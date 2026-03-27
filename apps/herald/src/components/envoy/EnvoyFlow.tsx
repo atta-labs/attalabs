@@ -6,6 +6,16 @@ import { JDInput } from './JDInput'
 import { LoadingState } from './LoadingState'
 import { ReportView } from './ReportView'
 
+interface CandidateProfile {
+  name: string
+  title: string
+  github?: string
+  summary: string
+  stack: string[]
+  location?: string
+  availability?: string
+}
+
 type FlowState = 'input' | 'loading' | 'result' | 'error'
 
 function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
@@ -22,7 +32,6 @@ function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
     try {
       await navigator.clipboard.writeText(window.location.href)
     } catch {
-      // Fallback for older browsers
       const input = document.createElement('input')
       input.value = window.location.href
       document.body.appendChild(input)
@@ -52,10 +61,10 @@ function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
   )
 }
 
-const ANIMATION_DURATION = 5000 // 5s deterministic loader
+const ANIMATION_DURATION = 5000
 const API_TIMEOUT = 25000
 
-export function EnvoyFlow() {
+export function EnvoyFlow({ profile }: { profile: CandidateProfile }) {
   const [state, setState] = useState<FlowState>('input')
   const [report, setReport] = useState<MatchReport | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -75,13 +84,11 @@ export function EnvoyFlow() {
     resultBuffer.current = null
     animationDone.current = false
 
-    // Start animation timer — minimum 5s before showing result
     const animationTimer = setTimeout(() => {
       animationDone.current = true
       tryReveal()
     }, ANIMATION_DURATION)
 
-    // Start API call in parallel
     const timeoutController = new AbortController()
     const apiTimer = setTimeout(() => timeoutController.abort(), API_TIMEOUT)
 
@@ -89,12 +96,23 @@ export function EnvoyFlow() {
       const res = await fetch('/api/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_description: jd }),
+        body: JSON.stringify({
+          job_description: jd,
+          _test_profile_override: {
+            name: profile.name,
+            title: profile.title,
+            github: profile.github,
+            summary: profile.summary,
+            stack: profile.stack,
+            projects: [],
+            experience: [],
+            github_signal: { patterns: [] }
+          }
+        }),
         signal: timeoutController.signal
       })
 
       clearTimeout(apiTimer)
-
       if (!res.ok) throw new Error(`API error: ${res.status}`)
 
       const data: MatchReport = await res.json()
@@ -120,11 +138,11 @@ export function EnvoyFlow() {
   }
 
   if (state === 'input') {
-    return <JDInput onSubmit={handleSubmit} />
+    return <JDInput onSubmit={handleSubmit} candidateName={profile.name} candidateTitle={profile.title} />
   }
 
   if (state === 'loading') {
-    return <LoadingState />
+    return <LoadingState candidateName={profile.name} candidateTitle={profile.title} />
   }
 
   if (state === 'error') {
@@ -132,8 +150,8 @@ export function EnvoyFlow() {
       <div className='mx-auto max-w-[680px] px-6 py-12'>
         <header className='mb-8 border-b border-border pb-6'>
           <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Forensic Match Audit</p>
-          <h1 className='mt-2 font-display text-2xl tracking-tight'>Dani Estevez Martin</h1>
-          <p className='mt-0.5 font-mono text-xs text-muted'>Senior Frontend Architect · AI Systems · Web3</p>
+          <h1 className='mt-2 font-display text-2xl tracking-tight'>{profile.name}</h1>
+          <p className='mt-0.5 font-mono text-xs text-muted'>{profile.title}</p>
         </header>
 
         <p className='text-sm text-muted'>{error}</p>

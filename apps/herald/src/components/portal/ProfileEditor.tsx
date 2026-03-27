@@ -1,11 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import type { DANI_PROFILE } from '@/lib/profile'
 
-type Profile = typeof DANI_PROFILE
+interface ProfileData {
+  name: string
+  title: string
+  location: string
+  availability: string
+  github: string
+  summary: string
+  stack: string[]
+}
 
-export function ProfileEditor({ profile }: { profile: Profile }) {
+export function ProfileEditor({ profile }: { profile: ProfileData }) {
   const [form, setForm] = useState({
     name: profile.name,
     title: profile.title,
@@ -30,8 +37,16 @@ export function ProfileEditor({ profile }: { profile: Profile }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...form,
-          stack: form.stack.split(',').map((s) => s.trim())
+          name: form.name,
+          title: form.title,
+          location: form.location,
+          availability: form.availability,
+          githubHandle: form.github,
+          summary: form.summary,
+          stack: form.stack
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
         })
       })
       if (res.ok) setSaved(true)
@@ -46,7 +61,6 @@ export function ProfileEditor({ profile }: { profile: Profile }) {
 
   return (
     <div className='space-y-8'>
-      {/* ── Identity ── */}
       <section>
         <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Identity</h2>
         <div className='grid grid-cols-2 gap-4'>
@@ -77,7 +91,6 @@ export function ProfileEditor({ profile }: { profile: Profile }) {
         </div>
       </section>
 
-      {/* ── Summary ── */}
       <section>
         <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Summary</h2>
         <textarea
@@ -87,7 +100,6 @@ export function ProfileEditor({ profile }: { profile: Profile }) {
         />
       </section>
 
-      {/* ── Stack ── */}
       <section>
         <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Stack (comma-separated)</h2>
         <textarea
@@ -97,7 +109,6 @@ export function ProfileEditor({ profile }: { profile: Profile }) {
         />
       </section>
 
-      {/* ── Actions ── */}
       <div className='flex items-center gap-3 border-t border-border pt-6'>
         <button
           type='button'
@@ -109,45 +120,6 @@ export function ProfileEditor({ profile }: { profile: Profile }) {
         </button>
         {saved && <span className='font-mono text-xs text-muted'>Saved</span>}
       </div>
-
-      {/* ── Projects (read-only for v1) ── */}
-      <section>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>
-          Projects (edit in code for v1)
-        </h2>
-        <div className='space-y-3'>
-          {profile.projects.map((p) => (
-            <div key={p.title} className='border-l border-foreground/10 pl-3'>
-              <p className='font-mono text-[13px] font-medium'>{p.title}</p>
-              <p className='mt-0.5 text-[12px] text-muted'>{p.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Experience (read-only for v1) ── */}
-      <section>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>
-          Experience (edit in code for v1)
-        </h2>
-        <div className='space-y-3'>
-          {profile.experience.map((e) => (
-            <div key={e.company} className='border-l border-foreground/10 pl-3'>
-              <p className='font-mono text-[13px] font-medium'>
-                {e.role} at {e.company}
-              </p>
-              <p className='mt-0.5 text-[12px] text-muted'>{e.period}</p>
-              <ul className='mt-1 space-y-0.5'>
-                {e.highlights.map((h) => (
-                  <li key={h} className='text-[12px] text-muted'>
-                    — {h}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   )
 }

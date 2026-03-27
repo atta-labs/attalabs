@@ -1,0 +1,70 @@
+import { eq } from 'drizzle-orm'
+import { db, schema } from '.'
+
+export async function getUserByClerkId(clerkId: string) {
+  const rows = await db.select().from(schema.users).where(eq(schema.users.clerkId, clerkId)).limit(1)
+  return rows[0] ?? null
+}
+
+export async function getUserByUsername(username: string) {
+  const rows = await db.select().from(schema.users).where(eq(schema.users.username, username)).limit(1)
+  return rows[0] ?? null
+}
+
+export async function isUsernameTaken(username: string): Promise<boolean> {
+  const rows = await db
+    .select({ username: schema.users.username })
+    .from(schema.users)
+    .where(eq(schema.users.username, username))
+    .limit(1)
+  return rows.length > 0
+}
+
+export async function createUser(data: {
+  clerkId: string
+  username: string
+  githubHandle?: string
+  name: string
+  title: string
+  location?: string
+  availability?: string
+  summary: string
+  stack: string[]
+}) {
+  await db.insert(schema.users).values({
+    clerkId: data.clerkId,
+    username: data.username,
+    githubHandle: data.githubHandle ?? null,
+    name: data.name,
+    title: data.title,
+    location: data.location ?? null,
+    availability: data.availability ?? null,
+    summary: data.summary,
+    stack: JSON.stringify(data.stack),
+    onboardingComplete: true
+  })
+}
+
+export async function updateUser(
+  clerkId: string,
+  data: {
+    name?: string
+    title?: string
+    location?: string
+    availability?: string
+    summary?: string
+    stack?: string[]
+    githubHandle?: string
+  }
+) {
+  const updates: Record<string, unknown> = { updatedAt: new Date() }
+  if (data.name !== undefined) updates.name = data.name
+  if (data.title !== undefined) updates.title = data.title
+  if (data.location !== undefined) updates.location = data.location
+  if (data.availability !== undefined) updates.availability = data.availability
+  if (data.summary !== undefined) updates.summary = data.summary
+  if (data.stack !== undefined) updates.stack = JSON.stringify(data.stack)
+  if (data.githubHandle !== undefined) updates.githubHandle = data.githubHandle
+
+  await db.update(schema.users).set(updates).where(eq(schema.users.clerkId, clerkId))
+}

@@ -16,19 +16,22 @@
     "@herald/cms": "workspace:*",
     "@herald/mcp": "workspace:*",
     "@herald/ui": "workspace:*",
+    "@neondatabase/serverless": "^1.0.2",
     "ai": "^6.0.140",
+    "drizzle-orm": "^0.45.1",
     "next": "^16.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@herald/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.0",
+    "drizzle-kit": "^0.31.10",
+    "postcss": "^8.5.0",
     "tailwindcss": "^4.0.0",
-    "@tailwindcss/postcss": "^4.0.0",
-    "postcss": "^8.5.0"
+    "typescript": "^5.7.0"
   }
 }

@@ -2,7 +2,15 @@
 
 import { useState } from 'react'
 
-export function JDInput({ onSubmit }: { onSubmit: (jd: string) => void }) {
+export function JDInput({
+  onSubmit,
+  candidateName = 'Dani Estevez Martin',
+  candidateTitle = 'Senior Frontend Architect · AI Systems · Web3'
+}: {
+  onSubmit: (jd: string) => void
+  candidateName?: string
+  candidateTitle?: string
+}) {
   const [value, setValue] = useState('')
   const [pending, setPending] = useState(false)
 
@@ -19,8 +27,8 @@ export function JDInput({ onSubmit }: { onSubmit: (jd: string) => void }) {
       {/* ── Candidate Context ── */}
       <header className='mb-8 border-b border-border pb-6'>
         <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Forensic Match Audit</p>
-        <h1 className='mt-2 font-display text-2xl tracking-tight'>Dani Estevez Martin</h1>
-        <p className='mt-0.5 font-mono text-xs text-muted'>Senior Frontend Architect · AI Systems · Web3</p>
+        <h1 className='mt-2 font-display text-2xl tracking-tight'>{candidateName}</h1>
+        <p className='mt-0.5 font-mono text-xs text-muted'>{candidateTitle}</p>
       </header>
 
       {/* ── Input ── */}
