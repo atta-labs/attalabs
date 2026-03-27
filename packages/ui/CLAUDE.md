@@ -2,7 +2,7 @@
 
 Shared UI component library for Herald. Built on shadcn/ui + Tailwind CSS v4 + lucide-react.
 
-Pattern: Same role as `@summon/ui` in the Summon repo, but simpler — Herald does not need multi-library switching (basic/retro/brutal). Herald uses a single component set with runtime theme switching via CSS variables.
+Herald uses a single component set with runtime theme switching via CSS variables.
 
 ---
 

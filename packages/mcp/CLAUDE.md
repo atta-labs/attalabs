@@ -4,7 +4,7 @@ MCP (Model Context Protocol) tool handlers for Herald. This package contains the
 
 v1 uses Vercel AI SDK tool handlers (server-side functions the LLM calls mid-reasoning). The package is structured for future extraction to a standalone MCP server with stdio/SSE transport.
 
-Pattern: Similar to `@summon/composer` in scope (AI pipeline), but the MCP transport structure is informed by Summon's `/api/mcp` route in the admin app.
+The package is structured for future extraction to a standalone MCP server with stdio/SSE transport.
 
 ---
 
@@ -128,8 +128,8 @@ When external AI clients (Claude Desktop, Cursor) need to connect to candidate p
 
 1. Add MCP transport layer (stdio/SSE)
 2. Register tools as MCP tools
-3. Deploy as Cloudflare Worker (like Summon's MCP server)
-4. App's `/api/mcp` route becomes a proxy (same pattern as Summon admin)
+3. Deploy as Cloudflare Worker
+4. App's `/api/mcp` route becomes a proxy
 
 The tool implementations stay the same — only the transport changes.
 

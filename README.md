@@ -34,7 +34,7 @@ Herald is a multi-tenant SaaS platform for engineers. Each engineer gets a deplo
 
 ## Architecture
 
-Herald follows the **Summon pattern** (Game7) — a single Next.js app serving both Portal and Envoy via middleware-based subdomain routing.
+Single Next.js app serving both Portal and Envoy via middleware-based subdomain routing.
 
 ```
 herald/
@@ -78,19 +78,10 @@ herald/
 ## Development
 
 ```bash
-# Install dependencies
 bun install
-
-# Start dev server
 bun run dev
-
-# Type check all packages
 bun run typecheck
-
-# Lint + format + typecheck
 bun run check
-
-# Build for production
 bun run build
 ```
 

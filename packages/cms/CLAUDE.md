@@ -2,7 +2,7 @@
 
 Sanity CMS schemas, configuration, and client for Herald. This package owns all content management — tenant profiles, themes, page configs, and asset references.
 
-Pattern: Same role as `@summon/cms` in the Summon repo.
+This package owns all content management — tenant profiles, themes, page configs, and asset references.
 
 ---
 
@@ -43,11 +43,11 @@ v1 uses a hardcoded profile in `apps/herald/src/lib/profile.ts`. The CMS package
 
 When Sanity is wired (Step 5+), all tenant content lives here:
 
-| Schema | Purpose | Summon Equivalent |
-|--------|---------|-------------------|
-| `profile` | Candidate name, title, summary, skills, projects, experience, GitHub handle | N/A (Herald-specific) |
-| `theme` | Color tokens, typography, spacing — runtime theme switching | `@summon/cms` themes |
-| `envoy-config` | Per-tenant Envoy page configuration (which sections to show, order) | Portal page config |
+| Schema | Purpose |
+|--------|---------|
+| `profile` | Candidate name, title, summary, skills, projects, experience, GitHub handle |
+| `theme` | Color tokens, typography, spacing — runtime theme switching |
+| `envoy-config` | Per-tenant Envoy page configuration (which sections to show, order) |
 
 ### RULE #3: GROQ queries are the only way to read from Sanity
 
@@ -110,4 +110,3 @@ Sanity Documents (live preview via postMessage)
 - [Root CLAUDE.md](../../CLAUDE.md) — Monorepo routing index
 - [HERALD-BUILD-SPEC.md Section 05](../../HERALD-BUILD-SPEC.md) — Admin Dashboard (Sanity integration)
 - [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) — "Why Sanity CMS" decision
-- [Summon CMS package](file:///Users/daniboomerang/Work/Repositories/game7/summon/packages/cms/CLAUDE.md) — Reference implementation

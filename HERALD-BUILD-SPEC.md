@@ -6,11 +6,11 @@
 
 ## 01. Project Vision
 
-Herald is a **Multi-Tenant SaaS Platform for Engineers** — following the architecture patterns established in the Summon platform (Game7). It provides an **Autonomous Engineering Envoy** that acts as a **Forensic Technical Auditor** for recruiters and hiring managers.
+Herald is a **Multi-Tenant SaaS Platform for Engineers**. It provides an **Autonomous Engineering Envoy** that acts as a **Forensic Technical Auditor** for recruiters and hiring managers.
 
 The platform has two faces:
 
-1. **Herald Portal** (`heyherald.com`) — The marketing site, onboarding flow, and admin dashboard. This is where engineers sign up, claim their username, upload their CV/GitHub, select a theme, and manage their deployed Envoy. Equivalent to Summon's Summoner + Admin (merged into one app).
+1. **Herald Portal** (`heyherald.com`) — The marketing site, onboarding flow, and admin dashboard. This is where engineers sign up, claim their username, upload their CV/GitHub, select a theme, and manage their deployed Envoy.
 
 2. **Herald Envoy** (`[username].heyherald.com`) — The deployed, public-facing candidate site. This is what engineers send to recruiters. A recruiter pastes a job description and gets a forensic match report with evidence-based engineering signals, honest gap analysis, and hyper-specific interview hooks.
 
@@ -20,20 +20,20 @@ The platform has two faces:
 
 ---
 
-## 02. Platform Topology (The Summon Pattern)
+## 02. Platform Topology
 
-Herald follows the same **Single-App, Multi-Tenant Architecture** as the Summon platform.
+Herald uses a **Single-App, Multi-Tenant Architecture**.
 
 ### Topology
 
-| Surface | URL | Purpose | Summon Equivalent |
-|---------|-----|---------|-------------------|
-| **Herald Portal** | `heyherald.com` | Marketing + Onboarding + Admin Dashboard | Summoner + Admin (merged) |
-| **Herald Envoy** | `[username].heyherald.com` | Deployed recruiter-facing candidate site | Portal |
+| Surface | URL | Purpose |
+|---------|-----|---------|
+| **Herald Portal** | `heyherald.com` | Marketing + Onboarding + Admin Dashboard |
+| **Herald Envoy** | `[username].heyherald.com` | Deployed recruiter-facing candidate site |
 
 ### Architecture
 
-- **Single Next.js app** with middleware-based subdomain routing (same as Summon Portal)
+- **Single Next.js app** with middleware-based subdomain routing
 - Next.js middleware reads `Host` header → extracts subdomain → maps to username → fetches tenant data from Sanity
 - `heyherald.com/dani` (path-based) and `dani.heyherald.com` (subdomain) both work and render the same page
 - Cloudflare wildcard DNS (`*.heyherald.com`) → Vercel
@@ -42,21 +42,21 @@ Herald follows the same **Single-App, Multi-Tenant Architecture** as the Summon 
 
 ## 03. Core Architecture
 
-### Tech Stack (Aligned with Summon)
+### Tech Stack
 
-| Layer | Technology | Summon Equivalent |
-|-------|-----------|-------------------|
-| Monorepo | Turborepo + Bun | Same |
-| Framework | Next.js 15 (App Router, TypeScript) | Same |
-| Styling | Tailwind CSS v4 + shadcn/ui | Same |
-| CMS | Sanity (tenant content, themes, page configs) | Same |
-| Auth | Clerk (sign-up, login, session management) | Same |
-| Storage | Cloudflare R2 (avatars, assets) | Same |
-| AI | Vercel AI SDK + Claude API (tool handlers) | Same |
-| Database | Neon Postgres + Drizzle ORM (relational data: users, match history, analytics) | Similar |
-| Rate Limiting | Upstash Redis + @upstash/ratelimit | N/A |
-| Hosting | Vercel | Same |
-| DNS | Cloudflare wildcard `*.heyherald.com` | Same |
+| Layer | Technology |
+|-------|-----------|
+| Monorepo | Turborepo + Bun |
+| Framework | Next.js 15 (App Router, TypeScript) |
+| Styling | Tailwind CSS v4 + shadcn/ui |
+| CMS | Sanity (tenant content, themes, page configs) |
+| Auth | Clerk (sign-up, login, session management) |
+| Storage | Cloudflare R2 (avatars, assets) |
+| AI | Vercel AI SDK + Claude API (tool handlers) |
+| Database | Neon Postgres + Drizzle ORM (relational data: users, match history, analytics) |
+| Rate Limiting | Upstash Redis + @upstash/ratelimit |
+| Hosting | Vercel |
+| DNS | Cloudflare wildcard `*.heyherald.com` |
 
 ### Monorepo Structure
 
@@ -83,7 +83,7 @@ herald/
 │       │   │   │   │   └── route.ts
 │       │   │   │   ├── mcp/               # MCP tool handlers (proxies to @herald/mcp)
 │       │   │   │   │   └── route.ts
-│       │   │   │   └── chat/              # AI onboarding chat (like Summoner)
+│       │   │   │   └── chat/              # AI onboarding chat
 │       │   │   │       └── route.ts
 │       │   │   ├── layout.tsx
 │       │   │   └── middleware.ts       # Subdomain routing + rate limiting
@@ -104,10 +104,10 @@ herald/
 │       └── public/
 ├── packages/
 │   ├── ui/                         # Shared UI components (shadcn base)
-│   ├── cms/                        # Sanity schemas + config (like @summon/cms)
+│   ├── cms/                        # Sanity schemas + config
 │   ├── mcp/                        # MCP tool handlers — match engine, GitHub signals, profile
 │   │                                 # v1: Vercel AI SDK tools. Extractable to standalone MCP server later.
-│   └── typescript-config/          # Shared TypeScript configs (like @summon/typescript-config)
+│   └── typescript-config/          # Shared TypeScript configs
 ├── .husky/                         # Git hooks (pre-commit, commit-msg)
 ├── biome.json                      # Biome formatter + linter config
 ├── commitlint.config.js            # Commit message validation
@@ -118,7 +118,7 @@ herald/
 
 ---
 
-## 04. The Onboarding Flow (The "Summoner")
+## 04. The Onboarding Flow
 
 Goal: Turn a visitor into a deployed subdomain in under 3 minutes.
 
@@ -129,9 +129,9 @@ Goal: Turn a visitor into a deployed subdomain in under 3 minutes.
 3. **The Look** — Select initial theme (Minimal Dark default). Optional: upload avatar, customise accent color.
 4. **Deployment** — On completion, Sanity record created, middleware immediately routes `[username].heyherald.com` to tenant data.
 
-### AI-Driven Onboarding (Like Summoner)
+### AI-Driven Onboarding
 
-The onboarding uses Claude via Vercel AI SDK with tool handlers (same pattern as Summon's Summoner):
+The onboarding uses Claude via Vercel AI SDK with tool handlers:
 
 - `check_username` — Verify username availability
 - `analyze_cv` — Extract skills, experience, projects from uploaded CV
@@ -143,19 +143,19 @@ The onboarding uses Claude via Vercel AI SDK with tool handlers (same pattern as
 
 ## 05. The Admin Dashboard
 
-The admin dashboard lives at `heyherald.com/admin` (protected by Clerk auth). It follows the Summon Admin pattern.
+The admin dashboard lives at `heyherald.com/admin` (protected by Clerk auth).
 
 ### Features
 
-| Feature | Description | Summon Equivalent |
-|---------|-------------|-------------------|
-| **Live Preview** | iframe showing `[username].heyherald.com` with real-time updates via postMessage | Portal Preview |
-| **Theme Control** | Select/customise theme (Minimal Dark, Neo-Brutalism, Terminal) | Theme Management |
-| **Content Management** | Edit profile, projects, experience. Override AI-generated content. | Content Editor |
-| **Asset Management** | Upload avatar, project screenshots (Cloudflare R2) | Image Upload |
-| **Analytics** | JD submissions, match grades, recruiter activity | N/A (new) |
+| Feature | Description |
+|---------|-------------|
+| **Live Preview** | iframe showing `[username].heyherald.com` with real-time updates via postMessage |
+| **Theme Control** | Select/customise theme (Minimal Dark, Neo-Brutalism, Terminal) |
+| **Content Management** | Edit profile, projects, experience. Override AI-generated content. |
+| **Asset Management** | Upload avatar, project screenshots (Cloudflare R2) |
+| **Analytics** | JD submissions, match grades, recruiter activity |
 
-### Live Preview Protocol (PostMessage — same as Summon)
+### Live Preview Protocol (PostMessage)
 
 ```typescript
 // Admin sends → Envoy iframe receives and applies
@@ -199,7 +199,7 @@ export const DANI_PROFILE = {
       signals: ["streaming", "parallel processing", "prompt engineering", "service architecture"]
     },
     {
-      title: "Multi-Tenant UI Portal (Game7)",
+      title: "Multi-Tenant UI Portal",
       description: "Swappable component libraries resolved at build time via Turborepo aliases. Sanity CMS integration for tenant content. OKLCH color science for AI-powered theme generation. Multi-chain Web3 integration.",
       stack: ["React", "Next.js", "TypeScript", "Turborepo", "Sanity", "Web3"],
       signals: ["monorepo", "multi-tenant", "build-time optimisation", "CMS integration", "blockchain"]
@@ -213,12 +213,12 @@ export const DANI_PROFILE = {
   ],
   experience: [
     {
-      company: "Game7",
+      company: "Previous Employer",
       role: "Senior Frontend Architect",
       period: "2022 — 2026",
       highlights: [
         "Architected multi-tenant portal system serving multiple Web3 gaming communities",
-        "Built Summoner onboarding system with automated tenant deployment pipeline",
+        "Built onboarding system with automated tenant deployment pipeline",
         "Implemented swappable component library system via Turborepo build-time aliases",
         "Led Web3 multi-chain integration (Ethereum, Polygon, Arbitrum)",
         "Introduced AI-powered theme generation with OKLCH color science"
@@ -459,14 +459,14 @@ Set up Sanity CMS schemas for tenant data (profiles, themes, configs). Implement
 **Deliverable:** `dani.heyherald.com` served from Sanity data.
 
 ### Step 6 — Onboarding Flow
-Build the onboarding wizard at `heyherald.com/onboarding` with Clerk auth. AI-driven chat (like Summoner) that collects username, CV, GitHub, theme preference. On completion, creates Sanity records and deploys Envoy at `[username].heyherald.com`.
+Build the onboarding wizard at `heyherald.com/onboarding` with Clerk auth. AI-driven chat that collects username, CV, GitHub, theme preference. On completion, creates Sanity records and deploys Envoy at `[username].heyherald.com`.
 
 **Deliverable:** New engineers can sign up and get a deployed Envoy.
 
 ### Step 7 — Admin Dashboard
 Build `heyherald.com/admin` with Clerk-protected routes. Live preview (iframe + postMessage), theme control, content management, asset upload (Cloudflare R2), analytics.
 
-**Deliverable:** Full Summon-style admin experience for managing deployed Envoy.
+**Deliverable:** Full admin experience for managing deployed Envoy.
 
 ---
 
@@ -510,7 +510,7 @@ GITHUB_TOKEN=                # Personal access token for higher rate limits
 Paste this as the first message when opening Claude Code in this repo:
 
 ```
-Read CLAUDE.md and HERALD-BUILD-SPEC.md. This is Herald — a multi-tenant SaaS platform for engineers, following the Summon architecture pattern.
+Read CLAUDE.md and HERALD-BUILD-SPEC.md. This is Herald — a multi-tenant SaaS platform for engineers.
 
 Start with Step 1 from the build spec: Static Shell (Envoy Template).
 
@@ -526,5 +526,4 @@ First deliverable: /dani renders a complete forensic audit report with hardcoded
 ---
 
 *Herald Build Spec v2.0 — March 2026*
-*Multi-tenant SaaS platform following the Summon architecture pattern*
 *Synthesised from architecture sessions across Claude, Gemini, and ChatGPT*

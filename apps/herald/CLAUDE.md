@@ -2,7 +2,7 @@
 
 The main Next.js 15 application. Serves both the **Herald Portal** (marketing + onboarding + admin dashboard) and the **Herald Envoy** (deployed candidate pages) from a single codebase via middleware-based subdomain routing.
 
-Pattern: Equivalent to Summon's Portal + Summoner + Admin apps merged into one.
+Pattern: Portal + Onboarding + Admin merged into one codebase.
 
 ---
 
@@ -144,7 +144,7 @@ Components use Tailwind classes (`bg-background`, `text-foreground`, `text-accen
 |-------|--------|---------|------------|
 | `/api/match` | POST | Forensic audit — JD + profile → MatchReport | Step 3 |
 | `/api/mcp` | POST | MCP tool handler proxy to `@herald/mcp` | Step 3 |
-| `/api/chat` | POST | AI onboarding conversation (Summoner pattern) | Step 6 |
+| `/api/chat` | POST | AI onboarding conversation | Step 6 |
 
 ---
 

@@ -2,7 +2,7 @@
 
 Shared TypeScript configurations for the Herald monorepo. This package provides base configs that all other packages and apps extend.
 
-Pattern: Same as `@summon/typescript-config` in the Summon repo.
+Provides base configs that all other packages and apps extend.
 
 ---
 

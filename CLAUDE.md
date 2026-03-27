@@ -1,20 +1,19 @@
 # Herald — Claude Code Instructions
 
-Herald is a **Multi-Tenant SaaS Platform for Engineers** following the Summon architecture pattern (Game7). It provides an **Autonomous Engineering Envoy** — a forensic technical auditor for recruiters and hiring managers.
+Herald is a **Multi-Tenant SaaS Platform for Engineers**. It provides an **Autonomous Engineering Envoy** — a forensic technical auditor for recruiters and hiring managers.
 
 **Domain:** heyherald.com
 **First customer (v1):** Dani Estevez Martin — Senior Frontend Architect, 15+ years, remote from Thailand
 **GitHub:** daniboomerang
-**Summon reference repo:** `/Users/daniboomerang/Work/Repositories/game7/summon`
 
 ---
 
-## Platform Topology (Summon Pattern)
+## Platform Topology
 
-| Surface | URL | Purpose | Summon Equivalent |
-|---------|-----|---------|-------------------|
-| Herald Portal | `heyherald.com` | Marketing + Onboarding + Admin Dashboard | Summoner + Admin (merged) |
-| Herald Envoy | `[username].heyherald.com` | Deployed recruiter-facing candidate site | Portal |
+| Surface | URL | Purpose |
+|---------|-----|---------|
+| Herald Portal | `heyherald.com` | Marketing + Onboarding + Admin Dashboard |
+| Herald Envoy | `[username].heyherald.com` | Deployed recruiter-facing candidate site |
 
 Single Next.js app with middleware-based subdomain routing. Both `heyherald.com/dani` (path) and `dani.heyherald.com` (subdomain) render the same Envoy page.
 
@@ -25,10 +24,10 @@ Single Next.js app with middleware-based subdomain routing. Both `heyherald.com/
 | Document | Purpose | Read When |
 |----------|---------|-----------|
 | [HERALD-BUILD-SPEC.md](HERALD-BUILD-SPEC.md) | **Complete build specification** — platform topology, onboarding, admin, API contracts, system prompts, UI specs, build order | Before writing ANY code |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture decisions and rationale (why Summon pattern, why Sanity, why runtime themes) | Understanding design choices |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture decisions and rationale | Understanding design choices |
 | This file | Routing index + rules | Always loaded automatically |
 
-**IMPORTANT:** Read `HERALD-BUILD-SPEC.md` first. It contains the full spec including the Summon-pattern platform architecture, onboarding flow, admin dashboard, forensic API contract, Skeptical Auditor system prompt, and strict build order.
+**IMPORTANT:** Read `HERALD-BUILD-SPEC.md` first. It contains the full spec including the platform architecture, onboarding flow, admin dashboard, forensic API contract, Skeptical Auditor system prompt, and strict build order.
 
 ---
 
@@ -70,23 +69,23 @@ packages/mcp
 
 ---
 
-## Tech Stack (Aligned with Summon)
+## Tech Stack
 
-| Layer | Technology | Summon Equivalent |
-|-------|-----------|-------------------|
-| Monorepo | Turborepo + Bun | Same |
-| Framework | Next.js 15 (App Router, TypeScript, React 19) | Same |
-| Styling | Tailwind CSS v4 + shadcn/ui | Same |
-| CMS | Sanity (tenant content, themes, configs) | Same |
-| Auth | Clerk (sign-up, login, session management) | Same |
-| Storage | Cloudflare R2 (avatars, assets) | Same |
-| AI | Vercel AI SDK + Claude API (tool handlers) | Same |
-| Database | Neon Postgres + Drizzle ORM (relational data) | Similar |
-| Rate Limiting | Upstash Redis + @upstash/ratelimit | N/A |
-| Hosting | Vercel | Same |
-| DNS | Cloudflare wildcard `*.heyherald.com` | Same |
-| Linting | Biome (formatter + linter) | Same |
-| Git Hooks | Husky + lint-staged + commitlint | Same |
+| Layer | Technology |
+|-------|-----------|
+| Monorepo | Turborepo + Bun |
+| Framework | Next.js 15 (App Router, TypeScript, React 19) |
+| Styling | Tailwind CSS v4 + shadcn/ui |
+| CMS | Sanity (tenant content, themes, configs) |
+| Auth | Clerk (sign-up, login, session management) |
+| Storage | Cloudflare R2 (avatars, assets) |
+| AI | Vercel AI SDK + Claude API (tool handlers) |
+| Database | Neon Postgres + Drizzle ORM (relational data) |
+| Rate Limiting | Upstash Redis + @upstash/ratelimit |
+| Hosting | Vercel |
+| DNS | Cloudflare wildcard `*.heyherald.com` |
+| Linting | Biome (formatter + linter) |
+| Git Hooks | Husky + lint-staged + commitlint |
 
 ---
 
@@ -130,7 +129,7 @@ bun run clean        # Clean build artifacts
 3. **Match Engine** — `POST /api/match` with Skeptical Auditor prompt. Wire `JDInput` → `LoadingState` → `ResultView`.
 4. **Rate Limiting & Polish** — Upstash Redis (5 reports/IP/hour). Copy Link. PDF export.
 5. **Subdomain Routing & Sanity** — Sanity CMS schemas, middleware subdomain routing, Envoy reads from Sanity.
-6. **Onboarding Flow** — AI-driven onboarding at `/onboarding` (Summoner pattern). Clerk auth.
+6. **Onboarding Flow** — AI-driven onboarding at `/onboarding`. Clerk auth.
 7. **Admin Dashboard** — `/admin` with live preview (iframe + postMessage), theme control, content management.
 
 ---
