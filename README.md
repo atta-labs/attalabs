@@ -2,7 +2,7 @@
 
 **Your AI speaks for you when you're not in the room.**
 
-Herald is a multi-tenant SaaS platform for engineers. Each engineer gets a deployed subdomain (`username.heyherald.com`) that acts as a **Forensic Technical Auditor** — a recruiter pastes a job description and gets an evidence-based match report with engineering signals, honest gap analysis, and hyper-specific interview hooks.
+Herald is a multi-tenant SaaS platform that gives any professional a deployed subdomain (`username.heyherald.com`) acting as a **Forensic Match Auditor** — a recruiter pastes a job description and gets an evidence-based match report with detected signals, honest gap analysis, and hyper-specific interview hooks.
 
 **Live at:** [heyherald.com](https://heyherald.com)
 
@@ -17,9 +17,9 @@ Herald is a multi-tenant SaaS platform for engineers. Each engineer gets a deplo
 
 ### How It Works
 
-**For Engineers (candidates):**
+**For Candidates:**
 1. Sign up at `heyherald.com`
-2. Claim your username, upload CV, connect GitHub
+2. Claim your username, upload CV, connect relevant profiles
 3. Get a deployed Envoy at `username.heyherald.com`
 4. Manage your page from the admin dashboard (themes, content, analytics)
 
@@ -59,7 +59,7 @@ herald/
 | Layer | Technology |
 |-------|-----------|
 | Monorepo | Turborepo + Bun |
-| Framework | Next.js 15 (App Router, React 19) |
+| Framework | Next.js 16 (App Router, React 19) |
 | Language | TypeScript (strict) |
 | Styling | Tailwind CSS v4 + shadcn/ui |
 | CMS | Sanity |
@@ -111,7 +111,7 @@ Each package and app has its own `CLAUDE.md` and `README.md`:
 
 **v1:** Personal portfolio tool — Dani is the first customer. Hardcoded profile, deployed Envoy, forensic match reports.
 
-**v2:** Multi-tenant platform — engineers sign up, onboard, and get their own deployed Envoy with admin dashboard.
+**v2:** Multi-tenant platform — candidates sign up, onboard, and get their own deployed Envoy with admin dashboard.
 
 **v3:** Talent marketplace — recruiters search across all candidates, paste a job description, get ranked matches.
 

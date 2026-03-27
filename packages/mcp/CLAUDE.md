@@ -19,7 +19,7 @@ packages/mcp/
 │   │   └── profile.ts          # Profile data retrieval
 │   ├── prompts/             # System prompts
 │   │   └── skeptical-auditor.ts # Verbatim auditor prompt (NEVER modify)
-│   ├── types.ts             # Shared types (MatchReport, MatchRequest, EngineeringSignal)
+│   ├── types.ts             # Shared types (MatchReport, MatchRequest, DetectedSignal)
 │   └── index.ts             # Public exports
 ├── CLAUDE.md
 ├── README.md
@@ -40,7 +40,7 @@ Key linguistic constraints enforced by the prompt:
 - Every claim must reference a detectable signal
 - Gaps are honest, always paired with mitigation
 - Interview hooks must be hyper-specific
-- Tone: senior engineer writing internal memo, not recruiter
+- Tone: senior professional writing internal memo, not recruiter
 
 ### RULE #2: Tools are independently testable
 
@@ -48,7 +48,7 @@ Each tool in `src/tools/` is a pure function that can be tested without the AI S
 
 ```typescript
 // ✅ Good — tool is a pure function
-export async function detectGitHubSignals(handle: string): Promise<EngineeringSignal[]> {
+export async function detectGitHubSignals(handle: string): Promise<Signal[]> {
   const repos = await fetchPublicRepos(handle)
   return scanForPatterns(repos)
 }
@@ -68,12 +68,12 @@ interface MatchReport {
   grade: 'A' | 'A-' | 'B+' | 'B'
   recommendation: 'Strong Fit' | 'Good Fit' | 'Borderline'
   confidence_reasoning: string[]
-  engineering_signal: EngineeringSignal[]
+  signal: Signal[]
   gaps: Array<{ gap: string; mitigation: string }>
   interview_hooks: string[]
 }
 
-interface EngineeringSignal {
+interface Signal {
   title: string
   observation: string
   interpretation: string
@@ -99,7 +99,7 @@ interface EngineeringSignal {
 ### `github-signals` — Signal Detection
 
 **Input:** GitHub username
-**Output:** `EngineeringSignal[]`
+**Output:** `Signal[]`
 **API:** GitHub public REST API (`https://api.github.com/users/{handle}/repos`)
 **Signals detected:** See HERALD-BUILD-SPEC.md Section 09
 
@@ -109,7 +109,7 @@ interface EngineeringSignal {
 | Schema Validation | `zod` imports | Boundary validation, production thinking |
 | Headless UI | `@radix-ui` imports | Behaviour/presentation separation |
 | Web3 Integration | `wagmi`/`ethers` imports | Blockchain experience |
-| Active Engineering | Commits within 90 days | Current hands-on practice |
+| Active Contribution | Commits within 90 days | Current hands-on practice |
 | AI/LLM Integration | `@anthropic-ai/sdk`/`openai` imports | Production LLM systems |
 | Modern ORM | `drizzle-orm` imports | Type-safe database access |
 

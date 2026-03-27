@@ -1,6 +1,6 @@
 # Herald App — Claude Code Instructions
 
-The main Next.js 15 application. Serves both the **Herald Portal** (marketing + onboarding + admin dashboard) and the **Herald Envoy** (deployed candidate pages) from a single codebase via middleware-based subdomain routing.
+The main Next.js 16 application. Serves both the **Herald Portal** (marketing + onboarding + admin dashboard) and the **Herald Envoy** (deployed candidate pages) from a single codebase via middleware-based subdomain routing.
 
 Pattern: Portal + Onboarding + Admin merged into one codebase.
 

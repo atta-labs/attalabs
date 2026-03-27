@@ -11,7 +11,7 @@ MCP (Model Context Protocol) tool handlers for Herald. Contains the match engine
 | Tool | Purpose |
 |------|---------|
 | `match` | Forensic match engine — takes JD + profile, returns `MatchReport` via Claude |
-| `github-signals` | Scans GitHub repos for engineering signal patterns |
+| `github-signals` | Scans GitHub repos for detectable signal patterns |
 | `profile` | Retrieves candidate profile (hardcoded v1, Sanity v2+) |
 
 ## Usage

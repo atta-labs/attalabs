@@ -1,6 +1,6 @@
 # Herald — Claude Code Instructions
 
-Herald is a **Multi-Tenant SaaS Platform for Engineers**. It provides an **Autonomous Engineering Envoy** — a forensic technical auditor for recruiters and hiring managers.
+Herald is a **Multi-Tenant SaaS Platform** that gives any professional a deployed subdomain with an AI-powered **Forensic Match Audit**. A recruiter pastes a job description and gets a structured, evidence-based match report.
 
 **Domain:** heyherald.com
 **First customer (v1):** Dani Estevez Martin — Senior Frontend Architect, 15+ years, remote from Thailand
@@ -13,7 +13,7 @@ Herald is a **Multi-Tenant SaaS Platform for Engineers**. It provides an **Auton
 | Surface | URL | Purpose |
 |---------|-----|---------|
 | Herald Portal | `heyherald.com` | Marketing + Onboarding + Admin Dashboard |
-| Herald Envoy | `[username].heyherald.com` | Deployed recruiter-facing candidate site |
+| Herald Envoy | `[username].heyherald.com` | Deployed recruiter-facing candidate page |
 
 Single Next.js app with middleware-based subdomain routing. Both `heyherald.com/dani` (path) and `dani.heyherald.com` (subdomain) render the same Envoy page.
 
@@ -37,7 +37,7 @@ Single Next.js app with middleware-based subdomain routing. Both `heyherald.com/
 
 | App | CLAUDE.md | README | Purpose |
 |-----|-----------|--------|---------|
-| [apps/herald](apps/herald/) | [CLAUDE.md](apps/herald/CLAUDE.md) | [README.md](apps/herald/README.md) | Next.js 15 app — Portal + Envoy in one codebase |
+| [apps/herald](apps/herald/) | [CLAUDE.md](apps/herald/CLAUDE.md) | [README.md](apps/herald/README.md) | Next.js 16 app — Portal + Envoy in one codebase |
 
 ### Packages
 
@@ -45,7 +45,7 @@ Single Next.js app with middleware-based subdomain routing. Both `heyherald.com/
 |---------|-----------|--------|---------|
 | [packages/ui](packages/ui/) | [CLAUDE.md](packages/ui/CLAUDE.md) | [README.md](packages/ui/README.md) | Shared UI components (shadcn/ui + Tailwind v4 + lucide-react) |
 | [packages/cms](packages/cms/) | [CLAUDE.md](packages/cms/CLAUDE.md) | [README.md](packages/cms/README.md) | Sanity CMS schemas, config, typed queries |
-| [packages/mcp](packages/mcp/) | [CLAUDE.md](packages/mcp/CLAUDE.md) | [README.md](packages/mcp/README.md) | MCP tool handlers — match engine, GitHub signals, profile |
+| [packages/mcp](packages/mcp/) | [CLAUDE.md](packages/mcp/CLAUDE.md) | [README.md](packages/mcp/README.md) | MCP tool handlers — match engine, signal detection, profile |
 | [packages/typescript-config](packages/typescript-config/) | [CLAUDE.md](packages/typescript-config/CLAUDE.md) | [README.md](packages/typescript-config/README.md) | Shared TypeScript configs (base, Next.js) |
 
 ### Package Dependency Graph
@@ -54,16 +54,10 @@ Single Next.js app with middleware-based subdomain routing. Both `heyherald.com/
 apps/herald
 ├── @herald/ui              → UI components
 ├── @herald/cms             → Sanity CMS client + queries
-├── @herald/mcp             → Match engine, GitHub signals
+├── @herald/mcp             → Match engine, signal detection
 └── @herald/typescript-config → TypeScript config (via tsconfig extends)
 
-packages/ui
-└── @herald/typescript-config
-
-packages/cms
-└── @herald/typescript-config
-
-packages/mcp
+packages/ui, packages/cms, packages/mcp
 └── @herald/typescript-config
 ```
 
@@ -74,9 +68,9 @@ packages/mcp
 | Layer | Technology |
 |-------|-----------|
 | Monorepo | Turborepo + Bun |
-| Framework | Next.js 15 (App Router, TypeScript, React 19) |
+| Framework | Next.js 16 (App Router, TypeScript, React 19) |
 | Styling | Tailwind CSS v4 + shadcn/ui |
-| CMS | Sanity (tenant content, themes, configs) |
+| CMS | Sanity (candidate content, themes, configs) |
 | Auth | Clerk (sign-up, login, session management) |
 | Storage | Cloudflare R2 (avatars, assets) |
 | AI | Vercel AI SDK + Claude API (tool handlers) |
@@ -125,7 +119,7 @@ bun run clean        # Clean build artifacts
 ## Build Order (Strict — Do Not Skip Steps)
 
 1. **Static Shell (Envoy Template)** — Build `ReportView` with hardcoded data. No LLM calls. Typography, spacing, Decision Anchor hierarchy.
-2. **GitHub Signal Detection** — `/api/mcp/github-signals` fetches `daniboomerang`'s public repos, detects patterns.
+2. **Signal Detection** — `/api/mcp/signals` fetches candidate's public repos, detects patterns.
 3. **Match Engine** — `POST /api/match` with Skeptical Auditor prompt. Wire `JDInput` → `LoadingState` → `ResultView`.
 4. **Rate Limiting & Polish** — Upstash Redis (5 reports/IP/hour). Copy Link. PDF export.
 5. **Subdomain Routing & Sanity** — Sanity CMS schemas, middleware subdomain routing, Envoy reads from Sanity.

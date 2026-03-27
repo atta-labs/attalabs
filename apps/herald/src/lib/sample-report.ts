@@ -16,7 +16,7 @@ export const daniReport: MatchReport = {
     'AI integration goes beyond API usage (MCP orchestration + streaming pipelines)'
   ],
 
-  engineering_signal: [
+  signal: [
     {
       title: 'Architectural Boundaries',
       observation: 'Detected: /apps + /packages workspace separation (Turborepo)',

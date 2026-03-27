@@ -6,13 +6,13 @@
 
 ## 01. Project Vision
 
-Herald is a **Multi-Tenant SaaS Platform for Engineers**. It provides an **Autonomous Engineering Envoy** that acts as a **Forensic Technical Auditor** for recruiters and hiring managers.
+Herald is a **Multi-Tenant SaaS Platform** that gives any professional a deployed subdomain with an AI-powered **Forensic Match Audit**. A recruiter pastes a job description and gets a structured, evidence-based match report.
 
 The platform has two faces:
 
-1. **Herald Portal** (`heyherald.com`) — The marketing site, onboarding flow, and admin dashboard. This is where engineers sign up, claim their username, upload their CV/GitHub, select a theme, and manage their deployed Envoy.
+1. **Herald Portal** (`heyherald.com`) — The marketing site, onboarding flow, and admin dashboard. This is where candidates sign up, claim their username, upload their CV/portfolio, select a theme, and manage their deployed Envoy.
 
-2. **Herald Envoy** (`[username].heyherald.com`) — The deployed, public-facing candidate site. This is what engineers send to recruiters. A recruiter pastes a job description and gets a forensic match report with evidence-based engineering signals, honest gap analysis, and hyper-specific interview hooks.
+2. **Herald Envoy** (`[username].heyherald.com`) — The deployed, public-facing candidate site. This is what candidates send to recruiters. A recruiter pastes a job description and gets a forensic match report with evidence-based signals, honest gap analysis, and hyper-specific interview hooks.
 
 **The one sentence:** "Paste your job description. See instantly how well I fit — and why."
 
@@ -34,7 +34,7 @@ Herald uses a **Single-App, Multi-Tenant Architecture**.
 ### Architecture
 
 - **Single Next.js app** with middleware-based subdomain routing
-- Next.js middleware reads `Host` header → extracts subdomain → maps to username → fetches tenant data from Sanity
+- Next.js middleware reads `Host` header → extracts subdomain → maps to username → fetches candidate data from Sanity
 - `heyherald.com/dani` (path-based) and `dani.heyherald.com` (subdomain) both work and render the same page
 - Cloudflare wildcard DNS (`*.heyherald.com`) → Vercel
 
@@ -47,9 +47,9 @@ Herald uses a **Single-App, Multi-Tenant Architecture**.
 | Layer | Technology |
 |-------|-----------|
 | Monorepo | Turborepo + Bun |
-| Framework | Next.js 15 (App Router, TypeScript) |
+| Framework | Next.js 16 (App Router, TypeScript) |
 | Styling | Tailwind CSS v4 + shadcn/ui |
-| CMS | Sanity (tenant content, themes, page configs) |
+| CMS | Sanity (candidate content, themes, page configs) |
 | Auth | Clerk (sign-up, login, session management) |
 | Storage | Cloudflare R2 (avatars, assets) |
 | AI | Vercel AI SDK + Claude API (tool handlers) |
@@ -127,7 +127,7 @@ Goal: Turn a visitor into a deployed subdomain in under 3 minutes.
 1. **Identity** — Create account via Clerk. Claim unique `[username]` (URL-safe, checked for uniqueness).
 2. **The Brain** — Upload CV (PDF/Markdown) + Connect GitHub handle. This becomes the candidate's "Truth Layer" that the Skeptical Auditor references.
 3. **The Look** — Select initial theme (Minimal Dark default). Optional: upload avatar, customise accent color.
-4. **Deployment** — On completion, Sanity record created, middleware immediately routes `[username].heyherald.com` to tenant data.
+4. **Deployment** — On completion, Sanity record created, middleware immediately routes `[username].heyherald.com` to candidate data.
 
 ### AI-Driven Onboarding
 
@@ -135,7 +135,7 @@ The onboarding uses Claude via Vercel AI SDK with tool handlers:
 
 - `check_username` — Verify username availability
 - `analyze_cv` — Extract skills, experience, projects from uploaded CV
-- `analyze_github` — Fetch and analyze GitHub repos for engineering signals
+- `analyze_github` — Fetch and analyze GitHub repos for detectable signals
 - `generate_profile` — Create structured candidate profile from collected data
 - `ask_confirm` — Show summary for final review before deployment
 
@@ -200,7 +200,7 @@ export const DANI_PROFILE = {
     },
     {
       title: "Multi-Tenant UI Portal",
-      description: "Swappable component libraries resolved at build time via Turborepo aliases. Sanity CMS integration for tenant content. OKLCH color science for AI-powered theme generation. Multi-chain Web3 integration.",
+      description: "Swappable component libraries resolved at build time via Turborepo aliases. Sanity CMS integration for candidate content. OKLCH color science for AI-powered theme generation. Multi-chain Web3 integration.",
       stack: ["React", "Next.js", "TypeScript", "Turborepo", "Sanity", "Web3"],
       signals: ["monorepo", "multi-tenant", "build-time optimisation", "CMS integration", "blockchain"]
     },
@@ -218,7 +218,7 @@ export const DANI_PROFILE = {
       period: "2022 — 2026",
       highlights: [
         "Architected multi-tenant portal system serving multiple Web3 gaming communities",
-        "Built onboarding system with automated tenant deployment pipeline",
+        "Built onboarding system with automated deployment pipeline",
         "Implemented swappable component library system via Turborepo build-time aliases",
         "Led Web3 multi-chain integration (Ethereum, Polygon, Arbitrum)",
         "Introduced AI-powered theme generation with OKLCH color science"
@@ -254,7 +254,7 @@ interface MatchReport {
   grade: "A" | "A-" | "B+" | "B"
   recommendation: "Strong Fit" | "Good Fit" | "Borderline"
   confidence_reasoning: string[]  // Bullet points explaining grade logic
-  engineering_signal: Array<{
+  signal: Array<{
     title: string           // e.g. "Architectural Boundaries"
     observation: string     // What forensic patterns were found
     interpretation: string  // What this proves about seniority
@@ -281,15 +281,15 @@ interface MatchReport {
 Use this prompt **verbatim** for the `/api/match` LLM call. Do not modify without explicit instruction.
 
 ```
-You are a forensic technical auditor producing a hiring decision artifact for a senior engineering role.
+You are a forensic technical auditor producing a hiring decision artifact.
 
 LINGUISTIC RULES:
-- Every claim must reference a specific, detectable signal: a technology, architectural pattern, code structure, or engineering decision
+- Every claim must reference a specific, detectable signal: a technology, pattern, demonstrated skill, or verifiable decision
 - Zero marketing language. Never use: passionate, innovative, results-driven, team player, self-starter, rockstar, ninja, guru, dynamic, proactive
 - If a claim cannot be supported by evidence from the profile or GitHub signals, do not make it
 - Gaps are honest and specific, always paired with a concrete mitigation that references real experience
 - Interview hooks must be hyper-specific — a generic question fails the spec. Bad: "Tell me about your React experience." Good: "Your Turborepo setup uses build-time alias resolution for component libraries — walk me through why you chose that over runtime switching and what the tradeoffs were."
-- Tone: a senior engineer writing an internal memo to a hiring committee, not a recruiter writing a job post
+- Tone: a senior professional writing an internal memo to a hiring committee, not a recruiter writing a job post
 
 GRADING LOGIC:
 - A: Meets or exceeds all core requirements with evidence. Gaps are minor or mitigated.
@@ -307,7 +307,7 @@ OUTPUT: Return valid JSON matching the schema exactly. No prose, no markdown, no
 **GitHub Handle:** `daniboomerang`
 **API:** GitHub public API — no auth required for public repos (optional token for higher rate limits)
 
-**Signals to detect and map to `engineering_signal`:**
+**Signals to detect and map to `signal`:**
 
 ```typescript
 const GITHUB_SIGNALS = [
@@ -333,7 +333,7 @@ const GITHUB_SIGNALS = [
   },
   {
     pattern: "commits within last 90 days",
-    title: "Active Engineering",
+    title: "Active Contribution",
     interpretation: "Demonstrates current hands-on coding practice, not just architectural oversight"
   },
   {
@@ -349,7 +349,7 @@ const GITHUB_SIGNALS = [
 ]
 ```
 
-**Implementation:** Fetch `https://api.github.com/users/daniboomerang/repos`, scan top 10 repos by recent activity, detect patterns, populate `engineering_signal` array.
+**Implementation:** Fetch `https://api.github.com/users/daniboomerang/repos`, scan top 10 repos by recent activity, detect patterns, populate `signal` array.
 
 ---
 
@@ -391,7 +391,7 @@ const GITHUB_SIGNALS = [
 **`ReportView`** — The forensic artifact
 - **Decision Anchor (top, prominent):** Grade (A/A-/B+/B) + Recommendation label + one-line verdict
 - **Confidence Reasoning:** Bulleted evidence list — why this grade
-- **Engineering Signals:** Card grid — title, observation, interpretation, confidence badge
+- **Detected Signals:** Card grid — title, observation, interpretation, confidence badge
 - **Gaps:** Honest gap + mitigation pairs — never hidden, presented matter-of-factly
 - **Interview Hooks:** 2-3 specific questions, styled as a callout box
 - **Actions (sticky bottom bar):** "Copy Link" + "Download PDF" — forwardability is the priority
@@ -439,7 +439,7 @@ Scaffold `apps/herald`. Build `ReportView` with hardcoded Dani profile data and 
 **Deliverable:** A URL at `/dani` that looks like a finished premium forensic audit product with hardcoded data. This becomes the Envoy template that every `[username].heyherald.com` will render.
 
 ### Step 2 — GitHub Signal Detection
-Implement `/api/mcp/github-signals` — fetch `daniboomerang`'s public repos, detect patterns from the signal list in Section 09, return structured `engineering_signal` array. Wire this into the ReportView.
+Implement `/api/mcp/signals` — fetch `daniboomerang`'s public repos, detect patterns from the signal list in Section 09, return structured `signal` array. Wire this into the ReportView.
 
 **Deliverable:** Real GitHub signals populating the report.
 
@@ -454,14 +454,14 @@ Add Upstash rate limiting. Add "Copy Link" functionality. Add PDF generation. Fi
 **Deliverable:** Production-ready Envoy for Dani.
 
 ### Step 5 — Subdomain Routing & Sanity Integration
-Set up Sanity CMS schemas for tenant data (profiles, themes, configs). Implement Next.js middleware for subdomain routing. Connect Envoy to pull data from Sanity instead of hardcoded profile.
+Set up Sanity CMS schemas for candidate data (profiles, themes, configs). Implement Next.js middleware for subdomain routing. Connect Envoy to pull data from Sanity instead of hardcoded profile.
 
 **Deliverable:** `dani.heyherald.com` served from Sanity data.
 
 ### Step 6 — Onboarding Flow
 Build the onboarding wizard at `heyherald.com/onboarding` with Clerk auth. AI-driven chat that collects username, CV, GitHub, theme preference. On completion, creates Sanity records and deploys Envoy at `[username].heyherald.com`.
 
-**Deliverable:** New engineers can sign up and get a deployed Envoy.
+**Deliverable:** New candidates can sign up and get a deployed Envoy.
 
 ### Step 7 — Admin Dashboard
 Build `heyherald.com/admin` with Clerk-protected routes. Live preview (iframe + postMessage), theme control, content management, asset upload (Cloudflare R2), analytics.
@@ -510,7 +510,7 @@ GITHUB_TOKEN=                # Personal access token for higher rate limits
 Paste this as the first message when opening Claude Code in this repo:
 
 ```
-Read CLAUDE.md and HERALD-BUILD-SPEC.md. This is Herald — a multi-tenant SaaS platform for engineers.
+Read CLAUDE.md and HERALD-BUILD-SPEC.md. This is Herald — a multi-tenant SaaS platform for candidates.
 
 Start with Step 1 from the build spec: Static Shell (Envoy Template).
 

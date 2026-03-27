@@ -4,7 +4,7 @@ This document captures the **why** behind key architectural choices. Read this t
 
 ---
 
-## Why Multi-Tenant Single-App
+## Why Single-App Multi-Tenant
 
 Herald uses a **single Next.js app** that serves both the Portal (marketing + onboarding + admin) and the Envoy (deployed candidate pages) via middleware-based subdomain routing.
 
@@ -26,7 +26,7 @@ Herald is built as a monorepo despite having only one app in v1. This is intenti
 
 Herald uses a dual data layer:
 
-- **Sanity CMS** — tenant content (profiles, themes, page configs). Provides real-time preview, structured content editing, and the admin dashboard content management experience.
+- **Sanity CMS** — candidate content (profiles, themes, page configs). Provides real-time preview, structured content editing, and the admin dashboard content management experience.
 - **Neon Postgres + Drizzle ORM** — relational data (user accounts, match report history, analytics, rate limiting metadata). Data that needs SQL queries, joins, and aggregations.
 
 **Why not just Postgres for everything?** Because Sanity provides the content management experience the admin dashboard needs — structured schemas, real-time preview, image handling — without building a custom CMS.
@@ -52,9 +52,9 @@ They are NOT yet a standalone MCP server with stdio/SSE transport.
 
 ## Why Runtime Theme Switching (Not Build-Time)
 
-Herald uses **runtime** theme switching via CSS variables and Sanity CMS, not build-time tenant resolution.
+Herald uses **runtime** theme switching via CSS variables and Sanity CMS, not build-time resolution.
 
-**The key difference:** A fixed set of known tenants can be resolved at build time. Herald has potentially thousands of unknown users who can each choose their own theme. You cannot build-time resolve for dynamic users.
+**The key difference:** A fixed set of known candidates can be resolved at build time. Herald has potentially thousands of unknown users who can each choose their own theme. You cannot build-time resolve for dynamic users.
 
 **v1 themes:**
 1. **Minimal Dark** (launch theme) — dark editorial, monochrome, serif typography
@@ -65,7 +65,7 @@ Herald uses **runtime** theme switching via CSS variables and Sanity CMS, not bu
 
 ## Why Hardcoded Profile in v1
 
-The Sanity CMS will store all tenant profiles in v2+, but v1 hardcodes Dani's profile as a TypeScript object in `apps/herald/src/lib/profile.ts`.
+The Sanity CMS will store all candidate profiles in v2+, but v1 hardcodes Dani's profile as a TypeScript object in `apps/herald/src/lib/profile.ts`.
 
 **Why:**
 - Ship faster — no Sanity setup, no auth flow, no onboarding needed for day 1

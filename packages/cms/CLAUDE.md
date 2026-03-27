@@ -1,8 +1,6 @@
 # CMS Package — Claude Code Instructions
 
-Sanity CMS schemas, configuration, and client for Herald. This package owns all content management — tenant profiles, themes, page configs, and asset references.
-
-This package owns all content management — tenant profiles, themes, page configs, and asset references.
+Sanity CMS schemas, configuration, and client for Herald. This package owns all content management — candidate profiles, themes, page configs, and asset references.
 
 ---
 
@@ -41,13 +39,13 @@ v1 uses a hardcoded profile in `apps/herald/src/lib/profile.ts`. The CMS package
 
 ### RULE #2: Schemas define the content model
 
-When Sanity is wired (Step 5+), all tenant content lives here:
+When Sanity is wired (Step 5+), all candidate content lives here:
 
 | Schema | Purpose |
 |--------|---------|
 | `profile` | Candidate name, title, summary, skills, projects, experience, GitHub handle |
 | `theme` | Color tokens, typography, spacing — runtime theme switching |
-| `envoy-config` | Per-tenant Envoy page configuration (which sections to show, order) |
+| `envoy-config` | Per-candidate Envoy page configuration (which sections to show, order) |
 
 ### RULE #3: GROQ queries are the only way to read from Sanity
 

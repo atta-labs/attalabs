@@ -11,12 +11,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "^15.2.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@herald/ui": "workspace:*",
     "@herald/cms": "workspace:*",
-    "@herald/mcp": "workspace:*"
+    "@herald/mcp": "workspace:*",
+    "@herald/ui": "workspace:*",
+    "next": "^16.2.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@herald/typescript-config": "workspace:*",

@@ -5,7 +5,7 @@ export function ReportView({ report }: { report: MatchReport }) {
     <article className='mx-auto max-w-[680px] px-6 py-12 print:max-w-none print:px-0 print:py-0'>
       {/* ── Header ── */}
       <header className='mb-8 border-b border-border pb-6'>
-        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Forensic Engineering Audit</p>
+        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Forensic Match Audit</p>
         <h1 className='mt-2 font-display text-2xl tracking-tight'>{report.candidate.name}</h1>
         <p className='mt-0.5 font-mono text-xs text-muted'>{report.candidate.title}</p>
       </header>
@@ -28,12 +28,12 @@ export function ReportView({ report }: { report: MatchReport }) {
         </ul>
       </section>
 
-      {/* ── Engineering Signals ── */}
+      {/* ── Detected Signals ── */}
       <section className='mb-8 border-b border-border pb-8'>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Engineering Signals</h2>
+        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Detected Signals</h2>
 
         <div className='space-y-4'>
-          {report.engineering_signal.map((signal) => (
+          {report.signal.map((signal) => (
             <div key={signal.title} className='border-l border-foreground/10 pl-3'>
               <div className='flex items-baseline justify-between gap-3'>
                 <h3 className='font-mono text-[13px] font-medium'>{signal.title}</h3>
@@ -81,7 +81,7 @@ export function ReportView({ report }: { report: MatchReport }) {
       {/* ── Footer ── */}
       <footer className='border-t border-border pt-4 print:mt-6'>
         <p className='font-mono text-[9px] uppercase tracking-[0.25em] text-muted'>
-          Herald · Forensic Engineering Audit · heyherald.com
+          Herald · Forensic Match Audit · heyherald.com
         </p>
       </footer>
     </article>

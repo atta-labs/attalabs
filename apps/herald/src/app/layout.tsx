@@ -22,8 +22,8 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'Herald — Forensic Engineering Audit',
-  description: 'Evidence-based engineering match reports for recruiters and hiring managers.'
+  title: 'Herald — Forensic Match Audit',
+  description: 'Evidence-based match reports for recruiters and hiring managers.'
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

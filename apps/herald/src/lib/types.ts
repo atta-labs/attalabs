@@ -7,7 +7,7 @@ export type MatchReport = {
   recommendation: string
   confidence: string
   confidence_reasoning: string[]
-  engineering_signal: {
+  signal: {
     title: string
     observation: string
     interpretation: string
