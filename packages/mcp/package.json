@@ -11,5 +11,9 @@
   "devDependencies": {
     "@herald/typescript-config": "workspace:*",
     "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.64",
+    "ai": "^6.0.140"
   }
 }
