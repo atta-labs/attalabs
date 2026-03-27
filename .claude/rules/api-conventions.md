@@ -9,7 +9,7 @@
 
 ## The Skeptical Auditor
 
-- The system prompt in HERALD-BUILD-SPEC.md Section 05 is **verbatim**
+- The system prompt in `apps/herald/src/lib/prompts.ts` is **verbatim** from HERALD-BUILD-SPEC.md Section 08
 - Do NOT modify it without explicit instruction from the user
 - Zero marketing language in any AI output
 - Every claim must reference a detectable signal
@@ -17,18 +17,25 @@
 
 ## Match API (`POST /api/match`)
 
-- Latency target: <6 seconds
-- Hard timeout: 10 seconds → return partial report
-- Caching: hash(JD + profile) → 24h cache
+- Input: `{ job_description: string }` — frontend sends ONLY the JD
+- Server-side: fetches GitHub signals, merges with DANI_PROFILE, calls Claude
+- Model: Claude Sonnet via Vercel AI SDK (`@ai-sdk/anthropic`)
+- LLM timeout: 25s with partial report fallback
+- Signal fetch: 3s timeout, degrades gracefully to empty signals
+- Caching: hash(JD + profile) → in-memory 24h (Upstash in Step 4)
+- Parse + retry once on malformed JSON response
 - Never show a spinner of death — always degrade gracefully
 
-## MCP Tool Handlers
+## Signal API (`GET /api/mcp/signals?username=[handle]`)
 
-- v1 uses Vercel AI SDK tool handlers, NOT true MCP transport
-- Structured for future extraction to standalone MCP server
-- Tool definitions should be clean, typed, and independently testable
+- Uses GITHUB_PAT for authentication (personal + org + private repos)
+- Identity-filtered: commits by author, PRs by author
+- Structural detection: turbo.json, biome.json, sanity, drizzle, docker
+- Dependency scanning: Next.js, Zod, Radix, AI SDKs, Web3, Clerk
+- Returns `RawSignal[]` with audit tone (Detected/Observed/Confirmed)
+- No code leakage, no LLM interpretation — raw facts only
 
-## Rate Limiting
+## Rate Limiting (Step 4)
 
 - 5 match reports per IP per hour (Upstash Redis)
 - Applied in middleware, not in individual route handlers
