@@ -17,6 +17,7 @@
     "format-and-lint": "biome check .",
     "format-and-lint:fix": "biome check --fix .",
     "check": "turbo typecheck && biome check .",
+    "test:match": "bun test tests/match-engine.test.ts",
     "clean": "turbo clean",
     "prepare": "husky"
   },

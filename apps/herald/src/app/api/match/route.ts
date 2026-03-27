@@ -12,9 +12,9 @@ import type { MatchReport } from '@/lib/types'
 const cache = new Map<string, { report: MatchReport; timestamp: number }>()
 const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
 
-function getCacheKey(jd: string): string {
+function getCacheKey(input: string): string {
   const hash = createHash('sha256')
-  hash.update(jd + JSON.stringify(DANI_PROFILE))
+  hash.update(input)
   return hash.digest('hex')
 }
 
@@ -28,9 +28,9 @@ function getCached(key: string): MatchReport | null {
   return entry.report
 }
 
-function buildPartialReport(): MatchReport {
+function buildPartialReport(name: string, title: string, github: string): MatchReport {
   return {
-    candidate: { name: DANI_PROFILE.name, title: DANI_PROFILE.title, github: DANI_PROFILE.github },
+    candidate: { name, title, github },
     grade: 'B+',
     recommendation: 'Good Fit',
     confidence: 'Low',
@@ -66,7 +66,10 @@ async function fetchSignalsWithTimeout(handle: string, timeoutMs: number): Promi
   }
 }
 
-function parseMatchReport(text: string): MatchReport | null {
+function parseMatchReport(
+  text: string,
+  candidateInfo: { name: string; title: string; github: string }
+): MatchReport | null {
   try {
     // Strip markdown code fences if present
     const cleaned = text.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '')
@@ -76,7 +79,7 @@ function parseMatchReport(text: string): MatchReport | null {
     if (!parsed.grade || !parsed.recommendation || !parsed.signal) return null
 
     return {
-      candidate: { name: DANI_PROFILE.name, title: DANI_PROFILE.title, github: DANI_PROFILE.github },
+      candidate: candidateInfo,
       grade: parsed.grade,
       recommendation: parsed.recommendation,
       confidence: parsed.grade === 'A' || parsed.grade === 'A-' ? 'High' : 'Moderate',
@@ -104,29 +107,50 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
     }
 
+    // Test profile override (only in development/test)
+    const testOverride = body._test_profile_override
+    const profile = testOverride
+      ? {
+          name: testOverride.name as string,
+          title: testOverride.title as string,
+          summary: testOverride.summary as string,
+          stack: testOverride.stack as string[],
+          projects: testOverride.projects as Array<{ title: string; description: string }>,
+          experience: testOverride.experience as Array<{
+            company: string
+            role: string
+            period: string
+            highlights: string[]
+          }>,
+          github: (testOverride.github as string) ?? 'unknown'
+        }
+      : DANI_PROFILE
+
     // Check cache
-    const cacheKey = getCacheKey(jd)
+    const cacheKey = getCacheKey(jd + JSON.stringify(profile))
     const cached = getCached(cacheKey)
     if (cached) {
       console.info('[Herald] Cache hit for match request')
       return NextResponse.json(cached)
     }
 
-    // Start signal fetch in parallel — don't wait for it to build the prompt
-    const signalPromise = fetchSignalsWithTimeout(DANI_PROFILE.github, 3000)
+    // Start signal fetch in parallel — skip for test profiles (they provide their own signals)
+    const signalPromise = testOverride
+      ? Promise.resolve((testOverride.github_signal?.patterns as string[]) ?? [])
+      : fetchSignalsWithTimeout(profile.github, 3000)
 
     // Build base prompt with profile + JD (signals added when available)
     const baseProfile = `CANDIDATE PROFILE:
-Name: ${DANI_PROFILE.name}
-Title: ${DANI_PROFILE.title}
-Summary: ${DANI_PROFILE.summary}
-Skills: ${DANI_PROFILE.stack.join(', ')}
+Name: ${profile.name}
+Title: ${profile.title}
+Summary: ${profile.summary}
+Skills: ${profile.stack.join(', ')}
 
 PROJECTS:
-${DANI_PROFILE.projects.map((p) => `- ${p.title}: ${p.description}`).join('\n')}
+${profile.projects.map((p) => `- ${p.title}: ${p.description}`).join('\n')}
 
 EXPERIENCE:
-${DANI_PROFILE.experience.map((e) => `- ${e.role} at ${e.company} (${e.period})\n  ${e.highlights.join('\n  ')}`).join('\n')}`
+${profile.experience.map((e) => `- ${e.role} at ${e.company} (${e.period})\n  ${e.highlights.join('\n  ')}`).join('\n')}`
 
     // Wait for signals (best-effort, may return empty)
     const signalEvidence = await signalPromise
@@ -160,7 +184,7 @@ ${MATCH_REPORT_SCHEMA}`
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error('LLM timeout')), 25000))
         ])
 
-        report = parseMatchReport(text)
+        report = parseMatchReport(text, { name: profile.name, title: profile.title, github: profile.github })
         if (report) break
 
         console.warn(`[Herald] Failed to parse LLM response (attempt ${attempt + 1}), retrying...`)
@@ -174,7 +198,7 @@ ${MATCH_REPORT_SCHEMA}`
     // Fall back to partial report if both attempts failed
     if (!report) {
       console.warn('[Herald] Returning partial report after failed attempts')
-      report = buildPartialReport()
+      report = buildPartialReport(profile.name, profile.title, profile.github)
     }
 
     // Cache the result
@@ -183,6 +207,6 @@ ${MATCH_REPORT_SCHEMA}`
     return NextResponse.json(report)
   } catch (err) {
     console.error('[Herald] Match route error:', err)
-    return NextResponse.json(buildPartialReport())
+    return NextResponse.json(buildPartialReport(DANI_PROFILE.name, DANI_PROFILE.title, DANI_PROFILE.github))
   }
 }
