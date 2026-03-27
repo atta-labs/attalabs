@@ -8,9 +8,29 @@ import { MATCH_REPORT_SCHEMA, SKEPTICAL_AUDITOR_PROMPT } from '@/lib/prompts'
 import { extractSignals } from '@/lib/signals'
 import type { MatchReport } from '@/lib/types'
 
-// In-memory cache (replace with Upstash in Step 4)
+// In-memory cache
 const cache = new Map<string, { report: MatchReport; timestamp: number }>()
 const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
+
+// In-memory rate limiting: 5 requests per IP per hour
+const RATE_LIMIT = 5
+const RATE_WINDOW = 60 * 60 * 1000 // 1 hour
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW })
+    return true
+  }
+
+  if (entry.count >= RATE_LIMIT) return false
+
+  entry.count++
+  return true
+}
 
 function getCacheKey(input: string): string {
   const hash = createHash('sha256')
@@ -94,6 +114,12 @@ function parseMatchReport(
 }
 
 export async function POST(request: Request) {
+  // Rate limit by IP
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json({ error: "You've run several audits recently. Try again in an hour." }, { status: 429 })
+  }
+
   try {
     const body = await request.json()
     const jd = body.job_description

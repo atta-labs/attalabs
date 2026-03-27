@@ -1,12 +1,56 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MatchReport } from '@/lib/types'
 import { JDInput } from './JDInput'
 import { LoadingState } from './LoadingState'
 import { ReportView } from './ReportView'
 
 type FlowState = 'input' | 'loading' | 'result' | 'error'
+
+function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
+  const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+    } catch {
+      // Fallback for older browsers
+      const input = document.createElement('input')
+      input.value = window.location.href
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand('copy')
+      document.body.removeChild(input)
+    }
+    setCopied(true)
+    timerRef.current = setTimeout(() => setCopied(false), 1500)
+  }
+
+  const btnClass =
+    'border border-foreground/20 bg-foreground/5 px-6 py-2 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
+
+  return (
+    <div className='mx-auto flex max-w-[680px] gap-3 px-6 pb-8 no-print'>
+      <button type='button' onClick={handleCopy} className={btnClass}>
+        {copied ? 'Copied!' : 'Copy Link'}
+      </button>
+      <button type='button' onClick={() => window.print()} className={btnClass}>
+        Export PDF
+      </button>
+      <button type='button' onClick={onNewAudit} className={btnClass}>
+        New Audit
+      </button>
+    </div>
+  )
+}
 
 const ANIMATION_DURATION = 5000 // 5s deterministic loader
 const API_TIMEOUT = 25000
@@ -109,15 +153,7 @@ export function EnvoyFlow() {
     return (
       <div>
         <ReportView report={report} />
-        <div className='mx-auto max-w-[680px] px-6 pb-8 no-print'>
-          <button
-            type='button'
-            onClick={handleRetry}
-            className='border border-foreground/20 bg-foreground/5 px-6 py-2 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
-          >
-            New Audit
-          </button>
-        </div>
+        <ResultActions onNewAudit={handleRetry} />
       </div>
     )
   }
