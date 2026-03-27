@@ -5,10 +5,11 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "type-check": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo"
   },
   "devDependencies": {
+    "@herald/typescript-config": "workspace:*",
     "typescript": "^5.7.0"
   }
 }

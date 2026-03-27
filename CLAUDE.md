@@ -1,23 +1,22 @@
-# Herald — AI Context for Claude Code
+# Herald — Claude Code Instructions
 
-Herald is an AI-powered portfolio agent that acts as a **Forensic Technical Auditor** for recruiters and hiring managers. A recruiter pastes a job description, and Herald generates a structured match report with evidence-based engineering signals, honest gap analysis, and hyper-specific interview hooks.
+Herald is a **Multi-Tenant SaaS Platform for Engineers** following the Summon architecture pattern (Game7). It provides an **Autonomous Engineering Envoy** — a forensic technical auditor for recruiters and hiring managers.
 
 **Domain:** heyherald.com
-**Candidate (v1):** Dani Estevez Martin — Senior Frontend Architect, 15+ years, remote from Thailand
+**First customer (v1):** Dani Estevez Martin — Senior Frontend Architect, 15+ years, remote from Thailand
 **GitHub:** daniboomerang
+**Summon reference repo:** `/Users/daniboomerang/Work/Repositories/game7/summon`
 
 ---
 
-## Repository Structure
+## Platform Topology (Summon Pattern)
 
-| Path | Purpose |
-|------|---------|
-| `apps/herald` | Next.js 15 app (App Router, TypeScript, Tailwind v4, shadcn/ui) |
-| `packages/ui` | Shared UI components (shadcn base) |
-| `packages/db` | Drizzle ORM schema + queries (Neon Postgres) |
-| `packages/config` | Shared types, constants, validation schemas |
+| Surface | URL | Purpose | Summon Equivalent |
+|---------|-----|---------|-------------------|
+| Herald Portal | `heyherald.com` | Marketing + Onboarding + Admin Dashboard | Summoner + Admin (merged) |
+| Herald Envoy | `[username].heyherald.com` | Deployed recruiter-facing candidate site | Portal |
 
-This is a fresh **Turborepo** monorepo. Patterns are informed by Game7/Summon architecture but the codebase is entirely new and standalone.
+Single Next.js app with middleware-based subdomain routing. Both `heyherald.com/dani` (path) and `dani.heyherald.com` (subdomain) render the same Envoy page.
 
 ---
 
@@ -25,37 +24,114 @@ This is a fresh **Turborepo** monorepo. Patterns are informed by Game7/Summon ar
 
 | Document | Purpose | Read When |
 |----------|---------|-----------|
-| [HERALD-BUILD-SPEC.md](HERALD-BUILD-SPEC.md) | **Complete build specification** — API contracts, system prompts, UI specs, GitHub signals, candidate profile, build order | Before writing ANY code |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture decisions and rationale | Understanding design choices |
+| [HERALD-BUILD-SPEC.md](HERALD-BUILD-SPEC.md) | **Complete build specification** — platform topology, onboarding, admin, API contracts, system prompts, UI specs, build order | Before writing ANY code |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture decisions and rationale (why Summon pattern, why Sanity, why runtime themes) | Understanding design choices |
 | This file | Routing index + rules | Always loaded automatically |
 
-**IMPORTANT:** Read `HERALD-BUILD-SPEC.md` first. It contains the full spec: hardcoded candidate profile, forensic API contract, Skeptical Auditor system prompt, GitHub signal detection patterns, UI/UX requirements with exact color tokens, rate limiting spec, and strict build order.
+**IMPORTANT:** Read `HERALD-BUILD-SPEC.md` first. It contains the full spec including the Summon-pattern platform architecture, onboarding flow, admin dashboard, forensic API contract, Skeptical Auditor system prompt, and strict build order.
+
+---
+
+## Monorepo Architecture
+
+### Apps
+
+| App | CLAUDE.md | README | Purpose |
+|-----|-----------|--------|---------|
+| [apps/herald](apps/herald/) | [CLAUDE.md](apps/herald/CLAUDE.md) | [README.md](apps/herald/README.md) | Next.js 15 app — Portal + Envoy in one codebase |
+
+### Packages
+
+| Package | CLAUDE.md | README | Purpose |
+|---------|-----------|--------|---------|
+| [packages/ui](packages/ui/) | [CLAUDE.md](packages/ui/CLAUDE.md) | [README.md](packages/ui/README.md) | Shared UI components (shadcn/ui + Tailwind v4 + lucide-react) |
+| [packages/cms](packages/cms/) | [CLAUDE.md](packages/cms/CLAUDE.md) | [README.md](packages/cms/README.md) | Sanity CMS schemas, config, typed queries |
+| [packages/mcp](packages/mcp/) | [CLAUDE.md](packages/mcp/CLAUDE.md) | [README.md](packages/mcp/README.md) | MCP tool handlers — match engine, GitHub signals, profile |
+| [packages/typescript-config](packages/typescript-config/) | [CLAUDE.md](packages/typescript-config/CLAUDE.md) | [README.md](packages/typescript-config/README.md) | Shared TypeScript configs (base, Next.js) |
+
+### Package Dependency Graph
+
+```
+apps/herald
+├── @herald/ui              → UI components
+├── @herald/cms             → Sanity CMS client + queries
+├── @herald/mcp             → Match engine, GitHub signals
+└── @herald/typescript-config → TypeScript config (via tsconfig extends)
+
+packages/ui
+└── @herald/typescript-config
+
+packages/cms
+└── @herald/typescript-config
+
+packages/mcp
+└── @herald/typescript-config
+```
+
+---
+
+## Tech Stack (Aligned with Summon)
+
+| Layer | Technology | Summon Equivalent |
+|-------|-----------|-------------------|
+| Monorepo | Turborepo + Bun | Same |
+| Framework | Next.js 15 (App Router, TypeScript, React 19) | Same |
+| Styling | Tailwind CSS v4 + shadcn/ui | Same |
+| CMS | Sanity (tenant content, themes, configs) | Same |
+| Auth | Clerk (sign-up, login, session management) | Same |
+| Storage | Cloudflare R2 (avatars, assets) | Same |
+| AI | Vercel AI SDK + Claude API (tool handlers) | Same |
+| Database | Neon Postgres + Drizzle ORM (relational data) | Similar |
+| Rate Limiting | Upstash Redis + @upstash/ratelimit | N/A |
+| Hosting | Vercel | Same |
+| DNS | Cloudflare wildcard `*.heyherald.com` | Same |
+| Linting | Biome (formatter + linter) | Same |
+| Git Hooks | Husky + lint-staged + commitlint | Same |
+
+---
+
+## Tooling
+
+### Biome
+
+Biome replaces ESLint + Prettier. Config at root `biome.json`.
+
+```bash
+bun run lint              # Lint only
+bun run format            # Format only
+bun run format-and-lint   # Both
+bun run check             # Typecheck + lint + format
+```
+
+### Husky + Commitlint
+
+- **pre-commit**: Runs `bun run check` (typecheck + biome)
+- **commit-msg**: Validates commit message format via commitlint
+
+Commit format: `Type: Brief description`
+Types: `Build`, `Docs`, `Feat`, `Chore`, `Fix`, `Perf`, `Refactor`, `Revert`, `Style`, `Test`
+
+### Turbo Tasks
+
+```bash
+bun run dev          # Start dev server (Turbopack)
+bun run build        # Production build
+bun run typecheck    # TypeScript check across all packages
+bun run check        # Typecheck + lint + format
+bun run clean        # Clean build artifacts
+```
 
 ---
 
 ## Build Order (Strict — Do Not Skip Steps)
 
-1. **Static Shell** — Build `ReportView` with hardcoded data. No LLM calls. Typography, spacing, Decision Anchor hierarchy. Must look like a finished premium product before any AI is wired.
-2. **GitHub Signal Detection** — `/api/mcp/github-signals` fetches `daniboomerang`'s public repos, detects patterns, returns structured `engineering_signal` array.
-3. **Match Engine** — `POST /api/match` with Skeptical Auditor system prompt. Wire `JDInput` → `LoadingState` → `ResultView`. Hash-based caching. 10s timeout with partial report fallback.
-4. **Rate Limiting & Polish** — Upstash Redis (5 reports/IP/hour). Copy Link. PDF export. Final typography pass.
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS v4 + shadcn/ui |
-| AI | Vercel AI SDK (tool handlers, upgradeable to MCP transport later) |
-| Database | Neon Postgres + Drizzle ORM (v1 uses hardcoded profile, DB ready for multi-user) |
-| Auth | Clerk (configured but not blocking v1 public pages) |
-| Rate Limiting | Upstash Redis + @upstash/ratelimit |
-| Hosting | Vercel |
-| DNS | Cloudflare (wildcard *.heyherald.com) |
-| Package Manager | Bun |
+1. **Static Shell (Envoy Template)** — Build `ReportView` with hardcoded data. No LLM calls. Typography, spacing, Decision Anchor hierarchy.
+2. **GitHub Signal Detection** — `/api/mcp/github-signals` fetches `daniboomerang`'s public repos, detects patterns.
+3. **Match Engine** — `POST /api/match` with Skeptical Auditor prompt. Wire `JDInput` → `LoadingState` → `ResultView`.
+4. **Rate Limiting & Polish** — Upstash Redis (5 reports/IP/hour). Copy Link. PDF export.
+5. **Subdomain Routing & Sanity** — Sanity CMS schemas, middleware subdomain routing, Envoy reads from Sanity.
+6. **Onboarding Flow** — AI-driven onboarding at `/onboarding` (Summoner pattern). Clerk auth.
+7. **Admin Dashboard** — `/admin` with live preview (iframe + postMessage), theme control, content management.
 
 ---
 
@@ -71,13 +147,13 @@ NEVER include `Generated with [Claude Code]` or `Co-Authored-By: Claude` attribu
 - TypeScript strict mode, no `any`
 - Prefer named exports over default exports
 - Use `type` imports for type-only imports
-- Biome for formatting (when configured)
+- Biome for formatting (configured in `biome.json`)
 
 ### UI Rules
 
 - Use shadcn/ui components — do not build custom primitives
 - Use `lucide-react` for icons
-- Follow the Minimal Dark theme tokens defined in `HERALD-BUILD-SPEC.md` Section 07
+- Follow the Minimal Dark theme tokens defined in `HERALD-BUILD-SPEC.md` Section 10
 - Single-column editorial layout, generous whitespace
 - Information density increases as user scrolls (Decision Anchor → Reasoning → Signals → Gaps → Hooks)
 
@@ -88,8 +164,8 @@ NEVER include `Generated with [Claude Code]` or `Co-Authored-By: Claude` attribu
 
 ### AI / LLM Rules
 
-- The Skeptical Auditor system prompt in `HERALD-BUILD-SPEC.md` Section 05 is **verbatim** — do not modify it without explicit instruction
-- Zero marketing language in any AI output. See the linguistic rules in the prompt.
+- The Skeptical Auditor system prompt in `HERALD-BUILD-SPEC.md` Section 08 is **verbatim** — do not modify it without explicit instruction
+- Zero marketing language in any AI output
 - Every claim must reference a detectable signal
 - Gaps are always honest, always paired with mitigation
 
@@ -105,24 +181,36 @@ NEVER include `Generated with [Claude Code]` or `Co-Authored-By: Claude` attribu
 
 | Rule | File | Loads When |
 |------|------|-----------|
-| UI patterns | `.claude/rules/ui-patterns.md` | `.tsx`/`.jsx` files |
-| API conventions | `.claude/rules/api-conventions.md` | `api/`, `route.ts` files |
-| Git conventions | `.claude/rules/git-conventions.md` | All files |
+| UI patterns | [.claude/rules/ui-patterns.md](.claude/rules/ui-patterns.md) | `.tsx`/`.jsx` files |
+| API conventions | [.claude/rules/api-conventions.md](.claude/rules/api-conventions.md) | `api/`, `route.ts` files |
+| Git conventions | [.claude/rules/git-conventions.md](.claude/rules/git-conventions.md) | All files |
 
 ---
 
-## Environment Variables (Required)
+## Environment Variables
 
 ```env
 # AI
 ANTHROPIC_API_KEY=           # Claude API key for match reports
 
-# Database (v2 — not needed for hardcoded v1)
+# CMS
+SANITY_PROJECT_ID=           # Sanity project ID
+SANITY_DATASET=              # Sanity dataset
+SANITY_API_TOKEN=            # Sanity write token
+NEXT_PUBLIC_SANITY_PROJECT_ID=
+NEXT_PUBLIC_SANITY_DATASET=
+
+# Database (relational data)
 DATABASE_URL=                # Neon Postgres connection string
 
-# Auth (v2 — not blocking v1)
+# Auth
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
+
+# Storage
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_API_TOKEN=
+R2_BUCKET_NAME=
 
 # Rate Limiting
 UPSTASH_REDIS_REST_URL=

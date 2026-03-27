@@ -6,18 +6,20 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "lint": "biome lint .",
+    "format": "biome format .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "next": "^15.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "@herald/ui": "workspace:*",
-    "@herald/db": "workspace:*",
-    "@herald/config": "workspace:*"
+    "@herald/cms": "workspace:*",
+    "@herald/mcp": "workspace:*"
   },
   "devDependencies": {
+    "@herald/typescript-config": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

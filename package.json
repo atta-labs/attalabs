@@ -9,11 +9,22 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "lint": "turbo lint",
-    "type-check": "turbo type-check",
-    "clean": "turbo clean"
+    "typecheck": "turbo typecheck",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --fix .",
+    "format": "biome format .",
+    "format:fix": "biome format --fix .",
+    "format-and-lint": "biome check .",
+    "format-and-lint:fix": "biome check --fix .",
+    "check": "turbo typecheck && biome check .",
+    "clean": "turbo clean",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "@commitlint/cli": "^19.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^16.0.0",
     "turbo": "^2.4.0",
     "typescript": "^5.7.0"
   }
