@@ -11,7 +11,7 @@ type GitHubRepo = {
   private: boolean
   pushed_at: string
   default_branch: string
-  owner: { login: string }
+  owner: { login: string; type: string }
 }
 
 type GitHubCommit = {
@@ -73,28 +73,38 @@ async function githubFetch<T>(path: string, token: string): Promise<T | null> {
 }
 
 async function getRecentRepos(username: string, token: string): Promise<GitHubRepo[]> {
-  // Fetch both user repos and repos the authenticated user has access to (orgs, private)
+  // Fetch user-owned repos + repos accessible via PAT (orgs, collabs)
   const [userRepos, allRepos] = await Promise.all([
-    githubFetch<GitHubRepo[]>(`/users/${username}/repos?sort=pushed&per_page=10&type=all`, token),
-    githubFetch<GitHubRepo[]>(
-      '/user/repos?sort=pushed&per_page=20&affiliation=owner,collaborator,organization_member',
-      token
-    )
+    githubFetch<GitHubRepo[]>(`/users/${username}/repos?sort=pushed&per_page=10&type=owner`, token),
+    githubFetch<GitHubRepo[]>('/user/repos?sort=pushed&per_page=20&affiliation=owner,organization_member', token)
   ])
 
-  // Merge and deduplicate by full_name, filter to repos the username has contributed to
+  // Merge and deduplicate, skip repos where user is just a collaborator on someone else's personal repo
   const seen = new Set<string>()
   const merged: GitHubRepo[] = []
 
   for (const repo of [...(allRepos ?? []), ...(userRepos ?? [])]) {
-    if (!seen.has(repo.full_name)) {
-      seen.add(repo.full_name)
+    if (seen.has(repo.full_name)) continue
+    seen.add(repo.full_name)
+    const isOwnedByUser = repo.owner.login.toLowerCase() === username.toLowerCase()
+    const isOrgRepo = repo.owner.type === 'Organization'
+    // Only keep repos owned by the user OR owned by an org — skip other users' personal repos
+    if (isOwnedByUser || isOrgRepo) {
       merged.push(repo)
     }
   }
 
   // Sort by most recently pushed and take top 5
-  return merged.sort((a, b) => new Date(b.pushed_at).getTime() - new Date(a.pushed_at).getTime()).slice(0, 5)
+  const top5 = merged.sort((a, b) => new Date(b.pushed_at).getTime() - new Date(a.pushed_at).getTime()).slice(0, 5)
+
+  console.info('[Herald] GitHub repos fetched:', {
+    userRepos: (userRepos ?? []).map((r) => `${r.full_name} (${r.private ? 'private' : 'public'})`),
+    authenticatedRepos: (allRepos ?? []).length,
+    merged: merged.length,
+    selected: top5.map((r) => `${r.full_name} (${r.private ? 'private' : 'public'}, pushed: ${r.pushed_at})`)
+  })
+
+  return top5
 }
 
 async function getAuthorCommits(
@@ -103,10 +113,20 @@ async function getAuthorCommits(
   author: string,
   token: string
 ): Promise<{ count: number; paths: Set<string>; messages: string[] }> {
-  const commits = await githubFetch<GitHubCommit[]>(
-    `/repos/${owner}/${repo}/commits?author=${author}&per_page=30`,
-    token
-  )
+  // Try GitHub login first, then fall back to email via user profile
+  let commits = await githubFetch<GitHubCommit[]>(`/repos/${owner}/${repo}/commits?author=${author}&per_page=30`, token)
+
+  // If no commits found by login, try fetching user email and retry
+  if (!commits || commits.length === 0) {
+    const emails = await githubFetch<{ email: string }[]>('/user/emails', token)
+    const primaryEmail = emails?.find((e) => e.email)?.email
+    if (primaryEmail) {
+      commits = await githubFetch<GitHubCommit[]>(
+        `/repos/${owner}/${repo}/commits?author=${encodeURIComponent(primaryEmail)}&per_page=30`,
+        token
+      )
+    }
+  }
   if (!commits) return { count: 0, paths: new Set(), messages: [] }
 
   const paths = new Set<string>()
@@ -175,6 +195,13 @@ async function extractSignalsFromRepo(repo: GitHubRepo, username: string, token:
     getPackageJsonDeps(owner, name, token)
   ])
 
+  console.info(`[Herald] Scanning ${repo.full_name}:`, {
+    commits: commitData.count,
+    prs: prData.count,
+    rootFiles: rootFiles.slice(0, 10),
+    depsFound: deps.length
+  })
+
   // Commit attribution
   if (commitData.count > 0) {
     const paths = [...commitData.paths].filter(Boolean).slice(0, 5)
@@ -233,6 +260,19 @@ export async function extractSignals(username: string, token: string): Promise<R
   if (repos.length === 0) return []
 
   const results = await Promise.all(repos.map((repo) => extractSignalsFromRepo(repo, username, token)))
+  const all = results.flat()
 
-  return results.flat()
+  console.info('[Herald] Final signals:', {
+    total: all.length,
+    byType: {
+      architecture: all.filter((s) => s.type === 'architecture').length,
+      data: all.filter((s) => s.type === 'data').length,
+      infra: all.filter((s) => s.type === 'infra').length,
+      ai: all.filter((s) => s.type === 'ai').length,
+      unknown: all.filter((s) => s.type === 'unknown').length
+    },
+    signals: all.map((s) => `[${s.type}] ${s.evidence} (${s.source.repo})`)
+  })
+
+  return all
 }

@@ -2,6 +2,7 @@ export type MatchReport = {
   candidate: {
     name: string
     title: string
+    github?: string
   }
   grade: 'A' | 'A-' | 'B+' | 'B'
   recommendation: string

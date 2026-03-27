@@ -3,7 +3,8 @@ import type { MatchReport } from './types'
 export const daniReport: MatchReport = {
   candidate: {
     name: 'Dani Estevez Martin',
-    title: 'Senior Frontend Architect · AI Systems · Web3'
+    title: 'Senior Frontend Architect · AI Systems · Web3',
+    github: 'daniboomerang'
   },
 
   grade: 'A-',

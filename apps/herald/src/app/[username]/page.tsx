@@ -61,8 +61,10 @@ async function fetchSignals(username: string): Promise<RawSignal[]> {
 }
 
 export default async function EnvoyPage({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = await params
-  const rawSignals = await fetchSignals(username)
+  await params
+  // Use the candidate's GitHub handle from profile, not the URL slug
+  const githubHandle = daniReport.candidate.github ?? 'daniboomerang'
+  const rawSignals = await fetchSignals(githubHandle)
   const report = mapRawSignalsToReport(rawSignals, daniReport)
 
   return <ReportView report={report} />
