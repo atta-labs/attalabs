@@ -1,0 +1,21 @@
+export type MatchReport = {
+  candidate: {
+    name: string
+    title: string
+  }
+  grade: 'A' | 'A-' | 'B+' | 'B'
+  recommendation: string
+  confidence: string
+  confidence_reasoning: string[]
+  engineering_signal: {
+    title: string
+    observation: string
+    interpretation: string
+    confidence: string
+  }[]
+  gaps: {
+    gap: string
+    mitigation: string
+  }[]
+  interview_hooks: string[]
+}
