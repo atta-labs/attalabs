@@ -15,6 +15,13 @@ export default async function EnvoyPage({ params }: { params: Promise<{ username
     github: user.githubHandle ?? undefined,
     summary: user.summary,
     stack: JSON.parse(user.stack) as string[],
+    projects: JSON.parse(user.projects) as Array<{ title: string; description: string }>,
+    experience: JSON.parse(user.experience) as Array<{
+      company: string
+      role: string
+      period: string
+      highlights: string[]
+    }>,
     location: user.location ?? undefined,
     availability: user.availability ?? undefined
   }

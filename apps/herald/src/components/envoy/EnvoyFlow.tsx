@@ -12,6 +12,8 @@ interface CandidateProfile {
   github?: string
   summary: string
   stack: string[]
+  projects?: Array<{ title: string; description: string }>
+  experience?: Array<{ company: string; role: string; period: string; highlights: string[] }>
   location?: string
   availability?: string
 }
@@ -104,8 +106,8 @@ export function EnvoyFlow({ profile }: { profile: CandidateProfile }) {
             github: profile.github,
             summary: profile.summary,
             stack: profile.stack,
-            projects: [],
-            experience: [],
+            projects: profile.projects ?? [],
+            experience: profile.experience ?? [],
             github_signal: { patterns: [] }
           }
         }),
