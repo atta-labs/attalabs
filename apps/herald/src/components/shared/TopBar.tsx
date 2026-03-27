@@ -14,19 +14,8 @@ export function TopBar({ username }: { username?: string }) {
             <Link href='/home' className='font-sans text-xs text-muted transition-colors hover:text-foreground'>
               About
             </Link>
-            <SignInButton>
-              <button type='button' className='font-sans text-xs text-muted transition-colors hover:text-foreground'>
-                Sign In
-              </button>
-            </SignInButton>
-            <SignUpButton>
-              <button
-                type='button'
-                className='border border-foreground/20 bg-foreground/5 px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.15em] text-foreground transition-colors hover:bg-foreground/10'
-              >
-                Get Your Envoy
-              </button>
-            </SignUpButton>
+            <SignInButton mode='modal' />
+            <SignUpButton mode='modal' />
           </Show>
 
           <Show when='signed-in'>
@@ -39,6 +28,9 @@ export function TopBar({ username }: { username?: string }) {
                 /{username} ↗
               </Link>
             )}
+            <Link href='/admin' className='font-mono text-xs text-muted transition-colors hover:text-foreground'>
+              Dashboard
+            </Link>
             <UserButton />
           </Show>
         </div>

@@ -9,11 +9,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!userId) redirect('/sign-in')
 
   const user = await getUserByClerkId(userId)
-  if (!user?.onboardingComplete) redirect('/')
 
   return (
     <>
-      <TopBar username={user.username} />
+      <TopBar username={user?.username} />
       {children}
     </>
   )
