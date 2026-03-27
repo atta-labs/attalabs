@@ -30,6 +30,8 @@ export async function createUser(data: {
   availability?: string
   summary: string
   stack: string[]
+  projects?: Array<{ title: string; description: string }>
+  experience?: Array<{ company: string; role: string; period: string; highlights: string[] }>
 }) {
   await db.insert(schema.users).values({
     clerkId: data.clerkId,
@@ -41,6 +43,8 @@ export async function createUser(data: {
     availability: data.availability ?? null,
     summary: data.summary,
     stack: JSON.stringify(data.stack),
+    projects: JSON.stringify(data.projects ?? []),
+    experience: JSON.stringify(data.experience ?? []),
     onboardingComplete: true
   })
 }
