@@ -79,8 +79,8 @@ function assertStructure(report: MatchReport, label: string) {
   // No marketing language
   const allText = [
     ...report.confidence_reasoning,
-    ...report.signal.map((s) => s.observation + ' ' + s.interpretation),
-    ...report.gaps.map((g) => g.gap + ' ' + g.mitigation),
+    ...report.signal.map((s) => `${s.observation} ${s.interpretation}`),
+    ...report.gaps.map((g) => `${g.gap} ${g.mitigation}`),
     ...report.interview_hooks
   ]
     .join(' ')
