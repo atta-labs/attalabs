@@ -1,3 +1,4 @@
+import { ClerkProvider } from '@clerk/nextjs'
 import type { Metadata } from 'next'
 import { DM_Mono, DM_Sans, Playfair_Display } from 'next/font/google'
 import './globals.css'
@@ -29,7 +30,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang='en' className={`${playfair.variable} ${dmMono.variable} ${dmSans.variable}`}>
-      <body className='bg-background text-foreground min-h-screen'>{children}</body>
+      <body className='min-h-screen bg-background text-foreground'>
+        <ClerkProvider>{children}</ClerkProvider>
+      </body>
     </html>
   )
 }

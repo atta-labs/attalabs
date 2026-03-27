@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.64",
+    "@clerk/nextjs": "^7.0.7",
     "@herald/cms": "workspace:*",
     "@herald/mcp": "workspace:*",
     "@herald/ui": "workspace:*",
