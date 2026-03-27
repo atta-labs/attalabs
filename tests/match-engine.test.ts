@@ -8,15 +8,30 @@
 
 import { describe, expect, it } from 'bun:test'
 import {
+  COMMERCIAL_PILOT,
   COMPLETELY_IRRELEVANT,
-  FULL_STACK_JD,
+  CORPORATE_LAWYER,
+  HOTEL_GENERAL_MANAGER,
   JUNIOR_FRONTEND,
+  LEAD_MAKEUP_ARTIST,
   SENIOR_BACKEND_NODE,
   SENIOR_FRONTEND_NO_WEB3,
   SENIOR_FRONTEND_WEB3,
+  SENIOR_PRODUCT_DESIGNER,
   type TestJD
 } from './fixtures/jds'
-import { JUNIOR, PARTIAL_MATCH, PERFECT_MATCH, type TestProfile, WRONG_SPECIALTY } from './fixtures/profiles'
+import {
+  HOSPITALITY_MANAGER,
+  JUNIOR,
+  LAWYER,
+  MAKEUP_ARTIST,
+  PARTIAL_MATCH,
+  PERFECT_MATCH,
+  PILOT,
+  PRODUCT_DESIGNER,
+  type TestProfile,
+  WRONG_SPECIALTY
+} from './fixtures/profiles'
 
 const BASE_URL = process.env.TEST_BASE_URL ?? 'http://localhost:3000'
 
@@ -227,5 +242,118 @@ describe('Edge Cases', () => {
     const second = Date.now() - start2
 
     expect(second < first || second < 1000, `Cache: second (${second}ms) should be fast`).toBe(true)
+  }, 60000)
+})
+
+// ── Non-tech profiles: right-field matches ──
+
+describe('Product Designer (Mia Torres)', () => {
+  it('A or A- on Product Designer role (right field)', async () => {
+    const r = await runMatch(PRODUCT_DESIGNER, SENIOR_PRODUCT_DESIGNER)
+    assertStructure(r, 'Mia/Designer')
+    expect(GRADE_ORDER[r.grade]! >= GRADE_ORDER['A-']!).toBe(true)
+  }, 60000)
+
+  it('B on Senior Frontend Web3 (wrong field)', async () => {
+    const r = await runMatch(PRODUCT_DESIGNER, SENIOR_FRONTEND_WEB3)
+    assertStructure(r, 'Mia/FE-Web3')
+    expect(GRADE_ORDER[r.grade]! <= GRADE_ORDER['B+']!).toBe(true)
+  }, 60000)
+})
+
+describe('Makeup Artist (Luna Vasquez)', () => {
+  it('A or A- on Lead Makeup Artist role (right field)', async () => {
+    const r = await runMatch(MAKEUP_ARTIST, LEAD_MAKEUP_ARTIST)
+    assertStructure(r, 'Luna/Makeup')
+    expect(GRADE_ORDER[r.grade]! >= GRADE_ORDER['A-']!).toBe(true)
+  }, 60000)
+
+  it('B on Senior Frontend Web3 (completely wrong field)', async () => {
+    const r = await runMatch(MAKEUP_ARTIST, SENIOR_FRONTEND_WEB3)
+    assertStructure(r, 'Luna/FE-Web3')
+    expect(r.grade).toBe('B')
+    expect(r.gaps.length).toBeGreaterThanOrEqual(3)
+  }, 60000)
+
+  it('B on Corporate Lawyer role (wrong field)', async () => {
+    const r = await runMatch(MAKEUP_ARTIST, CORPORATE_LAWYER)
+    assertStructure(r, 'Luna/Lawyer')
+    expect(r.grade).toBe('B')
+  }, 60000)
+})
+
+describe('Pilot (James Okonkwo)', () => {
+  it('A or A- on Commercial Pilot role (right field)', async () => {
+    const r = await runMatch(PILOT, COMMERCIAL_PILOT)
+    assertStructure(r, 'James/Pilot')
+    expect(GRADE_ORDER[r.grade]! >= GRADE_ORDER['A-']!).toBe(true)
+  }, 60000)
+
+  it('B on Hotel GM role (wrong field)', async () => {
+    const r = await runMatch(PILOT, HOTEL_GENERAL_MANAGER)
+    assertStructure(r, 'James/Hotel')
+    expect(r.grade).toBe('B')
+  }, 60000)
+})
+
+describe('Lawyer (Elena Petrova)', () => {
+  it('A or A- on Corporate Lawyer role (right field)', async () => {
+    const r = await runMatch(LAWYER, CORPORATE_LAWYER)
+    assertStructure(r, 'Elena/Lawyer')
+    expect(GRADE_ORDER[r.grade]! >= GRADE_ORDER['A-']!).toBe(true)
+  }, 60000)
+
+  it('B on Lead Makeup Artist role (wrong field)', async () => {
+    const r = await runMatch(LAWYER, LEAD_MAKEUP_ARTIST)
+    assertStructure(r, 'Elena/Makeup')
+    expect(r.grade).toBe('B')
+  }, 60000)
+})
+
+describe('Hospitality Manager (Sofia Andersson)', () => {
+  it('A or A- on Hotel GM role (right field)', async () => {
+    const r = await runMatch(HOSPITALITY_MANAGER, HOTEL_GENERAL_MANAGER)
+    assertStructure(r, 'Sofia/Hotel')
+    expect(GRADE_ORDER[r.grade]! >= GRADE_ORDER['A-']!).toBe(true)
+  }, 60000)
+
+  it('B on Senior Backend Node.js (wrong field)', async () => {
+    const r = await runMatch(HOSPITALITY_MANAGER, SENIOR_BACKEND_NODE)
+    assertStructure(r, 'Sofia/Backend')
+    expect(r.grade).toBe('B')
+  }, 60000)
+})
+
+// ── Cross-field consistency: everyone gets B on wrong fields ──
+
+describe('Cross-Field Mismatch Detection', () => {
+  it('Makeup Artist gets B on Pilot role', async () => {
+    const r = await runMatch(MAKEUP_ARTIST, COMMERCIAL_PILOT)
+    assertStructure(r, 'Luna/Pilot')
+    expect(r.grade).toBe('B')
+  }, 60000)
+
+  it('Pilot gets B on Frontend Web3 role', async () => {
+    const r = await runMatch(PILOT, SENIOR_FRONTEND_WEB3)
+    assertStructure(r, 'James/FE-Web3')
+    expect(r.grade).toBe('B')
+  }, 60000)
+
+  it('Lawyer gets B on Hotel GM role', async () => {
+    const r = await runMatch(LAWYER, HOTEL_GENERAL_MANAGER)
+    assertStructure(r, 'Elena/Hotel')
+    expect(r.grade).toBe('B')
+  }, 60000)
+
+  it('Hotel Manager gets B on Corporate Lawyer role', async () => {
+    const r = await runMatch(HOSPITALITY_MANAGER, CORPORATE_LAWYER)
+    assertStructure(r, 'Sofia/Lawyer')
+    expect(r.grade).toBe('B')
+  }, 60000)
+
+  it('Developer gets B on Makeup Artist role', async () => {
+    const r = await runMatch(PERFECT_MATCH, LEAD_MAKEUP_ARTIST)
+    assertStructure(r, 'Alex/Makeup')
+    expect(r.grade).toBe('B')
   }, 60000)
 })

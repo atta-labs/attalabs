@@ -254,4 +254,263 @@ export const FULL_STACK_PROFILE: TestProfile = {
   github_signal: { patterns: ['zod', 'prisma', 'postgres', 'redis', 'docker', 'active-commits-90-days', 'ethers'] }
 }
 
-export const ALL_TEST_PROFILES = [PERFECT_MATCH, PARTIAL_MATCH, WRONG_SPECIALTY, JUNIOR, FULL_STACK_PROFILE]
+// ── PROFILE 6: Product Designer ───────────────────────────────────────────────
+export const PRODUCT_DESIGNER: TestProfile = {
+  id: 'product-designer',
+  name: 'Mia Torres',
+  title: 'Senior Product Designer',
+  summary:
+    'Senior Product Designer with 9 years experience. Expert in end-to-end product design, design systems, user research, and prototyping. Led design for B2B SaaS products serving 100k+ users.',
+  stack: [
+    'Figma',
+    'Figma Dev Mode',
+    'Design Tokens',
+    'Storybook',
+    'Framer',
+    'Principle',
+    'Maze (usability testing)',
+    'Hotjar',
+    'Miro',
+    'Notion',
+    'Linear',
+    'Webflow',
+    'Basic HTML/CSS'
+  ],
+  projects: [
+    {
+      title: 'Enterprise Design System',
+      description:
+        'Built a design system with 200+ components in Figma, design tokens synced to code via Tokens Studio, and Storybook documentation. Adopted across 5 product teams.'
+    },
+    {
+      title: 'B2B Analytics Dashboard Redesign',
+      description:
+        'Led end-to-end redesign of analytics product. Conducted 30+ user interviews, built interactive prototypes in Figma, reduced task completion time by 40%.'
+    },
+    {
+      title: 'Mobile Onboarding Flow',
+      description:
+        'Designed and tested a 4-step mobile onboarding flow. A/B tested 3 variants, increased activation rate from 32% to 58%.'
+    }
+  ],
+  experience: [
+    {
+      company: 'B2B SaaS Platform',
+      role: 'Senior Product Designer',
+      period: '2020 — 2024',
+      highlights: [
+        'Owned design for core analytics product serving 100k+ users',
+        'Built and maintained Figma design system with 200+ components',
+        'Conducted 50+ user research sessions (interviews, usability tests, surveys)',
+        'Collaborated with engineering on design token pipeline (Figma → code)',
+        'Mentored 2 junior designers'
+      ]
+    }
+  ],
+  github_signal: { patterns: [] }
+}
+
+// ── PROFILE 7: Makeup Artist ──────────────────────────────────────────────────
+export const MAKEUP_ARTIST: TestProfile = {
+  id: 'makeup-artist',
+  name: 'Luna Vasquez',
+  title: 'Professional Makeup Artist',
+  summary:
+    "Professional makeup artist with 8 years experience in editorial, bridal, and film/TV makeup. Published in Vogue, Elle, and Harper's Bazaar. Certified in SFX and prosthetics.",
+  stack: [
+    'Editorial Makeup',
+    'Bridal Makeup',
+    'SFX / Prosthetics',
+    'Airbrush Technique',
+    'Color Theory',
+    'Skin Prep & Skincare',
+    'Photography Collaboration',
+    'Client Consultation',
+    'Product Knowledge (MAC, NARS, Pat McGrath)',
+    'Social Media Content Creation'
+  ],
+  projects: [
+    {
+      title: 'Vogue Mexico Editorial',
+      description:
+        'Lead makeup artist for 12-page editorial spread. Collaborated with photographer and creative director on 6 distinct looks. Published December 2023 issue.'
+    },
+    {
+      title: 'Independent Film — "Beneath the Surface"',
+      description:
+        'SFX and character makeup for 20-day shoot. Created aging prosthetics, wound effects, and continuity documentation for 8 principal cast members.'
+    }
+  ],
+  experience: [
+    {
+      company: 'Freelance',
+      role: 'Lead Makeup Artist',
+      period: '2016 — 2024',
+      highlights: [
+        "Published editorial work in Vogue, Elle, and Harper's Bazaar",
+        'Lead makeup artist for 15+ film/TV productions',
+        'Built client base of 200+ bridal clients with 100% satisfaction rate',
+        'Certified in SFX prosthetics (Gorton Studio, London)',
+        'Created educational content reaching 50k followers on Instagram'
+      ]
+    }
+  ],
+  github_signal: { patterns: [] }
+}
+
+// ── PROFILE 8: Commercial Pilot ───────────────────────────────────────────────
+export const PILOT: TestProfile = {
+  id: 'pilot',
+  name: 'James Okonkwo',
+  title: 'Commercial Airline Pilot',
+  summary:
+    'Commercial airline pilot with 12 years experience and 8,000+ flight hours. Type-rated on Boeing 737 and Airbus A320. Instructor and check pilot qualified.',
+  stack: [
+    'Boeing 737 NG/MAX',
+    'Airbus A320 Family',
+    'ATPL (Airline Transport Pilot Licence)',
+    'CRM (Crew Resource Management)',
+    'LOFT (Line Oriented Flight Training)',
+    'EFIS / Glass Cockpit',
+    'IFR / VFR Operations',
+    'ICAO English Level 6',
+    'SMS (Safety Management Systems)',
+    'Jeppesen FliteDeck Pro'
+  ],
+  projects: [
+    {
+      title: 'A320 Fleet Transition Programme',
+      description:
+        'Led training programme for airline transition from Boeing 737 to Airbus A320. Developed syllabus, trained 24 pilots over 6 months. Zero incidents during transition.'
+    },
+    {
+      title: 'Safety Reporting System Overhaul',
+      description:
+        'Redesigned airline voluntary safety reporting process. Increased report submissions by 300% through simplified mobile reporting and non-punitive culture advocacy.'
+    }
+  ],
+  experience: [
+    {
+      company: 'Major Airline',
+      role: 'Senior First Officer / Check Pilot',
+      period: '2015 — 2024',
+      highlights: [
+        '8,000+ total flight hours with zero incidents',
+        'Type-rated on Boeing 737 NG/MAX and Airbus A320',
+        'Qualified as Line Training Captain and Check Pilot',
+        'Led fleet transition training programme for 24 pilots',
+        'Voluntary Safety Report champion — 300% increase in submissions'
+      ]
+    }
+  ],
+  github_signal: { patterns: [] }
+}
+
+// ── PROFILE 9: Lawyer ─────────────────────────────────────────────────────────
+export const LAWYER: TestProfile = {
+  id: 'lawyer',
+  name: 'Elena Petrova',
+  title: 'Senior Corporate Lawyer',
+  summary:
+    'Senior corporate lawyer with 11 years experience specialising in M&A, venture capital financing, and technology licensing. Qualified in England & Wales and New York. Managed transactions totalling $2B+.',
+  stack: [
+    'M&A / Due Diligence',
+    'Venture Capital / Series A-D',
+    'Technology Licensing',
+    'GDPR / Data Privacy',
+    'Corporate Governance',
+    'Contract Drafting & Negotiation',
+    'Cross-border Transactions',
+    'Legal Project Management',
+    'Westlaw / LexisNexis',
+    'DocuSign CLM'
+  ],
+  projects: [
+    {
+      title: '$500M SaaS Company Acquisition',
+      description:
+        'Led legal workstream for acquisition of enterprise SaaS platform. Managed due diligence across 12 jurisdictions, negotiated representations and warranties, and structured earn-out provisions.'
+    },
+    {
+      title: 'Series C Financing ($80M)',
+      description:
+        'Represented fintech startup in Series C round. Drafted and negotiated term sheet, SHA, and SSA. Coordinated with 4 law firms across 3 jurisdictions.'
+    }
+  ],
+  experience: [
+    {
+      company: 'International Law Firm',
+      role: 'Senior Associate — Corporate / M&A',
+      period: '2016 — 2024',
+      highlights: [
+        'Led 20+ M&A transactions totalling $2B+ in deal value',
+        'Managed venture capital financings from seed to Series D',
+        'Built technology licensing practice generating $3M annual revenue',
+        'Dual-qualified: England & Wales (SRA) and New York (NYSBA)',
+        'Trained and supervised 8 junior associates'
+      ]
+    }
+  ],
+  github_signal: { patterns: [] }
+}
+
+// ── PROFILE 10: Hospitality Manager ───────────────────────────────────────────
+export const HOSPITALITY_MANAGER: TestProfile = {
+  id: 'hospitality-manager',
+  name: 'Sofia Andersson',
+  title: 'Hotel Operations Manager',
+  summary:
+    'Hotel operations manager with 10 years experience in luxury hospitality. Managed properties with 200+ rooms, led teams of 80+, and achieved consistent 4.8+ guest satisfaction scores.',
+  stack: [
+    'Opera PMS',
+    'Revenue Management (IDeaS)',
+    'Guest Experience Design',
+    'F&B Operations',
+    'Team Leadership (80+ staff)',
+    'P&L Management',
+    'Quality Assurance / LQA Audits',
+    'Sustainability Certifications (Green Key)',
+    'Crisis Management',
+    'Marriott / Hilton Brand Standards'
+  ],
+  projects: [
+    {
+      title: 'Boutique Hotel Opening',
+      description:
+        'Led pre-opening and launch of 120-room boutique hotel. Recruited and trained 65 staff, established SOPs, achieved 4.9 Google rating within first 6 months.'
+    },
+    {
+      title: 'Sustainability Programme',
+      description:
+        'Designed and implemented hotel sustainability programme achieving Green Key certification. Reduced water consumption by 30%, food waste by 45%, and energy costs by 20%.'
+    }
+  ],
+  experience: [
+    {
+      company: 'Luxury Hotel Group',
+      role: 'Operations Manager',
+      period: '2017 — 2024',
+      highlights: [
+        'Managed 220-room luxury property with annual revenue of $18M',
+        'Led team of 85 across front office, housekeeping, F&B, and maintenance',
+        'Achieved 4.8+ guest satisfaction score for 3 consecutive years',
+        'Reduced staff turnover from 40% to 15% through culture and training initiatives',
+        'Launched boutique hotel from pre-opening to operation in 4 months'
+      ]
+    }
+  ],
+  github_signal: { patterns: [] }
+}
+
+export const ALL_TEST_PROFILES = [
+  PERFECT_MATCH,
+  PARTIAL_MATCH,
+  WRONG_SPECIALTY,
+  JUNIOR,
+  FULL_STACK_PROFILE,
+  PRODUCT_DESIGNER,
+  MAKEUP_ARTIST,
+  PILOT,
+  LAWYER,
+  HOSPITALITY_MANAGER
+]
