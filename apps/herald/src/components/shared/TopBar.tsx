@@ -1,4 +1,4 @@
-import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
+import { Show, SignInButton, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
 
 export function TopBar({ username }: { username?: string }) {
@@ -11,11 +11,7 @@ export function TopBar({ username }: { username?: string }) {
 
         <div className='flex items-center gap-4'>
           <Show when='signed-out'>
-            <Link href='/home' className='font-sans text-xs text-muted transition-colors hover:text-foreground'>
-              About
-            </Link>
             <SignInButton mode='modal' />
-            <SignUpButton mode='modal' />
           </Show>
 
           <Show when='signed-in'>
