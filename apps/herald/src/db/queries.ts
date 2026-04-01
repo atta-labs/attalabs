@@ -33,8 +33,10 @@ export async function createUser(data: {
   projects?: Array<{ title: string; description: string }>
   experience?: Array<{ company: string; role: string; period: string; highlights: string[] }>
 }) {
-  await db.insert(schema.users).values({
-    clerkId: data.clerkId,
+  // Check if user already exists — update if so, insert if not
+  const existing = await getUserByClerkId(data.clerkId)
+
+  const values = {
     username: data.username,
     githubHandle: data.githubHandle ?? null,
     name: data.name,
@@ -45,8 +47,18 @@ export async function createUser(data: {
     stack: JSON.stringify(data.stack),
     projects: JSON.stringify(data.projects ?? []),
     experience: JSON.stringify(data.experience ?? []),
-    onboardingComplete: true
-  })
+    onboardingComplete: true,
+    updatedAt: new Date()
+  }
+
+  if (existing) {
+    await db.update(schema.users).set(values).where(eq(schema.users.clerkId, data.clerkId))
+  } else {
+    await db.insert(schema.users).values({
+      clerkId: data.clerkId,
+      ...values
+    })
+  }
 }
 
 export async function updateUser(
