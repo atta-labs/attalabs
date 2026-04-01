@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 
-import { OnboardingForm } from '@/components/portal/OnboardingForm'
+import { AIOnboarding } from '@/components/portal/AIOnboarding'
 import { ProfileEditor } from '@/components/portal/ProfileEditor'
 import { getUserByClerkId } from '@/db/queries'
 
@@ -13,11 +13,7 @@ export default async function AdminPage() {
 
   // No user record yet → show onboarding
   if (!user?.onboardingComplete) {
-    return (
-      <div className='mx-auto max-w-[900px] px-6 py-8'>
-        <OnboardingForm />
-      </div>
-    )
+    return <AIOnboarding />
   }
 
   // Onboarding complete → show dashboard

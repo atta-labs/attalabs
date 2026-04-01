@@ -28,5 +28,8 @@
     "lint-staged": "^16.0.0",
     "turbo": "^2.4.0",
     "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "zod": "3.25.76"
   }
 }

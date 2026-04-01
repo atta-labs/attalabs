@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.64",
+    "@ai-sdk/react": "^3.0.143",
     "@clerk/nextjs": "^7.0.7",
     "@herald/cms": "workspace:*",
     "@herald/mcp": "workspace:*",
@@ -22,7 +23,8 @@
     "next": "^16.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "unpdf": "^1.4.0"
+    "unpdf": "^1.4.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@herald/typescript-config": "workspace:*",
