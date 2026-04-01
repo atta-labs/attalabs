@@ -116,15 +116,17 @@ bun run clean        # Clean build artifacts
 
 ---
 
-## Build Order (Strict — Do Not Skip Steps)
+## Build Progress
 
-1. **Static Shell (Envoy Template)** — Build `ReportView` with hardcoded data. No LLM calls. Typography, spacing, Decision Anchor hierarchy.
-2. **Signal Detection** — `/api/mcp/signals` fetches candidate's public repos, detects patterns.
-3. **Match Engine** — `POST /api/match` with Skeptical Auditor prompt. Wire `JDInput` → `LoadingState` → `ResultView`.
-4. **Rate Limiting & Polish** — Upstash Redis (5 reports/IP/hour). Copy Link. PDF export.
-5. **Subdomain Routing & Sanity** — Sanity CMS schemas, middleware subdomain routing, Envoy reads from Sanity.
-6. **Onboarding Flow** — AI-driven onboarding at `/onboarding`. Clerk auth.
-7. **Admin Dashboard** — `/admin` with live preview (iframe + postMessage), theme control, content management.
+| Step | Status | What |
+|------|--------|------|
+| 1 | **Done** | Static Shell — ReportView with editorial layout |
+| 2 | **Done** | Signal Detection — GitHub PAT, identity-filtered, org repos |
+| 3 | **Done** | Match Engine — Claude Sonnet + deterministic loading + frontend flow |
+| 4 | Partial | Rate limiting (in-memory), Copy Link, Export PDF |
+| 5 | **Done** | DB profiles via Neon Postgres + Drizzle (no Sanity needed for v1) |
+| 6 | **Done** | AI Onboarding — Gemini-style chat with tools + CV parsing via @herald/mcp |
+| 7 | Partial | Admin dashboard — profile editor works, needs themes + analytics |
 
 ---
 

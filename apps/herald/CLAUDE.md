@@ -1,6 +1,6 @@
 # Herald App — Claude Code Instructions
 
-The main Next.js 16 application. Serves both the **Herald Portal** (marketing + onboarding + admin dashboard) and the **Herald Envoy** (deployed candidate pages) from a single codebase via middleware-based subdomain routing.
+The main Next.js 16 application. Serves both the **Herald Portal** (marketing + onboarding + admin dashboard) and the **Herald Envoy** (deployed candidate pages) from a single codebase via proxy-based subdomain routing.
 
 Pattern: Portal + Onboarding + Admin merged into one codebase.
 
@@ -12,50 +12,63 @@ Pattern: Portal + Onboarding + Admin merged into one codebase.
 apps/herald/
 ├── src/
 │   ├── app/
-│   │   ├── (portal)/               # Portal routes (heyherald.com)
-│   │   │   ├── page.tsx                # Landing / marketing page
-│   │   │   ├── layout.tsx              # Portal layout (nav, footer)
-│   │   │   ├── onboarding/            # Multi-step onboarding (Step 6)
-│   │   │   │   └── page.tsx
-│   │   │   └── admin/                 # Admin dashboard (Step 7)
-│   │   │       ├── page.tsx
-│   │   │       ├── preview/           # Live preview of Envoy (iframe + postMessage)
-│   │   │       ├── theme/             # Theme selection & customisation
-│   │   │       ├── content/           # Profile content management
-│   │   │       └── analytics/         # Match report analytics
+│   │   ├── page.tsx                # Landing page (always public)
+│   │   ├── home/page.tsx           # Always-public landing (even when logged in)
+│   │   ├── admin/                  # Admin dashboard + AI onboarding
+│   │   │   ├── layout.tsx             # Fixed TopBar + scrollable content
+│   │   │   └── page.tsx               # Onboarding if new, dashboard if done
 │   │   ├── [username]/             # Envoy routes ([username].heyherald.com)
-│   │   │   └── page.tsx               # Public candidate page
+│   │   │   └── page.tsx               # Public candidate page (fetches from DB)
+│   │   ├── sign-in/                # Clerk sign-in page
+│   │   ├── sign-up/                # Clerk sign-up page
+│   │   ├── not-found.tsx           # Custom 404 page
 │   │   ├── api/
 │   │   │   ├── match/                 # POST /api/match — forensic audit
 │   │   │   │   └── route.ts
-│   │   │   ├── mcp/                   # MCP tool handler proxy
+│   │   │   ├── mcp/signals/           # GET /api/mcp/signals — GitHub signal detection
 │   │   │   │   └── route.ts
-│   │   │   └── chat/                  # AI onboarding chat (Step 6)
-│   │   │       └── route.ts
-│   │   ├── layout.tsx              # Root layout (fonts, metadata)
+│   │   │   └── admin/
+│   │   │       ├── onboarding-chat/   # POST — AI onboarding chat (streaming)
+│   │   │       │   └── route.ts
+│   │   │       ├── onboarding/        # POST — save onboarded profile to DB
+│   │   │       │   └── route.ts
+│   │   │       ├── parse-cv/          # POST — upload CV, extract profile via @herald/mcp
+│   │   │       │   └── route.ts
+│   │   │       ├── check-username/    # GET — check username availability
+│   │   │       │   └── route.ts
+│   │   │       └── profile/           # POST — update profile from dashboard
+│   │   │           └── route.ts
+│   │   ├── layout.tsx              # Root layout (fonts, ClerkProvider)
 │   │   └── globals.css             # Theme tokens as CSS variables
 │   ├── components/
 │   │   ├── envoy/                  # Envoy components (recruiter-facing)
-│   │   │   ├── ReportView.tsx          # Main forensic artifact display
+│   │   │   ├── ReportView.tsx          # Forensic audit report display
 │   │   │   ├── JDInput.tsx             # Job description input
 │   │   │   ├── LoadingState.tsx        # 3-step deterministic progress
-│   │   │   └── ResultView.tsx          # Report wrapper with actions
+│   │   │   └── EnvoyFlow.tsx           # Orchestrates input → loading → result
 │   │   ├── portal/                 # Portal components (candidate-facing)
-│   │   │   ├── OnboardingChat.tsx      # AI-driven onboarding (Step 6)
-│   │   │   ├── AdminDashboard.tsx      # Dashboard shell (Step 7)
-│   │   │   └── PortalPreview.tsx       # Live preview iframe (Step 7)
-│   │   └── shared/                 # Components used by both Portal and Envoy
+│   │   │   ├── AIOnboarding.tsx        # Gemini-style AI onboarding chat
+│   │   │   ├── OnboardingForm.tsx      # Simple form fallback (not used in v1)
+│   │   │   ├── ProfileEditor.tsx       # Dashboard profile editor
+│   │   │   └── LandingPage.tsx         # Public landing page content
+│   │   └── shared/
+│   │       └── TopBar.tsx              # Navigation bar (auth-aware)
+│   ├── db/
+│   │   ├── schema.ts              # Drizzle schema (users table)
+│   │   ├── queries.ts             # DB queries (getUserByUsername, createUser, etc.)
+│   │   └── index.ts               # Neon DB client
 │   ├── lib/
-│   │   ├── profile.ts              # Hardcoded Dani profile (v1)
-│   │   └── prompts.ts              # Re-exports from @herald/mcp
-│   └── middleware.ts               # Subdomain routing + rate limiting
-├── public/
-├── CLAUDE.md
-├── README.md
-├── package.json
-├── tsconfig.json
+│   │   ├── profile.ts             # Hardcoded DANI_PROFILE (legacy, DB is primary now)
+│   │   ├── prompts.ts             # Skeptical Auditor system prompt
+│   │   ├── signals.ts             # GitHub signal extraction
+│   │   ├── types.ts               # MatchReport type
+│   │   └── sample-report.ts       # Hardcoded sample report (legacy)
+│   └── proxy.ts                   # Clerk middleware (protects /admin)
+├── drizzle.config.ts              # Drizzle ORM config for Neon
+├── next.config.ts                 # Next.js config (GitHub avatar domains)
 ├── postcss.config.js
-└── next.config.ts
+├── package.json
+└── tsconfig.json
 ```
 
 ---
@@ -64,142 +77,83 @@ apps/herald/
 
 ### RULE #1: Two render paths, one codebase
 
-The app serves two completely different experiences based on the URL:
+| URL | Render Path | Auth Required |
+|-----|------------|---------------|
+| `heyherald.com` | Landing page | No |
+| `heyherald.com/admin` | Onboarding or Dashboard | Yes (Clerk) |
+| `[username].heyherald.com` or `heyherald.com/[username]` | Envoy (public candidate page) | No |
 
-| URL | Render Path | Layout | Auth Required |
-|-----|------------|--------|---------------|
-| `heyherald.com/*` | `(portal)/` routes | Portal layout (nav, footer) | Some routes (admin, onboarding) |
-| `[username].heyherald.com` | `[username]/` route | Envoy layout (minimal, editorial) | No |
-| `heyherald.com/dani` | `[username]/` route | Envoy layout | No |
+### RULE #2: Profiles live in Neon Postgres
 
-Middleware detects subdomain and rewrites to the correct route.
+All candidate data comes from the `users` table via Drizzle ORM. The hardcoded `DANI_PROFILE` in `lib/profile.ts` is legacy — only used by the match engine as a fallback.
 
-### RULE #2: Envoy components are the priority (Steps 1-4)
+### RULE #3: AI Onboarding uses Vercel AI SDK
 
-The build order is strict. Steps 1-4 focus entirely on the Envoy (recruiter-facing) components. Portal components (onboarding, admin) come in Steps 6-7.
+The onboarding chat at `/admin` uses:
+- `streamText` on the server with Claude Haiku
+- `useChat` on the client with `DefaultChatTransport`
+- 4 tools: `check_username`, `verify_github`, `request_cv_upload`, `complete_onboarding`
+- CV parsing via `@herald/mcp` package (`parseCv` tool)
 
-**Do NOT build Portal components until Envoy is production-ready.**
-
-### RULE #3: Component organisation follows the two-face pattern
+### RULE #4: Envoy components are separate from Portal components
 
 ```
 components/
 ├── envoy/     # Only used on [username] pages (recruiter sees these)
-├── portal/    # Only used on (portal) pages (candidate sees these)
-└── shared/    # Used by both (rare — be intentional)
+├── portal/    # Only used on admin/onboarding pages (candidate sees these)
+└── shared/    # TopBar (used by both)
 ```
 
-Never put Envoy-specific components in `shared/`. Never import Portal components from Envoy pages.
+### RULE #5: Fonts and theme tokens
 
-### RULE #4: v1 uses hardcoded profile, not Sanity
-
-Step 1-4: `apps/herald/src/lib/profile.ts` contains `DANI_PROFILE` as a TypeScript object.
-Step 5+: Replace with Sanity query via `@herald/cms`.
-
-### RULE #5: Fonts are loaded in the root layout
-
-Three fonts loaded via `next/font/google`:
-
-```tsx
-import { Playfair_Display, DM_Mono, DM_Sans } from 'next/font/google'
-
-const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-display' })
-const dmMono = DM_Mono({ weight: ['400', '500'], subsets: ['latin'], variable: '--font-mono' })
-const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-sans' })
-```
-
-### RULE #6: Theme tokens are CSS variables in globals.css
-
-```css
-:root {
-  --background: #0D0B08;
-  --foreground: #E8D5B7;
-  --accent: #C8A84B;
-  --muted-foreground: #7A6A50;
-  --card: #1A1610;
-  --border: #2A2318;
-  --destructive: #C85A4B;
-}
-```
-
-Components use Tailwind classes (`bg-background`, `text-foreground`, `text-accent`) — never hardcoded hex values.
-
----
-
-## Middleware (Subdomain Routing)
-
-```typescript
-// src/middleware.ts
-// 1. Extract hostname from request
-// 2. If subdomain exists (e.g. dani.heyherald.com) → rewrite to /dani
-// 3. If path matches /api/match → check rate limit (Upstash Redis)
-// 4. If path matches /admin or /onboarding → check Clerk auth
-```
+Three fonts via `next/font/google`: Playfair Display, DM Mono, DM Sans.
+Theme tokens as CSS variables in `globals.css`. No hardcoded hex values in components.
 
 ---
 
 ## API Routes
 
-| Route | Method | Purpose | Build Step |
-|-------|--------|---------|------------|
-| `/api/match` | POST | Forensic audit — JD + profile → MatchReport | Step 3 |
-| `/api/mcp` | POST | MCP tool handler proxy to `@herald/mcp` | Step 3 |
-| `/api/chat` | POST | AI onboarding conversation | Step 6 |
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/match` | POST | Forensic audit — JD + profile → MatchReport via Claude |
+| `/api/mcp/signals` | GET | GitHub signal detection for a username |
+| `/api/admin/onboarding-chat` | POST | AI onboarding conversation (streaming) |
+| `/api/admin/onboarding` | POST | Save onboarded profile to DB |
+| `/api/admin/parse-cv` | POST | Upload CV → extract profile via @herald/mcp |
+| `/api/admin/check-username` | GET | Check username availability |
+| `/api/admin/profile` | POST | Update profile from dashboard |
 
 ---
 
-## Build Order (What To Build When)
+## Database
 
-| Step | What | Components/Routes |
-|------|------|-------------------|
-| 1 | Static Shell | `ReportView`, `[username]/page.tsx`, `layout.tsx`, `globals.css` |
-| 2 | GitHub Signals | Wire `@herald/mcp/tools/github-signals` into ReportView |
-| 3 | Match Engine | `JDInput`, `LoadingState`, `ResultView`, `/api/match` |
-| 4 | Rate Limiting | `middleware.ts` (Upstash), Copy Link, PDF export |
-| 5 | Sanity Integration | `middleware.ts` (subdomain routing), replace hardcoded profile |
-| 6 | Onboarding | `(portal)/onboarding/`, `OnboardingChat`, `/api/chat` |
-| 7 | Admin Dashboard | `(portal)/admin/`, `AdminDashboard`, `PortalPreview` |
+Neon Postgres via Drizzle ORM. Single `users` table:
 
----
-
-## Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `@herald/ui` | Shared UI components (shadcn) |
-| `@herald/cms` | Sanity CMS client and queries (Step 5+) |
-| `@herald/mcp` | Match engine, GitHub signals, profile tools |
-| `next` | Framework |
-| `react` / `react-dom` | UI runtime |
-| `tailwindcss` | Styling |
+| Column | Type | Purpose |
+|--------|------|---------|
+| `clerk_id` | varchar PK | Clerk user ID |
+| `username` | varchar unique | URL slug (heyherald.com/username) |
+| `github_handle` | varchar | GitHub handle for signal detection |
+| `name`, `title`, `location`, `availability` | varchar | Profile identity |
+| `summary` | text | Professional summary |
+| `stack` | text (JSON) | Skills array |
+| `projects` | text (JSON) | Projects array |
+| `experience` | text (JSON) | Experience array |
+| `onboarding_complete` | boolean | Whether onboarding is done |
 
 ---
 
 ## Environment Variables
 
 ```env
-# Required for Steps 1-2 (none — hardcoded data)
-
-# Required for Step 3
-ANTHROPIC_API_KEY=           # Claude API for match reports
-
-# Required for Step 4
-UPSTASH_REDIS_REST_URL=      # Rate limiting
-UPSTASH_REDIS_REST_TOKEN=
-
-# Required for Step 5
-SANITY_PROJECT_ID=           # CMS
-SANITY_DATASET=
-SANITY_API_TOKEN=
-
-# Required for Step 6
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=  # Auth
+# Required
+ANTHROPIC_API_KEY=           # Claude API for match reports + CV parsing
+GITHUB_PAT=                  # GitHub PAT for signal detection
+DATABASE_URL=                # Neon Postgres connection string
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
-
-# Required for Step 7
-CLOUDFLARE_ACCOUNT_ID=       # R2 storage
-CLOUDFLARE_API_TOKEN=
-R2_BUCKET_NAME=
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 
 # Optional
 GITHUB_TOKEN=                # Higher GitHub API rate limits
@@ -212,5 +166,3 @@ GITHUB_TOKEN=                # Higher GitHub API rate limits
 - [Root CLAUDE.md](../../CLAUDE.md) — Monorepo routing index
 - [HERALD-BUILD-SPEC.md](../../HERALD-BUILD-SPEC.md) — Complete build specification
 - [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) — Architecture decisions
-- [.claude/rules/ui-patterns.md](../../.claude/rules/ui-patterns.md) — UI rules (loaded for .tsx files)
-- [.claude/rules/api-conventions.md](../../.claude/rules/api-conventions.md) — API rules (loaded for route.ts files)

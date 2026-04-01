@@ -1,10 +1,8 @@
 # MCP Package — Claude Code Instructions
 
-MCP (Model Context Protocol) tool handlers for Herald. This package contains the match engine, GitHub signal detection, and profile tools that power the forensic audit reports.
+MCP (Model Context Protocol) tool handlers for Herald. Contains the CV parser, match engine types, and prompts that power the platform.
 
-v1 uses Vercel AI SDK tool handlers (server-side functions the LLM calls mid-reasoning). The package is structured for future extraction to a standalone MCP server with stdio/SSE transport.
-
-The package is structured for future extraction to a standalone MCP server with stdio/SSE transport.
+v1 uses Vercel AI SDK tool handlers. The package is structured for future extraction to a standalone MCP server with stdio/SSE transport.
 
 ---
 
@@ -13,14 +11,12 @@ The package is structured for future extraction to a standalone MCP server with 
 ```
 packages/mcp/
 ├── src/
-│   ├── tools/               # Individual tool handler definitions
-│   │   ├── match.ts             # Forensic match engine (JD → MatchReport)
-│   │   ├── github-signals.ts    # GitHub repo scanning + signal detection
-│   │   └── profile.ts          # Profile data retrieval
-│   ├── prompts/             # System prompts
-│   │   └── skeptical-auditor.ts # Verbatim auditor prompt (NEVER modify)
-│   ├── types.ts             # Shared types (MatchReport, MatchRequest, DetectedSignal)
-│   └── index.ts             # Public exports
+│   ├── tools/
+│   │   └── parse-cv.ts          # CV text → structured CandidateProfile via Claude Haiku
+│   ├── prompts/
+│   │   └── cv-parser.ts         # System prompt for CV extraction
+│   ├── types.ts                 # CandidateProfile, MatchReport interfaces
+│   └── index.ts                 # Public exports
 ├── CLAUDE.md
 ├── README.md
 ├── package.json
@@ -29,117 +25,77 @@ packages/mcp/
 
 ---
 
-## Critical Rules
+## Tools
 
-### RULE #1: The Skeptical Auditor prompt is VERBATIM
+### `parseCv` — CV Text Extraction
 
-The system prompt in `src/prompts/skeptical-auditor.ts` is copied exactly from HERALD-BUILD-SPEC.md Section 08. **NEVER modify it** without explicit instruction from the user.
+**Input:** CV text (extracted from PDF/TXT) + Anthropic API key
+**Output:** `CandidateProfile` (name, title, location, summary, stack, projects, experience)
+**Model:** Claude Haiku (fast, cheap — CV parsing doesn't need Sonnet)
+**Prompt:** Verbatim from `src/prompts/cv-parser.ts`
 
-Key linguistic constraints enforced by the prompt:
-- Zero marketing language
-- Every claim must reference a detectable signal
-- Gaps are honest, always paired with mitigation
-- Interview hooks must be hyper-specific
-- Tone: senior professional writing internal memo, not recruiter
+Used by: `apps/herald/src/app/api/admin/parse-cv/route.ts`
 
-### RULE #2: Tools are independently testable
+---
 
-Each tool in `src/tools/` is a pure function that can be tested without the AI SDK. The AI SDK integration happens in the app's API route (`apps/herald/src/app/api/match/route.ts`), not here.
+## Types
+
+### `CandidateProfile`
+
+The canonical profile shape extracted from CVs and stored in the database.
 
 ```typescript
-// ✅ Good — tool is a pure function
-export async function detectGitHubSignals(handle: string): Promise<Signal[]> {
-  const repos = await fetchPublicRepos(handle)
-  return scanForPatterns(repos)
+interface CandidateProfile {
+  name: string
+  title: string
+  location?: string
+  availability?: string
+  summary: string
+  stack: string[]
+  projects: Array<{ title: string; description: string }>
+  experience: Array<{ company: string; role: string; period: string; highlights: string[] }>
 }
-
-// ❌ Bad — tool is coupled to AI SDK
-export const githubSignalTool = tool({
-  // AI SDK specific code in the package
-})
 ```
 
-### RULE #3: Types are the contract
+### `MatchReport`
 
-The `MatchReport` interface is the API contract between the LLM output and the UI. It must match HERALD-BUILD-SPEC.md Section 07 exactly.
+The forensic audit output from the match engine.
 
 ```typescript
 interface MatchReport {
+  candidate: { name: string; title: string; github?: string }
   grade: 'A' | 'A-' | 'B+' | 'B'
-  recommendation: 'Strong Fit' | 'Good Fit' | 'Borderline'
+  recommendation: string
+  confidence: string
   confidence_reasoning: string[]
-  signal: Signal[]
+  signal: Array<{ title: string; observation: string; interpretation: string; confidence: string }>
   gaps: Array<{ gap: string; mitigation: string }>
   interview_hooks: string[]
-}
-
-interface Signal {
-  title: string
-  observation: string
-  interpretation: string
-  confidence: 'High' | 'Medium' | 'Low'
 }
 ```
 
 ---
 
-## Tool Handlers
+## Critical Rules
 
-### `match` — Forensic Match Engine
+### RULE #1: Tools are independently testable
 
-**Input:** Job description + candidate profile + GitHub signals
-**Output:** `MatchReport` JSON
-**LLM:** Claude API via Vercel AI SDK
-**Prompt:** Skeptical Auditor (verbatim)
-**Constraints:**
-- Latency target: <6 seconds
-- Hard timeout: 10 seconds → return partial report
-- Caching: `hash(JD + profile)` → 24h cache
+Each tool is a pure function. AI SDK integration happens in the app's API routes, not here.
 
-### `github-signals` — Signal Detection
+### RULE #2: The CV parser prompt is strict
 
-**Input:** GitHub username
-**Output:** `Signal[]`
-**API:** GitHub public REST API (`https://api.github.com/users/{handle}/repos`)
-**Signals detected:** See HERALD-BUILD-SPEC.md Section 09
-
-| Signal | Pattern | What It Proves |
-|--------|---------|---------------|
-| Monorepo Architecture | `turbo.json` exists | Multi-package workspace management |
-| Schema Validation | `zod` imports | Boundary validation, production thinking |
-| Headless UI | `@radix-ui` imports | Behaviour/presentation separation |
-| Web3 Integration | `wagmi`/`ethers` imports | Blockchain experience |
-| Active Contribution | Commits within 90 days | Current hands-on practice |
-| AI/LLM Integration | `@anthropic-ai/sdk`/`openai` imports | Production LLM systems |
-| Modern ORM | `drizzle-orm` imports | Type-safe database access |
-
-### `profile` — Profile Retrieval
-
-**Input:** Username
-**Output:** Candidate profile object
-**v1:** Returns hardcoded `DANI_PROFILE` from `apps/herald/src/lib/profile.ts`
-**v2+:** Reads from Sanity CMS via `@herald/cms`
+The prompt in `src/prompts/cv-parser.ts` extracts only what is explicitly stated. No embellishment, no inference.
 
 ---
 
-## Future: Standalone MCP Server
+## Dependencies
 
-When external AI clients (Claude Desktop, Cursor) need to connect to candidate profiles, this package extracts to a standalone MCP server:
-
-1. Add MCP transport layer (stdio/SSE)
-2. Register tools as MCP tools
-3. Deploy as Cloudflare Worker
-4. App's `/api/mcp` route becomes a proxy
-
-The tool implementations stay the same — only the transport changes.
+- `@ai-sdk/anthropic` — Anthropic provider
+- `ai` — Vercel AI SDK
 
 ---
 
 ## Related Documentation
 
 - [Root CLAUDE.md](../../CLAUDE.md) — Monorepo routing index
-- [HERALD-BUILD-SPEC.md Section 07](../../HERALD-BUILD-SPEC.md) — Forensic API contract (MatchReport schema)
-- [HERALD-BUILD-SPEC.md Section 08](../../HERALD-BUILD-SPEC.md) — Skeptical Auditor system prompt (verbatim)
-- [HERALD-BUILD-SPEC.md Section 09](../../HERALD-BUILD-SPEC.md) — GitHub signal detection patterns
-- [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) — "Why Vercel AI SDK (Not True MCP Yet)" decision
-- [.claude/rules/api-conventions.md](../../.claude/rules/api-conventions.md) — API coding rules
+- [HERALD-BUILD-SPEC.md](../../HERALD-BUILD-SPEC.md) — Build specification
