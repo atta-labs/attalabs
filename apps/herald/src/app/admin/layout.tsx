@@ -11,9 +11,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const user = await getUserByClerkId(userId)
 
   return (
-    <>
-      <TopBar username={user?.username} />
-      {children}
-    </>
+    <div className='flex h-screen flex-col'>
+      <div className='sticky top-0 z-10'>
+        <TopBar username={user?.username} />
+      </div>
+      <div className='flex-1 overflow-y-auto'>{children}</div>
+    </div>
   )
 }
