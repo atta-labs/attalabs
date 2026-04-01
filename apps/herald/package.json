@@ -18,6 +18,8 @@
     "@herald/mcp": "workspace:*",
     "@herald/ui": "workspace:*",
     "@neondatabase/serverless": "^1.0.2",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
     "ai": "^6.0.140",
     "drizzle-orm": "^0.45.1",
     "next": "^16.2.1",

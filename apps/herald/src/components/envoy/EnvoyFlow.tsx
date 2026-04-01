@@ -49,7 +49,7 @@ function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
     'border border-foreground/20 bg-foreground/5 px-6 py-2 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
 
   return (
-    <div className='mx-auto flex max-w-[680px] gap-3 px-6 pb-8 no-print'>
+    <div className='sticky bottom-0 mx-auto flex max-w-[680px] gap-3 border-t border-border/50 bg-background/80 px-6 py-4 backdrop-blur-sm no-print'>
       <button type='button' onClick={handleCopy} className={btnClass}>
         {copied ? 'Copied!' : 'Copy Link'}
       </button>
@@ -115,7 +115,10 @@ export function EnvoyFlow({ profile }: { profile: CandidateProfile }) {
       })
 
       clearTimeout(apiTimer)
-      if (!res.ok) throw new Error(`API error: ${res.status}`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        throw new Error(body?.error ?? `API error: ${res.status}`)
+      }
 
       const data: MatchReport = await res.json()
       resultBuffer.current = data
@@ -127,7 +130,8 @@ export function EnvoyFlow({ profile }: { profile: CandidateProfile }) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         setError('The audit took longer than expected. Please try again.')
       } else {
-        setError('Something went wrong. Please try again.')
+        const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
+        setError(message)
       }
       setState('error')
     }
