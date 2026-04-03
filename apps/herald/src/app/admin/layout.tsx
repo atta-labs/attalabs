@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 
-import { TopBar } from '@/components/shared/TopBar'
+import { AdminSidebar } from '@/components/portal/AdminSidebar'
 import { getUserByClerkId } from '@/db/queries'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -10,12 +10,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const user = await getUserByClerkId(userId)
 
+  // If no user yet (pre-onboarding), render children without sidebar
+  if (!user?.onboardingComplete) {
+    return <div className='h-screen'>{children}</div>
+  }
+
   return (
-    <div className='flex h-screen flex-col'>
-      <div className='sticky top-0 z-10'>
-        <TopBar username={user?.username} />
-      </div>
-      <div className='flex-1 overflow-y-auto'>{children}</div>
+    <div className='flex h-screen'>
+      <AdminSidebar username={user.username} />
+      <div className='flex-1 overflow-hidden'>{children}</div>
     </div>
   )
 }

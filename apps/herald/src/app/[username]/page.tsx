@@ -3,6 +3,7 @@ import type { ColorScheme } from '@herald/cms'
 import { cmsClient, generateThemeCSSForScheme, getThemeById } from '@herald/cms'
 import { notFound } from 'next/navigation'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
+import { PreviewThemeListener } from '@/components/theme/PreviewThemeListener'
 import { getUserByUsername } from '@/db/queries'
 
 export default async function EnvoyPage({ params }: { params: Promise<{ username: string }> }) {
@@ -41,6 +42,7 @@ export default async function EnvoyPage({ params }: { params: Promise<{ username
   return (
     <>
       {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
+      <PreviewThemeListener />
       <EnvoyFlow profile={profile} />
     </>
   )
