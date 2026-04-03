@@ -1,8 +1,9 @@
 import { auth } from '@clerk/nextjs/server'
+import { cmsClient, getThemeList } from '@herald/cms'
 import { redirect } from 'next/navigation'
-
 import { AIOnboarding } from '@/components/portal/AIOnboarding'
 import { ProfileEditor } from '@/components/portal/ProfileEditor'
+import { ThemePicker } from '@/components/portal/ThemePicker'
 import { getUserByClerkId } from '@/db/queries'
 
 export default async function AdminPage() {
@@ -27,6 +28,8 @@ export default async function AdminPage() {
     stack: JSON.parse(user.stack) as string[]
   }
 
+  const themes = await getThemeList(cmsClient)
+
   return (
     <div className='mx-auto max-w-[900px] px-6 py-8'>
       <header className='mb-8'>
@@ -39,7 +42,11 @@ export default async function AdminPage() {
         </p>
       </header>
 
-      <ProfileEditor profile={profile} />
+      <ThemePicker themes={themes} currentThemeId={user.themeId} />
+
+      <div className='mt-10'>
+        <ProfileEditor profile={profile} />
+      </div>
     </div>
   )
 }

@@ -1,6 +1,8 @@
 import { ClerkProvider } from '@clerk/nextjs'
 import type { Metadata } from 'next'
 import { DM_Mono, DM_Sans, Playfair_Display } from 'next/font/google'
+
+import { DEFAULT_THEME_CSS } from '@/lib/default-theme'
 import './globals.css'
 
 const playfair = Playfair_Display({
@@ -30,6 +32,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang='en' className={`${playfair.variable} ${dmMono.variable} ${dmSans.variable}`}>
+      <head>
+        <style id='herald-default-theme' dangerouslySetInnerHTML={{ __html: DEFAULT_THEME_CSS }} />
+      </head>
       <body className='min-h-screen bg-background text-foreground'>
         <ClerkProvider>{children}</ClerkProvider>
       </body>

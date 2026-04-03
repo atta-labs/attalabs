@@ -61,6 +61,13 @@ export async function createUser(data: {
   }
 }
 
+export async function updateUserTheme(clerkId: string, themeId: string, colorScheme = 'dark') {
+  await db
+    .update(schema.users)
+    .set({ themeId, colorScheme, updatedAt: new Date() })
+    .where(eq(schema.users.clerkId, clerkId))
+}
+
 export async function updateUser(
   clerkId: string,
   data: {

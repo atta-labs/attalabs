@@ -1,5 +1,7 @@
-import { notFound } from 'next/navigation'
+import type { ColorScheme } from '@herald/cms'
 
+import { cmsClient, generateThemeCSSForScheme, getThemeById } from '@herald/cms'
+import { notFound } from 'next/navigation'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
 import { getUserByUsername } from '@/db/queries'
 
@@ -26,5 +28,20 @@ export default async function EnvoyPage({ params }: { params: Promise<{ username
     availability: user.availability ?? undefined
   }
 
-  return <EnvoyFlow profile={profile} />
+  // Fetch theme from Sanity if user has one selected
+  let themeCSS: string | null = null
+  if (user.themeId) {
+    const theme = await getThemeById(cmsClient, user.themeId)
+    if (theme) {
+      const colorScheme = (user.colorScheme as ColorScheme) ?? 'dark'
+      themeCSS = generateThemeCSSForScheme(theme, colorScheme)
+    }
+  }
+
+  return (
+    <>
+      {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
+      <EnvoyFlow profile={profile} />
+    </>
+  )
 }

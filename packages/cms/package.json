@@ -5,11 +5,20 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
+    "studio": "sanity dev --port 3333",
+    "studio:deploy": "sanity deploy",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo"
   },
   "devDependencies": {
     "@herald/typescript-config": "workspace:*",
     "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@sanity/client": "^7.20.0",
+    "@sanity/vision": "^5.19.0",
+    "culori": "^4.0.2",
+    "sanity": "^5.19.0",
+    "styled-components": "^6.3.12"
   }
 }
