@@ -7,6 +7,7 @@
  */
 
 import { cssColorToOklch } from '@herald/cms/utils/oklch'
+import { loadThemeFonts } from '@/lib/font-loader'
 
 export interface ThemeData {
   dark?: Record<string, unknown>
@@ -101,5 +102,10 @@ export function applyThemeToDOM(theme: ThemeData, colorScheme?: 'dark' | 'light'
         root.style.setProperty(`--${camelToKebab(key)}`, value)
       }
     }
+  }
+
+  // Load custom Google Fonts
+  if (theme.typography) {
+    loadThemeFonts(theme.typography as { fontSans?: string; fontSerif?: string; fontMono?: string })
   }
 }

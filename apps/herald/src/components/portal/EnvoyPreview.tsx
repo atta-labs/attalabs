@@ -15,7 +15,7 @@ export function EnvoyPreview({ username }: { username: string }) {
       <div className='flex items-center justify-between border-b border-border px-4 py-2'>
         <div className='flex items-center gap-2'>
           <div className={`h-2 w-2 rounded-full ${isReady ? 'bg-green-500' : 'bg-yellow-500'}`} />
-          <span className='font-mono text-[10px] text-muted'>
+          <span className='font-mono text-[10px] text-muted-foreground'>
             {isReady ? 'Preview connected' : 'Loading preview...'}
           </span>
         </div>
@@ -23,7 +23,7 @@ export function EnvoyPreview({ username }: { username: string }) {
           href={`/${username}`}
           target='_blank'
           rel='noreferrer'
-          className='font-mono text-[10px] text-muted transition-colors hover:text-foreground'
+          className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
         >
           {username}.heyherald.com ↗
         </a>

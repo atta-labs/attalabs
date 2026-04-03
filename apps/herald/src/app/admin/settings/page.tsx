@@ -24,7 +24,7 @@ export default async function SettingsPage() {
     <div className='mx-auto max-w-[700px] px-6 py-8'>
       <header className='mb-8'>
         <h1 className='font-display text-xl tracking-tight'>Settings</h1>
-        <p className='mt-1 font-mono text-xs text-muted'>Profile, API keys, and social connections.</p>
+        <p className='mt-1 font-mono text-xs text-muted-foreground'>Profile, API keys, and social connections.</p>
       </header>
 
       <ProfileEditor profile={profile} />

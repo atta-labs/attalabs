@@ -18,7 +18,7 @@ export function AdminSidebar({ username }: { username: string }) {
       {/* Header */}
       <div className='border-b border-border px-4 py-4'>
         <p className='font-display text-sm tracking-tight'>Herald</p>
-        <p className='mt-0.5 font-mono text-[10px] text-muted'>{username}.heyherald.com</p>
+        <p className='mt-0.5 font-mono text-[10px] text-muted-foreground'>{username}.heyherald.com</p>
       </div>
 
       {/* Navigation */}
@@ -35,14 +35,14 @@ export function AdminSidebar({ username }: { username: string }) {
                   ? 'cursor-not-allowed text-muted/50'
                   : isActive
                     ? 'bg-foreground/10 font-medium text-foreground'
-                    : 'text-muted hover:bg-foreground/5 hover:text-foreground'
+                    : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'
               }`}
               onClick={item.comingSoon ? (e) => e.preventDefault() : undefined}
             >
               <span className='text-sm'>{item.icon}</span>
               <span>{item.label}</span>
               {item.comingSoon && (
-                <span className='ml-auto rounded bg-foreground/5 px-1.5 py-0.5 font-mono text-[9px] text-muted'>
+                <span className='ml-auto rounded bg-foreground/5 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground'>
                   Soon
                 </span>
               )}
@@ -57,7 +57,7 @@ export function AdminSidebar({ username }: { username: string }) {
           href={`/${username}`}
           target='_blank'
           rel='noreferrer'
-          className='font-mono text-[10px] text-muted transition-colors hover:text-foreground'
+          className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
         >
           View live page ↗
         </a>

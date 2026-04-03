@@ -144,11 +144,11 @@ export function OnboardingForm() {
   }
 
   const inputClass =
-    'w-full border border-border bg-card px-3 py-2 font-sans text-sm text-foreground placeholder:text-muted focus:border-foreground/30 focus:outline-none'
-  const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted'
+    'w-full border border-border bg-card px-3 py-2 font-sans text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/30 focus:outline-none'
+  const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
 
   function statusIndicator(status: FieldStatus, invalidMsg?: string) {
-    if (status === 'checking') return <p className='mt-1 font-mono text-[10px] text-muted'>Checking...</p>
+    if (status === 'checking') return <p className='mt-1 font-mono text-[10px] text-muted-foreground'>Checking...</p>
     if (status === 'valid') return <p className='mt-1 font-mono text-[10px] text-foreground'>✓ Valid</p>
     if (status === 'invalid')
       return <p className='mt-1 font-mono text-[10px] text-destructive'>{invalidMsg ?? 'Invalid'}</p>
@@ -162,7 +162,7 @@ export function OnboardingForm() {
     <div className='mx-auto max-w-[680px] px-6 py-12'>
       <header className='mb-8'>
         <h1 className='font-display text-2xl tracking-tight'>Launch Your Herald</h1>
-        <p className='mt-1 text-sm text-muted'>Pick a username, upload your CV. We extract the rest.</p>
+        <p className='mt-1 text-sm text-muted-foreground'>Pick a username, upload your CV. We extract the rest.</p>
       </header>
 
       <div className='flex flex-col gap-6'>
@@ -216,7 +216,7 @@ export function OnboardingForm() {
               <p className='font-mono text-[11px] text-foreground'>
                 Extracted: {parsedProfile.name} — {parsedProfile.title}
               </p>
-              <p className='mt-0.5 font-mono text-[10px] text-muted'>
+              <p className='mt-0.5 font-mono text-[10px] text-muted-foreground'>
                 {parsedProfile.stack.length} skills · {parsedProfile.projects.length} projects ·{' '}
                 {parsedProfile.experience.length} roles
               </p>

@@ -221,18 +221,18 @@ export function AIOnboarding() {
     return (
       <div className='flex h-[calc(100vh-57px)] flex-col items-center justify-center px-6'>
         <div className='w-full max-w-[560px]'>
-          <p className='mb-2 font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Herald</p>
+          <p className='mb-2 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Herald</p>
           {firstAgentText ? (
             <p className='mb-8 text-lg leading-relaxed text-foreground/80'>{firstAgentText}</p>
           ) : (
-            <p className='mb-8 animate-pulse text-lg text-muted'>...</p>
+            <p className='mb-8 animate-pulse text-lg text-muted-foreground'>...</p>
           )}
 
           <input ref={fileRef} type='file' accept='.pdf,.txt,.md' onChange={handleFileUpload} className='hidden' />
 
           <div className='flex gap-2'>
             <input
-              className='w-full border border-border bg-card px-4 py-3 font-sans text-sm text-foreground placeholder:text-muted focus:border-foreground/30 focus:outline-none'
+              className='w-full border border-border bg-card px-4 py-3 font-sans text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/30 focus:outline-none'
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -250,7 +250,7 @@ export function AIOnboarding() {
               type='button'
               onClick={handleSend}
               disabled={isThinking || !input.trim()}
-              className='shrink-0 border border-border px-4 py-3 font-mono text-[10px] uppercase text-muted transition-colors hover:text-foreground disabled:opacity-30'
+              className='shrink-0 border border-border px-4 py-3 font-mono text-[10px] uppercase text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30'
             >
               Send
             </button>
@@ -296,7 +296,7 @@ export function AIOnboarding() {
                 <p className='font-mono text-sm text-foreground'>
                   ✓ {state.cvProfile.name} — {state.cvProfile.title}
                 </p>
-                <p className='mt-0.5 font-mono text-[10px] text-muted'>
+                <p className='mt-0.5 font-mono text-[10px] text-muted-foreground'>
                   {state.cvProfile.stack.length} skills · {state.cvProfile.projects} projects ·{' '}
                   {state.cvProfile.experience} roles
                 </p>
@@ -305,8 +305,8 @@ export function AIOnboarding() {
 
             {state.complete && <div className='text-sm text-foreground/80'>✓ Your Herald is live — redirecting...</div>}
 
-            {uploading && <div className='animate-pulse text-sm text-muted'>Extracting your profile...</div>}
-            {isThinking && !uploading && <div className='animate-pulse text-sm text-muted'>...</div>}
+            {uploading && <div className='animate-pulse text-sm text-muted-foreground'>Extracting your profile...</div>}
+            {isThinking && !uploading && <div className='animate-pulse text-sm text-muted-foreground'>...</div>}
 
             <div ref={messagesEndRef} />
           </div>
@@ -322,14 +322,14 @@ export function AIOnboarding() {
             <button
               type='button'
               onClick={() => fileRef.current?.click()}
-              className='w-full border border-border bg-card px-4 py-3 text-left font-mono text-sm text-muted transition-colors hover:border-foreground/30 hover:text-foreground'
+              className='w-full border border-border bg-card px-4 py-3 text-left font-mono text-sm text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground'
             >
               📎 Click to upload your CV (PDF, TXT, or Markdown)
             </button>
           ) : (
             <div className='flex gap-2'>
               <input
-                className='w-full border border-border bg-card px-4 py-3 font-sans text-sm text-foreground placeholder:text-muted focus:border-foreground/30 focus:outline-none'
+                className='w-full border border-border bg-card px-4 py-3 font-sans text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/30 focus:outline-none'
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -345,7 +345,7 @@ export function AIOnboarding() {
                 type='button'
                 onClick={handleSend}
                 disabled={isThinking || !input.trim() || state.complete}
-                className='shrink-0 border border-border px-4 py-3 font-mono text-[10px] uppercase text-muted transition-colors hover:text-foreground disabled:opacity-30'
+                className='shrink-0 border border-border px-4 py-3 font-mono text-[10px] uppercase text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30'
               >
                 Send
               </button>

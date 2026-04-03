@@ -37,7 +37,7 @@ export function ThemePicker({ themes, currentThemeId }: { themes: ThemeCard[]; c
     <div>
       <div className='mb-4 flex items-center justify-between'>
         <h2 className='font-display text-xl tracking-tight'>Theme</h2>
-        {isPending && <span className='font-mono text-xs text-muted'>Saving...</span>}
+        {isPending && <span className='font-mono text-xs text-muted-foreground'>Saving...</span>}
         {saved && !isPending && <span className='font-mono text-xs text-accent'>Saved</span>}
       </div>
 
@@ -81,7 +81,7 @@ export function ThemePicker({ themes, currentThemeId }: { themes: ThemeCard[]; c
       </div>
 
       {selectedId === null && (
-        <p className='mt-3 font-mono text-xs text-muted'>No theme selected — using default Minimal Dark.</p>
+        <p className='mt-3 font-mono text-xs text-muted-foreground'>No theme selected — using default Minimal Dark.</p>
       )}
     </div>
   )

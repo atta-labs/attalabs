@@ -135,7 +135,7 @@ export function ThemeBrowser({
         <div className='flex items-center justify-between border-b border-border px-4 py-3'>
           <div>
             <h2 className='font-display text-lg tracking-tight'>Themes</h2>
-            <p className='font-mono text-[10px] text-muted'>{themes.length} available</p>
+            <p className='font-mono text-[10px] text-muted-foreground'>{themes.length} available</p>
           </div>
           {/* Publish button */}
           <button
@@ -164,52 +164,62 @@ export function ThemeBrowser({
             const hasBoth = schemes?.hasDark && schemes?.hasLight
 
             return (
-              <div
+              <button
                 key={theme._id}
-                className={`border-b border-border/50 transition-colors ${
+                type='button'
+                onClick={() => handleSelect(theme._id)}
+                className={`flex w-full items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors ${
                   isSelected ? 'bg-primary/10' : 'hover:bg-foreground/5'
                 }`}
               >
-                <button
-                  type='button'
-                  onClick={() => handleSelect(theme._id)}
-                  className='flex w-full items-center gap-3 px-4 py-3 text-left'
-                >
-                  <FourSquareSwatch colors={swatchColors} />
-                  <div className='min-w-0 flex-1'>
-                    <p
-                      className={`truncate font-mono text-xs ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}
-                    >
-                      {theme.name}
-                    </p>
-                  </div>
+                <FourSquareSwatch colors={swatchColors} />
+                <div className='flex min-w-0 flex-1 items-center gap-2'>
+                  <span
+                    className={`line-clamp-2 text-sm font-medium ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}
+                  >
+                    {theme.name}
+                  </span>
                   {isApplied && <div className='h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent' />}
-                </button>
-
-                {/* Dark/Light toggle — inline on each card */}
-                {isSelected && hasBoth && (
-                  <div className='flex gap-1 px-4 pb-3'>
-                    <button
-                      type='button'
-                      onClick={() => handleSchemeChange(theme._id, 'dark')}
-                      className={`rounded px-2 py-1 font-mono text-[10px] transition-colors ${
-                        thisScheme === 'dark' ? 'bg-foreground/15 text-foreground' : 'text-muted hover:text-foreground'
+                </div>
+                {/* Dark/Light radio buttons — always visible when theme has both */}
+                {hasBoth && (
+                  <div
+                    role='radiogroup'
+                    className='flex flex-shrink-0 flex-col gap-1'
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <label
+                      className={`flex cursor-pointer items-center gap-1 text-xs ${
+                        thisScheme === 'dark' ? 'text-foreground' : 'text-muted-foreground'
                       }`}
                     >
-                      ● Dark
-                    </button>
-                    <button
-                      type='button'
-                      onClick={() => handleSchemeChange(theme._id, 'light')}
-                      className={`rounded px-2 py-1 font-mono text-[10px] transition-colors ${
-                        thisScheme === 'light' ? 'bg-foreground/15 text-foreground' : 'text-muted hover:text-foreground'
+                      <input
+                        type='radio'
+                        name={`scheme-${theme._id}`}
+                        checked={thisScheme === 'dark'}
+                        onChange={() => handleSchemeChange(theme._id, 'dark')}
+                        className='h-3 w-3 accent-primary'
+                      />
+                      Dark
+                    </label>
+                    <label
+                      className={`flex cursor-pointer items-center gap-1 text-xs ${
+                        thisScheme === 'light' ? 'text-foreground' : 'text-muted-foreground'
                       }`}
                     >
-                      ○ Light
-                    </button>
+                      <input
+                        type='radio'
+                        name={`scheme-${theme._id}`}
+                        checked={thisScheme === 'light'}
+                        onChange={() => handleSchemeChange(theme._id, 'light')}
+                        className='h-3 w-3 accent-primary'
+                      />
+                      Light
+                    </label>
                   </div>
                 )}
-              </div>
+              </button>
             )
           })}
         </div>
@@ -220,10 +230,12 @@ export function ThemeBrowser({
         <div className='flex items-center justify-between border-b border-border px-4 py-2'>
           <div className='flex items-center gap-2'>
             <div className={`h-2 w-2 rounded-full ${isReady ? 'bg-green-500' : 'bg-yellow-500'}`} />
-            <span className='font-mono text-[10px] text-muted'>{isReady ? 'Preview connected' : 'Connecting...'}</span>
+            <span className='font-mono text-[10px] text-muted-foreground'>
+              {isReady ? 'Preview connected' : 'Connecting...'}
+            </span>
           </div>
           {selectedTheme && (
-            <span className='font-mono text-[10px] text-muted'>
+            <span className='font-mono text-[10px] text-muted-foreground'>
               {selectedTheme.name} · {selectedScheme}
             </span>
           )}

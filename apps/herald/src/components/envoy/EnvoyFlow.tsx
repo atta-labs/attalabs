@@ -155,12 +155,14 @@ export function EnvoyFlow({ profile }: { profile: CandidateProfile }) {
     return (
       <div className='mx-auto max-w-[680px] px-6 py-12'>
         <header className='mb-8 border-b border-border pb-6'>
-          <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Forensic Match Audit</p>
+          <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+            Forensic Match Audit
+          </p>
           <h1 className='mt-2 font-display text-2xl tracking-tight'>{profile.name}</h1>
-          <p className='mt-0.5 font-mono text-xs text-muted'>{profile.title}</p>
+          <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{profile.title}</p>
         </header>
 
-        <p className='text-sm text-muted'>{error}</p>
+        <p className='text-sm text-muted-foreground'>{error}</p>
 
         <button
           type='button'

@@ -19,12 +19,15 @@ export function TopBar({ username }: { username?: string }) {
               <Link
                 href={`/${username}`}
                 target='_blank'
-                className='font-mono text-xs text-muted transition-colors hover:text-foreground'
+                className='font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
               >
                 /{username} ↗
               </Link>
             )}
-            <Link href='/admin' className='font-mono text-xs text-muted transition-colors hover:text-foreground'>
+            <Link
+              href='/admin'
+              className='font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
+            >
               Dashboard
             </Link>
             <UserButton />

@@ -56,13 +56,13 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
   }
 
   const inputClass =
-    'w-full border border-border bg-card px-3 py-2 font-sans text-sm text-foreground placeholder:text-muted focus:border-foreground/30 focus:outline-none'
-  const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted'
+    'w-full border border-border bg-card px-3 py-2 font-sans text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/30 focus:outline-none'
+  const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
 
   return (
     <div className='space-y-8'>
       <section>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Identity</h2>
+        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Identity</h2>
         <div className='grid grid-cols-2 gap-4'>
           <label>
             <span className={labelClass}>Name</span>
@@ -92,7 +92,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
       </section>
 
       <section>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Summary</h2>
+        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
         <textarea
           className={`${inputClass} min-h-[100px] resize-y`}
           value={form.summary}
@@ -101,7 +101,9 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
       </section>
 
       <section>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Stack (comma-separated)</h2>
+        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+          Stack (comma-separated)
+        </h2>
         <textarea
           className={`${inputClass} min-h-[80px] resize-y`}
           value={form.stack}
@@ -118,7 +120,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
         >
           {saving ? 'Saving...' : 'Save Profile'}
         </button>
-        {saved && <span className='font-mono text-xs text-muted'>Saved</span>}
+        {saved && <span className='font-mono text-xs text-muted-foreground'>Saved</span>}
       </div>
     </div>
   )

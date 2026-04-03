@@ -32,9 +32,9 @@ export function LoadingState({
   return (
     <div className='mx-auto max-w-[680px] px-6 py-12'>
       <header className='mb-8 border-b border-border pb-6'>
-        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Forensic Match Audit</p>
+        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
         <h1 className='mt-2 font-display text-2xl tracking-tight'>{candidateName}</h1>
-        <p className='mt-0.5 font-mono text-xs text-muted'>{candidateTitle}</p>
+        <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{candidateTitle}</p>
       </header>
 
       <div className='space-y-4'>
@@ -49,7 +49,7 @@ export function LoadingState({
             </span>
             <p
               className={`font-mono text-xs transition-opacity duration-500 ${
-                i < activeStep ? 'text-muted' : i === activeStep ? 'text-foreground' : 'text-foreground/20'
+                i < activeStep ? 'text-muted-foreground' : i === activeStep ? 'text-foreground' : 'text-foreground/20'
               }`}
             >
               {step.label}

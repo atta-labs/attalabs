@@ -26,9 +26,9 @@ export function JDInput({
     <div className='mx-auto max-w-[680px] px-6 py-12'>
       {/* ── Candidate Context ── */}
       <header className='mb-8 border-b border-border pb-6'>
-        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted'>Forensic Match Audit</p>
+        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
         <h1 className='mt-2 font-display text-2xl tracking-tight'>{candidateName}</h1>
-        <p className='mt-0.5 font-mono text-xs text-muted'>{candidateTitle}</p>
+        <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{candidateTitle}</p>
       </header>
 
       {/* ── Input ── */}
@@ -39,7 +39,7 @@ export function JDInput({
           placeholder='Paste the job description here. I&#39;ll show you exactly how I fit — and why.'
           rows={10}
           disabled={pending}
-          className='w-full resize-none border border-border bg-card px-4 py-3 font-sans text-sm leading-relaxed text-foreground placeholder:text-muted focus:border-foreground/30 focus:outline-none disabled:opacity-50'
+          className='w-full resize-none border border-border bg-card px-4 py-3 font-sans text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-foreground/30 focus:outline-none disabled:opacity-50'
           onKeyDown={(e) => {
             if (e.key === 'Enter' && e.metaKey) handleSubmit()
           }}
@@ -54,7 +54,7 @@ export function JDInput({
           {pending ? 'Generating...' : 'Generate Audit'}
         </button>
 
-        <p className='mt-2 font-mono text-[10px] text-muted'>Cmd+Enter to submit</p>
+        <p className='mt-2 font-mono text-[10px] text-muted-foreground'>Cmd+Enter to submit</p>
       </div>
     </div>
   )
