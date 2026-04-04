@@ -23,6 +23,14 @@ export const DEFAULT_THEME_CSS = `:root {
   --destructive-foreground: #E8D5B7;
   --popover: #1A1610;
   --popover-foreground: #E8D5B7;
+  --sidebar: #1A1610;
+  --sidebar-foreground: #E8D5B7;
+  --sidebar-primary: #C8A84B;
+  --sidebar-primary-foreground: #0D0B08;
+  --sidebar-accent: #2A2318;
+  --sidebar-accent-foreground: #E8D5B7;
+  --sidebar-border: #2A2318;
+  --sidebar-ring: #C8A84B;
   --radius: 0.5rem;
 }
 `

@@ -1,9 +1,12 @@
 import { ClerkProvider } from '@clerk/nextjs'
 import type { Metadata } from 'next'
-import { DM_Mono, DM_Sans, Playfair_Display } from 'next/font/google'
+import { DM_Mono, DM_Sans, Geist, Playfair_Display } from 'next/font/google'
 
 import { DEFAULT_THEME_CSS } from '@/lib/default-theme'
 import './globals.css'
+import { cn } from '@/lib/utils'
+
+const geist = Geist({ subsets: ['latin'], variable: '--font-sans' })
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -31,7 +34,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang='en' className={`${playfair.variable} ${dmMono.variable} ${dmSans.variable}`}>
+    <html lang='en' className={cn(playfair.variable, dmMono.variable, dmSans.variable, 'font-sans', geist.variable)}>
       <head>
         <style id='herald-default-theme' dangerouslySetInnerHTML={{ __html: DEFAULT_THEME_CSS }} />
       </head>
