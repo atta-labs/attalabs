@@ -1,4 +1,6 @@
+import { createElement } from 'react'
 import { defineField, defineType } from 'sanity'
+import { LibraryPreview } from './library-preview'
 
 export const library = defineType({
   name: 'library',
@@ -39,7 +41,25 @@ export const library = defineType({
       description: 'Display ordering'
     })
   ],
+  orderings: [
+    {
+      title: 'Display Order',
+      name: 'orderAsc',
+      by: [{ field: 'order', direction: 'asc' }]
+    }
+  ],
   preview: {
-    select: { title: 'name', subtitle: 'id' }
+    select: {
+      title: 'name',
+      libraryId: 'id',
+      style: 'style'
+    },
+    prepare({ title, libraryId, style }) {
+      return {
+        title: title || 'Unnamed Library',
+        subtitle: [libraryId, style].filter(Boolean).join(' · '),
+        media: () => createElement(LibraryPreview, { libraryId })
+      }
+    }
   }
 })

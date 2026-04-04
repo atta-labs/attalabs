@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import { defineField, defineType } from 'sanity'
 
 const cssColorField = (name: string, title: string, description?: string) =>
@@ -131,14 +132,46 @@ export const uiTheme = defineType({
   ],
   preview: {
     select: {
-      title: 'name',
-      darkBg: 'dark.background',
-      darkPrimary: 'dark.primary'
+      name: 'name',
+      lightPrimary: 'light.primary',
+      lightBg: 'light.background',
+      darkPrimary: 'dark.primary',
+      darkBg: 'dark.background'
     },
-    prepare({ title, darkBg, darkPrimary }) {
+    prepare({ name, lightPrimary, lightBg, darkPrimary, darkBg }) {
+      const hasColors = darkPrimary || darkBg || lightPrimary || lightBg
+
       return {
-        title: title ?? 'Untitled Theme',
-        subtitle: [darkBg, darkPrimary].filter(Boolean).join(' / ')
+        title: name ?? 'Untitled Theme',
+        subtitle: [darkBg, darkPrimary].filter(Boolean).join(' / '),
+        media: hasColors
+          ? () =>
+              createElement(
+                'div',
+                {
+                  style: {
+                    display: 'flex',
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                    gap: '2px'
+                  }
+                },
+                createElement(
+                  'div',
+                  { style: { flex: 1, display: 'flex' } },
+                  darkPrimary && createElement('div', { key: 'dp', style: { flex: 1, background: darkPrimary } }),
+                  darkBg && createElement('div', { key: 'db', style: { flex: 1, background: darkBg } })
+                ),
+                createElement(
+                  'div',
+                  { style: { flex: 1, display: 'flex' } },
+                  lightPrimary && createElement('div', { key: 'lp', style: { flex: 1, background: lightPrimary } }),
+                  lightBg && createElement('div', { key: 'lb', style: { flex: 1, background: lightBg } })
+                )
+              )
+          : undefined
       }
     }
   }
