@@ -14,6 +14,6 @@ export default async function AdminPage() {
     return <AIOnboarding />
   }
 
-  // Onboarding complete → go to theme browser
-  redirect('/admin/theme')
+  // Onboarding complete → go to UI dashboard
+  redirect('/admin/ui')
 }
