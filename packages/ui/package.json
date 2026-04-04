@@ -2,14 +2,42 @@
   "name": "@herald/ui",
   "version": "0.1.0",
   "private": true,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./libraries/basic/components/index.ts",
+  "types": "./libraries/basic/components/index.ts",
+  "exports": {
+    ".": "./libraries/basic/components/index.ts",
+    "./types": "./types/index.ts",
+    "./types/*": "./types/*.ts",
+    "./components": "./libraries/basic/components/index.ts",
+    "./basic/components": "./libraries/basic/components/index.ts",
+    "./retro/components": "./libraries/retro/components/index.ts",
+    "./animate/components": "./libraries/animate/components/index.ts",
+    "./brutal/components": "./libraries/brutal/components/index.ts",
+    "./shared": "./libraries/shared/index.ts",
+    "./lib/*": "./lib/*.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "validate": "node scripts/validate-ui-contract.mjs",
     "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.7.0",
+    "tailwind-merge": "^3.5.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@herald/typescript-config": "workspace:*",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "typescript": "^5.7.0"
   }
 }

@@ -1,5 +1,5 @@
 {
   "extends": "@herald/typescript-config/base.json",
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": ["types/**/*.ts", "libraries/**/*.ts", "libraries/**/*.tsx", "lib/**/*.ts"],
+  "exclude": ["node_modules", "scripts"]
 }
