@@ -1,7 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { AIOnboarding } from '@/components/portal/AIOnboarding'
-import { EnvoyPreview } from '@/components/portal/EnvoyPreview'
 import { getUserByClerkId } from '@/db/queries'
 
 export default async function AdminPage() {
@@ -15,9 +14,6 @@ export default async function AdminPage() {
     return <AIOnboarding />
   }
 
-  return (
-    <div className='h-full'>
-      <EnvoyPreview username={user.username} />
-    </div>
-  )
+  // Onboarding complete → go to theme browser
+  redirect('/admin/theme')
 }
