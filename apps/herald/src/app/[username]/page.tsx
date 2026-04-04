@@ -8,8 +8,16 @@ import { PreviewThemeListener } from '@/components/theme/PreviewThemeListener'
 import { getUserByUsername } from '@/db/queries'
 import { getGoogleFontsUrl } from '@/lib/font-loader'
 
-export default async function EnvoyPage({ params }: { params: Promise<{ username: string }> }) {
+export default async function EnvoyPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ username: string }>
+  searchParams: Promise<Record<string, string | undefined>>
+}) {
   const { username } = await params
+  const { preview } = await searchParams
+  const isPreview = preview === 'true'
 
   const user = await getUserByUsername(username)
   if (!user) notFound()
@@ -56,8 +64,12 @@ export default async function EnvoyPage({ params }: { params: Promise<{ username
       )}
       {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
       <PreviewThemeListener />
-      <EnvoyFlow profile={profile} />
-      <EnvoyFooter />
+      <div className='flex min-h-screen flex-col'>
+        <div className='flex-1'>
+          <EnvoyFlow profile={profile} />
+        </div>
+        {!isPreview && <EnvoyFooter />}
+      </div>
     </>
   )
 }

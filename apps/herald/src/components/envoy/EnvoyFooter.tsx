@@ -1,4 +1,4 @@
-import { Show } from '@clerk/nextjs'
+import { Show, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
 
 export function EnvoyFooter() {
@@ -9,12 +9,19 @@ export function EnvoyFooter() {
           Herald
         </Link>
         <Show when='signed-in'>
-          <Link
-            href='/admin'
-            className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
-          >
-            Dashboard →
-          </Link>
+          <div className='flex items-center gap-3'>
+            <Link
+              href='/admin'
+              className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
+            >
+              Dashboard →
+            </Link>
+            <UserButton
+              appearance={{
+                elements: { avatarBox: 'h-5 w-5' }
+              }}
+            />
+          </div>
         </Show>
         <Show when='signed-out'>
           <Link
