@@ -8,6 +8,28 @@ export default defineConfig({
   title: 'Herald CMS',
   projectId: 'e9gbd2d1',
   dataset: 'production',
-  plugins: [structureTool(), visionTool()],
+  plugins: [
+    structureTool({
+      structure: (S) =>
+        S.list()
+          .title('Herald Content')
+          .items([
+            S.listItem()
+              .title('Herald Config')
+              .child(S.document().schemaType('heraldConfig').documentId('heraldConfig').title('Herald Config')),
+            S.listItem()
+              .title('User Interface')
+              .child(
+                S.list()
+                  .title('Herald User Interface')
+                  .items([
+                    S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Herald Themes')),
+                    S.listItem().title('Libraries').child(S.documentTypeList('library').title('Herald Libraries'))
+                  ])
+              )
+          ])
+    }),
+    visionTool()
+  ],
   schema: { types: schemaTypes }
 })

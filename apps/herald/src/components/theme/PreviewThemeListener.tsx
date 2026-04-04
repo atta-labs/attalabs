@@ -15,12 +15,17 @@ interface PreviewColorSchemeMessage {
   colorScheme: 'dark' | 'light'
 }
 
-type PreviewMessage = PreviewThemeMessage | PreviewColorSchemeMessage
+interface PreviewLibraryMessage {
+  type: 'PREVIEW_LIBRARY'
+  library: string
+}
+
+type PreviewMessage = PreviewThemeMessage | PreviewColorSchemeMessage | PreviewLibraryMessage
 
 function isPreviewMessage(data: unknown): data is PreviewMessage {
   if (!data || typeof data !== 'object') return false
   const msg = data as { type?: string }
-  return msg.type === 'PREVIEW_THEME' || msg.type === 'PREVIEW_COLOR_SCHEME'
+  return msg.type === 'PREVIEW_THEME' || msg.type === 'PREVIEW_COLOR_SCHEME' || msg.type === 'PREVIEW_LIBRARY'
 }
 
 /**
@@ -42,7 +47,7 @@ export function isPreviewMode(): boolean {
  *
  * Does NOT use next-themes or localStorage — directly manipulates the DOM.
  */
-export function PreviewThemeListener() {
+export function PreviewThemeListener({ onLibraryChange }: { onLibraryChange?: (library: string) => void } = {}) {
   useEffect(() => {
     if (!isPreviewMode()) return
 
@@ -61,6 +66,8 @@ export function PreviewThemeListener() {
         if (currentTheme) {
           applyThemeToDOM(currentTheme, data.colorScheme)
         }
+      } else if (data.type === 'PREVIEW_LIBRARY') {
+        onLibraryChange?.(data.library)
       }
     }
 

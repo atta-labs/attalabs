@@ -7,6 +7,29 @@ import { usePortalPreview } from '@/hooks/usePortalPreview'
 
 type ColorScheme = 'dark' | 'light'
 
+const LIBRARIES = [
+  {
+    id: 'basic',
+    name: 'Standard',
+    style: 'shadow-sm rounded-lg border'
+  },
+  {
+    id: 'retro',
+    name: 'Retro',
+    style: 'border-2 border-foreground shadow-md'
+  },
+  {
+    id: 'animate',
+    name: 'Animated',
+    style: 'shadow-sm rounded-lg border'
+  },
+  {
+    id: 'brutal',
+    name: 'Brutal',
+    style: 'border-2 border-border shadow-[3px_3px_0px_0px_var(--border)]'
+  }
+]
+
 function extractColor(value: unknown): string | undefined {
   if (!value) return undefined
   if (typeof value === 'string') return value
@@ -48,15 +71,16 @@ export function ThemeBrowser({
   themes,
   currentThemeId,
   currentColorScheme,
+  currentLibrary,
   username
 }: {
   themes: CMSTheme[]
   currentThemeId: string | null
   currentColorScheme: ColorScheme
+  currentLibrary: string
   username: string
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(currentThemeId)
-  // Track color scheme per theme
   const [schemeByTheme, setSchemeByTheme] = useState<Record<string, ColorScheme>>(() => {
     const initial: Record<string, ColorScheme> = {}
     if (currentThemeId) initial[currentThemeId] = currentColorScheme
@@ -64,11 +88,11 @@ export function ThemeBrowser({
   })
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
+  const [selectedLibrary, setSelectedLibrary] = useState(currentLibrary)
 
   const selectedTheme = themes.find((t) => t._id === selectedId) ?? null
   const selectedScheme = selectedId ? (schemeByTheme[selectedId] ?? 'dark') : 'dark'
 
-  // Determine which themes have both schemes
   const themeSchemes = useMemo(() => {
     const map: Record<string, { hasDark: boolean; hasLight: boolean }> = {}
     for (const theme of themes) {
@@ -111,13 +135,25 @@ export function ThemeBrowser({
     setSaved(false)
   }
 
+  function handleLibrarySelect(libraryId: string) {
+    setSelectedLibrary(libraryId)
+    setSaved(false)
+    if (isReady) {
+      sendMessage({ type: 'PREVIEW_LIBRARY', library: libraryId })
+    }
+  }
+
   function handlePublish() {
     if (!selectedId) return
     startTransition(async () => {
-      const res = await fetch('/api/admin/theme', {
+      const res = await fetch('/api/admin/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ themeId: selectedId, colorScheme: selectedScheme })
+        body: JSON.stringify({
+          themeId: selectedId,
+          colorScheme: selectedScheme,
+          library: selectedLibrary
+        })
       })
       if (res.ok) {
         setSaved(true)
@@ -126,26 +162,16 @@ export function ThemeBrowser({
     })
   }
 
-  const hasChanges = selectedId !== currentThemeId || selectedScheme !== currentColorScheme
+  const hasChanges =
+    selectedId !== currentThemeId || selectedScheme !== currentColorScheme || selectedLibrary !== currentLibrary
 
   return (
     <div className='flex h-full gap-0'>
       {/* Sidebar — theme list */}
       <div className='flex w-72 flex-shrink-0 flex-col border-r border-border'>
-        <div className='flex items-center justify-between border-b border-border px-4 py-3'>
-          <div>
-            <h2 className='font-display text-lg tracking-tight'>Themes</h2>
-            <p className='font-mono text-[10px] text-muted-foreground'>{themes.length} available</p>
-          </div>
-          {/* Publish button */}
-          <button
-            type='button'
-            onClick={handlePublish}
-            disabled={!hasChanges || isPending}
-            className='rounded bg-accent px-3 py-1.5 font-mono text-[10px] font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-30'
-          >
-            {isPending ? 'Saving...' : saved ? 'Saved!' : 'Publish'}
-          </button>
+        <div className='border-b border-border px-4 py-3'>
+          <h2 className='font-display text-lg tracking-tight'>Themes</h2>
+          <p className='font-mono text-[10px] text-muted-foreground'>{themes.length} available</p>
         </div>
 
         <div className='flex-1 overflow-y-auto'>
@@ -181,7 +207,6 @@ export function ThemeBrowser({
                   </span>
                   {isApplied && <div className='h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent' />}
                 </div>
-                {/* Dark/Light radio buttons — always visible when theme has both */}
                 {hasBoth && (
                   <div
                     role='radiogroup'
@@ -223,6 +248,32 @@ export function ThemeBrowser({
             )
           })}
         </div>
+
+        {/* Libraries — fixed bottom */}
+        <div className='border-t border-border px-4 py-3'>
+          <div className='mb-2'>
+            <h2 className='font-display text-lg tracking-tight'>Libraries</h2>
+            <p className='font-mono text-[10px] text-muted-foreground'>4 styles</p>
+          </div>
+          <div className='grid grid-cols-2 gap-2'>
+            {LIBRARIES.map((lib) => {
+              const isActive = selectedLibrary === lib.id
+              return (
+                <button
+                  key={lib.id}
+                  type='button'
+                  onClick={() => handleLibrarySelect(lib.id)}
+                  className={`px-3 py-2 text-left transition-all ${lib.style} ${
+                    isActive ? 'ring-1 ring-accent bg-card' : 'bg-card/30 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <p className='font-mono text-[10px] font-medium'>{lib.name}</p>
+                  {isActive && <div className='mt-1 h-0.5 w-5 bg-accent' />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Preview — iframe */}
@@ -234,11 +285,21 @@ export function ThemeBrowser({
               {isReady ? 'Preview connected' : 'Connecting...'}
             </span>
           </div>
-          {selectedTheme && (
-            <span className='font-mono text-[10px] text-muted-foreground'>
-              {selectedTheme.name} · {selectedScheme}
-            </span>
-          )}
+          <div className='flex items-center gap-3'>
+            {selectedTheme && (
+              <span className='font-mono text-[10px] text-muted-foreground'>
+                {selectedTheme.name} · {selectedScheme}
+              </span>
+            )}
+            <button
+              type='button'
+              onClick={handlePublish}
+              disabled={!hasChanges || isPending}
+              className='rounded bg-accent px-3 py-1.5 font-mono text-[10px] font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-30'
+            >
+              {isPending ? 'Saving...' : saved ? 'Saved!' : 'Publish'}
+            </button>
+          </div>
         </div>
 
         <div className='flex-1 bg-black/50'>

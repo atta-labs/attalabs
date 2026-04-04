@@ -1,11 +1,12 @@
 import type { ColorScheme } from '@herald/cms'
-
 import { cmsClient, generateThemeCSSForScheme, getThemeById } from '@herald/cms'
 import { notFound } from 'next/navigation'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
 import { EnvoyFooter } from '@/components/envoy/EnvoyFooter'
+import { LibraryProvider } from '@/components/providers/LibraryProvider'
 import { PreviewThemeListener } from '@/components/theme/PreviewThemeListener'
 import { getUserByUsername } from '@/db/queries'
+import type { UILibrary } from '@/hooks/useLibraryLoader'
 import { getGoogleFontsUrl } from '@/lib/font-loader'
 
 export default async function EnvoyPage({
@@ -53,6 +54,8 @@ export default async function EnvoyPage({
     }
   }
 
+  const userLibrary = (user.library ?? 'basic') as UILibrary
+
   return (
     <>
       {fontsUrl && (
@@ -64,12 +67,14 @@ export default async function EnvoyPage({
       )}
       {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
       <PreviewThemeListener />
-      <div className='flex min-h-screen flex-col'>
-        <div className='flex-1'>
-          <EnvoyFlow profile={profile} />
+      <LibraryProvider library={userLibrary}>
+        <div className='flex min-h-screen flex-col'>
+          <div className='flex-1'>
+            <EnvoyFlow profile={profile} />
+          </div>
+          {!isPreview && <EnvoyFooter />}
         </div>
-        {!isPreview && <EnvoyFooter />}
-      </div>
+      </LibraryProvider>
     </>
   )
 }

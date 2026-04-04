@@ -60,6 +60,24 @@ export const FIELD_TO_CSS_VAR: Record<string, string> = {
   gradientCard: 'gradient-card'
 }
 
+export interface CMSLibrary {
+  _id: string
+  id: string
+  name: string
+  description?: string
+  style?: string
+  order?: number
+}
+
+export interface HeraldConfig {
+  _id: string
+  userInterface: {
+    theme: CMSTheme | null
+    colorScheme: ColorScheme
+    library: CMSLibrary | null
+  }
+}
+
 export const SHADOW_TO_CSS_VAR: Record<string, string> = {
   shadow2xs: 'shadow-2xs',
   shadowXs: 'shadow-xs',

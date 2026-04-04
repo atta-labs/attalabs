@@ -61,15 +61,16 @@ export async function createUser(data: {
   }
 }
 
-export async function updateUserTheme(clerkId: string, themeId: string, colorScheme = 'dark') {
+export async function updateUserUI(clerkId: string, ui: { themeId: string; colorScheme: string; library: string }) {
   await db
     .update(schema.users)
-    .set({ themeId, colorScheme, updatedAt: new Date() })
+    .set({
+      themeId: ui.themeId,
+      colorScheme: ui.colorScheme,
+      library: ui.library,
+      updatedAt: new Date()
+    })
     .where(eq(schema.users.clerkId, clerkId))
-}
-
-export async function updateUserLibrary(clerkId: string, library: string) {
-  await db.update(schema.users).set({ library, updatedAt: new Date() }).where(eq(schema.users.clerkId, clerkId))
 }
 
 export async function updateUser(

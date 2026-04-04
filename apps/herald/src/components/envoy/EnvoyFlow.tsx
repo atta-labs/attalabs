@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useComponents } from '@/components/providers/LibraryProvider'
 import type { MatchReport } from '@/lib/types'
 import { JDInput } from './JDInput'
 import { LoadingState } from './LoadingState'
@@ -21,6 +22,7 @@ interface CandidateProfile {
 type FlowState = 'input' | 'loading' | 'result' | 'error'
 
 function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
+  const { Button } = useComponents()
   const [copied, setCopied] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -45,20 +47,40 @@ function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
     timerRef.current = setTimeout(() => setCopied(false), 1500)
   }
 
-  const btnClass =
+  const fallbackClass =
     'border border-foreground/20 bg-foreground/5 px-6 py-2 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
 
   return (
     <div className='sticky bottom-0 mx-auto flex max-w-[680px] gap-3 border-t border-border/50 bg-background/80 px-6 py-4 backdrop-blur-sm no-print'>
-      <button type='button' onClick={handleCopy} className={btnClass}>
-        {copied ? 'Copied!' : 'Copy Link'}
-      </button>
-      <button type='button' onClick={() => window.print()} className={btnClass}>
-        Export PDF
-      </button>
-      <button type='button' onClick={onNewAudit} className={btnClass}>
-        New Audit
-      </button>
+      {Button ? (
+        <>
+          <Button onClick={handleCopy} variant='outline' className='font-mono text-xs uppercase tracking-[0.2em]'>
+            {copied ? 'Copied!' : 'Copy Link'}
+          </Button>
+          <Button
+            onClick={() => window.print()}
+            variant='outline'
+            className='font-mono text-xs uppercase tracking-[0.2em]'
+          >
+            Export PDF
+          </Button>
+          <Button onClick={onNewAudit} variant='outline' className='font-mono text-xs uppercase tracking-[0.2em]'>
+            New Audit
+          </Button>
+        </>
+      ) : (
+        <>
+          <button type='button' onClick={handleCopy} className={fallbackClass}>
+            {copied ? 'Copied!' : 'Copy Link'}
+          </button>
+          <button type='button' onClick={() => window.print()} className={fallbackClass}>
+            Export PDF
+          </button>
+          <button type='button' onClick={onNewAudit} className={fallbackClass}>
+            New Audit
+          </button>
+        </>
+      )}
     </div>
   )
 }
@@ -67,6 +89,7 @@ const ANIMATION_DURATION = 5000
 const API_TIMEOUT = 25000
 
 export function EnvoyFlow({ profile }: { profile: CandidateProfile }) {
+  const { Button } = useComponents()
   const [state, setState] = useState<FlowState>('input')
   const [report, setReport] = useState<MatchReport | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -164,13 +187,19 @@ export function EnvoyFlow({ profile }: { profile: CandidateProfile }) {
 
         <p className='text-sm text-muted-foreground'>{error}</p>
 
-        <button
-          type='button'
-          onClick={handleRetry}
-          className='mt-4 border border-foreground/20 bg-foreground/5 px-6 py-2 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
-        >
-          Try Again
-        </button>
+        {Button ? (
+          <Button onClick={handleRetry} variant='outline' className='mt-4 font-mono text-xs uppercase tracking-[0.2em]'>
+            Try Again
+          </Button>
+        ) : (
+          <button
+            type='button'
+            onClick={handleRetry}
+            className='mt-4 border border-foreground/20 bg-foreground/5 px-6 py-2 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
+          >
+            Try Again
+          </button>
+        )}
       </div>
     )
   }
