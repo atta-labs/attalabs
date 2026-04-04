@@ -14,6 +14,7 @@ export const users = pgTable('users', {
   experience: text('experience').notNull().default('[]'), // JSON array stored as text
   themeId: varchar('theme_id', { length: 255 }),
   colorScheme: varchar('color_scheme', { length: 10 }).default('dark'),
+  library: varchar('library', { length: 50 }).default('basic'),
   onboardingComplete: boolean('onboarding_complete').notNull().default(false),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()

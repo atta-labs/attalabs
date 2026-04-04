@@ -68,6 +68,10 @@ export async function updateUserTheme(clerkId: string, themeId: string, colorSch
     .where(eq(schema.users.clerkId, clerkId))
 }
 
+export async function updateUserLibrary(clerkId: string, library: string) {
+  await db.update(schema.users).set({ library, updatedAt: new Date() }).where(eq(schema.users.clerkId, clerkId))
+}
+
 export async function updateUser(
   clerkId: string,
   data: {

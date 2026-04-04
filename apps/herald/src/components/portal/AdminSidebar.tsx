@@ -39,7 +39,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: <span className='text-sm'>◐</span>,
     children: [
       { href: '/admin/theme', label: 'Themes' },
-      { href: '/admin/libraries', label: 'Libraries', comingSoon: true }
+      { href: '/admin/libraries', label: 'Libraries' }
     ]
   }
 ]
