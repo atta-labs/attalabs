@@ -15,6 +15,7 @@ export const users = pgTable('users', {
   themeId: varchar('theme_id', { length: 255 }),
   colorScheme: varchar('color_scheme', { length: 10 }).default('dark'),
   library: varchar('library', { length: 50 }).default('basic'),
+  fontSans: varchar('font_sans', { length: 255 }),
   onboardingComplete: boolean('onboarding_complete').notNull().default(false),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()

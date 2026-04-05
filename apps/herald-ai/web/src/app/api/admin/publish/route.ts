@@ -9,7 +9,12 @@ export async function POST(request: Request) {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = (await request.json()) as { themeId?: string; colorScheme?: string; library?: string }
+  const body = (await request.json()) as {
+    themeId?: string
+    colorScheme?: string
+    library?: string
+    fontSans?: string | null
+  }
 
   if (!body.themeId || typeof body.themeId !== 'string') {
     return NextResponse.json({ error: 'themeId required' }, { status: 400 })
@@ -24,7 +29,8 @@ export async function POST(request: Request) {
   await updateUserUI(userId, {
     themeId: body.themeId,
     colorScheme: body.colorScheme,
-    library: body.library
+    library: body.library,
+    fontSans: body.fontSans
   })
 
   return NextResponse.json({ ok: true })

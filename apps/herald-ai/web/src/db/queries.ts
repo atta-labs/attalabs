@@ -61,13 +61,17 @@ export async function createUser(data: {
   }
 }
 
-export async function updateUserUI(clerkId: string, ui: { themeId: string; colorScheme: string; library: string }) {
+export async function updateUserUI(
+  clerkId: string,
+  ui: { themeId: string; colorScheme: string; library: string; fontSans?: string | null }
+) {
   await db
     .update(schema.users)
     .set({
       themeId: ui.themeId,
       colorScheme: ui.colorScheme,
       library: ui.library,
+      fontSans: ui.fontSans !== undefined ? ui.fontSans : undefined,
       updatedAt: new Date()
     })
     .where(eq(schema.users.clerkId, clerkId))
