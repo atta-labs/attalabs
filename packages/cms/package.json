@@ -11,6 +11,7 @@
   "scripts": {
     "studio": "sanity dev --port 3333",
     "studio:deploy": "sanity deploy",
+    "migrate:herald-to-product": "bun run ./scripts/migrate-herald-to-product.ts",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo"
   },
