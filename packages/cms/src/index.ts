@@ -1,4 +1,4 @@
-// @herald/cms — Sanity CMS client, types, queries, and theme utilities
+// @atta/cms — Sanity CMS client, types, queries, and theme utilities
 
 // Client
 export { cmsClient, cmsConfig, cmsWriteClient, createCmsClient } from './client'

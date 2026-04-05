@@ -8,10 +8,10 @@ export type UILibrary = 'basic' | 'animate' | 'retro' | 'brutal'
 export type ComponentMap = Record<string, ComponentType<any>>
 
 const LIBRARY_IMPORTERS: Record<UILibrary, () => Promise<Record<string, unknown>>> = {
-  basic: () => import('@herald/ui/basic/components'),
-  animate: () => import('@herald/ui/animate/components'),
-  retro: () => import('@herald/ui/retro/components'),
-  brutal: () => import('@herald/ui/brutal/components')
+  basic: () => import('@atta/ui/basic/components'),
+  animate: () => import('@atta/ui/animate/components'),
+  retro: () => import('@atta/ui/retro/components'),
+  brutal: () => import('@atta/ui/brutal/components')
 }
 
 /**

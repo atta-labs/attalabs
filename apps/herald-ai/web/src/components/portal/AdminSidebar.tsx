@@ -1,6 +1,5 @@
 'use client'
 
-import { useClerk, useUser } from '@clerk/nextjs'
 import {
   SidebarContent,
   SidebarGroup,
@@ -9,7 +8,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider
-} from '@herald/ui/components/sidebar'
+} from '@atta/ui/components/sidebar'
+import { useClerk, useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 

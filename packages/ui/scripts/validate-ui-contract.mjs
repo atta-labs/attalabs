@@ -57,8 +57,8 @@ function parseExports(filePath, visited = new Set()) {
     let resolved
     if (importPath.startsWith('.')) {
       resolved = resolve(dirname(filePath), importPath)
-    } else if (importPath.startsWith('@herald/ui/')) {
-      resolved = resolve(uiRoot, importPath.replace('@herald/ui/', ''))
+    } else if (importPath.startsWith('@atta/ui/')) {
+      resolved = resolve(uiRoot, importPath.replace('@atta/ui/', ''))
     }
     if (resolved) {
       const sub = parseExports(resolved, visited)
@@ -74,8 +74,8 @@ function parseExports(filePath, visited = new Set()) {
     let resolved
     if (importPath.startsWith('.')) {
       resolved = resolve(dirname(filePath), importPath)
-    } else if (importPath.startsWith('@herald/ui/')) {
-      resolved = resolve(uiRoot, importPath.replace('@herald/ui/', ''))
+    } else if (importPath.startsWith('@atta/ui/')) {
+      resolved = resolve(uiRoot, importPath.replace('@atta/ui/', ''))
     }
     if (resolved) {
       const sub = parseExports(resolved, visited)

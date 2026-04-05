@@ -6,7 +6,7 @@
  * Adapted from Summon's portal theme utils.
  */
 
-import { cssColorToOklch } from '@herald/cms/utils/oklch'
+import { cssColorToOklch } from '@atta/cms/utils/oklch'
 import { loadThemeFonts } from '@/lib/font-loader'
 
 export interface ThemeData {

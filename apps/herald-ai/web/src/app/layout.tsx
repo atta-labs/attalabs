@@ -1,6 +1,6 @@
+import type { ColorScheme } from '@atta/cms'
+import { cmsClient, generateThemeCSSForScheme, getHeraldConfig } from '@atta/cms'
 import { ClerkProvider } from '@clerk/nextjs'
-import type { ColorScheme } from '@herald/cms'
-import { cmsClient, generateThemeCSSForScheme, getHeraldConfig } from '@herald/cms'
 import type { Metadata } from 'next'
 import { DM_Mono, DM_Sans, Geist, Playfair_Display } from 'next/font/google'
 

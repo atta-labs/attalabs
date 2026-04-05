@@ -1,5 +1,5 @@
+import { cmsClient, getThemes } from '@atta/cms'
 import { auth } from '@clerk/nextjs/server'
-import { cmsClient, getThemes } from '@herald/cms'
 import { redirect } from 'next/navigation'
 import { ThemeBrowser } from '@/components/portal/ThemeBrowser'
 import { getUserByClerkId } from '@/db/queries'

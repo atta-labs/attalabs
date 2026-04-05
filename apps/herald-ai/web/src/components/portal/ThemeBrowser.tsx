@@ -1,6 +1,6 @@
 'use client'
 
-import type { CMSTheme } from '@herald/cms'
+import type { CMSTheme } from '@atta/cms'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import type { ThemeData } from '@/components/theme/utils'
 import { usePortalPreview } from '@/hooks/usePortalPreview'

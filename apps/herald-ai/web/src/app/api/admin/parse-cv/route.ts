@@ -1,5 +1,5 @@
+import { parseCv } from '@atta/herald-ai-mcp'
 import { auth } from '@clerk/nextjs/server'
-import { parseCv } from '@herald/mcp'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {

@@ -1,5 +1,5 @@
-import type { ColorScheme } from '@herald/cms'
-import { cmsClient, generateThemeCSSForScheme, getThemeById } from '@herald/cms'
+import type { ColorScheme } from '@atta/cms'
+import { cmsClient, generateThemeCSSForScheme, getThemeById } from '@atta/cms'
 import { notFound } from 'next/navigation'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
 import { EnvoyFooter } from '@/components/envoy/EnvoyFooter'
