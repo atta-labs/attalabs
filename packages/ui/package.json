@@ -1,5 +1,5 @@
 {
-  "name": "@herald/ui",
+  "name": "@atta/ui",
   "version": "0.1.0",
   "private": true,
   "main": "./libraries/basic/components/index.ts",
@@ -38,7 +38,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@herald/typescript-config": "workspace:*",
+    "@atta/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "typescript": "^5.7.0"

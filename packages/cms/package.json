@@ -1,5 +1,5 @@
 {
-  "name": "@herald/cms",
+  "name": "@atta/cms",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
@@ -15,7 +15,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "devDependencies": {
-    "@herald/typescript-config": "workspace:*",
+    "@atta/typescript-config": "workspace:*",
     "typescript": "^5.7.0"
   },
   "dependencies": {

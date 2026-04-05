@@ -1,14 +1,22 @@
 {
-  "name": "herald",
+  "name": "atta-ai",
   "private": true,
   "packageManager": "bun@1.2.4",
   "workspaces": [
-    "apps/*",
+    "apps/*/*",
     "packages/*"
   ],
   "scripts": {
     "dev": "turbo dev",
+    "dev:herald": "turbo dev --filter=@atta/herald-ai-web",
+    "dev:vitakka": "turbo dev --filter=@atta/vitakka-ai-web",
+    "dev:vada": "turbo dev --filter=@atta/vada-ai-web",
+    "dev:atta": "turbo dev --filter=@atta/atta-ai-web",
     "build": "turbo build",
+    "build:herald": "turbo build --filter=@atta/herald-ai-web",
+    "build:vitakka": "turbo build --filter=@atta/vitakka-ai-web",
+    "build:vada": "turbo build --filter=@atta/vada-ai-web",
+    "build:atta": "turbo build --filter=@atta/atta-ai-web",
     "typecheck": "turbo typecheck",
     "lint": "biome lint .",
     "lint:fix": "biome lint --fix .",
@@ -17,7 +25,6 @@
     "format-and-lint": "biome check .",
     "format-and-lint:fix": "biome check --fix .",
     "check": "turbo typecheck && biome check .",
-    "test:match": "bun test tests/match-engine.test.ts",
     "clean": "turbo clean",
     "prepare": "husky"
   },

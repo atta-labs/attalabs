@@ -1,5 +1,5 @@
 {
-  "extends": "@herald/typescript-config/base.json",
+  "extends": "@atta/typescript-config/base.json",
   "include": ["src/**/*.ts", "schemas/**/*.ts", "sanity.config.ts", "sanity.cli.ts"],
   "exclude": ["node_modules"]
 }
