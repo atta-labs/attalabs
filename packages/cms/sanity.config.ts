@@ -3,12 +3,15 @@ import { defineConfig } from 'sanity'
 import { structureTool } from 'sanity/structure'
 import { schemaTypes } from './schemas'
 
-const isAtta = process.env.SANITY_STUDIO_PRODUCT === 'atta'
+const product = process.env.SANITY_STUDIO_PRODUCT
+const isAtta = product === 'atta'
+const isVada = product === 'vada'
 
 export default defineConfig({
-  name: isAtta ? 'atta' : 'herald',
-  title: isAtta ? 'Atta CMS' : 'Herald CMS',
-  projectId: process.env.SANITY_STUDIO_PROJECT_ID || (isAtta ? '892o2m9f' : 'e9gbd2d1'),
+  name: isAtta ? 'atta' : isVada ? 'vada' : 'herald',
+  title: isAtta ? 'Atta CMS' : isVada ? 'Vada CMS' : 'Herald CMS',
+  projectId:
+    process.env.SANITY_STUDIO_PROJECT_ID || (isAtta ? '892o2m9f' : isVada ? '28r5u68w' : 'e9gbd2d1'),
   dataset: process.env.SANITY_STUDIO_DATASET || 'production',
   plugins: [
     structureTool({
@@ -31,7 +34,27 @@ export default defineConfig({
                       ])
                   )
               ])
-          : S.list()
+          : isVada
+            ? S.list()
+                .title('Vada Content')
+                .items([
+                  S.listItem()
+                    .title('Vada Config')
+                    .child(S.document().schemaType('vadaConfig').documentId('vadaConfig').title('Vada Config')),
+                  S.listItem()
+                    .title('User Interface')
+                    .child(
+                      S.list()
+                        .title('Vada User Interface')
+                        .items([
+                          S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Vada Themes')),
+                          S.listItem()
+                            .title('Libraries')
+                            .child(S.documentTypeList('library').title('Vada Libraries'))
+                        ])
+                    )
+                ])
+            : S.list()
               .title('Herald Content')
               .items([
                 S.listItem()

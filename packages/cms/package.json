@@ -11,8 +11,10 @@
   "scripts": {
     "studio": "sanity dev --port 3333",
     "studio:atta": "SANITY_STUDIO_PRODUCT=atta sanity dev --port 3334",
+    "studio:vada": "SANITY_STUDIO_PRODUCT=vada sanity dev --port 3335",
     "studio:deploy": "sanity deploy",
     "studio:deploy:atta": "SANITY_STUDIO_PRODUCT=atta sanity deploy",
+    "studio:deploy:vada": "SANITY_STUDIO_PRODUCT=vada sanity deploy",
     "migrate:herald-to-product": "bun run ./scripts/migrate-herald-to-product.ts",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo"
