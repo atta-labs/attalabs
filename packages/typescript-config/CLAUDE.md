@@ -1,6 +1,6 @@
 # TypeScript Config — Claude Code Instructions
 
-Shared TypeScript configurations for the Herald monorepo. This package provides base configs that all other packages and apps extend.
+Shared TypeScript configurations for the Atta AI monorepo. This package provides base configs that all other packages and apps extend.
 
 Provides base configs that all other packages and apps extend.
 
@@ -44,7 +44,7 @@ Every package and app in the monorepo extends these configs. A change here affec
 ```json
 // packages/*/tsconfig.json
 {
-  "extends": "@herald/typescript-config/base.json",
+  "extends": "@atta/typescript-config/base.json",
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules"]
 }
@@ -53,7 +53,7 @@ Every package and app in the monorepo extends these configs. A change here affec
 ```json
 // apps/herald/tsconfig.json
 {
-  "extends": "@herald/typescript-config/nextjs.json",
+  "extends": "@atta/typescript-config/nextjs.json",
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"]

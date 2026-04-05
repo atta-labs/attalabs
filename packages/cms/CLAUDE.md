@@ -1,6 +1,6 @@
 # CMS Package — Claude Code Instructions
 
-Sanity CMS schemas, configuration, and client for Herald. This package owns all content management — candidate profiles, themes, page configs, and asset references.
+Sanity CMS schemas, configuration, and client for Atta AI. This package owns all content management — candidate profiles, themes, page configs, and asset references.
 
 ---
 
@@ -53,11 +53,11 @@ Never use raw Sanity client calls in app code. All reads go through typed query 
 
 ```tsx
 // ✅ Good — typed query from CMS package
-import { getProfile } from '@herald/cms/queries/profile'
+import { getProfile } from '@atta/cms/queries/profile'
 const profile = await getProfile('dani')
 
 // ❌ Bad — raw client call in app code
-import { client } from '@herald/cms/client'
+import { client } from '@atta/cms/client'
 const profile = await client.fetch('*[_type == "profile"]')
 ```
 
@@ -106,5 +106,3 @@ Sanity Documents (live preview via postMessage)
 ## Related Documentation
 
 - [Root CLAUDE.md](../../CLAUDE.md) — Monorepo routing index
-- [HERALD-BUILD-SPEC.md Section 05](../../HERALD-BUILD-SPEC.md) — Admin Dashboard (Sanity integration)
-- [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) — "Why Sanity CMS" decision

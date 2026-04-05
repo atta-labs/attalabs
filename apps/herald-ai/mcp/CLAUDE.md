@@ -1,6 +1,6 @@
 # MCP Package — Claude Code Instructions
 
-MCP (Model Context Protocol) tool handlers for Herald. Contains the CV parser, match engine types, and prompts that power the platform.
+MCP (Model Context Protocol) tool handlers for Herald AI. Contains the CV parser, match engine types, and prompts that power the platform.
 
 v1 uses Vercel AI SDK tool handlers. The package is structured for future extraction to a standalone MCP server with stdio/SSE transport.
 
@@ -9,7 +9,7 @@ v1 uses Vercel AI SDK tool handlers. The package is structured for future extrac
 ## Architecture
 
 ```
-packages/mcp/
+apps/herald-ai/mcp/
 ├── src/
 │   ├── tools/
 │   │   └── parse-cv.ts          # CV text → structured CandidateProfile via Claude Haiku
@@ -34,7 +34,7 @@ packages/mcp/
 **Model:** Claude Haiku (fast, cheap — CV parsing doesn't need Sonnet)
 **Prompt:** Verbatim from `src/prompts/cv-parser.ts`
 
-Used by: `apps/herald/src/app/api/admin/parse-cv/route.ts`
+Used by: `apps/herald-ai/web/src/app/api/admin/parse-cv/route.ts`
 
 ---
 
@@ -92,10 +92,11 @@ The prompt in `src/prompts/cv-parser.ts` extracts only what is explicitly stated
 
 - `@ai-sdk/anthropic` — Anthropic provider
 - `ai` — Vercel AI SDK
+- `@atta/typescript-config` — Shared TypeScript config
 
 ---
 
 ## Related Documentation
 
-- [Root CLAUDE.md](../../CLAUDE.md) — Monorepo routing index
-- [HERALD-BUILD-SPEC.md](../../HERALD-BUILD-SPEC.md) — Build specification
+- [Root CLAUDE.md](../../../CLAUDE.md) — Monorepo routing index
+- [BUILD-SPEC.md](../web/docs/BUILD-SPEC.md) — Build specification

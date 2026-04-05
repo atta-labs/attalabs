@@ -1,4 +1,4 @@
-# @herald/mcp
+# @atta/herald-ai-mcp
 
 MCP (Model Context Protocol) tool handlers for Herald. Contains the match engine, GitHub signal detection, and profile tools that power forensic audit reports.
 
@@ -17,8 +17,8 @@ MCP (Model Context Protocol) tool handlers for Herald. Contains the match engine
 ## Usage
 
 ```tsx
-import { detectGitHubSignals } from '@herald/mcp/tools/github-signals'
-import type { MatchReport } from '@herald/mcp/types'
+import { detectGitHubSignals } from '@atta/herald-ai-mcp/tools/github-signals'
+import type { MatchReport } from '@atta/herald-ai-mcp/types'
 
 const signals = await detectGitHubSignals('daniboomerang')
 ```

@@ -1,4 +1,4 @@
-# @herald/web
+# @atta/herald-ai-web
 
 The main Herald application — a Next.js 15 app serving both the **Portal** (marketing + onboarding + admin) and the **Envoy** (deployed candidate pages).
 

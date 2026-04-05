@@ -1,6 +1,6 @@
-# @herald/cms
+# @atta/cms
 
-Sanity CMS schemas, configuration, and typed queries for the Herald platform.
+Sanity CMS schemas, configuration, and typed queries for the Atta AI platform.
 
 ## Status
 
@@ -18,8 +18,8 @@ Sanity CMS schemas, configuration, and typed queries for the Herald platform.
 ## Usage (Step 5+)
 
 ```tsx
-import { getProfile } from '@herald/cms/queries/profile'
-import { getTheme } from '@herald/cms/queries/theme'
+import { getProfile } from '@atta/cms/queries/profile'
+import { getTheme } from '@atta/cms/queries/theme'
 
 const profile = await getProfile('dani')
 const theme = await getTheme(profile.themeId)

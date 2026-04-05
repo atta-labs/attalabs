@@ -9,7 +9,7 @@ Pattern: Portal + Onboarding + Admin merged into one codebase.
 ## Architecture
 
 ```
-apps/herald/
+apps/herald-ai/web/
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx                # Landing page (always public)
@@ -32,7 +32,7 @@ apps/herald/
 │   │   │       │   └── route.ts
 │   │   │       ├── onboarding/        # POST — save onboarded profile to DB
 │   │   │       │   └── route.ts
-│   │   │       ├── parse-cv/          # POST — upload CV, extract profile via @herald/mcp
+│   │   │       ├── parse-cv/          # POST — upload CV, extract profile via @atta/herald-ai-mcp
 │   │   │       │   └── route.ts
 │   │   │       ├── check-username/    # GET — check username availability
 │   │   │       │   └── route.ts
@@ -93,7 +93,7 @@ The onboarding chat at `/admin` uses:
 - `streamText` on the server with Claude Haiku
 - `useChat` on the client with `DefaultChatTransport`
 - 4 tools: `check_username`, `verify_github`, `request_cv_upload`, `complete_onboarding`
-- CV parsing via `@herald/mcp` package (`parseCv` tool)
+- CV parsing via `@atta/herald-ai-mcp` package (`parseCv` tool)
 
 ### RULE #4: Envoy components are separate from Portal components
 
@@ -119,7 +119,7 @@ Theme tokens as CSS variables in `globals.css`. No hardcoded hex values in compo
 | `/api/mcp/signals` | GET | GitHub signal detection for a username |
 | `/api/admin/onboarding-chat` | POST | AI onboarding conversation (streaming) |
 | `/api/admin/onboarding` | POST | Save onboarded profile to DB |
-| `/api/admin/parse-cv` | POST | Upload CV → extract profile via @herald/mcp |
+| `/api/admin/parse-cv` | POST | Upload CV → extract profile via @atta/herald-ai-mcp |
 | `/api/admin/check-username` | GET | Check username availability |
 | `/api/admin/profile` | POST | Update profile from dashboard |
 
@@ -163,6 +163,42 @@ GITHUB_TOKEN=                # Higher GitHub API rate limits
 
 ## Related Documentation
 
-- [Root CLAUDE.md](../../CLAUDE.md) — Monorepo routing index
-- [HERALD-BUILD-SPEC.md](../../HERALD-BUILD-SPEC.md) — Complete build specification
-- [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) — Architecture decisions
+- [Root CLAUDE.md](../../../CLAUDE.md) — Monorepo routing index
+- [BUILD-SPEC.md](docs/BUILD-SPEC.md) — Complete build specification
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Architecture decisions
+
+---
+
+## Herald API Conventions
+
+### The Skeptical Auditor
+
+- The system prompt in `src/lib/prompts.ts` is **verbatim** from BUILD-SPEC.md Section 08
+- Do NOT modify it without explicit instruction from the user
+- Zero marketing language in any AI output
+- Every claim must reference a detectable signal
+- Gaps are always honest, always paired with mitigation
+
+### Match API (`POST /api/match`)
+
+- Input: `{ job_description: string }` — frontend sends ONLY the JD
+- Server-side: fetches GitHub signals, merges with profile, calls Claude
+- Model: Claude Sonnet via Vercel AI SDK (`@ai-sdk/anthropic`)
+- LLM timeout: 25s with partial report fallback
+- Signal fetch: 3s timeout, degrades gracefully to empty signals
+- Caching: hash(JD + profile) → in-memory 24h
+- Parse + retry once on malformed JSON response
+- Never show a spinner of death — always degrade gracefully
+
+### Signal API (`GET /api/mcp/signals?username=[handle]`)
+
+- Uses GITHUB_PAT for authentication (personal + org + private repos)
+- Identity-filtered: commits by author, PRs by author
+- Returns `RawSignal[]` with audit tone (Detected/Observed/Confirmed)
+- No code leakage, no LLM interpretation — raw facts only
+
+### Rate Limiting
+
+- 5 match reports per IP per hour (Upstash Redis)
+- Applied in middleware, not in individual route handlers
+- Error message: "You've run several audits recently. Try again in an hour."

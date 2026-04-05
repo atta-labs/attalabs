@@ -1,8 +1,8 @@
-# UI Patterns — Herald
+# UI Patterns — Atta AI
 
 ## Theme: Minimal Dark Editorial
 
-All UI must follow the Minimal Dark theme defined in HERALD-BUILD-SPEC.md Section 07.
+All UI must follow the Minimal Dark theme defined in the relevant product BUILD-SPEC.md.
 
 ### Color Tokens
 

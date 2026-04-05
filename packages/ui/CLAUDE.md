@@ -1,8 +1,8 @@
 # UI Package — Claude Code Instructions
 
-Shared UI component library for Herald. Built on shadcn/ui + Tailwind CSS v4 + lucide-react.
+Shared UI component library for Atta AI. Built on shadcn/ui + Tailwind CSS v4 + lucide-react.
 
-Herald uses a single component set with runtime theme switching via CSS variables.
+Atta AI uses a single component set with runtime theme switching via CSS variables.
 
 ---
 
@@ -96,12 +96,12 @@ These are the CSS variable values for the launch theme. Defined in the app's `gl
 
 ---
 
-## How to Import (from apps/herald)
+## How to Import
 
 ```tsx
-import { Button } from '@herald/ui/components/button'
-import { Card, CardHeader, CardContent } from '@herald/ui/components/card'
-import { Badge } from '@herald/ui/components/badge'
+import { Button } from '@atta/ui/components/button'
+import { Card, CardHeader, CardContent } from '@atta/ui/components/card'
+import { Badge } from '@atta/ui/components/badge'
 ```
 
 ---
@@ -109,5 +109,4 @@ import { Badge } from '@herald/ui/components/badge'
 ## Related Documentation
 
 - [Root CLAUDE.md](../../CLAUDE.md) — Monorepo routing index
-- [HERALD-BUILD-SPEC.md Section 10](../../HERALD-BUILD-SPEC.md) — Full UI/UX requirements and theme tokens
 - [.claude/rules/ui-patterns.md](../../.claude/rules/ui-patterns.md) — UI coding rules (loaded when editing .tsx files)

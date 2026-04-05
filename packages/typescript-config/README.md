@@ -1,6 +1,6 @@
-# @herald/typescript-config
+# @atta/typescript-config
 
-Shared TypeScript configurations for the Herald monorepo.
+Shared TypeScript configurations for the Atta AI monorepo.
 
 ## Configs
 
@@ -13,12 +13,12 @@ Shared TypeScript configurations for the Herald monorepo.
 
 ```json
 {
-  "extends": "@herald/typescript-config/base.json"
+  "extends": "@atta/typescript-config/base.json"
 }
 ```
 
 ```json
 {
-  "extends": "@herald/typescript-config/nextjs.json"
+  "extends": "@atta/typescript-config/nextjs.json"
 }
 ```
