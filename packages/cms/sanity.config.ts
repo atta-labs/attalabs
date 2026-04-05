@@ -18,6 +18,15 @@ export default defineConfig({
               .title('Herald Config')
               .child(S.document().schemaType('heraldConfig').documentId('heraldConfig').title('Herald Config')),
             S.listItem()
+              .title('Atta Config')
+              .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
+            S.listItem()
+              .title('Vitakka Config')
+              .child(S.document().schemaType('vitakkaConfig').documentId('vitakkaConfig').title('Vitakka Config')),
+            S.listItem()
+              .title('Vada Config')
+              .child(S.document().schemaType('vadaConfig').documentId('vadaConfig').title('Vada Config')),
+            S.listItem()
               .title('User Interface')
               .child(
                 S.list()
