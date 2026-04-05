@@ -8,7 +8,7 @@ const isAtta = process.env.SANITY_STUDIO_PRODUCT === 'atta'
 export default defineConfig({
   name: isAtta ? 'atta' : 'herald',
   title: isAtta ? 'Atta CMS' : 'Herald CMS',
-  projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'e9gbd2d1',
+  projectId: process.env.SANITY_STUDIO_PROJECT_ID || (isAtta ? '892o2m9f' : 'e9gbd2d1'),
   dataset: process.env.SANITY_STUDIO_DATASET || 'production',
   plugins: [
     structureTool({

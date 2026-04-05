@@ -1,11 +1,10 @@
 import { defineCliConfig } from 'sanity/cli'
 
+const isAtta = process.env.SANITY_STUDIO_PRODUCT === 'atta'
+
 export default defineCliConfig({
   api: {
-    projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'e9gbd2d1',
+    projectId: process.env.SANITY_STUDIO_PROJECT_ID || (isAtta ? '892o2m9f' : 'e9gbd2d1'),
     dataset: process.env.SANITY_STUDIO_DATASET || 'production'
-  },
-  deployment: {
-    appId: process.env.SANITY_STUDIO_APP_ID || 'dl47uh4y5jmv2on69nzc6yt0'
   }
 })
