@@ -6,12 +6,14 @@ import { schemaTypes } from './schemas'
 const product = process.env.SANITY_STUDIO_PRODUCT
 const isAtta = product === 'atta'
 const isVada = product === 'vada'
+const isVitakka = product === 'vitakka'
 
 export default defineConfig({
-  name: isAtta ? 'atta' : isVada ? 'vada' : 'herald',
-  title: isAtta ? 'Atta CMS' : isVada ? 'Vada CMS' : 'Herald CMS',
+  name: isAtta ? 'atta' : isVada ? 'vada' : isVitakka ? 'vitakka' : 'herald',
+  title: isAtta ? 'Atta CMS' : isVada ? 'Vada CMS' : isVitakka ? 'Vitakka CMS' : 'Herald CMS',
   projectId:
-    process.env.SANITY_STUDIO_PROJECT_ID || (isAtta ? '892o2m9f' : isVada ? '28r5u68w' : 'e9gbd2d1'),
+    process.env.SANITY_STUDIO_PROJECT_ID ||
+    (isAtta ? '892o2m9f' : isVada ? '28r5u68w' : isVitakka ? '6m85m3re' : 'e9gbd2d1'),
   dataset: process.env.SANITY_STUDIO_DATASET || 'production',
   plugins: [
     structureTool({
@@ -51,6 +53,33 @@ export default defineConfig({
                           S.listItem()
                             .title('Libraries')
                             .child(S.documentTypeList('library').title('Vada Libraries'))
+                        ])
+                    )
+                ])
+          : isVitakka
+            ? S.list()
+                .title('Vitakka Content')
+                .items([
+                  S.listItem()
+                    .title('Vitakka Config')
+                    .child(
+                      S.document()
+                        .schemaType('vitakkaConfig')
+                        .documentId('vitakkaConfig')
+                        .title('Vitakka Config')
+                    ),
+                  S.listItem()
+                    .title('User Interface')
+                    .child(
+                      S.list()
+                        .title('Vitakka User Interface')
+                        .items([
+                          S.listItem()
+                            .title('Themes')
+                            .child(S.documentTypeList('uiTheme').title('Vitakka Themes')),
+                          S.listItem()
+                            .title('Libraries')
+                            .child(S.documentTypeList('library').title('Vitakka Libraries'))
                         ])
                     )
                 ])
