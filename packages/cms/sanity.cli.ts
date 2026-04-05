@@ -14,6 +14,6 @@ export default defineCliConfig({
   deployment: {
     appId:
       process.env.SANITY_STUDIO_APP_ID ||
-      (isAtta ? 'ne4jogb79tawox8bo96irbrh' : isVada ? undefined : 'dl47uh4y5jmv2on69nzc6yt0')
+      (isAtta ? 'ne4jogb79tawox8bo96irbrh' : isVada ? 'm7z8p2o1' : 'dl47uh4y5jmv2on69nzc6yt0')
   }
 })
