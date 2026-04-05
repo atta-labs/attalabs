@@ -46,10 +46,15 @@ export default async function EnvoyPage({
   if (user.themeId) {
     const theme = await getThemeById(cmsClient, user.themeId)
     if (theme) {
+      // Apply per-user font override if set
+      const themeWithOverrides = {
+        ...theme,
+        typography: user.fontSans ? { ...theme.typography, fontSans: user.fontSans } : theme.typography
+      }
       const colorScheme = (user.colorScheme as ColorScheme) ?? 'dark'
-      themeCSS = generateThemeCSSForScheme(theme, colorScheme)
-      if (theme.typography) {
-        fontsUrl = getGoogleFontsUrl(theme.typography)
+      themeCSS = generateThemeCSSForScheme(themeWithOverrides, colorScheme)
+      if (themeWithOverrides.typography) {
+        fontsUrl = getGoogleFontsUrl(themeWithOverrides.typography)
       }
     }
   }

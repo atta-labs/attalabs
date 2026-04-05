@@ -4,31 +4,10 @@ import type { CMSTheme } from '@atta/cms'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import type { ThemeData } from '@/components/theme/utils'
 import { usePortalPreview } from '@/hooks/usePortalPreview'
+import { PortalPreviewFrame } from './PortalPreviewFrame'
+import { PreviewToolbar } from './PreviewToolbar'
 
 type ColorScheme = 'dark' | 'light'
-
-const LIBRARIES = [
-  {
-    id: 'basic',
-    name: 'Standard',
-    style: 'shadow-sm rounded-lg border'
-  },
-  {
-    id: 'retro',
-    name: 'Retro',
-    style: 'border-2 border-foreground shadow-md'
-  },
-  {
-    id: 'animate',
-    name: 'Animated',
-    style: 'shadow-sm rounded-lg border'
-  },
-  {
-    id: 'brutal',
-    name: 'Brutal',
-    style: 'border-2 border-border shadow-[3px_3px_0px_0px_var(--border)]'
-  }
-]
 
 function extractColor(value: unknown): string | undefined {
   if (!value) return undefined
@@ -53,13 +32,14 @@ function FourSquareSwatch({ colors }: { colors: Record<string, string | undefine
   )
 }
 
-function buildThemeMessage(theme: CMSTheme, colorScheme: ColorScheme) {
+function buildThemeMessage(theme: CMSTheme, colorScheme: ColorScheme, fontOverride?: string) {
+  const typography = fontOverride ? { ...theme.typography, fontSans: fontOverride } : theme.typography
   return {
     type: 'PREVIEW_THEME' as const,
     theme: {
       dark: theme.dark,
       light: theme.light,
-      typography: theme.typography,
+      typography,
       spacing: theme.spacing,
       shadows: theme.shadows
     } as ThemeData,
@@ -72,12 +52,14 @@ export function ThemeBrowser({
   currentThemeId,
   currentColorScheme,
   currentLibrary,
+  currentFontSans,
   username
 }: {
   themes: CMSTheme[]
   currentThemeId: string | null
   currentColorScheme: ColorScheme
   currentLibrary: string
+  currentFontSans: string | null
   username: string
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(currentThemeId)
@@ -89,6 +71,7 @@ export function ThemeBrowser({
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [selectedLibrary, setSelectedLibrary] = useState(currentLibrary)
+  const [selectedFontSans, setSelectedFontSans] = useState<string | undefined>(currentFontSans ?? undefined)
 
   const selectedTheme = themes.find((t) => t._id === selectedId) ?? null
   const selectedScheme = selectedId ? (schemeByTheme[selectedId] ?? 'dark') : 'dark'
@@ -106,12 +89,12 @@ export function ThemeBrowser({
 
   const buildMessage = useCallback(() => {
     if (!selectedTheme) return null
-    return buildThemeMessage(selectedTheme, selectedScheme)
-  }, [selectedTheme, selectedScheme])
+    return buildThemeMessage(selectedTheme, selectedScheme, selectedFontSans)
+  }, [selectedTheme, selectedScheme, selectedFontSans])
 
   const portalUrl = `/${username}`
 
-  const { iframeRef, iframeSrc, iframeKey, isReady, sendMessage } = usePortalPreview({
+  const { iframeRef, iframeSrc, iframeKey, isReady, sendMessage, refresh } = usePortalPreview({
     portalUrl,
     onReady: (send) => {
       const msg = buildMessage()
@@ -121,9 +104,9 @@ export function ThemeBrowser({
 
   useEffect(() => {
     if (isReady && selectedTheme) {
-      sendMessage(buildThemeMessage(selectedTheme, selectedScheme))
+      sendMessage(buildThemeMessage(selectedTheme, selectedScheme, selectedFontSans))
     }
-  }, [isReady, selectedTheme, selectedScheme, sendMessage])
+  }, [isReady, selectedTheme, selectedScheme, selectedFontSans, sendMessage])
 
   function handleSelect(themeId: string) {
     setSelectedId(themeId)
@@ -143,6 +126,14 @@ export function ThemeBrowser({
     }
   }
 
+  function handleFontChange(font: string) {
+    setSelectedFontSans(font)
+    setSaved(false)
+    if (isReady && selectedTheme) {
+      sendMessage(buildThemeMessage(selectedTheme, selectedScheme, font))
+    }
+  }
+
   function handlePublish() {
     if (!selectedId) return
     startTransition(async () => {
@@ -152,7 +143,8 @@ export function ThemeBrowser({
         body: JSON.stringify({
           themeId: selectedId,
           colorScheme: selectedScheme,
-          library: selectedLibrary
+          library: selectedLibrary,
+          fontSans: selectedFontSans ?? null
         })
       })
       if (res.ok) {
@@ -163,7 +155,10 @@ export function ThemeBrowser({
   }
 
   const hasChanges =
-    selectedId !== currentThemeId || selectedScheme !== currentColorScheme || selectedLibrary !== currentLibrary
+    selectedId !== currentThemeId ||
+    selectedScheme !== currentColorScheme ||
+    selectedLibrary !== currentLibrary ||
+    selectedFontSans !== (currentFontSans ?? undefined)
 
   return (
     <div className='flex h-full gap-0'>
@@ -248,70 +243,35 @@ export function ThemeBrowser({
             )
           })}
         </div>
-
-        {/* Libraries — fixed bottom */}
-        <div className='border-t border-border px-4 py-3'>
-          <div className='mb-2'>
-            <h2 className='font-display text-lg tracking-tight'>Libraries</h2>
-            <p className='font-mono text-[10px] text-muted-foreground'>4 styles</p>
-          </div>
-          <div className='grid grid-cols-2 gap-2'>
-            {LIBRARIES.map((lib) => {
-              const isActive = selectedLibrary === lib.id
-              return (
-                <button
-                  key={lib.id}
-                  type='button'
-                  onClick={() => handleLibrarySelect(lib.id)}
-                  className={`px-3 py-2 text-left transition-all ${lib.style} ${
-                    isActive ? 'ring-1 ring-accent bg-card' : 'bg-card/30 opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  <p className='font-mono text-[10px] font-medium'>{lib.name}</p>
-                  {isActive && <div className='mt-1 h-0.5 w-5 bg-accent' />}
-                </button>
-              )
-            })}
-          </div>
-        </div>
       </div>
 
-      {/* Preview — iframe */}
-      <div className='flex flex-1 flex-col'>
-        <div className='flex items-center justify-between border-b border-border px-4 py-2'>
-          <div className='flex items-center gap-2'>
-            <div className={`h-2 w-2 rounded-full ${isReady ? 'bg-green-500' : 'bg-yellow-500'}`} />
-            <span className='font-mono text-[10px] text-muted-foreground'>
-              {isReady ? 'Preview connected' : 'Connecting...'}
-            </span>
-          </div>
-          <div className='flex items-center gap-3'>
-            {selectedTheme && (
-              <span className='font-mono text-[10px] text-muted-foreground'>
-                {selectedTheme.name} · {selectedScheme}
-              </span>
-            )}
-            <button
-              type='button'
-              onClick={handlePublish}
-              disabled={!hasChanges || isPending}
-              className='rounded bg-accent px-3 py-1.5 font-mono text-[10px] font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-30'
-            >
-              {isPending ? 'Saving...' : saved ? 'Saved!' : 'Publish'}
-            </button>
-          </div>
-        </div>
-
-        <div className='flex-1 bg-black/50'>
-          <iframe
-            ref={iframeRef}
-            key={iframeKey}
-            src={iframeSrc}
-            className='h-full w-full border-0'
-            title='Envoy Preview'
+      {/* Preview — iframe with toolbar */}
+      <PortalPreviewFrame
+        isReady={isReady}
+        portalUrl={`/${username}`}
+        onRefresh={refresh}
+        title='Envoy Preview'
+        toolbar={
+          <PreviewToolbar
+            selectedLibrary={selectedLibrary}
+            onLibraryChange={handleLibrarySelect}
+            fontSans={selectedFontSans}
+            onFontChange={handleFontChange}
+            hasChanges={hasChanges}
+            isPending={isPending}
+            saved={saved}
+            onPublish={handlePublish}
           />
-        </div>
-      </div>
+        }
+      >
+        <iframe
+          ref={iframeRef}
+          key={iframeKey}
+          src={iframeSrc}
+          className='h-full w-full border-0'
+          title='Envoy Preview'
+        />
+      </PortalPreviewFrame>
     </div>
   )
 }

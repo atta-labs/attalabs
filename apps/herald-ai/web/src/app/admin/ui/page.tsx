@@ -20,6 +20,7 @@ export default async function AdminUIPage() {
         currentThemeId={user.themeId}
         currentColorScheme={(user.colorScheme as 'dark' | 'light') ?? 'dark'}
         currentLibrary={user.library ?? 'basic'}
+        currentFontSans={user.fontSans ?? null}
         username={user.username}
       />
     </div>
