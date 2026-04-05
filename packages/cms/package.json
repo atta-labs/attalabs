@@ -10,7 +10,9 @@
   },
   "scripts": {
     "studio": "sanity dev --port 3333",
+    "studio:atta": "sanity dev -c sanity.atta.config.ts --port 3334",
     "studio:deploy": "sanity deploy",
+    "studio:deploy:atta": "sanity deploy -c sanity.atta.config.ts",
     "migrate:herald-to-product": "bun run ./scripts/migrate-herald-to-product.ts",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo"
