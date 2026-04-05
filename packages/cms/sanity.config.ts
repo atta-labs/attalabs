@@ -3,40 +3,60 @@ import { defineConfig } from 'sanity'
 import { structureTool } from 'sanity/structure'
 import { schemaTypes } from './schemas'
 
+const isAtta = process.env.SANITY_STUDIO_PRODUCT === 'atta'
+
 export default defineConfig({
-  name: 'herald',
-  title: 'Herald CMS',
-  projectId: 'e9gbd2d1',
-  dataset: 'production',
+  name: isAtta ? 'atta' : 'herald',
+  title: isAtta ? 'Atta CMS' : 'Herald CMS',
+  projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'e9gbd2d1',
+  dataset: process.env.SANITY_STUDIO_DATASET || 'production',
   plugins: [
     structureTool({
       structure: (S) =>
-        S.list()
-          .title('Herald Content')
-          .items([
-            S.listItem()
-              .title('Herald Config')
-              .child(S.document().schemaType('heraldConfig').documentId('heraldConfig').title('Herald Config')),
-            S.listItem()
-              .title('Atta Config')
-              .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
-            S.listItem()
-              .title('Vitakka Config')
-              .child(S.document().schemaType('vitakkaConfig').documentId('vitakkaConfig').title('Vitakka Config')),
-            S.listItem()
-              .title('Vada Config')
-              .child(S.document().schemaType('vadaConfig').documentId('vadaConfig').title('Vada Config')),
-            S.listItem()
-              .title('User Interface')
-              .child(
-                S.list()
-                  .title('Herald User Interface')
-                  .items([
-                    S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Herald Themes')),
-                    S.listItem().title('Libraries').child(S.documentTypeList('library').title('Herald Libraries'))
-                  ])
-              )
-          ])
+        isAtta
+          ? S.list()
+              .title('Atta Content')
+              .items([
+                S.listItem()
+                  .title('Atta Config')
+                  .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
+                S.listItem()
+                  .title('User Interface')
+                  .child(
+                    S.list()
+                      .title('Atta User Interface')
+                      .items([
+                        S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Atta Themes')),
+                        S.listItem().title('Libraries').child(S.documentTypeList('library').title('Atta Libraries'))
+                      ])
+                  )
+              ])
+          : S.list()
+              .title('Herald Content')
+              .items([
+                S.listItem()
+                  .title('Herald Config')
+                  .child(S.document().schemaType('heraldConfig').documentId('heraldConfig').title('Herald Config')),
+                S.listItem()
+                  .title('Atta Config')
+                  .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
+                S.listItem()
+                  .title('Vitakka Config')
+                  .child(S.document().schemaType('vitakkaConfig').documentId('vitakkaConfig').title('Vitakka Config')),
+                S.listItem()
+                  .title('Vada Config')
+                  .child(S.document().schemaType('vadaConfig').documentId('vadaConfig').title('Vada Config')),
+                S.listItem()
+                  .title('User Interface')
+                  .child(
+                    S.list()
+                      .title('Herald User Interface')
+                      .items([
+                        S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Herald Themes')),
+                        S.listItem().title('Libraries').child(S.documentTypeList('library').title('Herald Libraries'))
+                      ])
+                  )
+              ])
     }),
     visionTool()
   ],
