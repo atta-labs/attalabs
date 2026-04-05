@@ -8,7 +8,7 @@
 
 ## Context
 
-Herald AI is the first product in the Atta AI ecosystem. The monorepo must be restructured so Herald is one app among many. Future products (Vitakka AI, Vada AI) and the organization's own site (Atta AI) will live in the same monorepo. Shared infrastructure (UI, CMS, MCP, TypeScript config) stays as shared packages under the `@atta` scope.
+Herald AI is the first product in the Atta AI ecosystem. The monorepo must be restructured so Herald is one app among many. Future products (Vitakka AI, Vada AI) and the organization's own site (Atta AI) will live in the same monorepo. Shared infrastructure (UI, CMS, TypeScript config) stays as shared packages under the `@atta` scope. Product-specific code lives inside the product's folder.
 
 The migration follows the Summon repo pattern: hierarchical docs with a routing-index CLAUDE.md, per-app scripts at root, each app and package has its own README + CLAUDE.md.
 
@@ -21,56 +21,103 @@ The migration follows the Summon repo pattern: hierarchical docs with a routing-
 ```
 atta-ai/
 ├── apps/
-│   ├── herald-ai-web/              # Migrated from apps/herald
-│   │   ├── src/                    # All current Herald source (unchanged)
-│   │   ├── docs/
-│   │   │   ├── BUILD-SPEC.md       # Moved from root HERALD-BUILD-SPEC.md
-│   │   │   └── ARCHITECTURE.md     # Moved from docs/ARCHITECTURE.md
-│   │   ├── CLAUDE.md               # Herald-specific instructions (updated)
-│   │   ├── README.md               # Herald app readme (updated)
-│   │   ├── package.json            # @atta/herald-ai-web
-│   │   ├── drizzle.config.ts
-│   │   ├── next.config.ts
-│   │   ├── postcss.config.js
-│   │   └── tsconfig.json
-│   ├── atta-ai-web/                # Empty scaffold — org page
-│   │   ├── src/app/
-│   │   │   ├── layout.tsx
-│   │   │   └── page.tsx
+│   ├── herald-ai/                      # Herald AI product
+│   │   ├── web/                        # Next.js app — @atta/herald-ai-web
+│   │   │   ├── src/                    # All current Herald source (unchanged)
+│   │   │   ├── docs/
+│   │   │   │   ├── BUILD-SPEC.md       # Moved from root HERALD-BUILD-SPEC.md
+│   │   │   │   └── ARCHITECTURE.md     # Moved from docs/ARCHITECTURE.md
+│   │   │   ├── tests/
+│   │   │   │   └── match-engine.test.ts
+│   │   │   ├── CLAUDE.md               # Herald web-specific instructions
+│   │   │   ├── README.md
+│   │   │   ├── package.json            # @atta/herald-ai-web
+│   │   │   ├── drizzle.config.ts
+│   │   │   ├── next.config.ts
+│   │   │   ├── postcss.config.js
+│   │   │   └── tsconfig.json
+│   │   ├── mobile/                     # React Native — @atta/herald-ai-mobile (scaffold)
+│   │   │   ├── CLAUDE.md
+│   │   │   ├── README.md
+│   │   │   └── package.json
+│   │   ├── mcp/                        # MCP server — @atta/herald-ai-mcp
+│   │   │   ├── src/                    # Moved from packages/mcp/src
+│   │   │   ├── CLAUDE.md
+│   │   │   ├── README.md
+│   │   │   ├── package.json            # @atta/herald-ai-mcp
+│   │   │   └── tsconfig.json
+│   │   ├── CLAUDE.md                   # Herald AI product overview
+│   │   └── README.md                   # Herald AI product readme
+│   │
+│   ├── atta-ai/                        # Atta AI — org page (scaffold)
+│   │   ├── web/
+│   │   │   ├── src/app/
+│   │   │   │   ├── layout.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── CLAUDE.md
+│   │   │   ├── README.md
+│   │   │   ├── package.json            # @atta/atta-ai-web
+│   │   │   └── tsconfig.json
+│   │   ├── mobile/
+│   │   │   ├── CLAUDE.md
+│   │   │   ├── README.md
+│   │   │   └── package.json            # @atta/atta-ai-mobile
 │   │   ├── CLAUDE.md
-│   │   ├── README.md
-│   │   ├── package.json            # @atta/atta-ai-web
-│   │   └── tsconfig.json
-│   ├── vitakka-ai-web/             # Empty scaffold — focus product
-│   │   ├── src/app/
-│   │   │   ├── layout.tsx
-│   │   │   └── page.tsx
+│   │   └── README.md
+│   │
+│   ├── vitakka-ai/                     # Vitakka AI — focus product (scaffold)
+│   │   ├── web/
+│   │   │   ├── src/app/
+│   │   │   │   ├── layout.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── CLAUDE.md
+│   │   │   ├── README.md
+│   │   │   ├── package.json            # @atta/vitakka-ai-web
+│   │   │   └── tsconfig.json
+│   │   ├── mobile/
+│   │   │   ├── CLAUDE.md
+│   │   │   ├── README.md
+│   │   │   └── package.json            # @atta/vitakka-ai-mobile
+│   │   ├── mcp/
+│   │   │   ├── CLAUDE.md
+│   │   │   ├── README.md
+│   │   │   └── package.json            # @atta/vitakka-ai-mcp
 │   │   ├── CLAUDE.md
-│   │   ├── README.md
-│   │   ├── package.json            # @atta/vitakka-ai-web
-│   │   └── tsconfig.json
-│   └── vada-ai-web/                # Empty scaffold — deliberation engine
-│       ├── src/app/
-│       │   ├── layout.tsx
-│       │   └── page.tsx
+│   │   └── README.md
+│   │
+│   └── vada-ai/                        # Vada AI — deliberation engine (scaffold)
+│       ├── web/
+│       │   ├── src/app/
+│       │   │   ├── layout.tsx
+│       │   │   └── page.tsx
+│       │   ├── CLAUDE.md
+│       │   ├── README.md
+│       │   ├── package.json            # @atta/vada-ai-web
+│       │   └── tsconfig.json
+│       ├── mobile/
+│       │   ├── CLAUDE.md
+│       │   ├── README.md
+│       │   └── package.json            # @atta/vada-ai-mobile
+│       ├── mcp/
+│       │   ├── CLAUDE.md
+│       │   ├── README.md
+│       │   └── package.json            # @atta/vada-ai-mcp
 │       ├── CLAUDE.md
-│       ├── README.md
-│       ├── package.json            # @atta/vada-ai-web
-│       └── tsconfig.json
+│       └── README.md
+│
 ├── packages/
-│   ├── ui/                         # @atta/ui (shared UI + libraries)
-│   ├── cms/                        # @atta/cms (shared Sanity CMS)
-│   ├── mcp/                        # @atta/mcp (shared MCP tooling)
-│   └── typescript-config/          # @atta/typescript-config
-├── tests/                          # Root-level tests (if any remain)
+│   ├── ui/                             # @atta/ui (shared UI + libraries)
+│   ├── cms/                            # @atta/cms (shared Sanity CMS)
+│   └── typescript-config/              # @atta/typescript-config
+│
 ├── .claude/
-│   └── rules/                      # Shared rules (generic, not Herald-specific)
+│   └── rules/                          # Shared rules (generic, not product-specific)
 │       ├── git-conventions.md
 │       ├── ui-patterns.md
 │       └── api-conventions.md
-├── CLAUDE.md                       # Atta AI routing index (Summon pattern)
-├── README.md                       # Atta AI ecosystem overview
-├── package.json                    # name: "atta-ai"
+├── CLAUDE.md                           # Atta AI routing index (Summon pattern)
+├── README.md                           # Atta AI ecosystem overview
+├── package.json                        # name: "atta-ai"
 ├── turbo.json
 ├── biome.json
 ├── commitlint.config.js
@@ -81,18 +128,39 @@ atta-ai/
 
 ---
 
-## 2. Package Renaming
+## 2. App Structure Convention
+
+Each product follows a consistent nested structure:
+
+```
+apps/{product-ai}/
+├── web/              # Next.js web app
+├── mobile/           # React Native (iOS + Android)
+├── mcp/              # MCP server (product as a tool for other AI systems)
+├── CLAUDE.md         # Product-level overview
+└── README.md         # Product-level readme
+```
+
+- Not every product needs all three surfaces immediately — scaffolds are created empty
+- Product-specific code (like Herald's match engine) lives inside the product folder, not in shared packages
+- Shared code that multiple products use lives in `packages/`
+
+Workspace glob: `"apps/*/*"` (matches `apps/herald-ai/web`, `apps/herald-ai/mcp`, etc.)
+
+---
+
+## 3. Package Renaming
 
 ### Package names
 
-| Current | New |
-|---------|-----|
-| `herald` (root) | `atta-ai` |
-| `@herald/web` | `@atta/herald-ai-web` |
-| `@herald/ui` | `@atta/ui` |
-| `@herald/cms` | `@atta/cms` |
-| `@herald/mcp` | `@atta/mcp` |
-| `@herald/typescript-config` | `@atta/typescript-config` |
+| Current | New | Location |
+|---------|-----|----------|
+| `herald` (root) | `atta-ai` | Root |
+| `@herald/web` | `@atta/herald-ai-web` | `apps/herald-ai/web` |
+| `@herald/ui` | `@atta/ui` | `packages/ui` |
+| `@herald/cms` | `@atta/cms` | `packages/cms` |
+| `@herald/mcp` | `@atta/herald-ai-mcp` | `apps/herald-ai/mcp` |
+| `@herald/typescript-config` | `@atta/typescript-config` | `packages/typescript-config` |
 
 ### Import updates (global find-and-replace)
 
@@ -100,14 +168,14 @@ atta-ai/
 |---------|-------------|
 | `@herald/ui` | `@atta/ui` |
 | `@herald/cms` | `@atta/cms` |
-| `@herald/mcp` | `@atta/mcp` |
+| `@herald/mcp` | `@atta/herald-ai-mcp` |
 | `@herald/typescript-config` | `@atta/typescript-config` |
 
 All source files, `package.json` dependencies, and `tsconfig.json` references must be updated.
 
 ---
 
-## 3. Root Scripts
+## 4. Root Scripts
 
 ```json
 {
@@ -135,13 +203,13 @@ All source files, `package.json` dependencies, and `tsconfig.json` references mu
 }
 ```
 
-The `test:match` script moves to `apps/herald-ai-web/package.json`.
+The `test:match` script moves to `apps/herald-ai/web/package.json`.
 
 ---
 
-## 4. Documentation (Summon Pattern)
+## 5. Documentation (Summon Pattern)
 
-### 4.1 Root `README.md` — Ecosystem overview
+### 5.1 Root `README.md` — Ecosystem overview
 
 Content:
 - Atta AI description: ecosystem of AI products
@@ -150,46 +218,50 @@ Content:
 - Tech stack table (Turborepo, Bun, Next.js 16, Tailwind v4, shadcn/ui, Sanity, Clerk, Neon, Drizzle, Vercel AI SDK, Biome)
 - Shared packages table with descriptions
 - Getting started / dev commands
-- Links to each app's README
+- Links to each product's README
 
-### 4.2 Root `CLAUDE.md` — Routing index
+### 5.2 Root `CLAUDE.md` — Routing index
 
 Content:
 - Atta AI ecosystem description
-- Apps table: name, CLAUDE.md link, README link, purpose
+- Products table: name, CLAUDE.md link, README link, surfaces (web/mobile/mcp), purpose
 - Packages table: name, CLAUDE.md link, README link, purpose
+- App structure convention (`apps/{product}/{surface}`)
 - Tech stack table
 - Monorepo tooling (Turborepo, Bun, Biome, Husky, commitlint)
+- Workspace glob: `"apps/*/*"`
 - Turbo tasks reference
 - Shared code style rules (TypeScript strict, named exports, type imports, Biome)
 - Git conventions (commit format, types)
 - Links to `.claude/rules/*`
-- Environment variables (shared ones only)
-- No Herald-specific content
+- No product-specific content
 
-### 4.3 `.claude/rules/` — Shared rules
+### 5.3 `.claude/rules/` — Shared rules
 
 - `git-conventions.md` — Remove Herald branding, keep generic commit format
 - `ui-patterns.md` — Keep as shared (theme tokens, typography, layout rules, shadcn/ui)
-- `api-conventions.md` — Keep generic API conventions only. Move Herald-specific content (Skeptical Auditor, match API, signal API, rate limiting details) to `apps/herald-ai-web/CLAUDE.md`
+- `api-conventions.md` — Keep generic API conventions only. Move Herald-specific content (Skeptical Auditor, match API, signal API, rate limiting details) to Herald's CLAUDE.md
 
-### 4.4 App-level docs
+### 5.4 Product-level docs
 
-**`apps/herald-ai-web/CLAUDE.md`** — Updated from current `apps/herald/CLAUDE.md`:
-- All existing Herald-specific instructions stay
-- Add Herald-specific API conventions (Skeptical Auditor, match API, signal API)
-- Update package references from `@herald/*` to `@atta/*`
-- Update doc links to new locations (`docs/BUILD-SPEC.md`, `docs/ARCHITECTURE.md`)
+Each product (`apps/{product-ai}/`) gets:
+- `CLAUDE.md` — Product overview, surfaces, architecture summary
+- `README.md` — Product description, getting started
 
-**`apps/herald-ai-web/docs/BUILD-SPEC.md`** — Moved from root `HERALD-BUILD-SPEC.md` (content unchanged)
+Each surface (`apps/{product-ai}/{surface}/`) gets:
+- `CLAUDE.md` — Surface-specific instructions
+- `README.md` — Surface-specific readme
 
-**`apps/herald-ai-web/docs/ARCHITECTURE.md`** — Moved from `docs/ARCHITECTURE.md` (content unchanged)
+**Herald AI specifics:**
+- `apps/herald-ai/web/CLAUDE.md` — Updated from current `apps/herald/CLAUDE.md` with Herald-specific API conventions
+- `apps/herald-ai/web/docs/BUILD-SPEC.md` — Moved from root `HERALD-BUILD-SPEC.md`
+- `apps/herald-ai/web/docs/ARCHITECTURE.md` — Moved from `docs/ARCHITECTURE.md`
+- `apps/herald-ai/mcp/CLAUDE.md` — MCP server instructions (from current `packages/mcp/CLAUDE.md`)
 
-**Scaffold apps** (`atta-ai-web`, `vitakka-ai-web`, `vada-ai-web`):
-- `CLAUDE.md` — Stub: app name, purpose, "Not yet implemented" status
-- `README.md` — Stub: app name, description, placeholder
+**Scaffold products** (`atta-ai`, `vitakka-ai`, `vada-ai`):
+- All CLAUDE.md and README.md files are stubs with product name, purpose, "Not yet implemented" status
 
-### 4.5 Package-level docs
+### 5.5 Package-level docs
 
 Each package keeps its existing `CLAUDE.md` and `README.md`, updated:
 - Replace `@herald` references with `@atta`
@@ -197,15 +269,13 @@ Each package keeps its existing `CLAUDE.md` and `README.md`, updated:
 
 ---
 
-## 5. Empty App Scaffolds
+## 6. Empty Scaffolds
 
-Each scaffold app gets:
-
-### `package.json`
+### Web surfaces (`{product}/web/`)
 
 ```json
 {
-  "name": "@atta/{app-name}",
+  "name": "@atta/{product}-web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -216,12 +286,12 @@ Each scaffold app gets:
   },
   "dependencies": {
     "@atta/ui": "workspace:*",
-    "@atta/typescript-config": "workspace:*",
     "next": "^16.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@atta/typescript-config": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -230,35 +300,34 @@ Each scaffold app gets:
 }
 ```
 
-### `tsconfig.json`
+Plus: `tsconfig.json` (extends `@atta/typescript-config/nextjs.json`), `src/app/layout.tsx`, `src/app/page.tsx`.
 
-Extends `@atta/typescript-config/nextjs.json`.
+### Mobile surfaces (`{product}/mobile/`)
 
-### `src/app/layout.tsx`
+Minimal `package.json` with name only. No React Native setup yet — just the folder and docs stubs.
 
-Minimal root layout with html + body.
+### MCP surfaces (`{product}/mcp/`)
 
-### `src/app/page.tsx`
-
-Placeholder page with app name and "Coming soon" message.
+Minimal `package.json` with name only (except Herald, which gets the migrated code from `packages/mcp/`).
 
 ---
 
-## 6. What Moves Where
+## 7. What Moves Where
 
 | Current Location | New Location | Notes |
 |-----------------|--------------|-------|
-| `apps/herald/` | `apps/herald-ai-web/` | Renamed folder |
-| `HERALD-BUILD-SPEC.md` | `apps/herald-ai-web/docs/BUILD-SPEC.md` | Moved |
-| `docs/ARCHITECTURE.md` | `apps/herald-ai-web/docs/ARCHITECTURE.md` | Moved |
-| `tests/match-engine.test.ts` | `apps/herald-ai-web/tests/match-engine.test.ts` | Moved with test:match script |
+| `apps/herald/` | `apps/herald-ai/web/` | Moved one level deeper |
+| `packages/mcp/` | `apps/herald-ai/mcp/` | Product-specific, not shared |
+| `HERALD-BUILD-SPEC.md` | `apps/herald-ai/web/docs/BUILD-SPEC.md` | Moved |
+| `docs/ARCHITECTURE.md` | `apps/herald-ai/web/docs/ARCHITECTURE.md` | Moved |
+| `tests/match-engine.test.ts` | `apps/herald-ai/web/tests/match-engine.test.ts` | Moved |
 | `CLAUDE.md` (root) | Rewritten | Atta AI routing index |
 | `README.md` (root) | Rewritten | Atta AI ecosystem overview |
 | `docs/superpowers/` | Stays at root | Shared design docs |
 
 ---
 
-## 7. What Does NOT Change
+## 8. What Does NOT Change
 
 - Herald's `src/` directory structure and all business logic
 - Herald's environment variables and `.env.local`
@@ -273,10 +342,26 @@ Placeholder page with app name and "Coming soon" message.
 
 ---
 
-## 8. Verification
+## 9. Workspace Configuration
+
+Root `package.json` workspaces change from:
+```json
+"workspaces": ["apps/*", "packages/*"]
+```
+
+To:
+```json
+"workspaces": ["apps/*/*", "packages/*"]
+```
+
+This matches the nested `apps/{product}/{surface}` structure.
+
+---
+
+## 10. Verification
 
 After migration:
-1. `bun install` — workspace resolution works with new package names
+1. `bun install` — workspace resolution works with new package names and `apps/*/*` glob
 2. `bun run typecheck` — no broken imports
 3. `bun run check` — typecheck + biome passes
 4. `bun run dev:herald` — Herald app starts and works
