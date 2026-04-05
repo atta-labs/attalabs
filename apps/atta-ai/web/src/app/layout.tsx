@@ -1,13 +1,30 @@
+import type { Metadata } from 'next'
+import { DM_Mono, Playfair_Display } from 'next/font/google'
 import type { ReactNode } from 'react'
+import './globals.css'
 
-export const metadata = {
-  title: 'Atta AI',
-  description: 'All your AI. One ecosystem.'
+const dmMono = DM_Mono({
+  weight: ['400', '500'],
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap'
+})
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  display: 'swap'
+})
+
+export const metadata: Metadata = {
+  title: 'Attā',
+  description: 'Yours.',
+  icons: { icon: '/favicon.ico' }
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang='en'>
+    <html lang='en' className={`${dmMono.variable} ${playfair.variable}`}>
       <body>{children}</body>
     </html>
   )
