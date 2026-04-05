@@ -1,4 +1,6 @@
+import { AuthProvider } from '@atta/auth/provider'
 import type { ReactNode } from 'react'
+import './globals.css'
 
 export const metadata = {
   title: 'Vada AI',
@@ -8,7 +10,9 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang='en'>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   )
 }
