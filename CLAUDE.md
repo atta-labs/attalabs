@@ -38,6 +38,7 @@ Not every product needs all surfaces. Scaffolds are created empty and built when
 |---------|------|-----------|--------|---------|
 | @atta/ui | [packages/ui/](packages/ui/) | [CLAUDE.md](packages/ui/CLAUDE.md) | [README.md](packages/ui/README.md) | Shared UI components + libraries (shadcn/ui + Tailwind v4) |
 | @atta/cms | [packages/cms/](packages/cms/) | [CLAUDE.md](packages/cms/CLAUDE.md) | [README.md](packages/cms/README.md) | Sanity CMS schemas, config, typed queries |
+| @atta/storage | [packages/storage/](packages/storage/) | [CLAUDE.md](packages/storage/CLAUDE.md) | — | Cloudflare R2 storage client + image transforms |
 | @atta/typescript-config | [packages/typescript-config/](packages/typescript-config/) | [CLAUDE.md](packages/typescript-config/CLAUDE.md) | [README.md](packages/typescript-config/README.md) | Shared TypeScript configs |
 
 ---
