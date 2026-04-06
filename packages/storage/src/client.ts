@@ -5,7 +5,7 @@ let cachedClient: S3Client | null = null
 let cachedConfigKey = ''
 
 function configKey(config: StorageConfig): string {
-  return `${config.accountId}:${config.bucketName}`
+  return `${config.accountId}:${config.bucketName}:${config.accessKeyId}`
 }
 
 export function createStorageClient(config: StorageConfig): S3Client {
