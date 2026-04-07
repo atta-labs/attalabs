@@ -1,19 +1,34 @@
+import { Heading, Separator, Text } from '@atta/ui'
+import { AIACanvas, AIASphere } from '@atta/ui/canvas'
+
 export default function Home() {
   return (
-    <main className='flex min-h-dvh flex-col items-center justify-center px-6 text-center'>
-      {/* Product name — no studio credit, Atta IS the studio */}
-      <h1 className='font-display text-[96px] tracking-tight'>Attā</h1>
+    <main className='flex min-h-dvh flex-col items-center justify-center text-center'>
+      <AIACanvas particleCount={200}>
+        <div className='fixed inset-0 flex items-center justify-center pointer-events-none'>
+          <AIASphere size='xl' state='idle' />
+        </div>
+      </AIACanvas>
+      <div className='relative z-10 flex flex-col items-center gap-10'>
+        <Text as='small' className='font-mono text-[11px] uppercase tracking-[0.35em] text-muted-foreground/60'>
+          atta.ai
+        </Text>
 
-      {/* Pali origin */}
-      <h2 className='mt-4 font-display text-[24px] font-normal italic text-foreground/60'>
-        attā · from the Pāli, self
-      </h2>
+        <div className='flex flex-col items-center gap-2'>
+          <Heading level={1} className='font-serif text-7xl font-normal tracking-wide'>
+            Attā
+          </Heading>
+          <Text as='p' className='font-serif text-lg italic text-muted-foreground'>
+            attā · from the Pāli, self
+          </Text>
+        </div>
 
-      {/* Divider */}
-      <div className='mx-auto my-16 h-px w-10 bg-accent' />
+        <Separator className='w-10' />
 
-      {/* Domain */}
-      <p className='mt-24 font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/30'>atta.ai</p>
+        <Text as='p' className='font-serif text-3xl'>
+          Awareness.
+        </Text>
+      </div>
     </main>
   )
 }
