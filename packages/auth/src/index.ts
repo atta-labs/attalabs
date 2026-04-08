@@ -1,3 +1,6 @@
+export { SignInButton, SignUpButton } from '@clerk/nextjs'
+export { buildClerkAppearance } from './clerk-appearance'
 export { useAuth, useClerk, useUser } from './hooks'
 export { clerkMiddleware, createRouteMatcher } from './middleware'
 export { AuthProvider } from './provider'
+export { SignUpTrigger } from './sign-up-trigger'
