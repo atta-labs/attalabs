@@ -1,9 +1,8 @@
 import { auth } from '@atta/auth/hooks'
-import { Heading, Text } from '@atta/ui'
-import Link from 'next/link'
+import { Text } from '@atta/ui'
 import { redirect } from 'next/navigation'
-import { DeliberationView } from './components/DeliberationView'
 import { getSessionWithTranscript } from '@/db/queries'
+import { DeliberationFeed } from './components/DeliberationFeed'
 
 export default async function DeliberationPage({ params }: { params: Promise<{ id: string }> }) {
   const { userId: clerkId } = await auth()
@@ -29,29 +28,13 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
   }))
 
   return (
-    <main className='min-h-dvh px-6 py-8'>
-      <div className='mx-auto max-w-2xl'>
-        <div className='mb-8 flex items-center justify-between'>
-          <Link href='/' className='text-sm text-muted-foreground transition-colors hover:text-foreground'>
-            ← Back
-          </Link>
-          <Link href='/history' className='text-sm text-muted-foreground transition-colors hover:text-foreground'>
-            History
-          </Link>
-        </div>
-
-        <Heading level={2} size='sm' className='mb-8 text-center font-light'>
-          {session.question}
-        </Heading>
-
-        <DeliberationView
-          sessionId={id}
-          initialEntries={initialEntries}
-          initialConclusion={session.conclusion}
-          initialState={session.state}
-          agentRoles={session.agents}
-        />
-      </div>
-    </main>
+    <DeliberationFeed
+      sessionId={id}
+      question={session.question}
+      agentRoles={session.agents}
+      initialEntries={initialEntries}
+      initialConclusion={session.conclusion}
+      initialState={session.state}
+    />
   )
 }
