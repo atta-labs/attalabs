@@ -24,8 +24,17 @@ export async function getDailySessionCount(userId: string) {
 
 // --- Sessions ---
 
-export async function createSession(userId: string, question: string, agents: string[]) {
-  const inserted = await db.insert(schema.sessions).values({ userId, question, agents }).returning()
+export async function createSession(
+  userId: string,
+  question: string,
+  agents: string[],
+  provider?: string,
+  modelId?: string
+) {
+  const inserted = await db
+    .insert(schema.sessions)
+    .values({ userId, question, agents, provider: provider ?? null, modelId: modelId ?? null })
+    .returning()
   return inserted[0]!
 }
 

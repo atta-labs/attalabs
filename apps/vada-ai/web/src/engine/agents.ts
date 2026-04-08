@@ -4,31 +4,14 @@ import { createGroq } from '@ai-sdk/groq'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import type { AgentConfig } from '../schemas'
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-export type Provider = 'groq' | 'google' | 'anthropic' | 'openrouter'
-
-export interface ModelConfig {
-  provider: Provider
-  modelId: string
-  apiKey?: string
-}
+import type { ModelConfig, Provider } from '../lib/models'
+import { DEFAULT_MODEL_IDS } from '../lib/models'
 
 // ── MOCK MODE ─────────────────────────────────────────────────────────────────
 // Set to true for UI simulation/testing (zero API calls).
 // Set to false to use real LLMs.
 
 const MOCK_MODE = false
-
-// ── Default models per provider ───────────────────────────────────────────────
-
-const DEFAULT_MODEL_IDS: Record<Provider, string> = {
-  groq: 'llama-3.3-70b-versatile',
-  google: 'gemini-2.0-flash',
-  anthropic: 'claude-sonnet-4-5',
-  openrouter: 'meta-llama/llama-3.3-70b-instruct:free'
-}
 
 // Switch providers instantly via env var:
 //   DEFAULT_PROVIDER=groq     → Llama 3.3 70B (free)

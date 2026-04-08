@@ -31,6 +31,8 @@ export const sessions = pgTable('sessions', {
   agents: text('agents').array().notNull(),
   state: sessionStateEnum('state').default('PENDING').notNull(),
   terminalState: terminalStateEnum('terminal_state'),
+  provider: varchar('provider'),
+  modelId: varchar('model_id'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
