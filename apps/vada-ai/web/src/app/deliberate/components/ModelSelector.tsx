@@ -6,6 +6,10 @@ import type { Provider } from '@/lib/models'
 
 // ── Model catalog ─────────────────────────────────────────────────────────────
 
+// Provider brand colors live here as the single source of truth.
+// They are set as --provider-color CSS variables on each option element
+// so all rendering uses var(--provider-color) rather than inline hex.
+
 interface ModelOption {
   provider: Provider
   modelId: string
@@ -13,7 +17,7 @@ interface ModelOption {
   sublabel: string
   speed: string
   tier: 'free' | 'paid'
-  color: string
+  brandColor: string
   keyPrefix: string
 }
 
@@ -25,7 +29,7 @@ const FREE_MODELS: ModelOption[] = [
     sublabel: 'Groq',
     speed: '⚡ Instant',
     tier: 'free',
-    color: '#F97316',
+    brandColor: '#F97316',
     keyPrefix: 'gsk_'
   },
   {
@@ -35,7 +39,7 @@ const FREE_MODELS: ModelOption[] = [
     sublabel: 'Google',
     speed: '🔥 Fast',
     tier: 'free',
-    color: '#60A5FA',
+    brandColor: '#60A5FA',
     keyPrefix: 'AIza'
   }
 ]
@@ -48,7 +52,7 @@ const PREMIUM_MODELS: ModelOption[] = [
     sublabel: 'Anthropic',
     speed: '— Standard',
     tier: 'paid',
-    color: '#C8A84B',
+    brandColor: '#C8A84B',
     keyPrefix: 'sk-ant-'
   },
   {
@@ -58,7 +62,7 @@ const PREMIUM_MODELS: ModelOption[] = [
     sublabel: 'OpenRouter',
     speed: '⚡ Instant',
     tier: 'free',
-    color: '#A78BFA',
+    brandColor: '#A78BFA',
     keyPrefix: 'sk-or-'
   }
 ]
@@ -71,6 +75,7 @@ export interface SelectedModel {
   provider: Provider
   modelId: string
   apiKey: string
+  brandColor: string
 }
 
 interface ModelSelectorProps {
@@ -96,14 +101,20 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
     }
     setKeyInputs(inputs)
     if (!value && inputs.groq) {
-      onChange({ provider: 'groq', modelId: 'llama-3.3-70b-versatile', apiKey: inputs.groq })
+      const groq = FREE_MODELS[0]!
+      onChange({
+        provider: 'groq',
+        modelId: 'llama-3.3-70b-versatile',
+        apiKey: inputs.groq,
+        brandColor: groq.brandColor
+      })
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelect = (option: ModelOption) => {
     const apiKey = keyInputs[option.provider] ?? ''
     if (rememberKey && apiKey) storeApiKey(option.provider, apiKey)
-    onChange({ provider: option.provider, modelId: option.modelId, apiKey })
+    onChange({ provider: option.provider, modelId: option.modelId, apiKey, brandColor: option.brandColor })
   }
 
   const handleKeyChange = (provider: Provider, key: string) => {
@@ -152,20 +163,28 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
           const showKeyInput = needsKeyInput(option)
 
           return (
-            <div key={option.provider}>
+            // --provider-color scopes the brand color to this option block
+            <div key={option.provider} style={{ '--provider-color': option.brandColor } as React.CSSProperties}>
               <button
                 type='button'
                 onClick={() => handleSelect(option)}
                 className='w-full rounded-lg border border-border p-3 text-left transition-all hover:border-muted-foreground/40'
                 style={
                   selected
-                    ? { borderLeftWidth: 3, borderLeftColor: option.color, borderColor: `${option.color}40` }
+                    ? {
+                        borderLeftWidth: 3,
+                        borderLeftColor: 'var(--provider-color)',
+                        borderColor: 'color-mix(in srgb, var(--provider-color) 25%, transparent)'
+                      }
                     : {}
                 }
               >
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2.5'>
-                    <span className='h-2 w-2 shrink-0 rounded-full' style={{ backgroundColor: option.color }} />
+                    <span
+                      className='h-2 w-2 shrink-0 rounded-full'
+                      style={{ backgroundColor: 'var(--provider-color)' }}
+                    />
                     <div>
                       <span className='text-sm font-medium text-foreground'>{option.label}</span>
                       <span className='ml-1.5 text-xs text-muted-foreground'>{option.sublabel}</span>
@@ -175,10 +194,17 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
                     <span className='text-[10px] text-muted-foreground'>{option.speed}</span>
                     <span
                       className='rounded-full px-1.5 py-0.5 text-[9px] uppercase tracking-wider'
-                      style={{
-                        backgroundColor: option.tier === 'free' ? '#2ECC711A' : '#C8A84B1A',
-                        color: option.tier === 'free' ? '#2ECC71' : '#C8A84B'
-                      }}
+                      style={
+                        option.tier === 'free'
+                          ? {
+                              backgroundColor: 'color-mix(in srgb, var(--success) 15%, transparent)',
+                              color: 'var(--success)'
+                            }
+                          : {
+                              backgroundColor: 'color-mix(in srgb, var(--accent) 15%, transparent)',
+                              color: 'var(--accent)'
+                            }
+                      }
                     >
                       {option.tier}
                     </span>

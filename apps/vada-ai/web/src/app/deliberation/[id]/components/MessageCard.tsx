@@ -3,7 +3,8 @@
 import { SphereAvatar } from '@atta/ui/canvas'
 import type { DeliberationMessage, StreamingMessage } from './useDeliberation'
 
-// Agent role → hex color (matches AgentBadge.tsx exactly)
+// Agent role → brand color (single source of truth).
+// Set as --agent-color CSS variable on each card; all rendering uses var(--agent-color).
 export const AGENT_COLORS: Record<string, string> = {
   strategist: '#4A9EDB',
   critic: '#DB4A4A',
@@ -33,37 +34,49 @@ interface MessageCardProps {
 }
 
 export function MessageCard({ message, isStreaming = false, onReplyClick }: MessageCardProps) {
-  const color = AGENT_COLORS[message.agentRole] ?? '#C8A84B'
+  const agentColor = AGENT_COLORS[message.agentRole] ?? 'var(--accent)'
+  const replyColor = message.replyTarget
+    ? (AGENT_COLORS[nameToRole(message.replyTarget)] ?? 'var(--muted-foreground)')
+    : 'var(--muted-foreground)'
   const sphereState = isStreaming ? 'speaking' : 'complete'
   const roleLabel = message.agentRole.replace('_', ' ')
 
   return (
+    // --agent-color scopes this agent's brand color to the card
     <div
       data-agent={message.agentRole}
       className='rounded-xl border border-border bg-card p-4 transition-shadow duration-300'
-      style={{ borderLeft: `3px solid ${color}` }}
+      style={
+        {
+          '--agent-color': agentColor,
+          borderLeft: '3px solid var(--agent-color)'
+        } as React.CSSProperties
+      }
     >
       {/* Header */}
       <div className='mb-3 flex items-center gap-2.5'>
-        <SphereAvatar state={sphereState} color={color} size='xs' />
+        <SphereAvatar state={sphereState} color='var(--agent-color)' size='xs' />
         <div className='flex min-w-0 flex-col'>
-          <span className='text-sm font-semibold leading-tight' style={{ color }}>
+          <span className='text-sm font-semibold leading-tight' style={{ color: 'var(--agent-color)' }}>
             {message.agent}
           </span>
           <span className='mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground'>{roleLabel}</span>
         </div>
       </div>
 
-      {/* Reply badge */}
+      {/* Reply badge — uses target agent's color scoped as --reply-color */}
       {message.replyTarget && (
         <button
           type='button'
           onClick={() => onReplyClick?.(message.replyTarget!)}
           className='mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] transition-opacity hover:opacity-70'
-          style={{
-            backgroundColor: `${AGENT_COLORS[nameToRole(message.replyTarget)] ?? color}1A`,
-            color: AGENT_COLORS[nameToRole(message.replyTarget)] ?? color
-          }}
+          style={
+            {
+              '--reply-color': replyColor,
+              backgroundColor: 'color-mix(in srgb, var(--reply-color) 10%, transparent)',
+              color: 'var(--reply-color)'
+            } as React.CSSProperties
+          }
         >
           <span>↩</span>
           <span>Replying to {message.replyTarget}</span>

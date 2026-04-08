@@ -57,7 +57,7 @@ export function DeliberationFeed({
     if (!target) return
     target.scrollIntoView({ behavior: 'smooth', block: 'center' })
     target.style.transition = 'box-shadow 0.15s ease-out'
-    target.style.boxShadow = '0 0 0 2px rgba(200, 168, 75, 0.35)'
+    target.style.boxShadow = '0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent)'
     setTimeout(() => {
       target.style.boxShadow = ''
     }, 1400)
@@ -106,7 +106,12 @@ export function DeliberationFeed({
               <span
                 key={role}
                 className='h-2 w-2 rounded-full'
-                style={{ backgroundColor: AGENT_COLORS[role] ?? '#7A6A50' }}
+                style={
+                  {
+                    '--agent-color': AGENT_COLORS[role] ?? 'var(--muted-foreground)',
+                    backgroundColor: 'var(--agent-color)'
+                  } as React.CSSProperties
+                }
                 title={role.replace('_', ' ')}
               />
             ))}
@@ -115,10 +120,17 @@ export function DeliberationFeed({
           {/* Status badge — lowercase */}
           <span
             className='shrink-0 rounded-full px-2 py-0.5 text-[10px]'
-            style={{
-              backgroundColor: isLive ? '#C8A84B1A' : '#2ECC711A',
-              color: isLive ? '#C8A84B' : '#2ECC71'
-            }}
+            style={
+              isLive
+                ? {
+                    backgroundColor: 'color-mix(in srgb, var(--accent) 15%, transparent)',
+                    color: 'var(--accent)'
+                  }
+                : {
+                    backgroundColor: 'color-mix(in srgb, var(--success) 15%, transparent)',
+                    color: 'var(--success)'
+                  }
+            }
           >
             {isLive ? currentState.replace('_', ' ').toLowerCase() : 'complete'}
           </span>
