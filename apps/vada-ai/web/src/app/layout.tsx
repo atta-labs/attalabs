@@ -1,18 +1,19 @@
-import { AuthProvider } from '@atta/auth/provider'
+import { cmsClient, getVadaConfig } from '@atta/cms'
+import { NextWebShell } from '@atta/ui/lib/next-web-shell'
+import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import './globals.css'
+import '@atta/ui/globals.css'
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Vada AI',
   description: 'Deliberation engine for structured thinking.'
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const config = await getVadaConfig(cmsClient).catch(() => null)
   return (
-    <html lang='en'>
-      <body>
-        <AuthProvider>{children}</AuthProvider>
-      </body>
-    </html>
+    <NextWebShell config={config} styleId='vada-theme'>
+      {children}
+    </NextWebShell>
   )
 }
