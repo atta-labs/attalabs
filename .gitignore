@@ -11,6 +11,7 @@ build/
 **/.turbo/
 .superpowers/
 docs/superpowers/
+docs/animation-context-for-atta.md
 
 # Environment
 .env
