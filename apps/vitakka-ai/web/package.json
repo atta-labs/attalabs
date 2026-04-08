@@ -9,6 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@atta/auth": "workspace:*",
+    "@atta/cms": "workspace:*",
     "@atta/ui": "workspace:*",
     "next": "^16.2.1",
     "react": "^19.2.4",
