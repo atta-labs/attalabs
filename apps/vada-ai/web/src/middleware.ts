@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@atta/auth/middleware'
 
 const isProtectedRoute = createRouteMatcher([
+  '/deliberate(.*)',
   '/deliberation(.*)',
   '/history(.*)',
   '/api/deliberation(.*)',

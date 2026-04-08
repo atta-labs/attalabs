@@ -28,3 +28,9 @@ export function getAgentConfig(role: AgentRole): AgentConfig {
   if (!config) throw new Error(`Unknown agent role: ${role}`)
   return config
 }
+
+export function getAgentConfigByName(name: string): AgentConfig {
+  const config = ALL_AGENTS.find((a) => a.name === name)
+  if (!config) return { role: 'strategist', name, temperature: 0.7 }
+  return config
+}

@@ -1,5 +1,5 @@
 export type { AgentConfig, AgentRole as AgentRoleType } from './agent'
-export { AgentRole, ALL_AGENTS, DEFAULT_ROOM, getAgentConfig, OPTIONAL_AGENTS } from './agent'
+export { AgentRole, ALL_AGENTS, DEFAULT_ROOM, getAgentConfig, getAgentConfigByName, OPTIONAL_AGENTS } from './agent'
 export { type Conclusion, ConclusionSchema } from './conclusion'
 export type { SSEEvent } from './events'
 export type {
