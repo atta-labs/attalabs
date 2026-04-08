@@ -41,3 +41,4 @@ yarn-error.log*
 # Lockfile
 bun.lock
 next-env.d.ts
+.aider*
