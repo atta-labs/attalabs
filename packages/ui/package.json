@@ -6,6 +6,7 @@
   "types": "./libraries/basic/components/index.ts",
   "exports": {
     ".": "./libraries/basic/components/index.ts",
+    "./globals.css": "./styles/globals.css",
     "./types": "./types/index.ts",
     "./types/*": "./types/*.ts",
     "./components": "./libraries/basic/components/index.ts",
@@ -14,6 +15,11 @@
     "./animate/components": "./libraries/animate/components/index.ts",
     "./brutal/components": "./libraries/brutal/components/index.ts",
     "./shared": "./libraries/shared/index.ts",
+    "./lib/assistant-wave": "./canvas/assistant-wave.tsx",
+    "./lib/next-web-shell": "./lib/next-web-shell.tsx",
+    "./lib/library-provider": "./lib/library-provider.tsx",
+    "./lib/library-loader": "./lib/library-loader.ts",
+    "./canvas": "./canvas/index.ts",
     "./lib/*": "./lib/*.ts",
     "./hooks/*": "./hooks/*.ts",
     "./components/*": "./libraries/basic/installed/*.tsx"
@@ -24,6 +30,8 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
+    "@atta/auth": "workspace:*",
+    "@atta/cms": "workspace:*",
     "@base-ui/react": "^1.3.0",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
