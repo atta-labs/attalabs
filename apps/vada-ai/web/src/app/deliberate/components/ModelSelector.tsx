@@ -193,7 +193,7 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
                   <input
                     type='password'
                     autoComplete='off'
-                    placeholder={option.keyPrefix + '…'}
+                    placeholder={`${option.keyPrefix}…`}
                     value={keyInputs[option.provider] ?? ''}
                     onChange={(e) => handleKeyChange(option.provider, e.target.value)}
                     className='w-full rounded-md border border-border bg-card px-3 py-1.5 font-mono text-xs text-foreground outline-none focus:border-muted-foreground/60'

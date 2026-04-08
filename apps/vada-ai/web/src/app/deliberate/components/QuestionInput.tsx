@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { type AgentConfig, DEFAULT_ROOM, OPTIONAL_AGENTS } from '@/schemas'
 import { AgentBadge } from '@/components/AgentBadge'
+import { ModelSelector, type SelectedModel } from './ModelSelector'
 
 export function QuestionInput({ remainingToday }: { remainingToday: number }) {
   const [question, setQuestion] = useState('')
   const [selectedAgents, setSelectedAgents] = useState<AgentConfig[]>([...DEFAULT_ROOM])
   const [showCustomize, setShowCustomize] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<SelectedModel | null>(null)
   const router = useRouter()
 
   const toggleAgent = (agent: AgentConfig) => {
@@ -22,7 +24,7 @@ export function QuestionInput({ remainingToday }: { remainingToday: number }) {
   }
 
   const handleStart = async () => {
-    if (!question.trim() || loading) return
+    if (!question.trim() || loading || !selectedModel) return
     setLoading(true)
 
     const res = await fetch('/api/deliberation/start', {
@@ -30,7 +32,10 @@ export function QuestionInput({ remainingToday }: { remainingToday: number }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         question: question.trim(),
-        agents: selectedAgents.map((a) => a.role)
+        agents: selectedAgents.map((a) => a.role),
+        provider: selectedModel.provider,
+        modelId: selectedModel.modelId,
+        apiKey: selectedModel.apiKey || undefined
       })
     })
 
@@ -45,8 +50,16 @@ export function QuestionInput({ remainingToday }: { remainingToday: number }) {
     router.push(`/deliberation/${session_id}`)
   }
 
+  const startLabel = loading
+    ? 'Starting…'
+    : selectedModel
+      ? `Start with ${selectedModel.modelId.split('/').pop()?.split('-').slice(0, 2).join(' ') ?? selectedModel.provider}`
+      : 'Select a model'
+
   return (
     <div className='flex w-full max-w-2xl flex-col gap-6'>
+      <ModelSelector value={selectedModel} onChange={setSelectedModel} />
+
       <Textarea
         value={question}
         onChange={(e) => setQuestion(e.target.value)}
@@ -91,8 +104,8 @@ export function QuestionInput({ remainingToday }: { remainingToday: number }) {
         <Text as='span' size='xs' muted>
           {remainingToday} deliberation{remainingToday !== 1 ? 's' : ''} remaining today
         </Text>
-        <Button onClick={handleStart} disabled={!question.trim() || loading || remainingToday <= 0}>
-          {loading ? 'Starting...' : 'Start Deliberation'} {remainingToday}
+        <Button onClick={handleStart} disabled={!question.trim() || loading || remainingToday <= 0 || !selectedModel}>
+          {startLabel}
         </Button>
       </div>
     </div>
