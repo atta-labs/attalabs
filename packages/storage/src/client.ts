@@ -19,8 +19,8 @@ export function createStorageClient(config: StorageConfig): S3Client {
     endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
     credentials: {
       accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-    },
+      secretAccessKey: config.secretAccessKey
+    }
   })
   cachedConfigKey = key
 

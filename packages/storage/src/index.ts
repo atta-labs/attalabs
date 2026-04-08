@@ -7,5 +7,5 @@ export type {
   StorageConfig,
   TransformOptions,
   UploadOptions,
-  UploadResult,
+  UploadResult
 } from './types'

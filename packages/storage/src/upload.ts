@@ -13,10 +13,7 @@ export function getPublicUrl(config: StorageConfig, key: string): string {
   return `${base}/${key}`
 }
 
-export async function upload(
-  config: StorageConfig,
-  options: UploadOptions,
-): Promise<UploadResult> {
+export async function upload(config: StorageConfig, options: UploadOptions): Promise<UploadResult> {
   const client = createStorageClient(config)
   const key = buildKey(options)
 
@@ -29,15 +26,15 @@ export async function upload(
     Metadata: {
       originalFilename: options.filename,
       uploadDate: new Date().toISOString(),
-      ...options.metadata,
-    },
+      ...options.metadata
+    }
   })
 
   await client.send(command)
 
   return {
     key,
-    url: getPublicUrl(config, key),
+    url: getPublicUrl(config, key)
   }
 }
 
@@ -46,7 +43,7 @@ export async function remove(config: StorageConfig, key: string): Promise<void> 
 
   const command = new DeleteObjectCommand({
     Bucket: config.bucketName,
-    Key: key,
+    Key: key
   })
 
   await client.send(command)
