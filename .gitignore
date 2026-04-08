@@ -10,6 +10,7 @@ dist/
 build/
 **/.turbo/
 .superpowers/
+docs/superpowers/
 
 # Environment
 .env
