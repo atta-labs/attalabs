@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useComponents } from '@/components/providers/LibraryProvider'
+import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { JDInput } from './JDInput'
 import { LoadingState } from './LoadingState'
@@ -48,23 +48,19 @@ function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
   }
 
   const fallbackClass =
-    'border border-foreground/20 bg-foreground/5 px-6 py-2 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
+    'border border-foreground/20 bg-foreground/5 px-6 py-2 text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
 
   return (
     <div className='sticky bottom-0 mx-auto flex max-w-[680px] gap-3 border-t border-border/50 bg-background/80 px-6 py-4 backdrop-blur-sm no-print'>
       {Button ? (
         <>
-          <Button onClick={handleCopy} variant='outline' className='font-mono text-xs uppercase tracking-[0.2em]'>
+          <Button onClick={handleCopy} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
             {copied ? 'Copied!' : 'Copy Link'}
           </Button>
-          <Button
-            onClick={() => window.print()}
-            variant='outline'
-            className='font-mono text-xs uppercase tracking-[0.2em]'
-          >
+          <Button onClick={() => window.print()} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
             Export PDF
           </Button>
-          <Button onClick={onNewAudit} variant='outline' className='font-mono text-xs uppercase tracking-[0.2em]'>
+          <Button onClick={onNewAudit} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
             New Audit
           </Button>
         </>
@@ -178,24 +174,22 @@ export function EnvoyFlow({ profile }: { profile: CandidateProfile }) {
     return (
       <div className='mx-auto max-w-[680px] px-6 py-12'>
         <header className='mb-8 border-b border-border pb-6'>
-          <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-            Forensic Match Audit
-          </p>
+          <p className='text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
           <h1 className='mt-2 font-display text-2xl tracking-tight'>{profile.name}</h1>
-          <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{profile.title}</p>
+          <p className='mt-0.5 text-xs text-muted-foreground'>{profile.title}</p>
         </header>
 
         <p className='text-sm text-muted-foreground'>{error}</p>
 
         {Button ? (
-          <Button onClick={handleRetry} variant='outline' className='mt-4 font-mono text-xs uppercase tracking-[0.2em]'>
+          <Button onClick={handleRetry} variant='outline' className='mt-4 text-xs uppercase tracking-[0.2em]'>
             Try Again
           </Button>
         ) : (
           <button
             type='button'
             onClick={handleRetry}
-            className='mt-4 border border-foreground/20 bg-foreground/5 px-6 py-2 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
+            className='mt-4 border border-foreground/20 bg-foreground/5 px-6 py-2 text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
           >
             Try Again
           </button>

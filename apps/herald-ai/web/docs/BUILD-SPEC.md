@@ -60,54 +60,36 @@ Herald uses a **Single-App, Multi-Tenant Architecture**.
 
 ### Monorepo Structure
 
+Herald AI is one product inside the **Atta AI** monorepo. Shared infrastructure lives in `packages/`, product-specific code in `apps/{product-ai}/`.
+
 ```
-herald/
+atta-ai/
 ├── apps/
-│   └── herald/                     # Next.js 15 app (Portal + Envoy)
-│       ├── src/
-│       │   ├── app/
-│       │   │   ├── (portal)/           # Herald Portal routes (marketing, onboarding, admin)
-│       │   │   │   ├── page.tsx            # Landing / marketing page
-│       │   │   │   ├── onboarding/         # Multi-step onboarding flow
-│       │   │   │   │   └── page.tsx
-│       │   │   │   └── admin/              # Admin dashboard
-│       │   │   │       ├── page.tsx
-│       │   │   │       ├── preview/        # Live preview of deployed Envoy
-│       │   │   │       ├── theme/          # Theme selection & customisation
-│       │   │   │       ├── content/        # Profile content management
-│       │   │   │       └── analytics/      # Match report analytics
-│       │   │   ├── [username]/         # Herald Envoy (public candidate page)
-│       │   │   │   └── page.tsx
-│       │   │   ├── api/
-│       │   │   │   ├── match/             # POST /api/match (forensic audit)
-│       │   │   │   │   └── route.ts
-│       │   │   │   ├── mcp/               # MCP tool handlers (proxies to @herald/mcp)
-│       │   │   │   │   └── route.ts
-│       │   │   │   └── chat/              # AI onboarding chat
-│       │   │   │       └── route.ts
-│       │   │   ├── layout.tsx
-│       │   │   └── middleware.ts       # Subdomain routing + rate limiting
-│       │   ├── components/
-│       │   │   ├── envoy/                 # Envoy components (recruiter-facing)
-│       │   │   │   ├── ReportView.tsx
-│       │   │   │   ├── JDInput.tsx
-│       │   │   │   ├── LoadingState.tsx
-│       │   │   │   └── ResultView.tsx
-│       │   │   ├── portal/                # Portal components (candidate-facing)
-│       │   │   │   ├── OnboardingChat.tsx
-│       │   │   │   ├── AdminDashboard.tsx
-│       │   │   │   └── PortalPreview.tsx
-│       │   │   └── shared/                # Shared components
-│       │   └── lib/
-│       │       ├── profile.ts             # Hardcoded Dani profile (v1)
-│       │       └── prompts.ts             # Skeptical Auditor system prompt
-│       └── public/
+│   ├── herald-ai/                  # Herald AI — forensic CV match
+│   │   ├── web/                       # Next.js 16 app (Portal + Envoy)
+│   │   │   ├── src/
+│   │   │   │   ├── app/
+│   │   │   │   │   ├── page.tsx            # Landing / marketing page
+│   │   │   │   │   ├── admin/              # Admin dashboard + onboarding
+│   │   │   │   │   ├── [username]/         # Herald Envoy (public candidate page)
+│   │   │   │   │   └── api/               # API routes (match, signals, onboarding)
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── envoy/             # Envoy components (recruiter-facing)
+│   │   │   │   │   ├── portal/            # Portal components (candidate-facing)
+│   │   │   │   │   └── shared/
+│   │   │   │   └── lib/
+│   │   │   └── docs/
+│   │   ├── mcp/                       # Herald MCP server
+│   │   └── mobile/                    # Herald mobile (future)
+│   ├── atta-ai/                    # Atta AI — all your AI, one conversation
+│   ├── vitakka-ai/                 # Vitakka AI — applied thought
+│   └── vada-ai/                    # Vada AI — deliberation engine
 ├── packages/
-│   ├── ui/                         # Shared UI components (shadcn base)
-│   ├── cms/                        # Sanity schemas + config
-│   ├── mcp/                        # MCP tool handlers — match engine, GitHub signals, profile
-│   │                                 # v1: Vercel AI SDK tools. Extractable to standalone MCP server later.
-│   └── typescript-config/          # Shared TypeScript configs
+│   ├── ui/                         # @atta/ui — shared UI components (shadcn base)
+│   ├── cms/                        # @atta/cms — Sanity schemas + config (all products)
+│   ├── db/                         # @atta/db — Drizzle ORM + Neon
+│   ├── auth/                       # @atta/auth — Clerk auth
+│   └── typescript-config/          # @atta/typescript-config — shared TS configs
 ├── .husky/                         # Git hooks (pre-commit, commit-msg)
 ├── biome.json                      # Biome formatter + linter config
 ├── commitlint.config.js            # Commit message validation
@@ -168,7 +150,7 @@ The admin dashboard lives at `heyherald.com/admin` (protected by Clerk auth).
 
 ## 06. Candidate Profile (Hardcoded for v1)
 
-This is the complete profile object. Store in `apps/herald/src/lib/profile.ts`.
+This is the complete profile object. Store in `apps/herald-ai/web/src/lib/profile.ts`.
 
 In v2, this data lives in Sanity CMS, populated during onboarding.
 
@@ -434,7 +416,7 @@ const GITHUB_SIGNALS = [
 ## 13. Build Order (Strict — Follow This Sequence)
 
 ### Step 1 — Static Shell (Envoy Template)
-Scaffold `apps/herald`. Build `ReportView` with hardcoded Dani profile data and hardcoded sample report JSON. No LLM calls. Focus entirely on typography, spacing, the Decision Anchor hierarchy, and forwardability.
+Scaffold `apps/herald-ai/web`. Build `ReportView` with hardcoded Dani profile data and hardcoded sample report JSON. No LLM calls. Focus entirely on typography, spacing, the Decision Anchor hierarchy, and forwardability.
 
 **Deliverable:** A URL at `/dani` that looks like a finished premium forensic audit product with hardcoded data. This becomes the Envoy template that every `[username].heyherald.com` will render.
 
@@ -510,13 +492,13 @@ GITHUB_TOKEN=                # Personal access token for higher rate limits
 Paste this as the first message when opening Claude Code in this repo:
 
 ```
-Read CLAUDE.md and HERALD-BUILD-SPEC.md. This is Herald — a multi-tenant SaaS platform for candidates.
+Read CLAUDE.md and apps/herald-ai/web/docs/BUILD-SPEC.md. Herald AI is one product in the Atta AI monorepo — a multi-tenant SaaS platform for candidates.
 
 Start with Step 1 from the build spec: Static Shell (Envoy Template).
 
-Build the ReportView component at apps/herald using the hardcoded Dani profile (Section 06) and a sample match report (Section 07 schema). No LLM calls yet.
+Build the ReportView component at apps/herald-ai/web using the hardcoded Dani profile (Section 06) and a sample match report (Section 07 schema). No LLM calls yet.
 
-Stack: Next.js 15, App Router, TypeScript, Tailwind v4, shadcn/ui. Theme tokens in Section 10.
+Stack: Next.js 16, App Router, TypeScript, Tailwind v4, shadcn/ui. Theme tokens in Section 10.
 
 The UI must look like a finished premium product before a single AI call is wired. Focus on typography, spacing, the Decision Anchor hierarchy (grade + recommendation at top), and editorial layout.
 

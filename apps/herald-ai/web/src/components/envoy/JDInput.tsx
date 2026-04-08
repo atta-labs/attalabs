@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useComponents } from '@/components/providers/LibraryProvider'
+import { useComponents } from '@atta/ui/lib/library-provider'
 
 export function JDInput({
   onSubmit,

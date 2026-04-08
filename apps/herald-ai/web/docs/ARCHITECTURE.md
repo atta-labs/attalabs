@@ -14,11 +14,11 @@ Herald uses a **single Next.js app** that serves both the Portal (marketing + on
 
 ## Why Turborepo Monorepo
 
-Herald is built as a monorepo despite having only one app in v1. This is intentional:
+Herald AI lives inside the **Atta AI** monorepo alongside Vitakka AI, Vada AI, and Atta AI itself. This is intentional:
 
 1. **Proven pattern** — the author has built multi-app Turborepo monorepos with 3+ apps and 8+ packages. The tooling, caching, and workspace management are battle-tested.
-2. **Future-ready** — the platform will need shared packages across Portal and Envoy rendering paths. Clean package boundaries are structural, not just convention.
-3. **Package boundaries enforce clean architecture** — `@herald/ui` can't reach into the database. `@herald/cms` handles all Sanity concerns. `@herald/mcp` owns the match engine.
+2. **Shared infrastructure** — all products share `@atta/ui`, `@atta/cms`, `@atta/db`, `@atta/auth`, and `@atta/typescript-config`. Each product stays independent at runtime but shares the plumbing.
+3. **Package boundaries enforce clean architecture** — `@atta/ui` can't reach into the database. `@atta/cms` handles all Sanity concerns. Herald's MCP lives in `apps/herald-ai/mcp/`, scoped to its product.
 
 ---
 
@@ -65,7 +65,7 @@ Herald uses **runtime** theme switching via CSS variables and Sanity CMS, not bu
 
 ## Why Hardcoded Profile in v1
 
-The Sanity CMS will store all candidate profiles in v2+, but v1 hardcodes Dani's profile as a TypeScript object in `apps/herald/src/lib/profile.ts`.
+The Sanity CMS will store all candidate profiles in v2+, but v1 hardcodes Dani's profile as a TypeScript object in `apps/herald-ai/web/src/lib/profile.ts`.
 
 **Why:**
 - Ship faster — no Sanity setup, no auth flow, no onboarding needed for day 1

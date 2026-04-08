@@ -1,7 +1,9 @@
 'use client'
 
+import { Button } from '@atta/ui/components/button'
 import { useClerk, useUser } from '@clerk/nextjs'
-import { LogOut } from 'lucide-react'
+import { ExternalLink, LogOut } from 'lucide-react'
+// Button kept for sign-out button below
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -10,7 +12,7 @@ const NAV_ITEMS = [
   { href: '/admin/settings', label: 'Settings', icon: '⚙' }
 ]
 
-export function AdminTopBar() {
+export function AdminTopBar({ username }: { username: string }) {
   const pathname = usePathname()
   const { signOut } = useClerk()
   const { user } = useUser()
@@ -30,36 +32,38 @@ export function AdminTopBar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
-                isActive
-                  ? 'bg-accent/10 font-medium text-foreground'
-                  : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'
-              }`}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs transition-colors hover:bg-accent/10 ${isActive ? 'bg-accent/10 font-medium text-foreground' : 'text-muted-foreground'}`}
             >
-              <span className='text-sm'>{item.icon}</span>
+              <span>{item.icon}</span>
               {item.label}
             </Link>
           )
         })}
       </div>
 
-      {/* Right: Sign out + Avatar */}
+      {/* Right: Envoy link + Avatar + Sign out */}
       <div className='flex items-center gap-3'>
-        <button
-          type='button'
-          onClick={() => signOut({ redirectUrl: '/' })}
-          className='flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
+        <Link
+          href={`/${username}`}
+          target='_blank'
+          className='inline-flex items-center gap-1 rounded-md px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-accent/10'
         >
-          <LogOut className='h-3 w-3' />
+          /{username}
+          <ExternalLink className='h-3 w-3' />
+        </Link>
+        {user?.imageUrl && (
+          // biome-ignore lint/performance/noImgElement: Clerk avatar URL is external
+          <img src={user.imageUrl} alt='' className='h-6 w-6 rounded-full' />
+        )}
+        <Button
+          variant='ghost'
+          size='sm'
+          onClick={() => signOut({ redirectUrl: '/' })}
+          className='gap-1.5 font-mono text-xs text-muted-foreground'
+        >
           Sign out
-        </button>
-        <div className='flex items-center gap-2'>
-          {user?.imageUrl && (
-            // biome-ignore lint/performance/noImgElement: Clerk avatar URL is external
-            <img src={user.imageUrl} alt='' className='h-6 w-6 rounded-full' />
-          )}
-          <span className='font-mono text-[10px] text-muted-foreground'>{user?.firstName ?? 'User'}</span>
-        </div>
+          <LogOut className='h-3.5 w-3.5' />
+        </Button>
       </div>
     </nav>
   )

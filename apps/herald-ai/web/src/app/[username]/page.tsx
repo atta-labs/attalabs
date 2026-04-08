@@ -3,11 +3,11 @@ import { cmsClient, generateThemeCSSForScheme, getThemeById } from '@atta/cms'
 import { notFound } from 'next/navigation'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
 import { EnvoyFooter } from '@/components/envoy/EnvoyFooter'
-import { LibraryProvider } from '@/components/providers/LibraryProvider'
+import type { UILibrary } from '@atta/ui/lib/library-loader'
+import { LibraryProvider } from '@atta/ui/lib/library-provider'
 import { PreviewThemeListener } from '@/components/theme/PreviewThemeListener'
 import { getUserByUsername } from '@/db/queries'
-import type { UILibrary } from '@/hooks/useLibraryLoader'
-import { getGoogleFontsUrl } from '@/lib/font-loader'
+import { getGoogleFontsUrl } from '@atta/cms'
 
 export default async function EnvoyPage({
   params,

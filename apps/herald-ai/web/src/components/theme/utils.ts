@@ -7,7 +7,7 @@
  */
 
 import { cssColorToOklch } from '@atta/cms/utils/oklch'
-import { loadThemeFonts } from '@/lib/font-loader'
+import { loadThemeFonts } from '@atta/cms'
 
 export interface ThemeData {
   dark?: Record<string, unknown>
