@@ -17,6 +17,7 @@
     "studio:deploy:atta": "SANITY_STUDIO_PRODUCT=atta sanity deploy",
     "studio:deploy:vada": "SANITY_STUDIO_PRODUCT=vada sanity deploy",
     "studio:deploy:vitakka": "SANITY_STUDIO_PRODUCT=vitakka sanity deploy",
+    "studio:deploy:all": "bun run studio:deploy -- -y && bun run studio:deploy:atta -- -y && bun run studio:deploy:vada -- -y && bun run studio:deploy:vitakka -- -y",
     "migrate:herald-to-product": "bun run ./scripts/migrate-herald-to-product.ts",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo"
@@ -27,9 +28,13 @@
   },
   "dependencies": {
     "@sanity/client": "^7.20.0",
+    "@sanity/icons": "^3.7.4",
+    "@sanity/ui": "^3.1.13",
     "@sanity/vision": "^5.19.0",
     "culori": "^4.0.2",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "sanity": "^5.19.0",
-    "styled-components": "^6.3.12"
+    "styled-components": "^6.1.15"
   }
 }

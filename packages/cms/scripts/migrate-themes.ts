@@ -31,7 +31,7 @@ const targetClient = createClient({
 })
 
 async function migrate() {
-  console.log('Fetching themes from Summon internal...')
+  console.info('Fetching themes from Summon internal...')
 
   const themes = await sourceClient.fetch(
     `*[_type == "uiTheme" && !(_id in path("drafts.**"))] {
@@ -47,20 +47,20 @@ async function migrate() {
     } | order(name asc)`
   )
 
-  console.log(`Found ${themes.length} themes`)
+  console.info(`Found ${themes.length} themes`)
 
   // Deduplicate by name (keep first)
   const seen = new Set<string>()
   const unique = themes.filter((t: { name: string }) => {
     if (seen.has(t.name)) {
-      console.log(`  Skipping duplicate: ${t.name}`)
+      console.info(`  Skipping duplicate: ${t.name}`)
       return false
     }
     seen.add(t.name)
     return true
   })
 
-  console.log(`Migrating ${unique.length} unique themes...`)
+  console.info(`Migrating ${unique.length} unique themes...`)
 
   for (const theme of unique) {
     const doc = {
@@ -77,13 +77,13 @@ async function migrate() {
 
     try {
       await targetClient.createOrReplace(doc)
-      console.log(`  Migrated: ${theme.name}`)
+      console.info(`  Migrated: ${theme.name}`)
     } catch (err) {
       console.error(`  Failed: ${theme.name}`, err)
     }
   }
 
-  console.log('Done!')
+  console.info('Done!')
 }
 
 migrate()

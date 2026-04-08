@@ -1,0 +1,706 @@
+[
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ]
+          }
+        ],
+        "name": "name",
+        "type": "string",
+        "title": "Theme Name"
+      },
+      {
+        "rows": 2,
+        "name": "description",
+        "type": "text"
+      },
+      {
+        "options": {
+          "collapsible": true,
+          "collapsed": false
+        },
+        "fields": [
+          {
+            "name": "background",
+            "type": "string"
+          },
+          {
+            "name": "foreground",
+            "type": "string"
+          },
+          {
+            "name": "card",
+            "type": "string"
+          },
+          {
+            "name": "cardForeground",
+            "type": "string"
+          },
+          {
+            "name": "popover",
+            "type": "string"
+          },
+          {
+            "name": "popoverForeground",
+            "type": "string"
+          },
+          {
+            "name": "primary",
+            "type": "string"
+          },
+          {
+            "name": "primaryForeground",
+            "type": "string"
+          },
+          {
+            "name": "secondary",
+            "type": "string"
+          },
+          {
+            "name": "secondaryForeground",
+            "type": "string"
+          },
+          {
+            "name": "muted",
+            "type": "string"
+          },
+          {
+            "name": "mutedForeground",
+            "type": "string"
+          },
+          {
+            "name": "accent",
+            "type": "string"
+          },
+          {
+            "name": "accentForeground",
+            "type": "string"
+          },
+          {
+            "name": "destructive",
+            "type": "string"
+          },
+          {
+            "name": "destructiveForeground",
+            "type": "string"
+          },
+          {
+            "name": "success",
+            "type": "string"
+          },
+          {
+            "name": "successForeground",
+            "type": "string"
+          },
+          {
+            "name": "warning",
+            "type": "string"
+          },
+          {
+            "name": "warningForeground",
+            "type": "string"
+          },
+          {
+            "name": "border",
+            "type": "string"
+          },
+          {
+            "name": "input",
+            "type": "string"
+          },
+          {
+            "name": "ring",
+            "type": "string"
+          },
+          {
+            "name": "chart1",
+            "type": "string"
+          },
+          {
+            "name": "chart2",
+            "type": "string"
+          },
+          {
+            "name": "chart3",
+            "type": "string"
+          },
+          {
+            "name": "chart4",
+            "type": "string"
+          },
+          {
+            "name": "chart5",
+            "type": "string"
+          },
+          {
+            "name": "sidebar",
+            "type": "string"
+          },
+          {
+            "name": "sidebarForeground",
+            "type": "string"
+          },
+          {
+            "name": "sidebarPrimary",
+            "type": "string"
+          },
+          {
+            "name": "sidebarPrimaryForeground",
+            "type": "string"
+          },
+          {
+            "name": "sidebarAccent",
+            "type": "string"
+          },
+          {
+            "name": "sidebarAccentForeground",
+            "type": "string"
+          },
+          {
+            "name": "sidebarBorder",
+            "type": "string"
+          },
+          {
+            "name": "sidebarRing",
+            "type": "string"
+          },
+          {
+            "name": "headerBackground",
+            "type": "string"
+          },
+          {
+            "name": "gradientPrimary",
+            "type": "string"
+          },
+          {
+            "name": "gradientBackground",
+            "type": "string"
+          },
+          {
+            "name": "gradientCard",
+            "type": "string"
+          }
+        ],
+        "name": "light",
+        "type": "object",
+        "title": "Light Mode Colors"
+      },
+      {
+        "options": {
+          "collapsible": true,
+          "collapsed": false
+        },
+        "fields": [
+          {
+            "name": "background",
+            "type": "string"
+          },
+          {
+            "name": "foreground",
+            "type": "string"
+          },
+          {
+            "name": "card",
+            "type": "string"
+          },
+          {
+            "name": "cardForeground",
+            "type": "string"
+          },
+          {
+            "name": "popover",
+            "type": "string"
+          },
+          {
+            "name": "popoverForeground",
+            "type": "string"
+          },
+          {
+            "name": "primary",
+            "type": "string"
+          },
+          {
+            "name": "primaryForeground",
+            "type": "string"
+          },
+          {
+            "name": "secondary",
+            "type": "string"
+          },
+          {
+            "name": "secondaryForeground",
+            "type": "string"
+          },
+          {
+            "name": "muted",
+            "type": "string"
+          },
+          {
+            "name": "mutedForeground",
+            "type": "string"
+          },
+          {
+            "name": "accent",
+            "type": "string"
+          },
+          {
+            "name": "accentForeground",
+            "type": "string"
+          },
+          {
+            "name": "destructive",
+            "type": "string"
+          },
+          {
+            "name": "destructiveForeground",
+            "type": "string"
+          },
+          {
+            "name": "success",
+            "type": "string"
+          },
+          {
+            "name": "successForeground",
+            "type": "string"
+          },
+          {
+            "name": "warning",
+            "type": "string"
+          },
+          {
+            "name": "warningForeground",
+            "type": "string"
+          },
+          {
+            "name": "border",
+            "type": "string"
+          },
+          {
+            "name": "input",
+            "type": "string"
+          },
+          {
+            "name": "ring",
+            "type": "string"
+          },
+          {
+            "name": "chart1",
+            "type": "string"
+          },
+          {
+            "name": "chart2",
+            "type": "string"
+          },
+          {
+            "name": "chart3",
+            "type": "string"
+          },
+          {
+            "name": "chart4",
+            "type": "string"
+          },
+          {
+            "name": "chart5",
+            "type": "string"
+          },
+          {
+            "name": "sidebar",
+            "type": "string"
+          },
+          {
+            "name": "sidebarForeground",
+            "type": "string"
+          },
+          {
+            "name": "sidebarPrimary",
+            "type": "string"
+          },
+          {
+            "name": "sidebarPrimaryForeground",
+            "type": "string"
+          },
+          {
+            "name": "sidebarAccent",
+            "type": "string"
+          },
+          {
+            "name": "sidebarAccentForeground",
+            "type": "string"
+          },
+          {
+            "name": "sidebarBorder",
+            "type": "string"
+          },
+          {
+            "name": "sidebarRing",
+            "type": "string"
+          },
+          {
+            "name": "headerBackground",
+            "type": "string"
+          },
+          {
+            "name": "gradientPrimary",
+            "type": "string"
+          },
+          {
+            "name": "gradientBackground",
+            "type": "string"
+          },
+          {
+            "name": "gradientCard",
+            "type": "string"
+          }
+        ],
+        "name": "dark",
+        "type": "object",
+        "title": "Dark Mode Colors"
+      },
+      {
+        "fields": [
+          {
+            "name": "fontSans",
+            "type": "string"
+          },
+          {
+            "name": "fontSerif",
+            "type": "string"
+          },
+          {
+            "name": "fontMono",
+            "type": "string"
+          },
+          {
+            "name": "trackingNormal",
+            "type": "string"
+          }
+        ],
+        "name": "typography",
+        "type": "object"
+      },
+      {
+        "fields": [
+          {
+            "name": "radius",
+            "type": "string",
+            "title": "Border Radius"
+          },
+          {
+            "name": "spacing",
+            "type": "string"
+          }
+        ],
+        "name": "spacing",
+        "type": "object"
+      },
+      {
+        "fields": [
+          {
+            "name": "shadow2xs",
+            "type": "string",
+            "title": "Shadow 2XS"
+          },
+          {
+            "name": "shadowXs",
+            "type": "string",
+            "title": "Shadow XS"
+          },
+          {
+            "name": "shadowSm",
+            "type": "string",
+            "title": "Shadow SM"
+          },
+          {
+            "name": "shadow",
+            "type": "string"
+          },
+          {
+            "name": "shadowMd",
+            "type": "string",
+            "title": "Shadow MD"
+          },
+          {
+            "name": "shadowLg",
+            "type": "string",
+            "title": "Shadow LG"
+          },
+          {
+            "name": "shadowXl",
+            "type": "string",
+            "title": "Shadow XL"
+          },
+          {
+            "name": "shadow2xl",
+            "type": "string",
+            "title": "Shadow 2XL"
+          }
+        ],
+        "name": "shadows",
+        "type": "object"
+      }
+    ],
+    "name": "uiTheme",
+    "type": "document",
+    "title": "UI Theme"
+  },
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ]
+          }
+        ],
+        "description": "Unique identifier: basic, retro, animate, brutal",
+        "name": "id",
+        "type": "string",
+        "title": "ID"
+      },
+      {
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ]
+          }
+        ],
+        "description": "Display name (e.g., \"Standard\", \"Retro\")",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "rows": 2,
+        "description": "Short style description",
+        "name": "description",
+        "type": "text"
+      },
+      {
+        "description": "Style category (e.g., \"Modern / Minimal\")",
+        "name": "style",
+        "type": "string"
+      },
+      {
+        "description": "Display ordering",
+        "name": "order",
+        "type": "number"
+      }
+    ],
+    "name": "library",
+    "type": "document",
+    "title": "Component Library"
+  },
+  {
+    "fields": [
+      {
+        "fields": [
+          {
+            "description": "Active theme for the Herald portal",
+            "to": [
+              {
+                "type": "uiTheme"
+              }
+            ],
+            "name": "theme",
+            "type": "reference"
+          },
+          {
+            "options": {
+              "list": [
+                {
+                  "title": "Dark",
+                  "value": "dark"
+                },
+                {
+                  "title": "Light",
+                  "value": "light"
+                }
+              ]
+            },
+            "initialValue": "dark",
+            "name": "colorScheme",
+            "type": "string"
+          },
+          {
+            "description": "Active component library for the Herald portal",
+            "to": [
+              {
+                "type": "library"
+              }
+            ],
+            "name": "library",
+            "type": "reference"
+          }
+        ],
+        "name": "userInterface",
+        "type": "object"
+      }
+    ],
+    "name": "heraldConfig",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "fields": [
+          {
+            "description": "Active theme for the Atta portal",
+            "to": [
+              {
+                "type": "uiTheme"
+              }
+            ],
+            "name": "theme",
+            "type": "reference"
+          },
+          {
+            "options": {
+              "list": [
+                {
+                  "title": "Dark",
+                  "value": "dark"
+                },
+                {
+                  "title": "Light",
+                  "value": "light"
+                }
+              ]
+            },
+            "initialValue": "dark",
+            "name": "colorScheme",
+            "type": "string"
+          },
+          {
+            "description": "Active component library for the Atta portal",
+            "to": [
+              {
+                "type": "library"
+              }
+            ],
+            "name": "library",
+            "type": "reference"
+          }
+        ],
+        "name": "userInterface",
+        "type": "object"
+      }
+    ],
+    "name": "attaConfig",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "fields": [
+          {
+            "description": "Active theme for the Vitakka portal",
+            "to": [
+              {
+                "type": "uiTheme"
+              }
+            ],
+            "name": "theme",
+            "type": "reference"
+          },
+          {
+            "options": {
+              "list": [
+                {
+                  "title": "Dark",
+                  "value": "dark"
+                },
+                {
+                  "title": "Light",
+                  "value": "light"
+                }
+              ]
+            },
+            "initialValue": "dark",
+            "name": "colorScheme",
+            "type": "string"
+          },
+          {
+            "description": "Active component library for the Vitakka portal",
+            "to": [
+              {
+                "type": "library"
+              }
+            ],
+            "name": "library",
+            "type": "reference"
+          }
+        ],
+        "name": "userInterface",
+        "type": "object"
+      }
+    ],
+    "name": "vitakkaConfig",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "fields": [
+          {
+            "description": "Active theme for the Vada portal",
+            "to": [
+              {
+                "type": "uiTheme"
+              }
+            ],
+            "name": "theme",
+            "type": "reference"
+          },
+          {
+            "options": {
+              "list": [
+                {
+                  "title": "Dark",
+                  "value": "dark"
+                },
+                {
+                  "title": "Light",
+                  "value": "light"
+                }
+              ]
+            },
+            "initialValue": "dark",
+            "name": "colorScheme",
+            "type": "string"
+          },
+          {
+            "description": "Active component library for the Vada portal",
+            "to": [
+              {
+                "type": "library"
+              }
+            ],
+            "name": "library",
+            "type": "reference"
+          }
+        ],
+        "name": "userInterface",
+        "type": "object"
+      }
+    ],
+    "name": "vadaConfig",
+    "type": "document"
+  }
+]

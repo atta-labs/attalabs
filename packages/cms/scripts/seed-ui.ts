@@ -1,8 +1,11 @@
 /**
- * Seed Sanity CMS with library documents and heraldConfig singleton.
- * Also logs existing themes so we can pick one for heraldConfig.
+ * Seed Sanity CMS with library documents and a product UI config singleton.
+ * Also logs existing themes so we can pick one for the config.
  *
  * Usage: cd packages/cms && npx tsx scripts/seed-ui.ts
+ *
+ * Target project via SANITY_* env. Which singleton to create:
+ *   SANITY_SEED_PRODUCT=herald | atta | vitakka | vada   (default: herald)
  */
 
 import { createClient } from '@sanity/client'
@@ -14,6 +17,15 @@ const client = createClient({
   token: process.env.SANITY_API_TOKEN!,
   useCdn: false
 })
+
+const SEED_PRODUCT = (process.env.SANITY_SEED_PRODUCT ?? 'herald').toLowerCase()
+
+const PRODUCT_CONFIGS: Record<string, { _type: string; _id: string }> = {
+  herald: { _type: 'heraldConfig', _id: 'heraldConfig' },
+  atta: { _type: 'attaConfig', _id: 'attaConfig' },
+  vitakka: { _type: 'vitakkaConfig', _id: 'vitakkaConfig' },
+  vada: { _type: 'vadaConfig', _id: 'vadaConfig' }
+}
 
 const LIBRARIES = [
   {
@@ -55,41 +67,48 @@ const LIBRARIES = [
 ]
 
 async function seed() {
-  console.log('Seeding libraries...')
+  const productCfg = PRODUCT_CONFIGS[SEED_PRODUCT]
+  if (!productCfg) {
+    console.error(
+      `Invalid SANITY_SEED_PRODUCT="${process.env.SANITY_SEED_PRODUCT}". Expected one of: ${Object.keys(PRODUCT_CONFIGS).join(', ')}`
+    )
+    process.exit(1)
+  }
+
+  console.info(`Seeding libraries (product: ${SEED_PRODUCT})...`)
 
   for (const lib of LIBRARIES) {
     await client.createOrReplace(lib)
-    console.log(`  Created library: ${lib.name} (${lib.id})`)
+    console.info(`  Created library: ${lib.name} (${lib.id})`)
   }
 
   // Find first available theme to use as default
   const themes = await client.fetch('*[_type == "uiTheme"] { _id, name } | order(name asc)')
-  console.log(`\nFound ${themes.length} themes:`)
+  console.info(`\nFound ${themes.length} themes:`)
   for (const t of themes) {
-    console.log(`  - ${t.name} (${t._id})`)
+    console.info(`  - ${t.name} (${t._id})`)
   }
 
   const defaultTheme = themes[0]
   if (!defaultTheme) {
-    console.log('\nNo themes found! Create a theme in Sanity Studio first, then re-run.')
+    console.info('\nNo themes found! Create a theme in Sanity Studio first, then re-run.')
     return
   }
 
-  console.log(`\nUsing "${defaultTheme.name}" as default theme for heraldConfig.`)
+  console.info(`\nUsing "${defaultTheme.name}" as default theme for ${productCfg._id}.`)
 
-  // Create heraldConfig singleton
   await client.createOrReplace({
-    _id: 'heraldConfig',
-    _type: 'heraldConfig',
+    _id: productCfg._id,
+    _type: productCfg._type,
     userInterface: {
       theme: { _type: 'reference', _ref: defaultTheme._id },
       colorScheme: 'dark',
       library: { _type: 'reference', _ref: 'library-basic' }
     }
   })
-  console.log('Created heraldConfig singleton.')
+  console.info(`Created ${productCfg._type} singleton (${productCfg._id}).`)
 
-  console.log('\nDone! Verify in Sanity Studio at http://localhost:3333')
+  console.info('\nDone! Verify in Sanity Studio at http://localhost:3333')
 }
 
 seed().catch(console.error)

@@ -1,28 +1,34 @@
 import { createElement } from 'react'
 import { defineField, defineType } from 'sanity'
+import { CSSValueInput } from '../components/CSSValueInput'
 
 const cssColorField = (name: string, title: string, description?: string) =>
   defineField({
     name,
     title,
     type: 'string',
-    description
+    description,
+    components: {
+      input: CSSValueInput
+    }
   })
 
 const colorGroup = (
   name: string,
   title: string,
-  colors: Array<{ name: string; title: string; description?: string }>
+  colors: Array<{ name: string; title: string; description?: string }>,
+  group?: string
 ) =>
   defineField({
     name,
     title,
     type: 'object',
+    group,
     options: { collapsible: true, collapsed: false },
     fields: colors.map(({ name, title, description }) => cssColorField(name, title, description))
   })
 
-const BASE_COLORS = [
+const COLOR_FIELDS = [
   { name: 'background', title: 'Background' },
   { name: 'foreground', title: 'Foreground' },
   { name: 'card', title: 'Card' },
@@ -59,10 +65,10 @@ const BASE_COLORS = [
   { name: 'sidebarAccentForeground', title: 'Sidebar Accent Foreground' },
   { name: 'sidebarBorder', title: 'Sidebar Border' },
   { name: 'sidebarRing', title: 'Sidebar Ring' },
-  { name: 'headerBackground', title: 'Header Background' },
-  { name: 'gradientPrimary', title: 'Gradient Primary' },
-  { name: 'gradientBackground', title: 'Gradient Background' },
-  { name: 'gradientCard', title: 'Gradient Card' }
+  { name: 'headerBackground', title: 'Header Background', description: 'CSS value (rgba, gradient, etc.)' },
+  { name: 'gradientPrimary', title: 'Gradient Primary', description: 'CSS gradient value' },
+  { name: 'gradientBackground', title: 'Gradient Background', description: 'CSS gradient value' },
+  { name: 'gradientCard', title: 'Gradient Card', description: 'CSS gradient or color value' }
 ]
 
 export const uiTheme = defineType({
@@ -70,54 +76,103 @@ export const uiTheme = defineType({
   title: 'UI Theme',
   type: 'document',
   groups: [
-    { name: 'light', title: 'Light', default: true },
-    { name: 'dark', title: 'Dark' },
+    { name: 'light', title: 'Light Mode', default: true },
+    { name: 'dark', title: 'Dark Mode' },
     { name: 'typography', title: 'Typography' },
-    { name: 'spacing', title: 'Spacing' },
-    { name: 'shadows', title: 'Shadows' }
+    { name: 'spacing', title: 'Spacing & Radius' },
+    { name: 'shadows', title: 'Shadows' },
+    { name: 'info', title: 'Info' }
   ],
   fields: [
+    // Info
     defineField({
       name: 'name',
       title: 'Theme Name',
       type: 'string',
+      description: 'Unique identifier for this theme (e.g., "Midnight Gold", "Cobalt")',
+      group: 'info',
       validation: (Rule) => Rule.required()
     }),
     defineField({
       name: 'description',
       title: 'Description',
       type: 'text',
-      rows: 2
+      rows: 2,
+      description: 'Brief description of this theme',
+      group: 'info'
     }),
-    colorGroup('light', 'Light Mode Colors', BASE_COLORS),
-    colorGroup('dark', 'Dark Mode Colors', BASE_COLORS),
+
+    // Light Mode Colors
+    colorGroup('light', 'Light Mode Colors', COLOR_FIELDS, 'light'),
+
+    // Dark Mode Colors
+    colorGroup('dark', 'Dark Mode Colors', COLOR_FIELDS, 'dark'),
+
+    // Typography
     defineField({
       name: 'typography',
       title: 'Typography',
       type: 'object',
       group: 'typography',
+      options: { collapsible: true, collapsed: false },
       fields: [
-        defineField({ name: 'fontSans', title: 'Font Sans', type: 'string' }),
-        defineField({ name: 'fontSerif', title: 'Font Serif', type: 'string' }),
-        defineField({ name: 'fontMono', title: 'Font Mono', type: 'string' }),
-        defineField({ name: 'trackingNormal', title: 'Tracking Normal', type: 'string' })
+        defineField({
+          name: 'fontSans',
+          title: 'Sans Font',
+          type: 'string',
+          description: 'e.g., "Inter, sans-serif"'
+        }),
+        defineField({
+          name: 'fontSerif',
+          title: 'Serif Font',
+          type: 'string',
+          description: 'e.g., "Merriweather, serif"'
+        }),
+        defineField({
+          name: 'fontMono',
+          title: 'Mono Font',
+          type: 'string',
+          description: 'e.g., "JetBrains Mono, monospace"'
+        }),
+        defineField({
+          name: 'trackingNormal',
+          title: 'Tracking Normal',
+          type: 'string',
+          description: 'Letter spacing, e.g., "0em"'
+        })
       ]
     }),
+
+    // Spacing & Radius
     defineField({
       name: 'spacing',
-      title: 'Spacing',
+      title: 'Spacing & Radius',
       type: 'object',
       group: 'spacing',
+      options: { collapsible: true, collapsed: false },
       fields: [
-        defineField({ name: 'radius', title: 'Border Radius', type: 'string' }),
-        defineField({ name: 'spacing', title: 'Spacing', type: 'string' })
+        defineField({
+          name: 'radius',
+          title: 'Border Radius',
+          type: 'string',
+          description: 'Base border radius, e.g., "0.5rem", "1.25rem"'
+        }),
+        defineField({
+          name: 'spacing',
+          title: 'Base Spacing',
+          type: 'string',
+          description: 'Base spacing unit, e.g., "0.25rem"'
+        })
       ]
     }),
+
+    // Shadows
     defineField({
       name: 'shadows',
       title: 'Shadows',
       type: 'object',
       group: 'shadows',
+      options: { collapsible: true, collapsed: false },
       fields: [
         defineField({ name: 'shadow2xs', title: 'Shadow 2XS', type: 'string' }),
         defineField({ name: 'shadowXs', title: 'Shadow XS', type: 'string' }),
@@ -130,6 +185,7 @@ export const uiTheme = defineType({
       ]
     })
   ],
+
   preview: {
     select: {
       name: 'name',

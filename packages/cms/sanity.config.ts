@@ -13,7 +13,7 @@ export default defineConfig({
   title: isAtta ? 'Atta CMS' : isVada ? 'Vada CMS' : isVitakka ? 'Vitakka CMS' : 'Herald CMS',
   projectId:
     process.env.SANITY_STUDIO_PROJECT_ID ||
-    (isAtta ? '892o2m9f' : isVada ? '28r5u68w' : isVitakka ? '6m85m3re' : 'e9gbd2d1'),
+    (isAtta ? '892o2m9f' : isVada ? 'ofnj2ojb' : isVitakka ? 'o56nzgrr' : 'e9gbd2d1'),
   dataset: process.env.SANITY_STUDIO_DATASET || 'production',
   plugins: [
     structureTool({
@@ -50,65 +50,62 @@ export default defineConfig({
                         .title('Vada User Interface')
                         .items([
                           S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Vada Themes')),
-                          S.listItem()
-                            .title('Libraries')
-                            .child(S.documentTypeList('library').title('Vada Libraries'))
+                          S.listItem().title('Libraries').child(S.documentTypeList('library').title('Vada Libraries'))
                         ])
                     )
                 ])
-          : isVitakka
-            ? S.list()
-                .title('Vitakka Content')
-                .items([
-                  S.listItem()
-                    .title('Vitakka Config')
-                    .child(
-                      S.document()
-                        .schemaType('vitakkaConfig')
-                        .documentId('vitakkaConfig')
-                        .title('Vitakka Config')
-                    ),
-                  S.listItem()
-                    .title('User Interface')
-                    .child(
-                      S.list()
-                        .title('Vitakka User Interface')
-                        .items([
-                          S.listItem()
-                            .title('Themes')
-                            .child(S.documentTypeList('uiTheme').title('Vitakka Themes')),
-                          S.listItem()
-                            .title('Libraries')
-                            .child(S.documentTypeList('library').title('Vitakka Libraries'))
-                        ])
-                    )
-                ])
-            : S.list()
-              .title('Herald Content')
-              .items([
-                S.listItem()
-                  .title('Herald Config')
-                  .child(S.document().schemaType('heraldConfig').documentId('heraldConfig').title('Herald Config')),
-                S.listItem()
-                  .title('Atta Config')
-                  .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
-                S.listItem()
-                  .title('Vitakka Config')
-                  .child(S.document().schemaType('vitakkaConfig').documentId('vitakkaConfig').title('Vitakka Config')),
-                S.listItem()
-                  .title('Vada Config')
-                  .child(S.document().schemaType('vadaConfig').documentId('vadaConfig').title('Vada Config')),
-                S.listItem()
-                  .title('User Interface')
-                  .child(
-                    S.list()
-                      .title('Herald User Interface')
-                      .items([
-                        S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Herald Themes')),
-                        S.listItem().title('Libraries').child(S.documentTypeList('library').title('Herald Libraries'))
-                      ])
-                  )
-              ])
+            : isVitakka
+              ? S.list()
+                  .title('Vitakka Content')
+                  .items([
+                    S.listItem()
+                      .title('Vitakka Config')
+                      .child(
+                        S.document().schemaType('vitakkaConfig').documentId('vitakkaConfig').title('Vitakka Config')
+                      ),
+                    S.listItem()
+                      .title('User Interface')
+                      .child(
+                        S.list()
+                          .title('Vitakka User Interface')
+                          .items([
+                            S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Vitakka Themes')),
+                            S.listItem()
+                              .title('Libraries')
+                              .child(S.documentTypeList('library').title('Vitakka Libraries'))
+                          ])
+                      )
+                  ])
+              : S.list()
+                  .title('Herald Content')
+                  .items([
+                    S.listItem()
+                      .title('Herald Config')
+                      .child(S.document().schemaType('heraldConfig').documentId('heraldConfig').title('Herald Config')),
+                    S.listItem()
+                      .title('Atta Config')
+                      .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
+                    S.listItem()
+                      .title('Vitakka Config')
+                      .child(
+                        S.document().schemaType('vitakkaConfig').documentId('vitakkaConfig').title('Vitakka Config')
+                      ),
+                    S.listItem()
+                      .title('Vada Config')
+                      .child(S.document().schemaType('vadaConfig').documentId('vadaConfig').title('Vada Config')),
+                    S.listItem()
+                      .title('User Interface')
+                      .child(
+                        S.list()
+                          .title('Herald User Interface')
+                          .items([
+                            S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Herald Themes')),
+                            S.listItem()
+                              .title('Libraries')
+                              .child(S.documentTypeList('library').title('Herald Libraries'))
+                          ])
+                      )
+                  ])
     }),
     visionTool()
   ],

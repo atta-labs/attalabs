@@ -9,7 +9,7 @@ export default defineCliConfig({
   api: {
     projectId:
       process.env.SANITY_STUDIO_PROJECT_ID ||
-      (isAtta ? '892o2m9f' : isVada ? '28r5u68w' : isVitakka ? '6m85m3re' : 'e9gbd2d1'),
+      (isAtta ? '892o2m9f' : isVada ? 'ofnj2ojb' : isVitakka ? 'o56nzgrr' : 'e9gbd2d1'),
     dataset: process.env.SANITY_STUDIO_DATASET || 'production'
   },
   deployment: {
@@ -18,9 +18,9 @@ export default defineCliConfig({
       (isAtta
         ? 'ne4jogb79tawox8bo96irbrh'
         : isVada
-          ? 'm7z8p2o1'
+          ? 'pmbemd30l0taw6d61c0uyz5v'
           : isVitakka
-            ? 'vsk9f2q4'
+            ? 'm457f9vl1jcgy3gkunej99wx'
             : 'dl47uh4y5jmv2on69nzc6yt0')
   }
 })

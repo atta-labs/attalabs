@@ -2,13 +2,31 @@
 
 // Client
 export { cmsClient, cmsConfig, cmsWriteClient, createCmsClient } from './client'
-// Queries
-export { getHeraldConfig } from './queries/herald-config'
 export { getLibraries, getLibraryById } from './queries/library'
+// Queries
+export {
+  getAttaConfig,
+  getHeraldConfig,
+  getProductUiConfig,
+  getVadaConfig,
+  getVitakkaConfig
+} from './queries/product-ui-config'
 export { getThemeById, getThemeByName, getThemeList, getThemes } from './queries/theme'
 // Types
-export type { CMSLibrary, CMSTheme, ColorScheme, HeraldConfig, ThemeSpacing, ThemeTypography } from './types'
+export type {
+  AttaConfig,
+  CMSLibrary,
+  CMSTheme,
+  ColorScheme,
+  HeraldConfig,
+  PortalUiConfig,
+  ThemeSpacing,
+  ThemeTypography,
+  VadaConfig,
+  VitakkaConfig
+} from './types'
 export { FIELD_TO_CSS_VAR, SHADOW_TO_CSS_VAR } from './types'
 
 // Utils
-export { generateThemeCSS, generateThemeCSSForScheme } from './utils/theme'
+export { getGoogleFontsUrl, loadThemeFonts } from './utils/font-loader'
+export { generateThemeCSS, generateThemeCSSForScheme, transformColorGroup } from './utils/theme'

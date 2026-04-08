@@ -69,7 +69,8 @@ export interface CMSLibrary {
   order?: number
 }
 
-export interface HeraldConfig {
+/** Shared shape for Herald, Atta, Vitakka, and Vada CMS singletons */
+export interface PortalUiConfig {
   _id: string
   userInterface: {
     theme: CMSTheme | null
@@ -77,6 +78,11 @@ export interface HeraldConfig {
     library: CMSLibrary | null
   }
 }
+
+export type HeraldConfig = PortalUiConfig
+export type AttaConfig = PortalUiConfig
+export type VitakkaConfig = PortalUiConfig
+export type VadaConfig = PortalUiConfig
 
 export const SHADOW_TO_CSS_VAR: Record<string, string> = {
   shadow2xs: 'shadow-2xs',
