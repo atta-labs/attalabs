@@ -57,11 +57,11 @@ export function useDeliberation(
   const isComplete = initialState === 'TERMINAL'
 
   const [messages, setMessages] = useState<DeliberationMessage[]>(() =>
-    initialEntries.map((e) => {
+    initialEntries.map((e, i) => {
       const { text, replyTarget } = parseContent(e.content)
       const config = getAgentConfigByName(e.agent)
       return {
-        id: `${e.round}-${config.role}`,
+        id: `${e.round}-${config.role}-${i}`,
         agent: e.agent,
         agentRole: config.role,
         round: e.round,
@@ -134,7 +134,7 @@ export function useDeliberation(
           const config = getAgentConfigByName(data.agent)
           const { text, replyTarget } = parseContent(data.content)
           const msg: DeliberationMessage = {
-            id: `${data.round}-${config.role}`,
+            id: `${data.round}-${config.role}-${Date.now()}`,
             agent: data.agent,
             agentRole: config.role,
             round: data.round,
