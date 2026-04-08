@@ -9,9 +9,7 @@ out/
 dist/
 build/
 **/.turbo/
-.superpowers/
-docs/superpowers/
-docs/animation-context-for-atta.md
+docs/
 
 # Environment
 .env
