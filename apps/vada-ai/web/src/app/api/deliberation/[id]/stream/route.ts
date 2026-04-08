@@ -2,6 +2,8 @@ import { auth } from '@atta/auth/hooks'
 import { getSessionWithTranscript } from '@/db/queries'
 import { SSEEmitter } from '@/engine/stream'
 import { runDeliberation } from '@/engine/workflow'
+import { consumeEphemeralKey } from '@/engine/pending-keys'
+import type { ModelConfig } from '@/lib/models'
 
 // Simulation delay to make "replayed" messages feel like they are arriving in real-time
 const REPLAY_DELAY = 800
@@ -51,23 +53,23 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     })()
     return emitter.toResponse()
   }
+
+  // Build ModelConfig from session + ephemeral key (if any)
+  const apiKey = consumeEphemeralKey(sessionId) ?? undefined
+  const modelConfig: ModelConfig | undefined = session.provider
+    ? { provider: session.provider as ModelConfig['provider'], modelId: session.modelId ?? '', apiKey }
+    : undefined
+
   // Handle Live or Pending Sessions
   ;(async () => {
     // 1. First, replay what we already have in the DB
     await replayHistory()
 
     // 2. If the session is new (PENDING), kick off the orchestrated workflow
-    // This now uses the SIMULATION_PAUSE and Mock agents we set up earlier
     if (session.state === 'PENDING') {
-      runDeliberation(
-        sessionId,
-        session.question,
-        session.agents, // Array of strings (roles) expected by workflow
-        emitter
-      )
+      runDeliberation(sessionId, session.question, session.agents, emitter, modelConfig)
     } else {
-      // If it's technically "IN_PROGRESS" but stalled, you might want to
-      // resume or close. For now, we close to prevent hanging connections.
+      // If it's technically "IN_PROGRESS" but stalled, close to prevent hanging connections.
       emitter.close()
     }
   })()

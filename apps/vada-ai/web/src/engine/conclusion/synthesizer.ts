@@ -3,6 +3,7 @@ import { ConclusionSchema } from '../../schemas'
 import { createConclusionAgent } from '../agents'
 import { CONCLUSION_MODE_PROMPT } from '../prompts/conclusion-prompts'
 import { buildTranscriptContext } from '../rounds/round-two'
+import type { ModelConfig } from '../../lib/models'
 
 interface TranscriptEntry {
   agent: string
@@ -13,9 +14,10 @@ interface TranscriptEntry {
 export async function generateConclusion(
   question: string,
   transcript: TranscriptEntry[],
-  agents: string[]
+  agents: string[],
+  modelConfig?: ModelConfig
 ): Promise<{ conclusion: Conclusion | null; raw: string }> {
-  const agent = createConclusionAgent(CONCLUSION_MODE_PROMPT)
+  const agent = createConclusionAgent(CONCLUSION_MODE_PROMPT, modelConfig)
 
   const context = buildTranscriptContext(transcript)
   const participantList = agents.join(', ')

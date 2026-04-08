@@ -6,6 +6,7 @@ import { reviseConclusion } from './conclusion/revision'
 import { updateSessionState, setSessionTerminalState, insertConclusion, getSessionWithTranscript } from '../db/queries'
 import { getAgentConfig, type AgentConfig } from '../schemas'
 import type { SSEEmitter } from './stream'
+import type { ModelConfig } from '../lib/models'
 
 const SIMULATION_PAUSE = 2500
 
@@ -15,7 +16,8 @@ export async function runDeliberation(
   sessionId: string,
   question: string,
   agentRoles: string[],
-  emitter: SSEEmitter
+  emitter: SSEEmitter,
+  modelConfig?: ModelConfig
 ): Promise<void> {
   const agents: AgentConfig[] = agentRoles.map((role) => getAgentConfig(role as Parameters<typeof getAgentConfig>[0]))
 
@@ -27,7 +29,7 @@ export async function runDeliberation(
     // --- Round 1: Parallel ---
     await updateSessionState(sessionId, 'ROUND_1')
     emitter.emit({ type: 'state_change', state: 'ROUND_1' })
-    await executeRoundOne(sessionId, question, agents, emitter)
+    await executeRoundOne(sessionId, question, agents, emitter, modelConfig)
 
     await sleep(SIMULATION_PAUSE)
 
@@ -41,7 +43,7 @@ export async function runDeliberation(
     // --- Round 2: Sequential ---
     await updateSessionState(sessionId, 'ROUND_2')
     emitter.emit({ type: 'state_change', state: 'ROUND_2' })
-    await executeSequentialRound(sessionId, question, 2, orderedAgents, r1Entries, emitter)
+    await executeSequentialRound(sessionId, question, 2, orderedAgents, r1Entries, emitter, modelConfig)
 
     await sleep(SIMULATION_PAUSE)
 
@@ -55,7 +57,7 @@ export async function runDeliberation(
     // --- Round 3: Sequential ---
     await updateSessionState(sessionId, 'ROUND_3')
     emitter.emit({ type: 'state_change', state: 'ROUND_3' })
-    await executeSequentialRound(sessionId, question, 3, orderedAgents, allEntriesAfterR2, emitter)
+    await executeSequentialRound(sessionId, question, 3, orderedAgents, allEntriesAfterR2, emitter, modelConfig)
 
     await sleep(SIMULATION_PAUSE)
 
@@ -75,7 +77,8 @@ export async function runDeliberation(
     const { conclusion: originalConclusion, raw: originalRaw } = await generateConclusion(
       question,
       completeTranscript,
-      agentRoles
+      agentRoles,
+      modelConfig
     )
 
     if (!originalConclusion) {
@@ -95,7 +98,7 @@ export async function runDeliberation(
     emitter.emit({ type: 'state_change', state: 'AUDITING' })
     emitter.emit({ type: 'loading_state', message: 'Blind Critic is reviewing the conclusion...' })
 
-    const verdict = await auditConclusion(question, originalConclusion)
+    const verdict = await auditConclusion(question, originalConclusion, modelConfig)
 
     if (verdict.startsWith('PASS')) {
       await insertConclusion({
@@ -116,7 +119,7 @@ export async function runDeliberation(
     emitter.emit({ type: 'state_change', state: 'REVISING' })
     emitter.emit({ type: 'loading_state', message: 'Synthesizer is revising...' })
 
-    const { conclusion: revisedConclusion } = await reviseConclusion(originalConclusion, verdict)
+    const { conclusion: revisedConclusion } = await reviseConclusion(originalConclusion, verdict, modelConfig)
 
     if (!revisedConclusion) {
       await insertConclusion({
@@ -132,7 +135,7 @@ export async function runDeliberation(
     }
 
     emitter.emit({ type: 'loading_state', message: 'Blind Critic is reviewing revision...' })
-    const reVerdict = await auditConclusion(question, revisedConclusion)
+    const reVerdict = await auditConclusion(question, revisedConclusion, modelConfig)
 
     if (reVerdict.startsWith('PASS')) {
       await insertConclusion({

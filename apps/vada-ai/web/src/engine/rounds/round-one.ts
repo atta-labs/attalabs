@@ -4,6 +4,7 @@ import type { AgentConfig } from '../../schemas'
 import { createDeliberationAgent } from '../agents'
 import { composeSystemPrompt } from '../prompts/compose'
 import type { SSEEmitter } from '../stream'
+import type { ModelConfig } from '../../lib/models'
 
 const ROUND = 1
 const TIMEOUT_MS = 30_000
@@ -13,9 +14,9 @@ interface AgentWithConfig {
   config: AgentConfig
 }
 
-function buildAgents(configs: AgentConfig[]): AgentWithConfig[] {
+function buildAgents(configs: AgentConfig[], modelConfig?: ModelConfig): AgentWithConfig[] {
   return configs.map((config) => ({
-    agent: createDeliberationAgent(config, composeSystemPrompt(config.role, ROUND, false)),
+    agent: createDeliberationAgent(config, composeSystemPrompt(config.role, ROUND, false), modelConfig),
     config
   }))
 }
@@ -64,9 +65,10 @@ export async function executeRoundOne(
   sessionId: string,
   question: string,
   agentConfigs: AgentConfig[],
-  emitter: SSEEmitter
+  emitter: SSEEmitter,
+  modelConfig?: ModelConfig
 ): Promise<void> {
-  const agentsWithConfig = buildAgents(agentConfigs)
+  const agentsWithConfig = buildAgents(agentConfigs, modelConfig)
 
   const tasks = agentsWithConfig.map(({ agent, config }, index) =>
     runAgentWithTimeout(agent, config, question, index, sessionId, emitter)

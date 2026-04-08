@@ -2,13 +2,15 @@ import type { Conclusion } from '../../schemas'
 import { ConclusionSchema } from '../../schemas'
 import { createConclusionAgent } from '../agents'
 import { REVISION_MODE_PROMPT } from '../prompts/conclusion-prompts'
+import type { ModelConfig } from '../../lib/models'
 
 export async function reviseConclusion(
   originalConclusion: Conclusion,
-  objection: string
+  objection: string,
+  modelConfig?: ModelConfig
 ): Promise<{ conclusion: Conclusion | null; raw: string }> {
   const systemPrompt = REVISION_MODE_PROMPT(objection)
-  const agent = createConclusionAgent(systemPrompt)
+  const agent = createConclusionAgent(systemPrompt, modelConfig)
 
   const message = `Original conclusion JSON:
 ${JSON.stringify(originalConclusion, null, 2)}

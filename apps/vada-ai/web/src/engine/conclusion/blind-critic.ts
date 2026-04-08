@@ -1,9 +1,14 @@
 import type { Conclusion } from '../../schemas'
 import { createBlindCriticAgent } from '../agents'
 import { BLIND_CRITIC_PROMPT } from '../prompts/conclusion-prompts'
+import type { ModelConfig } from '../../lib/models'
 
-export async function auditConclusion(question: string, conclusion: Conclusion): Promise<string> {
-  const agent = createBlindCriticAgent(BLIND_CRITIC_PROMPT)
+export async function auditConclusion(
+  question: string,
+  conclusion: Conclusion,
+  modelConfig?: ModelConfig
+): Promise<string> {
+  const agent = createBlindCriticAgent(BLIND_CRITIC_PROMPT, modelConfig)
 
   const message = `Principal's question: ${question}
 

@@ -3,6 +3,7 @@ import type { AgentConfig } from '../../schemas'
 import { createDeliberationAgent } from '../agents'
 import { composeSystemPrompt } from '../prompts/compose'
 import type { SSEEmitter } from '../stream'
+import type { ModelConfig } from '../../lib/models'
 
 const TARGET_PATTERN = /\[TARGET:\s*([^\]]+)\]/i
 
@@ -27,7 +28,8 @@ export async function executeSequentialRound(
   round: number,
   agentConfigs: AgentConfig[],
   priorEntries: TranscriptEntry[],
-  emitter: SSEEmitter
+  emitter: SSEEmitter,
+  modelConfig?: ModelConfig
 ): Promise<void> {
   const context = buildTranscriptContext(priorEntries)
   const contextMessage =
@@ -38,7 +40,7 @@ export async function executeSequentialRound(
   for (let i = 0; i < agentConfigs.length; i++) {
     const config = agentConfigs[i]!
     const systemPrompt = composeSystemPrompt(config.role, round, false)
-    const agent = createDeliberationAgent(config, systemPrompt)
+    const agent = createDeliberationAgent(config, systemPrompt, modelConfig)
 
     emitter.emit({ type: 'agent_start', agent: config.name, round })
 
