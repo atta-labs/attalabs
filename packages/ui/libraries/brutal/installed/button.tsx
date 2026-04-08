@@ -1,31 +1,26 @@
-'use client'
-
 import { Slot } from '@radix-ui/react-slot'
-import { cva, type VariantProps } from 'class-variance-authority'
-import * as React from 'react'
 import { cn } from '../../../lib/utils'
+import { cva, type VariantProps } from 'class-variance-authority'
+import type * as React from 'react'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all gap-2 cursor-pointer',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-all gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
         default:
           'text-primary-foreground bg-primary border-2 border-border shadow-[4px_4px_0px_0px_var(--border)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none',
-        destructive:
-          'text-destructive-foreground bg-destructive border-2 border-border shadow-[4px_4px_0px_0px_var(--border)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none',
-        outline:
-          'bg-background border-2 border-border shadow-[4px_4px_0px_0px_var(--border)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none',
-        secondary:
-          'text-secondary-foreground bg-secondary border-2 border-border shadow-[4px_4px_0px_0px_var(--border)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none',
-        ghost: 'hover:bg-accent hover:text-accent-foreground border-2 border-transparent',
-        link: 'text-primary underline-offset-4 hover:underline border-0'
+        noShadow: 'text-primary-foreground bg-primary border-2 border-border',
+        neutral:
+          'bg-card text-foreground border-2 border-border shadow-[4px_4px_0px_0px_var(--border)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none',
+        reverse:
+          'text-primary-foreground bg-primary border-2 border-border hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[4px_4px_0px_0px_var(--border)]'
       },
       size: {
         default: 'h-10 px-4 py-2',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-11 rounded-md px-8',
-        icon: 'h-10 w-10'
+        sm: 'h-9 px-3',
+        lg: 'h-11 px-8',
+        icon: 'size-10'
       }
     },
     defaultVariants: {
@@ -35,31 +30,19 @@ const buttonVariants = cva(
   }
 )
 
-interface ButtonPrimitiveProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  asChild?: boolean
-  loading?: boolean
-}
+function Button({
+  className,
+  variant,
+  size,
+  asChild = false,
+  ...props
+}: React.ComponentProps<'button'> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean
+  }) {
+  const Comp = asChild ? Slot : 'button'
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonPrimitiveProps>(
-  ({ className, variant, size, asChild = false, loading, children, disabled, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button'
-    return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
-        disabled={disabled || loading}
-        {...props}
-      >
-        {loading && (
-          <span className='mr-1 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent' />
-        )}
-        {children}
-      </Comp>
-    )
-  }
-)
-Button.displayName = 'Button'
+  return <Comp data-slot='button' className={cn(buttonVariants({ variant, size, className }))} {...props} />
+}
 
 export { Button, buttonVariants }

@@ -1,51 +1,32 @@
 import { Slot } from '@radix-ui/react-slot'
-import * as React from 'react'
 import { cn } from '../../../../lib/utils'
-import type { FlexProps } from '../../../../types/layout/flex'
+import React from 'react'
+import { getFlexClasses } from './class-utils'
+import type { FlexProps } from './types'
 
-const directionMap = {
-  row: 'flex-row',
-  column: 'flex-col',
-  'row-reverse': 'flex-row-reverse',
-  'column-reverse': 'flex-col-reverse'
-}
-const alignMap = {
-  start: 'items-start',
-  center: 'items-center',
-  end: 'items-end',
-  stretch: 'items-stretch',
-  baseline: 'items-baseline'
-}
-const justifyMap = {
-  start: 'justify-start',
-  center: 'justify-center',
-  end: 'justify-end',
-  between: 'justify-between',
-  around: 'justify-around',
-  evenly: 'justify-evenly'
-}
-const wrapMap = { wrap: 'flex-wrap', nowrap: 'flex-nowrap', 'wrap-reverse': 'flex-wrap-reverse' }
+/**
+ * Flex primitive - A flexbox container with declarative props
+ *
+ * This primitive handles:
+ * - asChild composition via Radix Slot
+ * - Prop-to-Tailwind class mapping
+ * - Ref forwarding
+ *
+ * @example
+ * <Flex direction="column" gap={4} align="center">
+ *   <Child />
+ * </Flex>
+ */
+export const Flex = React.forwardRef<HTMLDivElement, FlexProps>(
+  ({ asChild, as = 'div', direction, align, justify, wrap, gap, className, ...props }, forwardedRef) => {
+    const Component = asChild ? Slot : as
 
-const Flex = React.forwardRef<HTMLDivElement, FlexProps>(
-  ({ direction, align, justify, wrap, gap, as, asChild, className, ...props }, ref) => {
-    const Comp = asChild ? Slot : (as ?? 'div')
-    return (
-      <Comp
-        ref={ref}
-        className={cn(
-          'flex',
-          direction && directionMap[direction],
-          align && alignMap[align],
-          justify && justifyMap[justify],
-          wrap && wrapMap[wrap],
-          typeof gap === 'number' ? `gap-${gap}` : gap && `gap-[${gap}]`,
-          className
-        )}
-        {...props}
-      />
-    )
+    const flexClasses = cn(getFlexClasses({ direction, align, justify, wrap, gap }), className)
+
+    return <Component {...props} ref={forwardedRef} className={flexClasses} />
   }
 )
+
 Flex.displayName = 'Flex'
 
-export { Flex }
+export type { FlexProps }

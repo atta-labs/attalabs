@@ -1,6 +1,6 @@
-import * as React from 'react'
 import { cn } from '../../../../lib/utils'
-import type { TextProps } from '../../../../types/typography/text'
+import type { TextProps } from '../../../../types'
+import * as React from 'react'
 
 const sizeClasses: Record<string, string> = {
   xs: 'text-xs',
@@ -17,14 +17,19 @@ const weightClasses: Record<string, string> = {
   bold: 'font-bold'
 }
 
-function Text({ as: Tag = 'p', size = 'md', weight, muted, className, ...props }: TextProps) {
-  return (
-    <Tag
-      className={cn(sizeClasses[size], weight && weightClasses[weight], muted && 'text-muted-foreground', className)}
-      {...props}
-    />
-  )
-}
+const Text = React.forwardRef<HTMLElement, TextProps>(
+  ({ as: Tag = 'p', size = 'md', weight, muted, className, children, ...props }, ref) => {
+    return (
+      <Tag
+        ref={ref as any}
+        className={cn(sizeClasses[size], weight && weightClasses[weight], muted && 'text-muted-foreground', className)}
+        {...props}
+      >
+        {children}
+      </Tag>
+    )
+  }
+)
 Text.displayName = 'Text'
 
 export { Text }

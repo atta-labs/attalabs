@@ -11,6 +11,6 @@ export { Separator } from '../../basic/installed/separator'
 export { Flex, Heading, Text } from '../../shared'
 export { Button, buttonVariants } from '../installed/button'
 // Content
-export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../installed/card'
+export { Card } from '../installed/card'
 // Form — retro has its own textarea, falls back to basic for input
 export { Textarea } from '../installed/textarea'

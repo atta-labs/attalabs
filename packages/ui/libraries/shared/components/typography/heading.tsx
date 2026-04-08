@@ -1,6 +1,6 @@
-import * as React from 'react'
 import { cn } from '../../../../lib/utils'
-import type { HeadingProps } from '../../../../types/typography/heading'
+import type { HeadingProps } from '../../../../types'
+import * as React from 'react'
 
 const defaultSizeByLevel: Record<number, string> = {
   1: 'text-4xl',
@@ -22,12 +22,18 @@ const sizeClasses: Record<string, string> = {
   '4xl': 'text-4xl'
 }
 
-const Heading = React.forwardRef<HTMLHeadingElement, HeadingProps>(({ level = 2, size, className, ...props }, ref) => {
-  const Tag = `h${level}` as const
-  const sizeClass = size ? sizeClasses[size] : defaultSizeByLevel[level]
+const Heading = React.forwardRef<HTMLHeadingElement, HeadingProps>(
+  ({ level = 2, size, className, children, ...props }, ref) => {
+    const Tag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
+    const sizeClass = size ? sizeClasses[size] : defaultSizeByLevel[level]
 
-  return <Tag ref={ref} className={cn('font-bold tracking-tight', sizeClass, className)} {...props} />
-})
+    return (
+      <Tag ref={ref} className={cn(sizeClass, 'font-bold tracking-tight', className)} {...props}>
+        {children}
+      </Tag>
+    )
+  }
+)
 Heading.displayName = 'Heading'
 
 export { Heading }

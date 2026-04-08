@@ -1,5 +1,5 @@
 'use client'
 
-import { Badge as BadgePrimitive, badgeVariants } from '../../installed/badge'
+import { Badge as BadgePrimitive } from '../../installed/badge'
 
-export { BadgePrimitive as Badge, badgeVariants }
+export { BadgePrimitive as Badge }

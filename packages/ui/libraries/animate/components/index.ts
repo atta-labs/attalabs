@@ -14,4 +14,4 @@ export { Textarea } from '../../basic/installed/textarea'
 
 // Shared
 export { Flex, Heading, Text } from '../../shared'
-export { Button, buttonVariants } from '../installed/button'
+export { Button } from '../installed/button'
