@@ -1,23 +1,11 @@
+// ── aia-sphere.tsx ────────────────────────────────────────────────────────────
+// Pure presentational component. All hooks live in useAIASphere.
+
 'use client'
 
-import { type ReactNode, useEffect, useId, useRef } from 'react'
-import { type SphereState, useAIAContext } from './aia-context'
-
-const SIZE_MAP: Record<string, number> = {
-  xs: 32,
-  sm: 48,
-  md: 64,
-  lg: 96,
-  xl: 128
-}
-
-const PARTICLE_MAP: Record<string, number> = {
-  xs: 8,
-  sm: 15,
-  md: 25,
-  lg: 35,
-  xl: 50
-}
+import type { ReactNode } from 'react'
+import type { SphereState } from './aia-context'
+import { useAIASphere } from './useAIASphere'
 
 type LabelPosition = 'top' | 'top-right' | 'right' | 'bottom-right' | 'bottom' | 'bottom-left' | 'left' | 'top-left'
 
@@ -33,19 +21,8 @@ interface AIASphereProps {
   children?: ReactNode
   onClick?: () => void
   className?: string
-}
-
-function resolveColor(color: string | undefined): string {
-  if (!color) {
-    if (typeof document === 'undefined') return '#C8A84B'
-    return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#C8A84B'
-  }
-  if (color.startsWith('var(')) {
-    if (typeof document === 'undefined') return '#C8A84B'
-    const varName = color.replace('var(', '').replace(')', '').split(',')[0]!.trim()
-    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#C8A84B'
-  }
-  return color
+  matrixColors?: string[]
+  matrixOpacity?: number
 }
 
 const LABEL_STYLES: Record<LabelPosition, React.CSSProperties> = {
@@ -70,63 +47,20 @@ export function AIASphere({
   showMatrix = true,
   children,
   onClick,
-  className
+  className,
+  matrixColors,
+  matrixOpacity
 }: AIASphereProps) {
-  const generatedId = useId()
-  const id = externalId ?? generatedId
-  const ref = useRef<HTMLDivElement>(null)
-  const ctx = useAIAContext()
-  const diameter = typeof size === 'number' ? size : (SIZE_MAP[size] ?? 64)
-  const particles = particleCount ?? (typeof size === 'string' ? (PARTICLE_MAP[size] ?? 25) : 25)
-  const cssColor = color ?? 'var(--accent)'
-
-  // Keep always-current refs so the resize handler never reads stale state/showMatrix
-  const stateRef = useRef(state)
-  const showMatrixRef = useRef(showMatrix)
-  stateRef.current = state
-  showMatrixRef.current = showMatrix
-
-  // Effect 1 — position registration, mount/unmount only.
-  // MUST NOT include state/showMatrix in deps: changing them would run cleanup
-  // (unregisterSphere = Map.delete) then re-register (Map.set to END), which
-  // shifts every sphere's cluster assignment and makes the ring appear to rotate.
-  useEffect(() => {
-    if (!ctx || !ref.current || !ctx.containerRef.current) return
-
-    const updatePosition = () => {
-      if (!ref.current || !ctx.containerRef.current) return
-      const sphereRect = ref.current.getBoundingClientRect()
-      const containerRect = ctx.containerRef.current.getBoundingClientRect()
-      const exactX = sphereRect.left - containerRect.left + sphereRect.width / 2
-      const exactY = sphereRect.top - containerRect.top + sphereRect.height / 2
-
-      // registerSphere uses Map.set on existing key — preserves insertion order ✓
-      ctx.registerSphere({
-        id,
-        x: exactX,
-        y: exactY,
-        radius: diameter / 2,
-        color: resolveColor(color),
-        state: stateRef.current,
-        particleCount: particles,
-        showMatrix: showMatrixRef.current
-      })
-    }
-
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      ctx.unregisterSphere(id) // Only on real unmount
-    }
-  }, [ctx, id, diameter, color, particles]) // ← state/showMatrix deliberately excluded
-
-  // Effect 2 — state/showMatrix sync via updateSphere (Map.set on existing key, no order change)
-  useEffect(() => {
-    if (!ctx) return
-    ctx.updateSphere(id, { state, showMatrix })
-  }, [ctx, id, state, showMatrix])
+  const { ref, diameter, cssColor } = useAIASphere({
+    id: externalId,
+    state,
+    color,
+    size,
+    particleCount,
+    showMatrix,
+    matrixColors,
+    matrixOpacity
+  })
 
   const Tag = onClick ? 'button' : 'div'
 

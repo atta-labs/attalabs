@@ -43,6 +43,7 @@ interface AIARingProps {
   activeStep?: number
   thinking?: boolean
   sphereRadius?: number
+  matrixOpacity?: number
 }
 
 export function AIARing({
@@ -51,7 +52,8 @@ export function AIARing({
   children,
   activeStep = 0,
   thinking = false,
-  sphereRadius = 50
+  sphereRadius = 50,
+  matrixOpacity
 }: AIARingProps) {
   const ctx = useAIAContext()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -100,7 +102,8 @@ export function AIARing({
         style: 'none',
         spherePositions: [],
         sphereCount: numSpheres,
-        thinking: thinkingRef.current
+        thinking: thinkingRef.current,
+        matrixOpacity
       })
     }
 

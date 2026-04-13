@@ -15,6 +15,8 @@ export interface SphereRegistration {
   state: SphereState
   particleCount: number
   showMatrix: boolean
+  matrixColors?: string[]
+  matrixOpacity?: number
 }
 
 export interface RingRegistration {
@@ -26,6 +28,7 @@ export interface RingRegistration {
   spherePositions: { x: number; y: number }[]
   sphereCount: number
   thinking: boolean
+  matrixOpacity?: number
 }
 
 export interface AIAContextValue {

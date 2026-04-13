@@ -20,13 +20,13 @@ const RING_RENDERERS: Record<string, RingStyleRenderer> = {
 }
 
 function getThemeColors(): string[] {
-  if (typeof document === 'undefined') return ['#C8A84B', '#7A6A50', '#E8D5B7']
+  if (typeof document === 'undefined')
+    return ['hsl(var(--primary))', 'hsl(var(--muted-foreground))', 'hsl(var(--foreground))']
   const style = getComputedStyle(document.documentElement)
-  const primary = style.getPropertyValue('--primary').trim() || '#C8A84B'
-  const accent = style.getPropertyValue('--accent').trim() || '#C8A84B'
-  const muted = style.getPropertyValue('--muted-foreground').trim() || '#7A6A50'
-  const foreground = style.getPropertyValue('--foreground').trim() || '#E8D5B7'
-  return [primary, accent, muted, foreground]
+  const primary = style.getPropertyValue('--primary').trim() || 'hsl(var(--primary))'
+  const muted = style.getPropertyValue('--muted-foreground').trim() || 'hsl(var(--muted-foreground))'
+  const foreground = style.getPropertyValue('--foreground').trim() || 'hsl(var(--foreground))'
+  return [primary, muted, foreground]
 }
 
 interface Particle {
@@ -40,7 +40,6 @@ interface Particle {
   baseOpacity: number
   angle: number
   cluster: number
-  /** True = always wanders freely, never clusters to spheres */
   ambient: boolean
 }
 
@@ -59,10 +58,10 @@ interface MatrixDrop {
   speed: number
   char: string
   life: number
+  color: string
 }
 
 export interface AIACanvasRef {
-  /** Force the canvas to immediately start clustering particles around registered spheres */
   forceSettle: () => void
 }
 
@@ -71,14 +70,10 @@ interface AIACanvasProps {
   particleCount?: number
   className?: string
   onPhaseChange?: (phase: CanvasPhase) => void
-  /** How many frames before particles start clustering. Default 120. Set high to keep wander phase indefinitely. */
   wanderDuration?: number
-  /** When true, sphere backgrounds and matrix rain render even during the wander phase. Default false. */
   alwaysRenderSpheres?: boolean
-  /** Fraction of particles (0.0–1.0) that always wander freely and never cluster to spheres.
-   *  Default 0 (all particles cluster). Set e.g. 0.6 for 60% ambient floaters + 40% sphere-bound. */
   ambientRatio?: number
-  /** React 19 ref prop — exposes forceSettle() imperative API */
+  matchContentHeight?: boolean
   ref?: React.Ref<AIACanvasRef>
 }
 
@@ -92,8 +87,11 @@ export function AIACanvas({
   wanderDuration,
   alwaysRenderSpheres = false,
   ambientRatio = 0,
+  matchContentHeight = false,
   ref
 }: AIACanvasProps) {
+  const matchContentHeightRef = useRef(matchContentHeight)
+  matchContentHeightRef.current = matchContentHeight
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const onPhaseChangeRef = useRef<((phase: CanvasPhase) => void) | undefined>(onPhaseChange)
@@ -192,8 +190,6 @@ export function AIACanvas({
     let ringCompletion = 0
     let ringEnvoyProgress = 0
     let ringEnvoyActive = false
-    // Sphere-bound particles are teleported to their sphere on the first frame spheres register,
-    // so they appear inside their sphere from frame 1 (no visible drift-to-sphere animation)
     let particlesPositioned = false
 
     const matrixDrops = new Map<string, MatrixDrop[]>()
@@ -205,6 +201,7 @@ export function AIACanvas({
       char: string
       life: number
       speed: number
+      color: string
     }
     const ringChars = new Map<string, RingChar[]>()
 
@@ -212,7 +209,7 @@ export function AIACanvas({
       if (!containerRef.current) return
       const rect = containerRef.current.getBoundingClientRect()
       width = rect.width
-      height = rect.height
+      height = matchContentHeightRef.current ? Math.max(rect.height, containerRef.current.scrollHeight) : rect.height
       canvas!.width = width * dpr
       canvas!.height = height * dpr
       canvas!.style.width = `${width}px`
@@ -256,29 +253,24 @@ export function AIACanvas({
     }
 
     function updateToCluster(p: Particle, target: { x: number; y: number }) {
-      // Each particle has a random delay before it starts moving (0–90 frames).
-      // p.angle is already random (0–2π), so we reuse it as a cheap delay index.
       const delay = (p.angle / (Math.PI * 2)) * 90
       if (time - formingStart < delay) return
-      // Wide speed range: small particles drift slowly, large ones rush — very staggered arrival
       const lerpFactor = 0.005 + (p.radius / 2.5) * 0.025
       p.x += (target.x - p.x) * lerpFactor + (Math.random() - 0.5) * 1.0
       p.y += (target.y - p.y) * lerpFactor + (Math.random() - 0.5) * 1.0
     }
 
+    // Direct positioning — particles are AT the sphere every frame.
+    // No lerp, no drift, no searching. Sphere moves → particles move instantly.
     function updateClusterOrbit(p: Particle, target: { x: number; y: number }, clusterRadius: number) {
-      // Gentle random drift — no net rotation
-      p.angle += (Math.random() - 0.5) * 0.004
-      const tx = target.x + Math.cos(p.angle) * clusterRadius
-      const ty = target.y + Math.sin(p.angle) * clusterRadius
-      p.x += (tx - p.x) * 0.03 + (Math.random() - 0.5) * 0.4
-      p.y += (ty - p.y) * 0.03 + (Math.random() - 0.5) * 0.4
+      p.angle += (Math.random() - 0.5) * 0.003
+      p.x = target.x + Math.cos(p.angle) * clusterRadius + (Math.random() - 0.5) * 0.3
+      p.y = target.y + Math.sin(p.angle) * clusterRadius + (Math.random() - 0.5) * 0.3
     }
 
     function checkClustersFormed(): boolean {
       const spheres = Array.from(spheresRef.current.values())
       if (spheres.length === 0) return false
-      // Only check sphere-bound particles — ambient ones never settle
       const sphereBound = particles.filter((p) => !p.ambient)
       if (sphereBound.length === 0) return false
       let settled = 0
@@ -290,8 +282,9 @@ export function AIACanvas({
       return settled > sphereBound.length * 0.5
     }
 
-    function updateMatrixDropsForSphere(sphereId: string, sphere: SphereRegistration, glowLevel: number) {
-      if (!sphere.showMatrix || sphere.state === 'idle' || sphere.state === 'complete') return
+    function updateMatrixDropsForSphere(sphereId: string, sphere: SphereRegistration, _glowLevel: number) {
+      if (!sphere.showMatrix || sphere.state === 'idle') return
+
       let drops = matrixDrops.get(sphereId)
       if (!drops) {
         drops = []
@@ -299,16 +292,18 @@ export function AIACanvas({
       }
 
       const clipR = sphere.radius - 4
-      const spawnRate = sphere.state === 'speaking' ? 0.5 : 0.4
+      const spawnRate = sphere.state === 'speaking' ? 0.8 : 0.4
 
       if (Math.random() < spawnRate) {
         const xOffset = (Math.random() - 0.5) * clipR * 1.6
+        const palette = sphere.matrixColors ?? [sphere.color]
         drops.push({
           x: sphere.x + xOffset,
           y: sphere.y - clipR,
           speed: 0.4 + Math.random() * 0.6,
           char: MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)]!,
-          life: 1
+          life: 1,
+          color: palette[Math.floor(Math.random() * palette.length)]!
         })
       }
 
@@ -330,9 +325,13 @@ export function AIACanvas({
           continue
         }
 
-        ctx!.globalAlpha = Math.max(0, drop.life) * 0.55 * (glowLevel > 0.1 ? 1.6 : 1)
-        ctx!.fillStyle = colors[0]!
-        ctx!.font = '8px monospace'
+        const intensity = sphere.state === 'complete' ? 0.45 : 0.85
+
+        ctx!.globalAlpha = Math.max(0.3, drop.life) * intensity * (sphere.matrixOpacity ?? 1)
+        // Always use sphere's own color for matrix — agent-specific colors
+        ctx!.fillStyle = drop.color
+
+        ctx!.font = '12px monospace'
         ctx!.textAlign = 'center'
         ctx!.fillText(drop.char, drop.x, drop.y)
       }
@@ -344,18 +343,33 @@ export function AIACanvas({
       ctx!.globalAlpha = 1
       ctx!.clearRect(0, 0, width, height)
 
+      if (containerRef.current) {
+        // Auto-resize when content height changes (rounds expand/collapse)
+        const newHeight = Math.max(
+          containerRef.current.getBoundingClientRect().height,
+          containerRef.current.scrollHeight
+        )
+        if (Math.abs(newHeight - height) > 10) {
+          resize()
+        }
+      }
+
       const spheres = Array.from(spheresRef.current.values())
       const rings = Array.from(ringsRef.current.values())
 
-      // ambientRatio mode only: snap sphere-bound particles near their sphere on first frame
-      // so they appear already-grouped with no visible drift animation (Vitakka only)
       if (ambientRatioRef.current > 0 && !particlesPositioned && spheres.length > 0) {
+        // Snap sphere-bound particles near their sphere on first frame
         particlesPositioned = true
+        if (spheres.length > 1) {
+          let sbIdx = 0
+          for (const p of particles) {
+            if (!p.ambient) p.cluster = sbIdx++ % spheres.length
+          }
+        }
         for (const p of particles) {
           if (!p.ambient) {
             const sphere = spheres[p.cluster % spheres.length]!
             const a = Math.random() * Math.PI * 2
-            // Place on the orbital ring from frame 1 — matches wander orbit at 1.2× radius
             const r = sphere.radius * (1.1 + Math.random() * 0.2)
             p.x = sphere.x + Math.cos(a) * r
             p.y = sphere.y + Math.sin(a) * r
@@ -370,6 +384,12 @@ export function AIACanvas({
         const shouldForce = forceSettleSignal.current && spheres.length > 0
         const shouldAutoForm = time > wanderDurationRef.current && spheres.length > 0
         if (shouldForce || shouldAutoForm) {
+          if (spheres.length > 1) {
+            let sbIdx = 0
+            for (const p of particles) {
+              if (!p.ambient) p.cluster = sbIdx++ % spheres.length
+            }
+          }
           currentPhase = 'forming'
           formingStart = time
           setPhase('forming')
@@ -381,6 +401,32 @@ export function AIACanvas({
         currentPhase = 'settled'
         setPhase('settled')
         onPhaseChangeRef.current?.('settled')
+      }
+
+      if (spheres.length > 0 && currentPhase !== 'wander') {
+        // Redistribute particles when sphere count changes (expand/collapse)
+        const sphereBound = particles.filter((p) => !p.ambient)
+        if (sphereBound.length > 0) {
+          const needsRedistribute = sphereBound.some((p) => p.cluster >= spheres.length)
+          const maxCluster = Math.max(...sphereBound.map((p) => p.cluster))
+          const hasNewSpheres = spheres.length > maxCluster + 1
+
+          if (needsRedistribute || hasNewSpheres) {
+            let sbIdx = 0
+            for (const p of particles) {
+              if (!p.ambient) {
+                p.cluster = sbIdx++ % spheres.length
+                // Snap to sphere position immediately
+                const sphere = spheres[p.cluster]!
+                const a = Math.random() * Math.PI * 2
+                const r = sphere.radius * (0.8 + Math.random() * 0.4)
+                p.x = sphere.x + Math.cos(a) * r
+                p.y = sphere.y + Math.sin(a) * r
+                p.angle = a
+              }
+            }
+          }
+        }
       }
 
       for (const ring of rings) {
@@ -423,7 +469,7 @@ export function AIACanvas({
           updateWander(p)
         } else if (spheres.length > 0) {
           const sphere = spheres[p.cluster % spheres.length]!
-          if (currentPhase === 'wander') updateClusterOrbit(p, sphere, sphere.radius * 1.2)
+          if (currentPhase === 'wander') updateClusterOrbit(p, sphere, sphere.radius)
           else if (currentPhase === 'forming') updateToCluster(p, sphere)
           else updateClusterOrbit(p, sphere, sphere.radius)
         }
@@ -435,19 +481,17 @@ export function AIACanvas({
         ctx!.fill()
       }
 
-      // Direct messages — particles flying straight from sphere A center to sphere B center
+      // Direct messages
       for (let i = directMessagesRef.current.length - 1; i >= 0; i--) {
         const msg = directMessagesRef.current[i]!
-        msg.progress += 0.07 // ~14 frames = 0.23s — fast, clear, done before next fires
+        msg.progress += 0.07
 
         const t = Math.min(msg.progress, 1)
-        // Smooth ease
         const ease = t * t * (3 - 2 * t)
 
         const headX = msg.fromX + (msg.toX - msg.fromX) * ease
         const headY = msg.fromY + (msg.toY - msg.fromY) * ease
 
-        // Fading trail — sample previous positions along the trajectory
         const trailLen = 14
         for (let s = 1; s <= trailLen; s++) {
           const tTrail = Math.max(0, t - s * 0.04)
@@ -461,7 +505,6 @@ export function AIACanvas({
           ctx!.fill()
         }
 
-        // Leading glow
         const dg = ctx!.createRadialGradient(headX, headY, 0, headX, headY, 14)
         dg.addColorStop(0, '#ffffff')
         dg.addColorStop(0.3, colors[0]!)
@@ -472,14 +515,12 @@ export function AIACanvas({
         ctx!.arc(headX, headY, 14, 0, Math.PI * 2)
         ctx!.fill()
 
-        // Solid white core
         ctx!.globalAlpha = 1
         ctx!.fillStyle = '#ffffff'
         ctx!.beginPath()
         ctx!.arc(headX, headY, 3, 0, Math.PI * 2)
         ctx!.fill()
 
-        // Arrival — trigger glow on destination sphere and remove
         if (msg.progress >= 1) {
           const toSphere = spheres.find((s) => s.id === msg.toSphereId)
           if (toSphere) clusterGlow.set(toSphere.id, 1)
@@ -507,7 +548,7 @@ export function AIACanvas({
         }
       }
 
-      // Ring matrix — falling chars inside the ring circle when thinking, same as sphere matrix
+      // Ring matrix
       for (const ring of rings) {
         if (!ring.thinking) continue
         let chars = ringChars.get(ring.id)
@@ -518,15 +559,18 @@ export function AIACanvas({
 
         const clipR = ring.radius
 
-        // Spawn drops at top of ring interior
-        if (Math.random() < 0.4) {
+        if (Math.random() < 0.8) {
           const xOffset = (Math.random() - 0.5) * clipR * 1.8
           chars.push({
             x: ring.centerX + xOffset,
             y: ring.centerY - clipR,
             speed: 0.8 + Math.random() * 1.2,
             char: MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)]!,
-            life: 1
+            life: 1,
+            color:
+              spheres.length > 0
+                ? spheres[Math.floor(Math.random() * spheres.length)]!.color
+                : colors[Math.floor(Math.random() * colors.length)]!
           })
         }
 
@@ -534,7 +578,7 @@ export function AIACanvas({
         ctx!.beginPath()
         ctx!.arc(ring.centerX, ring.centerY, clipR, 0, Math.PI * 2)
         ctx!.clip()
-        ctx!.font = '9px monospace'
+        ctx!.font = '12px monospace'
         ctx!.textAlign = 'center'
 
         for (let i = chars.length - 1; i >= 0; i--) {
@@ -550,8 +594,9 @@ export function AIACanvas({
             continue
           }
 
-          ctx!.globalAlpha = Math.max(0, c.life) * 0.3
-          ctx!.fillStyle = colors[0]!
+          ctx!.globalAlpha = Math.max(0.3, c.life) * 0.85 * (ring.matrixOpacity ?? 1)
+
+          ctx!.fillStyle = c.color
           ctx!.fillText(c.char, c.x, c.y)
         }
 
@@ -577,8 +622,8 @@ export function AIACanvas({
 
   return (
     <AIAContext.Provider value={contextValue}>
-      <div ref={containerRef} className={`relative w-full overflow-hidden ${className ?? ''}`}>
-        <canvas ref={canvasRef} className='absolute inset-0 z-0 pointer-events-none' />
+      <div ref={containerRef} className={`relative w-full ${className ?? ''}`}>
+        <canvas ref={canvasRef} className='absolute inset-0 z-0 pointer-events-none overflow-hidden' />
         <div className='relative z-[1]'>{children}</div>
       </div>
     </AIAContext.Provider>
