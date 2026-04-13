@@ -5,110 +5,231 @@ triggers:
   - Using AIACanvas, AIASphere, AIARing, or useAIAContext
   - Building animated particle or ring UI
   - Editing canvas or particle system code
+  - Debugging missing particles, invisible matrix, or sphere positioning
+  - Adding spheres to a page or component
+  - Working with deliberation feed or home page visuals
 ---
 
 # Canvas Animation — Atta AI
 
-## Context
+## Architecture
 
-The `@atta/ui/canvas` package provides a reusable canvas particle system used across all Atta AI products. Components: `AIACanvas`, `AIASphere`, `AIARing`. Context: `useAIAContext`.
-
----
-
-## Component Hierarchy
-
-```tsx
-// AIACanvas provides the particle context and background
-<AIACanvas particleCount={300} ambientRatio={0.35}>
-  {/* Everything inside can consume useAIAContext */}
-  <PageContent />
-</AIACanvas>
-
-// AIARing wraps content with animated orbital ring
-<AIARing activeStep={2} orbit={[sphere1, sphere2]}>
-  {children}
-</AIARing>
-
-// AIASphere is a named sphere node — assigned a particle cluster
-<AIASphere id="agent-1" label="Analyst" />
+```
+AIACanvas (context provider + rAF renderer + single <canvas>)
+├── AIASphere (DOM position registration via useAIASphere hook)
+├── AIARing (SVG wave segments + canvas ring styles)
+└── Canvas renders: particles, matrix drops, glow, directed messages
 ```
 
----
+- **AIACanvas** wraps children, provides context, owns the animation loop
+- **AIASphere** registers its DOM position with the canvas. Particles orbit it. Matrix rain falls inside it. Pure presentation — all hooks in `useAIASphere.ts`
+- **AIARing** positions spheres in a circle, renders animated SVG wave segments
 
-## Rules
+## Critical Rules — MUST follow every time
 
-### Initialization
-- **MUST** wait for `ctx.phase === 'settled'` before starting simulations or animations
-- **MUST NOT** start sphere interactions before the particle system is ready
+### 1. Every AIASphere MUST pass an explicit visible `color`
 
-```tsx
-const ctx = useAIAContext()
-
-useEffect(() => {
-  if (ctx.phase !== 'settled') return
-  // Safe to start simulation
-}, [ctx.phase])
-```
-
-### Spheres
-- **MUST NOT** unmount/remount `AIASphere` to update its state — use `updateSphere` from context
-- **MUST NOT** reorder the `orbit` array passed to `AIARing` — breaks particle cluster assignments
-- Cluster assignments are positional — index 0 stays index 0 across re-renders
+Theme `--accent` and `--secondary` resolve to near-black `oklch(0.2178 0 none)`. Without explicit color, particles and matrix are invisible.
 
 ```tsx
-// ✅ Update sphere state without remounting
-const ctx = useAIAContext()
-ctx.updateSphere('agent-1', { active: true })
+// ✗ BAD — invisible on dark background
+<AIASphere id="s1" size="lg" state="speaking" showMatrix />
 
-// ❌ Triggers full remount, breaks cluster
-setSpheresVisible(false)
-setTimeout(() => setSpheresVisible(true), 100)
+// ✓ GOOD — explicit agent color
+<AIASphere id="s1" size="lg" color="hsl(119 21% 45%)" state="speaking" showMatrix />
+
+// ✓ GOOD — visible CSS variable
+<AIASphere id="s1" size="lg" color="var(--primary)" state="speaking" showMatrix />
 ```
 
-### Rings (SVG Wave)
-- **MUST NOT** use `freq` values near multiples of π — causes triangle/sawtooth artifacts
-- Safe range: `0.5` to `2.5`
-- Test visually after any freq changes
+Visible variables: `--primary` (white), `--foreground` (white), `--muted-foreground` (gray).
+Invisible variables: `--accent`, `--secondary` (both near-black).
 
-### Background Particles
-- Ambient (background) particles and sphere-bound particles are separate systems
-- `ambientRatio` controls what fraction of total particles float freely
-- **MUST NOT** mix ambient and sphere particle logic
+### 2. Every AIASphere MUST have a unique `id`
 
-### SVG Rings
-- **MUST NOT** add opaque fills to SVG ring elements — blocks particle visibility underneath
-- Ring fills should be `none` or very low opacity
+Duplicate IDs cause particles to migrate to the last-registered position.
 
----
+```tsx
+// ✗ BAD — same ID in different rounds
+<AIASphere id={`agent-${role}`} />
 
-## Props Reference
+// ✓ GOOD — unique per instance
+const sphereId = useId()
+<AIASphere id={sphereId} />
+```
 
-### AIACanvas
+### 3. Never use AIASphere for decorative dots
+
+Small AIASpheres register with canvas and steal particles from visible spheres.
+
+```tsx
+// ✗ BAD — steals particle budget
+<AIASphere size={14} color={c} state="idle" particleCount={0} />
+
+// ✓ GOOD — plain CSS dot
+<div className="size-3 rounded-full" style={{ background: c }} />
+```
+
+### 4. Particle budget math
+
+```
+particles per sphere = particleCount × (1 - ambientRatio) ÷ sphereCount
+```
+
+Need ≥25 per sphere for visible clusters. Example: `particleCount={400}`, `ambientRatio={0.5}`, 8 spheres = 25 each ✓.
+
+### 5. Scrolling pages MUST use `matchContentHeight`
+
+Without it, canvas is viewport-sized. Spheres below the fold render at positions outside the canvas.
+
+```tsx
+// Scrolling feed — canvas covers all content
+<AIACanvas matchContentHeight ... />
+
+// Fixed single screen — omit (viewport-sized)
+<AIACanvas ... />
+```
+
+### 6. Use `alwaysRenderSpheres` for immediate matrix
+
+Without it, matrix only renders after wander→forming→settled transition.
+
+### 7. No hardcoded colors anywhere
+
+Use CSS variables or HSL strings from `AGENT_THEME`. Never hex codes.
+
+### 8. Hooks in `useAIASphere.ts`, never in `aia-sphere.tsx`
+
+`AIASphere` is pure presentation. All position tracking, scroll handling, state sync lives in the hook.
+
+### 9. Position tracking is rAF-based
+
+`useAIASphere` runs `requestAnimationFrame` with `getBoundingClientRect()` every frame. Only updates when position changes >0.5px. Works in all scroll contexts. Do NOT add scroll/resize listeners.
+
+### 10. Particles use direct positioning
+
+`updateClusterOrbit` sets `p.x = target.x + offset` every frame. No lerp. Sphere moves → particles move instantly. Jitter value `0.3` controls calmness.
+
+## Theme Colors (Vāda Dark)
+
+| Variable | Value | Visible? |
+|----------|-------|----------|
+| `--primary` | `oklch(1 0 none)` | ✓ white |
+| `--foreground` | `oklch(1 0 none)` | ✓ white |
+| `--muted-foreground` | `oklch(0.6268 0 none)` | ✓ gray |
+| `--secondary` | `oklch(0.2178 0 none)` | ✗ near-black |
+| `--accent` | `oklch(0.2178 0 none)` | ✗ near-black |
+
+## Agent Colors (always visible on dark)
+
+| Agent | Color |
+|-------|-------|
+| Strategist | `hsl(119 21% 45%)` green |
+| Critic | `hsl(0 49% 57%)` red |
+| Devil's Advocate | `hsl(278 35% 63%)` purple |
+| Synthesizer | `hsl(43 52% 54%)` gold |
+| Researcher | `hsl(207 32% 52%)` blue |
+| Operator | `hsl(30 32% 52%)` amber |
+
+## AIACanvas Props
+
 | Prop | Type | Default | Notes |
 |------|------|---------|-------|
-| `particleCount` | number | 200 | Total particles (ambient + sphere-bound) |
-| `ambientRatio` | number | 0.3 | Fraction of particles that float freely |
+| `particleCount` | `number` | `200` | Total particles |
+| `ambientRatio` | `number` | `0` | 0–1, fraction that wander freely |
+| `wanderDuration` | `number` | `120` | Frames before clustering starts |
+| `alwaysRenderSpheres` | `boolean` | `false` | Matrix during wander phase |
+| `matchContentHeight` | `boolean` | `false` | Canvas = scrollHeight for scrolling pages |
+| `onPhaseChange` | `fn` | — | wander → forming → settled |
 
-### AIARing
-| Prop | Type | Notes |
-|------|------|-------|
-| `activeStep` | number | Controls which ring segment is active |
-| `orbit` | SphereConfig[] | Ordered list of sphere configs — never reorder |
+## AIASphere Props
 
-### AIASphere
-| Prop | Type | Notes |
-|------|------|-------|
-| `id` | string | Unique identifier — used by updateSphere |
-| `label` | string | Displayed below sphere |
-| `active` | boolean | Whether this sphere is currently active |
+| Prop | Type | Default | Notes |
+|------|------|---------|-------|
+| `id` | `string` | `useId()` | MUST be unique |
+| `size` | `preset\|number` | `'md'` | xs=32 sm=48 md=64 lg=96 xl=128 |
+| `color` | `string` | — | MUST be visible. No default is safe |
+| `state` | `idle\|speaking\|complete` | `'idle'` | Controls matrix intensity |
+| `showMatrix` | `boolean` | `true` | Enable matrix rain |
+| `particleCount` | `number` | size-based | Particles requested |
+| `matrixColors` | `string[]` | `[color]` | Multicolor matrix rain |
+| `matrixOpacity` | `number` | `1` | Brightness 0–1 |
+| `label` | `string` | — | Text near sphere |
+| `labelPosition` | `string` | `'bottom'` | top/right/bottom/left + corners |
 
----
+## AIARing Props
 
-## Anti-patterns
+| Prop | Type | Default | Notes |
+|------|------|---------|-------|
+| `size` | `number` | `600` | Ring diameter px |
+| `orbit` | `ReactNode[]` | — | Sphere elements |
+| `activeStep` | `number` | `0` | Revealed wave segments |
+| `thinking` | `boolean` | `false` | Ring matrix rain |
+| `sphereRadius` | `number` | `50` | SVG wave clip radius |
+| `matrixOpacity` | `number` | `1` | Ring matrix brightness |
 
-- ❌ Unmounting AIASphere to update state — use `ctx.updateSphere(id, patch)`
-- ❌ Reordering orbit array — clusters are positional
-- ❌ `freq` values at `π`, `2π`, etc. — causes visual artifacts
-- ❌ Opaque fills on SVG ring paths
-- ❌ Starting simulation before `phase === 'settled'`
-- ❌ Mixing ambient and sphere particle budgets
+## Page Configurations
+
+### Home Page (fixed, single screen)
+```tsx
+<AIACanvas particleCount={300} ambientRatio={0.35} alwaysRenderSpheres
+  className="fixed inset-0 z-0 bg-background">
+  <AIARing orbit={spheres.map((id, i) => (
+    <AIASphere key={id} id={id} size="lg" color={SPHERE_COLORS[i]}
+      state={getState(id, i)} showMatrix matrixColors={ALL_COLORS} />
+  ))} />
+</AIACanvas>
+```
+
+### Deliberation Feed (scrolling)
+```tsx
+<AIACanvas particleCount={400} ambientRatio={0.5} wanderDuration={30}
+  alwaysRenderSpheres matchContentHeight
+  className="fixed inset-0 z-0 bg-background">
+  {/* AgentCard uses useId() for sphere ID */}
+</AIACanvas>
+```
+
+## Debugging
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| No particles | `color` is near-black | Pass visible color |
+| Particles on wrong sphere | Duplicate `id` | Use `useId()` |
+| Particles below viewport | No `matchContentHeight` | Add prop to AIACanvas |
+| No matrix rain | `state='idle'` or no `alwaysRenderSpheres` | Set state + prop |
+| Matrix invisible | `color` near-black | Pass visible color |
+| Too few particles per sphere | Decorative AIASpheres stealing budget | Replace with plain divs |
+| Particles vibrate | Jitter too high | Reduce `0.3` in `updateClusterOrbit` |
+| Sudden sphere shrink | Different orbit radius in wander vs settled | Use same radius |
+
+## File Map
+
+```
+packages/ui/canvas/
+├── aia-canvas.tsx        — Renderer, particle system, animation loop
+├── aia-context.tsx        — React context, types
+├── aia-sphere.tsx         — Presentational sphere (no hooks)
+├── useAIASphere.ts        — Sphere hooks (rAF position tracking)
+├── aia-ring.tsx           — Ring layout + SVG wave segments
+├── assistant-wave.tsx     — Standalone SVG wave
+└── ring-styles/
+    ├── types.ts           — Ring renderer interface
+    ├── wave.ts            — Wave ring (canvas)
+    ├── particles.ts       — Particle ring (canvas)
+    └── line.ts            — Line ring (canvas)
+```
+
+## After Editing Package Files
+
+Shared package changes require restart:
+```bash
+# Kill dev server, then:
+bun run dev:vada
+```
+Hot reload does NOT work for `packages/ui/canvas/` changes.
+
+## Known Issues
+
+- **Ring matrix top gap (~15px):** Circular clip makes characters invisible at the very top where circle width → 0. Geometry constraint. Would need non-circular approach.
+- **Canvas resize lag:** Content height check in `animate()` occasionally lags one frame behind rapid expand/collapse.
