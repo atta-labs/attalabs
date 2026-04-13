@@ -43,3 +43,4 @@ yarn-error.log*
 bun.lock
 next-env.d.ts
 .aider*
+.superpowers/

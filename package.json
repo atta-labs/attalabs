@@ -25,6 +25,7 @@
     "format-and-lint": "biome check .",
     "format-and-lint:fix": "biome check --fix .",
     "check": "turbo typecheck && biome check .",
+    "db": "bash scripts/db-studio.sh",
     "clean": "turbo clean",
     "prepare": "husky"
   },
