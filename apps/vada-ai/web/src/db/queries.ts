@@ -29,11 +29,19 @@ export async function createSession(
   question: string,
   agents: string[],
   provider?: string,
-  modelId?: string
+  modelId?: string,
+  agentModels?: Record<string, { provider: string; modelId: string }>
 ) {
   const inserted = await db
     .insert(schema.sessions)
-    .values({ userId, question, agents, provider: provider ?? null, modelId: modelId ?? null })
+    .values({
+      userId,
+      question,
+      agents,
+      provider: provider ?? null,
+      modelId: modelId ?? null,
+      agentModels: agentModels ?? null
+    })
     .returning()
   return inserted[0]!
 }
@@ -114,6 +122,10 @@ export async function insertTranscriptEntry(data: {
 }
 
 // --- Conclusions ---
+
+export async function deleteConclusionBySession(sessionId: string) {
+  await db.delete(schema.conclusions).where(eq(schema.conclusions.sessionId, sessionId))
+}
 
 export async function insertConclusion(data: {
   sessionId: string

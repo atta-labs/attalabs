@@ -34,3 +34,38 @@ export function getAgentConfigByName(name: string): AgentConfig {
   if (!config) return { role: 'strategist', name, temperature: 0.7 }
   return config
 }
+
+// --- Room Presets ---
+
+export type PresetId = 'crucible' | 'war_room' | 'sparring'
+
+export interface Preset {
+  id: PresetId
+  name: string
+  subtitle: string
+  agents: AgentConfig[]
+}
+
+export const PRESETS: Preset[] = [
+  {
+    id: 'crucible',
+    name: 'The Crucible',
+    subtitle: 'A rigorous teardown that finds fatal flaws and rebuilds your premise.',
+    agents: DEFAULT_ROOM
+  },
+  {
+    id: 'war_room',
+    name: 'The War Room',
+    subtitle: 'Heavyweight analysis forcing abstract strategy to survive physical reality.',
+    agents: ALL_AGENTS
+  },
+  {
+    id: 'sparring',
+    name: 'The Sparring Match',
+    subtitle: 'Fast, adversarial friction. No formal conclusion.',
+    agents: [
+      { role: 'strategist', name: 'Strategist', temperature: 0.7 },
+      { role: 'critic', name: 'Critic', temperature: 0.7 }
+    ]
+  }
+]

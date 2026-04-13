@@ -12,7 +12,7 @@ export const SessionState = z.enum([
 ])
 export type SessionState = z.infer<typeof SessionState>
 
-export const TerminalState = z.enum(['CLEAN', 'REVISED', 'UNCONVERGED'])
+export const TerminalState = z.enum(['CLEAN', 'REVISED', 'UNCONVERGED', 'SPARRING_COMPLETE'])
 export type TerminalState = z.infer<typeof TerminalState>
 
 export const InterventionType = z.enum(['WHISPER', 'DIRECTIVE', 'STOP'])

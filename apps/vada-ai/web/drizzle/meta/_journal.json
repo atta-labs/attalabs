@@ -15,6 +15,13 @@
       "when": 1775664955604,
       "tag": "0001_jittery_bromley",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775915974629,
+      "tag": "0002_lazy_killer_shrike",
+      "breakpoints": true
     }
   ]
 }

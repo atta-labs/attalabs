@@ -11,7 +11,7 @@ export const sessionStateEnum = pgEnum('session_state', [
   'TERMINAL'
 ])
 
-export const terminalStateEnum = pgEnum('terminal_state', ['CLEAN', 'REVISED', 'UNCONVERGED'])
+export const terminalStateEnum = pgEnum('terminal_state', ['CLEAN', 'REVISED', 'UNCONVERGED', 'SPARRING_COMPLETE'])
 
 export const interventionTypeEnum = pgEnum('intervention_type', ['WHISPER', 'DIRECTIVE', 'STOP'])
 
@@ -33,6 +33,7 @@ export const sessions = pgTable('sessions', {
   terminalState: terminalStateEnum('terminal_state'),
   provider: varchar('provider'),
   modelId: varchar('model_id'),
+  agentModels: jsonb('agent_models'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
