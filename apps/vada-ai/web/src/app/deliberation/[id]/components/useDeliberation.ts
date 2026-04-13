@@ -57,11 +57,11 @@ export function useDeliberation(
   const isComplete = initialState === 'TERMINAL'
 
   const [messages, setMessages] = useState<DeliberationMessage[]>(() =>
-    initialEntries.map((e, i) => {
+    initialEntries.map((e) => {
       const { text, replyTarget } = parseContent(e.content)
       const config = getAgentConfigByName(e.agent)
       return {
-        id: `${e.round}-${config.role}-${i}`,
+        id: crypto.randomUUID(),
         agent: e.agent,
         agentRole: config.role,
         round: e.round,
@@ -72,24 +72,39 @@ export function useDeliberation(
     })
   )
 
-  const [round1Buffer, setRound1Buffer] = useState<DeliberationMessage[]>([])
+  const round1BufferRef = useRef<DeliberationMessage[]>([])
+  const [round1HasPending, setRound1HasPending] = useState(false)
   const [round1Ready, setRound1Ready] = useState<boolean>(() => initialEntries.some((e) => e.round === 1))
 
   const [streamingMessage, setStreamingMessage] = useState<StreamingMessage | null>(null)
   const [loadingMessage, setLoadingMessage] = useState<string | null>(null)
+  const [streamError, setStreamError] = useState<string | null>(null)
   const [currentState, setCurrentState] = useState(initialState)
   const [terminalState, setTerminalState] = useState<string | null>(null)
-  const [conclusion] = useState<Record<string, unknown> | null>(initialConclusion)
+  const [conclusion, setConclusion] = useState<Record<string, unknown> | null>(initialConclusion)
+
+  const [completedRounds, setCompletedRounds] = useState<Set<number>>(() => {
+    if (isComplete) {
+      return new Set(initialEntries.map((e) => e.round))
+    }
+    return new Set()
+  })
 
   const rawStreamRef = useRef('')
+  const seenRef = useRef<Set<string>>(
+    new Set(initialEntries.map((e) => `${e.round}-${getAgentConfigByName(e.agent).role}`))
+  )
 
   useEffect(() => {
     if (isComplete) return
 
     const es = new EventSource(`/api/deliberation/${sessionId}/stream`)
 
-    const flushRound1 = (buf: DeliberationMessage[]) => {
+    const flushRound1 = () => {
+      const buf = round1BufferRef.current
       if (buf.length === 0) return
+      round1BufferRef.current = []
+      setRound1HasPending(false)
       setMessages((prev) => [...prev, ...buf])
       setRound1Ready(true)
     }
@@ -101,12 +116,7 @@ export function useDeliberation(
         case 'state_change': {
           setCurrentState(data.state)
           setLoadingMessage(null)
-          if (data.state !== 'ROUND_1') {
-            setRound1Buffer((buf) => {
-              flushRound1(buf)
-              return []
-            })
-          }
+          if (data.state !== 'ROUND_1') flushRound1()
           break
         }
 
@@ -132,9 +142,14 @@ export function useDeliberation(
 
         case 'agent_complete': {
           const config = getAgentConfigByName(data.agent)
+          const seenKey = `${data.round}-${config.role}`
+          setStreamingMessage(null)
+          rawStreamRef.current = ''
+          if (seenRef.current.has(seenKey)) break
+          seenRef.current.add(seenKey)
           const { text, replyTarget } = parseContent(data.content)
           const msg: DeliberationMessage = {
-            id: `${data.round}-${config.role}-${Date.now()}`,
+            id: crypto.randomUUID(),
             agent: data.agent,
             agentRole: config.role,
             round: data.round,
@@ -142,10 +157,9 @@ export function useDeliberation(
             state: 'complete',
             replyTarget
           }
-          setStreamingMessage(null)
-          rawStreamRef.current = ''
           if (data.round === 1) {
-            setRound1Buffer((prev) => [...prev, msg])
+            round1BufferRef.current = [...round1BufferRef.current, msg]
+            setRound1HasPending(true)
           } else {
             setMessages((prev) => [...prev, msg])
           }
@@ -153,22 +167,47 @@ export function useDeliberation(
         }
 
         case 'round_complete': {
-          if (data.round === 1) {
-            setRound1Buffer((buf) => {
-              flushRound1(buf)
-              return []
-            })
-          }
+          if (data.round === 1) flushRound1()
+          setCompletedRounds((prev) => new Set([...prev, data.round]))
           break
         }
+
+        case 'agent_error':
+          setStreamError(data.error)
+          setStreamingMessage(null)
+          setLoadingMessage(null)
+          es.close()
+          break
 
         case 'loading_state':
           setLoadingMessage(data.message)
           break
 
-        case 'conclusion_complete':
+        case 'conclusion_complete': {
           setTerminalState(data.terminal_state)
+          setLoadingMessage(null)
+
+          // Fetch the conclusion from the API.
+          // The API route handles extracting originalJson/revisedJson based on
+          // terminal state and returns a flat conclusion object with recommendation,
+          // key_condition, unresolved_points, review_by fields.
+          fetch(`/api/sessions/${sessionId}`)
+            .then((res) => {
+              if (!res.ok) throw new Error(`Failed to fetch session: ${res.status}`)
+              return res.json()
+            })
+            .then((session: { conclusion?: Record<string, unknown> | null }) => {
+              if (session.conclusion) {
+                setConclusion(session.conclusion)
+              } else {
+                console.warn('⚠️ API returned no conclusion despite terminal state:', data.terminal_state)
+              }
+            })
+            .catch((err) => {
+              console.error('❌ Conclusion fetch failed:', err)
+            })
           break
+        }
 
         case 'done':
           es.close()
@@ -182,12 +221,14 @@ export function useDeliberation(
 
   return {
     messages,
-    round1Buffer,
+    round1HasPending,
     round1Ready,
     streamingMessage,
     loadingMessage,
+    streamError,
     currentState,
     terminalState,
-    conclusion
+    conclusion,
+    completedRounds
   }
 }

@@ -4,7 +4,12 @@ import Link from 'next/link'
 const STATE_COLORS: Record<string, string> = {
   CLEAN: '#2ECC71',
   REVISED: '#C8A84B',
-  UNCONVERGED: '#DB4A4A'
+  UNCONVERGED: '#DB4A4A',
+  SPARRING_COMPLETE: '#60A5FA'
+}
+
+const STATE_DISPLAY: Record<string, string> = {
+  SPARRING_COMPLETE: 'Sparring'
 }
 
 export function SessionCard({
@@ -20,7 +25,7 @@ export function SessionCard({
   createdAt: string
 }) {
   const stateColor = terminalState ? STATE_COLORS[terminalState] : undefined
-  const stateLabel = terminalState ?? 'In Progress'
+  const stateLabel = terminalState ? (STATE_DISPLAY[terminalState] ?? terminalState) : 'In Progress'
 
   return (
     <Link href={`/deliberation/${id}`} className='block transition-opacity hover:opacity-80'>
@@ -40,6 +45,8 @@ export function SessionCard({
           </div>
           <Text as='small' size='xs' muted className='mt-2'>
             {new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            {' · '}
+            {new Date(createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
           </Text>
         </CardContent>
       </Card>

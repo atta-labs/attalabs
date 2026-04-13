@@ -36,7 +36,7 @@ export function SynthesisCard({ synthesisContent, allEntries, round }: Synthesis
               <button
                 type='button'
                 onClick={() => setExpanded(!expanded)}
-                className='text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground'
+                className='text-[10px] uppercase tracking-wider  transition-colors hover:text-foreground'
               >
                 {expanded ? '▲ Hide' : '▼ All agents'}
               </button>
@@ -59,7 +59,7 @@ export function SynthesisCard({ synthesisContent, allEntries, round }: Synthesis
                 return (
                   <div key={i} className='space-y-1'>
                     <AgentBadge agentRole={config.role} name={entry.agent} />
-                    <Text as='p' size='xs' className='whitespace-pre-wrap leading-relaxed text-muted-foreground'>
+                    <Text as='p' size='xs' className='whitespace-pre-wrap leading-relaxed '>
                       {entry.content}
                     </Text>
                   </div>

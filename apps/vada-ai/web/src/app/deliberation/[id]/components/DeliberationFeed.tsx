@@ -1,32 +1,16 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
-import { motion } from 'motion/react'
 import { AIACanvas } from '@atta/ui/canvas'
-import { getAgentConfigByName } from '@/schemas'
-import { ChatBubble } from './ChatBubble'
+import { RoundSection } from './RoundSection'
 import { ConclusionPanel } from './ConclusionPanel'
-import { AGENT_COLORS, MessageCard } from './MessageCard'
 import { useDeliberation } from './useDeliberation'
-import type { DeliberationMessage } from './useDeliberation'
+import { AGENT_THEME, ROUND_TITLES } from './agent-theme'
+import { DEFAULT_ROOM, OPTIONAL_AGENTS } from '@/schemas'
+import { StickyHeaderTopBar } from '@/components/StickyHeaderTopBar'
 
-// ── Round metadata ────────────────────────────────────────────────────────────
-
-const ROUND_META: Record<number, { title: string; subtitle: string }> = {
-  1: { title: 'Initial Positions', subtitle: 'Four independent views, revealed together' },
-  2: { title: 'Adversarial Collision', subtitle: 'Agents challenge and refine positions' },
-  3: { title: 'Convergence', subtitle: 'Synthesising toward a conclusion' }
-}
-
-// Sphere placement: top-row cards (even rows) get sphere at bottom so it faces
-// downward toward the cluster centre; bottom-row cards get sphere at top.
-function getSpherePosition(index: number): 'top' | 'bottom' {
-  return Math.floor(index / 2) % 2 === 0 ? 'bottom' : 'top'
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
+const ALL_AGENT_CONFIGS = [...DEFAULT_ROOM, ...OPTIONAL_AGENTS]
 
 interface DeliberationFeedProps {
   sessionId: string
@@ -37,7 +21,7 @@ interface DeliberationFeedProps {
   initialState?: string
 }
 
-export function DeliberationFeed({
+function DeliberationScene({
   sessionId,
   question,
   agentRoles,
@@ -47,240 +31,242 @@ export function DeliberationFeed({
 }: DeliberationFeedProps) {
   const {
     messages,
-    round1Buffer,
-    round1Ready,
     streamingMessage,
     loadingMessage,
+    streamError,
     currentState,
     terminalState,
-    conclusion
+    conclusion,
+    completedRounds
   } = useDeliberation(sessionId, question, initialEntries, initialConclusion, initialState)
 
-  // Scroll to the most recent card for a given agent display name
-  const scrollToMessage = useCallback((targetAgentName: string) => {
-    const config = getAgentConfigByName(targetAgentName)
-    const all = document.querySelectorAll<HTMLElement>(`[data-agent="${config.role}"]`)
-    const target = all[all.length - 1]
-    if (!target) return
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    target.style.transition = 'box-shadow 0.15s ease-out'
-    target.style.boxShadow = '0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent)'
-    setTimeout(() => {
-      target.style.boxShadow = ''
-    }, 1400)
-  }, [])
-
-  // Group completed messages by round
-  const messagesByRound = messages.reduce<Record<number, DeliberationMessage[]>>((acc, msg) => {
-    acc[msg.round] ??= []
-    acc[msg.round]!.push(msg)
-    return acc
-  }, {})
-
-  // Determine which round sections to render
-  const visibleRounds = [
-    ...new Set([
-      ...Object.keys(messagesByRound).map(Number),
-      ...(round1Ready || round1Buffer.length > 0 || currentState === 'ROUND_1' ? [1] : []),
-      ...(streamingMessage && streamingMessage.round > 1 ? [streamingMessage.round] : [])
-    ])
-  ].sort((a, b) => a - b)
-
-  const isLive = currentState !== 'TERMINAL'
+  const isLiveSession = currentState !== 'TERMINAL'
   const showConclusion = !!terminalState
+  const showLoading = ['CONCLUDING', 'AUDITING', 'REVISING'].includes(currentState) && !!loadingMessage
+
+  // Only show rounds that have at least one non-empty entry
+  const rounds = Array.from(new Set(messages.map((m) => m.round)))
+    .filter((r) => messages.some((m) => m.round === r && m.content.trim().length > 0))
+    .sort((a, b) => a - b)
+
+  const currentRoundNum = currentState.startsWith('ROUND_')
+    ? Number.parseInt(currentState.replace('ROUND_', ''), 10)
+    : null
+
+  // Detect interrupted session:
+  // - Not live (page loaded with existing data, SSE closed or never started)
+  // - No conclusion (didn't finish)
+  // - Not PENDING (some work was done)
+  // - Not currently streaming (not in the middle of a live deliberation)
+  const isInterrupted = !isLiveSession && !showConclusion && initialState !== 'PENDING' && initialState !== 'TERMINAL'
+
+  // Even TERMINAL sessions with no conclusion might be interrupted
+  // (the old catch block forced TERMINAL + UNCONVERGED on errors)
+  const isTerminalButEmpty =
+    initialState === 'TERMINAL' &&
+    !initialConclusion &&
+    terminalState === 'UNCONVERGED' &&
+    initialEntries.length > 0 &&
+    initialEntries.length < agentRoles.length * 3 // less than full 3 rounds
+
+  // ── Auto-scroll ──
+  const feedEndRef = useRef<HTMLDivElement>(null)
+  const prevMessageCount = useRef(messages.length)
+
+  useEffect(() => {
+    if (messages.length !== prevMessageCount.current || loadingMessage || showConclusion) {
+      prevMessageCount.current = messages.length
+      feedEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }
+  }, [messages.length, loadingMessage, showConclusion])
+
+  useEffect(() => {
+    if (streamingMessage) {
+      feedEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }
+  }, [streamingMessage?.content])
+
+  // Figure out which round the interruption happened in
+  const interruptedRoundLabel = initialState?.replace('_', ' ').toLowerCase() ?? 'unknown state'
 
   return (
-    <div className='flex min-h-dvh flex-col bg-background'>
-      {/* ── Sticky top bar ─────────────────────────────────────────── */}
-      <div className='sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm'>
-        <div className='mx-auto flex max-w-3xl items-center gap-3 px-4 py-3'>
-          {/* Back */}
-          <Link
-            href='/'
-            className='flex shrink-0 items-center text-muted-foreground transition-colors hover:text-foreground'
-          >
-            <ArrowLeft className='h-4 w-4' />
-          </Link>
-
-          {/* Truncated question */}
-          <span className='min-w-0 flex-1 truncate text-xs text-muted-foreground' title={question}>
-            {question}
-          </span>
-
-          {/* Agent pills */}
-          <div className='hidden shrink-0 items-center gap-1.5 sm:flex'>
-            {agentRoles.map((role) => (
-              <span
-                key={role}
-                className='h-2 w-2 rounded-full'
-                style={
-                  {
-                    '--agent-color': AGENT_COLORS[role] ?? 'var(--muted-foreground)',
-                    backgroundColor: 'var(--agent-color)'
-                  } as React.CSSProperties
-                }
-                title={role.replace('_', ' ')}
-              />
-            ))}
+    <div className='relative z-10 flex min-h-dvh flex-col'>
+      {/* Error banner */}
+      {streamError && (
+        <div className='fixed inset-x-0 top-14 z-50 mx-auto max-w-2xl px-4'>
+          <div className='flex items-start justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 shadow-lg'>
+            <p className='text-sm text-destructive'>{streamError}</p>
+            <Link
+              href='/deliberate'
+              className='mt-0.5 shrink-0 text-sm text-destructive/70 underline transition-opacity hover:opacity-70'
+            >
+              Back
+            </Link>
           </div>
-
-          {/* Status badge — lowercase */}
-          <span
-            className='shrink-0 rounded-full px-2 py-0.5 text-[10px]'
-            style={
-              isLive
-                ? {
-                    backgroundColor: 'color-mix(in srgb, var(--accent) 15%, transparent)',
-                    color: 'var(--accent)'
-                  }
-                : {
-                    backgroundColor: 'color-mix(in srgb, var(--success) 15%, transparent)',
-                    color: 'var(--success)'
-                  }
-            }
-          >
-            {isLive ? currentState.replace('_', ' ').toLowerCase() : 'complete'}
-          </span>
         </div>
-      </div>
-
-      {/* ── Main feed — wrapped in AIACanvas so AIASpheres have context ── */}
-      <AIACanvas particleCount={80} ambientRatio={0.3} wanderDuration={40} className='flex-1'>
-        <div className='transition-opacity duration-700' style={{ opacity: showConclusion ? 0.35 : 1 }}>
-          <div className='mx-auto max-w-3xl px-4 pb-32 pt-8'>
-            {/* User question */}
-            <ChatBubble variant='user' label='Your Question'>
-              {question}
-            </ChatBubble>
-
-            {/* Rounds */}
-            {visibleRounds.map((round) => {
-              const roundMessages = messagesByRound[round] ?? []
-              const meta = ROUND_META[round] ?? { title: `Round ${round}`, subtitle: '' }
-              const isRound1 = round === 1
-              const isCurrentRound = currentState === `ROUND_${round}`
-
-              // Combine completed + active streaming card for correct grid index
-              const streamingInThisRound = streamingMessage?.round === round ? streamingMessage : null
-              const totalCards = roundMessages.length + (streamingInThisRound ? 1 : 0)
-
+      )}
+      {/* Sticky header */}
+      <StickyHeaderTopBar>
+        <div className='mx-auto flex h-full w-full max-w-[640px] items-center gap-3 px-5'>
+          <span className='min-w-0 flex-1 truncate text-xs '>
+            {question.length > 60 ? `${question.slice(0, 60)}...` : question}
+          </span>
+          <div className='hidden items-center gap-1 sm:flex'>
+            {agentRoles.map((role) => {
+              const cfg = ALL_AGENT_CONFIGS.find((a) => a.role === role)
+              const name = cfg?.name ?? role
               return (
-                <div key={round} className='mt-12'>
-                  {/* Round divider */}
-                  <div className='mb-8 flex items-center gap-4'>
-                    <div className='h-px flex-1 bg-border' />
-                    <div className='text-center'>
-                      <p className='text-[9px] uppercase tracking-[0.35em] text-muted-foreground/40'>Round {round}</p>
-                      <p className='mt-0.5 text-sm font-medium text-muted-foreground'>{meta.title}</p>
-                      {meta.subtitle && <p className='mt-0.5 text-[11px] text-muted-foreground/50'>{meta.subtitle}</p>}
-                    </div>
-                    <div className='h-px flex-1 bg-border' />
-                  </div>
-
-                  {/* ── Round 1: simultaneous reveal, held until all 4 ready ── */}
-                  {isRound1 && (
-                    <>
-                      {!round1Ready && (
-                        <div className='flex items-center justify-center gap-2.5 py-10 text-sm text-muted-foreground'>
-                          <span className='h-1.5 w-1.5 animate-pulse rounded-full bg-accent' />
-                          Agents are forming their initial positions…
-                        </div>
-                      )}
-
-                      {round1Ready && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.4 }}
-                          className='grid grid-cols-1 gap-4 md:grid-cols-2'
-                        >
-                          {roundMessages.map((msg, i) => (
-                            <MessageCard
-                              key={msg.id}
-                              message={msg}
-                              spherePosition={getSpherePosition(i)}
-                              onReplyClick={scrollToMessage}
-                            />
-                          ))}
-                        </motion.div>
-                      )}
-                    </>
-                  )}
-
-                  {/* ── Rounds 2+: sequential, same 2-col grid ──────────── */}
-                  {!isRound1 && (
-                    <>
-                      {/* Loading placeholder before any cards in this round */}
-                      {totalCards === 0 && isCurrentRound && loadingMessage && (
-                        <div className='flex items-center gap-2.5 px-1 py-3 text-sm text-muted-foreground'>
-                          <span className='h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground/50' />
-                          {loadingMessage}
-                        </div>
-                      )}
-
-                      <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                        {/* Completed cards */}
-                        {roundMessages.map((msg, i) => (
-                          <MessageCard
-                            key={msg.id}
-                            message={msg}
-                            spherePosition={getSpherePosition(i)}
-                            onReplyClick={scrollToMessage}
-                          />
-                        ))}
-
-                        {/* Active streaming card */}
-                        {streamingInThisRound && (
-                          <MessageCard
-                            key={`streaming-${streamingInThisRound.agentRole}`}
-                            message={streamingInThisRound}
-                            isStreaming
-                            spherePosition={getSpherePosition(roundMessages.length)}
-                            onReplyClick={scrollToMessage}
-                          />
-                        )}
-                      </div>
-
-                      {/* Loading indicator between agents (after at least one card) */}
-                      {isCurrentRound && loadingMessage && !streamingInThisRound && totalCards > 0 && (
-                        <div className='mt-4 flex items-center gap-2.5 px-1 py-3 text-sm text-muted-foreground'>
-                          <span className='h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground/50' />
-                          {loadingMessage}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
+                <div
+                  key={role}
+                  className='size-1.5 rounded-full'
+                  style={{ background: AGENT_THEME[name]?.color }}
+                  title={name}
+                />
               )
             })}
-
-            <div className='h-32' />
           </div>
+          {/* Status badge */}
+          {isInterrupted || isTerminalButEmpty ? (
+            <span className='shrink-0 rounded-full bg-yellow-500/10 px-2 py-0.5 text-[10px] tracking-wide text-yellow-500'>
+              interrupted
+            </span>
+          ) : isLiveSession ? (
+            <span className='shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] tracking-wide text-accent'>
+              {currentState.replace('_', ' ').toLowerCase()}
+            </span>
+          ) : (
+            <span className='shrink-0 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] tracking-wide text-green-500'>
+              complete
+            </span>
+          )}
         </div>
-      </AIACanvas>
+      </StickyHeaderTopBar>
 
-      {/* ── Conclusion overlay ─────────────────────────────────────── */}
-      {showConclusion && terminalState && (
-        <div className='fixed inset-x-0 bottom-0 z-50 px-4 pb-8 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:pb-0'>
-          <div className='w-full max-w-2xl'>
+      {/* Main feed */}
+      <div className='mx-auto w-full max-w-[640px] flex-1 px-5 pb-32 pt-6'>
+        {/* Question card */}
+        <div className='mb-8 rounded-xl border border-border bg-card p-4'>
+          <div className='mb-2 text-[9px] font-semibold uppercase tracking-[0.25em] '>Your Question</div>
+          <p className='m-0 text-base leading-relaxed text-foreground/90'>{question}</p>
+        </div>
+
+        {/* Interrupted session banner */}
+        {(isInterrupted || isTerminalButEmpty) && (
+          <div className='mb-6 rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4'>
+            <div className='mb-1 text-sm font-medium text-yellow-500'>Deliberation interrupted</div>
+            <p className='mb-3 text-[13px] leading-relaxed text-yellow-500/70'>
+              This session was interrupted during {interruptedRoundLabel}.
+              {rounds.length > 0 && (
+                <>
+                  {' '}
+                  Round{rounds.length > 1 ? `s ${rounds.join(', ')}` : ` ${rounds[0]}`}{' '}
+                  {rounds.length > 1 ? 'have' : 'has'} partial data.
+                </>
+              )}
+            </p>
+            <div className='flex gap-2'>
+              <button
+                onClick={() => window.location.reload()}
+                className='rounded-md bg-yellow-500/15 px-3 py-1.5 text-xs font-medium text-yellow-500 transition-colors hover:bg-yellow-500/25'
+              >
+                Resume Deliberation
+              </button>
+              <Link
+                href='/deliberate'
+                className='rounded-md bg-muted/50 px-3 py-1.5 text-xs font-medium  transition-colors hover:bg-muted'
+              >
+                Start Fresh
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Rounds — only those with non-empty entries */}
+        {rounds.map((round) => {
+          const roundMessages = messages.filter((m) => m.round === round && m.content.trim().length > 0)
+          const isCurrentRound = currentRoundNum === round
+          const roundStreamMsg = isCurrentRound && streamingMessage?.round === round ? streamingMessage : null
+          const isRoundDone = completedRounds.has(round)
+
+          return (
+            <RoundSection
+              key={round}
+              round={round}
+              entries={roundMessages}
+              streamingMessage={roundStreamMsg}
+              isLive={isCurrentRound}
+              isRoundComplete={isRoundDone}
+              expectedAgentCount={agentRoles.length}
+            />
+          )
+        })}
+
+        {/* Waiting for a round that has no messages yet — only show if live */}
+        {currentRoundNum && !rounds.includes(currentRoundNum) && isLiveSession && (
+          <div className='mb-6'>
+            <div className='mb-4 flex items-center gap-3 px-1'>
+              <div className='h-px flex-1 bg-border' />
+              <span className='whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.35em] '>
+                Round {currentRoundNum} — {ROUND_TITLES[currentRoundNum] ?? ''}
+              </span>
+              <div className='h-px flex-1 bg-border' />
+            </div>
+            <div className='flex items-center justify-center gap-2.5 py-8 text-sm '>
+              <span className='size-1.5 animate-pulse rounded-full bg-muted-foreground' />
+              {currentRoundNum === 1
+                ? 'Agents are forming their positions...'
+                : `Agents are reading Round ${currentRoundNum - 1}...`}
+            </div>
+          </div>
+        )}
+
+        {/* Loading state during conclusion protocol */}
+        {showLoading && (
+          <div className='flex items-center justify-center gap-2.5 py-8 text-sm '>
+            <span className='size-1.5 animate-pulse rounded-full bg-accent' />
+            {loadingMessage}
+          </div>
+        )}
+
+        {/* Conclusion — only show if we actually have a terminal state and it's not an interrupted empty session */}
+        {showConclusion && terminalState && !isTerminalButEmpty && (
+          <div className='pb-24 pt-4'>
             <ConclusionPanel terminalState={terminalState} conclusion={conclusion} />
-            <div className='mt-4 flex gap-3'>
+            <div className='mt-4 flex gap-2.5'>
               <button
                 type='button'
-                className='flex-1 rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground'
+                className='flex-1 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium  transition-colors hover:text-foreground'
               >
                 Export
               </button>
               <Link
                 href='/deliberate'
-                className='flex-1 rounded-lg bg-accent px-4 py-2.5 text-center text-sm font-medium text-background transition-opacity hover:opacity-90'
+                className='flex-1 rounded-lg bg-accent px-4 py-3 text-center text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90'
               >
-                Start New Deliberation
+                New Deliberation
               </Link>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Auto-scroll anchor */}
+        <div ref={feedEndRef} />
+      </div>
     </div>
+  )
+}
+
+// ── Outer wrapper — AIACanvas with ambient particles ──
+export function DeliberationFeed(props: DeliberationFeedProps) {
+  return (
+    <AIACanvas
+      particleCount={400}
+      ambientRatio={0.5}
+      wanderDuration={30}
+      alwaysRenderSpheres
+      className='fixed inset-0 h-full w-full bg-background z-0'
+    >
+      <DeliberationScene {...props} />
+    </AIACanvas>
   )
 }

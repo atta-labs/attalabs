@@ -3,28 +3,15 @@
 import { AIASphere } from '@atta/ui/canvas'
 import type { DeliberationMessage, StreamingMessage } from './useDeliberation'
 
-// Agent role → brand color (single source of truth).
-// Set as --agent-color CSS variable on the card root; all rendering uses var(--agent-color).
+// Used only for the canvas particle system (AIASphere color prop).
+// All DOM styling uses var(--agent-color) inherited from [data-agent] CSS rules.
 export const AGENT_COLORS: Record<string, string> = {
-  strategist: '#4A9EDB',
-  critic: '#DB4A4A',
-  devils_advocate: '#9B59B6',
-  synthesizer: '#C8A84B',
-  researcher: '#2ECC71',
-  operator: '#E67E22'
-}
-
-// Display name → role key
-function nameToRole(name: string): string {
-  const map: Record<string, string> = {
-    Strategist: 'strategist',
-    Critic: 'critic',
-    "Devil's Advocate": 'devils_advocate',
-    Synthesizer: 'synthesizer',
-    Researcher: 'researcher',
-    Operator: 'operator'
-  }
-  return map[name] ?? 'strategist'
+  strategist: 'var(--agent-strategist)',
+  critic: 'var(--agent-critic)',
+  devils_advocate: 'var(--agent-devils-advocate)',
+  synthesizer: 'var(--agent-synthesizer)',
+  researcher: 'var(--agent-researcher)',
+  operator: 'var(--agent-operator)'
 }
 
 interface MessageCardProps {
@@ -43,9 +30,6 @@ export function MessageCard({
   onReplyClick
 }: MessageCardProps) {
   const agentColor = AGENT_COLORS[message.agentRole] ?? 'var(--accent)'
-  const replyColor = message.replyTarget
-    ? (AGENT_COLORS[nameToRole(message.replyTarget)] ?? 'var(--muted-foreground)')
-    : 'var(--muted-foreground)'
   const sphereState = isStreaming ? 'speaking' : 'complete'
   const roleLabel = message.agentRole.replace('_', ' ')
 
@@ -55,11 +39,21 @@ export function MessageCard({
         id={'id' in message ? message.id : `streaming-${message.agentRole}`}
         state={sphereState}
         color={agentColor}
-        size='md'
-        label={message.agent}
-        labelPosition={spherePosition === 'bottom' ? 'bottom' : 'top'}
-        showMatrix={isStreaming}
-      />
+        size='lg'
+        showMatrix
+      >
+        {/* Ping ring — expands outward while agent is speaking */}
+        {isStreaming && (
+          <span className='absolute inset-0 animate-ping rounded-full bg-[var(--agent-color)] opacity-20' />
+        )}
+        {/* Visible circle — transparent bg so canvas matrix rain shows through */}
+        <span
+          className={`absolute inset-0 rounded-full border border-[var(--agent-color)] transition-all duration-300
+            ${isStreaming ? 'shadow-[0_0_18px_color-mix(in_srgb,var(--agent-color)_40%,transparent)]' : ''}
+            ${sphereState === 'complete' ? 'opacity-75' : 'opacity-100'}
+          `}
+        />
+      </AIASphere>
     </div>
   )
 
@@ -78,7 +72,7 @@ export function MessageCard({
       )}
 
       {/* Role label */}
-      <p className='mb-2 text-[10px] uppercase tracking-wider text-muted-foreground'>{roleLabel}</p>
+      <p className='mb-2 text-[10px] uppercase tracking-wider '>{roleLabel}</p>
 
       {/* Body */}
       <p className='text-sm leading-[1.7] text-foreground/90'>
@@ -95,11 +89,15 @@ export function MessageCard({
       {spherePosition === 'top' ? (
         <>
           {sphere}
-          <div className='rounded-xl border border-border p-4 transition-shadow duration-300'>{content}</div>
+          <div className='rounded-xl border border-border bg-card p-4 transition-shadow duration-300 h-64 overflow-y-auto'>
+            {content}
+          </div>
         </>
       ) : (
         <>
-          {content}
+          <div className='rounded-xl border border-border bg-card p-4 transition-shadow duration-300 h-64 overflow-y-auto'>
+            {content}
+          </div>
           {sphere}
         </>
       )}
