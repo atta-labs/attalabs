@@ -5,6 +5,7 @@ import type { PortalUiConfig } from '@atta/cms'
 import type { ReactNode } from 'react'
 import { LibraryProvider } from './library-provider'
 import type { UILibrary } from './library-loader'
+import { ToastProvider } from '../libraries/basic/components/display/toast'
 
 interface NextWebShellProps {
   children: ReactNode
@@ -49,7 +50,9 @@ export async function NextWebShell({ children, config, styleId }: NextWebShellPr
         )}
         {themeCSS && <style id={styleId} dangerouslySetInnerHTML={{ __html: themeCSS }} />}
         <AuthProvider appearance={appearance}>
-          <LibraryProvider library={libraryId}>{children}</LibraryProvider>
+          <LibraryProvider library={libraryId}>
+            <ToastProvider defaultPosition='bottom-right'>{children}</ToastProvider>
+          </LibraryProvider>
         </AuthProvider>
       </body>
     </html>

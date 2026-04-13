@@ -28,6 +28,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -67,6 +69,29 @@
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
   }
+
+  /* ── Vāda agent identity colors ──────────────────────────────────────────
+     One place to retheme all agent visuals. These are defaults; a Sanity
+     theme can override any of them via the generated <style> block.
+  ───────────────────────────────────────────────────────────────────────── */
+  :root {
+    --success: oklch(65% 0.17 145);
+    --warning: oklch(72% 0.17 75);
+    --agent-strategist:     oklch(65% 0.15 220);
+    --agent-critic:         var(--destructive);
+    --agent-devils-advocate: oklch(60% 0.14 290);
+    --agent-synthesizer:    var(--accent);
+    --agent-researcher:     oklch(65% 0.17 145);
+    --agent-operator:       oklch(65% 0.14 55);
+  }
+
+  /* Cascade --agent-color from the nearest [data-agent] ancestor */
+  [data-agent="strategist"]      { --agent-color: var(--agent-strategist); }
+  [data-agent="critic"]          { --agent-color: var(--agent-critic); }
+  [data-agent="devils_advocate"] { --agent-color: var(--agent-devils-advocate); }
+  [data-agent="synthesizer"]     { --agent-color: var(--agent-synthesizer); }
+  [data-agent="researcher"]      { --agent-color: var(--agent-researcher); }
+  [data-agent="operator"]        { --agent-color: var(--agent-operator); }
 }
 
 @layer components {
