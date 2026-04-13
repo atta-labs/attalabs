@@ -21,7 +21,13 @@ export async function generateConclusion(
 
   const context = buildTranscriptContext(transcript)
   const participantList = agents.join(', ')
-  const message = `The original question is: ${question}
+
+  // THE FIX: The decisiveness instruction MUST be at the very end of the message.
+  // Llama (and weaker models) have strong recency bias — they forget system prompt
+  // instructions after reading a long transcript. The last thing the model reads
+  // before generating is the last paragraph of the user message. That's where
+  // the "answer the question directly" instruction must live.
+  const message = `The original question is: "${question}"
 
 Participants in this deliberation: ${participantList}
 
@@ -31,7 +37,22 @@ ${context}
 
 ---
 
-Now produce the final conclusion JSON for this deliberation.`
+CRITICAL INSTRUCTION — READ THIS BEFORE GENERATING:
+
+1. You MUST output valid JSON matching the conclusion schema. No markdown, no explanation, just the JSON object.
+
+2. The "recommendation" field MUST directly answer the Principal's question: "${question}"
+   - If the question is "Should I...?", start with "No," or "Yes," or "Not yet —" followed by the reasoning.
+   - Do NOT hedge. Do NOT say "it depends" or "further evaluation is needed."
+   - The deliberation already happened. You are delivering the verdict, not asking more questions.
+
+3. The "key_condition" field must state the single most important assumption.
+
+4. The "unresolved_points" field must list specific disagreements from the transcript with the agents involved. Do not invent them.
+
+5. If the Principal's question had formatting constraints (e.g., "5 lines"), apply them to the recommendation text using \\n for line breaks.
+
+GENERATE THE JSON NOW:`
 
   let raw = ''
   try {

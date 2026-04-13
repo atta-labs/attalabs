@@ -14,9 +14,18 @@ interface AgentWithConfig {
   config: AgentConfig
 }
 
-function buildAgents(configs: AgentConfig[], modelConfig?: ModelConfig): AgentWithConfig[] {
+function buildAgents(
+  configs: AgentConfig[],
+  question: string,
+  modelConfig?: ModelConfig,
+  perAgentModels?: Record<string, ModelConfig>
+): AgentWithConfig[] {
   return configs.map((config) => ({
-    agent: createDeliberationAgent(config, composeSystemPrompt(config.role, ROUND, false), modelConfig),
+    agent: createDeliberationAgent(
+      config,
+      composeSystemPrompt(config.role, ROUND, false, question),
+      perAgentModels?.[config.role] ?? modelConfig
+    ),
     config
   }))
 }
@@ -66,9 +75,10 @@ export async function executeRoundOne(
   question: string,
   agentConfigs: AgentConfig[],
   emitter: SSEEmitter,
-  modelConfig?: ModelConfig
+  modelConfig?: ModelConfig,
+  perAgentModels?: Record<string, ModelConfig>
 ): Promise<void> {
-  const agentsWithConfig = buildAgents(agentConfigs, modelConfig)
+  const agentsWithConfig = buildAgents(agentConfigs, question, modelConfig, perAgentModels)
 
   const tasks = agentsWithConfig.map(({ agent, config }, index) =>
     runAgentWithTimeout(agent, config, question, index, sessionId, emitter)

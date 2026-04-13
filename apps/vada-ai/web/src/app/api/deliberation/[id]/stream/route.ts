@@ -1,8 +1,13 @@
 import { auth } from '@atta/auth/hooks'
 import { getSessionWithTranscript } from '@/db/queries'
 import { SSEEmitter } from '@/engine/stream'
-import { runDeliberation } from '@/engine/workflow'
-import { consumeEphemeralKey } from '@/engine/pending-keys'
+import { runDeliberation, resumeDeliberation } from '@/engine/workflow'
+import {
+  consumeEphemeralKey,
+  consumeEphemeralProviderKey,
+  peekEphemeralKey,
+  peekEphemeralProviderKey
+} from '@/engine/pending-keys'
 import type { ModelConfig } from '@/lib/models'
 
 // Simulation delay to make "replayed" messages feel like they are arriving in real-time
@@ -48,29 +53,49 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           type: 'conclusion_complete',
           terminal_state: session.conclusion.terminalState as 'CLEAN' | 'REVISED' | 'UNCONVERGED'
         })
+      } else if (session.terminalState === 'SPARRING_COMPLETE') {
+        // Sparring sessions never insert a conclusion row
+        emitter.emit({ type: 'conclusion_complete', terminal_state: 'SPARRING_COMPLETE' })
       }
       emitter.close()
     })()
     return emitter.toResponse()
   }
 
-  // Build ModelConfig from session + ephemeral key (if any)
-  const apiKey = consumeEphemeralKey(sessionId) ?? undefined
+  // Build global ModelConfig from session + ephemeral key (if any)
+  // Use consume for first start (PENDING), peek for resume so the key stays available
+  const isPending = session.state === 'PENDING'
+  const apiKey = isPending ? (consumeEphemeralKey(sessionId) ?? undefined) : (peekEphemeralKey(sessionId) ?? undefined)
   const modelConfig: ModelConfig | undefined = session.provider
     ? { provider: session.provider as ModelConfig['provider'], modelId: session.modelId ?? '', apiKey }
     : undefined
 
+  // Build per-agent ModelConfig map from session.agentModels (if present)
+  let perAgentModels: Record<string, ModelConfig> | undefined
+  const rawAgentModels = session.agentModels as Record<string, { provider: string; modelId: string }> | null
+  if (rawAgentModels) {
+    perAgentModels = {}
+    for (const [role, cfg] of Object.entries(rawAgentModels)) {
+      const providerKey = isPending
+        ? (consumeEphemeralProviderKey(sessionId, cfg.provider) ?? undefined)
+        : (peekEphemeralProviderKey(sessionId, cfg.provider) ?? undefined)
+      perAgentModels[role] = {
+        provider: cfg.provider as ModelConfig['provider'],
+        modelId: cfg.modelId,
+        apiKey: providerKey
+      }
+    }
+  }
   // Handle Live or Pending Sessions
   ;(async () => {
     // 1. First, replay what we already have in the DB
     await replayHistory()
 
-    // 2. If the session is new (PENDING), kick off the orchestrated workflow
+    // 2. Resume or start the workflow based on session state
     if (session.state === 'PENDING') {
-      runDeliberation(sessionId, session.question, session.agents, emitter, modelConfig)
+      runDeliberation(sessionId, session.question, session.agents, emitter, modelConfig, perAgentModels)
     } else {
-      // If it's technically "IN_PROGRESS" but stalled, close to prevent hanging connections.
-      emitter.close()
+      resumeDeliberation(sessionId, emitter, modelConfig, perAgentModels)
     }
   })()
 

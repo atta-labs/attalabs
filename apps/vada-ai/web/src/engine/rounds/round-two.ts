@@ -29,7 +29,8 @@ export async function executeSequentialRound(
   agentConfigs: AgentConfig[],
   priorEntries: TranscriptEntry[],
   emitter: SSEEmitter,
-  modelConfig?: ModelConfig
+  modelConfig?: ModelConfig,
+  perAgentModels?: Record<string, ModelConfig>
 ): Promise<void> {
   const context = buildTranscriptContext(priorEntries)
   const contextMessage =
@@ -39,8 +40,8 @@ export async function executeSequentialRound(
 
   for (let i = 0; i < agentConfigs.length; i++) {
     const config = agentConfigs[i]!
-    const systemPrompt = composeSystemPrompt(config.role, round, false)
-    const agent = createDeliberationAgent(config, systemPrompt, modelConfig)
+    const systemPrompt = composeSystemPrompt(config.role, round, false, question)
+    const agent = createDeliberationAgent(config, systemPrompt, perAgentModels?.[config.role] ?? modelConfig)
 
     emitter.emit({ type: 'agent_start', agent: config.name, round })
 
