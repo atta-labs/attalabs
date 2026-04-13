@@ -1,10 +1,20 @@
 'use client'
 
-import { Heading, Separator, Text } from '@atta/ui'
+import { AgentThinkingText, Heading, Separator, Text } from '@atta/ui'
 import { AIACanvas, AIARing, AIASphere } from '@atta/ui/canvas'
 import { SignUpAction } from './SignUpAction'
 import { StartAction } from './StartAction'
 import { useHomeContent } from './useHomeContent'
+import { AGENT_THEME } from '@/app/deliberation/[id]/components/agent-theme'
+
+const SPHERE_COLORS = [
+  AGENT_THEME.Strategist!.color,
+  AGENT_THEME.Critic!.color,
+  AGENT_THEME["Devil's Advocate"]!.color,
+  AGENT_THEME.Synthesizer!.color,
+  AGENT_THEME.Researcher!.color,
+  AGENT_THEME.Operator!.color
+]
 
 // Inner component — rendered INSIDE AIACanvas so useHomeContent can access the canvas context
 function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
@@ -19,6 +29,10 @@ function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
 
   const animationComplete = activeStep >= 6
 
+  const SPHERE_PHRASES = ['Framing...', 'Risks?', 'Counter...', 'Patterns...', 'Data...', 'Synthesis...']
+
+  const spheres = ['s1', 's2', 's3', 's4', 's5', 's6'] as const
+
   return (
     <div className='relative z-10 flex min-h-dvh w-full items-center justify-center overflow-hidden'>
       <AIARing
@@ -26,53 +40,31 @@ function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
         activeStep={activeStep}
         thinking={animationComplete}
         sphereRadius={50}
-        orbit={[
-          <AIASphere
-            key='s1'
-            id='s1'
-            size='lg'
-            state={getSphereState('s1', 0)}
-            showMatrix={activeAgent === 's1' || isTouched(0)}
-          />,
-          <AIASphere
-            key='s2'
-            id='s2'
-            size='lg'
-            state={getSphereState('s2', 1)}
-            showMatrix={activeAgent === 's2' || isTouched(1)}
-          />,
-          <AIASphere
-            key='s3'
-            id='s3'
-            size='lg'
-            state={getSphereState('s3', 2)}
-            showMatrix={activeAgent === 's3' || isTouched(2)}
-          />,
-          <AIASphere
-            key='s4'
-            id='s4'
-            size='lg'
-            state={getSphereState('s4', 3)}
-            showMatrix={activeAgent === 's4' || isTouched(3)}
-          />,
-          <AIASphere
-            key='s5'
-            id='s5'
-            size='lg'
-            state={getSphereState('s5', 4)}
-            showMatrix={activeAgent === 's5' || isTouched(4)}
-          />,
-          <AIASphere
-            key='s6'
-            id='s6'
-            size='lg'
-            state={getSphereState('s6', 5)}
-            showMatrix={activeAgent === 's6' || isTouched(5)}
-          />
-        ]}
+        matrixOpacity={0.2}
+        orbit={spheres.map((id, i) => {
+          const showMatrix = activeAgent === id || isTouched(i)
+          return (
+            <AIASphere
+              key={id}
+              id={id}
+              size='lg'
+              color={SPHERE_COLORS[i]}
+              state={getSphereState(id, i)}
+              showMatrix={showMatrix}
+              matrixOpacity={0.2}
+            >
+              {showMatrix && (
+                <AgentThinkingText
+                  text={SPHERE_PHRASES[i] ?? '...'}
+                  className='text-[8px] text-center leading-tight opacity-80'
+                />
+              )}
+            </AIASphere>
+          )
+        })}
       >
         <div className='relative z-10 flex flex-col items-center gap-10'>
-          <Text as='small' className='uppercase tracking-widest text-muted-foreground'>
+          <Text as='small' className='uppercase tracking-widest '>
             vada.ai
           </Text>
 
@@ -97,7 +89,7 @@ function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
 
             <div className='flex flex-col items-center gap-6'>{isSignedIn ? <StartAction /> : <SignUpAction />}</div>
           </div>
-          <Text as='small' className='uppercase text-muted-foreground'>
+          <Text as='small' className='uppercase '>
             an atta.ai product
           </Text>
         </div>
@@ -109,7 +101,14 @@ function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
 // Outer shell — sets up AIACanvas (the context provider), then renders HomeScene inside it
 export function HomeContent({ isSignedIn }: { isSignedIn: boolean }) {
   return (
-    <AIACanvas particleCount={300} ambientRatio={0.35} className='fixed inset-0 w-full h-full bg-background z-0'>
+    <AIACanvas
+      particleCount={1500}
+      ambientRatio={0.5}
+      wanderDuration={30}
+      alwaysRenderSpheres
+      matchContentHeight
+      className='fixed inset-0 h-full w-full z-0'
+    >
       <HomeScene isSignedIn={isSignedIn} />
     </AIACanvas>
   )
