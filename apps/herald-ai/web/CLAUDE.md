@@ -161,11 +161,19 @@ GITHUB_TOKEN=                # Higher GitHub API rate limits
 
 ---
 
+## Specifications
+
+| Spec | Path | Purpose |
+|------|------|---------|
+| Build Spec | [docs/BUILD-SPEC.md](docs/BUILD-SPEC.md) | Complete product spec — vision, flows, API contracts, prompts |
+| Architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture decisions and rationale |
+
+---
+
 ## Related Documentation
 
+- [Herald AI Overview](../CLAUDE.md)
 - [Root CLAUDE.md](../../../CLAUDE.md) — Monorepo routing index
-- [BUILD-SPEC.md](docs/BUILD-SPEC.md) — Complete build specification
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Architecture decisions
 
 ---
 

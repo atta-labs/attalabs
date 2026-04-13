@@ -16,6 +16,12 @@ Vitakka AI is a focus and applied thought tool. "Vitakka" means "applied thought
 
 ---
 
+## Specifications
+
+No specs yet. When created, they live in `specs/` at this level (`apps/vitakka-ai/specs/`).
+
+---
+
 ## Related
 
 - [Root CLAUDE.md](../../CLAUDE.md) — Atta AI monorepo routing index

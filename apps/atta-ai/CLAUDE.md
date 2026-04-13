@@ -15,6 +15,12 @@ Atta AI is the organization's own page and hub for the Atta AI ecosystem.
 
 ---
 
+## Specifications
+
+No specs yet. When created, they live in `specs/` at this level (`apps/atta-ai/specs/`).
+
+---
+
 ## Related
 
 - [Root CLAUDE.md](../../CLAUDE.md) — Atta AI monorepo routing index

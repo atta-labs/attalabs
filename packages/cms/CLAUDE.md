@@ -1,6 +1,6 @@
 # CMS Package — Claude Code Instructions
 
-Sanity CMS schemas, configuration, and client for Atta AI. This package owns all content management — candidate profiles, themes, page configs, and asset references.
+Sanity CMS client, schemas, typed queries, and theme utilities for all Atta AI products. This package is the **single source of truth** for visual identity — colors, typography, UI library selection — across Herald, Vada, Atta, and Vitakka.
 
 ---
 
@@ -9,100 +9,154 @@ Sanity CMS schemas, configuration, and client for Atta AI. This package owns all
 ```
 packages/cms/
 ├── src/
-│   ├── schemas/             # Sanity document type definitions
-│   │   ├── profile.ts           # Candidate profile schema
-│   │   ├── theme.ts             # Theme configuration schema
-│   │   ├── envoy-config.ts      # Envoy page configuration
-│   │   └── index.ts             # Schema registry
-│   ├── queries/             # GROQ queries for reading data
-│   │   ├── profile.ts           # getProfile(username)
-│   │   ├── theme.ts             # getTheme(themeId)
-│   │   └── envoy.ts             # getEnvoyConfig(username)
-│   ├── client.ts            # Sanity client factory
-│   ├── config.ts            # Project ID, dataset, API version
-│   └── index.ts             # Public exports
+│   ├── client.ts            # cmsClient (read), cmsWriteClient (write), createCmsClient
+│   ├── config.ts            # Project ID, dataset, API version, CDN flag
+│   ├── types.ts             # CMSTheme, PortalUiConfig, ThemeTypography, FIELD_TO_CSS_VAR
+│   ├── index.ts             # Public exports
+│   ├── queries/
+│   │   ├── product-ui-config.ts  # getHeraldConfig, getVadaConfig, getAttaConfig, getVitakkaConfig
+│   │   ├── theme.ts              # getThemeById, getThemeByName, getThemeList, getThemes
+│   │   └── library.ts            # getLibraries, getLibraryById
+│   └── utils/
+│       ├── theme.ts              # generateThemeCSSForScheme, generateThemeCSS, transformColorGroup
+│       ├── font-loader.ts        # getGoogleFontsUrl (SSR), loadThemeFonts (client)
+│       └── oklch.ts              # cssColorToOklch — converts any color format to oklch
 ├── CLAUDE.md
 ├── README.md
-├── package.json
-└── tsconfig.json
+└── package.json
 ```
 
 ---
 
 ## Critical Rules
 
-### RULE #1: v1 does NOT use Sanity yet
+### RULE #1: Never use the Sanity client directly in app code
 
-v1 uses a hardcoded profile in `apps/herald/src/lib/profile.ts`. The CMS package is scaffolded and ready for Step 5 (Subdomain Routing & Sanity Integration) in the build order.
-
-**Do NOT add Sanity dependencies or configuration until Step 5.**
-
-### RULE #2: Schemas define the content model
-
-When Sanity is wired (Step 5+), all candidate content lives here:
-
-| Schema | Purpose |
-|--------|---------|
-| `profile` | Candidate name, title, summary, skills, projects, experience, GitHub handle |
-| `theme` | Color tokens, typography, spacing — runtime theme switching |
-| `envoy-config` | Per-candidate Envoy page configuration (which sections to show, order) |
-
-### RULE #3: GROQ queries are the only way to read from Sanity
-
-Never use raw Sanity client calls in app code. All reads go through typed query functions exported from this package.
+All reads go through typed query functions exported from this package.
 
 ```tsx
-// ✅ Good — typed query from CMS package
-import { getProfile } from '@atta/cms/queries/profile'
-const profile = await getProfile('dani')
+// ✅ Typed query from CMS package
+import { getVadaConfig, cmsClient } from '@atta/cms'
+const config = await getVadaConfig(cmsClient)
 
-// ❌ Bad — raw client call in app code
-import { client } from '@atta/cms/client'
-const profile = await client.fetch('*[_type == "profile"]')
+// ❌ Raw client call in app code
+import { createClient } from '@sanity/client'
+const config = await client.fetch('*[_type == "vadaConfig"]')
 ```
 
-### RULE #4: Sanity client config comes from environment
+### RULE #2: Theme loading is SSR — fetch at root layout, not in components
 
-```typescript
-// packages/cms/src/config.ts
-export const cmsConfig = {
-  projectId: process.env.SANITY_PROJECT_ID!,
-  dataset: process.env.SANITY_DATASET ?? 'production',
-  apiVersion: '2026-03-01',
-  useCdn: process.env.NODE_ENV === 'production'
+Theme config is fetched once in the root `layout.tsx` (async Server Component) and passed to `NextWebShell`. Components never fetch theme data directly.
+
+```tsx
+// ✅ Root layout — server-side, once per request
+const config = await getVadaConfig(cmsClient).catch(() => null)
+return <NextWebShell config={config} styleId="vada-theme">{children}</NextWebShell>
+
+// ❌ Never fetch theme inside a component
+const config = await getVadaConfig(cmsClient)  // inside a page or component
+```
+
+### RULE #3: cmsClient vs cmsWriteClient
+
+```ts
+cmsClient       // Read-only, CDN-cached in production — use for all reads
+cmsWriteClient  // Requires SANITY_API_TOKEN — use only for admin mutations (server-side only)
+```
+
+### RULE #4: All colors go through generateThemeCSSForScheme — never transform manually
+
+```ts
+// ✅
+import { generateThemeCSSForScheme } from '@atta/cms'
+const css = generateThemeCSSForScheme(theme, 'dark')
+
+// ❌ Don't manually build CSS variable strings from theme tokens
+const css = Object.entries(theme.dark).map(([k, v]) => `--${k}: ${v};`).join('\n')
+```
+
+---
+
+## Sanity Studios
+
+Each product has its own studio. All managed from `packages/cms`.
+
+### Run Locally
+
+```bash
+bun run studio              # Herald — port 3333
+bun run studio:atta         # Atta — port 3334
+bun run studio:vada         # Vada — port 3335
+bun run studio:vitakka      # Vitakka — port 3336
+```
+
+### Deploy
+
+```bash
+bun run studio:deploy           # Herald
+bun run studio:deploy:atta      # Atta
+bun run studio:deploy:vada      # Vada
+bun run studio:deploy:vitakka   # Vitakka
+bun run studio:deploy:all       # All four
+```
+
+---
+
+## Product UI Config — One Singleton Per Product
+
+Each product has a singleton document in Sanity that stores:
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `userInterface.theme` | ref → `uiTheme` | Active color theme |
+| `userInterface.colorScheme` | `'dark' \| 'light'` | Which color scheme to apply |
+| `userInterface.library` | ref → `uiLibrary` | Active component library |
+
+Document types: `heraldConfig`, `attaConfig`, `vadaConfig`, `vitakkaConfig`
+
+Query functions:
+```ts
+import { getHeraldConfig, getAttaConfig, getVadaConfig, getVitakkaConfig, cmsClient } from '@atta/cms'
+```
+
+---
+
+## CMSTheme Structure
+
+```ts
+interface CMSTheme {
+  _id: string
+  name: string
+  light?: Record<string, string | { value: string }>   // Light scheme color tokens
+  dark?:  Record<string, string | { value: string }>   // Dark scheme color tokens
+  typography?: {
+    fontSans?: string    // e.g. "'DM Sans', sans-serif"
+    fontSerif?: string   // e.g. "'Playfair Display', serif"
+    fontMono?: string    // e.g. "'DM Mono', monospace"
+  }
+  spacing?: { radius?: string; spacing?: string }
+  shadows?: Record<string, string>
 }
 ```
+
+Colors are stored as plain hex or any CSS color format. `generateThemeCSSForScheme` converts them all to oklch.
 
 ---
 
 ## Environment Variables
 
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `SANITY_PROJECT_ID` | Step 5+ | Sanity project identifier |
-| `SANITY_DATASET` | Step 5+ | Dataset name (production/development) |
-| `SANITY_API_TOKEN` | Step 5+ | Write token (for admin mutations) |
-| `NEXT_PUBLIC_SANITY_PROJECT_ID` | Step 5+ | Client-side project ID |
-| `NEXT_PUBLIC_SANITY_DATASET` | Step 5+ | Client-side dataset |
-
----
-
-## Content Flow (Step 5+)
-
-```
-Onboarding Flow (Step 6)
-    ↓ creates
-Sanity Documents (profile, theme, envoy-config)
-    ↓ read by
-Envoy Page ([username].heyherald.com)
-    ↓ managed by
-Admin Dashboard (Step 7)
-    ↓ updates
-Sanity Documents (live preview via postMessage)
-```
+| Variable | Client | Purpose |
+|----------|--------|---------|
+| `SANITY_PROJECT_ID` | Server | Sanity project identifier |
+| `NEXT_PUBLIC_SANITY_PROJECT_ID` | Client+Server | Same, exposed to browser |
+| `SANITY_DATASET` | Server | Dataset (`production`) |
+| `NEXT_PUBLIC_SANITY_DATASET` | Client+Server | Same, exposed to browser |
+| `SANITY_API_TOKEN` | Server only | Write access (cmsWriteClient) |
 
 ---
 
 ## Related Documentation
 
 - [Root CLAUDE.md](../../CLAUDE.md) — Monorepo routing index
+- [packages/ui/CLAUDE.md](../ui/CLAUDE.md) — UI component library
+- [ai/skills/cms-theme.md](../../ai/skills/cms-theme.md) — Full SSR theme loading guide
