@@ -21,7 +21,7 @@ export function renderBgFills(
     const ringClosed = ringCompletion >= ring.sphereCount
     ringBgFade = ringClosed ? Math.min(1, ringBgFade + 0.008) : Math.max(0, ringBgFade - 0.02)
     if (ringBgFade > 0) {
-      ctx.globalAlpha = 0.82 * ringBgFade
+      ctx.globalAlpha = (ring.bgOpacity ?? 0.5) * ringBgFade
       ctx.beginPath()
       ctx.arc(ring.centerX, ring.centerY, ring.radius - 5, 0, Math.PI * 2)
       ctx.fill()
@@ -29,7 +29,8 @@ export function renderBgFills(
   }
 
   for (const sphere of spheres) {
-    ctx.globalAlpha = 0.88
+    if (!sphere.solidBg) continue
+    ctx.globalAlpha = sphere.bgOpacity ?? 0.5
     ctx.beginPath()
     ctx.arc(sphere.x, sphere.y, sphere.radius - 4, 0, Math.PI * 2)
     ctx.fill()

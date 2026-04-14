@@ -18,6 +18,8 @@ interface AIASphereProps {
   labelPosition?: LabelPosition
   particleCount?: number
   showMatrix?: boolean
+  solidBg?: boolean
+  bgOpacity?: number
   children?: ReactNode
   onClick?: () => void
   className?: string
@@ -45,6 +47,8 @@ export function AIASphere({
   labelPosition = 'bottom',
   particleCount,
   showMatrix = true,
+  solidBg = false,
+  bgOpacity,
   children,
   onClick,
   className,
@@ -59,7 +63,9 @@ export function AIASphere({
     particleCount,
     showMatrix,
     matrixColors,
-    matrixOpacity
+    matrixOpacity,
+    solidBg,
+    bgOpacity
   })
 
   const Tag = onClick ? 'button' : 'div'
@@ -80,6 +86,7 @@ export function AIASphere({
         cursor: onClick ? 'pointer' : undefined,
         outline: 'none',
         border: 'none',
+        borderRadius: '50%',
         background: onClick ? 'none' : undefined,
         padding: 0
       }}

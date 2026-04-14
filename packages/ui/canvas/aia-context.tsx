@@ -17,6 +17,8 @@ export interface SphereRegistration {
   showMatrix: boolean
   matrixColors?: string[]
   matrixOpacity?: number
+  solidBg?: boolean
+  bgOpacity?: number
 }
 
 export interface RingRegistration {
@@ -29,6 +31,7 @@ export interface RingRegistration {
   sphereCount: number
   thinking: boolean
   matrixOpacity?: number
+  bgOpacity?: number
 }
 
 export interface AIAContextValue {

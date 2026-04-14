@@ -31,9 +31,9 @@ function generateArcSegment(
 // Three wave variants — layered for depth, each at its own speed and direction
 // freq: spatial wave density per segment | speed: travel per frame at 60fps | dir: travel direction
 const WAVE_VARIANTS = [
-  { samples: 80, amplitude: 2.0, freq: 7, color: 'var(--muted-foreground)', width: 0.5, speed: 0.1, dir: 1 },
-  { samples: 80, amplitude: 4.0, freq: 13, color: 'var(--warning)', width: 0.9, speed: 0.05, dir: -1 },
-  { samples: 80, amplitude: 3.8, freq: 0.22, color: 'var(--accent)', width: 0.5, speed: 0.03, dir: -1 }
+  { samples: 80, amplitude: 2.0, freq: 7, color: 'var(--agent-strategist)', width: 1.0, speed: 0.1, dir: 1 },
+  { samples: 80, amplitude: 4.0, freq: 13, color: 'var(--agent-synthesizer)', width: 2.5, speed: 0.05, dir: -1 },
+  { samples: 80, amplitude: 3.8, freq: 0.22, color: 'var(--agent-devils-advocate)', width: 1.0, speed: 0.03, dir: -1 }
 ]
 
 interface AIARingProps {
@@ -44,6 +44,9 @@ interface AIARingProps {
   thinking?: boolean
   sphereRadius?: number
   matrixOpacity?: number
+  solidBg?: boolean
+  bgColor?: string
+  bgOpacity?: number
 }
 
 export function AIARing({
@@ -53,7 +56,10 @@ export function AIARing({
   activeStep = 0,
   thinking = false,
   sphereRadius = 50,
-  matrixOpacity
+  matrixOpacity,
+  solidBg = false,
+  bgColor,
+  bgOpacity
 }: AIARingProps) {
   const ctx = useAIAContext()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -103,7 +109,8 @@ export function AIARing({
         spherePositions: [],
         sphereCount: numSpheres,
         thinking: thinkingRef.current,
-        matrixOpacity
+        matrixOpacity,
+        bgOpacity
       })
     }
 
@@ -163,6 +170,17 @@ export function AIARing({
 
   return (
     <div ref={containerRef} className='relative' style={{ width: size, height: size }}>
+      {solidBg && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '50%',
+            background: bgColor ?? 'var(--background)',
+            zIndex: 0
+          }}
+        />
+      )}
       <svg
         className='absolute inset-0 pointer-events-none z-10'
         width={size}
@@ -199,7 +217,7 @@ export function AIARing({
                   stroke: v.color,
                   strokeWidth: v.width,
                   filter: 'url(#aia-wave-glow)',
-                  opacity: revealed ? 0.65 : 0,
+                  opacity: revealed ? 0.9 : 0,
                   strokeDasharray: segmentLength,
                   strokeDashoffset: revealed ? 0 : segmentLength,
                   transition: 'stroke-dashoffset 1200ms ease-in-out, opacity 400ms ease-in'

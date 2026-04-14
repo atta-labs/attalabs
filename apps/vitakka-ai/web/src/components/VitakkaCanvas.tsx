@@ -42,12 +42,11 @@ export function VitakkaCanvas() {
   return (
     <AIACanvas
       ref={canvasRef}
-      particleCount={250}
+      bg='fabric'
       className='fixed inset-0 w-full h-full bg-background z-0'
       onPhaseChange={handleCanvasPhase}
       wanderDuration={999999}
       alwaysRenderSpheres
-      ambientRatio={0.6}
     >
       {/* Thinking spheres — unmount when dissolving begins */}
       {!isDissolving && (

@@ -121,7 +121,7 @@ function EcosystemVisuals() {
 
 export default function AttaPortal({ isSignedIn }: { isSignedIn?: boolean }) {
   return (
-    <AIACanvas particleCount={400} ambientRatio={0.2} className='fixed inset-0 w-full h-full bg-background z-0'>
+    <AIACanvas bg='fabric' className='fixed inset-0 w-full h-full bg-background z-0'>
       {/* 1. Mount the Animated Engine in the background */}
       <EcosystemVisuals />
 

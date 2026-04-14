@@ -31,7 +31,7 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
   }, [animationComplete, ctx])
 
   return (
-    <div className='relative z-10 flex h-dvh w-full items-center justify-center overflow-hidden pt-14'>
+    <div className='relative flex h-dvh w-full items-center justify-center overflow-hidden'>
       <AIARing
         size={600}
         activeStep={activeStep}
@@ -49,6 +49,7 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
               state={getSphereState(id, i)}
               showMatrix={showMatrix}
               matrixOpacity={0.3}
+              solidBg
             >
               {showMatrix && (
                 <AgentThinkingText
