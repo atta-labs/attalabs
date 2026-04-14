@@ -16,7 +16,7 @@ export function ScienceSidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className='w-56 shrink-0 sticky top-14 h-[calc(100dvh-3.5rem)] border-r border-sidebar-border bg-sidebar py-12 pl-6 pr-4'>
+    <aside className='shrink-0 sticky top-14 h-[calc(100dvh-3.5rem)] border-r border-sidebar-border bg-sidebar py-4 pl-6 pr-4'>
       <nav className='flex flex-col gap-0.5'>
         {SCIENCE_NAV.map(({ href, label, icon: Icon }) => (
           <Link
