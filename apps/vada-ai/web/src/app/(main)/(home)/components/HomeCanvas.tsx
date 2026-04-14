@@ -31,13 +31,13 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
   }, [animationComplete, ctx])
 
   return (
-    <div className='relative z-10 flex min-h-dvh w-full items-center justify-center overflow-hidden'>
+    <div className='relative z-10 flex h-dvh w-full items-center justify-center overflow-hidden pt-14'>
       <AIARing
         size={600}
         activeStep={activeStep}
         thinking={animationComplete}
         sphereRadius={60}
-        matrixOpacity={0.5}
+        matrixOpacity={0.2}
         orbit={SPHERE_IDS.map((id, i) => {
           const showMatrix = activeAgent === id || isTouched(i)
           return (
@@ -48,7 +48,7 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
               color={AGENT_SPHERE_COLORS[i]}
               state={getSphereState(id, i)}
               showMatrix={showMatrix}
-              matrixOpacity={0.5}
+              matrixOpacity={0.3}
             >
               {showMatrix && (
                 <AgentThinkingText
@@ -69,15 +69,16 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
 // Outer — sets up AIACanvas (the context provider), renders HomeCanvasInner inside it
 export function HomeCanvas({ render }: HomeCanvasProps) {
   return (
-    <AIACanvas
-      bg='fabric'
-      wanderDuration={30}
-      alwaysRenderSpheres
-      matchContentHeight
-      autoTriggerGravity={false}
-      className='fixed inset-0 h-full w-full z-0'
-    >
-      <HomeCanvasInner render={render} />
-    </AIACanvas>
+    <div className='fixed inset-0 z-0'>
+      <AIACanvas
+        bg='fabric'
+        wanderDuration={30}
+        alwaysRenderSpheres
+        autoTriggerGravity={false}
+        className='h-full w-full'
+      >
+        <HomeCanvasInner render={render} />
+      </AIACanvas>
+    </div>
   )
 }

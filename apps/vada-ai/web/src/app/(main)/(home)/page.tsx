@@ -10,7 +10,7 @@ export default function Home() {
   const { isSignedIn } = useAuth()
 
   return (
-    <main>
+    <main className='overflow-hidden'>
       <HomeCanvas
         render={({ animationStarted, animationComplete }) => (
           <div className='relative z-10 flex flex-col items-center gap-10'>
