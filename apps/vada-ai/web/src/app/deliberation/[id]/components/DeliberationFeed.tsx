@@ -106,7 +106,7 @@ function DeliberationScene({
         </div>
       )}
       {/* Sticky header */}
-      <StickyHeaderTopBar>
+      <StickyHeaderTopBar className='top-14 z-20'>
         <div className='mx-auto flex h-full w-full max-w-[640px] items-center gap-3 px-5'>
           <span className='min-w-0 flex-1 truncate text-xs '>
             {question.length > 60 ? `${question.slice(0, 60)}...` : question}

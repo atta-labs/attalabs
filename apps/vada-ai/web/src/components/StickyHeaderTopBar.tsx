@@ -1,3 +1,4 @@
+import { cn } from '@atta/ui/lib/utils'
 import type { ReactNode } from 'react'
 
 export function StickyHeaderTopBar({
@@ -11,7 +12,7 @@ export function StickyHeaderTopBar({
 }) {
   return (
     <div
-      className={`sticky top-0 h-14 flex items-center ${isBlurred ? 'bg-background/10 backdrop-blur-xs' : ''} ${className ?? ''}`}
+      className={cn('sticky top-0 h-14 flex items-center', isBlurred && 'bg-background/10 backdrop-blur-xs', className)}
     >
       {children}
     </div>

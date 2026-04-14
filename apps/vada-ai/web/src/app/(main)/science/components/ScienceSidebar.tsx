@@ -17,7 +17,7 @@ export function ScienceSidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className='w-56 shrink-0 sticky top-16 h-fit py-16 pl-8 pr-4'>
+    <aside className='w-56 shrink-0 sticky top-14 h-fit py-16 pl-8 pr-4 bg-card'>
       <div className='mb-6 space-y-1'>
         <Text as='p' className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
           Vāda Manuscript
