@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { harmonicWave } from './shared/math'
 
 const PRIMARY = 'var(--primary, #7B5CFA)'
 const SECONDARY = 'var(--secondary, #3B82F6)'
@@ -29,13 +30,7 @@ function buildPath(config: (typeof WAVE_CONFIGS)[number], time: number, w: numbe
     const normX = i / POINTS
     const envelope = Math.exp(-(((normX - 0.5) * 3.2) ** 2))
     const scaledAmp = (amplitude / 240) * h
-    const y =
-      cy +
-      envelope *
-        scaledAmp *
-        (Math.sin(normX * Math.PI * 2 * frequency + t + phase) * 0.6 +
-          Math.sin(normX * Math.PI * 2 * frequency * 1.7 + t * 1.3 + phase * 0.7) * 0.3 +
-          Math.sin(normX * Math.PI * 2 * frequency * 0.5 + t * 0.7 + phase * 1.4) * 0.1)
+    const y = cy + envelope * scaledAmp * harmonicWave(normX, frequency, t, phase)
     d += ` L ${x.toFixed(2)} ${y.toFixed(2)}`
   }
   return d

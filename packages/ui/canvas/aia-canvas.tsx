@@ -8,50 +8,23 @@ import {
   type RingRegistration,
   type SphereRegistration
 } from './aia-context'
-import { renderLineRing } from './ring-styles/line'
-import { renderParticleRing } from './ring-styles/particles'
-import type { RingStyleRenderer } from './ring-styles/types'
-import { renderWaveRing } from './ring-styles/wave'
+import { BG_RENDERERS, type BgEvent, type BgRenderer, type BgVariant } from './bg'
+import { MATRIX_CHARS } from './shared/constants'
+import { getThemeColors } from './shared/colors'
 
-const RING_RENDERERS: Record<string, RingStyleRenderer> = {
-  wave: renderWaveRing,
-  particles: renderParticleRing,
-  line: renderLineRing
-}
+// Frames for forming → settled transition (~1s at 60fps)
+const FORM_DURATION = 60
 
-function getThemeColors(): string[] {
-  // Resolve a CSS custom property value to a canvas-safe color string.
-  // Tailwind v4 stores oklch values as raw components without the function wrapper,
-  // e.g. --primary = "1 0 none" rather than "oklch(1 0 none)".
-  // Canvas cannot parse CSS variable references or raw components — wrap if needed.
-  const resolve = (raw: string, fallback: string): string => {
-    if (!raw) return fallback
-    if (raw.includes('(')) return raw // Already a full CSS color function
-    return `oklch(${raw})` // Raw Tailwind v4 components — wrap in oklch()
-  }
-
-  if (typeof document === 'undefined') return ['#ffffff', 'rgba(156,163,175,0.8)', '#ffffff']
-
-  const style = getComputedStyle(document.documentElement)
-  return [
-    resolve(style.getPropertyValue('--primary').trim(), '#ffffff'),
-    resolve(style.getPropertyValue('--muted-foreground').trim(), 'rgba(156,163,175,0.8)'),
-    resolve(style.getPropertyValue('--foreground').trim(), '#ffffff')
-  ]
-}
-
+// Simplified — no vx/vy (wander removed), no ambient flag
 interface Particle {
   x: number
   y: number
-  vx: number
-  vy: number
   radius: number
   color: string
   opacity: number
   baseOpacity: number
   angle: number
-  cluster: number
-  ambient: boolean
+  cluster: number // index into current spheres array
 }
 
 interface DirectMessage {
@@ -78,27 +51,30 @@ export interface AIACanvasRef {
 
 interface AIACanvasProps {
   children: ReactNode
-  particleCount?: number
+  bg?: BgVariant | BgRenderer
   className?: string
   onPhaseChange?: (phase: CanvasPhase) => void
   wanderDuration?: number
   alwaysRenderSpheres?: boolean
-  ambientRatio?: number
   matchContentHeight?: boolean
+  /**
+   * When true (default), gravity ramp starts automatically when the canvas
+   * enters the settled phase. Set to false when you want to trigger gravity
+   * manually via ctx.startGravity() — e.g. after a ring simulation completes.
+   */
+  autoTriggerGravity?: boolean
   ref?: React.Ref<AIACanvasRef>
 }
 
-const MATRIX_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789αβγδεζηθ∑∏∫∂λμπφψω'
-
 export function AIACanvas({
   children,
-  particleCount = 200,
+  bg,
   className,
   onPhaseChange,
   wanderDuration,
   alwaysRenderSpheres = false,
-  ambientRatio = 0,
   matchContentHeight = false,
+  autoTriggerGravity = true,
   ref
 }: AIACanvasProps) {
   const matchContentHeightRef = useRef(matchContentHeight)
@@ -116,8 +92,23 @@ export function AIACanvas({
   const wanderDurationRef = useRef(wanderDuration ?? 120)
   const alwaysRenderSpheresRef = useRef(alwaysRenderSpheres)
   alwaysRenderSpheresRef.current = alwaysRenderSpheres
-  const ambientRatioRef = useRef(ambientRatio)
-  ambientRatioRef.current = ambientRatio
+
+  // bg and recentEvents — accessed via refs inside the rAF loop
+  const bgRef = useRef<BgVariant | BgRenderer | undefined>(bg)
+  bgRef.current = bg
+  const recentEventsRef = useRef<BgEvent[]>([])
+
+  // Gravity trigger — set by startGravity() from context, read inside rAF loop
+  const startGravitySignalRef = useRef(false)
+  const autoTriggerGravityRef = useRef(autoTriggerGravity)
+  autoTriggerGravityRef.current = autoTriggerGravity
+
+  const startGravity = useCallback(() => {
+    startGravitySignalRef.current = true
+    // Queue ring-closed event for the next frame's bg renderer
+    // cx/cy are unknown here (no canvas dims in React) — fabric.ts reads from rings[0] or W/2,H/2
+    recentEventsRef.current.push({ type: 'ring-closed', cx: 0, cy: 0 })
+  }, [])
 
   const registerSphere = useCallback((reg: SphereRegistration) => {
     spheresRef.current.set(reg.id, reg)
@@ -158,6 +149,8 @@ export function AIACanvas({
       progress: 0,
       toSphereId: toId
     })
+    // Notify bg renderers this frame
+    recentEventsRef.current.push({ type: 'message-fired', fromId, toId })
   }, [])
 
   useImperativeHandle(
@@ -179,7 +172,8 @@ export function AIACanvas({
     unregisterRing,
     phase,
     containerRef,
-    fireDirectedMessage
+    fireDirectedMessage,
+    startGravity
   }
 
   useEffect(() => {
@@ -192,16 +186,22 @@ export function AIACanvas({
     let width = 0
     let height = 0
     let particles: Particle[] = []
+    let particleSphereIds: string[] = []
     const colors = getThemeColors()
     const dpr = window.devicePixelRatio || 1
     let time = 0
     let currentPhase: CanvasPhase = 'wander'
     let formingStart = 0
+    let settleProgress = 0
+    // settleProgress rises in two stages:
+    //   forming  (FORM_DURATION frames):  0 → 0.4  — fabric shows first curve as ring appears
+    //   settled  (SETTLE_RAMP frames):    0.4 → 1  — fabric builds to full effect through sphere animation
+    let gravityStart = -1
+    const SETTLE_RAMP = 360 // ~6s at 60fps — slow, graceful ramp once triggered
 
     let ringCompletion = 0
     let ringEnvoyProgress = 0
     let ringEnvoyActive = false
-    let particlesPositioned = false
 
     const matrixDrops = new Map<string, MatrixDrop[]>()
     const clusterGlow = new Map<string, number>()
@@ -228,69 +228,35 @@ export function AIACanvas({
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
+    // Creates particles from each sphere's own particleCount.
+    // Called when the registered sphere set changes.
     function createParticles() {
       particles = []
       const spheres = Array.from(spheresRef.current.values())
-      const clusterCount = Math.max(spheres.length, 1)
-      const ambientCount = Math.floor(particleCount * ambientRatioRef.current)
-      for (let i = 0; i < particleCount; i++) {
-        particles.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.8,
-          vy: (Math.random() - 0.5) * 0.8,
-          radius: Math.random() * 2 + 0.5,
-          color: colors[Math.floor(Math.random() * colors.length)]!,
-          opacity: 0,
-          baseOpacity: Math.random() * 0.25 + 0.2,
-          angle: Math.random() * Math.PI * 2,
-          cluster: i % clusterCount,
-          ambient: i < ambientCount
-        })
-      }
+      particleSphereIds = spheres.map((s) => s.id)
+      spheres.forEach((sphere, idx) => {
+        for (let i = 0; i < sphere.particleCount; i++) {
+          const a = Math.random() * Math.PI * 2
+          const r = sphere.radius * (0.9 + Math.random() * 0.3)
+          particles.push({
+            x: sphere.x + Math.cos(a) * r,
+            y: sphere.y + Math.sin(a) * r,
+            radius: Math.random() * 2 + 0.5,
+            color: sphere.color,
+            opacity: 0,
+            baseOpacity: Math.random() * 0.25 + 0.2,
+            angle: a,
+            cluster: idx
+          })
+        }
+      })
     }
 
-    function updateWander(p: Particle) {
-      p.vx += (Math.random() - 0.5) * 0.03
-      p.vy += (Math.random() - 0.5) * 0.03
-      p.vx *= 0.99
-      p.vy *= 0.99
-      p.x += p.vx
-      p.y += p.vy
-      if (p.x < 0) p.vx += 0.1
-      if (p.x > width) p.vx -= 0.1
-      if (p.y < 0) p.vy += 0.1
-      if (p.y > height) p.vy -= 0.1
-    }
-
-    function updateToCluster(p: Particle, target: { x: number; y: number }) {
-      const delay = (p.angle / (Math.PI * 2)) * 90
-      if (time - formingStart < delay) return
-      const lerpFactor = 0.005 + (p.radius / 2.5) * 0.025
-      p.x += (target.x - p.x) * lerpFactor + (Math.random() - 0.5) * 1.0
-      p.y += (target.y - p.y) * lerpFactor + (Math.random() - 0.5) * 1.0
-    }
-
-    // Direct positioning — particles are AT the sphere every frame.
-    // No lerp, no drift, no searching. Sphere moves → particles move instantly.
+    // Direct positioning — particles orbit their sphere every frame.
     function updateClusterOrbit(p: Particle, target: { x: number; y: number }, clusterRadius: number) {
       p.angle += (Math.random() - 0.5) * 0.003
       p.x = target.x + Math.cos(p.angle) * clusterRadius + (Math.random() - 0.5) * 0.3
       p.y = target.y + Math.sin(p.angle) * clusterRadius + (Math.random() - 0.5) * 0.3
-    }
-
-    function checkClustersFormed(): boolean {
-      const spheres = Array.from(spheresRef.current.values())
-      if (spheres.length === 0) return false
-      const sphereBound = particles.filter((p) => !p.ambient)
-      if (sphereBound.length === 0) return false
-      let settled = 0
-      for (const p of sphereBound) {
-        const sphere = spheres[p.cluster % spheres.length]!
-        const d = Math.sqrt((sphere.x - p.x) ** 2 + (sphere.y - p.y) ** 2)
-        if (d < sphere.radius + 30) settled++
-      }
-      return settled > sphereBound.length * 0.5
     }
 
     function updateMatrixDropsForSphere(sphereId: string, sphere: SphereRegistration, _glowLevel: number) {
@@ -335,13 +301,9 @@ export function AIACanvas({
           drops.splice(d, 1)
           continue
         }
-
         const intensity = sphere.state === 'complete' ? 0.45 : 0.85
-
         ctx!.globalAlpha = Math.max(0.3, drop.life) * intensity * (sphere.matrixOpacity ?? 1)
-        // Always use sphere's own color for matrix — agent-specific colors
         ctx!.fillStyle = drop.color
-
         ctx!.font = '12px monospace'
         ctx!.textAlign = 'center'
         ctx!.fillText(drop.char, drop.x, drop.y)
@@ -354,92 +316,87 @@ export function AIACanvas({
       ctx!.globalAlpha = 1
       ctx!.clearRect(0, 0, width, height)
 
+      // Auto-resize when content height changes
       if (containerRef.current) {
-        // Auto-resize when content height changes (rounds expand/collapse)
         const newHeight = Math.max(
           containerRef.current.getBoundingClientRect().height,
           containerRef.current.scrollHeight
         )
-        if (Math.abs(newHeight - height) > 10) {
-          resize()
-        }
+        if (Math.abs(newHeight - height) > 10) resize()
       }
 
       const spheres = Array.from(spheresRef.current.values())
       const rings = Array.from(ringsRef.current.values())
 
-      if (ambientRatioRef.current > 0 && !particlesPositioned && spheres.length > 0) {
-        // Snap sphere-bound particles near their sphere on first frame
-        particlesPositioned = true
-        if (spheres.length > 1) {
-          let sbIdx = 0
-          for (const p of particles) {
-            if (!p.ambient) p.cluster = sbIdx++ % spheres.length
-          }
-        }
-        for (const p of particles) {
-          if (!p.ambient) {
-            const sphere = spheres[p.cluster % spheres.length]!
-            const a = Math.random() * Math.PI * 2
-            const r = sphere.radius * (1.1 + Math.random() * 0.2)
-            p.x = sphere.x + Math.cos(a) * r
-            p.y = sphere.y + Math.sin(a) * r
-            p.angle = a
-            p.vx = 0
-            p.vy = 0
-          }
-        }
+      // Capture and clear recentEvents for this frame
+      const frameEvents = recentEventsRef.current.slice()
+      recentEventsRef.current = []
+
+      // ── Background renderer (runs first, behind everything) ────────────────
+      const bgProp = bgRef.current
+      const bgRenderer: BgRenderer | null | undefined =
+        typeof bgProp === 'function' ? bgProp : bgProp ? BG_RENDERERS[bgProp] : null
+      if (bgRenderer) {
+        bgRenderer({
+          ctx: ctx!,
+          t: time,
+          W: width,
+          H: height,
+          phase: currentPhase,
+          settleProgress,
+          rings,
+          spheres,
+          recentEvents: frameEvents
+        })
       }
 
+      // ── Phase machine — time-based ─────────────────────────────────────────
       if (currentPhase === 'wander') {
         const shouldForce = forceSettleSignal.current && spheres.length > 0
         const shouldAutoForm = time > wanderDurationRef.current && spheres.length > 0
         if (shouldForce || shouldAutoForm) {
-          if (spheres.length > 1) {
-            let sbIdx = 0
-            for (const p of particles) {
-              if (!p.ambient) p.cluster = sbIdx++ % spheres.length
-            }
+          if (shouldForce) {
+            // Skip forming entirely, go straight to settled
+            currentPhase = 'settled'
+            gravityStart = time
+            settleProgress = 1
+            setPhase('settled')
+            onPhaseChangeRef.current?.('settled')
+          } else {
+            currentPhase = 'forming'
+            formingStart = time
+            setPhase('forming')
+            onPhaseChangeRef.current?.('forming')
           }
-          currentPhase = 'forming'
-          formingStart = time
-          setPhase('forming')
-          onPhaseChangeRef.current?.('forming')
           forceSettleSignal.current = false
         }
       }
-      if (currentPhase === 'forming' && checkClustersFormed()) {
-        currentPhase = 'settled'
-        setPhase('settled')
-        onPhaseChangeRef.current?.('settled')
-      }
-
-      if (spheres.length > 0 && currentPhase !== 'wander') {
-        // Redistribute particles when sphere count changes (expand/collapse)
-        const sphereBound = particles.filter((p) => !p.ambient)
-        if (sphereBound.length > 0) {
-          const needsRedistribute = sphereBound.some((p) => p.cluster >= spheres.length)
-          const maxCluster = Math.max(...sphereBound.map((p) => p.cluster))
-          const hasNewSpheres = spheres.length > maxCluster + 1
-
-          if (needsRedistribute || hasNewSpheres) {
-            let sbIdx = 0
-            for (const p of particles) {
-              if (!p.ambient) {
-                p.cluster = sbIdx++ % spheres.length
-                // Snap to sphere position immediately
-                const sphere = spheres[p.cluster]!
-                const a = Math.random() * Math.PI * 2
-                const r = sphere.radius * (0.8 + Math.random() * 0.4)
-                p.x = sphere.x + Math.cos(a) * r
-                p.y = sphere.y + Math.sin(a) * r
-                p.angle = a
-              }
-            }
-          }
+      if (currentPhase === 'forming') {
+        const elapsed = time - formingStart
+        if (elapsed >= FORM_DURATION) {
+          currentPhase = 'settled'
+          // Auto-trigger gravity when settled starts (for pages without explicit trigger)
+          if (autoTriggerGravityRef.current) gravityStart = time
+          setPhase('settled')
+          onPhaseChangeRef.current?.('settled')
         }
       }
 
+      // Pick up external startGravity() calls (e.g. from ring animation complete)
+      if (startGravitySignalRef.current) {
+        gravityStart = time
+        startGravitySignalRef.current = false
+      }
+
+      // Gravity ramp — cubic ease-in-out, starts from gravityStart
+      // Starts slow, accelerates through the middle, then settles gradually.
+      if (gravityStart >= 0) {
+        const progress = Math.min(1, (time - gravityStart) / SETTLE_RAMP)
+        const eased = progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2
+        settleProgress = eased
+      }
+
+      // ── Ring envoy ─────────────────────────────────────────────────────────
       for (const ring of rings) {
         if (currentPhase !== 'settled') continue
         if (!ringEnvoyActive && ringCompletion < ring.sphereCount) {
@@ -454,36 +411,25 @@ export function AIACanvas({
             if (ringCompletion >= ring.sphereCount) ringEnvoyActive = false
           }
         }
+      }
 
-        const renderer = RING_RENDERERS[ring.style]
-        if (renderer) {
-          renderer({
-            ctx: ctx!,
-            centerX: ring.centerX,
-            centerY: ring.centerY,
-            radius: ring.radius,
-            spherePositions: ring.spherePositions,
-            sphereCount: ring.sphereCount,
-            colors,
-            time,
-            completion: ringCompletion,
-            envoyProgress: ringEnvoyProgress
-          })
-        }
+      // ── Per-sphere particle system ─────────────────────────────────────────
+      // Recreate particle pool when sphere set changes
+      if (spheres.length > 0) {
+        const currentIds = spheres.map((s) => s.id)
+        const idsChanged =
+          currentIds.length !== particleSphereIds.length || currentIds.some((id, i) => id !== particleSphereIds[i])
+        if (idsChanged) createParticles()
       }
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i]!
         if (p.opacity < p.baseOpacity) p.opacity += 0.003
 
-        if (p.ambient) {
-          updateWander(p)
-        } else if (spheres.length > 0) {
-          const sphere = spheres[p.cluster % spheres.length]!
-          if (currentPhase === 'wander') updateClusterOrbit(p, sphere, sphere.radius)
-          else if (currentPhase === 'forming') updateToCluster(p, sphere)
-          else updateClusterOrbit(p, sphere, sphere.radius)
-        }
+        const sphere = spheres[p.cluster]
+        if (!sphere) continue
+
+        updateClusterOrbit(p, sphere, sphere.radius)
 
         ctx!.beginPath()
         ctx!.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
@@ -492,7 +438,7 @@ export function AIACanvas({
         ctx!.fill()
       }
 
-      // Direct messages
+      // ── Directed messages ──────────────────────────────────────────────────
       for (let i = directMessagesRef.current.length - 1; i >= 0; i--) {
         const msg = directMessagesRef.current[i]!
         msg.progress += 0.07
@@ -539,6 +485,7 @@ export function AIACanvas({
         }
       }
 
+      // ── Sphere glow + matrix rain ──────────────────────────────────────────
       if (currentPhase !== 'wander' || alwaysRenderSpheresRef.current) {
         for (const sphere of spheres) {
           const glow = clusterGlow.get(sphere.id) ?? 0
@@ -559,7 +506,7 @@ export function AIACanvas({
         }
       }
 
-      // Ring matrix
+      // ── Ring matrix rain ───────────────────────────────────────────────────
       for (const ring of rings) {
         if (!ring.thinking) continue
         let chars = ringChars.get(ring.id)
@@ -569,7 +516,6 @@ export function AIACanvas({
         }
 
         const clipR = ring.radius
-
         if (Math.random() < 0.8) {
           const xOffset = (Math.random() - 0.5) * clipR * 1.8
           chars.push({
@@ -604,13 +550,10 @@ export function AIACanvas({
             chars.splice(i, 1)
             continue
           }
-
           ctx!.globalAlpha = Math.max(0.3, c.life) * 0.85 * (ring.matrixOpacity ?? 1)
-
           ctx!.fillStyle = c.color
           ctx!.fillText(c.char, c.x, c.y)
         }
-
         ctx!.restore()
       }
 
@@ -619,7 +562,6 @@ export function AIACanvas({
     }
 
     resize()
-    createParticles()
     animate()
 
     const onResize = () => resize()
@@ -629,7 +571,7 @@ export function AIACanvas({
       cancelAnimationFrame(animId)
       window.removeEventListener('resize', onResize)
     }
-  }, [particleCount])
+  }, [])
 
   return (
     <AIAContext.Provider value={contextValue}>

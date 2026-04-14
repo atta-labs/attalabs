@@ -1,0 +1,23 @@
+// packages/ui/canvas/bg/types.ts
+import type { CanvasPhase, RingRegistration, SphereRegistration } from '../aia-context'
+
+export interface BgState {
+  ctx: CanvasRenderingContext2D
+  t: number // monotonic frame counter
+  W: number // canvas logical width (pre-DPR)
+  H: number // canvas logical height (pre-DPR)
+  phase: CanvasPhase // 'wander' | 'forming' | 'settled'
+  settleProgress: number // 0→1 smooth — the bridge to bg renderers
+  rings: RingRegistration[] // registered rings this frame
+  spheres: SphereRegistration[] // registered spheres this frame
+  recentEvents: BgEvent[] // events that fired this frame, cleared next frame
+}
+
+export type BgEvent =
+  | { type: 'message-fired'; fromId: string; toId: string }
+  | { type: 'sphere-state-changed'; sphereId: string }
+  | { type: 'ring-closed'; cx: number; cy: number }
+
+export type BgRenderer = (state: BgState) => void
+
+export type BgVariant = 'fabric' | 'none'

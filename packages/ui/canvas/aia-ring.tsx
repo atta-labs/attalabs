@@ -32,7 +32,7 @@ function generateArcSegment(
 // freq: spatial wave density per segment | speed: travel per frame at 60fps | dir: travel direction
 const WAVE_VARIANTS = [
   { samples: 80, amplitude: 2.0, freq: 7, color: 'var(--muted-foreground)', width: 0.5, speed: 0.1, dir: 1 },
-  { samples: 80, amplitude: 4.0, freq: 13, color: 'var(--primary)', width: 0.9, speed: 0.05, dir: -1 },
+  { samples: 80, amplitude: 4.0, freq: 13, color: 'var(--warning)', width: 0.9, speed: 0.05, dir: -1 },
   { samples: 80, amplitude: 3.8, freq: 0.22, color: 'var(--accent)', width: 0.5, speed: 0.03, dir: -1 }
 ]
 

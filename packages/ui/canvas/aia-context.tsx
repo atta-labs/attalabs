@@ -41,6 +41,8 @@ export interface AIAContextValue {
   phase: CanvasPhase
   containerRef: RefObject<HTMLDivElement | null>
   fireDirectedMessage: (fromSphereId: string, toSphereId: string) => void
+  /** Trigger the gravitational fabric ramp. Call when the ring animation is complete. */
+  startGravity: () => void
 }
 
 export const AIAContext = createContext<AIAContextValue | null>(null)

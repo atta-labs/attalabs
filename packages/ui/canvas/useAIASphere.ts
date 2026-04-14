@@ -3,6 +3,7 @@
 
 import { useEffect, useId, useRef } from 'react'
 import { type SphereState, useAIAContext } from './aia-context'
+import { resolveColor } from './shared/colors'
 
 const SIZE_MAP: Record<string, number> = {
   xs: 32,
@@ -18,19 +19,6 @@ const PARTICLE_MAP: Record<string, number> = {
   md: 25,
   lg: 35,
   xl: 50
-}
-
-function resolveColor(color: string | undefined): string {
-  if (!color) {
-    if (typeof document === 'undefined') return 'hsl(var(--accent))'
-    return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || 'hsl(var(--accent))'
-  }
-  if (color.startsWith('var(')) {
-    if (typeof document === 'undefined') return 'hsl(var(--accent))'
-    const varName = color.replace('var(', '').replace(')', '').split(',')[0]!.trim()
-    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || 'hsl(var(--accent))'
-  }
-  return color
 }
 
 interface UseAIASphereProps {
