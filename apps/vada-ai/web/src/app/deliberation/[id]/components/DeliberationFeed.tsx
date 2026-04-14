@@ -2,15 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { Button } from '@atta/ui'
 import { AIACanvas } from '@atta/ui/canvas'
 import { RoundSection } from './RoundSection'
 import { ConclusionPanel } from './ConclusionPanel'
 import { useDeliberation } from './useDeliberation'
-import { AGENT_THEME, ROUND_TITLES } from './agent-theme'
-import { DEFAULT_ROOM, OPTIONAL_AGENTS } from '@/schemas'
-import { StickyHeaderTopBar } from '@/components/StickyHeaderTopBar'
-
-const ALL_AGENT_CONFIGS = [...DEFAULT_ROOM, ...OPTIONAL_AGENTS]
+import { ROUND_TITLES } from './agent-theme'
+import { PRESETS } from '@/schemas'
 
 interface DeliberationFeedProps {
   sessionId: string
@@ -19,6 +17,15 @@ interface DeliberationFeedProps {
   initialEntries?: Array<{ agent: string; content: string; round: number }>
   initialConclusion?: Record<string, unknown> | null
   initialState?: string
+}
+
+// ── Outer wrapper — AIACanvas provides context for AIASphere in AgentCard ──
+export function DeliberationFeed(props: DeliberationFeedProps) {
+  return (
+    <AIACanvas alwaysRenderSpheres matchContentHeight className='relative w-full'>
+      <DeliberationScene {...props} />
+    </AIACanvas>
+  )
 }
 
 function DeliberationScene({
@@ -48,6 +55,10 @@ function DeliberationScene({
   const rounds = Array.from(new Set(messages.map((m) => m.round)))
     .filter((r) => messages.some((m) => m.round === r && m.content.trim().length > 0))
     .sort((a, b) => a - b)
+
+  const teamName =
+    PRESETS.find((p) => p.agents.length === agentRoles.length && p.agents.every((a) => agentRoles.includes(a.role)))
+      ?.name ?? 'Deliberation'
 
   const currentRoundNum = currentState.startsWith('ROUND_')
     ? Number.parseInt(currentState.replace('ROUND_', ''), 10)
@@ -90,7 +101,7 @@ function DeliberationScene({
   const interruptedRoundLabel = initialState?.replace('_', ' ').toLowerCase() ?? 'unknown state'
 
   return (
-    <div className='relative z-10 flex min-h-dvh flex-col'>
+    <div>
       {/* Error banner */}
       {streamError && (
         <div className='fixed inset-x-0 top-14 z-50 mx-auto max-w-2xl px-4'>
@@ -105,45 +116,9 @@ function DeliberationScene({
           </div>
         </div>
       )}
-      {/* Sticky header */}
-      <StickyHeaderTopBar className='top-14 z-20'>
-        <div className='mx-auto flex h-full w-full max-w-[640px] items-center gap-3 px-5'>
-          <span className='min-w-0 flex-1 truncate text-xs '>
-            {question.length > 60 ? `${question.slice(0, 60)}...` : question}
-          </span>
-          <div className='hidden items-center gap-1 sm:flex'>
-            {agentRoles.map((role) => {
-              const cfg = ALL_AGENT_CONFIGS.find((a) => a.role === role)
-              const name = cfg?.name ?? role
-              return (
-                <div
-                  key={role}
-                  className='size-1.5 rounded-full'
-                  style={{ background: AGENT_THEME[name]?.color }}
-                  title={name}
-                />
-              )
-            })}
-          </div>
-          {/* Status badge */}
-          {isInterrupted || isTerminalButEmpty ? (
-            <span className='shrink-0 rounded-full bg-yellow-500/10 px-2 py-0.5 text-[10px] tracking-wide text-yellow-500'>
-              interrupted
-            </span>
-          ) : isLiveSession ? (
-            <span className='shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] tracking-wide text-accent'>
-              {currentState.replace('_', ' ').toLowerCase()}
-            </span>
-          ) : (
-            <span className='shrink-0 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] tracking-wide text-green-500'>
-              complete
-            </span>
-          )}
-        </div>
-      </StickyHeaderTopBar>
 
       {/* Main feed */}
-      <div className='mx-auto w-full max-w-[640px] flex-1 px-5 pb-32 pt-6'>
+      <div className='mx-auto w-full max-w-[640px] px-5 pb-16 pt-6'>
         {/* Question card */}
         <div className='mb-8 rounded-xl border border-border bg-card p-4'>
           <div className='mb-2 text-[9px] font-semibold uppercase tracking-[0.25em] '>Your Question</div>
@@ -165,15 +140,17 @@ function DeliberationScene({
               )}
             </p>
             <div className='flex gap-2'>
-              <button
+              <Button
+                size='sm'
+                variant='outline'
                 onClick={() => window.location.reload()}
-                className='rounded-md bg-yellow-500/15 px-3 py-1.5 text-xs font-medium text-yellow-500 transition-colors hover:bg-yellow-500/25'
+                className='text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/15'
               >
                 Resume Deliberation
-              </button>
+              </Button>
               <Link
                 href='/deliberate'
-                className='rounded-md bg-muted/50 px-3 py-1.5 text-xs font-medium  transition-colors hover:bg-muted'
+                className='inline-flex h-7 items-center rounded-md border border-border bg-background px-2 text-xs font-medium transition-colors hover:bg-accent/20'
               >
                 Start Fresh
               </Link>
@@ -197,6 +174,7 @@ function DeliberationScene({
               isLive={isCurrentRound}
               isRoundComplete={isRoundDone}
               expectedAgentCount={agentRoles.length}
+              teamName={teamName}
             />
           )
         })}
@@ -233,12 +211,9 @@ function DeliberationScene({
           <div className='pb-24 pt-4'>
             <ConclusionPanel terminalState={terminalState} conclusion={conclusion} />
             <div className='mt-4 flex gap-2.5'>
-              <button
-                type='button'
-                className='flex-1 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium  transition-colors hover:text-foreground'
-              >
+              <Button type='button' variant='outline' className='flex-1'>
                 Export
-              </button>
+              </Button>
               <Link
                 href='/deliberate'
                 className='flex-1 rounded-lg bg-accent px-4 py-3 text-center text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90'
@@ -253,20 +228,5 @@ function DeliberationScene({
         <div ref={feedEndRef} />
       </div>
     </div>
-  )
-}
-
-// ── Outer wrapper — AIACanvas with ambient particles ──
-export function DeliberationFeed(props: DeliberationFeedProps) {
-  return (
-    <AIACanvas
-      particleCount={400}
-      ambientRatio={0.5}
-      wanderDuration={30}
-      alwaysRenderSpheres
-      className='fixed inset-0 h-full w-full bg-background z-0'
-    >
-      <DeliberationScene {...props} />
-    </AIACanvas>
   )
 }

@@ -2,6 +2,7 @@
 
 'use client'
 
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui'
 import { AgentCard } from './AgentCard'
 import { WaveConnector } from './WaveConnector'
 import { useRoundSection } from './useRoundSection'
@@ -14,6 +15,7 @@ interface RoundSectionProps {
   isLive?: boolean
   isRoundComplete?: boolean
   expectedAgentCount?: number
+  teamName?: string
 }
 
 export function RoundSection({
@@ -22,7 +24,8 @@ export function RoundSection({
   streamingMessage,
   isLive = false,
   isRoundComplete = false,
-  expectedAgentCount = 4
+  expectedAgentCount = 4,
+  teamName = 'Deliberation'
 }: RoundSectionProps) {
   const {
     isExpanded,
@@ -65,68 +68,63 @@ export function RoundSection({
         </div>
       )}
 
-      {/* ─── COLLAPSED ─── */}
-      {!isExpanded && validEntries.length > 0 && (
-        <div>
-          {deliberationEntries.length > 0 && (
-            <button
-              onClick={expand}
-              className='mb-3 flex w-full items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2.5 text-left transition-colors hover:border-muted-foreground/20 hover:bg-card'
-            >
-              <div className='flex -space-x-1'>
-                {deliberationEntries.map((e) => (
-                  <div key={e.id} className='size-3 rounded-full' style={{ background: getAgentColor(e.agent) }} />
-                ))}
-              </div>
-              <span className='text-[11px]'>Show deliberation · {agentNames}</span>
-              <span className='ml-auto text-[11px] '>▸</span>
-            </button>
+      {validEntries.length > 0 && (
+        <Collapsible open={isExpanded} onOpenChange={(open) => (open ? expand() : collapse())}>
+          {/* Toggle trigger — hidden while round is live */}
+          {deliberationEntries.length > 0 && !isLive && (
+            <CollapsibleTrigger className='mb-3 flex w-full items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2.5 text-left transition-colors hover:border-muted-foreground/20 hover:bg-card'>
+              {isExpanded ? (
+                <>
+                  <span className='text-[11px] text-muted-foreground'>Collapse round</span>
+                  <span className='ml-auto text-[11px] text-muted-foreground'>▾</span>
+                </>
+              ) : (
+                <>
+                  <span className='text-[11px]'>
+                    {teamName} · {agentNames}
+                  </span>
+                  <span className='ml-auto text-[11px]'>▸</span>
+                </>
+              )}
+            </CollapsibleTrigger>
           )}
 
-          {synthEntry && (
-            <AgentCard agent={synthEntry.agent} content={synthEntry.content} target={synthEntry.replyTarget} isLast />
-          )}
+          {/* Collapsible deliberation entries */}
+          <CollapsibleContent>
+            {deliberationEntries.map((entry, i) => {
+              const nextEntry = deliberationEntries[i + 1] ?? synthEntry
+              const showWave = !!nextEntry
+              const currentColor = getAgentColor(entry.agent)
+              const nextColor = nextEntry ? getAgentColor(nextEntry.agent) : currentColor
 
-          {wasInterrupted && <InterruptedBanner missingCount={missingCount} />}
-        </div>
-      )}
-
-      {/* ─── EXPANDED ─── */}
-      {isExpanded && validEntries.length > 0 && (
-        <div>
-          {!isLive && (
-            <button
-              onClick={collapse}
-              className='mb-3 flex w-full items-center gap-2 rounded-lg border border-border bg-card/50 px-3 py-2 text-left transition-colors hover:border-muted-foreground/20 hover:bg-card'
-            >
-              <span className='text-[11px] '>Collapse round</span>
-              <span className='ml-auto text-[11px] '>▾</span>
-            </button>
-          )}
-
-          {/* Deliberation agents with wave connectors */}
-          {deliberationEntries.map((entry, i) => {
-            const nextEntry = deliberationEntries[i + 1] ?? synthEntry
-            const showWave = !!nextEntry
-            const currentColor = getAgentColor(entry.agent)
-            const nextColor = nextEntry ? getAgentColor(nextEntry.agent) : currentColor
-
-            return (
-              <div key={entry.id}>
-                <AgentCard agent={entry.agent} content={entry.content} target={entry.replyTarget} isLast={false} />
-                {showWave && (
-                  <div className='flex'>
-                    <div className='w-[70px] shrink-0' />
-                    <div className='flex flex-1 justify-center'>
-                      <WaveConnector fromColor={currentColor} toColor={nextColor} height={64} />
+              return (
+                <div key={entry.id}>
+                  <AgentCard agent={entry.agent} content={entry.content} target={entry.replyTarget} isLast={false} />
+                  {showWave && (
+                    <div className='flex'>
+                      <div className='w-[70px] shrink-0' />
+                      <div className='flex flex-1 justify-center'>
+                        <WaveConnector fromColor={currentColor} toColor={nextColor} height={64} />
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+                  )}
+                </div>
+              )
+            })}
 
-          {/* Synthesizer */}
+            {/* Currently streaming */}
+            {streamingMessage && (
+              <AgentCard
+                agent={streamingMessage.agent}
+                content={streamingMessage.content}
+                target={streamingMessage.replyTarget}
+                isLast
+                isStreaming
+              />
+            )}
+          </CollapsibleContent>
+
+          {/* Synthesizer — always visible */}
           {synthEntry && (
             <AgentCard
               agent={synthEntry.agent}
@@ -136,19 +134,8 @@ export function RoundSection({
             />
           )}
 
-          {/* Currently streaming */}
-          {streamingMessage && (
-            <AgentCard
-              agent={streamingMessage.agent}
-              content={streamingMessage.content}
-              target={streamingMessage.replyTarget}
-              isLast
-              isStreaming
-            />
-          )}
-
           {wasInterrupted && <InterruptedBanner missingCount={missingCount} />}
-        </div>
+        </Collapsible>
       )}
     </div>
   )
