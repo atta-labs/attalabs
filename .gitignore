@@ -39,6 +39,9 @@ yarn-error.log*
 # Sanity
 .sanity/
 
+# Generated UI index (auto-created at build time from CMS config)
+packages/ui/generated/
+
 # Lockfile
 bun.lock
 next-env.d.ts

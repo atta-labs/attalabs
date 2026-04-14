@@ -4,11 +4,12 @@
 export type * from '../../../types'
 // Display — falls back to basic
 export { Badge } from '../../basic/installed/badge'
+export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../basic/installed/collapsible'
 export { Input } from '../../basic/installed/input'
 // Layout — falls back to basic
 export { Separator } from '../../basic/installed/separator'
 // Shared
-export { Flex, Heading, Text } from '../../shared'
+export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 export { Button, buttonVariants } from '../installed/button'
 // Content
 export { Card } from '../installed/card'

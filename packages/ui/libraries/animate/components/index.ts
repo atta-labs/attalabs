@@ -13,5 +13,6 @@ export { Separator } from '../../basic/installed/separator'
 export { Textarea } from '../../basic/installed/textarea'
 
 // Shared
-export { Flex, Heading, Text } from '../../shared'
+export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 export { Button } from '../installed/button'
+export { Collapsible, CollapsibleContent, CollapsibleTrigger, useCollapsible } from '../installed/collapsible'

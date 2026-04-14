@@ -39,19 +39,19 @@ function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
         size={600}
         activeStep={activeStep}
         thinking={animationComplete}
-        sphereRadius={50}
-        matrixOpacity={0.2}
+        sphereRadius={60}
+        matrixOpacity={0.5}
         orbit={spheres.map((id, i) => {
           const showMatrix = activeAgent === id || isTouched(i)
           return (
             <AIASphere
               key={id}
               id={id}
-              size='lg'
+              size='xl'
               color={SPHERE_COLORS[i]}
               state={getSphereState(id, i)}
               showMatrix={showMatrix}
-              matrixOpacity={0.2}
+              matrixOpacity={0.5}
             >
               {showMatrix && (
                 <AgentThinkingText
@@ -102,8 +102,8 @@ function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
 export function HomeContent({ isSignedIn }: { isSignedIn: boolean }) {
   return (
     <AIACanvas
-      particleCount={1500}
-      ambientRatio={0.5}
+      particleCount={50}
+      ambientRatio={0.8}
       wanderDuration={30}
       alwaysRenderSpheres
       matchContentHeight

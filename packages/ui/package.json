@@ -22,7 +22,8 @@
     "./canvas": "./canvas/index.ts",
     "./lib/*": "./lib/*.ts",
     "./hooks/*": "./hooks/*.ts",
-    "./components/*": "./libraries/basic/installed/*.tsx"
+    "./components/*": "./libraries/basic/installed/*.tsx",
+    "./scripts/generate-ui": "./scripts/generate-ui.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -33,6 +34,7 @@
     "@atta/auth": "workspace:*",
     "@atta/cms": "workspace:*",
     "@base-ui/react": "^1.3.0",
+    "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",

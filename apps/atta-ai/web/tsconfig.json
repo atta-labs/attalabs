@@ -2,7 +2,9 @@
   "extends": "@atta/typescript-config/nextjs.json",
   "compilerOptions": {
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@atta/ui": ["../../../packages/ui/generated/atta/components"],
+      "@atta/ui/canvas": ["../../../packages/ui/generated/atta/canvas"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],

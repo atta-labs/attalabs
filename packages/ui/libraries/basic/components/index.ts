@@ -13,5 +13,6 @@ export { Toast, ToastProvider, useToastContext } from './display/toast'
 export { Input } from './form/input'
 export { Textarea } from './form/textarea'
 export { Button, buttonVariants } from './interactive/button'
+export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
 // Layout
 export { Separator } from './layout/separator'

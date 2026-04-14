@@ -20,13 +20,24 @@ const RING_RENDERERS: Record<string, RingStyleRenderer> = {
 }
 
 function getThemeColors(): string[] {
-  if (typeof document === 'undefined')
-    return ['hsl(var(--primary))', 'hsl(var(--muted-foreground))', 'hsl(var(--foreground))']
+  // Resolve a CSS custom property value to a canvas-safe color string.
+  // Tailwind v4 stores oklch values as raw components without the function wrapper,
+  // e.g. --primary = "1 0 none" rather than "oklch(1 0 none)".
+  // Canvas cannot parse CSS variable references or raw components — wrap if needed.
+  const resolve = (raw: string, fallback: string): string => {
+    if (!raw) return fallback
+    if (raw.includes('(')) return raw // Already a full CSS color function
+    return `oklch(${raw})` // Raw Tailwind v4 components — wrap in oklch()
+  }
+
+  if (typeof document === 'undefined') return ['#ffffff', 'rgba(156,163,175,0.8)', '#ffffff']
+
   const style = getComputedStyle(document.documentElement)
-  const primary = style.getPropertyValue('--primary').trim() || 'hsl(var(--primary))'
-  const muted = style.getPropertyValue('--muted-foreground').trim() || 'hsl(var(--muted-foreground))'
-  const foreground = style.getPropertyValue('--foreground').trim() || 'hsl(var(--foreground))'
-  return [primary, muted, foreground]
+  return [
+    resolve(style.getPropertyValue('--primary').trim(), '#ffffff'),
+    resolve(style.getPropertyValue('--muted-foreground').trim(), 'rgba(156,163,175,0.8)'),
+    resolve(style.getPropertyValue('--foreground').trim(), '#ffffff')
+  ]
 }
 
 interface Particle {

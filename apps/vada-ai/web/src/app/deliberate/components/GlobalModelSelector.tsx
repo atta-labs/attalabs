@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Button } from '@atta/ui'
+import { Button, Input } from '@atta/ui'
+import { Text } from '@atta/ui/shared'
 import { getStoredApiKey, storeApiKey } from '@/lib/model-keys'
 import type { Provider } from '@/lib/models'
 
@@ -49,7 +50,6 @@ export function GlobalModelSelector({ value, onChange, perAgentMode, onTogglePer
       if (key) stored[m.provider] = key
     }
     setApiKeys(stored)
-    // Auto-select Groq if key is stored and nothing selected yet
     if (!value && stored.groq) {
       const groq = MODEL_OPTIONS[0]!
       onChange({ provider: groq.provider, modelId: groq.modelId, apiKey: stored.groq })
@@ -75,7 +75,7 @@ export function GlobalModelSelector({ value, onChange, perAgentMode, onTogglePer
   if (perAgentMode) {
     return (
       <div className='flex items-center justify-end'>
-        <Button variant='ghost' size='sm' onClick={onTogglePerAgent} className='text-xs  underline'>
+        <Button variant='ghost' size='sm' onClick={onTogglePerAgent} className='text-xs underline'>
           Use global model
         </Button>
       </div>
@@ -84,11 +84,13 @@ export function GlobalModelSelector({ value, onChange, perAgentMode, onTogglePer
 
   return (
     <div className='space-y-3'>
-      <p className='text-[10px] uppercase tracking-[0.3em] '>Model</p>
+      <Text as='p' className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
+        Intelligence
+      </Text>
       <select
         value={value?.provider ?? ''}
         onChange={handleSelect}
-        className='w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-muted-foreground'
+        className='w-full rounded-lg border border-border/50 bg-card/60 px-3 py-2 font-sans text-sm text-foreground outline-none focus:border-muted-foreground'
       >
         <option value='' disabled>
           Select a model…
@@ -101,21 +103,23 @@ export function GlobalModelSelector({ value, onChange, perAgentMode, onTogglePer
       </select>
 
       {needsKey && selectedOption && (
-        <div className='rounded-lg border border-border bg-background p-3'>
-          <p className='mb-2 text-[11px] '>Enter your {selectedOption.label.split('—')[1]?.trim()} API key</p>
-          <input
+        <div className='rounded-lg border border-border/30 bg-background/60 p-3'>
+          <Text as='p' size='xs' muted className='mb-2'>
+            Enter your {selectedOption.label.split('—')[1]?.trim()} API key
+          </Text>
+          <Input
             type='password'
             autoComplete='off'
             placeholder={`${selectedOption.keyPrefix}…`}
             value={apiKeys[selectedOption.provider] ?? ''}
             onChange={(e) => handleKeyChange(selectedOption.provider, e.target.value)}
-            className='w-full rounded-md border border-border bg-card px-3 py-1.5 font-mono text-xs text-foreground outline-none focus:border-muted-foreground'
+            className='font-mono text-xs'
           />
         </div>
       )}
 
       <div className='flex justify-end'>
-        <Button variant='ghost' size='sm' onClick={onTogglePerAgent} className='text-xs  underline'>
+        <Button variant='ghost' size='sm' onClick={onTogglePerAgent} className='text-xs underline'>
           Configure per-agent
         </Button>
       </div>

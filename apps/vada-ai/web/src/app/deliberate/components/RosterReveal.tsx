@@ -1,7 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { BookOpen, ChevronDown, ChevronUp, Map as MapIcon, Settings, ShieldAlert, Scale, Zap } from 'lucide-react'
+import { BookOpen, ChevronDown, Map as MapIcon, Settings, ShieldAlert, Scale, Zap } from 'lucide-react'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger, Input } from '@atta/ui'
+import { Text } from '@atta/ui/shared'
+import { cn } from '@atta/ui/lib/utils'
 import { getStoredApiKey, storeApiKey } from '@/lib/model-keys'
 import { MODEL_OPTIONS, type ModelSelection, type PerAgentModelMap } from './GlobalModelSelector'
 import type { AgentConfig } from '@/schemas'
@@ -14,10 +17,10 @@ interface AgentMeta {
 }
 
 const AGENT_META: Record<string, AgentMeta> = {
-  strategist: { icon: MapIcon, description: 'Builds the plan' },
-  critic: { icon: ShieldAlert, description: 'Finds the flaws' },
-  devils_advocate: { icon: Zap, description: 'Stress-tests assumptions' },
-  synthesizer: { icon: Scale, description: 'Weighs and concludes' },
+  strategist: { icon: MapIcon, description: 'Maps the landscape, governs trajectory' },
+  critic: { icon: ShieldAlert, description: 'Detects fallacies, demands grounding' },
+  devils_advocate: { icon: Zap, description: 'Prevents early consensus' },
+  synthesizer: { icon: Scale, description: 'Reconciles contradictions into action' },
   researcher: { icon: BookOpen, description: 'Grounds claims in evidence' },
   operator: { icon: Settings, description: 'Drives execution clarity' }
 }
@@ -46,17 +49,15 @@ export function RosterReveal({ agents, perAgentMode, perAgentValues, onPerAgentC
   }
 
   return (
-    <div className='rounded-lg border border-border bg-card/50'>
-      <button
-        type='button'
-        onClick={() => setOpen((o) => !o)}
-        className='flex w-full items-center justify-between px-4 py-3 text-[10px] uppercase tracking-[0.3em] '
-      >
-        <span>Room Roster</span>
-        {open ? <ChevronUp className='h-3 w-3' /> : <ChevronDown className='h-3 w-3' />}
-      </button>
+    <Collapsible open={open} onOpenChange={setOpen} className='rounded-lg border border-border/30 bg-card/40'>
+      <CollapsibleTrigger className='flex w-full items-center justify-between px-4 py-3 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'>
+        <span className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Room Roster</span>
+        <ChevronDown
+          className={cn('h-3 w-3 text-muted-foreground transition-transform duration-200', open && 'rotate-180')}
+        />
+      </CollapsibleTrigger>
 
-      {open && (
+      <CollapsibleContent>
         <div className='flex flex-col gap-1 px-3 pb-3'>
           {agents.map((agent) => {
             const meta = AGENT_META[agent.role]
@@ -67,23 +68,26 @@ export function RosterReveal({ agents, perAgentMode, perAgentValues, onPerAgentC
             return (
               <div key={agent.role} className='space-y-1.5'>
                 <div className='flex items-center gap-3 rounded-md px-1 py-2'>
-                  {/* Icon */}
-                  <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/40'>
-                    {Icon && <Icon className='h-3.5 w-3.5 ' />}
+                  <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/30 ring-1 ring-border/20'>
+                    {Icon && <Icon className='h-3.5 w-3.5 text-muted-foreground' />}
                   </div>
 
-                  {/* Name + description */}
                   <div className='min-w-0 flex-1'>
-                    <p className='text-sm font-medium leading-none text-foreground'>{agent.name}</p>
-                    {meta?.description && <p className='mt-0.5 text-[11px] leading-none '>{meta.description}</p>}
+                    <Text as='p' className='font-serif text-sm font-medium leading-none text-foreground'>
+                      {agent.name}
+                    </Text>
+                    {meta?.description && (
+                      <Text as='p' size='xs' muted className='mt-1 leading-none'>
+                        {meta.description}
+                      </Text>
+                    )}
                   </div>
 
-                  {/* Per-agent model dropdown */}
                   {perAgentMode && (
                     <select
                       value={selection?.provider ?? ''}
                       onChange={(e) => handleSelectChange(agent.role, e.target.value)}
-                      className='ml-auto rounded border border-border bg-background px-2 py-1 text-xs text-foreground outline-none'
+                      className='ml-auto rounded border border-border/50 bg-background px-2 py-1 font-mono text-xs text-foreground outline-none focus:border-muted-foreground'
                     >
                       <option value='' disabled>
                         Model…
@@ -97,13 +101,12 @@ export function RosterReveal({ agents, perAgentMode, perAgentValues, onPerAgentC
                   )}
                 </div>
 
-                {/* API key input */}
                 {needsKey && selection && (
-                  <input
+                  <Input
                     type='password'
                     autoComplete='off'
                     placeholder={`API key for ${selection.provider}…`}
-                    className='w-full rounded border border-border bg-background px-2 py-1 font-mono text-xs text-foreground outline-none'
+                    className='font-mono text-xs'
                     onChange={(e) => handleKeyChange(agent.role, selection.provider, e.target.value)}
                   />
                 )}
@@ -111,7 +114,7 @@ export function RosterReveal({ agents, perAgentMode, perAgentValues, onPerAgentC
             )
           })}
         </div>
-      )}
-    </div>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
