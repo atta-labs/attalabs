@@ -1,20 +1,18 @@
 'use client'
 
-import { BookOpen, Map as MapIcon, Settings, ShieldAlert, Scale, Zap } from 'lucide-react'
-import { Button, Card, CardContent } from '@atta/ui'
+import { ChevronDown } from 'lucide-react'
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@atta/ui'
 import { Text } from '@atta/ui/shared'
 import { PRESETS, type Preset, type PresetId } from '@/schemas'
-import type { LucideIcon } from 'lucide-react'
 import { cn } from '@atta/ui/lib/utils'
-
-const AGENT_ICONS: Record<string, LucideIcon> = {
-  strategist: MapIcon,
-  critic: ShieldAlert,
-  devils_advocate: Zap,
-  synthesizer: Scale,
-  researcher: BookOpen,
-  operator: Settings
-}
 
 interface PresetSelectorProps {
   selected: PresetId
@@ -22,49 +20,43 @@ interface PresetSelectorProps {
 }
 
 export function PresetSelector({ selected, onChange }: PresetSelectorProps) {
+  const selectedPreset = PRESETS.find((p) => p.id === selected) ?? PRESETS[0]!
+  const displayName = selectedPreset.name.replace('The ', '').toUpperCase()
+
   return (
-    <div className='grid grid-cols-1 gap-2 sm:grid-cols-3'>
-      {PRESETS.map((preset) => {
-        const isSelected = preset.id === selected
-        return (
-          <Button
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant='ghost'
+          className='h-auto gap-1.5 p-0 text-foreground/70 hover:bg-transparent hover:text-foreground'
+        >
+          <Text as='span' className='font-mono text-[10px] uppercase tracking-widest'>
+            Team: {displayName}
+          </Text>
+          <ChevronDown className='h-3 w-3' />
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align='start' side='top' className='w-72 border-border/40 bg-card/95 backdrop-blur-md'>
+        <DropdownMenuLabel className='font-mono text-[9px] uppercase tracking-widest text-muted-foreground/60'>
+          Team Presets
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {PRESETS.map((preset) => (
+          <DropdownMenuItem
             key={preset.id}
-            variant='ghost'
-            className='h-auto w-full p-0 text-left focus-visible:ring-1 focus-visible:ring-ring'
             onClick={() => onChange(preset)}
+            className={cn('flex-col items-start gap-0.5 py-3', selected === preset.id && 'bg-muted/30')}
           >
-            <Card
-              className={cn(
-                'w-full cursor-pointer transition-colors',
-                isSelected ? 'border-primary/50 bg-card' : 'border-border/30 bg-card/40 hover:bg-card/70'
-              )}
-            >
-              <CardContent className='p-4'>
-                <Text as='p' className='text-sm font-medium text-foreground'>
-                  {preset.name}
-                </Text>
-                <Text as='p' size='xs' muted className='mt-1 leading-relaxed'>
-                  {preset.subtitle}
-                </Text>
-                <div className='mt-3 flex flex-wrap gap-1.5'>
-                  {preset.agents.map((a) => {
-                    const Icon = AGENT_ICONS[a.role]
-                    return (
-                      <span
-                        key={a.role}
-                        className='flex items-center gap-1 rounded-full border border-border/50 bg-muted/30 px-2 py-0.5'
-                      >
-                        {Icon && <Icon className='h-2.5 w-2.5 text-muted-foreground' />}
-                        <span className='font-mono text-[10px] text-muted-foreground'>{a.name}</span>
-                      </span>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </Button>
-        )
-      })}
-    </div>
+            <Text as='span' className='font-mono text-[10px] uppercase tracking-widest text-foreground'>
+              {preset.name}
+            </Text>
+            <Text as='span' className='font-sans text-[11px] leading-snug text-muted-foreground'>
+              {preset.subtitle}
+            </Text>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

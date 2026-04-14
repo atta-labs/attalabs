@@ -38,23 +38,28 @@ const textareaVariants = cva('', {
 export interface TextareaProps
   extends React.TextareaHTMLAttributes<HTMLTextAreaElement>,
     VariantProps<typeof rootVariants>,
-    VariantProps<typeof textareaVariants> {}
+    VariantProps<typeof textareaVariants> {
+  textareaClassName?: string
+}
 
-const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, variant, size, ...props }, ref) => {
-  return (
-    <div className={cn(rootVariants({ variant }), className)}>
-      <textarea
-        data-slot='textarea'
-        className={cn(
-          'w-full py-1 bg-transparent ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none text-base resize-vertical',
-          textareaVariants({ size })
-        )}
-        ref={ref}
-        {...props}
-      />
-    </div>
-  )
-})
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, variant, size, textareaClassName, ...props }, ref) => {
+    return (
+      <div className={cn(rootVariants({ variant }), className)}>
+        <textarea
+          data-slot='textarea'
+          className={cn(
+            'w-full py-1 bg-transparent ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none text-base resize-vertical',
+            textareaVariants({ size }),
+            textareaClassName
+          )}
+          ref={ref}
+          {...props}
+        />
+      </div>
+    )
+  }
+)
 
 Textarea.displayName = 'Textarea'
 

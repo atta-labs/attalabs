@@ -16,3 +16,20 @@ export { Textarea } from '../../basic/installed/textarea'
 export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 export { Button } from '../installed/button'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger, useCollapsible } from '../installed/collapsible'
+export {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger
+} from '../../basic/installed/dropdown-menu'

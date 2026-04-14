@@ -1,10 +1,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Button, Input } from '@atta/ui'
+import { Check, ChevronsUpDown } from 'lucide-react'
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Input
+} from '@atta/ui'
 import { Text } from '@atta/ui/shared'
 import { getStoredApiKey, storeApiKey } from '@/lib/model-keys'
 import type { Provider } from '@/lib/models'
+import { cn } from '@atta/ui/lib/utils'
 
 export interface ModelOption {
   provider: Provider
@@ -20,7 +31,7 @@ export const MODEL_OPTIONS: ModelOption[] = [
   {
     provider: 'openrouter',
     modelId: 'meta-llama/llama-3.3-70b-instruct:free',
-    label: 'Llama 3.3 70B — OpenRouter',
+    label: 'Llama 3.3 70B — OpenRouter (Free)',
     keyPrefix: 'sk-or-'
   }
 ]
@@ -36,12 +47,11 @@ export type PerAgentModelMap = Record<string, ModelSelection>
 interface GlobalModelSelectorProps {
   value: ModelSelection | null
   onChange: (v: ModelSelection | null) => void
-  perAgentMode: boolean
-  onTogglePerAgent: () => void
 }
 
-export function GlobalModelSelector({ value, onChange, perAgentMode, onTogglePerAgent }: GlobalModelSelectorProps) {
+export function GlobalModelSelector({ value, onChange }: GlobalModelSelectorProps) {
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({})
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     const stored: Record<string, string> = {}
@@ -56,11 +66,10 @@ export function GlobalModelSelector({ value, onChange, perAgentMode, onTogglePer
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const opt = MODEL_OPTIONS.find((m) => m.provider === e.target.value)
-    if (!opt) return
-    const apiKey = getStoredApiKey(opt.provider)
+  const handleSelect = (opt: ModelOption) => {
+    const apiKey = getStoredApiKey(opt.provider) ?? ''
     onChange({ provider: opt.provider, modelId: opt.modelId, apiKey })
+    if (apiKey) setOpen(false)
   }
 
   const handleKeyChange = (provider: Provider, key: string) => {
@@ -70,59 +79,72 @@ export function GlobalModelSelector({ value, onChange, perAgentMode, onTogglePer
   }
 
   const selectedOption = MODEL_OPTIONS.find((m) => m.provider === value?.provider)
+  const displayName = selectedOption
+    ? (selectedOption.label.split('—')[0]?.trim().toUpperCase() ?? 'SELECT MODEL')
+    : 'SELECT MODEL'
   const needsKey = value && !getStoredApiKey(value.provider)
 
-  if (perAgentMode) {
-    return (
-      <div className='flex items-center justify-end'>
-        <Button variant='ghost' size='sm' onClick={onTogglePerAgent} className='text-xs underline'>
-          Use global model
-        </Button>
-      </div>
-    )
-  }
-
   return (
-    <div className='space-y-3'>
-      <Text as='p' className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
-        Intelligence
-      </Text>
-      <select
-        value={value?.provider ?? ''}
-        onChange={handleSelect}
-        className='w-full rounded-lg border border-border/50 bg-card/60 px-3 py-2 font-sans text-sm text-foreground outline-none focus:border-muted-foreground'
-      >
-        <option value='' disabled>
-          Select a model…
-        </option>
-        {MODEL_OPTIONS.map((m) => (
-          <option key={m.provider} value={m.provider}>
-            {m.label}
-          </option>
-        ))}
-      </select>
-
-      {needsKey && selectedOption && (
-        <div className='rounded-lg border border-border/30 bg-background/60 p-3'>
-          <Text as='p' size='xs' muted className='mb-2'>
-            Enter your {selectedOption.label.split('—')[1]?.trim()} API key
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant='ghost'
+          className='h-auto gap-1.5 p-0 text-foreground/70 hover:bg-transparent hover:text-foreground'
+        >
+          <Text as='span' className='font-mono text-[10px] uppercase tracking-widest'>
+            {displayName}
           </Text>
-          <Input
-            type='password'
-            autoComplete='off'
-            placeholder={`${selectedOption.keyPrefix}…`}
-            value={apiKeys[selectedOption.provider] ?? ''}
-            onChange={(e) => handleKeyChange(selectedOption.provider, e.target.value)}
-            className='font-mono text-xs'
-          />
-        </div>
-      )}
-
-      <div className='flex justify-end'>
-        <Button variant='ghost' size='sm' onClick={onTogglePerAgent} className='text-xs underline'>
-          Configure per-agent
+          <ChevronsUpDown className='h-3 w-3' />
         </Button>
-      </div>
-    </div>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align='start' side='top' className='w-72 border-border/40 bg-card/95 backdrop-blur-md'>
+        <DropdownMenuLabel className='font-mono text-[9px] uppercase tracking-widest text-muted-foreground/60'>
+          Intelligence
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {MODEL_OPTIONS.map((opt) => (
+          <DropdownMenuItem
+            key={opt.provider}
+            onClick={() => handleSelect(opt)}
+            className={cn('flex items-center justify-between py-3', value?.provider === opt.provider && 'bg-muted/30')}
+          >
+            <div className='flex flex-col gap-0.5'>
+              <Text as='span' className='font-mono text-[10px] uppercase tracking-widest text-foreground'>
+                {opt.label.split('—')[0]?.trim()}
+              </Text>
+              <Text as='span' className='font-sans text-[11px] text-muted-foreground'>
+                {opt.label.split('—')[1]?.trim()}
+              </Text>
+            </div>
+            {value?.provider === opt.provider && <Check className='h-3.5 w-3.5 shrink-0 text-foreground' />}
+          </DropdownMenuItem>
+        ))}
+
+        {needsKey && selectedOption && (
+          <>
+            <DropdownMenuSeparator />
+            <div className='px-2 py-2'>
+              <Text
+                as='p'
+                size='xs'
+                className='mb-1.5 font-mono text-[9px] uppercase tracking-widest text-foreground/60'
+              >
+                API Key Required
+              </Text>
+              <Input
+                type='password'
+                autoComplete='off'
+                placeholder={`${selectedOption.keyPrefix}…`}
+                value={apiKeys[selectedOption.provider] ?? ''}
+                onChange={(e) => handleKeyChange(selectedOption.provider, e.target.value)}
+                className='font-mono text-xs'
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
