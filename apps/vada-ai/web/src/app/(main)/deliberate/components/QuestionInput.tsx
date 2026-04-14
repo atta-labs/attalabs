@@ -28,7 +28,15 @@ function AgentRow({ agent }: { agent: AgentConfig }) {
   return (
     <div className='flex items-center gap-3 border-b border-border/10 px-2 py-3 last:border-0'>
       <div className='shrink-0'>
-        <AIASphere id={`roster-${agent.role}`} state='speaking' color={color} size={44} showMatrix particleCount={10} />
+        <AIASphere
+          id={`roster-${agent.role}`}
+          state='speaking'
+          color={color}
+          size={44}
+          showMatrix
+          particleCount={10}
+          solidBg
+        />
       </div>
       <div className='min-w-0 flex-1'>
         <Text as='p' className='font-serif text-sm font-medium text-foreground'>
