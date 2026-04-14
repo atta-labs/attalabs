@@ -26,6 +26,7 @@ packages/ui/
 │   └── globals.css          # Tailwind v4 @theme inline mappings + base styles
 ├── hooks/                   # Shared React hooks
 ├── types/                   # Shared TypeScript types
+├── component-contract.mjs   # Contract: every component/type all libraries must export
 ├── CLAUDE.md
 └── package.json
 ```
@@ -186,9 +187,47 @@ Defined in each product's `globals.css` as CSS variables, overridden by the Sani
 
 ---
 
+## Component Contract
+
+Every library must export the same set of components and types. This is enforced by `component-contract.mjs` + `scripts/validate-ui-contract.mjs`, which runs automatically before every `build` and `dev` command. If a library is missing an export the process exits 1 and nothing starts.
+
+### Adding a new component to a library
+
+1. Create the component file in `libraries/{name}/installed/` or `libraries/{name}/components/`
+2. Export it from `libraries/{name}/components/index.ts`
+3. Add the component name to `REQUIRED_COMPONENTS` in `component-contract.mjs`
+4. Add its Props type to `REQUIRED_TYPES` in `component-contract.mjs`
+5. Implement (or add a basic fallback) in **all other libraries** — the contract blocks the build until every library exports it
+6. Run `bun run validate:ui-contract` to verify before committing
+
+### Running the validator manually
+
+```bash
+bun run validate:ui-contract
+```
+
+### What the output looks like
+
+```
+🔍 Validating UI Component Contract
+
+   Contract : 37 components, 43 types
+   Libraries: basic, retro, animate, brutal
+
+📦 Checking retro...
+   ❌ Missing components (2):
+        - Toast
+        - ToastProvider
+
+❌ Some libraries are missing required exports. Fix them or update the contract.
+```
+
+---
+
 ## Related Documentation
 
 - [Root CLAUDE.md](../../CLAUDE.md)
 - [canvas/CLAUDE.md](canvas/CLAUDE.md) — Canvas particle animation system
 - [ai/skills/ui-components.md](../../ai/skills/ui-components.md) — Full UI rules
+- [ai/skills/ui-library-system.md](../../ai/skills/ui-library-system.md) — Library system, build-time generation, contract validation
 - [ai/skills/cms-theme.md](../../ai/skills/cms-theme.md) — Theme loading from CMS

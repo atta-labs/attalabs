@@ -18,10 +18,15 @@ export const buttonVariants = cva(
         ghost: 'bg-transparent hover:bg-accent'
       },
       size: {
+        default: 'px-4 py-1.5 text-base',
+        xs: 'px-2 py-0.5 text-xs',
         sm: 'px-3 py-1 text-sm shadow hover:shadow-none',
         md: 'px-4 py-1.5 text-base',
         lg: 'px-6 lg:px-8 py-2 lg:py-3 text-md lg:text-lg',
-        icon: 'p-2'
+        icon: 'p-2',
+        'icon-xs': 'p-1',
+        'icon-sm': 'p-1.5',
+        'icon-lg': 'p-3'
       }
     },
     defaultVariants: {

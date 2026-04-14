@@ -5,6 +5,23 @@ export type * from '../../../types'
 // Display — falls back to basic
 export { Badge } from '../../basic/installed/badge'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../basic/installed/collapsible'
+export {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger
+} from '../../basic/installed/dropdown-menu'
 export { Input } from '../../basic/installed/input'
 // Layout — falls back to basic
 export { Separator } from '../../basic/installed/separator'
@@ -12,6 +29,8 @@ export { Separator } from '../../basic/installed/separator'
 export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 export { Button, buttonVariants } from '../installed/button'
 // Content
-export { Card } from '../installed/card'
+export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../installed/card'
+// Display — falls back to basic for Toast
+export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
 // Form — retro has its own textarea, falls back to basic for input
 export { Textarea } from '../installed/textarea'

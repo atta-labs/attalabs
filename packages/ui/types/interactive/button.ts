@@ -10,7 +10,7 @@ export type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' 
 /**
  * Button size options available across all templates.
  */
-export type ButtonSize = 'default' | 'sm' | 'lg' | 'icon'
+export type ButtonSize = 'default' | 'xs' | 'sm' | 'lg' | 'icon' | 'icon-xs' | 'icon-sm' | 'icon-lg'
 
 /**
  * Button component props contract.

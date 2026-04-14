@@ -1,62 +1,136 @@
 /**
- * Herald UI Component Contract
+ * UI Component Contract
  *
- * All libraries (basic, retro, animate, brutal) must export these components and types.
- * Run `bun run validate:ui-contract` to verify.
+ * Defines every component and type that MUST be exported by every UI library.
+ * The validate-ui-contract script enforces this — any library missing an entry
+ * here will fail the build.
+ *
+ * Rules:
+ *   - Adding a component to any library → add it here AND implement in all others
+ *   - Adding a type to packages/ui/types → add it here
+ *   - NEVER remove entries without removing the component from ALL libraries
  */
 
 export const REQUIRED_COMPONENTS = [
-  // Interactive
+  // Shared primitives
+  'AgentThinkingText',
+  'Flex',
+  'Heading',
+  'Text',
+
+  // Badge
+  'Badge',
+
+  // Button
   'Button',
   'buttonVariants',
-  // Content
+
+  // Card
   'Card',
+  'CardContent',
+  'CardDescription',
+  'CardFooter',
   'CardHeader',
   'CardTitle',
-  'CardDescription',
-  'CardContent',
-  'CardFooter',
+
+  // Collapsible
+  'Collapsible',
+  'CollapsibleContent',
+  'CollapsibleTrigger',
+
+  // DropdownMenu
+  'DropdownMenu',
+  'DropdownMenuCheckboxItem',
+  'DropdownMenuContent',
+  'DropdownMenuGroup',
+  'DropdownMenuItem',
+  'DropdownMenuLabel',
+  'DropdownMenuPortal',
+  'DropdownMenuRadioGroup',
+  'DropdownMenuRadioItem',
+  'DropdownMenuSeparator',
+  'DropdownMenuShortcut',
+  'DropdownMenuSub',
+  'DropdownMenuSubContent',
+  'DropdownMenuSubTrigger',
+  'DropdownMenuTrigger',
+
   // Form
   'Input',
   'Textarea',
-  // Display
-  'Badge',
+
   // Layout
   'Separator',
-  'Flex',
-  // Typography
-  'Heading',
-  'Text'
+
+  // Toast
+  'Toast',
+  'ToastProvider',
+  'useToastContext',
 ]
 
 export const REQUIRED_TYPES = [
+  // Button
   'ButtonProps',
-  'ButtonVariant',
   'ButtonSize',
+  'ButtonVariant',
   'ButtonVariantsFn',
-  'CardProps',
-  'CardHeaderProps',
-  'CardTitleProps',
-  'CardDescriptionProps',
-  'CardContentProps',
-  'CardFooterProps',
-  'InputProps',
-  'TextareaProps',
+
+  // Badge
+  'BadgeAnimation',
   'BadgeProps',
+  'BadgeShape',
+  'BadgeSize',
   'BadgeVariant',
-  'SeparatorProps',
-  'FlexProps',
-  'FlexDirection',
+
+  // Card
+  'CardActionProps',
+  'CardContentProps',
+  'CardDescriptionProps',
+  'CardFooterProps',
+  'CardHeaderProps',
+  'CardProps',
+  'CardTitleProps',
+
+  // Form — Input
+  'InputBlockProps',
+  'InputProps',
+  'InputSize',
+  'InputVariant',
+
+  // Form — Textarea
+  'TextareaProps',
+  'TextareaSize',
+  'TextareaVariant',
+
+  // Layout — Flex
   'FlexAlign',
+  'FlexDirection',
   'FlexJustify',
+  'FlexProps',
   'FlexWrap',
-  'HeadingProps',
+
+  // Layout — Separator
+  'SeparatorOrientation',
+  'SeparatorProps',
+
+  // Typography — Heading
   'HeadingLevel',
+  'HeadingProps',
   'HeadingSize',
-  'TextProps',
+
+  // Typography — Text
   'TextAs',
+  'TextProps',
   'TextSize',
-  'TextWeight'
+  'TextWeight',
+
+  // Toast
+  'ToastContextType',
+  'ToastData',
+  'ToastPosition',
+  'ToastProps',
+  'ToastProviderProps',
+  'ToastType',
 ]
 
 export const TEMPLATES = ['basic', 'retro', 'animate', 'brutal']

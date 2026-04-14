@@ -15,6 +15,9 @@ export { Textarea } from '../../basic/installed/textarea'
 // Shared
 export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 export { Button } from '../installed/button'
+export { buttonVariants } from '../../basic/installed/button'
+// Display — falls back to basic for Toast
+export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger, useCollapsible } from '../installed/collapsible'
 export {
   DropdownMenu,

@@ -189,8 +189,12 @@ export { DropdownMenu, ... } from '../../basic/installed/dropdown-menu' // falls
 
 1. Create the component in `libraries/{name}/installed/{component}.tsx`
 2. Export it from `libraries/{name}/components/index.ts`
-3. If other libraries should also have it (even as a basic fallback), add it to their `components/index.ts` too
-4. For Vada (build-time pattern): the generated file is a passthrough, so no extra step needed — rebuild picks it up
+3. Add the component name to `REQUIRED_COMPONENTS` in `packages/ui/component-contract.mjs`
+4. Add its Props type to `REQUIRED_TYPES` in `component-contract.mjs`
+5. Implement or add a `basic` fallback in **all other libraries** — the contract validator blocks builds until every library exports it
+6. For Vada (build-time pattern): the generated file is a passthrough, so no extra step needed — rebuild picks it up
+
+**The contract validator enforces step 5.** You cannot forget — the build fails if any library is missing the export.
 
 ---
 
@@ -236,10 +240,13 @@ export { DropdownMenu, ... } from '../../basic/installed/dropdown-menu' // falls
 
 ### "Component not found" or wrong component rendering
 
+**First step for any missing component:** run `bun run validate:ui-contract`. If the library doesn't export it, the contract will tell you exactly what's missing across all libraries.
+
 **Build-time apps (Vada):**
-1. Check `packages/ui/generated/vada/components.ts` — what library does it point to?
-2. Check that the component is exported from `libraries/{library}/components/index.ts`
-3. If the generated file is stale, delete it and rebuild — `generateUIIndex` will recreate it
+1. Run `bun run validate:ui-contract` — check if the active library is missing the component
+2. Check `packages/ui/generated/vada/components.ts` — what library does it point to?
+3. Check that the component is exported from `libraries/{library}/components/index.ts`
+4. If the generated file is stale, delete it and rebuild — `generateUIIndex` will recreate it
 
 **Runtime apps (Herald):**
 1. Check that `LibraryProvider` wraps the component tree
@@ -260,10 +267,57 @@ For runtime apps: the component must be exported from `package.json`'s default e
 
 ---
 
+## Component Contract
+
+Every library must export the same set of components and types. This is enforced at build time — `node scripts/validate-ui-contract.mjs` runs before every `build` and `dev` command and exits 1 if any library is missing an export.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `packages/ui/component-contract.mjs` | Source of truth: `REQUIRED_COMPONENTS`, `REQUIRED_TYPES`, `TEMPLATES` |
+| `scripts/validate-ui-contract.mjs` | Validator script — parses all library indexes recursively and diffs against contract |
+
+### Running manually
+
+```bash
+bun run validate:ui-contract
+```
+
+### Contract output
+
+```
+🔍 Validating UI Component Contract
+
+   Contract : 37 components, 43 types
+   Libraries: basic, retro, animate, brutal
+
+📦 Checking retro...
+   ❌ Missing components (2):
+        - Toast
+        - ToastProvider
+
+❌ Some libraries are missing required exports. Fix them or update the contract.
+```
+
+### How the validator works
+
+The validator recursively parses `libraries/{name}/components/index.ts`, following:
+- `export { A, B } from '...'` — named value exports
+- `export type { A, B } from '...'` — named type exports
+- `export * from '...'` — star re-exports (recurse, collect components + types)
+- `export type * from '...'` — star type re-exports (recurse, collect types only)
+
+All four patterns are needed. Our libraries use `export type * from '../../../types'` to re-export the shared type contracts — the validator follows this chain.
+
+---
+
 ## File Reference
 
 | File | Purpose |
 |------|---------|
+| `packages/ui/component-contract.mjs` | Contract: required components + types for all libraries |
+| `scripts/validate-ui-contract.mjs` | Validator — runs before every build and dev, exits 1 on failure |
 | `packages/ui/scripts/generate-ui.ts` | Generates `generated/{app}/components.ts` from CMS config |
 | `packages/ui/generated/{app}/components.ts` | Auto-generated re-export of the active library (gitignored) |
 | `packages/ui/lib/library-provider.tsx` | `LibraryProvider` + `useComponents()` for runtime switching |

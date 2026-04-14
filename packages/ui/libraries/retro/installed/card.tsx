@@ -34,11 +34,8 @@ const CardContent = ({ className, ...props }: ICardProps) => {
   return <div className={cn('p-4', className)} {...props} />
 }
 
-const CardComponent = Object.assign(Card, {
-  Header: CardHeader,
-  Title: CardTitle,
-  Description: CardDescription,
-  Content: CardContent
-})
+const CardFooter = ({ className, ...props }: ICardProps) => {
+  return <div className={cn('flex items-center p-4 pt-0', className)} {...props} />
+}
 
-export { CardComponent as Card }
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
