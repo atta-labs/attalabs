@@ -1,7 +1,8 @@
 'use client'
 
 import { AgentThinkingText, Heading, Separator, Text } from '@atta/ui'
-import { AIACanvas, AIARing, AIASphere } from '@atta/ui/canvas'
+import { AIACanvas, AIARing, AIASphere, useAIAContext } from '@atta/ui/canvas'
+import { useEffect } from 'react'
 import { SignUpAction } from './SignUpAction'
 import { StartAction } from './StartAction'
 import { useHomeContent } from './useHomeContent'
@@ -10,6 +11,7 @@ import { AGENT_SPHERE_COLORS } from '@/lib/agent-theme'
 // Inner component — rendered INSIDE AIACanvas so useHomeContent can access the canvas context
 function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
   const { activeAgent, activeStep } = useHomeContent()
+  const ctx = useAIAContext()
 
   // Once a sphere is touched (receives a message), it stays in speaking mode — thinking together
   const isTouched = (index: number) => activeStep > index
@@ -19,6 +21,14 @@ function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
   }
 
   const animationComplete = activeStep >= 6
+
+  // When the ring is fully formed, wait for the last segment's CSS draw-in animation
+  // (1200ms — matches stroke-dashoffset transition in AIARing), then trigger gravity + pulse
+  useEffect(() => {
+    if (!animationComplete) return
+    const id = setTimeout(() => ctx?.startGravity(), 500)
+    return () => clearTimeout(id)
+  }, [animationComplete, ctx])
 
   const SPHERE_PHRASES = ['Framing...', 'Risks?', 'Counter...', 'Patterns...', 'Data...', 'Synthesis...']
 
@@ -97,6 +107,7 @@ export function HomeContent({ isSignedIn }: { isSignedIn: boolean }) {
       wanderDuration={30}
       alwaysRenderSpheres
       matchContentHeight
+      autoTriggerGravity={false}
       className='fixed inset-0 h-full w-full z-0'
     >
       <HomeScene isSignedIn={isSignedIn} />
