@@ -2,40 +2,49 @@
 
 import { Button, Textarea } from '@atta/ui'
 import { Text } from '@atta/ui/shared'
-import { ArrowUpRight, BookOpen, Map as MapIcon, Scale, Settings, ShieldAlert, X, Zap } from 'lucide-react'
+import { AIACanvas, AIASphere } from '@atta/ui/canvas'
+import { ArrowUpRight, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
-import type { LucideIcon } from 'lucide-react'
 import type { AgentConfig } from '@/schemas'
 import { PRESETS, type Preset, type PresetId } from '@/schemas'
 import { PresetSelector } from './PresetSelector'
 import { GlobalModelSelector, type ModelSelection } from './GlobalModelSelector'
 
-const AGENT_META: Record<string, { icon: LucideIcon; description: string }> = {
-  strategist: { icon: MapIcon, description: 'Maps the landscape, governs trajectory' },
-  critic: { icon: ShieldAlert, description: 'Detects fallacies, demands grounding' },
-  devils_advocate: { icon: Zap, description: 'Prevents early consensus' },
-  synthesizer: { icon: Scale, description: 'Reconciles contradictions into action' },
-  researcher: { icon: BookOpen, description: 'Grounds claims in evidence' },
-  operator: { icon: Settings, description: 'Drives execution clarity' }
+const AGENT_COLORS: Record<string, string> = {
+  strategist: 'var(--agent-strategist)',
+  critic: 'var(--agent-critic)',
+  devils_advocate: 'var(--agent-devils-advocate)',
+  synthesizer: 'var(--agent-synthesizer)',
+  researcher: 'var(--agent-researcher)',
+  operator: 'var(--agent-operator)'
+}
+
+const AGENT_DESCRIPTIONS: Record<string, string> = {
+  strategist: 'Maps the landscape, governs trajectory',
+  critic: 'Detects fallacies, demands grounding',
+  devils_advocate: 'Prevents early consensus',
+  synthesizer: 'Reconciles contradictions into action',
+  researcher: 'Grounds claims in evidence',
+  operator: 'Drives execution clarity'
 }
 
 function AgentRow({ agent }: { agent: AgentConfig }) {
-  const meta = AGENT_META[agent.role]
-  const Icon = meta?.icon
+  const color = AGENT_COLORS[agent.role] ?? 'var(--foreground)'
+  const description = AGENT_DESCRIPTIONS[agent.role]
   return (
-    <div className='flex items-start gap-3 border-b border-border/10 px-2 py-2.5 last:border-0'>
-      <div className='flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted/30'>
-        {Icon && <Icon className='h-3 w-3 text-foreground/60' />}
+    <div className='flex items-center gap-3 border-b border-border/10 px-2 py-3 last:border-0'>
+      <div className='shrink-0'>
+        <AIASphere id={`roster-${agent.role}`} state='speaking' color={color} size={44} showMatrix particleCount={10} />
       </div>
       <div className='min-w-0 flex-1'>
         <Text as='p' className='font-serif text-sm font-medium text-foreground'>
           {agent.name}
         </Text>
-        {meta?.description && (
+        {description && (
           <Text as='p' size='xs' className='mt-0.5 text-[11px] leading-snug text-foreground/60'>
-            {meta.description}
+            {description}
           </Text>
         )}
       </div>
@@ -136,16 +145,18 @@ export function QuestionInput({ remainingToday, initialError }: { remainingToday
             </Button>
           </div>
 
-          {/* ROOM ROSTER — always visible, updates as team preset changes */}
+          {/* ROOM ROSTER — always visible, spheres with matrix */}
           <div className='mt-6'>
             <Text as='p' className='mb-3 font-mono text-[9px] uppercase tracking-widest text-foreground/50'>
               Room Roster: {selectedPreset.name}
             </Text>
-            <div className='grid grid-cols-2 gap-x-4'>
-              {selectedPreset.agents.map((agent) => (
-                <AgentRow key={agent.role} agent={agent} />
-              ))}
-            </div>
+            <AIACanvas alwaysRenderSpheres>
+              <div className='grid grid-cols-2 gap-x-4'>
+                {selectedPreset.agents.map((agent) => (
+                  <AgentRow key={agent.role} agent={agent} />
+                ))}
+              </div>
+            </AIACanvas>
           </div>
         </div>
       </div>

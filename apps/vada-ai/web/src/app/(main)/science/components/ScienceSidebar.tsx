@@ -2,41 +2,32 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Badge } from '@atta/ui'
-import { Text } from '@atta/ui/shared'
+import { BookOpen, Brain, FlaskConical, Layers } from 'lucide-react'
 import { cn } from '@atta/ui/lib/utils'
 
 const SCIENCE_NAV = [
-  { href: '/science/overview', label: 'Overview' },
-  { href: '/science/frameworks', label: 'Frameworks' },
-  { href: '/science/agents', label: 'Agents' },
-  { href: '/science/mechanics', label: 'Mechanics' }
+  { href: '/science/overview', label: 'Overview', icon: BookOpen },
+  { href: '/science/frameworks', label: 'Frameworks', icon: Layers },
+  { href: '/science/agents', label: 'Agents', icon: Brain },
+  { href: '/science/mechanics', label: 'Mechanics', icon: FlaskConical }
 ]
 
 export function ScienceSidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className='w-56 shrink-0 sticky top-14 h-fit py-16 pl-8 pr-4 bg-card'>
-      <div className='mb-6 space-y-1'>
-        <Text as='p' className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
-          Vāda Manuscript
-        </Text>
-        <Badge variant='outline' className='font-mono text-[10px]'>
-          v1.0
-        </Badge>
-      </div>
-
-      <nav className='flex flex-col gap-1'>
-        {SCIENCE_NAV.map(({ href, label }) => (
+    <aside className='w-56 shrink-0 sticky top-14 h-[calc(100dvh-3.5rem)] border-r border-sidebar-border bg-sidebar py-12 pl-6 pr-4'>
+      <nav className='flex flex-col gap-0.5'>
+        {SCIENCE_NAV.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}
             className={cn(
-              'rounded-md px-3 py-2 font-sans text-sm transition-colors hover:text-foreground',
-              pathname === href ? 'text-foreground' : 'text-muted-foreground'
+              'flex items-center gap-2.5 rounded-md px-3 py-2 font-sans text-sm transition-colors hover:text-foreground',
+              pathname === href ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-muted-foreground'
             )}
           >
+            <Icon className='h-3.5 w-3.5 shrink-0' />
             {label}
           </Link>
         ))}

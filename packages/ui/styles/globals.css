@@ -77,12 +77,12 @@
   :root {
     --success: oklch(65% 0.17 145);
     --warning: oklch(72% 0.17 75);
-    --agent-strategist:     oklch(65% 0.15 220);
-    --agent-critic:         var(--destructive);
-    --agent-devils-advocate: oklch(60% 0.14 290);
-    --agent-synthesizer:    var(--accent);
-    --agent-researcher:     oklch(65% 0.17 145);
-    --agent-operator:       oklch(65% 0.14 55);
+    --agent-strategist:      hsl(119 21% 45%);
+    --agent-critic:          hsl(0 49% 57%);
+    --agent-devils-advocate: hsl(278 35% 63%);
+    --agent-synthesizer:     hsl(43 52% 54%);
+    --agent-researcher:      hsl(207 32% 52%);
+    --agent-operator:        hsl(30 32% 52%);
   }
 
   /* Cascade --agent-color from the nearest [data-agent] ancestor */
