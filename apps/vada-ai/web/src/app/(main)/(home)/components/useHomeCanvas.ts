@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAIAContext } from '@atta/ui/canvas'
 
-export function useHomeContent() {
+export function useHomeCanvas() {
   const [activeAgent, setActiveAgent] = useState<string | null>(null)
   const [activeStep, setActiveStep] = useState(0)
   const [messageSignal, setMessageSignal] = useState<{ from: string; to: string } | null>(null)
@@ -48,5 +48,5 @@ export function useHomeContent() {
     }
   }, [messageSignal, ctx])
 
-  return { activeAgent, activeStep }
+  return { activeAgent, activeStep, animationStarted: activeStep >= 1, animationComplete: activeStep >= 6 }
 }
