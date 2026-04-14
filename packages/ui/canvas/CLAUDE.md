@@ -145,6 +145,9 @@ A DOM element that registers its position with the canvas. The canvas uses the p
   matrixColors={['hsl(119 21% 45%)', 'hsl(0 49% 57%)']}  // Multicolor matrix rain
   matrixOpacity={1}          // Matrix brightness multiplier (0–1)
   particleCount={30}         // Particles requested for this sphere
+  solidBg={true}             // Canvas draws a dark bg circle behind this sphere (default false)
+  bgOpacity={0.5}            // Opacity of the canvas bg fill (0–1, default 0.5)
+  visible={true}             // When false: particles orbit silently but don't render (default true)
   label='Strategist'         // Optional label text
   labelPosition='bottom'     // 'top'|'bottom'|'left'|'right'|'top-right' etc.
   onClick={() => {}}         // Makes it a <button>
@@ -192,6 +195,9 @@ An SVG ring with animated wavy paths. Orbiting spheres sit at equally spaced pos
   activeStep={activeStep}  // How many segments are "revealed" (wave draw-in). 0 = none.
   thinking={false}         // When true: matrix rain falls inside the ring circle.
   matrixOpacity={1}        // Ring matrix brightness multiplier (0–1).
+  solidBg={false}          // DOM div fills ring interior with bgColor (default false)
+  bgColor='var(--background)' // Color for solidBg DOM fill (default var(--background))
+  bgOpacity={0.5}          // Opacity of the canvas bg fill that fades in when ring closes (default 0.5)
   orbit={[                 // Array of ReactNodes — one per sphere position
     <AIASphere key='s1' id='s1' color={SPHERE_COLORS[0]} ... />,
     <AIASphere key='s2' id='s2' color={SPHERE_COLORS[1]} ... />,
@@ -507,18 +513,24 @@ Jitter too high in `updateClusterOrbit`. Current value: `0.3`. Reduce for calmer
 
 ```
 packages/ui/canvas/
-├── aia-canvas.tsx        — Root provider, rAF loop, particle system, messages, matrix
+├── aia-canvas/            — Canvas orchestrator (split from monolith)
+│   ├── index.tsx          — AIACanvas component (pure JSX shell)
+│   ├── use-aia-canvas.ts  — All React hooks: state, rAF loop, context callbacks
+│   ├── bg-fills.ts        — Ring + sphere background fill rendering
+│   ├── matrix-rain.ts     — Matrix rain for spheres and rings
+│   ├── message-system.ts  — Directed message particle rendering
+│   ├── particle-system.ts — Particle creation, orbit, rendering
+│   ├── phase-machine.ts   — wander → forming → settled state machine
+│   ├── ring-envoy.ts      — Ring envoy animation (segment reveal progress)
+│   └── types.ts           — Internal canvas types (Particle, DirectMessage, etc.)
 ├── aia-sphere.tsx         — Pure presentational sphere (no hooks)
 ├── useAIASphere.ts        — All sphere hooks (rAF position tracking, registration)
-├── aia-ring.tsx           — SVG ring, animated waves, orbit layout
+├── aia-ring.tsx           — SVG ring, animated waves (agent colors), orbit layout
 ├── aia-context.tsx        — Context types: SphereRegistration, RingRegistration, AIAContextValue
 ├── assistant-wave.tsx     — Standalone animated SVG wave (not canvas-based)
-├── index.ts               — Public exports
-└── ring-styles/           — Canvas ring renderers
-    ├── types.ts           — RingStyleContext and RingStyleRenderer interfaces
-    ├── wave.ts            — Wave ring renderer (canvas 2D, multi-layer)
-    ├── particles.ts       — Particle ring renderer (orbiting dots)
-    └── line.ts            — Simple line ring renderer (arc segments)
+├── bg/                    — Background renderers (fabric, etc.)
+├── shared/                — Shared utilities (colors, math, constants)
+└── index.ts               — Public exports
 ```
 
 ## Consuming Components (Vāda)

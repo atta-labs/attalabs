@@ -6,6 +6,7 @@ import { useAIAContext } from '@atta/ui/canvas'
 export function useHomeCanvas() {
   const [activeAgent, setActiveAgent] = useState<string | null>(null)
   const [activeStep, setActiveStep] = useState(0)
+  const [revealedCount, setRevealedCount] = useState(0)
   const [messageSignal, setMessageSignal] = useState<{ from: string; to: string } | null>(null)
   const simulationStarted = useRef(false)
 
@@ -21,6 +22,8 @@ export function useHomeCanvas() {
     const runSimulation = async () => {
       await new Promise((r) => setTimeout(r, 200))
 
+      setRevealedCount(1) // reveal sphere 0
+
       for (let i = 0; i < sequence.length; i++) {
         const current = sequence[i] as string
         const next = sequence[(i + 1) % sequence.length] as string
@@ -34,8 +37,11 @@ export function useHomeCanvas() {
         setActiveStep(i + 1)
         setMessageSignal({ from: current, to: next })
 
-        // Wait for arc particle to arrive before next agent starts
-        await new Promise((r) => setTimeout(r, 250))
+        // Reveal destination sphere when message arrives (~230ms travel)
+        await new Promise((r) => setTimeout(r, 230))
+        setRevealedCount(i + 2)
+
+        await new Promise((r) => setTimeout(r, 20))
       }
     }
 
@@ -48,5 +54,11 @@ export function useHomeCanvas() {
     }
   }, [messageSignal, ctx])
 
-  return { activeAgent, activeStep, animationStarted: activeStep >= 1, animationComplete: activeStep >= 6 }
+  return {
+    activeAgent,
+    activeStep,
+    revealedCount,
+    animationStarted: activeStep >= 1,
+    animationComplete: activeStep >= 6
+  }
 }

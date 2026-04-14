@@ -34,3 +34,30 @@ export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader,
 export { Textarea } from '../installed/textarea'
 // Display — falls back to basic for Toast
 export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
+// Sidebar — falls back to basic
+export {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInput,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSkeleton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar
+} from '../../basic/installed/sidebar'

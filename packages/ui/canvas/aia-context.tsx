@@ -19,6 +19,7 @@ export interface SphereRegistration {
   matrixOpacity?: number
   solidBg?: boolean
   bgOpacity?: number
+  visible?: boolean
 }
 
 export interface RingRegistration {

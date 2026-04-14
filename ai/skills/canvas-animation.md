@@ -154,8 +154,13 @@ Use CSS variables or HSL strings from `AGENT_THEME`. Never hex codes.
 | `particleCount` | `number` | size-based | Particles requested |
 | `matrixColors` | `string[]` | `[color]` | Multicolor matrix rain |
 | `matrixOpacity` | `number` | `1` | Brightness 0–1 |
+| `solidBg` | `boolean` | `false` | Canvas draws dark bg circle behind sphere |
+| `bgOpacity` | `number` | `0.5` | Opacity of canvas bg fill |
+| `visible` | `boolean` | `true` | When false: particles orbit silently, don't render |
 | `label` | `string` | — | Text near sphere |
 | `labelPosition` | `string` | `'bottom'` | top/right/bottom/left + corners |
+
+**`solidBg` + `visible` pattern** — use together for progressive reveal: `visible={revealed}` hides particles, `solidBg={revealed}` gates the canvas bg fill. Particles orbit at all times (stable cluster positions) but only render when `visible=true`, fading in smoothly on reveal.
 
 ## AIARing Props
 
@@ -167,6 +172,9 @@ Use CSS variables or HSL strings from `AGENT_THEME`. Never hex codes.
 | `thinking` | `boolean` | `false` | Ring matrix rain |
 | `sphereRadius` | `number` | `50` | SVG wave clip radius |
 | `matrixOpacity` | `number` | `1` | Ring matrix brightness |
+| `solidBg` | `boolean` | `false` | DOM div fills ring interior with bgColor |
+| `bgColor` | `string` | `var(--background)` | Color for solidBg DOM fill |
+| `bgOpacity` | `number` | `0.5` | Opacity of canvas bg fill (fades in when ring closes) |
 
 ## Page Configurations
 
@@ -199,6 +207,7 @@ Use CSS variables or HSL strings from `AGENT_THEME`. Never hex codes.
 | Particles below viewport | No `matchContentHeight` | Add prop to AIACanvas |
 | No matrix rain | `state='idle'` or no `alwaysRenderSpheres` | Set state + prop |
 | Matrix invisible | `color` near-black | Pass visible color |
+| Particles visible before sphere reveals | `visible` not set to `false` | Pass `visible={revealed}` |
 | Too few particles per sphere | Decorative AIASpheres stealing budget | Replace with plain divs |
 | Particles vibrate | Jitter too high | Reduce `0.3` in `updateClusterOrbit` |
 | Sudden sphere shrink | Different orbit radius in wander vs settled | Use same radius |
@@ -207,17 +216,23 @@ Use CSS variables or HSL strings from `AGENT_THEME`. Never hex codes.
 
 ```
 packages/ui/canvas/
-├── aia-canvas.tsx        — Renderer, particle system, animation loop
-├── aia-context.tsx        — React context, types
+├── aia-canvas/            — Canvas orchestrator (modular)
+│   ├── index.tsx          — AIACanvas component (pure JSX shell)
+│   ├── use-aia-canvas.ts  — All React hooks: state, rAF loop, context callbacks
+│   ├── bg-fills.ts        — Ring + sphere background fill rendering
+│   ├── matrix-rain.ts     — Matrix rain for spheres and rings
+│   ├── message-system.ts  — Directed message particle rendering
+│   ├── particle-system.ts — Particle creation, orbit, rendering
+│   ├── phase-machine.ts   — wander → forming → settled state machine
+│   ├── ring-envoy.ts      — Ring envoy animation (segment reveal progress)
+│   └── types.ts           — Internal canvas types
+├── aia-context.tsx        — React context, SphereRegistration, RingRegistration types
 ├── aia-sphere.tsx         — Presentational sphere (no hooks)
-├── useAIASphere.ts        — Sphere hooks (rAF position tracking)
-├── aia-ring.tsx           — Ring layout + SVG wave segments
-├── assistant-wave.tsx     — Standalone SVG wave
-└── ring-styles/
-    ├── types.ts           — Ring renderer interface
-    ├── wave.ts            — Wave ring (canvas)
-    ├── particles.ts       — Particle ring (canvas)
-    └── line.ts            — Line ring (canvas)
+├── useAIASphere.ts        — Sphere hooks (rAF position tracking, registration)
+├── aia-ring.tsx           — Ring layout + SVG wave segments (agent colors)
+├── bg/                    — Background renderers (fabric, etc.)
+├── shared/                — Shared utilities (colors, math, constants)
+└── assistant-wave.tsx     — Standalone SVG wave
 ```
 
 ## After Editing Package Files

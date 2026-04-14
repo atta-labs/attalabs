@@ -20,6 +20,7 @@ interface AIASphereProps {
   showMatrix?: boolean
   solidBg?: boolean
   bgOpacity?: number
+  visible?: boolean
   children?: ReactNode
   onClick?: () => void
   className?: string
@@ -49,6 +50,7 @@ export function AIASphere({
   showMatrix = true,
   solidBg = false,
   bgOpacity,
+  visible = true,
   children,
   onClick,
   className,
@@ -65,7 +67,8 @@ export function AIASphere({
     matrixColors,
     matrixOpacity,
     solidBg,
-    bgOpacity
+    bgOpacity,
+    visible
   })
 
   const Tag = onClick ? 'button' : 'div'

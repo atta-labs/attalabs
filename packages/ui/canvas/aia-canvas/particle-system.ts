@@ -36,13 +36,19 @@ export function renderParticles(
 ): void {
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i]!
-    if (p.opacity < p.baseOpacity) p.opacity += 0.003
 
     const sphere = spheres[p.cluster]
     if (!sphere) continue
 
     updateClusterOrbit(p, sphere, sphere.radius)
 
+    // Hidden spheres: keep orbiting silently, reset opacity so they fade in on reveal
+    if (sphere.visible === false) {
+      p.opacity = 0
+      continue
+    }
+
+    if (p.opacity < p.baseOpacity) p.opacity += 0.003
     ctx.beginPath()
     ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
     ctx.fillStyle = p.color

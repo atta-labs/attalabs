@@ -15,7 +15,7 @@ const SPHERE_PHRASES = ['Framing...', 'Risks?', 'Counter...', 'Patterns...', 'Da
 
 // Inner — must be inside AIACanvas to access canvas context
 function HomeCanvasInner({ render }: HomeCanvasProps) {
-  const { activeAgent, activeStep, animationStarted, animationComplete } = useHomeCanvas()
+  const { activeAgent, activeStep, revealedCount, animationStarted, animationComplete } = useHomeCanvas()
   const ctx = useAIAContext()
 
   const isTouched = (index: number) => activeStep > index
@@ -39,25 +39,35 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
         sphereRadius={60}
         matrixOpacity={0.2}
         orbit={SPHERE_IDS.map((id, i) => {
+          const revealed = revealedCount > i
           const showMatrix = activeAgent === id || isTouched(i)
           return (
-            <AIASphere
+            <div
               key={id}
-              id={id}
-              size='xl'
-              color={AGENT_SPHERE_COLORS[i]}
-              state={getSphereState(id, i)}
-              showMatrix={showMatrix}
-              matrixOpacity={0.3}
-              solidBg
+              style={{
+                opacity: revealed ? 1 : 0,
+                transform: revealed ? 'scale(1)' : 'scale(0.85)',
+                transition: 'opacity 500ms ease-in, transform 500ms ease-out'
+              }}
             >
-              {showMatrix && (
-                <AgentThinkingText
-                  text={SPHERE_PHRASES[i] ?? '...'}
-                  className='text-[8px] text-center leading-tight opacity-80'
-                />
-              )}
-            </AIASphere>
+              <AIASphere
+                id={id}
+                size='xl'
+                color={AGENT_SPHERE_COLORS[i]}
+                state={getSphereState(id, i)}
+                showMatrix={showMatrix}
+                matrixOpacity={0.3}
+                solidBg={revealed}
+                visible={revealed}
+              >
+                {showMatrix && (
+                  <AgentThinkingText
+                    text={SPHERE_PHRASES[i] ?? '...'}
+                    className='text-[8px] text-center leading-tight opacity-80'
+                  />
+                )}
+              </AIASphere>
+            </div>
           )
         })}
       >

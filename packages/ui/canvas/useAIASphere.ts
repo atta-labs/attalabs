@@ -32,6 +32,7 @@ interface UseAIASphereProps {
   matrixOpacity?: number
   solidBg?: boolean
   bgOpacity?: number
+  visible?: boolean
 }
 
 export function useAIASphere({
@@ -44,7 +45,8 @@ export function useAIASphere({
   matrixColors,
   matrixOpacity,
   solidBg = false,
-  bgOpacity
+  bgOpacity,
+  visible = true
 }: UseAIASphereProps) {
   const generatedId = useId()
   const id = externalId ?? generatedId
@@ -102,7 +104,8 @@ export function useAIASphere({
           matrixColors: matrixColorsRef.current,
           matrixOpacity: matrixOpacityRef.current,
           solidBg,
-          bgOpacity
+          bgOpacity,
+          visible
         })
       }
 
@@ -116,7 +119,7 @@ export function useAIASphere({
       cancelAnimationFrame(rafId)
       ctx.unregisterSphere(id)
     }
-  }, [ctx, id, diameter, color, particles, solidBg, bgOpacity])
+  }, [ctx, id, diameter, color, particles, solidBg, bgOpacity, visible])
 
   // Effect 2 — State/showMatrix sync (no position change, no order change)
   useEffect(() => {

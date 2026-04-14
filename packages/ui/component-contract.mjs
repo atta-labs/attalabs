@@ -66,6 +66,32 @@ export const REQUIRED_COMPONENTS = [
   'Toast',
   'ToastProvider',
   'useToastContext',
+
+  // Sidebar
+  'Sidebar',
+  'SidebarContent',
+  'SidebarFooter',
+  'SidebarGroup',
+  'SidebarGroupAction',
+  'SidebarGroupContent',
+  'SidebarGroupLabel',
+  'SidebarHeader',
+  'SidebarInput',
+  'SidebarInset',
+  'SidebarMenu',
+  'SidebarMenuAction',
+  'SidebarMenuBadge',
+  'SidebarMenuButton',
+  'SidebarMenuItem',
+  'SidebarMenuSkeleton',
+  'SidebarMenuSub',
+  'SidebarMenuSubButton',
+  'SidebarMenuSubItem',
+  'SidebarProvider',
+  'SidebarRail',
+  'SidebarSeparator',
+  'SidebarTrigger',
+  'useSidebar',
 ]
 
 export const REQUIRED_TYPES = [

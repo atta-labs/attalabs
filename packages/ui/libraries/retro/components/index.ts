@@ -34,3 +34,30 @@ export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
 // Form — retro has its own textarea, falls back to basic for input
 export { Textarea } from '../installed/textarea'
+// Sidebar — falls back to basic
+export {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInput,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSkeleton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar
+} from '../../basic/installed/sidebar'
