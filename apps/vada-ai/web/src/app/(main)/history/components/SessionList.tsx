@@ -1,4 +1,4 @@
-import { Text } from '@atta/ui'
+import { Text } from '@atta/ui/shared'
 import { SessionCard } from './SessionCard'
 
 interface Session {
@@ -9,11 +9,17 @@ interface Session {
   createdAt: string
 }
 
-export function SessionList({ sessions }: { sessions: Session[] }) {
+export function SessionList({
+  sessions,
+  emptyMessage = 'No deliberations yet.'
+}: {
+  sessions: Session[]
+  emptyMessage?: string
+}) {
   if (sessions.length === 0) {
     return (
       <Text as='p' size='sm' muted className='py-12 text-center'>
-        No deliberations yet.
+        {emptyMessage}
       </Text>
     )
   }

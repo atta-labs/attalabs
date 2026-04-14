@@ -1,8 +1,8 @@
 import { auth } from '@atta/auth/hooks'
-import { Heading } from '@atta/ui'
-import Link from 'next/link'
+import { Separator } from '@atta/ui'
+import { Heading, Text } from '@atta/ui/shared'
 import { redirect } from 'next/navigation'
-import { SessionList } from './components/SessionList'
+import { HistoryClientView } from './components/HistoryClientView'
 import { getOrCreateUser, listSessions } from '@/db/queries'
 
 export default async function HistoryPage() {
@@ -13,17 +13,22 @@ export default async function HistoryPage() {
   const sessions = await listSessions(user.id)
 
   return (
-    <main className='min-h-dvh px-6 py-8'>
-      <div className='mx-auto max-w-2xl'>
-        <div className='mb-8 flex items-center justify-between'>
-          <Heading level={1} size='sm' className='font-light'>
-            Past Deliberations
+    <main className='min-h-dvh px-6 py-16'>
+      <div className='mx-auto max-w-2xl space-y-10'>
+        {/* Header */}
+        <div className='space-y-4'>
+          <span className='font-mono text-xs text-muted-foreground'>History</span>
+          <Heading level={1} className='font-serif text-4xl font-light leading-tight'>
+            Your Deliberations
           </Heading>
-          <Link href='/' className='text-sm text-primary underline-offset-4 hover:underline'>
-            New deliberation
-          </Link>
+          <Text as='p' muted className='text-lg leading-relaxed'>
+            A record of every room you have opened. Search to revisit a past deliberation, or start a new one.
+          </Text>
         </div>
-        <SessionList
+
+        <Separator className='opacity-20' />
+
+        <HistoryClientView
           sessions={sessions.map((s) => ({
             id: s.id,
             question: s.question,

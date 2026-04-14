@@ -1,15 +1,13 @@
-import { Badge, Card, CardContent, Text } from '@atta/ui'
+import { Badge, Card, CardContent } from '@atta/ui'
+import { Text } from '@atta/ui/shared'
+import { cn } from '@atta/ui/lib/utils'
 import Link from 'next/link'
 
-const STATE_COLORS: Record<string, string> = {
-  CLEAN: '#2ECC71',
-  REVISED: '#C8A84B',
-  UNCONVERGED: '#DB4A4A',
-  SPARRING_COMPLETE: '#60A5FA'
-}
-
-const STATE_DISPLAY: Record<string, string> = {
-  SPARRING_COMPLETE: 'Sparring'
+const STATE_CONFIG: Record<string, { label: string; className: string }> = {
+  CLEAN: { label: 'Clean', className: 'text-green-500 border-green-500/40' },
+  REVISED: { label: 'Revised', className: 'text-yellow-500 border-yellow-500/40' },
+  UNCONVERGED: { label: 'Unconverged', className: 'text-destructive border-destructive/40' },
+  SPARRING_COMPLETE: { label: 'Sparring', className: 'text-blue-400 border-blue-400/40' }
 }
 
 export function SessionCard({
@@ -24,8 +22,9 @@ export function SessionCard({
   state: string
   createdAt: string
 }) {
-  const stateColor = terminalState ? STATE_COLORS[terminalState] : undefined
-  const stateLabel = terminalState ? (STATE_DISPLAY[terminalState] ?? terminalState) : 'In Progress'
+  const config = terminalState ? STATE_CONFIG[terminalState] : null
+  const stateLabel = config?.label ?? 'In Progress'
+  const stateClass = config?.className ?? 'text-muted-foreground border-border'
 
   return (
     <Link href={`/deliberation/${id}`} className='block transition-opacity hover:opacity-80'>
@@ -35,11 +34,7 @@ export function SessionCard({
             <Text as='p' size='sm' className='line-clamp-2 flex-1'>
               {question}
             </Text>
-            <Badge
-              variant='outline'
-              className='shrink-0 text-[10px] uppercase tracking-wider'
-              style={stateColor ? { color: stateColor, borderColor: stateColor } : undefined}
-            >
+            <Badge variant='outline' className={cn('shrink-0 text-[10px] uppercase tracking-wider', stateClass)}>
               {stateLabel}
             </Badge>
           </div>
