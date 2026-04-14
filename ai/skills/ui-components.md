@@ -154,36 +154,19 @@ Font values (which Google Font is used for each role) are set by the active them
 
 ## The UI Library System
 
-### Four Libraries
-
-`@atta/ui` ships four component libraries. Each product uses exactly one, set in Sanity CMS:
-
-| Library | Export Path | Style |
-|---------|------------|-------|
-| `basic` | `@atta/ui/basic/components` | Default — clean, minimal |
-| `retro` | `@atta/ui/retro/components` | Retro/vintage aesthetic |
-| `animate` | `@atta/ui/animate/components` | Motion-rich |
-| `brutal` | `@atta/ui/brutal/components` | Neo-brutalist |
-
-The default import (`@atta/ui` or `@atta/ui/components`) always resolves to `basic`.
+`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each product uses exactly one, resolved either at build time (Vada pattern) or runtime (Herald pattern).
 
 ```tsx
-// ✅ Always import from the default — the active library is resolved at runtime
+// ✅ Always import from the default alias — resolves to the active library
 import { Button, Card, Badge, Input } from '@atta/ui'
-// or
-import { Button } from '@atta/ui/components/button'
 
 // ❌ Don't hard-switch libraries in component code
-import { Button } from '@atta/ui/brutal/components'   // unless you specifically need brutal
+import { Button } from '@atta/ui/brutal/components'   // unless specifically required
 ```
 
-### Shared Components
+Shared cross-library primitives (`Heading`, `Text`, `Flex`, `AgentThinkingText`) live in `@atta/ui/shared` and are always available regardless of active library.
 
-Cross-library primitives live in `@atta/ui/shared`:
-
-```tsx
-import { Heading, Text, Flex, AgentThinkingText } from '@atta/ui/shared'
-```
+**For the full architecture** — build-time generation, runtime switching, adding apps, debugging resolution — see [`ai/skills/ui-library-system.md`](./ui-library-system.md).
 
 ---
 

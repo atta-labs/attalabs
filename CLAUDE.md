@@ -132,6 +132,7 @@ In-depth guides for specific domains. Reference when working in that area.
 | Skill | File | Use For |
 |-------|------|---------|
 | UI Components | [ai/skills/ui-components.md](ai/skills/ui-components.md) | Component usage, CSS variables, theming |
+| UI Library System | [ai/skills/ui-library-system.md](ai/skills/ui-library-system.md) | Build-time generation, runtime switching, adding apps/libraries |
 | CMS Theme | [ai/skills/cms-theme.md](ai/skills/cms-theme.md) | SSR theme loading, fonts, Sanity studios |
 | API Routes | [ai/skills/api-routes.md](ai/skills/api-routes.md) | Route patterns, validation, LLM calls |
 | Database | [ai/skills/database.md](ai/skills/database.md) | Drizzle schema, queries, migrations |
