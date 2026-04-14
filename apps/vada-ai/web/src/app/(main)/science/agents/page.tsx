@@ -3,7 +3,7 @@
 import { Heading, Text } from '@atta/ui/shared'
 import { Separator } from '@atta/ui'
 import { AIACanvas, AIASphere } from '@atta/ui/canvas'
-import { AGENT_COLOR_BY_ROLE } from '@/app/deliberation/[id]/components/agent-theme'
+import { AGENT_COLOR_BY_ROLE } from '@/lib/agent-theme'
 import Link from 'next/link'
 import { useId } from 'react'
 

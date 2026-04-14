@@ -9,17 +9,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import type { AgentConfig } from '@/schemas'
 import { PRESETS, type Preset, type PresetId } from '@/schemas'
+import { AGENT_COLOR_BY_ROLE } from '@/lib/agent-theme'
 import { PresetSelector } from './PresetSelector'
 import { GlobalModelSelector, type ModelSelection } from './GlobalModelSelector'
-
-const AGENT_COLORS: Record<string, string> = {
-  strategist: 'var(--agent-strategist)',
-  critic: 'var(--agent-critic)',
-  devils_advocate: 'var(--agent-devils-advocate)',
-  synthesizer: 'var(--agent-synthesizer)',
-  researcher: 'var(--agent-researcher)',
-  operator: 'var(--agent-operator)'
-}
 
 const AGENT_DESCRIPTIONS: Record<string, string> = {
   strategist: 'Maps the landscape, governs trajectory',
@@ -31,7 +23,7 @@ const AGENT_DESCRIPTIONS: Record<string, string> = {
 }
 
 function AgentRow({ agent }: { agent: AgentConfig }) {
-  const color = AGENT_COLORS[agent.role] ?? 'var(--foreground)'
+  const color = AGENT_COLOR_BY_ROLE[agent.role] ?? 'var(--foreground)'
   const description = AGENT_DESCRIPTIONS[agent.role]
   return (
     <div className='flex items-center gap-3 border-b border-border/10 px-2 py-3 last:border-0'>

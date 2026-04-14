@@ -5,16 +5,7 @@ import { AIACanvas, AIARing, AIASphere } from '@atta/ui/canvas'
 import { SignUpAction } from './SignUpAction'
 import { StartAction } from './StartAction'
 import { useHomeContent } from './useHomeContent'
-import { AGENT_THEME } from '@/app/deliberation/[id]/components/agent-theme'
-
-const SPHERE_COLORS = [
-  AGENT_THEME.Strategist!.color,
-  AGENT_THEME.Critic!.color,
-  AGENT_THEME["Devil's Advocate"]!.color,
-  AGENT_THEME.Synthesizer!.color,
-  AGENT_THEME.Researcher!.color,
-  AGENT_THEME.Operator!.color
-]
+import { AGENT_SPHERE_COLORS } from '@/lib/agent-theme'
 
 // Inner component — rendered INSIDE AIACanvas so useHomeContent can access the canvas context
 function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
@@ -48,7 +39,7 @@ function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
               key={id}
               id={id}
               size='xl'
-              color={SPHERE_COLORS[i]}
+              color={AGENT_SPHERE_COLORS[i]}
               state={getSphereState(id, i)}
               showMatrix={showMatrix}
               matrixOpacity={0.5}
@@ -102,8 +93,7 @@ function HomeScene({ isSignedIn }: { isSignedIn: boolean }) {
 export function HomeContent({ isSignedIn }: { isSignedIn: boolean }) {
   return (
     <AIACanvas
-      particleCount={50}
-      ambientRatio={0.8}
+      bg='fabric'
       wanderDuration={30}
       alwaysRenderSpheres
       matchContentHeight
