@@ -1,3 +1,15 @@
+# ⚠️ ABSOLUTE RULE — NEVER COMMIT WITHOUT EXPLICIT INSTRUCTION
+
+**NEVER run `git commit` (or any command that creates a commit) unless the user has explicitly asked you to commit in that message.**
+
+- "Can you commit this?" → commit
+- "Commit X" → commit only X
+- Fixing a bug, spotting a typo, completing a task → DO NOT commit
+- Finding uncommitted related changes → DO NOT commit them
+- No exceptions. No bundling. No "while I'm at it". Ask first.
+
+---
+
 # Atta AI — Claude Code Instructions
 
 Atta AI is an ecosystem of AI products built as a Turborepo monorepo. Each product has its own surfaces (web, mobile, MCP) and documentation. Shared infrastructure lives in packages.
@@ -134,6 +146,7 @@ In-depth guides for specific domains. Reference when working in that area.
 | UI Components | [ai/skills/ui-components.md](ai/skills/ui-components.md) | Component usage, CSS variables, theming |
 | UI Library System | [ai/skills/ui-library-system.md](ai/skills/ui-library-system.md) | Build-time generation, runtime switching, adding apps/libraries |
 | CMS Theme | [ai/skills/cms-theme.md](ai/skills/cms-theme.md) | SSR theme loading, fonts, Sanity studios |
+| Branding | [ai/skills/branding.md](ai/skills/branding.md) | Logos, favicons, brand assets, seed script |
 | API Routes | [ai/skills/api-routes.md](ai/skills/api-routes.md) | Route patterns, validation, LLM calls |
 | Database | [ai/skills/database.md](ai/skills/database.md) | Drizzle schema, queries, migrations |
 | Monorepo | [ai/skills/monorepo-structure.md](ai/skills/monorepo-structure.md) | Workspace layout, package imports |

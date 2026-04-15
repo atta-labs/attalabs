@@ -1,3 +1,9 @@
+# ⚠️ ABSOLUTE RULE — NEVER COMMIT WITHOUT EXPLICIT INSTRUCTION
+
+**NEVER run `git commit` unless the user explicitly asked you to commit in this message. No exceptions.**
+
+---
+
 # Git Commit Conventions
 
 **Use this exact format:**
