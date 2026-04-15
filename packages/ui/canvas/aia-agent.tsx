@@ -26,6 +26,17 @@ const AGENT_INDEX: Record<AgentName, number> = {
 
 export type FaceStyle = 'reductive' | 'emblematic'
 
+// Face inset per sphere size — how much to shrink the face relative to the sphere diameter.
+// Larger spheres get a smaller inset (face fills more of the circle).
+// Numeric sizes fall back to the 'md' value.
+const FACE_INSET: Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', string> = {
+  xs: '18%',
+  sm: '15%',
+  md: '12%',
+  lg: '10%',
+  xl: '8%'
+}
+
 interface AIAgentProps {
   /** Agent archetype name — determines color and face illustration. */
   name: AgentName
@@ -45,16 +56,22 @@ interface AIAgentProps {
   showMatrix?: boolean
   /** Matrix rain opacity multiplier. */
   matrixOpacity?: number
+  /** Number of canvas particles requested for this sphere. */
+  particleCount?: number
   /** Render a dark background circle behind the sphere. */
   solidBg?: boolean
   /** Whether the sphere is visible (particles still orbit when false). */
   visible?: boolean
-  /** Optional label below the sphere. Defaults to the agent name. */
+  /** Optional label. Defaults to the agent name. */
   label?: string
+  /** Position of the label relative to the sphere. */
+  labelPosition?: 'top' | 'top-right' | 'right' | 'bottom-right' | 'bottom' | 'bottom-left' | 'left' | 'top-left'
   /** Hide the label entirely. */
   noLabel?: boolean
   onClick?: () => void
   className?: string
+  /** Opacity of the face illustration (0–1). Default 0.25. */
+  faceOpacity?: number
   /** Content rendered inside the sphere, above the face layer. */
   children?: ReactNode
 }
@@ -66,11 +83,14 @@ export function AIAgent({
   state = 'idle',
   id,
   showMatrix,
-  matrixOpacity,
+  matrixOpacity = 0.5,
+  particleCount = 150,
   solidBg,
   visible = true,
   label,
+  labelPosition,
   noLabel = false,
+  faceOpacity = 0.5,
   onClick,
   className,
   children
@@ -79,6 +99,7 @@ export function AIAgent({
   const color = AGENTS[name]?.color ?? 'var(--foreground)'
   const faces = faceStyle === 'reductive' ? REDUCTIVE_FACES : EMBLEMATIC_FACES
   const FaceComponent = faces[index]
+  const faceInset = typeof size === 'string' ? FACE_INSET[size] : FACE_INSET.md
 
   return (
     <AIASphere
@@ -88,13 +109,19 @@ export function AIAgent({
       state={state}
       showMatrix={showMatrix}
       matrixOpacity={matrixOpacity}
+      particleCount={particleCount}
       solidBg={solidBg}
       visible={visible}
       label={noLabel ? undefined : (label ?? name)}
-      face={FaceComponent ? <FaceComponent /> : undefined}
       onClick={onClick}
       className={className}
+      labelPosition={labelPosition}
     >
+      {FaceComponent && (
+        <div className='absolute pointer-events-none z-0' style={{ inset: faceInset, opacity: faceOpacity, color }}>
+          <FaceComponent />
+        </div>
+      )}
       {children}
     </AIASphere>
   )
