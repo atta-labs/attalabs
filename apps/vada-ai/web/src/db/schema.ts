@@ -1,4 +1,4 @@
-import { date, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import { date, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core'
 
 export const sessionStateEnum = pgEnum('session_state', [
   'PENDING',
@@ -76,4 +76,47 @@ export const conclusions = pgTable('conclusions', {
   terminalState: terminalStateEnum('terminal_state').notNull(),
   reviewBy: date('review_by'),
   createdAt: timestamp('created_at').defaultNow().notNull()
+})
+
+// ── Settings ─────────────────────────────────────────────────────────────────
+
+export const userApiKeys = pgTable(
+  'user_api_keys',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .references(() => users.id)
+      .notNull(),
+    provider: varchar('provider').notNull(), // 'anthropic' | 'openai' | 'google' | 'groq' | 'openrouter'
+    encryptedKey: text('encrypted_key').notNull(),
+    keyHint: varchar('key_hint', { length: 12 }), // e.g. "…4zAB" — shown in UI
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull()
+  },
+  (t) => [unique().on(t.userId, t.provider)]
+)
+
+export const userTeamModels = pgTable(
+  'user_team_models',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .references(() => users.id)
+      .notNull(),
+    teamId: varchar('team_id').notNull(), // 'crucible' | 'war_room' | 'sparring'
+    agentRole: varchar('agent_role').notNull(), // role slug e.g. 'strategist'
+    provider: varchar('provider').notNull(),
+    modelId: varchar('model_id').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull()
+  },
+  (t) => [unique().on(t.userId, t.teamId, t.agentRole)]
+)
+
+export const userSettings = pgTable('user_settings', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id),
+  faceStyle: varchar('face_style').default('emblematic').notNull(), // 'reductive' | 'emblematic'
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
 })

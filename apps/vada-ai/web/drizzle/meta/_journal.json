@@ -22,6 +22,13 @@
       "when": 1775915974629,
       "tag": "0002_lazy_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776240375117,
+      "tag": "0003_true_legion",
+      "breakpoints": true
     }
   ]
 }
