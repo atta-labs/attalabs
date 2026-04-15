@@ -69,6 +69,59 @@ export interface CMSLibrary {
   order?: number
 }
 
+export interface CMSBrandingFile {
+  _type: 'file'
+  url?: string
+}
+
+export interface CMSBrandingImage {
+  _type: 'image'
+  url?: string
+}
+
+export interface CMSBrandingFaviconSet {
+  ico?: CMSBrandingFile
+  png16?: CMSBrandingImage
+  png32?: CMSBrandingImage
+  png48?: CMSBrandingImage
+  png64?: CMSBrandingImage
+  png128?: CMSBrandingImage
+  png180?: CMSBrandingImage
+  png192?: CMSBrandingImage
+  png512?: CMSBrandingImage
+  appleTouchIcon?: CMSBrandingImage
+  appIcon180?: CMSBrandingImage
+  appIcon192?: CMSBrandingImage
+  appIcon512?: CMSBrandingImage
+}
+
+export interface CMSBranding {
+  _id: string
+  productId: 'herald' | 'atta' | 'vada' | 'vitakka'
+  productName: string
+  paliRoot?: string
+  paliMeaning?: string
+  tagline?: string
+  bladeDirection?: 'apex-up' | 'apex-down'
+  interiorElement?: string
+  interiorMeaning?: string
+  shapeNotes?: string
+  outlineDescription?: string
+  outlineUseCases?: string
+  outlineMinSizePx?: number
+  solidDescription?: string
+  solidUseCases?: string
+  solidMinSizePx?: number
+  clearSpace?: string
+  forbidden?: string[]
+  logoOutlineLight?: CMSBrandingFile
+  logoOutlineDark?: CMSBrandingFile
+  logoSolidLight?: CMSBrandingFile
+  logoSolidDark?: CMSBrandingFile
+  faviconLight?: CMSBrandingFaviconSet
+  faviconDark?: CMSBrandingFaviconSet
+}
+
 /** Shared shape for Herald, Atta, Vitakka, and Vada CMS singletons */
 export interface PortalUiConfig {
   _id: string

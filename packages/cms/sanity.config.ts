@@ -26,6 +26,9 @@ export default defineConfig({
                   .title('Atta Config')
                   .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
                 S.listItem()
+                  .title('Branding')
+                  .child(S.document().schemaType('branding').documentId('branding-atta').title('Atta Branding')),
+                S.listItem()
                   .title('User Interface')
                   .child(
                     S.list()
@@ -43,6 +46,9 @@ export default defineConfig({
                   S.listItem()
                     .title('Vada Config')
                     .child(S.document().schemaType('vadaConfig').documentId('vadaConfig').title('Vada Config')),
+                  S.listItem()
+                    .title('Branding')
+                    .child(S.document().schemaType('branding').documentId('branding-vada').title('Vada Branding')),
                   S.listItem()
                     .title('User Interface')
                     .child(
@@ -64,6 +70,11 @@ export default defineConfig({
                         S.document().schemaType('vitakkaConfig').documentId('vitakkaConfig').title('Vitakka Config')
                       ),
                     S.listItem()
+                      .title('Branding')
+                      .child(
+                        S.document().schemaType('branding').documentId('branding-vitakka').title('Vitakka Branding')
+                      ),
+                    S.listItem()
                       .title('User Interface')
                       .child(
                         S.list()
@@ -83,16 +94,32 @@ export default defineConfig({
                       .title('Herald Config')
                       .child(S.document().schemaType('heraldConfig').documentId('heraldConfig').title('Herald Config')),
                     S.listItem()
+                      .title('Herald Branding')
+                      .child(
+                        S.document().schemaType('branding').documentId('branding-herald').title('Herald Branding')
+                      ),
+                    S.listItem()
                       .title('Atta Config')
                       .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
+                    S.listItem()
+                      .title('Atta Branding')
+                      .child(S.document().schemaType('branding').documentId('branding-atta').title('Atta Branding')),
                     S.listItem()
                       .title('Vitakka Config')
                       .child(
                         S.document().schemaType('vitakkaConfig').documentId('vitakkaConfig').title('Vitakka Config')
                       ),
                     S.listItem()
+                      .title('Vitakka Branding')
+                      .child(
+                        S.document().schemaType('branding').documentId('branding-vitakka').title('Vitakka Branding')
+                      ),
+                    S.listItem()
                       .title('Vada Config')
                       .child(S.document().schemaType('vadaConfig').documentId('vadaConfig').title('Vada Config')),
+                    S.listItem()
+                      .title('Vada Branding')
+                      .child(S.document().schemaType('branding').documentId('branding-vada').title('Vada Branding')),
                     S.listItem()
                       .title('User Interface')
                       .child(

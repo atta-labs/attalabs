@@ -2,6 +2,7 @@
 
 // Client
 export { cmsClient, cmsConfig, cmsWriteClient, createCmsClient } from './client'
+export { getAttaBranding, getHeraldBranding, getVadaBranding, getVitakkaBranding } from './queries/branding'
 export { getLibraries, getLibraryById } from './queries/library'
 // Queries
 export {
@@ -15,6 +16,10 @@ export { getThemeById, getThemeByName, getThemeList, getThemes } from './queries
 // Types
 export type {
   AttaConfig,
+  CMSBranding,
+  CMSBrandingFaviconSet,
+  CMSBrandingFile,
+  CMSBrandingImage,
   CMSLibrary,
   CMSTheme,
   ColorScheme,

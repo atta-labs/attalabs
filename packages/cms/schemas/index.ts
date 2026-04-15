@@ -1,8 +1,9 @@
 import { attaConfig } from './atta-config'
+import { branding } from './branding'
 import { heraldConfig } from './herald-config'
 import { library } from './library'
 import { uiTheme } from './ui-theme'
 import { vadaConfig } from './vada-config'
 import { vitakkaConfig } from './vitakka-config'
 
-export const schemaTypes = [uiTheme, library, heraldConfig, attaConfig, vitakkaConfig, vadaConfig]
+export const schemaTypes = [uiTheme, library, branding, heraldConfig, attaConfig, vitakkaConfig, vadaConfig]
