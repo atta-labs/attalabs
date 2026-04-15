@@ -2,57 +2,9 @@
 
 import { Heading, Text } from '@atta/ui/shared'
 import { Separator } from '@atta/ui'
-import { AIACanvas, AIASphere } from '@atta/ui/canvas'
-import { AGENT_COLOR_BY_ROLE } from '@/lib/agent-theme'
+import { AIACanvas, AIASphere, AGENT_LIST } from '@atta/ui/canvas'
 import Link from 'next/link'
 import { useId } from 'react'
-
-const AGENTS = [
-  {
-    role: 'strategist',
-    name: 'The Strategist',
-    function: 'Maps the landscape, governs deliberation trajectory',
-    role_desc:
-      'Identifies the Grand Objective and ensures all sub-threads serve the terminal goal of resolving the core inquiry',
-    voice: 'Measured, prescriptive, and teleological. Speaks in frameworks and milestones.'
-  },
-  {
-    role: 'critic',
-    name: 'The Critic',
-    function: 'Analytical interrogation of premises and logical consistency',
-    role_desc: 'Detects fallacies and demands empirical grounding for every assertion made in the room',
-    voice: 'Sparse and clinical. Values brevity and precision, often responding with targeted, reductive questions.'
-  },
-  {
-    role: 'devils_advocate',
-    name: "The Devil's Advocate",
-    function: 'Mandatory contrarian perspective generation',
-    role_desc:
-      'Prevents early consensus by identifying counter-arguments and unexplored failure modes in every position',
-    voice: "Provocative and speculative. Uses 'What if' scenarios to dismantle comfortable assumptions."
-  },
-  {
-    role: 'synthesizer',
-    name: 'The Synthesizer',
-    function: 'Reconciles contradictions between competing arguments',
-    role_desc: 'Weaves disparate viewpoints into a cohesive, actionable narrative for the final conclusion',
-    voice: 'Harmonious and narrative. Excels at summarizing progress and identifying convergence.'
-  },
-  {
-    role: 'researcher',
-    name: 'The Researcher',
-    function: 'External knowledge validation and context grounding',
-    role_desc: 'Supplies citations, historical precedents, and scientific literature to anchor claims in evidence',
-    voice: 'Informative and dense. Speaks in bibliographies and case studies.'
-  },
-  {
-    role: 'operator',
-    name: 'The Operator',
-    function: 'Translates theory into actionable, executable outputs',
-    role_desc: 'Handles formatting, implementation clarity, and practical execution planning',
-    voice: 'Functional and direct. Prioritizes utility over philosophy.'
-  }
-]
 
 function AgentsScene() {
   const baseId = useId()
@@ -75,8 +27,7 @@ function AgentsScene() {
 
       {/* Agent cards */}
       <div className='space-y-6'>
-        {AGENTS.map((agent) => {
-          const color = AGENT_COLOR_BY_ROLE[agent.role] ?? 'var(--foreground)'
+        {AGENT_LIST.map((agent) => {
           const sphereId = `${baseId}-agent-${agent.role}`
           return (
             <div key={agent.role} className='rounded-lg border border-border/20 bg-card/30 p-6 space-y-4'>
@@ -85,11 +36,11 @@ function AgentsScene() {
                 <AIASphere
                   id={sphereId}
                   size='md'
-                  color={color}
+                  color={agent.color}
                   state='speaking'
                   showMatrix
                   matrixOpacity={0.6}
-                  label={agent.name}
+                  label={agent.displayName}
                   labelPosition='right'
                 />
               </div>
@@ -109,7 +60,7 @@ function AgentsScene() {
                     Role
                   </Text>
                   <Text as='p' size='sm' className='leading-relaxed text-foreground/80'>
-                    {agent.role_desc}
+                    {agent.roleDesc}
                   </Text>
                 </div>
 

@@ -1,4 +1,4 @@
-// Shared agent colors live in @/lib/agent-theme — re-exported here for local imports.
+// Deliberation-specific constants. Agent definitions live in @/lib/agent-theme.
 export { AGENT_THEME, AGENT_COLOR_BY_ROLE, AGENT_SPHERE_COLORS } from '@/lib/agent-theme'
 
 export const ROUND_TITLES: Record<number, string> = {

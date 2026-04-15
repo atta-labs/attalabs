@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { AIARing, AIASphere, useAIAContext } from '@atta/ui/canvas'
+import { AIARing, AIASphere, useAIAContext, AGENT_COLOR_BY_ROLE } from '@atta/ui/canvas'
 import { getAgentConfigByName } from '@/schemas'
 import { CenterViewport } from './CenterViewport'
 
@@ -12,15 +12,6 @@ function getLabelPosition(index: number, total: number): 'top' | 'right' | 'bott
   const y = Math.sin(angle)
   if (Math.abs(y) >= Math.abs(x)) return y < 0 ? 'top' : 'bottom'
   return x > 0 ? 'right' : 'left'
-}
-
-const AGENT_COLORS: Record<string, string> = {
-  strategist: '#4A9EDB',
-  critic: '#DB4A4A',
-  devils_advocate: '#9B59B6',
-  synthesizer: '#C8A84B',
-  researcher: '#4ADB7F',
-  operator: '#DB9B4A'
 }
 
 interface RoundViewProps {
@@ -106,7 +97,7 @@ export function RoundView({
               id={agent.name}
               label={agent.name}
               labelPosition={getLabelPosition(i, agents.length)}
-              color={AGENT_COLORS[agent.role] ?? 'var(--accent)'}
+              color={AGENT_COLOR_BY_ROLE[agent.role] ?? 'var(--accent)'}
               size='lg'
               state={
                 activeAgent === agent.name

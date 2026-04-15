@@ -1,18 +1,10 @@
 'use client'
 
-import { AIASphere } from '@atta/ui/canvas'
+import { AIASphere, AGENT_COLOR_BY_ROLE } from '@atta/ui/canvas'
 import type { DeliberationMessage, StreamingMessage } from './useDeliberation'
 
-// Used only for the canvas particle system (AIASphere color prop).
-// All DOM styling uses var(--agent-color) inherited from [data-agent] CSS rules.
-export const AGENT_COLORS: Record<string, string> = {
-  strategist: 'var(--agent-strategist)',
-  critic: 'var(--agent-critic)',
-  devils_advocate: 'var(--agent-devils-advocate)',
-  synthesizer: 'var(--agent-synthesizer)',
-  researcher: 'var(--agent-researcher)',
-  operator: 'var(--agent-operator)'
-}
+// Re-export for RoundView which imports AGENT_COLORS from here.
+export const AGENT_COLORS = AGENT_COLOR_BY_ROLE
 
 interface MessageCardProps {
   message: DeliberationMessage | StreamingMessage

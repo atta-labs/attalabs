@@ -1,4 +1,15 @@
 export { AIACanvas, type AIACanvasRef } from './aia-canvas'
+export { AIAgent, type FaceStyle } from './aia-agent'
+export {
+  AGENTS,
+  AGENT_LIST,
+  AGENT_THEME,
+  AGENT_COLOR_BY_ROLE,
+  AGENT_SPHERE_COLORS,
+  type AgentName,
+  type AgentRole,
+  type AgentDef
+} from '@atta/agents'
 export { AIASphere } from './aia-sphere'
 export { useAIASphere } from './useAIASphere'
 export { AIARing } from './aia-ring'

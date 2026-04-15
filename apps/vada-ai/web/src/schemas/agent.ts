@@ -1,6 +1,9 @@
 import { z } from 'zod'
+import { AGENTS, AGENT_LIST } from '@atta/agents'
 
-export const AgentRole = z.enum(['strategist', 'critic', 'devils_advocate', 'synthesizer', 'researcher', 'operator'])
+// Derive role slugs from @atta/agents — single source of truth.
+const agentRoleValues = AGENT_LIST.map((a) => a.role) as [string, ...string[]]
+export const AgentRole = z.enum(agentRoleValues)
 export type AgentRole = z.infer<typeof AgentRole>
 
 export interface AgentConfig {
@@ -9,16 +12,17 @@ export interface AgentConfig {
   temperature: number
 }
 
+// temperature is engine config — not part of agent identity.
 export const DEFAULT_ROOM: AgentConfig[] = [
-  { role: 'strategist', name: 'Strategist', temperature: 0.7 },
-  { role: 'critic', name: 'Critic', temperature: 0.7 },
-  { role: 'devils_advocate', name: "Devil's Advocate", temperature: 0.7 },
-  { role: 'synthesizer', name: 'Synthesizer', temperature: 0.5 }
+  { role: AGENTS.Strategist.role, name: AGENTS.Strategist.name, temperature: 0.7 },
+  { role: AGENTS.Critic.role, name: AGENTS.Critic.name, temperature: 0.7 },
+  { role: AGENTS["Devil's Advocate"].role, name: AGENTS["Devil's Advocate"].name, temperature: 0.7 },
+  { role: AGENTS.Synthesizer.role, name: AGENTS.Synthesizer.name, temperature: 0.5 }
 ]
 
 export const OPTIONAL_AGENTS: AgentConfig[] = [
-  { role: 'researcher', name: 'Researcher', temperature: 0.7 },
-  { role: 'operator', name: 'Operator', temperature: 0.7 }
+  { role: AGENTS.Researcher.role, name: AGENTS.Researcher.name, temperature: 0.7 },
+  { role: AGENTS.Operator.role, name: AGENTS.Operator.name, temperature: 0.7 }
 ]
 
 export const ALL_AGENTS: AgentConfig[] = [...DEFAULT_ROOM, ...OPTIONAL_AGENTS]
@@ -64,8 +68,8 @@ export const PRESETS: Preset[] = [
     name: 'The Sparring Match',
     subtitle: 'Fast, adversarial friction. No formal conclusion.',
     agents: [
-      { role: 'strategist', name: 'Strategist', temperature: 0.7 },
-      { role: 'critic', name: 'Critic', temperature: 0.7 }
+      { role: AGENTS.Strategist.role, name: AGENTS.Strategist.name, temperature: 0.7 },
+      { role: AGENTS.Critic.role, name: AGENTS.Critic.name, temperature: 0.7 }
     ]
   }
 ]

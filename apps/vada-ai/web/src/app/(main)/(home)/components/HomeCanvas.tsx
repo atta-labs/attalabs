@@ -1,14 +1,15 @@
 'use client'
 
 import { AgentThinkingText } from '@atta/ui'
-import { AGENT_FACES_FULL, AIACanvas, AIARing, AIASphere, useAIAContext } from '@atta/ui/canvas'
+import { AIAgent, AIACanvas, AIARing, useAIAContext, type AgentName } from '@atta/ui/canvas'
 import { type ReactNode, useEffect } from 'react'
-import { AGENT_SPHERE_COLORS } from '@/lib/agent-theme'
 import { useHomeCanvas } from './useHomeCanvas'
 
 interface HomeCanvasProps {
   render: (state: { animationStarted: boolean; animationComplete: boolean }) => ReactNode
 }
+
+const AGENTS: AgentName[] = ['Strategist', 'Critic', "Devil's Advocate", 'Synthesizer', 'Researcher', 'Operator']
 
 const SPHERE_IDS = ['s1', 's2', 's3', 's4', 's5', 's6'] as const
 const SPHERE_PHRASES = ['Framing...', 'Risks?', 'Counter...', 'Patterns...', 'Data...', 'Synthesis...']
@@ -41,7 +42,6 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
         orbit={SPHERE_IDS.map((id, i) => {
           const revealed = revealedCount > i
           const showMatrix = activeAgent === id || isTouched(i)
-          const FaceComponent = AGENT_FACES_FULL[i]
           return (
             <div
               key={id}
@@ -51,16 +51,17 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
                 transition: 'opacity 500ms ease-in, transform 500ms ease-out'
               }}
             >
-              <AIASphere
+              <AIAgent
                 id={id}
+                name={AGENTS[i]!}
+                faceStyle='emblematic'
                 size='xl'
-                color={AGENT_SPHERE_COLORS[i]}
                 state={getSphereState(id, i)}
                 showMatrix={showMatrix}
                 matrixOpacity={0.3}
                 solidBg={revealed}
                 visible={revealed}
-                face={revealed && FaceComponent ? <FaceComponent /> : undefined}
+                noLabel
               >
                 {showMatrix && (
                   <AgentThinkingText
@@ -68,7 +69,7 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
                     className='text-[8px] text-center leading-tight opacity-80'
                   />
                 )}
-              </AIASphere>
+              </AIAgent>
             </div>
           )
         })}
