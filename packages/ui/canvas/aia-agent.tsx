@@ -99,7 +99,8 @@ export function AIAgent({
   const color = AGENTS[name]?.color ?? 'var(--foreground)'
   const faces = faceStyle === 'reductive' ? REDUCTIVE_FACES : EMBLEMATIC_FACES
   const FaceComponent = faces[index]
-  const faceInset = typeof size === 'string' ? FACE_INSET[size] : FACE_INSET.md
+  const faceInset =
+    typeof size === 'string' ? FACE_INSET[size] : `${Math.round(Math.max(4, Math.min(20, 20 - size / 10)))}%`
 
   return (
     <AIASphere

@@ -27,7 +27,7 @@ export interface ModelOption {
 export const MODEL_OPTIONS: ModelOption[] = [
   { provider: 'groq', modelId: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B — Groq', keyPrefix: 'gsk_' },
   { provider: 'google', modelId: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash — Google', keyPrefix: 'AIza' },
-  { provider: 'anthropic', modelId: 'claude-sonnet-4-5', label: 'Claude Sonnet — Anthropic', keyPrefix: 'sk-ant-' },
+  { provider: 'anthropic', modelId: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6 — Anthropic', keyPrefix: 'sk-ant-' },
   {
     provider: 'openrouter',
     modelId: 'meta-llama/llama-3.3-70b-instruct:free',

@@ -11,6 +11,6 @@ export interface ModelConfig {
 export const DEFAULT_MODEL_IDS: Record<Provider, string> = {
   groq: 'llama-3.3-70b-versatile',
   google: 'gemini-2.0-flash',
-  anthropic: 'claude-sonnet-4-5',
+  anthropic: 'claude-sonnet-4-6',
   openrouter: 'meta-llama/llama-3.3-70b-instruct:free'
 }
