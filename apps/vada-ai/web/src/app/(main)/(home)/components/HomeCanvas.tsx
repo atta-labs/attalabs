@@ -1,7 +1,7 @@
 'use client'
 
 import { AgentThinkingText } from '@atta/ui'
-import { AIACanvas, AIARing, AIASphere, useAIAContext } from '@atta/ui/canvas'
+import { AGENT_FACES_FULL, AIACanvas, AIARing, AIASphere, useAIAContext } from '@atta/ui/canvas'
 import { type ReactNode, useEffect } from 'react'
 import { AGENT_SPHERE_COLORS } from '@/lib/agent-theme'
 import { useHomeCanvas } from './useHomeCanvas'
@@ -41,6 +41,7 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
         orbit={SPHERE_IDS.map((id, i) => {
           const revealed = revealedCount > i
           const showMatrix = activeAgent === id || isTouched(i)
+          const FaceComponent = AGENT_FACES_FULL[i]
           return (
             <div
               key={id}
@@ -59,6 +60,7 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
                 matrixOpacity={0.3}
                 solidBg={revealed}
                 visible={revealed}
+                face={revealed && FaceComponent ? <FaceComponent /> : undefined}
               >
                 {showMatrix && (
                   <AgentThinkingText
