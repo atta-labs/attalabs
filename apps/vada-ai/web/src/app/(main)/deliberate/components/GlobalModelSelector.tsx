@@ -47,13 +47,35 @@ export type PerAgentModelMap = Record<string, ModelSelection>
 interface GlobalModelSelectorProps {
   value: ModelSelection | null
   onChange: (v: ModelSelection | null) => void
+  settingsProviders?: string[]
+  initialTeamModels?: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
+  selectedPresetId?: string
 }
 
-export function GlobalModelSelector({ value, onChange }: GlobalModelSelectorProps) {
+export function GlobalModelSelector({
+  value,
+  onChange,
+  settingsProviders = [],
+  initialTeamModels = [],
+  selectedPresetId
+}: GlobalModelSelectorProps) {
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({})
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
+    // On mount: seed from settings for the initial preset
+    if (selectedPresetId && initialTeamModels.length > 0) {
+      const entry = initialTeamModels.find((m) => m.teamId === selectedPresetId)
+      if (entry) {
+        onChange({
+          provider: entry.provider as Provider,
+          modelId: entry.modelId,
+          apiKey: getStoredApiKey(entry.provider) ?? ''
+        })
+        return
+      }
+    }
+    // Fall back to localStorage (existing behavior)
     const stored: Record<string, string> = {}
     for (const m of MODEL_OPTIONS) {
       const key = getStoredApiKey(m.provider)
@@ -66,10 +88,22 @@ export function GlobalModelSelector({ value, onChange }: GlobalModelSelectorProp
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When preset changes, re-seed from settings for the new preset
+  useEffect(() => {
+    if (!selectedPresetId || !initialTeamModels.length) return
+    const entry = initialTeamModels.find((m) => m.teamId === selectedPresetId)
+    if (!entry) return
+    onChange({
+      provider: entry.provider as Provider,
+      modelId: entry.modelId,
+      apiKey: getStoredApiKey(entry.provider) ?? ''
+    })
+  }, [selectedPresetId]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSelect = (opt: ModelOption) => {
     const apiKey = getStoredApiKey(opt.provider) ?? ''
     onChange({ provider: opt.provider, modelId: opt.modelId, apiKey })
-    if (apiKey) setOpen(false)
+    if (apiKey || settingsProviders.includes(opt.provider)) setOpen(false)
   }
 
   const handleKeyChange = (provider: Provider, key: string) => {
@@ -82,7 +116,7 @@ export function GlobalModelSelector({ value, onChange }: GlobalModelSelectorProp
   const displayName = selectedOption
     ? (selectedOption.label.split('—')[0]?.trim().toUpperCase() ?? 'SELECT MODEL')
     : 'SELECT MODEL'
-  const needsKey = value && !getStoredApiKey(value.provider)
+  const needsKey = value && !getStoredApiKey(value.provider) && !settingsProviders.includes(value.provider)
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>

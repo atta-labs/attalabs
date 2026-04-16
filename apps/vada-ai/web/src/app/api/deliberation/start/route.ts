@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
 import { getOrCreateUser, getDailySessionCount, createSession } from '@/db/queries'
+import { getDecryptedApiKey } from '@/db/settings-queries'
 import { DAILY_SESSION_LIMIT, DEFAULT_ROOM } from '@/schemas'
 import { storeEphemeralKey, storeEphemeralProviderKey } from '@/engine/pending-keys'
 import { validateModelConfig } from '@/engine/agents'
@@ -45,9 +46,25 @@ export async function POST(request: Request) {
 
   const agents = parsed.data.agents ?? DEFAULT_ROOM.map((a) => a.role)
 
+  // Fill missing API keys from DB settings if not provided in request body
+  let resolvedApiKey = parsed.data.apiKey
+  if (!resolvedApiKey && parsed.data.provider) {
+    resolvedApiKey = (await getDecryptedApiKey(user.id, parsed.data.provider)) ?? undefined
+  }
+
+  const resolvedApiKeys: Record<string, string> = { ...(parsed.data.apiKeys ?? {}) }
+  if (parsed.data.agentModels) {
+    for (const cfg of Object.values(parsed.data.agentModels)) {
+      if (!resolvedApiKeys[cfg.provider]) {
+        const key = await getDecryptedApiKey(user.id, cfg.provider)
+        if (key) resolvedApiKeys[cfg.provider] = key
+      }
+    }
+  }
+
   // Validate LLM connectivity before creating the session.
   // Per-agent mode validates each unique provider; global mode validates single config.
-  if (parsed.data.agentModels && parsed.data.apiKeys) {
+  if (parsed.data.agentModels && Object.keys(resolvedApiKeys).length > 0) {
     const seen = new Set<string>()
     for (const cfg of Object.values(parsed.data.agentModels)) {
       if (seen.has(cfg.provider)) continue
@@ -55,7 +72,7 @@ export async function POST(request: Request) {
       const validation = await validateModelConfig({
         provider: cfg.provider,
         modelId: cfg.modelId,
-        apiKey: parsed.data.apiKeys[cfg.provider]
+        apiKey: resolvedApiKeys[cfg.provider]
       })
       if (!validation.ok) {
         return NextResponse.json({ error: validation.error }, { status: 503 })
@@ -68,7 +85,7 @@ export async function POST(request: Request) {
         (process.env.DEFAULT_PROVIDER as 'groq' | 'google' | 'anthropic' | 'openrouter') ??
         'groq',
       modelId: parsed.data.modelId ?? process.env.DEFAULT_MODEL_ID ?? 'llama-3.3-70b-versatile',
-      ...(parsed.data.apiKey ? { apiKey: parsed.data.apiKey } : {})
+      ...(resolvedApiKey ? { apiKey: resolvedApiKey } : {})
     }
     const validation = await validateModelConfig(globalModelConfig)
     if (!validation.ok) {
@@ -85,11 +102,11 @@ export async function POST(request: Request) {
     parsed.data.agentModels
   )
 
-  if (parsed.data.apiKey) {
-    storeEphemeralKey(session.id, parsed.data.apiKey)
+  if (resolvedApiKey) {
+    storeEphemeralKey(session.id, resolvedApiKey)
   }
-  if (parsed.data.apiKeys) {
-    for (const [provider, key] of Object.entries(parsed.data.apiKeys)) {
+  if (Object.keys(resolvedApiKeys).length > 0) {
+    for (const [provider, key] of Object.entries(resolvedApiKeys)) {
       storeEphemeralProviderKey(session.id, provider, key)
     }
   }
