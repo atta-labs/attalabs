@@ -1,10 +1,35 @@
 'use client'
 
 import { AIAgent, AIACanvas, AIARing, useAIAContext, type AgentName } from '@atta/ui/canvas'
-import { type ReactNode, useEffect, useRef } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useHomeCanvas } from './useHomeCanvas'
 import { useSphereAbsorb } from './useSphereAbsorb'
 import { useUserPreferences } from '@/lib/user-preferences-context'
+
+const MAX_RING = 600
+const SPHERE_RATIO = 128 / 600
+const MIN_SPHERE = 48
+
+function useResponsiveRingSize() {
+  const [dims, setDims] = useState({ ringSize: MAX_RING, sphereSize: 128, sphereRadius: 64 })
+  useEffect(() => {
+    const compute = () => {
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const ringSize = Math.min(MAX_RING, Math.floor(Math.min(vw * 0.85, vh * 0.7)))
+      const sphereSize = Math.max(MIN_SPHERE, Math.round(ringSize * SPHERE_RATIO))
+      setDims({ ringSize, sphereSize, sphereRadius: Math.round(sphereSize / 2) })
+    }
+    compute()
+    window.addEventListener('resize', compute)
+    window.addEventListener('orientationchange', compute)
+    return () => {
+      window.removeEventListener('resize', compute)
+      window.removeEventListener('orientationchange', compute)
+    }
+  }, [])
+  return dims
+}
 
 interface HomeCanvasProps {
   render: (state: { animationStarted: boolean; animationComplete: boolean }) => ReactNode
@@ -26,6 +51,7 @@ function HomeCanvasInner({ render, registerSphere, onOriginCompleteRef }: HomeCa
     useHomeCanvas(onOriginCompleteRef)
   const ctx = useAIAContext()
   const { faceStyle } = useUserPreferences()
+  const { ringSize, sphereSize, sphereRadius } = useResponsiveRingSize()
 
   const isTouched = (index: number) => activeStep > index
   const getSphereState = (id: string, index: number) => {
@@ -42,10 +68,10 @@ function HomeCanvasInner({ render, registerSphere, onOriginCompleteRef }: HomeCa
   return (
     <div className='relative flex h-dvh w-full items-center justify-center overflow-hidden'>
       <AIARing
-        size={600}
+        size={ringSize}
         activeStep={activeStep}
         thinking={animationComplete}
-        sphereRadius={60}
+        sphereRadius={sphereRadius}
         matrixOpacity={0.2}
         orbit={SPHERE_IDS.map((id, i) => {
           const revealed = revealedCount > i
@@ -64,7 +90,7 @@ function HomeCanvasInner({ render, registerSphere, onOriginCompleteRef }: HomeCa
                 id={id}
                 name={AGENTS[i]!}
                 faceStyle={faceStyle}
-                size='xl'
+                size={sphereSize}
                 state={getSphereState(id, i)}
                 showMatrix={showMatrix}
                 thinkingText={SPHERE_PHRASES[i] ?? '...'}
