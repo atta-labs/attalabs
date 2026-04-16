@@ -1,10 +1,7 @@
 'use client'
 
-import { AIASphere, AGENT_COLOR_BY_ROLE } from '@atta/ui/canvas'
+import { AIAgent, AGENT_BY_ROLE, type AgentName } from '@atta/ui/canvas'
 import type { DeliberationMessage, StreamingMessage } from './useDeliberation'
-
-// Re-export for RoundView which imports AGENT_COLORS from here.
-export const AGENT_COLORS = AGENT_COLOR_BY_ROLE
 
 interface MessageCardProps {
   message: DeliberationMessage | StreamingMessage
@@ -21,18 +18,20 @@ export function MessageCard({
   spherePosition = 'bottom',
   onReplyClick
 }: MessageCardProps) {
-  const agentColor = AGENT_COLORS[message.agentRole] ?? 'var(--accent)'
+  const agentName = (AGENT_BY_ROLE[message.agentRole]?.name ?? message.agentRole) as AgentName
   const sphereState = isStreaming ? 'speaking' : 'complete'
   const roleLabel = message.agentRole.replace('_', ' ')
 
   const sphere = (
     <div className='flex justify-center py-2'>
-      <AIASphere
+      <AIAgent
         id={'id' in message ? message.id : `streaming-${message.agentRole}`}
+        name={agentName}
+        faceStyle='reductive'
         state={sphereState}
-        color={agentColor}
         size='lg'
         showMatrix
+        noLabel
       >
         {/* Ping ring — expands outward while agent is speaking */}
         {isStreaming && (
@@ -45,7 +44,7 @@ export function MessageCard({
             ${sphereState === 'complete' ? 'opacity-75' : 'opacity-100'}
           `}
         />
-      </AIASphere>
+      </AIAgent>
     </div>
   )
 

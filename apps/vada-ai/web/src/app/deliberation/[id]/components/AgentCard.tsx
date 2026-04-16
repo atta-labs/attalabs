@@ -1,8 +1,8 @@
 'use client'
 
 import { useId } from 'react'
-import { AIASphere } from '@atta/ui/canvas'
-import { AGENT_THEME } from './agent-theme'
+import { AIAgent, type AgentName } from '@atta/ui/canvas'
+import { useUserPreferences } from '@/lib/user-preferences-context'
 
 interface AgentCardProps {
   agent: string
@@ -14,19 +14,19 @@ interface AgentCardProps {
 
 export function AgentCard({ agent, content, target, isStreaming = false }: AgentCardProps) {
   const sphereId = useId()
-  const theme = AGENT_THEME[agent] ?? { color: 'hsl(var(--muted-foreground))', label: '' }
+  const { faceStyle } = useUserPreferences()
 
   return (
     <div className='flex gap-4'>
       <div className='flex shrink-0 flex-col items-center'>
         <div className='rounded-full'>
-          <AIASphere
+          <AIAgent
             id={sphereId}
-            size={70}
-            color={theme.color}
+            name={agent as AgentName}
+            faceStyle={faceStyle}
+            size='lg'
             state='speaking'
-            showMatrix={true}
-            particleCount={30}
+            showMatrix
             label={agent}
             labelPosition='bottom'
           />
@@ -35,7 +35,6 @@ export function AgentCard({ agent, content, target, isStreaming = false }: Agent
 
       <div className='min-w-0 flex-1'>
         <div className='rounded-lg border border-border bg-card px-4 py-3.5'>
-          {/* Target inside the card — no gap between wave and card edge */}
           {target && (
             <div className='mb-2'>
               <span className='text-[10px] italic text-muted-foreground/50'>→ replying to {target}</span>

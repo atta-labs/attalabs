@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { AIARing, AIASphere, useAIAContext, AGENT_COLOR_BY_ROLE } from '@atta/ui/canvas'
+import { AIARing, AIAgent, useAIAContext, type AgentName } from '@atta/ui/canvas'
 import { getAgentConfigByName } from '@/schemas'
 import { CenterViewport } from './CenterViewport'
 
@@ -92,12 +92,13 @@ export function RoundView({
           activeStep={activeStep}
           thinking={isLive}
           orbit={agents.map((agent, i) => (
-            <AIASphere
+            <AIAgent
               key={agent.role}
               id={agent.name}
+              name={agent.name as AgentName}
+              faceStyle='emblematic'
               label={agent.name}
               labelPosition={getLabelPosition(i, agents.length)}
-              color={AGENT_COLOR_BY_ROLE[agent.role] ?? 'var(--accent)'}
               size='lg'
               state={
                 activeAgent === agent.name
