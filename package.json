@@ -4,7 +4,8 @@
   "packageManager": "bun@1.2.4",
   "workspaces": [
     "apps/*/*",
-    "packages/*"
+    "packages/*",
+    "tools/*"
   ],
   "scripts": {
     "validate:ui-contract": "node scripts/validate-ui-contract.mjs",
@@ -13,6 +14,7 @@
     "dev:vitakka": "node scripts/validate-ui-contract.mjs && turbo dev --filter=@atta/vitakka-ai-web",
     "dev:vada": "node scripts/validate-ui-contract.mjs && turbo dev --filter=@atta/vada-ai-web",
     "dev:atta": "node scripts/validate-ui-contract.mjs && turbo dev --filter=@atta/atta-ai-web",
+    "dev:admin": "turbo dev --filter=@atta/admin",
     "build": "node scripts/validate-ui-contract.mjs && turbo build",
     "build:herald": "node scripts/validate-ui-contract.mjs && turbo build --filter=@atta/herald-ai-web",
     "build:vitakka": "node scripts/validate-ui-contract.mjs && turbo build --filter=@atta/vitakka-ai-web",

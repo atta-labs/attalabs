@@ -36,7 +36,7 @@ export default async function DeliberationLayout({ children }: { children: React
       <StickyHeaderTopBar isBlurred={true} className='z-40'>
         <UserTopBar logo={logo} />
       </StickyHeaderTopBar>
-      {children}
+      <main className='min-h-0 flex-1'>{children}</main>
     </UserPreferencesProvider>
   )
 }

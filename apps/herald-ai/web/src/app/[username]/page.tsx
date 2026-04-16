@@ -2,23 +2,14 @@ import type { ColorScheme } from '@atta/cms'
 import { cmsClient, generateThemeCSSForScheme, getThemeById } from '@atta/cms'
 import { notFound } from 'next/navigation'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
-import { EnvoyFooter } from '@/components/envoy/EnvoyFooter'
 import type { UILibrary } from '@atta/ui/lib/library-loader'
 import { LibraryProvider } from '@atta/ui/lib/library-provider'
 import { PreviewThemeListener } from '@/components/theme/PreviewThemeListener'
 import { getUserByUsername } from '@/db/queries'
 import { getGoogleFontsUrl } from '@atta/cms'
 
-export default async function EnvoyPage({
-  params,
-  searchParams
-}: {
-  params: Promise<{ username: string }>
-  searchParams: Promise<Record<string, string | undefined>>
-}) {
+export default async function EnvoyPage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params
-  const { preview } = await searchParams
-  const isPreview = preview === 'true'
 
   const user = await getUserByUsername(username)
   if (!user) notFound()
@@ -73,12 +64,7 @@ export default async function EnvoyPage({
       {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
       <PreviewThemeListener />
       <LibraryProvider library={userLibrary}>
-        <div className='flex min-h-screen flex-col'>
-          <div className='flex-1'>
-            <EnvoyFlow profile={profile} />
-          </div>
-          {!isPreview && <EnvoyFooter />}
-        </div>
+        <EnvoyFlow profile={profile} />
       </LibraryProvider>
     </>
   )

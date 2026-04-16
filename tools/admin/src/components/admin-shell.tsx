@@ -1,0 +1,34 @@
+'use client'
+
+import type { ReactNode } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+
+interface AdminShellProps {
+  children: ReactNode
+}
+
+export function AdminShell({ children }: AdminShellProps) {
+  const pathname = usePathname()
+
+  return (
+    <div className='flex h-screen flex-col'>
+      <header className='flex h-12 shrink-0 items-center gap-6 border-b border-border bg-card px-4'>
+        <span className='font-mono text-sm text-muted-foreground'>tools/admin</span>
+        <nav className='flex items-center gap-1'>
+          <Link
+            href='/themes'
+            className={`rounded px-2.5 py-1 font-mono text-xs transition-colors ${
+              pathname.startsWith('/themes')
+                ? 'bg-foreground/10 text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Themes
+          </Link>
+        </nav>
+      </header>
+      <main className='flex-1 overflow-hidden'>{children}</main>
+    </div>
+  )
+}

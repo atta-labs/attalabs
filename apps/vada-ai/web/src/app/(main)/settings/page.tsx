@@ -17,7 +17,7 @@ export default async function SettingsPage() {
   ])
 
   return (
-    <main className='px-6 py-4'>
+    <div className='px-6 py-4'>
       <div className='mx-auto w-full max-w-2xl space-y-6'>
         <div className='space-y-2'>
           <span className='font-mono text-xs text-muted-foreground'>Configuration</span>
@@ -35,6 +35,6 @@ export default async function SettingsPage() {
           initialFaceStyle={settings.faceStyle}
         />
       </div>
-    </main>
+    </div>
   )
 }

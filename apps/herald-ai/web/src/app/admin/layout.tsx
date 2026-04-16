@@ -11,13 +11,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   // If no user yet (pre-onboarding), render children without topbar
   if (!user?.onboardingComplete) {
-    return <div className='h-screen'>{children}</div>
+    return <main className='h-screen'>{children}</main>
   }
 
   return (
     <div className='flex h-screen flex-col'>
       <AdminTopBar username={user.username} />
-      <div className='flex-1 overflow-hidden'>{children}</div>
+      <main className='flex-1 overflow-hidden'>{children}</main>
     </div>
   )
 }
