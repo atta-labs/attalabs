@@ -73,12 +73,10 @@ export default async function EnvoyPage({
       {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
       <PreviewThemeListener />
       <LibraryProvider library={userLibrary}>
-        <div className='flex min-h-screen flex-col'>
-          <div className='flex-1'>
-            <EnvoyFlow profile={profile} />
-          </div>
-          {!isPreview && <EnvoyFooter />}
-        </div>
+        <main className='flex-1'>
+          <EnvoyFlow profile={profile} />
+        </main>
+        {!isPreview && <EnvoyFooter />}
       </LibraryProvider>
     </>
   )
