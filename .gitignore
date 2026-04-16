@@ -47,3 +47,4 @@ bun.lock
 next-env.d.ts
 .aider*
 .superpowers/
+.worktrees/
