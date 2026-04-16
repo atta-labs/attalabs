@@ -3,13 +3,22 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Palette, Brush, Library } from 'lucide-react'
 import { Button } from '@atta/ui/components/button'
-import { cn } from '@atta/ui/lib/utils'
+import {
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider
+} from '@atta/ui'
 
 const navItems = [
-  { label: 'Themes', href: '/themes', disabled: false },
-  { label: 'Branding', href: '#', disabled: true },
-  { label: 'Libraries', href: '#', disabled: true }
+  { label: 'Themes', href: '/themes', icon: Palette, disabled: false },
+  { label: 'Branding', href: '#', icon: Brush, disabled: true },
+  { label: 'Libraries', href: '#', icon: Library, disabled: true }
 ] as const
 
 interface AdminShellProps {
@@ -32,32 +41,29 @@ export function AdminShell({ children }: AdminShellProps) {
       {/* Body */}
       <div className='flex flex-1 overflow-hidden'>
         {/* Left sidebar */}
-        <nav className='flex w-56 shrink-0 flex-col border-r border-border bg-card'>
-          {navItems.map((item) => {
-            const isActive = !item.disabled && pathname.startsWith(item.href)
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(item.disabled && 'pointer-events-none')}
-                tabIndex={item.disabled ? -1 : undefined}
-                aria-disabled={item.disabled}
-              >
-                <Button
-                  variant='ghost'
-                  className={cn(
-                    'w-full justify-start rounded-none',
-                    isActive && 'bg-accent text-accent-foreground',
-                    item.disabled && 'text-muted-foreground'
-                  )}
-                  disabled={item.disabled}
-                >
-                  {item.label}
-                </Button>
-              </Link>
-            )
-          })}
-        </nav>
+        <SidebarProvider className='h-full w-56 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'>
+          <SidebarContent className='px-2 py-4'>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu className='gap-1'>
+                  {navItems.map(({ label, href, icon: Icon, disabled }) => (
+                    <SidebarMenuItem key={label}>
+                      <SidebarMenuButton
+                        size='sm'
+                        isActive={!disabled && pathname.startsWith(href)}
+                        disabled={disabled}
+                        render={disabled ? <span /> : <Link href={href} />}
+                      >
+                        <Icon className='shrink-0' />
+                        <span>{label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </SidebarProvider>
 
         {/* Main content */}
         <main className='flex-1 overflow-auto'>{children}</main>
