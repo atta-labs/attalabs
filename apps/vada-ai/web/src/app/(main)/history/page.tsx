@@ -13,7 +13,7 @@ export default async function HistoryPage() {
   const sessions = await listSessions(user.id)
 
   return (
-    <main className='px-6 py-4'>
+    <div className='px-6 py-4'>
       <div className='mx-auto max-w-2xl space-y-10'>
         {/* Header */}
         <div className='space-y-4'>
@@ -38,6 +38,6 @@ export default async function HistoryPage() {
           }))}
         />
       </div>
-    </main>
+    </div>
   )
 }

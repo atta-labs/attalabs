@@ -13,11 +13,11 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
 
   if (!session) {
     return (
-      <main className='flex min-h-dvh items-center justify-center'>
+      <div className='flex min-h-dvh items-center justify-center'>
         <Text as='p' muted>
           Session not found.
         </Text>
-      </main>
+      </div>
     )
   }
 
