@@ -49,7 +49,7 @@ const FRAMEWORKS = [
 
 export default function ScienceFrameworksPage() {
   return (
-    <article className='space-y-16'>
+    <article className='space-y-8'>
       {/* Header */}
       <div className='space-y-4'>
         <span className='font-mono text-xs text-muted-foreground'>Deliberative Frameworks</span>

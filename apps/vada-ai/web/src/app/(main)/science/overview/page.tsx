@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export default function ScienceOverviewPage() {
   return (
-    <article className='space-y-16'>
+    <article className='space-y-8'>
       {/* Hero */}
       <div className='space-y-4'>
         <span className='font-mono text-xs text-muted-foreground'>Fundamental Theory</span>

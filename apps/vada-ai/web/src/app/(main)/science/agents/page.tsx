@@ -2,7 +2,7 @@
 
 import { Heading, Text } from '@atta/ui/shared'
 import { Separator } from '@atta/ui'
-import { AIACanvas, AIASphere, AGENT_LIST } from '@atta/ui/canvas'
+import { AIACanvas, AIAgent, AGENT_LIST } from '@atta/ui/canvas'
 import Link from 'next/link'
 import { useId } from 'react'
 
@@ -10,7 +10,7 @@ function AgentsScene() {
   const baseId = useId()
 
   return (
-    <article className='space-y-16'>
+    <article className='space-y-8'>
       {/* Header */}
       <div className='space-y-4'>
         <span className='font-mono text-xs text-muted-foreground'>Agent Roster</span>
@@ -30,18 +30,18 @@ function AgentsScene() {
         {AGENT_LIST.map((agent) => {
           const sphereId = `${baseId}-agent-${agent.role}`
           return (
-            <div key={agent.role} className='rounded-lg border border-border/20 bg-card/30 p-6 space-y-4'>
+            <div key={agent.role} className='rounded-lg border border-border/20 bg-card/30 pt-8 px-6 pb-6 space-y-4'>
               {/* Name row with sphere */}
               <div className='flex items-center gap-4'>
-                <AIASphere
+                <AIAgent
                   id={sphereId}
-                  size='md'
-                  color={agent.color}
+                  name={agent.name}
+                  faceStyle='emblematic'
+                  size='lg'
                   state='speaking'
                   showMatrix
-                  matrixOpacity={0.6}
                   label={agent.displayName}
-                  labelPosition='right'
+                  labelPosition='top'
                 />
               </div>
 

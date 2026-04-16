@@ -6,7 +6,7 @@ export default function ScienceLayout({ children }: { children: ReactNode }) {
     <div className='flex h-full'>
       <ScienceSidebar />
       <main className='flex-1 overflow-y-auto'>
-        <div className='mx-auto max-w-3xl px-8 py-8'>{children}</div>
+        <div className='mx-auto max-w-3xl px-8 py-4'>{children}</div>
       </main>
     </div>
   )

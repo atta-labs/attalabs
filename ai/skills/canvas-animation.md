@@ -17,13 +17,18 @@ triggers:
 ```
 AIACanvas (context provider + rAF renderer + single <canvas>)
 ├── AIASphere (DOM position registration via useAIASphere hook)
+├── AIAAgent (convenience wrapper around AIASphere — resolves color + face from agent name)
 ├── AIARing (SVG wave segments + canvas ring styles)
 └── Canvas renders: particles, matrix drops, glow, directed messages
+
+bg/fabric.ts — standalone Tron particle background (grid mesh + particles)
 ```
 
 - **AIACanvas** wraps children, provides context, owns the animation loop
 - **AIASphere** registers its DOM position with the canvas. Particles orbit it. Matrix rain falls inside it. Pure presentation — all hooks in `useAIASphere.ts`
+- **AIAAgent** wraps `AIASphere` and resolves agent `color` and face illustration from the agent name. **Always prefer `AIAAgent` over `AIASphere` for named agents.**
 - **AIARing** positions spheres in a circle, renders animated SVG wave segments
+- **fabric.ts** renders a displaced grid mesh background with Tron-style particles that travel along grid edges toward agent spheres, with birth animations and collision effects
 
 ## Critical Rules — MUST follow every time
 
@@ -131,6 +136,77 @@ Use CSS variables or HSL strings from `AGENT_THEME`. Never hex codes.
 | Researcher | `hsl(207 32% 52%)` blue |
 | Operator | `hsl(30 32% 52%)` amber |
 
+## AIAAgent
+
+Convenience wrapper around `AIASphere` — resolves agent `color` and face illustration from the canonical agent name. Use this instead of `AIASphere` when working with named agents.
+
+```tsx
+import { AIAAgent } from '@atta/ui/canvas'
+
+<AIAAgent
+  name="Strategist"          // AgentName — determines color + face
+  faceStyle="emblematic"     // 'reductive' (gestural) | 'emblematic' (portrait + sigil). Default: emblematic
+  size="lg"
+  state="speaking"
+  showMatrix
+  id={sphereId}              // Still needs unique id for particle tracking
+/>
+```
+
+**`faceStyle` options:**
+- `'emblematic'` — symbolic portrait with forehead sigil (default)
+- `'reductive'` — gestural floating features (minimal)
+
+All other props pass through to `AIASphere`.
+
+---
+
+## Fabric Background (Tron Particles)
+
+`bg/fabric.ts` is a standalone background renderer — it does NOT use `AIACanvas`. It renders directly onto a canvas element via `drawFabric(state)`.
+
+```tsx
+import { drawFabric } from '@atta/ui/canvas/bg'
+// Used in HomeCanvas and settings pages as a background layer
+```
+
+**What it renders:**
+1. A displaced grid mesh (two-density layers: coarse + fine) with ripple effects on sphere joins
+2. **Tron particles** — spawn from the grid border, travel along displaced grid edges toward a target agent sphere, then detach for a straight-line final approach and join with a collision glow
+3. **Birth animations** — before a particle spawns, the origin cell illuminates with matrix characters and energy tendrils
+4. **Closing pulses** — radial ripple effect when a particle joins a sphere
+
+**Key behaviors:**
+- Colors always sampled from active sphere colors — never hardcoded
+- Particles home toward a specific sphere (`targetSphereId`)
+- `didTurn` flag enforces alternating turn/straight movement (no double turns)
+- `finalApproach` phase: particle detaches from grid and flies straight to sphere center
+- `dying` state: particle stops moving and fades out (trail erosion)
+- Ring exclusion zone: particles avoid the AIARing area (accounts for fabric displacement)
+- Settle gate: particles don't spawn until the canvas has settled
+
+**State shape passed to `drawFabric`:**
+```ts
+{
+  spheres: Array<{ id: string; x: number; y: number; color: string; radius: number }>
+  ringCenter?: { x: number; y: number; radius: number }
+  settled: boolean
+  t: number  // frame counter
+}
+```
+
+---
+
+## Canvas Context — Additional Methods
+
+Beyond the standard `registerSphere` / `fireDirectedMessage`, the context also exposes:
+
+```tsx
+ctx.startGravity()  // Trigger gravity pull after animation completes — spheres drift inward
+```
+
+---
+
 ## AIACanvas Props
 
 | Prop | Type | Default | Notes |
@@ -228,9 +304,15 @@ packages/ui/canvas/
 │   └── types.ts           — Internal canvas types
 ├── aia-context.tsx        — React context, SphereRegistration, RingRegistration types
 ├── aia-sphere.tsx         — Presentational sphere (no hooks)
+├── aia-agent.tsx          — AIAAgent: AIASphere wrapper with agent color + face resolution
+├── agent-faces-minimal.tsx — 'reductive' face SVG illustrations
+├── agent-faces-full.tsx   — 'emblematic' face SVG illustrations
 ├── useAIASphere.ts        — Sphere hooks (rAF position tracking, registration)
 ├── aia-ring.tsx           — Ring layout + SVG wave segments (agent colors)
-├── bg/                    — Background renderers (fabric, etc.)
+├── bg/
+│   ├── fabric.ts          — Tron particle background: grid mesh + particles + birth animations
+│   ├── types.ts           — BgState type
+│   └── index.ts           — Public exports
 ├── shared/                — Shared utilities (colors, math, constants)
 └── assistant-wave.tsx     — Standalone SVG wave
 ```

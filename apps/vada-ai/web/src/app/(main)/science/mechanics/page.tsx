@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export default function ScienceMechanicsPage() {
   return (
-    <article className='space-y-16'>
+    <article className='space-y-8'>
       {/* Header */}
       <div className='space-y-4'>
         <span className='font-mono text-xs text-muted-foreground'>Engine Mechanics</span>
