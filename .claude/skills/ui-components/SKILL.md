@@ -38,6 +38,31 @@ import { Heading, Text } from '@atta/ui/shared'
 
 ---
 
+## RULE 1b: Missing Component? ADD IT to `@atta/ui` — NEVER Roll Custom
+
+If a primitive you need (Tabs, Accordion, Dialog, Select, Popover, etc.) does not exist in `@atta/ui`, you **MUST** add it to the library. **Do not** hand-roll a substitute in the app using `<Button>` + conditional rendering, `<div>` + state, or any other workaround.
+
+This includes "simple" cases like tab bars, toggle groups, segmented controls, or accordion-style disclosures. If it has a shadcn/Radix primitive, it belongs in `@atta/ui`.
+
+**Required workflow when a component is missing:**
+
+1. Create the component in `packages/ui/libraries/basic/installed/{component}.tsx` (shadcn base)
+2. If the active library is `animate` / `retro` / `brutal`, create the styled variant in `packages/ui/libraries/{library}/installed/{component}.tsx`
+3. Export it from **every** library's `components/index.ts` (animate/retro/brutal can fall back to basic with `export { Tabs } from '../../basic/installed/tabs'`)
+4. Add the component + Props type to `REQUIRED_COMPONENTS` and `REQUIRED_TYPES` in `packages/ui/component-contract.mjs`
+5. Run `bun run validate:ui-contract` — build fails if any library is missing the export
+6. Then use `import { Tabs } from '@atta/ui'` in the app
+
+**Red flags that mean STOP — you are about to violate this rule:**
+- "I'll just make a quick tab bar with Buttons"
+- "A simple `<div>` with onClick is enough here"
+- "I'll wrap it in motion.div myself since the library doesn't have it"
+- "It's just this one page, I'll inline it"
+
+Every one of these is a custom primitive in disguise. Stop, add the component to `@atta/ui`, then use it.
+
+---
+
 ## RULE 2: CSS Variables — NEVER Hardcoded Colors
 
 All colors **MUST** come from CSS variables via Tailwind semantic classes. Hardcoded hex values, oklch literals, or `bg-[#hex]` arbitrary Tailwind values are **FORBIDDEN**.
@@ -255,6 +280,9 @@ These rules apply to all products:
 |-------------|------|
 | `<button>` instead of `<Button>` | RULE 1 — use UI components |
 | Custom hand-rolled Card/Badge/Input | RULE 1 — extend shadcn/ui |
+| Custom tab bar built from `<Button>` + state | RULE 1b — add `Tabs` to `@atta/ui` |
+| Custom accordion built from `useState` + `<div>` | RULE 1b — add `Accordion` to `@atta/ui` |
+| "I'll inline it just this once" | RULE 1b — no one-offs, add it to the library |
 | `bg-[#1A1610]` | RULE 2 — use CSS variable class |
 | `style={{ color: '#E8D5B7' }}` | RULE 2 + RULE 3 |
 | `style={{ padding: '16px' }}` | RULE 3 — use Tailwind |
