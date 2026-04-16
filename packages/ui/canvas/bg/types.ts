@@ -11,6 +11,7 @@ export interface BgState {
   rings: RingRegistration[] // registered rings this frame
   spheres: SphereRegistration[] // registered spheres this frame
   recentEvents: BgEvent[] // events that fired this frame, cleared next frame
+  onSphereAbsorb?: (sphereId: string) => void // fired when a Tron particle joins a sphere
 }
 
 export type BgEvent =

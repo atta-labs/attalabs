@@ -3,6 +3,7 @@ import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
+import '@atta/ui/canvas.css'
 
 export const metadata: Metadata = {
   title: 'Vada AI',

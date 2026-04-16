@@ -161,6 +161,85 @@ All other props pass through to `AIASphere`.
 
 ---
 
+## Sphere Absorb — rAF → DOM without re-renders
+
+`onSphereAbsorb` is called from the canvas rAF loop (60fps). **Never wire it to React state** — state updates from rAF cause React re-renders every frame which visibly glitches sphere DOM elements.
+
+The correct pattern: **ref-based direct DOM classList toggle**.
+
+```ts
+// useSphereAbsorb.ts — lives in the app, NOT in the package
+export function useSphereAbsorb() {
+  const elementsRef = useRef<Map<string, HTMLElement>>(new Map())
+
+  const registerSphere = useCallback((id: string, el: HTMLElement | null) => {
+    if (el) elementsRef.current.set(id, el)
+    else elementsRef.current.delete(id)
+  }, [])
+
+  const onSphereAbsorb = useCallback((sphereId: string) => {
+    const el = elementsRef.current.get(sphereId)
+    if (!el) return
+    el.classList.add('sphere-absorbing')
+    setTimeout(() => el.classList.remove('sphere-absorbing'), 1100) // matches CSS keyframe
+  }, [])
+
+  return { registerSphere, onSphereAbsorb }
+}
+```
+
+```tsx
+// HomeCanvas.tsx — outer component
+const { onSphereAbsorb, registerSphere } = useSphereAbsorb()
+
+<AIACanvas onSphereAbsorb={onSphereAbsorb} ...>
+  <HomeCanvasInner registerSphere={registerSphere} />
+</AIACanvas>
+
+// In the sphere wrapper div — ref callback, no className toggle
+<div ref={(el) => registerSphere(id, el)} style={...}>
+```
+
+CSS keyframe lives in `packages/ui/styles/canvas.css` (import `@atta/ui/canvas.css` — products that don't use canvas don't import it):
+
+```css
+@keyframes sphere-absorb {
+  0%   { filter: brightness(1)   scale(1); }
+  15%  { filter: brightness(2.2) scale(1.1); }
+  50%  { filter: brightness(1.4) scale(1.04); }
+  100% { filter: brightness(1)   scale(1); }
+}
+.sphere-absorbing { animation: sphere-absorb 1.1s ease-out forwards; }
+```
+
+---
+
+## Fabric ripple on particle join
+
+When a particle joins a sphere, push a high-amplitude radial ripple for a **local** mesh distortion:
+
+```ts
+ripples.push({ cx: sphere.x, cy: sphere.y, startT: t, life: 1, amp: 55, mode: 'radial' })
+```
+
+- `amp: 55` = clearly visible mesh shift (~55px at wave front)
+- `mode: 'radial'` = expands outward from the sphere position (not tangentially from ring center)
+- Gaussian envelope keeps distortion local (~90px wide ring); life decays to ~0.1 by the time it reaches the ring center
+- **Do NOT use `ClosingPulse` for particle joins** — it renders full-screen expanding glow rings identical to the ring-close event, confusing users. `ClosingPulse` is ring-close only.
+
+---
+
+## `withAlpha` — color format support
+
+`fabric.ts` `withAlpha()` handles both HSL and hex colors:
+- `hsl(h s% l%)` → `hsla(h, s%, l%, alpha)` ✓
+- `#rrggbb` / `#rgb` hex → `rgba(r, g, b, alpha)` ✓
+- Anything else → falls back to white
+
+Agent colors come through as hex `#rrggbb` from the canvas context (not always HSL). Without hex support, halo + explosion effects render white instead of agent color.
+
+---
+
 ## Fabric Background (Tron Particles)
 
 `bg/fabric.ts` is a standalone background renderer — it does NOT use `AIACanvas`. It renders directly onto a canvas element via `drawFabric(state)`.
@@ -217,6 +296,7 @@ ctx.startGravity()  // Trigger gravity pull after animation completes — sphere
 | `alwaysRenderSpheres` | `boolean` | `false` | Matrix during wander phase |
 | `matchContentHeight` | `boolean` | `false` | Canvas = scrollHeight for scrolling pages |
 | `onPhaseChange` | `fn` | — | wander → forming → settled |
+| `onSphereAbsorb` | `fn` | — | Fires when a Tron particle joins a sphere. Receives `sphereId`. |
 
 ## AIASphere Props
 

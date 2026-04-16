@@ -1,12 +1,17 @@
 'use client'
 
-import { AgentThinkingText } from '@atta/ui'
 import { AIAgent, AIACanvas, AIARing, useAIAContext, type AgentName } from '@atta/ui/canvas'
 import { type ReactNode, useEffect } from 'react'
 import { useHomeCanvas } from './useHomeCanvas'
+import { useSphereAbsorb } from './useSphereAbsorb'
+import { useUserPreferences } from '@/lib/user-preferences-context'
 
 interface HomeCanvasProps {
   render: (state: { animationStarted: boolean; animationComplete: boolean }) => ReactNode
+}
+
+interface HomeCanvasInnerProps extends HomeCanvasProps {
+  registerSphere: (id: string, el: HTMLElement | null) => void
 }
 
 const AGENTS: AgentName[] = ['Strategist', 'Critic', "Devil's Advocate", 'Synthesizer', 'Researcher', 'Operator']
@@ -15,9 +20,10 @@ const SPHERE_IDS = ['s1', 's2', 's3', 's4', 's5', 's6'] as const
 const SPHERE_PHRASES = ['Framing...', 'Risks?', 'Counter...', 'Patterns...', 'Data...', 'Synthesis...']
 
 // Inner — must be inside AIACanvas to access canvas context
-function HomeCanvasInner({ render }: HomeCanvasProps) {
+function HomeCanvasInner({ render, registerSphere }: HomeCanvasInnerProps) {
   const { activeAgent, activeStep, revealedCount, animationStarted, animationComplete } = useHomeCanvas()
   const ctx = useAIAContext()
+  const { faceStyle } = useUserPreferences()
 
   const isTouched = (index: number) => activeStep > index
   const getSphereState = (id: string, index: number) => {
@@ -45,6 +51,7 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
           return (
             <div
               key={id}
+              ref={(el) => registerSphere(id, el)}
               style={{
                 opacity: revealed ? 1 : 0,
                 transform: revealed ? 'scale(1)' : 'scale(0.85)',
@@ -54,22 +61,15 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
               <AIAgent
                 id={id}
                 name={AGENTS[i]!}
-                faceStyle='emblematic'
+                faceStyle={faceStyle}
                 size='xl'
                 state={getSphereState(id, i)}
                 showMatrix={showMatrix}
-                matrixOpacity={0.3}
+                thinkingText={SPHERE_PHRASES[i] ?? '...'}
                 solidBg={revealed}
                 visible={revealed}
                 noLabel
-              >
-                {showMatrix && (
-                  <AgentThinkingText
-                    text={SPHERE_PHRASES[i] ?? '...'}
-                    className='text-[8px] text-center leading-tight opacity-80'
-                  />
-                )}
-              </AIAgent>
+              />
             </div>
           )
         })}
@@ -82,6 +82,8 @@ function HomeCanvasInner({ render }: HomeCanvasProps) {
 
 // Outer — sets up AIACanvas (the context provider), renders HomeCanvasInner inside it
 export function HomeCanvas({ render }: HomeCanvasProps) {
+  const { onSphereAbsorb, registerSphere } = useSphereAbsorb()
+
   return (
     <div className='fixed inset-0 z-0'>
       <AIACanvas
@@ -89,9 +91,10 @@ export function HomeCanvas({ render }: HomeCanvasProps) {
         wanderDuration={30}
         alwaysRenderSpheres
         autoTriggerGravity={false}
+        onSphereAbsorb={onSphereAbsorb}
         className='h-full w-full'
       >
-        <HomeCanvasInner render={render} />
+        <HomeCanvasInner render={render} registerSphere={registerSphere} />
       </AIACanvas>
     </div>
   )

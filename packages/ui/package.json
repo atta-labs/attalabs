@@ -7,6 +7,7 @@
   "exports": {
     ".": "./libraries/basic/components/index.ts",
     "./globals.css": "./styles/globals.css",
+    "./canvas.css": "./styles/canvas.css",
     "./types": "./types/index.ts",
     "./types/*": "./types/*.ts",
     "./components": "./libraries/basic/components/index.ts",

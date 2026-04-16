@@ -29,6 +29,7 @@ export interface AIACanvasRef {
 export interface AIACanvasConfig {
   bg?: BgVariant | BgRenderer
   onPhaseChange?: (phase: CanvasPhase) => void
+  onSphereAbsorb?: (sphereId: string) => void
   wanderDuration?: number
   alwaysRenderSpheres?: boolean
   matchContentHeight?: boolean
@@ -45,6 +46,7 @@ export function useAIACanvas(
   {
     bg,
     onPhaseChange,
+    onSphereAbsorb,
     wanderDuration = 120,
     alwaysRenderSpheres = false,
     matchContentHeight = false,
@@ -59,6 +61,8 @@ export function useAIACanvas(
   matchContentHeightRef.current = matchContentHeight
   const onPhaseChangeRef = useRef<((phase: CanvasPhase) => void) | undefined>(onPhaseChange)
   onPhaseChangeRef.current = onPhaseChange
+  const onSphereAbsorbRef = useRef<((sphereId: string) => void) | undefined>(onSphereAbsorb)
+  onSphereAbsorbRef.current = onSphereAbsorb
 
   const spheresRef = useRef<Map<string, SphereRegistration>>(new Map())
   const ringsRef = useRef<Map<string, RingRegistration>>(new Map())
@@ -208,7 +212,8 @@ export function useAIACanvas(
         settleProgress: phaseState.settleProgress,
         rings,
         spheres,
-        recentEvents: frameEvents
+        recentEvents: frameEvents,
+        onSphereAbsorb: onSphereAbsorbRef.current
       })
 
       // ── Phase machine ────────────────────────────────────────────────────

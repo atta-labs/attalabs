@@ -1,0 +1,12 @@
+/* Canvas animation styles — import only in products that use @atta/ui/canvas */
+
+@keyframes sphere-absorb {
+  0%   { filter: brightness(1)   scale(1); }
+  15%  { filter: brightness(2.2) scale(1.1); }
+  50%  { filter: brightness(1.4) scale(1.04); }
+  100% { filter: brightness(1)   scale(1); }
+}
+
+.sphere-absorbing {
+  animation: sphere-absorb 1.1s ease-out forwards;
+}
