@@ -168,7 +168,6 @@ export function useAIACanvas(
     let particles: Particle[] = []
     let particleSphereIds: string[] = []
     const colors = getThemeColors()
-    const bgColor = resolveColor('var(--background)', '#000000')
     const dpr = window.devicePixelRatio || 1
     let time = 0
     let ringBgFade = 0
@@ -263,7 +262,10 @@ export function useAIACanvas(
       renderMessages(gfx, directMessagesRef.current, colors, spheres, clusterGlow)
 
       // ── Background fills (ring interior, then sphere interiors) ──────────
+      // Resolve bgColor every frame so live theme/scheme swaps take effect and
+      // we pick up --background even if it lands after canvas mount.
       if (currentPhase !== 'wander' || alwaysRenderSpheresRef.current) {
+        const bgColor = resolveColor('var(--background)', 'transparent')
         ringBgFade = renderBgFills(gfx, rings, spheres, bgColor, envoyState.ringCompletion, ringBgFade)
       }
 
