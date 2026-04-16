@@ -222,6 +222,7 @@ interface ParticleEffect {
   startT: number
   type: 'crash' | 'join' | 'halo'
   sphereRadius?: number // for join/halo effects — used to scale the burst to the sphere size
+  origin?: boolean // halo from the origin event — toned down alpha to avoid green-dome stacking
 }
 let particleEffects: ParticleEffect[] = []
 
@@ -445,14 +446,22 @@ export function renderFabricBg(state: BgState): void {
             type: 'join',
             sphereRadius: sphere.radius
           })
-          particleEffects.push({
-            x: sphere.x,
-            y: sphere.y,
-            color: p.color,
-            startT: t,
-            type: 'halo',
-            sphereRadius: sphere.radius
-          })
+          // Origin event: 5 particles arrive on the same frame at the same point. Pushing a
+          // halo per particle stacks them into a saturated agent-color dome. Emit only one
+          // halo from the LAST arriving origin particle, flagged so the renderer tones it.
+          const isOriginStack = p.origin === true
+          const isLastOrigin = isOriginStack && originArrivedCount >= originTotalCount && originTotalCount > 0
+          if (!isOriginStack || isLastOrigin) {
+            particleEffects.push({
+              x: sphere.x,
+              y: sphere.y,
+              color: p.color,
+              startT: t,
+              type: 'halo',
+              sphereRadius: sphere.radius,
+              origin: isOriginStack
+            })
+          }
         }
       }
       return true
@@ -1045,9 +1054,10 @@ export function renderFabricBg(state: BgState): void {
       const sr = fx.sphereRadius ?? 48
       const peakAlpha = Math.sin(progress * Math.PI) // 0→1→0 arc, peaks at midpoint
       const outerR = sr * (1.2 + ease * 1.8) // grows from 1.2× to 3× sphere radius
+      const alphaScale = fx.origin ? 0.6 : 1.0
       const grad = ctx.createRadialGradient(fx.x, fx.y, sr * 0.7, fx.x, fx.y, outerR)
-      grad.addColorStop(0, withAlpha(fx.color, peakAlpha * 0.45))
-      grad.addColorStop(0.4, withAlpha(fx.color, peakAlpha * 0.25))
+      grad.addColorStop(0, withAlpha(fx.color, peakAlpha * 0.45 * alphaScale))
+      grad.addColorStop(0.4, withAlpha(fx.color, peakAlpha * 0.25 * alphaScale))
       grad.addColorStop(1, withAlpha(fx.color, 0))
       ctx.globalAlpha = 1
       ctx.fillStyle = grad
