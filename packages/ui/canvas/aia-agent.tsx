@@ -10,6 +10,7 @@ import { AGENT_FACES as REDUCTIVE_FACES } from './agent-faces-minimal'
 import { AGENT_FACES as EMBLEMATIC_FACES } from './agent-faces-full'
 import { AIASphere } from './aia-sphere'
 import { AGENTS, type AgentName } from '@atta/agents'
+import { AgentThinkingText } from '@atta/ui/shared'
 import type { ReactNode } from 'react'
 import type { SphereState } from './aia-context'
 
@@ -30,11 +31,20 @@ export type FaceStyle = 'reductive' | 'emblematic'
 // Larger spheres get a smaller inset (face fills more of the circle).
 // Numeric sizes fall back to the 'md' value.
 const FACE_INSET: Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', string> = {
-  xs: '18%',
-  sm: '15%',
-  md: '12%',
-  lg: '10%',
-  xl: '8%'
+  xs: '6%',
+  sm: '4%',
+  md: '2%',
+  lg: '1%',
+  xl: '0%'
+}
+
+// Thinking text font size per sphere size — proportional to diameter.
+const THINKING_TEXT_PX: Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', number> = {
+  xs: 4,
+  sm: 5,
+  md: 6,
+  lg: 7,
+  xl: 9
 }
 
 interface AIAgentProps {
@@ -72,6 +82,8 @@ interface AIAgentProps {
   className?: string
   /** Opacity of the face illustration (0–1). Default 0.25. */
   faceOpacity?: number
+  /** Text rendered inside the sphere with the typewriter scramble effect. */
+  thinkingText?: string
   /** Content rendered inside the sphere, above the face layer. */
   children?: ReactNode
 }
@@ -91,6 +103,7 @@ export function AIAgent({
   labelPosition,
   noLabel = false,
   faceOpacity = 0.5,
+  thinkingText,
   onClick,
   className,
   children
@@ -101,6 +114,8 @@ export function AIAgent({
   const FaceComponent = faces[index]
   const faceInset =
     typeof size === 'string' ? FACE_INSET[size] : `${Math.round(Math.max(4, Math.min(20, 20 - size / 10)))}%`
+  const thinkingFontPx =
+    typeof size === 'string' ? THINKING_TEXT_PX[size] : Math.round(Math.max(4, Math.min(10, size / 14)))
 
   return (
     <AIASphere
@@ -119,8 +134,19 @@ export function AIAgent({
       labelPosition={labelPosition}
     >
       {FaceComponent && (
-        <div className='absolute pointer-events-none z-0' style={{ inset: faceInset, opacity: faceOpacity, color }}>
+        <div
+          className='absolute pointer-events-none z-0'
+          style={{ inset: faceInset, top: `calc(${faceInset} + 28%)`, opacity: faceOpacity, color }}
+        >
           <FaceComponent />
+        </div>
+      )}
+      {showMatrix && thinkingText && (
+        <div
+          className='absolute flex justify-center pointer-events-none z-10 overflow-hidden'
+          style={{ top: '18%', left: '20%', right: '20%', color, fontSize: thinkingFontPx }}
+        >
+          <AgentThinkingText text={thinkingText} className='text-center leading-tight opacity-80 truncate' />
         </div>
       )}
       {children}

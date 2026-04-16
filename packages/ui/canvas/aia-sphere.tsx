@@ -21,7 +21,6 @@ interface AIASphereProps {
   solidBg?: boolean
   bgOpacity?: number
   visible?: boolean
-  face?: ReactNode
   children?: ReactNode
   onClick?: () => void
   className?: string
@@ -52,7 +51,6 @@ export function AIASphere({
   solidBg = false,
   bgOpacity,
   visible = true,
-  face,
   children,
   onClick,
   className,
@@ -92,36 +90,16 @@ export function AIASphere({
         outline: 'none',
         border: 'none',
         borderRadius: '50%',
-        overflow: 'hidden',
         background: onClick ? 'none' : undefined,
         padding: 0
       }}
     >
-      {face && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: '15%',
-            top: 25,
-            opacity: 0.25,
-            pointerEvents: 'none',
-            zIndex: 0
-          }}
-        >
-          {face}
-        </div>
-      )}
-
       {children && (
         <div
           style={{
-            position: 'relative',
+            position: 'absolute',
+            inset: 0,
             zIndex: 1,
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             overflow: 'hidden',
             borderRadius: '50%'
           }}

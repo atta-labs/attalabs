@@ -5,10 +5,15 @@ export {
   AGENT_LIST,
   AGENT_THEME,
   AGENT_COLOR_BY_ROLE,
+  AGENT_BY_ROLE,
   AGENT_SPHERE_COLORS,
+  TEAMS,
+  TEAM_LIST,
   type AgentName,
   type AgentRole,
-  type AgentDef
+  type AgentDef,
+  type TeamId,
+  type TeamDef
 } from '@atta/agents'
 export { AIASphere } from './aia-sphere'
 export { useAIASphere } from './useAIASphere'

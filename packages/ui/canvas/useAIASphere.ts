@@ -54,6 +54,12 @@ export function useAIASphere({
   const ctx = useAIAContext()
   const matrixOpacityRef = useRef(matrixOpacity)
   matrixOpacityRef.current = matrixOpacity
+  const solidBgRef = useRef(solidBg)
+  solidBgRef.current = solidBg
+  const bgOpacityRef = useRef(bgOpacity)
+  bgOpacityRef.current = bgOpacity
+  const visibleRef = useRef(visible)
+  visibleRef.current = visible
 
   const diameter = typeof size === 'number' ? size : (SIZE_MAP[size] ?? 64)
   const particles = particleCount ?? (typeof size === 'string' ? (PARTICLE_MAP[size] ?? 25) : 25)
@@ -103,9 +109,9 @@ export function useAIASphere({
           showMatrix: showMatrixRef.current,
           matrixColors: matrixColorsRef.current,
           matrixOpacity: matrixOpacityRef.current,
-          solidBg,
-          bgOpacity,
-          visible
+          solidBg: solidBgRef.current,
+          bgOpacity: bgOpacityRef.current,
+          visible: visibleRef.current
         })
       }
 
@@ -119,13 +125,13 @@ export function useAIASphere({
       cancelAnimationFrame(rafId)
       ctx.unregisterSphere(id)
     }
-  }, [ctx, id, diameter, color, particles, solidBg, bgOpacity, visible])
+  }, [ctx, id, diameter, color, particles])
 
-  // Effect 2 — State/showMatrix sync (no position change, no order change)
+  // Effect 2 — Render-only props sync (no position change, no cluster reassignment)
   useEffect(() => {
     if (!ctx) return
-    ctx.updateSphere(id, { state, showMatrix })
-  }, [ctx, id, state, showMatrix])
+    ctx.updateSphere(id, { state, showMatrix, solidBg, bgOpacity, visible })
+  }, [ctx, id, state, showMatrix, solidBg, bgOpacity, visible])
 
   return {
     ref,
