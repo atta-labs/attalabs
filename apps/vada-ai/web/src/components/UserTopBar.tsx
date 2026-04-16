@@ -20,7 +20,8 @@ const NAV_WITHOUT_WORDMARK = [{ href: '/science', label: 'Science', exact: false
 
 const AUTH_NAV = [
   { href: '/deliberate', label: 'Deliberate', exact: true },
-  { href: '/history', label: 'History', exact: true }
+  { href: '/history', label: 'History', exact: true },
+  { href: '/settings', label: 'Settings', exact: true }
 ]
 
 export function UserTopBar({ logo }: UserTopBarProps) {
