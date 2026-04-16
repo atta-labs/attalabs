@@ -34,3 +34,17 @@ export async function deleteThemeAction(id: string): Promise<void> {
     throw new Error('Failed to delete theme.')
   }
 }
+
+export async function setActiveThemeAction(id: string, colorScheme: 'dark' | 'light'): Promise<void> {
+  try {
+    await cmsWriteClient
+      .patch('vadaConfig')
+      .set({
+        'userInterface.theme': { _type: 'reference', _ref: id },
+        'userInterface.colorScheme': colorScheme
+      })
+      .commit()
+  } catch {
+    throw new Error('Failed to set active theme.')
+  }
+}

@@ -1,20 +1,19 @@
 interface FourSquareSwatchProps {
-  colors: [string, string, string, string] // [primary, secondary, accent, background]
-  size?: number // px, default 28
+  colors: {
+    primary?: string
+    secondary?: string
+    accent?: string
+    background?: string
+  }
 }
 
-export function FourSquareSwatch({ colors, size = 28 }: FourSquareSwatchProps) {
-  const half = size / 2
+export function FourSquareSwatch({ colors }: FourSquareSwatchProps) {
   return (
-    <div
-      className='rounded overflow-hidden shrink-0'
-      style={{ width: size, height: size }} // runtime dimension — justified
-    >
-      <div className='flex flex-wrap' style={{ width: size, height: size }}>
-        {colors.map((color, i) => (
-          <div key={i} style={{ width: half, height: half, backgroundColor: color }} />
-        ))}
-      </div>
+    <div className='grid h-8 w-8 grid-cols-2 gap-0.5 overflow-hidden rounded'>
+      <div className='rounded-sm' style={{ backgroundColor: colors.primary ?? '#888' }} />
+      <div className='rounded-sm' style={{ backgroundColor: colors.secondary ?? '#666' }} />
+      <div className='rounded-sm' style={{ backgroundColor: colors.accent ?? '#aaa' }} />
+      <div className='rounded-sm' style={{ backgroundColor: colors.background ?? '#333' }} />
     </div>
   )
 }
