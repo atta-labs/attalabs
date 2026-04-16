@@ -7,7 +7,7 @@ import { SettingsClientPage } from './components/SettingsClientPage'
 
 export default async function SettingsPage() {
   const { userId: clerkId } = await auth()
-  if (!clerkId) redirect('/sign-in')
+  if (!clerkId) redirect('/?signin=1')
 
   const user = await getOrCreateUser(clerkId, '')
   const [apiKeys, teamModels, settings] = await Promise.all([

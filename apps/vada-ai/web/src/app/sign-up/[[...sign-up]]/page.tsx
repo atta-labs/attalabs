@@ -1,9 +1,5 @@
-import { SignUp } from '@clerk/nextjs'
+import { redirect } from 'next/navigation'
 
 export default function SignUpPage() {
-  return (
-    <div className='flex min-h-dvh items-center justify-center'>
-      <SignUp />
-    </div>
-  )
+  redirect('/?signup=1')
 }

@@ -2,6 +2,8 @@
 
 import { useAuth } from '@clerk/nextjs'
 import { Heading, Separator, Text } from '@atta/ui'
+import { Suspense } from 'react'
+import { AuthModalTrigger } from './components/AuthModalTrigger'
 import { HomeCanvas } from './components/HomeCanvas'
 import { SignUpAction } from './components/SignUpAction'
 import { StartAction } from './components/StartAction'
@@ -13,6 +15,9 @@ export default function Home() {
     <HomeCanvas
       render={({ animationStarted, animationComplete }) => (
         <div className='relative z-10 flex flex-col items-center gap-10'>
+          <Suspense fallback={null}>
+            <AuthModalTrigger />
+          </Suspense>
           <Text
             as='small'
             className='uppercase tracking-widest transition-opacity duration-700'

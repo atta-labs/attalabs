@@ -7,7 +7,7 @@ import { DeliberateSection } from './components/DeliberateSection'
 
 export default async function DeliberatePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { userId: clerkId } = await auth()
-  if (!clerkId) redirect('/sign-in')
+  if (!clerkId) redirect('/?signin=1')
 
   const user = await getOrCreateUser(clerkId, '')
   const [dailyCount, apiKeys, teamModels] = await Promise.all([

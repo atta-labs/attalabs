@@ -33,7 +33,7 @@ const AUTH_NAV = [
 ]
 
 export function UserTopBar({ logo }: UserTopBarProps) {
-  const { signOut } = useClerk()
+  const { signOut, openSignIn } = useClerk()
   const { user } = useUser()
   const pathname = usePathname()
 
@@ -103,11 +103,9 @@ export function UserTopBar({ logo }: UserTopBarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Link href='/sign-in'>
-            <Button variant='outline' size='sm' className='text-xs'>
-              Sign in
-            </Button>
-          </Link>
+          <Button variant='outline' size='sm' className='text-xs' onClick={() => openSignIn()}>
+            Sign in
+          </Button>
         )}
       </div>
     </nav>

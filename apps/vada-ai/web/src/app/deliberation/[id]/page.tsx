@@ -6,7 +6,7 @@ import { DeliberationFeed } from './components/DeliberationFeed'
 
 export default async function DeliberationPage({ params }: { params: Promise<{ id: string }> }) {
   const { userId: clerkId } = await auth()
-  if (!clerkId) redirect('/sign-in')
+  if (!clerkId) redirect('/?signin=1')
 
   const { id } = await params
   const session = await getSessionWithTranscript(id)
