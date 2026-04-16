@@ -33,17 +33,20 @@ export async function NextWebShell({ children, config, styleId }: NextWebShellPr
   if (theme) {
     const colorGroup = colorScheme === 'dark' ? theme.dark : theme.light
     const resolved = transformColorGroup(colorGroup)
-    appearance = buildClerkAppearance({
-      background: resolved.get('background')!,
-      foreground: resolved.get('foreground')!,
-      card: resolved.get('card')!,
-      border: resolved.get('border')!,
-      primary: resolved.get('primary')!,
-      primaryForeground: resolved.get('primary-foreground')!,
-      muted: resolved.get('muted')!,
-      mutedForeground: resolved.get('muted-foreground')!,
-      destructive: resolved.get('destructive')!
-    })
+    appearance = buildClerkAppearance(
+      {
+        background: resolved.get('background')!,
+        foreground: resolved.get('foreground')!,
+        card: resolved.get('card')!,
+        border: resolved.get('border')!,
+        primary: resolved.get('primary')!,
+        primaryForeground: resolved.get('primary-foreground')!,
+        muted: resolved.get('muted')!,
+        mutedForeground: resolved.get('muted-foreground')!,
+        destructive: resolved.get('destructive')!
+      },
+      colorScheme
+    )
   }
 
   return (

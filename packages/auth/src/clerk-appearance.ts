@@ -1,20 +1,29 @@
+import { dark } from '@clerk/themes'
+
 /**
  * Build Clerk appearance from resolved theme colors.
  * Called server-side in the layout so Clerk gets real hex values,
  * not CSS variables that might not resolve inside its portal.
+ *
+ * `colorScheme` sets Clerk's baseTheme — variable overrides alone don't
+ * switch Clerk out of its default light base.
  */
-export function buildClerkAppearance(colors: {
-  background: string
-  foreground: string
-  card: string
-  border: string
-  primary: string
-  primaryForeground: string
-  muted: string
-  mutedForeground: string
-  destructive: string
-}): Record<string, unknown> {
+export function buildClerkAppearance(
+  colors: {
+    background: string
+    foreground: string
+    card: string
+    border: string
+    primary: string
+    primaryForeground: string
+    muted: string
+    mutedForeground: string
+    destructive: string
+  },
+  colorScheme: 'light' | 'dark' = 'light'
+): Record<string, unknown> {
   return {
+    baseTheme: colorScheme === 'dark' ? dark : undefined,
     layout: {
       animations: true,
       socialButtonsPlacement: 'top'

@@ -15,7 +15,8 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.0.7"
+    "@clerk/nextjs": "^7.0.7",
+    "@clerk/themes": "^2.4.57"
   },
   "peerDependencies": {
     "react": "^19.0.0",
