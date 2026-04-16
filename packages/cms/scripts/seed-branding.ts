@@ -10,7 +10,14 @@
  *   vada     — ofnj2ojb
  *   vitakka  — o56nzgrr
  *
- * Expects assets at: ~/Downloads/logos/{product}/...
+ * Expects assets at: ~/Downloads/logos/{product}/
+ *   outline/{product}-outline-{light|dark}.svg
+ *   solid/{product}-solid-{light|dark}.svg
+ *   lockup/{product}-lockup-{outline|solid}-{light|dark}.svg
+ *   favicon/
+ *     {product}-light.ico, {product}-dark.ico, {product}-apple-touch-180.png
+ *     light/{product}-{16|32|48|64|128|256|512}.png
+ *     dark/{product}-{16|32|48|64|128|256|512}.png
  */
 
 import fs from 'node:fs'
@@ -162,38 +169,36 @@ function imageRef(assetId: string) {
 
 // ── Favicon set upload ──────────────────────────────────────────────────────
 
-const FAVICON_MAP: Array<{ field: string; filename: string; type: 'file' | 'image'; contentType?: string }> = [
-  { field: 'ico', filename: 'favicon.ico', type: 'file', contentType: 'image/x-icon' },
-  { field: 'png16', filename: 'favicon-16x16.png', type: 'image' },
-  { field: 'png32', filename: 'favicon-32x32.png', type: 'image' },
-  { field: 'png48', filename: 'favicon-48x48.png', type: 'image' },
-  { field: 'png64', filename: 'favicon-64x64.png', type: 'image' },
-  { field: 'png128', filename: 'favicon-128x128.png', type: 'image' },
-  { field: 'png180', filename: 'favicon-180x180.png', type: 'image' },
-  { field: 'png192', filename: 'favicon-192x192.png', type: 'image' },
-  { field: 'png512', filename: 'favicon-512x512.png', type: 'image' },
-  { field: 'appleTouchIcon', filename: 'apple-touch-icon.png', type: 'image' },
-  { field: 'appIcon180', filename: 'app-icon-180x180.png', type: 'image' },
-  { field: 'appIcon192', filename: 'app-icon-192x192.png', type: 'image' },
-  { field: 'appIcon512', filename: 'app-icon-512x512.png', type: 'image' }
+const FAVICON_PNG_SIZES: Array<{ field: string; size: number }> = [
+  { field: 'png16', size: 16 },
+  { field: 'png32', size: 32 },
+  { field: 'png48', size: 48 },
+  { field: 'png64', size: 64 },
+  { field: 'png128', size: 128 },
+  { field: 'png256', size: 256 },
+  { field: 'png512', size: 512 }
 ]
 
 async function uploadFaviconSet(product: string, scheme: 'light' | 'dark'): Promise<Record<string, unknown>> {
-  const dir = path.join(LOGOS_DIR, product, 'favicon', scheme)
+  const faviconRoot = path.join(LOGOS_DIR, product, 'favicon')
+  const pngDir = path.join(faviconRoot, scheme)
   const set: Record<string, unknown> = {}
 
-  for (const { field, filename, type, contentType } of FAVICON_MAP) {
-    const buf = readAsset(path.join(dir, filename))
+  // .ico lives at favicon root: {product}-{scheme}.ico
+  const icoFilename = `${product}-${scheme}.ico`
+  const icoBuf = readAsset(path.join(faviconRoot, icoFilename))
+  if (icoBuf) {
+    const assetId = await uploadFile(icoBuf, icoFilename, 'image/x-icon')
+    if (assetId) set.ico = fileRef(assetId)
+  }
+
+  // PNGs live at favicon/{scheme}/{product}-{size}.png
+  for (const { field, size } of FAVICON_PNG_SIZES) {
+    const filename = `${product}-${size}.png`
+    const buf = readAsset(path.join(pngDir, filename))
     if (!buf) continue
-
-    const assetId =
-      type === 'file'
-        ? await uploadFile(buf, `${product}-${scheme}-${filename}`, contentType!)
-        : await uploadImage(buf, `${product}-${scheme}-${filename}`)
-
-    if (assetId) {
-      set[field] = type === 'file' ? fileRef(assetId) : imageRef(assetId)
-    }
+    const assetId = await uploadImage(buf, `${product}-${scheme}-${size}.png`)
+    if (assetId) set[field] = imageRef(assetId)
   }
 
   return set
@@ -216,13 +221,18 @@ async function main() {
       process.exit(1)
     }
 
-    // Upload SVG logos
+    // Upload SVG logos — mark variants + lockup (Logo Full) variants
     console.log('Uploading SVG logos...')
+    const p = SEED_PRODUCT
     const svgFiles = [
-      { field: 'logoOutlineLight', src: `outline/light/${SEED_PRODUCT}-outline-light.svg` },
-      { field: 'logoOutlineDark', src: `outline/dark/${SEED_PRODUCT}-outline-dark.svg` },
-      { field: 'logoSolidLight', src: `solid/light/${SEED_PRODUCT}-solid-light.svg` },
-      { field: 'logoSolidDark', src: `solid/dark/${SEED_PRODUCT}-solid-dark.svg` }
+      { field: 'logoOutlineLight', src: `outline/${p}-outline-light.svg` },
+      { field: 'logoOutlineDark', src: `outline/${p}-outline-dark.svg` },
+      { field: 'logoSolidLight', src: `solid/${p}-solid-light.svg` },
+      { field: 'logoSolidDark', src: `solid/${p}-solid-dark.svg` },
+      { field: 'logoLockupOutlineLight', src: `lockup/${p}-lockup-outline-light.svg` },
+      { field: 'logoLockupOutlineDark', src: `lockup/${p}-lockup-outline-dark.svg` },
+      { field: 'logoLockupSolidLight', src: `lockup/${p}-lockup-solid-light.svg` },
+      { field: 'logoLockupSolidDark', src: `lockup/${p}-lockup-solid-dark.svg` }
     ]
 
     for (const { field, src } of svgFiles) {
@@ -231,6 +241,15 @@ async function main() {
       const filename = path.basename(src)
       const assetId = await uploadFile(buf, filename, 'image/svg+xml')
       if (assetId) doc[field] = fileRef(assetId)
+    }
+
+    // Upload shared apple-touch-icon (single asset, not per-scheme)
+    console.log('\nUploading apple-touch-icon...')
+    const appleTouchFilename = `${p}-apple-touch-180.png`
+    const appleTouchBuf = readAsset(path.join(productDir, 'favicon', appleTouchFilename))
+    if (appleTouchBuf) {
+      const assetId = await uploadImage(appleTouchBuf, appleTouchFilename)
+      if (assetId) doc.appleTouchIcon = imageRef(assetId)
     }
 
     // Upload favicon sets

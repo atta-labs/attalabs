@@ -19,10 +19,11 @@ Sanity CMS — branding document (one per product)
 ├── shape            bladeDirection, interiorElement, interiorMeaning, shapeNotes
 ├── variants         outlineDescription, outlineMinSizePx, solidDescription, solidMinSizePx, useCases
 ├── usage            clearSpace, forbidden[] (list of rules)
-├── logos            logoOutlineLight, logoOutlineDark, logoSolidLight, logoSolidDark  (SVG file assets)
+├── logos            logoOutlineLight/Dark, logoSolidLight/Dark,
+│                   logoLockupOutlineLight/Dark, logoLockupSolidLight/Dark  (SVG file assets)
+├── appleTouchIcon   Shared iOS home-screen icon (single PNG, not per-scheme)
 └── favicons
-    ├── faviconLight  ico, png16, png32, png48, png64, png128, png180, png192, png512,
-    │                 appleTouchIcon, appIcon180, appIcon192, appIcon512
+    ├── faviconLight  ico, png16, png32, png48, png64, png128, png256, png512
     └── faviconDark   (same fields)
 
 @atta/cms package
@@ -82,30 +83,32 @@ interface CMSBranding {
   // Usage rules
   clearSpace?: string
   forbidden?: string[]
-  // SVG logo files
+  // SVG logo files — mark variants
   logoOutlineLight?: CMSBrandingFile    // { _type: 'file', url?: string }
   logoOutlineDark?: CMSBrandingFile
   logoSolidLight?: CMSBrandingFile
   logoSolidDark?: CMSBrandingFile
+  // SVG logo files — lockup (Logo Full): mark + wordmark + tagline
+  logoLockupOutlineLight?: CMSBrandingFile
+  logoLockupOutlineDark?: CMSBrandingFile
+  logoLockupSolidLight?: CMSBrandingFile
+  logoLockupSolidDark?: CMSBrandingFile
+  // iOS home screen — single asset shared across schemes
+  appleTouchIcon?: CMSBrandingImage    // apple-touch-icon.png (180×180)
   // Favicon sets
   faviconLight?: CMSBrandingFaviconSet
   faviconDark?: CMSBrandingFaviconSet
 }
 
 interface CMSBrandingFaviconSet {
-  ico?: CMSBrandingFile           // favicon.ico
-  png16?: CMSBrandingImage        // favicon-16×16
-  png32?: CMSBrandingImage        // favicon-32×32
-  png48?: CMSBrandingImage        // favicon-48×48
-  png64?: CMSBrandingImage        // favicon-64×64
-  png128?: CMSBrandingImage       // favicon-128×128 (Chrome Web Store)
-  png180?: CMSBrandingImage       // favicon-180×180
-  png192?: CMSBrandingImage       // favicon-192×192
-  png512?: CMSBrandingImage       // favicon-512×512
-  appleTouchIcon?: CMSBrandingImage  // apple-touch-icon.png — iOS home screen (180×180)
-  appIcon180?: CMSBrandingImage
-  appIcon192?: CMSBrandingImage   // Android / PWA
-  appIcon512?: CMSBrandingImage   // PWA splash screen
+  ico?: CMSBrandingFile           // favicon.ico (multi-res)
+  png16?: CMSBrandingImage        // favicon-16
+  png32?: CMSBrandingImage        // favicon-32
+  png48?: CMSBrandingImage        // favicon-48
+  png64?: CMSBrandingImage        // favicon-64
+  png128?: CMSBrandingImage       // favicon-128 (Chrome Web Store)
+  png256?: CMSBrandingImage       // favicon-256 (Retina / PWA manifest)
+  png512?: CMSBrandingImage       // favicon-512 (PWA splash / large)
 }
 ```
 
@@ -172,18 +175,15 @@ Tokens live in each product's `apps/{product}-ai/web/.env.local`. Project IDs ar
 ```
 ~/Downloads/logos/
 └── {product}/
-    ├── outline/
-    │   ├── light/{product}-outline-light.svg
-    │   └── dark/{product}-outline-dark.svg
-    ├── solid/
-    │   ├── light/{product}-solid-light.svg
-    │   └── dark/{product}-solid-dark.svg
+    ├── outline/{product}-outline-{light|dark}.svg
+    ├── solid/{product}-solid-{light|dark}.svg
+    ├── lockup/{product}-lockup-{outline|solid}-{light|dark}.svg   (4 files — Logo Full)
     └── favicon/
-        ├── light/   favicon.ico, favicon-16x16.png, favicon-32x32.png, favicon-48x48.png,
-        │            favicon-64x64.png, favicon-128x128.png, favicon-180x180.png,
-        │            favicon-192x192.png, favicon-512x512.png, apple-touch-icon.png,
-        │            app-icon-180x180.png, app-icon-192x192.png, app-icon-512x512.png
-        └── dark/    (same files)
+        ├── {product}-light.ico
+        ├── {product}-dark.ico
+        ├── {product}-apple-touch-180.png       (shared across schemes)
+        ├── light/{product}-{16|32|48|64|128|256|512}.png
+        └── dark/{product}-{16|32|48|64|128|256|512}.png
 ```
 
 The script uses `client.createOrReplace()` — safe to re-run if assets are updated.

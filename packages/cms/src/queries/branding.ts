@@ -11,13 +11,8 @@ const FAVICON_SET_PROJ = `{
   "png48": png48 ${IMAGE_PROJ},
   "png64": png64 ${IMAGE_PROJ},
   "png128": png128 ${IMAGE_PROJ},
-  "png180": png180 ${IMAGE_PROJ},
-  "png192": png192 ${IMAGE_PROJ},
-  "png512": png512 ${IMAGE_PROJ},
-  "appleTouchIcon": appleTouchIcon ${IMAGE_PROJ},
-  "appIcon180": appIcon180 ${IMAGE_PROJ},
-  "appIcon192": appIcon192 ${IMAGE_PROJ},
-  "appIcon512": appIcon512 ${IMAGE_PROJ}
+  "png256": png256 ${IMAGE_PROJ},
+  "png512": png512 ${IMAGE_PROJ}
 }`
 
 const BRANDING_PROJECTION = `{
@@ -43,6 +38,11 @@ const BRANDING_PROJECTION = `{
   "logoOutlineDark": logoOutlineDark ${FILE_PROJ},
   "logoSolidLight": logoSolidLight ${FILE_PROJ},
   "logoSolidDark": logoSolidDark ${FILE_PROJ},
+  "logoLockupOutlineLight": logoLockupOutlineLight ${FILE_PROJ},
+  "logoLockupOutlineDark": logoLockupOutlineDark ${FILE_PROJ},
+  "logoLockupSolidLight": logoLockupSolidLight ${FILE_PROJ},
+  "logoLockupSolidDark": logoLockupSolidDark ${FILE_PROJ},
+  "appleTouchIcon": appleTouchIcon ${IMAGE_PROJ},
   "faviconLight": faviconLight ${FAVICON_SET_PROJ},
   "faviconDark": faviconDark ${FAVICON_SET_PROJ}
 }`

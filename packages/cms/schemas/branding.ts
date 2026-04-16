@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { SvgFileInput } from '../components/SvgFileInput'
 
 const faviconSetFields = [
   defineField({
@@ -6,40 +7,15 @@ const faviconSetFields = [
     title: 'favicon.ico',
     type: 'file',
     options: { accept: '.ico' },
-    description: 'Multi-size legacy (16 + 32 + 48 px)'
+    description: 'Multi-resolution ICO (16, 32, 48, 64, 128, 256 px)'
   }),
-  defineField({ name: 'png16', title: 'favicon-16×16.png', type: 'image', description: 'Browser tab — small' }),
-  defineField({ name: 'png32', title: 'favicon-32×32.png', type: 'image', description: 'Browser tab — standard' }),
-  defineField({ name: 'png48', title: 'favicon-48×48.png', type: 'image', description: 'Browser tab — medium' }),
-  defineField({ name: 'png64', title: 'favicon-64×64.png', type: 'image', description: 'Browser tab — high-DPI' }),
-  defineField({ name: 'png128', title: 'favicon-128×128.png', type: 'image', description: 'Chrome Web Store' }),
-  defineField({ name: 'png180', title: 'favicon-180×180.png', type: 'image', description: '180 px general' }),
-  defineField({ name: 'png192', title: 'favicon-192×192.png', type: 'image', description: '192 px general' }),
-  defineField({ name: 'png512', title: 'favicon-512×512.png', type: 'image', description: '512 px general' }),
-  defineField({
-    name: 'appleTouchIcon',
-    title: 'apple-touch-icon.png',
-    type: 'image',
-    description: 'iOS home screen (180×180)'
-  }),
-  defineField({
-    name: 'appIcon180',
-    title: 'app-icon-180×180.png',
-    type: 'image',
-    description: 'App icon (180×180)'
-  }),
-  defineField({
-    name: 'appIcon192',
-    title: 'app-icon-192×192.png',
-    type: 'image',
-    description: 'Android / PWA (192×192)'
-  }),
-  defineField({
-    name: 'appIcon512',
-    title: 'app-icon-512×512.png',
-    type: 'image',
-    description: 'PWA splash screen (512×512)'
-  })
+  defineField({ name: 'png16', title: 'favicon-16.png', type: 'image', description: 'Browser tab — small' }),
+  defineField({ name: 'png32', title: 'favicon-32.png', type: 'image', description: 'Browser tab — standard' }),
+  defineField({ name: 'png48', title: 'favicon-48.png', type: 'image', description: 'Browser tab — medium' }),
+  defineField({ name: 'png64', title: 'favicon-64.png', type: 'image', description: 'Browser tab — high-DPI' }),
+  defineField({ name: 'png128', title: 'favicon-128.png', type: 'image', description: 'Chrome Web Store' }),
+  defineField({ name: 'png256', title: 'favicon-256.png', type: 'image', description: 'Retina / PWA manifest' }),
+  defineField({ name: 'png512', title: 'favicon-512.png', type: 'image', description: 'PWA splash / 512 px general' })
 ]
 
 export const branding = defineType({
@@ -203,31 +179,76 @@ export const branding = defineType({
       title: 'Logo — Outline, Light',
       type: 'file',
       group: 'logos',
-      options: { accept: '.svg,image/svg+xml' }
+      options: { accept: '.svg,image/svg+xml' },
+      components: { input: SvgFileInput }
     }),
     defineField({
       name: 'logoOutlineDark',
       title: 'Logo — Outline, Dark',
       type: 'file',
       group: 'logos',
-      options: { accept: '.svg,image/svg+xml' }
+      options: { accept: '.svg,image/svg+xml' },
+      components: { input: SvgFileInput }
     }),
     defineField({
       name: 'logoSolidLight',
       title: 'Logo — Solid, Light',
       type: 'file',
       group: 'logos',
-      options: { accept: '.svg,image/svg+xml' }
+      options: { accept: '.svg,image/svg+xml' },
+      components: { input: SvgFileInput }
     }),
     defineField({
       name: 'logoSolidDark',
       title: 'Logo — Solid, Dark',
       type: 'file',
       group: 'logos',
-      options: { accept: '.svg,image/svg+xml' }
+      options: { accept: '.svg,image/svg+xml' },
+      components: { input: SvgFileInput }
+    }),
+
+    // ── Lockup (Logo Full) — mark + wordmark + tagline ────────────
+    defineField({
+      name: 'logoLockupOutlineLight',
+      title: 'Logo Full — Outline, Light',
+      type: 'file',
+      group: 'logos',
+      options: { accept: '.svg,image/svg+xml' },
+      components: { input: SvgFileInput }
+    }),
+    defineField({
+      name: 'logoLockupOutlineDark',
+      title: 'Logo Full — Outline, Dark',
+      type: 'file',
+      group: 'logos',
+      options: { accept: '.svg,image/svg+xml' },
+      components: { input: SvgFileInput }
+    }),
+    defineField({
+      name: 'logoLockupSolidLight',
+      title: 'Logo Full — Solid, Light',
+      type: 'file',
+      group: 'logos',
+      options: { accept: '.svg,image/svg+xml' },
+      components: { input: SvgFileInput }
+    }),
+    defineField({
+      name: 'logoLockupSolidDark',
+      title: 'Logo Full — Solid, Dark',
+      type: 'file',
+      group: 'logos',
+      options: { accept: '.svg,image/svg+xml' },
+      components: { input: SvgFileInput }
     }),
 
     // ── Favicon Sets ──────────────────────────────────────────────
+    defineField({
+      name: 'appleTouchIcon',
+      title: 'apple-touch-icon.png',
+      type: 'image',
+      group: 'favicons',
+      description: 'iOS home screen (180×180) — single asset shared across schemes'
+    }),
     defineField({
       name: 'faviconLight',
       title: 'Favicon Set — Light',

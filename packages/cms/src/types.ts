@@ -86,13 +86,8 @@ export interface CMSBrandingFaviconSet {
   png48?: CMSBrandingImage
   png64?: CMSBrandingImage
   png128?: CMSBrandingImage
-  png180?: CMSBrandingImage
-  png192?: CMSBrandingImage
+  png256?: CMSBrandingImage
   png512?: CMSBrandingImage
-  appleTouchIcon?: CMSBrandingImage
-  appIcon180?: CMSBrandingImage
-  appIcon192?: CMSBrandingImage
-  appIcon512?: CMSBrandingImage
 }
 
 export interface CMSBranding {
@@ -118,6 +113,11 @@ export interface CMSBranding {
   logoOutlineDark?: CMSBrandingFile
   logoSolidLight?: CMSBrandingFile
   logoSolidDark?: CMSBrandingFile
+  logoLockupOutlineLight?: CMSBrandingFile
+  logoLockupOutlineDark?: CMSBrandingFile
+  logoLockupSolidLight?: CMSBrandingFile
+  logoLockupSolidDark?: CMSBrandingFile
+  appleTouchIcon?: CMSBrandingImage
   faviconLight?: CMSBrandingFaviconSet
   faviconDark?: CMSBrandingFaviconSet
 }

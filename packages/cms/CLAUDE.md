@@ -121,8 +121,8 @@ Each product has a `branding` document in Sanity storing logo SVG files, the ful
 | `shape`     | `bladeDirection`, `interiorElement`, `interiorMeaning`, `shapeNotes` |
 | `variants`  | Outline/solid descriptions, use cases, minimum sizes |
 | `usage`     | `clearSpace`, `forbidden[]` |
-| `logos`     | `logoOutlineLight/Dark`, `logoSolidLight/Dark` (SVG `file` assets) |
-| `favicons`  | `faviconLight` + `faviconDark` objects, each with 13 size fields |
+| `logos`     | `logoOutlineLight/Dark`, `logoSolidLight/Dark`, `logoLockupOutlineLight/Dark`, `logoLockupSolidLight/Dark` (SVG `file` assets) |
+| `favicons`  | Shared `appleTouchIcon` + `faviconLight` + `faviconDark` objects, each set with `ico` + 7 PNG sizes (16/32/48/64/128/256/512) |
 
 Document IDs: `branding-herald`, `branding-atta`, `branding-vada`, `branding-vitakka`
 
