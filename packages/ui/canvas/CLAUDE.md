@@ -216,6 +216,46 @@ An SVG ring with animated wavy paths. Orbiting spheres sit at equally spaced pos
 
 **Ring matrix:** When `thinking=true`, matrix characters fall inside the ring. They pick random colors from registered sphere colors for multicolor effect. Ring matrix uses circular clip — there is a ~15px gap at the very top where the circle width approaches zero. This is a geometry constraint.
 
+**Responsive sizing:** `AIARing` has no built-in viewport awareness — it renders whatever `size` you give it. For full-viewport home pages, the consumer computes `size` from the viewport and scales orbiting spheres proportionally so they stay on the ring without overflowing. `AIARing` re-registers with the canvas context whenever `size` changes (see `aia-ring.tsx:97–123`), and `useAIASphere`'s rAF position loop picks up sphere size changes via `getBoundingClientRect()` — no extra plumbing needed.
+
+Canonical pattern (see `apps/vada-ai/web/src/app/(main)/(home)/components/HomeCanvas.tsx`):
+
+```tsx
+const MAX_RING = 600
+const SPHERE_RATIO = 128 / 600   // keep xl-to-ring proportion
+const MIN_SPHERE = 48            // floor so faces stay legible
+
+function useResponsiveRingSize() {
+  const [dims, setDims] = useState({ ringSize: MAX_RING, sphereSize: 128, sphereRadius: 64 })
+  useEffect(() => {
+    const compute = () => {
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const ringSize = Math.min(MAX_RING, Math.floor(Math.min(vw * 0.85, vh * 0.7)))
+      const sphereSize = Math.max(MIN_SPHERE, Math.round(ringSize * SPHERE_RATIO))
+      setDims({ ringSize, sphereSize, sphereRadius: Math.round(sphereSize / 2) })
+    }
+    compute()
+    window.addEventListener('resize', compute)
+    window.addEventListener('orientationchange', compute)
+    return () => {
+      window.removeEventListener('resize', compute)
+      window.removeEventListener('orientationchange', compute)
+    }
+  }, [])
+  return dims
+}
+
+const { ringSize, sphereSize, sphereRadius } = useResponsiveRingSize()
+<AIARing size={ringSize} sphereRadius={sphereRadius} ...>
+  {orbit.map(() => <AIAgent ... size={sphereSize} />)}
+</AIARing>
+```
+
+Why `0.85 × vw` and `0.7 × vh`: xl spheres protrude ~half their diameter past the ring's bbox, so the visible extent is ~1.2× the `size` prop. The clamps leave room for the overhang and margin. Tune per product if the ring has different surrounding UI.
+
+Keep the hook local to the consumer — sizing policy (max size, ratio, floor) varies per product (Vāda 600, Atta 800). Don't push it into `AIARing`.
+
 ---
 
 ## Canvas Phases
