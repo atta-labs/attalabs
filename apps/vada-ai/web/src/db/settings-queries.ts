@@ -1,8 +1,7 @@
+import 'server-only'
 import { and, eq } from 'drizzle-orm'
 import { db, schema } from './index'
 import { decryptApiKey, encryptApiKey, makeKeyHint } from '@/lib/crypto'
-import type { Provider } from '@/lib/models'
-
 // ── API Keys ──────────────────────────────────────────────────────────────────
 
 export async function upsertUserApiKey(userId: string, provider: string, plainKey: string): Promise<string> {
