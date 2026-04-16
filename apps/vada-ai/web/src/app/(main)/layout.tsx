@@ -13,15 +13,12 @@ import type { FaceStyle } from '@atta/ui/canvas'
 
 export default async function MainLayout({ children }: { children: ReactNode }) {
   const branding = await fetchVadaBranding()
+  const lightUrl = branding?.logoLockupSolidLight?.url ?? branding?.logoSolidLight?.url
+  const darkUrl = branding?.logoLockupSolidDark?.url ?? branding?.logoSolidDark?.url
   const logo =
-    branding?.logoSolidLight?.url || branding?.logoSolidDark?.url ? (
+    lightUrl || darkUrl ? (
       <Link href='/'>
-        <Logo
-          light={branding.logoSolidLight?.url}
-          dark={branding.logoSolidDark?.url}
-          alt={branding.productName ?? 'Vada AI'}
-          size='h-9'
-        />
+        <Logo light={lightUrl} dark={darkUrl} alt={branding?.productName ?? 'Vada AI'} size='h-9' />
       </Link>
     ) : null
 

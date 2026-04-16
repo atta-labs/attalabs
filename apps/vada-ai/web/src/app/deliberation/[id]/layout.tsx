@@ -13,15 +13,12 @@ import Link from 'next/link'
 export default async function DeliberationLayout({ children }: { children: ReactNode }) {
   const { userId: clerkId } = await auth()
   const branding = await fetchVadaBranding()
+  const lightUrl = branding?.logoLockupSolidLight?.url ?? branding?.logoSolidLight?.url
+  const darkUrl = branding?.logoLockupSolidDark?.url ?? branding?.logoSolidDark?.url
   const logo =
-    branding?.logoSolidLight?.url || branding?.logoSolidDark?.url ? (
+    lightUrl || darkUrl ? (
       <Link href='/'>
-        <Logo
-          light={branding.logoSolidLight?.url}
-          dark={branding.logoSolidDark?.url}
-          alt={branding.productName ?? 'Vada AI'}
-          size='h-9'
-        />
+        <Logo light={lightUrl} dark={darkUrl} alt={branding?.productName ?? 'Vada AI'} size='h-9' />
       </Link>
     ) : null
   let faceStyle: FaceStyle = 'emblematic'
