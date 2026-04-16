@@ -21,7 +21,7 @@ export default async function DeliberatePage({ searchParams }: { searchParams: P
   const configuredProviders = apiKeys.map((k) => k.provider)
 
   return (
-    <main className='flex flex-1 flex-col px-8'>
+    <div className='flex flex-1 flex-col px-8'>
       <div className='mx-auto w-full max-w-2xl flex-1 py-4'>
         <DeliberateSection
           remainingToday={remaining}
@@ -30,6 +30,6 @@ export default async function DeliberatePage({ searchParams }: { searchParams: P
           initialTeamModels={teamModels}
         />
       </div>
-    </main>
+    </div>
   )
 }

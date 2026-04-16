@@ -11,10 +11,10 @@ export function StickyHeaderTopBar({
   isBlurred?: boolean
 }) {
   return (
-    <div
+    <header
       className={cn('sticky top-0 h-14 flex items-center', isBlurred && 'bg-background/10 backdrop-blur-xs', className)}
     >
       {children}
-    </div>
+    </header>
   )
 }
