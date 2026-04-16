@@ -31,8 +31,8 @@ export function ScienceSidebar() {
             <SidebarMenu className='gap-1'>
               {SCIENCE_NAV.map(({ href, label, icon: Icon }) => (
                 <SidebarMenuItem key={href}>
-                  <SidebarMenuButton isActive={pathname === href} render={<Link href={href} />}>
-                    <Icon className='h-3.5 w-3.5 shrink-0' />
+                  <SidebarMenuButton size='sm' isActive={pathname === href} render={<Link href={href} />}>
+                    <Icon className='shrink-0' />
                     <span>{label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
