@@ -101,7 +101,12 @@ function edgeKey(r1: number, c1: number, r2: number, c2: number): string {
 function generateTendrils(br: number, bc: number, count: number): Array<Array<{ r: number; c: number }>> {
   const tendrils: Array<Array<{ r: number; c: number }>> = []
   const usedStartDirs = new Set<string>()
-  const allDirs: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+  const allDirs: [number, number][] = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1]
+  ]
   for (let ti = 0; ti < count; ti++) {
     const avail = allDirs.filter(([dr, dc]) => !usedStartDirs.has(`${dr},${dc}`))
     if (avail.length === 0) break
@@ -122,7 +127,16 @@ function generateTendrils(br: number, bc: number, count: number): Array<Array<{ 
       cr = nr
       cc = nc
       if (!turned && Math.random() < 0.4) {
-        const perp: [number, number][] = dr === 0 ? [[-1, 0], [1, 0]] : [[0, -1], [0, 1]]
+        const perp: [number, number][] =
+          dr === 0
+            ? [
+                [-1, 0],
+                [1, 0]
+              ]
+            : [
+                [0, -1],
+                [0, 1]
+              ]
         ;[dr, dc] = perp[Math.floor(Math.random() * 2)]!
         turned = true
       }
@@ -251,7 +265,7 @@ export function renderFabricBg(state: BgState): void {
       for (let i = 0; i < 5; i++) {
         const baseAngle = (i / 5) * Math.PI * 2
         const angle = baseAngle + (Math.random() - 0.5) * Math.PI * 0.35
-        const minD = Math.min(W, H) * 0.10
+        const minD = Math.min(W, H) * 0.1
         const maxD = Math.min(W, H) * 0.35
         const dist = minD + (i / 4) * (maxD - minD) + (Math.random() - 0.5) * Math.min(W, H) * 0.04
         const bx = CX + Math.cos(angle) * dist
@@ -891,7 +905,12 @@ export function renderFabricBg(state: BgState): void {
           // Normal grid-traversal particle
           const dx = targetSphere.x - bvb.x
           const dy = targetSphere.y - bvb.y
-          const dirOptions: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+          const dirOptions: [number, number][] = [
+            [-1, 0],
+            [1, 0],
+            [0, -1],
+            [0, 1]
+          ]
           const [bdr, bdc] = dirOptions.reduce((best, cur) =>
             cur[0] * dy + cur[1] * dx > best[0] * dy + best[1] * dx ? cur : best
           )

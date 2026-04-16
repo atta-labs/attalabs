@@ -22,7 +22,8 @@ const SPHERE_PHRASES = ['Framing...', 'Risks?', 'Counter...', 'Patterns...', 'Da
 
 // Inner — must be inside AIACanvas to access canvas context
 function HomeCanvasInner({ render, registerSphere, onOriginCompleteRef }: HomeCanvasInnerProps) {
-  const { activeAgent, activeStep, revealedCount, animationStarted, animationComplete } = useHomeCanvas(onOriginCompleteRef)
+  const { activeAgent, activeStep, revealedCount, animationStarted, animationComplete } =
+    useHomeCanvas(onOriginCompleteRef)
   const ctx = useAIAContext()
   const { faceStyle } = useUserPreferences()
 
