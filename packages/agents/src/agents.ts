@@ -110,6 +110,11 @@ export const AGENT_COLOR_BY_ROLE: Record<AgentRole | string, string> = Object.fr
   AGENT_LIST.map((a) => [a.role, a.color])
 )
 
+// Role-slug keyed full agent lookup — use when you have a slug and need the full AgentDef.
+export const AGENT_BY_ROLE: Record<AgentRole | string, AgentDef> = Object.fromEntries(
+  AGENT_LIST.map((a) => [a.role, a])
+)
+
 // Display-name keyed map — use when you have an agent name string from API/SSE messages.
 // Typed as Record<string, ...> so runtime lookups don't require casts.
 export const AGENT_THEME: Record<string, { color: string; label: string }> = Object.fromEntries(
