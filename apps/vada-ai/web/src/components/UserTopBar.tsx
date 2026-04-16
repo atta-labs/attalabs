@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@atta/ui'
+import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
 import { useClerk, useUser } from '@clerk/nextjs'
 import { LogOut, Settings } from 'lucide-react'
 import Link from 'next/link'
@@ -62,8 +63,9 @@ export function UserTopBar({ logo }: UserTopBarProps) {
           ))}
         </div>
       </div>
-      {/* Right: avatar dropdown (auth) or sign-in (anonymous) */}
+      {/* Right: scheme toggle + avatar dropdown (auth) or sign-in (anonymous) */}
       <div className='flex items-center gap-3'>
+        <ColorSchemeToggle />
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger className='rounded-full outline-none ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'>

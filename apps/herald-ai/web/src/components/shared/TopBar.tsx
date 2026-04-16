@@ -1,6 +1,8 @@
 import { Show, SignInButton, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
 
+import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
+
 export function TopBar({ username }: { username?: string }) {
   return (
     <nav className='border-b border-border'>
@@ -10,6 +12,7 @@ export function TopBar({ username }: { username?: string }) {
         </Link>
 
         <div className='flex items-center gap-4'>
+          <ColorSchemeToggle />
           <Show when='signed-out'>
             <SignInButton mode='modal' />
           </Show>

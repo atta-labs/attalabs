@@ -1,8 +1,10 @@
 import { buildClerkAppearance } from '@atta/auth'
 import { AuthProvider } from '@atta/auth/provider'
-import { generateThemeCSSForScheme, getGoogleFontsUrl, transformColorGroup } from '@atta/cms'
+import { generateThemeCSS, getGoogleFontsUrl, transformColorGroup } from '@atta/cms'
 import type { PortalUiConfig } from '@atta/cms'
+import { cookies } from 'next/headers'
 import type { ReactNode } from 'react'
+import { COLOR_SCHEME_COOKIE, resolveColorScheme, type ColorScheme } from './color-scheme'
 import { LibraryProvider } from './library-provider'
 import type { UILibrary } from './library-loader'
 import { ToastProvider } from '../libraries/basic/components/display/toast'
@@ -15,10 +17,16 @@ interface NextWebShellProps {
 
 export async function NextWebShell({ children, config, styleId }: NextWebShellProps) {
   const theme = config?.userInterface?.theme ?? null
-  const colorScheme = config?.userInterface?.colorScheme ?? 'dark'
+  const cmsScheme = config?.userInterface?.colorScheme as ColorScheme | undefined
+
+  const cookieStore = await cookies()
+  const cookieScheme = cookieStore.get(COLOR_SCHEME_COOKIE)?.value
+  const colorScheme: ColorScheme = resolveColorScheme(cookieScheme, cmsScheme)
+
   const libraryId = (config?.userInterface?.library?.id ?? 'basic') as UILibrary
 
-  const themeCSS = theme ? generateThemeCSSForScheme(theme, colorScheme) : null
+  // Emit BOTH light and dark blocks; <html data-theme> picks which is active.
+  const themeCSS = theme ? generateThemeCSS(theme) : null
   const fontsUrl = theme?.typography ? getGoogleFontsUrl(theme.typography) : null
 
   let appearance: ReturnType<typeof buildClerkAppearance> | undefined
@@ -39,7 +47,7 @@ export async function NextWebShell({ children, config, styleId }: NextWebShellPr
   }
 
   return (
-    <html lang='en'>
+    <html lang='en' data-theme={colorScheme}>
       <body className='min-h-screen bg-background text-foreground'>
         {fontsUrl && (
           <>

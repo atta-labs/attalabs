@@ -20,6 +20,8 @@
     "./lib/next-web-shell": "./lib/next-web-shell.tsx",
     "./lib/library-provider": "./lib/library-provider.tsx",
     "./lib/library-loader": "./lib/library-loader.ts",
+    "./lib/color-scheme": "./lib/color-scheme.ts",
+    "./lib/color-scheme-toggle": "./lib/color-scheme-toggle.tsx",
     "./canvas": "./canvas/index.ts",
     "./lib/*": "./lib/*.ts",
     "./hooks/*": "./hooks/*.ts",
