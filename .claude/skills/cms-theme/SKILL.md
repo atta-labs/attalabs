@@ -36,7 +36,9 @@ Sanity CMS
 └── types.ts                       # CMSTheme, PortalUiConfig, ThemeTypography
 
 @atta/ui package
-└── lib/next-web-shell.tsx         # Root provider: fetches config → injects CSS + fonts
+├── lib/next-web-shell.tsx         # Root provider: reads cookie + config → injects CSS + fonts
+├── lib/color-scheme.ts            # Shared cookie/attribute/default contract
+└── lib/color-scheme-toggle.tsx    # Client toggle — flips <html data-theme> + writes cookie
 ```
 
 ---
@@ -62,7 +64,7 @@ interface PortalUiConfig {
   _id: string
   userInterface: {
     theme: CMSTheme | null          // null until theme is set in Sanity
-    colorScheme: 'dark' | 'light'
+    colorScheme: 'dark' | 'light'   // default scheme; the atta-color-scheme cookie can override per-visitor
     library: CMSLibrary | null      // null falls back to 'basic'
   }
 }
@@ -72,22 +74,7 @@ interface PortalUiConfig {
 
 ## Theme CSS Generation
 
-Colors from Sanity are stored as plain hex or oklch strings. The `generateThemeCSSForScheme` utility converts them to oklch and formats them as CSS variables:
-
-```ts
-import { generateThemeCSSForScheme } from '@atta/cms'
-
-const css = generateThemeCSSForScheme(theme, 'dark')
-// Output:
-// :root {
-//   --background: oklch(12% 0.02 60);
-//   --foreground: oklch(88% 0.05 70);
-//   --font-sans: 'DM Sans', sans-serif;
-//   ...
-// }
-```
-
-Use `generateThemeCSS` when you need both light and dark blocks:
+Colors from Sanity are stored as plain hex or oklch strings. `NextWebShell` emits **both** schemes via `generateThemeCSS` — `<html data-theme>` selects which one is active, and the runtime toggle can flip between them with no FOUC:
 
 ```ts
 import { generateThemeCSS } from '@atta/cms'
@@ -95,6 +82,15 @@ import { generateThemeCSS } from '@atta/cms'
 const css = generateThemeCSS(theme)
 // :root { /* light tokens */ }
 // :root[data-theme="dark"], .dark { /* dark tokens */ }
+```
+
+Use `generateThemeCSSForScheme` only when you need a single scheme (e.g. an admin live-preview iframe that always renders one):
+
+```ts
+import { generateThemeCSSForScheme } from '@atta/cms'
+
+const css = generateThemeCSSForScheme(theme, 'dark')
+// :root { --background: oklch(12% 0.02 60); --foreground: oklch(88% 0.05 70); ... }
 ```
 
 ---
@@ -146,16 +142,20 @@ Theme application is **fully server-side rendered**. There is no flash of unstyl
    → .catch(() => null) ensures graceful degradation if CMS is unreachable
 4. config is passed to NextWebShell (also a Server Component)
 5. NextWebShell runs server-side:
-   a. generateThemeCSSForScheme(theme, colorScheme)
-      → produces CSS string: ":root { --background: oklch(...); --font-sans: 'DM Sans'; ... }"
-   b. getGoogleFontsUrl(theme.typography)
+   a. await cookies() → reads atta-color-scheme cookie (if present)
+   b. resolveColorScheme(cookie, cmsScheme) → cookie wins, then CMS, then 'dark'
+   c. generateThemeCSS(theme)
+      → produces dual CSS string:
+        ":root { /* light */ } :root[data-theme=\"dark\"], .dark { /* dark */ }"
+   d. getGoogleFontsUrl(theme.typography)
       → produces Google Fonts URL string
-6. NextWebShell returns the full <html> tree including:
+6. NextWebShell returns the full <html data-theme="..."> tree including:
    - <link> tags for fonts (in <head>, so browser fetches fonts immediately)
-   - <style id="vada-theme"> with all CSS variables (inline in initial HTML)
+   - <style id="vada-theme"> with both light + dark variable blocks (inline in initial HTML)
    - Children wrapped in AuthProvider + LibraryProvider + ToastProvider
-7. Browser receives complete HTML — CSS variables are present before any JS runs
-   → No FOUC. Theme is applied on first paint.
+7. Browser receives complete HTML — both schemes' variables are present before any JS runs;
+   <html data-theme> selects which one is active.
+   → No FOUC. Correct scheme is applied on first paint.
 ```
 
 **Key:** `cmsClient` uses `useCdn: true` in production, so Sanity serves from edge CDN — fast, no cold starts at the theme fetch level.
@@ -186,13 +186,52 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 **`styleId` must be unique per product** — it identifies the injected `<style>` tag. Use `herald-theme`, `vada-theme`, `atta-theme`, `vitakka-theme`.
 
 `NextWebShell` handles in order:
-1. Reads `colorScheme` and `libraryId` from config
-2. Calls `generateThemeCSSForScheme` → injects `<style id={styleId}>` with all CSS variables
-3. Calls `getGoogleFontsUrl` → injects `<link rel="preconnect">` + `<link rel="stylesheet">` for fonts
-4. Builds Clerk appearance object from resolved color tokens (matching auth UI to product theme)
-5. Wraps children: `AuthProvider` → `LibraryProvider` → `ToastProvider`
+1. Reads `cmsScheme` and `libraryId` from config
+2. Reads `atta-color-scheme` cookie via `next/headers`; resolves final scheme as `cookie → CMS → 'dark'`
+3. Calls `generateThemeCSS` → injects `<style id={styleId}>` with **both** light + dark variable blocks
+4. Stamps `<html data-theme={resolvedScheme}>` so the browser knows which block is active
+5. Calls `getGoogleFontsUrl` → injects `<link rel="preconnect">` + `<link rel="stylesheet">` for fonts
+6. Builds Clerk appearance object from the *resolved* scheme's color tokens
+7. Wraps children: `AuthProvider` → `LibraryProvider` → `ToastProvider`
 
 **When `config` is `null`** (CMS unreachable or not yet configured): no theme CSS is injected, no fonts are loaded, the base `globals.css` defaults apply. The app still renders.
+
+---
+
+## Color Scheme Toggle (Light / Dark)
+
+Visitors can flip between the theme's light and dark color schemes at runtime. The mechanism is cookie-driven so the next SSR render agrees with the user's choice — no FOUC.
+
+### Architecture
+
+```
+packages/ui/lib/
+├── color-scheme.ts            # Shared contract: cookie name, type, default, resolveColorScheme()
+├── color-scheme-toggle.tsx    # 'use client' — sun/moon Button; flips <html data-theme> + writes cookie
+└── next-web-shell.tsx         # Server — reads cookie, resolves scheme, sets <html data-theme>
+```
+
+### How it works
+
+- **SSR (`NextWebShell`):** reads `atta-color-scheme` cookie via `next/headers`, resolves `cookie → CMS default → 'dark'`, emits both light + dark CSS blocks via `generateThemeCSS`, stamps `<html data-theme="...">`.
+- **Client (`ColorSchemeToggle`):** on click, sets `document.documentElement.dataset.theme` and writes the cookie. Pure client side — no router refresh, instant repaint.
+- **Tailwind `dark:` variant:** `globals.css` declares `@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *))` so `dark:` utilities follow the attribute (not `prefers-color-scheme`).
+
+### Adding the toggle to a topbar
+
+```tsx
+import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
+
+<div className='flex items-center gap-3'>
+  <ColorSchemeToggle />
+  {/* rest of right-side cluster */}
+</div>
+```
+
+### Trade-offs to know
+
+- **Clerk modals don't update on a client-side flip** — Clerk's `appearance` is built once server-side from the resolved scheme. Modals adopt the new scheme after the next full server render (e.g. navigation). Acceptable; modals are infrequent.
+- **CMS `colorScheme` is the *default*** — the cookie wins per-visitor. Changing CMS still affects new visitors with no cookie set.
 
 ---
 
@@ -225,6 +264,8 @@ In components, use `--agent-color` via the `data-agent` attribute — never hard
 - **MUST** inject font URLs from `getGoogleFontsUrl` — never hardcode Google Fonts URLs
 - **MUST NOT** add product-specific CSS variable definitions outside `globals.css` or the CMS theme system
 - **MUST NOT** override `--font-sans`, `--font-serif`, `--font-mono` in component CSS — let the theme own fonts
+- **MUST NOT** hardcode the cookie name or `data-theme` attribute — import constants from `@atta/ui/lib/color-scheme`
+- **MUST NOT** read or write the color scheme from a Server Component manually — `NextWebShell` owns the SSR resolution
 
 ---
 
@@ -283,5 +324,7 @@ bun run studio:deploy:all       # Deploy all four (sequential, prompts y/n)
 - ❌ Hex colors in component CSS or JSX — all colors via CSS variables
 - ❌ `next/font/google` with hardcoded font names — fonts come from CMS theme
 - ❌ Different theme CSS per-component — theme is global, injected once at root by `NextWebShell`
-- ❌ Calling `generateThemeCSSForScheme` in a component — only call at root layout level
+- ❌ Calling `generateThemeCSS` (or `generateThemeCSSForScheme`) inside a component — theme CSS is injected once at root layout by `NextWebShell`
 - ❌ Duplicating `AuthProvider` or `LibraryProvider` inside `NextWebShell` children
+- ❌ Hand-rolling a color-scheme toggle — use `<ColorSchemeToggle />` from `@atta/ui/lib/color-scheme-toggle`
+- ❌ Reading the `atta-color-scheme` cookie directly anywhere except `NextWebShell` — keep the SSR resolution single-source

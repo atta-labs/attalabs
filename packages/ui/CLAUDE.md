@@ -152,6 +152,21 @@ import { cn } from '@atta/ui/lib/utils'
 <div className={cn('bg-card', isActive && 'border-accent', className)} />
 ```
 
+### `ColorSchemeToggle` — runtime light/dark switch
+
+Client component. Sun/moon icon button; flips `<html data-theme>` and writes the `atta-color-scheme` cookie so the next SSR render agrees. Drop into any topbar.
+
+```tsx
+import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
+
+<div className='flex items-center gap-3'>
+  <ColorSchemeToggle />
+  {/* avatar, sign-in, etc. */}
+</div>
+```
+
+The shared cookie name, attribute name, default scheme, and `resolveColorScheme()` helper live in `@atta/ui/lib/color-scheme` — `NextWebShell` (server) and the toggle (client) both import from there. See `.claude/skills/cms-theme/SKILL.md` for the full architecture.
+
 ---
 
 ## globals.css
