@@ -19,6 +19,8 @@ export { buttonVariants } from '../../basic/installed/button'
 // Display — falls back to basic for Toast
 export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger, useCollapsible } from '../installed/collapsible'
+// Interactive — Tabs (animate overrides TabsContent, re-exports others from basic)
+export { Tabs, TabsContent, TabsList, TabsTrigger } from '../installed/tabs'
 export {
   DropdownMenu,
   DropdownMenuCheckboxItem,

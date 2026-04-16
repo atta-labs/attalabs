@@ -1,5 +1,6 @@
 // Interactive
 export type { ButtonProps, ButtonSize, ButtonVariant, ButtonVariantsFn } from './interactive/button'
+export type { TabsContentProps, TabsListProps, TabsProps, TabsTriggerProps } from './interactive/tabs'
 
 // Content
 export type {

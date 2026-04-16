@@ -38,6 +38,12 @@ export const REQUIRED_COMPONENTS = [
   'CollapsibleContent',
   'CollapsibleTrigger',
 
+  // Tabs
+  'Tabs',
+  'TabsContent',
+  'TabsList',
+  'TabsTrigger',
+
   // DropdownMenu
   'DropdownMenu',
   'DropdownMenuCheckboxItem',
@@ -100,6 +106,12 @@ export const REQUIRED_TYPES = [
   'ButtonSize',
   'ButtonVariant',
   'ButtonVariantsFn',
+
+  // Tabs
+  'TabsContentProps',
+  'TabsListProps',
+  'TabsProps',
+  'TabsTriggerProps',
 
   // Badge
   'BadgeAnimation',

@@ -5,6 +5,8 @@ export type * from '../../../types'
 // Display — falls back to basic
 export { Badge } from '../../basic/installed/badge'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../basic/installed/collapsible'
+// Interactive — Tabs — falls back to basic
+export { Tabs, TabsContent, TabsList, TabsTrigger } from '../../basic/installed/tabs'
 export {
   DropdownMenu,
   DropdownMenuCheckboxItem,

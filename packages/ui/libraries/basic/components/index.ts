@@ -14,6 +14,8 @@ export { Input } from './form/input'
 export { Textarea } from './form/textarea'
 export { Button, buttonVariants } from './interactive/button'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
+// Interactive — Tabs
+export { Tabs, TabsContent, TabsList, TabsTrigger } from '../installed/tabs'
 export {
   DropdownMenu,
   DropdownMenuCheckboxItem,

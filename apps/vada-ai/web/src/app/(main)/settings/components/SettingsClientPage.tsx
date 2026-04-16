@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@atta/ui'
-import { cn } from '@atta/ui/lib/utils'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui'
 import type { TeamModelEntry } from '@/db/settings-queries'
 import type { FaceStyle } from '@atta/ui/canvas'
 import { ApiKeysSection } from './api-keys/ApiKeysSection'
@@ -32,29 +31,16 @@ export function SettingsClientPage({ initialApiKeys, initialTeamModels, initialF
   const configuredProviders = new Set(apiKeys.map((k) => k.provider))
 
   return (
-    <div className='space-y-8'>
-      {/* Tab bar */}
-      <div className='flex items-center gap-0 border-b border-border/20'>
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tab)}>
+      <TabsList>
         {TABS.map((tab) => (
-          <Button
-            key={tab.id}
-            variant='ghost'
-            size='sm'
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'h-auto rounded-none px-4 pb-3 pt-0 font-mono text-[10px] uppercase tracking-widest transition-colors hover:bg-transparent',
-              activeTab === tab.id
-                ? 'border-b-2 border-foreground text-foreground'
-                : 'text-foreground/40 hover:text-foreground/70'
-            )}
-          >
+          <TabsTrigger key={tab.id} value={tab.id}>
             {tab.label}
-          </Button>
+          </TabsTrigger>
         ))}
-      </div>
+      </TabsList>
 
-      {/* Tab panels */}
-      {activeTab === 'api-keys' && (
+      <TabsContent value='api-keys'>
         <ApiKeysSection
           apiKeys={apiKeys}
           onKeyAdded={(provider, keyHint) => {
@@ -67,9 +53,9 @@ export function SettingsClientPage({ initialApiKeys, initialTeamModels, initialF
             setApiKeys((prev) => prev.filter((k) => k.provider !== provider))
           }}
         />
-      )}
+      </TabsContent>
 
-      {activeTab === 'teams' && (
+      <TabsContent value='teams'>
         <TeamsSection
           teamModels={teamModels}
           configuredProviders={configuredProviders}
@@ -80,9 +66,11 @@ export function SettingsClientPage({ initialApiKeys, initialTeamModels, initialF
             })
           }}
         />
-      )}
+      </TabsContent>
 
-      {activeTab === 'agent-style' && <AgentStyleSection faceStyle={faceStyle} onFaceStyleChanged={setFaceStyle} />}
-    </div>
+      <TabsContent value='agent-style'>
+        <AgentStyleSection faceStyle={faceStyle} onFaceStyleChanged={setFaceStyle} />
+      </TabsContent>
+    </Tabs>
   )
 }
