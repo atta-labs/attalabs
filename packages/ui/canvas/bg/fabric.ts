@@ -39,9 +39,9 @@ interface Ripple {
   cy: number
   startT: number
   life: number
-  amp?: number          // displacement amplitude — default 4
-  mode?: 'radial'      // 'radial' = expand outward from ripple source (correct for off-center origins)
-                        // omit  = original tangential displacement relative to fabric center
+  amp?: number // displacement amplitude — default 4
+  mode?: 'radial' // 'radial' = expand outward from ripple source (correct for off-center origins)
+  // omit  = original tangential displacement relative to fabric center
 }
 let ripples: Ripple[] = []
 
@@ -64,9 +64,9 @@ function withAlpha(color: string, alpha: number): string {
   const hex = color.match(/^#([0-9a-f]{3,8})$/i)
   if (hex) {
     const h = hex[1]!
-    const r = h.length <= 4 ? parseInt(h[0]! + h[0]!, 16) : parseInt(h.slice(0, 2), 16)
-    const g = h.length <= 4 ? parseInt(h[1]! + h[1]!, 16) : parseInt(h.slice(2, 4), 16)
-    const b = h.length <= 4 ? parseInt(h[2]! + h[2]!, 16) : parseInt(h.slice(4, 6), 16)
+    const r = h.length <= 4 ? Number.parseInt(h[0]! + h[0]!, 16) : Number.parseInt(h.slice(0, 2), 16)
+    const g = h.length <= 4 ? Number.parseInt(h[1]! + h[1]!, 16) : Number.parseInt(h.slice(2, 4), 16)
+    const b = h.length <= 4 ? Number.parseInt(h[2]! + h[2]!, 16) : Number.parseInt(h.slice(4, 6), 16)
     return `rgba(${r},${g},${b},${alpha.toFixed(3)})`
   }
   return `rgba(255,255,255,${alpha.toFixed(3)})`
@@ -96,6 +96,55 @@ function edgeKey(r1: number, c1: number, r2: number, c2: number): string {
   return r1 < r2 || (r1 === r2 && c1 < c2) ? `${r1},${c1},${r2},${c2}` : `${r2},${c2},${r1},${c1}`
 }
 
+// Pre-generate `count` energy tendrils spreading from a birth vertex.
+// Tendrils are angular circuit-like paths — at most one turn each.
+function generateTendrils(br: number, bc: number, count: number): Array<Array<{ r: number; c: number }>> {
+  const tendrils: Array<Array<{ r: number; c: number }>> = []
+  const usedStartDirs = new Set<string>()
+  const allDirs: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+  for (let ti = 0; ti < count; ti++) {
+    const avail = allDirs.filter(([dr, dc]) => !usedStartDirs.has(`${dr},${dc}`))
+    if (avail.length === 0) break
+    const [tdr, tdc] = avail[Math.floor(Math.random() * avail.length)]!
+    usedStartDirs.add(`${tdr},${tdc}`)
+    const path: Array<{ r: number; c: number }> = []
+    let cr = br
+    let cc = bc
+    let dr = tdr
+    let dc = tdc
+    const len = 3 + Math.floor(Math.random() * 4)
+    let turned = false
+    for (let step = 0; step < len; step++) {
+      const nr = cr + dr
+      const nc = cc + dc
+      if (nr < 0 || nr > ROWS || nc < 0 || nc > COLS) break
+      path.push({ r: nr, c: nc })
+      cr = nr
+      cc = nc
+      if (!turned && Math.random() < 0.4) {
+        const perp: [number, number][] = dr === 0 ? [[-1, 0], [1, 0]] : [[0, -1], [0, 1]]
+        ;[dr, dc] = perp[Math.floor(Math.random() * 2)]!
+        turned = true
+      }
+    }
+    if (path.length > 0) tendrils.push(path)
+  }
+  return tendrils
+}
+
+// Pre-generate a pool of 20 matrix characters for birth cycling animation.
+function generateCharPool(): Array<{ dr: number; dc: number; char: string }> {
+  const charPool: Array<{ dr: number; dc: number; char: string }> = []
+  for (let ci = 0; ci < 20; ci++) {
+    charPool.push({
+      dr: Math.floor(Math.random() * 7) - 3,
+      dc: Math.floor(Math.random() * 9) - 4,
+      char: BIRTH_CHARS[Math.floor(Math.random() * BIRTH_CHARS.length)]!
+    })
+  }
+  return charPool
+}
+
 interface TronParticle {
   r: number // current vertex row
   c: number // current vertex col
@@ -118,7 +167,8 @@ interface TronParticle {
   // in a straight screen-space line directly to the sphere center at the same speed.
   finalApproach: boolean
   approachProgress: number // 0→1 along the straight-line final approach
-  approachDist: number     // pixel distance to sphere center at detach time — used for speed normalisation
+  approachDist: number // pixel distance to sphere center at detach time — used for speed normalisation
+  origin?: boolean // true = spawned by sphere-origin event; arrival counted for onOriginComplete
 }
 
 const TRAIL_LEN = 22
@@ -141,9 +191,13 @@ interface TronBirth {
   spawned: boolean // true once the TronParticle has been created
   tendrils: Array<Array<{ r: number; c: number }>> // pre-generated lit grid paths
   charPool: Array<{ dr: number; dc: number; char: string }> // 20 chars, cycled by frame
+  origin?: boolean // true = intensified rendering (1.8× glow, more tendrils) for sphere-origin event
 }
 let tronBirths: TronBirth[] = []
 let firstParticleSpawned = false
+// Tracks convergence of origin particles so onOriginComplete fires at the right moment
+let originTotalCount = 0
+let originArrivedCount = 0
 
 // ── Particle effects — crash explosion or sphere-join glow ────────────────────
 // Spawned when a particle dies. Drawn independently for a short window.
@@ -183,6 +237,46 @@ export function renderFabricBg(state: BgState): void {
       ]
       closingPulses.push({ cx, cy, startT: t, life: 1, frontColors })
     }
+    if (evt.type === 'sphere-origin') {
+      const target = state.spheres.find((s) => s.id === evt.sphereId)
+      if (!target) continue
+      // Reset origin convergence tracking
+      originArrivedCount = 0
+      let spawned = 0
+      // Births spread from SCREEN CENTER (CX, CY), not from the sphere.
+      // Sphere s1 sits at the top of the ring — spreading from it would cluster all
+      // births near the top edge. Spreading from screen center fills the whole visible
+      // area. Particles then converge upward toward the sphere position.
+      // 5 births, one per 72° sector, staggered distances for varied beam speeds.
+      for (let i = 0; i < 5; i++) {
+        const baseAngle = (i / 5) * Math.PI * 2
+        const angle = baseAngle + (Math.random() - 0.5) * Math.PI * 0.35
+        const minD = Math.min(W, H) * 0.10
+        const maxD = Math.min(W, H) * 0.35
+        const dist = minD + (i / 4) * (maxD - minD) + (Math.random() - 0.5) * Math.min(W, H) * 0.04
+        const bx = CX + Math.cos(angle) * dist
+        const by = CY + Math.sin(angle) * dist
+        const br = Math.round((by / H) * ROWS)
+        const bc = Math.round((bx / W) * COLS)
+        if (br < 3 || br > ROWS - 3 || bc < 3 || bc > COLS - 3) continue
+        const tendrils = generateTendrils(br, bc, 4)
+        const charPool = generateCharPool()
+        tronBirths.push({
+          r: br,
+          c: bc,
+          targetSphereId: target.id,
+          color: target.color,
+          startT: t,
+          spawned: false,
+          tendrils,
+          charPool,
+          origin: true
+        })
+        spawned++
+      }
+      originTotalCount = spawned
+      if (spawned > 0) firstParticleSpawned = true
+    }
   }
 
   ripples = ripples.filter((rp) => {
@@ -212,7 +306,12 @@ export function renderFabricBg(state: BgState): void {
   // First particle spawns immediately when the ring finishes forming (no random gate).
   // Subsequent ones use the normal 0.8%/frame probability.
   const spawnNow = !firstParticleSpawned && tronParticles.length + activeBirths === 0
-  if (spheres.length > 0 && settleProgress >= 1 && tronParticles.length + activeBirths < 5 && (spawnNow || Math.random() < 0.008)) {
+  if (
+    spheres.length > 0 &&
+    settleProgress >= 1 &&
+    tronParticles.length + activeBirths < 5 &&
+    (spawnNow || Math.random() < 0.008)
+  ) {
     firstParticleSpawned = true
     const targetSphere = spheres[Math.floor(Math.random() * spheres.length)]!
     // Never birth a second particle of the same color
@@ -234,7 +333,11 @@ export function renderFabricBg(state: BgState): void {
           const distToSphere = Math.hypot(vb.x - targetSphere.x, vb.y - targetSphere.y)
           const distToRing = Math.hypot(vb.x - CX, vb.y - CY)
           // Must be just outside the sphere, within reach, and outside the ring
-          if (distToSphere > targetSphere.radius * 1.8 && distToSphere < targetSphere.radius * 4.5 && distToRing >= RING_R * 1.6) {
+          if (
+            distToSphere > targetSphere.radius * 1.8 &&
+            distToSphere < targetSphere.radius * 4.5 &&
+            distToRing >= RING_R * 1.6
+          ) {
             candidates.push([r, c])
           }
         }
@@ -242,46 +345,19 @@ export function renderFabricBg(state: BgState): void {
       if (candidates.length === 0) return // no valid spot near this sphere this frame
       const [br, bc] = candidates[Math.floor(Math.random() * candidates.length)]!
 
-      // Pre-generate 2–3 tendrils spreading from the birth vertex
-      const tendrils: Array<Array<{ r: number; c: number }>> = []
-      const usedStartDirs = new Set<string>()
-      const allDirs: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
-      const tendrilCount = 2 + Math.floor(Math.random() * 2)
-      for (let ti = 0; ti < tendrilCount; ti++) {
-        const avail = allDirs.filter(([dr, dc]) => !usedStartDirs.has(`${dr},${dc}`))
-        if (avail.length === 0) break
-        const [tdr, tdc] = avail[Math.floor(Math.random() * avail.length)]!
-        usedStartDirs.add(`${tdr},${tdc}`)
-        const path: Array<{ r: number; c: number }> = []
-        let cr = br, cc = bc, dr = tdr, dc = tdc
-        const len = 3 + Math.floor(Math.random() * 4)
-        let turned = false
-        for (let step = 0; step < len; step++) {
-          const nr = cr + dr, nc = cc + dc
-          if (nr < 0 || nr > ROWS || nc < 0 || nc > COLS) break
-          path.push({ r: nr, c: nc })
-          cr = nr; cc = nc
-          // At most one turn per tendril — keeps them angular, circuit-like
-          if (!turned && Math.random() < 0.4) {
-            const perp: [number, number][] = dr === 0 ? [[-1, 0], [1, 0]] : [[0, -1], [0, 1]]
-            ;[dr, dc] = perp[Math.floor(Math.random() * 2)]!
-            turned = true
-          }
-        }
-        if (path.length > 0) tendrils.push(path)
-      }
+      const tendrils = generateTendrils(br, bc, 2 + Math.floor(Math.random() * 2))
+      const charPool = generateCharPool()
 
-      // Pre-generate 20 matrix chars for the cycling animation
-      const charPool: Array<{ dr: number; dc: number; char: string }> = []
-      for (let ci = 0; ci < 20; ci++) {
-        charPool.push({
-          dr: Math.floor(Math.random() * 7) - 3,
-          dc: Math.floor(Math.random() * 9) - 4,
-          char: BIRTH_CHARS[Math.floor(Math.random() * BIRTH_CHARS.length)]!
-        })
-      }
-
-      tronBirths.push({ r: br, c: bc, targetSphereId: targetSphere.id, color: targetSphere.color, startT: t, spawned: false, tendrils, charPool })
+      tronBirths.push({
+        r: br,
+        c: bc,
+        targetSphereId: targetSphere.id,
+        color: targetSphere.color,
+        startT: t,
+        spawned: false,
+        tendrils,
+        charPool
+      })
     }
   }
 
@@ -338,11 +414,31 @@ export function renderFabricBg(state: BgState): void {
         p.dying = true
         if (sphere) {
           onSphereAbsorb?.(sphere.id)
+          if (p.origin) {
+            originArrivedCount++
+            if (originArrivedCount >= originTotalCount && originTotalCount > 0) {
+              state.onOriginComplete?.()
+            }
+          }
           // Local ripple — radial, high amplitude so the mesh visibly distorts outward
           // from the sphere center. Stays local (Gaussian envelope ~45px wide ring).
           ripples.push({ cx: sphere.x, cy: sphere.y, startT: t, life: 1, amp: 55, mode: 'radial' })
-          particleEffects.push({ x: sphere.x, y: sphere.y, color: p.color, startT: t, type: 'join', sphereRadius: sphere.radius })
-          particleEffects.push({ x: sphere.x, y: sphere.y, color: p.color, startT: t, type: 'halo', sphereRadius: sphere.radius })
+          particleEffects.push({
+            x: sphere.x,
+            y: sphere.y,
+            color: p.color,
+            startT: t,
+            type: 'join',
+            sphereRadius: sphere.radius
+          })
+          particleEffects.push({
+            x: sphere.x,
+            y: sphere.y,
+            color: p.color,
+            startT: t,
+            type: 'halo',
+            sphereRadius: sphere.radius
+          })
         }
       }
       return true
@@ -664,7 +760,7 @@ export function renderFabricBg(state: BgState): void {
   // Each birth animates in 3 phases: illuminate (0–40%), matrix chars (30–100%),
   // then the particle spawns and the glow fades out behind it.
   const BIRTH_DURATION = 40 // frames of emergence before particle spawns
-  const BIRTH_FADE = 22     // frames to fade after particle spawns
+  const BIRTH_FADE = 22 // frames to fade after particle spawns
   const GRID_STEP_X = W / COLS
   const GRID_STEP_Y = H / ROWS
 
@@ -680,10 +776,11 @@ export function renderFabricBg(state: BgState): void {
     const emergence = Math.min(1, age / BIRTH_DURATION)
     const fadeOut = birth.spawned ? Math.max(0, 1 - postSpawnAge / BIRTH_FADE) : 1
     const pulse = Math.sin(age * 0.18) * 0.5 + 0.5 // slow oscillation
+    const intensityMult = birth.origin ? 1.8 : 1.0
 
     // 1. Central glow dot — brightens as emergence peaks
-    const glowR = 3 + pulse * 7
-    const glowAlpha = emergence * (0.5 + pulse * 0.45) * fadeOut
+    const glowR = (birth.origin ? 5 : 3) + pulse * (birth.origin ? 12 : 7)
+    const glowAlpha = emergence * (0.5 + pulse * 0.45) * fadeOut * intensityMult
     const glowGrad = ctx.createRadialGradient(birthVert.x, birthVert.y, 0, birthVert.x, birthVert.y, glowR + 10)
     glowGrad.addColorStop(0, `rgba(255,255,255,${(glowAlpha * 0.95).toFixed(3)})`)
     glowGrad.addColorStop(0.3, withAlpha(birth.color, glowAlpha * 0.8))
@@ -695,10 +792,15 @@ export function renderFabricBg(state: BgState): void {
     ctx.fill()
 
     // 2. Illuminated edges — the 4 grid edges touching the birth vertex glow brightly
-    const edgeAlpha = emergence * (0.35 + pulse * 0.35) * fadeOut
+    const edgeAlpha = emergence * (0.35 + pulse * 0.35) * fadeOut * intensityMult
     ctx.strokeStyle = birth.color
     ctx.lineWidth = 1.8
-    const edgeNeighbors: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+    const edgeNeighbors: [number, number][] = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1]
+    ]
     for (const [dr, dc] of edgeNeighbors) {
       const nv = pos[(birth.r + dr) * STRIDE + (birth.c + dc)]
       if (!nv) continue
@@ -719,7 +821,7 @@ export function renderFabricBg(state: BgState): void {
         // Wave front travelling along the tendril
         const segFrac = (i + 1) / tendril.length
         const wave = Math.sin(age * 0.25 - segFrac * Math.PI * 3) * 0.5 + 0.5
-        const segAlpha = tendrilAge * wave * (0.45 + pulse * 0.25) * fadeOut * (1 - segFrac * 0.4)
+        const segAlpha = tendrilAge * wave * (0.45 + pulse * 0.25) * fadeOut * (1 - segFrac * 0.4) * intensityMult
         ctx.globalAlpha = segAlpha
         ctx.strokeStyle = birth.color
         ctx.lineWidth = 1 + wave * 1.2
@@ -743,11 +845,7 @@ export function renderFabricBg(state: BgState): void {
         const flicker = Math.sin(age * 0.4 + ci * 1.3) * 0.5 + 0.5
         ctx.globalAlpha = charEmergence * flicker * 0.75 * fadeOut
         ctx.fillStyle = birth.color
-        ctx.fillText(
-          ch.char,
-          birthVert.x + ch.dc * GRID_STEP_X * 0.55,
-          birthVert.y + ch.dr * GRID_STEP_Y * 0.6
-        )
+        ctx.fillText(ch.char, birthVert.x + ch.dc * GRID_STEP_X * 0.55, birthVert.y + ch.dr * GRID_STEP_Y * 0.6)
       }
     }
 
@@ -755,30 +853,74 @@ export function renderFabricBg(state: BgState): void {
     if (!birth.spawned && age >= BIRTH_DURATION) {
       birth.spawned = true
       const targetSphere = spheres.find((s) => s.id === birth.targetSphereId)
-      const colorTaken = tronParticles.some((q) => !q.dying && q.color === birth.color)
+      const colorTaken = !birth.origin && tronParticles.some((q) => !q.dying && q.color === birth.color)
       if (targetSphere && !colorTaken) {
-        // Direction: pick the cardinal direction that aligns best with sphere center
         const bvb = vertBasePos(birth.r, birth.c)
-        const dx = targetSphere.x - bvb.x
-        const dy = targetSphere.y - bvb.y
-        const dirOptions: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
-        const [bdr, bdc] = dirOptions.reduce((best, cur) =>
-          cur[0] * dy + cur[1] * dx > best[0] * dy + best[1] * dx ? cur : best
-        )
-        const nr = birth.r + bdr, nc = birth.c + bdc
-        if (nr >= 0 && nr <= ROWS && nc >= 0 && nc <= COLS) {
+        if (birth.origin) {
+          // Origin particles fly directly to sphere center — bypasses grid traversal.
+          // Speed is calibrated so all origin particles arrive after the same number of
+          // frames regardless of their distance (further = faster, closer = slower).
+          const ORIGIN_APPROACH_FRAMES = 90
+          const approachDist = Math.hypot(targetSphere.x - bvb.x, targetSphere.y - bvb.y)
+          const gridStepPx = W / COLS
+          const speed = approachDist > 0 ? approachDist / (gridStepPx * 3 * ORIGIN_APPROACH_FRAMES) : 0.05
           tronParticles.push({
-            r: birth.r, c: birth.c,
-            targetR: nr, targetC: nc,
-            progress: 0, dr: bdr, dc: bdc,
-            speed: 0.04 + Math.random() * 0.06,
-            color: birth.color, trail: [],
-            ownedEdges: new Set([edgeKey(birth.r, birth.c, nr, nc)]),
-            visitedVerts: new Set([`${birth.r},${birth.c}`]),
-            didTurn: false, targetSphereId: birth.targetSphereId,
-            steps: 0, opacity: 1, dying: false,
-            finalApproach: false, approachProgress: 0, approachDist: 0
+            r: birth.r,
+            c: birth.c,
+            targetR: birth.r,
+            targetC: birth.c,
+            progress: 0,
+            dr: 0,
+            dc: 0,
+            speed,
+            color: birth.color,
+            trail: [],
+            ownedEdges: new Set(),
+            visitedVerts: new Set(),
+            didTurn: false,
+            targetSphereId: birth.targetSphereId,
+            steps: 0,
+            opacity: 1,
+            dying: false,
+            finalApproach: true,
+            approachProgress: 0,
+            approachDist,
+            origin: true
           })
+        } else {
+          // Normal grid-traversal particle
+          const dx = targetSphere.x - bvb.x
+          const dy = targetSphere.y - bvb.y
+          const dirOptions: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+          const [bdr, bdc] = dirOptions.reduce((best, cur) =>
+            cur[0] * dy + cur[1] * dx > best[0] * dy + best[1] * dx ? cur : best
+          )
+          const nr = birth.r + bdr
+          const nc = birth.c + bdc
+          if (nr >= 0 && nr <= ROWS && nc >= 0 && nc <= COLS) {
+            tronParticles.push({
+              r: birth.r,
+              c: birth.c,
+              targetR: nr,
+              targetC: nc,
+              progress: 0,
+              dr: bdr,
+              dc: bdc,
+              speed: 0.04 + Math.random() * 0.06,
+              color: birth.color,
+              trail: [],
+              ownedEdges: new Set([edgeKey(birth.r, birth.c, nr, nc)]),
+              visitedVerts: new Set([`${birth.r},${birth.c}`]),
+              didTurn: false,
+              targetSphereId: birth.targetSphereId,
+              steps: 0,
+              opacity: 1,
+              dying: false,
+              finalApproach: false,
+              approachProgress: 0,
+              approachDist: 0
+            })
+          }
         }
       }
     }
@@ -883,7 +1025,7 @@ export function renderFabricBg(state: BgState): void {
       // Peaks at ~30% progress then fades gently.
       const sr = fx.sphereRadius ?? 48
       const peakAlpha = Math.sin(progress * Math.PI) // 0→1→0 arc, peaks at midpoint
-      const outerR = sr * (1.2 + ease * 1.8)         // grows from 1.2× to 3× sphere radius
+      const outerR = sr * (1.2 + ease * 1.8) // grows from 1.2× to 3× sphere radius
       const grad = ctx.createRadialGradient(fx.x, fx.y, sr * 0.7, fx.x, fx.y, outerR)
       grad.addColorStop(0, withAlpha(fx.color, peakAlpha * 0.45))
       grad.addColorStop(0.4, withAlpha(fx.color, peakAlpha * 0.25))

@@ -17,6 +17,7 @@ export function AIACanvas({
   bg,
   onPhaseChange,
   onSphereAbsorb,
+  onOriginComplete,
   wanderDuration,
   alwaysRenderSpheres,
   matchContentHeight,
@@ -24,7 +25,7 @@ export function AIACanvas({
   ref
 }: AIACanvasProps) {
   const { containerRef, canvasRef, contextValue } = useAIACanvas(
-    { bg, onPhaseChange, onSphereAbsorb, wanderDuration, alwaysRenderSpheres, matchContentHeight, autoTriggerGravity },
+    { bg, onPhaseChange, onSphereAbsorb, onOriginComplete, wanderDuration, alwaysRenderSpheres, matchContentHeight, autoTriggerGravity },
     ref
   )
 

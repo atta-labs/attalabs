@@ -281,8 +281,59 @@ import { drawFabric } from '@atta/ui/canvas/bg'
 Beyond the standard `registerSphere` / `fireDirectedMessage`, the context also exposes:
 
 ```tsx
-ctx.startGravity()  // Trigger gravity pull after animation completes — spheres drift inward
+ctx.startGravity()        // Trigger gravity pull after animation completes — spheres drift inward
+ctx.fireSphereOrigin(id)  // Trigger origin birth animation — 5 Tron births converge on sphere
 ```
+
+---
+
+## Sphere Origin Birth Animation
+
+Before a sphere is revealed, `ctx.fireSphereOrigin(sphereId)` spawns 5 intense Tron births spread across the **screen center** (not the sphere position). After their emergence animation, each particle flies directly to the sphere center. All 5 arrive simultaneously — the sphere only appears via the `onOriginComplete` callback.
+
+**Why screen center, not sphere position:** Sphere `s1` sits at the top of the ring (~300px above screen center). Spreading from the sphere position would cluster all births near the top edge and many would fall off-screen. Spreading from screen center fills the visible area.
+
+**Synchronized arrival:** Each particle skips grid traversal and enters `finalApproach` immediately. Speed is calibrated as `dist / (gridStep × 3 × 90_frames)` — further births move faster, closer births slower — so all arrive after exactly 90 frames regardless of distance.
+
+**Wiring pattern** — three layers to bridge canvas → React state:
+
+```tsx
+// HomeCanvas.tsx (outer — where AIACanvas lives)
+export function HomeCanvas({ render }: HomeCanvasProps) {
+  const { onSphereAbsorb, registerSphere } = useSphereAbsorb()
+  const onOriginCompleteRef = useRef<(() => void) | null>(null)
+
+  return (
+    <AIACanvas
+      onSphereAbsorb={onSphereAbsorb}
+      onOriginComplete={() => onOriginCompleteRef.current?.()}
+      ...
+    >
+      <HomeCanvasInner registerSphere={registerSphere} onOriginCompleteRef={onOriginCompleteRef} />
+    </AIACanvas>
+  )
+}
+
+// useHomeCanvas.ts (inner — where revealedCount state lives)
+export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() => void) | null>) {
+  const runSimulation = async () => {
+    ctx.fireSphereOrigin('s1')
+
+    // Await arrival of all 5 particles — no fixed timeout
+    await new Promise<void>((resolve) => {
+      onOriginCompleteRef.current = resolve
+      setTimeout(resolve, 4000) // safety fallback
+    })
+    onOriginCompleteRef.current = null
+
+    setRevealedCount(1) // sphere appears exactly when last particle arrives
+  }
+}
+```
+
+**Why the ref bridge:** `onOriginComplete` fires from the canvas (lives in outer `HomeCanvas`), but `setRevealedCount` lives in inner `useHomeCanvas`. A `MutableRefObject` bridges them without prop drilling or context re-renders.
+
+**Key constraint — do NOT call `setRevealedCount` before `onOriginComplete`** — the sphere will appear before particles arrive.
 
 ---
 
@@ -297,6 +348,8 @@ ctx.startGravity()  // Trigger gravity pull after animation completes — sphere
 | `matchContentHeight` | `boolean` | `false` | Canvas = scrollHeight for scrolling pages |
 | `onPhaseChange` | `fn` | — | wander → forming → settled |
 | `onSphereAbsorb` | `fn` | — | Fires when a Tron particle joins a sphere. Receives `sphereId`. |
+| `onOriginComplete` | `fn` | — | Fires once when **all** origin particles have arrived. Use to gate sphere reveal. |
+| `autoTriggerGravity` | `boolean` | `true` | Set false to manually call `ctx.startGravity()` |
 
 ## AIASphere Props
 

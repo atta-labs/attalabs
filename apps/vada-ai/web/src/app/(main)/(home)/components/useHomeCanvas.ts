@@ -1,9 +1,10 @@
 'use client'
 
+import type React from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { useAIAContext } from '@atta/ui/canvas'
 
-export function useHomeCanvas() {
+export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() => void) | null>) {
   const [activeAgent, setActiveAgent] = useState<string | null>(null)
   const [activeStep, setActiveStep] = useState(0)
   const [revealedCount, setRevealedCount] = useState(0)
@@ -22,7 +23,18 @@ export function useHomeCanvas() {
     const runSimulation = async () => {
       await new Promise((r) => setTimeout(r, 200))
 
-      setRevealedCount(1) // reveal sphere 0
+      // Fire 4 origin births — they emerge from fabric, then fly straight to s1 center
+      ctx.fireSphereOrigin('s1')
+
+      // Wait for all 4 particles to converge. The canvas calls onOriginComplete when
+      // the last particle arrives — which resolves this promise. Fallback: 4s timeout.
+      await new Promise<void>((resolve) => {
+        onOriginCompleteRef.current = resolve
+        setTimeout(resolve, 4000)
+      })
+      onOriginCompleteRef.current = null
+
+      setRevealedCount(1) // sphere appears as particles arrive
 
       for (let i = 0; i < sequence.length; i++) {
         const current = sequence[i] as string

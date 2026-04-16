@@ -30,6 +30,7 @@ export interface AIACanvasConfig {
   bg?: BgVariant | BgRenderer
   onPhaseChange?: (phase: CanvasPhase) => void
   onSphereAbsorb?: (sphereId: string) => void
+  onOriginComplete?: () => void
   wanderDuration?: number
   alwaysRenderSpheres?: boolean
   matchContentHeight?: boolean
@@ -47,6 +48,7 @@ export function useAIACanvas(
     bg,
     onPhaseChange,
     onSphereAbsorb,
+    onOriginComplete,
     wanderDuration = 120,
     alwaysRenderSpheres = false,
     matchContentHeight = false,
@@ -63,6 +65,8 @@ export function useAIACanvas(
   onPhaseChangeRef.current = onPhaseChange
   const onSphereAbsorbRef = useRef<((sphereId: string) => void) | undefined>(onSphereAbsorb)
   onSphereAbsorbRef.current = onSphereAbsorb
+  const onOriginCompleteRef = useRef<(() => void) | undefined>(onOriginComplete)
+  onOriginCompleteRef.current = onOriginComplete
 
   const spheresRef = useRef<Map<string, SphereRegistration>>(new Map())
   const ringsRef = useRef<Map<string, RingRegistration>>(new Map())
@@ -128,6 +132,10 @@ export function useAIACanvas(
       toSphereId: toId
     })
     recentEventsRef.current.push({ type: 'message-fired', fromId, toId })
+  }, [])
+
+  const fireSphereOrigin = useCallback((sphereId: string) => {
+    recentEventsRef.current.push({ type: 'sphere-origin', sphereId })
   }, [])
 
   // ── Imperative handle ────────────────────────────────────────────────────
@@ -213,7 +221,8 @@ export function useAIACanvas(
         rings,
         spheres,
         recentEvents: frameEvents,
-        onSphereAbsorb: onSphereAbsorbRef.current
+        onSphereAbsorb: onSphereAbsorbRef.current,
+        onOriginComplete: onOriginCompleteRef.current
       })
 
       // ── Phase machine ────────────────────────────────────────────────────
@@ -311,7 +320,8 @@ export function useAIACanvas(
     phase,
     containerRef,
     fireDirectedMessage,
-    startGravity
+    startGravity,
+    fireSphereOrigin
   }
 
   return { containerRef, canvasRef, contextValue }

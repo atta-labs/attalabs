@@ -12,12 +12,14 @@ export interface BgState {
   spheres: SphereRegistration[] // registered spheres this frame
   recentEvents: BgEvent[] // events that fired this frame, cleared next frame
   onSphereAbsorb?: (sphereId: string) => void // fired when a Tron particle joins a sphere
+  onOriginComplete?: () => void // fired once when all origin particles have arrived
 }
 
 export type BgEvent =
   | { type: 'message-fired'; fromId: string; toId: string }
   | { type: 'sphere-state-changed'; sphereId: string }
   | { type: 'ring-closed'; cx: number; cy: number }
+  | { type: 'sphere-origin'; sphereId: string }
 
 export type BgRenderer = (state: BgState) => void
 

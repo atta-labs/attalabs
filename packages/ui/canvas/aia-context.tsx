@@ -47,6 +47,8 @@ export interface AIAContextValue {
   fireDirectedMessage: (fromSphereId: string, toSphereId: string) => void
   /** Trigger the gravitational fabric ramp. Call when the ring animation is complete. */
   startGravity: () => void
+  /** Trigger the origin birth animation — 3 intense Tron births converge on this sphere. */
+  fireSphereOrigin: (sphereId: string) => void
 }
 
 export const AIAContext = createContext<AIAContextValue | null>(null)

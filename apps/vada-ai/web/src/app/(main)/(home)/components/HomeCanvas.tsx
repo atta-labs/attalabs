@@ -1,7 +1,7 @@
 'use client'
 
 import { AIAgent, AIACanvas, AIARing, useAIAContext, type AgentName } from '@atta/ui/canvas'
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useEffect, useRef } from 'react'
 import { useHomeCanvas } from './useHomeCanvas'
 import { useSphereAbsorb } from './useSphereAbsorb'
 import { useUserPreferences } from '@/lib/user-preferences-context'
@@ -12,6 +12,7 @@ interface HomeCanvasProps {
 
 interface HomeCanvasInnerProps extends HomeCanvasProps {
   registerSphere: (id: string, el: HTMLElement | null) => void
+  onOriginCompleteRef: React.MutableRefObject<(() => void) | null>
 }
 
 const AGENTS: AgentName[] = ['Strategist', 'Critic', "Devil's Advocate", 'Synthesizer', 'Researcher', 'Operator']
@@ -20,8 +21,8 @@ const SPHERE_IDS = ['s1', 's2', 's3', 's4', 's5', 's6'] as const
 const SPHERE_PHRASES = ['Framing...', 'Risks?', 'Counter...', 'Patterns...', 'Data...', 'Synthesis...']
 
 // Inner — must be inside AIACanvas to access canvas context
-function HomeCanvasInner({ render, registerSphere }: HomeCanvasInnerProps) {
-  const { activeAgent, activeStep, revealedCount, animationStarted, animationComplete } = useHomeCanvas()
+function HomeCanvasInner({ render, registerSphere, onOriginCompleteRef }: HomeCanvasInnerProps) {
+  const { activeAgent, activeStep, revealedCount, animationStarted, animationComplete } = useHomeCanvas(onOriginCompleteRef)
   const ctx = useAIAContext()
   const { faceStyle } = useUserPreferences()
 
@@ -83,6 +84,7 @@ function HomeCanvasInner({ render, registerSphere }: HomeCanvasInnerProps) {
 // Outer — sets up AIACanvas (the context provider), renders HomeCanvasInner inside it
 export function HomeCanvas({ render }: HomeCanvasProps) {
   const { onSphereAbsorb, registerSphere } = useSphereAbsorb()
+  const onOriginCompleteRef = useRef<(() => void) | null>(null)
 
   return (
     <div className='fixed inset-0 z-0'>
@@ -92,9 +94,10 @@ export function HomeCanvas({ render }: HomeCanvasProps) {
         alwaysRenderSpheres
         autoTriggerGravity={false}
         onSphereAbsorb={onSphereAbsorb}
+        onOriginComplete={() => onOriginCompleteRef.current?.()}
         className='h-full w-full'
       >
-        <HomeCanvasInner render={render} registerSphere={registerSphere} />
+        <HomeCanvasInner render={render} registerSphere={registerSphere} onOriginCompleteRef={onOriginCompleteRef} />
       </AIACanvas>
     </div>
   )
