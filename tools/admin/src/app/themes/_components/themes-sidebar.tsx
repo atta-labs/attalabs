@@ -2,6 +2,7 @@
 
 import type { CMSTheme } from '@atta/cms'
 import { Button } from '@atta/ui/components/button'
+import { SidebarMenu, SidebarProvider } from '@atta/ui'
 import { Plus } from 'lucide-react'
 import { ThemeEntryCard } from './theme-entry-card'
 
@@ -23,14 +24,18 @@ export function ThemesSidebar({ themes, selectedId, onSelect, onNewTheme }: Them
       </div>
       <div className='flex-1 overflow-auto'>
         {themes.length === 0 && <p className='p-4 text-sm text-muted-foreground'>No themes found.</p>}
-        {themes.map((theme) => (
-          <ThemeEntryCard
-            key={theme._id}
-            theme={theme}
-            isSelected={selectedId === theme._id}
-            onSelect={() => onSelect(theme._id)}
-          />
-        ))}
+        <SidebarProvider className='flex-col'>
+          <SidebarMenu className='px-2 py-1'>
+            {themes.map((theme) => (
+              <ThemeEntryCard
+                key={theme._id}
+                theme={theme}
+                isSelected={selectedId === theme._id}
+                onSelect={() => onSelect(theme._id)}
+              />
+            ))}
+          </SidebarMenu>
+        </SidebarProvider>
       </div>
     </div>
   )

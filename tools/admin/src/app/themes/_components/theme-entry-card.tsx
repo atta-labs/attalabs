@@ -1,8 +1,7 @@
 'use client'
 
 import type { CMSTheme } from '@atta/cms'
-import { Button } from '@atta/ui/components/button'
-import { cn } from '@atta/ui/lib/utils'
+import { SidebarMenuButton, SidebarMenuItem } from '@atta/ui'
 import { FourSquareSwatch } from './four-square-swatch'
 
 function extractSwatchColors(theme: CMSTheme): [string, string, string, string] {
@@ -27,16 +26,11 @@ interface ThemeEntryCardProps {
 
 export function ThemeEntryCard({ theme, isSelected, onSelect }: ThemeEntryCardProps) {
   return (
-    <Button
-      variant='ghost'
-      className={cn(
-        'w-full justify-start gap-2 rounded-none px-3 h-10',
-        isSelected && 'bg-accent text-accent-foreground'
-      )}
-      onClick={onSelect}
-    >
-      <FourSquareSwatch colors={extractSwatchColors(theme)} />
-      <span className='truncate text-sm'>{theme.name}</span>
-    </Button>
+    <SidebarMenuItem>
+      <SidebarMenuButton isActive={isSelected} onClick={onSelect}>
+        <FourSquareSwatch colors={extractSwatchColors(theme)} />
+        <span>{theme.name}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   )
 }
