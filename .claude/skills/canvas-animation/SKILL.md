@@ -1,13 +1,6 @@
 ---
 name: canvas-animation
 description: Rules and patterns for the AIACanvas particle system — AIACanvas, AIASphere, AIARing components in @atta/ui/canvas
-triggers:
-  - Using AIACanvas, AIASphere, AIARing, or useAIAContext
-  - Building animated particle or ring UI
-  - Editing canvas or particle system code
-  - Debugging missing particles, invisible matrix, or sphere positioning
-  - Adding spheres to a page or component
-  - Working with deliberation feed or home page visuals
 ---
 
 # Canvas Animation — Atta AI

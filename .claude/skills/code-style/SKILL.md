@@ -1,9 +1,6 @@
 ---
 name: code-style
 description: Enforces TypeScript, export, import, and Biome code style rules across the Atta AI monorepo
-triggers:
-  - Any new file creation
-  - Any TypeScript or TSX edit
 ---
 
 # Code Style — Atta AI Monorepo

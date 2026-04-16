@@ -1,11 +1,6 @@
 ---
 name: monorepo-structure
 description: Turborepo monorepo structure, workspace conventions, package imports, and task commands for Atta AI
-triggers:
-  - Adding a new package or app
-  - Setting up a new surface (web/mobile/mcp)
-  - Configuring TypeScript or package.json
-  - Importing across workspace packages
 ---
 
 # Monorepo Structure — Atta AI

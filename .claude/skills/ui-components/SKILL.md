@@ -1,10 +1,6 @@
 ---
 name: ui-components
 description: Rules for building UI across ALL Atta AI apps — component usage, CSS variables, theming, typography, inline styles, library system
-triggers:
-  - Creating or editing any .tsx or .jsx file
-  - Building any UI feature in any product (herald-ai, vada-ai, atta-ai, vitakka-ai)
-  - Adding components, layouts, or styling
 ---
 
 # UI Components — Atta AI (All Products)
@@ -166,7 +162,7 @@ import { Button } from '@atta/ui/brutal/components'   // unless specifically req
 
 Shared cross-library primitives (`Heading`, `Text`, `Flex`, `AgentThinkingText`) live in `@atta/ui/shared` and are always available regardless of active library.
 
-**For the full architecture** — build-time generation, runtime switching, adding apps, debugging resolution — see [`ai/skills/ui-library-system.md`](./ui-library-system.md).
+**For the full architecture** — build-time generation, runtime switching, adding apps, debugging resolution — see [`.claude/skills/ui-library-system/SKILL.md`](../ui-library-system/SKILL.md).
 
 ---
 

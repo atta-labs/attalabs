@@ -1,11 +1,6 @@
 ---
 name: auth
 description: Clerk authentication patterns across all Atta AI products — root layout, middleware, server components, per-product isolation
-triggers:
-  - Adding or editing authentication in any product
-  - Creating middleware.ts files
-  - Protecting routes
-  - Accessing current user in server or client components
 ---
 
 # Authentication — Atta AI

@@ -1,13 +1,6 @@
 ---
 name: branding
 description: How the branding document system works — Sanity schema, logo/favicon asset queries, per-product geometry, and the seed script for uploading assets
-triggers:
-  - Working with logos, favicons, or brand assets in any product
-  - Using CMSBranding, getAttaBranding, getVadaBranding, getHeraldBranding, or getVitakkaBranding
-  - Seeding or re-uploading brand assets to Sanity
-  - Adding Herald logos when they are created
-  - Rendering product logos or favicons in app code
-  - Updating brand identity text (Pali root, tagline, usage rules)
 ---
 
 # Branding System — Atta AI

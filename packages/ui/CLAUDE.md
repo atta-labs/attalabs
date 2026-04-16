@@ -228,6 +228,6 @@ bun run validate:ui-contract
 
 - [Root CLAUDE.md](../../CLAUDE.md)
 - [canvas/CLAUDE.md](canvas/CLAUDE.md) — Canvas particle animation system
-- [ai/skills/ui-components.md](../../ai/skills/ui-components.md) — Full UI rules
-- [ai/skills/ui-library-system.md](../../ai/skills/ui-library-system.md) — Library system, build-time generation, contract validation
-- [ai/skills/cms-theme.md](../../ai/skills/cms-theme.md) — Theme loading from CMS
+- [.claude/skills/ui-components/SKILL.md](../../.claude/skills/ui-components/SKILL.md) — Full UI rules
+- [.claude/skills/ui-library-system/SKILL.md](../../.claude/skills/ui-library-system/SKILL.md) — Library system, build-time generation, contract validation
+- [.claude/skills/cms-theme/SKILL.md](../../.claude/skills/cms-theme/SKILL.md) — Theme loading from CMS

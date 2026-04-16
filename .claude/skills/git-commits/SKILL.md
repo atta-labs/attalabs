@@ -1,9 +1,6 @@
 ---
 name: git-commits
 description: Git commit format and rules for the Atta AI monorepo — enforced by commitlint + husky
-triggers:
-  - Committing any changes
-  - Writing a commit message
 ---
 
 # Git Commits — Atta AI

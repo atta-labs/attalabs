@@ -1,12 +1,6 @@
 ---
 name: ui-library-system
 description: How the @atta/ui multi-library system works — build-time generation (Vada pattern) vs runtime switching (Herald pattern), how to add a new app or library, and how to debug library resolution
-triggers:
-  - Adding a new product app
-  - Configuring UI library for an existing app
-  - Importing from @atta/ui and getting wrong components
-  - Understanding why tsconfig has @atta/ui path aliases
-  - Working with LibraryProvider or useComponents
 ---
 
 # UI Library System — Atta AI

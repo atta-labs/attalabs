@@ -143,16 +143,16 @@ In-depth guides for specific domains. Reference when working in that area.
 
 | Skill | File | Use For |
 |-------|------|---------|
-| UI Components | [ai/skills/ui-components.md](ai/skills/ui-components.md) | Component usage, CSS variables, theming |
-| UI Library System | [ai/skills/ui-library-system.md](ai/skills/ui-library-system.md) | Build-time generation, runtime switching, adding apps/libraries |
-| CMS Theme | [ai/skills/cms-theme.md](ai/skills/cms-theme.md) | SSR theme loading, fonts, Sanity studios |
-| Branding | [ai/skills/branding.md](ai/skills/branding.md) | Logos, favicons, brand assets, seed script |
-| API Routes | [ai/skills/api-routes.md](ai/skills/api-routes.md) | Route patterns, validation, LLM calls |
-| Database | [ai/skills/database.md](ai/skills/database.md) | Drizzle schema, queries, migrations |
-| Monorepo | [ai/skills/monorepo-structure.md](ai/skills/monorepo-structure.md) | Workspace layout, package imports |
-| Git Commits | [ai/skills/git-commits.md](ai/skills/git-commits.md) | Commit format and rules |
-| Canvas Animation | [ai/skills/canvas-animation.md](ai/skills/canvas-animation.md) | AIACanvas, AIASphere, AIARing |
-| Vada Engine | [ai/skills/vada-engine.md](ai/skills/vada-engine.md) | Deliberation engine, sessions, streaming |
-| Herald Engine | [ai/skills/herald-engine.md](ai/skills/herald-engine.md) | Forensic audit, Skeptical Auditor, signal detection |
-| Auth | [ai/skills/auth.md](ai/skills/auth.md) | Clerk patterns, middleware, per-product isolation |
-| Code Style | [ai/skills/code-style.md](ai/skills/code-style.md) | TypeScript, exports, Biome rules |
+| UI Components | [.claude/skills/ui-components/SKILL.md](.claude/skills/ui-components/SKILL.md) | Component usage, CSS variables, theming |
+| UI Library System | [.claude/skills/ui-library-system/SKILL.md](.claude/skills/ui-library-system/SKILL.md) | Build-time generation, runtime switching, adding apps/libraries |
+| CMS Theme | [.claude/skills/cms-theme/SKILL.md](.claude/skills/cms-theme/SKILL.md) | SSR theme loading, fonts, Sanity studios |
+| Branding | [.claude/skills/branding/SKILL.md](.claude/skills/branding/SKILL.md) | Logos, favicons, brand assets, seed script |
+| API Routes | [.claude/skills/api-routes/SKILL.md](.claude/skills/api-routes/SKILL.md) | Route patterns, validation, LLM calls |
+| Database | [.claude/skills/database/SKILL.md](.claude/skills/database/SKILL.md) | Drizzle schema, queries, migrations |
+| Monorepo | [.claude/skills/monorepo-structure/SKILL.md](.claude/skills/monorepo-structure/SKILL.md) | Workspace layout, package imports |
+| Git Commits | [.claude/skills/git-commits/SKILL.md](.claude/skills/git-commits/SKILL.md) | Commit format and rules |
+| Canvas Animation | [.claude/skills/canvas-animation/SKILL.md](.claude/skills/canvas-animation/SKILL.md) | AIACanvas, AIASphere, AIARing |
+| Vada Engine | [.claude/skills/vada-engine/SKILL.md](.claude/skills/vada-engine/SKILL.md) | Deliberation engine, sessions, streaming |
+| Herald Engine | [.claude/skills/herald-engine/SKILL.md](.claude/skills/herald-engine/SKILL.md) | Forensic audit, Skeptical Auditor, signal detection |
+| Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, per-product isolation |
+| Code Style | [.claude/skills/code-style/SKILL.md](.claude/skills/code-style/SKILL.md) | TypeScript, exports, Biome rules |

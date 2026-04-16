@@ -1,10 +1,6 @@
 ---
 name: vada-engine
 description: Vāda deliberation engine architecture — agents, rounds, streaming, session management, and resume logic
-triggers:
-  - Editing files in apps/vada-ai/web/src/engine/
-  - Editing deliberation API routes (start, stream)
-  - Building or modifying deliberation flow
 ---
 
 # Vāda Engine — Deliberation System

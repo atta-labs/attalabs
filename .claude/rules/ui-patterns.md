@@ -86,7 +86,7 @@ Font values come from the CMS theme. Never hardcode font-family names.
 
 Colors, fonts, and UI library (basic/retro/animate/brutal) are set per-product in Sanity CMS and injected at root layout via `NextWebShell`. Never hardcode theme values — they change per product and per theme.
 
-See `ai/skills/cms-theme.md` for full details.
+See `.claude/skills/cms-theme/SKILL.md` for full details.
 
 ---
 

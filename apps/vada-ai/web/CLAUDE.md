@@ -125,6 +125,6 @@ Specs live at the product level, not the surface level.
 
 - [Vada AI Overview](../CLAUDE.md)
 - [Root CLAUDE.md](../../../CLAUDE.md)
-- [ai/skills/vada-engine.md](../../../ai/skills/vada-engine.md) — Engine architecture and rules
+- [.claude/skills/vada-engine/SKILL.md](../../../.claude/skills/vada-engine/SKILL.md) — Engine architecture and rules
 - [packages/ui/CLAUDE.md](../../../packages/ui/CLAUDE.md) — UI component library
 - [packages/cms/CLAUDE.md](../../../packages/cms/CLAUDE.md) — CMS theme system

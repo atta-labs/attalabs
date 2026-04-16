@@ -1,11 +1,6 @@
 ---
 name: cms-theme
 description: How the CMS theme and UI config system works across all Atta AI products — Sanity schemas, theme generation, font loading, product configs
-triggers:
-  - Working with theme, colors, or fonts in any product
-  - Adding a new product or modifying an existing product's look
-  - Editing packages/cms or packages/ui
-  - Using getHeraldConfig, getVadaConfig, getAttaConfig, getVitakkaConfig
 ---
 
 # CMS Theme System — Atta AI
