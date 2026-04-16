@@ -24,7 +24,7 @@ export function ScienceSidebar() {
   const pathname = usePathname()
 
   return (
-    <SidebarProvider className='w-56 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground !min-h-0'>
+    <SidebarProvider className='h-full w-56 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'>
       <SidebarContent className='px-2 py-4'>
         <SidebarGroup>
           <SidebarGroupContent>
