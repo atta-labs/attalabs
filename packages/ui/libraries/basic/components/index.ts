@@ -33,6 +33,7 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '../installed/dropdown-menu'
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../installed/popover'
 // Layout
 export { Separator } from './layout/separator'
 // Table

@@ -49,6 +49,7 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '../../basic/installed/dropdown-menu'
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../../basic/installed/popover'
 // Sidebar — falls back to basic
 export {
   Sidebar,

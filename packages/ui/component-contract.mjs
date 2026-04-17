@@ -61,6 +61,12 @@ export const REQUIRED_COMPONENTS = [
   'DropdownMenuSubTrigger',
   'DropdownMenuTrigger',
 
+  // Popover
+  'Popover',
+  'PopoverAnchor',
+  'PopoverContent',
+  'PopoverTrigger',
+
   // Form
   'Input',
   'Textarea',

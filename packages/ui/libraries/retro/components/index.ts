@@ -24,6 +24,7 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '../../basic/installed/dropdown-menu'
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../../basic/installed/popover'
 export { Input } from '../../basic/installed/input'
 // Layout — falls back to basic
 export { Separator } from '../../basic/installed/separator'
