@@ -1,8 +1,8 @@
 'use client'
 
 import { Button, Input } from '@atta/ui'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { Search, Plus } from 'lucide-react'
-import Link from 'next/link'
 import { useState } from 'react'
 import { SessionList } from './SessionList'
 
@@ -35,12 +35,12 @@ export function HistoryClientView({ sessions }: { sessions: Session[] }) {
             className='pl-9'
           />
         </div>
-        <Link href='/deliberate'>
+        <NextLink variant='unstyled' href='/deliberate'>
           <Button size='sm' className='gap-1.5'>
             <Plus className='h-3.5 w-3.5' />
             New deliberation
           </Button>
-        </Link>
+        </NextLink>
       </div>
 
       <SessionList

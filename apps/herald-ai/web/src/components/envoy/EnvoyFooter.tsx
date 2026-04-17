@@ -1,21 +1,18 @@
 import { Show, UserButton } from '@clerk/nextjs'
-import Link from 'next/link'
+import { NextLink } from '@atta/ui/lib/next-link'
 
 export function EnvoyFooter() {
   return (
     <footer className='border-t border-border/50 py-6 no-print'>
       <div className='mx-auto flex max-w-[680px] items-center justify-between px-6'>
-        <Link href='/' className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'>
+        <NextLink variant='subtle' href='/' className='text-[10px]'>
           Herald
-        </Link>
+        </NextLink>
         <Show when='signed-in'>
           <div className='flex items-center gap-3'>
-            <Link
-              href='/admin'
-              className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
-            >
+            <NextLink variant='subtle' href='/admin' className='text-[10px]'>
               Dashboard →
-            </Link>
+            </NextLink>
             <UserButton
               appearance={{
                 elements: { avatarBox: 'h-5 w-5' }
@@ -24,12 +21,9 @@ export function EnvoyFooter() {
           </div>
         </Show>
         <Show when='signed-out'>
-          <Link
-            href='/sign-in'
-            className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
-          >
+          <NextLink variant='subtle' href='/sign-in' className='text-[10px]'>
             Sign in
-          </Link>
+          </NextLink>
         </Show>
       </div>
     </footer>

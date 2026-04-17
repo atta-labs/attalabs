@@ -1,9 +1,9 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import remarkGfm from 'remark-gfm'
 import { ArrowRight } from 'lucide-react'
 import { Separator } from '@atta/ui'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
 import { scienceMdxComponents } from '../components/MDXComponents'
@@ -67,13 +67,14 @@ export default async function ScienceDocPage({ params }: { params: Promise<{ slu
           <Separator className='opacity-20' />
           <footer className='flex items-center justify-between pt-2'>
             <span className='font-mono text-xs uppercase tracking-wider text-muted-foreground'>Next</span>
-            <Link
+            <NextLink
+              variant='unstyled'
               href={next.href}
               className='group flex items-center gap-2 font-serif text-base text-foreground transition-colors hover:text-primary'
             >
               <span>{next.title}</span>
               <ArrowRight className='size-4 transition-transform group-hover:translate-x-0.5' />
-            </Link>
+            </NextLink>
           </footer>
         </>
       )}

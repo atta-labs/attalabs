@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import Link from 'next/link'
 import { Button } from '@atta/ui'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { AIACanvas } from '@atta/ui/canvas'
 import { RoundSection } from './RoundSection'
 import { ConclusionPanel } from './ConclusionPanel'
@@ -107,12 +107,9 @@ function DeliberationScene({
         <div className='fixed inset-x-0 top-14 z-50 mx-auto max-w-2xl px-4'>
           <div className='flex items-start justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 shadow-lg'>
             <p className='text-sm text-destructive'>{streamError}</p>
-            <Link
-              href='/deliberate'
-              className='mt-0.5 shrink-0 text-sm text-destructive/70 underline transition-opacity hover:opacity-70'
-            >
+            <NextLink variant='destructive' href='/deliberate' className='mt-0.5 shrink-0 text-sm'>
               Back
-            </Link>
+            </NextLink>
           </div>
         </div>
       )}
@@ -148,12 +145,13 @@ function DeliberationScene({
               >
                 Resume Deliberation
               </Button>
-              <Link
+              <NextLink
+                variant='unstyled'
                 href='/deliberate'
                 className='inline-flex h-7 items-center rounded-md border border-border bg-background px-2 text-xs font-medium transition-colors hover:bg-accent/20'
               >
                 Start Fresh
-              </Link>
+              </NextLink>
             </div>
           </div>
         )}
@@ -214,12 +212,13 @@ function DeliberationScene({
               <Button type='button' variant='outline' className='flex-1'>
                 Export
               </Button>
-              <Link
+              <NextLink
+                variant='unstyled'
                 href='/deliberate'
                 className='flex-1 rounded-lg bg-accent px-4 py-3 text-center text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90'
               >
                 New Deliberation
-              </Link>
+              </NextLink>
             </div>
           </div>
         )}

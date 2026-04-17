@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   SidebarContent,
@@ -12,6 +11,7 @@ import {
   SidebarMenuItem,
   SidebarProvider
 } from '@atta/ui'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { getScienceIcon } from '../lib/icons'
 
 export type ClientScienceGroup = {
@@ -45,7 +45,7 @@ export function ScienceSidebarClient({ groups }: { groups: ClientScienceGroup[] 
                       <SidebarMenuButton
                         size='sm'
                         isActive={isActive}
-                        render={<Link href={href} />}
+                        render={<NextLink variant='unstyled' href={href} />}
                         className='h-auto min-h-8 items-start gap-3 py-1.5 font-sans text-sm font-normal [&>span:last-child]:whitespace-normal [&>span:last-child]:leading-snug'
                       >
                         <Icon className='mt-0.5 size-4 shrink-0' />

@@ -11,9 +11,9 @@ import {
   DropdownMenuTrigger
 } from '@atta/ui'
 import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { useClerk, useUser } from '@clerk/nextjs'
 import { LogOut, Settings } from 'lucide-react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 interface UserTopBarProps {
@@ -36,9 +36,9 @@ export function UserTopBar({ logo }: UserTopBarProps) {
 
   const allLinks = user ? [...PUBLIC_NAV, ...AUTH_NAV] : PUBLIC_NAV
   const leftLogo = logo ?? (
-    <Link href='/' className='text-xs text-foreground'>
+    <NextLink variant='unstyled' href='/' className='text-xs text-foreground'>
       VADA.AI
-    </Link>
+    </NextLink>
   )
 
   const displayName = user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress
@@ -52,13 +52,9 @@ export function UserTopBar({ logo }: UserTopBarProps) {
       {/* Center: nav links */}
       <div className='flex items-center gap-8 justify-self-center'>
         {allLinks.map(({ href, label, exact }) => (
-          <Link
-            key={href}
-            href={href}
-            className={`text-xs transition-colors hover:text-foreground ${isActive(href, exact) ? 'text-foreground' : ''}`}
-          >
+          <NextLink key={href} variant='nav' active={isActive(href, exact)} href={href} className='text-xs'>
             {label}
-          </Link>
+          </NextLink>
         ))}
       </div>
       {/* Right: scheme toggle + settings + avatar dropdown (auth) or sign-in (anonymous) */}
@@ -66,9 +62,9 @@ export function UserTopBar({ logo }: UserTopBarProps) {
         <ColorSchemeToggle />
         {user && (
           <Button variant='ghost' size='icon' asChild aria-label='Settings' title='Settings'>
-            <Link href='/settings'>
+            <NextLink variant='unstyled' href='/settings'>
               <Settings className='h-4 w-4' />
-            </Link>
+            </NextLink>
           </Button>
         )}
         {user ? (

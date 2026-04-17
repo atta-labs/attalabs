@@ -1,10 +1,9 @@
 'use client'
 
 import { Button } from '@atta/ui/components/button'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { useClerk, useUser } from '@clerk/nextjs'
 import { ExternalLink, LogOut } from 'lucide-react'
-// Button kept for sign-out button below
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const NAV_ITEMS = [
@@ -21,36 +20,39 @@ export function AdminTopBar({ username }: { username: string }) {
     <nav className='flex h-12 shrink-0 items-center justify-between border-b border-border bg-background px-4'>
       {/* Left: Logo + Nav */}
       <div className='flex items-center gap-1'>
-        <Link href='/admin' className='flex items-center gap-2 px-2'>
+        <NextLink variant='unstyled' href='/admin' className='flex items-center gap-2 px-2'>
           <span className='text-base'>🎺</span>
           <span className='font-display text-sm font-bold tracking-tight'>Herald</span>
-        </Link>
+        </NextLink>
         <span className='mx-2 text-border'>|</span>
         {NAV_ITEMS.map((item) => {
           const isActive = pathname.startsWith(item.href)
           return (
-            <Link
+            <NextLink
               key={item.href}
+              variant='nav'
+              active={isActive}
               href={item.href}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs transition-colors hover:bg-accent/10 ${isActive ? 'bg-accent/10 font-medium text-foreground' : 'text-muted-foreground'}`}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs hover:bg-accent/10 ${isActive ? 'bg-accent/10' : ''}`}
             >
               <span>{item.icon}</span>
               {item.label}
-            </Link>
+            </NextLink>
           )
         })}
       </div>
 
       {/* Right: Envoy link + Avatar + Sign out */}
       <div className='flex items-center gap-3'>
-        <Link
+        <NextLink
+          variant='subtle'
           href={`/${username}`}
           target='_blank'
-          className='inline-flex items-center gap-1 rounded-md px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-accent/10'
+          className='inline-flex items-center gap-1 rounded-md px-3 py-1.5 hover:bg-accent/10'
         >
           /{username}
           <ExternalLink className='h-3 w-3' />
-        </Link>
+        </NextLink>
         {user?.imageUrl && (
           // biome-ignore lint/performance/noImgElement: Clerk avatar URL is external
           <img src={user.imageUrl} alt='' className='h-6 w-6 rounded-full' />

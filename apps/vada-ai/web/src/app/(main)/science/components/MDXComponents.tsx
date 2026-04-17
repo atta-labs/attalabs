@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import type { MDXComponents } from 'mdx/types'
 import { Card, Separator, Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 
 function isInternalHref(href: string | undefined): boolean {
@@ -51,14 +51,7 @@ export const scienceMdxComponents: MDXComponents = {
   ),
   a: ({ href, children, ...props }) => {
     if (isInternalHref(href)) {
-      return (
-        <Link
-          href={href ?? '#'}
-          className='text-primary underline underline-offset-2 decoration-primary/40 hover:decoration-primary transition-colors'
-        >
-          {children}
-        </Link>
-      )
+      return <NextLink href={href ?? '#'}>{children}</NextLink>
     }
     return (
       <a

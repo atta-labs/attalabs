@@ -1,15 +1,15 @@
 import { Show, SignInButton, UserButton } from '@clerk/nextjs'
-import Link from 'next/link'
 
 import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
+import { NextLink } from '@atta/ui/lib/next-link'
 
 export function TopBar({ username }: { username?: string }) {
   return (
     <nav className='border-b border-border'>
       <div className='mx-auto flex h-14 max-w-[900px] items-center justify-between px-6'>
-        <Link href='/' className='font-display text-lg tracking-tight'>
+        <NextLink variant='unstyled' href='/' className='font-display text-lg tracking-tight'>
           Herald
-        </Link>
+        </NextLink>
 
         <div className='flex items-center gap-4'>
           <ColorSchemeToggle />
@@ -19,20 +19,13 @@ export function TopBar({ username }: { username?: string }) {
 
           <Show when='signed-in'>
             {username && (
-              <Link
-                href={`/${username}`}
-                target='_blank'
-                className='font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
-              >
+              <NextLink variant='subtle' href={`/${username}`} target='_blank'>
                 /{username} ↗
-              </Link>
+              </NextLink>
             )}
-            <Link
-              href='/admin'
-              className='font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
-            >
+            <NextLink variant='subtle' href='/admin'>
               Dashboard
-            </Link>
+            </NextLink>
             <UserButton />
           </Show>
         </div>

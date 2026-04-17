@@ -1,7 +1,7 @@
 import { Badge, Card, CardContent } from '@atta/ui'
 import { Text } from '@atta/ui/shared'
 import { cn } from '@atta/ui/lib/utils'
-import Link from 'next/link'
+import { NextLink } from '@atta/ui/lib/next-link'
 
 const STATE_CONFIG: Record<string, { label: string; className: string }> = {
   CLEAN: { label: 'Clean', className: 'text-success border-success/40' },
@@ -28,7 +28,7 @@ export function SessionCard({
   const date = new Date(createdAt)
 
   return (
-    <Link href={`/deliberation/${id}`} className='block transition-opacity hover:opacity-80'>
+    <NextLink variant='card' href={`/deliberation/${id}`}>
       <Card className='border border-border bg-transparent [background:none] py-0 shadow-none'>
         <CardContent className='flex items-start gap-4 px-4 py-3'>
           <Text as='p' size='sm' className='line-clamp-2 flex-1'>
@@ -46,6 +46,6 @@ export function SessionCard({
           </div>
         </CardContent>
       </Card>
-    </Link>
+    </NextLink>
   )
 }

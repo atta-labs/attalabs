@@ -8,7 +8,7 @@ import { getUserSettings } from '@/db/settings-queries'
 import type { FaceStyle } from '@atta/ui/canvas'
 import { Logo } from '@atta/ui/shared'
 import { fetchVadaBranding } from '@/lib/branding'
-import Link from 'next/link'
+import { NextLink } from '@atta/ui/lib/next-link'
 
 export default async function DeliberationLayout({ children }: { children: ReactNode }) {
   const { userId: clerkId } = await auth()
@@ -17,9 +17,9 @@ export default async function DeliberationLayout({ children }: { children: React
   const darkUrl = branding?.logoLockupSolidDark?.url ?? branding?.logoSolidDark?.url
   const logo =
     lightUrl || darkUrl ? (
-      <Link href='/'>
+      <NextLink variant='unstyled' href='/'>
         <Logo light={lightUrl} dark={darkUrl} alt={branding?.productName ?? 'Vada AI'} size='h-10' />
-      </Link>
+      </NextLink>
     ) : null
   let faceStyle: FaceStyle = 'emblematic'
   if (clerkId) {

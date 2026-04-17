@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import Link from 'next/link'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { Logo } from '@atta/ui/shared'
 import { ToastProvider } from '@atta/ui'
 import { auth } from '@atta/auth/hooks'
@@ -17,9 +17,9 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
   const darkUrl = branding?.logoLockupSolidDark?.url ?? branding?.logoSolidDark?.url
   const logo =
     lightUrl || darkUrl ? (
-      <Link href='/'>
+      <NextLink variant='unstyled' href='/'>
         <Logo light={lightUrl} dark={darkUrl} alt={branding?.productName ?? 'Vada AI'} size='h-10' />
-      </Link>
+      </NextLink>
     ) : null
 
   const { userId: clerkId } = await auth()
