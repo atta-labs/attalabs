@@ -210,7 +210,7 @@ function DeliberationScene({
         {/* Conclusion — only show if we actually have a terminal state and it's not an interrupted empty session */}
         {showConclusion && terminalState && !isTerminalButEmpty && (
           <div className='pb-24 pt-4'>
-            <ConclusionPanel terminalState={terminalState} conclusion={conclusion} />
+            <ConclusionPanel terminalState={terminalState} conclusion={conclusion} agentModels={agentModels} />
             <div className='mt-4 flex gap-2.5'>
               <Button type='button' variant='outline' className='flex-1'>
                 Export

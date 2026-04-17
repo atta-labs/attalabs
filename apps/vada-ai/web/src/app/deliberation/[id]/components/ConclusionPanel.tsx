@@ -1,14 +1,17 @@
 'use client'
 
+import { ModelIcon } from '@atta/ui'
+import { AGENTS } from '@atta/agents'
 import { motion } from 'motion/react'
 import { AGENT_THEME, TERMINAL_BADGE, type TerminalStateKey } from './agent-theme'
 
 interface ConclusionPanelProps {
   terminalState: string
   conclusion: Record<string, unknown> | null
+  agentModels?: Record<string, { provider: string; modelId: string }> | null
 }
 
-export function ConclusionPanel({ terminalState, conclusion }: ConclusionPanelProps) {
+export function ConclusionPanel({ terminalState, conclusion, agentModels }: ConclusionPanelProps) {
   const badge = TERMINAL_BADGE[terminalState as TerminalStateKey] ?? TERMINAL_BADGE.UNCONVERGED
 
   return (
@@ -80,6 +83,28 @@ export function ConclusionPanel({ terminalState, conclusion }: ConclusionPanelPr
                 <span className='text-xs '>{conclusion.review_by as string}</span>
               </div>
             )}
+
+            {/* Participants */}
+            {Array.isArray(conclusion.participants) &&
+              (conclusion.participants as Array<{ agent: string; version: string }>).length > 0 && (
+                <div className='flex items-center justify-between border-t border-border pt-3'>
+                  <span className='text-[9px] font-semibold uppercase tracking-[0.2em] '>Participants</span>
+                  <div className='flex items-center gap-2'>
+                    {(conclusion.participants as Array<{ agent: string; version: string }>).map((p) => {
+                      const role = AGENTS[p.agent as keyof typeof AGENTS]?.role
+                      const modelId = role ? agentModels?.[role]?.modelId : undefined
+                      return (
+                        <div key={p.agent} className='flex items-center gap-1'>
+                          {modelId && <ModelIcon model={modelId} size={14} type='avatar' />}
+                          <span className='text-[10px] font-medium' style={{ color: AGENT_THEME[p.agent]?.color }}>
+                            {p.agent}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
           </>
         ) : (
           <p className='m-0 text-sm '>The agents could not produce a conclusion that survived independent review.</p>
