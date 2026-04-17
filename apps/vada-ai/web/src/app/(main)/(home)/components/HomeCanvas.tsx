@@ -31,6 +31,23 @@ function useResponsiveRingSize() {
   return dims
 }
 
+function useIsInView(ref: React.RefObject<HTMLElement | null>) {
+  const [isInView, setIsInView] = useState(true)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) setIsInView(entry.isIntersecting)
+      },
+      { threshold: 0 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ref])
+  return isInView
+}
+
 interface HomeCanvasProps {
   render: (state: { animationStarted: boolean; animationComplete: boolean }) => ReactNode
 }
@@ -112,20 +129,28 @@ function HomeCanvasInner({ render, registerSphere, onOriginCompleteRef }: HomeCa
 export function HomeCanvas({ render }: HomeCanvasProps) {
   const { onSphereAbsorb, registerSphere } = useSphereAbsorb()
   const onOriginCompleteRef = useRef<(() => void) | null>(null)
+  const heroRef = useRef<HTMLElement>(null)
+  const isInView = useIsInView(heroRef)
 
   return (
-    <div className='fixed inset-0 z-0'>
-      <AIACanvas
-        bg='fabric'
-        wanderDuration={30}
-        alwaysRenderSpheres
-        autoTriggerGravity={false}
-        onSphereAbsorb={onSphereAbsorb}
-        onOriginComplete={() => onOriginCompleteRef.current?.()}
-        className='h-full w-full'
+    <>
+      <section ref={heroRef} id='hero' className='relative h-dvh w-full' />
+      <div
+        className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-500 ease-out ${isInView ? 'opacity-100' : 'opacity-0'}`}
       >
-        <HomeCanvasInner render={render} registerSphere={registerSphere} onOriginCompleteRef={onOriginCompleteRef} />
-      </AIACanvas>
-    </div>
+        <AIACanvas
+          bg='fabric'
+          wanderDuration={30}
+          alwaysRenderSpheres
+          autoTriggerGravity={false}
+          paused={!isInView}
+          onSphereAbsorb={onSphereAbsorb}
+          onOriginComplete={() => onOriginCompleteRef.current?.()}
+          className='h-full w-full'
+        >
+          <HomeCanvasInner render={render} registerSphere={registerSphere} onOriginCompleteRef={onOriginCompleteRef} />
+        </AIACanvas>
+      </div>
+    </>
   )
 }
