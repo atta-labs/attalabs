@@ -41,9 +41,13 @@ export function paintParticleHead(
   const opacity = opts.opacity ?? 1
   const light = isLightTheme()
 
-  const coreColor = light ? brightenForLight(agentColor) : 'rgba(255,255,255,1)'
-  const outerColor = light ? coreColor : agentColor
-  const bloomAlpha = light ? 0.5 * opacity : 0.9 * opacity
+  // Light mode: same saturated hue for both gradient stops but STEPPED alpha
+  // (1 → 0.25) so the disc fades rapidly from vivid core to whisper before
+  // hitting transparent. Using the same full-alpha string for both stops
+  // makes the 0–30% arc a solid disc that blends to grey mud on light bg.
+  const coreColor = light ? withAlpha(brightenForLight(agentColor), 1) : 'rgba(255,255,255,1)'
+  const outerColor = light ? withAlpha(brightenForLight(agentColor), 0.25) : agentColor
+  const bloomAlpha = light ? 0.55 * opacity : 0.9 * opacity
 
   const grad = ctx.createRadialGradient(x, y, 0, x, y, radius)
   grad.addColorStop(0, coreColor)
