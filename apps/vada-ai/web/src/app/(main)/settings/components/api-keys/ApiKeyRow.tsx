@@ -1,10 +1,11 @@
 'use client'
 
+import { useIdentity } from '@atta/identity/react'
+import type { ProviderMeta, RouteProvider } from '@atta/models'
 import { Button, Input } from '@atta/ui'
 import { Text } from '@atta/ui/shared'
 import { Check, Loader2, X } from 'lucide-react'
 import { useState } from 'react'
-import type { ProviderMeta } from '@atta/models'
 
 type Status = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -15,24 +16,27 @@ interface ApiKeyRowProps {
   onRemoved: (provider: string) => void
 }
 
+// Keys are stored in the browser via @atta/identity — never sent to the server.
+// The `keyHint` is derived locally from the in-memory key so the server-shaped
+// onSaved/onRemoved callbacks still work without a server round-trip.
+function computeHint(key: string): string {
+  if (key.length < 4) return '…'
+  return `…${key.slice(-4)}`
+}
+
 export function ApiKeyRow({ provider, keyHint, onSaved, onRemoved }: ApiKeyRowProps) {
   const [inputValue, setInputValue] = useState('')
   const [status, setStatus] = useState<Status>('idle')
+  const identity = useIdentity()
 
   const hasKey = keyHint !== null && keyHint !== ''
 
-  const save = async (value: string) => {
+  const save = (value: string) => {
     if (!value.trim()) return
     setStatus('saving')
     try {
-      const res = await fetch('/api/settings/api-keys', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: provider.id, apiKey: value.trim() })
-      })
-      if (!res.ok) throw new Error()
-      const { keyHint: hint } = await res.json()
-      onSaved(provider.id, hint)
+      identity.setKey(provider.id as RouteProvider, value.trim())
+      onSaved(provider.id, computeHint(value.trim()))
       setInputValue('')
       setStatus('saved')
       setTimeout(() => setStatus('idle'), 2000)
@@ -42,15 +46,10 @@ export function ApiKeyRow({ provider, keyHint, onSaved, onRemoved }: ApiKeyRowPr
     }
   }
 
-  const remove = async () => {
+  const remove = () => {
     setStatus('saving')
     try {
-      const res = await fetch('/api/settings/api-keys', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: provider.id })
-      })
-      if (!res.ok) throw new Error()
+      identity.removeKey(provider.id as RouteProvider)
       onRemoved(provider.id)
       setStatus('idle')
     } catch {
