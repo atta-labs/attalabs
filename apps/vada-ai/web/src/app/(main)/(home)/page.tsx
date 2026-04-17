@@ -9,6 +9,7 @@ import { LearnMoreAction } from './components/LearnMoreAction'
 import { ArchitectureSection } from './components/sections/ArchitectureSection'
 import { IntroSection } from './components/sections/IntroSection'
 import { MechanismSection } from './components/sections/MechanismSection'
+import { NegationsSection } from './components/sections/NegationsSection'
 import { PillarsSection } from './components/sections/PillarsSection'
 import { PositioningSection } from './components/sections/PositioningSection'
 import { ProtocolSection } from './components/sections/ProtocolSection'
@@ -66,6 +67,7 @@ export default function Home() {
       <div className='relative z-10'>
         <PositioningSection />
         <MechanismSection />
+        <NegationsSection />
         <IntroSection />
         <PullQuoteSection />
         <PillarsSection />
