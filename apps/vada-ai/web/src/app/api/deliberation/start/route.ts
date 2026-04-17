@@ -8,14 +8,14 @@ import { validateModelConfig } from '@/engine/agents'
 import { z } from 'zod'
 
 const AgentModelEntry = z.object({
-  provider: z.enum(['groq', 'google', 'anthropic', 'openrouter']),
+  provider: z.enum(['anthropic', 'google', 'groq', 'openai', 'openrouter']),
   modelId: z.string()
 })
 
 const StartSchema = z.object({
   question: z.string().min(1).max(5000),
   agents: z.array(z.string()).min(2).max(6).optional(),
-  provider: z.enum(['groq', 'google', 'anthropic', 'openrouter']).optional(),
+  provider: z.enum(['anthropic', 'google', 'groq', 'openai', 'openrouter']).optional(),
   modelId: z.string().optional(),
   apiKey: z.string().optional(),
   agentModels: z.record(z.string(), AgentModelEntry).optional(),
