@@ -32,7 +32,7 @@ export function GlobalModelSelector({
   const catalog = useCatalog()
   const identity = useIdentity()
   const storedKeys = identity.state.keys
-  const { errorToast, successToast } = useToastContext()
+  const { successToast } = useToastContext()
 
   // Mount: seed from settings preset, else fall back to in-memory identity
   useEffect(() => {
@@ -85,11 +85,13 @@ export function GlobalModelSelector({
     // Probe the key against the provider before persisting it. See /trust —
     // the probe is a browser → provider call with the user's own key; it
     // never touches the Vāda server.
+    //
+    // Throwing on failure keeps the ModelPicker's key-entry view open and
+    // surfaces the error inline. The picker closes only on a resolved promise.
     const modelId = value?.provider === route ? value.modelId : undefined
     const probe = await probeProviderKey(route, key, modelId)
     if (!probe.ok) {
-      errorToast('Key not accepted', probe.error ?? 'Could not verify key against provider.')
-      return
+      throw new Error(probe.error ?? 'Could not verify key against provider.')
     }
     identity.setKey(route, key)
     if (value?.provider === route) onChange({ ...value, apiKey: key })

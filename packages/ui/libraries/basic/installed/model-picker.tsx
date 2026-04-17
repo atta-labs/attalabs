@@ -32,7 +32,10 @@ export interface ModelPickerProps {
   value: ModelPickerValue | null
   onChange: (value: ModelPickerValue) => void
   configuredRoutes: Set<RouteProvider>
-  onProvideKey?: (route: RouteProvider, key: string) => void
+  // Returning a Promise lets the picker await the caller (e.g. probe the key
+  // against the provider) before closing. Throw on failure to keep the key-
+  // entry view open and surface the error inline.
+  onProvideKey?: (route: RouteProvider, key: string) => void | Promise<void>
   trigger?: React.ReactNode
   align?: 'start' | 'center' | 'end'
   side?: 'top' | 'bottom' | 'left' | 'right'
@@ -61,6 +64,8 @@ export function ModelPicker({
   const [keyEntryRoute, setKeyEntryRoute] = React.useState<RouteProvider | null>(null)
   const [pendingModel, setPendingModel] = React.useState<ModelEntry | null>(null)
   const [keyInput, setKeyInput] = React.useState('')
+  const [saving, setSaving] = React.useState(false)
+  const [saveError, setSaveError] = React.useState<string | null>(null)
   const [flagshipOnly, setFlagshipOnly] = React.useState(false)
   const [freeOnly, setFreeOnly] = React.useState(false)
   const [searchValue, setSearchValue] = React.useState('')
@@ -139,13 +144,24 @@ export function ModelPicker({
     setOpen(false)
   }
 
-  const handleSaveKey = () => {
+  const handleSaveKey = async () => {
     if (!keyEntryRoute || !pendingModel || !onProvideKey) return
     const trimmed = keyInput.trim()
     if (!trimmed) return
-    onProvideKey(keyEntryRoute, trimmed)
-    onChange({ route: pendingModel.route, modelId: pendingModel.modelId })
-    setOpen(false)
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await Promise.resolve(onProvideKey(keyEntryRoute, trimmed))
+      onChange({ route: pendingModel.route, modelId: pendingModel.modelId })
+      setKeyEntryRoute(null)
+      setPendingModel(null)
+      setKeyInput('')
+      setOpen(false)
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Could not save key.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const defaultTrigger = (
@@ -183,7 +199,10 @@ export function ModelPicker({
             autoFocus
             placeholder={PROVIDERS[keyEntryRoute].keyPlaceholder}
             value={keyInput}
-            onChange={(e) => setKeyInput(e.target.value)}
+            onChange={(e) => {
+              setKeyInput(e.target.value)
+              if (saveError) setSaveError(null)
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -194,10 +213,13 @@ export function ModelPicker({
                 setKeyEntryRoute(null)
                 setPendingModel(null)
                 setKeyInput('')
+                setSaveError(null)
               }
             }}
+            disabled={saving}
             className='font-mono text-xs'
           />
+          {saveError && <p className='font-mono text-[11px] text-destructive'>{saveError}</p>}
           <div className='flex items-center justify-end gap-2'>
             <Button
               variant='ghost'
@@ -206,12 +228,14 @@ export function ModelPicker({
                 setKeyEntryRoute(null)
                 setPendingModel(null)
                 setKeyInput('')
+                setSaveError(null)
               }}
+              disabled={saving}
             >
               Cancel
             </Button>
-            <Button size='sm' onClick={handleSaveKey} disabled={!keyInput.trim()}>
-              Save & select
+            <Button size='sm' onClick={handleSaveKey} disabled={!keyInput.trim() || saving}>
+              {saving ? 'Verifying…' : 'Save & select'}
             </Button>
           </div>
         </div>
