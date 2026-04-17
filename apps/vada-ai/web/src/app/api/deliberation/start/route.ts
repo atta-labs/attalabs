@@ -5,17 +5,20 @@ import { getDecryptedApiKey } from '@/db/settings-queries'
 import { DAILY_SESSION_LIMIT, DEFAULT_ROOM } from '@/schemas'
 import { storeEphemeralKey, storeEphemeralProviderKey } from '@/engine/pending-keys'
 import { validateModelConfig } from '@/engine/agents'
+import { ROUTE_PROVIDER_ORDER, type RouteProvider } from '@atta/models'
 import { z } from 'zod'
 
+const providerEnum = z.enum(ROUTE_PROVIDER_ORDER as [RouteProvider, ...RouteProvider[]])
+
 const AgentModelEntry = z.object({
-  provider: z.enum(['anthropic', 'google', 'groq', 'openai', 'openrouter']),
+  provider: providerEnum,
   modelId: z.string()
 })
 
 const StartSchema = z.object({
   question: z.string().min(1).max(5000),
   agents: z.array(z.string()).min(2).max(6).optional(),
-  provider: z.enum(['anthropic', 'google', 'groq', 'openai', 'openrouter']).optional(),
+  provider: providerEnum.optional(),
   modelId: z.string().optional(),
   apiKey: z.string().optional(),
   agentModels: z.record(z.string(), AgentModelEntry).optional(),

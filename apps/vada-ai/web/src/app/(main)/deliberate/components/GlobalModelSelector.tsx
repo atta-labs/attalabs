@@ -1,7 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CATALOG, getStoredApiKey, storeApiKey, type ModelConfig, type RouteProvider } from '@atta/models'
+import {
+  CATALOG,
+  getStoredApiKey,
+  storeApiKey,
+  ROUTE_PROVIDER_ORDER,
+  type ModelConfig,
+  type RouteProvider
+} from '@atta/models'
 import { ModelPicker } from '@atta/ui'
 
 export interface ModelSelection {
@@ -19,8 +26,6 @@ interface GlobalModelSelectorProps {
   initialTeamModels?: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   selectedPresetId?: string
 }
-
-const ALL_ROUTES: RouteProvider[] = ['anthropic', 'openai', 'google', 'groq', 'openrouter']
 
 export function GlobalModelSelector({
   value,
@@ -47,7 +52,7 @@ export function GlobalModelSelector({
     }
     // Load all stored keys for configured-routes derivation
     const loaded: Partial<Record<RouteProvider, string>> = {}
-    for (const r of ALL_ROUTES) {
+    for (const r of ROUTE_PROVIDER_ORDER) {
       const k = getStoredApiKey(r)
       if (k) loaded[r] = k
     }
