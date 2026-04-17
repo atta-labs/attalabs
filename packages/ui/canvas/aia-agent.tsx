@@ -11,6 +11,7 @@ import { AGENT_FACES as EMBLEMATIC_FACES } from './agent-faces-full'
 import { AIASphere } from './aia-sphere'
 import { AGENTS, type AgentName } from '@atta/agents'
 import { AgentThinkingText } from '@atta/ui/shared'
+import { ModelIcon as LobeModelIcon } from '@lobehub/icons'
 import type { ReactNode } from 'react'
 import type { SphereState } from './aia-context'
 
@@ -86,6 +87,10 @@ interface AIAgentProps {
   thinkingText?: string
   /** Content rendered inside the sphere, above the face layer. */
   children?: ReactNode
+  /** Model id (e.g. 'claude-opus-4-7'). When set, a small badge with the model icon is rendered at the sphere's bottom-right. */
+  model?: string
+  /** Tooltip text shown on hover of the model badge. Typically the model label + version. */
+  modelLabel?: string
 }
 
 export function AIAgent({
@@ -106,7 +111,9 @@ export function AIAgent({
   thinkingText,
   onClick,
   className,
-  children
+  children,
+  model,
+  modelLabel
 }: AIAgentProps) {
   const index = AGENT_INDEX[name]
   const color = AGENTS[name]?.color ?? 'var(--foreground)'
@@ -116,6 +123,15 @@ export function AIAgent({
     typeof size === 'string' ? FACE_INSET[size] : `${Math.round(Math.max(4, Math.min(20, 20 - size / 10)))}%`
   const thinkingFontPx =
     typeof size === 'string' ? THINKING_TEXT_PX[size] : Math.round(Math.max(4, Math.min(10, size / 14)))
+
+  const badge = model ? (
+    <span
+      title={modelLabel ?? model}
+      className='flex items-center justify-center rounded-md border border-border bg-card p-0.5 shadow-sm'
+    >
+      <LobeModelIcon model={model} size={20} type='avatar' />
+    </span>
+  ) : undefined
 
   return (
     <AIASphere
@@ -132,6 +148,7 @@ export function AIAgent({
       onClick={onClick}
       className={className}
       labelPosition={labelPosition}
+      badge={badge}
     >
       {FaceComponent && (
         <div

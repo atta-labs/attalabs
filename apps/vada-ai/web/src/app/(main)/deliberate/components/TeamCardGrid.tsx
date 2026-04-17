@@ -3,13 +3,16 @@
 import { AIACanvas, AIAgent, type AgentName } from '@atta/ui/canvas'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { TeamCard } from '@atta/ui/shared'
+import { ModelIcon } from '@atta/ui'
+import { useCatalog } from '@atta/models'
 import { PRESETS, type Preset, type PresetId } from '@/schemas'
+import type { ModelSelection } from './GlobalModelSelector'
 
 type FaceSize = 'sm' | 'md' | 'lg' | 'xl'
 
 const FACE_LAYOUT: Record<PresetId, { gridClass: string; size: FaceSize }> = {
-  crucible: { gridClass: 'grid grid-cols-2 gap-x-3 gap-y-5 justify-items-center py-2', size: 'md' },
-  war_room: { gridClass: 'grid grid-cols-3 gap-x-2 gap-y-5 justify-items-center py-2', size: 'md' },
+  crucible: { gridClass: 'grid grid-cols-2 gap-4 justify-items-center py-2', size: 'md' },
+  war_room: { gridClass: 'grid grid-cols-3 gap-3 justify-items-center py-2', size: 'md' },
   sparring: { gridClass: 'flex justify-center gap-8 py-2', size: 'xl' }
 }
 
@@ -30,9 +33,34 @@ interface TeamCardGridProps {
   onStart: () => void
   canStart: boolean
   loading: boolean
+  globalModel: ModelSelection | null
 }
 
-export function TeamCardGrid({ selectedPreset, onSelectPreset, onStart, canStart, loading }: TeamCardGridProps) {
+export function TeamCardGrid({
+  selectedPreset,
+  onSelectPreset,
+  onStart,
+  canStart,
+  loading,
+  globalModel
+}: TeamCardGridProps) {
+  const catalog = useCatalog()
+  const modelEntry = globalModel
+    ? (catalog.find((e) => e.route === globalModel.provider && e.modelId === globalModel.modelId) ?? null)
+    : null
+  const modelId = globalModel?.modelId
+  const modelLabel = modelEntry?.label ?? modelId
+
+  const headerModel = modelId ? (
+    <span
+      className='flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'
+      title={modelLabel}
+    >
+      <ModelIcon model={modelId} size={16} type='avatar' />
+      <span className='truncate'>{modelLabel}</span>
+    </span>
+  ) : undefined
+
   return (
     <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
       {PRESETS.map((preset) => {
@@ -47,6 +75,7 @@ export function TeamCardGrid({ selectedPreset, onSelectPreset, onStart, canStart
                 {preset.agents.length} agents
               </span>
             }
+            model={headerModel}
             description={
               <>
                 {SHORT_DESCRIPTIONS[preset.id]}
@@ -77,6 +106,8 @@ export function TeamCardGrid({ selectedPreset, onSelectPreset, onStart, canStart
                       visible
                       showMatrix={isSelected}
                       solidBg={isSelected}
+                      model={modelId}
+                      modelLabel={modelLabel}
                     />
                   ))}
                 </div>

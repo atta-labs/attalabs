@@ -10,6 +10,8 @@ export interface TeamCardProps {
   description: React.ReactNode
   faces: React.ReactNode
   titleAside?: React.ReactNode
+  /** Optional model badge rendered on its own row below the title. */
+  model?: React.ReactNode
   ctaLabel: string
   onCtaClick: () => void
   /** Disables the CTA even when the card is selected. Use for gating on external conditions (e.g. form validity). */
@@ -24,6 +26,7 @@ export function TeamCard({
   description,
   faces,
   titleAside,
+  model,
   ctaLabel,
   onCtaClick,
   ctaDisabled,
@@ -45,14 +48,14 @@ export function TeamCard({
         }
       }}
       className={cn(
-        'group relative flex flex-col gap-3 rounded-lg bg-card p-4',
+        'group relative flex flex-col gap-4 rounded-lg bg-card p-4',
         'border-2 transition-all duration-200 ease-out',
         'outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
         selected ? 'cursor-default border-primary' : 'cursor-pointer border-transparent hover:border-border/40',
         className
       )}
     >
-      <div className='flex flex-col gap-2'>
+      <div className='flex flex-col'>
         <div className='flex items-baseline justify-between gap-3'>
           <Heading
             level={3}
@@ -66,40 +69,35 @@ export function TeamCard({
           </Heading>
           {titleAside && <div className='shrink-0'>{titleAside}</div>}
         </div>
-        <div
-          className={cn(
-            'text-sm leading-snug transition-colors duration-200',
-            selected ? 'text-muted-foreground' : 'text-foreground/40'
-          )}
-        >
-          {description}
-        </div>
+        {model && <div>{model}</div>}
       </div>
 
       <div
         className={cn(
-          'flex-1 border-t border-border/30 pt-3 transition-all duration-200 ease-out',
-          !selected && 'opacity-60 grayscale'
+          'text-sm leading-snug transition-colors duration-200',
+          selected ? 'text-muted-foreground' : 'text-foreground/40'
         )}
       >
+        {description}
+      </div>
+
+      <div className={cn('flex-1 transition-all duration-200 ease-out', !selected && 'opacity-60 grayscale')}>
         {faces}
       </div>
 
-      <div className='mt-auto border-t border-border/30 pt-3'>
-        <Button
-          variant='default'
-          size='default'
-          className='w-full'
-          onClick={(event) => {
-            event.stopPropagation()
-            onCtaClick()
-          }}
-          onKeyDown={(event) => event.stopPropagation()}
-          disabled={!selected || ctaDisabled}
-        >
-          {ctaLabel}
-        </Button>
-      </div>
+      <Button
+        variant='default'
+        size='default'
+        className='w-full'
+        onClick={(event) => {
+          event.stopPropagation()
+          onCtaClick()
+        }}
+        onKeyDown={(event) => event.stopPropagation()}
+        disabled={!selected || ctaDisabled}
+      >
+        {ctaLabel}
+      </Button>
 
       {!selected && (
         <div

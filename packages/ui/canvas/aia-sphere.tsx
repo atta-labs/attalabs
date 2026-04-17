@@ -15,6 +15,13 @@ interface AIASphereProps {
   color?: string
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | number
   label?: string
+  /**
+   * Label layout:
+   * - 'flow' (default): label renders as a flex sibling below the sphere — participates in layout.
+   * - 'absolute': label is absolutely positioned relative to the sphere's bbox (for orbit/ring layouts where the sphere's bbox must stay == diameter × diameter).
+   */
+  labelPlacement?: 'flow' | 'absolute'
+  /** Only used when labelPlacement='absolute'. */
   labelPosition?: LabelPosition
   particleCount?: number
   showMatrix?: boolean
@@ -22,13 +29,15 @@ interface AIASphereProps {
   bgOpacity?: number
   visible?: boolean
   children?: ReactNode
+  /** Overlay slot (e.g. a model-icon badge). Rendered outside the circular clip, anchored bottom-right. */
+  badge?: ReactNode
   onClick?: () => void
   className?: string
   matrixColors?: string[]
   matrixOpacity?: number
 }
 
-const LABEL_STYLES: Record<LabelPosition, React.CSSProperties> = {
+const ABSOLUTE_LABEL_STYLES: Record<LabelPosition, React.CSSProperties> = {
   top: { bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 6 },
   'top-right': { bottom: '100%', left: '100%', marginBottom: 4, marginLeft: -8 },
   right: { left: '100%', top: '50%', transform: 'translateY(-50%)', marginLeft: 6 },
@@ -39,12 +48,23 @@ const LABEL_STYLES: Record<LabelPosition, React.CSSProperties> = {
   'top-left': { bottom: '100%', right: '100%', marginBottom: 4, marginRight: -8 }
 }
 
+const LABEL_TEXT_STYLE = (state: SphereState, cssColor: string): React.CSSProperties => ({
+  whiteSpace: 'nowrap',
+  fontFamily: 'var(--font-mono, monospace)',
+  fontSize: 9,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase' as const,
+  color: state === 'idle' ? 'var(--muted-foreground)' : cssColor,
+  opacity: state === 'idle' ? 0.4 : 0.8
+})
+
 export function AIASphere({
   id: externalId,
   state = 'idle',
   color,
   size = 'md',
   label,
+  labelPlacement = 'flow',
   labelPosition = 'bottom',
   particleCount,
   showMatrix = true,
@@ -52,6 +72,7 @@ export function AIASphere({
   bgOpacity,
   visible = true,
   children,
+  badge,
   onClick,
   className,
   matrixColors,
@@ -73,12 +94,12 @@ export function AIASphere({
 
   const Tag = onClick ? 'button' : 'div'
 
-  return (
+  const sphere = (
     <Tag
       ref={ref as React.Ref<HTMLDivElement & HTMLButtonElement>}
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={className}
+      className={labelPlacement === 'flow' ? undefined : className}
       style={{
         position: 'relative',
         width: diameter,
@@ -86,6 +107,7 @@ export function AIASphere({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        flexShrink: 0,
         cursor: onClick ? 'pointer' : undefined,
         outline: 'none',
         border: 'none',
@@ -108,23 +130,38 @@ export function AIASphere({
         </div>
       )}
 
-      {label && (
+      {label && labelPlacement === 'absolute' && (
         <span
           style={{
             position: 'absolute',
-            whiteSpace: 'nowrap',
-            fontFamily: 'var(--font-mono, monospace)',
-            fontSize: 9,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase' as const,
-            color: state === 'idle' ? 'var(--muted-foreground)' : cssColor,
-            opacity: state === 'idle' ? 0.4 : 0.8,
-            ...LABEL_STYLES[labelPosition]
+            ...LABEL_TEXT_STYLE(state, cssColor),
+            ...ABSOLUTE_LABEL_STYLES[labelPosition]
           }}
         >
           {label}
         </span>
       )}
+
+      {badge && (
+        <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', zIndex: 2, display: 'inline-flex' }}>
+          {badge}
+        </span>
+      )}
     </Tag>
+  )
+
+  // No label OR absolute label — sphere stands alone (bbox == diameter × diameter, which is what ring/orbit layouts rely on).
+  if (!label || labelPlacement === 'absolute') return sphere
+
+  // Flow label — wrap sphere + label in a flex-col so the label participates in layout.
+  // The ref still points to the inner sphere element, so canvas position tracking is unaffected.
+  return (
+    <span
+      className={className}
+      style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
+    >
+      {sphere}
+      <span style={LABEL_TEXT_STYLE(state, cssColor)}>{label}</span>
+    </span>
   )
 }

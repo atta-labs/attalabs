@@ -30,6 +30,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
         onStart={form.handleStart}
         canStart={form.canStart}
         loading={form.loading}
+        globalModel={form.globalModel}
       />
     </div>
   )
