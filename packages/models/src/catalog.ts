@@ -1,3 +1,5 @@
+import { unstable_cache } from 'next/cache'
+
 import type { DisplayProvider, RouteProvider } from './providers'
 import { FALLBACK_CATALOG } from './fallback'
 import { fetchModelsDev } from './sources/models-dev'
@@ -14,12 +16,25 @@ export interface ModelEntry {
   cost: 'free' | 'paid'
 }
 
-// Fetches the canonical catalog from models.dev (24h revalidate via Next.js data cache).
+const REVALIDATE_SECONDS = 60 * 60 * 24 // 24h
+
+// Wrap the fetch + transform together. The raw models.dev response is ~2.3MB
+// (above Next's 2MB per-item fetch-cache cap), but the transformed entry array
+// is small, so we cache that instead.
+const getCatalogCached = unstable_cache(
+  async (): Promise<ModelEntry[]> => {
+    const raw = await fetchModelsDev()
+    return transformModelsDev(raw)
+  },
+  ['atta-models-catalog'],
+  { revalidate: REVALIDATE_SECONDS, tags: ['atta-models-catalog'] }
+)
+
+// Fetches the canonical catalog from models.dev. Cached 24h via Next.js.
 // On fetch or parse failure, returns FALLBACK_CATALOG so the app keeps working.
 export async function getCatalog(): Promise<ModelEntry[]> {
   try {
-    const raw = await fetchModelsDev()
-    const entries = transformModelsDev(raw)
+    const entries = await getCatalogCached()
     if (entries.length === 0) return FALLBACK_CATALOG
     return entries
   } catch {

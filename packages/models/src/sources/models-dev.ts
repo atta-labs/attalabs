@@ -36,16 +36,12 @@ export interface ModelsDevProvider {
 export type ModelsDevResponse = Record<string, ModelsDevProvider>
 
 const MODELS_DEV_URL = 'https://models.dev/api.json'
-const REVALIDATE_SECONDS = 60 * 60 * 24 // 24h
 
-// Next.js extends RequestInit with a `next` field for the Data Cache; @atta/models
-// doesn't depend on Next.js directly, so we cast rather than import types.
-type FetchWithNext = RequestInit & { next?: { revalidate?: number } }
-
+// The response is ~2.3MB, above Next.js's 2MB per-item cache limit.
+// We explicitly opt out of fetch-level caching; the CALLER wraps the
+// transformed (small) output with `unstable_cache` instead.
 export async function fetchModelsDev(): Promise<ModelsDevResponse> {
-  const res = await fetch(MODELS_DEV_URL, {
-    next: { revalidate: REVALIDATE_SECONDS }
-  } as FetchWithNext)
+  const res = await fetch(MODELS_DEV_URL, { cache: 'no-store' })
   if (!res.ok) throw new Error(`models.dev fetch failed: ${res.status}`)
   return (await res.json()) as ModelsDevResponse
 }
