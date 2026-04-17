@@ -285,8 +285,10 @@ export function useAIACanvas(
           if (glow > 0.01) {
             const r = sphere.radius + 15
             const g = gfx.createRadialGradient(sphere.x, sphere.y, 0, sphere.x, sphere.y, r)
-            g.addColorStop(0, colors[0]!)
-            g.addColorStop(0.6, colors[1]!)
+            // Use this sphere's own color so an arrival on the Critic looks red,
+            // the Synthesizer gold, etc. — rather than a uniform --primary pulse.
+            g.addColorStop(0, sphere.color)
+            g.addColorStop(0.6, sphere.color)
             g.addColorStop(1, 'transparent')
             gfx.globalAlpha = glow * 0.3
             gfx.fillStyle = g
