@@ -41,6 +41,8 @@ Sanity CMS — branding document (one per product)
 | Vādā     | `branding-vada`      | `ofnj2ojb`     |
 | Vitakka  | `branding-vitakka`   | `o56nzgrr`     |
 
+The same IDs are exported from `@atta/cms` as `PROJECT_IDS`. Pair with `createProductClient(product)` to query any product's Sanity project from any app (see _Cross-product fetching_ below).
+
 ### Asset Storage
 
 - **SVG logos** — stored as Sanity `file` assets (not `image`). This preserves the raw SVG without server-side transform processing.
@@ -54,9 +56,31 @@ Sanity CMS — branding document (one per product)
 ```ts
 import { cmsClient, getAttaBranding, getVadaBranding, getHeraldBranding, getVitakkaBranding } from '@atta/cms'
 
-// In layout.tsx or a server component
-const branding = await getAttaBranding(cmsClient).catch(() => null)
+// In layout.tsx or a server component — for your own product's branding
+const branding = await getVadaBranding(cmsClient).catch(() => null)
 ```
+
+### Cross-product fetching
+
+Each product's branding lives in its own Sanity project, so the app's default `cmsClient` (wired to one project via `SANITY_PROJECT_ID`) cannot reach other products' docs. For ecosystem surfaces — e.g. the Vāda home page showing Attā and Vitakka alongside Vāda — use `createProductClient(productKey)`:
+
+```ts
+import {
+  cmsClient,
+  createProductClient,
+  getAttaBranding,
+  getVadaBranding,
+  getVitakkaBranding
+} from '@atta/cms'
+
+const [atta, vada, vitakka] = await Promise.all([
+  getAttaBranding(createProductClient('atta')).catch(() => null),
+  getVadaBranding(cmsClient).catch(() => null),
+  getVitakkaBranding(createProductClient('vitakka')).catch(() => null)
+])
+```
+
+`createProductClient` returns a read-only Sanity client hitting the public CDN for the chosen project — no token required. `ProductKey` is `'herald' | 'atta' | 'vada' | 'vitakka'`. The same helper works for any other typed query in `@atta/cms` (themes, configs, etc.) when you need data from a sibling product.
 
 Returned shape — all asset fields include a resolved `url` string:
 

@@ -1,8 +1,9 @@
 import { Text } from '@atta/ui'
 import { EyeOff } from 'lucide-react'
+import { ConclusionCard } from '../../primitives/ConclusionCard'
 import { FlowArrow } from '../../primitives/FlowArrow'
 
-const CONCLUSION_FIELDS = ['Recommendation', 'Key condition', 'Unresolved'] as const
+const MECHANISM_CONCLUSION_FIELDS = [{ label: 'Recommendation' }, { label: 'Key condition' }, { label: 'Unresolved' }]
 
 interface TerminalState {
   label: string
@@ -21,31 +22,6 @@ const TERMINAL_STATES: TerminalState[] = [
     border: 'border-destructive/40'
   }
 ]
-
-function ConclusionCard() {
-  return (
-    <div className='flex flex-col gap-3 rounded-md border border-border bg-card p-5'>
-      <div className='flex items-center justify-between gap-3'>
-        <Text as='small' className='font-mono uppercase tracking-widest text-xs text-muted-foreground'>
-          Conclusion
-        </Text>
-        <span className='rounded-sm border border-success/40 bg-success/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-success'>
-          Clean
-        </span>
-      </div>
-      <ul className='flex flex-col gap-2'>
-        {CONCLUSION_FIELDS.map((field) => (
-          <li key={field} className='flex items-center gap-2'>
-            <span className='size-1.5 shrink-0 rounded-full bg-success' aria-hidden />
-            <Text as='small' className='text-sm text-muted-foreground'>
-              {field}
-            </Text>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
 
 function BlindCritic() {
   return (
@@ -81,7 +57,7 @@ function TerminalStates() {
 export function ConclusionFlow() {
   return (
     <div className='grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-center md:gap-4'>
-      <ConclusionCard />
+      <ConclusionCard state='Clean' fields={MECHANISM_CONCLUSION_FIELDS} />
       <FlowArrow direction='responsive' />
       <BlindCritic />
       <FlowArrow direction='responsive' />

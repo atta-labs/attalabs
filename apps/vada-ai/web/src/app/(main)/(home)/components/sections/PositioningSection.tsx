@@ -16,7 +16,7 @@ export function PositioningSection() {
 
             <Heading level={2} className='font-serif text-4xl md:text-6xl text-success leading-tight'>
               <span className='block'>Vāda is not a factory.</span>
-              <span className='block'>Vāda is a boardroom.</span>
+              <span className='block'>Vāda is deliberation.</span>
             </Heading>
 
             <Text as='p' className='text-muted-foreground max-w-xl leading-relaxed'>

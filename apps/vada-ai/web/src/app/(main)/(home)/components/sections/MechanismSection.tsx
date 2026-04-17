@@ -1,7 +1,8 @@
 import { Heading, Text } from '@atta/ui'
+import type { AgentCardData } from '../primitives/AgentCard'
+import { AgentGrid } from '../primitives/AgentGrid'
 import { SectionLabel } from '../primitives/SectionLabel'
 import { SectionWrapper } from '../primitives/SectionWrapper'
-import { AgentGrid } from './mechanism/AgentGrid'
 import { BYOKCallout } from './mechanism/BYOKCallout'
 import { ConclusionFlow } from './mechanism/ConclusionFlow'
 import { RoundGeometry, type RoundState } from './mechanism/RoundGeometry'
@@ -17,6 +18,33 @@ const ROUNDS: RoundSpec[] = [
   { title: 'Round 3 · Convergence', state: 'convergence' }
 ]
 
+const MECHANISM_AGENTS: AgentCardData[] = [
+  {
+    agent: 'strategist',
+    name: 'Strategist',
+    role: 'Maps the landscape.',
+    voice: 'Maps the landscape. Here is the map.'
+  },
+  {
+    agent: 'critic',
+    name: 'Critic',
+    role: 'Finds what is wrong.',
+    voice: 'Finds what is wrong. Here is where the map is wrong.'
+  },
+  {
+    agent: 'devils_advocate',
+    name: "Devil's Advocate",
+    role: 'Rejects the frame.',
+    voice: 'Rejects the frame. We should not be making a map at all.'
+  },
+  {
+    agent: 'synthesizer',
+    name: 'Synthesizer',
+    role: 'Draws threads together.',
+    voice: 'Draws threads together. Here is what we know, and here is what we broke.'
+  }
+]
+
 export function MechanismSection() {
   return (
     <SectionWrapper id='mechanism'>
@@ -29,7 +57,7 @@ export function MechanismSection() {
           </Heading>
         </div>
 
-        <AgentGrid />
+        <AgentGrid agents={MECHANISM_AGENTS} />
 
         <div className='flex flex-col gap-6'>
           <div className='grid gap-4 md:grid-cols-3'>

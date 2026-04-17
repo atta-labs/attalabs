@@ -28,30 +28,21 @@ const NEGATIONS: Negation[] = [
 
 export function NegationsSection() {
   return (
-    <SectionWrapper id='what-this-is-not' innerClassName='max-w-3xl'>
-      <div className='flex flex-col gap-16 md:gap-20'>
+    <SectionWrapper id='what-this-is-not' className='bg-card'>
+      <div className='flex flex-col gap-12 md:gap-16'>
         <SectionLabel>04 / What This Is Not</SectionLabel>
 
-        <div className='flex flex-col gap-14 md:gap-20'>
+        <div className='grid gap-12 md:grid-cols-2 md:gap-x-16 md:gap-y-16'>
           {NEGATIONS.map(({ headline, subline }) => (
             <div key={headline} className='flex flex-col gap-3'>
-              <Heading level={3} className='font-serif text-3xl md:text-5xl text-success leading-tight'>
+              <Heading level={3} className='font-serif text-3xl md:text-4xl lg:text-5xl text-success leading-tight'>
                 {headline}
               </Heading>
-              <Text as='p' className='text-lg text-muted-foreground leading-relaxed'>
+              <Text as='p' className='text-base md:text-lg text-muted-foreground leading-relaxed'>
                 {subline}
               </Text>
             </div>
           ))}
-        </div>
-
-        <div className='flex flex-col gap-5 pt-10 md:pt-16'>
-          <Heading level={2} className='font-serif text-5xl md:text-7xl text-success leading-tight'>
-            Vāda is a room.
-          </Heading>
-          <Text as='p' className='text-xl text-muted-foreground leading-relaxed'>
-            Agents enter. They deliberate. A conclusion exits.
-          </Text>
         </div>
       </div>
     </SectionWrapper>

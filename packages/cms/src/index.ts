@@ -1,7 +1,15 @@
 // @atta/cms — Sanity CMS client, types, queries, and theme utilities
 
 // Client
-export { cmsClient, cmsConfig, cmsWriteClient, createCmsClient } from './client'
+export {
+  cmsClient,
+  cmsConfig,
+  cmsWriteClient,
+  createCmsClient,
+  createProductClient,
+  PROJECT_IDS,
+  type ProductKey
+} from './client'
 export { getAttaBranding, getHeraldBranding, getVadaBranding, getVitakkaBranding } from './queries/branding'
 export { getLibraries, getLibraryById } from './queries/library'
 // Queries

@@ -182,6 +182,50 @@ Never hardcode the hex/HSL values — they're tuned per product and may be rethe
 
 ---
 
+## Shared Content Primitives
+
+Three cross-section components live in `components/primitives/` and are reused across sections that describe or dramatize the deliberation engine:
+
+### `AgentCard` + `AgentGrid`
+
+`AgentCard` is a single labeled card driven by the `data-agent` cascade — its left border color comes from `--agent-color` set on the DOM element. `AgentGrid` wraps four cards in a responsive 2×2 grid.
+
+```tsx
+import { AgentGrid } from '../primitives/AgentGrid'
+import type { AgentCardData } from '../primitives/AgentCard'
+
+const AGENTS: AgentCardData[] = [
+  { agent: 'strategist', name: 'Strategist', role: 'Maps the landscape.', voice: '…' },
+  { agent: 'critic', name: 'Critic', role: 'Finds what is wrong.' },
+  // …
+]
+
+<AgentGrid agents={AGENTS} />
+```
+
+`voice` is optional — omit it for one-line cards (§02 round walkthroughs), include it for full cards with the italic voice line (§03 mechanism overview).
+
+### `ConclusionCard`
+
+Labeled output card with a state tag (`Clean` / `Revised` / `Unconverged`) and a list of fields. Fields accept either just a `label` (for the abstract structural view in §03) or `label + value` (for a concrete conclusion in §02).
+
+```tsx
+import { ConclusionCard, type ConclusionField } from '../primitives/ConclusionCard'
+
+<ConclusionCard
+  state='Clean'
+  fields={[
+    { label: 'Recommendation', value: 'Pursue European expansion via partnership.' },
+    { label: 'Key condition', value: 'Identify a viable partner within 60 days.' },
+    { label: 'Unresolved', value: '…' }
+  ]}
+/>
+```
+
+State tone (success / warning / destructive) is applied automatically to the bullet color and the header pill.
+
+---
+
 ## Round Geometry Component
 
 `components/sections/mechanism/RoundGeometry.tsx` renders the four-agent deliberation diagram in one of three states — `orthogonal`, `adversarial`, `convergence`. Reuse it for any visualization of the three-round mechanism. It sizes to its parent (give it a sized container, e.g. `aspect-square`).
