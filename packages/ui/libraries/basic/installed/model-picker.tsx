@@ -168,7 +168,7 @@ export function ModelPicker({
       <PopoverContent
         align={align}
         side={side}
-        avoidCollisions={false}
+        collisionPadding={8}
         className={cn('w-80 border-border/60 bg-popover p-0', className)}
       >
         {keyEntryRoute && pendingModel ? (
