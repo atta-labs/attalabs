@@ -155,6 +155,7 @@ In-depth guides for specific domains. Reference when working in that area.
 | Git Commits | [.claude/skills/git-commits/SKILL.md](.claude/skills/git-commits/SKILL.md) | Commit format and rules |
 | Canvas Animation | [.claude/skills/canvas-animation/SKILL.md](.claude/skills/canvas-animation/SKILL.md) | AIACanvas, AIASphere, AIARing |
 | Vada Engine | [.claude/skills/vada-engine/SKILL.md](.claude/skills/vada-engine/SKILL.md) | Deliberation engine, sessions, streaming |
+| Vada Home Sections | [.claude/skills/vada-home-sections/SKILL.md](.claude/skills/vada-home-sections/SKILL.md) | Home page section primitives (SectionWrapper, SectionLabel, StatusFooter, TwoColumnSection) and composition recipe |
 | Herald Engine | [.claude/skills/herald-engine/SKILL.md](.claude/skills/herald-engine/SKILL.md) | Forensic audit, Skeptical Auditor, signal detection |
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, per-product isolation |
 | Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |
