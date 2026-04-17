@@ -109,6 +109,47 @@ export async function getSessionWithTranscript(sessionId: string) {
   }
 }
 
+// Returns the session only if it belongs to the given user. Returns null if the
+// session does not exist OR is owned by a different user — never leaks existence.
+export async function getSessionForUser(sessionId: string, userId: string) {
+  const session = await db
+    .select()
+    .from(schema.sessions)
+    .where(and(eq(schema.sessions.id, sessionId), eq(schema.sessions.userId, userId)))
+    .limit(1)
+  return session[0] ?? null
+}
+
+export async function getSessionWithTranscriptForUser(sessionId: string, userId: string) {
+  const session = await getSessionForUser(sessionId, userId)
+  if (!session) return null
+
+  const entries = await db
+    .select()
+    .from(schema.transcriptEntries)
+    .where(eq(schema.transcriptEntries.sessionId, sessionId))
+    .orderBy(schema.transcriptEntries.round, schema.transcriptEntries.orderInRound)
+
+  const interv = await db
+    .select()
+    .from(schema.interventions)
+    .where(eq(schema.interventions.sessionId, sessionId))
+    .orderBy(schema.interventions.createdAt)
+
+  const conclusion = await db
+    .select()
+    .from(schema.conclusions)
+    .where(eq(schema.conclusions.sessionId, sessionId))
+    .limit(1)
+
+  return {
+    ...session,
+    transcriptEntries: entries,
+    interventions: interv,
+    conclusion: conclusion[0] ?? null
+  }
+}
+
 // --- Transcript ---
 
 export async function insertTranscriptEntry(data: {
