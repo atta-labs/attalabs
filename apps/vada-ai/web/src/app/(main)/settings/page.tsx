@@ -3,7 +3,7 @@ import { CatalogProvider, getCatalog } from '@atta/models'
 import { Heading, Text } from '@atta/ui/shared'
 import { redirect } from 'next/navigation'
 import { getOrCreateUser } from '@/db/queries'
-import { getUserApiKeys, getUserSettings, getUserTeamModels } from '@/db/settings-queries'
+import { getUserSettings, getUserTeamModels } from '@/db/settings-queries'
 import { SettingsClientPage } from './components/SettingsClientPage'
 
 export default async function SettingsPage() {
@@ -11,13 +11,14 @@ export default async function SettingsPage() {
   if (!clerkId) redirect('/?signin=1')
 
   const user = await getOrCreateUser(clerkId, '')
-  const [apiKeys, teamModels, settings, catalog] = await Promise.all([
-    getUserApiKeys(user.id),
+  const [teamModels, settings, catalog] = await Promise.all([
     getUserTeamModels(user.id),
     getUserSettings(user.id),
     getCatalog()
   ])
 
+  // API keys live in the browser (passkey-encrypted IndexedDB or in-memory).
+  // SettingsClientPage reads them via useIdentity(); initialApiKeys stays [].
   return (
     <CatalogProvider catalog={catalog}>
       <div className='px-6 py-4'>
@@ -33,7 +34,7 @@ export default async function SettingsPage() {
           </div>
 
           <SettingsClientPage
-            initialApiKeys={apiKeys}
+            initialApiKeys={[]}
             initialTeamModels={teamModels}
             initialFaceStyle={settings.faceStyle}
           />

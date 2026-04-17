@@ -1,46 +1,9 @@
 import 'server-only'
 import { and, eq } from 'drizzle-orm'
 import { db, schema } from './index'
-import { decryptApiKey, encryptApiKey, makeKeyHint } from '@/lib/crypto'
-// ── API Keys ──────────────────────────────────────────────────────────────────
 
-export async function upsertUserApiKey(userId: string, provider: string, plainKey: string): Promise<string> {
-  const encryptedKey = await encryptApiKey(plainKey)
-  const keyHint = makeKeyHint(plainKey)
-  await db
-    .insert(schema.userApiKeys)
-    .values({ userId, provider, encryptedKey, keyHint })
-    .onConflictDoUpdate({
-      target: [schema.userApiKeys.userId, schema.userApiKeys.provider],
-      set: { encryptedKey, keyHint, updatedAt: new Date() }
-    })
-  return keyHint
-}
-
-export async function getUserApiKeys(userId: string): Promise<Array<{ provider: string; keyHint: string }>> {
-  const rows = await db
-    .select({ provider: schema.userApiKeys.provider, keyHint: schema.userApiKeys.keyHint })
-    .from(schema.userApiKeys)
-    .where(eq(schema.userApiKeys.userId, userId))
-  return rows.map((r) => ({ provider: r.provider, keyHint: r.keyHint ?? '' }))
-}
-
-export async function deleteUserApiKey(userId: string, provider: string): Promise<void> {
-  await db
-    .delete(schema.userApiKeys)
-    .where(and(eq(schema.userApiKeys.userId, userId), eq(schema.userApiKeys.provider, provider)))
-}
-
-/** Server-only — never expose the return value to the client. */
-export async function getDecryptedApiKey(userId: string, provider: string): Promise<string | null> {
-  const rows = await db
-    .select({ encryptedKey: schema.userApiKeys.encryptedKey })
-    .from(schema.userApiKeys)
-    .where(and(eq(schema.userApiKeys.userId, userId), eq(schema.userApiKeys.provider, provider)))
-    .limit(1)
-  if (!rows[0]) return null
-  return decryptApiKey(rows[0].encryptedKey)
-}
+// NOTE: API keys are not stored server-side. They live in the user's browser
+// (passkey-encrypted IndexedDB or in-memory). See /trust.
 
 // ── Team Models ───────────────────────────────────────────────────────────────
 
@@ -77,6 +40,18 @@ export async function getUserTeamModels(userId: string): Promise<TeamModelEntry[
     })
     .from(schema.userTeamModels)
     .where(eq(schema.userTeamModels.userId, userId))
+}
+
+export async function deleteUserTeamModel(userId: string, teamId: string, agentRole: string): Promise<void> {
+  await db
+    .delete(schema.userTeamModels)
+    .where(
+      and(
+        eq(schema.userTeamModels.userId, userId),
+        eq(schema.userTeamModels.teamId, teamId),
+        eq(schema.userTeamModels.agentRole, agentRole)
+      )
+    )
 }
 
 // ── User Settings (face style etc.) ──────────────────────────────────────────

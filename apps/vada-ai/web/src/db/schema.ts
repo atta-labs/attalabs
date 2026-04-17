@@ -79,22 +79,8 @@ export const conclusions = pgTable('conclusions', {
 })
 
 // ── Settings ─────────────────────────────────────────────────────────────────
-
-export const userApiKeys = pgTable(
-  'user_api_keys',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id')
-      .references(() => users.id)
-      .notNull(),
-    provider: varchar('provider').notNull(), // 'anthropic' | 'openai' | 'google' | 'groq' | 'openrouter'
-    encryptedKey: text('encrypted_key').notNull(),
-    keyHint: varchar('key_hint', { length: 12 }), // e.g. "…4zAB" — shown in UI
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull()
-  },
-  (t) => [unique().on(t.userId, t.provider)]
-)
+// Note: there is no user_api_keys table. Keys live only in the user's browser.
+// See /trust for the BYOK architecture guarantee.
 
 export const userTeamModels = pgTable(
   'user_team_models',
