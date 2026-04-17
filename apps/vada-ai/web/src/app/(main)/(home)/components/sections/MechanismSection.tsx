@@ -84,7 +84,7 @@ export function MechanismSection() {
           <ConclusionFlow />
           <Text as='p' className='text-center italic text-lg text-muted-foreground'>
             &ldquo;Most AI products hide their uncertainty.{' '}
-            <span className='font-medium not-italic text-success'>Vāda names it.</span>&rdquo;
+            <span className='font-medium not-italic text-primary'>Vāda names it.</span>&rdquo;
           </Text>
         </div>
 

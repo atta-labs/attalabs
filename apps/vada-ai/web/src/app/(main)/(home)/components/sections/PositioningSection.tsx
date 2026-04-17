@@ -14,7 +14,7 @@ export function PositioningSection() {
           <div className='flex flex-col gap-8'>
             <SectionLabel>01 / Positioning</SectionLabel>
 
-            <Heading level={2} className='font-serif text-4xl md:text-6xl text-success leading-tight'>
+            <Heading level={2} className='font-serif text-4xl md:text-6xl text-primary leading-tight'>
               <span className='block'>Vāda is not a factory.</span>
               <span className='block'>Vāda is deliberation.</span>
             </Heading>
@@ -25,7 +25,7 @@ export function PositioningSection() {
               question is the right question. Give an execution swarm a bad idea and it will execute it perfectly.
             </Text>
 
-            <blockquote className='border-l-4 border-success pl-5 py-1 max-w-xl'>
+            <blockquote className='border-l-4 border-secondary pl-5 py-1 max-w-xl'>
               <Text as='p' className='text-foreground leading-relaxed'>
                 Vāda sits above execution. You bring a decision to Vāda before you commit resources to it — to
                 stress-test the strategy, attack the assumptions, and find the blind spots.

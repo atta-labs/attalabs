@@ -6,13 +6,13 @@ const EXECUTION_TOOLS = 'SKILLS · SWARMS · PLUGINS · MCP · BROWSERS · RUNNE
 export function PositioningDiagram() {
   return (
     <div className='flex flex-col gap-4'>
-      <div className='rounded-md border border-success/40 bg-background/60 px-6 py-7'>
+      <div className='rounded-md border border-secondary/40 bg-background/60 px-6 py-7'>
         <div className='flex justify-end'>
-          <Text as='small' className='font-serif text-success'>
+          <Text as='small' className='font-serif text-secondary'>
             Vāda
           </Text>
         </div>
-        <Text as='p' className='mt-6 text-center font-mono uppercase tracking-widest text-sm text-success'>
+        <Text as='p' className='mt-6 text-center font-mono uppercase tracking-widest text-sm text-secondary'>
           Deliberation Layer
         </Text>
       </div>

@@ -87,7 +87,7 @@ export function SeeItWorkSection() {
           </Phase>
 
           <Phase label='Round 3 · Convergence'>
-            <blockquote className='border-l-4 border-success bg-card/20 px-6 py-5'>
+            <blockquote className='border-l-4 border-secondary bg-card/20 px-6 py-5'>
               <Text as='p' className='text-lg md:text-xl text-foreground leading-relaxed'>
                 &ldquo;The question has evolved from &lsquo;expand or not&rsquo; to &lsquo;is there a viable
                 partner?&rsquo;&rdquo;
@@ -102,7 +102,7 @@ export function SeeItWorkSection() {
 
         <Text as='p' className='mx-auto max-w-3xl text-center text-lg md:text-xl text-muted-foreground leading-relaxed'>
           The question she walked in with has been replaced by a better question.{' '}
-          <span className='font-medium text-success'>That reframe is the product.</span>
+          <span className='font-medium text-primary'>That reframe is the product.</span>
         </Text>
       </div>
     </SectionWrapper>

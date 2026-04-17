@@ -35,7 +35,7 @@ export function NegationsSection() {
         <div className='grid gap-12 md:grid-cols-2 md:gap-x-16 md:gap-y-16'>
           {NEGATIONS.map(({ headline, subline }) => (
             <div key={headline} className='flex flex-col gap-3'>
-              <Heading level={3} className='font-serif text-3xl md:text-4xl lg:text-5xl text-success leading-tight'>
+              <Heading level={3} className='font-serif text-3xl md:text-4xl lg:text-5xl text-primary leading-tight'>
                 {headline}
               </Heading>
               <Text as='p' className='text-base md:text-lg text-muted-foreground leading-relaxed'>
