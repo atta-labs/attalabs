@@ -50,6 +50,16 @@ export {
   DropdownMenuTrigger
 } from '../../basic/installed/dropdown-menu'
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../../basic/installed/popover'
+export {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut
+} from '../../basic/installed/command'
 // Sidebar — falls back to basic
 export {
   Sidebar,

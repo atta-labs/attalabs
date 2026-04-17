@@ -67,6 +67,16 @@ export const REQUIRED_COMPONENTS = [
   'PopoverContent',
   'PopoverTrigger',
 
+  // Command
+  'Command',
+  'CommandEmpty',
+  'CommandGroup',
+  'CommandInput',
+  'CommandItem',
+  'CommandList',
+  'CommandSeparator',
+  'CommandShortcut',
+
   // Form
   'Input',
   'Textarea',

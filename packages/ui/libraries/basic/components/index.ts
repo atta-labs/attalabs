@@ -34,6 +34,16 @@ export {
   DropdownMenuTrigger
 } from '../installed/dropdown-menu'
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../installed/popover'
+export {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut
+} from '../installed/command'
 // Layout
 export { Separator } from './layout/separator'
 // Table
