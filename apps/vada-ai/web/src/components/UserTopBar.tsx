@@ -20,12 +20,7 @@ interface UserTopBarProps {
   logo?: ReactNode
 }
 
-const NAV_WITH_WORDMARK = [
-  { href: '/', label: 'VADA.AI', exact: true },
-  { href: '/science', label: 'Science', exact: false }
-]
-
-const NAV_WITHOUT_WORDMARK = [{ href: '/science', label: 'Science', exact: false }]
+const PUBLIC_NAV = [{ href: '/science', label: 'Science', exact: false }]
 
 const AUTH_NAV = [
   { href: '/deliberate', label: 'Deliberate', exact: true },
@@ -39,32 +34,35 @@ export function UserTopBar({ logo }: UserTopBarProps) {
 
   const isActive = (href: string, exact: boolean) => (exact ? pathname === href : pathname.startsWith(href))
 
-  const publicNav = logo ? NAV_WITHOUT_WORDMARK : NAV_WITH_WORDMARK
-  const allLinks = user ? [...publicNav, ...AUTH_NAV] : publicNav
+  const allLinks = user ? [...PUBLIC_NAV, ...AUTH_NAV] : PUBLIC_NAV
+  const leftLogo = logo ?? (
+    <Link href='/' className='text-xs text-foreground'>
+      VADA.AI
+    </Link>
+  )
 
   const displayName = user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress
   const email = user?.primaryEmailAddress?.emailAddress
   const initial = (displayName || email || '?').charAt(0).toUpperCase()
 
   return (
-    <nav className='flex h-full w-full items-center justify-between px-4 text-muted-foreground'>
-      {/* Left: logo + nav links */}
-      <div className='flex items-center'>
-        {logo}
-        <div className='flex items-center gap-8'>
-          {allLinks.map(({ href, label, exact }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`text-xs transition-colors hover:text-foreground ${isActive(href, exact) ? 'text-foreground' : ''}`}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
+    <nav className='grid h-full w-full grid-cols-3 items-center px-4 text-muted-foreground'>
+      {/* Left: logo */}
+      <div className='flex items-center justify-self-start'>{leftLogo}</div>
+      {/* Center: nav links */}
+      <div className='flex items-center gap-8 justify-self-center'>
+        {allLinks.map(({ href, label, exact }) => (
+          <Link
+            key={href}
+            href={href}
+            className={`text-xs transition-colors hover:text-foreground ${isActive(href, exact) ? 'text-foreground' : ''}`}
+          >
+            {label}
+          </Link>
+        ))}
       </div>
       {/* Right: scheme toggle + settings + avatar dropdown (auth) or sign-in (anonymous) */}
-      <div className='flex items-center gap-3'>
+      <div className='flex items-center gap-3 justify-self-end'>
         <ColorSchemeToggle />
         {user && (
           <Button variant='ghost' size='icon' asChild aria-label='Settings' title='Settings'>
