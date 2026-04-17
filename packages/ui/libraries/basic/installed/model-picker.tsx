@@ -252,7 +252,14 @@ export function ModelPicker({
                 const hiddenCount = group.entries.length - visibleEntries.length
                 return (
                   <React.Fragment key={group.route}>
-                    <CommandGroup heading={group.label}>
+                    <CommandGroup
+                      heading={
+                        <span className='flex items-center gap-1.5'>
+                          <ModelIcon model={group.route} size={12} type='avatar' />
+                          {group.label}
+                        </span>
+                      }
+                    >
                       {visibleEntries.map((entry) => {
                         const isSelected = value?.route === entry.route && value?.modelId === entry.modelId
                         const locked = !configuredRoutes.has(entry.route)
@@ -264,7 +271,7 @@ export function ModelPicker({
                             onSelect={() => handleSelect(entry)}
                             className='flex items-center gap-2'
                           >
-                            <ModelIcon model={entry.displayProvider} size={16} type='avatar' />
+                            <ModelIcon model={entry.modelId} size={16} type='avatar' />
                             <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
                               <span className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
                                 {entry.label}
