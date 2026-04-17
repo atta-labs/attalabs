@@ -1,6 +1,6 @@
 import type { BgState } from './types'
 import { brightenForLight, fgAt, withAlpha } from '../shared/color-math'
-import { isLightTheme, refreshThemeCache } from '../shared/theme'
+import { isLightTheme } from '../shared/theme'
 import { paintParticleHead } from '../shared/paint'
 
 // ── Grid definition ───────────────────────────────────────────────────────────
@@ -203,9 +203,6 @@ let particleEffects: ParticleEffect[] = []
 
 export function renderFabricBg(state: BgState): void {
   const { ctx, t, W, H, settleProgress, rings, recentEvents, onSphereAbsorb } = state
-
-  // One getComputedStyle per frame — all withAlpha/isLightTheme calls below read the cached flag.
-  refreshThemeCache()
 
   const CX = W / 2
   const CY = H / 2

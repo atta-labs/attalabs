@@ -10,6 +10,7 @@ import {
 } from '../aia-context'
 import { BG_RENDERERS, type BgEvent, type BgRenderer, type BgVariant } from '../bg'
 import { getThemeColors, resolveColor } from '../shared/colors'
+import { refreshThemeCache } from '../shared/theme'
 import { paintClusterGlow } from '../shared/paint'
 import { renderBgFills } from './bg-fills'
 import { renderMessages } from './message-system'
@@ -204,6 +205,10 @@ export function useAIACanvas(
       time++
       gfx.globalAlpha = 1
       gfx.clearRect(0, 0, width, height)
+
+      // Theme cache refresh — one getComputedStyle check per frame, read by
+      // every downstream renderer (fabric.ts, message-system.ts, paint primitives).
+      refreshThemeCache()
 
       // Auto-resize when content height changes
       if (containerRef.current) {
