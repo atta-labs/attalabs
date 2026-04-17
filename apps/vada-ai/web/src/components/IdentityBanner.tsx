@@ -1,11 +1,16 @@
 'use client'
 
-// Renders the unlock / save-with-passkey / forget-this-device affordances
-// based on IdentityProvider state. See /trust for the BYOK architecture.
+// Renders the BYOK affordance for every identity state:
+//   - no keys / no credential: "Pick a model above…" teaser with /trust link
+//   - no credential + in-memory keys: "Save with passkey"
+//   - locked: "Unlock with passkey"
+//   - unlocked: "Sign out / Forget this device"
+// Single source of truth for the top-of-deliberate-page banner.
 
 import { useIdentity } from '@atta/identity/react'
 import { Button, Text, useToastContext } from '@atta/ui'
 import { KeyRound, Lock, ShieldX, Unlock } from 'lucide-react'
+import Link from 'next/link'
 import { useState } from 'react'
 
 export function IdentityBanner() {
@@ -58,6 +63,23 @@ export function IdentityBanner() {
       setBusy(false)
       setConfirmForget(false)
     }
+  }
+
+  // No stored credential AND no in-memory keys: first-time BYOK hint
+  if (identity.state.kind === 'no-stored-credential' && !hasInMemoryKeys) {
+    return (
+      <div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card/40 px-4 py-3'>
+        <div className='flex items-center gap-2.5'>
+          <KeyRound className='size-4 shrink-0 text-muted-foreground' aria-hidden />
+          <Text as='small' className='text-sm text-muted-foreground'>
+            Pick a model above to add your first API key.{' '}
+            <Link href='/trust' className='underline'>
+              Your keys stay in your browser.
+            </Link>
+          </Text>
+        </div>
+      </div>
+    )
   }
 
   // Locked: prompt to unlock
