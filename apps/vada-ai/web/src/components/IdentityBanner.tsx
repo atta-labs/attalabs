@@ -1,0 +1,145 @@
+'use client'
+
+// Renders the unlock / save-with-passkey / forget-this-device affordances
+// based on IdentityProvider state. See /trust for the BYOK architecture.
+
+import { useIdentity } from '@atta/identity/react'
+import { Button, Text, useToastContext } from '@atta/ui'
+import { KeyRound, Lock, ShieldX, Unlock } from 'lucide-react'
+import { useState } from 'react'
+
+export function IdentityBanner() {
+  const identity = useIdentity()
+  const { errorToast, successToast } = useToastContext()
+  const [busy, setBusy] = useState(false)
+  const [confirmForget, setConfirmForget] = useState(false)
+
+  const hasInMemoryKeys = Object.keys(identity.state.keys).length > 0
+
+  const handleUnlock = async () => {
+    setBusy(true)
+    try {
+      await identity.unlockWithPasskey()
+      successToast('Unlocked', 'Your keys are loaded for this session.')
+    } catch (e) {
+      errorToast('Could not unlock', e instanceof Error ? e.message : 'Try again or enter keys manually.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!hasInMemoryKeys) {
+      errorToast('No keys to save', 'Add at least one API key first.')
+      return
+    }
+    setBusy(true)
+    try {
+      await identity.savePasskey()
+      successToast('Keys saved', 'Unlock with Touch ID / Face ID / Windows Hello next time.')
+    } catch (e) {
+      errorToast(
+        'Could not save with passkey',
+        e instanceof Error ? e.message : 'Your keys stay in memory for this session.'
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleForget = async () => {
+    setBusy(true)
+    try {
+      await identity.forgetDevice()
+      successToast('This device is forgotten', 'Your passkey in your OS keychain was not touched.')
+    } catch (e) {
+      errorToast('Could not forget device', e instanceof Error ? e.message : 'Try again.')
+    } finally {
+      setBusy(false)
+      setConfirmForget(false)
+    }
+  }
+
+  // Locked: prompt to unlock
+  if (identity.state.kind === 'locked') {
+    return (
+      <div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card/40 px-4 py-3'>
+        <div className='flex items-center gap-2.5'>
+          <Lock className='size-4 shrink-0 text-muted-foreground' aria-hidden />
+          <Text as='small' className='text-sm text-muted-foreground'>
+            Your API keys are encrypted on this device. Unlock with your passkey to continue.
+          </Text>
+        </div>
+        <Button type='button' size='sm' onClick={handleUnlock} disabled={busy}>
+          <Unlock className='mr-1.5 size-3.5' /> Unlock with passkey
+        </Button>
+      </div>
+    )
+  }
+
+  // No stored credential: optionally prompt to save if user has in-memory keys
+  if (identity.state.kind === 'no-stored-credential' && hasInMemoryKeys && identity.passkeySupported) {
+    return (
+      <div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card/40 px-4 py-3'>
+        <div className='flex items-center gap-2.5'>
+          <KeyRound className='size-4 shrink-0 text-muted-foreground' aria-hidden />
+          <Text as='small' className='text-sm text-muted-foreground'>
+            Save your keys securely with a passkey? You'll unlock with Touch ID / Face ID / Windows Hello next visit.
+          </Text>
+        </div>
+        <Button type='button' size='sm' variant='outline' onClick={handleSave} disabled={busy}>
+          Save with passkey
+        </Button>
+      </div>
+    )
+  }
+
+  // Unlocked: offer sign out + forget device
+  if (identity.state.kind === 'unlocked') {
+    if (confirmForget) {
+      return (
+        <div className='space-y-2 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3'>
+          <div className='flex items-start gap-2.5'>
+            <ShieldX className='mt-0.5 size-4 shrink-0 text-destructive' aria-hidden />
+            <Text as='small' className='text-sm text-foreground'>
+              Your stored API keys on this device will be permanently deleted. You will need to re-enter them to use
+              Vāda here again. Your passkey in your OS keychain will not be deleted automatically — remove it there
+              separately if you want to.
+            </Text>
+          </div>
+          <div className='flex gap-2 pl-6'>
+            <Button type='button' size='sm' variant='destructive' onClick={handleForget} disabled={busy}>
+              Forget this device
+            </Button>
+            <Button type='button' size='sm' variant='outline' onClick={() => setConfirmForget(false)} disabled={busy}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card/40 px-4 py-3'>
+        <div className='flex items-center gap-2.5'>
+          <Unlock className='size-4 shrink-0 text-muted-foreground' aria-hidden />
+          <Text as='small' className='text-sm text-muted-foreground'>
+            {identity.state.providers.length > 0
+              ? `Unlocked — ${identity.state.providers.length} provider${identity.state.providers.length === 1 ? '' : 's'} configured on this device.`
+              : 'Unlocked — keys in memory for this session.'}
+          </Text>
+        </div>
+        <div className='flex items-center gap-2'>
+          <Button type='button' size='sm' variant='ghost' onClick={() => identity.signOut()} disabled={busy}>
+            Sign out
+          </Button>
+          <Button type='button' size='sm' variant='outline' onClick={() => setConfirmForget(true)} disabled={busy}>
+            Forget this device
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Otherwise (no credential, no keys, or passkey unsupported): nothing to offer.
+  return null
+}
