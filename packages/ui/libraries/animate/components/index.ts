@@ -10,6 +10,17 @@ export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 export { Input } from '../../basic/installed/input'
 // Layout — falls back to basic
 export { Separator } from '../../basic/installed/separator'
+// Table — falls back to basic
+export {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '../../basic/installed/table'
 export { Textarea } from '../../basic/installed/textarea'
 
 // Shared

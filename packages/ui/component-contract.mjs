@@ -68,6 +68,16 @@ export const REQUIRED_COMPONENTS = [
   // Layout
   'Separator',
 
+  // Table
+  'Table',
+  'TableBody',
+  'TableCaption',
+  'TableCell',
+  'TableFooter',
+  'TableHead',
+  'TableHeader',
+  'TableRow',
+
   // Toast
   'Toast',
   'ToastProvider',

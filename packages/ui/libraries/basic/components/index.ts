@@ -35,6 +35,17 @@ export {
 } from '../installed/dropdown-menu'
 // Layout
 export { Separator } from './layout/separator'
+// Table
+export {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '../installed/table'
 export {
   Sidebar,
   SidebarContent,
