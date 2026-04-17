@@ -13,6 +13,11 @@ interface DeliberateSectionProps {
 
 export function DeliberateSection(props: DeliberateSectionProps) {
   const form = useDeliberateForm(props)
+
+  const modelIds = Object.fromEntries(
+    props.initialTeamModels.filter((m) => m.teamId === form.selectedPreset.id).map((m) => [m.agentRole, m.modelId])
+  )
+
   return (
     <div className='flex flex-col gap-6'>
       <QuestionInputArea
@@ -28,7 +33,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
         configuredProviders={props.configuredProviders}
         initialTeamModels={props.initialTeamModels}
       />
-      <RoomRoster selectedPresetId={form.selectedPreset.id} faceStyle={form.faceStyle} />
+      <RoomRoster selectedPresetId={form.selectedPreset.id} faceStyle={form.faceStyle} modelIds={modelIds} />
     </div>
   )
 }

@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 import { AIACanvas, AIAgent, type AgentName, type FaceStyle } from '@atta/ui/canvas'
-import { Text } from '@atta/ui/shared'
+import { ModelIcon, Text } from '@atta/ui'
 import { AGENTS } from '@atta/agents'
 import { PRESETS } from '@/schemas'
 import type { AgentConfig } from '@/schemas'
@@ -14,7 +14,17 @@ const ALL_ROSTER_AGENTS: AgentConfig[] = Array.from(
   new Map(PRESETS.flatMap((p) => p.agents).map((a) => [a.role, a])).values()
 )
 
-function AgentCard({ agent, active, faceStyle }: { agent: AgentConfig; active: boolean; faceStyle: FaceStyle }) {
+function AgentCard({
+  agent,
+  active,
+  faceStyle,
+  modelId
+}: {
+  agent: AgentConfig
+  active: boolean
+  faceStyle: FaceStyle
+  modelId?: string
+}) {
   const agentName = agent.name as AgentName
   return (
     // opacity-0 keeps real layout position so getBoundingClientRect() stays accurate.
@@ -32,9 +42,12 @@ function AgentCard({ agent, active, faceStyle }: { agent: AgentConfig; active: b
         visible={active}
       />
       <div className='flex flex-col items-center gap-0.5 text-center'>
-        <Text as='p' className='font-serif text-sm font-medium text-foreground'>
-          {agent.name}
-        </Text>
+        <div className='flex items-center gap-1'>
+          {modelId && <ModelIcon model={modelId} size={12} type='avatar' />}
+          <Text as='p' className='font-serif text-sm font-medium text-foreground'>
+            {agent.name}
+          </Text>
+        </div>
         <Text as='p' size='xs' className='text-[11px] leading-snug text-foreground/60'>
           {AGENTS[agentName]?.tagline}
         </Text>
@@ -46,9 +59,10 @@ function AgentCard({ agent, active, faceStyle }: { agent: AgentConfig; active: b
 interface RoomRosterProps {
   selectedPresetId: string
   faceStyle: FaceStyle
+  modelIds?: Record<string, string>
 }
 
-export const RoomRoster = memo(function RoomRoster({ selectedPresetId, faceStyle }: RoomRosterProps) {
+export const RoomRoster = memo(function RoomRoster({ selectedPresetId, faceStyle, modelIds }: RoomRosterProps) {
   const selectedPreset = PRESETS.find((p) => p.id === selectedPresetId) ?? PRESETS[0]!
   const activeRoles = new Set(selectedPreset.agents.map((a) => a.role))
 
@@ -60,7 +74,13 @@ export const RoomRoster = memo(function RoomRoster({ selectedPresetId, faceStyle
       <AIACanvas alwaysRenderSpheres>
         <div className='grid grid-cols-3 gap-3'>
           {ALL_ROSTER_AGENTS.map((agent) => (
-            <AgentCard key={agent.role} agent={agent} active={activeRoles.has(agent.role)} faceStyle={faceStyle} />
+            <AgentCard
+              key={agent.role}
+              agent={agent}
+              active={activeRoles.has(agent.role)}
+              faceStyle={faceStyle}
+              modelId={modelIds?.[agent.role]}
+            />
           ))}
         </div>
       </AIACanvas>
