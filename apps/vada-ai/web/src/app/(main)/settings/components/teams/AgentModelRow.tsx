@@ -1,9 +1,6 @@
 'use client'
 
-import { FALLBACK_CATALOG, type RouteProvider } from '@atta/models'
-
-// TODO(Dyn-9): replace FALLBACK_CATALOG with async getCatalog() call
-const CATALOG = FALLBACK_CATALOG
+import { useCatalog, type RouteProvider } from '@atta/models'
 import { ModelPicker } from '@atta/ui'
 import { AIAgent, type AgentName } from '@atta/ui/canvas'
 import { Text } from '@atta/ui/shared'
@@ -21,6 +18,7 @@ interface AgentModelRowProps {
 }
 
 export function AgentModelRow({ agent, teamId, currentModel, configuredProviders, onChanged }: AgentModelRowProps) {
+  const catalog = useCatalog()
   const { faceStyle } = useUserPreferences()
 
   const save = async (provider: string, modelId: string) => {
@@ -54,7 +52,7 @@ export function AgentModelRow({ agent, teamId, currentModel, configuredProviders
       </Text>
 
       <ModelPicker
-        options={CATALOG}
+        options={catalog}
         value={pickerValue}
         onChange={({ route, modelId }) => save(route, modelId)}
         configuredRoutes={configuredProviders as Set<RouteProvider>}
