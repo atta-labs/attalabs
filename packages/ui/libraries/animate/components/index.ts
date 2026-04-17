@@ -62,6 +62,11 @@ export {
 } from '../../basic/installed/command'
 // Model
 export { ModelIcon, type ModelIconProps } from '../../basic/installed/model-icon'
+export {
+  ModelPicker,
+  type ModelPickerProps,
+  type ModelPickerValue
+} from '../../basic/installed/model-picker'
 // Sidebar — falls back to basic
 export {
   Sidebar,

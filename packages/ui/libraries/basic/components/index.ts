@@ -46,6 +46,11 @@ export {
 } from '../installed/command'
 // Model
 export { ModelIcon, type ModelIconProps } from '../installed/model-icon'
+export {
+  ModelPicker,
+  type ModelPickerProps,
+  type ModelPickerValue
+} from '../installed/model-picker'
 // Layout
 export { Separator } from './layout/separator'
 // Table

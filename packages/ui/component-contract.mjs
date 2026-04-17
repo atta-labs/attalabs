@@ -79,6 +79,7 @@ export const REQUIRED_COMPONENTS = [
 
   // Model
   'ModelIcon',
+  'ModelPicker',
 
   // Form
   'Input',
@@ -193,6 +194,8 @@ export const REQUIRED_TYPES = [
 
   // Model
   'ModelIconProps',
+  'ModelPickerProps',
+  'ModelPickerValue',
 
   // Toast
   'ToastContextType',
