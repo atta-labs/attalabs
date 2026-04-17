@@ -136,7 +136,12 @@ export function ModelPicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger ?? defaultTrigger}</PopoverTrigger>
-      <PopoverContent align={align} side={side} className={cn('w-80 border-border/60 bg-popover p-0', className)}>
+      <PopoverContent
+        align={align}
+        side={side}
+        avoidCollisions={false}
+        className={cn('w-80 border-border/60 bg-popover p-0', className)}
+      >
         {keyEntryRoute && pendingModel ? (
           <div className='flex flex-col gap-3 p-3'>
             <div className='flex items-center gap-2'>
@@ -210,8 +215,8 @@ export function ModelPicker({
                 Free
               </button>
             </div>
-            <CommandList>
-              <CommandEmpty>No model found.</CommandEmpty>
+            <CommandList className='min-h-[280px]'>
+              <CommandEmpty className='py-20'>No model found.</CommandEmpty>
               {grouped.map((group) => (
                 <CommandGroup key={group.route} heading={group.label}>
                   {group.entries.map((entry) => {
@@ -225,7 +230,7 @@ export function ModelPicker({
                         onSelect={() => handleSelect(entry)}
                         className='flex items-center gap-2'
                       >
-                        <ModelIcon model={entry.modelId} size={16} type='avatar' />
+                        <ModelIcon model={entry.displayProvider} size={16} type='avatar' />
                         <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
                           <span className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
                             {entry.label}
