@@ -95,6 +95,7 @@ The root. Provides context, owns the canvas element, runs the rAF loop.
   alwaysRenderSpheres={false}   // Show sphere glow/matrix during wander phase too.
   matchContentHeight={false}    // Canvas height = scrollHeight for scrolling pages.
   onPhaseChange={(phase) => {}} // 'wander' | 'forming' | 'settled'
+  paused={false}                // Cancel the main rAF loop without losing particle state. See "Pausing" below.
   className='fixed inset-0 z-0 bg-background'
   ref={canvasRef}               // AIACanvasRef — exposes forceSettle()
 >
@@ -115,6 +116,10 @@ The root. Provides context, owns the canvas element, runs the rAF loop.
 const canvasRef = useRef<AIACanvasRef>(null)
 canvasRef.current?.forceSettle()  // Skip wander phase, start clustering immediately
 ```
+
+**Pausing — `paused` prop.** Toggling `paused` cancels (or re-kicks) the main `animate()` rAF loop. Particle positions, sphere registrations, and phase are all preserved — resume continues from the same state. Only the main canvas loop is affected; the ring's wave rAF and the sphere position-tracking loops keep running (deliberate trade-off, ~80% CPU savings in one file). Typical use: wrap the canvas in a placeholder `<section h-dvh>` + `IntersectionObserver` so the canvas stops when scrolled out of view. See `.claude/skills/canvas-animation/SKILL.md` for the full pattern including `pointer-events-none` on the fixed wrapper so scroll passes through to the page.
+
+> **Canvas MUST be `fixed inset-0`.** Particle/sphere/matrix drawing uses sphere viewport coords (from `getBoundingClientRect`) directly as canvas-local coords. Putting the canvas inside a scrolled parent breaks the mapping and particles end up drawn at a constant offset from their spheres — most visibly as "pulses from the top of the screen" when the scrolled parent comes back into view. Use the placeholder + `fixed` pattern instead.
 
 ### Page configurations:
 

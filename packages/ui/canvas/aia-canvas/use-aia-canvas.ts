@@ -35,6 +35,7 @@ export interface AIACanvasConfig {
   alwaysRenderSpheres?: boolean
   matchContentHeight?: boolean
   autoTriggerGravity?: boolean
+  paused?: boolean
 }
 
 export interface AIACanvasRefs {
@@ -52,7 +53,8 @@ export function useAIACanvas(
     wanderDuration = 120,
     alwaysRenderSpheres = false,
     matchContentHeight = false,
-    autoTriggerGravity = true
+    autoTriggerGravity = true,
+    paused = false
   }: AIACanvasConfig,
   ref: React.Ref<AIACanvasRef> | undefined
 ): AIACanvasRefs {
@@ -84,6 +86,10 @@ export function useAIACanvas(
   const startGravitySignalRef = useRef(false)
   const autoTriggerGravityRef = useRef(autoTriggerGravity)
   autoTriggerGravityRef.current = autoTriggerGravity
+  const animIdRef = useRef<number | null>(null)
+  const pausedRef = useRef(paused)
+  pausedRef.current = paused
+  const animateFnRef = useRef<(() => void) | null>(null)
 
   // ── Context callbacks ────────────────────────────────────────────────────
 
@@ -162,7 +168,6 @@ export function useAIACanvas(
     const cvs: HTMLCanvasElement = canvas
     const gfx: CanvasRenderingContext2D = ctx
 
-    let animId: number
     let width = 0
     let height = 0
     let particles: Particle[] = []
@@ -191,6 +196,10 @@ export function useAIACanvas(
     }
 
     function animate() {
+      if (pausedRef.current) {
+        animIdRef.current = null
+        return
+      }
       time++
       gfx.globalAlpha = 1
       gfx.clearRect(0, 0, width, height)
@@ -296,19 +305,34 @@ export function useAIACanvas(
       }
 
       gfx.globalAlpha = 1
-      animId = requestAnimationFrame(animate)
+      animIdRef.current = requestAnimationFrame(animate)
     }
 
     resize()
-    animate()
+    animateFnRef.current = animate
+    if (!pausedRef.current) animate()
 
     const onResize = () => resize()
     window.addEventListener('resize', onResize)
     return () => {
-      cancelAnimationFrame(animId)
+      if (animIdRef.current !== null) cancelAnimationFrame(animIdRef.current)
+      animateFnRef.current = null
       window.removeEventListener('resize', onResize)
     }
   }, [])
+
+  useEffect(() => {
+    if (paused) {
+      if (animIdRef.current !== null) {
+        cancelAnimationFrame(animIdRef.current)
+        animIdRef.current = null
+      }
+      return
+    }
+    if (animateFnRef.current && animIdRef.current === null) {
+      animateFnRef.current()
+    }
+  }, [paused])
 
   // ── Context value ────────────────────────────────────────────────────────
 
