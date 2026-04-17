@@ -343,6 +343,7 @@ export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() =>
 | `onSphereAbsorb` | `fn` | — | Fires when a Tron particle joins a sphere. Receives `sphereId`. |
 | `onOriginComplete` | `fn` | — | Fires once when **all** origin particles have arrived. Use to gate sphere reveal. |
 | `autoTriggerGravity` | `boolean` | `true` | Set false to manually call `ctx.startGravity()` |
+| `paused` | `boolean` | `false` | Cancel the main rAF loop without losing particle state. Flip to `true` to halt; flip back to `false` to resume from the same positions. See *Pause on scroll away* below. |
 
 ## AIASphere Props
 
@@ -377,6 +378,59 @@ export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() =>
 | `solidBg` | `boolean` | `false` | DOM div fills ring interior with bgColor |
 | `bgColor` | `string` | `var(--background)` | Color for solidBg DOM fill |
 | `bgOpacity` | `number` | `0.5` | Opacity of canvas bg fill (fades in when ring closes) |
+
+## Canvas positioning: MUST be `fixed inset-0`
+
+Particle, sphere-glow, matrix, and message drawing all use `sphere.x, sphere.y` directly as canvas coordinates — but those values come from `getBoundingClientRect()` on the sphere DOM element, which returns **viewport-relative** coordinates. The canvas does not translate them into canvas-local space.
+
+**Consequence:** the canvas element's own top-left MUST coincide with viewport (0, 0) for the math to line up. That's why the canonical pattern is `className='fixed inset-0 z-0 bg-background'` on every consumer.
+
+Putting the canvas inside a scrolled parent (`absolute inset-0` inside a `relative h-dvh` section, for example) breaks the mapping: as the user scrolls, the canvas's own viewport-top moves, but sphere registrations still report viewport coords — so particles end up drawn at a constant offset. The visible artifact is particles appearing to originate from the top of the screen instead of centered on the ring.
+
+If you need the canvas to occupy "one viewport" in document flow (e.g. a home hero followed by other sections), use the placeholder + fixed-canvas pattern in the next section.
+
+## Pause on scroll away
+
+To pause the canvas when the hero leaves the viewport while keeping the canvas itself `fixed`, use a bare placeholder section for scroll space and drive `paused` from `IntersectionObserver`.
+
+```tsx
+function useIsInView(ref: React.RefObject<HTMLElement | null>) {
+  const [isInView, setIsInView] = useState(true)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => { for (const entry of entries) setIsInView(entry.isIntersecting) },
+      { threshold: 0 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ref])
+  return isInView
+}
+
+export function HeroCanvas({ children }) {
+  const heroRef = useRef<HTMLElement>(null)
+  const isInView = useIsInView(heroRef)
+  return (
+    <>
+      <section ref={heroRef} id='hero' className='relative h-dvh w-full' />
+      <div className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-500 ease-out ${isInView ? 'opacity-100' : 'opacity-0'}`}>
+        <AIACanvas paused={!isInView} className='h-full w-full' ...>
+          {children}
+        </AIACanvas>
+      </div>
+    </>
+  )
+}
+```
+
+Two things to keep in mind with this pattern:
+
+- **`pointer-events-none` on the fixed wrapper is mandatory.** Otherwise the canvas div captures wheel/touch events over the viewport and scroll below the hero stops working. Opt buttons back in with `pointer-events-auto` on the container that holds them.
+- **Subsequent sections need `relative z-10`** so they render above the fixed canvas when scrolled to. A single wrapper around all sections is enough.
+
+Partial-pause scope: only the main `animate()` loop is cancelled. The ring's own wave rAF in `aia-ring.tsx` and `useAIASphere`'s position-tracking loops keep running. This is a deliberate trade-off for a one-file pause implementation — ~80% of the CPU savings; ring phase may drift by a tiny amount across a long pause, not visually perceptible.
 
 ## Page Configurations
 
