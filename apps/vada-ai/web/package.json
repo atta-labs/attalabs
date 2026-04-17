@@ -17,6 +17,7 @@
     "@atta/auth": "workspace:*",
     "@atta/cms": "workspace:*",
     "@atta/db": "workspace:*",
+    "@atta/identity": "workspace:*",
     "@atta/ui": "workspace:*",
     "@neondatabase/serverless": "^1.0.2",
     "drizzle-orm": "^0.45.1",

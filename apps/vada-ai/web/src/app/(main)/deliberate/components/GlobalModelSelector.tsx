@@ -1,15 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import {
-  useCatalog,
-  getStoredApiKey,
-  storeApiKey,
-  ROUTE_PROVIDER_ORDER,
-  type ModelConfig,
-  type RouteProvider
-} from '@atta/models'
+import { useIdentity } from '@atta/identity/react'
+import { type ModelConfig, type RouteProvider, useCatalog } from '@atta/models'
 import { ModelPicker } from '@atta/ui'
+import { useEffect } from 'react'
 
 export interface ModelSelection {
   provider: RouteProvider
@@ -35,9 +29,10 @@ export function GlobalModelSelector({
   selectedPresetId
 }: GlobalModelSelectorProps) {
   const catalog = useCatalog()
-  const [storedKeys, setStoredKeys] = useState<Partial<Record<RouteProvider, string>>>({})
+  const identity = useIdentity()
+  const storedKeys = identity.state.keys
 
-  // Mount: seed from settings preset, else fall back to localStorage
+  // Mount: seed from settings preset, else fall back to in-memory identity
   useEffect(() => {
     if (selectedPresetId && initialTeamModels.length > 0) {
       const entry = initialTeamModels.find((m) => m.teamId === selectedPresetId)
@@ -46,23 +41,16 @@ export function GlobalModelSelector({
         onChange({
           provider: route,
           modelId: entry.modelId,
-          apiKey: getStoredApiKey(route) ?? ''
+          apiKey: storedKeys[route] ?? ''
         })
         return
       }
     }
-    // Load all stored keys for configured-routes derivation
-    const loaded: Partial<Record<RouteProvider, string>> = {}
-    for (const r of ROUTE_PROVIDER_ORDER) {
-      const k = getStoredApiKey(r)
-      if (k) loaded[r] = k
-    }
-    setStoredKeys(loaded)
     // Default selection: first catalog entry whose route has a stored key
     if (!value) {
-      const first = catalog.find((e) => loaded[e.route])
+      const first = catalog.find((e) => storedKeys[e.route])
       if (first) {
-        onChange({ provider: first.route, modelId: first.modelId, apiKey: loaded[first.route] ?? '' })
+        onChange({ provider: first.route, modelId: first.modelId, apiKey: storedKeys[first.route] ?? '' })
       }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -76,7 +64,7 @@ export function GlobalModelSelector({
     onChange({
       provider: route,
       modelId: entry.modelId,
-      apiKey: getStoredApiKey(route) ?? ''
+      apiKey: storedKeys[route] ?? ''
     })
   }, [selectedPresetId]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -88,13 +76,11 @@ export function GlobalModelSelector({
   const pickerValue = value ? { route: value.provider, modelId: value.modelId } : null
 
   const handleChange = (next: { route: RouteProvider; modelId: string }) => {
-    const apiKey = getStoredApiKey(next.route) ?? ''
-    onChange({ provider: next.route, modelId: next.modelId, apiKey })
+    onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKeys[next.route] ?? '' })
   }
 
   const handleProvideKey = (route: RouteProvider, key: string) => {
-    storeApiKey(route, key)
-    setStoredKeys((prev) => ({ ...prev, [route]: key }))
+    identity.setKey(route, key)
     if (value?.provider === route) onChange({ ...value, apiKey: key })
   }
 

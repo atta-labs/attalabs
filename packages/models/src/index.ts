@@ -6,8 +6,6 @@ export { getCatalog, findModelEntry, findModelEntryByModelId } from './catalog'
 
 export { FALLBACK_CATALOG } from './fallback'
 
-export { getStoredApiKey, removeStoredApiKey, storeApiKey } from './storage'
-
 export { OVERLAY } from './overlay'
 
 export { CatalogProvider, useCatalog, type CatalogProviderProps } from './provider'

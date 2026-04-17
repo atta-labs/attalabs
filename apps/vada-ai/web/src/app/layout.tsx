@@ -1,4 +1,5 @@
 import { cmsClient, getVadaConfig } from '@atta/cms'
+import { IdentityProvider } from '@atta/identity/react'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
@@ -16,7 +17,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <NextWebShell config={config} styleId='vada-theme'>
       <PreviewThemeListener />
-      {children}
+      <IdentityProvider>{children}</IdentityProvider>
     </NextWebShell>
   )
 }

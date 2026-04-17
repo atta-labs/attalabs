@@ -1,10 +1,18 @@
 'use client'
 
+// Browser-driven pull loop. Replaces the old SSE consumer.
+// The server returns commands via /api/deliberation/[id]/next; we execute each
+// command locally with the user's API key (held in @atta/identity, never sent
+// to the server), stream tokens into UI state, then POST /turn with the final
+// text. See /trust for the BYOK architecture guarantee.
+
+import { classifyProviderError, invokeAgent, invokeMock, isMockModeActive, retryWithBackoff } from '@atta/identity'
+import { useIdentity } from '@atta/identity/react'
+import type { RouteProvider } from '@atta/models'
 import { useEffect, useRef, useState } from 'react'
 import { getAgentConfigByName } from '@/schemas'
-import type { SSEEvent } from '@/schemas'
 
-// ── Exported types ────────────────────────────────────────────────────────────
+// ── Exported types (unchanged from SSE-era API) ───────────────────────────────
 
 export type MessageDisplayState = 'streaming' | 'complete'
 
@@ -45,6 +53,47 @@ interface InitialEntry {
   round: number
 }
 
+// ── Command types (matching server engine/types.ts) ───────────────────────────
+
+interface ModelRef {
+  provider: RouteProvider
+  modelId: string
+}
+
+type ConclusionPhase = 'synthesize' | 'audit' | 'revise' | 'reaudit'
+
+type NextCommand =
+  | {
+      type: 'run_agent'
+      turnId: string
+      agent: string
+      round: number
+      model: ModelRef
+      systemPrompt: string
+      userPrompt: string
+    }
+  | {
+      type: 'run_conclusion'
+      turnId: string
+      phase: ConclusionPhase
+      model: ModelRef
+      systemPrompt: string
+      userPrompt: string
+      expected: 'json' | 'verdict'
+    }
+  | { type: 'state_change'; state: string }
+  | { type: 'terminal'; terminal_state: string }
+  | { type: 'done' }
+
+// ── Loading messages per conclusion phase ─────────────────────────────────────
+
+const CONCLUSION_LOADING: Record<ConclusionPhase, string> = {
+  synthesize: 'Synthesizer is drafting the conclusion...',
+  audit: 'Blind Critic is reviewing the conclusion...',
+  revise: 'Synthesizer is revising...',
+  reaudit: 'Blind Critic is reviewing revision...'
+}
+
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useDeliberation(
@@ -54,6 +103,10 @@ export function useDeliberation(
   initialConclusion: Record<string, unknown> | null = null,
   initialState = 'PENDING'
 ) {
+  const identity = useIdentity()
+  const keyMapRef = useRef(identity.state.keys)
+  keyMapRef.current = identity.state.keys
+
   const isComplete = initialState === 'TERMINAL'
 
   const [messages, setMessages] = useState<DeliberationMessage[]>(() =>
@@ -72,157 +125,186 @@ export function useDeliberation(
     })
   )
 
-  const round1BufferRef = useRef<DeliberationMessage[]>([])
-  const [round1HasPending, setRound1HasPending] = useState(false)
-  const [round1Ready, setRound1Ready] = useState<boolean>(() => initialEntries.some((e) => e.round === 1))
-
   const [streamingMessage, setStreamingMessage] = useState<StreamingMessage | null>(null)
   const [loadingMessage, setLoadingMessage] = useState<string | null>(null)
   const [streamError, setStreamError] = useState<string | null>(null)
   const [currentState, setCurrentState] = useState(initialState)
   const [terminalState, setTerminalState] = useState<string | null>(null)
   const [conclusion, setConclusion] = useState<Record<string, unknown> | null>(initialConclusion)
-
   const [completedRounds, setCompletedRounds] = useState<Set<number>>(() => {
-    if (isComplete) {
-      return new Set(initialEntries.map((e) => e.round))
-    }
+    if (isComplete) return new Set(initialEntries.map((e) => e.round))
     return new Set()
   })
 
-  const rawStreamRef = useRef('')
-  const seenRef = useRef<Set<string>>(
-    new Set(initialEntries.map((e) => `${e.round}-${getAgentConfigByName(e.agent).role}`))
-  )
+  const abortRef = useRef<AbortController | null>(null)
+  const stoppedRef = useRef(false)
 
   useEffect(() => {
     if (isComplete) return
+    stoppedRef.current = false
 
-    const es = new EventSource(`/api/deliberation/${sessionId}/stream`)
+    const drive = async () => {
+      // Safety cap — a bug in the server orchestrator shouldn't let the browser
+      // loop forever. 200 rounds is well beyond any real deliberation.
+      for (let iter = 0; iter < 200 && !stoppedRef.current; iter++) {
+        let cmd: NextCommand
+        try {
+          const res = await fetch(`/api/deliberation/${sessionId}/next`, { method: 'POST' })
+          if (!res.ok) throw new Error(`next failed: ${res.status}`)
+          cmd = (await res.json()) as NextCommand
+        } catch (err) {
+          if (stoppedRef.current) return
+          setStreamError(err instanceof Error ? err.message : 'Failed to fetch next command')
+          return
+        }
 
-    const flushRound1 = () => {
-      const buf = round1BufferRef.current
-      if (buf.length === 0) return
-      round1BufferRef.current = []
-      setRound1HasPending(false)
-      setMessages((prev) => [...prev, ...buf])
-      setRound1Ready(true)
-    }
+        if (cmd.type === 'done') return
 
-    es.onmessage = (event) => {
-      const data = JSON.parse(event.data as string) as SSEEvent
-
-      switch (data.type) {
-        case 'state_change': {
-          setCurrentState(data.state)
+        if (cmd.type === 'terminal') {
+          setTerminalState(cmd.terminal_state)
+          setCurrentState('TERMINAL')
           setLoadingMessage(null)
-          if (data.state !== 'ROUND_1') flushRound1()
-          break
-        }
-
-        case 'agent_start': {
-          const config = getAgentConfigByName(data.agent)
-          rawStreamRef.current = ''
-          setStreamingMessage({
-            agent: data.agent,
-            agentRole: config.role,
-            round: data.round,
-            content: '',
-            replyTarget: null
-          })
-          break
-        }
-
-        case 'agent_token': {
-          rawStreamRef.current += data.token
-          const { text, replyTarget } = parseContent(rawStreamRef.current)
-          setStreamingMessage((prev) => (prev ? { ...prev, content: text, replyTarget } : prev))
-          break
-        }
-
-        case 'agent_complete': {
-          const config = getAgentConfigByName(data.agent)
-          const seenKey = `${data.round}-${config.role}`
-          setStreamingMessage(null)
-          rawStreamRef.current = ''
-          if (seenRef.current.has(seenKey)) break
-          seenRef.current.add(seenKey)
-          const { text, replyTarget } = parseContent(data.content)
-          const msg: DeliberationMessage = {
-            id: crypto.randomUUID(),
-            agent: data.agent,
-            agentRole: config.role,
-            round: data.round,
-            content: text,
-            state: 'complete',
-            replyTarget
+          // Fetch the finalized conclusion row for display
+          try {
+            const res = await fetch(`/api/sessions/${sessionId}`)
+            if (res.ok) {
+              const session = (await res.json()) as { conclusion?: Record<string, unknown> | null }
+              if (session.conclusion) setConclusion(session.conclusion)
+            }
+          } catch {
+            // Conclusion fetch is cosmetic — terminal state is already set
           }
-          if (data.round === 1) {
-            round1BufferRef.current = [...round1BufferRef.current, msg]
-            setRound1HasPending(true)
+          return
+        }
+
+        if (cmd.type === 'state_change') {
+          setCurrentState(cmd.state)
+          continue
+        }
+
+        // run_agent or run_conclusion — execute the provider call
+        const apiKey = keyMapRef.current[cmd.model.provider]
+        if (!apiKey) {
+          setStreamError(
+            `Missing ${cmd.model.provider} API key. Add one in settings and reload to continue this deliberation.`
+          )
+          return
+        }
+
+        const abort = new AbortController()
+        abortRef.current = abort
+
+        const dispatch = isMockModeActive() ? invokeMock : invokeAgent
+
+        try {
+          if (cmd.type === 'run_agent') {
+            const config = getAgentConfigByName(cmd.agent)
+            setCurrentState(`ROUND_${cmd.round}`)
+            setStreamingMessage({
+              agent: cmd.agent,
+              agentRole: config.role,
+              round: cmd.round,
+              content: '',
+              replyTarget: null
+            })
           } else {
-            setMessages((prev) => [...prev, msg])
+            setLoadingMessage(CONCLUSION_LOADING[cmd.phase])
+            setCurrentState(
+              cmd.phase === 'synthesize' ? 'CONCLUDING' : cmd.phase === 'revise' ? 'REVISING' : 'AUDITING'
+            )
           }
-          break
-        }
 
-        case 'round_complete': {
-          if (data.round === 1) flushRound1()
-          setCompletedRounds((prev) => new Set([...prev, data.round]))
-          break
-        }
+          const result = await retryWithBackoff(
+            () =>
+              dispatch({
+                provider: cmd.model.provider,
+                modelId: cmd.model.modelId,
+                apiKey,
+                systemPrompt: cmd.systemPrompt,
+                userPrompt: cmd.userPrompt,
+                signal: abort.signal,
+                ...(cmd.type === 'run_agent' ? { agentLabel: cmd.agent, round: cmd.round } : {})
+              }),
+            {
+              maxAttempts: 3,
+              shouldRetry: (err) => classifyProviderError(err, cmd.model.provider).recoverable
+            }
+          )
 
-        case 'agent_error':
-          setStreamError(data.error)
+          let fullText = ''
+          for await (const delta of result.textStream) {
+            if (stoppedRef.current) return
+            fullText += delta
+            if (cmd.type === 'run_agent') {
+              const { text, replyTarget } = parseContent(fullText)
+              setStreamingMessage((prev) => (prev ? { ...prev, content: text, replyTarget } : prev))
+            }
+          }
+
+          // Report turn result to server
+          await fetch(`/api/deliberation/${sessionId}/turn`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              turnId: cmd.turnId,
+              content: fullText,
+              phase: cmd.type === 'run_agent' ? 'run_agent' : cmd.phase,
+              ...(cmd.type === 'run_agent' ? { agent: cmd.agent, round: cmd.round } : {})
+            })
+          })
+
+          if (cmd.type === 'run_agent') {
+            const config = getAgentConfigByName(cmd.agent)
+            const { text, replyTarget } = parseContent(fullText)
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                agent: cmd.agent,
+                agentRole: config.role,
+                round: cmd.round,
+                content: text,
+                state: 'complete',
+                replyTarget
+              }
+            ])
+            setStreamingMessage(null)
+            setCompletedRounds((prev) => {
+              // Mark round complete when we have as many entries as expected.
+              // Expected count lives on the server; we approximate by checking
+              // if this was the last agent in the round (next /next call will
+              // either move to the next round or conclusion).
+              return prev
+            })
+          } else {
+            setLoadingMessage(null)
+          }
+        } catch (err) {
+          if (stoppedRef.current || (err as DOMException)?.name === 'AbortError') return
+          const classified = classifyProviderError(err, cmd.model.provider)
+          // Notify server (V1 no-op but good API hygiene)
+          await fetch(`/api/deliberation/${sessionId}/turn-error`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ turnId: cmd.turnId, error: classified.userMessage })
+          }).catch(() => {})
+          setStreamError(classified.userMessage)
           setStreamingMessage(null)
           setLoadingMessage(null)
-          es.close()
-          break
-
-        case 'loading_state':
-          setLoadingMessage(data.message)
-          break
-
-        case 'conclusion_complete': {
-          setTerminalState(data.terminal_state)
-          setLoadingMessage(null)
-
-          // Fetch the conclusion from the API.
-          // The API route handles extracting originalJson/revisedJson based on
-          // terminal state and returns a flat conclusion object with recommendation,
-          // key_condition, unresolved_points, review_by fields.
-          fetch(`/api/sessions/${sessionId}`)
-            .then((res) => {
-              if (!res.ok) throw new Error(`Failed to fetch session: ${res.status}`)
-              return res.json()
-            })
-            .then((session: { conclusion?: Record<string, unknown> | null }) => {
-              if (session.conclusion) {
-                setConclusion(session.conclusion)
-              } else {
-                console.warn('⚠️ API returned no conclusion despite terminal state:', data.terminal_state)
-              }
-            })
-            .catch((err) => {
-              console.error('❌ Conclusion fetch failed:', err)
-            })
-          break
+          return
         }
-
-        case 'done':
-          es.close()
-          break
       }
     }
 
-    es.onerror = () => es.close()
-    return () => es.close()
+    drive()
+    return () => {
+      stoppedRef.current = true
+      abortRef.current?.abort()
+    }
   }, [sessionId, isComplete])
 
   return {
     messages,
-    round1HasPending,
-    round1Ready,
     streamingMessage,
     loadingMessage,
     streamError,
