@@ -1,5 +1,5 @@
 import { Text } from '@atta/ui'
-import { ArrowDown } from 'lucide-react'
+import { FlowArrow } from '../primitives/FlowArrow'
 
 const EXECUTION_TOOLS = 'SKILLS · SWARMS · PLUGINS · MCP · BROWSERS · RUNNERS'
 
@@ -21,7 +21,7 @@ export function PositioningDiagram() {
         <span className='rounded-sm border border-border bg-card px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
           Conclusion
         </span>
-        <ArrowDown className='size-4 text-muted-foreground' aria-hidden />
+        <FlowArrow />
       </div>
 
       <div className='rounded-md border border-border bg-background/30 px-6 py-7'>

@@ -159,6 +159,55 @@ These are enforced across every section:
 
 ---
 
+## Agent Colors
+
+Four locked colors — Strategist / Critic / Devil's Advocate / Synthesizer — defined in `packages/ui/styles/globals.css` as `--agent-strategist`, `--agent-critic`, `--agent-devils-advocate`, `--agent-synthesizer`. They are **not** mapped to Tailwind utility classes; use them via the `data-agent` cascade or as direct CSS-variable references in SVG attributes.
+
+**DOM-element pattern (cascade):** set `data-agent="…"` on the container, which globally sets `--agent-color`. Then reference it through arbitrary Tailwind property syntax.
+
+```tsx
+<div
+  data-agent='strategist'               // or critic | devils_advocate | synthesizer
+  className='border-l-4 [border-left-color:var(--agent-color)] …'
+/>
+```
+
+**SVG pattern:** reference the variable directly in the attribute value.
+
+```tsx
+<circle fill='var(--agent-strategist)' … />
+```
+
+Never hardcode the hex/HSL values — they're tuned per product and may be retheme-overridden by the CMS.
+
+---
+
+## Round Geometry Component
+
+`components/sections/mechanism/RoundGeometry.tsx` renders the four-agent deliberation diagram in one of three states — `orthogonal`, `adversarial`, `convergence`. Reuse it for any visualization of the three-round mechanism. It sizes to its parent (give it a sized container, e.g. `aspect-square`).
+
+```tsx
+<div className='aspect-square rounded-md border border-border bg-background/40 p-5'>
+  <RoundGeometry state='convergence' />
+</div>
+```
+
+---
+
+## Provider Icons (BYOK / Model Showcases)
+
+For callouts that display AI model provider logos, use `ProviderIcon` from `@lobehub/icons` (already a dependency of `@atta/ui`):
+
+```tsx
+import { ProviderIcon } from '@lobehub/icons'
+
+<ProviderIcon provider='anthropic' size={28} />
+```
+
+Supported slugs include `anthropic`, `google`, `openai`, `meta`, `mistral`, `deepseek`, `qwen`, `xai`, `groq`. For a compact callout, render at `size={28}` inside a `flex flex-wrap` row with `opacity-60`. For a full interactive picker, use the `ModelPicker` primitive instead — see `.claude/skills/model-picker/SKILL.md`.
+
+---
+
 ## Diagram Conventions
 
 When a section includes a diagram (§2 canonical example):
