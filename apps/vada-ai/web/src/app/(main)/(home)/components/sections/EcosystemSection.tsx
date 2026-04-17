@@ -3,6 +3,7 @@
 import type { CMSBranding } from '@atta/cms'
 import { Button, Heading, Text } from '@atta/ui'
 import { cn } from '@atta/ui/lib/utils'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { FlowArrow } from '../primitives/FlowArrow'
@@ -88,10 +89,11 @@ interface ProductLogoProps {
   branding: CMSBranding | null
   alt: string
   fallback: ReactNode
+  size: number
   className?: string
 }
 
-function ProductLogo({ branding, alt, fallback, className }: ProductLogoProps) {
+function ProductLogo({ branding, alt, fallback, size, className }: ProductLogoProps) {
   const lightUrl = branding?.logoSolidLight?.url
   const darkUrl = branding?.logoSolidDark?.url
 
@@ -102,13 +104,36 @@ function ProductLogo({ branding, alt, fallback, className }: ProductLogoProps) {
   if (lightUrl && darkUrl) {
     return (
       <>
-        <img src={lightUrl} alt={alt} className={cn(className, 'block dark:hidden')} />
-        <img src={darkUrl} alt={alt} className={cn(className, 'hidden dark:block')} />
+        <Image
+          src={lightUrl}
+          alt={alt}
+          width={size}
+          height={size}
+          unoptimized
+          className={cn(className, 'block dark:hidden')}
+        />
+        <Image
+          src={darkUrl}
+          alt={alt}
+          width={size}
+          height={size}
+          unoptimized
+          className={cn(className, 'hidden dark:block')}
+        />
       </>
     )
   }
 
-  return <img src={(darkUrl ?? lightUrl) as string} alt={alt} className={className} />
+  return (
+    <Image
+      src={(darkUrl ?? lightUrl) as string}
+      alt={alt}
+      width={size}
+      height={size}
+      unoptimized
+      className={className}
+    />
+  )
 }
 
 interface ProductTileProps {
@@ -122,7 +147,7 @@ function ProductTile({ branding, fallbackGlyph, name, tagline }: ProductTileProp
   return (
     <div className='flex h-full flex-col items-center gap-3 rounded-md border border-border bg-card p-6 text-center'>
       <div className='text-foreground'>
-        <ProductLogo branding={branding} alt={name} fallback={fallbackGlyph} className='size-10' />
+        <ProductLogo branding={branding} alt={name} fallback={fallbackGlyph} size={40} />
       </div>
       <Text as='small' className='font-mono uppercase tracking-widest text-xs text-foreground'>
         {name}
@@ -139,12 +164,7 @@ function AttaSubstrate({ brandings }: EcosystemSectionProps) {
     <div className='rounded-xl border border-border bg-card/20 p-6 md:p-10'>
       <div className='mb-10 flex flex-col items-center gap-2 text-center'>
         <div className='text-muted-foreground'>
-          <ProductLogo
-            branding={brandings.atta}
-            alt='Attā'
-            fallback={<AttaGlyph className='size-8' />}
-            className='size-8'
-          />
+          <ProductLogo branding={brandings.atta} alt='Attā' fallback={<AttaGlyph className='size-8' />} size={32} />
         </div>
         <Text as='small' className='font-mono uppercase tracking-widest text-xs text-muted-foreground'>
           Attā · Persistent Self
