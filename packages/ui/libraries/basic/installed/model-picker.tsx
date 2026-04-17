@@ -56,18 +56,30 @@ export function ModelPicker({
   const [keyEntryRoute, setKeyEntryRoute] = React.useState<RouteProvider | null>(null)
   const [pendingModel, setPendingModel] = React.useState<ModelEntry | null>(null)
   const [keyInput, setKeyInput] = React.useState('')
+  const [flagshipOnly, setFlagshipOnly] = React.useState(false)
+  const [freeOnly, setFreeOnly] = React.useState(false)
 
   React.useEffect(() => {
     if (!open) {
       setKeyEntryRoute(null)
       setPendingModel(null)
       setKeyInput('')
+      setFlagshipOnly(false)
+      setFreeOnly(false)
     }
   }, [open])
 
+  const filteredOptions = React.useMemo(() => {
+    return options.filter((o) => {
+      if (flagshipOnly && o.tier !== 'frontier') return false
+      if (freeOnly && o.cost !== 'free') return false
+      return true
+    })
+  }, [options, flagshipOnly, freeOnly])
+
   const grouped = React.useMemo(() => {
     const byRoute = new Map<RouteProvider, ModelEntry[]>()
-    for (const opt of options) {
+    for (const opt of filteredOptions) {
       const bucket = byRoute.get(opt.route) ?? []
       bucket.push(opt)
       byRoute.set(opt.route, bucket)
@@ -77,7 +89,7 @@ export function ModelPicker({
       label: PROVIDERS[r].label,
       entries: byRoute.get(r)!
     }))
-  }, [options])
+  }, [filteredOptions])
 
   const selectedEntry = value ? options.find((o) => o.route === value.route && o.modelId === value.modelId) : null
 
@@ -174,6 +186,30 @@ export function ModelPicker({
         ) : (
           <Command>
             <CommandInput placeholder='Search models…' />
+            <div className='flex items-center gap-1 border-b border-border px-2 py-1.5'>
+              <button
+                type='button'
+                onClick={() => setFlagshipOnly((v) => !v)}
+                aria-pressed={flagshipOnly}
+                className={cn(
+                  'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest transition-colors',
+                  flagshipOnly ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Flagship
+              </button>
+              <button
+                type='button'
+                onClick={() => setFreeOnly((v) => !v)}
+                aria-pressed={freeOnly}
+                className={cn(
+                  'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest transition-colors',
+                  freeOnly ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Free
+              </button>
+            </div>
             <CommandList>
               <CommandEmpty>No model found.</CommandEmpty>
               {grouped.map((group) => (

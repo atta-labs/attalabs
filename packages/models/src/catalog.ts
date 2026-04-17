@@ -8,6 +8,7 @@ export interface ModelEntry {
   label: string
   description?: string
   tier: 'frontier' | 'balanced' | 'fast' | 'reasoning'
+  cost: 'free' | 'paid'
 }
 
 export const CATALOG: ModelEntry[] = [
@@ -19,7 +20,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'anthropic',
     label: 'Claude Opus 4.7',
     description: 'Most capable — deep reasoning',
-    tier: 'frontier'
+    tier: 'frontier',
+    cost: 'paid'
   },
   {
     id: 'anthropic/claude-sonnet-4-6',
@@ -28,7 +30,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'anthropic',
     label: 'Claude Sonnet 4.6',
     description: 'Balanced — default',
-    tier: 'balanced'
+    tier: 'balanced',
+    cost: 'paid'
   },
   {
     id: 'anthropic/claude-haiku-4-5',
@@ -37,7 +40,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'anthropic',
     label: 'Claude Haiku 4.5',
     description: 'Fast + cheap',
-    tier: 'fast'
+    tier: 'fast',
+    cost: 'paid'
   },
 
   // OpenAI — native
@@ -48,7 +52,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'openai',
     label: 'GPT-5',
     description: 'Most capable OpenAI',
-    tier: 'frontier'
+    tier: 'frontier',
+    cost: 'paid'
   },
   {
     id: 'openai/gpt-5-mini',
@@ -57,7 +62,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'openai',
     label: 'GPT-5 mini',
     description: 'Fast + cheap',
-    tier: 'fast'
+    tier: 'fast',
+    cost: 'paid'
   },
   {
     id: 'openai/gpt-4.1',
@@ -66,7 +72,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'openai',
     label: 'GPT-4.1',
     description: 'Balanced workhorse',
-    tier: 'balanced'
+    tier: 'balanced',
+    cost: 'paid'
   },
   {
     id: 'openai/o3',
@@ -75,7 +82,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'openai',
     label: 'o3',
     description: 'Reasoning-optimized',
-    tier: 'reasoning'
+    tier: 'reasoning',
+    cost: 'paid'
   },
 
   // Google — native
@@ -86,7 +94,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'google',
     label: 'Gemini 2.5 Pro',
     description: 'Frontier Gemini',
-    tier: 'frontier'
+    tier: 'frontier',
+    cost: 'paid'
   },
   {
     id: 'google/gemini-2.5-flash',
@@ -95,7 +104,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'google',
     label: 'Gemini 2.5 Flash',
     description: 'Balanced',
-    tier: 'balanced'
+    tier: 'balanced',
+    cost: 'paid'
   },
   {
     id: 'google/gemini-2.5-flash-lite',
@@ -104,7 +114,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'google',
     label: 'Gemini 2.5 Flash-Lite',
     description: 'Fast + cheap',
-    tier: 'fast'
+    tier: 'fast',
+    cost: 'paid'
   },
 
   // Groq — native (fast open-weight)
@@ -115,7 +126,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'groq',
     label: 'Llama 3.3 70B',
     description: 'Groq — fastest open-weight',
-    tier: 'balanced'
+    tier: 'balanced',
+    cost: 'paid'
   },
   {
     id: 'groq/llama-3.1-8b',
@@ -124,7 +136,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'groq',
     label: 'Llama 3.1 8B',
     description: 'Groq — ultra-fast',
-    tier: 'fast'
+    tier: 'fast',
+    cost: 'paid'
   },
   {
     id: 'groq/gpt-oss-120b',
@@ -133,7 +146,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'groq',
     label: 'GPT-OSS 120B',
     description: 'Groq — OpenAI open-weight',
-    tier: 'balanced'
+    tier: 'balanced',
+    cost: 'paid'
   },
 
   // OpenRouter — proxy routes
@@ -144,7 +158,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'openrouter',
     label: 'Grok 4',
     description: 'xAI frontier',
-    tier: 'frontier'
+    tier: 'frontier',
+    cost: 'paid'
   },
   {
     id: 'openrouter/grok-3',
@@ -153,7 +168,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'openrouter',
     label: 'Grok 3',
     description: 'xAI workhorse',
-    tier: 'balanced'
+    tier: 'balanced',
+    cost: 'paid'
   },
   {
     id: 'openrouter/deepseek-r1',
@@ -162,7 +178,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'openrouter',
     label: 'DeepSeek R1',
     description: 'Reasoning',
-    tier: 'reasoning'
+    tier: 'reasoning',
+    cost: 'paid'
   },
   {
     id: 'openrouter/deepseek-v3',
@@ -171,7 +188,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'openrouter',
     label: 'DeepSeek V3',
     description: 'Balanced chat',
-    tier: 'balanced'
+    tier: 'balanced',
+    cost: 'paid'
   },
   {
     id: 'openrouter/mistral-large',
@@ -180,7 +198,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'openrouter',
     label: 'Mistral Large',
     description: 'European frontier',
-    tier: 'balanced'
+    tier: 'balanced',
+    cost: 'paid'
   },
   {
     id: 'openrouter/llama-3.3-70b-cerebras',
@@ -189,7 +208,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'openrouter',
     label: 'Llama 3.3 70B (Cerebras)',
     description: 'Cerebras — ultra-fast inference',
-    tier: 'fast'
+    tier: 'fast',
+    cost: 'paid'
   },
   {
     id: 'openrouter/llama-3.3-70b-free',
@@ -198,7 +218,8 @@ export const CATALOG: ModelEntry[] = [
     route: 'openrouter',
     label: 'Llama 3.3 70B (Free)',
     description: 'Free tier — rate-limited',
-    tier: 'fast'
+    tier: 'fast',
+    cost: 'free'
   }
 ]
 
