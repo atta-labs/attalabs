@@ -105,8 +105,7 @@ export function GlobalModelSelector({
       onChange={handleChange}
       configuredRoutes={configuredRoutes}
       onProvideKey={handleProvideKey}
-      align='start'
-      side='top'
+      mode='modal'
       settingsHref='/settings'
       settingsLabel='Configure defaults →'
     />

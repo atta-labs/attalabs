@@ -24,7 +24,7 @@ export default async function DeliberatePage({ searchParams }: { searchParams: P
 
   return (
     <CatalogProvider catalog={catalog}>
-      <div className='mx-auto w-full max-w-2xl flex-1 py-4 px-8'>
+      <div className='mx-auto w-full max-w-5xl flex-1 pt-10 pb-4 px-6'>
         <DeliberateSection
           remainingToday={remaining}
           initialError={error}
