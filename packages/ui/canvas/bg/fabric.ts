@@ -1,7 +1,7 @@
 import type { BgState } from './types'
-import { brightenForLight, fgAt, withAlpha } from '../shared/color-math'
+import { fgAt, withAlpha } from '../shared/color-math'
 import { isLightTheme } from '../shared/theme'
-import { paintParticleHead } from '../shared/paint'
+import { bloomStops, paintParticleHead } from '../shared/paint'
 
 // ── Grid definition ───────────────────────────────────────────────────────────
 // MARGIN extends the grid beyond each screen edge so displaced outer vertices
@@ -779,13 +779,14 @@ export function renderFabricBg(state: BgState): void {
     // 1. Central glow dot — brightens as emergence peaks
     const glowR = (birth.origin ? 5 : 3) + pulse * (birth.origin ? 12 : 7)
     const glowAlpha = emergence * (0.5 + pulse * 0.45) * fadeOut * intensityMult
+    // Birth-glow center uses the theme-aware [core] half of `bloomStops` so the
+    // "white core on dark, brightened-agent core on light" rule is centralized.
+    // The 0.3 / 1.0 stops keep their original agent-color ramp — this glow
+    // pulses and fades quickly, so the standard stepped-alpha mud guard isn't
+    // needed here (the pulse itself already attenuates the outer stop).
     const glowGrad = ctx.createRadialGradient(birthVert.x, birthVert.y, 0, birthVert.x, birthVert.y, glowR + 10)
-    glowGrad.addColorStop(
-      0,
-      isLightTheme()
-        ? withAlpha(brightenForLight(birth.color), glowAlpha * 0.95)
-        : `rgba(255,255,255,${(glowAlpha * 0.95).toFixed(3)})`
-    )
+    const [glowCore] = bloomStops(birth.color, { intensity: glowAlpha * 0.95 })
+    glowGrad.addColorStop(0, glowCore)
     glowGrad.addColorStop(0.3, withAlpha(birth.color, glowAlpha * 0.8))
     glowGrad.addColorStop(1, withAlpha(birth.color, 0))
     ctx.globalAlpha = 1

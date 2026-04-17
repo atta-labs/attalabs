@@ -1,19 +1,52 @@
 // packages/ui/canvas/shared/paint.ts
 /**
- * Canvas paint primitives for particle visuals. Encodes the single visual
- * language for "glowing particle heads" and "cluster glows" so dark/light
- * modes render consistently across all callers (fabric.ts, message-system.ts,
- * use-aia-canvas.ts).
+ * Canvas paint primitives for particle visuals. Single source of truth for the
+ * "glowing particle" visual language across fabric.ts, message-system.ts, and
+ * use-aia-canvas.ts.
  *
- * Key insight driving the asymmetric dark/light treatment: alpha fills ADD
- * light on a dark bg (reads as a glow) but SUBTRACT into grey mud on a light
- * bg. Dark mode can rely on a hot white core + full-alpha agent halo; light
- * mode needs a vivid small core and a whisper-transparent halo so the bloom
- * doesn't muddy the page.
+ * THE LIGHT/DARK RULE (applies to every radial glow primitive here):
+ *
+ *   Dark bg: alpha fills ADD light → radial gradient renders as a bloom.
+ *            Core = bright white, outer = full-alpha agent color.
+ *
+ *   Light bg: alpha fills SUBTRACT light → same gradient renders as grey mud.
+ *             Core = saturated agent color at α=1, outer = SAME hue at α=0.25.
+ *             The STEPPED alpha (1 → 0.25) is load-bearing — using full alpha
+ *             on both stops produces a solid disc that greys out the page.
+ *             See `bloomStops()` — always route new primitives through it.
+ *
+ * Canonical bug (fixed in `ce54784`): paintParticleHead's outer stop was
+ * accidentally set to the same full-alpha color as the core, losing the fade.
+ * The visible result: grey halos around colored particles in light mode.
  */
 
 import { brightenForLight, withAlpha } from './color-math'
 import { isLightTheme } from './theme'
+
+export interface BloomStopsOpts {
+  /** Alpha multiplier applied to both returned stops (0-1). Default 1. */
+  intensity?: number
+  /** Outer stop alpha in light mode (0-1). Default 0.25 — the "whisper". */
+  lightOuterAlpha?: number
+}
+
+/**
+ * Returns the `[coreColor, outerColor]` tuple for a theme-aware radial bloom.
+ * Use this wherever you're building a radial gradient for a particle / glow
+ * effect — it encodes the stepped-alpha rule that prevents grey-mud on light bg.
+ *
+ * Dark mode → [white@intensity, agent@intensity]
+ * Light mode → [brightened@intensity, brightened@intensity * lightOuterAlpha]
+ */
+export function bloomStops(agentColor: string, opts: BloomStopsOpts = {}): [string, string] {
+  const intensity = opts.intensity ?? 1
+  const lightOuterAlpha = opts.lightOuterAlpha ?? 0.25
+  if (!isLightTheme()) {
+    return [`rgba(255,255,255,${intensity.toFixed(3)})`, withAlpha(agentColor, intensity)]
+  }
+  const brightened = brightenForLight(agentColor)
+  return [withAlpha(brightened, intensity), withAlpha(brightened, intensity * lightOuterAlpha)]
+}
 
 export interface ParticleHeadOpts {
   /** Radial glow radius in px. Default 14. */
@@ -26,8 +59,8 @@ export interface ParticleHeadOpts {
 
 /**
  * Paint a glowing particle head — radial gradient bloom + solid core dot.
- * Agent color is used for identity; core is white (dark) or brightened agent
- * color (light).
+ * Agent color carries identity; core is white (dark) or brightened agent
+ * color (light). Uses bloomStops() so the light/dark rule is centralized.
  */
 export function paintParticleHead(
   ctx: CanvasRenderingContext2D,
@@ -39,15 +72,8 @@ export function paintParticleHead(
   const radius = opts.radius ?? 14
   const coreRadius = opts.coreRadius ?? 3
   const opacity = opts.opacity ?? 1
-  const light = isLightTheme()
-
-  // Light mode: same saturated hue for both gradient stops but STEPPED alpha
-  // (1 → 0.25) so the disc fades rapidly from vivid core to whisper before
-  // hitting transparent. Using the same full-alpha string for both stops
-  // makes the 0–30% arc a solid disc that blends to grey mud on light bg.
-  const coreColor = light ? withAlpha(brightenForLight(agentColor), 1) : 'rgba(255,255,255,1)'
-  const outerColor = light ? withAlpha(brightenForLight(agentColor), 0.25) : agentColor
-  const bloomAlpha = light ? 0.55 * opacity : 0.9 * opacity
+  const [coreColor, outerColor] = bloomStops(agentColor)
+  const bloomAlpha = (isLightTheme() ? 0.55 : 0.9) * opacity
 
   const grad = ctx.createRadialGradient(x, y, 0, x, y, radius)
   grad.addColorStop(0, coreColor)
@@ -69,8 +95,10 @@ export function paintParticleHead(
 
 /**
  * Paint an agent-colored glow ring around a sphere on message arrival.
- * Caller is expected to decay intensity over frames by scaling with a
- * `glow` multiplier (same behaviour as before — kept as a parameter).
+ * Caller decays `intensity` across frames. Flat full-alpha agent color for
+ * both stops is intentional here — the gradient is small (fits inside a
+ * sphere), the outer edge fades via globalAlpha, and the scaled intensity
+ * (×0.22 light / ×0.3 dark) already keeps it subtle enough to dodge mud.
  */
 export function paintClusterGlow(
   ctx: CanvasRenderingContext2D,

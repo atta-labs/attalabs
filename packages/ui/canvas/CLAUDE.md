@@ -25,6 +25,46 @@ The canvas is always behind. The SVG ring is above the canvas. DOM content is ab
 
 ---
 
+## Shared Modules (`shared/`)
+
+Four focused modules. Use them instead of rolling inline color math or hardcoded whites in any renderer.
+
+| Module | Responsibility | Key exports |
+|---|---|---|
+| `colors.ts` | **CSS variable layer** — reads `var(--*)` values from the DOM | `resolveColor(colorOrVar, fallback)`, `getThemeColors()` |
+| `color-math.ts` | **Canvas color math** — format conversion + theme-aware tweaks, pure | `parseColor`, `withAlpha(color, α)`, `brightenForLight(color)`, `fgAt(α)`, `rgbToHsl`, `Hsl` |
+| `theme.ts` | **Theme cache** — cached once per frame from `html[data-theme]` | `refreshThemeCache()`, `isLightTheme()` |
+| `paint.ts` | **Particle paint primitives** — "glowing particle" visual language | `paintParticleHead`, `paintClusterGlow`, `bloomStops` |
+
+**colors.ts vs color-math.ts — why two files:** `colors.ts` bridges the CSS var world (var lookups, fallbacks). `color-math.ts` operates on already-resolved color strings (hex / hsl / rgb) — no DOM reads. They compose: `withAlpha(resolveColor('var(--primary)'), 0.8)`.
+
+**theme cache lifecycle:** `refreshThemeCache()` runs exactly once per rAF frame inside `use-aia-canvas.ts → animate()`. Every downstream renderer (fabric.ts, message-system.ts, paint.ts primitives) reads `isLightTheme()` without hitting the DOM. This is what lets the color-scheme toggle take effect within one frame without per-renderer theme watchers.
+
+### `paint.ts` — the visual language
+
+Every "glowing particle" (Tron approach, sphere origin, directed message, sphere arrival glow) routes through one of two primitives — and both obey **the light/dark rule**.
+
+**THE LIGHT/DARK RULE:** alpha fills ADD light on dark bg (reads as bloom) but SUBTRACT light on light bg (reads as grey mud). Dark mode uses a bright white core + full-alpha agent outer. Light mode uses stepped alpha: agent@α=1 core → SAME HUE @α=0.25 outer → transparent. Never use the same full-alpha stop for both core and outer on light bg.
+
+The `bloomStops(agentColor, { intensity, lightOuterAlpha })` helper encodes this rule as a reusable `[coreColor, outerColor]` tuple. **New radial-glow renderers MUST route through it.**
+
+```ts
+import { bloomStops, paintParticleHead } from '@atta/ui/canvas/shared/paint'
+
+// Ready-made particle head:
+paintParticleHead(ctx, x, y, agentColor, { opacity: p.opacity })
+
+// Custom gradient that still follows the rule:
+const [core, outer] = bloomStops(color, { intensity: 0.9 })
+grad.addColorStop(0, core)
+grad.addColorStop(0.3, outer)
+grad.addColorStop(1, 'transparent')
+```
+
+**Canonical bug (fixed `ce54784`):** paintParticleHead's outer stop was accidentally set to the same full-alpha color as the core, collapsing the stepped-alpha fade. Result: grey halos around colored particles in light mode. If you see grey mud, suspect an outer stop without the 0.25 step.
+
+---
+
 ## Critical Constraints — read before touching ANY canvas code
 
 ### Color Visibility
@@ -574,7 +614,13 @@ packages/ui/canvas/
 ├── aia-context.tsx        — Context types: SphereRegistration, RingRegistration, AIAContextValue
 ├── assistant-wave.tsx     — Standalone animated SVG wave (not canvas-based)
 ├── bg/                    — Background renderers (fabric, etc.)
-├── shared/                — Shared utilities (colors, math, constants)
+├── shared/                — Shared canvas utilities (see "Shared Modules" below)
+│   ├── colors.ts          — CSS variable resolution (resolveColor, getThemeColors)
+│   ├── color-math.ts      — Canvas color math (parseColor, withAlpha, brightenForLight, fgAt, rgbToHsl)
+│   ├── theme.ts           — Light/dark theme cache (refreshThemeCache, isLightTheme)
+│   ├── paint.ts           — Particle paint primitives (paintParticleHead, paintClusterGlow, bloomStops)
+│   ├── constants.ts       — MATRIX_CHARS and other tuning constants
+│   └── math.ts            — Trig + small numeric helpers
 └── index.ts               — Public exports
 ```
 

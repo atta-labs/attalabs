@@ -92,21 +92,69 @@ Without it, canvas is viewport-sized. Spheres below the fold render at positions
 
 Without it, matrix only renders after wander→forming→settled transition.
 
-### 7. No hardcoded colors anywhere
+### 7. No hardcoded colors anywhere — route through `shared/color-math.ts`
 
-Use CSS variables or HSL strings from `AGENT_THEME`. Never hex codes.
+Use CSS variables or HSL strings from `AGENT_THEME`. Never hex codes, never inline `rgba(255,255,255,…)`, never inline `getComputedStyle(...)` inside a renderer.
 
-### 8. Hooks in `useAIASphere.ts`, never in `aia-sphere.tsx`
+Every color operation in a renderer routes through the shared helpers:
+- `withAlpha(color, α)` — attach alpha to any hex/hsl/rgb input (handles format conversion)
+- `brightenForLight(color)` — theme-aware saturation boost for agent palettes in light mode
+- `fgAt(α)` — theme-ink color from `--foreground` with alpha
+- `bloomStops(color, opts)` — `[core, outer]` tuple for radial glow gradients (see Rule #11)
+
+```ts
+// ✗ BAD
+grad.addColorStop(0, isLight ? 'rgba(255,255,255,0.9)' : '#fff')
+
+// ✓ GOOD
+const [core] = bloomStops(agentColor, { intensity: 0.9 })
+grad.addColorStop(0, core)
+```
+
+### 8. Alpha fills on light bg collapse into grey mud — use `bloomStops`
+
+**THE GOTCHA that drove the paint-primitives refactor.** Alpha fills ADD light on a dark bg (reads as a bloom) but SUBTRACT light on a light bg (reads as grey mud). The same gradient that glows on dark looks like a dirty disc on light.
+
+**The rule:** on light bg, never use the same full-alpha color for both the core and outer stop of a radial glow. Stepped alpha — core @α=1 → outer @α=0.25 → transparent — fades fast enough to dodge mud.
+
+`shared/paint.ts` provides `bloomStops(agentColor, { intensity?, lightOuterAlpha? })` that returns a `[core, outer]` tuple implementing the rule. Every radial glow in the canvas (particle head, cluster glow, birth glow) routes through it. **New radial renderers MUST use it.**
+
+```ts
+// ✗ BAD (produces grey mud in light mode)
+grad.addColorStop(0, agentColor)
+grad.addColorStop(0.3, agentColor)    // same full-alpha = solid disc
+grad.addColorStop(1, 'transparent')
+
+// ✓ GOOD
+const [core, outer] = bloomStops(agentColor)
+grad.addColorStop(0, core)
+grad.addColorStop(0.3, outer)         // stepped α=0.25 on light, full on dark
+grad.addColorStop(1, 'transparent')
+```
+
+Diagnostic: if a colored particle reads as a grey disc on light bg, check the outer gradient stop — it's almost always a missing stepped-alpha.
+
+### 9. Hooks in `useAIASphere.ts`, never in `aia-sphere.tsx`
 
 `AIASphere` is pure presentation. All position tracking, scroll handling, state sync lives in the hook.
 
-### 9. Position tracking is rAF-based
+### 10. Position tracking is rAF-based
 
 `useAIASphere` runs `requestAnimationFrame` with `getBoundingClientRect()` every frame. Only updates when position changes >0.5px. Works in all scroll contexts. Do NOT add scroll/resize listeners.
 
-### 10. Particles use direct positioning
+### 11. Particles use direct positioning
 
 `updateClusterOrbit` sets `p.x = target.x + offset` every frame. No lerp. Sphere moves → particles move instantly. Jitter value `0.3` controls calmness.
+
+### 12. Visually verify canvas refactors before declaring done
+
+Canvas rendering has no unit tests — typechecks pass on grey mud. When extracting or consolidating visual code into shared primitives:
+
+1. **Diff line-by-line** against the working source. "Same color" is not the same as "same alpha" — a primitive that collapses the distinction will silently regress all call sites at once (single source of truth ⇒ single source of regression).
+2. **Restart the Vada dev server** (shared package, no hot reload) and load the home page in BOTH light and dark modes before committing. Toggle between them.
+3. **Check each particle type**: initial origin converge, approach particles, directed messages, sphere-arrival glow. One primitive powering all of them means one missed alpha can break every scenario.
+
+This rule exists because exactly this happened during the paint-primitives refactor (commits `5ba108d..4872649`): the extraction silently flattened a stepped-alpha gradient, typecheck was green, subagent reports all said "DONE", and every particle in light mode rendered as grey mud. Fix was `ce54784`.
 
 ## Theme Colors (Vāda Dark)
 
@@ -222,14 +270,16 @@ ripples.push({ cx: sphere.x, cy: sphere.y, startT: t, life: 1, amp: 55, mode: 'r
 
 ---
 
-## `withAlpha` — color format support
+## `withAlpha` and friends — color helpers in `shared/color-math.ts`
 
-`fabric.ts` `withAlpha()` handles both HSL and hex colors:
-- `hsl(h s% l%)` → `hsla(h, s%, l%, alpha)` ✓
-- `#rrggbb` / `#rgb` hex → `rgba(r, g, b, alpha)` ✓
-- Anything else → falls back to white
+All color format conversion lives in `packages/ui/canvas/shared/color-math.ts`. Import from there, never roll your own.
 
-Agent colors come through as hex `#rrggbb` from the canvas context (not always HSL). Without hex support, halo + explosion effects render white instead of agent color.
+- `withAlpha(color, α)` → attaches alpha. Handles `hsl(h s% l%)` / `hsla(...)`, `#rgb` / `#rrggbb`, and `rgb(r,g,b)` / `rgba(...)`. Falls back to white if unparseable.
+- `parseColor(color)` → `{h, s, l}` in any of the above formats. Use when you need the HSL channels.
+- `brightenForLight(color)` → theme-aware saturation boost (applies only in light mode; dark-mode passthrough). Low-chroma agent colors like Strategist green `hsl(119 21% 45%)` become punchy enough to pop on a light bg; high-chroma colors already pop and round up within the clamped range.
+- `fgAt(α)` → reads `--foreground` and returns an oklch string with alpha. For theme-aware "ink" strokes (grid lines, halo overlays).
+
+Agent colors arrive as either hex `#rrggbb` (Chrome normalizes custom properties) or `hsl(...)` (direct from `--agent-*` tokens). All helpers above accept both transparently.
 
 ---
 
@@ -493,7 +543,13 @@ packages/ui/canvas/
 │   ├── fabric.ts          — Tron particle background: grid mesh + particles + birth animations
 │   ├── types.ts           — BgState type
 │   └── index.ts           — Public exports
-├── shared/                — Shared utilities (colors, math, constants)
+├── shared/                — Shared canvas utilities
+│   ├── colors.ts          — CSS variable resolution (resolveColor, getThemeColors)
+│   ├── color-math.ts      — Format conversion (parseColor, withAlpha, brightenForLight, fgAt, rgbToHsl)
+│   ├── theme.ts           — Cached light/dark detection (refreshThemeCache, isLightTheme)
+│   ├── paint.ts           — Particle paint primitives (paintParticleHead, paintClusterGlow, bloomStops)
+│   ├── constants.ts       — MATRIX_CHARS and tuning constants
+│   └── math.ts            — Trig / numeric helpers
 └── assistant-wave.tsx     — Standalone SVG wave
 ```
 
