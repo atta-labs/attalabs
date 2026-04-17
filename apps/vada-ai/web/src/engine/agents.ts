@@ -2,10 +2,19 @@ import { Agent } from '@mastra/core/agent'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGroq } from '@ai-sdk/groq'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { createOpenAI } from '@ai-sdk/openai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
+import type { ModelConfig, RouteProvider } from '@atta/models'
 import type { AgentConfig } from '../schemas'
-import type { ModelConfig, Provider } from '../lib/models'
-import { DEFAULT_MODEL_IDS } from '../lib/models'
+
+// Per-route default model IDs — used only when no explicit modelId is provided
+const DEFAULT_MODEL_IDS: Record<RouteProvider, string> = {
+  anthropic: 'claude-sonnet-4-6',
+  openai: 'gpt-4.1',
+  google: 'gemini-2.5-flash',
+  groq: 'llama-3.3-70b-versatile',
+  openrouter: 'meta-llama/llama-3.3-70b-instruct:free'
+}
 
 // ── MOCK MODE ─────────────────────────────────────────────────────────────────
 // Set to true for UI simulation/testing (zero API calls).
@@ -150,7 +159,7 @@ class MockBlindCriticAgent {
 // ── Provider factory (real mode) ──────────────────────────────────────────────
 
 function getDefaultModelConfig(): ModelConfig {
-  const provider = (process.env.DEFAULT_PROVIDER ?? 'groq') as Provider
+  const provider = (process.env.DEFAULT_PROVIDER ?? 'groq') as RouteProvider
   return {
     provider,
     modelId: process.env.DEFAULT_MODEL_ID ?? DEFAULT_MODEL_IDS[provider] ?? 'llama-3.3-70b-versatile'
@@ -160,12 +169,14 @@ function getDefaultModelConfig(): ModelConfig {
 function resolveModel(config: ModelConfig) {
   const { provider, modelId, apiKey } = config
   switch (provider) {
-    case 'groq':
-      return createGroq({ apiKey: apiKey ?? process.env.GROQ_API_KEY })(modelId)
-    case 'google':
-      return createGoogleGenerativeAI({ apiKey: apiKey ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY })(modelId)
     case 'anthropic':
       return createAnthropic({ apiKey: apiKey ?? process.env.ANTHROPIC_API_KEY })(modelId)
+    case 'openai':
+      return createOpenAI({ apiKey: apiKey ?? process.env.OPENAI_API_KEY })(modelId)
+    case 'google':
+      return createGoogleGenerativeAI({ apiKey: apiKey ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY })(modelId)
+    case 'groq':
+      return createGroq({ apiKey: apiKey ?? process.env.GROQ_API_KEY })(modelId)
     case 'openrouter':
       return createOpenRouter({ apiKey: apiKey ?? process.env.OPENROUTER_API_KEY })(modelId)
   }
@@ -236,6 +247,13 @@ export async function validateModelConfig(config: ModelConfig): Promise<ProbeRes
         `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY}`,
         {},
         { contents: [{ parts: [{ text: 'hi' }] }], generationConfig: { maxOutputTokens: 800, stopSequences: ['\n'] } },
+        provider
+      )
+    case 'openai':
+      return probeRaw(
+        'https://api.openai.com/v1/chat/completions',
+        { Authorization: `Bearer ${apiKey ?? process.env.OPENAI_API_KEY}` },
+        { model: modelId, messages: [{ role: 'user', content: 'hi' }], max_tokens: 800, stop: ['\n'] },
         provider
       )
     case 'openrouter':
