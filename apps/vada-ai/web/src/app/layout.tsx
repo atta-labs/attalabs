@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
 import '@atta/ui/canvas.css'
+import { MockModeBanner } from '@/components/MockModeBanner'
 import { PreviewThemeListener } from '@/components/theme/preview-theme-listener'
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <NextWebShell config={config} styleId='vada-theme'>
       <PreviewThemeListener />
+      <MockModeBanner />
       <IdentityProvider>{children}</IdentityProvider>
     </NextWebShell>
   )
