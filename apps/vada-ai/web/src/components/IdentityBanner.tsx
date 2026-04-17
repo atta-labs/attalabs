@@ -7,6 +7,7 @@
 //   - unlocked: "Sign out / Forget this device"
 // Single source of truth for the top-of-deliberate-page banner.
 
+import { providerLabel } from '@atta/identity'
 import { useIdentity } from '@atta/identity/react'
 import { Button, Text, useToastContext } from '@atta/ui'
 import { KeyRound, Lock, ShieldX, Unlock } from 'lucide-react'
@@ -146,8 +147,10 @@ export function IdentityBanner() {
           <Unlock className='size-4 shrink-0 text-muted-foreground' aria-hidden />
           <Text as='small' className='text-sm text-muted-foreground'>
             {identity.state.providers.length > 0
-              ? `Unlocked — ${identity.state.providers.length} provider${identity.state.providers.length === 1 ? '' : 's'} configured on this device.`
-              : 'Unlocked — keys in memory for this session.'}
+              ? `Unlocked — ${identity.state.providers.map(providerLabel).join(', ')} configured on this device.`
+              : Object.keys(identity.state.keys).length > 0
+                ? `Unlocked — ${(Object.keys(identity.state.keys) as typeof identity.state.providers).map(providerLabel).join(', ')} in memory for this session.`
+                : 'Unlocked — no keys yet.'}
           </Text>
         </div>
         <div className='flex items-center gap-2'>

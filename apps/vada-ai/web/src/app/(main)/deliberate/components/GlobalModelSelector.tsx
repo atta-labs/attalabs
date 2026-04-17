@@ -1,8 +1,9 @@
 'use client'
 
+import { probeProviderKey } from '@atta/identity'
 import { useIdentity } from '@atta/identity/react'
 import { type ModelConfig, type RouteProvider, useCatalog } from '@atta/models'
-import { ModelPicker } from '@atta/ui'
+import { ModelPicker, useToastContext } from '@atta/ui'
 import { useEffect } from 'react'
 
 export interface ModelSelection {
@@ -31,6 +32,7 @@ export function GlobalModelSelector({
   const catalog = useCatalog()
   const identity = useIdentity()
   const storedKeys = identity.state.keys
+  const { errorToast, successToast } = useToastContext()
 
   // Mount: seed from settings preset, else fall back to in-memory identity
   useEffect(() => {
@@ -79,9 +81,19 @@ export function GlobalModelSelector({
     onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKeys[next.route] ?? '' })
   }
 
-  const handleProvideKey = (route: RouteProvider, key: string) => {
+  const handleProvideKey = async (route: RouteProvider, key: string) => {
+    // Probe the key against the provider before persisting it. See /trust —
+    // the probe is a browser → provider call with the user's own key; it
+    // never touches the Vāda server.
+    const modelId = value?.provider === route ? value.modelId : undefined
+    const probe = await probeProviderKey(route, key, modelId)
+    if (!probe.ok) {
+      errorToast('Key not accepted', probe.error ?? 'Could not verify key against provider.')
+      return
+    }
     identity.setKey(route, key)
     if (value?.provider === route) onChange({ ...value, apiKey: key })
+    successToast('Key verified', `${route} is ready to use.`)
   }
 
   return (

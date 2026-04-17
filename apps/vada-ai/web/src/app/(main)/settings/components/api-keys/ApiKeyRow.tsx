@@ -1,5 +1,6 @@
 'use client'
 
+import { probeProviderKey } from '@atta/identity'
 import { useIdentity } from '@atta/identity/react'
 import type { ProviderMeta, RouteProvider } from '@atta/models'
 import { Button, Input } from '@atta/ui'
@@ -27,23 +28,31 @@ function computeHint(key: string): string {
 export function ApiKeyRow({ provider, keyHint, onSaved, onRemoved }: ApiKeyRowProps) {
   const [inputValue, setInputValue] = useState('')
   const [status, setStatus] = useState<Status>('idle')
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const identity = useIdentity()
 
   const hasKey = keyHint !== null && keyHint !== ''
 
-  const save = (value: string) => {
-    if (!value.trim()) return
+  const save = async (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) return
     setStatus('saving')
-    try {
-      identity.setKey(provider.id as RouteProvider, value.trim())
-      onSaved(provider.id, computeHint(value.trim()))
-      setInputValue('')
-      setStatus('saved')
-      setTimeout(() => setStatus('idle'), 2000)
-    } catch {
+    setErrorMsg(null)
+    const probe = await probeProviderKey(provider.id as RouteProvider, trimmed)
+    if (!probe.ok) {
+      setErrorMsg(probe.error ?? 'Could not verify key.')
       setStatus('error')
-      setTimeout(() => setStatus('idle'), 3000)
+      setTimeout(() => {
+        setStatus('idle')
+        setErrorMsg(null)
+      }, 5000)
+      return
     }
+    identity.setKey(provider.id as RouteProvider, trimmed)
+    onSaved(provider.id, computeHint(trimmed))
+    setInputValue('')
+    setStatus('saved')
+    setTimeout(() => setStatus('idle'), 2000)
   }
 
   const remove = () => {
@@ -98,8 +107,8 @@ export function ApiKeyRow({ provider, keyHint, onSaved, onRemoved }: ApiKeyRowPr
           </Text>
         )}
         {status === 'error' && (
-          <Text as='span' className='font-mono text-[10px] text-destructive'>
-            Error
+          <Text as='span' className='font-mono text-[10px] text-destructive' title={errorMsg ?? 'Error'}>
+            {errorMsg ? errorMsg.slice(0, 40) : 'Error'}
           </Text>
         )}
         {hasKey && status === 'idle' && (
