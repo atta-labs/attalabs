@@ -1,11 +1,14 @@
 'use client'
 
 import type { CMSTheme } from '@atta/cms'
+import { Pencil } from 'lucide-react'
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import type { ThemeData } from '@/components/theme/utils'
 import { usePortalPreview } from '@/hooks/use-portal-preview'
 import { PortalPreviewFrame } from '@/components/portal/portal-preview-frame'
-import { createThemeAction, setActiveThemeAction } from '../actions'
+import { setActiveThemeAction } from '../actions'
+import { CreateThemeDialog } from './create-theme-dialog'
 import { PreviewToolbar } from './preview-toolbar'
 import { FourSquareSwatch } from './four-square-swatch'
 
@@ -54,6 +57,7 @@ export function ThemesBrowseClient({ themes, currentThemeId, currentColorScheme 
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [selectedFontSans, setSelectedFontSans] = useState<string | undefined>(undefined)
+  const [createOpen, setCreateOpen] = useState(false)
 
   const selectedTheme = themes.find((t) => t._id === selectedId) ?? null
   const selectedScheme = selectedId ? (schemeByTheme[selectedId] ?? 'dark') : 'dark'
@@ -121,129 +125,142 @@ export function ThemesBrowseClient({ themes, currentThemeId, currentColorScheme 
     })
   }
 
-  async function handleNewTheme() {
-    const name = window.prompt('Theme name:')
-    if (!name?.trim()) return
-    try {
-      await createThemeAction(name.trim())
-    } catch {
-      console.error('Failed to create theme')
-    }
+  function handleOpenCreate() {
+    setCreateOpen(true)
   }
 
   const hasChanges =
     selectedId !== currentThemeId || selectedScheme !== currentColorScheme || selectedFontSans !== undefined
 
   return (
-    <div className='flex h-full gap-0'>
-      <div className='flex w-72 shrink-0 flex-col border-r border-border'>
-        <div className='border-b border-border px-4 py-3'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <h2 className='font-serif text-lg tracking-tight'>Themes</h2>
-              <p className='font-mono text-[10px] text-muted-foreground'>{themes.length} available</p>
+    <>
+      <CreateThemeDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <div className='flex h-full gap-0'>
+        <div className='flex w-72 shrink-0 flex-col border-r border-border'>
+          <div className='border-b border-border px-4 py-3'>
+            <div className='flex items-center justify-between'>
+              <div>
+                <h2 className='font-serif text-lg tracking-tight'>Themes</h2>
+                <p className='font-mono text-[10px] text-muted-foreground'>{themes.length} available</p>
+              </div>
+              <button
+                type='button'
+                onClick={handleOpenCreate}
+                className='rounded-md border border-border px-2.5 py-1 font-mono text-[10px] transition-colors hover:bg-foreground/5'
+              >
+                Create
+              </button>
             </div>
-            <button
-              type='button'
-              onClick={handleNewTheme}
-              className='rounded-md border border-border px-2.5 py-1 font-mono text-[10px] transition-colors hover:bg-foreground/5'
-            >
-              + New
-            </button>
+          </div>
+
+          <div className='flex-1 overflow-y-auto'>
+            {themes.map((theme) => {
+              const isSelected = selectedId === theme._id
+              const isApplied = theme._id === currentThemeId
+              const thisScheme = schemeByTheme[theme._id] ?? 'dark'
+              const schemeData = thisScheme === 'dark' ? theme.dark : theme.light
+              const swatchColors = {
+                primary: extractColor((schemeData as Record<string, unknown> | undefined)?.primary),
+                secondary: extractColor((schemeData as Record<string, unknown> | undefined)?.secondary),
+                accent: extractColor((schemeData as Record<string, unknown> | undefined)?.accent),
+                background: extractColor((schemeData as Record<string, unknown> | undefined)?.background)
+              }
+              const schemes = themeSchemes[theme._id]
+              const hasBoth = schemes?.hasDark && schemes?.hasLight
+
+              return (
+                <div
+                  key={theme._id}
+                  role='button'
+                  tabIndex={0}
+                  onClick={() => handleSelect(theme._id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleSelect(theme._id)
+                    }
+                  }}
+                  className={`flex w-full cursor-pointer items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors ${
+                    isSelected ? 'bg-primary/10' : 'hover:bg-foreground/5'
+                  }`}
+                >
+                  <FourSquareSwatch colors={swatchColors} />
+                  <div className='flex min-w-0 flex-1 items-center gap-2'>
+                    <span
+                      className={`line-clamp-2 text-sm font-medium ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}
+                    >
+                      {theme.name}
+                    </span>
+                    {isApplied && <div className='h-1.5 w-1.5 shrink-0 rounded-full bg-accent' />}
+                  </div>
+                  {hasBoth && (
+                    <div
+                      role='radiogroup'
+                      className='flex shrink-0 flex-col gap-1'
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
+                      {(['dark', 'light'] as const).map((s) => (
+                        <label
+                          key={s}
+                          className={`flex cursor-pointer items-center gap-1 text-xs ${
+                            thisScheme === s ? 'text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
+                          <input
+                            type='radio'
+                            name={`scheme-${theme._id}`}
+                            checked={thisScheme === s}
+                            onChange={() => handleSchemeChange(theme._id, s)}
+                            className='h-3 w-3 accent-primary'
+                          />
+                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  <Link
+                    href={`/themes/${theme._id}/edit`}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    aria-label={`Edit ${theme.name}`}
+                    className='shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground'
+                  >
+                    <Pencil className='h-3.5 w-3.5' />
+                  </Link>
+                </div>
+              )
+            })}
           </div>
         </div>
 
-        <div className='flex-1 overflow-y-auto'>
-          {themes.map((theme) => {
-            const isSelected = selectedId === theme._id
-            const isApplied = theme._id === currentThemeId
-            const thisScheme = schemeByTheme[theme._id] ?? 'dark'
-            const schemeData = thisScheme === 'dark' ? theme.dark : theme.light
-            const swatchColors = {
-              primary: extractColor((schemeData as Record<string, unknown> | undefined)?.primary),
-              secondary: extractColor((schemeData as Record<string, unknown> | undefined)?.secondary),
-              accent: extractColor((schemeData as Record<string, unknown> | undefined)?.accent),
-              background: extractColor((schemeData as Record<string, unknown> | undefined)?.background)
-            }
-            const schemes = themeSchemes[theme._id]
-            const hasBoth = schemes?.hasDark && schemes?.hasLight
-
-            return (
-              <button
-                key={theme._id}
-                type='button'
-                onClick={() => handleSelect(theme._id)}
-                className={`flex w-full items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors ${
-                  isSelected ? 'bg-primary/10' : 'hover:bg-foreground/5'
-                }`}
-              >
-                <FourSquareSwatch colors={swatchColors} />
-                <div className='flex min-w-0 flex-1 items-center gap-2'>
-                  <span
-                    className={`line-clamp-2 text-sm font-medium ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}
-                  >
-                    {theme.name}
-                  </span>
-                  {isApplied && <div className='h-1.5 w-1.5 shrink-0 rounded-full bg-accent' />}
-                </div>
-                {hasBoth && (
-                  <div
-                    role='radiogroup'
-                    className='flex shrink-0 flex-col gap-1'
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                  >
-                    {(['dark', 'light'] as const).map((s) => (
-                      <label
-                        key={s}
-                        className={`flex cursor-pointer items-center gap-1 text-xs ${
-                          thisScheme === s ? 'text-foreground' : 'text-muted-foreground'
-                        }`}
-                      >
-                        <input
-                          type='radio'
-                          name={`scheme-${theme._id}`}
-                          checked={thisScheme === s}
-                          onChange={() => handleSchemeChange(theme._id, s)}
-                          className='h-3 w-3 accent-primary'
-                        />
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      <PortalPreviewFrame
-        isReady={isReady}
-        portalUrl='http://localhost:3003'
-        onRefresh={refresh}
-        title='Vada Preview'
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={toggleFullscreen}
-        toolbar={
-          <PreviewToolbar
-            fontSans={selectedFontSans}
-            onFontChange={handleFontChange}
-            hasChanges={hasChanges}
-            isPending={isPending}
-            saved={saved}
-            onPublish={handlePublish}
-          />
-        }
-      >
-        <iframe
-          ref={iframeRef}
-          key={iframeKey}
-          src={iframeSrc}
-          className='h-full w-full border-0'
+        <PortalPreviewFrame
+          isReady={isReady}
+          portalUrl='http://localhost:3003'
+          onRefresh={refresh}
           title='Vada Preview'
-        />
-      </PortalPreviewFrame>
-    </div>
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          toolbar={
+            <PreviewToolbar
+              fontSans={selectedFontSans}
+              onFontChange={handleFontChange}
+              hasChanges={hasChanges}
+              isPending={isPending}
+              saved={saved}
+              onPublish={handlePublish}
+            />
+          }
+        >
+          <iframe
+            ref={iframeRef}
+            key={iframeKey}
+            src={iframeSrc}
+            className='h-full w-full border-0'
+            title='Vada Preview'
+          />
+        </PortalPreviewFrame>
+      </div>
+    </>
   )
 }
