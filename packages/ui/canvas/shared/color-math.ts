@@ -67,7 +67,7 @@ export function parseColor(color: string): Hsl | null {
   }
   const rgb = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/)
   if (rgb) {
-    return rgbToHsl(Number.parseInt(rgb[1]!), Number.parseInt(rgb[2]!), Number.parseInt(rgb[3]!))
+    return rgbToHsl(Number.parseInt(rgb[1]!, 10), Number.parseInt(rgb[2]!, 10), Number.parseInt(rgb[3]!, 10))
   }
   return null
 }
