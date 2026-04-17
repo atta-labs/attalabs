@@ -17,6 +17,7 @@ import {
   CommandList,
   CommandSeparator
 } from './command'
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './dialog'
 import { Input } from './input'
 import { ModelIcon } from './model-icon'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
@@ -38,6 +39,8 @@ export interface ModelPickerProps {
   settingsHref?: string
   settingsLabel?: string
   className?: string
+  /** 'popover' (default) anchors to the trigger; 'modal' opens a centered dialog. */
+  mode?: 'popover' | 'modal'
 }
 
 export function ModelPicker({
@@ -51,7 +54,8 @@ export function ModelPicker({
   side = 'bottom',
   settingsHref,
   settingsLabel = 'Configure defaults →',
-  className
+  className,
+  mode = 'popover'
 }: ModelPickerProps) {
   const [open, setOpen] = React.useState(false)
   const [keyEntryRoute, setKeyEntryRoute] = React.useState<RouteProvider | null>(null)
@@ -163,6 +167,174 @@ export function ModelPicker({
     </Button>
   )
 
+  const content = (
+    <>
+      {keyEntryRoute && pendingModel ? (
+        <div className='flex flex-col gap-3 p-3'>
+          <div className='flex items-center gap-2'>
+            <ModelIcon model={pendingModel.modelId} size={16} type='avatar' />
+            <p className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
+              {PROVIDERS[keyEntryRoute].label} key required
+            </p>
+          </div>
+          <Input
+            type='password'
+            autoComplete='off'
+            autoFocus
+            placeholder={PROVIDERS[keyEntryRoute].keyPlaceholder}
+            value={keyInput}
+            onChange={(e) => setKeyInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleSaveKey()
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                setKeyEntryRoute(null)
+                setPendingModel(null)
+                setKeyInput('')
+              }
+            }}
+            className='font-mono text-xs'
+          />
+          <div className='flex items-center justify-end gap-2'>
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={() => {
+                setKeyEntryRoute(null)
+                setPendingModel(null)
+                setKeyInput('')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button size='sm' onClick={handleSaveKey} disabled={!keyInput.trim()}>
+              Save & select
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Command>
+          <CommandInput placeholder='Search models…' value={searchValue} onValueChange={setSearchValue} />
+          <div className='flex items-center gap-1 border-b border-border px-2 py-1.5'>
+            <button
+              type='button'
+              onClick={() => setFlagshipOnly((v) => !v)}
+              aria-pressed={flagshipOnly}
+              className={cn(
+                'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest transition-colors',
+                flagshipOnly ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Flagship
+            </button>
+            <button
+              type='button'
+              onClick={() => setFreeOnly((v) => !v)}
+              aria-pressed={freeOnly}
+              className={cn(
+                'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest transition-colors',
+                freeOnly ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Free
+            </button>
+          </div>
+          <CommandList className='min-h-[280px]'>
+            <CommandEmpty className='py-20'>No model found.</CommandEmpty>
+            {grouped.map((group, groupIdx) => {
+              const isExpanded = expandedGroups.has(group.route) || isSearching
+              const visibleEntries = isExpanded ? group.entries : group.entries.slice(0, COLLAPSED_LIMIT)
+              const hiddenCount = group.entries.length - visibleEntries.length
+              return (
+                <React.Fragment key={group.route}>
+                  {groupIdx > 0 && <CommandSeparator />}
+                  <CommandGroup
+                    className='p-0 [&_[cmdk-group-heading]]:flex [&_[cmdk-group-heading]]:items-center [&_[cmdk-group-heading]]:gap-2 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:font-serif [&_[cmdk-group-heading]]:text-sm [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-foreground'
+                    heading={
+                      <>
+                        <ProviderIcon provider={group.route} size={14} type='avatar' />
+                        {group.label}
+                      </>
+                    }
+                  >
+                    {visibleEntries.map((entry) => {
+                      const isSelected = value?.route === entry.route && value?.modelId === entry.modelId
+                      const locked = !configuredRoutes.has(entry.route)
+                      return (
+                        <CommandItem
+                          key={entry.id}
+                          value={`${entry.label} ${entry.description ?? ''} ${group.label}`}
+                          disabled={locked && !onProvideKey}
+                          onSelect={() => handleSelect(entry)}
+                          className='flex items-center gap-2 pl-6 pr-3'
+                        >
+                          <ModelIcon model={entry.modelId} size={16} type='avatar' />
+                          <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
+                            <span className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
+                              {entry.label}
+                            </span>
+                            {entry.description && (
+                              <span className='truncate text-[11px] text-muted-foreground'>{entry.description}</span>
+                            )}
+                          </div>
+                          {locked ? (
+                            <Lock className='h-3 w-3 shrink-0 text-muted-foreground' aria-label='API key required' />
+                          ) : isSelected ? (
+                            <Check className='h-3.5 w-3.5 shrink-0 text-foreground' />
+                          ) : null}
+                        </CommandItem>
+                      )
+                    })}
+                  </CommandGroup>
+                  {!isSearching && (hiddenCount > 0 || (isExpanded && group.entries.length > COLLAPSED_LIMIT)) && (
+                    <div className='px-3 pb-1'>
+                      <button
+                        type='button'
+                        onClick={() => toggleGroup(group.route)}
+                        className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground'
+                      >
+                        {isExpanded ? 'Show fewer' : `Show all ${group.entries.length}`}
+                      </button>
+                    </div>
+                  )}
+                </React.Fragment>
+              )
+            })}
+          </CommandList>
+          {settingsHref && (
+            <>
+              <CommandSeparator />
+              <div className='p-2'>
+                <a
+                  href={settingsHref}
+                  className='flex items-center gap-1.5 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground'
+                >
+                  <ExternalLink className='h-3 w-3' />
+                  {settingsLabel}
+                </a>
+              </div>
+            </>
+          )}
+        </Command>
+      )}
+    </>
+  )
+
+  if (mode === 'modal') {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger render={(trigger ?? defaultTrigger) as React.ReactElement} />
+        <DialogContent showCloseButton={false} className={cn('max-w-lg border-border/60 bg-popover p-0', className)}>
+          <DialogTitle className='sr-only'>Select model</DialogTitle>
+          {content}
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger ?? defaultTrigger}</PopoverTrigger>
@@ -172,157 +344,7 @@ export function ModelPicker({
         collisionPadding={8}
         className={cn('w-80 border-border/60 bg-popover p-0', className)}
       >
-        {keyEntryRoute && pendingModel ? (
-          <div className='flex flex-col gap-3 p-3'>
-            <div className='flex items-center gap-2'>
-              <ModelIcon model={pendingModel.modelId} size={16} type='avatar' />
-              <p className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
-                {PROVIDERS[keyEntryRoute].label} key required
-              </p>
-            </div>
-            <Input
-              type='password'
-              autoComplete='off'
-              autoFocus
-              placeholder={PROVIDERS[keyEntryRoute].keyPlaceholder}
-              value={keyInput}
-              onChange={(e) => setKeyInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  handleSaveKey()
-                }
-                if (e.key === 'Escape') {
-                  e.preventDefault()
-                  setKeyEntryRoute(null)
-                  setPendingModel(null)
-                  setKeyInput('')
-                }
-              }}
-              className='font-mono text-xs'
-            />
-            <div className='flex items-center justify-end gap-2'>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => {
-                  setKeyEntryRoute(null)
-                  setPendingModel(null)
-                  setKeyInput('')
-                }}
-              >
-                Cancel
-              </Button>
-              <Button size='sm' onClick={handleSaveKey} disabled={!keyInput.trim()}>
-                Save & select
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <Command>
-            <CommandInput placeholder='Search models…' value={searchValue} onValueChange={setSearchValue} />
-            <div className='flex items-center gap-1 border-b border-border px-2 py-1.5'>
-              <button
-                type='button'
-                onClick={() => setFlagshipOnly((v) => !v)}
-                aria-pressed={flagshipOnly}
-                className={cn(
-                  'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest transition-colors',
-                  flagshipOnly ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Flagship
-              </button>
-              <button
-                type='button'
-                onClick={() => setFreeOnly((v) => !v)}
-                aria-pressed={freeOnly}
-                className={cn(
-                  'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest transition-colors',
-                  freeOnly ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Free
-              </button>
-            </div>
-            <CommandList className='min-h-[280px]'>
-              <CommandEmpty className='py-20'>No model found.</CommandEmpty>
-              {grouped.map((group, groupIdx) => {
-                const isExpanded = expandedGroups.has(group.route) || isSearching
-                const visibleEntries = isExpanded ? group.entries : group.entries.slice(0, COLLAPSED_LIMIT)
-                const hiddenCount = group.entries.length - visibleEntries.length
-                return (
-                  <React.Fragment key={group.route}>
-                    {groupIdx > 0 && <CommandSeparator />}
-                    <CommandGroup
-                      className='p-0 [&_[cmdk-group-heading]]:flex [&_[cmdk-group-heading]]:items-center [&_[cmdk-group-heading]]:gap-2 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:font-serif [&_[cmdk-group-heading]]:text-sm [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-foreground'
-                      heading={
-                        <>
-                          <ProviderIcon provider={group.route} size={14} type='avatar' />
-                          {group.label}
-                        </>
-                      }
-                    >
-                      {visibleEntries.map((entry) => {
-                        const isSelected = value?.route === entry.route && value?.modelId === entry.modelId
-                        const locked = !configuredRoutes.has(entry.route)
-                        return (
-                          <CommandItem
-                            key={entry.id}
-                            value={`${entry.label} ${entry.description ?? ''} ${group.label}`}
-                            disabled={locked && !onProvideKey}
-                            onSelect={() => handleSelect(entry)}
-                            className='flex items-center gap-2 pl-6 pr-3'
-                          >
-                            <ModelIcon model={entry.modelId} size={16} type='avatar' />
-                            <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
-                              <span className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
-                                {entry.label}
-                              </span>
-                              {entry.description && (
-                                <span className='truncate text-[11px] text-muted-foreground'>{entry.description}</span>
-                              )}
-                            </div>
-                            {locked ? (
-                              <Lock className='h-3 w-3 shrink-0 text-muted-foreground' aria-label='API key required' />
-                            ) : isSelected ? (
-                              <Check className='h-3.5 w-3.5 shrink-0 text-foreground' />
-                            ) : null}
-                          </CommandItem>
-                        )
-                      })}
-                    </CommandGroup>
-                    {!isSearching && (hiddenCount > 0 || (isExpanded && group.entries.length > COLLAPSED_LIMIT)) && (
-                      <div className='px-3 pb-1'>
-                        <button
-                          type='button'
-                          onClick={() => toggleGroup(group.route)}
-                          className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground'
-                        >
-                          {isExpanded ? 'Show fewer' : `Show all ${group.entries.length}`}
-                        </button>
-                      </div>
-                    )}
-                  </React.Fragment>
-                )
-              })}
-            </CommandList>
-            {settingsHref && (
-              <>
-                <CommandSeparator />
-                <div className='p-2'>
-                  <a
-                    href={settingsHref}
-                    className='flex items-center gap-1.5 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground'
-                  >
-                    <ExternalLink className='h-3 w-3' />
-                    {settingsLabel}
-                  </a>
-                </div>
-              </>
-            )}
-          </Command>
-        )}
+        {content}
       </PopoverContent>
     </Popover>
   )
