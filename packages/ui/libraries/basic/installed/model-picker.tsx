@@ -271,7 +271,7 @@ export function ModelPicker({
                             value={`${entry.label} ${entry.description ?? ''} ${group.label}`}
                             disabled={locked && !onProvideKey}
                             onSelect={() => handleSelect(entry)}
-                            className='flex items-center gap-2'
+                            className='flex items-center gap-2 px-0 pl-6'
                           >
                             <ModelIcon model={entry.modelId} size={16} type='avatar' />
                             <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
