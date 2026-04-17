@@ -1,6 +1,5 @@
 import type { BgState } from './types'
 import { fgAt, withAlpha } from '../shared/color-math'
-import { isLightTheme } from '../shared/theme'
 import { bloomStops, paintParticleHead } from '../shared/paint'
 
 // ── Grid definition ───────────────────────────────────────────────────────────
