@@ -60,6 +60,8 @@ export {
   CommandSeparator,
   CommandShortcut
 } from '../../basic/installed/command'
+// Model
+export { ModelIcon, type ModelIconProps } from '../../basic/installed/model-icon'
 // Sidebar — falls back to basic
 export {
   Sidebar,

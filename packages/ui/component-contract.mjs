@@ -77,6 +77,9 @@ export const REQUIRED_COMPONENTS = [
   'CommandSeparator',
   'CommandShortcut',
 
+  // Model
+  'ModelIcon',
+
   // Form
   'Input',
   'Textarea',
@@ -187,6 +190,9 @@ export const REQUIRED_TYPES = [
   'TextProps',
   'TextSize',
   'TextWeight',
+
+  // Model
+  'ModelIconProps',
 
   // Toast
   'ToastContextType',

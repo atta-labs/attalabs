@@ -44,6 +44,8 @@ export {
   CommandSeparator,
   CommandShortcut
 } from '../installed/command'
+// Model
+export { ModelIcon, type ModelIconProps } from '../installed/model-icon'
 // Layout
 export { Separator } from './layout/separator'
 // Table
