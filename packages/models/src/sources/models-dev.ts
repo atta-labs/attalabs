@@ -38,10 +38,14 @@ export type ModelsDevResponse = Record<string, ModelsDevProvider>
 const MODELS_DEV_URL = 'https://models.dev/api.json'
 const REVALIDATE_SECONDS = 60 * 60 * 24 // 24h
 
+// Next.js extends RequestInit with a `next` field for the Data Cache; @atta/models
+// doesn't depend on Next.js directly, so we cast rather than import types.
+type FetchWithNext = RequestInit & { next?: { revalidate?: number } }
+
 export async function fetchModelsDev(): Promise<ModelsDevResponse> {
   const res = await fetch(MODELS_DEV_URL, {
     next: { revalidate: REVALIDATE_SECONDS }
-  })
+  } as FetchWithNext)
   if (!res.ok) throw new Error(`models.dev fetch failed: ${res.status}`)
   return (await res.json()) as ModelsDevResponse
 }
