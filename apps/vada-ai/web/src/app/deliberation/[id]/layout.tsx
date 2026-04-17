@@ -18,7 +18,7 @@ export default async function DeliberationLayout({ children }: { children: React
   const logo =
     lightUrl || darkUrl ? (
       <Link href='/'>
-        <Logo light={lightUrl} dark={darkUrl} alt={branding?.productName ?? 'Vada AI'} size='h-9' />
+        <Logo light={lightUrl} dark={darkUrl} alt={branding?.productName ?? 'Vada AI'} size='h-10' />
       </Link>
     ) : null
   let faceStyle: FaceStyle = 'emblematic'

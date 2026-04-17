@@ -49,7 +49,7 @@ export function UserTopBar({ logo }: UserTopBarProps) {
   return (
     <nav className='flex h-full w-full items-center justify-between px-4 text-muted-foreground'>
       {/* Left: logo + nav links */}
-      <div className='flex items-center gap-8'>
+      <div className='flex items-center'>
         {logo}
         <div className='flex items-center gap-8'>
           {allLinks.map(({ href, label, exact }) => (

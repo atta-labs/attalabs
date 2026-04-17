@@ -18,7 +18,7 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
   const logo =
     lightUrl || darkUrl ? (
       <Link href='/'>
-        <Logo light={lightUrl} dark={darkUrl} alt={branding?.productName ?? 'Vada AI'} size='h-9' />
+        <Logo light={lightUrl} dark={darkUrl} alt={branding?.productName ?? 'Vada AI'} size='h-10' />
       </Link>
     ) : null
 
