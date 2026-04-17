@@ -63,9 +63,16 @@ export function UserTopBar({ logo }: UserTopBarProps) {
           ))}
         </div>
       </div>
-      {/* Right: scheme toggle + avatar dropdown (auth) or sign-in (anonymous) */}
+      {/* Right: scheme toggle + settings + avatar dropdown (auth) or sign-in (anonymous) */}
       <div className='flex items-center gap-3'>
         <ColorSchemeToggle />
+        {user && (
+          <Button variant='ghost' size='icon' asChild aria-label='Settings' title='Settings'>
+            <Link href='/settings'>
+              <Settings className='h-4 w-4' />
+            </Link>
+          </Button>
+        )}
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger className='rounded-full outline-none ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'>
@@ -90,12 +97,6 @@ export function UserTopBar({ logo }: UserTopBarProps) {
                   <DropdownMenuSeparator />
                 </>
               )}
-              <DropdownMenuItem asChild>
-                <Link href='/settings' className='cursor-pointer'>
-                  <Settings className='h-4 w-4' />
-                  Settings
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => signOut({ redirectUrl: '/' })} className='cursor-pointer'>
                 <LogOut className='h-4 w-4' />
                 Sign out
