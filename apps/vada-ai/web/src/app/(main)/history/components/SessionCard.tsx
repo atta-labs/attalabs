@@ -1,4 +1,4 @@
-import { Badge, Card, CardContent } from '@atta/ui'
+import { Badge, Card, CardContent, ModelIcon } from '@atta/ui'
 import { Text } from '@atta/ui/shared'
 import { cn } from '@atta/ui/lib/utils'
 import { NextLink } from '@atta/ui/lib/next-link'
@@ -14,12 +14,14 @@ export function SessionCard({
   id,
   question,
   terminalState,
+  agentModels,
   createdAt
 }: {
   id: string
   question: string
   terminalState: string | null
   state: string
+  agentModels: Record<string, { provider: string; modelId: string }> | null
   createdAt: string
 }) {
   const config = terminalState ? STATE_CONFIG[terminalState] : null
@@ -34,6 +36,25 @@ export function SessionCard({
           <Text as='p' size='sm' className='line-clamp-2 flex-1'>
             {question}
           </Text>
+          {(() => {
+            const modelIds = Array.from(new Set(Object.values(agentModels ?? {}).map((m) => m.modelId)))
+            const shown = modelIds.slice(0, 3)
+            const overflow = modelIds.length - shown.length
+            return shown.length > 0 ? (
+              <span className='flex shrink-0 items-center gap-0.5'>
+                {shown.map((mid) => (
+                  <ModelIcon
+                    key={mid}
+                    model={mid}
+                    size={12}
+                    type='avatar'
+                    className='-ml-1 rounded-full bg-background p-px ring-1 ring-border first:ml-0'
+                  />
+                ))}
+                {overflow > 0 && <span className='ml-1 font-mono text-[10px] text-muted-foreground'>+{overflow}</span>}
+              </span>
+            ) : null
+          })()}
           <div className='flex shrink-0 flex-col items-end gap-1.5'>
             <Badge variant='outline' size='xs' className={cn('uppercase tracking-wider', stateClass)}>
               {stateLabel}

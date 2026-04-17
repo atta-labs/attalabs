@@ -6,6 +6,7 @@ interface Session {
   question: string
   terminalState: string | null
   state: string
+  agentModels: Record<string, { provider: string; modelId: string }> | null
   createdAt: string
 }
 
@@ -33,6 +34,7 @@ export function SessionList({
           question={s.question}
           terminalState={s.terminalState}
           state={s.state}
+          agentModels={s.agentModels}
           createdAt={s.createdAt}
         />
       ))}

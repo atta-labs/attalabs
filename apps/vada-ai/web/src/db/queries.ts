@@ -71,6 +71,7 @@ export async function listSessions(userId: string) {
       question: schema.sessions.question,
       state: schema.sessions.state,
       terminalState: schema.sessions.terminalState,
+      agentModels: schema.sessions.agentModels,
       createdAt: schema.sessions.createdAt
     })
     .from(schema.sessions)

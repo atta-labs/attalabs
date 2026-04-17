@@ -34,6 +34,7 @@ export default async function HistoryPage() {
             question: s.question,
             terminalState: s.terminalState,
             state: s.state,
+            agentModels: (s.agentModels ?? null) as Record<string, { provider: string; modelId: string }> | null,
             createdAt: s.createdAt?.toISOString() ?? new Date().toISOString()
           }))}
         />
