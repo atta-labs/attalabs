@@ -9,8 +9,14 @@
 // text → wrong model ID. Rate-limit signals are treated as transient and
 // bubbled up verbatim so the user can distinguish "wrong key" from "try again
 // in a minute".
+//
+// Mock mode short-circuit: when NEXT_PUBLIC_VADA_MOCK_MODE=true the probe
+// returns ok without a network call. This matches the mock-mode contract —
+// "no real provider calls are being made" — and lets a developer use any
+// fake string as a key for UI testing without hitting a 401 at save time.
 
 import type { RouteProvider } from '@atta/models'
+import { isMockModeActive } from './mock'
 
 export interface ProbeResult {
   ok: boolean
@@ -59,6 +65,10 @@ export async function probeProviderKey(
   apiKey: string,
   modelId?: string
 ): Promise<ProbeResult> {
+  // See comment at the top of this file. Mock mode = no real provider call,
+  // including the validation probe itself.
+  if (isMockModeActive()) return { ok: true }
+
   const model = modelId ?? DEFAULT_PROBE_MODEL[provider]
   switch (provider) {
     case 'anthropic':
