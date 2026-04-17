@@ -10,6 +10,7 @@ import {
 } from '../aia-context'
 import { BG_RENDERERS, type BgEvent, type BgRenderer, type BgVariant } from '../bg'
 import { getThemeColors, resolveColor } from '../shared/colors'
+import { paintClusterGlow } from '../shared/paint'
 import { renderBgFills } from './bg-fills'
 import { renderMessages } from './message-system'
 import { renderRingMatrix, renderSphereMatrix } from './matrix-rain'
@@ -283,18 +284,7 @@ export function useAIACanvas(
         for (const sphere of spheres) {
           const glow = clusterGlow.get(sphere.id) ?? 0
           if (glow > 0.01) {
-            const r = sphere.radius + 15
-            const g = gfx.createRadialGradient(sphere.x, sphere.y, 0, sphere.x, sphere.y, r)
-            // Use this sphere's own color so an arrival on the Critic looks red,
-            // the Synthesizer gold, etc. — rather than a uniform --primary pulse.
-            g.addColorStop(0, sphere.color)
-            g.addColorStop(0.6, sphere.color)
-            g.addColorStop(1, 'transparent')
-            gfx.globalAlpha = glow * 0.3
-            gfx.fillStyle = g
-            gfx.beginPath()
-            gfx.arc(sphere.x, sphere.y, r, 0, Math.PI * 2)
-            gfx.fill()
+            paintClusterGlow(gfx, sphere.x, sphere.y, sphere.radius + 15, sphere.color, glow)
             clusterGlow.set(sphere.id, glow * 0.96)
           }
           renderSphereMatrix(gfx, sphere, matrixDrops)
