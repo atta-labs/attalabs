@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { getStoredApiKey, ROUTE_PROVIDER_ORDER, type RouteProvider } from '@atta/models'
 import { useToastContext } from '@atta/ui'
+import type { FaceStyle } from '@atta/ui/canvas'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { useUserPreferences } from '@/lib/user-preferences-context'
 import { PRESETS, type Preset } from '@/schemas'
-import type { FaceStyle } from '@atta/ui/canvas'
 import type { ModelSelection } from './GlobalModelSelector'
 
 interface UseDeliberateFormProps {
@@ -24,15 +25,21 @@ export interface DeliberateFormState {
   setGlobalModel: (m: ModelSelection | null) => void
   loading: boolean
   canStart: boolean
+  hasAnyKey: boolean
   handleStart: () => Promise<void>
   faceStyle: FaceStyle
 }
 
-export function useDeliberateForm({ remainingToday, initialError }: UseDeliberateFormProps): DeliberateFormState {
+export function useDeliberateForm({
+  remainingToday,
+  initialError,
+  configuredProviders
+}: UseDeliberateFormProps): DeliberateFormState {
   const [question, setQuestion] = useState('')
   const [selectedPreset, setSelectedPreset] = useState<Preset>(PRESETS[0]!)
   const [globalModel, setGlobalModel] = useState<ModelSelection | null>(null)
   const [loading, setLoading] = useState(false)
+  const [storedRoutes, setStoredRoutes] = useState<Set<string>>(() => new Set())
   const router = useRouter()
   const { errorToast } = useToastContext()
   const { faceStyle } = useUserPreferences()
@@ -41,7 +48,21 @@ export function useDeliberateForm({ remainingToday, initialError }: UseDeliberat
     if (initialError) errorToast('Could not start deliberation', initialError)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const canStart = !!question.trim() && remainingToday > 0 && !loading && !!globalModel?.provider
+  useEffect(() => {
+    const next = new Set<string>()
+    for (const route of ROUTE_PROVIDER_ORDER) {
+      if (getStoredApiKey(route as RouteProvider) != null) next.add(route)
+    }
+    setStoredRoutes(next)
+  }, [globalModel])
+
+  const selectedProvider = globalModel?.provider
+  const hasKeyForSelected =
+    selectedProvider != null &&
+    (configuredProviders.includes(selectedProvider) || storedRoutes.has(selectedProvider) || !!globalModel?.apiKey)
+  const hasAnyKey = configuredProviders.length > 0 || storedRoutes.size > 0
+
+  const canStart = !!question.trim() && remainingToday > 0 && !loading && hasKeyForSelected
 
   const handleStart = async () => {
     if (!canStart) return
@@ -83,6 +104,7 @@ export function useDeliberateForm({ remainingToday, initialError }: UseDeliberat
     setGlobalModel,
     loading,
     canStart,
+    hasAnyKey,
     handleStart,
     faceStyle
   }
