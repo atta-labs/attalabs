@@ -2,6 +2,7 @@
 
 import type { ModelEntry, RouteProvider } from '@atta/models'
 import { PROVIDERS, ROUTE_PROVIDER_ORDER } from '@atta/models'
+import { ProviderIcon } from '@lobehub/icons'
 import { Check, ChevronsUpDown, ExternalLink, Lock } from 'lucide-react'
 import * as React from 'react'
 
@@ -254,10 +255,10 @@ export function ModelPicker({
                   <React.Fragment key={group.route}>
                     {groupIdx > 0 && <CommandSeparator />}
                     <CommandGroup
-                      className='[&_[cmdk-group-heading]]:flex [&_[cmdk-group-heading]]:items-center [&_[cmdk-group-heading]]:gap-2 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:font-serif [&_[cmdk-group-heading]]:text-sm [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-foreground'
+                      className='p-0 [&_[cmdk-group-heading]]:flex [&_[cmdk-group-heading]]:items-center [&_[cmdk-group-heading]]:gap-2 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:font-serif [&_[cmdk-group-heading]]:text-sm [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-foreground'
                       heading={
                         <>
-                          <ModelIcon model={group.route} size={14} type='avatar' />
+                          <ProviderIcon provider={group.route} size={14} type='avatar' />
                           {group.label}
                         </>
                       }
@@ -271,7 +272,7 @@ export function ModelPicker({
                             value={`${entry.label} ${entry.description ?? ''} ${group.label}`}
                             disabled={locked && !onProvideKey}
                             onSelect={() => handleSelect(entry)}
-                            className='flex items-center gap-2 px-0 pl-6'
+                            className='flex items-center gap-2 pl-6 pr-3'
                           >
                             <ModelIcon model={entry.modelId} size={16} type='avatar' />
                             <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
