@@ -4,12 +4,12 @@ import { Button, Input } from '@atta/ui'
 import { Text } from '@atta/ui/shared'
 import { Check, Loader2, X } from 'lucide-react'
 import { useState } from 'react'
-import type { ProviderDef } from '@/lib/provider-models'
+import type { ProviderMeta } from '@atta/models'
 
 type Status = 'idle' | 'saving' | 'saved' | 'error'
 
 interface ApiKeyRowProps {
-  provider: ProviderDef
+  provider: ProviderMeta
   keyHint: string | null
   onSaved: (provider: string, keyHint: string) => void
   onRemoved: (provider: string) => void
@@ -79,7 +79,7 @@ export function ApiKeyRow({ provider, keyHint, onSaved, onRemoved }: ApiKeyRowPr
           <Input
             type='password'
             autoComplete='off'
-            placeholder={`${provider.keyPrefix}…`}
+            placeholder={provider.keyPlaceholder}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onBlur={() => save(inputValue)}

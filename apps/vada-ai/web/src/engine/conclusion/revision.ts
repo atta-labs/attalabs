@@ -2,7 +2,7 @@ import type { Conclusion } from '../../schemas'
 import { ConclusionSchema } from '../../schemas'
 import { createConclusionAgent } from '../agents'
 import { REVISION_MODE_PROMPT } from '../prompts/conclusion-prompts'
-import type { ModelConfig } from '../../lib/models'
+import type { ModelConfig } from '@atta/models'
 
 export async function reviseConclusion(
   originalConclusion: Conclusion,

@@ -1,7 +1,7 @@
 import type { Conclusion } from '../../schemas'
 import { createBlindCriticAgent } from '../agents'
 import { BLIND_CRITIC_PROMPT } from '../prompts/conclusion-prompts'
-import type { ModelConfig } from '../../lib/models'
+import type { ModelConfig } from '@atta/models'
 
 export async function auditConclusion(
   question: string,

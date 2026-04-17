@@ -8,7 +8,7 @@ import {
   peekEphemeralKey,
   peekEphemeralProviderKey
 } from '@/engine/pending-keys'
-import type { ModelConfig } from '@/lib/models'
+import type { ModelConfig } from '@atta/models'
 
 // Simulation delay to make "replayed" messages feel like they are arriving in real-time
 const REPLAY_DELAY = 800

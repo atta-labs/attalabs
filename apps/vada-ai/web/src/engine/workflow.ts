@@ -12,7 +12,7 @@ import {
 } from '../db/queries'
 import { getAgentConfig, type AgentConfig } from '../schemas'
 import type { SSEEmitter } from './stream'
-import type { ModelConfig } from '../lib/models'
+import type { ModelConfig } from '@atta/models'
 
 const SIMULATION_PAUSE = 2500
 

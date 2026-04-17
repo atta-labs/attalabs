@@ -1,5 +1,5 @@
 import { Text } from '@atta/ui/shared'
-import { PROVIDERS } from '@/lib/provider-models'
+import { PROVIDERS, ROUTE_PROVIDER_ORDER } from '@atta/models'
 import { ApiKeyRow } from './ApiKeyRow'
 
 interface ApiKeysSectionProps {
@@ -23,11 +23,11 @@ export function ApiKeysSection({ apiKeys, onKeyAdded, onKeyRemoved }: ApiKeysSec
       </div>
 
       <div>
-        {PROVIDERS.map((provider) => (
+        {ROUTE_PROVIDER_ORDER.map((id) => (
           <ApiKeyRow
-            key={provider.id}
-            provider={provider}
-            keyHint={keyMap[provider.id] ?? null}
+            key={id}
+            provider={PROVIDERS[id]}
+            keyHint={keyMap[id] ?? null}
             onSaved={onKeyAdded}
             onRemoved={onKeyRemoved}
           />

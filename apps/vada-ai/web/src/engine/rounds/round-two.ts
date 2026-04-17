@@ -3,7 +3,7 @@ import type { AgentConfig } from '../../schemas'
 import { createDeliberationAgent } from '../agents'
 import { composeSystemPrompt } from '../prompts/compose'
 import type { SSEEmitter } from '../stream'
-import type { ModelConfig } from '../../lib/models'
+import type { ModelConfig } from '@atta/models'
 
 const TARGET_PATTERN = /\[TARGET:\s*([^\]]+)\]/i
 

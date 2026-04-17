@@ -3,7 +3,7 @@ import { ConclusionSchema } from '../../schemas'
 import { createConclusionAgent } from '../agents'
 import { CONCLUSION_MODE_PROMPT } from '../prompts/conclusion-prompts'
 import { buildTranscriptContext } from '../rounds/round-two'
-import type { ModelConfig } from '../../lib/models'
+import type { ModelConfig } from '@atta/models'
 
 interface TranscriptEntry {
   agent: string
