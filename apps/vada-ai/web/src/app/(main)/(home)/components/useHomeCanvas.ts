@@ -4,6 +4,10 @@ import type React from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { useAIAContext } from '@atta/ui/canvas'
 
+// Bumped when the intro is intentionally redesigned — existing visitors see the
+// new version once, then resume skipping. Read comment in the skip branch below.
+const INTRO_SEEN_KEY = 'vada:home-intro-seen-v1'
+
 export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() => void) | null>) {
   const [activeAgent, setActiveAgent] = useState<string | null>(null)
   const [activeStep, setActiveStep] = useState(0)
@@ -17,6 +21,18 @@ export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() =>
   useEffect(() => {
     if (!ctx || ctx.phase !== 'settled' || simulationStarted.current) return
     simulationStarted.current = true
+
+    // Skip the ~8s intro for returning visitors. `?intro=1` forces a replay
+    // (demos / design review). The phase === 'settled' gate above ensures
+    // spheres are registered before we jump straight to the end state.
+    const forceIntro = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('intro')
+    const alreadySeen = typeof window !== 'undefined' && window.localStorage.getItem(INTRO_SEEN_KEY) === '1'
+
+    if (alreadySeen && !forceIntro) {
+      setRevealedCount(6) // all spheres visible
+      setActiveStep(6) // ring fully closed → animationComplete flips → startGravity fires
+      return
+    }
 
     const sequence = ['s1', 's2', 's3', 's4', 's5', 's6']
 
@@ -57,7 +73,9 @@ export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() =>
       }
     }
 
-    runSimulation()
+    runSimulation().then(() => {
+      if (typeof window !== 'undefined') window.localStorage.setItem(INTRO_SEEN_KEY, '1')
+    })
   }, [ctx?.phase])
 
   useEffect(() => {
