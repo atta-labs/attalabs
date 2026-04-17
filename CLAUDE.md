@@ -144,6 +144,7 @@ In-depth guides for specific domains. Reference when working in that area.
 | Skill | File | Use For |
 |-------|------|---------|
 | UI Components | [.claude/skills/ui-components/SKILL.md](.claude/skills/ui-components/SKILL.md) | Component usage, CSS variables, theming |
+| Theme Tokens | [.claude/skills/theme-tokens/SKILL.md](.claude/skills/theme-tokens/SKILL.md) | Complete list of semantic color/font/radius tokens — hardcoded palette colors forbidden |
 | UI Library System | [.claude/skills/ui-library-system/SKILL.md](.claude/skills/ui-library-system/SKILL.md) | Build-time generation, runtime switching, adding apps/libraries |
 | CMS Theme | [.claude/skills/cms-theme/SKILL.md](.claude/skills/cms-theme/SKILL.md) | SSR theme loading, fonts, Sanity studios |
 | Branding | [.claude/skills/branding/SKILL.md](.claude/skills/branding/SKILL.md) | Logos, favicons, brand assets, seed script |

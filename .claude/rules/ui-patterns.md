@@ -27,22 +27,28 @@ import { Badge } from '@atta/ui/components/badge'
 
 ## RULE 2: CSS Variables — NEVER Hardcoded Colors
 
-All colors must use semantic Tailwind classes that map to CSS variables. Hardcoded hex, oklch values, or `bg-[#hex]` arbitrary classes are **forbidden**.
+All colors **MUST** use semantic tokens mapped to CSS variables. Hardcoded Tailwind palette classes (`text-green-500`, `bg-zinc-900`, `ring-blue-400`, …), hex, oklch, hsl, or `bg-[#hex]` arbitrary classes are **forbidden**.
 
 ```tsx
-// ✅
+// ✅ Semantic tokens only
 <div className="bg-background text-foreground border-border" />
 <span className="text-muted-foreground" />
-<div className="bg-card text-card-foreground" />
-<Badge className="bg-accent text-accent-foreground" />
+<Badge className="text-success border-success/40">Clean</Badge>
+<Badge className="text-warning border-warning/40">Revised</Badge>
+<Badge className="text-destructive border-destructive/40">Unconverged</Badge>
 
-// ❌
+// ❌ NEVER
 <div className="bg-[#1A1610]" />
 <div style={{ background: '#0D0B08' }} />
-<div className="bg-zinc-900 text-amber-200" />
+<div className="text-green-500 border-yellow-500/40" />   // palette colors are forbidden
+<div className="ring-blue-400" />
 ```
 
-Token reference: `bg-background`, `text-foreground`, `bg-card`, `text-muted-foreground`, `bg-accent`, `bg-destructive`, `border-border`, `bg-primary`, `bg-muted`.
+**Available tokens:** `background`, `foreground`, `card` / `card-foreground`, `popover` / `popover-foreground`, `muted` / `muted-foreground`, `primary` / `primary-foreground`, `secondary` / `secondary-foreground`, `accent` / `accent-foreground`, `success`, `warning`, `destructive` / `destructive-foreground`, `border`, `input`, `ring`, plus `sidebar-*` variants.
+
+> There is no `info` / `blue` token. Use `primary` for informational/in-progress states with visual weight, or `muted-foreground` for neutral ones.
+
+**Full reference:** [.claude/skills/theme-tokens/SKILL.md](../skills/theme-tokens/SKILL.md) — complete list, why it matters, and how to add a new token if one is truly missing.
 
 ---
 

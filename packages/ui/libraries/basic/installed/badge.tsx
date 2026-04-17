@@ -1,6 +1,7 @@
 'use client'
 
 import React, { type MouseEvent, type ReactElement, type ReactNode, useState } from 'react'
+import { cn } from '../../../lib/utils'
 
 // Enhanced Icons
 const XIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
@@ -239,7 +240,7 @@ export const Badge = React.forwardRef<HTMLElement, BadgeProps>(
         'border border-transparent [background:linear-gradient(var(--background),var(--background))_padding-box,linear-gradient(90deg,#3b82f6,#8b5cf6,#a855f7,#d946ef)_border-box] text-foreground'
     }
 
-    const baseClasses = [
+    const baseClasses = cn(
       'inline-flex items-center justify-center font-medium transition-all duration-200',
       'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
       sizeStyles[size],
@@ -247,14 +248,12 @@ export const Badge = React.forwardRef<HTMLElement, BadgeProps>(
       animationStyles[animation],
       durationStyles[animationDuration],
       positionStyles[position],
-      !className ? variantStyles[variant] : '',
-      disabled ? 'opacity-50 cursor-not-allowed' : '',
-      active ? 'ring-2 ring-ring ring-offset-2' : '',
-      loading ? 'cursor-wait' : '',
+      variantStyles[variant],
+      disabled && 'opacity-50 cursor-not-allowed',
+      active && 'ring-2 ring-ring ring-offset-2',
+      loading && 'cursor-wait',
       className
-    ]
-      .filter(Boolean)
-      .join(' ')
+    )
 
     // Add positioning styles if needed
     const positioningStyles: React.CSSProperties = {
