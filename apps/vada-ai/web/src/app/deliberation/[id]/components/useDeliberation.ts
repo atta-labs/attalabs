@@ -137,26 +137,38 @@ export function useDeliberation(
   })
 
   const abortRef = useRef<AbortController | null>(null)
-  const stoppedRef = useRef(false)
 
   useEffect(() => {
     if (isComplete) return
-    stoppedRef.current = false
+
+    // React 19 StrictMode double-invokes useEffect in dev, which would spawn
+    // two concurrent pull loops racing against each other. A closure-scoped
+    // `cancelled` variable (not a ref) makes each invocation's cancellation
+    // signal unique to its own mount, so the unmount from the first pass only
+    // cancels that pass. We also guard every mutation with a `cancelled` check
+    // after each await so the first-mount drive can't POST /turn after its
+    // cleanup has fired.
+    let cancelled = false
 
     const drive = async () => {
       // Safety cap — a bug in the server orchestrator shouldn't let the browser
       // loop forever. 200 rounds is well beyond any real deliberation.
-      for (let iter = 0; iter < 200 && !stoppedRef.current; iter++) {
+      for (let iter = 0; iter < 200; iter++) {
+        if (cancelled) return
+
         let cmd: NextCommand
         try {
           const res = await fetch(`/api/deliberation/${sessionId}/next`, { method: 'POST' })
+          if (cancelled) return
           if (!res.ok) throw new Error(`next failed: ${res.status}`)
           cmd = (await res.json()) as NextCommand
         } catch (err) {
-          if (stoppedRef.current) return
+          if (cancelled) return
           setStreamError(err instanceof Error ? err.message : 'Failed to fetch next command')
           return
         }
+
+        if (cancelled) return
 
         if (cmd.type === 'done') return
 
@@ -167,9 +179,10 @@ export function useDeliberation(
           // Fetch the finalized conclusion row for display
           try {
             const res = await fetch(`/api/sessions/${sessionId}`)
+            if (cancelled) return
             if (res.ok) {
               const session = (await res.json()) as { conclusion?: Record<string, unknown> | null }
-              if (session.conclusion) setConclusion(session.conclusion)
+              if (!cancelled && session.conclusion) setConclusion(session.conclusion)
             }
           } catch {
             // Conclusion fetch is cosmetic — terminal state is already set
@@ -231,9 +244,11 @@ export function useDeliberation(
             }
           )
 
+          if (cancelled) return
+
           let fullText = ''
           for await (const delta of result.textStream) {
-            if (stoppedRef.current) return
+            if (cancelled) return
             fullText += delta
             if (cmd.type === 'run_agent') {
               const { text, replyTarget } = parseContent(fullText)
@@ -241,7 +256,11 @@ export function useDeliberation(
             }
           }
 
-          // Report turn result to server
+          if (cancelled) return
+
+          // Report turn result to server. Must not fire after cancellation —
+          // a cancelled drive that still POSTs /turn would double-write when
+          // a sibling drive also makes it past its own cancellation check.
           await fetch(`/api/deliberation/${sessionId}/turn`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -252,6 +271,8 @@ export function useDeliberation(
               ...(cmd.type === 'run_agent' ? { agent: cmd.agent, round: cmd.round } : {})
             })
           })
+
+          if (cancelled) return
 
           if (cmd.type === 'run_agent') {
             const config = getAgentConfigByName(cmd.agent)
@@ -269,18 +290,11 @@ export function useDeliberation(
               }
             ])
             setStreamingMessage(null)
-            setCompletedRounds((prev) => {
-              // Mark round complete when we have as many entries as expected.
-              // Expected count lives on the server; we approximate by checking
-              // if this was the last agent in the round (next /next call will
-              // either move to the next round or conclusion).
-              return prev
-            })
           } else {
             setLoadingMessage(null)
           }
         } catch (err) {
-          if (stoppedRef.current || (err as DOMException)?.name === 'AbortError') return
+          if (cancelled || (err as DOMException)?.name === 'AbortError') return
           const classified = classifyProviderError(err, cmd.model.provider)
           // Notify server (V1 no-op but good API hygiene)
           await fetch(`/api/deliberation/${sessionId}/turn-error`, {
@@ -298,7 +312,7 @@ export function useDeliberation(
 
     drive()
     return () => {
-      stoppedRef.current = true
+      cancelled = true
       abortRef.current?.abort()
     }
   }, [sessionId, isComplete])
