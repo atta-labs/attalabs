@@ -1,5 +1,5 @@
 import { auth } from '@atta/auth/hooks'
-import { getSessionWithTranscript } from '@/db/queries'
+import { getOrCreateUser, getSessionWithTranscriptForUser } from '@/db/queries'
 
 function formatConclusion(session: {
   question: string
@@ -51,8 +51,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return new Response('Unauthorized', { status: 401 })
   }
 
+  const user = await getOrCreateUser(clerkId, '')
   const { id } = await params
-  const session = await getSessionWithTranscript(id)
+  const session = await getSessionWithTranscriptForUser(id, user.id)
 
   if (!session) {
     return new Response('Session not found', { status: 404 })
