@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import {
-  CATALOG,
+  FALLBACK_CATALOG,
   getStoredApiKey,
   storeApiKey,
   ROUTE_PROVIDER_ORDER,
   type ModelConfig,
   type RouteProvider
 } from '@atta/models'
+
+// TODO(Dyn-8): replace FALLBACK_CATALOG with async getCatalog() call
+const CATALOG = FALLBACK_CATALOG
 import { ModelPicker } from '@atta/ui'
 
 export interface ModelSelection {

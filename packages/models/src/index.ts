@@ -2,7 +2,9 @@ export type { DisplayProvider, ProviderMeta, RouteProvider } from './providers'
 export { PROVIDERS, ROUTE_PROVIDER_ORDER } from './providers'
 
 export type { ModelEntry } from './catalog'
-export { CATALOG, findModelEntry, findModelEntryByModelId } from './catalog'
+export { getCatalog, findModelEntry, findModelEntryByModelId } from './catalog'
+
+export { FALLBACK_CATALOG } from './fallback'
 
 export { getStoredApiKey, removeStoredApiKey, storeApiKey } from './storage'
 

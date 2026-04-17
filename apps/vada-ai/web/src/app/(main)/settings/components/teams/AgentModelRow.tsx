@@ -1,6 +1,9 @@
 'use client'
 
-import { CATALOG, type RouteProvider } from '@atta/models'
+import { FALLBACK_CATALOG, type RouteProvider } from '@atta/models'
+
+// TODO(Dyn-9): replace FALLBACK_CATALOG with async getCatalog() call
+const CATALOG = FALLBACK_CATALOG
 import { ModelPicker } from '@atta/ui'
 import { AIAgent, type AgentName } from '@atta/ui/canvas'
 import { Text } from '@atta/ui/shared'
