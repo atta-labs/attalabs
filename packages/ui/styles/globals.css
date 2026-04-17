@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Align Tailwind's dark: variant with our SSR-driven [data-theme="dark"]
+   attribute on <html>. Without this, dark: would resolve via the browser's
+   prefers-color-scheme and could disagree with the user's chosen scheme.
+   MUST be declared before @source so Tailwind resolves dark: utilities
+   against this selector instead of the default media query. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../libraries/basic/components/**/*.{ts,tsx}";
 @source "../libraries/basic/installed/**/*.{ts,tsx}";
@@ -10,11 +17,6 @@
 @source "../libraries/brutal/components/**/*.{ts,tsx}";
 @source "../libraries/brutal/installed/**/*.{ts,tsx}";
 @source "../libraries/shared/**/*.{ts,tsx}";
-
-/* Align Tailwind's dark: variant with our SSR-driven [data-theme="dark"]
-   attribute on <html>. Without this, dark: would resolve via the browser's
-   prefers-color-scheme and could disagree with the user's chosen scheme. */
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme inline {
   --color-background: var(--background);
