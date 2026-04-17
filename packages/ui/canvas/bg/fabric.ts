@@ -1,4 +1,7 @@
 import type { BgState } from './types'
+import { brightenForLight, fgAt, withAlpha } from '../shared/color-math'
+import { isLightTheme, refreshThemeCache } from '../shared/theme'
+import { paintParticleHead } from '../shared/paint'
 
 // ── Grid definition ───────────────────────────────────────────────────────────
 // MARGIN extends the grid beyond each screen edge so displaced outer vertices
@@ -55,146 +58,6 @@ interface ClosingPulse {
   intensity?: number // multiplier on wave amplitude + glow — default 1.0 (full ring-close strength)
 }
 let closingPulses: ClosingPulse[] = []
-
-// Theme cache — populated once per renderFabricBg call so all withAlpha
-// calls within a frame share one read. data-theme is set by NextWebShell on the
-// html element and flipped by the color-scheme toggle, so it's authoritative.
-let isLightTheme = false
-
-function refreshThemeCache(): void {
-  if (typeof document === 'undefined') return
-  isLightTheme = document.documentElement.getAttribute('data-theme') === 'light'
-}
-
-// Lightens agent colors in light theme so they don't read as harsh dark strokes
-// on the light background. Boost is moderate (~30% toward white) — earlier +50%
-// washed out into pale sage, 0% left trails reading too dark. Dark theme passes
-// through unchanged. Handles hsl() (any separator / optional `deg`) and hex.
-function adaptColor(color: string): string {
-  if (!isLightTheme) return color
-
-  const hsl = color.match(/hsla?\(\s*([\d.]+)(?:deg)?\s*[,\s]\s*([\d.]+)%?\s*[,\s]\s*([\d.]+)%?\s*[,/)]/)
-  if (hsl) {
-    const l = Number.parseFloat(hsl[3]!)
-    const newL = Math.min(72, l + 15)
-    return `hsl(${hsl[1]} ${hsl[2]}% ${newL}%)`
-  }
-
-  const hex = color.match(/^#([0-9a-f]{3,8})$/i)
-  if (hex) {
-    const h = hex[1]!
-    const r = h.length <= 4 ? Number.parseInt(h[0]! + h[0]!, 16) : Number.parseInt(h.slice(0, 2), 16)
-    const g = h.length <= 4 ? Number.parseInt(h[1]! + h[1]!, 16) : Number.parseInt(h.slice(2, 4), 16)
-    const b = h.length <= 4 ? Number.parseInt(h[2]! + h[2]!, 16) : Number.parseInt(h.slice(4, 6), 16)
-    const mix = 0.3
-    const nr = Math.round(r + (255 - r) * mix)
-    const ng = Math.round(g + (255 - g) * mix)
-    const nb = Math.round(b + (255 - b) * mix)
-    return `rgb(${nr}, ${ng}, ${nb})`
-  }
-
-  return color
-}
-
-// Convert RGB (0-255) to HSL (H: 0-360, S/L: 0-100)
-function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
-  const rn = r / 255
-  const gn = g / 255
-  const bn = b / 255
-  const max = Math.max(rn, gn, bn)
-  const min = Math.min(rn, gn, bn)
-  const l = (max + min) / 2
-  let h = 0
-  let s = 0
-  if (max !== min) {
-    const d = max - min
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-    switch (max) {
-      case rn:
-        h = ((gn - bn) / d + (gn < bn ? 6 : 0)) * 60
-        break
-      case gn:
-        h = ((bn - rn) / d + 2) * 60
-        break
-      case bn:
-        h = ((rn - gn) / d + 4) * 60
-        break
-    }
-  }
-  return { h, s: s * 100, l: l * 100 }
-}
-
-// Highlight color for particle heads and birth-glow centers — the single source
-// of truth for "bright hot-spot in the middle of a particle".
-// - Dark mode: bright white (pops on dark bg, classic hot-core look)
-// - Light mode: agent color with SATURATION BOOSTED (min 55%). Strategist green
-//   at hsl(119 21% 45%) is too low-chroma to pop on a light bg — lightening it
-//   just desaturates further. Saturating turns it into a punchy forest green
-//   that reads at the same visual weight as Critic red (already hi-sat).
-function brightenForLight(color: string, _amount: number): string {
-  let h: number
-  let s: number
-  let l: number
-
-  const hslMatch = color.match(/hsla?\(\s*([\d.]+)(?:deg)?\s*[,\s]\s*([\d.]+)%?\s*[,\s]\s*([\d.]+)%?\s*[,/)]/)
-  if (hslMatch) {
-    h = Number.parseFloat(hslMatch[1]!)
-    s = Number.parseFloat(hslMatch[2]!)
-    l = Number.parseFloat(hslMatch[3]!)
-  } else {
-    const hex = color.match(/^#([0-9a-f]{3,8})$/i)
-    if (!hex) return color
-    const hx = hex[1]!
-    const r = hx.length <= 4 ? Number.parseInt(hx[0]! + hx[0]!, 16) : Number.parseInt(hx.slice(0, 2), 16)
-    const g = hx.length <= 4 ? Number.parseInt(hx[1]! + hx[1]!, 16) : Number.parseInt(hx.slice(2, 4), 16)
-    const b = hx.length <= 4 ? Number.parseInt(hx[2]! + hx[2]!, 16) : Number.parseInt(hx.slice(4, 6), 16)
-    ;({ h, s, l } = rgbToHsl(r, g, b))
-  }
-
-  // Lift saturation floor + land at a "jewel" lightness ~50% so every agent
-  // reads at comparable weight against a light bg.
-  const newS = Math.min(75, Math.max(60, s * 1.8))
-  const newL = Math.min(60, Math.max(45, l))
-  return `hsl(${h.toFixed(1)} ${newS.toFixed(1)}% ${newL.toFixed(1)}%)`
-}
-
-function headHighlight(agentColor: string, alpha: number): string {
-  if (!isLightTheme) return `rgba(255,255,255,${alpha.toFixed(3)})`
-  return withAlpha(brightenForLight(agentColor, 0.6), alpha)
-}
-
-// Converts a color string to an rgba/hsla value with the given alpha.
-// Handles hsl(h s% l%) and #rrggbb / #rgb hex. Falls back to white.
-// Theme-adapts hsl inputs via adaptColor so agent colors automatically soften
-// in light mode wherever withAlpha is used.
-function withAlpha(color: string, alpha: number): string {
-  const adapted = adaptColor(color)
-  const hsl = adapted.match(/hsla?\(\s*([\d.]+)(?:deg)?\s*[,\s]\s*([\d.]+)%?\s*[,\s]\s*([\d.]+)%?\s*[,/)]/)
-  if (hsl) return `hsla(${hsl[1]}, ${hsl[2]}%, ${hsl[3]}%, ${alpha.toFixed(3)})`
-  const hex = adapted.match(/^#([0-9a-f]{3,8})$/i)
-  if (hex) {
-    const h = hex[1]!
-    const r = h.length <= 4 ? Number.parseInt(h[0]! + h[0]!, 16) : Number.parseInt(h.slice(0, 2), 16)
-    const g = h.length <= 4 ? Number.parseInt(h[1]! + h[1]!, 16) : Number.parseInt(h.slice(2, 4), 16)
-    const b = h.length <= 4 ? Number.parseInt(h[2]! + h[2]!, 16) : Number.parseInt(h.slice(4, 6), 16)
-    return `rgba(${r},${g},${b},${alpha.toFixed(3)})`
-  }
-  const rgb = adapted.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
-  if (rgb) return `rgba(${rgb[1]},${rgb[2]},${rgb[3]},${alpha.toFixed(3)})`
-  return `rgba(255,255,255,${alpha.toFixed(3)})`
-}
-
-// Reads --foreground CSS variable and returns an oklch color string with alpha.
-// Handles two formats:
-//   "0.145 0 0"           → channel values only  → oklch(0.145 0 0 / alpha)
-//   "oklch(0.145 0 0)"    → full function string → oklch(0.145 0 0 / alpha)
-function fgAt(alpha: number): string {
-  if (typeof document === 'undefined') return `rgba(0,0,0,${alpha})`
-  const raw = getComputedStyle(document.documentElement).getPropertyValue('--foreground').trim()
-  const inner = raw.match(/^oklch\(\s*(.+?)\s*\)$/)?.[1] ?? raw
-  const channels = inner.replace(/none/gi, '0')
-  return channels ? `oklch(${channels} / ${alpha.toFixed(3)})` : `rgba(0,0,0,${alpha})`
-}
 
 // ── Tron particle state ───────────────────────────────────────────────────────
 // Particles enter from the grid border, travel along displaced grid edges,
@@ -341,7 +204,7 @@ let particleEffects: ParticleEffect[] = []
 export function renderFabricBg(state: BgState): void {
   const { ctx, t, W, H, settleProgress, rings, recentEvents, onSphereAbsorb } = state
 
-  // One getComputedStyle per frame — all adaptColor/withAlpha calls below read the cached flag.
+  // One getComputedStyle per frame — all withAlpha/isLightTheme calls below read the cached flag.
   refreshThemeCache()
 
   const CX = W / 2
@@ -920,7 +783,12 @@ export function renderFabricBg(state: BgState): void {
     const glowR = (birth.origin ? 5 : 3) + pulse * (birth.origin ? 12 : 7)
     const glowAlpha = emergence * (0.5 + pulse * 0.45) * fadeOut * intensityMult
     const glowGrad = ctx.createRadialGradient(birthVert.x, birthVert.y, 0, birthVert.x, birthVert.y, glowR + 10)
-    glowGrad.addColorStop(0, headHighlight(birth.color, glowAlpha * 0.95))
+    glowGrad.addColorStop(
+      0,
+      isLightTheme()
+        ? withAlpha(brightenForLight(birth.color), glowAlpha * 0.95)
+        : `rgba(255,255,255,${(glowAlpha * 0.95).toFixed(3)})`
+    )
     glowGrad.addColorStop(0.3, withAlpha(birth.color, glowAlpha * 0.8))
     glowGrad.addColorStop(1, withAlpha(birth.color, 0))
     ctx.globalAlpha = 1
@@ -931,7 +799,7 @@ export function renderFabricBg(state: BgState): void {
 
     // 2. Illuminated edges — the 4 grid edges touching the birth vertex glow brightly
     const edgeAlpha = emergence * (0.35 + pulse * 0.35) * fadeOut * intensityMult
-    const birthStroke = adaptColor(birth.color)
+    const birthStroke = birth.color
     ctx.strokeStyle = birthStroke
     ctx.lineWidth = 1.8
     const edgeNeighbors: [number, number][] = [
@@ -1125,7 +993,7 @@ export function renderFabricBg(state: BgState): void {
 
     // Tron line trail — segments connecting trail vertices, very bright near the
     // head then sharp exponential fade toward the tail
-    const trailColor = adaptColor(p.color)
+    const trailColor = p.color
     for (let i = 1; i < pts.length; i++) {
       const frac = i / pts.length // 0 near tail, 1 at head
       ctx.globalAlpha = frac ** 0.25 * 0.92 * p.opacity
@@ -1137,29 +1005,7 @@ export function renderFabricBg(state: BgState): void {
       ctx.stroke()
     }
 
-    // Glowing head — radial light source.
-    //   Dark mode: white core + agent-color halo, reads as a hot lightbulb.
-    //   Light mode: a soft halo at low alpha (~0.25) can't blend into grey
-    //   mud against the white bg; only the vivid 3px core carries the "pop".
-    //   The outer gradient is kept just subtle enough to hint at a bloom.
-    const headCenter = headHighlight(p.color, 1)
-    const headOuter = isLightTheme ? headHighlight(p.color, 0.25) : trailColor
-    const outerAlpha = isLightTheme ? 0.55 * p.opacity : 0.9 * p.opacity
-    const dg = ctx.createRadialGradient(headX, headY, 0, headX, headY, 14)
-    dg.addColorStop(0, headCenter)
-    dg.addColorStop(0.3, headOuter)
-    dg.addColorStop(1, 'transparent')
-    ctx.globalAlpha = outerAlpha
-    ctx.fillStyle = dg
-    ctx.beginPath()
-    ctx.arc(headX, headY, 14, 0, Math.PI * 2)
-    ctx.fill()
-
-    ctx.globalAlpha = p.opacity
-    ctx.fillStyle = headHighlight(p.color, 1)
-    ctx.beginPath()
-    ctx.arc(headX, headY, 3, 0, Math.PI * 2)
-    ctx.fill()
+    paintParticleHead(ctx, headX, headY, p.color, { opacity: p.opacity })
   }
   ctx.restore()
 
@@ -1191,7 +1037,7 @@ export function renderFabricBg(state: BgState): void {
       return true
     }
 
-    const fxColor = adaptColor(fx.color)
+    const fxColor = fx.color
     if (fx.type === 'crash') {
       // Expanding ring burst
       const radius = ease * 22
