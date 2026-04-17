@@ -22,7 +22,7 @@ export function MechanismSection() {
     <SectionWrapper id='mechanism'>
       <div className='flex flex-col gap-20'>
         <div className='flex flex-col gap-8'>
-          <SectionLabel>04 / The Mechanism</SectionLabel>
+          <SectionLabel>03 / The Mechanism</SectionLabel>
           <Heading level={2} className='font-serif text-4xl md:text-6xl text-foreground leading-tight'>
             <span className='block'>Four agents. Three rounds.</span>
             <span className='block'>One conclusion.</span>

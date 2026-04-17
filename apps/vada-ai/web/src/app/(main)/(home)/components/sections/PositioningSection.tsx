@@ -12,7 +12,7 @@ export function PositioningSection() {
         className='md:grid-cols-[1.2fr_1fr]'
         left={
           <div className='flex flex-col gap-8'>
-            <SectionLabel>02 / Positioning</SectionLabel>
+            <SectionLabel>01 / Positioning</SectionLabel>
 
             <Heading level={2} className='font-serif text-4xl md:text-6xl text-success leading-tight'>
               <span className='block'>Vāda is not a factory.</span>

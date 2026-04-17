@@ -30,7 +30,7 @@ export function NegationsSection() {
   return (
     <SectionWrapper id='what-this-is-not' innerClassName='max-w-3xl'>
       <div className='flex flex-col gap-16 md:gap-20'>
-        <SectionLabel>05 / What This Is Not</SectionLabel>
+        <SectionLabel>04 / What This Is Not</SectionLabel>
 
         <div className='flex flex-col gap-14 md:gap-20'>
           {NEGATIONS.map(({ headline, subline }) => (
