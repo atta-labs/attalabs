@@ -2,16 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import {
-  FALLBACK_CATALOG,
+  useCatalog,
   getStoredApiKey,
   storeApiKey,
   ROUTE_PROVIDER_ORDER,
   type ModelConfig,
   type RouteProvider
 } from '@atta/models'
-
-// TODO(Dyn-8): replace FALLBACK_CATALOG with async getCatalog() call
-const CATALOG = FALLBACK_CATALOG
 import { ModelPicker } from '@atta/ui'
 
 export interface ModelSelection {
@@ -37,6 +34,7 @@ export function GlobalModelSelector({
   initialTeamModels = [],
   selectedPresetId
 }: GlobalModelSelectorProps) {
+  const catalog = useCatalog()
   const [storedKeys, setStoredKeys] = useState<Partial<Record<RouteProvider, string>>>({})
 
   // Mount: seed from settings preset, else fall back to localStorage
@@ -62,7 +60,7 @@ export function GlobalModelSelector({
     setStoredKeys(loaded)
     // Default selection: first catalog entry whose route has a stored key
     if (!value) {
-      const first = CATALOG.find((e) => loaded[e.route])
+      const first = catalog.find((e) => loaded[e.route])
       if (first) {
         onChange({ provider: first.route, modelId: first.modelId, apiKey: loaded[first.route] ?? '' })
       }
@@ -102,7 +100,7 @@ export function GlobalModelSelector({
 
   return (
     <ModelPicker
-      options={CATALOG}
+      options={catalog}
       value={pickerValue}
       onChange={handleChange}
       configuredRoutes={configuredRoutes}

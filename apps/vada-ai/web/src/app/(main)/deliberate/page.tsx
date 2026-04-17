@@ -1,4 +1,5 @@
 import { auth } from '@atta/auth/hooks'
+import { CatalogProvider, getCatalog } from '@atta/models'
 import { redirect } from 'next/navigation'
 import { getDailySessionCount, getOrCreateUser } from '@/db/queries'
 import { getUserApiKeys, getUserTeamModels } from '@/db/settings-queries'
@@ -10,10 +11,11 @@ export default async function DeliberatePage({ searchParams }: { searchParams: P
   if (!clerkId) redirect('/?signin=1')
 
   const user = await getOrCreateUser(clerkId, '')
-  const [dailyCount, apiKeys, teamModels] = await Promise.all([
+  const [dailyCount, apiKeys, teamModels, catalog] = await Promise.all([
     getDailySessionCount(user.id),
     getUserApiKeys(user.id),
-    getUserTeamModels(user.id)
+    getUserTeamModels(user.id),
+    getCatalog()
   ])
 
   const remaining = DAILY_SESSION_LIMIT - dailyCount
@@ -21,13 +23,15 @@ export default async function DeliberatePage({ searchParams }: { searchParams: P
   const configuredProviders = apiKeys.map((k) => k.provider)
 
   return (
-    <div className='mx-auto w-full max-w-2xl flex-1 py-4 px-8'>
-      <DeliberateSection
-        remainingToday={remaining}
-        initialError={error}
-        configuredProviders={configuredProviders}
-        initialTeamModels={teamModels}
-      />
-    </div>
+    <CatalogProvider catalog={catalog}>
+      <div className='mx-auto w-full max-w-2xl flex-1 py-4 px-8'>
+        <DeliberateSection
+          remainingToday={remaining}
+          initialError={error}
+          configuredProviders={configuredProviders}
+          initialTeamModels={teamModels}
+        />
+      </div>
+    </CatalogProvider>
   )
 }
