@@ -246,18 +246,20 @@ export function ModelPicker({
             </div>
             <CommandList className='min-h-[280px]'>
               <CommandEmpty className='py-20'>No model found.</CommandEmpty>
-              {grouped.map((group) => {
+              {grouped.map((group, groupIdx) => {
                 const isExpanded = expandedGroups.has(group.route) || isSearching
                 const visibleEntries = isExpanded ? group.entries : group.entries.slice(0, COLLAPSED_LIMIT)
                 const hiddenCount = group.entries.length - visibleEntries.length
                 return (
                   <React.Fragment key={group.route}>
+                    {groupIdx > 0 && <CommandSeparator />}
                     <CommandGroup
+                      className='[&_[cmdk-group-heading]]:flex [&_[cmdk-group-heading]]:items-center [&_[cmdk-group-heading]]:gap-2 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:font-serif [&_[cmdk-group-heading]]:text-sm [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-foreground'
                       heading={
-                        <span className='flex items-center gap-1.5'>
-                          <ModelIcon model={group.route} size={12} type='avatar' />
+                        <>
+                          <ModelIcon model={group.route} size={14} type='avatar' />
                           {group.label}
-                        </span>
+                        </>
                       }
                     >
                       {visibleEntries.map((entry) => {
