@@ -75,6 +75,14 @@ export function GlobalModelSelector({
     ...(Object.keys(storedKeys) as RouteProvider[])
   ])
 
+  // Last-4 of each configured key, shown next to the provider heading in
+  // the picker. Never the full key — just enough for the user to cross-
+  // reference with their provider dashboard.
+  const routeHints: Partial<Record<RouteProvider, string>> = {}
+  for (const [route, key] of Object.entries(storedKeys) as [RouteProvider, string | undefined][]) {
+    if (key && key.length >= 4) routeHints[route] = key.slice(-4)
+  }
+
   const pickerValue = value ? { route: value.provider, modelId: value.modelId } : null
 
   const handleChange = (next: { route: RouteProvider; modelId: string }) => {
@@ -104,6 +112,7 @@ export function GlobalModelSelector({
       value={pickerValue}
       onChange={handleChange}
       configuredRoutes={configuredRoutes}
+      routeHints={routeHints}
       onProvideKey={handleProvideKey}
       mode='modal'
       settingsHref='/settings'

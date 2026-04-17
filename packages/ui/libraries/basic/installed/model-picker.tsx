@@ -36,6 +36,10 @@ export interface ModelPickerProps {
   // against the provider) before closing. Throw on failure to keep the key-
   // entry view open and surface the error inline.
   onProvideKey?: (route: RouteProvider, key: string) => void | Promise<void>
+  // Last-4 (or any short identifier) of each configured key, rendered next
+  // to the provider heading so the user can cross-reference with their
+  // provider dashboard. Never pass the full key.
+  routeHints?: Partial<Record<RouteProvider, string>>
   trigger?: React.ReactNode
   align?: 'start' | 'center' | 'end'
   side?: 'top' | 'bottom' | 'left' | 'right'
@@ -52,6 +56,7 @@ export function ModelPicker({
   onChange,
   configuredRoutes,
   onProvideKey,
+  routeHints,
   trigger,
   align = 'start',
   side = 'bottom',
@@ -280,7 +285,13 @@ export function ModelPicker({
                     heading={
                       <>
                         <ProviderIcon provider={group.route} size={14} type='avatar' />
-                        {group.label}
+                        <span>{group.label}</span>
+                        {configuredRoutes.has(group.route) && (
+                          <span className='ml-auto flex items-center gap-1 font-mono text-[10px] font-normal text-muted-foreground'>
+                            <Check className='size-3 text-success' aria-hidden />
+                            {routeHints?.[group.route] ? `…${routeHints[group.route]}` : null}
+                          </span>
+                        )}
                       </>
                     }
                   >
