@@ -14,6 +14,7 @@ interface DeliberationFeedProps {
   sessionId: string
   question: string
   agentRoles: string[]
+  agentModels?: Record<string, { provider: string; modelId: string }>
   initialEntries?: Array<{ agent: string; content: string; round: number }>
   initialConclusion?: Record<string, unknown> | null
   initialState?: string
@@ -32,6 +33,7 @@ function DeliberationScene({
   sessionId,
   question,
   agentRoles,
+  agentModels,
   initialEntries = [],
   initialConclusion = null,
   initialState = 'PENDING'
@@ -173,6 +175,7 @@ function DeliberationScene({
               isRoundComplete={isRoundDone}
               expectedAgentCount={agentRoles.length}
               teamName={teamName}
+              agentModels={agentModels}
             />
           )
         })}

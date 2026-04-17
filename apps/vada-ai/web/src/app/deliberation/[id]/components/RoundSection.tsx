@@ -16,6 +16,7 @@ interface RoundSectionProps {
   isRoundComplete?: boolean
   expectedAgentCount?: number
   teamName?: string
+  agentModels?: Record<string, { provider: string; modelId: string }>
 }
 
 export function RoundSection({
@@ -25,7 +26,8 @@ export function RoundSection({
   isLive = false,
   isRoundComplete = false,
   expectedAgentCount = 4,
-  teamName = 'Deliberation'
+  teamName = 'Deliberation',
+  agentModels
 }: RoundSectionProps) {
   const {
     isExpanded,
@@ -99,7 +101,13 @@ export function RoundSection({
 
               return (
                 <div key={entry.id}>
-                  <AgentCard agent={entry.agent} content={entry.content} target={entry.replyTarget} isLast={false} />
+                  <AgentCard
+                    agent={entry.agent}
+                    content={entry.content}
+                    target={entry.replyTarget}
+                    isLast={false}
+                    modelId={agentModels?.[entry.agentRole]?.modelId}
+                  />
                   {showWave && (
                     <div className='flex'>
                       <div className='w-[70px] shrink-0' />
@@ -120,6 +128,7 @@ export function RoundSection({
                 target={streamingMessage.replyTarget}
                 isLast
                 isStreaming
+                modelId={agentModels?.[streamingMessage.agentRole]?.modelId}
               />
             )}
           </CollapsibleContent>
@@ -131,6 +140,7 @@ export function RoundSection({
               content={synthEntry.content}
               target={synthEntry.replyTarget}
               isLast={!streamingMessage}
+              modelId={agentModels?.[synthEntry.agentRole]?.modelId}
             />
           )}
 

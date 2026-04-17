@@ -1,5 +1,6 @@
 'use client'
 
+import { ModelIcon } from '@atta/ui'
 import { AIAgent, AGENT_BY_ROLE, type AgentName } from '@atta/ui/canvas'
 import type { DeliberationMessage, StreamingMessage } from './useDeliberation'
 
@@ -10,13 +11,15 @@ interface MessageCardProps {
   // 'top'    = sphere at top edge (bottom-row cards)
   spherePosition?: 'top' | 'bottom'
   onReplyClick?: (targetAgentName: string) => void
+  modelId?: string
 }
 
 export function MessageCard({
   message,
   isStreaming = false,
   spherePosition = 'bottom',
-  onReplyClick
+  onReplyClick,
+  modelId
 }: MessageCardProps) {
   const agentName = (AGENT_BY_ROLE[message.agentRole]?.name ?? message.agentRole) as AgentName
   const sphereState = isStreaming ? 'speaking' : 'complete'
@@ -63,7 +66,10 @@ export function MessageCard({
       )}
 
       {/* Role label */}
-      <p className='mb-2 text-[10px] uppercase tracking-wider '>{roleLabel}</p>
+      <div className='mb-2 flex items-center gap-1.5'>
+        <p className='text-[10px] uppercase tracking-wider '>{roleLabel}</p>
+        {modelId && <ModelIcon model={modelId} size={10} type='mono' />}
+      </div>
 
       {/* Body */}
       <p className='text-sm leading-[1.7] text-foreground/90'>

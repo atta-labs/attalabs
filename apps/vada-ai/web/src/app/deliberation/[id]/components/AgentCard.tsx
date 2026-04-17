@@ -1,6 +1,7 @@
 'use client'
 
 import { useId } from 'react'
+import { ModelIcon } from '@atta/ui'
 import { AIAgent, type AgentName } from '@atta/ui/canvas'
 import { useUserPreferences } from '@/lib/user-preferences-context'
 
@@ -10,9 +11,10 @@ interface AgentCardProps {
   target?: string | null
   isLast?: boolean
   isStreaming?: boolean
+  modelId?: string
 }
 
-export function AgentCard({ agent, content, target, isStreaming = false }: AgentCardProps) {
+export function AgentCard({ agent, content, target, isStreaming = false, modelId }: AgentCardProps) {
   const sphereId = useId()
   const { faceStyle } = useUserPreferences()
 
@@ -35,6 +37,10 @@ export function AgentCard({ agent, content, target, isStreaming = false }: Agent
 
       <div className='min-w-0 flex-1'>
         <div className='rounded-lg border border-border bg-card px-4 py-3.5'>
+          <div className='mb-2 flex items-center gap-1.5'>
+            <span className='text-[11px] font-medium text-foreground/70'>{agent}</span>
+            {modelId && <ModelIcon model={modelId} size={10} type='mono' />}
+          </div>
           {target && (
             <div className='mb-2'>
               <span className='text-[10px] italic text-muted-foreground/50'>→ replying to {target}</span>

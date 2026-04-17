@@ -32,6 +32,7 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
       sessionId={id}
       question={session.question}
       agentRoles={session.agents}
+      agentModels={(session.agentModels as Record<string, { provider: string; modelId: string }> | null) ?? undefined}
       initialEntries={initialEntries}
       initialConclusion={session.conclusion}
       initialState={session.state}
