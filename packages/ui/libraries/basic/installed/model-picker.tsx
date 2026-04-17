@@ -58,6 +58,20 @@ export function ModelPicker({
   const [keyInput, setKeyInput] = React.useState('')
   const [flagshipOnly, setFlagshipOnly] = React.useState(false)
   const [freeOnly, setFreeOnly] = React.useState(false)
+  const [searchValue, setSearchValue] = React.useState('')
+  const [expandedGroups, setExpandedGroups] = React.useState<Set<RouteProvider>>(new Set())
+
+  const COLLAPSED_LIMIT = 4
+  const isSearching = searchValue.trim().length > 0
+
+  const toggleGroup = (route: RouteProvider) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(route)) next.delete(route)
+      else next.add(route)
+      return next
+    })
+  }
 
   React.useEffect(() => {
     if (!open) {
@@ -66,6 +80,8 @@ export function ModelPicker({
       setKeyInput('')
       setFlagshipOnly(false)
       setFreeOnly(false)
+      setSearchValue('')
+      setExpandedGroups(new Set())
     }
   }, [open])
 
@@ -84,10 +100,23 @@ export function ModelPicker({
       bucket.push(opt)
       byRoute.set(opt.route, bucket)
     }
+    const TIER_ORDER: Record<ModelEntry['tier'], number> = {
+      frontier: 0,
+      reasoning: 1,
+      balanced: 2,
+      fast: 3
+    }
     return ROUTE_PROVIDER_ORDER.filter((r) => byRoute.has(r)).map((r) => ({
       route: r,
       label: PROVIDERS[r].label,
-      entries: byRoute.get(r)!
+      entries: byRoute
+        .get(r)!
+        .slice()
+        .sort((a, b) => {
+          const tierDiff = TIER_ORDER[a.tier] - TIER_ORDER[b.tier]
+          if (tierDiff !== 0) return tierDiff
+          return a.label.localeCompare(b.label)
+        })
     }))
   }, [filteredOptions])
 
@@ -190,7 +219,7 @@ export function ModelPicker({
           </div>
         ) : (
           <Command>
-            <CommandInput placeholder='Search models…' />
+            <CommandInput placeholder='Search models…' value={searchValue} onValueChange={setSearchValue} />
             <div className='flex items-center gap-1 border-b border-border px-2 py-1.5'>
               <button
                 type='button'
@@ -217,38 +246,56 @@ export function ModelPicker({
             </div>
             <CommandList className='min-h-[280px]'>
               <CommandEmpty className='py-20'>No model found.</CommandEmpty>
-              {grouped.map((group) => (
-                <CommandGroup key={group.route} heading={group.label}>
-                  {group.entries.map((entry) => {
-                    const isSelected = value?.route === entry.route && value?.modelId === entry.modelId
-                    const locked = !configuredRoutes.has(entry.route)
-                    return (
-                      <CommandItem
-                        key={entry.id}
-                        value={`${entry.label} ${entry.description ?? ''} ${group.label}`}
-                        disabled={locked && !onProvideKey}
-                        onSelect={() => handleSelect(entry)}
-                        className='flex items-center gap-2'
-                      >
-                        <ModelIcon model={entry.displayProvider} size={16} type='avatar' />
-                        <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
-                          <span className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
-                            {entry.label}
-                          </span>
-                          {entry.description && (
-                            <span className='truncate text-[11px] text-muted-foreground'>{entry.description}</span>
-                          )}
-                        </div>
-                        {locked ? (
-                          <Lock className='h-3 w-3 shrink-0 text-muted-foreground' aria-label='API key required' />
-                        ) : isSelected ? (
-                          <Check className='h-3.5 w-3.5 shrink-0 text-foreground' />
-                        ) : null}
-                      </CommandItem>
-                    )
-                  })}
-                </CommandGroup>
-              ))}
+              {grouped.map((group) => {
+                const isExpanded = expandedGroups.has(group.route) || isSearching
+                const visibleEntries = isExpanded ? group.entries : group.entries.slice(0, COLLAPSED_LIMIT)
+                const hiddenCount = group.entries.length - visibleEntries.length
+                return (
+                  <React.Fragment key={group.route}>
+                    <CommandGroup heading={group.label}>
+                      {visibleEntries.map((entry) => {
+                        const isSelected = value?.route === entry.route && value?.modelId === entry.modelId
+                        const locked = !configuredRoutes.has(entry.route)
+                        return (
+                          <CommandItem
+                            key={entry.id}
+                            value={`${entry.label} ${entry.description ?? ''} ${group.label}`}
+                            disabled={locked && !onProvideKey}
+                            onSelect={() => handleSelect(entry)}
+                            className='flex items-center gap-2'
+                          >
+                            <ModelIcon model={entry.displayProvider} size={16} type='avatar' />
+                            <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
+                              <span className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
+                                {entry.label}
+                              </span>
+                              {entry.description && (
+                                <span className='truncate text-[11px] text-muted-foreground'>{entry.description}</span>
+                              )}
+                            </div>
+                            {locked ? (
+                              <Lock className='h-3 w-3 shrink-0 text-muted-foreground' aria-label='API key required' />
+                            ) : isSelected ? (
+                              <Check className='h-3.5 w-3.5 shrink-0 text-foreground' />
+                            ) : null}
+                          </CommandItem>
+                        )
+                      })}
+                    </CommandGroup>
+                    {!isSearching && (hiddenCount > 0 || (isExpanded && group.entries.length > COLLAPSED_LIMIT)) && (
+                      <div className='px-3 pb-1'>
+                        <button
+                          type='button'
+                          onClick={() => toggleGroup(group.route)}
+                          className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground'
+                        >
+                          {isExpanded ? 'Show fewer' : `Show all ${group.entries.length}`}
+                        </button>
+                      </div>
+                    )}
+                  </React.Fragment>
+                )
+              })}
             </CommandList>
             {settingsHref && (
               <>
