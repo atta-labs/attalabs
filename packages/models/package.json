@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./providers": "./src/providers.ts",
     "./catalog": "./src/catalog.ts",
-    "./storage": "./src/storage.ts"
+    "./storage": "./src/storage.ts",
+    "./provider": "./src/provider.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
