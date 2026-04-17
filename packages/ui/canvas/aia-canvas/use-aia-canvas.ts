@@ -8,7 +8,7 @@ import {
   type RingRegistration,
   type SphereRegistration
 } from '../aia-context'
-import { BG_RENDERERS, type BgEvent, type BgRenderer, type BgVariant } from '../bg'
+import { BG_RENDERERS, type BgEvent, type BgRenderer, type BgVariant, resetBgState } from '../bg'
 import { getThemeColors, resolveColor } from '../shared/colors'
 import { refreshThemeCache } from '../shared/theme'
 import { paintClusterGlow } from '../shared/paint'
@@ -169,6 +169,13 @@ export function useAIACanvas(
     // but it DOES infer the narrowed type at the point of a const assignment.
     const cvs: HTMLCanvasElement = canvas
     const gfx: CanvasRenderingContext2D = ctx
+
+    // Reset bg renderers' module-level state. Our per-mount frame counter
+    // starts at 0 below, but any entries in fabric.ts's module-level arrays
+    // would carry stale `startT` values from a prior mount (browser back,
+    // Fast Refresh) — causing `t - startT` to go deeply negative and blow up
+    // ease/radius math. This gives every mount a clean slate.
+    resetBgState()
 
     let width = 0
     let height = 0

@@ -200,6 +200,26 @@ interface ParticleEffect {
 }
 let particleEffects: ParticleEffect[] = []
 
+/**
+ * Reset all module-level mutable state.
+ *
+ * Canvas consumers must call this when the canvas mounts — e.g. after a
+ * browser back navigation. The canvas's per-mount frame counter restarts at 0,
+ * but these module-level arrays persist across mounts; stale entries with
+ * large `startT` values would make `t - startT` deeply negative, blowing up
+ * progress/ease math and causing `ctx.arc()` to throw on negative radii.
+ */
+export function resetFabricState(): void {
+  ripples = []
+  closingPulses = []
+  tronParticles = []
+  tronBirths = []
+  particleEffects = []
+  firstParticleSpawned = false
+  originTotalCount = 0
+  originArrivedCount = 0
+}
+
 export function renderFabricBg(state: BgState): void {
   const { ctx, t, W, H, settleProgress, rings, recentEvents, onSphereAbsorb } = state
 
