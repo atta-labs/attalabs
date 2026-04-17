@@ -50,6 +50,7 @@ Not every product needs all surfaces. Scaffolds are created empty and built when
 |---------|------|-----------|--------|---------|
 | @atta/ui | [packages/ui/](packages/ui/) | [CLAUDE.md](packages/ui/CLAUDE.md) | [README.md](packages/ui/README.md) | Shared UI components + libraries (shadcn/ui + Tailwind v4) |
 | @atta/cms | [packages/cms/](packages/cms/) | [CLAUDE.md](packages/cms/CLAUDE.md) | [README.md](packages/cms/README.md) | Sanity CMS schemas, config, typed queries, theme utilities |
+| @atta/models | [packages/models/](packages/models/) | [CLAUDE.md](packages/models/CLAUDE.md) | — | AI model catalog — dynamic fetch from models.dev + curated overlay |
 | @atta/db | [packages/db/](packages/db/) | [CLAUDE.md](packages/db/CLAUDE.md) | — | Drizzle ORM + Neon Postgres client |
 | @atta/auth | [packages/auth/](packages/auth/) | [CLAUDE.md](packages/auth/CLAUDE.md) | — | Clerk authentication wrapper |
 | @atta/storage | [packages/storage/](packages/storage/) | [CLAUDE.md](packages/storage/CLAUDE.md) | — | Cloudflare R2 storage client + image transforms |
@@ -156,4 +157,5 @@ In-depth guides for specific domains. Reference when working in that area.
 | Vada Engine | [.claude/skills/vada-engine/SKILL.md](.claude/skills/vada-engine/SKILL.md) | Deliberation engine, sessions, streaming |
 | Herald Engine | [.claude/skills/herald-engine/SKILL.md](.claude/skills/herald-engine/SKILL.md) | Forensic audit, Skeptical Auditor, signal detection |
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, per-product isolation |
+| Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |
 | Code Style | [.claude/skills/code-style/SKILL.md](.claude/skills/code-style/SKILL.md) | TypeScript, exports, Biome rules |

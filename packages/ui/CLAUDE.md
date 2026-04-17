@@ -78,6 +78,17 @@ import { Card, CardContent } from '@atta/ui/components/card'
 import { Badge } from '@atta/ui/components/badge'
 import { Input } from '@atta/ui/components/input'
 
+// Palette + popover primitives
+import { Popover, PopoverContent, PopoverTrigger } from '@atta/ui'
+import {
+  Command, CommandInput, CommandList, CommandEmpty,
+  CommandGroup, CommandItem, CommandSeparator
+} from '@atta/ui'
+
+// Model-aware primitives (backed by @lobehub/icons + @atta/models)
+import { ModelPicker, ModelIcon } from '@atta/ui'
+// See .claude/skills/model-picker/SKILL.md for the full contract.
+
 // Shared cross-library primitives
 import { Heading, Text, Flex, AgentThinkingText } from '@atta/ui/shared'
 
