@@ -22,10 +22,9 @@ const rootVariants = cva('py-1 px-2 flex gap-1 items-center transition duration-
   variants: {
     variant: {
       // outline
-      default:
-        'border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background rounded-[var(--radius)]',
+      default: 'border border-border bg-input focus-within:border-ring rounded-[var(--radius)]',
       underlined:
-        'border-b border-input bg-transparent focus-within:border-b-2 focus-within:border-ring rounded-none px-0',
+        'border-b border-border bg-transparent focus-within:border-b-2 focus-within:border-ring rounded-none px-0',
       filled: 'bg-muted text-foreground focus-within:bg-muted/80 rounded-[var(--radius)]',
       ghost: 'bg-transparent text-foreground focus-within:bg-muted rounded-[var(--radius)]',
       neubrutalism:
