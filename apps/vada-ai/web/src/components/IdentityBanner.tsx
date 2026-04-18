@@ -10,7 +10,7 @@
 import { providerLabel } from '@atta/identity'
 import { useIdentity } from '@atta/identity/react'
 import { Button, Text, useToastContext } from '@atta/ui'
-import { KeyRound, Lock, ShieldX, Unlock } from 'lucide-react'
+import { KeyRound, ShieldX, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
@@ -21,18 +21,6 @@ export function IdentityBanner() {
   const [confirmForget, setConfirmForget] = useState(false)
 
   const hasInMemoryKeys = Object.keys(identity.state.keys).length > 0
-
-  const handleUnlock = async () => {
-    setBusy(true)
-    try {
-      await identity.unlockWithPasskey()
-      successToast('Unlocked', 'Your keys are loaded for this session.')
-    } catch (e) {
-      errorToast('Could not unlock', e instanceof Error ? e.message : 'Try again or enter keys manually.')
-    } finally {
-      setBusy(false)
-    }
-  }
 
   const handleSave = async () => {
     if (!hasInMemoryKeys) {
@@ -83,22 +71,9 @@ export function IdentityBanner() {
     )
   }
 
-  // Locked: prompt to unlock
-  if (identity.state.kind === 'locked') {
-    return (
-      <div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card/40 px-4 py-3'>
-        <div className='flex items-center gap-2.5'>
-          <Lock className='size-4 shrink-0 text-muted-foreground' aria-hidden />
-          <Text as='small' className='text-sm text-muted-foreground'>
-            Your API keys are encrypted on this device. Unlock with your passkey to continue.
-          </Text>
-        </div>
-        <Button type='button' size='sm' onClick={handleUnlock} disabled={busy}>
-          <Unlock className='mr-1.5 size-3.5' /> Unlock with passkey
-        </Button>
-      </div>
-    )
-  }
+  // Locked state is intentionally silent here — unlock is triggered when the
+  // user picks a model whose provider has a saved key. See GlobalModelSelector.
+  if (identity.state.kind === 'locked') return null
 
   // No stored credential: optionally prompt to save if user has in-memory keys
   if (identity.state.kind === 'no-stored-credential' && hasInMemoryKeys && identity.passkeySupported) {

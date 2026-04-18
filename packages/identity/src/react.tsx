@@ -26,7 +26,9 @@ export interface IdentityValue {
   hasKey: (provider: RouteProvider) => boolean
   missingProviders: (required: Set<RouteProvider>) => RouteProvider[]
   savePasskey: () => Promise<void>
-  unlockWithPasskey: () => Promise<void>
+  // Returns the decrypted keymap so callers can use it immediately without
+  // waiting for React state to propagate on the next render.
+  unlockWithPasskey: () => Promise<ApiKeyMap>
   forgetDevice: () => Promise<void>
   passkeySupported: boolean
 }
@@ -128,7 +130,7 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
     setStateKind('unlocked')
   }, [keys, passkeySupported])
 
-  const unlock = useCallback(async () => {
+  const unlock = useCallback(async (): Promise<ApiKeyMap> => {
     const cred: StoredCredential | null = await loadCredential()
     if (!cred) throw new Error('No stored credential to unlock')
     const rpId = window.location.hostname
@@ -141,6 +143,7 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
     setKeys(decrypted)
     setProviders(cred.providers)
     setStateKind('unlocked')
+    return decrypted
   }, [])
 
   const forgetDevice = useCallback(async () => {

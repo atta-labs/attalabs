@@ -32,7 +32,7 @@ export function GlobalModelSelector({
   const baseCatalog = useCatalog()
   const identity = useIdentity()
   const storedKeys = identity.state.keys
-  const { successToast } = useToastContext()
+  const { successToast, errorToast } = useToastContext()
 
   // Installed Ollama models (fetched live from localhost:11434/api/tags).
   // null = not probed yet. Empty array = server reachable but nothing
@@ -109,12 +109,15 @@ export function GlobalModelSelector({
     })
   }, [selectedPresetId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Ollama has no API key — if the local server is reachable, treat it as
-  // configured regardless of identity state. The user should never see a key
-  // prompt for a local model.
+  // Routes the user has some credential for.
+  // - In-memory keys: unlocked session
+  // - state.providers: locked session (keys exist encrypted in IndexedDB but
+  //   aren't loaded yet; unlock happens on first pick)
+  // - ollama: no auth, always configured when server is reachable
   const configuredRoutes = new Set<RouteProvider>([
     ...(settingsProviders as RouteProvider[]),
-    ...(Object.keys(storedKeys) as RouteProvider[])
+    ...(Object.keys(storedKeys) as RouteProvider[]),
+    ...(identity.state.providers as RouteProvider[])
   ])
   if (ollamaReachable) configuredRoutes.add('ollama')
 
@@ -128,7 +131,25 @@ export function GlobalModelSelector({
 
   const pickerValue = value ? { route: value.provider, modelId: value.modelId } : null
 
-  const handleChange = (next: { route: RouteProvider; modelId: string }) => {
+  const handleChange = async (next: { route: RouteProvider; modelId: string }) => {
+    // If the user has a saved key for this provider but the session is locked,
+    // trigger passkey unlock right here. This is the "action-triggered" flow:
+    // no persistent banner, no separate unlock button — you pick a model, you
+    // get a biometric prompt, keys load, model is selected.
+    const needsUnlock =
+      identity.state.kind === 'locked' && identity.state.providers.includes(next.route) && !storedKeys[next.route]
+
+    if (needsUnlock) {
+      try {
+        const freshKeys = await identity.unlockWithPasskey()
+        successToast('Unlocked', `Your ${next.route} key is loaded for this session.`)
+        onChange({ provider: next.route, modelId: next.modelId, apiKey: freshKeys[next.route] ?? '' })
+      } catch (e) {
+        errorToast('Could not unlock', e instanceof Error ? e.message : 'Try again or enter keys manually.')
+      }
+      return
+    }
+
     onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKeys[next.route] ?? '' })
   }
 
