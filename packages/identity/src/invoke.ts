@@ -95,18 +95,44 @@ export async function invokeAgent(params: InvokeParams): Promise<InvokeResult> {
     system: params.systemPrompt,
     prompt: params.userPrompt,
     abortSignal: params.signal,
+    // onError claims the error for the SDK's own rejection fanout. Without
+    // this, every unused PromiseLike field (result.text, finishReason, usage,
+    // response, warnings, steps, providerMetadata...) rejects independently,
+    // which Next's dev overlay surfaces as a red banner even when our caller
+    // try/catch already showed a toast. Set to a no-op — the real handling
+    // happens in the for-await loop in useDeliberation.
+    onError: () => {},
     ...(providerOptions ? { providerOptions } : {})
   })
 
-  // streamText eagerly creates several promises (result.text, result.finishReason,
-  // etc). Callers only consume textStream — the unused promises would become
-  // "unhandled promise rejections" on failure, which Next dev surfaces as a
-  // red console overlay even when our try/catch around the stream iteration
-  // already handled the error. Wrap in Promise.resolve (result.text is a
-  // PromiseLike, not a Promise) and attach a no-op catch. Real error still
-  // surfaces from the for-await loop in useDeliberation.
-  Promise.resolve(result.text).catch(() => {})
-  if (result.finishReason) Promise.resolve(result.finishReason).catch(() => {})
+  // Belt-and-braces: `onError` should be enough in AI SDK v6, but defensively
+  // swallow every promise-like field we know streamText exposes so older /
+  // patched SDKs don't leak an unhandled rejection through.
+  const swallow = (p: unknown) => {
+    if (p && typeof (p as Promise<unknown>).then === 'function') {
+      Promise.resolve(p as PromiseLike<unknown>).catch(() => {})
+    }
+  }
+  const r = result as unknown as Record<string, unknown>
+  for (const k of [
+    'text',
+    'finishReason',
+    'usage',
+    'response',
+    'request',
+    'providerMetadata',
+    'experimental_providerMetadata',
+    'warnings',
+    'steps',
+    'reasoning',
+    'reasoningDetails',
+    'sources',
+    'files',
+    'toolCalls',
+    'toolResults'
+  ]) {
+    swallow(r[k])
+  }
 
   return {
     textStream: result.textStream,
