@@ -3,7 +3,7 @@ import { CatalogProvider, getCatalog } from '@atta/models'
 import { redirect } from 'next/navigation'
 import { getDailySessionCount, getOrCreateUser } from '@/db/queries'
 import { getUserTeamModels } from '@/db/settings-queries'
-import { DAILY_SESSION_LIMIT } from '@/schemas'
+import { getDailySessionLimit } from '@/schemas'
 import { DeliberateSection } from './components/DeliberateSection'
 
 export default async function DeliberatePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -17,7 +17,8 @@ export default async function DeliberatePage({ searchParams }: { searchParams: P
     getCatalog()
   ])
 
-  const remaining = DAILY_SESSION_LIMIT - dailyCount
+  const dailyLimit = getDailySessionLimit()
+  const remaining = dailyLimit - dailyCount
   const { error } = await searchParams
 
   // Provider keys live in the browser — the client reads them via useIdentity().
@@ -27,6 +28,7 @@ export default async function DeliberatePage({ searchParams }: { searchParams: P
       <div className='mx-auto w-full max-w-5xl flex-1 pt-10 pb-4 px-6'>
         <DeliberateSection
           remainingToday={remaining}
+          dailyLimit={dailyLimit}
           initialError={error}
           configuredProviders={[]}
           initialTeamModels={teamModels}

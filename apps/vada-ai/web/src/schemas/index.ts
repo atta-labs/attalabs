@@ -15,4 +15,4 @@ export type {
   SessionState as SessionStateType,
   TerminalState as TerminalStateType
 } from './session'
-export { DAILY_SESSION_LIMIT, InterventionType, SessionState, TerminalState } from './session'
+export { DAILY_SESSION_LIMIT, getDailySessionLimit, InterventionType, SessionState, TerminalState } from './session'

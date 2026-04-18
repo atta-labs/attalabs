@@ -11,6 +11,7 @@ import type { ModelSelection } from './GlobalModelSelector'
 
 interface UseDeliberateFormProps {
   remainingToday: number
+  dailyLimit: number
   initialError?: string
   configuredProviders: string[]
   initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
@@ -30,7 +31,11 @@ export interface DeliberateFormState {
   faceStyle: FaceStyle
 }
 
-export function useDeliberateForm({ remainingToday, initialError }: UseDeliberateFormProps): DeliberateFormState {
+export function useDeliberateForm({
+  remainingToday,
+  dailyLimit,
+  initialError
+}: UseDeliberateFormProps): DeliberateFormState {
   const [question, setQuestion] = useState('')
   const [selectedPreset, setSelectedPreset] = useState<Preset>(PRESETS[0]!)
   const [globalModel, setGlobalModel] = useState<ModelSelection | null>(null)
@@ -42,6 +47,18 @@ export function useDeliberateForm({ remainingToday, initialError }: UseDeliberat
 
   useEffect(() => {
     if (initialError) errorToast('Could not start deliberation', initialError)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Surface the daily-limit state explicitly. Without a toast, the Deliberate
+  // buttons just grey out and the user is left guessing why nothing happens.
+  useEffect(() => {
+    if (remainingToday <= 0) {
+      errorToast(
+        'Daily deliberation limit reached',
+        `You have used all ${dailyLimit} deliberations for today. The counter resets at midnight (UTC).`,
+        8000
+      )
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedProvider = globalModel?.provider

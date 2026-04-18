@@ -7,6 +7,7 @@ import { useDeliberateForm } from './useDeliberateForm'
 
 interface DeliberateSectionProps {
   remainingToday: number
+  dailyLimit: number
   initialError?: string
   configuredProviders: string[]
   initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>

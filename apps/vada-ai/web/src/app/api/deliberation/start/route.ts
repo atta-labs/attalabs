@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
 import { createSession, getDailySessionCount, getOrCreateUser } from '@/db/queries'
-import { DAILY_SESSION_LIMIT, DEFAULT_ROOM } from '@/schemas'
+import { DEFAULT_ROOM, getDailySessionLimit } from '@/schemas'
 import { ROUTE_PROVIDER_ORDER, type RouteProvider } from '@atta/models'
 import { z } from 'zod'
 
@@ -29,10 +29,11 @@ export async function POST(request: Request) {
   }
 
   const user = await getOrCreateUser(clerkId, '')
+  const dailyLimit = getDailySessionLimit()
   const dailyCount = await getDailySessionCount(user.id)
-  if (dailyCount >= DAILY_SESSION_LIMIT) {
+  if (dailyCount >= dailyLimit) {
     return NextResponse.json(
-      { error: `Daily limit reached. You have ${DAILY_SESSION_LIMIT} deliberations per day.` },
+      { error: `Daily limit reached. You have ${dailyLimit} deliberations per day.` },
       { status: 429 }
     )
   }
