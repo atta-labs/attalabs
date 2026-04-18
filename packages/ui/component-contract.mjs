@@ -85,6 +85,7 @@ export const REQUIRED_COMPONENTS = [
   'Input',
   'Textarea',
   'Slider',
+  'Checkbox',
 
   // Layout
   'Separator',
@@ -173,6 +174,10 @@ export const REQUIRED_TYPES = [
 
   // Form — Slider
   'SliderProps',
+
+  // Form — Checkbox
+  'CheckboxProps',
+  'CheckedState',
 
   // Layout — Flex
   'FlexAlign',

@@ -36,6 +36,7 @@ export {
   CommandShortcut
 } from '../../basic/installed/command'
 export { Input } from '../installed/input'
+export { Checkbox } from './form/checkbox'
 // Model
 export { ModelIcon, type ModelIconProps } from '../../basic/installed/model-icon'
 export {

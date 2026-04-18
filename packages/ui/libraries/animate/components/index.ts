@@ -8,6 +8,7 @@ export { Badge } from '../../basic/installed/badge'
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../basic/installed/card'
 // Form — falls back to basic
 export { Input } from '../../basic/installed/input'
+export { Checkbox } from './form/checkbox'
 // Layout — falls back to basic
 export { Separator } from '../../basic/installed/separator'
 // Form — falls back to basic

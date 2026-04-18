@@ -12,6 +12,7 @@ export { Toast, ToastProvider, useToastContext } from './display/toast'
 // Form
 export { Input } from './form/input'
 export { Textarea } from './form/textarea'
+export { Checkbox } from './form/checkbox'
 export { Button, buttonVariants } from './interactive/button'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
 // Interactive — Tabs
