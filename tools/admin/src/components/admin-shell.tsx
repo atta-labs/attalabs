@@ -27,6 +27,7 @@ export function AdminShell({ children }: AdminShellProps) {
             Themes
           </Link>
         </nav>
+        <div id='admin-header-slot' className='ml-auto flex items-center gap-3' />
       </header>
       <main className='flex-1 overflow-hidden'>{children}</main>
     </div>

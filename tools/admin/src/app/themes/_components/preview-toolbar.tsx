@@ -1,5 +1,7 @@
 'use client'
 
+import { Pencil } from 'lucide-react'
+import Link from 'next/link'
 import { FontPicker } from '@/components/portal/font-picker'
 
 interface PreviewToolbarProps {
@@ -9,6 +11,7 @@ interface PreviewToolbarProps {
   isPending: boolean
   saved: boolean
   onPublish: () => void
+  editHref?: string | null
 }
 
 export function PreviewToolbar({
@@ -17,12 +20,22 @@ export function PreviewToolbar({
   hasChanges,
   isPending,
   saved,
-  onPublish
+  onPublish,
+  editHref
 }: PreviewToolbarProps) {
   return (
     <div className='flex shrink-0 items-center justify-end gap-2 border-b border-border px-3 py-1.5'>
       <FontPicker value={fontSans} onChange={onFontChange} />
       <span className='mx-1 text-border'>|</span>
+      {editHref && (
+        <Link
+          href={editHref}
+          className='flex items-center gap-1.5 rounded border border-border px-2.5 py-1 font-mono text-[10px] font-medium text-foreground transition-colors hover:bg-foreground/5'
+        >
+          <Pencil className='h-3 w-3' />
+          Edit
+        </Link>
+      )}
       <button
         type='button'
         onClick={onPublish}

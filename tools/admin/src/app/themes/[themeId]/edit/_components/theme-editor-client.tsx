@@ -3,6 +3,7 @@
 import { Button } from '@atta/ui/components/button'
 import { Check } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import { PortalPreviewFrame } from '@/components/portal/portal-preview-frame'
 import { usePortalPreview } from '@/hooks/use-portal-preview'
 import { updateThemeAction } from '../../../actions'
@@ -57,6 +58,11 @@ export function ThemeEditorClient({ theme }: ThemeEditorClientProps) {
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [headerSlot, setHeaderSlot] = useState<Element | null>(null)
+
+  useEffect(() => {
+    setHeaderSlot(document.getElementById('admin-header-slot'))
+  }, [])
 
   const dirty = useMemo(() => JSON.stringify(data) !== JSON.stringify(initialData), [data, initialData])
 
@@ -96,61 +102,67 @@ export function ThemeEditorClient({ theme }: ThemeEditorClientProps) {
     })
   }
 
+  const headerContent = (
+    <>
+      <div className='flex items-center gap-1 rounded-md border border-border p-0.5'>
+        {(['dark', 'light'] as const).map((s) => (
+          <button
+            key={s}
+            type='button'
+            onClick={() => setColorScheme(s)}
+            className={`rounded px-2 py-0.5 font-mono text-[10px] tracking-widest uppercase transition-colors ${
+              colorScheme === s ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+      {saved && (
+        <span className='flex items-center gap-1 font-mono text-[10px] text-success'>
+          <Check className='h-3 w-3' /> Saved
+        </span>
+      )}
+      <Button type='button' size='sm' onClick={handleSave} loading={isPending} disabled={!dirty || isPending}>
+        Save
+      </Button>
+    </>
+  )
+
   return (
-    <div className='flex h-full'>
-      <div className='flex w-[28rem] shrink-0 flex-col border-r border-border'>
-        <div className='flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3'>
-          <div className='flex items-center gap-1 rounded-md border border-border p-0.5'>
-            {(['dark', 'light'] as const).map((s) => (
-              <button
-                key={s}
-                type='button'
-                onClick={() => setColorScheme(s)}
-                className={`rounded px-2 py-1 font-mono text-[10px] tracking-widest uppercase transition-colors ${
-                  colorScheme === s ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-          <div className='flex items-center gap-2'>
-            {saved && (
-              <span className='flex items-center gap-1 font-mono text-[10px] text-success'>
-                <Check className='h-3 w-3' /> Saved
-              </span>
-            )}
-            <Button type='button' size='sm' onClick={handleSave} loading={isPending} disabled={!dirty || isPending}>
-              Save
-            </Button>
-          </div>
-        </div>
+    <>
+      {headerSlot && createPortal(headerContent, headerSlot)}
+      <div className='flex h-full flex-col'>
         {saveError && (
           <p className='shrink-0 border-b border-destructive/20 bg-destructive/10 px-4 py-2 font-mono text-xs text-destructive'>
             {saveError}
           </p>
         )}
-        <div className='flex-1 overflow-y-auto'>
-          <ThemeForm data={data} onChange={setData} colorScheme={colorScheme} />
+        <div className='flex min-h-0 flex-1'>
+          <div className='flex w-96 shrink-0 flex-col border-r border-border'>
+            <div className='flex-1 overflow-y-auto'>
+              <ThemeForm data={data} onChange={setData} colorScheme={colorScheme} />
+            </div>
+          </div>
+
+          <PortalPreviewFrame
+            isReady={isReady}
+            portalUrl='http://localhost:3003'
+            onRefresh={refresh}
+            title='Vada Preview'
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={toggleFullscreen}
+          >
+            <iframe
+              ref={iframeRef}
+              key={iframeKey}
+              src={iframeSrc}
+              className='h-full w-full border-0'
+              title='Vada Preview'
+            />
+          </PortalPreviewFrame>
         </div>
       </div>
-
-      <PortalPreviewFrame
-        isReady={isReady}
-        portalUrl='http://localhost:3003'
-        onRefresh={refresh}
-        title='Vada Preview'
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={toggleFullscreen}
-      >
-        <iframe
-          ref={iframeRef}
-          key={iframeKey}
-          src={iframeSrc}
-          className='h-full w-full border-0'
-          title='Vada Preview'
-        />
-      </PortalPreviewFrame>
-    </div>
+    </>
   )
 }

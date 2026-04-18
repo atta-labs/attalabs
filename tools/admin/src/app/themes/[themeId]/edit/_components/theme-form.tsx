@@ -10,13 +10,14 @@ import {
   DialogTitle
 } from '@atta/ui/components/dialog'
 import { Input } from '@atta/ui/components/input'
+import { Slider } from '@atta/ui/components/slider'
 import { Textarea } from '@atta/ui/components/textarea'
 
 const FIELD_INPUT_CLASS = 'flex-1 h-8 rounded-md border border-input bg-background/60 px-2 font-mono text-xs'
 const FULL_INPUT_CLASS = 'h-9 rounded-md border border-input bg-background/60 px-2 text-sm'
 const FULL_TEXTAREA_CLASS = 'rounded-md border border-input bg-background/60 px-2 py-1.5 text-sm'
-import { Clipboard } from 'lucide-react'
-import { useId, useState } from 'react'
+import { Clipboard, RotateCcw } from 'lucide-react'
+import { useId, useRef, useState } from 'react'
 import {
   COLOR_GROUPS,
   SHADOW_FIELDS,
@@ -24,6 +25,7 @@ import {
   type ThemeColors,
   type ThemeEditorData
 } from '../../../_types'
+import { scaleShadows } from '@/lib/scale-shadow'
 import { parseShadcnCss } from '@/lib/parse-shadcn-css'
 
 type ColorScheme = 'dark' | 'light'
@@ -45,6 +47,28 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return <span className='font-mono text-[10px] tracking-widest uppercase text-muted-foreground'>{children}</span>
 }
 
+function shortenColorFieldName(name: string): string {
+  return name.replace(/Foreground$/, 'Fore')
+}
+
+const TYPOGRAPHY_LABELS: Record<string, string> = {
+  fontSans: 'sans',
+  fontSerif: 'serif',
+  fontMono: 'mono',
+  trackingNormal: 'tracking'
+}
+
+const SHADOW_LABELS: Record<string, string> = {
+  shadow2xs: '2xs',
+  shadowXs: 'xs',
+  shadowSm: 'sm',
+  shadow: 'normal',
+  shadowMd: 'md',
+  shadowLg: 'lg',
+  shadowXl: 'xl',
+  shadow2xl: '2xl'
+}
+
 function ColorRow({
   name,
   value,
@@ -56,13 +80,15 @@ function ColorRow({
 }) {
   const displayColor = isValidCssColor(value) ? value : undefined
   return (
-    <div className='flex items-center gap-3'>
+    <div className='flex items-center gap-2'>
       <span
         aria-hidden='true'
-        className='h-6 w-6 shrink-0 rounded border border-border/50'
+        className='h-5 w-5 shrink-0 rounded border border-border/50'
         style={displayColor ? ({ background: displayColor } as React.CSSProperties) : undefined}
       />
-      <span className='w-40 shrink-0 font-mono text-[11px] text-foreground/80'>{name}</span>
+      <span className='w-24 shrink-0 truncate font-mono text-[11px] text-foreground/80'>
+        {shortenColorFieldName(name)}
+      </span>
       <Input
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
@@ -89,6 +115,12 @@ export function ThemeForm({ data, onChange, colorScheme }: ThemeFormProps) {
   const [pasteText, setPasteText] = useState('')
   const [pasteMessage, setPasteMessage] = useState<string | null>(null)
 
+  const [intensityPct, setIntensityPct] = useState(100)
+  const [areaPct, setAreaPct] = useState(100)
+  const baseShadowsRef = useRef<Record<string, string> | null>(null)
+
+  const isSliderDefault = intensityPct === 100 && areaPct === 100
+
   const currentColors = (colorScheme === 'dark' ? data.dark : data.light) ?? {}
 
   function update(next: Partial<ThemeEditorData>) {
@@ -111,7 +143,38 @@ export function ThemeForm({ data, onChange, colorScheme }: ThemeFormProps) {
   }
 
   function updateShadow(field: string, value: string) {
+    if (baseShadowsRef.current) {
+      baseShadowsRef.current = null
+      setIntensityPct(100)
+      setAreaPct(100)
+    }
     update({ shadows: { ...data.shadows, [field]: value } })
+  }
+
+  function applySliderScale(nextIntensityPct: number, nextAreaPct: number) {
+    setIntensityPct(nextIntensityPct)
+    setAreaPct(nextAreaPct)
+    const isDefault = nextIntensityPct === 100 && nextAreaPct === 100
+    if (isDefault) {
+      if (baseShadowsRef.current) {
+        update({ shadows: baseShadowsRef.current })
+        baseShadowsRef.current = null
+      }
+      return
+    }
+    if (!baseShadowsRef.current) {
+      baseShadowsRef.current = { ...(data.shadows ?? {}) }
+    }
+    update({
+      shadows: scaleShadows(baseShadowsRef.current, {
+        intensity: nextIntensityPct / 100,
+        area: nextAreaPct / 100
+      })
+    })
+  }
+
+  function handleResetSliders() {
+    applySliderScale(100, 100)
   }
 
   function handlePasteApply() {
@@ -134,6 +197,11 @@ export function ThemeForm({ data, onChange, colorScheme }: ThemeFormProps) {
       spacing: { ...data.spacing, ...parsed.spacing },
       shadows: { ...data.shadows, ...parsed.shadows }
     })
+    if (baseShadowsRef.current) {
+      baseShadowsRef.current = null
+      setIntensityPct(100)
+      setAreaPct(100)
+    }
     const unknownNote = parsed.unknownTokens.length
       ? ` (${parsed.unknownTokens.length} unknown token${parsed.unknownTokens.length === 1 ? '' : 's'} ignored)`
       : ''
@@ -185,8 +253,8 @@ export function ThemeForm({ data, onChange, colorScheme }: ThemeFormProps) {
 
       <Section title='Typography'>
         {(['fontSans', 'fontSerif', 'fontMono', 'trackingNormal'] as const).map((field) => (
-          <div key={field} className='flex items-center gap-3'>
-            <span className='w-40 shrink-0 font-mono text-[11px] text-foreground/80'>{field}</span>
+          <div key={field} className='flex items-center gap-2'>
+            <span className='w-16 shrink-0 font-mono text-[11px] text-foreground/80'>{TYPOGRAPHY_LABELS[field]}</span>
             <Input
               value={data.typography?.[field] ?? ''}
               onChange={(e) => updateTypography(field, e.target.value)}
@@ -198,8 +266,8 @@ export function ThemeForm({ data, onChange, colorScheme }: ThemeFormProps) {
 
       <Section title='Spacing & Radius'>
         {(['radius', 'spacing'] as const).map((field) => (
-          <div key={field} className='flex items-center gap-3'>
-            <span className='w-40 shrink-0 font-mono text-[11px] text-foreground/80'>{field}</span>
+          <div key={field} className='flex items-center gap-2'>
+            <span className='w-24 shrink-0 font-mono text-[11px] text-foreground/80'>{field}</span>
             <Input
               value={data.spacing?.[field] ?? ''}
               onChange={(e) => updateSpacing(field, e.target.value)}
@@ -210,9 +278,55 @@ export function ThemeForm({ data, onChange, colorScheme }: ThemeFormProps) {
       </Section>
 
       <Section title='Shadows'>
+        <div className='flex flex-col gap-2.5 rounded-md border border-border/50 bg-background/40 p-3'>
+          <div className='flex items-center justify-between'>
+            <span className='font-mono text-[10px] tracking-widest uppercase text-muted-foreground'>Scale</span>
+            <button
+              type='button'
+              onClick={handleResetSliders}
+              disabled={isSliderDefault}
+              className='flex items-center gap-1 rounded border border-border/60 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40'
+              aria-label='Reset shadow scale sliders'
+            >
+              <RotateCcw className='h-3 w-3' />
+              Reset
+            </button>
+          </div>
+
+          <div className='flex items-center gap-3'>
+            <span className='w-20 shrink-0 font-mono text-[11px] text-foreground/80'>Intensity</span>
+            <Slider
+              aria-label='Intensity'
+              min={0}
+              max={200}
+              step={10}
+              value={[intensityPct]}
+              onValueChange={(v) => applySliderScale(v[0] ?? 100, areaPct)}
+            />
+            <span className='w-10 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground'>
+              {intensityPct}%
+            </span>
+          </div>
+
+          <div className='flex items-center gap-3'>
+            <span className='w-20 shrink-0 font-mono text-[11px] text-foreground/80'>Area</span>
+            <Slider
+              aria-label='Area'
+              min={0}
+              max={200}
+              step={10}
+              value={[areaPct]}
+              onValueChange={(v) => applySliderScale(intensityPct, v[0] ?? 100)}
+            />
+            <span className='w-10 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground'>
+              {areaPct}%
+            </span>
+          </div>
+        </div>
+
         {SHADOW_FIELDS.map((field) => (
-          <div key={field} className='flex items-center gap-3'>
-            <span className='w-40 shrink-0 font-mono text-[11px] text-foreground/80'>{field}</span>
+          <div key={field} className='flex items-center gap-2'>
+            <span className='w-16 shrink-0 font-mono text-[11px] text-foreground/80'>{SHADOW_LABELS[field]}</span>
             <Input
               value={data.shadows?.[field] ?? ''}
               onChange={(e) => updateShadow(field, e.target.value)}

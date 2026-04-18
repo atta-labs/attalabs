@@ -1,7 +1,8 @@
 import { cmsClient } from '@atta/cms'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ThemeEditorClient } from './_components/theme-editor-client'
+
+export const dynamic = 'force-dynamic'
 
 interface FetchedTheme {
   _id: string
@@ -38,21 +39,5 @@ export default async function ThemeEditPage({ params }: { params: Promise<{ them
     notFound()
   }
 
-  return (
-    <div className='flex h-full flex-col'>
-      <div className='flex shrink-0 items-center gap-3 border-b border-border px-4 py-3'>
-        <Link
-          href='/themes'
-          className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
-        >
-          ← Themes
-        </Link>
-        <span className='font-mono text-[10px] text-muted-foreground'>/</span>
-        <span className='font-serif text-sm'>{theme.name}</span>
-      </div>
-      <div className='flex-1 min-h-0'>
-        <ThemeEditorClient theme={theme} />
-      </div>
-    </div>
-  )
+  return <ThemeEditorClient theme={theme} />
 }

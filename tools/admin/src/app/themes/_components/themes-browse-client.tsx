@@ -249,6 +249,7 @@ export function ThemesBrowseClient({ themes, currentThemeId, currentColorScheme 
               isPending={isPending}
               saved={saved}
               onPublish={handlePublish}
+              editHref={selectedId ? `/themes/${selectedId}/edit` : null}
             />
           }
         >
