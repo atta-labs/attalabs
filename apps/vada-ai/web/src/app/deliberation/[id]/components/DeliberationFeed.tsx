@@ -104,23 +104,22 @@ function DeliberationScene({
     }
   }, [showConclusion])
 
+  // Surface stream errors as toasts, not a sticky banner. The old top-of-page
+  // banner covered the feed; toasts auto-dismiss and don't steal scroll room.
+  const { errorToast } = useToastContext()
+  const lastToastedErrorRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (streamError && streamError !== lastToastedErrorRef.current) {
+      lastToastedErrorRef.current = streamError
+      errorToast('Deliberation error', streamError, 8000)
+    }
+  }, [streamError, errorToast])
+
   // Figure out which round the interruption happened in
   const interruptedRoundLabel = initialState?.replace('_', ' ').toLowerCase() ?? 'unknown state'
 
   return (
     <div>
-      {/* Error banner */}
-      {streamError && (
-        <div className='fixed inset-x-0 top-14 z-50 mx-auto max-w-2xl px-4'>
-          <div className='flex items-start justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 shadow-lg'>
-            <p className='text-sm text-destructive'>{streamError}</p>
-            <NextLink variant='destructive' href='/deliberate' className='mt-0.5 shrink-0 text-sm'>
-              Back
-            </NextLink>
-          </div>
-        </div>
-      )}
-
       {/* Main feed */}
       <div className='mx-auto w-full max-w-[640px] px-5 pb-16 pt-6'>
         {/* Question card */}
