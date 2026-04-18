@@ -101,7 +101,8 @@ export function useDeliberation(
   _initialQuestion: string,
   initialEntries: InitialEntry[] = [],
   initialConclusion: Record<string, unknown> | null = null,
-  initialState = 'PENDING'
+  initialState = 'PENDING',
+  initialTerminalState: string | null = null
 ) {
   const identity = useIdentity()
   const keyMapRef = useRef(identity.state.keys)
@@ -129,7 +130,9 @@ export function useDeliberation(
   const [loadingMessage, setLoadingMessage] = useState<string | null>(null)
   const [streamError, setStreamError] = useState<string | null>(null)
   const [currentState, setCurrentState] = useState(initialState)
-  const [terminalState, setTerminalState] = useState<string | null>(null)
+  // Seed from server prop so reloads of a completed session render the
+  // conclusion panel immediately. Drive loop only runs for active sessions.
+  const [terminalState, setTerminalState] = useState<string | null>(initialTerminalState)
   const [conclusion, setConclusion] = useState<Record<string, unknown> | null>(initialConclusion)
   const [completedRounds, setCompletedRounds] = useState<Set<number>>(() => {
     if (isComplete) return new Set(initialEntries.map((e) => e.round))

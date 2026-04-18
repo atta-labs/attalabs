@@ -15,6 +15,7 @@ interface UseDeliberationSceneProps {
   initialEntries: Array<{ agent: string; content: string; round: number }>
   initialConclusion: Record<string, unknown> | null
   initialState: string
+  initialTerminalState: string | null
 }
 
 export function useDeliberationScene({
@@ -23,10 +24,11 @@ export function useDeliberationScene({
   agentRoles,
   initialEntries,
   initialConclusion,
-  initialState
+  initialState,
+  initialTerminalState
 }: UseDeliberationSceneProps) {
   const { messages, streamingMessage, loadingMessage, streamError, currentState, terminalState, conclusion } =
-    useDeliberation(sessionId, question, initialEntries, initialConclusion, initialState)
+    useDeliberation(sessionId, question, initialEntries, initialConclusion, initialState, initialTerminalState)
 
   const isLiveSession = currentState !== 'TERMINAL'
   const showConclusion = !!terminalState

@@ -20,6 +20,7 @@ interface DeliberationFeedProps {
   initialEntries?: Array<{ agent: string; content: string; round: number }>
   initialConclusion?: Record<string, unknown> | null
   initialState?: string
+  initialTerminalState?: string | null
 }
 
 // ── Outer wrapper — AIACanvas provides context for AIASphere in AgentCard ──
@@ -44,7 +45,8 @@ function DeliberationScene({
   agentModels,
   initialEntries = [],
   initialConclusion = null,
-  initialState = 'PENDING'
+  initialState = 'PENDING',
+  initialTerminalState = null
 }: DeliberationFeedProps) {
   const s = useDeliberationScene({
     sessionId,
@@ -52,7 +54,8 @@ function DeliberationScene({
     agentRoles,
     initialEntries,
     initialConclusion,
-    initialState
+    initialState,
+    initialTerminalState
   })
 
   return (

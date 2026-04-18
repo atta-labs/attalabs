@@ -36,6 +36,7 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
       initialEntries={initialEntries}
       initialConclusion={session.conclusion}
       initialState={session.state}
+      initialTerminalState={session.terminalState ?? null}
     />
   )
 }
