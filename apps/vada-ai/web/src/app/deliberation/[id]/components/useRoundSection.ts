@@ -1,10 +1,11 @@
 // ── useRoundSection.ts ────────────────────────────────────────────────────────
+// Default: live round is expanded, completed rounds collapse to a one-line
+// synthesizer teaser. User can expand any past round on demand. No auto-
+// collapse timer — the "snap after 1.5s" pattern made scrolling jittery.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AGENT_THEME, ROUND_TITLES } from './agent-theme'
 import type { DeliberationMessage, StreamingMessage } from './useDeliberation'
-
-const AUTO_COLLAPSE_DELAY = 1500
 
 interface UseRoundSectionProps {
   round: number
@@ -15,6 +16,18 @@ interface UseRoundSectionProps {
   expectedAgentCount: number
 }
 
+// Extract the first sentence or first ~160 chars of a synthesizer's output,
+// stripping any leftover Universal-Anchor reminders some models leak.
+function extractTeaser(text: string): string {
+  const cleaned = text
+    .replace(/\[CRITICAL REMINDER[\s\S]*?\]/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const firstSentence = cleaned.match(/^[^.!?\n]+[.!?]/)?.[0]?.trim()
+  const teaser = firstSentence ?? cleaned
+  return teaser.length > 160 ? `${teaser.slice(0, 157).trimEnd()}…` : teaser
+}
+
 export function useRoundSection({
   round,
   entries,
@@ -23,10 +36,18 @@ export function useRoundSection({
   isRoundComplete,
   expectedAgentCount
 }: UseRoundSectionProps) {
+  // Default: live → expanded, completed → collapsed. User can override.
   const [isExpanded, setIsExpanded] = useState(isLive)
-  const hasAutoCollapsed = useRef(false)
 
-  // Derived data
+  // When a round becomes live, expand it. When it finishes, collapse it
+  // (only once — if the user manually expands later, we respect that).
+  const [userTouched, setUserTouched] = useState(false)
+  useEffect(() => {
+    if (userTouched) return
+    if (isLive) setIsExpanded(true)
+    else if (isRoundComplete) setIsExpanded(false)
+  }, [isLive, isRoundComplete, userTouched])
+
   const title = ROUND_TITLES[round] ?? ''
   const validEntries = entries.filter((e) => e.content.trim().length > 0)
   const synthEntry = validEntries.find((e) => e.agentRole === 'synthesizer') ?? null
@@ -38,35 +59,28 @@ export function useRoundSection({
   const missingCount = expectedAgentCount - validEntries.length
   const isEmpty = validEntries.length === 0 && !isLive && !streamingMessage
 
-  // Auto-expand when round goes live
-  useEffect(() => {
-    if (isLive) {
-      setIsExpanded(true)
-      hasAutoCollapsed.current = false
-    }
-  }, [isLive])
+  const teaser = synthEntry
+    ? extractTeaser(synthEntry.content)
+    : deliberationEntries.length > 0
+      ? extractTeaser(deliberationEntries[deliberationEntries.length - 1]?.content ?? '')
+      : ''
 
-  // Auto-collapse after round completes
-  useEffect(() => {
-    if (isRoundComplete && !hasAutoCollapsed.current && !wasInterrupted) {
-      const timer = setTimeout(() => {
-        setIsExpanded(false)
-        hasAutoCollapsed.current = true
-      }, AUTO_COLLAPSE_DELAY)
-      return () => clearTimeout(timer)
-    }
-  }, [isRoundComplete, wasInterrupted])
-
-  // Agent colors for wave connectors
   const getAgentColor = (agent: string) => AGENT_THEME[agent]?.color ?? 'hsl(var(--muted-foreground))'
 
   return {
-    // State
     isExpanded,
-    expand: () => setIsExpanded(true),
-    collapse: () => setIsExpanded(false),
-
-    // Derived
+    expand: () => {
+      setIsExpanded(true)
+      setUserTouched(true)
+    },
+    collapse: () => {
+      setIsExpanded(false)
+      setUserTouched(true)
+    },
+    toggle: () => {
+      setIsExpanded((v) => !v)
+      setUserTouched(true)
+    },
     title,
     validEntries,
     synthEntry,
@@ -76,8 +90,7 @@ export function useRoundSection({
     wasInterrupted,
     missingCount,
     isEmpty,
-
-    // Helpers
+    teaser,
     getAgentColor
   }
 }

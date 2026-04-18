@@ -1,13 +1,15 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { Button } from '@atta/ui'
+import { useEffect, useRef, useState } from 'react'
+import { Button, useToastContext } from '@atta/ui'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { AIACanvas } from '@atta/ui/canvas'
+import { Download, Copy } from 'lucide-react'
 import { RoundSection } from './RoundSection'
 import { ConclusionPanel } from './ConclusionPanel'
 import { useDeliberation } from './useDeliberation'
 import { ROUND_TITLES } from './agent-theme'
+import { copyTranscriptToClipboard, downloadTranscript } from './transcript-export'
 import { PRESETS } from '@/schemas'
 
 interface DeliberationFeedProps {
@@ -83,21 +85,24 @@ function DeliberationScene({
     initialEntries.length < agentRoles.length * 3 // less than full 3 rounds
 
   // ── Auto-scroll ──
+  // Scoped to live streaming only. Past rounds are collapsed-by-default and
+  // stable; auto-scrolling past them while the user is reading was jittery.
   const feedEndRef = useRef<HTMLDivElement>(null)
-  const prevMessageCount = useRef(messages.length)
-
-  useEffect(() => {
-    if (messages.length !== prevMessageCount.current || loadingMessage || showConclusion) {
-      prevMessageCount.current = messages.length
-      feedEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-    }
-  }, [messages.length, loadingMessage, showConclusion])
 
   useEffect(() => {
     if (streamingMessage) {
       feedEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
     }
   }, [streamingMessage?.content])
+
+  // Scroll to conclusion once when it arrives.
+  const scrolledToConclusionRef = useRef(false)
+  useEffect(() => {
+    if (showConclusion && !scrolledToConclusionRef.current) {
+      scrolledToConclusionRef.current = true
+      feedEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }
+  }, [showConclusion])
 
   // Figure out which round the interruption happened in
   const interruptedRoundLabel = initialState?.replace('_', ' ').toLowerCase() ?? 'unknown state'
@@ -211,24 +216,69 @@ function DeliberationScene({
         {showConclusion && terminalState && !isTerminalButEmpty && (
           <div className='pb-24 pt-4'>
             <ConclusionPanel terminalState={terminalState} conclusion={conclusion} agentModels={agentModels} />
-            <div className='mt-4 flex gap-2.5'>
-              <Button type='button' variant='outline' className='flex-1'>
-                Export
-              </Button>
-              <NextLink
-                variant='unstyled'
-                href='/deliberate'
-                className='flex-1 rounded-lg bg-accent px-4 py-3 text-center text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90'
-              >
-                New Deliberation
-              </NextLink>
-            </div>
+            <TranscriptActions
+              input={{
+                question,
+                messages,
+                terminalState,
+                conclusion
+              }}
+            />
           </div>
         )}
 
         {/* Auto-scroll anchor */}
         <div ref={feedEndRef} />
       </div>
+    </div>
+  )
+}
+
+// ── TranscriptActions ────────────────────────────────────────────────────────
+// Export + copy + new-deliberation triad. Rendered under the conclusion card.
+
+function TranscriptActions({ input }: { input: Parameters<typeof downloadTranscript>[0] }) {
+  const { successToast, errorToast } = useToastContext()
+  const [copying, setCopying] = useState(false)
+
+  const handleCopy = async () => {
+    setCopying(true)
+    try {
+      await copyTranscriptToClipboard(input)
+      successToast('Copied', 'Full transcript on your clipboard.')
+    } catch (e) {
+      errorToast('Copy failed', e instanceof Error ? e.message : 'Try download instead.')
+    } finally {
+      setCopying(false)
+    }
+  }
+
+  const handleDownload = () => {
+    try {
+      downloadTranscript(input)
+      successToast('Downloaded', 'Transcript saved as markdown.')
+    } catch (e) {
+      errorToast('Download failed', e instanceof Error ? e.message : 'Try again.')
+    }
+  }
+
+  return (
+    <div className='mt-4 flex flex-wrap gap-2.5'>
+      <Button type='button' variant='outline' onClick={handleCopy} disabled={copying} className='flex-1'>
+        <Copy className='mr-1.5 size-3.5' />
+        {copying ? 'Copying…' : 'Copy transcript'}
+      </Button>
+      <Button type='button' variant='outline' onClick={handleDownload} className='flex-1'>
+        <Download className='mr-1.5 size-3.5' />
+        Download .md
+      </Button>
+      <NextLink
+        variant='unstyled'
+        href='/deliberate'
+        className='flex-1 rounded-lg bg-accent px-4 py-3 text-center text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90'
+      >
+        New deliberation
+      </NextLink>
     </div>
   )
 }
