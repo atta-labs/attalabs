@@ -45,9 +45,22 @@ export interface InvokeParams {
   signal?: AbortSignal
 }
 
+export interface InvokeUsage {
+  inputTokens: number | null
+  outputTokens: number | null
+  totalTokens: number | null
+}
+
 export interface InvokeResult {
   textStream: AsyncIterable<string>
   fullText: () => Promise<string>
+  /**
+   * Token usage after the stream settles. Resolves `null` fields when the
+   * provider didn't report counts (rare — Ollama via ollama-ai-provider-v2
+   * returns promptEvalCount + evalCount, and the hosted providers all
+   * surface usage).
+   */
+  usage: () => Promise<InvokeUsage>
 }
 
 function resolveModel(provider: RouteProvider, modelId: string, apiKey: string): LanguageModel {
@@ -136,6 +149,21 @@ export async function invokeAgent(params: InvokeParams): Promise<InvokeResult> {
 
   return {
     textStream: result.textStream,
-    fullText: async () => await result.text
+    fullText: async () => await result.text,
+    usage: async () => {
+      try {
+        const raw = (await result.usage) as
+          | { inputTokens?: number | null; outputTokens?: number | null; totalTokens?: number | null }
+          | null
+          | undefined
+        return {
+          inputTokens: raw?.inputTokens ?? null,
+          outputTokens: raw?.outputTokens ?? null,
+          totalTokens: raw?.totalTokens ?? null
+        }
+      } catch {
+        return { inputTokens: null, outputTokens: null, totalTokens: null }
+      }
+    }
   }
 }

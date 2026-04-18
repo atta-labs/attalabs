@@ -259,6 +259,7 @@ export function useDeliberation(
             )
           }
 
+          const callStart = performance.now()
           const result = await retryWithBackoff(
             () =>
               dispatch({
@@ -290,6 +291,12 @@ export function useDeliberation(
 
           if (cancelled) return
 
+          // Token usage settles after the stream ends; wall-clock is from
+          // call-kick to stream-end. Pass to /turn so the server can fold
+          // these into benchmark_metrics when benchmark is enabled.
+          const usage = await result.usage()
+          const elapsedMs = Math.round(performance.now() - callStart)
+
           // Report turn result to server. Must not fire after cancellation —
           // a cancelled drive that still POSTs /turn would double-write when
           // a sibling drive also makes it past its own cancellation check.
@@ -300,7 +307,10 @@ export function useDeliberation(
               turnId: cmd.turnId,
               content: fullText,
               phase: cmd.type === 'run_agent' ? 'run_agent' : cmd.phase,
-              ...(cmd.type === 'run_agent' ? { agent: cmd.agent, round: cmd.round } : {})
+              ...(cmd.type === 'run_agent' ? { agent: cmd.agent, round: cmd.round } : {}),
+              tokensInput: usage.inputTokens,
+              tokensOutput: usage.outputTokens,
+              elapsedMs
             })
           })
 

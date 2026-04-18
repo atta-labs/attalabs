@@ -40,6 +40,7 @@ export async function invokeMock(params: MockInvokeParams): Promise<InvokeResult
 
   return {
     textStream,
-    fullText: async () => mockText(agent, round)
+    fullText: async () => mockText(agent, round),
+    usage: async () => ({ inputTokens: null, outputTokens: null, totalTokens: null })
   }
 }
