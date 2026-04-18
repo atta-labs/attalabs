@@ -45,8 +45,13 @@ export function useDeliberateForm({ remainingToday, initialError }: UseDeliberat
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedProvider = globalModel?.provider
-  const hasKeyForSelected = selectedProvider != null && (identity.hasKey(selectedProvider) || !!globalModel?.apiKey)
-  const hasAnyKey = Object.keys(identity.state.keys).length > 0
+  // Ollama runs locally with no auth — treat as always-keyed from the
+  // browser's perspective. If the server isn't running, the deliberation
+  // turn will surface a clear "Could not reach Ollama" error.
+  const hasKeyForSelected =
+    selectedProvider === 'ollama' ||
+    (selectedProvider != null && (identity.hasKey(selectedProvider) || !!globalModel?.apiKey))
+  const hasAnyKey = Object.keys(identity.state.keys).length > 0 || selectedProvider === 'ollama'
 
   const canStart = !!question.trim() && remainingToday > 0 && !loading && hasKeyForSelected
 

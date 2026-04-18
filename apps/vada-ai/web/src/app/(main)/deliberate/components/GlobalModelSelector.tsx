@@ -35,39 +35,43 @@ export function GlobalModelSelector({
   const { successToast } = useToastContext()
 
   // Installed Ollama models (fetched live from localhost:11434/api/tags).
-  // null = not fetched yet. Empty array = fetched successfully but nothing
-  // installed locally. Non-empty = replace the hardcoded Ollama defaults in
-  // the catalog so the picker only offers models the user can actually run.
+  // null = not probed yet. Empty array = server reachable but nothing
+  // installed. Non-empty = server reachable and we have models.
+  // Ollama has no API key concept, so we always try to reach it — if it
+  // responds, we treat it as configured regardless of identity.state.keys.
   const [installedOllama, setInstalledOllama] = useState<ModelEntry[] | null>(null)
-  const hasOllama = !!storedKeys.ollama
+  const [ollamaReachable, setOllamaReachable] = useState<boolean | null>(null)
   useEffect(() => {
-    if (!hasOllama) {
-      setInstalledOllama(null)
-      return
-    }
     let cancelled = false
     fetchInstalledOllamaModels()
       .then((models) => {
-        if (!cancelled) setInstalledOllama(models)
+        if (!cancelled) {
+          setInstalledOllama(models)
+          setOllamaReachable(true)
+        }
       })
       .catch(() => {
-        if (!cancelled) setInstalledOllama([])
+        if (!cancelled) {
+          setInstalledOllama([])
+          setOllamaReachable(false)
+        }
       })
     return () => {
       cancelled = true
     }
-  }, [hasOllama])
+  }, [])
 
   // Build the final catalog shown in the picker.
-  // - Ollama not configured → keep hardcoded defaults (discovery mode)
-  // - Ollama configured but /api/tags still loading → keep defaults for now
-  // - Configured + 0 installed → keep defaults so the user can see what to pull
-  // - Configured + N installed → show only what the user can actually run
+  // - Ollama not reachable → keep hardcoded defaults (discovery mode)
+  // - Ollama reachable + 0 installed → keep defaults so the user can discover
+  //   what to pull; at turn time the unreachable model will fail with a clear
+  //   error telling them to pull
+  // - Ollama reachable + N installed → show only what the user can run
   const catalog = useMemo(() => {
-    if (!hasOllama || installedOllama === null || installedOllama.length === 0) return baseCatalog
+    if (!ollamaReachable || installedOllama === null || installedOllama.length === 0) return baseCatalog
     const nonOllama = baseCatalog.filter((e) => e.route !== 'ollama')
     return [...nonOllama, ...installedOllama]
-  }, [baseCatalog, hasOllama, installedOllama])
+  }, [baseCatalog, ollamaReachable, installedOllama])
 
   // Mount: seed from settings preset, else fall back to in-memory identity
   useEffect(() => {
@@ -105,10 +109,14 @@ export function GlobalModelSelector({
     })
   }, [selectedPresetId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Ollama has no API key — if the local server is reachable, treat it as
+  // configured regardless of identity state. The user should never see a key
+  // prompt for a local model.
   const configuredRoutes = new Set<RouteProvider>([
     ...(settingsProviders as RouteProvider[]),
     ...(Object.keys(storedKeys) as RouteProvider[])
   ])
+  if (ollamaReachable) configuredRoutes.add('ollama')
 
   // Last-4 of each configured key, shown next to the provider heading in
   // the picker. Never the full key — just enough for the user to cross-
