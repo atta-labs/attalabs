@@ -628,15 +628,19 @@ packages/ui/canvas/
 
 ```
 apps/vada-ai/web/src/app/deliberation/[id]/components/
-├── AgentCard.tsx          — 70px AIASphere per agent card (useId for sphere ID)
-├── RoundSection.tsx       — Round layout with wave connectors (plain divs for collapsed dots)
-├── useRoundSection.ts     — All hooks for RoundSection
-├── WaveConnector.tsx      — Animated SVG vertical wave between cards (useId for gradient IDs)
-├── ConclusionPanel.tsx    — Terminal state display
-├── DeliberationFeed.tsx   — Main feed with AIACanvas wrapper (matchContentHeight)
-├── useDeliberation.ts     — SSE streaming, conclusion fetch
-└── agent-theme.ts         — Agent colors, round titles, terminal badges
+├── DeliberationFeed.tsx   — Main feed with AIACanvas wrapper (matchContentHeight, alwaysRenderSpheres)
+├── RoundStrip.tsx         — Per-round strip (sphere row + single selected-speaker card with sliding transition)
+├── useRoundStrip.ts       — All state/effects/handlers for RoundStrip (selection, handoff fireDirectedMessage, copy/download)
+├── deriveAgentStates.ts   — Pure function — (agentRoles, entries, streamingMessage, round) → AgentState[]
+├── ConclusionPanel.tsx    — Terminal state display + rendered markdown recommendation/key_condition
+├── markdown-components.tsx— Shared ReactMarkdown overrides (DRY between RoundStrip and ConclusionPanel)
+├── transcript-export.ts   — Markdown serializers (whole transcript + per-round)
+├── useDeliberation.ts     — Pull-loop driver (fetch /next, stream tokens, POST /turn)
+├── useDeliberationScene.ts— Scene-level derivations + auto-scroll effects
+└── agent-theme.ts         — Agent colors, round titles, round descriptions, terminal badges
 ```
+
+Sphere ID convention in the deliberation feed: `` `round-${round}-${role}` `` (see `sphereIdFor` in `useRoundStrip.ts`). Unique per round so particles don't migrate between strips — matches the canvas requirement for unique sphere IDs.
 
 ## After Editing Package Files
 

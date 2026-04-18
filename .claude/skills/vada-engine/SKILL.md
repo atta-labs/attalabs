@@ -22,11 +22,17 @@ Engine layers:
   pending-keys.ts     → Key-based state tracking (what's been emitted)
   prompts/compose.ts  → Message composition for each agent
 
-Round flow:
-  Round 1 → Sparring (agents debate)
-  → SPARRING_COMPLETE (if sparring mode)
-  → Conclusion phase (blind-critic → revision → synthesizer)
+Round flow (applies to every preset — Crucible, War Room, Sparring):
+  Round 1 → Round 2 → Round 3 (agents debate)
+  → CONCLUDING (Synthesizer produces structured JSON)
+  → AUDITING (Blind Critic audits)
+  → CLEAN or REVISING (→ re-audit → CLEAN or UNCONVERGED)
 ```
+
+Sparring teams lack a Synthesizer agent, but the conclusion phase still runs —
+the orchestrator falls back to the session's default model for synthesis +
+audit. Every team ends with a conclusion; `SPARRING_COMPLETE` is a legacy
+terminal state only present on pre-2026-04-18 sessions.
 
 ---
 
@@ -83,10 +89,10 @@ function buildRoundOneAgents(agentModels: AgentModels) {
 - Replay completed steps to client on resume (non-streaming, fast replay)
 - Continue streaming from last incomplete step
 
-### SPARRING_COMPLETE
-- If session ends at sparring (no conclusion requested), status = `SPARRING_COMPLETE`
-- Frontend shows completion banner instead of conclusion panel
-- History shows blue Sparring badge for these sessions
+### Every team ends with a conclusion
+- Since 2026-04-18, every preset (Crucible, War Room, Sparring) runs the conclusion protocol.
+- Sparring teams lack a Synthesizer agent → orchestrator falls back to the session's default model for synthesize + audit.
+- `SPARRING_COMPLETE` is a legacy terminal state — still present on pre-2026-04-18 sessions and rendered fine, but the current engine never produces it.
 
 ---
 

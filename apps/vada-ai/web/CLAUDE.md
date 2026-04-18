@@ -20,11 +20,13 @@ apps/vada-ai/web/
 │   │   │   ├── page.tsx
 │   │   │   └── components/
 │   │   │       ├── CenterViewport.tsx      # Canvas + feed layout
-│   │   │       ├── DeliberationFeed.tsx    # Scrolling round/message feed
-│   │   │       ├── RoundView.tsx           # Single round with agent spheres
-│   │   │       ├── MessageCard.tsx         # Individual agent message
-│   │   │       ├── SynthesisCard.tsx       # Synthesis message display
-│   │   │       ├── ConclusionPanel.tsx     # Final conclusion display
+│   │   │       ├── DeliberationFeed.tsx    # Scrolling feed — stacks RoundStrip sections inside one AIACanvas
+│   │   │       ├── RoundStrip.tsx          # Per-round strip: sphere row + single card with selected speaker's message
+│   │   │       ├── useRoundStrip.ts        # Derivations, selection state, handoff particles, per-round copy/download
+│   │   │       ├── deriveAgentStates.ts    # Pure function: (agentRoles, entries, streaming, round) → AgentState[]
+│   │   │       ├── ConclusionPanel.tsx     # Final conclusion display (rendered markdown, flag banner for UNCONVERGED)
+│   │   │       ├── markdown-components.tsx # Shared ReactMarkdown overrides used by RoundStrip + ConclusionPanel
+│   │   │       └── transcript-export.ts    # Markdown serializers — whole transcript + per-round
 │   │   │       └── useDeliberation.ts      # SSE stream hook
 │   │   ├── history/                        # Past sessions
 │   │   │   └── components/SessionCard.tsx
@@ -104,7 +106,7 @@ Each agent can use a different model. `ModelConfig` is stored as `agentModels` J
 |--------|---------|
 | `IN_PROGRESS` | Actively streaming or resumable |
 | `COMPLETE` | Full deliberation finished (conclusion generated) |
-| `SPARRING_COMPLETE` | Stopped after sparring rounds (no conclusion) |
+| `SPARRING_COMPLETE` | Legacy — pre-2026-04-18 sparring sessions. New engine always routes every team through the conclusion protocol; this state is never produced for new sessions but older rows still render. |
 | `ERROR` | Failed, not resumable |
 
 ---
