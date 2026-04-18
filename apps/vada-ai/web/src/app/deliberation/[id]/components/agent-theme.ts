@@ -14,3 +14,9 @@ export const TERMINAL_BADGE: Record<TerminalStateKey, { label: string; className
   REVISED: { label: 'Revised', className: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' },
   UNCONVERGED: { label: 'Unconverged', className: 'bg-destructive/10 text-destructive border-destructive/20' }
 }
+
+export const ROUND_DESCRIPTIONS: Record<number, string> = {
+  1: 'Each agent opens independently.',
+  2: 'Agents challenge each other directly.',
+  3: 'Agents move toward shared ground.'
+}

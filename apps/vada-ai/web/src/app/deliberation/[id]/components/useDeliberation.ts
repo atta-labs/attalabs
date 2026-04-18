@@ -38,12 +38,21 @@ export interface StreamingMessage {
 
 const TARGET_RE = /\[TARGET:\s*([^\]]+)\]/g
 
-function parseContent(raw: string): { text: string; replyTarget: string | null } {
+// `selfName` lets us drop a self-reply emitted by a model that mis-followed
+// the [TARGET: X] instruction (observed in Qwen 14B: the Critic sometimes
+// writes "[TARGET: Critic]" on its own message). Without this, the UI and
+// markdown export show "replying to Critic" on a Critic message, which is
+// confusing and wrong. Filter at the single parse boundary.
+function parseContent(raw: string, selfName?: string): { text: string; replyTarget: string | null } {
   let replyTarget: string | null = null
   const text = raw.replace(TARGET_RE, (_match, name: string) => {
     replyTarget = name.trim()
     return ''
   })
+  const target = replyTarget as string | null
+  if (selfName && target && target.toLowerCase() === selfName.toLowerCase()) {
+    replyTarget = null
+  }
   return { text: text.trim(), replyTarget }
 }
 
@@ -112,7 +121,7 @@ export function useDeliberation(
 
   const [messages, setMessages] = useState<DeliberationMessage[]>(() =>
     initialEntries.map((e) => {
-      const { text, replyTarget } = parseContent(e.content)
+      const { text, replyTarget } = parseContent(e.content, e.agent)
       const config = getAgentConfigByName(e.agent)
       return {
         id: crypto.randomUUID(),
@@ -274,7 +283,7 @@ export function useDeliberation(
             if (cancelled) return
             fullText += delta
             if (cmd.type === 'run_agent') {
-              const { text, replyTarget } = parseContent(fullText)
+              const { text, replyTarget } = parseContent(fullText, cmd.agent)
               setStreamingMessage((prev) => (prev ? { ...prev, content: text, replyTarget } : prev))
             }
           }
@@ -299,7 +308,7 @@ export function useDeliberation(
 
           if (cmd.type === 'run_agent') {
             const config = getAgentConfigByName(cmd.agent)
-            const { text, replyTarget } = parseContent(fullText)
+            const { text, replyTarget } = parseContent(fullText, cmd.agent)
             setMessages((prev) => [
               ...prev,
               {

@@ -20,13 +20,11 @@ export function TranscriptActions({ input }: { input: TranscriptInput }) {
         <Download className='mr-1.5 size-3.5' />
         Download .md
       </Button>
-      <NextLink
-        variant='unstyled'
-        href='/deliberate'
-        className='flex-1 rounded-lg bg-accent px-4 py-3 text-center text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90'
-      >
-        New deliberation
-      </NextLink>
+      <Button type='button' onClick={a.download} className='flex-1'>
+        <NextLink variant='unstyled' href='/deliberate'>
+          New deliberation
+        </NextLink>
+      </Button>
     </div>
   )
 }

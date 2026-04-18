@@ -46,6 +46,15 @@ export function useDeliberationScene({
     ? Number.parseInt(currentState.replace('ROUND_', ''), 10)
     : null
 
+  // Display set = completed rounds ∪ currently-streaming round. Makes an
+  // empty RoundStrip appear as soon as the engine starts a new round, even
+  // before any content streams back.
+  const displayRounds = (() => {
+    const s = new Set<number>(rounds)
+    if (currentRoundNum) s.add(currentRoundNum)
+    return Array.from(s).sort((a, b) => a - b)
+  })()
+
   // A round is "complete" if the engine has moved past it — either to a later
   // round, into the conclusion protocol, or to TERMINAL. Derived from
   // currentState rather than tracked separately so there's one source of truth.
@@ -110,6 +119,24 @@ export function useDeliberationScene({
     }
   }, [showConclusion])
 
+  // New round started: scroll that round's strip to the top of the viewport
+  // so the user refocuses on the fresh round. The first round we see (mount
+  // or initial run) is recorded but not scrolled — user is already at the
+  // top, no yank needed. Subsequent transitions (round 1 → 2 → 3) scroll.
+  const lastScrolledRoundRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!currentRoundNum) return
+    if (lastScrolledRoundRef.current === null) {
+      lastScrolledRoundRef.current = currentRoundNum
+      return
+    }
+    if (currentRoundNum !== lastScrolledRoundRef.current) {
+      lastScrolledRoundRef.current = currentRoundNum
+      const el = document.querySelector(`[data-round="${currentRoundNum}"]`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [currentRoundNum])
+
   // Stream errors → toast (not a sticky banner). Dedupe against last toasted.
   const { errorToast } = useToastContext()
   const lastToastedErrorRef = useRef<string | null>(null)
@@ -132,6 +159,7 @@ export function useDeliberationScene({
     showConclusion,
     showLoading,
     rounds,
+    displayRounds,
     teamName,
     currentRoundNum,
     isRoundComplete,

@@ -7,8 +7,7 @@ import { Button } from '@atta/ui'
 import { AIACanvas } from '@atta/ui/canvas'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ConclusionPanel } from './ConclusionPanel'
-import { ROUND_TITLES } from './agent-theme'
-import { RoundSection } from './RoundSection'
+import { RoundStrip } from './RoundStrip'
 import { TranscriptActions } from './TranscriptActions'
 import { useDeliberationScene } from './useDeliberationScene'
 
@@ -17,6 +16,7 @@ interface DeliberationFeedProps {
   question: string
   agentRoles: string[]
   agentModels?: Record<string, { provider: string; modelId: string }>
+  modelByRole?: Record<string, { provider: string; modelId: string }>
   initialEntries?: Array<{ agent: string; content: string; round: number }>
   initialConclusion?: Record<string, unknown> | null
   initialState?: string
@@ -24,15 +24,13 @@ interface DeliberationFeedProps {
 }
 
 // ── Outer wrapper — AIACanvas provides context for AIASphere in AgentCard ──
-// Pause the rAF loop when the session is already terminal on load. A completed
-// deliberation is a read-only page; the animation just burns CPU and causes
-// visible scroll jank on long transcripts (matchContentHeight canvases can be
-// several viewports tall). Particle state is preserved, so if the user later
-// triggers something, resuming is free.
+// Canvas runs on every page (live and completed) so particles settle around
+// every agent face and matrix rain animates for the selected face. Each
+// AIAgent requests its own particleCount in RoundStrip (small — 12 spheres
+// on a Crucible transcript) to keep total particle count manageable.
 export function DeliberationFeed(props: DeliberationFeedProps) {
-  const isAlreadyTerminal = props.initialState === 'TERMINAL'
   return (
-    <AIACanvas alwaysRenderSpheres matchContentHeight paused={isAlreadyTerminal} className='relative w-full'>
+    <AIACanvas alwaysRenderSpheres matchContentHeight className='relative w-full'>
       <DeliberationScene {...props} />
     </AIACanvas>
   )
@@ -43,6 +41,7 @@ function DeliberationScene({
   question,
   agentRoles,
   agentModels,
+  modelByRole = {},
   initialEntries = [],
   initialConclusion = null,
   initialState = 'PENDING',
@@ -94,42 +93,34 @@ function DeliberationScene({
           </div>
         )}
 
-        {s.rounds.map((round) => {
-          const roundMessages = s.messages.filter((m) => m.round === round && m.content.trim().length > 0)
-          const isCurrentRound = s.currentRoundNum === round
-          const roundStreamMsg = isCurrentRound && s.streamingMessage?.round === round ? s.streamingMessage : null
-          return (
-            <RoundSection
-              key={round}
-              round={round}
-              entries={roundMessages}
-              streamingMessage={roundStreamMsg}
-              isLive={isCurrentRound}
-              isRoundComplete={s.isRoundComplete(round)}
-              expectedAgentCount={agentRoles.length}
-              teamName={s.teamName}
-              agentModels={agentModels}
-            />
-          )
-        })}
-
-        {s.currentRoundNum && !s.rounds.includes(s.currentRoundNum) && s.isLiveSession && (
-          <div className='mb-6'>
-            <div className='mb-4 flex items-center gap-3 px-1'>
-              <div className='h-px flex-1 bg-border' />
-              <span className='whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.35em]'>
-                Round {s.currentRoundNum} — {ROUND_TITLES[s.currentRoundNum] ?? ''}
-              </span>
-              <div className='h-px flex-1 bg-border' />
-            </div>
-            <div className='flex items-center justify-center gap-2.5 py-8 text-sm text-muted-foreground'>
-              <span className='size-1.5 animate-pulse rounded-full bg-muted-foreground' />
-              {s.currentRoundNum === 1
-                ? 'Agents are forming their positions…'
-                : `Agents are reading Round ${s.currentRoundNum - 1}…`}
-            </div>
-          </div>
-        )}
+        {/* Rounds stack with a vertical connector between them — a single dashed
+            line rendered via divide-y so adjacent strips feel like one continuous
+            deliberation instead of isolated cards. */}
+        <div className='flex flex-col'>
+          {s.displayRounds.map((round, i) => {
+            const roundEntries = s.messages.filter((m) => m.round === round)
+            const streamingForRound = s.streamingMessage?.round === round ? s.streamingMessage : null
+            return (
+              <div key={round} className='flex flex-col'>
+                {i > 0 && (
+                  <div aria-hidden className='flex h-10 items-center justify-center'>
+                    <div className='h-full w-px border-l border-dashed border-border' />
+                  </div>
+                )}
+                <RoundStrip
+                  round={round}
+                  question={question}
+                  agentRoles={agentRoles}
+                  modelByRole={modelByRole}
+                  entries={roundEntries}
+                  streamingMessage={streamingForRound}
+                  isLive={s.currentRoundNum === round && s.isLiveSession}
+                  isRoundComplete={s.isRoundComplete(round)}
+                />
+              </div>
+            )
+          })}
+        </div>
 
         {s.showLoading && (
           <div className='flex items-center justify-center gap-2.5 py-8 text-sm text-muted-foreground'>
@@ -146,7 +137,8 @@ function DeliberationScene({
                 question,
                 messages: s.messages,
                 terminalState: s.terminalState,
-                conclusion: s.conclusion
+                conclusion: s.conclusion,
+                modelByRole
               }}
             />
           </div>

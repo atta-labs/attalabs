@@ -3,7 +3,11 @@
 import { ModelIcon } from '@atta/ui'
 import { AGENTS } from '@atta/agents'
 import { motion } from 'motion/react'
+import type { CSSProperties } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { AGENT_THEME, TERMINAL_BADGE, type TerminalStateKey } from './agent-theme'
+import { MARKDOWN_COMPONENTS } from './markdown-components'
 
 interface ConclusionPanelProps {
   terminalState: string
@@ -13,6 +17,8 @@ interface ConclusionPanelProps {
 
 export function ConclusionPanel({ terminalState, conclusion, agentModels }: ConclusionPanelProps) {
   const badge = TERMINAL_BADGE[terminalState as TerminalStateKey] ?? TERMINAL_BADGE.UNCONVERGED
+  const criticVerdict = typeof conclusion?._criticVerdict === 'string' ? (conclusion._criticVerdict as string) : null
+  const isFlagged = terminalState === 'UNCONVERGED' && !!criticVerdict
 
   return (
     <motion.div
@@ -34,18 +40,40 @@ export function ConclusionPanel({ terminalState, conclusion, agentModels }: Conc
 
       {/* Conclusion card */}
       <div className='flex flex-col gap-5 rounded-xl border border-border bg-card p-5'>
+        {isFlagged && (
+          <div className='rounded-md border border-warning/40 bg-warning/5 p-3'>
+            <div className='mb-1 text-[9px] font-semibold uppercase tracking-[0.2em] text-warning'>
+              Flagged during review
+            </div>
+            <p className='m-0 text-[12px] leading-relaxed text-foreground/70'>
+              The Blind Critic flagged the synthesizer's recommendation. The team's best synthesis is shown below —
+              treat it as a working answer, not a final one.
+            </p>
+            <p className='m-0 mt-2 text-[12px] leading-relaxed text-foreground/85'>
+              <span className='font-semibold'>Critic:</span> {criticVerdict}
+            </p>
+          </div>
+        )}
         {conclusion ? (
           <>
             {/* Recommendation */}
             <div>
               <div className='mb-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] '>Recommendation</div>
-              <p className='m-0 text-[15px] leading-[1.7] text-foreground/85'>{conclusion.recommendation as string}</p>
+              <div className='text-[15px] leading-[1.7] text-foreground/85'>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                  {conclusion.recommendation as string}
+                </ReactMarkdown>
+              </div>
             </div>
 
             {/* Key Condition */}
             <div className='border-t border-border pt-4'>
               <div className='mb-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] '>Key Condition</div>
-              <p className='m-0 text-[13px] leading-relaxed '>{conclusion.key_condition as string}</p>
+              <div className='text-[13px] leading-relaxed'>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                  {conclusion.key_condition as string}
+                </ReactMarkdown>
+              </div>
             </div>
 
             {/* Unresolved Points */}
@@ -55,22 +83,65 @@ export function ConclusionPanel({ terminalState, conclusion, agentModels }: Conc
                   <div className='mb-2.5 text-[9px] font-semibold uppercase tracking-[0.2em] '>Unresolved</div>
                   <div className='space-y-2.5'>
                     {(conclusion.unresolved_points as Array<{ point: string; agents_involved: string[] }>).map(
-                      (up, i) => (
-                        <div key={i} className='border-l-2 border-border pl-3'>
-                          <p className='m-0 text-[13px] leading-snug /70'>{up.point}</p>
-                          <div className='mt-1 flex gap-1.5'>
-                            {up.agents_involved.map((a) => (
-                              <span
-                                key={a}
-                                className='text-[10px] font-medium'
-                                style={{ color: AGENT_THEME[a]?.color }}
-                              >
-                                {a}
-                              </span>
-                            ))}
+                      (up, i) => {
+                        // Display-time rescue: older sessions have `point` as a
+                        // JSON-stringified `{ agents, disagreement }` because the
+                        // parser fell back to JSON.stringify. Try to unwrap.
+                        let displayPoint = up.point
+                        let displayAgents = up.agents_involved
+                        if (typeof displayPoint === 'string') {
+                          const trimmed = displayPoint.trim()
+                          if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+                            try {
+                              const inner = JSON.parse(trimmed) as Record<string, unknown>
+                              const textKeys = [
+                                'point',
+                                'point_of_disagreement',
+                                'pointOfDisagreement',
+                                'disagreement',
+                                'disement',
+                                'description',
+                                'statement',
+                                'summary',
+                                'issue',
+                                'text'
+                              ]
+                              for (const k of textKeys) {
+                                const v = inner[k]
+                                if (typeof v === 'string' && v.trim().length > 0) {
+                                  displayPoint = v
+                                  break
+                                }
+                              }
+                              if (Array.isArray(inner.agents) && displayAgents.length === 0) {
+                                displayAgents = inner.agents.filter((a): a is string => typeof a === 'string')
+                              }
+                            } catch {
+                              // leave as-is
+                            }
+                          }
+                        }
+                        return (
+                          <div key={i} className='border-l-2 border-border pl-3'>
+                            <p className='m-0 text-[13px] leading-snug /70'>{displayPoint}</p>
+                            <div className='mt-1 flex gap-1.5'>
+                              {displayAgents.map((a) => (
+                                <span
+                                  key={a}
+                                  className='text-[10px] font-medium text-[var(--agent-color)]'
+                                  style={
+                                    {
+                                      '--agent-color': AGENT_THEME[a]?.color ?? 'var(--muted-foreground)'
+                                    } as CSSProperties
+                                  }
+                                >
+                                  {a}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )
+                        )
+                      }
                     )}
                   </div>
                 </div>
@@ -96,7 +167,14 @@ export function ConclusionPanel({ terminalState, conclusion, agentModels }: Conc
                       return (
                         <div key={p.agent} className='flex items-center gap-1'>
                           {modelId && <ModelIcon model={modelId} size={14} type='avatar' />}
-                          <span className='text-[10px] font-medium' style={{ color: AGENT_THEME[p.agent]?.color }}>
+                          <span
+                            className='text-[10px] font-medium text-[var(--agent-color)]'
+                            style={
+                              {
+                                '--agent-color': AGENT_THEME[p.agent]?.color ?? 'var(--muted-foreground)'
+                              } as CSSProperties
+                            }
+                          >
                             {p.agent}
                           </span>
                         </div>

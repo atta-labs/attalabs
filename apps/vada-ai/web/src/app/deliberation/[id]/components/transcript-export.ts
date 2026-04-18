@@ -10,6 +10,7 @@ interface ConclusionShape {
   unresolved_points?: Array<{ point: string; agents_involved: string[] }>
   review_by?: string
   participants?: Array<{ agent: string; version: string }>
+  _criticVerdict?: string | null
 }
 
 export interface TranscriptInput {
@@ -17,6 +18,8 @@ export interface TranscriptInput {
   messages: DeliberationMessage[]
   terminalState: string | null
   conclusion: ConclusionShape | Record<string, unknown> | null
+  /** Label-enriched model entries per agent role; included on every round + in the final conclusion. */
+  modelByRole?: Record<string, { provider: string; modelId: string; label?: string }>
 }
 
 export function buildTranscriptMarkdown(input: TranscriptInput): string {
@@ -32,6 +35,25 @@ export function buildTranscriptMarkdown(input: TranscriptInput): string {
   for (const round of rounds) {
     lines.push(`## Round ${round}`)
     lines.push('')
+    // Deduped model list for the agents that spoke in THIS round. Older
+    // sessions without modelByRole simply omit this line.
+    if (input.modelByRole) {
+      const rolesInRound = Array.from(new Set(input.messages.filter((m) => m.round === round).map((m) => m.agentRole)))
+      const seen = new Set<string>()
+      const pills: string[] = []
+      for (const role of rolesInRound) {
+        const m = input.modelByRole[role]
+        if (!m) continue
+        const key = `${m.provider}:${m.modelId}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        pills.push(m.label ? `${m.label} (${m.provider}:${m.modelId})` : `${m.provider}:${m.modelId}`)
+      }
+      if (pills.length > 0) {
+        lines.push(`**Models:** ${pills.join(', ')}`)
+        lines.push('')
+      }
+    }
     const roundMsgs = input.messages.filter((m) => m.round === round)
     for (const m of roundMsgs) {
       lines.push(`### ${m.agent}`)
@@ -50,6 +72,16 @@ export function buildTranscriptMarkdown(input: TranscriptInput): string {
       lines.push('')
     }
     const c = (input.conclusion ?? {}) as ConclusionShape
+    // UNCONVERGED transcripts should explain WHY — the Blind Critic's verdict
+    // tells the reader what was wrong with the synthesis they're about to see.
+    if (input.terminalState === 'UNCONVERGED' && c._criticVerdict) {
+      lines.push('> Flagged during review. The Blind Critic rejected the synthesis with:')
+      lines.push('>')
+      lines.push(`> ${c._criticVerdict}`)
+      lines.push('>')
+      lines.push("> The team's best synthesis is shown below — treat it as a working answer, not a final one.")
+      lines.push('')
+    }
     if (c.recommendation) {
       lines.push('### Recommendation')
       lines.push('')
@@ -99,4 +131,34 @@ export async function copyTranscriptToClipboard(input: TranscriptInput): Promise
     throw new Error('Clipboard API not available')
   }
   await navigator.clipboard.writeText(markdown)
+}
+
+// Serialize a single round's messages into markdown. Used by the per-round
+// copy/export icons in the RoundStrip header.
+export function buildRoundMarkdown(
+  question: string,
+  round: number,
+  roundTitle: string,
+  entries: DeliberationMessage[],
+  models: Array<{ provider: string; modelId: string; label: string }> = []
+): string {
+  const lines: string[] = []
+  lines.push(`# Round ${round} — ${roundTitle}`)
+  lines.push('')
+  if (models.length > 0) {
+    lines.push(`**Models:** ${models.map((m) => `${m.label} (${m.provider}:${m.modelId})`).join(', ')}`)
+    lines.push('')
+  }
+  lines.push('## Question')
+  lines.push('')
+  lines.push(`> ${question.trim()}`)
+  lines.push('')
+  for (const m of entries) {
+    lines.push(`### ${m.agent}`)
+    if (m.replyTarget) lines.push(`_replying to ${m.replyTarget}_`)
+    lines.push('')
+    lines.push(m.content.trim())
+    lines.push('')
+  }
+  return lines.join('\n')
 }
