@@ -195,8 +195,9 @@ export function useDeliberation(
           continue
         }
 
-        // run_agent or run_conclusion — execute the provider call
-        const apiKey = keyMapRef.current[cmd.model.provider]
+        // run_agent or run_conclusion — execute the provider call.
+        // Ollama is local and auth-free; invokeAgent uses a sentinel key for it.
+        const apiKey = cmd.model.provider === 'ollama' ? 'ollama-local' : keyMapRef.current[cmd.model.provider]
         if (!apiKey) {
           setStreamError(
             `Missing ${cmd.model.provider} API key. Add one in settings and reload to continue this deliberation.`
