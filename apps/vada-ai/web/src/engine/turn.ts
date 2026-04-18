@@ -21,9 +21,60 @@ function parseTarget(content: string): string | undefined {
   return match?.[1]?.trim()
 }
 
+// Best-effort repair of common JSON mistakes produced by smaller models.
+// Not a full parser — just targeted regex fixes for the shapes we've seen
+// in real deliberation outputs.
+function repairJson(s: string): string {
+  let out = s
+  // Missing comma between a string value and the next key:
+  //   "foo": "bar" "baz": "qux"  →  "foo": "bar", "baz": "qux"
+  // Requires the closing quote to be non-escaped. Whitespace (incl. newlines)
+  // between the two quoted tokens.
+  out = out.replace(/([^\\])"(\s+)"([A-Za-z_][A-Za-z0-9_]*)"(\s*):/g, '$1", "$3"$4:')
+  // Trailing comma before } or ]
+  out = out.replace(/,(\s*[}\]])/g, '$1')
+  return out
+}
+
+// Extract a JSON object from a model response that may be wrapped in code
+// fences, prefixed with prose, contain nested ``` blocks inside string
+// values, or have small syntax mistakes (missing commas, trailing commas).
+//
+// Strategy: try several candidate slices, with and without repair, and
+// return the first one that parses. Falls back to trimmed raw — JSON.parse
+// downstream will then throw and salvage takes over.
 function extractJson(raw: string): string {
-  const jsonMatch = /```(?:json)?\s*([\s\S]*?)```/i.exec(raw) ?? /(\{[\s\S]*\})/i.exec(raw)
-  return jsonMatch?.[1]?.trim() ?? raw.trim()
+  const trimmed = raw.trim()
+  const slices: string[] = []
+
+  // 1. Outer single ```json ... ``` wrapper around the entire response.
+  const outer = /^```(?:json)?\s*([\s\S]*?)\s*```\s*$/i.exec(trimmed)
+  if (outer?.[1]) slices.push(outer[1].trim())
+
+  // 2. First `{` to last `}` — robust against prose before/after the JSON.
+  const first = trimmed.indexOf('{')
+  const last = trimmed.lastIndexOf('}')
+  if (first !== -1 && last > first) slices.push(trimmed.slice(first, last + 1))
+
+  // 3. Raw as-is (model returned naked JSON with no wrapper).
+  slices.push(trimmed)
+
+  // Try each slice twice: first as-is, then with repair heuristics.
+  for (const s of slices) {
+    try {
+      JSON.parse(s)
+      return s
+    } catch {
+      try {
+        const repaired = repairJson(s)
+        JSON.parse(repaired)
+        return repaired
+      } catch {
+        // next slice
+      }
+    }
+  }
+  return trimmed
 }
 
 function parseConclusionJson(raw: string): Conclusion | null {
@@ -50,17 +101,50 @@ function parseConclusionLenient(raw: string, agents: string[]): Conclusion | nul
         if (typeof item === 'string') return { point: item, agents_involved: [] }
         if (item && typeof item === 'object') {
           const obj = item as Record<string, unknown>
-          return {
-            point:
-              typeof obj.point === 'string'
-                ? obj.point
-                : typeof obj.text === 'string'
-                  ? obj.text
-                  : JSON.stringify(item),
-            agents_involved: Array.isArray(obj.agents_involved)
-              ? obj.agents_involved.filter((a): a is string => typeof a === 'string')
-              : []
+          // Model drift observed in the wild: `{ agents, disagreement }`,
+          // `{ agents, disement }` (typo), `{ description }`, etc. Try each
+          // likely text field before giving up and stringifying the object.
+          // Try every text-ish key the models have produced in the wild.
+          // Order matters only when multiple are present — prefer the most
+          // specific first. `point_of_disagreement` is Qwen's favorite.
+          const textKeys = [
+            'point',
+            'point_of_disagreement',
+            'pointOfDisagreement',
+            'disagreement',
+            'disement',
+            'description',
+            'statement',
+            'summary',
+            'issue',
+            'text'
+          ]
+          let point: string | null = null
+          for (const k of textKeys) {
+            const v = obj[k]
+            if (typeof v === 'string' && v.trim().length > 0) {
+              point = v
+              break
+            }
           }
+          // Typo-tolerant fallback: if no recognized key matched, pick the
+          // longest non-empty string value in the object. Catches model
+          // typos like `poof_disagreement` or novel keys like `conflict`.
+          if (!point) {
+            let longest = ''
+            for (const k of Object.keys(obj)) {
+              const v = obj[k]
+              if (typeof v === 'string' && v.trim().length > longest.length) longest = v
+            }
+            if (longest) point = longest
+          }
+          if (!point) point = JSON.stringify(item)
+          const agentsInvolved = Array.isArray(obj.agents_involved)
+            ? obj.agents_involved.filter((a): a is string => typeof a === 'string')
+            : Array.isArray(obj.agents)
+              ? obj.agents.filter((a): a is string => typeof a === 'string')
+              : []
+          return { point, agents_involved: agentsInvolved }
         }
         return { point: String(item), agents_involved: [] }
       })
@@ -135,11 +219,11 @@ export async function recordTurn(sessionId: string, userId: string, payload: Tur
         if (round === 1) await updateSessionState(sessionId, 'ROUND_2')
         else if (round === 2) await updateSessionState(sessionId, 'ROUND_3')
         else if (round === 3) {
-          const hasSynth = session.agents.includes('synthesizer')
-          if (hasSynth) await updateSessionState(sessionId, 'CONCLUDING')
-          else {
-            await setSessionTerminalState(sessionId, 'SPARRING_COMPLETE')
-          }
+          // Every deliberation ends with a conclusion, regardless of team
+          // composition. The Synthesizer role is run even when no agent in
+          // the team has that role — the orchestrator falls back to the
+          // session's default model for the synthesis + audit passes.
+          await updateSessionState(sessionId, 'CONCLUDING')
         }
       }
       return

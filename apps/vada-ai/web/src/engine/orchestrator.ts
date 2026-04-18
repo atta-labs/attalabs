@@ -200,9 +200,11 @@ export function getNextCommand(session: SessionLike): NextCommand {
       const done = new Set(session.transcriptEntries.filter((e) => e.round === 3).map((e) => e.agent))
       const remaining = ordered.filter((a) => !done.has(a.name))
       const next = remaining[0]
-      const synthesizer = agents.find((a) => a.role === 'synthesizer')
       if (!next) {
-        if (!synthesizer) return { type: 'terminal', terminal_state: 'SPARRING_COMPLETE' }
+        // All rounds complete — every team goes through the conclusion
+        // protocol (synthesize → audit → maybe revise). If the team lacks a
+        // Synthesizer role (e.g. Sparring), the CONCLUDING handler below
+        // falls back to the session's default model for the synthesis.
         return { type: 'state_change', state: 'CONCLUDING' }
       }
       const prior = session.transcriptEntries.filter((e) => e.round <= 2)
