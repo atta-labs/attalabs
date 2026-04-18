@@ -18,6 +18,39 @@ interface UseGlobalModelSelectorProps {
   selectedPresetId: string | undefined
 }
 
+// Persist last picked model locally so the next /deliberate visit pre-selects
+// it. Kept client-only — matches the BYOK story (no server round trip) and is
+// per-device by nature.
+const LAST_MODEL_KEY = 'vada:last-model'
+
+interface LastModel {
+  provider: RouteProvider
+  modelId: string
+}
+
+function readLastModel(): LastModel | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(LAST_MODEL_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<LastModel>
+    if (!parsed.provider || typeof parsed.modelId !== 'string') return null
+    return { provider: parsed.provider as RouteProvider, modelId: parsed.modelId }
+  } catch {
+    return null
+  }
+}
+
+function writeLastModel(v: LastModel | null) {
+  if (typeof window === 'undefined') return
+  try {
+    if (v) window.localStorage.setItem(LAST_MODEL_KEY, JSON.stringify(v))
+    else window.localStorage.removeItem(LAST_MODEL_KEY)
+  } catch {
+    // quota exceeded / disabled — harmless, move on
+  }
+}
+
 export function useGlobalModelSelector({
   value,
   onChange,
@@ -65,6 +98,13 @@ export function useGlobalModelSelector({
   }, [baseCatalog, ollamaReachable, installedOllama])
 
   // ── Preset / default seeding on mount ──────────────────────────────────────
+  // Seeding priority:
+  //   1. Team-preset saved model (if user picked a preset and it has saved models)
+  //   2. Last-used model from localStorage (even if we're locked — the provider
+  //      is available as long as it's in identity.state.providers; the key
+  //      loads on DELIBERATE click via the existing unlock flow)
+  //   3. First catalog entry whose provider currently has a key in memory
+  //   4. Nothing — user picks manually
   useEffect(() => {
     if (selectedPresetId && initialTeamModels.length > 0) {
       const entry = initialTeamModels.find((m) => m.teamId === selectedPresetId)
@@ -75,6 +115,16 @@ export function useGlobalModelSelector({
       }
     }
     if (!value) {
+      const last = readLastModel()
+      if (last) {
+        const providerAvailable =
+          last.provider === 'ollama' || !!storedKeys[last.provider] || identity.state.providers.includes(last.provider)
+        const inCatalog = baseCatalog.some((e) => e.route === last.provider && e.modelId === last.modelId)
+        if (providerAvailable && inCatalog) {
+          onChange({ provider: last.provider, modelId: last.modelId, apiKey: storedKeys[last.provider] ?? '' })
+          return
+        }
+      }
       const first = baseCatalog.find((e) => storedKeys[e.route])
       if (first) {
         onChange({ provider: first.route, modelId: first.modelId, apiKey: storedKeys[first.route] ?? '' })
@@ -111,6 +161,13 @@ export function useGlobalModelSelector({
   }, [storedKeys])
 
   const pickerValue = useMemo(() => (value ? { route: value.provider, modelId: value.modelId } : null), [value])
+
+  // Persist every selection so next visit can seed from it. Effect watching
+  // `value` covers all write paths (picker change, preset change, key paste)
+  // without having to touch each one.
+  useEffect(() => {
+    if (value) writeLastModel({ provider: value.provider, modelId: value.modelId })
+  }, [value?.provider, value?.modelId])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   // Action-triggered unlock: picking a model whose provider has a saved-but-

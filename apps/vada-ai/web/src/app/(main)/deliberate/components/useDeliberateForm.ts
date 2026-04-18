@@ -26,6 +26,7 @@ export interface DeliberateFormState {
   setGlobalModel: (m: ModelSelection | null) => void
   loading: boolean
   canStart: boolean
+  needsUnlock: boolean
   hasAnyKey: boolean
   handleStart: () => Promise<void>
   faceStyle: FaceStyle
@@ -65,9 +66,17 @@ export function useDeliberateForm({
   // Ollama runs locally with no auth — treat as always-keyed from the
   // browser's perspective. If the server isn't running, the deliberation
   // turn will surface a clear "Could not reach Ollama" error.
-  const hasKeyForSelected =
+  const hasKeyInMemory =
     selectedProvider === 'ollama' ||
     (selectedProvider != null && (identity.hasKey(selectedProvider) || !!globalModel?.apiKey))
+  // Selected provider is saved-on-device but credentials aren't unlocked yet.
+  // DELIBERATE can still run — we'll unlock biometrically on click.
+  const needsUnlock =
+    !hasKeyInMemory &&
+    selectedProvider != null &&
+    identity.state.kind === 'locked' &&
+    identity.state.providers.includes(selectedProvider)
+  const hasKeyForSelected = hasKeyInMemory || needsUnlock
   const hasAnyKey = Object.keys(identity.state.keys).length > 0 || selectedProvider === 'ollama'
 
   const canStart = !!question.trim() && remainingToday > 0 && !loading && hasKeyForSelected
@@ -75,6 +84,23 @@ export function useDeliberateForm({
   const handleStart = async () => {
     if (!canStart) return
     setLoading(true)
+
+    // If the selected provider is saved-but-locked, unlock first. This is the
+    // one-click flow when the user arrives at /deliberate with a pre-seeded
+    // last-used model from localStorage — they shouldn't have to click the
+    // picker just to trigger biometric; hitting DELIBERATE does both.
+    if (needsUnlock) {
+      try {
+        await identity.unlockWithPasskey()
+      } catch (e) {
+        errorToast(
+          'Could not unlock',
+          e instanceof Error ? e.message : 'Try picking the model from the picker instead.'
+        )
+        setLoading(false)
+        return
+      }
+    }
 
     // Note: we do NOT send the apiKey to the server. Keys stay in the browser.
     // The browser will call the provider directly during the pull loop. See /trust.
@@ -113,6 +139,7 @@ export function useDeliberateForm({
     setGlobalModel,
     loading,
     canStart,
+    needsUnlock,
     hasAnyKey,
     handleStart,
     faceStyle

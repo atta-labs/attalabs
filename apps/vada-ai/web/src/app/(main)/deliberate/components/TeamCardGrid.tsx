@@ -33,6 +33,7 @@ interface TeamCardGridProps {
   onStart: () => void
   canStart: boolean
   loading: boolean
+  needsUnlock: boolean
   globalModel: ModelSelection | null
 }
 
@@ -42,6 +43,7 @@ export function TeamCardGrid({
   onStart,
   canStart,
   loading,
+  needsUnlock,
   globalModel
 }: TeamCardGridProps) {
   const catalog = useCatalog()
@@ -113,7 +115,9 @@ export function TeamCardGrid({
                 </div>
               </AIACanvas>
             }
-            ctaLabel={loading && isSelected ? 'STARTING…' : 'DELIBERATE'}
+            ctaLabel={
+              loading && isSelected ? 'STARTING…' : needsUnlock && isSelected ? 'UNLOCK & DELIBERATE' : 'DELIBERATE'
+            }
             onCtaClick={onStart}
             ctaDisabled={!canStart}
             selected={isSelected}
