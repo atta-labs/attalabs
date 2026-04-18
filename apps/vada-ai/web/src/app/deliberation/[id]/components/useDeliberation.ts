@@ -197,7 +197,26 @@ export function useDeliberation(
 
         // run_agent or run_conclusion — execute the provider call.
         // Ollama is local and auth-free; invokeAgent uses a sentinel key for it.
-        const apiKey = cmd.model.provider === 'ollama' ? 'ollama-local' : keyMapRef.current[cmd.model.provider]
+        let apiKey = cmd.model.provider === 'ollama' ? 'ollama-local' : keyMapRef.current[cmd.model.provider]
+
+        // Resume-case unlock: the user came back to an in-progress deliberation
+        // with saved-but-locked credentials. Trigger a passkey unlock instead
+        // of bailing with "Missing key" — that's the exact experience the
+        // picker gives on /deliberate, and it should work here too.
+        if (!apiKey && identity.state.kind === 'locked' && identity.state.providers.includes(cmd.model.provider)) {
+          try {
+            const freshKeys = await identity.unlockWithPasskey()
+            if (cancelled) return
+            apiKey = freshKeys[cmd.model.provider]
+          } catch (e) {
+            if (cancelled) return
+            setStreamError(
+              `Could not unlock ${cmd.model.provider} key: ${e instanceof Error ? e.message : 'passkey cancelled'}. Reload and try again.`
+            )
+            return
+          }
+        }
+
         if (!apiKey) {
           setStreamError(
             `Missing ${cmd.model.provider} API key. Add one in settings and reload to continue this deliberation.`

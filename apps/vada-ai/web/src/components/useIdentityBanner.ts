@@ -15,9 +15,10 @@ export function useIdentityBanner() {
   const [confirmForget, setConfirmForget] = useState(false)
 
   const hasInMemoryKeys = Object.keys(identity.state.keys).length > 0
+  const savedProviderLabels = identity.state.providers.map(providerLabel).join(', ')
   const providerSummary =
     identity.state.providers.length > 0
-      ? `${identity.state.providers.map(providerLabel).join(', ')} configured on this device.`
+      ? `${savedProviderLabels} configured on this device.`
       : hasInMemoryKeys
         ? `${(Object.keys(identity.state.keys) as typeof identity.state.providers).map(providerLabel).join(', ')} in memory for this session.`
         : 'no keys yet.'
@@ -63,6 +64,7 @@ export function useIdentityBanner() {
     hasInMemoryKeys,
     passkeySupported: identity.passkeySupported,
     providerSummary,
+    savedProviderLabels,
     busy,
     confirmForget,
     save,

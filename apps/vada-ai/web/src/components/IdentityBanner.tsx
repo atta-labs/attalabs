@@ -19,12 +19,13 @@ export function IdentityBanner() {
   if (b.kind === 'initializing') return null
 
   // Locked: tiny pill so the user knows something's stored on this device.
-  // Not a loud banner — the unlock happens when they pick a model.
+  // Name the provider(s) so "saved" isn't a mystery.
   if (b.kind === 'locked') {
+    const label = b.savedProviderLabels ? `${b.savedProviderLabels} saved` : 'Saved on this device'
     return (
       <div className='inline-flex items-center gap-1.5 self-start rounded-full border border-border bg-card/40 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
         <KeyRound className='size-2.5' aria-hidden />
-        Saved on this device · pick a model to unlock
+        {label} · pick a model to unlock
       </div>
     )
   }

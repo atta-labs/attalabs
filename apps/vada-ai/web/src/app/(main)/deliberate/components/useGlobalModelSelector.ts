@@ -115,9 +115,10 @@ export function useGlobalModelSelector({
   // ── Handlers ───────────────────────────────────────────────────────────────
   // Action-triggered unlock: picking a model whose provider has a saved-but-
   // locked key fires the biometric prompt right here. After unlock we probe
-  // the key against the provider — stale or garbage keys (e.g. mock-mode
-  // placeholders from earlier dev work) get dropped and the user is told to
-  // re-enter. Keeps the stored credential honest: "saved" means "verified".
+  // the key, but only DROP it when the probe says `invalid_key`. Rate limits,
+  // model-not-found, and transient/unreachable failures mean the key is still
+  // probably valid — destroying it on those would force a re-entry for a
+  // problem the user can't fix (e.g. Google quota burst).
   const handleChange = useCallback(
     async (next: { route: RouteProvider; modelId: string }) => {
       const needsUnlock =
@@ -132,20 +133,27 @@ export function useGlobalModelSelector({
             onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKey ?? '' })
             return
           }
-          // Verify the stored key still works. If not, drop it and the user
-          // gets a clear instruction — next pick of this provider shows the
-          // key-entry form because configuredRoutes no longer includes it.
           const probe = await probeProviderKey(next.route, storedKey, next.modelId)
-          if (!probe.ok) {
+          if (probe.kind === 'invalid_key') {
             identity.removeKey(next.route)
             errorToast(
-              `Your saved ${next.route} key no longer works`,
-              `Open the picker and select ${next.route} again to paste a fresh key. Reason: ${probe.error ?? 'key rejected by provider'}`,
+              `Your saved ${next.route} key is invalid`,
+              `Open the picker and select ${next.route} again to paste a fresh key.`,
               10000
             )
             return
           }
-          successToast('Unlocked', `Your ${next.route} key is loaded for this session.`)
+          // Keep the key. For non-ok but non-invalid probes, load it anyway
+          // and warn — the user's next deliberation attempt may still work.
+          if (!probe.ok) {
+            errorToast(
+              `${next.route} reachable, but probe warned`,
+              probe.error ?? 'Key loaded, but the probe returned a non-success response.',
+              6000
+            )
+          } else {
+            successToast('Unlocked', `Your ${next.route} key is loaded for this session.`)
+          }
           onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKey })
         } catch (e) {
           errorToast('Could not unlock', e instanceof Error ? e.message : 'Try again or enter keys manually.')
@@ -157,18 +165,27 @@ export function useGlobalModelSelector({
     [identity, storedKeys, onChange, successToast, errorToast]
   )
 
-  // Probe the key against the provider before persisting. Throwing on failure
-  // keeps the ModelPicker key-entry view open (it catches and shows inline).
+  // Probe the key against the provider before persisting. We REJECT only on
+  // `invalid_key` — the user pasted something bogus. For rate-limit /
+  // model-not-found / unreachable, accept the key (it's fine; the environment
+  // is the problem) but warn so the user knows their next run may fail.
   const handleProvideKey = useCallback(
     async (route: RouteProvider, key: string) => {
       const modelId = value?.provider === route ? value.modelId : undefined
       const probe = await probeProviderKey(route, key, modelId)
-      if (!probe.ok) {
-        throw new Error(probe.error ?? 'Could not verify key against provider.')
+      if (probe.kind === 'invalid_key') {
+        throw new Error(probe.error ?? 'Invalid API key.')
       }
       identity.setKey(route, key)
       if (value?.provider === route) onChange({ ...value, apiKey: key })
-      successToast('Key verified', `${route} is ready to use.`)
+      if (probe.ok) {
+        successToast('Key verified', `${route} is ready to use.`)
+      } else {
+        successToast(
+          `${route} saved with a warning`,
+          probe.error ?? 'Key stored; provider returned a non-success probe.'
+        )
+      }
     },
     [value, identity, onChange, successToast]
   )

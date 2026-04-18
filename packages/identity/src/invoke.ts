@@ -97,6 +97,17 @@ export async function invokeAgent(params: InvokeParams): Promise<InvokeResult> {
     abortSignal: params.signal,
     ...(providerOptions ? { providerOptions } : {})
   })
+
+  // streamText eagerly creates several promises (result.text, result.finishReason,
+  // etc). Callers only consume textStream — the unused promises would become
+  // "unhandled promise rejections" on failure, which Next dev surfaces as a
+  // red console overlay even when our try/catch around the stream iteration
+  // already handled the error. Wrap in Promise.resolve (result.text is a
+  // PromiseLike, not a Promise) and attach a no-op catch. Real error still
+  // surfaces from the for-await loop in useDeliberation.
+  Promise.resolve(result.text).catch(() => {})
+  if (result.finishReason) Promise.resolve(result.finishReason).catch(() => {})
+
   return {
     textStream: result.textStream,
     fullText: async () => await result.text
