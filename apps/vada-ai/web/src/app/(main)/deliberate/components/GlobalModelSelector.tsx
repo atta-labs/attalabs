@@ -1,10 +1,12 @@
 'use client'
 
-import { fetchInstalledOllamaModels, probeProviderKey } from '@atta/identity'
-import { useIdentity } from '@atta/identity/react'
-import { type ModelConfig, type ModelEntry, type RouteProvider, useCatalog } from '@atta/models'
-import { ModelPicker, useToastContext } from '@atta/ui'
-import { useEffect, useMemo, useState } from 'react'
+// Presentational only. All state / effects / handlers live in
+// useGlobalModelSelector. See that file for the Ollama fetch, catalog build,
+// preset seeding, action-triggered passkey unlock, and key-probe flow.
+
+import type { ModelConfig, RouteProvider } from '@atta/models'
+import { ModelPicker } from '@atta/ui'
+import { useGlobalModelSelector } from './useGlobalModelSelector'
 
 export interface ModelSelection {
   provider: RouteProvider
@@ -29,155 +31,15 @@ export function GlobalModelSelector({
   initialTeamModels = [],
   selectedPresetId
 }: GlobalModelSelectorProps) {
-  const baseCatalog = useCatalog()
-  const identity = useIdentity()
-  const storedKeys = identity.state.keys
-  const { successToast, errorToast } = useToastContext()
-
-  // Installed Ollama models (fetched live from localhost:11434/api/tags).
-  // null = not probed yet. Empty array = server reachable but nothing
-  // installed. Non-empty = server reachable and we have models.
-  // Ollama has no API key concept, so we always try to reach it — if it
-  // responds, we treat it as configured regardless of identity.state.keys.
-  const [installedOllama, setInstalledOllama] = useState<ModelEntry[] | null>(null)
-  const [ollamaReachable, setOllamaReachable] = useState<boolean | null>(null)
-  useEffect(() => {
-    let cancelled = false
-    fetchInstalledOllamaModels()
-      .then((models) => {
-        if (!cancelled) {
-          setInstalledOllama(models)
-          setOllamaReachable(true)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setInstalledOllama([])
-          setOllamaReachable(false)
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  // Build the final catalog shown in the picker.
-  // - Ollama not reachable → keep hardcoded defaults (discovery mode)
-  // - Ollama reachable + 0 installed → keep defaults so the user can discover
-  //   what to pull; at turn time the unreachable model will fail with a clear
-  //   error telling them to pull
-  // - Ollama reachable + N installed → show only what the user can run
-  const catalog = useMemo(() => {
-    if (!ollamaReachable || installedOllama === null || installedOllama.length === 0) return baseCatalog
-    const nonOllama = baseCatalog.filter((e) => e.route !== 'ollama')
-    return [...nonOllama, ...installedOllama]
-  }, [baseCatalog, ollamaReachable, installedOllama])
-
-  // Mount: seed from settings preset, else fall back to in-memory identity
-  useEffect(() => {
-    if (selectedPresetId && initialTeamModels.length > 0) {
-      const entry = initialTeamModels.find((m) => m.teamId === selectedPresetId)
-      if (entry) {
-        const route = entry.provider as RouteProvider
-        onChange({
-          provider: route,
-          modelId: entry.modelId,
-          apiKey: storedKeys[route] ?? ''
-        })
-        return
-      }
-    }
-    // Default selection: first catalog entry whose route has a stored key
-    if (!value) {
-      const first = baseCatalog.find((e) => storedKeys[e.route])
-      if (first) {
-        onChange({ provider: first.route, modelId: first.modelId, apiKey: storedKeys[first.route] ?? '' })
-      }
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Preset changed → reseed from settings
-  useEffect(() => {
-    if (!selectedPresetId || initialTeamModels.length === 0) return
-    const entry = initialTeamModels.find((m) => m.teamId === selectedPresetId)
-    if (!entry) return
-    const route = entry.provider as RouteProvider
-    onChange({
-      provider: route,
-      modelId: entry.modelId,
-      apiKey: storedKeys[route] ?? ''
-    })
-  }, [selectedPresetId]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Routes the user has some credential for.
-  // - In-memory keys: unlocked session
-  // - state.providers: locked session (keys exist encrypted in IndexedDB but
-  //   aren't loaded yet; unlock happens on first pick)
-  // - ollama: no auth, always configured when server is reachable
-  const configuredRoutes = new Set<RouteProvider>([
-    ...(settingsProviders as RouteProvider[]),
-    ...(Object.keys(storedKeys) as RouteProvider[]),
-    ...(identity.state.providers as RouteProvider[])
-  ])
-  if (ollamaReachable) configuredRoutes.add('ollama')
-
-  // Last-4 of each configured key, shown next to the provider heading in
-  // the picker. Never the full key — just enough for the user to cross-
-  // reference with their provider dashboard.
-  const routeHints: Partial<Record<RouteProvider, string>> = {}
-  for (const [route, key] of Object.entries(storedKeys) as [RouteProvider, string | undefined][]) {
-    if (key && key.length >= 4) routeHints[route] = key.slice(-4)
-  }
-
-  const pickerValue = value ? { route: value.provider, modelId: value.modelId } : null
-
-  const handleChange = async (next: { route: RouteProvider; modelId: string }) => {
-    // If the user has a saved key for this provider but the session is locked,
-    // trigger passkey unlock right here. This is the "action-triggered" flow:
-    // no persistent banner, no separate unlock button — you pick a model, you
-    // get a biometric prompt, keys load, model is selected.
-    const needsUnlock =
-      identity.state.kind === 'locked' && identity.state.providers.includes(next.route) && !storedKeys[next.route]
-
-    if (needsUnlock) {
-      try {
-        const freshKeys = await identity.unlockWithPasskey()
-        successToast('Unlocked', `Your ${next.route} key is loaded for this session.`)
-        onChange({ provider: next.route, modelId: next.modelId, apiKey: freshKeys[next.route] ?? '' })
-      } catch (e) {
-        errorToast('Could not unlock', e instanceof Error ? e.message : 'Try again or enter keys manually.')
-      }
-      return
-    }
-
-    onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKeys[next.route] ?? '' })
-  }
-
-  const handleProvideKey = async (route: RouteProvider, key: string) => {
-    // Probe the key against the provider before persisting it. See /trust —
-    // the probe is a browser → provider call with the user's own key; it
-    // never touches the Vāda server.
-    //
-    // Throwing on failure keeps the ModelPicker's key-entry view open and
-    // surfaces the error inline. The picker closes only on a resolved promise.
-    const modelId = value?.provider === route ? value.modelId : undefined
-    const probe = await probeProviderKey(route, key, modelId)
-    if (!probe.ok) {
-      throw new Error(probe.error ?? 'Could not verify key against provider.')
-    }
-    identity.setKey(route, key)
-    if (value?.provider === route) onChange({ ...value, apiKey: key })
-    successToast('Key verified', `${route} is ready to use.`)
-  }
-
+  const g = useGlobalModelSelector({ value, onChange, settingsProviders, initialTeamModels, selectedPresetId })
   return (
     <ModelPicker
-      options={catalog}
-      value={pickerValue}
-      onChange={handleChange}
-      configuredRoutes={configuredRoutes}
-      routeHints={routeHints}
-      onProvideKey={handleProvideKey}
+      options={g.catalog}
+      value={g.pickerValue}
+      onChange={g.handleChange}
+      configuredRoutes={g.configuredRoutes}
+      routeHints={g.routeHints}
+      onProvideKey={g.handleProvideKey}
       mode='modal'
       settingsHref='/settings'
       settingsLabel='Configure defaults →'

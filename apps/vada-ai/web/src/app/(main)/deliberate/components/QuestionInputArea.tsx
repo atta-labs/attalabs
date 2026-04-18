@@ -25,8 +25,7 @@ export function QuestionInputArea({
   return (
     <div className='relative'>
       <Textarea
-        variant='default'
-        textareaClassName='text-xl font-serif font-light italic text-left leading-tight placeholder:text-foreground/50 resize-none px-3 pb-10'
+        textareaClassName='text-xl text-left leading-tight placeholder:text-foreground/50 resize-none px-3'
         className='w-full'
         placeholder='What decision are you wrestling with?'
         value={question}
