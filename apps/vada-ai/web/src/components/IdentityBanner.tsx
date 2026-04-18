@@ -15,7 +15,19 @@ import { useIdentityBanner } from './useIdentityBanner'
 export function IdentityBanner() {
   const b = useIdentityBanner()
 
-  if (b.kind === 'initializing' || b.kind === 'locked') return null
+  // Initializing: stay silent until the mount-time IndexedDB check resolves.
+  if (b.kind === 'initializing') return null
+
+  // Locked: tiny pill so the user knows something's stored on this device.
+  // Not a loud banner — the unlock happens when they pick a model.
+  if (b.kind === 'locked') {
+    return (
+      <div className='inline-flex items-center gap-1.5 self-start rounded-full border border-border bg-card/40 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
+        <KeyRound className='size-2.5' aria-hidden />
+        Saved on this device · pick a model to unlock
+      </div>
+    )
+  }
 
   if (b.kind === 'no-stored-credential' && !b.hasInMemoryKeys) {
     return (
