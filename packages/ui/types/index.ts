@@ -19,6 +19,7 @@ export type { BadgeAnimation, BadgeProps, BadgeShape, BadgeSize, BadgeVariant } 
 // Form
 export type { InputBlockProps, InputProps, InputSize, InputVariant } from './form/input'
 export type { TextareaProps, TextareaSize, TextareaVariant } from './form/textarea'
+export type { SliderProps } from './form/slider'
 
 // Layout
 export type { FlexAlign, FlexDirection, FlexJustify, FlexProps, FlexWrap } from './layout/flex'

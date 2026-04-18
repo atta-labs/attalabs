@@ -84,6 +84,7 @@ export const REQUIRED_COMPONENTS = [
   // Form
   'Input',
   'Textarea',
+  'Slider',
 
   // Layout
   'Separator',
@@ -169,6 +170,9 @@ export const REQUIRED_TYPES = [
   'TextareaProps',
   'TextareaSize',
   'TextareaVariant',
+
+  // Form — Slider
+  'SliderProps',
 
   // Layout — Flex
   'FlexAlign',

@@ -53,6 +53,7 @@ export {
 } from '../installed/model-picker'
 // Layout
 export { Separator } from './layout/separator'
+export { Slider } from '../installed/slider'
 // Table
 export {
   Table,

@@ -10,6 +10,8 @@ export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 export { Input } from '../../basic/installed/input'
 // Layout — falls back to basic
 export { Separator } from '../../basic/installed/separator'
+// Form — falls back to basic
+export { Slider } from '../../basic/installed/slider'
 // Table — falls back to basic
 export {
   Table,

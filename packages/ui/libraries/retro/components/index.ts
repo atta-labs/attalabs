@@ -45,6 +45,8 @@ export {
 } from '../../basic/installed/model-picker'
 // Layout — falls back to basic
 export { Separator } from '../../basic/installed/separator'
+// Form — falls back to basic
+export { Slider } from '../../basic/installed/slider'
 // Table — falls back to basic
 export {
   Table,
