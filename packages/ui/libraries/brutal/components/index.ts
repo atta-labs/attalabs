@@ -35,7 +35,7 @@ export {
   CommandSeparator,
   CommandShortcut
 } from '../../basic/installed/command'
-export { Input } from '../../basic/installed/input'
+export { Input } from '../installed/input'
 // Model
 export { ModelIcon, type ModelIconProps } from '../../basic/installed/model-icon'
 export {
