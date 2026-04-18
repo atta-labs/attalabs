@@ -46,21 +46,26 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
   const cryptoKeyRef = useRef<CryptoKey | null>(null)
   const credentialIdRef = useRef<ArrayBuffer | null>(null)
 
-  // On mount, check passkey support + stored credential
+  // On mount, check passkey support + stored credential.
+  // If the credential exists but has no providers (e.g. user removed all keys
+  // and the re-encrypt effect wrote an empty keymap back), treat it as no
+  // credential. Otherwise we'd show 'locked' with nothing to actually unlock.
   useEffect(() => {
     setPasskeySupported(isPasskeySupported())
     loadCredential()
       .then((cred) => {
-        if (cred) {
+        if (cred && cred.providers.length > 0) {
           credentialIdRef.current = cred.credentialId
           setProviders(cred.providers)
           setStateKind('locked')
         } else {
+          // Empty or missing credential — also clean up IndexedDB if a zombie
+          // record exists, so next visit isn't confused.
+          if (cred) clearCredential().catch(() => {})
           setStateKind('no-stored-credential')
         }
       })
       .catch(() => {
-        // IndexedDB unavailable (private mode, quota) — treat as no credential
         setStateKind('no-stored-credential')
       })
   }, [])
