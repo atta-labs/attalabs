@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@atta/ui/lib/utils'
-import { Checkbox as RetroUICheckbox } from '@atta/ui/basic/installed/checkbox'
+import { Checkbox as RetroUICheckbox } from '../../../basic/installed/checkbox'
 import type { ComponentProps } from 'react'
 
 type CheckboxProps = ComponentProps<typeof RetroUICheckbox>

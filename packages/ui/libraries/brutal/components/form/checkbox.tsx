@@ -1,6 +1,6 @@
 'use client'
 
-import { Checkbox as BrutalCheckbox } from '@atta/ui/brutal/installed/checkbox'
+import { Checkbox as BrutalCheckbox } from '../../installed/checkbox'
 import type { CheckboxProps } from '@atta/ui/types'
 import * as React from 'react'
 

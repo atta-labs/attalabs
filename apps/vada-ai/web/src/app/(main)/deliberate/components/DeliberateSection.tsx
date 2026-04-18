@@ -1,7 +1,7 @@
 'use client'
 
-import { Button } from '@atta/ui'
-import { Check, GitCompare } from 'lucide-react'
+import { Checkbox } from '@atta/ui'
+import { GitCompare } from 'lucide-react'
 import { IdentityBanner } from '@/components/IdentityBanner'
 import { QuestionInputArea } from './QuestionInputArea'
 import { TeamCardGrid } from './TeamCardGrid'
@@ -29,21 +29,23 @@ export function DeliberateSection(props: DeliberateSectionProps) {
         configuredProviders={props.configuredProviders}
         initialTeamModels={props.initialTeamModels}
       />
-      {/* Toggle-button pattern (no Checkbox primitive in @atta/ui). Off by
-          default — extra API calls cost tokens/time so opt-in matches the
-          BYOK ethos of not spending without intent. When on: browser fires
-          a single-shot baseline in parallel with the deliberation, then an
-          AI-judge compare after terminal. Results at /deliberation/[id]/benchmark. */}
-      <Button
-        type='button'
-        size='sm'
-        variant={form.benchmarkEnabled ? 'default' : 'outline'}
-        onClick={() => form.setBenchmarkEnabled(!form.benchmarkEnabled)}
-        className='self-start'
+      {/* Opt-in benchmark. Extra API calls cost tokens/time so opt-in matches
+          the BYOK ethos of not spending without intent. When on: the browser
+          fires a single-shot baseline in parallel with the deliberation and
+          an AI-judge compare after terminal. Results at
+          /deliberation/[id]/benchmark. */}
+      <label
+        htmlFor='vada-benchmark-checkbox'
+        className='flex items-center gap-2 self-start text-[13px] text-muted-foreground hover:text-foreground'
       >
-        {form.benchmarkEnabled ? <Check className='mr-1.5 size-3.5' /> : <GitCompare className='mr-1.5 size-3.5' />}
+        <Checkbox
+          id='vada-benchmark-checkbox'
+          checked={form.benchmarkEnabled}
+          onCheckedChange={(v) => form.setBenchmarkEnabled(v === true)}
+        />
+        <GitCompare className='size-3.5' />
         Run benchmark comparison (single-shot + AI judge)
-      </Button>
+      </label>
       <TeamCardGrid
         selectedPreset={form.selectedPreset}
         onSelectPreset={form.setSelectedPreset}

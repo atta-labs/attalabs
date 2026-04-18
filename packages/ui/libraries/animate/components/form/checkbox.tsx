@@ -3,7 +3,7 @@
 import {
   CheckboxIndicator as CheckboxIndicatorPrimitive,
   Checkbox as CheckboxPrimitive
-} from '@atta/ui/animate/installed/checkbox'
+} from '../../installed/checkbox'
 import { cn } from '@atta/ui/lib/utils'
 import type { CheckboxProps as CheckboxPropsContract } from '@atta/ui/types'
 import { cva, type VariantProps } from 'class-variance-authority'
