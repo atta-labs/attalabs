@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
-import { createSession, getDailySessionCount, getOrCreateUser } from '@/db/queries'
+import { createSession, getDailySessionCount, getOrCreateUser, initBenchmarkMetrics } from '@/db/queries'
 import { DEFAULT_ROOM, getDailySessionLimit } from '@/schemas'
 import { ROUTE_PROVIDER_ORDER, type RouteProvider } from '@atta/models'
 import { z } from 'zod'
@@ -15,7 +15,11 @@ const StartSchema = z.object({
   agents: z.array(z.string()).min(2).max(6).optional(),
   provider: providerEnum.optional(),
   modelId: z.string().optional(),
-  agentModels: z.record(z.string(), AgentModelEntry).optional()
+  agentModels: z.record(z.string(), AgentModelEntry).optional(),
+  // Opt-in benchmark — when true we create a benchmark_metrics row so the
+  // browser can POST baseline + judge results and the engine can aggregate
+  // deliberation tokens as they arrive.
+  benchmark: z.boolean().optional()
 })
 
 export async function POST(request: Request) {
@@ -51,5 +55,8 @@ export async function POST(request: Request) {
     parsed.data.modelId,
     parsed.data.agentModels
   )
-  return NextResponse.json({ session_id: session.id })
+  if (parsed.data.benchmark) {
+    await initBenchmarkMetrics(session.id)
+  }
+  return NextResponse.json({ session_id: session.id, benchmark: !!parsed.data.benchmark })
 }

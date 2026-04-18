@@ -191,3 +191,87 @@ export async function insertConclusion(data: {
     })
     .returning()
 }
+
+// --- Benchmark metrics (optional A/B comparison) ---
+
+export async function initBenchmarkMetrics(sessionId: string) {
+  await db.insert(schema.benchmarkMetrics).values({ sessionId }).onConflictDoNothing()
+}
+
+export async function getBenchmarkMetrics(sessionId: string) {
+  const rows = await db
+    .select()
+    .from(schema.benchmarkMetrics)
+    .where(eq(schema.benchmarkMetrics.sessionId, sessionId))
+    .limit(1)
+  return rows[0] ?? null
+}
+
+export async function saveBaselineMetrics(
+  sessionId: string,
+  data: {
+    answer: string
+    provider: string
+    modelId: string
+    tokensInput: number | null
+    tokensOutput: number | null
+    elapsedMs: number
+  }
+) {
+  await db
+    .update(schema.benchmarkMetrics)
+    .set({
+      baselineAnswer: data.answer,
+      baselineProvider: data.provider,
+      baselineModelId: data.modelId,
+      baselineTokensInput: data.tokensInput,
+      baselineTokensOutput: data.tokensOutput,
+      baselineElapsedMs: data.elapsedMs,
+      baselineCreatedAt: new Date(),
+      updatedAt: new Date()
+    })
+    .where(eq(schema.benchmarkMetrics.sessionId, sessionId))
+}
+
+export async function saveJudgeMetrics(
+  sessionId: string,
+  data: {
+    response: string
+    tokensInput: number | null
+    tokensOutput: number | null
+    elapsedMs: number
+  }
+) {
+  await db
+    .update(schema.benchmarkMetrics)
+    .set({
+      judgeResponse: data.response,
+      judgeTokensInput: data.tokensInput,
+      judgeTokensOutput: data.tokensOutput,
+      judgeElapsedMs: data.elapsedMs,
+      judgeCreatedAt: new Date(),
+      updatedAt: new Date()
+    })
+    .where(eq(schema.benchmarkMetrics.sessionId, sessionId))
+}
+
+export async function bumpDeliberationMetrics(
+  sessionId: string,
+  data: {
+    tokensInput: number | null
+    tokensOutput: number | null
+    elapsedMs: number
+  }
+) {
+  // Sum atomically via SQL expression — don't read-modify-write on the client.
+  await db
+    .update(schema.benchmarkMetrics)
+    .set({
+      deliberationTokensInput: sql`${schema.benchmarkMetrics.deliberationTokensInput} + ${data.tokensInput ?? 0}`,
+      deliberationTokensOutput: sql`${schema.benchmarkMetrics.deliberationTokensOutput} + ${data.tokensOutput ?? 0}`,
+      deliberationSumElapsedMs: sql`${schema.benchmarkMetrics.deliberationSumElapsedMs} + ${data.elapsedMs}`,
+      deliberationCallCount: sql`${schema.benchmarkMetrics.deliberationCallCount} + 1`,
+      updatedAt: new Date()
+    })
+    .where(eq(schema.benchmarkMetrics.sessionId, sessionId))
+}

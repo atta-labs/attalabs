@@ -78,6 +78,46 @@ export const conclusions = pgTable('conclusions', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 })
 
+// ── Benchmark metrics ────────────────────────────────────────────────────────
+// Optional A/B comparison per session — only populated when the user opts into
+// the benchmark checkbox on /deliberate. Captures a single-shot baseline
+// response against the deliberation's synthesis, plus an AI judge verdict
+// comparing them, plus token/elapsed metrics for both branches. See the
+// /deliberation/[id]/benchmark page and the plan doc in specs/v2/plans/.
+
+export const benchmarkMetrics = pgTable('benchmark_metrics', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id')
+    .references(() => sessions.id)
+    .unique()
+    .notNull(),
+
+  // Single-shot baseline — same model, same question, no deliberation.
+  baselineAnswer: text('baseline_answer'),
+  baselineProvider: varchar('baseline_provider'),
+  baselineModelId: varchar('baseline_model_id'),
+  baselineTokensInput: integer('baseline_tokens_input'),
+  baselineTokensOutput: integer('baseline_tokens_output'),
+  baselineElapsedMs: integer('baseline_elapsed_ms'),
+  baselineCreatedAt: timestamp('baseline_created_at'),
+
+  // AI judge verdict — same model asked to compare the two outputs.
+  judgeResponse: text('judge_response'),
+  judgeTokensInput: integer('judge_tokens_input'),
+  judgeTokensOutput: integer('judge_tokens_output'),
+  judgeElapsedMs: integer('judge_elapsed_ms'),
+  judgeCreatedAt: timestamp('judge_created_at'),
+
+  // Deliberation aggregate — summed across every agent/round/conclusion call.
+  deliberationTokensInput: integer('deliberation_tokens_input').default(0).notNull(),
+  deliberationTokensOutput: integer('deliberation_tokens_output').default(0).notNull(),
+  deliberationSumElapsedMs: integer('deliberation_sum_elapsed_ms').default(0).notNull(),
+  deliberationCallCount: integer('deliberation_call_count').default(0).notNull(),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+})
+
 // ── Settings ─────────────────────────────────────────────────────────────────
 // Note: there is no user_api_keys table. Keys live only in the user's browser.
 // See /trust for the BYOK architecture guarantee.

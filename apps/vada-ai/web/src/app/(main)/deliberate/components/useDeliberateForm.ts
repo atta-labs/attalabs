@@ -1,5 +1,6 @@
 'use client'
 
+import { invokeAgent } from '@atta/identity'
 import { useIdentity } from '@atta/identity/react'
 import { useToastContext } from '@atta/ui'
 import type { FaceStyle } from '@atta/ui/canvas'
@@ -8,6 +9,42 @@ import { useEffect, useState } from 'react'
 import { useUserPreferences } from '@/lib/user-preferences-context'
 import { PRESETS, type Preset } from '@/schemas'
 import type { ModelSelection } from './GlobalModelSelector'
+
+// Fire the single-shot baseline call in parallel with session navigation.
+// Fire-and-forget — the page the user lands on doesn't block on this; when
+// the response lands we POST it to /api/sessions/[id]/baseline.
+async function fireBaselineBenchmark(sessionId: string, question: string, model: ModelSelection): Promise<void> {
+  const apiKey = model.provider === 'ollama' ? 'ollama-local' : model.apiKey
+  if (!apiKey) return
+  const start = performance.now()
+  try {
+    const result = await invokeAgent({
+      provider: model.provider,
+      modelId: model.modelId,
+      apiKey,
+      systemPrompt: "Answer the user's question directly. No framing, no caveats. If code is useful, include it.",
+      userPrompt: question
+    })
+    const text = await result.fullText()
+    const elapsedMs = Math.round(performance.now() - start)
+    await fetch(`/api/sessions/${sessionId}/baseline`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        answer: text,
+        provider: model.provider,
+        modelId: model.modelId,
+        tokensInput: null,
+        tokensOutput: null,
+        elapsedMs
+      })
+    })
+  } catch (e) {
+    // Benchmark is opt-in and cosmetic — surface via console, don't toast.
+    // The deliberation itself runs fine whether or not baseline lands.
+    console.warn('[benchmark] baseline call failed', e)
+  }
+}
 
 interface UseDeliberateFormProps {
   remainingToday: number
@@ -28,6 +65,8 @@ export interface DeliberateFormState {
   canStart: boolean
   needsUnlock: boolean
   hasAnyKey: boolean
+  benchmarkEnabled: boolean
+  setBenchmarkEnabled: (v: boolean) => void
   handleStart: () => Promise<void>
   faceStyle: FaceStyle
 }
@@ -41,6 +80,7 @@ export function useDeliberateForm({
   const [selectedPreset, setSelectedPreset] = useState<Preset>(PRESETS[0]!)
   const [globalModel, setGlobalModel] = useState<ModelSelection | null>(null)
   const [loading, setLoading] = useState(false)
+  const [benchmarkEnabled, setBenchmarkEnabled] = useState(false)
   const router = useRouter()
   const { errorToast } = useToastContext()
   const { faceStyle } = useUserPreferences()
@@ -110,7 +150,8 @@ export function useDeliberateForm({
       ...(globalModel && {
         provider: globalModel.provider,
         modelId: globalModel.modelId
-      })
+      }),
+      benchmark: benchmarkEnabled
     }
 
     const res = await fetch('/api/deliberation/start', {
@@ -127,6 +168,14 @@ export function useDeliberateForm({
     }
 
     const { session_id } = await res.json()
+
+    // If benchmark was enabled AND we have a usable model selection, fire the
+    // baseline call in parallel. Intentionally NOT awaited — the user
+    // navigates immediately; the fetch settles in the background.
+    if (benchmarkEnabled && globalModel) {
+      void fireBaselineBenchmark(session_id, question.trim(), globalModel)
+    }
+
     router.push(`/deliberation/${session_id}`)
   }
 
@@ -141,6 +190,8 @@ export function useDeliberateForm({
     canStart,
     needsUnlock,
     hasAnyKey,
+    benchmarkEnabled,
+    setBenchmarkEnabled,
     handleStart,
     faceStyle
   }
