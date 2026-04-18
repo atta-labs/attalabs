@@ -132,14 +132,16 @@ export function useGlobalModelSelector({
             onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKey ?? '' })
             return
           }
-          // Verify the stored key still works. If not, drop it and ask for a
-          // new one — the picker's onProvideKey flow handles re-entry.
+          // Verify the stored key still works. If not, drop it and the user
+          // gets a clear instruction — next pick of this provider shows the
+          // key-entry form because configuredRoutes no longer includes it.
           const probe = await probeProviderKey(next.route, storedKey, next.modelId)
           if (!probe.ok) {
             identity.removeKey(next.route)
             errorToast(
-              `Stored ${next.route} key didn't verify`,
-              probe.error ?? 'It looks stale. Enter a fresh key for this provider.'
+              `Your saved ${next.route} key no longer works`,
+              `Open the picker and select ${next.route} again to paste a fresh key. Reason: ${probe.error ?? 'key rejected by provider'}`,
+              10000
             )
             return
           }
