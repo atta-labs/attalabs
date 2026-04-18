@@ -35,6 +35,47 @@ function parseConclusionJson(raw: string): Conclusion | null {
   }
 }
 
+// Second-chance parse. Some providers (Gemini is the worst offender) return
+// valid JSON that almost matches the schema but flattens `unresolved_points`
+// into a string[] and omits `participants`. The deliberation already happened;
+// dropping to salvage loses all the structure. Instead we coerce the known
+// drift shapes and re-validate before giving up.
+function parseConclusionLenient(raw: string, agents: string[]): Conclusion | null {
+  try {
+    const parsed = JSON.parse(extractJson(raw)) as Record<string, unknown>
+    const patched: Record<string, unknown> = { ...parsed }
+
+    if (Array.isArray(patched.unresolved_points)) {
+      patched.unresolved_points = patched.unresolved_points.map((item) => {
+        if (typeof item === 'string') return { point: item, agents_involved: [] }
+        if (item && typeof item === 'object') {
+          const obj = item as Record<string, unknown>
+          return {
+            point:
+              typeof obj.point === 'string'
+                ? obj.point
+                : typeof obj.text === 'string'
+                  ? obj.text
+                  : JSON.stringify(item),
+            agents_involved: Array.isArray(obj.agents_involved)
+              ? obj.agents_involved.filter((a): a is string => typeof a === 'string')
+              : []
+          }
+        }
+        return { point: String(item), agents_involved: [] }
+      })
+    }
+
+    if (!Array.isArray(patched.participants)) {
+      patched.participants = agents.map((a) => ({ agent: a, version: 'v1' }))
+    }
+
+    return ConclusionSchema.parse(patched)
+  } catch {
+    return null
+  }
+}
+
 // Build a best-effort Conclusion from raw model output when schema parsing
 // fails. The deliberation already happened — users should still see what the
 // Synthesizer said, tagged with an honest note that it wasn't structured
@@ -105,19 +146,17 @@ export async function recordTurn(sessionId: string, userId: string, payload: Tur
     }
 
     case 'synthesize': {
-      const parsed = parseConclusionJson(payload.content)
-      // When strict parsing fails, salvage a best-effort conclusion from the
-      // raw text instead of blackholing the whole deliberation. The audit
-      // still runs — the Blind Critic will reject a salvaged conclusion most
-      // of the time, which puts the transcript in REVISING where a second
-      // pass can produce cleaner JSON. At minimum, the user sees what the
-      // Synthesizer actually said.
-      const conclusion = parsed ?? salvageConclusion(payload.content, session.agents)
+      // Strict → lenient → salvage. Lenient catches providers (Gemini) that
+      // return valid JSON with unresolved_points as string[] and no
+      // participants. Salvage only fires when the payload isn't even JSON.
+      const strict = parseConclusionJson(payload.content)
+      const lenient = strict ?? parseConclusionLenient(payload.content, session.agents)
+      const conclusion = lenient ?? salvageConclusion(payload.content, session.agents)
       await deleteConclusionBySession(sessionId)
       await insertConclusion({
         sessionId,
         originalJson: conclusion,
-        criticVerdict: parsed ? 'PENDING_AUDIT' : 'SALVAGED_FROM_RAW',
+        criticVerdict: strict ? 'PENDING_AUDIT' : lenient ? 'COERCED_FROM_LOOSE_JSON' : 'SALVAGED_FROM_RAW',
         terminalState: 'UNCONVERGED',
         reviewBy: conclusion.review_by
       })
@@ -148,8 +187,9 @@ export async function recordTurn(sessionId: string, userId: string, payload: Tur
 
     case 'revise': {
       if (!session.conclusion) return
-      const parsed = parseConclusionJson(payload.content)
-      const revised = parsed ?? salvageConclusion(payload.content, session.agents)
+      const strict = parseConclusionJson(payload.content)
+      const lenient = strict ?? parseConclusionLenient(payload.content, session.agents)
+      const revised = lenient ?? salvageConclusion(payload.content, session.agents)
       await deleteConclusionBySession(sessionId)
       await insertConclusion({
         sessionId,

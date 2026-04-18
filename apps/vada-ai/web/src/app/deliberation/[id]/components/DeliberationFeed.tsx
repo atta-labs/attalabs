@@ -23,9 +23,15 @@ interface DeliberationFeedProps {
 }
 
 // ── Outer wrapper — AIACanvas provides context for AIASphere in AgentCard ──
+// Pause the rAF loop when the session is already terminal on load. A completed
+// deliberation is a read-only page; the animation just burns CPU and causes
+// visible scroll jank on long transcripts (matchContentHeight canvases can be
+// several viewports tall). Particle state is preserved, so if the user later
+// triggers something, resuming is free.
 export function DeliberationFeed(props: DeliberationFeedProps) {
+  const isAlreadyTerminal = props.initialState === 'TERMINAL'
   return (
-    <AIACanvas alwaysRenderSpheres matchContentHeight className='relative w-full'>
+    <AIACanvas alwaysRenderSpheres matchContentHeight paused={isAlreadyTerminal} className='relative w-full'>
       <DeliberationScene {...props} />
     </AIACanvas>
   )
