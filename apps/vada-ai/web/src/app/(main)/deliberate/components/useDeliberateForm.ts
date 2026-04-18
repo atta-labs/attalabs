@@ -5,7 +5,7 @@ import { useIdentity } from '@atta/identity/react'
 import { useToastContext } from '@atta/ui'
 import type { FaceStyle } from '@atta/ui/canvas'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUserPreferences } from '@/lib/user-preferences-context'
 import { PRESETS, type Preset } from '@/schemas'
 import type { ModelSelection } from './GlobalModelSelector'
@@ -121,7 +121,14 @@ export function useDeliberateForm({
 
   const canStart = !!question.trim() && remainingToday > 0 && !loading && hasKeyForSelected
 
-  const handleStart = async () => {
+  // Ref-pattern for a truly stable handleStart reference. If we used a plain
+  // useCallback with [question, benchmarkEnabled, ...] deps, the ref would
+  // change on every keystroke and defeat the memo on TeamCardGrid, causing
+  // the agent spheres to flicker on input. The ref-indirection keeps the
+  // exposed callback's identity stable across renders while always calling
+  // the latest closure (which sees fresh state).
+  const handleStartImplRef = useRef<() => Promise<void>>(() => Promise.resolve())
+  handleStartImplRef.current = async () => {
     if (!canStart) return
     setLoading(true)
 
@@ -178,6 +185,7 @@ export function useDeliberateForm({
 
     router.push(`/deliberation/${session_id}`)
   }
+  const handleStart = useCallback(() => handleStartImplRef.current(), [])
 
   return {
     question,

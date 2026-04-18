@@ -5,6 +5,7 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { TeamCard } from '@atta/ui/shared'
 import { ModelIcon } from '@atta/ui'
 import { useCatalog } from '@atta/models'
+import { memo } from 'react'
 import { PRESETS, type Preset, type PresetId } from '@/schemas'
 import type { ModelSelection } from './GlobalModelSelector'
 
@@ -37,7 +38,13 @@ interface TeamCardGridProps {
   globalModel: ModelSelection | null
 }
 
-export function TeamCardGrid({
+// Memoized: every keystroke in the question input and every Checkbox click
+// re-renders the parent DeliberateSection. Without memo, that cascade re-
+// renders each TeamCard → AIACanvas → AIAgent spheres → visible flicker on
+// matrix rain + particle positions. Default shallow equality is enough here
+// because useDeliberateForm wraps handleStart in useCallback (stable ref)
+// and PRESETS are module-level constants (stable refs).
+export const TeamCardGrid = memo(function TeamCardGrid({
   selectedPreset,
   onSelectPreset,
   onStart,
@@ -127,4 +134,4 @@ export function TeamCardGrid({
       })}
     </div>
   )
-}
+})
