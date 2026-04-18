@@ -67,6 +67,50 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
   // string values still unwraps correctly.
   const repairJson = (s: string): string =>
     s.replace(/([^\\])"(\s+)"([A-Za-z_][A-Za-z0-9_]*)"(\s*):/g, '$1", "$3"$4:').replace(/,(\s*[}\]])/g, '$1')
+  // Close truncated JSON — mirror of the engine helper so old sessions
+  // where the Synthesizer hit max_tokens mid-string still render.
+  const closeTruncatedJson = (s: string): string | null => {
+    let inString = false
+    let escaped = false
+    let braces = 0
+    let brackets = 0
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i]
+      if (escaped) {
+        escaped = false
+        continue
+      }
+      if (c === '\\') {
+        escaped = true
+        continue
+      }
+      if (c === '"') {
+        inString = !inString
+        continue
+      }
+      if (inString) continue
+      if (c === '{') braces++
+      else if (c === '}') braces--
+      else if (c === '[') brackets++
+      else if (c === ']') brackets--
+      if (braces < 0 || brackets < 0) return null
+    }
+    let out = s
+    if (inString) {
+      if (out.endsWith('\\')) out = out.slice(0, -1)
+      out += '"'
+    }
+    out = out.replace(/,\s*$/, '')
+    while (brackets > 0) {
+      out += ']'
+      brackets--
+    }
+    while (braces > 0) {
+      out += '}'
+      braces--
+    }
+    return out
+  }
   const tryExtractJson = (raw: string): Record<string, unknown> | null => {
     const trimmed = raw.trim()
     const slices: string[] = []
@@ -77,7 +121,11 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
     if (first !== -1 && last > first) slices.push(trimmed.slice(first, last + 1))
     slices.push(trimmed)
     for (const s of slices) {
-      for (const candidate of [s, repairJson(s)]) {
+      const closed = closeTruncatedJson(s)
+      const candidates = [s, repairJson(s), closed, closed ? repairJson(closed) : null].filter(
+        (c): c is string => typeof c === 'string'
+      )
+      for (const candidate of candidates) {
         try {
           const parsed = JSON.parse(candidate) as Record<string, unknown>
           if (parsed && typeof parsed.recommendation === 'string') return parsed

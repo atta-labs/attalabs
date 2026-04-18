@@ -28,11 +28,66 @@ function repairJson(s: string): string {
   let out = s
   // Missing comma between a string value and the next key:
   //   "foo": "bar" "baz": "qux"  →  "foo": "bar", "baz": "qux"
-  // Requires the closing quote to be non-escaped. Whitespace (incl. newlines)
-  // between the two quoted tokens.
   out = out.replace(/([^\\])"(\s+)"([A-Za-z_][A-Za-z0-9_]*)"(\s*):/g, '$1", "$3"$4:')
   // Trailing comma before } or ]
   out = out.replace(/,(\s*[}\]])/g, '$1')
+  return out
+}
+
+// Close truncated JSON. Small models under max_tokens emit `{ "recommendation":
+// "...long string...` and just stop mid-value. Walk the string tracking string
+// vs structural context, then append whatever closers are still open.
+// Returns the balanced string, or null if structurally invalid (unmatched
+// closers we can't recover from).
+function closeTruncatedJson(s: string): string | null {
+  let inString = false
+  let escaped = false
+  let braces = 0
+  let brackets = 0
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]
+    if (escaped) {
+      escaped = false
+      continue
+    }
+    if (c === '\\') {
+      escaped = true
+      continue
+    }
+    if (c === '"') {
+      inString = !inString
+      continue
+    }
+    if (inString) continue
+    if (c === '{') braces++
+    else if (c === '}') braces--
+    else if (c === '[') brackets++
+    else if (c === ']') brackets--
+    if (braces < 0 || brackets < 0) return null
+  }
+  let out = s
+  // If we ended mid-string, close it. Also trim a trailing backslash that
+  // would escape our closing quote.
+  if (inString) {
+    if (out.endsWith('\\')) out = out.slice(0, -1)
+    // Trim a trailing lone ',' or ':' that would make the post-close syntax
+    // invalid (e.g. `"foo": "bar\nbaz` → closing gives `"baz"` at end; but
+    // if the value ended with a colon followed by nothing, the repair still
+    // produces junk — the parent object-close below then adds `}` which
+    // JSON.parse will reject anyway, surfaces naturally as failure).
+    out += '"'
+  }
+  // Drop dangling `,` that would sit between the last-closed value and the
+  // appended `}` or `]`.
+  out = out.replace(/,\s*$/, '')
+  while (brackets > 0) {
+    out += ']'
+    brackets--
+  }
+  while (braces > 0) {
+    out += '}'
+    braces--
+  }
   return out
 }
 
@@ -59,18 +114,30 @@ function extractJson(raw: string): string {
   // 3. Raw as-is (model returned naked JSON with no wrapper).
   slices.push(trimmed)
 
-  // Try each slice twice: first as-is, then with repair heuristics.
+  // Try each slice four ways, in order of increasing aggression:
+  //   1. as-is
+  //   2. repairJson (missing commas, trailing commas)
+  //   3. closeTruncatedJson (append missing `"` `]` `}` when output was cut
+  //      off before the synthesizer finished)
+  //   4. closeTruncatedJson + repairJson (both repairs chained)
+  const attempts: Array<(s: string) => string | null> = [
+    (x) => x,
+    (x) => repairJson(x),
+    (x) => closeTruncatedJson(x),
+    (x) => {
+      const closed = closeTruncatedJson(x)
+      return closed ? repairJson(closed) : null
+    }
+  ]
   for (const s of slices) {
-    try {
-      JSON.parse(s)
-      return s
-    } catch {
+    for (const attempt of attempts) {
+      const candidate = attempt(s)
+      if (candidate == null) continue
       try {
-        const repaired = repairJson(s)
-        JSON.parse(repaired)
-        return repaired
+        JSON.parse(candidate)
+        return candidate
       } catch {
-        // next slice
+        // next attempt
       }
     }
   }

@@ -53,8 +53,8 @@ export function useJudgeBenchmark({
 
   useEffect(() => {
     if (firedRef.current) return
-    if (!benchmark || benchmark.judgeAvailable) return
-    if (!benchmark.baselineAvailable || !benchmark.baselineAnswer) return
+    if (!benchmark) return
+    if (benchmark.judgeAvailable) return
     if (!terminalReached) return
     if (!defaultProvider || !defaultModelId) return
 
@@ -65,9 +65,19 @@ export function useJudgeBenchmark({
       defaultProvider === 'ollama' ? 'ollama-local' : (identity.state.keys[defaultProvider] as string | undefined)
     if (!apiKey) return
 
-    firedRef.current = true
-    const responseA = benchmark.baselineAnswer
-    const run = async () => {
+    // Baseline may have landed AFTER the page SSR'd (the fire-and-forget from
+    // /deliberate settles on its own timeline). If the SSR snapshot says
+    // baseline isn't available yet, poll the benchmark endpoint until it is —
+    // then fire the judge. Cap at 2 minutes; beyond that, assume the baseline
+    // failed and stop wasting cycles.
+    let cancelled = false
+    let pollTimer: ReturnType<typeof setTimeout> | null = null
+    const POLL_INTERVAL_MS = 3000
+    const MAX_WAIT_MS = 120_000
+    const pollStart = Date.now()
+
+    const fireJudge = async (responseA: string) => {
+      firedRef.current = true
       const start = performance.now()
       try {
         const result = await invokeAgent({
@@ -80,6 +90,7 @@ export function useJudgeBenchmark({
         const text = await result.fullText()
         const usage = await result.usage()
         const elapsedMs = Math.round(performance.now() - start)
+        if (cancelled) return
         await fetch(`/api/sessions/${sessionId}/judge`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -97,7 +108,52 @@ export function useJudgeBenchmark({
         firedRef.current = false
       }
     }
-    void run()
+
+    const tryFire = async () => {
+      if (cancelled || firedRef.current) return
+
+      // If SSR snapshot already shows baseline, use it directly — no network
+      // hop needed.
+      if (benchmark.baselineAvailable && benchmark.baselineAnswer) {
+        await fireJudge(benchmark.baselineAnswer)
+        return
+      }
+
+      // Otherwise poll — baseline may still be in flight from /deliberate's
+      // fire-and-forget call.
+      try {
+        const res = await fetch(`/api/sessions/${sessionId}/benchmark`)
+        if (!res.ok) throw new Error(`benchmark GET ${res.status}`)
+        const data = (await res.json()) as {
+          enabled?: boolean
+          baselineAvailable?: boolean
+          baselineAnswer?: string | null
+          judgeAvailable?: boolean
+        }
+        if (cancelled) return
+        if (data.judgeAvailable) {
+          firedRef.current = true // already done server-side
+          return
+        }
+        if (data.baselineAvailable && data.baselineAnswer) {
+          await fireJudge(data.baselineAnswer)
+          return
+        }
+      } catch (e) {
+        console.warn('[benchmark] poll failed', e)
+      }
+
+      if (Date.now() - pollStart < MAX_WAIT_MS) {
+        pollTimer = setTimeout(tryFire, POLL_INTERVAL_MS)
+      }
+    }
+
+    void tryFire()
+
+    return () => {
+      cancelled = true
+      if (pollTimer) clearTimeout(pollTimer)
+    }
   }, [
     sessionId,
     question,
