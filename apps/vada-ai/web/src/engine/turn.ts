@@ -35,6 +35,26 @@ function parseConclusionJson(raw: string): Conclusion | null {
   }
 }
 
+// Build a best-effort Conclusion from raw model output when schema parsing
+// fails. The deliberation already happened — users should still see what the
+// Synthesizer said, tagged with an honest note that it wasn't structured
+// cleanly. Salvaged from pre-refactor engine/conclusion/synthesizer.ts, which
+// had this fallback before the BYOK inversion.
+function salvageConclusion(raw: string, agents: string[]): Conclusion {
+  const trimmed = raw.trim()
+  const reviewBy = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? ''
+  return {
+    recommendation: trimmed.slice(0, 2000) || 'The deliberation did not produce a structured recommendation.',
+    key_condition: 'The model did not produce a structured key_condition. Raw synthesizer output shown above.',
+    unresolved_points: agents.map((a) => ({
+      point: 'Structured JSON parsing failed — raw output preserved in recommendation.',
+      agents_involved: [a]
+    })),
+    review_by: reviewBy,
+    participants: agents.map((a) => ({ agent: a, version: 'v1' }))
+  }
+}
+
 function classifyVerdict(raw: string): 'PASS' | string {
   const trimmed = raw.trim()
   const upper = trimmed.toUpperCase()
@@ -85,22 +105,19 @@ export async function recordTurn(sessionId: string, userId: string, payload: Tur
     }
 
     case 'synthesize': {
-      const conclusion = parseConclusionJson(payload.content)
+      const parsed = parseConclusionJson(payload.content)
+      // When strict parsing fails, salvage a best-effort conclusion from the
+      // raw text instead of blackholing the whole deliberation. The audit
+      // still runs — the Blind Critic will reject a salvaged conclusion most
+      // of the time, which puts the transcript in REVISING where a second
+      // pass can produce cleaner JSON. At minimum, the user sees what the
+      // Synthesizer actually said.
+      const conclusion = parsed ?? salvageConclusion(payload.content, session.agents)
       await deleteConclusionBySession(sessionId)
-      if (!conclusion) {
-        await insertConclusion({
-          sessionId,
-          originalJson: { raw: payload.content, error: 'Schema validation failed' },
-          criticVerdict: 'Schema validation failed',
-          terminalState: 'UNCONVERGED'
-        })
-        await setSessionTerminalState(sessionId, 'UNCONVERGED')
-        return
-      }
       await insertConclusion({
         sessionId,
         originalJson: conclusion,
-        criticVerdict: 'PENDING_AUDIT',
+        criticVerdict: parsed ? 'PENDING_AUDIT' : 'SALVAGED_FROM_RAW',
         terminalState: 'UNCONVERGED',
         reviewBy: conclusion.review_by
       })
@@ -130,12 +147,9 @@ export async function recordTurn(sessionId: string, userId: string, payload: Tur
     }
 
     case 'revise': {
-      const revised = parseConclusionJson(payload.content)
       if (!session.conclusion) return
-      if (!revised) {
-        await setSessionTerminalState(sessionId, 'UNCONVERGED')
-        return
-      }
+      const parsed = parseConclusionJson(payload.content)
+      const revised = parsed ?? salvageConclusion(payload.content, session.agents)
       await deleteConclusionBySession(sessionId)
       await insertConclusion({
         sessionId,
