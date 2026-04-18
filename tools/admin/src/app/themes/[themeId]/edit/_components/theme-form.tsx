@@ -1,14 +1,5 @@
 'use client'
 
-import { Button } from '@atta/ui/components/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@atta/ui/components/dialog'
 import { Input } from '@atta/ui/components/input'
 import { Slider } from '@atta/ui/components/slider'
 import { Textarea } from '@atta/ui/components/textarea'
@@ -16,7 +7,7 @@ import { Textarea } from '@atta/ui/components/textarea'
 const FIELD_INPUT_CLASS = 'flex-1 h-8 rounded-md border border-input bg-background/60 px-2 font-mono text-xs'
 const FULL_INPUT_CLASS = 'h-9 rounded-md border border-input bg-background/60 px-2 text-sm'
 const FULL_TEXTAREA_CLASS = 'rounded-md border border-input bg-background/60 px-2 py-1.5 text-sm'
-import { Clipboard, RotateCcw } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import { useId, useRef, useState } from 'react'
 import {
   COLOR_GROUPS,
@@ -26,7 +17,6 @@ import {
   type ThemeEditorData
 } from '../../../_types'
 import { scaleShadows } from '@/lib/scale-shadow'
-import { parseShadcnCss } from '@/lib/parse-shadcn-css'
 
 type ColorScheme = 'dark' | 'light'
 
@@ -111,9 +101,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function ThemeForm({ data, onChange, colorScheme }: ThemeFormProps) {
   const nameId = useId()
   const descId = useId()
-  const [pasteOpen, setPasteOpen] = useState(false)
-  const [pasteText, setPasteText] = useState('')
-  const [pasteMessage, setPasteMessage] = useState<string | null>(null)
 
   const [intensityPct, setIntensityPct] = useState(100)
   const [areaPct, setAreaPct] = useState(100)
@@ -177,42 +164,6 @@ export function ThemeForm({ data, onChange, colorScheme }: ThemeFormProps) {
     applySliderScale(100, 100)
   }
 
-  function handlePasteApply() {
-    const parsed = parseShadcnCss(pasteText)
-    const hasAny =
-      Object.keys(parsed.light).length > 0 ||
-      Object.keys(parsed.dark).length > 0 ||
-      Object.keys(parsed.shadows).length > 0 ||
-      Object.keys(parsed.typography).length > 0 ||
-      Object.keys(parsed.spacing).length > 0
-    if (!hasAny) {
-      setPasteMessage('No recognizable shadcn tokens found.')
-      return
-    }
-    onChange({
-      ...data,
-      light: { ...(data.light ?? {}), ...parsed.light },
-      dark: { ...(data.dark ?? {}), ...parsed.dark },
-      typography: { ...data.typography, ...parsed.typography },
-      spacing: { ...data.spacing, ...parsed.spacing },
-      shadows: { ...data.shadows, ...parsed.shadows }
-    })
-    if (baseShadowsRef.current) {
-      baseShadowsRef.current = null
-      setIntensityPct(100)
-      setAreaPct(100)
-    }
-    const unknownNote = parsed.unknownTokens.length
-      ? ` (${parsed.unknownTokens.length} unknown token${parsed.unknownTokens.length === 1 ? '' : 's'} ignored)`
-      : ''
-    setPasteMessage(`Applied.${unknownNote}`)
-    setTimeout(() => {
-      setPasteOpen(false)
-      setPasteText('')
-      setPasteMessage(null)
-    }, 1200)
-  }
-
   return (
     <div className='flex flex-col'>
       <section className='flex flex-col gap-3 border-b border-border/50 px-4 py-4'>
@@ -235,12 +186,6 @@ export function ThemeForm({ data, onChange, colorScheme }: ThemeFormProps) {
             className={FULL_TEXTAREA_CLASS}
           />
         </label>
-        <div>
-          <Button type='button' variant='outline' size='sm' onClick={() => setPasteOpen(true)}>
-            <Clipboard className='h-3.5 w-3.5' />
-            Paste shadcn CSS
-          </Button>
-        </div>
       </section>
 
       {COLOR_GROUPS.map((group) => (
@@ -335,34 +280,6 @@ export function ThemeForm({ data, onChange, colorScheme }: ThemeFormProps) {
           </div>
         ))}
       </Section>
-
-      <Dialog open={pasteOpen} onOpenChange={setPasteOpen}>
-        <DialogContent className='w-[min(40rem,calc(100vw-2rem))]'>
-          <DialogHeader>
-            <DialogTitle>Paste shadcn CSS</DialogTitle>
-            <DialogDescription>
-              Paste a shadcn theme export. Both <code>:root</code> and <code>.dark</code> blocks are parsed. Matched
-              tokens fill the form; unknown ones are ignored.
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            value={pasteText}
-            onChange={(e) => setPasteText(e.target.value)}
-            rows={14}
-            placeholder=':root {&#10;  --background: oklch(1 0 0);&#10;  --foreground: oklch(0.15 0 0);&#10;  ...&#10;}&#10;&#10;.dark {&#10;  --background: oklch(0.15 0 0);&#10;  ...&#10;}'
-            className='rounded-md border border-input bg-background/60 px-2 py-1.5 font-mono text-xs'
-          />
-          {pasteMessage && <p className='font-mono text-xs text-muted-foreground'>{pasteMessage}</p>}
-          <DialogFooter>
-            <Button type='button' variant='ghost' onClick={() => setPasteOpen(false)}>
-              Cancel
-            </Button>
-            <Button type='button' onClick={handlePasteApply} disabled={!pasteText.trim()}>
-              Apply
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

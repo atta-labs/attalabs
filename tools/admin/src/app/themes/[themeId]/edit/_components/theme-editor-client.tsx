@@ -1,11 +1,22 @@
 'use client'
 
 import { Button } from '@atta/ui/components/button'
-import { Check } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@atta/ui/components/dialog'
+import { Textarea } from '@atta/ui/components/textarea'
+import { Check, Clipboard, Copy, Download } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { PortalPreviewFrame } from '@/components/portal/portal-preview-frame'
 import { usePortalPreview } from '@/hooks/use-portal-preview'
+import { exportShadcnCss } from '@/lib/export-shadcn-css'
+import { parseShadcnCss } from '@/lib/parse-shadcn-css'
 import { updateThemeAction } from '../../../actions'
 import type { ThemeEditorData } from '../../../_types'
 import { ThemeForm } from './theme-form'
@@ -59,10 +70,59 @@ export function ThemeEditorClient({ theme }: ThemeEditorClientProps) {
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [headerSlot, setHeaderSlot] = useState<Element | null>(null)
+  const [exportOpen, setExportOpen] = useState(false)
+  const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
+  const [importOpen, setImportOpen] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importMessage, setImportMessage] = useState<string | null>(null)
 
   useEffect(() => {
     setHeaderSlot(document.getElementById('admin-header-slot'))
   }, [])
+
+  const exportedCss = useMemo(() => (exportOpen ? exportShadcnCss(data) : ''), [exportOpen, data])
+
+  async function handleCopy() {
+    if (!exportedCss) return
+    try {
+      await navigator.clipboard.writeText(exportedCss)
+      setCopyState('copied')
+      setTimeout(() => setCopyState('idle'), 1500)
+    } catch {
+      setCopyState('idle')
+    }
+  }
+
+  function handleImportApply() {
+    const parsed = parseShadcnCss(importText)
+    const hasAny =
+      Object.keys(parsed.light).length > 0 ||
+      Object.keys(parsed.dark).length > 0 ||
+      Object.keys(parsed.shadows).length > 0 ||
+      Object.keys(parsed.typography).length > 0 ||
+      Object.keys(parsed.spacing).length > 0
+    if (!hasAny) {
+      setImportMessage('No recognizable shadcn tokens found.')
+      return
+    }
+    setData((prev) => ({
+      ...prev,
+      light: { ...(prev.light ?? {}), ...parsed.light },
+      dark: { ...(prev.dark ?? {}), ...parsed.dark },
+      typography: { ...prev.typography, ...parsed.typography },
+      spacing: { ...prev.spacing, ...parsed.spacing },
+      shadows: { ...prev.shadows, ...parsed.shadows }
+    }))
+    const unknownNote = parsed.unknownTokens.length
+      ? ` (${parsed.unknownTokens.length} unknown token${parsed.unknownTokens.length === 1 ? '' : 's'} ignored)`
+      : ''
+    setImportMessage(`Applied.${unknownNote}`)
+    setTimeout(() => {
+      setImportOpen(false)
+      setImportText('')
+      setImportMessage(null)
+    }, 1200)
+  }
 
   const dirty = useMemo(() => JSON.stringify(data) !== JSON.stringify(initialData), [data, initialData])
 
@@ -123,6 +183,14 @@ export function ThemeEditorClient({ theme }: ThemeEditorClientProps) {
           <Check className='h-3 w-3' /> Saved
         </span>
       )}
+      <Button type='button' size='sm' variant='outline' onClick={() => setImportOpen(true)}>
+        <Clipboard className='h-3.5 w-3.5' />
+        Import
+      </Button>
+      <Button type='button' size='sm' variant='outline' onClick={() => setExportOpen(true)}>
+        <Download className='h-3.5 w-3.5' />
+        Export
+      </Button>
       <Button type='button' size='sm' onClick={handleSave} loading={isPending} disabled={!dirty || isPending}>
         Save
       </Button>
@@ -132,6 +200,58 @@ export function ThemeEditorClient({ theme }: ThemeEditorClientProps) {
   return (
     <>
       {headerSlot && createPortal(headerContent, headerSlot)}
+
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className='w-[min(40rem,calc(100vw-2rem))]'>
+          <DialogHeader>
+            <DialogTitle>Import shadcn CSS</DialogTitle>
+            <DialogDescription>
+              Paste a shadcn theme export. Both <code>:root</code> and <code>.dark</code> blocks are parsed. Matched
+              tokens fill the form; unknown ones are ignored.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+            rows={14}
+            placeholder=':root {&#10;  --background: oklch(1 0 0);&#10;  --foreground: oklch(0.15 0 0);&#10;  ...&#10;}&#10;&#10;.dark {&#10;  --background: oklch(0.15 0 0);&#10;  ...&#10;}'
+            className='rounded-md border border-input bg-background/60 px-2 py-1.5 font-mono text-xs'
+          />
+          {importMessage && <p className='font-mono text-xs text-muted-foreground'>{importMessage}</p>}
+          <DialogFooter>
+            <Button type='button' variant='ghost' onClick={() => setImportOpen(false)}>
+              Cancel
+            </Button>
+            <Button type='button' onClick={handleImportApply} disabled={!importText.trim()}>
+              Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className='w-[min(44rem,calc(100vw-2rem))]'>
+          <DialogHeader>
+            <DialogTitle>Export theme</DialogTitle>
+            <DialogDescription>
+              shadcn-style CSS — paste this into any Atta AI theme via the "Paste shadcn CSS" dialog to round-trip.
+            </DialogDescription>
+          </DialogHeader>
+          <pre className='max-h-[60vh] overflow-auto rounded-md border border-input bg-background/60 p-3 font-mono text-[11px] leading-relaxed text-foreground/90'>
+            {exportedCss}
+          </pre>
+          <DialogFooter>
+            <Button type='button' variant='ghost' onClick={() => setExportOpen(false)}>
+              Close
+            </Button>
+            <Button type='button' onClick={handleCopy} disabled={!exportedCss}>
+              <Copy className='h-3.5 w-3.5' />
+              {copyState === 'copied' ? 'Copied!' : 'Copy to clipboard'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className='flex h-full flex-col'>
         {saveError && (
           <p className='shrink-0 border-b border-destructive/20 bg-destructive/10 px-4 py-2 font-mono text-xs text-destructive'>
