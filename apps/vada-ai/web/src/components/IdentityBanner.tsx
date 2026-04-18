@@ -54,6 +54,12 @@ export function IdentityBanner() {
     }
   }
 
+  // Silent until mount-time IndexedDB check resolves — otherwise the
+  // first-time banner flashes for ~1 frame before flipping to 'locked' for
+  // returning users. Locked is also silent; unlock is triggered on model pick.
+  if (identity.state.kind === 'initializing') return null
+  if (identity.state.kind === 'locked') return null
+
   // No stored credential AND no in-memory keys: first-time BYOK hint
   if (identity.state.kind === 'no-stored-credential' && !hasInMemoryKeys) {
     return (
@@ -70,10 +76,6 @@ export function IdentityBanner() {
       </div>
     )
   }
-
-  // Locked state is intentionally silent here — unlock is triggered when the
-  // user picks a model whose provider has a saved key. See GlobalModelSelector.
-  if (identity.state.kind === 'locked') return null
 
   // No stored credential: optionally prompt to save if user has in-memory keys
   if (identity.state.kind === 'no-stored-credential' && hasInMemoryKeys && identity.passkeySupported) {
