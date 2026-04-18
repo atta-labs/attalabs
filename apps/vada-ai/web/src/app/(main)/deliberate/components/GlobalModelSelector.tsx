@@ -1,10 +1,10 @@
 'use client'
 
-import { probeProviderKey } from '@atta/identity'
+import { fetchInstalledOllamaModels, probeProviderKey } from '@atta/identity'
 import { useIdentity } from '@atta/identity/react'
-import { type ModelConfig, type RouteProvider, useCatalog } from '@atta/models'
+import { type ModelConfig, type ModelEntry, type RouteProvider, useCatalog } from '@atta/models'
 import { ModelPicker, useToastContext } from '@atta/ui'
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 export interface ModelSelection {
   provider: RouteProvider
@@ -29,10 +29,45 @@ export function GlobalModelSelector({
   initialTeamModels = [],
   selectedPresetId
 }: GlobalModelSelectorProps) {
-  const catalog = useCatalog()
+  const baseCatalog = useCatalog()
   const identity = useIdentity()
   const storedKeys = identity.state.keys
   const { successToast } = useToastContext()
+
+  // Installed Ollama models (fetched live from localhost:11434/api/tags).
+  // null = not fetched yet. Empty array = fetched successfully but nothing
+  // installed locally. Non-empty = replace the hardcoded Ollama defaults in
+  // the catalog so the picker only offers models the user can actually run.
+  const [installedOllama, setInstalledOllama] = useState<ModelEntry[] | null>(null)
+  const hasOllama = !!storedKeys.ollama
+  useEffect(() => {
+    if (!hasOllama) {
+      setInstalledOllama(null)
+      return
+    }
+    let cancelled = false
+    fetchInstalledOllamaModels()
+      .then((models) => {
+        if (!cancelled) setInstalledOllama(models)
+      })
+      .catch(() => {
+        if (!cancelled) setInstalledOllama([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [hasOllama])
+
+  // Build the final catalog shown in the picker.
+  // - Ollama not configured → keep hardcoded defaults (discovery mode)
+  // - Ollama configured but /api/tags still loading → keep defaults for now
+  // - Configured + 0 installed → keep defaults so the user can see what to pull
+  // - Configured + N installed → show only what the user can actually run
+  const catalog = useMemo(() => {
+    if (!hasOllama || installedOllama === null || installedOllama.length === 0) return baseCatalog
+    const nonOllama = baseCatalog.filter((e) => e.route !== 'ollama')
+    return [...nonOllama, ...installedOllama]
+  }, [baseCatalog, hasOllama, installedOllama])
 
   // Mount: seed from settings preset, else fall back to in-memory identity
   useEffect(() => {
@@ -50,7 +85,7 @@ export function GlobalModelSelector({
     }
     // Default selection: first catalog entry whose route has a stored key
     if (!value) {
-      const first = catalog.find((e) => storedKeys[e.route])
+      const first = baseCatalog.find((e) => storedKeys[e.route])
       if (first) {
         onChange({ provider: first.route, modelId: first.modelId, apiKey: storedKeys[first.route] ?? '' })
       }
