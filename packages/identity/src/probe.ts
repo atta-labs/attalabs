@@ -15,7 +15,7 @@
 // "no real provider calls are being made" — and lets a developer use any
 // fake string as a key for UI testing without hitting a 401 at save time.
 
-import type { RouteProvider } from '@atta/models'
+import { OLLAMA_BASE_URL, type RouteProvider } from '@atta/models'
 import { isMockModeActive } from './mock'
 
 export interface ProbeResult {
@@ -31,7 +31,30 @@ const DEFAULT_PROBE_MODEL: Record<RouteProvider, string> = {
   openai: 'gpt-4o-mini',
   google: 'gemini-2.5-flash',
   groq: 'llama-3.3-70b-versatile',
-  openrouter: 'meta-llama/llama-3.3-70b-instruct:free'
+  openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
+  ollama: 'llama3.3'
+}
+
+async function probeOllama(): Promise<ProbeResult> {
+  // Ollama has no API key concept. The probe just verifies that the local
+  // server is reachable. /api/tags returns 200 with the list of installed
+  // models (may be empty — that's still "configured correctly", the user
+  // just needs to `ollama pull <model>`).
+  try {
+    const res = await fetch(`${OLLAMA_BASE_URL}/api/tags`)
+    if (res.ok) return { ok: true }
+    return { ok: false, error: `Ollama responded ${res.status}. Is it running?` }
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof TypeError
+          ? `Could not reach Ollama at ${OLLAMA_BASE_URL}. Start it with 'ollama serve' and set OLLAMA_ORIGINS=${typeof window !== 'undefined' ? window.location.origin : '*'} before running to allow browser access.`
+          : err instanceof Error
+            ? err.message
+            : String(err)
+    }
+  }
 }
 
 async function postAndClassify(url: string, headers: Record<string, string>, body: unknown): Promise<ProbeResult> {
@@ -68,6 +91,8 @@ export async function probeProviderKey(
   // See comment at the top of this file. Mock mode = no real provider call,
   // including the validation probe itself.
   if (isMockModeActive()) return { ok: true }
+
+  if (provider === 'ollama') return probeOllama()
 
   const model = modelId ?? DEFAULT_PROBE_MODEL[provider]
   switch (provider) {
@@ -117,6 +142,7 @@ export function providerLabel(p: RouteProvider): string {
     openai: 'OpenAI',
     google: 'Google',
     groq: 'Groq',
-    openrouter: 'OpenRouter'
+    openrouter: 'OpenRouter',
+    ollama: 'Ollama'
   }[p]
 }

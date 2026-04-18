@@ -1,5 +1,5 @@
 export type { DisplayProvider, ProviderMeta, RouteProvider } from './providers'
-export { PROVIDERS, ROUTE_PROVIDER_ORDER } from './providers'
+export { OLLAMA_BASE_URL, PROVIDERS, ROUTE_PROVIDER_ORDER } from './providers'
 
 export type { ModelEntry } from './catalog'
 export { getCatalog, findModelEntry, findModelEntryByModelId } from './catalog'

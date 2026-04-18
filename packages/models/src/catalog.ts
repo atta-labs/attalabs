@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache'
 import type { DisplayProvider, RouteProvider } from './providers'
 import { FALLBACK_CATALOG } from './fallback'
 import { fetchModelsDev } from './sources/models-dev'
+import { OLLAMA_DEFAULT_CATALOG } from './sources/ollama-defaults'
 import { transformModelsDev } from './transform'
 
 export interface ModelEntry {
@@ -32,13 +33,15 @@ const getCatalogCached = unstable_cache(
 
 // Fetches the canonical catalog from models.dev. Cached 24h via Next.js.
 // On fetch or parse failure, returns FALLBACK_CATALOG so the app keeps working.
+// Always appends OLLAMA_DEFAULT_CATALOG since Ollama models aren't indexed on
+// models.dev (they're locally-pulled, not hosted).
 export async function getCatalog(): Promise<ModelEntry[]> {
   try {
     const entries = await getCatalogCached()
-    if (entries.length === 0) return FALLBACK_CATALOG
-    return entries
+    if (entries.length === 0) return [...FALLBACK_CATALOG, ...OLLAMA_DEFAULT_CATALOG]
+    return [...entries, ...OLLAMA_DEFAULT_CATALOG]
   } catch {
-    return FALLBACK_CATALOG
+    return [...FALLBACK_CATALOG, ...OLLAMA_DEFAULT_CATALOG]
   }
 }
 

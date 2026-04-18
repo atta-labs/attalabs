@@ -13,10 +13,10 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createGroq } from '@ai-sdk/groq'
 import { createOpenAI } from '@ai-sdk/openai'
+import { OLLAMA_BASE_URL, type RouteProvider } from '@atta/models'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import type { LanguageModel } from 'ai'
 import { streamText } from 'ai'
-import type { RouteProvider } from '@atta/models'
 
 export interface InvokeParams {
   provider: RouteProvider
@@ -44,6 +44,11 @@ function resolveModel(provider: RouteProvider, modelId: string, apiKey: string):
       return createGroq({ apiKey })(modelId)
     case 'openrouter':
       return createOpenRouter({ apiKey })(modelId)
+    case 'ollama':
+      // Ollama exposes an OpenAI-compatible endpoint at /v1 and ignores the
+      // Authorization header by default. We send a sentinel so the SDK is
+      // happy, and point baseURL at the local server.
+      return createOpenAI({ apiKey: apiKey || 'ollama-local', baseURL: `${OLLAMA_BASE_URL}/v1` })(modelId)
   }
 }
 

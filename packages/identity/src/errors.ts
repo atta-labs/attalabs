@@ -16,7 +16,8 @@ function providerLabel(p: RouteProvider): string {
     openai: 'OpenAI',
     google: 'Google',
     groq: 'Groq',
-    openrouter: 'OpenRouter'
+    openrouter: 'OpenRouter',
+    ollama: 'Ollama'
   }
   return labels[p]
 }
