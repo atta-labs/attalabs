@@ -1,7 +1,7 @@
 import { auth } from '@atta/auth/hooks'
 import { Text } from '@atta/ui'
 import { redirect } from 'next/navigation'
-import { getSessionWithTranscript } from '@/db/queries'
+import { getBenchmarkMetrics, getSessionWithTranscript } from '@/db/queries'
 import { DeliberationFeed } from './components/DeliberationFeed'
 
 export default async function DeliberationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -10,6 +10,7 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
 
   const { id } = await params
   const session = await getSessionWithTranscript(id)
+  const benchmark = await getBenchmarkMetrics(id)
 
   if (!session) {
     return (
@@ -115,6 +116,16 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
     if (m) modelByRole[role] = m
   }
 
+  // Minimal benchmark view the client needs to decide whether to fire the
+  // judge call. Full row lives at /deliberation/[id]/benchmark.
+  const benchmarkClient = benchmark
+    ? {
+        baselineAvailable: !!benchmark.baselineAnswer,
+        baselineAnswer: benchmark.baselineAnswer ?? null,
+        judgeAvailable: !!benchmark.judgeResponse
+      }
+    : null
+
   return (
     <DeliberationFeed
       sessionId={id}
@@ -122,10 +133,13 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
       agentRoles={session.agents}
       agentModels={agentModels ?? undefined}
       modelByRole={modelByRole}
+      defaultProvider={session.provider ?? null}
+      defaultModelId={session.modelId ?? null}
       initialEntries={initialEntries}
       initialConclusion={initialConclusion}
       initialState={session.state}
       initialTerminalState={session.terminalState ?? null}
+      benchmark={benchmarkClient}
     />
   )
 }

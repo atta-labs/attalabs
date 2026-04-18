@@ -3,6 +3,7 @@
 // Presentational only. State + effects + scroll handling + error toasting
 // all live in useDeliberationScene. TranscriptActions uses its own hook.
 
+import type { RouteProvider } from '@atta/models'
 import { Button } from '@atta/ui'
 import { AIACanvas } from '@atta/ui/canvas'
 import { NextLink } from '@atta/ui/lib/next-link'
@@ -10,6 +11,13 @@ import { ConclusionPanel } from './ConclusionPanel'
 import { RoundStrip } from './RoundStrip'
 import { TranscriptActions } from './TranscriptActions'
 import { useDeliberationScene } from './useDeliberationScene'
+import { useJudgeBenchmark } from './useJudgeBenchmark'
+
+export interface BenchmarkClientState {
+  baselineAvailable: boolean
+  baselineAnswer: string | null
+  judgeAvailable: boolean
+}
 
 interface DeliberationFeedProps {
   sessionId: string
@@ -17,10 +25,13 @@ interface DeliberationFeedProps {
   agentRoles: string[]
   agentModels?: Record<string, { provider: string; modelId: string }>
   modelByRole?: Record<string, { provider: string; modelId: string }>
+  defaultProvider?: string | null
+  defaultModelId?: string | null
   initialEntries?: Array<{ agent: string; content: string; round: number }>
   initialConclusion?: Record<string, unknown> | null
   initialState?: string
   initialTerminalState?: string | null
+  benchmark?: BenchmarkClientState | null
 }
 
 // ── Outer wrapper — AIACanvas provides context for AIASphere in AgentCard ──
@@ -42,10 +53,13 @@ function DeliberationScene({
   agentRoles,
   agentModels,
   modelByRole = {},
+  defaultProvider = null,
+  defaultModelId = null,
   initialEntries = [],
   initialConclusion = null,
   initialState = 'PENDING',
-  initialTerminalState = null
+  initialTerminalState = null,
+  benchmark = null
 }: DeliberationFeedProps) {
   const s = useDeliberationScene({
     sessionId,
@@ -55,6 +69,19 @@ function DeliberationScene({
     initialConclusion,
     initialState,
     initialTerminalState
+  })
+
+  // Judge call fires once, when: benchmark enabled AND baseline landed AND
+  // terminal reached AND no judge stored yet AND user's key in memory. All
+  // conditions checked inside the hook — safe to call unconditionally.
+  useJudgeBenchmark({
+    sessionId,
+    question,
+    benchmark,
+    terminalReached: !!s.terminalState,
+    conclusion: s.conclusion,
+    defaultProvider: (defaultProvider ?? null) as RouteProvider | null,
+    defaultModelId
   })
 
   return (
