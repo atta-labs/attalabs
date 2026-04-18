@@ -10,7 +10,7 @@ import { type ApiKeyMap, hasProviderKey, missingProviders as computeMissing } fr
 import { createPasskeyWithPrf, isPasskeySupported, unlockWithPasskey } from './passkey'
 import { clearCredential, loadCredential, saveCredential, type StoredCredential } from './storage'
 
-export type IdentityStateKind = 'no-stored-credential' | 'locked' | 'unlocked'
+export type IdentityStateKind = 'initializing' | 'no-stored-credential' | 'locked' | 'unlocked'
 
 export interface IdentityState {
   kind: IdentityStateKind
@@ -37,7 +37,10 @@ const IdentityContext = createContext<IdentityValue | null>(null)
 
 export function IdentityProvider({ children }: { children: ReactNode }) {
   const [keys, setKeys] = useState<ApiKeyMap>({})
-  const [stateKind, setStateKind] = useState<IdentityStateKind>('no-stored-credential')
+  // 'initializing' suppresses any banner/UI gated on identity state until the
+  // mount-time IndexedDB check resolves. Otherwise consumers would flash the
+  // "no credential" banner for ~1 frame before the stored credential loads.
+  const [stateKind, setStateKind] = useState<IdentityStateKind>('initializing')
   const [providers, setProviders] = useState<RouteProvider[]>([])
   const [passkeySupported, setPasskeySupported] = useState(false)
   const cryptoKeyRef = useRef<CryptoKey | null>(null)
@@ -52,10 +55,13 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
           credentialIdRef.current = cred.credentialId
           setProviders(cred.providers)
           setStateKind('locked')
+        } else {
+          setStateKind('no-stored-credential')
         }
       })
       .catch(() => {
-        // IndexedDB unavailable (private mode, quota) — stay in no-credential mode
+        // IndexedDB unavailable (private mode, quota) — treat as no credential
+        setStateKind('no-stored-credential')
       })
   }, [])
 
