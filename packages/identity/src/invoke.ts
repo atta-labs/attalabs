@@ -19,16 +19,21 @@ import type { LanguageModel } from 'ai'
 import { streamText } from 'ai'
 import { createOllama } from 'ollama-ai-provider-v2'
 
-// Ollama optimization defaults for Vāda's workload:
+// Ollama optimization defaults for Vāda's workload.
+//
+// Only num_ctx is plumbed through here — the ollama-ai-provider-v2 zod schema
+// for providerOptions.ollama.options accepts num_ctx / num_predict / sampling
+// knobs and nothing else. num_batch and keep_alive are dropped by the parser.
+//
 // - num_ctx: 8192 is plenty for 3 rounds of 4 agents (~5-7k tokens worst case).
-//   The model default of 32768 wastes ~6GB of KV cache and slows prompt eval.
-// - keep_alive: 30m keeps the model warm between agent turns so we don't pay
-//   reload cost during a single deliberation. Ollama default is 5m.
-// - num_batch: 512 is the typical sweet spot for Apple Silicon prompt eval.
+//   The model default of 32768 wastes ~4.5GB of KV cache and slows prompt eval.
+//
+// To extend keep_alive (so the model stays loaded between deliberation turns
+// and you don't pay reload cost mid-run), start Ollama with the env var:
+//   OLLAMA_KEEP_ALIVE=30m ollama serve
+// Ollama's default is 5m which is usually fine for single-shot deliberations.
 const OLLAMA_OPTIONS = {
-  numCtx: 8192,
-  numBatch: 512,
-  keepAlive: '30m'
+  numCtx: 8192
 } as const
 
 export interface InvokeParams {
@@ -73,15 +78,14 @@ export async function invokeAgent(params: InvokeParams): Promise<InvokeResult> {
 
   // Ollama-specific options get passed through via providerOptions so the
   // underlying /api/chat request includes them. Ignored for other providers.
+  // The only knob that meaningfully moves performance here is num_ctx.
   const providerOptions =
     params.provider === 'ollama'
       ? {
           ollama: {
             options: {
-              num_ctx: OLLAMA_OPTIONS.numCtx,
-              num_batch: OLLAMA_OPTIONS.numBatch
-            },
-            keep_alive: OLLAMA_OPTIONS.keepAlive
+              num_ctx: OLLAMA_OPTIONS.numCtx
+            }
           }
         }
       : undefined
