@@ -114,9 +114,10 @@ export function useGlobalModelSelector({
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   // Action-triggered unlock: picking a model whose provider has a saved-but-
-  // locked key fires the biometric prompt right here. unlockWithPasskey()
-  // returns the decrypted keymap so we can use the fresh value without waiting
-  // for React re-render.
+  // locked key fires the biometric prompt right here. After unlock we probe
+  // the key against the provider — stale or garbage keys (e.g. mock-mode
+  // placeholders from earlier dev work) get dropped and the user is told to
+  // re-enter. Keeps the stored credential honest: "saved" means "verified".
   const handleChange = useCallback(
     async (next: { route: RouteProvider; modelId: string }) => {
       const needsUnlock =
@@ -124,8 +125,26 @@ export function useGlobalModelSelector({
       if (needsUnlock) {
         try {
           const freshKeys = await identity.unlockWithPasskey()
+          const storedKey = freshKeys[next.route]
+          // Ollama has no auth to probe — skip the verification step.
+          if (next.route === 'ollama' || !storedKey) {
+            successToast('Unlocked', `Your ${next.route} key is loaded for this session.`)
+            onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKey ?? '' })
+            return
+          }
+          // Verify the stored key still works. If not, drop it and ask for a
+          // new one — the picker's onProvideKey flow handles re-entry.
+          const probe = await probeProviderKey(next.route, storedKey, next.modelId)
+          if (!probe.ok) {
+            identity.removeKey(next.route)
+            errorToast(
+              `Stored ${next.route} key didn't verify`,
+              probe.error ?? 'It looks stale. Enter a fresh key for this provider.'
+            )
+            return
+          }
           successToast('Unlocked', `Your ${next.route} key is loaded for this session.`)
-          onChange({ provider: next.route, modelId: next.modelId, apiKey: freshKeys[next.route] ?? '' })
+          onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKey })
         } catch (e) {
           errorToast('Could not unlock', e instanceof Error ? e.message : 'Try again or enter keys manually.')
         }
