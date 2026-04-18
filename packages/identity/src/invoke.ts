@@ -17,6 +17,19 @@ import { OLLAMA_BASE_URL, type RouteProvider } from '@atta/models'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import type { LanguageModel } from 'ai'
 import { streamText } from 'ai'
+import { createOllama } from 'ollama-ai-provider-v2'
+
+// Ollama optimization defaults for Vāda's workload:
+// - num_ctx: 8192 is plenty for 3 rounds of 4 agents (~5-7k tokens worst case).
+//   The model default of 32768 wastes ~6GB of KV cache and slows prompt eval.
+// - keep_alive: 30m keeps the model warm between agent turns so we don't pay
+//   reload cost during a single deliberation. Ollama default is 5m.
+// - num_batch: 512 is the typical sweet spot for Apple Silicon prompt eval.
+const OLLAMA_OPTIONS = {
+  numCtx: 8192,
+  numBatch: 512,
+  keepAlive: '30m'
+} as const
 
 export interface InvokeParams {
   provider: RouteProvider
@@ -44,21 +57,41 @@ function resolveModel(provider: RouteProvider, modelId: string, apiKey: string):
       return createGroq({ apiKey })(modelId)
     case 'openrouter':
       return createOpenRouter({ apiKey })(modelId)
-    case 'ollama':
-      // Ollama exposes an OpenAI-compatible endpoint at /v1 and ignores the
-      // Authorization header by default. We send a sentinel so the SDK is
-      // happy, and point baseURL at the local server.
-      return createOpenAI({ apiKey: apiKey || 'ollama-local', baseURL: `${OLLAMA_BASE_URL}/v1` })(modelId)
+    case 'ollama': {
+      // Native Ollama provider instead of OpenAI-compat — lets us pass Ollama
+      // options (num_ctx, keep_alive, num_batch) that the /v1 endpoint strips.
+      // These defaults cut prompt-eval time on long-transcript rounds and keep
+      // the model loaded between agent turns during a deliberation.
+      const ollama = createOllama({ baseURL: `${OLLAMA_BASE_URL}/api` })
+      return ollama(modelId) as LanguageModel
+    }
   }
 }
 
 export async function invokeAgent(params: InvokeParams): Promise<InvokeResult> {
   const model = resolveModel(params.provider, params.modelId, params.apiKey)
+
+  // Ollama-specific options get passed through via providerOptions so the
+  // underlying /api/chat request includes them. Ignored for other providers.
+  const providerOptions =
+    params.provider === 'ollama'
+      ? {
+          ollama: {
+            options: {
+              num_ctx: OLLAMA_OPTIONS.numCtx,
+              num_batch: OLLAMA_OPTIONS.numBatch
+            },
+            keep_alive: OLLAMA_OPTIONS.keepAlive
+          }
+        }
+      : undefined
+
   const result = streamText({
     model,
     system: params.systemPrompt,
     prompt: params.userPrompt,
-    abortSignal: params.signal
+    abortSignal: params.signal,
+    ...(providerOptions ? { providerOptions } : {})
   })
   return {
     textStream: result.textStream,
