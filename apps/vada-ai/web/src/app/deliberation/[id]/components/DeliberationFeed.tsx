@@ -84,18 +84,52 @@ function DeliberationScene({
     initialEntries.length > 0 &&
     initialEntries.length < agentRoles.length * 3 // less than full 3 rounds
 
-  // ── Auto-scroll ──
-  // Scoped to live streaming only. Past rounds are collapsed-by-default and
-  // stable; auto-scrolling past them while the user is reading was jittery.
+  // ── Auto-scroll (sticky-bottom pattern) ──
+  // The standard chat-app behavior: follow the stream only when the user is
+  // already near the bottom. If they've scrolled up to read a past round,
+  // leave them alone — each new streaming token must NOT yank them back.
+  // A ref tracks "was at bottom" from the scroll handler; the stream-scroll
+  // effect reads the ref before doing anything. This fixes the bug where
+  // smoothScroll fired on every token update and made the feed unreadable
+  // during streaming.
   const feedEndRef = useRef<HTMLDivElement>(null)
+  const wasAtBottomRef = useRef(true)
 
   useEffect(() => {
-    if (streamingMessage) {
-      feedEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    const THRESHOLD = 150 // px — "near enough to bottom" tolerance
+    const handleScroll = () => {
+      const distanceFromBottom = document.documentElement.scrollHeight - window.scrollY - window.innerHeight
+      wasAtBottomRef.current = distanceFromBottom < THRESHOLD
+    }
+    // Initial measurement
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Follow the streaming tail only if the user was at the bottom. Use 'instant'
+  // so rapid token-by-token updates don't queue smooth-scroll animations that
+  // fight each other.
+  useEffect(() => {
+    if (streamingMessage && wasAtBottomRef.current) {
+      feedEndRef.current?.scrollIntoView({ behavior: 'instant', block: 'end' })
     }
   }, [streamingMessage?.content])
 
-  // Scroll to conclusion once when it arrives.
+  // When a new message is appended (round progresses), jump only if user was
+  // at the bottom. Smooth is fine here — it's a one-shot per message.
+  const lastMessageCountRef = useRef(messages.length)
+  useEffect(() => {
+    if (messages.length > lastMessageCountRef.current) {
+      lastMessageCountRef.current = messages.length
+      if (wasAtBottomRef.current) {
+        feedEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      }
+    }
+  }, [messages.length])
+
+  // Scroll to conclusion once when it arrives (even if the user scrolled up —
+  // the conclusion is the payoff and warrants an unconditional scroll).
   const scrolledToConclusionRef = useRef(false)
   useEffect(() => {
     if (showConclusion && !scrolledToConclusionRef.current) {
