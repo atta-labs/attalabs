@@ -1,4 +1,5 @@
 import type { RouteProvider } from '@atta/models'
+import type { ConclusionPhase } from '@atta/orchestration'
 import type { SessionState, TerminalState } from '@/schemas'
 
 export interface ModelRef {
@@ -16,7 +17,7 @@ export interface RunAgentCommand {
   userPrompt: string
 }
 
-export type ConclusionPhase = 'synthesize' | 'audit' | 'revise' | 'reaudit'
+export type { ConclusionPhase }
 
 export interface RunConclusionCommand {
   type: 'run_conclusion'
