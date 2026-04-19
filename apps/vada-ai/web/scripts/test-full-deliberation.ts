@@ -1,7 +1,7 @@
 // Step 4a verification — full Crucible deliberation through Mastra /agent/* routes
 //
 // Drives a complete 4-agent × 3-round deliberation + conclusion against the
-// running dev server (http://localhost:3000). Agent turns go through the new
+// running dev server (http://localhost:3003). Agent turns go through the new
 // /api/deliberation/{id}/agent/{role} Mastra routes. Conclusion phases call
 // Anthropic directly with the full prompts composed by the orchestrator.
 //
@@ -17,7 +17,7 @@ import { config } from 'dotenv'
 
 config({ path: '.env.local' })
 
-const BASE_URL = process.env.VADA_BASE_URL ?? 'http://localhost:3000'
+const BASE_URL = process.env.VADA_BASE_URL ?? 'http://localhost:3003'
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY
 const CLERK_SESSION_ID = process.env.CLERK_SESSION_ID ?? 'sess_3CSsNVZgk2K5KBYx0eZDqALfkBA'
