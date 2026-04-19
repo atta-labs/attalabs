@@ -94,7 +94,7 @@ export function RoundStrip({
           <div className='font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground'>
             Round {round} — {roundTitle}
           </div>
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-1'>
             <span
               className={`rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.2em] ${statusBadge.className}`}
             >
