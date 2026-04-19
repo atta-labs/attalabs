@@ -194,8 +194,8 @@ export default function TrustPage() {
           <code className='font-mono text-sm'>token</code> — you will find nothing.
         </li>
         <li>
-          <strong>Server routes:</strong> no Next.js route and no Mastra workflow accepts an API key as input. Check the
-          route handlers and input schemas; none of them will have a provider key field.
+          <strong>Server routes:</strong> no server route accepts an API key as input. Check the route handlers and
+          input schemas; none of them will have a provider key field.
         </li>
         <li>
           <strong>Network tab:</strong> open your browser's developer tools during a deliberation. Watch the requests.

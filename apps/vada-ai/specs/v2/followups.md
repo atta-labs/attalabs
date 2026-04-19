@@ -28,13 +28,27 @@ One-time historical-row migration ran successfully on 2026-04-19 (`scripts/migra
 
 Gate: manual UI verification of the 8 migrated sessions. Keep both robustness layers until then — the write-time containment added 2026-04-19 plus the display-time rescue. Once verified, collapse to write-time only.
 
-## Security — apiKey redaction in Mastra route error responses
+## Security — apiKey redaction in agent route error responses
 
-Step 2 route at `/api/deliberation/[id]/mastra/strategist` echoes raw error messages in 500 responses. If Mastra or AI SDK throws an error containing the `apiKey`, it could leak to clients. Add key-redaction to error responses before Step 6 (browser integration) or any production exposure.
+Step 2 route at `/api/deliberation/[id]/agent/strategist` echoes raw error messages in 500 responses. If the underlying framework or AI SDK throws an error containing the `apiKey`, it could leak to clients. Add key-redaction to error responses before Step 6 (browser integration) or any production exposure.
 
 Pattern: `message.replace(/sk-[a-zA-Z0-9_-]+/g, 'sk-[REDACTED]')` or equivalent for other provider key formats (OpenAI `sk-`, Anthropic `sk-ant-`, Groq `gsk_`, Google `AIza`).
 
-**Gate:** must be in place before Step 6 wires the browser deliberation engine to Mastra routes.
+**Gate:** must be in place before Step 6 wires the browser deliberation engine to agent invocation routes.
+
+## Step-6 BLOCKER — rewrite /trust page for transient-runtime BYOK
+
+The current guarantee on `/trust` ("no server route accepts an API key as input") becomes **false** in Step 6, when the browser switches to sending keys to the server via RequestContext for agent invocation. This is a structurally visible change in the BYOK commitment.
+
+Before or during Step 6, rewrite the "Server routes" bullet on `/trust` (and the matching line in `vada-byok-principles.md`) to describe the new architecture honestly:
+
+- Keys transit server memory for the lifetime of the specific request that uses them
+- Never logged, never persisted to database, garbage-collected at request end
+- The transport is HTTPS; the key is never written to any storage layer
+
+The new copy should make clear that the BYOK guarantee shifted from "keys never leave the browser" to "keys enter the server only for the duration of a single request and are not retained." This is an honest architectural evolution, not a regression — but it must be communicated accurately before Step 6 ships.
+
+**Gate:** this rewrite must land before or simultaneously with Step 6.
 
 ## Observability — benchmark diagnosis history view
 

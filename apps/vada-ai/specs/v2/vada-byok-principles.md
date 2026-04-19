@@ -74,7 +74,7 @@ You can verify every claim on this page:
 
 - **Client code:** the identity package source is open for inspection. Look for where keys are written (`packages/identity/src/storage.ts`) and where they're read (hooks). Trace the call graph; you'll never find a `fetch` to Vāda's server that includes key material.
 - **Server schema:** the Drizzle schema defines every table and column. There is no key-like field anywhere in it. Grep the schema for `api_key`, `credential`, `secret`, `token` — you will find nothing.
-- **Server routes:** no Next.js route and no Mastra workflow accepts an API key as input. Check the route handlers and input schemas; none of them will have a provider key field.
+- **Server routes:** no server route accepts an API key as input. Check the route handlers and input schemas; none of them will have a provider key field.
 - **Network tab:** open your browser's developer tools during a deliberation. Watch the requests. You'll see calls going directly from your browser to `api.anthropic.com`, `api.openai.com`, etc. — not through Vāda's servers.
 
 If you find any of the above to be untrue, that is a critical security bug and we want to know about it immediately.
