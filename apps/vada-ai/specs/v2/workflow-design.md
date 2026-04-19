@@ -146,27 +146,85 @@ Cons: DB reads per step (same as today — not a regression). Traces show step d
 
 ### Workflow model
 
-**Agent step retries:** Mastra step-level `retryConfig` (`maxRetries: 3, delay: 1000`) replaces `retryWithBackoff`. Retry eligibility (recoverable vs. non-recoverable provider errors) should be expressed as a custom `onError` handler that rethrows non-recoverable errors immediately rather than retrying.
+**Agent step retries:** Mastra step-level `retryConfig: { attempts: 3, delay: 1000 }` replaces `retryWithBackoff`. Note: the field is `attempts`, not `maxRetries`. Can be set at the workflow level (applies to all steps) or overridden per-step. Retry eligibility (recoverable vs. non-recoverable provider errors) is expressed by rethrowing non-recoverable errors inside the `execute` function — Mastra will not retry if the step throws; retries only apply to transient failures from the step's perspective (i.e., the step itself decides whether to retry by catching and rethrowing or returning a bail-out value).
 
-**Conclusion parse failures:** These are not retry candidates — if the model's output is unparseable, re-running the same prompt with the same context will likely produce the same malformed output. Parse failure should immediately route to the `ERROR` terminal step (see Section 7).
+**Conclusion parse failures:** Not retry candidates. Parse failure routes immediately to the `ERROR` terminal state via the containment logic in `executeConclusionTurn` (see Section 7).
 
 **Partial completion recovery:** If a workflow instance fails mid-run (infrastructure failure, not model failure), Option B's DB-first state persistence means a new workflow instance can pick up where the old one left off by reading the current DB state. This is equivalent to today's browser re-poll behavior.
 
+**Mastra framework errors (unrecoverable):** If the Mastra workflow engine itself fails (process crash, internal framework error, unhandled exception outside a step), the workflow terminates. The session remains in its last valid DB state — whatever turns were already committed to the DB are preserved. The user can retry via the existing `/next` pull-loop fallback, which reads current DB state and issues the next command. No special handling needed in Step 5; the DB-first persistence model (Section 4, Option B) fully covers this case.
+
 ---
 
-## Section 6 — Open Questions
+## Section 6 — Open Questions (Resolved 2026-04-19)
 
-These must be answered before Step 5 implementation begins. The answers should come from reading Mastra's current source/docs rather than assuming from training data.
+*Resolved by reading Mastra current documentation before Step 5 implementation.*
 
-1. **Conditional branching API:** What is Mastra's exact `.when()` API for workflow steps? Does it branch on step output fields or on thrown errors? Is there a `switch`-equivalent for more than two branches?
+### Q1 — Conditional branching API
 
-2. **Workflow instance resumption:** If a Mastra workflow instance is interrupted (process crash, deployment), can it resume from the last completed step? If yes, what persistence backend does it require? If no, does Option B's DB-first approach fully mitigate this, or does the workflow need to be re-created from scratch?
+**Answer:** There is no `.when()` API. The correct method is `.branch()`.
 
-3. **Dynamic workflow definition:** Mastra workflows are defined statically in code. For War Room (18 steps) vs. Crucible (12 steps), is the workflow definition per-team, or can step count be parameterized at workflow-creation time without defining a new class?
+```typescript
+.branch([
+  [async ({ inputData }) => !inputData.parseOk, errorTerminalStep],
+  [async ({ inputData }) => inputData.parseOk,  auditStep],
+])
+```
 
-4. **Workflow input schema:** What is the correct type for workflow `inputData`? The workflow needs: `sessionId`, `question`, `agents: string[]`, `provider`, `modelId`. Does Mastra validate this against a schema at invocation time?
+`.branch()` takes an array of `[conditionFn, step]` pairs. Conditions receive `inputData` (the prior step's output) and return a boolean. Conditions are evaluated in order; the first truthy match wins. There is no switch-equivalent — for >2 branches, extend the array.
 
-5. **Sub-workflow support:** Could the conclusion chain (synthesize → audit → [revise → reaudit]?) be cleanly expressed as a sub-workflow? Is there a runtime cost to sub-workflow composition?
+After `.branch()`, the next step's `inputData` is keyed by the executed branch's step `id` (e.g., `{ 'audit-step': { verdict: 'PASS' } }`). Use `.map()` with `getStepResult()` to merge possible branch outputs before chaining further steps.
+
+**Impact on design:** Replace all `.when()` references in Section 3 with `.branch()` + `.map()` patterns. The conclusion chain shape is unchanged; only the API spelling differs.
+
+### Q2 — Workflow instance resumption
+
+**Answer:** Mastra supports resumption, but only from explicit `suspend()` checkpoints. State is saved as a snapshot to a configured storage provider and persists across process restarts. However: if a workflow crashes *before* reaching a `suspend()` call, no snapshot exists and the workflow cannot auto-resume — it must be recreated.
+
+For Vāda's Step 5 workflow, agent steps do not call `suspend()`. A mid-run crash leaves no Mastra snapshot.
+
+**Mitigation:** Option B's DB-first persistence fully covers this. Every completed agent turn is written to the DB immediately. A new workflow run started from the current DB state will produce the same next command — identical to today's browser re-poll behavior. Mastra's snapshot system is not needed for Step 5.
+
+**Action:** No storage provider configuration required for Step 5. Revisit if explicit suspend/resume points are added in a later step (e.g., waiting for user input mid-deliberation).
+
+### Q3 — Dynamic workflow definition
+
+**Answer:** Mastra workflows are defined statically in code — there is no API to add steps at runtime programmatically. However, `.foreach(step, { concurrency: 1 })` provides the functional equivalent: it runs the same step sequentially over an array of inputs, making the iteration count data-driven rather than code-driven.
+
+For Step 5 (Crucible, 12 agent turns): flat sequential steps remain the approach. Each step is distinct and named, which produces the clearest traces.
+
+For War Room support (18 agent turns, Step 7+): use three `.foreach(agentStep, { concurrency: 1 })` calls — one per round — where the input array is the session's agent list. Step count becomes a function of `session.agents.length`, requiring no workflow redefinition.
+
+**Decision:** Flat 12-step DAG for Crucible in Step 5. Foreach-based approach for War Room in Step 7+. No design change needed for Step 5.
+
+### Q4 — Workflow input schema
+
+**Answer:** Fully confirmed. `createWorkflow({ inputSchema: z.object({...}) })` declares the schema; `run.start({ inputData: { ... } })` passes the data. Mastra validates `inputData` against the schema at invocation time (controlled by the `validateInputs` option, which defaults to true).
+
+Workflow input schema for Step 5:
+
+```typescript
+inputSchema: z.object({
+  sessionId: z.string(),
+  question:  z.string(),
+  agents:    z.array(z.string()),
+  provider:  z.string(),
+  modelId:   z.string(),
+})
+```
+
+### Q5 — Sub-workflow support
+
+**Answer:** Fully supported. A committed workflow can be used directly as a step in a parent workflow:
+
+```typescript
+const conclusionWorkflow = createWorkflow({...}).then(synthesize).then(audit)...commit()
+const mainWorkflow = createWorkflow({...})...then(conclusionWorkflow).commit()
+```
+
+`cloneWorkflow()` is available for reuse with separate run IDs. No documented runtime cost beyond normal step composition.
+
+**Decision for Step 5:** Use a sub-workflow for the conclusion chain (synthesize → audit → conditional revise → reaudit). This isolates conclusion logic cleanly and makes the main workflow's round chain easier to read. The sub-workflow is an internal implementation detail — it shares the same DB session context via `sessionId` passed through workflow input.
 
 ---
 
@@ -250,7 +308,22 @@ This means Step 5 has two sub-deliverables:
 1. Extract `parseConclusionJson`, `parseConclusionLenient`, and helpers into `@atta/orchestration`
 2. Implement the Mastra Workflow using `executeAgentTurn` + `executeConclusionTurn`
 
-The `turn.ts` DB logic remains as the single authority for what gets persisted and how state advances. The workflow calls `/turn` (or its internal equivalent) after each step — same as the browser does today.
+### Transcript persistence mechanism (Refinement 2)
+
+**Decision: direct DB write, not HTTP loopback.**
+
+The workflow steps write transcript entries directly to the DB via a shared function extracted from `turn.ts`. They do not make HTTP calls back to `/api/deliberation/[id]/turn`.
+
+Concretely:
+- Extract the transcript-write and state-advance logic from `turn.ts:recordTurn` into a standalone function `persistTurn(sessionId, turnData)` in `apps/vada-ai/web/src/engine/turn-logic.ts`
+- The existing `/api/deliberation/[id]/turn` route handler calls `persistTurn()` (preserving the existing browser pull-loop interface)
+- Mastra workflow steps also call `persistTurn()` directly (no HTTP round-trip)
+
+This means `turn.ts` becomes a thin route adapter: it validates the incoming HTTP request, calls `persistTurn()`, and returns the response. The business logic lives in `turn-logic.ts`.
+
+**Why not HTTP loopback:** An HTTP loopback would add a round-trip per agent turn, require auth (Clerk token management inside a workflow step), and fail silently if the dev server restarts mid-run. Direct DB write is simpler, faster, and more reliable.
+
+**Browser pull-loop compatibility:** The existing `/api/deliberation/[id]/turn` route is unchanged from the browser's perspective. Both paths (browser POST → route → `persistTurn()`, and workflow step → `persistTurn()` directly) produce identical DB writes.
 
 ### Regression test gate
 
