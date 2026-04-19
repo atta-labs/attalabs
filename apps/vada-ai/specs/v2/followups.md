@@ -28,6 +28,14 @@ One-time historical-row migration ran successfully on 2026-04-19 (`scripts/migra
 
 Gate: manual UI verification of the 8 migrated sessions. Keep both robustness layers until then — the write-time containment added 2026-04-19 plus the display-time rescue. Once verified, collapse to write-time only.
 
+## Security — apiKey redaction in Mastra route error responses
+
+Step 2 route at `/api/deliberation/[id]/mastra/strategist` echoes raw error messages in 500 responses. If Mastra or AI SDK throws an error containing the `apiKey`, it could leak to clients. Add key-redaction to error responses before Step 6 (browser integration) or any production exposure.
+
+Pattern: `message.replace(/sk-[a-zA-Z0-9_-]+/g, 'sk-[REDACTED]')` or equivalent for other provider key formats (OpenAI `sk-`, Anthropic `sk-ant-`, Groq `gsk_`, Google `AIza`).
+
+**Gate:** must be in place before Step 6 wires the browser deliberation engine to Mastra routes.
+
 ## Observability — benchmark diagnosis history view
 
 Now that `benchmark_metrics.judge_diagnosis` is a typed enum (`VADA_WON` / `BASELINE_WON` / `TIE` / `NEGLIGIBLE_DIFFERENCE` / `PIPELINE_FAILURE`), build a simple history/tally view: "in last N runs, Vāda won X%, baseline won Y%, pipeline failed Z%." Filterable by question shape (code / planning / forecasting / etc.) once we classify questions. This turns the benchmark from a per-run A/B into longitudinal quality surveillance.
