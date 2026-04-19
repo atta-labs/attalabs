@@ -12,6 +12,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
+    "zod": "^4.3.6",
     "@ai-sdk/anthropic": "^3.0.64",
     "@ai-sdk/google": "^3.0.60",
     "@ai-sdk/groq": "^3.0.35",
