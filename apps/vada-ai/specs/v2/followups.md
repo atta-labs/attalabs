@@ -36,6 +36,27 @@ Pattern: `message.replace(/sk-[a-zA-Z0-9_-]+/g, 'sk-[REDACTED]')` or equivalent 
 
 **Gate:** must be in place before Step 6 wires the browser deliberation engine to agent invocation routes.
 
+## Small-model posture adherence (observed Step 3, 2026-04-20)
+
+Qwen 2.5 14B does not reliably maintain distinct agent personas under Vāda's posture system prompts. Output defaults to generic advisory voice regardless of role (Strategist, Critic, etc.). Claude Sonnet 4.6 maintains personas clearly.
+
+This is a model capability ceiling, not an infrastructure bug. Verified in Step 3 Critic sanity test: same question + same orchestration code produces distinct Critic posture on Anthropic, generic advisory on Ollama Qwen 14B.
+
+Implications:
+- Vāda Bench (future) should treat model capability as a primary dimension; measure posture-adherence rate across models.
+- Product copy: note model capability requirement in `/trust` or `/science` when appropriate. Recommend Claude, GPT-4-class, or Llama 70B+ for serious deliberation.
+- Containment work (Fixes #1-3 from previous session) is doubly justified: small-model posture failure and small-model JSON corruption are two axes of the same underlying capability ceiling.
+
+No action for V1. This is ambient context for bench design and product positioning.
+
+## Step 5.5 — Add Mastra observability (logging + AI tracing)
+
+Between Step 5 (Workflow migration) and Step 6 (browser integration), add observability to `@atta/orchestration`. Use Mastra's built-in logging and tracing primitives. Suggested exporter: Langfuse or Braintrust (evaluate both for free tier limits, trace retention, and pricing curve).
+
+Outcomes: per-deliberation traces showing every agent call with latency and tokens, aggregated cost tracking, ability to debug "why did this deliberation go wrong" by replaying traces.
+
+Why this step specifically: post-Workflow (traces have the most structure), pre-browser (we need it most for debugging real traffic).
+
 ## Step-6 BLOCKER — rewrite /trust page for transient-runtime BYOK
 
 The current guarantee on `/trust` ("no server route accepts an API key as input") becomes **false** in Step 6, when the browser switches to sending keys to the server via RequestContext for agent invocation. This is a structurally visible change in the BYOK commitment.
@@ -49,6 +70,23 @@ Before or during Step 6, rewrite the "Server routes" bullet on `/trust` (and the
 The new copy should make clear that the BYOK guarantee shifted from "keys never leave the browser" to "keys enter the server only for the duration of a single request and are not retained." This is an honest architectural evolution, not a regression — but it must be communicated accurately before Step 6 ships.
 
 **Gate:** this rewrite must land before or simultaneously with Step 6.
+
+## Step ~9 — Add Mastra evals
+
+Mastra ships 16+ built-in evaluators: hallucination, faithfulness, prompt-alignment, context-relevancy, contextual-recall, tone-consistency, toxicity, keyword-coverage, summarization, answer-relevancy, etc. Both LLM-as-judge and rule-based variants.
+
+When the full deliberation pipeline runs on Mastra (post-workflow, post-conclusion-migration), add evals as standardized quality signals. Specific applications:
+
+- `prompt-alignment` measures posture adherence — directly addresses the Qwen 14B posture-failure finding from Step 3. Would produce systematic cross-model data.
+- `faithfulness` measures whether Synthesizer's conclusion reflects the transcript — complements our containment work with automated detection.
+- `hallucination` measures invented claims — directly relevant to past regressions like the React class-component failure.
+- `context-relevancy` measures whether Rounds 2/3 agents actually use transcript context.
+
+Evals complement (don't replace) our custom DIAGNOSIS judge. Our judge answers "did Vāda win vs baseline?" Evals answer "along which dimensions?" Combined data: "Vāda won, driven by higher faithfulness and lower hallucination."
+
+This is foundational to the future Vāda Bench — evals are the measurement primitives that turn the bench from "did it terminate CLEAN?" to "CLEAN + scored X on alignment + Y on faithfulness."
+
+**Gate:** not before full Mastra migration completes. Ideally after Step 7 (conclusion phases on Mastra) and before Step 10 (docs).
 
 ## Observability — benchmark diagnosis history view
 
