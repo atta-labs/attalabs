@@ -55,6 +55,27 @@ The Step 4a verification script (`scripts/test-full-deliberation.ts`) failed on 
 
 For any future server-to-server orchestration (Step 5 workflow callbacks, CI-level smoke tests), tokens must refresh mid-run rather than once at invocation. Low priority — acceptable to handle per-script rather than centrally until there is a long-running server component that holds sessions across request boundaries.
 
+## Typecheck OOM on @atta/vada-ai-web (observed 2026-04-20, temporary measure applied)
+
+`bun run typecheck` crashed with SIGABRT/OOM on the @atta/vada-ai-web package. Reproduced on baseline `acc45fc` (before Commit 4 workflow code). Not caused by recent migration work — pre-existing type complexity issue.
+
+**Update:** applied `NODE_OPTIONS='--max-old-space-size=8192'` to the typecheck script in `apps/vada-ai/web/package.json` as a temporary measure. Pre-commit hook now completes successfully.
+
+Runtime is unaffected. Dev server, tests, and IDE diagnostics all work normally.
+
+Still worth investigating long-term — 8GB heap is a heavy hammer. When addressing:
+1. Use `tsc --traceResolution` or `--listFiles` to find hot spots
+2. Look for generic explosions (Zod inference chains, Drizzle query builders, Clerk types)
+3. Long-term: isolate the package into smaller compilation units
+
+## Step 5 — apiKey trace redaction in crucible workflow
+
+The `/api/deliberation/[id]/workflow/run` route accepts `apiKey` in the request body and passes it as part of the Mastra workflow `inputData`. Every step receives it via `getInitData()`. If Mastra observability / tracing is enabled (Step 5.5), the tracer will record step inputs — which includes `apiKey`.
+
+**Required before enabling tracing:** configure the tracer to redact `apiKey` from all step input snapshots. Pattern: strip any field named `apiKey`, or apply a regex redaction (`sk-[a-zA-Z0-9_-]+`, `sk-ant-api03-[a-zA-Z0-9_-]+`, `gsk_[a-zA-Z0-9_-]+`, `AIza[a-zA-Z0-9_-]+`) across the serialised trace payload.
+
+**Gate:** must be resolved before Step 5.5 (observability) is turned on in any environment that handles real user keys.
+
 ## Step 5.5 — Add Mastra observability (logging + AI tracing)
 
 Between Step 5 (Workflow migration) and Step 6 (browser integration), add observability to `@atta/orchestration`. Use Mastra's built-in logging and tracing primitives. Suggested exporter: Langfuse or Braintrust (evaluate both for free tier limits, trace retention, and pricing curve).

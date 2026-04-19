@@ -11,7 +11,7 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import { executeConclusionTurn } from '@atta/orchestration'
+import { executeConclusionTurn } from '@atta/orchestration/server'
 
 const SYSTEM_PROMPT = `You are a deliberation synthesizer. Given the following debate transcript,
 produce a JSON conclusion with this exact schema:

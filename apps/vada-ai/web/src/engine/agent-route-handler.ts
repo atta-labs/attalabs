@@ -1,5 +1,6 @@
-import { createDeliberationContext, executeAgentTurn } from '@atta/orchestration'
+import { createDeliberationContext } from '@atta/orchestration'
 import type { DeliberationAgent } from '@atta/orchestration'
+import { executeAgentTurn } from '@atta/orchestration/server'
 import type { RouteProvider } from '@atta/models'
 import { z } from 'zod'
 
