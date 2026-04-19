@@ -19,6 +19,40 @@ export function ConclusionPanel({ terminalState, conclusion, agentModels }: Conc
   const badge = TERMINAL_BADGE[terminalState as TerminalStateKey] ?? TERMINAL_BADGE.UNCONVERGED
   const criticVerdict = typeof conclusion?._criticVerdict === 'string' ? (conclusion._criticVerdict as string) : null
   const isFlagged = terminalState === 'UNCONVERGED' && !!criticVerdict
+  const isError = terminalState === 'ERROR'
+
+  if (isError) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+      >
+        <div className='mb-5 flex items-center gap-3'>
+          <div className='h-px flex-1 bg-border' />
+          <span className='text-[10px] uppercase tracking-[0.4em] '>Conclusion</span>
+          <span
+            className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${badge.className}`}
+          >
+            {badge.label}
+          </span>
+          <div className='h-px flex-1 bg-border' />
+        </div>
+        <div className='flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-5'>
+          <div className='text-[9px] font-semibold uppercase tracking-[0.2em] text-destructive'>Synthesis failed</div>
+          <p className='m-0 text-sm leading-relaxed text-foreground/85'>
+            The Synthesizer's output could not be parsed into a valid conclusion. The deliberation rounds themselves
+            completed successfully — you can copy the transcript above.
+          </p>
+          <p className='m-0 text-sm leading-relaxed text-muted-foreground'>
+            This usually happens when the synthesis model runs out of output tokens or returns malformed JSON. Try
+            running the deliberation again, switch to a model with a larger output budget, or use a more capable model
+            for the synthesizer role.
+          </p>
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
     <motion.div

@@ -50,11 +50,25 @@ interface BenchmarkReportProps {
   }
   judge: {
     response: string | null
+    provider: string | null
+    modelId: string | null
+    diagnosis: string | null
     tokensInput: number | null
     tokensOutput: number | null
     elapsedMs: number | null
     createdAt: string | null
   }
+}
+
+const DIAGNOSIS_META: Record<string, { label: string; className: string }> = {
+  VADA_WON: { label: 'Vāda won', className: 'text-success border-success/40 bg-success/5' },
+  BASELINE_WON: { label: 'Baseline won', className: 'text-warning border-warning/40 bg-warning/5' },
+  TIE: { label: 'Tie', className: 'text-muted-foreground border-border bg-card/40' },
+  NEGLIGIBLE_DIFFERENCE: {
+    label: 'No meaningful difference',
+    className: 'text-muted-foreground border-border bg-card/40'
+  },
+  PIPELINE_FAILURE: { label: 'Pipeline failure', className: 'text-destructive border-destructive/40 bg-destructive/5' }
 }
 
 function fmt(n: number | null | undefined): string {
@@ -159,14 +173,33 @@ export function BenchmarkReport(props: BenchmarkReportProps) {
           label='Vāda synthesis'
           subtitle={props.terminalState ? `Terminal · ${props.terminalState}` : '—'}
           content={props.vadaRecommendation}
+          emptyMessage={
+            props.terminalState === 'ERROR'
+              ? "Synthesis failed — the model's output could not be parsed into a valid conclusion."
+              : undefined
+          }
         />
         <ResponsePanel label='Single-shot baseline' subtitle='Raw single call' content={props.baseline.answer} />
       </div>
 
       {/* Judge verdict */}
       <section className='space-y-3'>
-        <div className='flex items-center justify-between'>
-          <h2 className='font-serif text-lg'>Judge verdict</h2>
+        <div className='flex items-center justify-between gap-3'>
+          <div className='flex items-center gap-3'>
+            <h2 className='font-serif text-lg'>Judge verdict</h2>
+            {props.judge.diagnosis && DIAGNOSIS_META[props.judge.diagnosis] && (
+              <span
+                className={`rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${DIAGNOSIS_META[props.judge.diagnosis]?.className}`}
+              >
+                {DIAGNOSIS_META[props.judge.diagnosis]?.label}
+              </span>
+            )}
+            {props.judge.modelId && (
+              <span className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+                judged by {props.judge.modelId}
+              </span>
+            )}
+          </div>
           {props.judge.elapsedMs != null && (
             <span className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
               {fmtMs(props.judge.elapsedMs)} · {fmt(props.judge.tokensInput)} in · {fmt(props.judge.tokensOutput)} out
@@ -231,7 +264,17 @@ function MetricRow({
   )
 }
 
-function ResponsePanel({ label, subtitle, content }: { label: string; subtitle: string; content: string | null }) {
+function ResponsePanel({
+  label,
+  subtitle,
+  content,
+  emptyMessage
+}: {
+  label: string
+  subtitle: string
+  content: string | null
+  emptyMessage?: string
+}) {
   return (
     <div className='flex flex-col rounded-lg border border-border bg-card/40'>
       <div className='flex items-center justify-between border-b border-border px-4 py-2'>
@@ -244,7 +287,7 @@ function ResponsePanel({ label, subtitle, content }: { label: string; subtitle: 
             {content}
           </ReactMarkdown>
         ) : (
-          <span className='italic text-muted-foreground'>Not available yet.</span>
+          <span className='italic text-muted-foreground'>{emptyMessage ?? 'Not available yet.'}</span>
         )}
       </div>
     </div>

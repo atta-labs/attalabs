@@ -11,7 +11,13 @@ export const sessionStateEnum = pgEnum('session_state', [
   'TERMINAL'
 ])
 
-export const terminalStateEnum = pgEnum('terminal_state', ['CLEAN', 'REVISED', 'UNCONVERGED', 'SPARRING_COMPLETE'])
+export const terminalStateEnum = pgEnum('terminal_state', [
+  'CLEAN',
+  'REVISED',
+  'UNCONVERGED',
+  'SPARRING_COMPLETE',
+  'ERROR'
+])
 
 export const interventionTypeEnum = pgEnum('intervention_type', ['WHISPER', 'DIRECTIVE', 'STOP'])
 
@@ -101,8 +107,14 @@ export const benchmarkMetrics = pgTable('benchmark_metrics', {
   baselineElapsedMs: integer('baseline_elapsed_ms'),
   baselineCreatedAt: timestamp('baseline_created_at'),
 
-  // AI judge verdict — same model asked to compare the two outputs.
+  // AI judge verdict — asked to compare the two outputs. May run on a
+  // stronger model than the participants (set NEXT_PUBLIC_VADA_JUDGE_PROVIDER
+  // and _MODEL to override). Provider/modelId are captured so the benchmark
+  // page can render which model judged which run.
   judgeResponse: text('judge_response'),
+  judgeProvider: varchar('judge_provider'),
+  judgeModelId: varchar('judge_model_id'),
+  judgeDiagnosis: varchar('judge_diagnosis'),
   judgeTokensInput: integer('judge_tokens_input'),
   judgeTokensOutput: integer('judge_tokens_output'),
   judgeElapsedMs: integer('judge_elapsed_ms'),

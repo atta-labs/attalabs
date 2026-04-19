@@ -237,6 +237,9 @@ export async function saveJudgeMetrics(
   sessionId: string,
   data: {
     response: string
+    provider: string | null
+    modelId: string | null
+    diagnosis: string | null
     tokensInput: number | null
     tokensOutput: number | null
     elapsedMs: number
@@ -246,6 +249,9 @@ export async function saveJudgeMetrics(
     .update(schema.benchmarkMetrics)
     .set({
       judgeResponse: data.response,
+      judgeProvider: data.provider,
+      judgeModelId: data.modelId,
+      judgeDiagnosis: data.diagnosis,
       judgeTokensInput: data.tokensInput,
       judgeTokensOutput: data.tokensOutput,
       judgeElapsedMs: data.elapsedMs,

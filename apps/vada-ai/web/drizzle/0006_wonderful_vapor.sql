@@ -1,0 +1,1 @@
+ALTER TYPE "public"."terminal_state" ADD VALUE 'ERROR';

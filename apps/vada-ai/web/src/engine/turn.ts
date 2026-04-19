@@ -227,26 +227,6 @@ function parseConclusionLenient(raw: string, agents: string[]): Conclusion | nul
   }
 }
 
-// Build a best-effort Conclusion from raw model output when schema parsing
-// fails. The deliberation already happened — users should still see what the
-// Synthesizer said, tagged with an honest note that it wasn't structured
-// cleanly. Salvaged from pre-refactor engine/conclusion/synthesizer.ts, which
-// had this fallback before the BYOK inversion.
-function salvageConclusion(raw: string, agents: string[]): Conclusion {
-  const trimmed = raw.trim()
-  const reviewBy = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? ''
-  return {
-    recommendation: trimmed.slice(0, 2000) || 'The deliberation did not produce a structured recommendation.',
-    key_condition: 'The model did not produce a structured key_condition. Raw synthesizer output shown above.',
-    unresolved_points: agents.map((a) => ({
-      point: 'Structured JSON parsing failed — raw output preserved in recommendation.',
-      agents_involved: [a]
-    })),
-    review_by: reviewBy,
-    participants: agents.map((a) => ({ agent: a, version: 'v1' }))
-  }
-}
-
 function classifyVerdict(raw: string): 'PASS' | string {
   const trimmed = raw.trim()
   const upper = trimmed.toUpperCase()
@@ -297,19 +277,36 @@ export async function recordTurn(sessionId: string, userId: string, payload: Tur
     }
 
     case 'synthesize': {
-      // Strict → lenient → salvage. Lenient catches providers (Gemini) that
-      // return valid JSON with unresolved_points as string[] and no
-      // participants. Salvage only fires when the payload isn't even JSON.
+      // Strict → lenient. If both fail, we used to fall back to salvage,
+      // which wrapped the raw model output as `recommendation`. That meant
+      // truncated JSON, double-encoded escape sequences, and hallucinated
+      // code blocks ended up rendered to the user as "the team's answer."
+      // Containment rule: when the model's output can't be parsed at all,
+      // terminate the session as ERROR. Never surface raw text as a
+      // recommendation. See specs/v2/pipeline-containment.md.
       const strict = parseConclusionJson(payload.content)
       const lenient = strict ?? parseConclusionLenient(payload.content, session.agents)
-      const conclusion = lenient ?? salvageConclusion(payload.content, session.agents)
+      if (!lenient) {
+        await deleteConclusionBySession(sessionId)
+        await insertConclusion({
+          sessionId,
+          originalJson: {
+            error: 'SYNTHESIS_FAILED_UNPARSEABLE',
+            rawOutputLength: payload.content.length
+          },
+          criticVerdict: 'SYNTHESIS_FAILED_UNPARSEABLE',
+          terminalState: 'ERROR'
+        })
+        await setSessionTerminalState(sessionId, 'ERROR')
+        return
+      }
       await deleteConclusionBySession(sessionId)
       await insertConclusion({
         sessionId,
-        originalJson: conclusion,
-        criticVerdict: strict ? 'PENDING_AUDIT' : lenient ? 'COERCED_FROM_LOOSE_JSON' : 'SALVAGED_FROM_RAW',
+        originalJson: lenient,
+        criticVerdict: strict ? 'PENDING_AUDIT' : 'COERCED_FROM_LOOSE_JSON',
         terminalState: 'UNCONVERGED',
-        reviewBy: conclusion.review_by
+        reviewBy: lenient.review_by
       })
       await updateSessionState(sessionId, 'AUDITING')
       return
@@ -337,27 +334,48 @@ export async function recordTurn(sessionId: string, userId: string, payload: Tur
     }
 
     case 'revise': {
+      // Same containment rule as synthesize — if the revision pass can't
+      // produce parseable JSON, terminate as ERROR rather than letting
+      // salvage dump raw output into `revisedJson.recommendation`.
       if (!session.conclusion) return
       const strict = parseConclusionJson(payload.content)
       const lenient = strict ?? parseConclusionLenient(payload.content, session.agents)
-      const revised = lenient ?? salvageConclusion(payload.content, session.agents)
+      if (!lenient) {
+        await deleteConclusionBySession(sessionId)
+        await insertConclusion({
+          sessionId,
+          originalJson: session.conclusion.originalJson,
+          criticVerdict: session.conclusion.criticVerdict,
+          revisedJson: {
+            error: 'REVISION_FAILED_UNPARSEABLE',
+            rawOutputLength: payload.content.length
+          },
+          terminalState: 'ERROR'
+        })
+        await setSessionTerminalState(sessionId, 'ERROR')
+        return
+      }
       await deleteConclusionBySession(sessionId)
       await insertConclusion({
         sessionId,
         originalJson: session.conclusion.originalJson,
         criticVerdict: session.conclusion.criticVerdict,
-        revisedJson: revised,
+        revisedJson: lenient,
         terminalState: 'UNCONVERGED',
-        reviewBy: revised.review_by
+        reviewBy: lenient.review_by
       })
       await updateSessionState(sessionId, 'AUDITING')
       return
     }
 
     case 'reaudit': {
+      // Vāda always delivers a team answer. Even when the Critic's re-audit
+      // flags a residual concern, the Synthesizer's revised conclusion is the
+      // team's agreement and ships as REVISED. The critic's verdict is kept
+      // as caveat metadata (criticReVerdict) so the UI can surface the
+      // reservation without hiding the conclusion.
       const verdict = classifyVerdict(payload.content)
       if (!session.conclusion) return
-      const isPass = verdict === 'PASS'
       await deleteConclusionBySession(sessionId)
       await insertConclusion({
         sessionId,
@@ -365,10 +383,10 @@ export async function recordTurn(sessionId: string, userId: string, payload: Tur
         criticVerdict: session.conclusion.criticVerdict,
         revisedJson: session.conclusion.revisedJson,
         criticReVerdict: verdict,
-        terminalState: isPass ? 'REVISED' : 'UNCONVERGED',
+        terminalState: 'REVISED',
         reviewBy: (session.conclusion.revisedJson as { review_by?: string })?.review_by
       })
-      await setSessionTerminalState(sessionId, isPass ? 'REVISED' : 'UNCONVERGED')
+      await setSessionTerminalState(sessionId, 'REVISED')
       return
     }
   }

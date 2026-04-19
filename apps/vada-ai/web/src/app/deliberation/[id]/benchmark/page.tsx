@@ -2,6 +2,7 @@ import { auth } from '@atta/auth/hooks'
 import { Text } from '@atta/ui'
 import { redirect } from 'next/navigation'
 import { getBenchmarkMetrics, getSessionWithTranscript } from '@/db/queries'
+import { extractRenderableConclusion } from '@/engine/conclusion-rescue'
 import { BenchmarkReport } from './components/BenchmarkReport'
 
 export default async function BenchmarkPage({ params }: { params: Promise<{ id: string }> }) {
@@ -32,12 +33,13 @@ export default async function BenchmarkPage({ params }: { params: Promise<{ id: 
     )
   }
 
-  // Extract Vāda recommendation from conclusion row, preferring revised.
+  // Extract Vāda recommendation using the shared rescue — handles legacy
+  // { raw, error } shape + salvage-artifact recommendations + truncated JSON.
   const conclusionRow = session.conclusion as {
     originalJson?: Record<string, unknown> | null
     revisedJson?: Record<string, unknown> | null
   } | null
-  const conclusionJson = conclusionRow ? (conclusionRow.revisedJson ?? conclusionRow.originalJson ?? null) : null
+  const conclusionJson = extractRenderableConclusion(conclusionRow)
   const vadaRecommendation =
     conclusionJson && typeof conclusionJson.recommendation === 'string'
       ? (conclusionJson.recommendation as string)
@@ -70,6 +72,9 @@ export default async function BenchmarkPage({ params }: { params: Promise<{ id: 
       }}
       judge={{
         response: metrics.judgeResponse ?? null,
+        provider: metrics.judgeProvider ?? null,
+        modelId: metrics.judgeModelId ?? null,
+        diagnosis: metrics.judgeDiagnosis ?? null,
         tokensInput: metrics.judgeTokensInput,
         tokensOutput: metrics.judgeTokensOutput,
         elapsedMs: metrics.judgeElapsedMs,

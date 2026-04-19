@@ -5,6 +5,9 @@ import { getBenchmarkMetrics, getOrCreateUser, getSessionWithTranscriptForUser, 
 
 const JudgeSchema = z.object({
   response: z.string().min(1),
+  provider: z.string().nullable().optional(),
+  modelId: z.string().nullable().optional(),
+  diagnosis: z.string().nullable().optional(),
   tokensInput: z.number().int().nullable().optional(),
   tokensOutput: z.number().int().nullable().optional(),
   elapsedMs: z.number().int().min(0)
@@ -30,6 +33,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   await saveJudgeMetrics(id, {
     response: parsed.data.response,
+    provider: parsed.data.provider ?? null,
+    modelId: parsed.data.modelId ?? null,
+    diagnosis: parsed.data.diagnosis ?? null,
     tokensInput: parsed.data.tokensInput ?? null,
     tokensOutput: parsed.data.tokensOutput ?? null,
     elapsedMs: parsed.data.elapsedMs

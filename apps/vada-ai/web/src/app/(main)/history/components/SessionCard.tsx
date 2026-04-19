@@ -7,7 +7,8 @@ const STATE_CONFIG: Record<string, { label: string; className: string }> = {
   CLEAN: { label: 'Clean', className: 'text-success border-success/40' },
   REVISED: { label: 'Revised', className: 'text-warning border-warning/40' },
   UNCONVERGED: { label: 'Unconverged', className: 'text-destructive border-destructive/40' },
-  SPARRING_COMPLETE: { label: 'Sparring', className: 'text-primary border-primary/40' }
+  SPARRING_COMPLETE: { label: 'Sparring', className: 'text-primary border-primary/40' },
+  ERROR: { label: 'Error', className: 'text-destructive border-destructive/40' }
 }
 
 export function SessionCard({

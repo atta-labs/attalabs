@@ -7,12 +7,13 @@ export const ROUND_TITLES: Record<number, string> = {
   3: 'Convergence'
 }
 
-export type TerminalStateKey = 'CLEAN' | 'REVISED' | 'UNCONVERGED'
+export type TerminalStateKey = 'CLEAN' | 'REVISED' | 'UNCONVERGED' | 'ERROR'
 
 export const TERMINAL_BADGE: Record<TerminalStateKey, { label: string; className: string }> = {
-  CLEAN: { label: 'Clean', className: 'bg-green-500/10 text-green-500 border-green-500/20' },
-  REVISED: { label: 'Revised', className: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' },
-  UNCONVERGED: { label: 'Unconverged', className: 'bg-destructive/10 text-destructive border-destructive/20' }
+  CLEAN: { label: 'Clean', className: 'bg-success/10 text-success border-success/20' },
+  REVISED: { label: 'Revised', className: 'bg-warning/10 text-warning border-warning/20' },
+  UNCONVERGED: { label: 'Unconverged', className: 'bg-destructive/10 text-destructive border-destructive/20' },
+  ERROR: { label: 'Error', className: 'bg-destructive/10 text-destructive border-destructive/20' }
 }
 
 export const ROUND_DESCRIPTIONS: Record<number, string> = {

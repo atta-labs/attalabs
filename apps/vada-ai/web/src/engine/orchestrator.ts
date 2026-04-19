@@ -88,7 +88,7 @@ CRITICAL INSTRUCTION — READ THIS BEFORE GENERATING:
 
 4. The "unresolved_points" field must list specific disagreements from the transcript with the agents involved. Do not invent them.
 
-5. If the Principal's question had formatting constraints (e.g., "5 lines"), apply them to the recommendation text using \\n for line breaks.
+5. Keep the "recommendation" field concise prose. No code blocks. No nested JSON. If the question asked for code, name the chosen approach in the recommendation — do not paste code into this field.
 
 GENERATE THE JSON NOW:`
 }
@@ -123,8 +123,32 @@ ${unresolved || 'None'}
 ${reviewBy}`
 }
 
-function buildRevisionUserPrompt(original: Record<string, unknown>, objection: string): string {
-  return `Original conclusion JSON:
+function buildRevisionUserPrompt(
+  question: string,
+  agents: string[],
+  transcript: TranscriptEntry[],
+  original: Record<string, unknown>,
+  objection: string
+): string {
+  // Revision must regenerate from the transcript (ground truth), not just
+  // patch the broken conclusion surface. Before this prompt received the
+  // transcript, revision could only rearrange corrupt output — it had no
+  // way to reconstruct what the agents actually said. See the shopping-cart
+  // regression (session 4697f15c) for why that matters.
+  const context = buildTranscriptContext(transcript)
+  const participantList = agents.join(', ')
+  return `The original question is: "${question}"
+
+Participants in this deliberation: ${participantList}
+
+Deliberation transcript:
+
+${context}
+
+---
+
+The Synthesizer's previous conclusion was audited and flagged. Here is what was produced:
+
 ${JSON.stringify(original, null, 2)}
 
 The auditor's objection: ${objection}
@@ -133,16 +157,17 @@ The auditor's objection: ${objection}
 
 CRITICAL INSTRUCTION — READ THIS BEFORE GENERATING:
 
-1. Output ONLY the revised JSON object. No markdown, no explanation, no preamble.
+1. You MUST output valid JSON matching the conclusion schema. No markdown, no explanation, just the JSON object.
 
-2. If the objection says the recommendation "does not directly answer the question":
-   - Rewrite the recommendation to START with a clear, committed position: "No," or "Yes," or "Not yet —"
-   - Follow with the reasoning from the original conclusion.
+2. Regenerate the conclusion from the transcript above — do not simply patch the broken conclusion text. The transcript is ground truth. The previous conclusion may contain corruption or hallucination; trust the transcript, not the previous output.
+
+3. The "recommendation" field MUST directly answer the Principal's question: "${question}"
+   - If the objection says the recommendation "does not directly answer the question": rewrite it to START with "No," or "Yes," or "Not yet —" followed by the reasoning drawn from the transcript.
    - Do NOT hedge. Do NOT say "it depends" or "further evaluation is needed."
 
-3. If the objection is about formatting (e.g., wrong number of lines), fix the recommendation text using \\n for line breaks.
+4. The "key_condition" field must state the single most important assumption, taken from the transcript.
 
-4. Keep all other fields (key_condition, unresolved_points, review_by, participants) unchanged unless the objection specifically targets them.
+5. The "unresolved_points" field must list specific disagreements from the transcript with the agents involved. Do not invent them. If the agents agreed on every substantive point, return an empty array.
 
 GENERATE THE REVISED JSON NOW:`
 }
@@ -259,7 +284,13 @@ export function getNextCommand(session: SessionLike): NextCommand {
         phase: 'revise',
         model: dflt,
         systemPrompt: REVISION_MODE_PROMPT(verdict),
-        userPrompt: buildRevisionUserPrompt(original, verdict),
+        userPrompt: buildRevisionUserPrompt(
+          session.question,
+          session.agents,
+          session.transcriptEntries,
+          original,
+          verdict
+        ),
         expected: 'json'
       }
     }
