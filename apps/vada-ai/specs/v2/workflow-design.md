@@ -58,7 +58,9 @@ Cons: Workflow definition is verbose (12–18 steps). Team changes require a new
 
 Generate steps at workflow-creation time by iterating over `session.agents × [1, 2, 3]`. Avoids hardcoding but makes the workflow definition harder to read in traces.
 
-**Decision:** Option A for Step 5. Flat 12-step DAG for Crucible, flat 18-step for War Room. Verbosity is acceptable at this scale and traces are cleaner. Dynamic generation is a Step 7+ concern if teams become configurable at runtime.
+**Decision:** Option A for Step 5. Flat 12-step DAG for Crucible. Verbosity is acceptable at this scale and traces are cleaner. Dynamic generation is a Step 7+ concern if teams become configurable at runtime.
+
+**Scope note:** Step 5 implements the Crucible workflow only (4 agents × 3 rounds = 12 flat steps). Sparring (2 agents) and War Room (6 agents) workflows are out of scope for Step 5 and will be delivered via `.foreach()`-based refactor in a later step.
 
 ### Within-round sequencing
 
