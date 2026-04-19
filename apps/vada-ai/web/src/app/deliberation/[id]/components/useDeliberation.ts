@@ -143,7 +143,7 @@ export function useDeliberation(
   // conclusion panel immediately. Drive loop only runs for active sessions.
   const [terminalState, setTerminalState] = useState<string | null>(initialTerminalState)
   const [conclusion, setConclusion] = useState<Record<string, unknown> | null>(initialConclusion)
-  const [completedRounds, setCompletedRounds] = useState<Set<number>>(() => {
+  const [completedRounds, _setCompletedRounds] = useState<Set<number>>(() => {
     if (isComplete) return new Set(initialEntries.map((e) => e.round))
     return new Set()
   })

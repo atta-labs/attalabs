@@ -49,6 +49,12 @@ Implications:
 
 No action for V1. This is ambient context for bench design and product positioning.
 
+## Test scripts — Clerk token refresh for long-running runs
+
+The Step 4a verification script (`scripts/test-full-deliberation.ts`) failed on its first run at Turn 5 with a 401 on `/next`. Root cause: Clerk session tokens fetched at script start expire in ~60s; the full 12-turn deliberation takes ~90–120s. Fixed by refreshing the token on each loop iteration.
+
+For any future server-to-server orchestration (Step 5 workflow callbacks, CI-level smoke tests), tokens must refresh mid-run rather than once at invocation. Low priority — acceptable to handle per-script rather than centrally until there is a long-running server component that holds sessions across request boundaries.
+
 ## Step 5.5 — Add Mastra observability (logging + AI tracing)
 
 Between Step 5 (Workflow migration) and Step 6 (browser integration), add observability to `@atta/orchestration`. Use Mastra's built-in logging and tracing primitives. Suggested exporter: Langfuse or Braintrust (evaluate both for free tier limits, trace retention, and pricing curve).

@@ -50,8 +50,8 @@ async function getClerkToken(): Promise<string> {
     headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}`, 'Content-Type': 'application/json' }
   })
   if (!res.ok) throw new Error(`Clerk token fetch failed: ${res.status} ${await res.text()}`)
-  const data = (await res.json()) as { token: string }
-  return data.token
+  const data = (await res.json()) as { jwt: string }
+  return data.jwt
 }
 
 // ── Anthropic direct call (conclusion phases only) ────────────────────────────
@@ -133,8 +133,14 @@ async function main() {
   let agentTurnCount = 0
   let conclusionPhaseCount = 0
 
-  // 2. Drive loop
+  // 2. Drive loop — refresh token each iteration (Clerk dev tokens expire in ~60s)
   for (let iter = 0; iter < 60; iter++) {
+    const freshToken = await getClerkToken()
+    const auth: Record<string, string> = {
+      Authorization: `Bearer ${freshToken}`,
+      'Content-Type': 'application/json'
+    }
+
     const nextRes = await fetch(`${BASE_URL}/api/deliberation/${sessionId}/next`, {
       method: 'POST',
       headers: auth
