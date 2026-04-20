@@ -104,6 +104,18 @@ Outcomes: per-deliberation traces showing every agent call with latency and toke
 
 Why this step specifically: post-Workflow (traces have the most structure), pre-browser (we need it most for debugging real traffic).
 
+## Step 5.5 followup — LLM-level span instrumentation
+
+Current Langfuse integration (2026-04-20) traces at workflow and step level only. Individual LLM calls inside `executeAgentTurn` and `executeConclusionTurn` do not emit spans — prompts, responses, and per-call token counts are not visible in traces.
+
+Verified in dashboard: workflow hierarchy and step execution are captured. `apiKey` correctly shows as `[REDACTED]`. But drilling into "what did the Critic say on Round 2?" requires reading the DB transcript, not the trace.
+
+**Fix:** add OpenTelemetry span instrumentation inside `executeAgentTurn` and `executeConclusionTurn` in `@atta/orchestration` — emit a child span per LLM call with prompt (redacted), response snippet, input/output tokens, and duration.
+
+Medium priority — workflow-level visibility is sufficient for Step 6 debugging. Per-call visibility helps with V2 experiments (e.g., comparing agent prompt variants, diagnosing why a specific round diverged).
+
+**Gate:** not before Step 6. Ideally alongside or after Step 7 (conclusion phases on Mastra) when all calls flow through the same instrumented path.
+
 ## Step-6 BLOCKER — rewrite /trust page for transient-runtime BYOK
 
 The current guarantee on `/trust` ("no server route accepts an API key as input") becomes **false** in Step 6, when the browser switches to sending keys to the server via RequestContext for agent invocation. This is a structurally visible change in the BYOK commitment.
