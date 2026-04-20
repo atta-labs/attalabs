@@ -185,6 +185,15 @@ export function useDeliberateForm({
         globalModel.provider === 'ollama'
           ? 'ollama-local'
           : (freshKeys?.[globalModel.provider] ?? globalModel.apiKey) || undefined
+      // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
+      console.log('[baseline] debug', {
+        provider: globalModel.provider,
+        freshKeysKeys: freshKeys ? Object.keys(freshKeys) : null,
+        freshApiKeyPresent: !!baselineApiKey,
+        baselineApiKeyLength: baselineApiKey?.length,
+        baselineApiKeyPrefix: baselineApiKey?.slice(0, 10),
+        globalModelApiKeyLength: globalModel.apiKey?.length
+      })
       if (baselineApiKey) {
         void fireBaselineBenchmark(session_id, question.trim(), { ...globalModel, apiKey: baselineApiKey })
       }
