@@ -253,7 +253,7 @@ function MetricRow({
   baseline: number | null | undefined
   format: (n: number | null | undefined) => string
 }) {
-  const ratio = vada != null && baseline && baseline !== 0 ? (vada / baseline).toFixed(1) + '×' : '—'
+  const ratio = vada != null && baseline && baseline !== 0 ? `${(vada / baseline).toFixed(1)}×` : '—'
   return (
     <tr className='border-t border-border'>
       <td className='px-4 py-2 text-muted-foreground'>{label}</td>

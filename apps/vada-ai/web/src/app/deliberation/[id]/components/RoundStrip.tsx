@@ -195,7 +195,7 @@ export function RoundStrip({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className='text-center text-sm italic text-muted-foreground'
+              className='flex h-[240px] items-center justify-center text-sm italic text-muted-foreground'
             >
               Agents are getting ready…
             </motion.div>

@@ -16,6 +16,7 @@ interface UseDeliberationSceneProps {
   initialConclusion: Record<string, unknown> | null
   initialState: string
   initialTerminalState: string | null
+  defaultProvider: string | null
 }
 
 export function useDeliberationScene({
@@ -25,10 +26,19 @@ export function useDeliberationScene({
   initialEntries,
   initialConclusion,
   initialState,
-  initialTerminalState
+  initialTerminalState,
+  defaultProvider
 }: UseDeliberationSceneProps) {
   const { messages, streamingMessage, loadingMessage, streamError, currentState, terminalState, conclusion } =
-    useDeliberation(sessionId, question, initialEntries, initialConclusion, initialState, initialTerminalState)
+    useDeliberation(
+      sessionId,
+      question,
+      initialEntries,
+      initialConclusion,
+      initialState,
+      initialTerminalState,
+      defaultProvider
+    )
 
   const isLiveSession = currentState !== 'TERMINAL'
   const showConclusion = !!terminalState

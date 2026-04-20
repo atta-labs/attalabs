@@ -80,7 +80,7 @@ export function useDeliberateForm({
   const [selectedPreset, setSelectedPreset] = useState<Preset>(PRESETS[0]!)
   const [globalModel, setGlobalModel] = useState<ModelSelection | null>(null)
   const [loading, setLoading] = useState(false)
-  const [benchmarkEnabled, setBenchmarkEnabled] = useState(false)
+  const [benchmarkEnabled, setBenchmarkEnabled] = useState(true)
   const router = useRouter()
   const { errorToast } = useToastContext()
   const { faceStyle } = useUserPreferences()
@@ -149,8 +149,8 @@ export function useDeliberateForm({
       }
     }
 
-    // Note: we do NOT send the apiKey to the server. Keys stay in the browser.
-    // The browser will call the provider directly during the pull loop. See /trust.
+    // The apiKey is not sent to /start. The deliberation page passes it to
+    // /workflow/run?stream=true when the SSE stream opens. See /trust.
     const body: Record<string, unknown> = {
       question: question.trim(),
       agents: selectedPreset.agents.map((a) => a.role),

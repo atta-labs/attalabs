@@ -8,8 +8,8 @@
 const BACKTICK = String.fromCharCode(96)
 const FENCE = BACKTICK + BACKTICK + BACKTICK
 
-const FENCED_BLOCK = new RegExp('(^' + FENCE + '[\\s\\S]*?^' + FENCE + '$)', 'gm')
-const INLINE_CODE = new RegExp('(' + BACKTICK + '+[^' + BACKTICK + '\\n]*' + BACKTICK + '+)', 'g')
+const FENCED_BLOCK = new RegExp(`(^${FENCE}[\\s\\S]*?^${FENCE}$)`, 'gm')
+const INLINE_CODE = new RegExp(`(${BACKTICK}+[^${BACKTICK}\\n]*${BACKTICK}+)`, 'g')
 const BRACE = /([{}])/g
 const HTML_COMMENT = /<!--[\s\S]*?-->/g
 

@@ -68,7 +68,8 @@ function DeliberationScene({
     initialEntries,
     initialConclusion,
     initialState,
-    initialTerminalState
+    initialTerminalState,
+    defaultProvider: defaultProvider ?? null
   })
 
   // Judge call fires once, when: benchmark enabled AND baseline landed AND

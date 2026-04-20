@@ -19,7 +19,21 @@ export function DeliberateSection(props: DeliberateSectionProps) {
   const form = useDeliberateForm(props)
   return (
     <div className='flex flex-col gap-4'>
-      <IdentityBanner />
+      <div className='flex items-center justify-between gap-3'>
+        <label
+          htmlFor='vada-benchmark-checkbox'
+          className='flex shrink-0 items-center gap-2 text-[13px] text-muted-foreground hover:text-foreground'
+        >
+          <Checkbox
+            id='vada-benchmark-checkbox'
+            checked={form.benchmarkEnabled}
+            onCheckedChange={(v) => form.setBenchmarkEnabled(v === true)}
+          />
+          <GitCompare className='size-3.5' />
+          Run benchmark comparison (single-shot + AI judge)
+        </label>
+        <IdentityBanner />
+      </div>
       <QuestionInputArea
         question={form.question}
         onQuestionChange={form.setQuestion}
@@ -29,23 +43,6 @@ export function DeliberateSection(props: DeliberateSectionProps) {
         configuredProviders={props.configuredProviders}
         initialTeamModels={props.initialTeamModels}
       />
-      {/* Opt-in benchmark. Extra API calls cost tokens/time so opt-in matches
-          the BYOK ethos of not spending without intent. When on: the browser
-          fires a single-shot baseline in parallel with the deliberation and
-          an AI-judge compare after terminal. Results at
-          /deliberation/[id]/benchmark. */}
-      <label
-        htmlFor='vada-benchmark-checkbox'
-        className='flex items-center gap-2 self-start text-[13px] text-muted-foreground hover:text-foreground'
-      >
-        <Checkbox
-          id='vada-benchmark-checkbox'
-          checked={form.benchmarkEnabled}
-          onCheckedChange={(v) => form.setBenchmarkEnabled(v === true)}
-        />
-        <GitCompare className='size-3.5' />
-        Run benchmark comparison (single-shot + AI judge)
-      </label>
       <TeamCardGrid
         selectedPreset={form.selectedPreset}
         onSelectPreset={form.setSelectedPreset}
