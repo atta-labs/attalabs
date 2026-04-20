@@ -10,15 +10,15 @@ import { useCallback, useState } from 'react'
 
 export function useIdentityBanner() {
   const identity = useIdentity()
-  const { errorToast, successToast } = useToastContext()
+  const { errorToast, successToast, infoToast } = useToastContext()
   const [busy, setBusy] = useState(false)
   const [confirmForget, setConfirmForget] = useState(false)
+  const [pendingRemoveProvider, setPendingRemoveProvider] = useState<string | null>(null)
 
   const hasInMemoryKeys = Object.keys(identity.state.keys).length > 0
+  const allProviders = Object.keys(identity.state.keys) as typeof identity.state.providers
   const savedProviderLabels = identity.state.providers.map(providerLabel).join(', ')
-  const unsavedProviders = (Object.keys(identity.state.keys) as typeof identity.state.providers).filter(
-    (provider) => !identity.state.providers.includes(provider)
-  )
+  const unsavedProviders = allProviders.filter((provider) => !identity.state.providers.includes(provider))
   const unsavedProviderLabels = unsavedProviders.map(providerLabel).join(', ')
   const providerSummary =
     identity.state.providers.length > 0
@@ -86,10 +86,38 @@ export function useIdentityBanner() {
   const signOut = useCallback(() => identity.signOut(), [identity])
   const promptForget = useCallback(() => setConfirmForget(true), [])
   const cancelForget = useCallback(() => setConfirmForget(false), [])
+  const promptRemoveProvider = useCallback(
+    (provider: string) => {
+      if (identity.state.kind === 'locked') {
+        infoToast('Unlock first', 'Pick a model to unlock, then remove keys.')
+        return
+      }
+      setPendingRemoveProvider(provider)
+    },
+    [identity.state.kind, infoToast]
+  )
+  const cancelRemoveProvider = useCallback(() => setPendingRemoveProvider(null), [])
+  const confirmRemoveProvider = useCallback(async () => {
+    if (!pendingRemoveProvider) return
+    setBusy(true)
+    try {
+      identity.removeKey(pendingRemoveProvider as (typeof identity.state.providers)[0])
+      successToast(
+        'Key removed',
+        `${providerLabel(pendingRemoveProvider as (typeof identity.state.providers)[0])} key deleted.`
+      )
+      setPendingRemoveProvider(null)
+    } catch (e) {
+      errorToast('Could not remove key', e instanceof Error ? e.message : 'Try again.')
+    } finally {
+      setBusy(false)
+    }
+  }, [pendingRemoveProvider, identity, successToast, errorToast])
 
   return {
     kind: identity.state.kind,
     hasInMemoryKeys,
+    allProviders,
     unsavedProviders,
     passkeySupported: identity.passkeySupported,
     providerSummary,
@@ -97,11 +125,15 @@ export function useIdentityBanner() {
     unlockedStatusSuffix,
     busy,
     confirmForget,
+    pendingRemoveProvider,
     save,
     forget,
     updatePasskey,
     signOut,
     promptForget,
-    cancelForget
+    cancelForget,
+    promptRemoveProvider,
+    cancelRemoveProvider,
+    confirmRemoveProvider
   }
 }

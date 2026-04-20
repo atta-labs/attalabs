@@ -10,9 +10,34 @@
 
 import { providerLabel } from '@atta/identity'
 import { Button, Text } from '@atta/ui'
-import { KeyRound, Lock, ShieldX, Unlock } from 'lucide-react'
+import { KeyRound, Lock, ShieldX, Unlock, X } from 'lucide-react'
 import Link from 'next/link'
 import { useIdentityBanner } from './useIdentityBanner'
+
+function ProviderChip({
+  provider,
+  onRemove,
+  disabled
+}: {
+  provider: string
+  onRemove: (provider: string) => void
+  disabled: boolean
+}) {
+  return (
+    <span className='inline-flex items-center gap-1.5'>
+      {provider}
+      <button
+        type='button'
+        onClick={() => onRemove(provider)}
+        disabled={disabled}
+        className='inline-flex text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50'
+        aria-label={`Remove ${provider} key`}
+      >
+        <X className='size-3.5' aria-hidden />
+      </button>
+    </span>
+  )
+}
 
 export function IdentityBanner() {
   const b = useIdentityBanner()
@@ -22,6 +47,28 @@ export function IdentityBanner() {
 
   // Locked: unified panel with status, update button (if unsaved), sign out, forget device
   if (b.kind === 'locked') {
+    if (b.pendingRemoveProvider) {
+      return (
+        <div className='space-y-2 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3'>
+          <div className='flex items-start gap-2.5'>
+            <ShieldX className='mt-0.5 size-4 shrink-0 text-destructive' aria-hidden />
+            <Text as='small' className='text-sm text-foreground'>
+              Remove {providerLabel(b.pendingRemoveProvider as (typeof b.unsavedProviders)[0])} key? You'll need to
+              re-enter it to use {providerLabel(b.pendingRemoveProvider as (typeof b.unsavedProviders)[0])} models
+              again.
+            </Text>
+          </div>
+          <div className='flex gap-2 pl-6'>
+            <Button type='button' size='sm' variant='destructive' onClick={b.confirmRemoveProvider} disabled={b.busy}>
+              Remove
+            </Button>
+            <Button type='button' size='sm' variant='outline' onClick={b.cancelRemoveProvider} disabled={b.busy}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )
+    }
     if (b.confirmForget) {
       return (
         <div className='space-y-2 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3'>
@@ -44,16 +91,21 @@ export function IdentityBanner() {
         </div>
       )
     }
-    const lockedStatus =
-      b.unsavedProviders.length > 0
-        ? `${b.savedProviderLabels} saved · ${b.unsavedProviders.map(providerLabel).join(', ')} unsaved`
-        : `${b.savedProviderLabels} saved`
     return (
       <div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card/40 px-4 py-3'>
-        <div className='flex items-center gap-2.5'>
+        <div className='flex flex-wrap items-center gap-2.5'>
           <Lock className='size-4 shrink-0 text-muted-foreground' aria-hidden />
           <Text as='small' className='text-sm text-muted-foreground'>
-            {lockedStatus}
+            {b.allProviders.map((provider, i) => (
+              <span key={provider}>
+                {i > 0 && ', '}
+                <ProviderChip
+                  provider={providerLabel(provider)}
+                  onRemove={() => b.promptRemoveProvider(provider)}
+                  disabled={b.busy}
+                />
+              </span>
+            ))}
           </Text>
         </div>
         <div className='flex items-center gap-2'>
@@ -108,6 +160,28 @@ export function IdentityBanner() {
   }
 
   if (b.kind === 'unlocked') {
+    if (b.pendingRemoveProvider) {
+      return (
+        <div className='space-y-2 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3'>
+          <div className='flex items-start gap-2.5'>
+            <ShieldX className='mt-0.5 size-4 shrink-0 text-destructive' aria-hidden />
+            <Text as='small' className='text-sm text-foreground'>
+              Remove {providerLabel(b.pendingRemoveProvider as (typeof b.unsavedProviders)[0])} key? You'll need to
+              re-enter it to use {providerLabel(b.pendingRemoveProvider as (typeof b.unsavedProviders)[0])} models
+              again.
+            </Text>
+          </div>
+          <div className='flex gap-2 pl-6'>
+            <Button type='button' size='sm' variant='destructive' onClick={b.confirmRemoveProvider} disabled={b.busy}>
+              Remove
+            </Button>
+            <Button type='button' size='sm' variant='outline' onClick={b.cancelRemoveProvider} disabled={b.busy}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )
+    }
     if (b.confirmForget) {
       return (
         <div className='space-y-2 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3'>
@@ -132,10 +206,20 @@ export function IdentityBanner() {
     }
     return (
       <div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card/40 px-4 py-3'>
-        <div className='flex items-center gap-2.5'>
+        <div className='flex flex-wrap items-center gap-2.5'>
           <Unlock className='size-4 shrink-0 text-muted-foreground' aria-hidden />
           <Text as='small' className='text-sm text-muted-foreground'>
-            Unlocked — {b.unlockedStatusSuffix}
+            Unlocked —{' '}
+            {b.allProviders.map((provider, i) => (
+              <span key={provider}>
+                {i > 0 && ', '}
+                <ProviderChip
+                  provider={providerLabel(provider)}
+                  onRemove={() => b.promptRemoveProvider(provider)}
+                  disabled={b.busy}
+                />
+              </span>
+            ))}
           </Text>
         </div>
         <div className='flex items-center gap-2'>
