@@ -1,6 +1,8 @@
 # Vāda follow-ups
 
-Deferred work discovered during the 2026-04-19 benchmark audit + pipeline containment session. Each item is scoped for a specific release and has a concrete trigger for revisiting.
+Deferred work discovered during development sessions. Each item is scoped for a specific release and has a concrete trigger for revisiting.
+
+---
 
 ## V1 — code-output gap
 
@@ -9,6 +11,8 @@ The synthesizer is correctly forbidden from pasting code into the `recommendatio
 **V1 fix:** add a UI helper on code-request conclusions that surfaces the Round 3 transcript entries. Detection heuristic: if the question or any agent's round content contains a fenced code block, show a "The team's code examples are in the Round 3 transcript above" link or scroll anchor on the conclusion panel. No engine changes.
 
 **V2 consideration:** extend the conclusion JSON schema with a `chosen_code` field — a single code example implementing the recommended approach only, emitted as its own string field separate from the prose `recommendation`. Makes "multiple code blocks crammed into one markdown field" structurally impossible rather than prompt-forbidden. Requires: schema change, parser/salvage/rescue updates, UI rendering path.
+
+---
 
 ## V2 — synthesizer two-pass architecture
 
@@ -19,6 +23,8 @@ Current synthesis asks the model to do six things in one output: valid JSON, ans
 
 Two smaller passes are more reliable for capacity-limited models. Material architecture change — not V1 work.
 
+---
+
 ## Cleanup — delete display-time rescue code
 
 One-time historical-row migration ran successfully on 2026-04-19 (`scripts/migrate-historical-rescue.ts` without `--dry-run` — rewrote 8 `originalJson` rows and 2 `revisedJson` rows). After UI verification that those 10 rows render cleanly without the read-time rescue path, delete:
@@ -28,6 +34,8 @@ One-time historical-row migration ran successfully on 2026-04-19 (`scripts/migra
 
 Gate: manual UI verification of the 8 migrated sessions. Keep both robustness layers until then — the write-time containment added 2026-04-19 plus the display-time rescue. Once verified, collapse to write-time only.
 
+---
+
 ## Security — apiKey redaction in agent route error responses
 
 Step 2 route at `/api/deliberation/[id]/agent/strategist` echoes raw error messages in 500 responses. If the underlying framework or AI SDK throws an error containing the `apiKey`, it could leak to clients. Add key-redaction to error responses before Step 6 (browser integration) or any production exposure.
@@ -36,6 +44,8 @@ Pattern: `message.replace(/sk-[a-zA-Z0-9_-]+/g, 'sk-[REDACTED]')` or equivalent 
 
 **Gate:** must be in place before Step 6 wires the browser deliberation engine to agent invocation routes.
 
+---
+
 ## Small-model posture adherence (observed Step 3, 2026-04-20)
 
 Qwen 2.5 14B does not reliably maintain distinct agent personas under Vāda's posture system prompts. Output defaults to generic advisory voice regardless of role (Strategist, Critic, etc.). Claude Sonnet 4.6 maintains personas clearly.
@@ -43,17 +53,21 @@ Qwen 2.5 14B does not reliably maintain distinct agent personas under Vāda's po
 This is a model capability ceiling, not an infrastructure bug. Verified in Step 3 Critic sanity test: same question + same orchestration code produces distinct Critic posture on Anthropic, generic advisory on Ollama Qwen 14B.
 
 Implications:
-- Vāda Bench (future) should treat model capability as a primary dimension; measure posture-adherence rate across models.
+- Vāda Bench should treat model capability as a primary dimension; measure posture-adherence rate across models.
 - Product copy: note model capability requirement in `/trust` or `/science` when appropriate. Recommend Claude, GPT-4-class, or Llama 70B+ for serious deliberation.
 - Containment work (Fixes #1-3 from previous session) is doubly justified: small-model posture failure and small-model JSON corruption are two axes of the same underlying capability ceiling.
 
 No action for V1. This is ambient context for bench design and product positioning.
+
+---
 
 ## Test scripts — Clerk token refresh for long-running runs
 
 The Step 4a verification script (`scripts/test-full-deliberation.ts`) failed on its first run at Turn 5 with a 401 on `/next`. Root cause: Clerk session tokens fetched at script start expire in ~60s; the full 12-turn deliberation takes ~90–120s. Fixed by refreshing the token on each loop iteration.
 
 For any future server-to-server orchestration (Step 5 workflow callbacks, CI-level smoke tests), tokens must refresh mid-run rather than once at invocation. Low priority — acceptable to handle per-script rather than centrally until there is a long-running server component that holds sessions across request boundaries.
+
+---
 
 ## Typecheck OOM on @atta/vada-ai-web (observed 2026-04-20, temporary measure applied)
 
@@ -68,67 +82,66 @@ Still worth investigating long-term — 8GB heap is a heavy hammer. When address
 2. Look for generic explosions (Zod inference chains, Drizzle query builders, Clerk types)
 3. Long-term: isolate the package into smaller compilation units
 
-## Step 5 — apiKey trace redaction in crucible workflow
+---
 
-The `/api/deliberation/[id]/workflow/run` route accepts `apiKey` in the request body and passes it as part of the Mastra workflow `inputData`. Every step receives it via `getInitData()`. If Mastra observability / tracing is enabled (Step 5.5), the tracer will record step inputs — which includes `apiKey`.
+## Bench — V1 bench token-cost analysis
 
-**Required before enabling tracing:** configure the tracer to redact `apiKey` from all step input snapshots. Pattern: strip any field named `apiKey`, or apply a regex redaction (`sk-[a-zA-Z0-9_-]+`, `sk-ant-api03-[a-zA-Z0-9_-]+`, `gsk_[a-zA-Z0-9_-]+`, `AIza[a-zA-Z0-9_-]+`) across the serialised trace payload.
+Now that workflow path correctly records deliberationTokensInput/Output (fix committed 2ef5638 on 2026-04-21), the next bench run (post-Synthesizer-refinement) will have clean cost data per question. V1 bench results (7/7 diagnosis split) have mixed data — T1/A1/E2 still have zero-token rows from pre-fix smoke test runs that were not re-executed.
 
-**Gate:** must be resolved before Step 5.5 (observability) is turned on in any environment that handles real user keys.
+**Action when analyzing V2 Experiment 1.A results:** re-run T1, A1, E2 to get clean token data, OR accept partial token coverage and focus analysis on the 11 questions with clean rows.
 
-## Bench — vadaTokensIn/Out = 0 (workflow bypasses bumpDeliberationMetrics)
-
-The overnight bench harness records 0 for Vāda input/output tokens in `benchmark_metrics`. Root cause: the Mastra workflow route (`/workflow/run`) drives all 12 agent turns + conclusion phases server-side without going through the `/turn` API endpoint that calls `bumpDeliberationMetrics`. Token aggregation never fires.
-
-Tonight's bench data has correct diagnosis, session IDs, baseline tokens, and judge tokens — only the Vāda token columns are wrong.
-
-**Fix options:**
-1. Have each workflow step call `bumpDeliberationMetrics` directly (requires `getBenchmarkMetrics` + per-step token plumbing into `persistTurn`)
-2. Have the bench harness read turn-level token data from the transcript after the workflow completes and sum them itself
-
-Medium priority — required before using bench token columns for cost or quality analysis. Tonight's run is still valid for diagnosis signal.
-
-## Bench — Vāda hedges on low-ambiguity technical questions (T1 smoke test)
-
-T1 ("Vercel vs AWS for 3-person fintech team") produced BASELINE_WON. Vāda opened with "Not yet — answer two questions before committing…" while the baseline gave a direct recommendation with reasoning. Judge correctly preferred the decisive answer.
-
-This is a V1 Synthesizer tuning datapoint. The current Synthesizer prompt maps convergence faithfully but doesn't push toward commitment when agent agreement is high and stakes are medium. Possible future work: adjust Synthesizer Round 3 / conclusion prompt to commit decisively on questions where all agents agree on the direction and the only disagreement is in nuance.
-
-Track against second overnight run (after token fix) to see if T1 pattern holds across easy-CLEAN questions.
-
-## Step 5.5 — Add Mastra observability (logging + AI tracing)
-
-Between Step 5 (Workflow migration) and Step 6 (browser integration), add observability to `@atta/orchestration`. Use Mastra's built-in logging and tracing primitives. Suggested exporter: Langfuse or Braintrust (evaluate both for free tier limits, trace retention, and pricing curve).
-
-Outcomes: per-deliberation traces showing every agent call with latency and tokens, aggregated cost tracking, ability to debug "why did this deliberation go wrong" by replaying traces.
-
-Why this step specifically: post-Workflow (traces have the most structure), pre-browser (we need it most for debugging real traffic).
+---
 
 ## Step 5.5 followup — LLM-level span instrumentation
 
-Current Langfuse integration (2026-04-20) traces at workflow and step level only. Individual LLM calls inside `executeAgentTurn` and `executeConclusionTurn` do not emit spans — prompts, responses, and per-call token counts are not visible in traces.
+Current Langfuse integration (committed 70b4bcd on 2026-04-21) traces at workflow and step level only. Individual LLM calls inside `executeAgentTurn` and `executeConclusionTurn` do not emit spans — prompts, responses, and per-call token counts are not visible in traces.
 
 Verified in dashboard: workflow hierarchy and step execution are captured. `apiKey` correctly shows as `[REDACTED]`. But drilling into "what did the Critic say on Round 2?" requires reading the DB transcript, not the trace.
 
 **Fix:** add OpenTelemetry span instrumentation inside `executeAgentTurn` and `executeConclusionTurn` in `@atta/orchestration` — emit a child span per LLM call with prompt (redacted), response snippet, input/output tokens, and duration.
 
-Medium priority — workflow-level visibility is sufficient for Step 6 debugging. Per-call visibility helps with V2 experiments (e.g., comparing agent prompt variants, diagnosing why a specific round diverged).
+Medium priority — workflow-level visibility is sufficient for V1 debugging. Per-call visibility helps with V2 experiments (e.g., comparing agent prompt variants, diagnosing why a specific round diverged).
 
-**Gate:** not before Step 6. Ideally alongside or after Step 7 (conclusion phases on Mastra) when all calls flow through the same instrumented path.
+**Gate:** ideally alongside or before V2 Phase 1 experiments where per-agent behavior becomes important to diagnose.
 
-## Step-6 BLOCKER — rewrite /trust page for transient-runtime BYOK
+---
 
-The current guarantee on `/trust` ("no server route accepts an API key as input") becomes **false** in Step 6, when the browser switches to sending keys to the server via RequestContext for agent invocation. This is a structurally visible change in the BYOK commitment.
+## Bench — Vāda Synthesizer over-compression (root cause of BASELINE_WON)
 
-Before or during Step 6, rewrite the "Server routes" bullet on `/trust` (and the matching line in `vada-byok-principles.md`) to describe the new architecture honestly:
+**Updated 2026-04-21 based on judge reasoning analysis.**
 
-- Keys transit server memory for the lifetime of the specific request that uses them
-- Never logged, never persisted to database, garbage-collected at request end
-- The transport is HTTPS; the key is never written to any storage layer
+V1 bench produced 7 VADA_WON / 7 BASELINE_WON. Reading the three BASELINE_WON judge reasonings reveals the actual pattern: Vāda's Synthesizer is **not hedging** — it is **over-compressing**. The deliberation transcript contains useful content (conditional branches, stress-test warnings, practical caveats, heuristics) that the Synthesizer strips in producing the final conclusion.
 
-The new copy should make clear that the BYOK guarantee shifted from "keys never leave the browser" to "keys enter the server only for the duration of a single request and are not retained." This is an honest architectural evolution, not a regression — but it must be communicated accurately before Step 6 ships.
+Judge quotes:
+- *"Deliberation tightened the prose and provided a cleaner verdict, but removed critical stress-test content"*
+- *"Compressed away the unplanned work/capacity reservation heuristic"*
+- *"Sacrificed important practical warnings"*
 
-**Gate:** this rewrite must land before or simultaneously with Step 6.
+**Earlier hedging diagnosis (April 20) is superseded.** The pattern is compression, not caution.
+
+**V2 fix (Experiment 1.A):** update conclusion-phase Synthesizer prompt to preserve conditional structure, caveats, and decision-support scaffolding from the deliberation transcript. Move from "produce a single recommendation" to "produce a structured recommendation with conditional branches where the deliberation surfaced them." See `vada-v2-specification.md` for full experiment plan.
+
+---
+
+## V2 — benchmarkMetrics experiment_id column
+
+V2 experiments need to tag benchmarkMetrics rows with architecture version so historical comparisons are possible. Currently all rows are interchangeable; after V2 experiments start, we need to know which rows are V1 baseline vs V2 Experiment 1.A vs V2 Experiment 1.B, etc.
+
+**Implementation:** Drizzle migration adding `experiment_id TEXT` or `architecture_version TEXT` column to `benchmark_metrics`. Default `"v1-baseline"` for existing rows. Bench runner accepts `--experiment-id` arg.
+
+**Gate:** before first V2 experiment run.
+
+---
+
+## V2 — "Claude.ai equivalent" baseline for honest comparison
+
+Current bench baseline is stripped single-shot Claude Sonnet API call (no tools, no search). This is fair as an architectural test but does not represent how humans actually use AI — real user comparison would be Claude.ai with web search and tool access.
+
+**V2 addition:** add a second baseline column to bench: `baseline_claude_ai_equivalent` — single API call with web search tool enabled. Shows whether Vāda (with Challenge 2 tool parity) beats "what a user would actually use."
+
+**Gate:** not before Challenge 2 Phase 2.1 (web search for all agents) ships — baseline is meaningful only once Vāda has equivalent capability.
+
+---
 
 ## Step ~9 — Add Mastra evals
 
@@ -137,7 +150,7 @@ Mastra ships 16+ built-in evaluators: hallucination, faithfulness, prompt-alignm
 When the full deliberation pipeline runs on Mastra (post-workflow, post-conclusion-migration), add evals as standardized quality signals. Specific applications:
 
 - `prompt-alignment` measures posture adherence — directly addresses the Qwen 14B posture-failure finding from Step 3. Would produce systematic cross-model data.
-- `faithfulness` measures whether Synthesizer's conclusion reflects the transcript — complements our containment work with automated detection.
+- `faithfulness` measures whether Synthesizer's conclusion reflects the transcript — complements our containment work with automated detection. **Particularly relevant now:** V1 bench revealed Synthesizer over-compression; faithfulness eval would catch this systematically.
 - `hallucination` measures invented claims — directly relevant to past regressions like the React class-component failure.
 - `context-relevancy` measures whether Rounds 2/3 agents actually use transcript context.
 
@@ -145,8 +158,59 @@ Evals complement (don't replace) our custom DIAGNOSIS judge. Our judge answers "
 
 This is foundational to the future Vāda Bench — evals are the measurement primitives that turn the bench from "did it terminate CLEAN?" to "CLEAN + scored X on alignment + Y on faithfulness."
 
-**Gate:** not before full Mastra migration completes. Ideally after Step 7 (conclusion phases on Mastra) and before Step 10 (docs).
+**Gate:** not before full Mastra migration completes. Ideally after Step 10 (docs).
+
+---
 
 ## Observability — benchmark diagnosis history view
 
 Now that `benchmark_metrics.judge_diagnosis` is a typed enum (`VADA_WON` / `BASELINE_WON` / `TIE` / `NEGLIGIBLE_DIFFERENCE` / `PIPELINE_FAILURE`), build a simple history/tally view: "in last N runs, Vāda won X%, baseline won Y%, pipeline failed Z%." Filterable by question shape (code / planning / forecasting / etc.) once we classify questions. This turns the benchmark from a per-run A/B into longitudinal quality surveillance.
+
+**V2 requirement:** once experiment_id column exists, this view should also group by experiment_id so visible trend is "V1 baseline 7/14 → V2 Exp 1.A 9/14 → V2 Exp 1.B 11/14" etc.
+
+---
+
+## Docs — BYOK principles rewrite for transient-runtime model (Step 6)
+
+`vada-byok-principles.md` currently claims:
+- "API calls to model providers are made directly from your browser"
+- "No server route accepts an API key as input"
+- "Network tab: You'll see calls going directly from your browser to api.anthropic.com"
+
+**After Step 6 (in progress on 2026-04-21), all three statements are false.** The new architecture sends apiKey to the server for each deliberation request, held in-memory for request lifetime, never persisted, never logged, redacted from all traces.
+
+**Gate:** byok-principles.md rewrite must land in the same commit (or immediately after) Step 6 code changes. Communicate the evolution honestly: BYOK commitment shifts from "keys never leave browser" to "keys enter server only for the duration of a single request and are not retained anywhere." This is a structurally stronger posture than standard BYOK, just different in shape.
+
+---
+
+## Docs — V1 bench results as persistent document
+
+`/tmp/vada-bench-morning.log` contains the raw 2026-04-21 bench output but will be cleared when /tmp is purged. The bench learnings should live in the repo.
+
+**Action:** create `apps/vada-ai/specs/vada-v1-bench-results.md` capturing:
+- 7 VADA_WON / 7 BASELINE_WON distribution
+- Per-category breakdown
+- Per-question session IDs and cost
+- Full judge reasoning excerpts for BASELINE_WON cases
+- Root-cause analysis (Synthesizer over-compression)
+- Link to V2 Experiment 1.A as the response
+
+This becomes the historical baseline referenced by all V2 experiments.
+
+---
+
+## Docs — architecture diagram
+
+No doc visualizes Vāda's data flow: how the Mastra workflow executes, where apiKey transits, where redaction happens, what the browser sees vs server holds, where Langfuse traces attach.
+
+**Action:** create a one-page diagram (SVG or Mermaid) showing:
+- User enters question → session create
+- Browser POSTs to /workflow/run with apiKey
+- Server runs Mastra workflow → 12 agent turns → conclusion phases
+- Each step persists to DB, emits Langfuse span (with apiKey redacted)
+- SSE events stream back to browser as steps complete
+- Terminal state → browser fetches full session for conclusion panel
+
+**Value:** prevents future confusion about data flow. Supports onboarding. Documents security claims visually.
+
+**Gate:** after Step 6 ships (data flow stabilizes).
