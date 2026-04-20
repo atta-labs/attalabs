@@ -1,12 +1,12 @@
 // /trust — BYOK architecture principles.
-// Source of truth: apps/vada-ai/specs/v2/vada-byok-principles.md
-// This copy is locked — do not paraphrase. If the doc changes, update here too.
+// Source of truth: apps/vada-ai/specs/vada-byok-principles.md
+// This copy is locked — do not paraphrase. If the architecture changes, update here too.
 
 import { Heading, Text } from '@atta/ui/shared'
 
 export const metadata = {
   title: 'Trust · Vāda',
-  description: 'How Vāda never sees your API keys — the BYOK architecture.'
+  description: 'How Vāda handles your API keys — the BYOK architecture.'
 }
 
 function H1({ children }: { children: React.ReactNode }) {
@@ -53,8 +53,9 @@ export default function TrustPage() {
 
       <H2>The promise</H2>
       <P>
-        You bring your own API keys. Vāda never sees them, never stores them, never transmits them. This is not a policy
-        we follow — it is a structural fact about how the product is built.
+        Your keys are never stored in our database. They are never written to any log. They exist on our server only in
+        memory, only during the single request that uses them, and only long enough to make your API call. This is not a
+        policy we follow — it is a structural fact about how the product is built.
       </P>
 
       <H2>What that means, concretely</H2>
@@ -75,19 +76,22 @@ export default function TrustPage() {
           When you close the tab, they are gone.
         </li>
       </UL>
-      <P>In both modes, the keys exist only on the device in front of you.</P>
-
-      <H3>Vāda's servers never touch your keys</H3>
       <P>
-        When a deliberation runs, API calls to model providers (Anthropic, OpenAI, Google, Mistral, DeepSeek, xAI, Meta,
-        etc.) are made <strong>directly from your browser</strong>, not from Vāda's servers. Your browser authenticates
-        to the provider using your key. Vāda's servers never see the key, never proxy the request, never intercept the
-        response in transit.
+        In both modes, the keys live on your device between deliberations. They transit our server only during the
+        deliberation request itself (see the next section).
+      </P>
+
+      <H3>In memory, not in storage</H3>
+      <P>
+        When a deliberation runs, your key is sent from your browser to Vāda's server in the POST body of the
+        deliberation start request. The server holds the key in memory, passes it to the model provider (Anthropic,
+        OpenAI, etc.) to authenticate the API calls, then discards it. The key is never written to disk, never logged,
+        never persisted to the database, and is garbage-collected when the request ends. Transit is over HTTPS.
       </P>
       <P>
-        What Vāda's servers do see: the text of the responses your browser received, which gets stored as part of your
-        deliberation history. The server orchestrates which agent runs next and constructs the prompts — but the actual
-        API call, with your credentials, happens on your device.
+        What Vāda's servers do see: the text of the model responses, which is stored as your deliberation transcript.
+        The server constructs prompts, runs the agent orchestration, and calls the provider — your key authorizes those
+        calls but is not retained once they complete.
       </P>
 
       <H3>The database has no place for your keys</H3>
@@ -100,9 +104,10 @@ export default function TrustPage() {
 
       <H3>No logs contain your keys</H3>
       <P>
-        Server logs, error reports, analytics — none of these touch your API keys, because the keys never reach the
-        server in the first place. The only logging that could ever involve your keys would be on your own device, in
-        your browser's dev tools. That's your machine, your control.
+        Server logs, error reports, and analytics capture request metadata, not request body content — because your keys
+        are never written to any log sink, only held in process memory for the duration of the request. Langfuse traces
+        (our observability layer) are configured with a <code className='font-mono text-sm'>SensitiveDataFilter</code>{' '}
+        that redacts any field named <code className='font-mono text-sm'>apiKey</code> before it leaves the process.
       </P>
 
       <H2>What Vāda does store</H2>
@@ -161,16 +166,16 @@ export default function TrustPage() {
       </P>
       <P>
         We chose not to offer server-side encrypted sync even though it would be cryptographically defensible. "Your
-        keys are encrypted in our database" is a weaker story than "your keys never reach our database." We prefer the
+        keys are encrypted in our database" is a weaker story than "your keys never reach our storage." We prefer the
         stronger story — and the architectural constraint that enforces it.
       </P>
 
-      <H2>Why this matters</H2>
+      <H2>Why this architecture</H2>
       <P>
-        BYOK products that still touch your keys server-side — even in encrypted form, even temporarily — create attack
-        surface. A database breach, a rogue employee, a misconfigured log, a subpoena, a legal compulsion. None of those
-        can expose what doesn't exist. By designing Vāda so the server never receives keys, we take those risks off the
-        table structurally.
+        BYOK products that store your keys server-side — even in encrypted form — create attack surface. A database
+        breach, a rogue employee, a misconfigured log, a subpoena, a legal compulsion. None of those can expose what
+        doesn't exist in storage. By designing Vāda so keys are never written to any storage layer — only held in
+        process memory for the duration of a single request — we take those risks off the table structurally.
       </P>
       <P>
         This also preserves your relationship with the model providers. Your Anthropic bill is yours. Your usage metrics
@@ -178,43 +183,61 @@ export default function TrustPage() {
         tools you already own.
       </P>
 
-      <H2>Audit trail</H2>
-      <P>You can verify every claim on this page:</P>
+      <H2>Why this changed</H2>
+      <P>
+        Earlier versions of Vāda made API calls directly from your browser to model providers. We moved these calls
+        server-side because the new architecture (Mastra workflow orchestration) requires server-side execution to
+        produce accurate traces, coordinate multi-agent deliberations reliably, and give you a better experience.
+      </P>
+      <P>
+        The privacy tradeoff: your key now transits our server memory during each deliberation. We protected this by
+        ensuring the key is never written to any storage, never logged, and is dropped as soon as the request completes.
+        This is a stronger posture than most BYOK products, just architecturally different from our earlier one.
+      </P>
+
+      <H2>How to verify our claims</H2>
       <UL>
         <li>
-          <strong>Client code:</strong> the identity package source is open for inspection. Look for where keys are
-          written (<code className='font-mono text-sm'>packages/identity/src/storage.ts</code>) and where they're read
-          (hooks). Trace the call graph; you'll never find a <code className='font-mono text-sm'>fetch</code> to Vāda's
-          server that includes key material.
+          <strong>Check the database schema.</strong> Drizzle schema files in the repository contain every table and
+          column. Search for <code className='font-mono text-sm'>api_key</code>,{' '}
+          <code className='font-mono text-sm'>credential</code>, <code className='font-mono text-sm'>token</code> — you
+          won't find any.
         </li>
         <li>
-          <strong>Server schema:</strong> the Drizzle schema defines every table and column. There is no key-like field
-          anywhere in it. Grep the schema for <code className='font-mono text-sm'>api_key</code>,{' '}
-          <code className='font-mono text-sm'>credential</code>, <code className='font-mono text-sm'>secret</code>,{' '}
-          <code className='font-mono text-sm'>token</code> — you will find nothing.
+          <strong>Check the identity package.</strong> The <code className='font-mono text-sm'>@atta/identity</code>{' '}
+          package source is open for inspection. Look at where keys are stored (
+          <code className='font-mono text-sm'>packages/identity/src/storage.ts</code>) and where they're read. Trace the
+          call graph — the key is sent to exactly one destination: Vāda's{' '}
+          <code className='font-mono text-sm'>/workflow/run</code> endpoint. No analytics, no telemetry, no error
+          reporters, no third-party sinks.
         </li>
         <li>
-          <strong>Server routes:</strong> no server route accepts an API key as input. Check the route handlers and
-          input schemas; none of them will have a provider key field.
+          <strong>Check the workflow route.</strong>{' '}
+          <code className='font-mono text-sm'>/api/deliberation/[id]/workflow/run</code> is the only route that accepts
+          a key. Read the source — you'll see the key flowing to provider calls and never to storage.
         </li>
         <li>
-          <strong>Network tab:</strong> open your browser's developer tools during a deliberation. Watch the requests.
-          You'll see calls going directly from your browser to{' '}
-          <code className='font-mono text-sm'>api.anthropic.com</code>,{' '}
-          <code className='font-mono text-sm'>api.openai.com</code>, etc. — not through Vāda's servers.
+          <strong>Check the network tab.</strong> You'll see the deliberation start as a POST to Vāda's{' '}
+          <code className='font-mono text-sm'>/api/deliberation/[id]/workflow/run</code> (the POST body contains your
+          key), then an SSE stream back. The server uses your key to make provider calls on your behalf — those calls
+          happen server-side, not in your browser. You can verify what the server does with your key by inspecting the
+          workflow endpoint source code, which is in the repository.
+        </li>
+        <li>
+          <strong>Check the observability config.</strong> Our Langfuse integration includes a{' '}
+          <code className='font-mono text-sm'>SensitiveDataFilter</code> that redacts{' '}
+          <code className='font-mono text-sm'>apiKey</code> from all traces before they leave the process.
         </li>
       </UL>
-      <P>
-        If you find any of the above to be untrue, that is a critical security bug and we want to know about it
-        immediately.
-      </P>
+      <P>If any of the above is untrue, that is a critical security bug and we want to know about it.</P>
 
       <hr className='my-12 border-border' />
 
       <P>
         <em>
-          The BYOK promise is worth nothing if it's just a policy. We made it structural because policies can slip.
-          Architecture cannot.
+          The BYOK promise is worth nothing if it's just a policy. We made the database constraint structural because
+          policies can slip and schemas cannot. The server-transit model is honest: your key enters our process, does
+          its job, and leaves. No storage. No logs. No copies.
         </em>
       </P>
     </article>
