@@ -1,4 +1,4 @@
-import { cmsClient, getVadaConfig } from '@atta/cms'
+import { cmsClient, getVadaConfig, getVadaBranding } from '@atta/cms'
 import { IdentityProvider } from '@atta/identity/react'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import type { Metadata } from 'next'
@@ -14,9 +14,13 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const config = await getVadaConfig(cmsClient).catch(() => null)
+  const [config, branding] = await Promise.all([
+    getVadaConfig(cmsClient).catch(() => null),
+    getVadaBranding(cmsClient).catch(() => null)
+  ])
+
   return (
-    <NextWebShell config={config} styleId='vada-theme'>
+    <NextWebShell config={config} branding={branding} styleId='vada-theme'>
       <PreviewThemeListener />
       <MockModeBanner />
       <IdentityProvider>{children}</IdentityProvider>
