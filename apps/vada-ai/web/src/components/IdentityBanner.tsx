@@ -26,15 +26,17 @@ function ProviderChip({
   return (
     <span className='inline-flex items-center gap-1.5'>
       {provider}
-      <button
+      <Button
         type='button'
+        size='icon'
+        variant='outline'
         onClick={() => onRemove(provider)}
         disabled={disabled}
-        className='inline-flex text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50'
+        className='size-6 text-muted-foreground hover:bg-transparent hover:text-destructive'
         aria-label={`Remove ${provider} key`}
       >
-        <X className='size-3.5' aria-hidden />
-      </button>
+        <X className='size-4' aria-hidden />
+      </Button>
     </span>
   )
 }
@@ -98,7 +100,7 @@ export function IdentityBanner() {
           <Text as='small' className='text-sm text-muted-foreground'>
             {b.savedProviders.map((provider, i) => (
               <span key={provider}>
-                {i > 0 && ', '}
+                {i > 0 && ' - '}
                 <ProviderChip
                   provider={providerLabel(provider)}
                   onRemove={() => b.promptRemoveProvider(provider)}
