@@ -16,12 +16,22 @@ export function useIdentityBanner() {
 
   const hasInMemoryKeys = Object.keys(identity.state.keys).length > 0
   const savedProviderLabels = identity.state.providers.map(providerLabel).join(', ')
+  const unsavedProviders = (Object.keys(identity.state.keys) as typeof identity.state.providers).filter(
+    (provider) => !identity.state.providers.includes(provider)
+  )
+  const unsavedProviderLabels = unsavedProviders.map(providerLabel).join(', ')
   const providerSummary =
     identity.state.providers.length > 0
       ? `${savedProviderLabels} configured on this device.`
       : hasInMemoryKeys
         ? `${(Object.keys(identity.state.keys) as typeof identity.state.providers).map(providerLabel).join(', ')} in memory for this session.`
         : 'no keys yet.'
+  const unlockedStatusSuffix =
+    identity.state.providers.length > 0 && unsavedProviders.length > 0
+      ? `${savedProviderLabels} configured · ${unsavedProviderLabels} in memory`
+      : identity.state.providers.length > 0
+        ? `${savedProviderLabels} configured`
+        : `${(Object.keys(identity.state.keys) as typeof identity.state.providers).map(providerLabel).join(', ')} in memory`
 
   const save = useCallback(async () => {
     if (!hasInMemoryKeys) {
@@ -55,6 +65,24 @@ export function useIdentityBanner() {
     }
   }, [identity, errorToast, successToast])
 
+  const updatePasskey = useCallback(async () => {
+    if (unsavedProviders.length === 0) return
+    setBusy(true)
+    try {
+      if (identity.state.kind === 'locked') {
+        await identity.unlockWithPasskey()
+      }
+      successToast('Keys updated', 'Your passkey now includes the new API keys.')
+    } catch (e) {
+      errorToast(
+        'Could not update passkey',
+        e instanceof Error ? e.message : 'Your keys stay in memory for this session.'
+      )
+    } finally {
+      setBusy(false)
+    }
+  }, [unsavedProviders, identity, errorToast, successToast])
+
   const signOut = useCallback(() => identity.signOut(), [identity])
   const promptForget = useCallback(() => setConfirmForget(true), [])
   const cancelForget = useCallback(() => setConfirmForget(false), [])
@@ -62,13 +90,16 @@ export function useIdentityBanner() {
   return {
     kind: identity.state.kind,
     hasInMemoryKeys,
+    unsavedProviders,
     passkeySupported: identity.passkeySupported,
     providerSummary,
     savedProviderLabels,
+    unlockedStatusSuffix,
     busy,
     confirmForget,
     save,
     forget,
+    updatePasskey,
     signOut,
     promptForget,
     cancelForget

@@ -2,13 +2,15 @@
 
 // Presentational only. All state + behavior lives in useIdentityBanner.
 // Conditional on identity state:
-//   - initializing / locked: silent (null)
+//   - initializing: silent (null)
+//   - locked: unified panel with status + sign out + forget + optional update button
 //   - no-stored-credential + no keys: first-time hint + /trust link
 //   - no-stored-credential + in-memory keys + passkey supported: save prompt
-//   - unlocked: sign out + forget device (confirm dialog on forget)
+//   - unlocked: unified panel with status + sign out + forget + optional update button
 
+import { providerLabel } from '@atta/identity'
 import { Button, Text } from '@atta/ui'
-import { KeyRound, ShieldX, Unlock } from 'lucide-react'
+import { KeyRound, Lock, ShieldX, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useIdentityBanner } from './useIdentityBanner'
 
@@ -18,14 +20,57 @@ export function IdentityBanner() {
   // Initializing: stay silent until the mount-time IndexedDB check resolves.
   if (b.kind === 'initializing') return null
 
-  // Locked: tiny pill so the user knows something's stored on this device.
-  // Name the provider(s) so "saved" isn't a mystery.
+  // Locked: unified panel with status, update button (if unsaved), sign out, forget device
   if (b.kind === 'locked') {
-    const label = b.savedProviderLabels ? `${b.savedProviderLabels} saved` : 'Saved on this device'
+    if (b.confirmForget) {
+      return (
+        <div className='space-y-2 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3'>
+          <div className='flex items-start gap-2.5'>
+            <ShieldX className='mt-0.5 size-4 shrink-0 text-destructive' aria-hidden />
+            <Text as='small' className='text-sm text-foreground'>
+              Your stored API keys on this device will be permanently deleted. You will need to re-enter them to use
+              Vāda here again. Your passkey in your OS keychain will not be deleted automatically — remove it there
+              separately if you want to.
+            </Text>
+          </div>
+          <div className='flex gap-2 pl-6'>
+            <Button type='button' size='sm' variant='destructive' onClick={b.forget} disabled={b.busy}>
+              Forget this device
+            </Button>
+            <Button type='button' size='sm' variant='outline' onClick={b.cancelForget} disabled={b.busy}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )
+    }
+    const lockedStatus =
+      b.unsavedProviders.length > 0
+        ? `${b.savedProviderLabels} saved · ${b.unsavedProviders.map(providerLabel).join(', ')} unsaved`
+        : `${b.savedProviderLabels} saved`
     return (
-      <div className='inline-flex items-center gap-1.5 self-start rounded-full border border-border bg-card/40 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
-        <KeyRound className='size-2.5' aria-hidden />
-        {label} · pick a model to unlock
+      <div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card/40 px-4 py-3'>
+        <div className='flex items-center gap-2.5'>
+          <Lock className='size-4 shrink-0 text-muted-foreground' aria-hidden />
+          <Text as='small' className='text-sm text-muted-foreground'>
+            {lockedStatus}
+          </Text>
+        </div>
+        <div className='flex items-center gap-2'>
+          {b.unsavedProviders.length > 0 && (
+            <Button type='button' size='sm' variant='outline' onClick={b.updatePasskey} disabled={b.busy}>
+              {b.unsavedProviders.length === 1
+                ? `Save ${b.unsavedProviders.map(providerLabel)[0]} with passkey`
+                : `Save ${b.unsavedProviders.length} new keys with passkey`}
+            </Button>
+          )}
+          <Button type='button' size='sm' variant='ghost' onClick={b.signOut} disabled={b.busy}>
+            Sign out
+          </Button>
+          <Button type='button' size='sm' variant='outline' onClick={b.promptForget} disabled={b.busy}>
+            Forget this device
+          </Button>
+        </div>
       </div>
     )
   }
@@ -90,10 +135,17 @@ export function IdentityBanner() {
         <div className='flex items-center gap-2.5'>
           <Unlock className='size-4 shrink-0 text-muted-foreground' aria-hidden />
           <Text as='small' className='text-sm text-muted-foreground'>
-            Unlocked — {b.providerSummary}
+            Unlocked — {b.unlockedStatusSuffix}
           </Text>
         </div>
         <div className='flex items-center gap-2'>
+          {b.unsavedProviders.length > 0 && (
+            <Button type='button' size='sm' variant='outline' onClick={b.updatePasskey} disabled={b.busy}>
+              {b.unsavedProviders.length === 1
+                ? `Save ${b.unsavedProviders.map(providerLabel)[0]} with passkey`
+                : `Save ${b.unsavedProviders.length} new keys with passkey`}
+            </Button>
+          )}
           <Button type='button' size='sm' variant='ghost' onClick={b.signOut} disabled={b.busy}>
             Sign out
           </Button>
