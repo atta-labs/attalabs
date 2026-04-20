@@ -76,6 +76,26 @@ The `/api/deliberation/[id]/workflow/run` route accepts `apiKey` in the request 
 
 **Gate:** must be resolved before Step 5.5 (observability) is turned on in any environment that handles real user keys.
 
+## Bench — vadaTokensIn/Out = 0 (workflow bypasses bumpDeliberationMetrics)
+
+The overnight bench harness records 0 for Vāda input/output tokens in `benchmark_metrics`. Root cause: the Mastra workflow route (`/workflow/run`) drives all 12 agent turns + conclusion phases server-side without going through the `/turn` API endpoint that calls `bumpDeliberationMetrics`. Token aggregation never fires.
+
+Tonight's bench data has correct diagnosis, session IDs, baseline tokens, and judge tokens — only the Vāda token columns are wrong.
+
+**Fix options:**
+1. Have each workflow step call `bumpDeliberationMetrics` directly (requires `getBenchmarkMetrics` + per-step token plumbing into `persistTurn`)
+2. Have the bench harness read turn-level token data from the transcript after the workflow completes and sum them itself
+
+Medium priority — required before using bench token columns for cost or quality analysis. Tonight's run is still valid for diagnosis signal.
+
+## Bench — Vāda hedges on low-ambiguity technical questions (T1 smoke test)
+
+T1 ("Vercel vs AWS for 3-person fintech team") produced BASELINE_WON. Vāda opened with "Not yet — answer two questions before committing…" while the baseline gave a direct recommendation with reasoning. Judge correctly preferred the decisive answer.
+
+This is a V1 Synthesizer tuning datapoint. The current Synthesizer prompt maps convergence faithfully but doesn't push toward commitment when agent agreement is high and stakes are medium. Possible future work: adjust Synthesizer Round 3 / conclusion prompt to commit decisively on questions where all agents agree on the direction and the only disagreement is in nuance.
+
+Track against second overnight run (after token fix) to see if T1 pattern holds across easy-CLEAN questions.
+
 ## Step 5.5 — Add Mastra observability (logging + AI tracing)
 
 Between Step 5 (Workflow migration) and Step 6 (browser integration), add observability to `@atta/orchestration`. Use Mastra's built-in logging and tracing primitives. Suggested exporter: Langfuse or Braintrust (evaluate both for free tier limits, trace retention, and pricing curve).

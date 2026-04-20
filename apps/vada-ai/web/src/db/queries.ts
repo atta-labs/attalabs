@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, isNotNull, sql } from 'drizzle-orm'
 import { db, schema } from './index'
 
 // --- Users ---
@@ -259,6 +259,19 @@ export async function saveJudgeMetrics(
       updatedAt: new Date()
     })
     .where(eq(schema.benchmarkMetrics.sessionId, sessionId))
+}
+
+export async function findCompletedBenchmarkForQuestion(question: string) {
+  const rows = await db
+    .select({
+      sessionId: schema.benchmarkMetrics.sessionId,
+      judgeDiagnosis: schema.benchmarkMetrics.judgeDiagnosis
+    })
+    .from(schema.benchmarkMetrics)
+    .innerJoin(schema.sessions, eq(schema.benchmarkMetrics.sessionId, schema.sessions.id))
+    .where(and(eq(schema.sessions.question, question), isNotNull(schema.benchmarkMetrics.judgeResponse)))
+    .limit(1)
+  return rows[0] ?? null
 }
 
 export async function bumpDeliberationMetrics(
