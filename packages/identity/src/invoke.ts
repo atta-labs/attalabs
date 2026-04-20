@@ -114,7 +114,14 @@ export async function invokeAgent(params: InvokeParams): Promise<InvokeResult> {
     // which Next's dev overlay surfaces as a red banner even when our caller
     // try/catch already showed a toast. Set to a no-op — the real handling
     // happens in the for-await loop in useDeliberation.
-    onError: (err) => console.error('[invoke] stream error:', err),
+    onError: (err) => {
+      const actualError = err?.error ?? err
+      if (actualError instanceof Error) {
+        console.error('[invoke] stream error:', actualError.message, actualError)
+      } else {
+        console.error('[invoke] stream error:', actualError)
+      }
+    },
     ...(providerOptions ? { providerOptions } : {})
   })
 
