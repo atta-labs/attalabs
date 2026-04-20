@@ -136,9 +136,10 @@ export function useDeliberateForm({
     // one-click flow when the user arrives at /deliberate with a pre-seeded
     // last-used model from localStorage — they shouldn't have to click the
     // picker just to trigger biometric; hitting DELIBERATE does both.
+    let freshKeys: Record<string, string> | undefined
     if (needsUnlock) {
       try {
-        await identity.unlockWithPasskey()
+        freshKeys = (await identity.unlockWithPasskey()) as Record<string, string>
       } catch (e) {
         errorToast(
           'Could not unlock',
@@ -180,7 +181,13 @@ export function useDeliberateForm({
     // baseline call in parallel. Intentionally NOT awaited — the user
     // navigates immediately; the fetch settles in the background.
     if (benchmarkEnabled && globalModel) {
-      void fireBaselineBenchmark(session_id, question.trim(), globalModel)
+      const baselineApiKey =
+        globalModel.provider === 'ollama'
+          ? 'ollama-local'
+          : (freshKeys?.[globalModel.provider] ?? globalModel.apiKey) || undefined
+      if (baselineApiKey) {
+        void fireBaselineBenchmark(session_id, question.trim(), { ...globalModel, apiKey: baselineApiKey })
+      }
     }
 
     router.push(`/deliberation/${session_id}`)
