@@ -96,7 +96,7 @@ export function IdentityBanner() {
         <div className='flex flex-wrap items-center gap-2.5'>
           <Lock className='size-4 shrink-0 text-muted-foreground' aria-hidden />
           <Text as='small' className='text-sm text-muted-foreground'>
-            {b.allProviders.map((provider, i) => (
+            {b.savedProviders.map((provider, i) => (
               <span key={provider}>
                 {i > 0 && ', '}
                 <ProviderChip
