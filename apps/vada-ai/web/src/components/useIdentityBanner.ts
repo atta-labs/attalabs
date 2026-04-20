@@ -17,7 +17,8 @@ export function useIdentityBanner() {
 
   const hasInMemoryKeys = Object.keys(identity.state.keys).length > 0
   const allProviders = Object.keys(identity.state.keys) as typeof identity.state.providers
-  const savedProviderLabels = identity.state.providers.map(providerLabel).join(', ')
+  const savedProviders = identity.state.providers
+  const savedProviderLabels = savedProviders.map(providerLabel).join(', ')
   const unsavedProviders = allProviders.filter((provider) => !identity.state.providers.includes(provider))
   const unsavedProviderLabels = unsavedProviders.map(providerLabel).join(', ')
   const providerSummary =
@@ -118,6 +119,7 @@ export function useIdentityBanner() {
     kind: identity.state.kind,
     hasInMemoryKeys,
     allProviders,
+    savedProviders,
     unsavedProviders,
     passkeySupported: identity.passkeySupported,
     providerSummary,

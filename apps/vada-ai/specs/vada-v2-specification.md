@@ -78,6 +78,24 @@ The V1 Synthesizer role is too aggressive in compression. Deliberation generates
 
 **Cost:** ~$3.50 for full rerun.
 
+#### Evidence from April 21 UI testing
+
+Two runs of identical question through identical Crucible produced materially different conclusions:
+
+- **Run 1 Synthesizer:** "Not yet, cannot answer" deflection
+- **Run 2 Synthesizer:** "Start with SQLite" commitment
+
+All four agents provided comparable material in Rounds 1-3 across both runs. The Synthesizer — not upstream agents — was the divergence point. Both runs saw Strategist/Critic/Devil's Advocate offer coherent positions. The Synthesizer in Run 1 elevated disagreement into meta-paralysis; Run 2 integrated disagreement into actionable conditional guidance.
+
+This is concrete evidence for Experiment 1.A — the Synthesizer prompt needs refinement to consistently commit when agent positions converge on a defensible answer, even with disagreement on justification.
+
+**Measurement approach:**
+
+- Run SQLite vs PostgreSQL question N=5 times with V1 Synthesizer prompt
+- Run same question N=5 times with V2 refined Synthesizer prompt
+- Compare: how often does each produce commitment vs deflection?
+- Success criterion: refined prompt produces commitment in >80% of runs
+
 ### Experiment 1.B — Conclusion structure redesign
 
 **If 1.A insufficient:** change the Conclusion type to allow richer structure. Currently Conclusion has single `recommendation` string. V2 could add:
