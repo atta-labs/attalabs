@@ -6,9 +6,9 @@ import { Separator } from '@atta/ui'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
-import { scienceMdxComponents } from '../components/MDXComponents'
+import { mdxComponents } from '@/components/mdx/MDXComponents'
 import { getFlatScienceDocs, getNextScienceDoc, getScienceDocBySlug, getScienceDocContent } from '../lib/content'
-import { preprocessMdx } from '../lib/mdx-preprocess'
+import { preprocessMdx } from '@/lib/mdx-preprocess'
 
 const mdxOptions = {
   mdxOptions: {
@@ -59,7 +59,7 @@ export default async function ScienceDocPage({ params }: { params: Promise<{ slu
       <Separator className='opacity-20' />
 
       <div className='text-base'>
-        <MDXRemote source={body} components={scienceMdxComponents} options={mdxOptions} />
+        <MDXRemote source={body} components={mdxComponents} options={mdxOptions} />
       </div>
 
       {next && (

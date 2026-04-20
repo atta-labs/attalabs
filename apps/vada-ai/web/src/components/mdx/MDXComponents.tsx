@@ -8,7 +8,7 @@ function isInternalHref(href: string | undefined): boolean {
   return href.startsWith('/') || href.startsWith('#')
 }
 
-export const scienceMdxComponents: MDXComponents = {
+export const mdxComponents: MDXComponents = {
   h1: ({ children, ...props }) => (
     <Heading level={1} className='mb-4 font-serif text-4xl font-light leading-tight' {...props}>
       {children}

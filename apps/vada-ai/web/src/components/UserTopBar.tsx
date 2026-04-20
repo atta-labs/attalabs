@@ -20,7 +20,10 @@ interface UserTopBarProps {
   logo?: ReactNode
 }
 
-const PUBLIC_NAV = [{ href: '/science', label: 'Science', exact: false }]
+const PUBLIC_NAV = [
+  { href: '/science', label: 'Science', exact: false },
+  { href: '/trust', label: 'Trust', exact: false }
+]
 
 const AUTH_NAV = [
   { href: '/deliberate', label: 'Deliberate', exact: true },
