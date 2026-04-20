@@ -110,19 +110,7 @@ export function useGlobalModelSelector({
       const entry = initialTeamModels.find((m) => m.teamId === selectedPresetId)
       if (entry) {
         const route = entry.provider as RouteProvider
-        const apiKey = storedKeys[route] ?? ''
-        // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-        console.log('[globalModel] update', {
-          trigger: 'seed-mount-preset',
-          provider: route,
-          modelId: entry.modelId,
-          apiKeySource: 'storedKeys[route]',
-          apiKeyLength: apiKey.length,
-          identityStateKeys: Object.keys(identity.state.keys),
-          hasAnthropicInIdentity: !!identity.state.keys?.anthropic,
-          anthropicKeyLength: identity.state.keys?.anthropic?.length ?? 0
-        })
-        onChange({ provider: route, modelId: entry.modelId, apiKey })
+        onChange({ provider: route, modelId: entry.modelId, apiKey: storedKeys[route] ?? '' })
         return
       }
     }
@@ -133,37 +121,13 @@ export function useGlobalModelSelector({
           last.provider === 'ollama' || !!storedKeys[last.provider] || identity.state.providers.includes(last.provider)
         const inCatalog = baseCatalog.some((e) => e.route === last.provider && e.modelId === last.modelId)
         if (providerAvailable && inCatalog) {
-          const apiKey = storedKeys[last.provider] ?? ''
-          // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-          console.log('[globalModel] update', {
-            trigger: 'seed-mount-lastModel',
-            provider: last.provider,
-            modelId: last.modelId,
-            apiKeySource: 'storedKeys[last.provider]',
-            apiKeyLength: apiKey.length,
-            identityStateKeys: Object.keys(identity.state.keys),
-            hasAnthropicInIdentity: !!identity.state.keys?.anthropic,
-            anthropicKeyLength: identity.state.keys?.anthropic?.length ?? 0
-          })
-          onChange({ provider: last.provider, modelId: last.modelId, apiKey })
+          onChange({ provider: last.provider, modelId: last.modelId, apiKey: storedKeys[last.provider] ?? '' })
           return
         }
       }
       const first = baseCatalog.find((e) => storedKeys[e.route])
       if (first) {
-        const apiKey = storedKeys[first.route] ?? ''
-        // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-        console.log('[globalModel] update', {
-          trigger: 'seed-mount-firstKeyed',
-          provider: first.route,
-          modelId: first.modelId,
-          apiKeySource: 'storedKeys[first.route]',
-          apiKeyLength: apiKey.length,
-          identityStateKeys: Object.keys(identity.state.keys),
-          hasAnthropicInIdentity: !!identity.state.keys?.anthropic,
-          anthropicKeyLength: identity.state.keys?.anthropic?.length ?? 0
-        })
-        onChange({ provider: first.route, modelId: first.modelId, apiKey })
+        onChange({ provider: first.route, modelId: first.modelId, apiKey: storedKeys[first.route] ?? '' })
       }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -175,17 +139,6 @@ export function useGlobalModelSelector({
     if (!entry) return
     const route = entry.provider as RouteProvider
     const apiKey = storedKeys[route] ?? ''
-    // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-    console.log('[globalModel] update', {
-      trigger: 'preset-switch',
-      provider: route,
-      modelId: entry.modelId,
-      apiKeySource: 'storedKeys[route]',
-      apiKeyLength: apiKey.length,
-      identityStateKeys: Object.keys(identity.state.keys),
-      hasAnthropicInIdentity: !!identity.state.keys?.anthropic,
-      anthropicKeyLength: identity.state.keys?.anthropic?.length ?? 0
-    })
     onChange({ provider: route, modelId: entry.modelId, apiKey })
   }, [selectedPresetId]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -248,17 +201,6 @@ export function useGlobalModelSelector({
           // Ollama has no auth to probe — skip the verification step.
           if (next.route === 'ollama' || !storedKey) {
             successToast('Unlocked', `Your ${next.route} key is loaded for this session.`)
-            // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-            console.log('[globalModel] update', {
-              trigger: 'handleChange-unlock-noStoredKey',
-              provider: next.route,
-              modelId: next.modelId,
-              apiKeySource: 'storedKey-missing',
-              apiKeyLength: 0,
-              identityStateKeys: Object.keys(identity.state.keys),
-              hasAnthropicInIdentity: !!identity.state.keys?.anthropic,
-              anthropicKeyLength: identity.state.keys?.anthropic?.length ?? 0
-            })
             onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKey ?? '' })
             return
           }
@@ -283,17 +225,6 @@ export function useGlobalModelSelector({
           } else {
             successToast('Unlocked', `Your ${next.route} key is loaded for this session.`)
           }
-          // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-          console.log('[globalModel] update', {
-            trigger: 'handleChange-unlock-withKey',
-            provider: next.route,
-            modelId: next.modelId,
-            apiKeySource: 'freshKeys[route]',
-            apiKeyLength: storedKey.length,
-            identityStateKeys: Object.keys(identity.state.keys),
-            hasAnthropicInIdentity: !!identity.state.keys?.anthropic,
-            anthropicKeyLength: identity.state.keys?.anthropic?.length ?? 0
-          })
           onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKey })
         } catch (e) {
           errorToast('Could not unlock', e instanceof Error ? e.message : 'Try again or enter keys manually.')
@@ -301,17 +232,6 @@ export function useGlobalModelSelector({
         return
       }
       const apiKey = storedKeys[next.route] ?? ''
-      // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-      console.log('[globalModel] update', {
-        trigger: 'handleChange-noUnlock',
-        provider: next.route,
-        modelId: next.modelId,
-        apiKeySource: 'storedKeys[route]',
-        apiKeyLength: apiKey.length,
-        identityStateKeys: Object.keys(identity.state.keys),
-        hasAnthropicInIdentity: !!identity.state.keys?.anthropic,
-        anthropicKeyLength: identity.state.keys?.anthropic?.length ?? 0
-      })
       onChange({ provider: next.route, modelId: next.modelId, apiKey })
     },
     [identity, storedKeys, onChange, successToast, errorToast]
@@ -329,18 +249,6 @@ export function useGlobalModelSelector({
         throw new Error(probe.error ?? 'Invalid API key.')
       }
       identity.setKey(route, key)
-      // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-      console.log('[globalModel] update', {
-        trigger: 'handleProvideKey',
-        provider: route,
-        modelId: value?.modelId,
-        apiKeySource: 'key-direct',
-        apiKeyLength: key.length,
-        valueProviderMatchesRoute: value?.provider === route,
-        identityStateKeys: Object.keys(identity.state.keys),
-        hasAnthropicInIdentity: !!identity.state.keys?.anthropic,
-        anthropicKeyLength: identity.state.keys?.anthropic?.length ?? 0
-      })
       if (value?.provider === route) onChange({ ...value, apiKey: key })
       if (probe.ok) {
         successToast('Key verified', `${route} is ready to use.`)

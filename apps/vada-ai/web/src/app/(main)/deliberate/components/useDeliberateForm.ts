@@ -1,6 +1,5 @@
 'use client'
 
-import { invokeAgent } from '@atta/identity'
 import { useIdentity } from '@atta/identity/react'
 import { useToastContext } from '@atta/ui'
 import type { FaceStyle } from '@atta/ui/canvas'
@@ -10,51 +9,25 @@ import { useUserPreferences } from '@/lib/user-preferences-context'
 import { PRESETS, type Preset } from '@/schemas'
 import type { ModelSelection } from './GlobalModelSelector'
 
-// Fire the single-shot baseline call in parallel with session navigation.
-// Fire-and-forget — the page the user lands on doesn't block on this; when
-// the response lands we POST it to /api/sessions/[id]/baseline.
+// Fire-and-forget — POST to server-side route so the LLM call happens
+// server-side (Anthropic blocks browser-origin streaming at CORS preflight).
+// apiKey transits server memory only, per /trust.
 async function fireBaselineBenchmark(sessionId: string, question: string, model: ModelSelection): Promise<void> {
-  // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-  console.log('[fireBaselineBenchmark] entered', {
-    sessionId,
-    hasApiKey: !!model.apiKey,
-    provider: model.provider,
-    modelId: model.modelId
-  })
   const apiKey = model.provider === 'ollama' ? 'ollama-local' : model.apiKey
   if (!apiKey) return
-  const start = performance.now()
   try {
-    // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-    console.log('[fireBaselineBenchmark] calling invokeAgent')
-    const result = await invokeAgent({
-      provider: model.provider,
-      modelId: model.modelId,
-      apiKey,
-      systemPrompt: "Answer the user's question directly. No framing, no caveats. If code is useful, include it.",
-      userPrompt: question
-    })
-    // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-    console.log('[fireBaselineBenchmark] invokeAgent returned, awaiting stream')
-    const text = await result.fullText()
-    // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-    console.log('[fireBaselineBenchmark] stream complete, text length:', text.length)
-    const elapsedMs = Math.round(performance.now() - start)
-    await fetch(`/api/sessions/${sessionId}/baseline`, {
+    await fetch('/api/benchmark/baseline', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        answer: text,
+        sessionId,
+        question,
         provider: model.provider,
         modelId: model.modelId,
-        tokensInput: null,
-        tokensOutput: null,
-        elapsedMs
+        apiKey
       })
     })
   } catch (e) {
-    // Benchmark is opt-in and cosmetic — surface via console, don't toast.
-    // The deliberation itself runs fine whether or not baseline lands.
     console.warn('[benchmark] baseline call failed', e)
   }
 }
@@ -198,27 +171,8 @@ export function useDeliberateForm({
         globalModel.provider === 'ollama'
           ? 'ollama-local'
           : (freshKeys?.[globalModel.provider] ?? globalModel.apiKey) || undefined
-      // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-      console.log('[baseline] trigger check', {
-        benchmarkEnabled,
-        hasGlobalModel: !!globalModel,
-        provider: globalModel.provider,
-        modelId: globalModel.modelId,
-        freshKeysAvailable: !!freshKeys,
-        freshKeysProviders: freshKeys ? Object.keys(freshKeys) : null,
-        hasFreshKeyForProvider: freshKeys ? !!freshKeys[globalModel.provider] : false,
-        hasGlobalModelApiKey: !!globalModel.apiKey,
-        globalModelApiKeyLength: globalModel.apiKey?.length,
-        baselineApiKeyResolved: !!baselineApiKey,
-        baselineApiKeyLength: baselineApiKey?.length
-      })
       if (baselineApiKey) {
-        // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-        console.log('[baseline] calling fireBaselineBenchmark')
         void fireBaselineBenchmark(session_id, question.trim(), { ...globalModel, apiKey: baselineApiKey })
-      } else {
-        // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-        console.log('[baseline] SKIPPED — no apiKey resolved')
       }
     }
 

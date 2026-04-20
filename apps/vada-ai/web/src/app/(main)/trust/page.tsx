@@ -86,7 +86,9 @@ export default function TrustPage() {
         When a deliberation runs, your key is sent from your browser to Vāda's server in the POST body of the
         deliberation start request. The server holds the key in memory, passes it to the model provider (Anthropic,
         OpenAI, etc.) to authenticate the API calls, then discards it. The key is never written to disk, never logged,
-        never persisted to the database, and is garbage-collected when the request ends. Transit is over HTTPS.
+        never persisted to the database, and is garbage-collected when the request ends. Transit is over HTTPS. The same
+        applies to benchmark calls: the baseline single-shot and AI judge requests transit server memory under the same
+        contract.
       </P>
       <P>
         What Vāda's servers do see: the text of the model responses, which is stored as your deliberation transcript.

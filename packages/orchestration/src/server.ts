@@ -3,3 +3,4 @@
 export { executeAgentTurn } from './execute'
 export { executeConclusionTurn } from './execute-conclusion'
 export type { ConclusionTurnInput, ConclusionTurnResult } from './execute-conclusion'
+export { resolveModel } from './model-resolver'
