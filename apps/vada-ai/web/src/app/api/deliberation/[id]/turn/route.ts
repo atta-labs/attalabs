@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { auth } from '@atta/auth/hooks'
-import { bumpDeliberationMetrics, getBenchmarkMetrics, getOrCreateUser, getSessionForUser } from '@/db/queries'
+import { getOrCreateUser, getSessionForUser } from '@/db/queries'
 import { recordTurn } from '@/engine/turn'
 
 const TurnSchema = z.object({
@@ -32,18 +32,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   await recordTurn(id, user.id, parsed.data)
-
-  // Only touch benchmark_metrics when the row exists (opt-in flag at start).
-  if (parsed.data.elapsedMs !== undefined) {
-    const metrics = await getBenchmarkMetrics(id)
-    if (metrics) {
-      await bumpDeliberationMetrics(id, {
-        tokensInput: parsed.data.tokensInput ?? null,
-        tokensOutput: parsed.data.tokensOutput ?? null,
-        elapsedMs: parsed.data.elapsedMs
-      })
-    }
-  }
 
   return Response.json({ ok: true })
 }

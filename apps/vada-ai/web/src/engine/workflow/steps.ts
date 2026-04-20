@@ -83,13 +83,17 @@ async function runAgentTurn(sessionId: string, apiKey: string | undefined) {
     round: command.round,
     hasWhispers: session.interventions.length > 0
   })
+  const agentStart = Date.now()
   const result = await executeAgentTurn(agent, command.userPrompt, ctx)
   await persistTurn(sessionId, {
     turnId: command.turnId,
     content: result.text,
     phase: 'run_agent',
     agent: command.agent,
-    round: command.round
+    round: command.round,
+    tokensInput: result.usage.inputTokens ?? null,
+    tokensOutput: result.usage.outputTokens ?? null,
+    elapsedMs: Date.now() - agentStart
   })
 }
 
@@ -143,7 +147,10 @@ export const conclusionSynthesizeStep: OkStep = {
     await persistTurn(sessionId, {
       turnId: command.turnId,
       content: result.content,
-      phase: command.phase
+      phase: command.phase,
+      tokensInput: result.inputTokens,
+      tokensOutput: result.outputTokens,
+      elapsedMs: result.durationMs
     })
     return { ok: true as const }
   }
@@ -169,7 +176,10 @@ export const conclusionAuditStep: AuditStepType = {
     await persistTurn(sessionId, {
       turnId: command.turnId,
       content: result.content,
-      phase: command.phase
+      phase: command.phase,
+      tokensInput: result.inputTokens,
+      tokensOutput: result.outputTokens,
+      elapsedMs: result.durationMs
     })
     return { verdict }
   }
@@ -205,7 +215,10 @@ export const conclusionReviseReauditStep: BranchStepType = {
       await persistTurn(sessionId, {
         turnId: command.turnId,
         content: result.content,
-        phase: command.phase
+        phase: command.phase,
+        tokensInput: result.inputTokens,
+        tokensOutput: result.outputTokens,
+        elapsedMs: result.durationMs
       })
     }
 
@@ -223,7 +236,10 @@ export const conclusionReviseReauditStep: BranchStepType = {
       await persistTurn(sessionId, {
         turnId: command.turnId,
         content: result.content,
-        phase: command.phase
+        phase: command.phase,
+        tokensInput: result.inputTokens,
+        tokensOutput: result.outputTokens,
+        elapsedMs: result.durationMs
       })
     }
 

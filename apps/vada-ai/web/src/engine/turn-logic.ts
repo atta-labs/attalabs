@@ -5,7 +5,9 @@
 
 import 'server-only'
 import {
+  bumpDeliberationMetrics,
   deleteConclusionBySession,
+  getBenchmarkMetrics,
   getSessionWithTranscript,
   insertConclusion,
   insertTranscriptEntry,
@@ -42,6 +44,17 @@ async function countRoundEntries(sessionId: string, round: number): Promise<numb
 export async function persistTurn(sessionId: string, payload: TurnPayload): Promise<void> {
   const session = await getSessionWithTranscript(sessionId)
   if (!session) return
+
+  if (payload.elapsedMs !== undefined) {
+    const metrics = await getBenchmarkMetrics(sessionId)
+    if (metrics) {
+      await bumpDeliberationMetrics(sessionId, {
+        tokensInput: payload.tokensInput ?? null,
+        tokensOutput: payload.tokensOutput ?? null,
+        elapsedMs: payload.elapsedMs
+      })
+    }
+  }
 
   switch (payload.phase) {
     case 'run_agent': {
