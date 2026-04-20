@@ -33,7 +33,7 @@ export interface ProbeResult {
 // if a user's key lacks access to these specific models they'll get a 404
 // which the UI should treat as "key is probably valid, pick a different model".
 const DEFAULT_PROBE_MODEL: Record<RouteProvider, string> = {
-  anthropic: 'claude-sonnet-4-6',
+  anthropic: 'claude-haiku-4-5-20251001',
   openai: 'gpt-4o-mini',
   google: 'gemini-2.5-flash',
   groq: 'llama-3.3-70b-versatile',

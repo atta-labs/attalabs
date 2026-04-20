@@ -214,3 +214,29 @@ No doc visualizes Vāda's data flow: how the Mastra workflow executes, where api
 **Value:** prevents future confusion about data flow. Supports onboarding. Documents security claims visually.
 
 **Gate:** after Step 6 ships (data flow stabilizes).
+
+---
+
+### Probe: dynamic model discovery (replace hardcoded DEFAULT_PROBE_MODEL)
+
+**Current problem:** `packages/identity/src/probe.ts:36` hardcodes one model per provider as probe fallback. These will rot as providers deprecate/rename models. On April 21, 2026, Anthropic's `claude-sonnet-4-6` was rejected by /v1/messages — the hardcoded default for anthropic. Fixed symptomatically, architectural problem remains.
+
+**Proper design — dynamic model discovery:**
+1. Replace probe with "list models" call per provider:
+   - Anthropic: GET /v1/models
+   - OpenAI: GET /v1/models
+   - Google: GET /v1beta/models
+   - Groq: GET /openai/v1/models
+   - OpenRouter: GET /api/v1/models (no auth)
+   - Ollama: GET /api/tags (local)
+2. Listing models with a key acts as validation. If 401 → invalid key. If 200 → key valid, pick cheapest model from returned list for future fallback needs.
+3. Cache discovered models per-session in identity state.
+4. Remove `DEFAULT_PROBE_MODEL` entirely.
+
+**Chicken-and-egg resolution:** list-models IS the validation. No pre-validation needed to list models.
+
+**Providers without list-models endpoints:** graceful degradation — fall back to a "known-safe probe model" or skip probe entirely, letting first real use validate the key.
+
+**Estimated effort:** 3-5 hours. Touches `packages/identity/src/probe.ts`, requires new cache in identity state, updates to `ApiKeyRow`, `useGlobalModelSelector`. Test across all 6 providers.
+
+**Priority:** High. Tackle as first V2 infrastructure task before V2 Experiment 1.A. Avoids repeating the hardcoded-model rot for OpenAI, Google, Groq which will happen eventually.
