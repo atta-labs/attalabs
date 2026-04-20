@@ -1,98 +1,130 @@
 ---
 name: vada-engine
-description: Vāda deliberation engine architecture — agents, rounds, streaming, session management, and resume logic
+description: Vāda deliberation engine architecture — Mastra workflow, agents, rounds, SSE streaming, session states, and write path rules
 ---
 
 # Vāda Engine — Deliberation System
 
 ## Context
 
-The Vāda engine runs multi-agent deliberation sessions. Sessions stream via SSE. The engine supports both fresh starts and resuming incomplete sessions. Each agent can use a different model (per-agent ModelConfig).
+The Vāda engine runs multi-agent deliberation sessions using a Mastra workflow. The browser POSTs to `/api/deliberation/[id]/workflow/run`, which starts the workflow server-side and streams progress back via SSE. Sessions persist to DB. Reconnecting clients open a new SSE connection and receive replayed state through the DB poll loop — no special resume protocol needed.
+
+BYOK: the user's API key is sent in the POST body of the workflow/run request. It is held in server memory for the duration of the workflow run, passed to provider calls, and never written to any storage.
 
 ---
 
 ## Architecture
 
 ```
-API: POST /api/deliberation/start        → Creates session, returns sessionId
-API: GET  /api/deliberation/[id]/stream  → SSE stream, drives the engine
+API: POST /api/deliberation/start             → Creates session, returns sessionId
+API: POST /api/deliberation/[id]/workflow/run → Starts Mastra workflow (fire-and-forget or sync)
+API: GET  /api/deliberation/[id]/workflow/run?stream=true → SSE stream (works for both fresh + reconnect)
+
+Mastra workflow (engine/workflow/crucible-workflow.ts):
+  runRound1 → runRound2 → runRound3 → runConclusion → runAudit → [runRevision →] terminal
 
 Engine layers:
-  agents.ts           → Agent definitions + role configurations
-  pending-keys.ts     → Key-based state tracking (what's been emitted)
-  prompts/compose.ts  → Message composition for each agent
-
-Round flow (applies to every preset — Crucible, War Room, Sparring):
-  Round 1 → Round 2 → Round 3 (agents debate)
-  → CONCLUDING (Synthesizer produces structured JSON)
-  → AUDITING (Blind Critic audits)
-  → CLEAN or REVISING (→ re-audit → CLEAN or UNCONVERGED)
+  orchestrator.ts      → Provider call + retry wrapper (wraps Anthropic/OpenAI/etc.)
+  turn-logic.ts        → persistTurn — the only function that writes transcript entries to DB
+  conclusion-rescue.ts → Conclusion JSON repair when model output is malformed
+  agents.ts            → Agent role definitions + configs
+  prompts/             → Prompt composition per agent/round/intervention
+  workflow/steps.ts    → Step implementations + getNextCommand state machine
 ```
 
-Sparring teams lack a Synthesizer agent, but the conclusion phase still runs —
-the orchestrator falls back to the session's default model for synthesis +
-audit. Every team ends with a conclusion; `SPARRING_COMPLETE` is a legacy
-terminal state only present on pre-2026-04-18 sessions.
+Session state progression:
+```
+PENDING → ROUND_1 → ROUND_2 → ROUND_3 → CONCLUDING → AUDITING → TERMINAL (CLEAN)
+                                                              ↘ REVISING → TERMINAL (REVISED or UNCONVERGED)
+```
 
 ---
 
 ## Rules
 
-### Session State
-- Sessions persist to DB — always fetch fresh session state at stream start
-- **MUST** check session status before deciding to start fresh vs resume
-- Resume = replay already-emitted keys, then continue from last checkpoint
+### Workflow Start Guard — Never Remove
+
+The `/workflow/run` route checks `session.state === 'PENDING'` before calling `run.start()`. This prevents duplicate workflow runs when a client reconnects or reloads mid-deliberation.
 
 ```ts
-// In stream route
-const session = await getSessionById(id)
-if (!session) return new Response('Not found', { status: 404 })
-
-const isResume = session.status === 'IN_PROGRESS' && session.pendingKeys.length > 0
+const shouldStart = initial.state === 'PENDING'
+if (shouldStart) {
+  const wf = mastra.getWorkflow('crucible')
+  const run = await wf.createRun()
+  run.start({ inputData: { sessionId, apiKey } }).catch(() => {})
+}
+// SSE poll loop always opens — serves both fresh start and reconnect
 ```
 
-### Pending Keys
-- Keys track which parts of the workflow have been emitted
-- **MUST** use peek functions (non-consuming) when checking resume state — don't dequeue during inspection
-- `peekKey(key)` — check if key exists without removing it
-- `consumeKey(key)` — removes key, marking step as consumed
+### persistTurn is the Single Write Path
+
+All workflow steps write agent turns through `persistTurn` in `turn-logic.ts`. The SSE poll loop discovers new entries via DB reads.
 
 ```ts
-// ✅ Non-consuming check for resume
-const hasRound1 = peekKey(session.pendingKeys, 'round-1-complete')
+// ✅ All workflow steps call this
+await persistTurn(sessionId, agentRole, round, message)
 
-// ❌ Don't consume during inspection — breaks resume logic
-const hasRound1 = consumeKey(session.pendingKeys, 'round-1-complete')
+// ❌ Never write transcript entries directly to the DB
+await db.insert(transcriptEntries).values({ ... })
 ```
+
+### SSE Emission Order
+
+Within each poll cycle: `agent_completed` events are emitted **before** `state_changed`. The client appends the message before updating the round indicator — this matches expected UX ordering. Do not change this order.
 
 ### Per-Agent Model Config
-- Each agent can use a different Claude model
-- ModelConfig is stored in session as `agentModels` JSON
-- **MUST** thread ModelConfig through the full engine pipeline — don't hardcode model per agent
+
+Each agent can use a different model. Provider and modelId are stored on the session and must be threaded through the full engine pipeline.
 
 ```ts
-// In session
-type AgentModels = Record<AgentRole, ModelConfig>
-type ModelConfig = { model: string; apiKey?: string }
-
-// In round builder
-function buildRoundOneAgents(agentModels: AgentModels) {
-  return AGENT_ROLES.map(role => ({
-    role,
-    model: agentModels[role] ?? DEFAULT_MODEL_CONFIG
-  }))
-}
+// Session stores the global provider + modelId
+// agentModels JSON stores per-agent overrides (future)
+// Never hardcode a model name inside a step — always read from session
 ```
 
-### Streaming (SSE)
-- Stream route handles both fresh start and resume via unified workflow driver
-- Replay completed steps to client on resume (non-streaming, fast replay)
-- Continue streaming from last incomplete step
+### getNextCommand is Live State-Machine Logic
 
-### Every team ends with a conclusion
-- Since 2026-04-18, every preset (Crucible, War Room, Sparring) runs the conclusion protocol.
-- Sparring teams lack a Synthesizer agent → orchestrator falls back to the session's default model for synthesize + audit.
-- `SPARRING_COMPLETE` is a legacy terminal state — still present on pre-2026-04-18 sessions and rendered fine, but the current engine never produces it.
+`getNextCommand` in `workflow/steps.ts` is the state-machine backbone — it reads session state from DB and returns the next command for each step. It is not dead code. All 12 workflow steps call it to interpret the current session state and determine what action to take.
+
+### Every Team Ends with a Conclusion
+
+Since 2026-04-18, every preset (Crucible, War Room, Sparring) runs the full conclusion protocol. `SPARRING_COMPLETE` is a legacy terminal state — still present on pre-2026-04-18 DB rows and rendered correctly by the UI, but the current engine never produces it.
+
+---
+
+## Session States
+
+| State | Meaning |
+|-------|---------|
+| `PENDING` | Session created, workflow not yet started |
+| `ROUND_1` / `ROUND_2` / `ROUND_3` | Agents debating in the named round |
+| `CONCLUDING` | Synthesizer producing structured conclusion JSON |
+| `AUDITING` | Blind critic evaluating the conclusion |
+| `REVISING` | Synthesizer revising after critic rejection |
+| `TERMINAL` | Deliberation complete — check `terminalState` for outcome |
+
+Terminal states (set on the `terminalState` column when `state = TERMINAL`):
+
+| Terminal State | Meaning |
+|----------------|---------|
+| `CLEAN` | Critic accepted the first-pass conclusion |
+| `REVISED` | Critic rejected; revised conclusion accepted |
+| `UNCONVERGED` | Revision also rejected; best available shown |
+| `SPARRING_COMPLETE` | Legacy — pre-2026-04-18 sessions only |
+
+---
+
+## SSE Event Types
+
+The browser's `useDeliberation.ts` hook consumes these from `/workflow/run?stream=true`:
+
+| Type | Payload | Effect |
+|------|---------|--------|
+| `state_changed` | `{ state: SessionState }` | Updates round indicators and loading spinners |
+| `agent_completed` | `{ agent: string; round: number; message: string }` | Appends transcript entry |
+| `terminal` | `{ terminalState: string; conclusion: object }` | Closes stream, renders conclusion panel |
+| `keepalive` | `{}` | No-op — prevents connection timeout every 15s |
+| `error` | `{ message: string }` | Infra-level failure (not model errors) |
 
 ---
 
@@ -101,18 +133,24 @@ function buildRoundOneAgents(agentModels: AgentModels) {
 ```
 src/engine/
 ├── agents.ts                    # Agent role definitions + configs
-├── pending-keys.ts              # Key management (peek, consume, emit)
+├── orchestrator.ts              # Provider call + retry wrapper
+├── conclusion-rescue.ts         # Conclusion JSON repair/fallback
+├── turn-logic.ts                # persistTurn — DB write path for all transcript entries
+├── types.ts                     # Shared engine types
 ├── prompts/
 │   ├── compose.ts               # Message assembly per agent/round
-│   └── conclusion-prompts.ts    # Prompts for conclusion phase
-└── conclusion/
-    ├── blind-critic.ts          # Blind critic phase
-    ├── revision.ts              # Revision phase
-    └── synthesizer.ts           # Final synthesis
+│   ├── conclusion-prompts.ts    # Prompts for conclusion phase
+│   ├── postures.ts              # Agent posture modifiers
+│   ├── round-modifiers.ts       # Round-specific prompt modifiers
+│   ├── task-horizons.ts         # Task horizon modifiers
+│   └── whisper-modifier.ts      # Intervention whisper injection
+└── workflow/
+    ├── crucible-workflow.ts      # Mastra workflow definition (step graph)
+    └── steps.ts                  # Step implementations + getNextCommand state machine
 
 src/app/api/deliberation/
-├── start/route.ts               # POST — create session
-└── [id]/stream/route.ts         # GET — SSE stream driver
+├── start/route.ts                      # POST — create session
+└── [id]/workflow/run/route.ts          # POST start + GET SSE stream driver
 ```
 
 ---
@@ -120,7 +158,8 @@ src/app/api/deliberation/
 ## Anti-patterns
 
 - ❌ Hardcoding model names per agent — use per-agent ModelConfig from session
-- ❌ Consuming pending keys during resume inspection — use peek
-- ❌ Assuming fresh start when stream begins — always check session status
-- ❌ Modifying system prompts for agents without explicit user instruction
-- ❌ Duplicating fresh/resume logic — use unified workflow driver
+- ❌ Starting a Mastra run without checking `session.state === 'PENDING'` — causes duplicate runs on reconnect
+- ❌ Writing transcript entries outside of `persistTurn` — breaks SSE poll discovery
+- ❌ Modifying agent system prompts without explicit user instruction
+- ❌ Removing or reordering the `agent_completed` / `state_changed` emission order in the SSE loop
+- ❌ Treating `getNextCommand` as dead code — it is the live state-machine backbone for all 12 steps
