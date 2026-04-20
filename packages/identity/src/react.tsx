@@ -151,7 +151,7 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
     const decrypted = await decryptJson<ApiKeyMap>(cryptoKey, cred.encryptedKeys, cred.iv)
     cryptoKeyRef.current = cryptoKey
     credentialIdRef.current = cred.credentialId
-    setKeys(decrypted)
+    setKeys((prev) => ({ ...prev, ...decrypted }))
     setProviders(cred.providers)
     setStateKind('unlocked')
     return decrypted

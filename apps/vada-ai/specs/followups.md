@@ -217,6 +217,16 @@ No doc visualizes Vāda's data flow: how the Mastra workflow executes, where api
 
 ---
 
+### Key rotation edge case in unlock merge
+
+The unlock merge logic `setKeys((prev) => ({ ...prev, ...decrypted }))` treats vault as ground truth — vault-stored keys overwrite any session keys for the same provider during unlock.
+
+Edge case: user has a key in vault, locks, enters a NEW key for same provider while locked (intending to rotate), then unlocks. Vault's older key wins. User's newer key is lost.
+
+Low priority — rare flow, recoverable (user just re-enters). But worth considering whether "session key for locked-state additions wins over vault" is a cleaner invariant. Requires distinguishing "session keys added pre-unlock" from "session keys that should be overwritten by vault."
+
+---
+
 ### Probe: dynamic model discovery (replace hardcoded DEFAULT_PROBE_MODEL)
 
 **Current problem:** `packages/identity/src/probe.ts:36` hardcodes one model per provider as probe fallback. These will rot as providers deprecate/rename models. On April 21, 2026, Anthropic's `claude-sonnet-4-6` was rejected by /v1/messages — the hardcoded default for anthropic. Fixed symptomatically, architectural problem remains.
