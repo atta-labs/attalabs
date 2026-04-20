@@ -14,10 +14,19 @@ import type { ModelSelection } from './GlobalModelSelector'
 // Fire-and-forget — the page the user lands on doesn't block on this; when
 // the response lands we POST it to /api/sessions/[id]/baseline.
 async function fireBaselineBenchmark(sessionId: string, question: string, model: ModelSelection): Promise<void> {
+  // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
+  console.log('[fireBaselineBenchmark] entered', {
+    sessionId,
+    hasApiKey: !!model.apiKey,
+    provider: model.provider,
+    modelId: model.modelId
+  })
   const apiKey = model.provider === 'ollama' ? 'ollama-local' : model.apiKey
   if (!apiKey) return
   const start = performance.now()
   try {
+    // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
+    console.log('[fireBaselineBenchmark] calling invokeAgent')
     const result = await invokeAgent({
       provider: model.provider,
       modelId: model.modelId,
@@ -25,7 +34,11 @@ async function fireBaselineBenchmark(sessionId: string, question: string, model:
       systemPrompt: "Answer the user's question directly. No framing, no caveats. If code is useful, include it.",
       userPrompt: question
     })
+    // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
+    console.log('[fireBaselineBenchmark] invokeAgent returned, awaiting stream')
     const text = await result.fullText()
+    // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
+    console.log('[fireBaselineBenchmark] stream complete, text length:', text.length)
     const elapsedMs = Math.round(performance.now() - start)
     await fetch(`/api/sessions/${sessionId}/baseline`, {
       method: 'POST',
@@ -186,16 +199,26 @@ export function useDeliberateForm({
           ? 'ollama-local'
           : (freshKeys?.[globalModel.provider] ?? globalModel.apiKey) || undefined
       // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
-      console.log('[baseline] debug', {
+      console.log('[baseline] trigger check', {
+        benchmarkEnabled,
+        hasGlobalModel: !!globalModel,
         provider: globalModel.provider,
-        freshKeysKeys: freshKeys ? Object.keys(freshKeys) : null,
-        freshApiKeyPresent: !!baselineApiKey,
-        baselineApiKeyLength: baselineApiKey?.length,
-        baselineApiKeyPrefix: baselineApiKey?.slice(0, 10),
-        globalModelApiKeyLength: globalModel.apiKey?.length
+        modelId: globalModel.modelId,
+        freshKeysAvailable: !!freshKeys,
+        freshKeysProviders: freshKeys ? Object.keys(freshKeys) : null,
+        hasFreshKeyForProvider: freshKeys ? !!freshKeys[globalModel.provider] : false,
+        hasGlobalModelApiKey: !!globalModel.apiKey,
+        globalModelApiKeyLength: globalModel.apiKey?.length,
+        baselineApiKeyResolved: !!baselineApiKey,
+        baselineApiKeyLength: baselineApiKey?.length
       })
       if (baselineApiKey) {
+        // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
+        console.log('[baseline] calling fireBaselineBenchmark')
         void fireBaselineBenchmark(session_id, question.trim(), { ...globalModel, apiKey: baselineApiKey })
+      } else {
+        // biome-ignore lint/suspicious/noConsole: temporary diagnosis log
+        console.log('[baseline] SKIPPED — no apiKey resolved')
       }
     }
 
