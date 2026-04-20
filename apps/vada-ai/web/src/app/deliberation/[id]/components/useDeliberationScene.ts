@@ -4,7 +4,7 @@
 // Returns a flat object the component reads — no hooks inside the JSX.
 
 import { useToastContext } from '@atta/ui'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { PRESETS } from '@/schemas'
 import { useDeliberation } from './useDeliberation'
 
@@ -44,9 +44,13 @@ export function useDeliberationScene({
   const showConclusion = !!terminalState
   const showLoading = ['CONCLUDING', 'AUDITING', 'REVISING'].includes(currentState) && !!loadingMessage
 
-  const rounds = Array.from(new Set(messages.map((m) => m.round)))
-    .filter((r) => messages.some((m) => m.round === r && m.content.trim().length > 0))
-    .sort((a, b) => a - b)
+  const rounds = useMemo(
+    () =>
+      Array.from(new Set(messages.map((m) => m.round)))
+        .filter((r) => messages.some((m) => m.round === r && m.content.trim().length > 0))
+        .sort((a, b) => a - b),
+    [messages]
+  )
 
   const teamName =
     PRESETS.find((p) => p.agents.length === agentRoles.length && p.agents.every((a) => agentRoles.includes(a.role)))
@@ -59,21 +63,24 @@ export function useDeliberationScene({
   // Display set = completed rounds ∪ currently-streaming round. Makes an
   // empty RoundStrip appear as soon as the engine starts a new round, even
   // before any content streams back.
-  const displayRounds = (() => {
-    const s = new Set<number>(rounds)
-    if (currentRoundNum) s.add(currentRoundNum)
-    return Array.from(s).sort((a, b) => a - b)
-  })()
+  const displayRounds = useMemo(() => {
+    const set = new Set<number>(rounds)
+    if (currentRoundNum) set.add(currentRoundNum)
+    return Array.from(set).sort((a, b) => a - b)
+  }, [rounds, currentRoundNum])
 
   // A round is "complete" if the engine has moved past it — either to a later
   // round, into the conclusion protocol, or to TERMINAL. Derived from
   // currentState rather than tracked separately so there's one source of truth.
-  const isRoundComplete = (round: number): boolean => {
-    if (currentState === 'TERMINAL') return true
-    if (['CONCLUDING', 'AUDITING', 'REVISING'].includes(currentState)) return true
-    if (currentRoundNum === null) return false
-    return round < currentRoundNum
-  }
+  const isRoundComplete = useCallback(
+    (round: number): boolean => {
+      if (currentState === 'TERMINAL') return true
+      if (['CONCLUDING', 'AUDITING', 'REVISING'].includes(currentState)) return true
+      if (currentRoundNum === null) return false
+      return round < currentRoundNum
+    },
+    [currentState, currentRoundNum]
+  )
 
   const isInterrupted = !isLiveSession && !showConclusion && initialState !== 'PENDING' && initialState !== 'TERMINAL'
   const isTerminalButEmpty =

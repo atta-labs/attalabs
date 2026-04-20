@@ -7,6 +7,7 @@ import type { RouteProvider } from '@atta/models'
 import { Button } from '@atta/ui'
 import { AIACanvas } from '@atta/ui/canvas'
 import { NextLink } from '@atta/ui/lib/next-link'
+import { useMemo } from 'react'
 import { ConclusionPanel } from './ConclusionPanel'
 import { RoundStrip } from './RoundStrip'
 import { TranscriptActions } from './TranscriptActions'
@@ -72,6 +73,19 @@ function DeliberationScene({
     defaultProvider: defaultProvider ?? null
   })
 
+  // Group messages by round once, keyed on the messages array reference.
+  // Each round's array is stable across renders where that round's content
+  // hasn't changed, giving RoundStrip.memo a chance to skip.
+  const entriesByRound = useMemo(() => {
+    const map = new Map<number, typeof s.messages>()
+    for (const m of s.messages) {
+      const list = map.get(m.round)
+      if (list) list.push(m)
+      else map.set(m.round, [m])
+    }
+    return map
+  }, [s.messages])
+
   // Judge call fires once, when: benchmark enabled AND baseline landed AND
   // terminal reached AND no judge stored yet AND user's key in memory. All
   // conditions checked inside the hook — safe to call unconditionally.
@@ -126,7 +140,7 @@ function DeliberationScene({
             deliberation instead of isolated cards. */}
         <div className='flex flex-col'>
           {s.displayRounds.map((round, i) => {
-            const roundEntries = s.messages.filter((m) => m.round === round)
+            const roundEntries = entriesByRound.get(round) ?? []
             const streamingForRound = s.streamingMessage?.round === round ? s.streamingMessage : null
             return (
               <div key={round} className='flex flex-col'>

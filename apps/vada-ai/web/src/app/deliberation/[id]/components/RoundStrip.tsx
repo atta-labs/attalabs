@@ -16,7 +16,7 @@ import { Button, ModelIcon } from '@atta/ui'
 import { AIAgent, type AgentName } from '@atta/ui/canvas'
 import { Copy, Download } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import type { CSSProperties } from 'react'
+import { memo, type CSSProperties, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { AGENT_COLOR_BY_ROLE } from './agent-theme'
@@ -48,7 +48,26 @@ function toAgentName(role: string): AgentName {
   return AGENT_NAME_BY_ROLE[role] ?? (role as AgentName)
 }
 
-export function RoundStrip({
+// Memoized so ReactMarkdown doesn't re-parse on parent re-renders when the
+// message text hasn't changed. The cursor blink is the only live update here.
+const AgentMessageText = memo(function AgentMessageText({
+  message,
+  isSpeaking
+}: {
+  message: string
+  isSpeaking: boolean
+}) {
+  return (
+    <div className='text-[13px] leading-relaxed text-foreground/90'>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+        {message}
+      </ReactMarkdown>
+      {isSpeaking && <span className='ml-0.5 inline-block h-3 w-px animate-pulse bg-foreground align-middle' />}
+    </div>
+  )
+})
+
+export const RoundStrip = memo(function RoundStrip({
   round,
   question,
   agentRoles,
@@ -58,6 +77,8 @@ export function RoundStrip({
   isLive,
   isRoundComplete
 }: RoundStripProps) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
   const {
     agentStates,
     currentSpeaker,
@@ -79,6 +100,12 @@ export function RoundStrip({
     isLive,
     isRoundComplete
   })
+
+  useEffect(() => {
+    if (displayState?.status === 'speaking' && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [displayState?.message, displayState?.status])
 
   return (
     <section data-round={round} className='space-y-4 rounded-lg border border-border bg-card/40 p-4'>
@@ -162,16 +189,17 @@ export function RoundStrip({
       </header>
 
       {/* Selected speaker card — sliding transition on selection change */}
-      <div className='relative min-h-[240px] overflow-hidden'>
+      <div className='relative h-[320px] overflow-hidden'>
         <AnimatePresence mode='wait' initial={false}>
           {displayState ? (
             <motion.div
+              ref={scrollRef}
               key={displayState.role}
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -40 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className='rounded border-l-2 border-l-[var(--agent-color)] bg-card/60 px-4 py-3'
+              className='h-full overflow-y-auto rounded border-l-2 border-l-[var(--agent-color)] bg-card/60 px-4 py-3'
               style={{ '--agent-color': AGENT_COLOR_BY_ROLE[displayState.role] ?? 'var(--border)' } as CSSProperties}
             >
               <div className='mb-1 font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--agent-color)]'>
@@ -180,14 +208,7 @@ export function RoundStrip({
                   <span className='ml-2 normal-case tracking-normal text-muted-foreground'>· speaking</span>
                 )}
               </div>
-              <div className='text-[13px] leading-relaxed text-foreground/90'>
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
-                  {displayState.message}
-                </ReactMarkdown>
-                {displayState.status === 'speaking' && (
-                  <span className='ml-0.5 inline-block h-3 w-px animate-pulse bg-foreground align-middle' />
-                )}
-              </div>
+              <AgentMessageText message={displayState.message} isSpeaking={displayState.status === 'speaking'} />
             </motion.div>
           ) : (
             <motion.div
@@ -195,7 +216,7 @@ export function RoundStrip({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className='flex h-[240px] items-center justify-center text-sm italic text-muted-foreground'
+              className='flex h-full items-center justify-center text-sm italic text-muted-foreground'
             >
               Agents are getting ready…
             </motion.div>
@@ -204,4 +225,4 @@ export function RoundStrip({
       </div>
     </section>
   )
-}
+})
