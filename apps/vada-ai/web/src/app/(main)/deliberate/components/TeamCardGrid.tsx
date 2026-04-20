@@ -31,10 +31,6 @@ const SCIENCE_URL = '/science/architecture/agents'
 interface TeamCardGridProps {
   selectedPreset: Preset
   onSelectPreset: (p: Preset) => void
-  onStart: () => void
-  canStart: boolean
-  loading: boolean
-  needsUnlock: boolean
   globalModel: ModelSelection | null
 }
 
@@ -47,10 +43,6 @@ interface TeamCardGridProps {
 export const TeamCardGrid = memo(function TeamCardGrid({
   selectedPreset,
   onSelectPreset,
-  onStart,
-  canStart,
-  loading,
-  needsUnlock,
   globalModel
 }: TeamCardGridProps) {
   const catalog = useCatalog()
@@ -122,11 +114,6 @@ export const TeamCardGrid = memo(function TeamCardGrid({
                 </div>
               </AIACanvas>
             }
-            ctaLabel={
-              loading && isSelected ? 'STARTING…' : needsUnlock && isSelected ? 'UNLOCK & DELIBERATE' : 'DELIBERATE'
-            }
-            onCtaClick={onStart}
-            ctaDisabled={!canStart}
             selected={isSelected}
             onSelect={() => onSelectPreset(preset)}
           />

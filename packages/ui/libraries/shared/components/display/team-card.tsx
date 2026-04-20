@@ -12,8 +12,8 @@ export interface TeamCardProps {
   titleAside?: React.ReactNode
   /** Optional model badge rendered on its own row below the title. */
   model?: React.ReactNode
-  ctaLabel: string
-  onCtaClick: () => void
+  ctaLabel?: string
+  onCtaClick?: () => void
   /** Disables the CTA even when the card is selected. Use for gating on external conditions (e.g. form validity). */
   ctaDisabled?: boolean
   selected: boolean
@@ -85,19 +85,21 @@ export function TeamCard({
         {faces}
       </div>
 
-      <Button
-        variant='default'
-        size='default'
-        className='w-full'
-        onClick={(event) => {
-          event.stopPropagation()
-          onCtaClick()
-        }}
-        onKeyDown={(event) => event.stopPropagation()}
-        disabled={!selected || ctaDisabled}
-      >
-        {ctaLabel}
-      </Button>
+      {ctaLabel && onCtaClick && (
+        <Button
+          variant='default'
+          size='default'
+          className='w-full'
+          onClick={(event) => {
+            event.stopPropagation()
+            onCtaClick()
+          }}
+          onKeyDown={(event) => event.stopPropagation()}
+          disabled={!selected || ctaDisabled}
+        >
+          {ctaLabel}
+        </Button>
+      )}
 
       {!selected && (
         <div
