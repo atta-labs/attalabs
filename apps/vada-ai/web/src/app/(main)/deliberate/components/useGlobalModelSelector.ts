@@ -189,6 +189,19 @@ export function useGlobalModelSelector({
     onChange({ provider: route, modelId: entry.modelId, apiKey })
   }, [selectedPresetId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── storedKeys → globalModel.apiKey sync ──────────────────────────────────
+  // Keeps globalModel.apiKey current whenever keys arrive asynchronously:
+  // identity unlock after mount, setKey from any source (including
+  // handleProvideKey when value was null and the onChange guard was false).
+  useEffect(() => {
+    if (!value || value.provider === 'ollama') return
+    const latestKey = storedKeys[value.provider] ?? ''
+    if (latestKey !== value.apiKey) {
+      onChange({ ...value, apiKey: latestKey })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omits value/onChange; sync should only fire when stored keys change, not on every value/onChange identity change
+  }, [storedKeys])
+
   // ── Derived picker inputs ──────────────────────────────────────────────────
   const configuredRoutes = useMemo(() => {
     const set = new Set<RouteProvider>([
