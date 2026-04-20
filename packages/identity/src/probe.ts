@@ -122,7 +122,7 @@ export async function probeProviderKey(
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true'
         },
-        { model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 16, stop_sequences: ['\n'] }
+        { model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 16 }
       )
     case 'openai':
       return postAndClassify(
