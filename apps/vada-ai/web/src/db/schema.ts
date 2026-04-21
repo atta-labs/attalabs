@@ -193,6 +193,29 @@ export const v2JudgeResults = pgTable('v2_judge_results', {
   createdAt: timestamp('created_at').defaultNow()
 })
 
+// ── V2 orchestration runs ─────────────────────────────────────────────────────
+// Raw output from B0 (V1 Vāda full workflow on Haiku).
+// One row per question × run_index. Populated by orchestration-alone.ts.
+
+export const v2OrchestrationRuns = pgTable(
+  'v2_orchestration_runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    questionId: text('question_id').notNull(), // corpus ID e.g. 'T1'
+    runIndex: integer('run_index').notNull(), // 0, 1, 2 for N=3
+    questionText: text('question_text').notNull(),
+    sessionId: uuid('session_id'), // Vāda session used for this run
+    conclusionText: text('conclusion_text'), // serialized for judge comparison
+    conclusionJson: jsonb('conclusion_json'), // raw parsed conclusion object
+    terminalState: text('terminal_state'), // 'CLEAN' | 'REVISED' | 'UNCONVERGED'
+    modelId: text('model_id').notNull(),
+    provider: text('provider').notNull(),
+    elapsedMs: integer('elapsed_ms').notNull(),
+    createdAt: timestamp('created_at').defaultNow()
+  },
+  (t) => [index('v2_orchestration_runs_q_r_idx').on(t.questionId, t.runIndex)]
+)
+
 // ── Settings ─────────────────────────────────────────────────────────────────
 // Note: there is no user_api_keys table. Keys live only in the user's browser.
 // See /trust for the BYOK architecture guarantee.

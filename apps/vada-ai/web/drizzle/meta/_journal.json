@@ -78,6 +78,13 @@
       "when": 1776753911550,
       "tag": "0010_married_sunspot",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776755548655,
+      "tag": "0011_ordinary_fat_cobra",
+      "breakpoints": true
     }
   ]
 }
