@@ -27,7 +27,7 @@ const PUBLIC_NAV = [
 
 const AUTH_NAV = [
   { href: '/deliberate', label: 'Deliberate', exact: true },
-  { href: '/history', label: 'History', exact: true }
+  { href: '/sessions', label: 'My Sessions', exact: true }
 ]
 
 export function UserTopBar({ logo }: UserTopBarProps) {
