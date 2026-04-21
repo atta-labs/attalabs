@@ -66,6 +66,11 @@ async function loadFreshSession(sessionId: string) {
 
 async function runAgentTurn(sessionId: string, apiKey: string | undefined) {
   let session = await loadFreshSession(sessionId)
+  if (session.transcriptEntries.length === 0)
+    // biome-ignore lint/suspicious/noConsole: intentional workflow observability log — model/provider audit trail
+    console.log(
+      `[workflow] model=${session.modelId ?? 'claude-sonnet-4-6'} provider=${session.provider ?? 'anthropic'}`
+    )
   let command = getNextCommand(session)
   for (let i = 0; i < 4 && command.type === 'state_change'; i++) {
     await updateSessionState(sessionId, command.state)
