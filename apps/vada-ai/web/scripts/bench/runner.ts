@@ -13,7 +13,7 @@ const MODEL_ID = 'claude-sonnet-4-6'
 
 // Source of truth for these prompts: useJudgeBenchmark.ts (judge) and
 // useDeliberateForm.ts (baseline). Copied here for direct server-side use.
-const BASELINE_SYSTEM_PROMPT =
+export const BASELINE_SYSTEM_PROMPT =
   "Answer the user's question directly. No framing, no caveats. If code is useful, include it."
 
 const JUDGE_SYSTEM_PROMPT = `You are an impartial judge. You are given:

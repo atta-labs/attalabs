@@ -64,6 +64,13 @@
       "when": 1776738271487,
       "tag": "0008_damp_violations",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776746500487,
+      "tag": "0009_rapid_penance",
+      "breakpoints": true
     }
   ]
 }

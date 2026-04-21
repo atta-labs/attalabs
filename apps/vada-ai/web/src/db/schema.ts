@@ -1,4 +1,17 @@
-import { date, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  date,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+  varchar
+} from 'drizzle-orm/pg-core'
 
 export const sessionStateEnum = pgEnum('session_state', [
   'PENDING',
@@ -129,6 +142,31 @@ export const benchmarkMetrics = pgTable('benchmark_metrics', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
+
+// ── V2 baseline runs ──────────────────────────────────────────────────────────
+// Raw output from A0 (naive) and A1 (rich-prompted) single-shot calls on Haiku.
+// One row per question × variant × run_index. Populated by baseline-ceiling.ts.
+
+export const v2BaselineRuns = pgTable(
+  'v2_baseline_runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    questionId: text('question_id').notNull(), // corpus ID e.g. 'T1'
+    variant: text('variant').notNull(), // 'A0' | 'A1'
+    runIndex: integer('run_index').notNull(), // 0, 1, 2 for N=3
+    questionText: text('question_text').notNull(),
+    responseText: text('response_text').notNull(),
+    parsedJson: jsonb('parsed_json'), // A1 responses parsed if valid JSON; null otherwise
+    schemaValid: boolean('schema_valid'), // null until full V2 schema validation in Task 4
+    modelId: text('model_id').notNull(),
+    provider: text('provider').notNull(),
+    tokensInput: integer('tokens_input'),
+    tokensOutput: integer('tokens_output'),
+    elapsedMs: integer('elapsed_ms').notNull(),
+    createdAt: timestamp('created_at').defaultNow()
+  },
+  (t) => [index('v2_baseline_runs_q_v_r_idx').on(t.questionId, t.variant, t.runIndex)]
+)
 
 // ── V2 judge results ─────────────────────────────────────────────────────────
 // Stores results from the neutral V2 judge (/api/benchmark/v2-judge).
