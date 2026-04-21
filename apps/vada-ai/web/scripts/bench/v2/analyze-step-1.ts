@@ -280,7 +280,7 @@ A1 won ${counts.A1_WON} / ${total} comparisons (${((counts.A1_WON / total) * 100
 ${counts.A1_WON > counts.A0_WON ? 'A1 is the stronger baseline and will serve as the primary comparator for Step 4 (A1 vs B1).' : counts.A0_WON > counts.A1_WON ? 'A0 outperformed A1 — rich prompting did not improve over naive for Haiku 4.5. Flag before proceeding.' : 'A1 and A0 are roughly equivalent — rich prompting produced no improvement over naive for Haiku 4.5.'}
 `
 
-  const outPath = join(import.meta.dir, '../../../../../specs/v2-results/step-1-analysis.md')
+  const outPath = join(import.meta.dir, '../../../../specs/v2-results/step-1-analysis.md')
   writeFileSync(outPath, report, 'utf-8')
   console.log(`\nReport written to: ${outPath}`)
 
