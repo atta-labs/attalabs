@@ -137,3 +137,50 @@ export async function getV2ConclusionForSession(sessionId: string) {
   const rows = await db.select().from(schema.conclusions).where(eq(schema.conclusions.sessionId, sessionId)).limit(1)
   return rows[0] ?? null
 }
+
+// ── Task 3.5 — Sonnet/Haiku isolation helpers ─────────────────────────────────
+
+// Model-aware orchestration run lookup (for Task 3.5 Sonnet/Haiku isolation).
+// getV2OrchestrationRun checks by (questionId, runIndex) only — this collides if Haiku
+// and Sonnet share the same questionId+runIndex. Use this helper to filter by model.
+export async function getV2OrchestrationRunForModel(questionId: string, runIndex: number, modelId: string) {
+  const rows = await db
+    .select()
+    .from(schema.v2OrchestrationRuns)
+    .where(
+      and(
+        eq(schema.v2OrchestrationRuns.questionId, questionId),
+        eq(schema.v2OrchestrationRuns.runIndex, runIndex),
+        eq(schema.v2OrchestrationRuns.modelId, modelId)
+      )
+    )
+    .limit(1)
+  return rows[0] ?? null
+}
+
+// Fetch all orchestration runs for a specific model (e.g. all Sonnet B0S rows).
+export async function getV2OrchestrationRunsForModel(modelId: string) {
+  return db
+    .select()
+    .from(schema.v2OrchestrationRuns)
+    .where(eq(schema.v2OrchestrationRuns.modelId, modelId))
+    .orderBy(schema.v2OrchestrationRuns.questionId, schema.v2OrchestrationRuns.runIndex)
+}
+
+// Fetch all Step 2 judge results for Sonnet (comparison_type = baseline-vs-vada-sonnet).
+export async function getAllV2Step2SonnetJudgeResults() {
+  return db
+    .select()
+    .from(schema.v2JudgeResults)
+    .where(eq(schema.v2JudgeResults.comparisonType, 'baseline-vs-vada-sonnet'))
+    .orderBy(schema.v2JudgeResults.createdAt)
+}
+
+// Fetch all Step 1 judge results for Sonnet (comparison_type = baseline-vs-baseline-sonnet).
+export async function getAllV2BaselineSonnetJudgeResults() {
+  return db
+    .select()
+    .from(schema.v2JudgeResults)
+    .where(eq(schema.v2JudgeResults.comparisonType, 'baseline-vs-baseline-sonnet'))
+    .orderBy(schema.v2JudgeResults.createdAt)
+}
