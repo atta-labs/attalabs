@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import { auth } from '@atta/auth/hooks'
+
+export const metadata: Metadata = {
+  title: 'History'
+}
+
 import { Separator } from '@atta/ui'
 import { Heading, Text } from '@atta/ui/shared'
 import { redirect } from 'next/navigation'
