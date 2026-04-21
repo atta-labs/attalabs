@@ -776,4 +776,174 @@ Actions:
 
 ---
 
+# §10 Addition to `vada-v2-specification.md`
+
+**Append this section to `vada-v2-specification.md`, between §9 (Delegated artifacts) and the current end-of-document marker.**
+
+---
+
+## 10. Round 4 refinements
+
+After spec lock, three reviewers (Grok, Gemini, ChatGPT) performed one additional short review round on the integrated plan. Seven concrete refinements surfaced and were accepted. Applied at specific task boundaries.
+
+### 10.1 Synthesizer prompt goal ranking (applies at Task 4, Step 3 build)
+
+**Source:** Gemini, Round 4.
+
+**Problem:** the Synthesizer conclusion prompt mixes "preserve structural richness" and "commit to a position" without explicit priority. On Haiku, Transformer recency bias makes the last instruction in the prompt dominant, producing over-compression (V1 failure mode) by default.
+
+**Refinement:** rank goals explicitly.
+
+- **Primary Directive:** "You are a Structure-Preserving Auditor. Your success metric is the **Retention Density** of the transcript's technical warnings and conditional branches."
+- **Secondary Directive:** "After capturing the full content, provide a committed recommendation."
+- **Fail-Safe clause (explicit in prompt):** "A concise response that omits a specific technical friction point from the transcript is a Failure. A detailed response that preserves irreducible tension is a Success."
+
+**Retention Density** becomes a named metric: retained transcript content / total transcript content. Tracked in Task 5 (Step 3) and Task 6 (Step 4) analysis.
+
+### 10.2 Omission-is-failure in Blind Critic Richness gate (applies at Task 4)
+
+**Source:** Gemini, Round 3+4.
+
+**Refinement:** Blind Critic Richness gate explicitly checks whether valuable upstream content (stress-test warnings, conditional branches, base-rate arguments) appeared in transcript but got stripped from conclusion. If yes → FAIL regardless of how clean or decisive the output looks.
+
+### 10.3 Hallucinatory Nuance watch-item (applies at Task 5, Task 6 analysis)
+
+**Source:** Gemini, Round 4.
+
+**New failure mode:** if prompts are so rigid about preserving richness that Haiku fabricates branches, caveats, or conditionals that didn't appear in the transcript, Vāda swaps V1's over-compression for V2's hallucinated nuance. Both are failure modes.
+
+**Detection:** track Logic Audit pass rate alongside Richness scores. Warning sign: B1 shows high Richness but drops in Logic Audit compared to B0. This indicates forced richness / fabrication.
+
+**Response if detected:** pause Step 3 rollout, investigate whether prompts are demanding structure Haiku can't legitimately produce, soften prompt constraints, retest.
+
+### 10.4 Pre-commitment ritual before Step 4 (applies at Task 6)
+
+**Source:** Grok + ChatGPT convergence, Round 4.
+
+**Problem:** both reviewers independently flagged that after Steps 1-3 improve Vāda with schema fix, the Principal is emotionally invested before Step 4 runs. "Teams quietly rewrite their own rules" at the kill gate.
+
+**Refinement:** before Task 6 execution, Principal writes a sealed commitment document. Committed to repo. Cannot be edited after Task 6 runs.
+
+Document template:
+
+```markdown
+# Step 4 Pre-Commitment
+
+Written [YYYY-MM-DD], before Step 4 execution.
+Repo state: commit [hash].
+
+## Part 1 — Prior probability distribution
+
+Expected outcomes before running Step 4 (Haiku 4.5, N=5, 7 V1-loss subset + SQLite):
+
+- B1 > A1 meaningfully: [X]% likely
+- B1 ≈ A1, B1 lower variance: [X]%
+- B1 ≈ A1, B1 higher info gain: [X]%
+- B1 ≈ A1, no other gains: [X]%
+- B1 < A1: [X]%
+
+Reviewer predictions (optional, collected for triangulation):
+- Grok: [distribution or single verdict]
+- Gemini: [distribution or single verdict]
+- ChatGPT: [distribution or single verdict]
+
+## Part 2 — Interpretation commitments
+
+Locked rules. No rationalization after results arrive.
+
+1. If actual outcome matches predicted "most likely," cannot claim
+   surprise to justify reinterpretation.
+2. If B1 beats A1 by fewer than 3 net flips on the 7-question V1-losses
+   subset, thesis dead as stated. No "close to meaningful" rationalization.
+3. If B1 beats A1 by 4+ net flips AND Step 4.5 shows A1 < B0-original
+   meaningfully, orchestration adds value. Proceed to Step 5.
+4. If B1 ≈ A1 on Haiku, run Sonnet disambiguation (§10.6) BEFORE killing.
+5. Apply interpretation grid in §3 Step 4 without deviation.
+
+## Part 3 — Watch-items to check before interpreting
+
+- Logic Audit pass rate on B1 (Hallucinatory Nuance check, §10.3)
+- Schema parse failure rate on B1 (>5% invalidates results partially)
+- Persona Collapse indicators on Haiku (capability floor signal)
+
+Signed, [Principal].
+```
+
+### 10.5 Information Gain as quality metric (applies at Task 6)
+
+**Source:** ChatGPT, Round 4.
+
+**Problem:** spec's original Information Gain metric ("count unique conditional branches, triggers, caveats") treats decorative complexity as equal to useful insight. Counts filler.
+
+**Refinement:** judge evaluates each structural element in output as either:
+- **Actionable insight:** addresses a real consideration the Principal would weigh
+- **Filler:** generic hedging without content
+
+Information Gain = count of actionable elements only. Filler ignored.
+
+**Implementation:** extension to V2 judge — extra evaluation pass that tags elements before aggregating. Cost: ~$1 additional per step that uses it.
+
+**Applied at:** Task 5 analysis (Step 3), Task 6 analysis (Step 4), all downstream steps that report Information Gain.
+
+### 10.6 Haiku → Sonnet disambiguation (modifies §6 Kill criteria)
+
+**Source:** ChatGPT, Round 4.
+
+**Problem:** if Step 4 shows B1 ≈ A1 on Haiku, the result has two incompatible interpretations:
+- Orchestration is redundant (thesis dead)
+- Haiku is below capability floor for orchestration (thesis fine, model too weak)
+
+Haiku-only data cannot distinguish these. Killing the thesis on Haiku-only ≈ results risks a false negative.
+
+**Refinement:** if Task 6 shows B1 ≈ A1 on Haiku, run priority disambiguation step before applying kill criteria:
+
+- Same prompts, same schema, same 7 V1-losses corpus
+- Model: Sonnet 4.6 (agents, baseline, judge all switch to Sonnet)
+- N=3 per variant
+- Cross-model judge for Sonnet neutrality
+- Cost: ~$3, time: 1 day
+
+**Interpretation:**
+- Sonnet also shows B1 ≈ A1 → thesis dead at two capability levels. Kill or pivot.
+- Sonnet shows B1 > A1 meaningfully → Haiku was below capability floor. Thesis survives. V2 continues on Sonnet for remaining steps.
+
+**Kill gate modification:** the "B1 ≈ A1 → pivot or kill" rule in §6 now reads: "B1 ≈ A1 on Haiku → run Sonnet disambiguation → apply rule based on Sonnet result."
+
+### 10.7 Elevate Step 8 E5 to priority (modifies §3 Step 8)
+
+**Source:** Gemini + ChatGPT convergence, Round 4.
+
+**Problem:** "Echo Chamber of One" — all Vāda agents share one model's weights, so they share its blind spots. No amount of role-prompting creates knowledge the base model lacks. E5 (model diversity) is the only experiment that addresses this at the architectural level rather than the prompt level.
+
+**Refinement:** E5 moves from "optional, highest-cost" to **priority experiment** within Step 8, gated on Step 4 thesis survival.
+
+**Gemini's concrete first-variant configuration:**
+- Critic → Llama 3 (high-temperature destruction model)
+- Strategist → Sonnet 4.6 (planner)
+- Devil's Advocate → [TBD — Principal choice]
+- Cold Reader synthesis → Gemini Pro or GPT-4o
+
+This creates a "Synthetic Committee" where no single model's attention bias dominates.
+
+**Cheaper alternative variant** (simpler to run, no Ollama dependency):
+- Haiku + Sonnet + Gemini Flash across agents
+
+Test cheaper variant first if time-constrained. Full Llama-inclusive variant if results warrant.
+
+---
+
+## Watch-items summary (consolidated)
+
+Three watch-items from Round 4 that monitor for specific failure modes during execution:
+
+1. **Schema parse failure rate on Haiku** — >5% means Haiku can't reliably produce V2 schema, results partially invalid
+2. **Persona Collapse on Haiku** — agents blurring into same voice means capability floor reached
+3. **Hallucinatory Nuance** — high Richness + low Logic Audit means forced fabrication, not preservation
+
+All three are instrumented at Task 4 build. All three reviewed at Task 5 and Task 6 analysis.
+
+---
+
+**End of Round 4 refinements.**
+
 **End of V2 specification.**
