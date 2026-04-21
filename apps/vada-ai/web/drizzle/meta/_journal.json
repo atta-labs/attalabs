@@ -57,6 +57,13 @@
       "when": 1776562977176,
       "tag": "0007_harsh_red_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776738271487,
+      "tag": "0008_damp_violations",
+      "breakpoints": true
     }
   ]
 }

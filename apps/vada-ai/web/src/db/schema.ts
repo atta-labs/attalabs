@@ -130,6 +130,30 @@ export const benchmarkMetrics = pgTable('benchmark_metrics', {
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
 
+// ── V2 judge results ─────────────────────────────────────────────────────────
+// Stores results from the neutral V2 judge (/api/benchmark/v2-judge).
+// Separate from benchmark_metrics to preserve V1 data and support intra-variant
+// comparisons (baseline-vs-baseline, vada-vs-vada) that V1 judge can't handle.
+
+export const v2JudgeResults = pgTable('v2_judge_results', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id'), // nullable — bench runs may not be tied to a session
+  comparisonType: text('comparison_type').notNull(), // 'baseline-vs-baseline' | 'vada-vs-vada' | 'baseline-vs-vada' | 'other'
+  systemADescription: text('system_a_description').notNull(),
+  systemBDescription: text('system_b_description').notNull(),
+  question: text('question').notNull(),
+  responseA: text('response_a').notNull(),
+  responseB: text('response_b').notNull(),
+  judgeResponse: text('judge_response').notNull(),
+  diagnosis: text('diagnosis'),
+  provider: text('provider').notNull(),
+  modelId: text('model_id').notNull(),
+  tokensInput: integer('tokens_input'),
+  tokensOutput: integer('tokens_output'),
+  elapsedMs: integer('elapsed_ms').notNull(),
+  createdAt: timestamp('created_at').defaultNow()
+})
+
 // ── Settings ─────────────────────────────────────────────────────────────────
 // Note: there is no user_api_keys table. Keys live only in the user's browser.
 // See /trust for the BYOK architecture guarantee.
