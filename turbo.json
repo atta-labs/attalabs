@@ -7,6 +7,28 @@
     },
     "build": {
       "dependsOn": ["typecheck", "^build"],
+      "env": [
+        "NODE_ENV",
+        "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+        "NEXT_PUBLIC_CLERK_SIGN_IN_URL",
+        "NEXT_PUBLIC_CLERK_SIGN_UP_URL",
+        "NEXT_PUBLIC_SANITY_PROJECT_ID",
+        "NEXT_PUBLIC_SANITY_DATASET",
+        "NEXT_PUBLIC_VADA_JUDGE_PROVIDER",
+        "NEXT_PUBLIC_VADA_JUDGE_MODEL",
+        "NEXT_PUBLIC_VADA_MOCK_MODE"
+      ],
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "CLERK_SECRET_KEY",
+        "SANITY_API_TOKEN",
+        "SANITY_PROJECT_ID",
+        "SANITY_DATASET",
+        "LANGFUSE_PUBLIC_KEY",
+        "LANGFUSE_SECRET_KEY",
+        "LANGFUSE_BASE_URL",
+        "VADA_DAILY_SESSION_LIMIT"
+      ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "dev": {
