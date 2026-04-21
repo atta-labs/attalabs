@@ -1,0 +1,1 @@
+ALTER TABLE "v2_judge_results" ADD COLUMN "run_index" integer;

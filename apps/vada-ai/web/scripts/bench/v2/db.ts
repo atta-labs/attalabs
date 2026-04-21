@@ -43,20 +43,30 @@ export async function getV2BaselineRunsForQuestion(questionId: string, variant: 
     .orderBy(schema.v2BaselineRuns.runIndex)
 }
 
-// Check if a comparison has already been judged for this exact pairing.
-// Keyed on question text + systemADescription to avoid re-running.
-export async function getExistingV2JudgeResult(questionText: string, systemADescription: string) {
+// Check if this exact run has already been judged.
+// Keyed on (question, systemADescription, runIndex) — all three required to prevent
+// same-slot dedup when multiple run indices share the same slot assignment.
+export async function getExistingV2JudgeResult(questionText: string, systemADescription: string, runIndex: number) {
   const rows = await db
     .select({ id: schema.v2JudgeResults.id, diagnosis: schema.v2JudgeResults.diagnosis })
     .from(schema.v2JudgeResults)
     .where(
       and(
         eq(schema.v2JudgeResults.question, questionText),
-        eq(schema.v2JudgeResults.systemADescription, systemADescription)
+        eq(schema.v2JudgeResults.systemADescription, systemADescription),
+        eq(schema.v2JudgeResults.runIndex, runIndex)
       )
     )
     .limit(1)
   return rows[0] ?? null
+}
+
+export async function deleteV2BaselineRunsForVariant(variant: string) {
+  await db.delete(schema.v2BaselineRuns).where(eq(schema.v2BaselineRuns.variant, variant))
+}
+
+export async function deleteAllV2BaselineJudgeResults() {
+  await db.delete(schema.v2JudgeResults).where(eq(schema.v2JudgeResults.comparisonType, 'baseline-vs-baseline'))
 }
 
 // Fetch all V2 judge results for Step 1 analysis (comparison_type = baseline-vs-baseline).

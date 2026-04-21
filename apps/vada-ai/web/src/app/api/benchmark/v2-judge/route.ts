@@ -15,6 +15,7 @@ export const maxDuration = 120
 
 const Schema = z.object({
   sessionId: z.string().nullable().optional(),
+  runIndex: z.number().int().nullable().optional(),
   question: z.string().min(1),
   responseA: z.string().min(1),
   responseB: z.string().min(1),
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
 
   const {
     sessionId,
+    runIndex,
     question,
     responseA,
     responseB,
@@ -103,6 +105,7 @@ export async function POST(request: Request) {
 
   await saveV2JudgeResult({
     sessionId: sessionId ?? null,
+    runIndex: runIndex ?? null,
     comparisonType,
     systemADescription,
     systemBDescription,

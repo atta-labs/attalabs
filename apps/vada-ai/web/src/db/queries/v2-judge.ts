@@ -2,6 +2,7 @@ import { db, schema } from '@/db'
 
 export async function saveV2JudgeResult(input: {
   sessionId?: string | null
+  runIndex?: number | null
   comparisonType: string
   systemADescription: string
   systemBDescription: string
@@ -20,6 +21,7 @@ export async function saveV2JudgeResult(input: {
     .insert(schema.v2JudgeResults)
     .values({
       sessionId: input.sessionId ?? null,
+      runIndex: input.runIndex ?? null,
       comparisonType: input.comparisonType,
       systemADescription: input.systemADescription,
       systemBDescription: input.systemBDescription,

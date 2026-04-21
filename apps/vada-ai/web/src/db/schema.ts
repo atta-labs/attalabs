@@ -176,6 +176,7 @@ export const v2BaselineRuns = pgTable(
 export const v2JudgeResults = pgTable('v2_judge_results', {
   id: uuid('id').primaryKey().defaultRandom(),
   sessionId: uuid('session_id'), // nullable — bench runs may not be tied to a session
+  runIndex: integer('run_index'), // nullable for legacy rows; set by bench scripts for dedup
   comparisonType: text('comparison_type').notNull(), // 'baseline-vs-baseline' | 'vada-vs-vada' | 'baseline-vs-vada' | 'other'
   systemADescription: text('system_a_description').notNull(),
   systemBDescription: text('system_b_description').notNull(),

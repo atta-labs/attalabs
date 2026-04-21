@@ -62,6 +62,7 @@ async function callV2Judge(params: {
   responseB: string
   systemADescription: string
   systemBDescription: string
+  runIndex: number
   token: string
 }): Promise<{ ok: boolean; diagnosis: string | null }> {
   const res = await fetch(`${BASE_URL}/api/benchmark/v2-judge`, {
@@ -69,6 +70,7 @@ async function callV2Judge(params: {
     headers: { Authorization: `Bearer ${params.token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       sessionId: null,
+      runIndex: params.runIndex,
       question: params.question,
       responseA: params.responseA,
       responseB: params.responseB,
@@ -121,8 +123,8 @@ async function main() {
       const systemADesc = DESC[slotA]
       const systemBDesc = DESC[slotB]
 
-      // Resumability: skip if this exact pairing was already judged
-      const existing = await getExistingV2JudgeResult(question.text, systemADesc)
+      // Resumability: skip if this run index was already judged for this pairing
+      const existing = await getExistingV2JudgeResult(question.text, systemADesc, runIndex)
       if (existing) {
         console.log(`  [run ${runIndex}] ↩ Already judged (${existing.diagnosis}) — skipping`)
         totalSkipped++
@@ -147,6 +149,7 @@ async function main() {
           responseB: runB.responseText,
           systemADescription: systemADesc,
           systemBDescription: systemBDesc,
+          runIndex,
           token
         })
         const elapsed = ((Date.now() - start) / 1000).toFixed(1)

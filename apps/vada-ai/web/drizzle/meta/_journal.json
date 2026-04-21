@@ -71,6 +71,13 @@
       "when": 1776746500487,
       "tag": "0009_rapid_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776753911550,
+      "tag": "0010_married_sunspot",
+      "breakpoints": true
     }
   ]
 }

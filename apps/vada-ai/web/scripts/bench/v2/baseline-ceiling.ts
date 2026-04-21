@@ -87,11 +87,16 @@ async function main() {
           assertModelId(V2_MODEL_ID, 'claude-haiku-4-5-20251001')
 
           let parsedJson: unknown | null = null
+          let schemaValid: boolean | null = null
           if (variant.name === 'A1') {
+            const raw = result.content
+            // Strip ```json ... ``` wrapper Haiku often emits
+            const fenceMatch = raw.match(/^```(?:json)?\s*([\s\S]*?)\s*```\s*$/m)
+            const candidate = fenceMatch ? fenceMatch[1]! : raw
             try {
-              parsedJson = JSON.parse(result.content)
+              parsedJson = JSON.parse(candidate)
+              schemaValid = true
             } catch {
-              // Not valid JSON — store null, log the issue
               console.log(`  [${variant.name} run ${runIndex}] ⚠ JSON parse failed`)
             }
           }
@@ -103,7 +108,7 @@ async function main() {
             questionText: question.text,
             responseText: result.content,
             parsedJson,
-            schemaValid: null, // full validation deferred to Task 4
+            schemaValid, // true if JSON parsed (fence-stripped or bare); null for A0
             modelId: V2_MODEL_ID,
             provider: V2_MODEL_PROVIDER,
             tokensInput: result.inputTokens,
