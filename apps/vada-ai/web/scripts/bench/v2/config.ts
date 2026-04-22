@@ -6,7 +6,7 @@ export const V2_JUDGE_MODEL_ID = 'claude-haiku-4-5-20251001'
 export function assertModelId(modelId: string, expected: string) {
   if (modelId !== expected) {
     throw new Error(
-      `Model mismatch: expected ${expected}, got ${modelId}. ` + 'V2 experiments must use Haiku 4.5 throughout.'
+      `Model mismatch: expected ${expected}, got ${modelId}. V2 experiments must use Haiku 4.5 throughout.`
     )
   }
 }
