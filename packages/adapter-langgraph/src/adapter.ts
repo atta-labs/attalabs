@@ -8,6 +8,8 @@ import type {
   Plan
 } from '@atta/engine'
 import { buildStateGraph } from './graph-builder'
+import { createDefaultLlmCall } from './llm'
+import { createNodeExecutor } from './node-executor'
 
 /**
  * LangGraph-based implementation of the Vāda Adapter interface.
@@ -154,24 +156,47 @@ export class LangGraphAdapter implements Adapter {
   private async runExecution(
     state: ExecutionState,
     _hooks: ExecutionHooks,
-    _params: ExecuteParams
+    params: ExecuteParams
   ): Promise<Conclusion> {
-    // Build the StateGraph from the Plan
-    const _stateGraph = buildStateGraph(state.plan, async (_graphState, _context) => {
-      // Phase 2 Task 4: Implement actual node execution
-      // For now, return empty updates to allow graph traversal
-      return {}
-    })
+    // Phase 4b: real executor with LLM calls
+    // Resolve LLM call: user override > default
+    const llmCall = params.llmCall ?? createDefaultLlmCall(this.config.apiKey)
 
-    // TODO (Phase 2 Task 4): Invoke the graph, populate state.outputs
-    //                        as nodes execute, call hooks per node
-    // TODO (Phase 2 Task 6): Assemble Conclusion from final state
+    // Create real node executor bound to the LLM function
+    const executor = createNodeExecutor(llmCall)
 
-    // Stub for now: return FAILED Conclusion with "not implemented"
+    // Build the LangGraph StateGraph from the Plan
+    const graph = buildStateGraph(state.plan, executor)
+
+    // Initial state for the graph run
+    const initialState = {
+      question: state.question,
+      customVars: state.customVars,
+      outputs: state.outputs,
+      executionOrder: state.executionOrder,
+      status: state.status,
+      error: state.error,
+      startedAt: state.startedAt
+    }
+
+    // Phase 4b: invoke the graph with real executor
+    const finalState = await graph.invoke(initialState)
+
+    // Sync final state back to ExecutionState
+    state.outputs = finalState.outputs
+    state.executionOrder = finalState.executionOrder
+    state.status = finalState.status
+    state.error = finalState.error
+
+    // TODO (Task 6): Assemble proper Conclusion from final state.
+    // For now, return FAILED noting Task 6 is pending,
+    // but include the (real) transcript so users can see nodes ran.
     state.status = 'ERROR'
-    state.error = { message: 'Graph invocation not yet implemented (Phase 2 Task 4)' }
+    state.error = {
+      message: 'Nodes executed; Conclusion assembly pending (Task 6)'
+    }
 
-    return this.buildFailedConclusion('LangGraphAdapter graph invocation not implemented', state)
+    return this.buildFailedConclusion('Nodes executed; Conclusion assembly pending (Task 6)', state)
   }
 
   /**
