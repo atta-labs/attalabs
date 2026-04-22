@@ -1,4 +1,4 @@
-import { StateGraph } from '@langchain/langgraph'
+import { END, StateGraph } from '@langchain/langgraph'
 import type { AgentOutput, Plan, PlanNode, RevisionCondition } from '@atta/engine'
 import { VadaGraphState, type VadaGraphStateValue } from './graph-state'
 
@@ -93,33 +93,31 @@ export function buildStateGraph(plan: Plan, executor: NodeExecutor) {
 
   // Add unconditional edges
   for (const edge of plan.graph.edges) {
-    let targetId: string
-    if (edge.to === '__END__') {
-      targetId = '__end__'
-    } else {
-      targetId = edge.to
-    }
+    const toTarget = edge.to === '__END__' ? END : edge.to
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(graph as any).addEdge(edge.from, targetId)
+    ;(graph as any).addEdge(edge.from, toTarget)
   }
 
   // Add conditional edges
   for (const condEdge of plan.graph.conditionalEdges) {
+    const ifTrueTarget = condEdge.ifTrue === '__END__' ? END : condEdge.ifTrue
+    const ifFalseTarget = condEdge.ifFalse === '__END__' ? END : condEdge.ifFalse
+
     const routerFn = (state: VadaGraphStateValue): string => {
       // Task 5: Evaluate RevisionCondition against target node's output
       const targetOutput = state.outputs[condEdge.condition.targetNode]
       if (!targetOutput) {
-        return condEdge.ifFalse
+        return ifFalseTarget
       }
 
       const conditionMet = evaluateRevisionCondition(condEdge.condition.check, targetOutput)
-      return conditionMet ? condEdge.ifTrue : condEdge.ifFalse
+      return conditionMet ? ifTrueTarget : ifFalseTarget
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(graph as any).addConditionalEdges(condEdge.from, routerFn, {
-      [condEdge.ifTrue]: condEdge.ifTrue,
-      [condEdge.ifFalse]: condEdge.ifFalse
+      [ifTrueTarget]: ifTrueTarget,
+      [ifFalseTarget]: ifFalseTarget
     })
   }
   // Set entry point: connect START to the first node in the plan
