@@ -9,8 +9,8 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import { writeFileSync } from 'fs'
-import { join } from 'path'
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { corpus } from '../corpus'
 import { V2_MODEL_ID, V2_JUDGE_MODEL_ID } from './config'
 import { getAllV2BaselineJudgeResults, getV2BaselineRunsForQuestion } from './db'
