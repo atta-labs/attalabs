@@ -64,7 +64,7 @@ export function PositioningSection() {
                 />
               ))}
             </div>
-            <div className='bg-background/70 border  p-4 px-6'>
+            <div className='bg-background/80 border  p-4 px-6'>
               <ArchitectureDiagram />
             </div>
           </div>

@@ -5,7 +5,7 @@ const PROVIDERS = ['anthropic', 'google', 'openai', 'meta', 'mistral', 'deepseek
 
 export function BYOKCallout() {
   return (
-    <div className='flex flex-col items-center gap-5 rounded-md border border-border px-6 py-10 bg-background/70'>
+    <div className='flex flex-col items-center gap-5 rounded-md border border-border px-6 py-10 bg-background/80'>
       <Heading level={3} className='font-serif text-2xl text-foreground'>
         Choose your models.
       </Heading>

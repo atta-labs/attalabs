@@ -92,21 +92,8 @@ export function EcosystemSection({ brandings }: EcosystemSectionProps) {
   return (
     <SectionWrapper id='ecosystem'>
       {/* The Master Blueprint Container */}
-      <div className='relative w-full border border-border p-6 sm:p-10 md:p-14 overflow-hidden bg-background mb-16'>
+      <div className='relative w-full p-6 sm:p-10 md:p-14 overflow-hidden mb-16'>
         {/* Blueprint Grid Mask Layer */}
-        <div
-          className='absolute inset-0 pointer-events-none z-0 opacity-40'
-          style={{
-            backgroundImage: `
-              linear-gradient(hsl(var(--border)) 1px, transparent 1px),
-              linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)
-            `,
-            backgroundSize: '40px 40px',
-            backgroundPosition: '-1px -1px',
-            maskImage: 'radial-gradient(ellipse at center, black 15%, transparent 85%)',
-            WebkitMaskImage: 'radial-gradient(ellipse at center, black 15%, transparent 85%)'
-          }}
-        />
 
         <div className='relative z-10 flex flex-col items-center w-full'>
           {/* Top Header Row */}
@@ -135,101 +122,102 @@ export function EcosystemSection({ brandings }: EcosystemSectionProps) {
               THE TREE STRUCTURE 
               ============================================================ */}
 
-          {/* ROOT NODE: Attā */}
-          <div className='border-[2px] border-foreground bg-background p-6 sm:p-8 text-center w-full max-w-xs sm:max-w-md z-10 shadow-[8px_8px_0_0_hsl(var(--foreground))]'>
-            <div className='mb-3 flex justify-center text-foreground'>
-              <ProductLogo
-                branding={brandings.atta}
-                alt='Attā'
-                fallback={<span className='font-serif italic text-[32px] leading-none'>A</span>}
-                size={36}
-              />
+          <div className='bg-background/80 border border-border flex flex-col items-center w-full p-6'>
+            {/* ROOT NODE: Attā */}
+            <div className='border-[2px] border-foreground p-6 sm:p-8 text-center w-full max-w-xs sm:max-w-md z-10 shadow-[8px_8px_0_0_hsl(var(--foreground))]'>
+              <div className='mb-3 flex justify-center text-foreground'>
+                <ProductLogo
+                  branding={brandings.atta}
+                  alt='Attā'
+                  fallback={<span className='font-serif italic text-[32px] leading-none'>A</span>}
+                  size={36}
+                />
+              </div>
+              <div className='font-mono text-[10px] sm:text-[11px] tracking-[0.22em] uppercase font-semibold text-foreground mb-1.5'>
+                Attā · Persistent Self
+              </div>
+              <div className='font-serif italic text-xs sm:text-sm text-muted-foreground leading-snug'>
+                The substrate that makes memory possible.
+              </div>
             </div>
-            <div className='font-mono text-[10px] sm:text-[11px] tracking-[0.22em] uppercase font-semibold text-foreground mb-1.5'>
-              Attā · Persistent Self
+
+            {/* TRUNK */}
+            <div className='w-[2px] h-8 sm:h-12 bg-foreground z-10 relative'>
+              {/* Center Joint (Desktop Only) */}
+              <div className='absolute -bottom-[3px] -left-[3px] w-2 h-2 rounded-full bg-foreground hidden md:block' />
             </div>
-            <div className='font-serif italic text-xs sm:text-sm text-muted-foreground leading-snug'>
-              The substrate that makes memory possible.
-            </div>
-          </div>
 
-          {/* TRUNK */}
-          <div className='w-[2px] h-8 sm:h-12 bg-foreground z-10 relative'>
-            {/* Center Joint (Desktop Only) */}
-            <div className='absolute -bottom-[3px] -left-[3px] w-2 h-2 rounded-full bg-foreground hidden md:block' />
-          </div>
+            {/* BRANCHES & LEAVES */}
+            <div className='relative w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 pt-0 md:pt-10'>
+              {/* Horizontal Branch Line (Desktop Only) */}
+              <div className='absolute top-0 left-1/4 right-1/4 h-[2px] bg-foreground hidden md:block z-0' />
 
-          {/* BRANCHES & LEAVES */}
-          <div className='relative w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 pt-0 md:pt-10'>
-            {/* Horizontal Branch Line (Desktop Only) */}
-            <div className='absolute top-0 left-1/4 right-1/4 h-[2px] bg-foreground hidden md:block z-0' />
+              {/* LEFT NODE: Vāda */}
+              <div className='relative flex justify-center'>
+                {/* Vertical Stem (Desktop Only) */}
+                <div className='absolute -top-10 left-1/2 w-[2px] h-10 bg-foreground hidden md:block z-0' />
+                {/* Mobile Fallback Stem */}
+                <div className='absolute -top-8 left-1/2 w-[2px] h-8 bg-foreground md:hidden z-0' />
 
-            {/* LEFT NODE: Vāda */}
-            <div className='relative flex justify-center'>
-              {/* Vertical Stem (Desktop Only) */}
-              <div className='absolute -top-10 left-1/2 w-[2px] h-10 bg-foreground hidden md:block z-0' />
-              {/* Mobile Fallback Stem */}
-              <div className='absolute -top-8 left-1/2 w-[2px] h-8 bg-foreground md:hidden z-0' />
-
-              <div className='w-full border-[1.5px] border-foreground bg-background p-6 sm:p-8 text-center z-10 flex flex-col h-full shadow-[8px_8px_0_0_hsl(var(--foreground))]'>
-                <div className='mb-3 flex justify-center text-foreground'>
-                  <ProductLogo
-                    branding={brandings.vada}
-                    alt='Vāda'
-                    fallback={<span className='font-serif italic text-[28px] leading-none'>V</span>}
-                    size={32}
-                  />
+                <div className='w-full border-[1.5px] border-foreground p-6 sm:p-8 text-center z-10 flex flex-col h-full shadow-[8px_8px_0_0_hsl(var(--foreground))]'>
+                  <div className='mb-3 flex justify-center text-foreground'>
+                    <ProductLogo
+                      branding={brandings.vada}
+                      alt='Vāda'
+                      fallback={<span className='font-serif italic text-[28px] leading-none'>V</span>}
+                      size={32}
+                    />
+                  </div>
+                  <div className='font-mono text-[9px] sm:text-[10px] tracking-[0.2em] uppercase font-semibold text-foreground mb-1.5'>
+                    Vāda · Deliberation Engine
+                  </div>
+                  <div className='text-xs sm:text-[13px] text-muted-foreground leading-relaxed mb-4 flex-grow'>
+                    Lateral — thinking in depth at a specific moment.
+                  </div>
+                  <div className='font-mono text-[8px] sm:text-[9px] tracking-[0.14em] text-muted-foreground/70 uppercase mt-auto'>
+                    Standalone · Closed-Room
+                  </div>
                 </div>
-                <div className='font-mono text-[9px] sm:text-[10px] tracking-[0.2em] uppercase font-semibold text-foreground mb-1.5'>
-                  Vāda · Deliberation Engine
-                </div>
-                <div className='text-xs sm:text-[13px] text-muted-foreground leading-relaxed mb-4 flex-grow'>
-                  Lateral — thinking in depth at a specific moment.
-                </div>
-                <div className='font-mono text-[8px] sm:text-[9px] tracking-[0.14em] text-muted-foreground/70 uppercase mt-auto'>
-                  Standalone · Closed-Room
+              </div>
+
+              {/* RIGHT NODE: Vitakka */}
+              <div className='relative flex justify-center'>
+                {/* Vertical Stem (Desktop Only) */}
+                <div className='absolute -top-10 left-1/2 w-[2px] h-10 bg-foreground hidden md:block z-0' />
+                {/* Mobile Fallback Stem */}
+                <div className='absolute -top-8 left-1/2 w-[2px] h-8 bg-foreground md:hidden z-0' />
+
+                <div className='w-full border-[1.5px] border-foreground p-6 sm:p-8 text-center z-10 flex flex-col h-full shadow-[8px_8px_0_0_hsl(var(--foreground))]'>
+                  <div className='mb-3 flex justify-center text-foreground'>
+                    <ProductLogo
+                      branding={brandings.vitakka}
+                      alt='Vitakka'
+                      fallback={<span className='font-serif italic text-[28px] leading-none'>V</span>}
+                      size={32}
+                    />
+                  </div>
+                  <div className='font-mono text-[9px] sm:text-[10px] tracking-[0.2em] uppercase font-semibold text-foreground mb-1.5'>
+                    Vitakka · Applied Focus
+                  </div>
+                  <div className='text-xs sm:text-[13px] text-muted-foreground leading-relaxed mb-4 flex-grow'>
+                    Longitudinal — thinking over time.
+                  </div>
+                  <div className='font-mono text-[8px] sm:text-[9px] tracking-[0.14em] text-muted-foreground/70 uppercase mt-auto'>
+                    Standalone · Persistent
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* RIGHT NODE: Vitakka */}
-            <div className='relative flex justify-center'>
-              {/* Vertical Stem (Desktop Only) */}
-              <div className='absolute -top-10 left-1/2 w-[2px] h-10 bg-foreground hidden md:block z-0' />
-              {/* Mobile Fallback Stem */}
-              <div className='absolute -top-8 left-1/2 w-[2px] h-8 bg-foreground md:hidden z-0' />
-
-              <div className='w-full border-[1.5px] border-foreground bg-background p-6 sm:p-8 text-center z-10 flex flex-col h-full shadow-[8px_8px_0_0_hsl(var(--foreground))]'>
-                <div className='mb-3 flex justify-center text-foreground'>
-                  <ProductLogo
-                    branding={brandings.vitakka}
-                    alt='Vitakka'
-                    fallback={<span className='font-serif italic text-[28px] leading-none'>V</span>}
-                    size={32}
-                  />
-                </div>
-                <div className='font-mono text-[9px] sm:text-[10px] tracking-[0.2em] uppercase font-semibold text-foreground mb-1.5'>
-                  Vitakka · Applied Focus
-                </div>
-                <div className='text-xs sm:text-[13px] text-muted-foreground leading-relaxed mb-4 flex-grow'>
-                  Longitudinal — thinking over time.
-                </div>
-                <div className='font-mono text-[8px] sm:text-[9px] tracking-[0.14em] text-muted-foreground/70 uppercase mt-auto'>
-                  Standalone · Persistent
-                </div>
-              </div>
+            {/* Footer Metadata */}
+            <div className='w-full max-w-3xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-16 sm:mt-24 font-mono text-[8px] sm:text-[9px] uppercase tracking-[0.15em] text-muted-foreground/60'>
+              <div>Drawing · Eco-05-01</div>
+              <div>Rev · 02</div>
+              <div>Each Node Is Independent</div>
             </div>
-          </div>
-
-          {/* Footer Metadata */}
-          <div className='w-full max-w-3xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-16 sm:mt-24 font-mono text-[8px] sm:text-[9px] uppercase tracking-[0.15em] text-muted-foreground/60'>
-            <div>Drawing · Eco-05-01</div>
-            <div>Rev · 02</div>
-            <div>Each Node Is Independent</div>
           </div>
         </div>
       </div>
-
       <CTABlock />
     </SectionWrapper>
   )
