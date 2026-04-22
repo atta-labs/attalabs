@@ -20,8 +20,7 @@ export default async function Task3Page() {
   const revisedCount = orchRuns.filter((r) => r.terminalState === 'REVISED').length
   const revisedRate = orchRuns.length > 0 ? (revisedCount / orchRuns.length) * 100 : 0
 
-  const avgElapsedMs =
-    orchRuns.length > 0 ? orchRuns.reduce((s, r) => s + r.elapsedMs, 0) / orchRuns.length : 0
+  const avgElapsedMs = orchRuns.length > 0 ? orchRuns.reduce((s, r) => s + r.elapsedMs, 0) / orchRuns.length : 0
 
   return (
     <div className='space-y-6 max-w-7xl'>
@@ -62,10 +61,7 @@ export default async function Task3Page() {
           <StatRow label='Avg runtime' value={`${(avgElapsedMs / 1000).toFixed(1)}s`} />
           <StatRow label='CLEAN' value={orchRuns.filter((r) => r.terminalState === 'CLEAN').length} />
           <StatRow label='REVISED' value={revisedCount} />
-          <StatRow
-            label='UNCONVERGED'
-            value={orchRuns.filter((r) => r.terminalState === 'UNCONVERGED').length}
-          />
+          <StatRow label='UNCONVERGED' value={orchRuns.filter((r) => r.terminalState === 'UNCONVERGED').length} />
         </AggregationCard>
       </div>
 

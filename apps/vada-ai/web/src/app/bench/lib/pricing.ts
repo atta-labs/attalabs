@@ -6,7 +6,7 @@ type ModelPricing = { input: number; output: number }
 const PRICING: Record<string, ModelPricing> = {
   'claude-haiku-4-5-20251001': { input: 0.8 / 1_000_000, output: 4 / 1_000_000 },
   'claude-sonnet-4-6': { input: 3 / 1_000_000, output: 15 / 1_000_000 },
-  'claude-opus-4-7': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
+  'claude-opus-4-7': { input: 15 / 1_000_000, output: 75 / 1_000_000 }
 }
 
 const FALLBACK: ModelPricing = { input: 3 / 1_000_000, output: 15 / 1_000_000 }

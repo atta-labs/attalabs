@@ -14,28 +14,28 @@ const ORCH_COLUMNS: ColumnDef<V2OrchestrationRow>[] = [
     header: 'Q ID',
     render: (r) => <span className='font-mono text-xs'>{r.questionId}</span>,
     sortValue: (r) => r.questionId,
-    csvValue: (r) => r.questionId,
+    csvValue: (r) => r.questionId
   },
   {
     key: 'runIndex',
     header: 'Run',
     render: (r) => <span className='font-mono text-xs'>{r.runIndex}</span>,
     sortValue: (r) => r.runIndex,
-    csvValue: (r) => r.runIndex,
+    csvValue: (r) => r.runIndex
   },
   {
     key: 'terminalState',
     header: 'Terminal',
     render: (r) => <TerminalStateBadge state={r.terminalState} />,
     sortValue: (r) => r.terminalState ?? '',
-    csvValue: (r) => r.terminalState ?? '',
+    csvValue: (r) => r.terminalState ?? ''
   },
   {
     key: 'elapsedMs',
     header: 'Elapsed',
     render: (r) => <span className='font-mono text-xs text-muted-foreground'>{(r.elapsedMs / 1000).toFixed(1)}s</span>,
     sortValue: (r) => r.elapsedMs,
-    csvValue: (r) => r.elapsedMs,
+    csvValue: (r) => r.elapsedMs
   },
   {
     key: 'sessionId',
@@ -48,8 +48,8 @@ const ORCH_COLUMNS: ColumnDef<V2OrchestrationRow>[] = [
       ) : (
         <span className='text-muted-foreground text-xs'>—</span>
       ),
-    csvValue: (r) => r.sessionId ?? '',
-  },
+    csvValue: (r) => r.sessionId ?? ''
+  }
 ]
 
 const JUDGE_COLUMNS: ColumnDef<V2JudgeRow>[] = [
@@ -58,28 +58,28 @@ const JUDGE_COLUMNS: ColumnDef<V2JudgeRow>[] = [
     header: 'Question',
     render: (r) => <QuestionCell text={r.question} maxLen={50} />,
     sortValue: (r) => r.question,
-    csvValue: (r) => r.question,
+    csvValue: (r) => r.question
   },
   {
     key: 'runIndex',
     header: 'Run',
     render: (r) => <span className='font-mono text-xs'>{r.runIndex ?? '—'}</span>,
     sortValue: (r) => r.runIndex ?? -1,
-    csvValue: (r) => r.runIndex ?? '',
+    csvValue: (r) => r.runIndex ?? ''
   },
   {
     key: 'diagnosis',
     header: 'Verdict',
     render: (r) => <DiagnosisBadge diagnosis={r.diagnosis} />,
     sortValue: (r) => r.diagnosis ?? '',
-    csvValue: (r) => r.diagnosis ?? '',
+    csvValue: (r) => r.diagnosis ?? ''
   },
   {
     key: 'cost',
     header: 'Cost',
     render: (r) => <CostCell modelId={r.modelId} tokensInput={r.tokensInput} tokensOutput={r.tokensOutput} />,
-    csvValue: (r) => r.modelId,
-  },
+    csvValue: (r) => r.modelId
+  }
 ]
 
 const BASELINE_COLUMNS: ColumnDef<V2BaselineRow>[] = [
@@ -88,21 +88,21 @@ const BASELINE_COLUMNS: ColumnDef<V2BaselineRow>[] = [
     header: 'Q ID',
     render: (r) => <span className='font-mono text-xs'>{r.questionId}</span>,
     sortValue: (r) => r.questionId,
-    csvValue: (r) => r.questionId,
+    csvValue: (r) => r.questionId
   },
   {
     key: 'variant',
     header: 'Variant',
     render: (r) => <span className='font-mono text-xs'>{r.variant}</span>,
     sortValue: (r) => r.variant,
-    csvValue: (r) => r.variant,
+    csvValue: (r) => r.variant
   },
   {
     key: 'runIndex',
     header: 'Run',
     render: (r) => <span className='font-mono text-xs'>{r.runIndex}</span>,
     sortValue: (r) => r.runIndex,
-    csvValue: (r) => r.runIndex,
+    csvValue: (r) => r.runIndex
   },
   {
     key: 'schemaValid',
@@ -116,7 +116,7 @@ const BASELINE_COLUMNS: ColumnDef<V2BaselineRow>[] = [
         <span className='text-destructive text-xs font-mono'>N</span>
       ),
     sortValue: (r) => (r.schemaValid ? 1 : 0),
-    csvValue: (r) => (r.schemaValid == null ? '' : r.schemaValid ? 'Y' : 'N'),
+    csvValue: (r) => (r.schemaValid == null ? '' : r.schemaValid ? 'Y' : 'N')
   },
   {
     key: 'tokens',
@@ -127,14 +127,14 @@ const BASELINE_COLUMNS: ColumnDef<V2BaselineRow>[] = [
       </span>
     ),
     sortValue: (r) => (r.tokensInput ?? 0) + (r.tokensOutput ?? 0),
-    csvValue: (r) => `${r.tokensInput ?? ''}/${r.tokensOutput ?? ''}`,
+    csvValue: (r) => `${r.tokensInput ?? ''}/${r.tokensOutput ?? ''}`
   },
   {
     key: 'cost',
     header: 'Cost',
     render: (r) => <CostCell modelId={r.modelId} tokensInput={r.tokensInput} tokensOutput={r.tokensOutput} />,
-    csvValue: (r) => r.modelId,
-  },
+    csvValue: (r) => r.modelId
+  }
 ]
 
 export function Task35TablesClient({
@@ -143,7 +143,7 @@ export function Task35TablesClient({
   haikuJudge,
   sonnetJudge,
   sonnetBaselineRuns,
-  sonnetBaselineJudge,
+  sonnetBaselineJudge
 }: {
   haikuOrcRuns: V2OrchestrationRow[]
   sonnetOrcRuns: V2OrchestrationRow[]

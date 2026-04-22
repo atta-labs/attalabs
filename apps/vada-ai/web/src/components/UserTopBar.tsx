@@ -22,7 +22,7 @@ interface UserTopBarProps {
 
 const PUBLIC_NAV = [
   { href: '/science', label: 'Science', exact: false },
-  { href: '/trust', label: 'Trust', exact: false }
+  { href: '/trust ', label: 'Trust · Vāda', exact: false }
 ]
 
 const AUTH_NAV = [

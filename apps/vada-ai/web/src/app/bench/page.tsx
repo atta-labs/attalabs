@@ -11,7 +11,7 @@ export default async function BenchIndexPage() {
     getOverviewStats(),
     getV1BenchSummary(),
     getRecentSessions(20),
-    getTotalCost(),
+    getTotalCost()
   ])
 
   const v2Tasks = [
@@ -20,22 +20,22 @@ export default async function BenchIndexPage() {
       name: 'Task 2 — A0 vs A1 baseline ceiling',
       description: 'Haiku 4.5, 15 questions, N=3. Does rich prompting raise the baseline?',
       href: '/bench/v2/task-2',
-      models: ['claude-haiku-4-5-20251001'],
+      models: ['claude-haiku-4-5-20251001']
     },
     {
       id: 'task-3',
       name: 'Task 3 — A0 vs B0 orchestration',
       description: '7 V1-loss questions, N=3, Haiku. Does full Vāda pipeline beat single-shot?',
       href: '/bench/v2/task-3',
-      models: ['claude-haiku-4-5-20251001'],
+      models: ['claude-haiku-4-5-20251001']
     },
     {
       id: 'task-3-5',
       name: 'Task 3.5 — Sonnet replication',
       description: 'Same 7 questions on Sonnet 4.6. Haiku vs Sonnet side-by-side.',
       href: '/bench/v2/task-3-5',
-      models: ['claude-sonnet-4-6'],
-    },
+      models: ['claude-sonnet-4-6']
+    }
   ]
 
   return (
@@ -142,7 +142,8 @@ export default async function BenchIndexPage() {
               {recentSessions.map((s, i) => (
                 <tr key={i} className='border-b border-border/50 last:border-0 hover:bg-muted/20'>
                   <td className='px-3 py-2 font-mono text-xs text-muted-foreground whitespace-nowrap'>
-                    {s.createdAt.toLocaleDateString()} {s.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {s.createdAt.toLocaleDateString()}{' '}
+                    {s.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className='px-3 py-2'>
                     <code className='rounded bg-muted px-1.5 py-0.5 text-xs'>{s.type}</code>
@@ -159,7 +160,11 @@ export default async function BenchIndexPage() {
                     <TerminalStateBadge state={s.terminalState} />
                   </td>
                   <td className='px-3 py-2'>
-                    {s.diagnosis ? <DiagnosisBadge diagnosis={s.diagnosis} /> : <span className='text-muted-foreground text-xs'>—</span>}
+                    {s.diagnosis ? (
+                      <DiagnosisBadge diagnosis={s.diagnosis} />
+                    ) : (
+                      <span className='text-muted-foreground text-xs'>—</span>
+                    )}
                   </td>
                 </tr>
               ))}

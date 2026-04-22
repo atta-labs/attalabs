@@ -22,10 +22,8 @@ export default async function Task35Page() {
   const haikuWinRate = vadaWinRate(haikuJudge)
   const sonnetWinRate = vadaWinRate(sonnetJudge)
 
-  const revDelta =
-    haikuRevRate !== null && sonnetRevRate !== null ? sonnetRevRate - haikuRevRate : null
-  const winDelta =
-    haikuWinRate !== null && sonnetWinRate !== null ? sonnetWinRate - haikuWinRate : null
+  const revDelta = haikuRevRate !== null && sonnetRevRate !== null ? sonnetRevRate - haikuRevRate : null
+  const winDelta = haikuWinRate !== null && sonnetWinRate !== null ? sonnetWinRate - haikuWinRate : null
 
   return (
     <div className='space-y-6 max-w-7xl'>

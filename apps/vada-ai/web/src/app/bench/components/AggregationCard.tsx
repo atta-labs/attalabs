@@ -1,12 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components/card'
 
-export function AggregationCard({
-  title,
-  children,
-}: {
-  title: string
-  children: React.ReactNode
-}) {
+export function AggregationCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card>
       <CardHeader className='pb-2'>

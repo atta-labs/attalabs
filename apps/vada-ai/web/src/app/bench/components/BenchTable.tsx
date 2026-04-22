@@ -21,7 +21,7 @@ export function BenchTable<T>({
   searchKeys,
   filename,
   defaultSortKey,
-  emptyMessage = 'No data',
+  emptyMessage = 'No data'
 }: {
   rows: T[]
   columns: ColumnDef<T>[]
@@ -70,7 +70,7 @@ export function BenchTable<T>({
     const exportRows = sorted.map((r) => {
       const obj: Record<string, unknown> = {}
       for (const col of columns) {
-        obj[col.header] = col.csvValue ? col.csvValue(r) : col.sortValue?.(r) ?? ''
+        obj[col.header] = col.csvValue ? col.csvValue(r) : (col.sortValue?.(r) ?? '')
       }
       return obj
     })
@@ -107,9 +107,7 @@ export function BenchTable<T>({
                   onClick={() => col.sortValue && handleSort(col.key)}
                 >
                   {col.header}
-                  {sortKey === col.key && (
-                    <span className='ml-1 text-xs'>{sortDir === 'asc' ? '↑' : '↓'}</span>
-                  )}
+                  {sortKey === col.key && <span className='ml-1 text-xs'>{sortDir === 'asc' ? '↑' : '↓'}</span>}
                 </th>
               ))}
             </tr>
@@ -123,10 +121,7 @@ export function BenchTable<T>({
               </tr>
             ) : (
               sorted.map((row, i) => (
-                <tr
-                  key={i}
-                  className='border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors'
-                >
+                <tr key={i} className='border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors'>
                   {columns.map((col) => (
                     <td key={col.key} className='px-3 py-2 align-top'>
                       {col.render(row)}

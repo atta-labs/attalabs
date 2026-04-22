@@ -4,7 +4,7 @@ const STATE_CLASSES: Record<string, string> = {
   CLEAN: 'text-success border-success/40',
   REVISED: 'text-warning border-warning/40',
   UNCONVERGED: 'text-destructive border-destructive/40',
-  ERROR: 'text-destructive border-destructive/40',
+  ERROR: 'text-destructive border-destructive/40'
 }
 
 export function TerminalStateBadge({ state }: { state: string | null | undefined }) {

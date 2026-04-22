@@ -16,9 +16,7 @@ export default async function V1BenchPage() {
   }
   const revRate = rows.filter((r) => r.terminalState === 'REVISED').length
   const avgDelibMs =
-    rows.length > 0
-      ? Math.round(rows.reduce((s, r) => s + r.deliberationSumElapsedMs, 0) / rows.length)
-      : 0
+    rows.length > 0 ? Math.round(rows.reduce((s, r) => s + r.deliberationSumElapsedMs, 0) / rows.length) : 0
 
   return (
     <div className='space-y-6 max-w-7xl'>
@@ -52,7 +50,11 @@ export default async function V1BenchPage() {
       <div className='grid grid-cols-2 gap-4 sm:grid-cols-3'>
         <AggregationCard title='Diagnosis breakdown'>
           {Object.entries(diagnosisCounts).map(([d, n]) => (
-            <StatRow key={d} label={d} value={`${n} (${rows.length > 0 ? ((n / rows.length) * 100).toFixed(0) : 0}%)`} />
+            <StatRow
+              key={d}
+              label={d}
+              value={`${n} (${rows.length > 0 ? ((n / rows.length) * 100).toFixed(0) : 0}%)`}
+            />
           ))}
         </AggregationCard>
       </div>

@@ -18,23 +18,14 @@ export default async function Task2Page() {
 
   const a0WinCount = judgeResults.filter((j) => {
     const sysA = j.systemADescription.toLowerCase()
-    return (
-      (sysA.includes('a0') && j.diagnosis === 'A') ||
-      (!sysA.includes('a0') && j.diagnosis === 'B')
-    )
+    return (sysA.includes('a0') && j.diagnosis === 'A') || (!sysA.includes('a0') && j.diagnosis === 'B')
   }).length
 
   const total = judgeResults.length
   const a0WinRate = total > 0 ? (a0WinCount / total) * 100 : 0
 
-  const a0ParseRate =
-    a0Runs.length > 0
-      ? (a0Runs.filter((r) => r.schemaValid).length / a0Runs.length) * 100
-      : null
-  const a1ParseRate =
-    a1Runs.length > 0
-      ? (a1Runs.filter((r) => r.schemaValid).length / a1Runs.length) * 100
-      : null
+  const a0ParseRate = a0Runs.length > 0 ? (a0Runs.filter((r) => r.schemaValid).length / a0Runs.length) * 100 : null
+  const a1ParseRate = a1Runs.length > 0 ? (a1Runs.filter((r) => r.schemaValid).length / a1Runs.length) * 100 : null
 
   return (
     <div className='space-y-6 max-w-7xl'>

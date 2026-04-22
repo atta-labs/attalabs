@@ -3,7 +3,7 @@ import { computeCost, formatCost } from '../lib/pricing'
 export function CostCell({
   modelId,
   tokensInput,
-  tokensOutput,
+  tokensOutput
 }: {
   modelId: string | null | undefined
   tokensInput: number | null | undefined

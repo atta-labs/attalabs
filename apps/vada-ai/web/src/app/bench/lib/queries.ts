@@ -75,17 +75,17 @@ export async function getOverviewStats(): Promise<OverviewStats> {
     db.select({ count: count() }).from(schema.benchmarkMetrics),
     db.select({ count: count() }).from(schema.v2BaselineRuns),
     db.select({ count: count() }).from(schema.v2OrchestrationRuns),
-    db.select({ count: count() }).from(schema.v2JudgeResults),
+    db.select({ count: count() }).from(schema.v2JudgeResults)
   ])
 
-  const [dateResult] = await db.select({
-    minDate: sql<string>`min(created_at)`,
-    maxDate: sql<string>`max(created_at)`,
-  }).from(schema.benchmarkMetrics)
+  const [dateResult] = await db
+    .select({
+      minDate: sql<string>`min(created_at)`,
+      maxDate: sql<string>`max(created_at)`
+    })
+    .from(schema.benchmarkMetrics)
 
-  const modelRows = await db
-    .selectDistinct({ modelId: schema.v2BaselineRuns.modelId })
-    .from(schema.v2BaselineRuns)
+  const modelRows = await db.selectDistinct({ modelId: schema.v2BaselineRuns.modelId }).from(schema.v2BaselineRuns)
   const orchModelRows = await db
     .selectDistinct({ modelId: schema.v2OrchestrationRuns.modelId })
     .from(schema.v2OrchestrationRuns)
@@ -98,9 +98,9 @@ export async function getOverviewStats(): Promise<OverviewStats> {
     totalV2JudgeResults: Number(judgeCount[0]?.count ?? 0),
     dateRange: {
       min: dateResult?.minDate ? new Date(dateResult.minDate) : null,
-      max: dateResult?.maxDate ? new Date(dateResult.maxDate) : null,
+      max: dateResult?.maxDate ? new Date(dateResult.maxDate) : null
     },
-    models,
+    models
   }
 }
 
@@ -109,19 +109,19 @@ export async function getTotalCost(): Promise<number> {
     .select({
       modelId: schema.v2BaselineRuns.modelId,
       tokensInput: schema.v2BaselineRuns.tokensInput,
-      tokensOutput: schema.v2BaselineRuns.tokensOutput,
+      tokensOutput: schema.v2BaselineRuns.tokensOutput
     })
     .from(schema.v2BaselineRuns)
   const orchRuns = await db
     .select({
-      modelId: schema.v2OrchestrationRuns.modelId,
+      modelId: schema.v2OrchestrationRuns.modelId
     })
     .from(schema.v2OrchestrationRuns)
   const judgeRuns = await db
     .select({
       modelId: schema.v2JudgeResults.modelId,
       tokensInput: schema.v2JudgeResults.tokensInput,
-      tokensOutput: schema.v2JudgeResults.tokensOutput,
+      tokensOutput: schema.v2JudgeResults.tokensOutput
     })
     .from(schema.v2JudgeResults)
   const v1Metrics = await db
@@ -133,7 +133,7 @@ export async function getTotalCost(): Promise<number> {
       judgeTokensInput: schema.benchmarkMetrics.judgeTokensInput,
       judgeTokensOutput: schema.benchmarkMetrics.judgeTokensOutput,
       deliberationTokensInput: schema.benchmarkMetrics.deliberationTokensInput,
-      deliberationTokensOutput: schema.benchmarkMetrics.deliberationTokensOutput,
+      deliberationTokensOutput: schema.benchmarkMetrics.deliberationTokensOutput
     })
     .from(schema.benchmarkMetrics)
 
@@ -156,7 +156,7 @@ export async function getV1BenchSummary(): Promise<V1Summary> {
   const rows = await db
     .select({
       judgeDiagnosis: schema.benchmarkMetrics.judgeDiagnosis,
-      createdAt: schema.benchmarkMetrics.createdAt,
+      createdAt: schema.benchmarkMetrics.createdAt
     })
     .from(schema.benchmarkMetrics)
 
@@ -195,7 +195,7 @@ export async function getV1BenchRows(): Promise<V1BenchRow[]> {
       deliberationTokensInput: schema.benchmarkMetrics.deliberationTokensInput,
       deliberationTokensOutput: schema.benchmarkMetrics.deliberationTokensOutput,
       deliberationSumElapsedMs: schema.benchmarkMetrics.deliberationSumElapsedMs,
-      deliberationCallCount: schema.benchmarkMetrics.deliberationCallCount,
+      deliberationCallCount: schema.benchmarkMetrics.deliberationCallCount
     })
     .from(schema.benchmarkMetrics)
     .innerJoin(schema.sessions, eq(schema.sessions.id, schema.benchmarkMetrics.sessionId))
@@ -207,7 +207,7 @@ export async function getV1BenchRows(): Promise<V1BenchRow[]> {
     totalCost:
       computeCost(r.baselineModelId, r.baselineTokensInput, r.baselineTokensOutput) +
       computeCost(r.judgeModelId, r.judgeTokensInput, r.judgeTokensOutput) +
-      computeCost(r.modelId, r.deliberationTokensInput, r.deliberationTokensOutput),
+      computeCost(r.modelId, r.deliberationTokensInput, r.deliberationTokensOutput)
   }))
 }
 
@@ -226,7 +226,7 @@ export async function getV2Task2Data() {
       .select()
       .from(schema.v2JudgeResults)
       .where(sql`${schema.v2JudgeResults.comparisonType} = 'baseline-vs-baseline'`)
-      .orderBy(schema.v2JudgeResults.createdAt),
+      .orderBy(schema.v2JudgeResults.createdAt)
   ])
   return { baselineRuns, judgeResults }
 }
@@ -244,7 +244,7 @@ export async function getV2Task3Data() {
       .select()
       .from(schema.v2JudgeResults)
       .where(sql`${schema.v2JudgeResults.comparisonType} = 'baseline-vs-vada'`)
-      .orderBy(schema.v2JudgeResults.createdAt),
+      .orderBy(schema.v2JudgeResults.createdAt)
   ])
   return { orchRuns, judgeResults }
 }
@@ -285,7 +285,7 @@ export async function getV2Task3_5Data() {
         .select()
         .from(schema.v2JudgeResults)
         .where(sql`${schema.v2JudgeResults.comparisonType} = 'baseline-vs-baseline-sonnet'`)
-        .orderBy(schema.v2JudgeResults.createdAt),
+        .orderBy(schema.v2JudgeResults.createdAt)
     ])
   return { haikuOrcRuns, sonnetOrcRuns, haikuJudge, sonnetJudge, sonnetBaselineRuns, sonnetBaselineJudge }
 }
@@ -301,22 +301,14 @@ export async function getRecentSessions(limit = 20): Promise<RecentSessionEntry[
         modelId: schema.sessions.modelId,
         terminalState: schema.sessions.terminalState,
         judgeDiagnosis: schema.benchmarkMetrics.judgeDiagnosis,
-        createdAt: schema.benchmarkMetrics.createdAt,
+        createdAt: schema.benchmarkMetrics.createdAt
       })
       .from(schema.benchmarkMetrics)
       .innerJoin(schema.sessions, eq(schema.sessions.id, schema.benchmarkMetrics.sessionId))
       .orderBy(desc(schema.benchmarkMetrics.createdAt))
       .limit(limit),
-    db
-      .select()
-      .from(schema.v2BaselineRuns)
-      .orderBy(desc(schema.v2BaselineRuns.createdAt))
-      .limit(limit),
-    db
-      .select()
-      .from(schema.v2OrchestrationRuns)
-      .orderBy(desc(schema.v2OrchestrationRuns.createdAt))
-      .limit(limit),
+    db.select().from(schema.v2BaselineRuns).orderBy(desc(schema.v2BaselineRuns.createdAt)).limit(limit),
+    db.select().from(schema.v2OrchestrationRuns).orderBy(desc(schema.v2OrchestrationRuns.createdAt)).limit(limit)
   ])
 
   const all: RecentSessionEntry[] = [
@@ -329,7 +321,7 @@ export async function getRecentSessions(limit = 20): Promise<RecentSessionEntry[
       model: r.modelId,
       terminalState: r.terminalState ?? null,
       diagnosis: r.judgeDiagnosis ?? null,
-      createdAt: r.createdAt,
+      createdAt: r.createdAt
     })),
     ...baselineRows.map((r) => ({
       id: r.id,
@@ -340,7 +332,7 @@ export async function getRecentSessions(limit = 20): Promise<RecentSessionEntry[
       model: r.modelId,
       terminalState: null,
       diagnosis: null,
-      createdAt: r.createdAt ?? new Date(0),
+      createdAt: r.createdAt ?? new Date(0)
     })),
     ...orchRows.map((r) => ({
       id: r.id,
@@ -351,8 +343,8 @@ export async function getRecentSessions(limit = 20): Promise<RecentSessionEntry[
       model: r.modelId,
       terminalState: r.terminalState ?? null,
       diagnosis: null,
-      createdAt: r.createdAt ?? new Date(0),
-    })),
+      createdAt: r.createdAt ?? new Date(0)
+    }))
   ]
 
   return all.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit)

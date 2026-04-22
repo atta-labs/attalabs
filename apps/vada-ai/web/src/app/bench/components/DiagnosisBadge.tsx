@@ -8,7 +8,7 @@ const DIAGNOSIS_CLASSES: Record<string, string> = {
   PIPELINE_FAILURE: 'text-warning border-warning/40',
   A: 'text-success border-success/40',
   B: 'text-destructive border-destructive/40',
-  UNJUDGED: 'text-muted-foreground border-border',
+  UNJUDGED: 'text-muted-foreground border-border'
 }
 
 export function DiagnosisBadge({ diagnosis }: { diagnosis: string | null | undefined }) {
