@@ -106,7 +106,7 @@ export class LangGraphAdapter implements Adapter {
       const conclusion = await this.runWithTimeout(() => this.runExecution(state, hooks, params), timeoutMs)
 
       try {
-        await this.callHook(hooks.onComplete, conclusion, state)
+        await this.callHook(hooks.onComplete, { state, conclusion })
       } catch (err) {
         console.error('[LangGraphAdapter] onComplete hook failed:', err)
       }
@@ -121,7 +121,7 @@ export class LangGraphAdapter implements Adapter {
       const conclusion = this.buildFailedConclusion(errorMessage, state)
 
       try {
-        await this.callHook(hooks.onComplete, conclusion, state)
+        await this.callHook(hooks.onComplete, { state, conclusion })
       } catch (hookErr) {
         console.error('[LangGraphAdapter] onComplete hook failed:', hookErr)
       }

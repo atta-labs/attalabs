@@ -66,6 +66,8 @@ export type RevisionCondition =
       type: 'contains'
       /** Substring to search for in the agent's content field. */
       value: string
+      /** Whether the substring search is case-sensitive. Defaults to true. */
+      caseSensitive?: boolean
     }
   | {
       /** Triggers revision if the JSON field at `path` strictly equals `value`. */
@@ -600,16 +602,38 @@ export type LlmCallFn = (params: {
  * All hooks are optional. Use for logging, telemetry, SSE streaming, or progress UIs.
  */
 export interface ExecutionHooks {
-  /** Called once at the start of execution, before any node runs. */
-  onStart?: (state: ExecutionState) => void
-  /** Called immediately before each node begins executing. */
-  onNodeStart?: (node: PlanNode, state: ExecutionState) => void
-  /** Called immediately after each node completes successfully. */
-  onNodeComplete?: (node: PlanNode, output: AgentOutput, state: ExecutionState) => void
-  /** Called when a conditional edge is evaluated, reporting which branch was taken. */
-  onConditionalEdge?: (edge: PlanConditionalEdge, takenNodeId: string, state: ExecutionState) => void
-  /** Called once after execution completes — for both success and failure paths. */
-  onComplete?: (conclusion: Conclusion, state: ExecutionState) => void
+  /** Called once when execution begins, before entryNode executes. */
+  onStart?: (state: ExecutionState) => void | Promise<void>
+
+  /**
+   * Called before each node's LLM call. templateState is what
+   * deriveTemplateState produced; renderedPrompt is the
+   * post-Handlebars text about to go to the LLM.
+   */
+  onNodeStart?: (params: {
+    state: ExecutionState
+    node: PlanNode
+    templateState: TemplateState
+    renderedPrompt: string
+  }) => void | Promise<void>
+
+  /** Called after each node's LLM call completes and output is recorded. */
+  onNodeComplete?: (params: { state: ExecutionState; node: PlanNode; output: AgentOutput }) => void | Promise<void>
+
+  /**
+   * Called when a conditional edge is evaluated. evaluatedValue
+   * is the condition result (true/false); nextNode is the target
+   * taken based on that value.
+   */
+  onConditionalEdge?: (params: {
+    state: ExecutionState
+    edge: PlanConditionalEdge
+    evaluatedValue: boolean
+    nextNode: string
+  }) => void | Promise<void>
+
+  /** Called when execution completes (normally or with error). */
+  onComplete?: (params: { state: ExecutionState; conclusion: Conclusion }) => void | Promise<void>
 }
 
 /**
