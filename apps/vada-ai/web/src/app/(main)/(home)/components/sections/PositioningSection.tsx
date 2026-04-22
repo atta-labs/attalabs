@@ -17,7 +17,7 @@ const POSITIONING_AGENTS: Array<{ id: string; name: AgentName }> = [
 
 export function PositioningSection() {
   return (
-    <SectionWrapper id='positioning' className='bg-transparent'>
+    <SectionWrapper id='positioning'>
       <TwoColumnSection
         className='md:grid-cols-[1.2fr_1fr]'
         left={
@@ -64,7 +64,9 @@ export function PositioningSection() {
                 />
               ))}
             </div>
-            <ArchitectureDiagram />
+            <div className='bg-background/70 border  p-4 px-6'>
+              <ArchitectureDiagram />
+            </div>
           </div>
         }
       />

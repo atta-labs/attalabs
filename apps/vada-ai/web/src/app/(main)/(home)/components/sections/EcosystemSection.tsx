@@ -90,7 +90,7 @@ function CTABlock() {
 
 export function EcosystemSection({ brandings }: EcosystemSectionProps) {
   return (
-    <SectionWrapper id='ecosystem' className='bg-background'>
+    <SectionWrapper id='ecosystem'>
       {/* The Master Blueprint Container */}
       <div className='relative w-full border border-border p-6 sm:p-10 md:p-14 overflow-hidden bg-background mb-16'>
         {/* Blueprint Grid Mask Layer */}

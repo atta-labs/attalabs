@@ -143,7 +143,7 @@ export function SeeItWorkSection() {
 
   // THE DIAGRAM COLUMN (LEFT SIDE)
   const diagramColumn = (
-    <div className='relative w-full p-4 sm:p-6 border border-border'>
+    <div className='relative w-full p-4 sm:p-6 border border-border bg-background/70'>
       {/* Blueprint Grid Mask Layer */}
       <div
         className='absolute inset-0 pointer-events-none z-0 opacity-40'
@@ -232,7 +232,7 @@ export function SeeItWorkSection() {
   )
 
   return (
-    <SectionWrapper id='see-it-work' className='bg-transparent'>
+    <SectionWrapper id='see-it-work'>
       <TwoColumnSection className='md:grid-cols-[1.2fr_1fr] md:items-start' left={diagramColumn} right={textColumn} />
     </SectionWrapper>
   )

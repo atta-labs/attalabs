@@ -14,7 +14,7 @@ interface SectionsWithCanvasProps {
 
 export function SectionsWithCanvas({ brandings }: SectionsWithCanvasProps) {
   return (
-    <div className='bg-background'>
+    <div className='relative z-10'>
       <PositioningSection />
       <SeeItWorkSection />
       <MechanismSection />

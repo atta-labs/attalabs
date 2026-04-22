@@ -116,7 +116,7 @@ export function MechanismSection() {
 
   // THE DIAGRAM COLUMN (RIGHT SIDE)
   const diagramColumn = (
-    <div className='relative w-full p-4 sm:p-6 lg:p-8 border border-border'>
+    <div className='relative w-full p-4 sm:p-6 lg:p-8 border border-border bg-background/70'>
       {/* Blueprint Grid Mask Layer */}
       <div
         className='absolute inset-0 pointer-events-none z-0 opacity-40'
@@ -274,7 +274,7 @@ export function MechanismSection() {
   )
 
   return (
-    <SectionWrapper id='mechanism' className='bg-transparent'>
+    <SectionWrapper id='mechanism'>
       <TwoColumnSection className='md:grid-cols-[1fr_1.2fr] md:items-start' left={textColumn} right={diagramColumn} />
     </SectionWrapper>
   )

@@ -28,7 +28,7 @@ const NEGATIONS: Negation[] = [
 
 export function NegationsSection() {
   return (
-    <SectionWrapper id='what-this-is-not' className='bg-card'>
+    <SectionWrapper id='what-this-is-not'>
       <div className='flex flex-col gap-12 md:gap-16'>
         <SectionLabel>04 / What This Is Not</SectionLabel>
 
