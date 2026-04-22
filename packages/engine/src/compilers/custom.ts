@@ -1,4 +1,5 @@
 import type { CustomWorkflow, Plan, PlanEdge, PlanGraph, PlanNode, Team } from '../types.js'
+import { validateTemplate } from '../validate-template.js'
 
 /**
  * Compiles a CustomWorkflow team into a Plan with one node per step.
@@ -23,6 +24,7 @@ export function compileCustom(params: { team: Team; workflow: CustomWorkflow; qu
   const nodes: Record<string, PlanNode> = {}
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i]!
+    validateTemplate(step.input, 'custom-step')
     const nodeId = `step-${i}`
     nodes[nodeId] = {
       id: nodeId,

@@ -1,4 +1,5 @@
 import type { Agent, Plan, PlanConditionalEdge, PlanEdge, PlanGraph, PlanNode, RoundsWorkflow, Team } from '../types.js'
+import { validateTemplate } from '../validate-template.js'
 
 /**
  * Compiles a RoundsWorkflow team into a Plan with a pre-allocated
@@ -46,6 +47,13 @@ export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; qu
   const auditAgent = hasAudit ? workflow.auditAgent : undefined
   const auditTemplate = hasAudit ? workflow.auditTemplate : undefined
   const maxRevisions = hasAudit ? (workflow.maxRevisions ?? 1) : 0
+
+  // Validate templates before building the graph
+  validateTemplate(messageTemplate, 'round')
+  validateTemplate(messageTemplate, 'terminal')
+  if (hasAudit && auditTemplate !== undefined) {
+    validateTemplate(auditTemplate, 'audit')
+  }
 
   // Non-terminal, non-audit agents (the "round agents" that speak each round)
   const roundAgents = team.agents.filter((a) => a.name !== terminalAgent && (!hasAudit || a.name !== auditAgent))
