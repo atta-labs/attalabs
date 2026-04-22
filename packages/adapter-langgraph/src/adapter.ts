@@ -7,6 +7,7 @@ import type {
   ExecutionState,
   Plan
 } from '@atta/engine'
+import { buildStateGraph } from './graph-builder'
 
 /**
  * LangGraph-based implementation of the Vāda Adapter interface.
@@ -155,16 +156,22 @@ export class LangGraphAdapter implements Adapter {
     _hooks: ExecutionHooks,
     _params: ExecuteParams
   ): Promise<Conclusion> {
-    // TODO (Phase 2 Task 3): Build LangGraph StateGraph from state.plan
+    // Build the StateGraph from the Plan
+    const _stateGraph = buildStateGraph(state.plan, async (_graphState, _context) => {
+      // Phase 2 Task 4: Implement actual node execution
+      // For now, return empty updates to allow graph traversal
+      return {}
+    })
+
     // TODO (Phase 2 Task 4): Invoke the graph, populate state.outputs
     //                        as nodes execute, call hooks per node
     // TODO (Phase 2 Task 6): Assemble Conclusion from final state
 
     // Stub for now: return FAILED Conclusion with "not implemented"
     state.status = 'ERROR'
-    state.error = { message: 'Graph execution not yet implemented' }
+    state.error = { message: 'Graph invocation not yet implemented (Phase 2 Task 4)' }
 
-    return this.buildFailedConclusion('LangGraphAdapter graph execution not implemented (Phase 2 Task 3+)', state)
+    return this.buildFailedConclusion('LangGraphAdapter graph invocation not implemented', state)
   }
 
   /**
