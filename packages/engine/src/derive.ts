@@ -1,4 +1,4 @@
-import type { AgentOutput, Conclusion, ExecutionState, PlanNode, TemplateState } from './types.js'
+import type { AgentOutput, ExecutionState, PlanNode, TemplateState } from './types.js'
 
 /**
  * Derives the TemplateState from the current ExecutionState and the
@@ -73,10 +73,21 @@ export function deriveTemplateState(state: ExecutionState, node: PlanNode): Temp
     }
   }
 
-  // conclusion remains undefined during execution. The full Conclusion object
-  // only exists after the entire session completes. Audit templates can reference
-  // the prior terminal output via allPreviousOutputs[-1] if needed.
-  const conclusion: Conclusion | undefined = undefined
+  // conclusion (only for audit role)
+  let conclusion: string | undefined
+  if (node.role === 'audit') {
+    for (let i = state.executionOrder.length - 1; i >= 0; i--) {
+      const executedNodeId = state.executionOrder[i]!
+      const executedNode = state.plan.graph.nodes[executedNodeId]
+      if (executedNode?.role === 'terminal') {
+        const output = state.outputs[executedNodeId]
+        if (output) {
+          conclusion = output.content
+          break
+        }
+      }
+    }
+  }
 
   // previousRevisions (only for audit role)
   let previousRevisions: AgentOutput[] | undefined

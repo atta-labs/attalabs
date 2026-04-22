@@ -531,8 +531,8 @@ export interface TemplateState {
   currentRoundOutputs: AgentOutput[]
   /** All outputs produced by the audit agent across all rounds and revisions. */
   auditOutputs: AgentOutput[]
-  /** The Conclusion from a prior terminal execution, available on revision re-runs. */
-  conclusion?: Conclusion
+  /** The content of the most recent terminal output, available on audit templates as {{conclusion}}. */
+  conclusion?: string
   /** Outputs from prior revision cycles at this node's position. */
   previousRevisions?: AgentOutput[]
   customVars: Record<string, unknown>
