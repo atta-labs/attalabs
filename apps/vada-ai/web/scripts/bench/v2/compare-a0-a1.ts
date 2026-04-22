@@ -124,7 +124,7 @@ async function main() {
       const systemBDesc = DESC[slotB]
 
       // Resumability: skip if this run index was already judged for this pairing
-      const existing = await getExistingV2JudgeResult(question.text, systemADesc, runIndex)
+      const existing = await getExistingV2JudgeResult(question.text, systemADesc, runIndex, 'baseline-vs-baseline')
       if (existing) {
         console.log(`  [run ${runIndex}] ↩ Already judged (${existing.diagnosis}) — skipping`)
         totalSkipped++

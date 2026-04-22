@@ -117,7 +117,7 @@ async function main() {
       const systemADesc = DESC[slotA]
       const systemBDesc = DESC[slotB]
 
-      const existing = await getExistingV2JudgeResult(question.text, systemADesc, runIndex)
+      const existing = await getExistingV2JudgeResult(question.text, systemADesc, runIndex, 'baseline-vs-vada')
       if (existing) {
         console.log(`  [run ${runIndex}] ↩ Already judged (${existing.diagnosis}) — skipping`)
         totalSkipped++
