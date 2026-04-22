@@ -8,6 +8,65 @@ import { useAIAContext } from '@atta/ui/canvas'
 // new version once, then resume skipping. Read comment in the skip branch below.
 const INTRO_SEEN_KEY = 'vada:home-intro-seen-v1'
 
+const MAX_RING = 600
+const SPHERE_RATIO = 128 / 600
+const MIN_SPHERE = 48
+
+function useResponsiveRingSize() {
+  const [dims, setDims] = useState({ ringSize: MAX_RING, sphereSize: 128, sphereRadius: 64 })
+  useEffect(() => {
+    const compute = () => {
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const ringSize = Math.min(MAX_RING, Math.floor(Math.min(vw * 0.85, vh * 0.7)))
+      const sphereSize = Math.max(MIN_SPHERE, Math.round(ringSize * SPHERE_RATIO))
+      setDims({ ringSize, sphereSize, sphereRadius: Math.round(sphereSize / 2) })
+    }
+    compute()
+    window.addEventListener('resize', compute)
+    window.addEventListener('orientationchange', compute)
+    return () => {
+      window.removeEventListener('resize', compute)
+      window.removeEventListener('orientationchange', compute)
+    }
+  }, [])
+  return dims
+}
+
+// Scroll-driven opacity: rAF loop reads #hero.getBoundingClientRect().top every frame.
+// Works with any scroll container (window or custom) — no scroll event listener needed.
+// ringVisible flips only at a threshold — drives canvas effect props that need a boolean.
+// Fade profile: 50% scroll → 75% faded; fully gone at ~67% scroll.
+function useScrollRingOpacity() {
+  const ringDivRef = useRef<HTMLDivElement | null>(null)
+  const [ringVisible, setRingVisible] = useState(true)
+  const rafRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const tick = () => {
+      const hero = document.getElementById('hero')
+      if (hero) {
+        const top = hero.getBoundingClientRect().top
+        const vh = window.innerHeight
+        // top goes negative as user scrolls; -top / (vh*2/3) → ratio 0→1.
+        const scrollRatio = Math.max(0, Math.min(1, -top / (vh * (2 / 3))))
+        const opacity = 1 - scrollRatio
+        if (ringDivRef.current) ringDivRef.current.style.opacity = String(opacity)
+        // Only trigger a React re-render when crossing the visibility threshold.
+        const next = opacity > 0.05
+        setRingVisible((prev) => (prev === next ? prev : next))
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
+  return { ringDivRef, ringVisible }
+}
+
 export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() => void) | null>) {
   const [activeAgent, setActiveAgent] = useState<string | null>(null)
   const [activeStep, setActiveStep] = useState(0)
@@ -16,8 +75,12 @@ export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() =>
   const simulationStarted = useRef(false)
 
   const ctx = useAIAContext()
+  const { ringSize, sphereSize, sphereRadius } = useResponsiveRingSize()
+  const { ringDivRef, ringVisible } = useScrollRingOpacity()
 
-  // Start simulation once canvas is settled — no arbitrary timer
+  // Start simulation once canvas is settled — no arbitrary timer.
+  // On scroll-back the simulation never re-runs (simulationStarted stays true),
+  // so revealedCount/activeStep remain at 6 and the ring fades back in fully formed.
   useEffect(() => {
     if (!ctx || ctx.phase !== 'settled' || simulationStarted.current) return
     simulationStarted.current = true
@@ -84,11 +147,24 @@ export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() =>
     }
   }, [messageSignal, ctx])
 
+  const animationComplete = activeStep >= 6
+
+  useEffect(() => {
+    if (!animationComplete) return
+    const id = setTimeout(() => ctx?.startGravity(), 500)
+    return () => clearTimeout(id)
+  }, [animationComplete, ctx])
+
   return {
     activeAgent,
     activeStep,
     revealedCount,
     animationStarted: activeStep >= 1,
-    animationComplete: activeStep >= 6
+    animationComplete,
+    ringSize,
+    sphereSize,
+    sphereRadius,
+    ringDivRef,
+    ringVisible
   }
 }
