@@ -5,6 +5,7 @@
 // the canonical agent name. Accepts a faceStyle to switch between the two face
 // illustration registers: 'reductive' (gestural, floating features) and
 // 'emblematic' (symbolic portrait with forehead sigil).
+// Standalone mode is handled by AIASphere — no extra setup needed here.
 
 import { AGENT_FACES as REDUCTIVE_FACES } from './agent-faces-minimal'
 import { AGENT_FACES as EMBLEMATIC_FACES } from './agent-faces-full'

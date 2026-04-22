@@ -6,8 +6,6 @@ import { cn } from '@atta/ui/lib/utils'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
-import { FlowArrow } from '../primitives/FlowArrow'
-import { SectionLabel } from '../primitives/SectionLabel'
 import { SectionWrapper } from '../primitives/SectionWrapper'
 
 interface EcosystemBrandings {
@@ -18,71 +16,6 @@ interface EcosystemBrandings {
 
 interface EcosystemSectionProps {
   brandings: EcosystemBrandings
-}
-
-interface GlyphProps {
-  className?: string
-}
-
-function AttaGlyph({ className }: GlyphProps) {
-  return (
-    <svg
-      viewBox='0 0 32 32'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth={1.5}
-      strokeLinecap='round'
-      strokeLinejoin='round'
-      className={className}
-      aria-hidden
-    >
-      <path d='M 6 26 L 16 6 L 26 26' />
-      <path d='M 10 22 C 12 19, 20 19, 22 22 C 20 25, 12 25, 10 22 Z' />
-      <circle cx={16} cy={22} r={1.3} fill='currentColor' />
-    </svg>
-  )
-}
-
-function VitakkaGlyph({ className }: GlyphProps) {
-  return (
-    <svg
-      viewBox='0 0 32 32'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth={1.5}
-      strokeLinecap='round'
-      strokeLinejoin='round'
-      className={className}
-      aria-hidden
-    >
-      <path d='M 6 8 L 16 26 L 26 8' />
-      <circle cx={16} cy={15} r={3.4} />
-      <circle cx={16} cy={15} r={1.1} fill='currentColor' />
-    </svg>
-  )
-}
-
-function VadaGlyph({ className }: GlyphProps) {
-  return (
-    <svg
-      viewBox='0 0 32 32'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth={1.5}
-      strokeLinecap='round'
-      strokeLinejoin='round'
-      className={className}
-      aria-hidden
-    >
-      <path d='M 6 8 L 16 26 L 26 8' />
-      <line x1={11} y1={12} x2={21} y2={12} />
-      <line x1={11} y1={12} x2={16} y2={19} />
-      <line x1={21} y1={12} x2={16} y2={19} />
-      <circle cx={11} cy={12} r={1.3} fill='currentColor' />
-      <circle cx={21} cy={12} r={1.3} fill='currentColor' />
-      <circle cx={16} cy={19} r={1.3} fill='currentColor' />
-    </svg>
-  )
 }
 
 interface ProductLogoProps {
@@ -136,67 +69,10 @@ function ProductLogo({ branding, alt, fallback, size, className }: ProductLogoPr
   )
 }
 
-interface ProductTileProps {
-  branding: CMSBranding | null
-  fallbackGlyph: ReactNode
-  name: string
-  tagline: string
-}
-
-function ProductTile({ branding, fallbackGlyph, name, tagline }: ProductTileProps) {
-  return (
-    <div className='flex h-full flex-col items-center gap-3 rounded-md border border-border bg-card p-6 text-center'>
-      <div className='text-foreground'>
-        <ProductLogo branding={branding} alt={name} fallback={fallbackGlyph} size={40} />
-      </div>
-      <Text as='small' className='font-mono uppercase tracking-widest text-xs text-foreground'>
-        {name}
-      </Text>
-      <Text as='p' className='text-sm text-muted-foreground'>
-        {tagline}
-      </Text>
-    </div>
-  )
-}
-
-function AttaSubstrate({ brandings }: EcosystemSectionProps) {
-  return (
-    <div className='rounded-xl border border-border bg-card/20 p-6 md:p-10'>
-      <div className='mb-10 flex flex-col items-center gap-2 text-center'>
-        <div className='text-muted-foreground'>
-          <ProductLogo branding={brandings.atta} alt='Attā' fallback={<AttaGlyph className='size-8' />} size={32} />
-        </div>
-        <Text as='small' className='font-mono uppercase tracking-widest text-xs text-muted-foreground'>
-          Attā · Persistent Self
-        </Text>
-        <Text as='p' className='italic text-xs text-muted-foreground/80'>
-          The substrate that makes memory possible.
-        </Text>
-      </div>
-
-      <div className='grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-6'>
-        <ProductTile
-          branding={brandings.vada}
-          fallbackGlyph={<VadaGlyph className='size-10' />}
-          name='Vāda · Deliberation Engine'
-          tagline='Lateral — thinking in depth at a specific moment.'
-        />
-        <FlowArrow direction='responsive' />
-        <ProductTile
-          branding={brandings.vitakka}
-          fallbackGlyph={<VitakkaGlyph className='size-10' />}
-          name='Vitakka · Applied Focus'
-          tagline='Longitudinal — thinking over time.'
-        />
-      </div>
-    </div>
-  )
-}
-
 function CTABlock() {
   const router = useRouter()
   return (
-    <div className='flex flex-col items-center gap-8 py-10 text-center'>
+    <div className='flex flex-col items-center gap-8 py-10 text-center mt-8'>
       <Heading level={2} className='font-serif text-5xl md:text-7xl text-foreground leading-tight'>
         Ready to deliberate.
       </Heading>
@@ -214,25 +90,147 @@ function CTABlock() {
 
 export function EcosystemSection({ brandings }: EcosystemSectionProps) {
   return (
-    <SectionWrapper id='ecosystem'>
-      <div className='flex flex-col gap-24 md:gap-32'>
-        <div className='flex flex-col gap-10'>
-          <SectionLabel>05 / The Attā Ecosystem</SectionLabel>
-          <Heading level={2} className='font-serif text-4xl md:text-6xl text-foreground leading-tight'>
-            <span className='block'>Three products.</span>
-            <span className='block'>One ecosystem.</span>
-          </Heading>
-          <Text as='p' className='max-w-xl text-muted-foreground leading-relaxed'>
-            Vāda is a standalone product. It does not require any other product to work. But it belongs to a family.
-          </Text>
+    <SectionWrapper id='ecosystem' className='bg-background'>
+      {/* The Master Blueprint Container */}
+      <div className='relative w-full border border-border p-6 sm:p-10 md:p-14 overflow-hidden bg-background mb-16'>
+        {/* Blueprint Grid Mask Layer */}
+        <div
+          className='absolute inset-0 pointer-events-none z-0 opacity-40'
+          style={{
+            backgroundImage: `
+              linear-gradient(hsl(var(--border)) 1px, transparent 1px),
+              linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)
+            `,
+            backgroundSize: '40px 40px',
+            backgroundPosition: '-1px -1px',
+            maskImage: 'radial-gradient(ellipse at center, black 15%, transparent 85%)',
+            WebkitMaskImage: 'radial-gradient(ellipse at center, black 15%, transparent 85%)'
+          }}
+        />
 
-          <div className='pt-4'>
-            <AttaSubstrate brandings={brandings} />
+        <div className='relative z-10 flex flex-col items-center w-full'>
+          {/* Top Header Row */}
+          <div className='flex items-baseline justify-between w-full mb-8 sm:mb-12'>
+            <div className='font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.24em] text-muted-foreground'>
+              Schema-05 · The Attā Ecosystem
+            </div>
+            <div className='font-serif text-sm sm:text-base font-medium text-foreground italic'>Vāda</div>
+          </div>
+
+          {/* Heading & Intro */}
+          <div className='w-full max-w-4xl flex flex-col gap-4 mb-14 md:mb-20'>
+            <Heading
+              level={2}
+              className='font-serif text-4xl sm:text-5xl md:text-6xl text-foreground leading-tight tracking-tight'
+            >
+              <span className='block'>Three products.</span>
+              <span className='block'>One ecosystem.</span>
+            </Heading>
+            <Text as='p' className='text-foreground/80 leading-relaxed text-sm sm:text-base max-w-xl'>
+              Vāda is a standalone product. It does not require any other product to work. But it belongs to a family.
+            </Text>
+          </div>
+
+          {/* ============================================================
+              THE TREE STRUCTURE 
+              ============================================================ */}
+
+          {/* ROOT NODE: Attā */}
+          <div className='border-[2px] border-foreground bg-background p-6 sm:p-8 text-center w-full max-w-xs sm:max-w-md z-10 shadow-[8px_8px_0_0_hsl(var(--foreground))]'>
+            <div className='mb-3 flex justify-center text-foreground'>
+              <ProductLogo
+                branding={brandings.atta}
+                alt='Attā'
+                fallback={<span className='font-serif italic text-[32px] leading-none'>A</span>}
+                size={36}
+              />
+            </div>
+            <div className='font-mono text-[10px] sm:text-[11px] tracking-[0.22em] uppercase font-semibold text-foreground mb-1.5'>
+              Attā · Persistent Self
+            </div>
+            <div className='font-serif italic text-xs sm:text-sm text-muted-foreground leading-snug'>
+              The substrate that makes memory possible.
+            </div>
+          </div>
+
+          {/* TRUNK */}
+          <div className='w-[2px] h-8 sm:h-12 bg-foreground z-10 relative'>
+            {/* Center Joint (Desktop Only) */}
+            <div className='absolute -bottom-[3px] -left-[3px] w-2 h-2 rounded-full bg-foreground hidden md:block' />
+          </div>
+
+          {/* BRANCHES & LEAVES */}
+          <div className='relative w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 pt-0 md:pt-10'>
+            {/* Horizontal Branch Line (Desktop Only) */}
+            <div className='absolute top-0 left-1/4 right-1/4 h-[2px] bg-foreground hidden md:block z-0' />
+
+            {/* LEFT NODE: Vāda */}
+            <div className='relative flex justify-center'>
+              {/* Vertical Stem (Desktop Only) */}
+              <div className='absolute -top-10 left-1/2 w-[2px] h-10 bg-foreground hidden md:block z-0' />
+              {/* Mobile Fallback Stem */}
+              <div className='absolute -top-8 left-1/2 w-[2px] h-8 bg-foreground md:hidden z-0' />
+
+              <div className='w-full border-[1.5px] border-foreground bg-background p-6 sm:p-8 text-center z-10 flex flex-col h-full shadow-[8px_8px_0_0_hsl(var(--foreground))]'>
+                <div className='mb-3 flex justify-center text-foreground'>
+                  <ProductLogo
+                    branding={brandings.vada}
+                    alt='Vāda'
+                    fallback={<span className='font-serif italic text-[28px] leading-none'>V</span>}
+                    size={32}
+                  />
+                </div>
+                <div className='font-mono text-[9px] sm:text-[10px] tracking-[0.2em] uppercase font-semibold text-foreground mb-1.5'>
+                  Vāda · Deliberation Engine
+                </div>
+                <div className='text-xs sm:text-[13px] text-muted-foreground leading-relaxed mb-4 flex-grow'>
+                  Lateral — thinking in depth at a specific moment.
+                </div>
+                <div className='font-mono text-[8px] sm:text-[9px] tracking-[0.14em] text-muted-foreground/70 uppercase mt-auto'>
+                  Standalone · Closed-Room
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT NODE: Vitakka */}
+            <div className='relative flex justify-center'>
+              {/* Vertical Stem (Desktop Only) */}
+              <div className='absolute -top-10 left-1/2 w-[2px] h-10 bg-foreground hidden md:block z-0' />
+              {/* Mobile Fallback Stem */}
+              <div className='absolute -top-8 left-1/2 w-[2px] h-8 bg-foreground md:hidden z-0' />
+
+              <div className='w-full border-[1.5px] border-foreground bg-background p-6 sm:p-8 text-center z-10 flex flex-col h-full shadow-[8px_8px_0_0_hsl(var(--foreground))]'>
+                <div className='mb-3 flex justify-center text-foreground'>
+                  <ProductLogo
+                    branding={brandings.vitakka}
+                    alt='Vitakka'
+                    fallback={<span className='font-serif italic text-[28px] leading-none'>V</span>}
+                    size={32}
+                  />
+                </div>
+                <div className='font-mono text-[9px] sm:text-[10px] tracking-[0.2em] uppercase font-semibold text-foreground mb-1.5'>
+                  Vitakka · Applied Focus
+                </div>
+                <div className='text-xs sm:text-[13px] text-muted-foreground leading-relaxed mb-4 flex-grow'>
+                  Longitudinal — thinking over time.
+                </div>
+                <div className='font-mono text-[8px] sm:text-[9px] tracking-[0.14em] text-muted-foreground/70 uppercase mt-auto'>
+                  Standalone · Persistent
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Metadata */}
+          <div className='w-full max-w-3xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-16 sm:mt-24 font-mono text-[8px] sm:text-[9px] uppercase tracking-[0.15em] text-muted-foreground/60'>
+            <div>Drawing · Eco-05-01</div>
+            <div>Rev · 02</div>
+            <div>Each Node Is Independent</div>
           </div>
         </div>
-
-        <CTABlock />
       </div>
+
+      <CTABlock />
     </SectionWrapper>
   )
 }

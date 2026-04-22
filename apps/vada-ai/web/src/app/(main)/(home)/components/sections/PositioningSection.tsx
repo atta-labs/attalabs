@@ -1,13 +1,23 @@
+'use client'
+
 import { Heading, Text } from '@atta/ui'
+import { AIAgent, type AgentName } from '@atta/ui/canvas'
 import { SectionLabel } from '../primitives/SectionLabel'
 import { SectionWrapper } from '../primitives/SectionWrapper'
 import { StatusFooter } from '../primitives/StatusFooter'
 import { TwoColumnSection } from '../primitives/TwoColumnSection'
-import { PositioningDiagram } from './PositioningDiagram'
+import { ArchitectureDiagram } from './ArchitectureDiagram'
+
+const POSITIONING_AGENTS: Array<{ id: string; name: AgentName }> = [
+  { id: 'positioning-strategist', name: 'Strategist' },
+  { id: 'positioning-critic', name: 'Critic' },
+  { id: 'positioning-devils-advocate', name: "Devil's Advocate" },
+  { id: 'positioning-synthesizer', name: 'Synthesizer' }
+]
 
 export function PositioningSection() {
   return (
-    <SectionWrapper id='positioning'>
+    <SectionWrapper id='positioning' className='bg-transparent'>
       <TwoColumnSection
         className='md:grid-cols-[1.2fr_1fr]'
         left={
@@ -38,7 +48,25 @@ export function PositioningSection() {
             />
           </div>
         }
-        right={<PositioningDiagram />}
+        right={
+          <div className='flex flex-col gap-8'>
+            <div className='flex flex-wrap justify-center gap-6 sm:gap-10'>
+              {POSITIONING_AGENTS.map((agent) => (
+                <AIAgent
+                  key={agent.id}
+                  id={agent.id}
+                  name={agent.name}
+                  size='sm'
+                  state='speaking'
+                  showMatrix={true}
+                  particleCount={25}
+                  noLabel
+                />
+              ))}
+            </div>
+            <ArchitectureDiagram />
+          </div>
+        }
       />
     </SectionWrapper>
   )

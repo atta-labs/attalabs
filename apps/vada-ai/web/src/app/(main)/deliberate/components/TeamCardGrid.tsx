@@ -1,6 +1,6 @@
 'use client'
 
-import { AIACanvas, AIAgent, type AgentName } from '@atta/ui/canvas'
+import { AIAgent, type AgentName } from '@atta/ui/canvas'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { TeamCard } from '@atta/ui/shared'
 import { ModelIcon } from '@atta/ui'
@@ -34,9 +34,8 @@ interface TeamCardGridProps {
   globalModel: ModelSelection | null
 }
 
-// Memoized: every keystroke in the question input and every Checkbox click
-// re-renders the parent DeliberateSection. Without memo, that cascade re-
-// renders each TeamCard → AIACanvas → AIAgent spheres → visible flicker on
+// Memoized: every keystroke in the question input re-renders the parent.
+// Without memo, that cascade re-renders AIAgent spheres → visible flicker on
 // matrix rain + particle positions. Default shallow equality is enough here
 // because useDeliberateForm wraps handleStart in useCallback (stable ref)
 // and PRESETS are module-level constants (stable refs).
@@ -95,24 +94,22 @@ export const TeamCardGrid = memo(function TeamCardGrid({
               </>
             }
             faces={
-              <AIACanvas alwaysRenderSpheres>
-                <div className={layout.gridClass}>
-                  {preset.agents.map((agent) => (
-                    <AIAgent
-                      key={agent.role}
-                      id={`teamcard-${preset.id}-${agent.role}`}
-                      name={agent.name as AgentName}
-                      state={isSelected ? 'speaking' : 'idle'}
-                      size={layout.size}
-                      visible
-                      showMatrix={isSelected}
-                      solidBg={isSelected}
-                      model={modelId}
-                      modelLabel={modelLabel}
-                    />
-                  ))}
-                </div>
-              </AIACanvas>
+              <div className={layout.gridClass}>
+                {preset.agents.map((agent) => (
+                  <AIAgent
+                    key={agent.role}
+                    id={`teamcard-${preset.id}-${agent.role}`}
+                    name={agent.name as AgentName}
+                    state={isSelected ? 'speaking' : 'idle'}
+                    size={layout.size}
+                    visible
+                    showMatrix={isSelected}
+                    solidBg={isSelected}
+                    model={modelId}
+                    modelLabel={modelLabel}
+                  />
+                ))}
+              </div>
             }
             selected={isSelected}
             onSelect={() => onSelectPreset(preset)}

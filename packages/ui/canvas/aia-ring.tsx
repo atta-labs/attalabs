@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { useAIAContext } from './aia-context'
+import { AIACanvas } from './aia-canvas'
 
 // Generate a wavy arc path from startAngle to endAngle
 // timeOffset shifts the wave phase, creating flowing motion when animated
@@ -49,7 +50,7 @@ interface AIARingProps {
   bgOpacity?: number
 }
 
-export function AIARing({
+function AIARingInner({
   size = 600,
   orbit,
   children,
@@ -245,5 +246,17 @@ export function AIARing({
         )
       })}
     </div>
+  )
+}
+
+export function AIARing(props: Parameters<typeof AIARingInner>[0]) {
+  const ctx = useAIAContext()
+
+  if (ctx) return <AIARingInner {...props} />
+
+  return (
+    <AIACanvas wanderDuration={0} alwaysRenderSpheres>
+      <AIARingInner {...props} />
+    </AIACanvas>
   )
 }

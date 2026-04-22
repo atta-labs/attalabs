@@ -1,11 +1,22 @@
 // ── aia-sphere.tsx ────────────────────────────────────────────────────────────
 // Pure presentational component. All hooks live in useAIASphere.
+// Self-sufficient: when rendered outside an AIACanvas, wraps itself in one.
 
 'use client'
 
 import type { ReactNode } from 'react'
 import type { SphereState } from './aia-context'
+import { useAIAContext } from './aia-context'
 import { useAIASphere } from './useAIASphere'
+import { AIACanvas } from './aia-canvas'
+
+const SPHERE_DIAMETER: Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', number> = {
+  xs: 32,
+  sm: 48,
+  md: 64,
+  lg: 96,
+  xl: 128
+}
 
 type LabelPosition = 'top' | 'top-right' | 'right' | 'bottom-right' | 'bottom' | 'bottom-left' | 'left' | 'top-left'
 
@@ -58,7 +69,7 @@ const LABEL_TEXT_STYLE = (state: SphereState, cssColor: string): React.CSSProper
   opacity: state === 'idle' ? 0.4 : 0.8
 })
 
-export function AIASphere({
+function AIASphereInner({
   id: externalId,
   state = 'idle',
   color,
@@ -161,6 +172,54 @@ export function AIASphere({
       style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
     >
       {sphere}
+      <span style={LABEL_TEXT_STYLE(state, cssColor)}>{label}</span>
+    </span>
+  )
+}
+
+export function AIASphere(props: Parameters<typeof AIASphereInner>[0]) {
+  const ctx = useAIAContext()
+
+  if (ctx) return <AIASphereInner {...props} />
+
+  // Standalone: layout anchor is sphere-sized so surrounding flex/grid is unaffected.
+  // Canvas extends beyond with negative inset giving particles room to orbit outside.
+  const { size = 'md', label, labelPlacement = 'flow', state = 'idle', color, className } = props
+  const diameter = typeof size === 'string' ? SPHERE_DIAMETER[size] : size
+  const pad = diameter
+  const canvasSize = diameter + pad * 2
+
+  // The sphere canvas block — layout anchor is always sphere-sized.
+  // Only inline styles for runtime-computed numeric values (width/height/inset/top/left).
+  // Position utilities use Tailwind classes.
+  const sphereBlock = (
+    <div className='relative' style={{ width: diameter, height: diameter }}>
+      <div className='absolute' style={{ inset: -pad }}>
+        {/* No className on AIACanvas — avoids relative/absolute Tailwind class conflict that collapses containerRef height to 0. */}
+        {/* Explicit-size inner div drives containerRef height instead. */}
+        <AIACanvas wanderDuration={0} alwaysRenderSpheres>
+          <div className='relative' style={{ width: canvasSize, height: canvasSize }}>
+            {/* Sphere at (pad, pad) aligns the face with the layout anchor. */}
+            <div className='absolute' style={{ top: pad, left: pad }}>
+              {/* Suppress flow label here — rendered outside the canvas container so it participates in DOM layout flow. */}
+              <AIASphereInner {...props} label={labelPlacement !== 'absolute' ? undefined : label} />
+            </div>
+          </div>
+        </AIACanvas>
+      </div>
+    </div>
+  )
+
+  // Absolute label: handled inside AIASphereInner relative to sphere bbox. No wrapping needed.
+  // No label: sphere block is the complete element.
+  if (!label || labelPlacement === 'absolute') return sphereBlock
+
+  // Flow label: render OUTSIDE the canvas absolute container so it participates in parent layout flow.
+  // Mirrors AIASphereInner's flow-label wrapping pattern exactly.
+  const cssColor = color ?? 'var(--foreground)'
+  return (
+    <span className={`inline-flex flex-col items-center gap-1.5${className ? ` ${className}` : ''}`}>
+      {sphereBlock}
       <span style={LABEL_TEXT_STYLE(state, cssColor)}>{label}</span>
     </span>
   )

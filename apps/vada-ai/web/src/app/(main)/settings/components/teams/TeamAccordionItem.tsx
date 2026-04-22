@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { Text } from '@atta/ui/shared'
-import { AIACanvas } from '@atta/ui/canvas'
 import { AGENTS } from '@atta/agents'
 import type { TeamDef } from '@atta/agents'
 import type { TeamModelEntry } from '@/db/settings-queries'
@@ -40,24 +39,22 @@ export function TeamAccordionItem({ team, teamModels, configuredProviders, onMod
       </button>
 
       {open && (
-        <AIACanvas alwaysRenderSpheres className='w-full'>
-          <div className='grid grid-cols-2 gap-3 pb-4 pt-1'>
-            {team.agents.map((agentName) => {
-              const agent = AGENTS[agentName]
-              const saved = teamModels.find((m) => m.teamId === team.id && m.agentRole === agent.role)
-              return (
-                <AgentModelRow
-                  key={agent.role}
-                  agent={agent}
-                  teamId={team.id}
-                  currentModel={saved ? { provider: saved.provider, modelId: saved.modelId } : null}
-                  configuredProviders={configuredProviders}
-                  onChanged={onModelChanged}
-                />
-              )
-            })}
-          </div>
-        </AIACanvas>
+        <div className='grid grid-cols-2 gap-3 pb-4 pt-1'>
+          {team.agents.map((agentName) => {
+            const agent = AGENTS[agentName]
+            const saved = teamModels.find((m) => m.teamId === team.id && m.agentRole === agent.role)
+            return (
+              <AgentModelRow
+                key={agent.role}
+                agent={agent}
+                teamId={team.id}
+                currentModel={saved ? { provider: saved.provider, modelId: saved.modelId } : null}
+                configuredProviders={configuredProviders}
+                onChanged={onModelChanged}
+              />
+            )
+          })}
+        </div>
       )}
     </div>
   )
