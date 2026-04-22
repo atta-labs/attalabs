@@ -53,10 +53,15 @@ export function createDefaultLlmCall(apiKey?: string): LlmCallFn {
       const response = await llm.invoke(messages)
       content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
-      const usage = response.usage_metadata
-      if (usage) {
-        tokensInput = usage.input_tokens ?? 0
-        tokensOutput = usage.output_tokens ?? 0
+      try {
+        const usage = response.usage_metadata
+        if (usage) {
+          tokensInput = usage.input_tokens ?? 0
+          tokensOutput = usage.output_tokens ?? 0
+        }
+      } catch (err) {
+        // Token extraction failed; proceed without token counts
+        console.error('[llm] Token extraction error:', err)
       }
     }
 

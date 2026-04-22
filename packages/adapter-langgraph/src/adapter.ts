@@ -5,7 +5,8 @@ import type {
   ExecuteParams,
   ExecutionHooks,
   ExecutionState,
-  Plan
+  Plan,
+  RevisionCondition
 } from '@atta/engine'
 import { buildStateGraph } from './graph-builder'
 import { createDefaultLlmCall } from './llm'
@@ -188,15 +189,107 @@ export class LangGraphAdapter implements Adapter {
     state.status = finalState.status
     state.error = finalState.error
 
-    // TODO (Task 6): Assemble proper Conclusion from final state.
-    // For now, return FAILED noting Task 6 is pending,
-    // but include the (real) transcript so users can see nodes ran.
-    state.status = 'ERROR'
-    state.error = {
-      message: 'Nodes executed; Conclusion assembly pending (Task 6)'
+    // Task 6: Assemble Conclusion from final execution state
+    if (state.status === 'ERROR') {
+      return this.buildFailedConclusion(state.error?.message ?? 'Execution error', state)
     }
 
-    return this.buildFailedConclusion('Nodes executed; Conclusion assembly pending (Task 6)', state)
+    return this.buildSuccessfulConclusion(state)
+  }
+
+  /**
+   * Build a successful Conclusion from a completed execution state.
+   * Task 6: Determines terminalState by scanning executionOrder for revision indicators.
+   */
+  private buildSuccessfulConclusion(state: ExecutionState): Conclusion {
+    const transcript: AgentOutput[] = state.executionOrder
+      .map((id) => state.outputs[id])
+      .filter((o): o is AgentOutput => o !== undefined)
+
+    // Terminal output is the last agent in the execution order
+    const terminalOutput = transcript.length > 0 ? transcript[transcript.length - 1] : undefined
+
+    const content = terminalOutput?.content ?? ''
+    const structured = terminalOutput?.structured
+
+    const totalTokensInput = transcript.reduce((sum, o) => sum + o.tokensInput, 0)
+    const totalTokensOutput = transcript.reduce((sum, o) => sum + o.tokensOutput, 0)
+
+    const totalElapsedMs = Date.now() - state.startedAt
+
+    // Task 6: Determine terminalState by scanning for revision indicators
+    // - CLEAN: no terminal-k nodes with k>0 executed
+    // - REVISED: terminal-k with k>0 executed AND final audit didn't trigger revision
+    // - MAX_REVISIONS: final audit WOULD trigger revision but ceiling was hit
+    let terminalState: 'CLEAN' | 'REVISED' | 'MAX_REVISIONS' | 'FAILED' = 'CLEAN'
+
+    // Scan executionOrder to find revision history
+    let maxRevisionIndex = 0
+    let finalAuditNode: { node: (typeof state.plan.graph.nodes)[string]; output: AgentOutput } | undefined
+    let finalConditionalEdge: (typeof state.plan.graph.conditionalEdges)[number] | undefined
+
+    for (const nodeId of state.executionOrder) {
+      const node = state.plan.graph.nodes[nodeId]
+      const output = state.outputs[nodeId]
+      if (!node || !output) continue
+
+      // Track highest revision index in terminal/audit nodes
+      if ((node.role === 'terminal' || node.role === 'audit') && node.metadata.revisionIndex !== undefined) {
+        maxRevisionIndex = Math.max(maxRevisionIndex, node.metadata.revisionIndex)
+      }
+
+      // Track the final audit node (we only care about its output for condition evaluation)
+      if (node.role === 'audit') {
+        finalAuditNode = { node, output }
+        // Find the conditional edge from this audit node
+        finalConditionalEdge = state.plan.graph.conditionalEdges.find((e) => e.from === nodeId)
+      }
+    }
+
+    // Determine terminalState based on revision history
+    if (maxRevisionIndex > 0) {
+      // Revisions occurred. Check if the final audit would have triggered another revision.
+      // If so, and we can't do more, it's MAX_REVISIONS. Otherwise it's REVISED.
+      if (finalAuditNode && finalConditionalEdge) {
+        const auditWouldTrigger = this.evaluateRevisionCondition(
+          finalConditionalEdge.condition.check,
+          finalAuditNode.output
+        )
+
+        // Infer maxRevisions from the graph structure:
+        // Count audit nodes with the same base name (audit-0, audit-1, etc.)
+        // The highest revision index indicates how many revisions are possible
+        const maxPossibleRevisions = Math.max(
+          ...state.plan.graph.conditionalEdges
+            .filter((e) => e.from.includes('audit'))
+            .map((e) => {
+              const auditNode = state.plan.graph.nodes[e.from]
+              return auditNode?.metadata.revisionIndex ?? 0
+            })
+        )
+
+        // If final audit triggers revision AND we've done all revisions, it's MAX_REVISIONS
+        if (auditWouldTrigger && maxRevisionIndex >= maxPossibleRevisions) {
+          terminalState = 'MAX_REVISIONS'
+        } else {
+          terminalState = 'REVISED'
+        }
+      } else {
+        terminalState = 'REVISED'
+      }
+    } else {
+      terminalState = 'CLEAN'
+    }
+
+    return {
+      content,
+      structured,
+      transcript,
+      terminalState,
+      totalTokensInput,
+      totalTokensOutput,
+      totalElapsedMs
+    }
   }
 
   /**
@@ -221,6 +314,55 @@ export class LangGraphAdapter implements Adapter {
       totalElapsedMs,
       error: errorMessage
     }
+  }
+
+  /**
+   * Evaluates a RevisionCondition against an agent's output.
+   * Returns true if the condition is satisfied (triggers revision), false otherwise.
+   */
+  private evaluateRevisionCondition(condition: RevisionCondition, output: AgentOutput): boolean {
+    switch (condition.type) {
+      case 'contains': {
+        const searchStr = condition.value
+        const contentStr = output.content
+        const caseSensitive = condition.caseSensitive ?? true
+        if (caseSensitive) {
+          return contentStr.includes(searchStr)
+        }
+        return contentStr.toLowerCase().includes(searchStr.toLowerCase())
+      }
+
+      case 'json-field-equals': {
+        if (!output.structured) return false
+        const value = this.getJsonField(output.structured, condition.path)
+        return value === condition.value
+      }
+
+      case 'json-field-truthy': {
+        if (!output.structured) return false
+        const value = this.getJsonField(output.structured, condition.path)
+        return Boolean(value)
+      }
+
+      default:
+        return false
+    }
+  }
+
+  /**
+   * Extract a value from a JSON object using dot-notation path.
+   * Example: getJsonField({ result: { verdict: 'yes' } }, 'result.verdict') => 'yes'
+   */
+  private getJsonField(obj: unknown, path: string): unknown {
+    const parts = path.split('.')
+    let current = obj
+    for (const part of parts) {
+      if (typeof current !== 'object' || current === null) {
+        return undefined
+      }
+      current = (current as Record<string, unknown>)[part]
+    }
+    return current
   }
 
   /**
