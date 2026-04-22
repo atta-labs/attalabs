@@ -1,4 +1,5 @@
 export * from './types.js'
 export * from './errors.js'
 export { compile } from './compile.js'
+export { deriveTemplateState } from './derive.js'
 export { validateTeam, validateWorkflow } from './validate.js'
