@@ -116,7 +116,7 @@ export class LangGraphAdapter implements Adapter {
       // Timeout or unhandled error
       const errorMessage = err instanceof Error ? err.message : String(err)
       state.status = 'ERROR'
-      state.error = errorMessage
+      state.error = { message: errorMessage }
 
       const conclusion = this.buildFailedConclusion(errorMessage, state)
 
@@ -141,7 +141,7 @@ export class LangGraphAdapter implements Adapter {
       status: 'RUNNING',
       outputs: {},
       executionOrder: [],
-      startedAt: new Date().toISOString()
+      startedAt: Date.now()
     }
   }
 
@@ -162,7 +162,7 @@ export class LangGraphAdapter implements Adapter {
 
     // Stub for now: return FAILED Conclusion with "not implemented"
     state.status = 'ERROR'
-    state.error = 'Graph execution not yet implemented'
+    state.error = { message: 'Graph execution not yet implemented' }
 
     return this.buildFailedConclusion('LangGraphAdapter graph execution not implemented (Phase 2 Task 3+)', state)
   }
@@ -178,7 +178,7 @@ export class LangGraphAdapter implements Adapter {
     const totalTokensInput = transcript.reduce((sum, o) => sum + o.tokensInput, 0)
     const totalTokensOutput = transcript.reduce((sum, o) => sum + o.tokensOutput, 0)
 
-    const totalElapsedMs = state ? Date.now() - new Date(state.startedAt).getTime() : 0
+    const totalElapsedMs = state ? Date.now() - state.startedAt : 0
 
     return {
       content: '',

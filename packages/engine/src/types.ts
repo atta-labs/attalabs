@@ -470,10 +470,10 @@ export interface ExecutionState {
   outputs: Record<string, AgentOutput>
   /** Ordered list of completed node IDs, in execution order. */
   executionOrder: string[]
-  /** ISO 8601 timestamp of when execution started. */
-  startedAt: string
-  /** Error description if status is ERROR. */
-  error?: string
+  /** Epoch ms when execution started. */
+  startedAt: number
+  /** Error description and node context if status is ERROR. */
+  error?: { message: string; nodeId?: string }
 }
 
 /**
@@ -1001,10 +1001,10 @@ export interface ExperimentResult {
   schemaVersion: ExperimentResultSchemaVersion
   /** The Experiment definition that produced these results. */
   experiment: Experiment
-  /** ISO 8601 timestamp of when the experiment started. */
-  startedAt: string
-  /** ISO 8601 timestamp of when the experiment completed. */
-  completedAt: string
+  /** Epoch ms when the experiment started. */
+  startedAt: number
+  /** Epoch ms when the experiment completed. */
+  completedAt: number
   /** All individual variant runs, in execution order. */
   runs: ExperimentRun[]
   /** All pairwise judge verdicts. */
