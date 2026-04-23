@@ -115,3 +115,18 @@ All comparisons are pairwise: for N variants, N*(N-1)/2 pairs are judged indepen
 
 **schemaVersion on data types, not name types**
 `Plan`, `Corpus`, `Experiment`, and `ExperimentResult` carry a `schemaVersion` literal field because these types are stored and transmitted as JSON documents. Schema versions enable readers to reject or migrate documents with incompatible shapes. Names like `Agent`, `Team`, and `Workflow` are configuration-level types that live in code, not documents, and do not need schema versioning.
+
+---
+
+## Section 9: Phase 2 Implementation Decisions
+
+*Decisions surfaced during Task 8 — V1 Crucible port to `@atta/engine` + `@atta/adapter-langgraph`.*
+
+**LangChain Anthropic wrapper bypassed in the LangGraph adapter**
+`@langchain/anthropic` v0.3.x defaults `topP` to `-1` internally and includes it unconditionally in API requests. The Anthropic API rejects this value. After confirming the issue was a library default (not a fixable constructor option for the models in use), the decision was made to bypass `ChatAnthropic` entirely and make LLM calls directly through `@anthropic-ai/sdk`. The LangGraph state machine (`@langchain/langgraph`) is still used for graph orchestration. Direct SDK calls give full control over request parameters, eliminate opaque defaults, and remove a dependency that was adding noise without benefit. The cost is that LangChain's retry logic, streaming helpers, and structured output wrappers are no longer available automatically — these are implemented directly as needed. Provider substitution (e.g. to OpenAI) requires a direct SDK integration per provider rather than a LangChain adapter swap. Revisit if `@langchain/anthropic` addresses this in a stable release or if a second provider creates pressure for a unified abstraction. *File: `packages/adapter-langgraph/src/llm.ts`*
+
+**Two-synthesizer pattern for V1 Crucible**
+V1 Mastra had one Synthesizer agent that ran both in rounds and as the terminal node, switching behavior via a `CONCLUSION_MODE_PROMPT` injection. The engine port splits this into two agents: `Synthesizer` participates in each deliberation round and produces plain-text synthesis; `ConclusionSynthesizer` runs only as the terminal node and carries an `outputSchema` that produces a structured conclusion JSON. The split reflects genuinely different roles — round synthesis is exploratory and comparative, terminal synthesis is committed and structured. Collapsing them into one agent required prompt injection to change the role at runtime, which obscures the intent. This pattern generalizes: when an agent's role changes based on its position in the graph, splitting it into two named agents is preferred over runtime prompt switching. *Files: `apps/vada-ai/web/src/examples/agents/synthesizer.ts`, `apps/vada-ai/web/src/examples/agents/conclusion-synthesizer.ts`*
+
+**Revision condition keyword-based for V1 behavior parity**
+V1's `classifyVerdict` function triggered revision when BlindCritic's output contained "FLAG". The port uses `revisionCondition: { type: 'contains', value: 'FLAG', caseSensitive: false }` — a direct translation. The engine supports structured JSON audit output (`json-field-equals`, `json-field-truthy`), but that was not used here. Upgrading BlindCritic to produce structured output during a port introduces a confound: it becomes impossible to distinguish infrastructure changes (adapter, graph topology) from quality changes (audit signal fidelity). Behavior parity during Phase 2 keeps the V1 benchmark results directly comparable. Whether structured audit output improves revision quality is a Phase 6 research question. *File: `apps/vada-ai/web/src/examples/teams/crucible.ts`*

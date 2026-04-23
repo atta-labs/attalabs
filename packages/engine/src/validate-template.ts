@@ -64,10 +64,14 @@ export function validateTemplate(template: string, role: PlanNodeRole): void {
 
   // Match all Handlebars expressions: {{ ... }} (anything between braces)
   // Captures the content between the braces.
+  // NOTE: use a for-loop so `continue` always hits the advancement expression.
+  // A while-loop with `continue` before `match = regex.exec()` would loop forever.
   const expressionRegex = /\{\{[~]?\s*([^}]+?)\s*[~]?\}\}/g
-  let match = expressionRegex.exec(withoutComments)
-
-  while (match !== null) {
+  for (
+    let match = expressionRegex.exec(withoutComments);
+    match !== null;
+    match = expressionRegex.exec(withoutComments)
+  ) {
     const expression = match[1]!.trim()
 
     // Skip block helpers: {{#name}}, {{/name}}, {{^name}}
@@ -87,7 +91,8 @@ export function validateTemplate(template: string, role: PlanNodeRole): void {
     const rootIdentifier = expression.split(/[\s.[]/)[0]!
 
     // Skip block context identifiers (this, @index, etc.)
-    if (BLOCK_CONTEXT_IDENTIFIERS.has(rootIdentifier)) {
+    // Also skip @-prefixed data variables (@index, @key, @first, @last, @../index, etc.)
+    if (BLOCK_CONTEXT_IDENTIFIERS.has(rootIdentifier) || rootIdentifier.startsWith('@')) {
       continue
     }
 
@@ -116,7 +121,6 @@ export function validateTemplate(template: string, role: PlanNodeRole): void {
         }
       )
     }
-    match = expressionRegex.exec(withoutComments)
   }
 }
 
