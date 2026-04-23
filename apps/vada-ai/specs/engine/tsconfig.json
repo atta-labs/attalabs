@@ -1,7 +1,0 @@
-{
-  "extends": "../../../../packages/typescript-config/base.json",
-  "compilerOptions": {
-    "noEmit": true
-  },
-  "include": ["types.draft.ts"]
-}
