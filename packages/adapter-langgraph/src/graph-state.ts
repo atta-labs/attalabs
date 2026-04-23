@@ -2,6 +2,32 @@ import { Annotation } from '@langchain/langgraph'
 import type { AgentOutput, ExecutionState } from '@atta/engine'
 
 /**
+ * Classifier decision for a single tool-enabled agent turn.
+ * Produced by the Intent Classifier node before each tool-enabled agent.
+ */
+export interface ToolDecision {
+  /** Subset of the agent's declared tools that this turn actually needs. */
+  needs: string[]
+  /** Max tool invocations allowed for this turn (best-effort; server tools can't be counted). */
+  budget: number
+  /** Optional one-line reason from the classifier. */
+  reason?: string
+}
+
+/**
+ * Record of tool allocation for a single agent turn.
+ * One record per tool per tool-enabled agent turn (best-effort — server tools
+ * don't emit tool_use blocks, so actual invocation counts are unavailable).
+ */
+export interface ToolUseRecord {
+  agentNodeId: string
+  toolName: string
+  inputTokens: number
+  outputTokens: number
+  durationMs: number
+}
+
+/**
  * LangGraph state for Vāda executions.
  *
  * Mirrors Vāda's ExecutionState but expressed in LangGraph's Annotation
@@ -12,6 +38,8 @@ import type { AgentOutput, ExecutionState } from '@atta/engine'
  * The reducer patterns:
  * - outputs: merged (new entries overlay existing, keyed by node id)
  * - executionOrder: concatenated (new ids appended in order)
+ * - toolDecisions: merged (classifier decisions overlay existing, keyed by agent node id)
+ * - toolUseHistory: concatenated (new records appended in order)
  * - status: replaced (latest value wins)
  * - error: replaced
  *
@@ -26,6 +54,14 @@ export const VadaGraphState = Annotation.Root({
     default: () => ({})
   }),
   executionOrder: Annotation<string[]>({
+    reducer: (current, update) => [...current, ...update],
+    default: () => []
+  }),
+  toolDecisions: Annotation<Record<string, ToolDecision>>({
+    reducer: (current, update) => ({ ...current, ...update }),
+    default: () => ({})
+  }),
+  toolUseHistory: Annotation<ToolUseRecord[]>({
     reducer: (current, update) => [...current, ...update],
     default: () => []
   }),

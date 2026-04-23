@@ -1,6 +1,7 @@
 import Handlebars from 'handlebars'
-import { deriveTemplateState, type AgentOutput, type ExecutionState, type LlmCallFn } from '@atta/engine'
+import { deriveTemplateState, type Agent, type AgentOutput, type ExecutionState, type LlmCallFn } from '@atta/engine'
 import type { NodeExecutor } from './graph-builder.js'
+import type { ToolUseRecord } from './graph-state.js'
 
 /**
  * Creates a NodeExecutor bound to a specific LLM call function.
@@ -55,13 +56,31 @@ export function createNodeExecutor(llmCall: LlmCallFn): NodeExecutor {
     // Resolve model: agent override > plan default
     const model = agent.model ?? plan.model
 
-    // Invoke the LLM
+    // Apply cognitive router decision: filter tools to those the classifier approved.
+    // Falls back to the agent's full tool list if no decision is present.
+    const decision = graphState.toolDecisions?.[node.id]
+    const filteredAgent: Agent = decision
+      ? { ...agent, tools: decision.needs.length > 0 ? decision.needs : undefined }
+      : agent
+
+    // Invoke the LLM with (potentially filtered) tool list
     const llmResult = await llmCall({
       model,
-      agent,
+      agent: filteredAgent,
       systemPrompt: agent.systemPrompt,
       userPrompt: renderedPrompt
     })
+
+    // Track tool allocation for tool-enabled agents (best-effort — one record per
+    // allocated tool since server tools don't emit countable tool_use blocks).
+    const enabledTools = decision?.needs ?? agent.tools ?? []
+    const toolUseUpdates: ToolUseRecord[] = enabledTools.map((toolName) => ({
+      agentNodeId: node.id,
+      toolName,
+      inputTokens: llmResult.tokensInput,
+      outputTokens: llmResult.tokensOutput,
+      durationMs: llmResult.elapsedMs
+    }))
 
     // Build AgentOutput
     const agentOutput: AgentOutput = {
@@ -79,7 +98,8 @@ export function createNodeExecutor(llmCall: LlmCallFn): NodeExecutor {
     // Return partial state update. Reducers handle merging.
     return {
       outputs: { [node.id]: agentOutput },
-      executionOrder: [node.id]
+      executionOrder: [node.id],
+      ...(toolUseUpdates.length > 0 ? { toolUseHistory: toolUseUpdates } : {})
     }
   }
 }

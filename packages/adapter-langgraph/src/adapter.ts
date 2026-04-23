@@ -160,15 +160,16 @@ export class LangGraphAdapter implements Adapter {
     _hooks: ExecutionHooks,
     params: ExecuteParams
   ): Promise<Conclusion> {
-    // Phase 4b: real executor with LLM calls
     // Resolve LLM call: user override > default
     const llmCall = params.llmCall ?? createDefaultLlmCall(this.config.apiKey)
 
-    // Create real node executor bound to the LLM function
+    // Create node executor bound to the LLM function
     const executor = createNodeExecutor(llmCall)
 
-    // Build the LangGraph StateGraph from the Plan
-    const graph = buildStateGraph(state.plan, executor)
+    // Build the LangGraph StateGraph from the Plan.
+    // Passing apiKey enables the cognitive router (classifier nodes injected before
+    // each tool-enabled agent node).
+    const graph = buildStateGraph(state.plan, executor, this.config.apiKey)
 
     // Initial state for the graph run
     const initialState = {
@@ -176,13 +177,28 @@ export class LangGraphAdapter implements Adapter {
       customVars: state.customVars,
       outputs: state.outputs,
       executionOrder: state.executionOrder,
+      toolDecisions: {},
+      toolUseHistory: [],
       status: state.status,
       error: state.error,
       startedAt: state.startedAt
     }
 
-    // Phase 4b: invoke the graph with real executor
-    const finalState = await graph.invoke(initialState)
+    // Invoke the graph. recursionLimit counts node executions, not call-stack depth.
+    // Cognitive router adds one classifier node per tool-enabled agent turn, so the
+    // effective step count ~doubles. 150 gives plenty of headroom for max-revision runs.
+    const finalState = await graph.invoke(initialState, { recursionLimit: 150 })
+
+    // Log cognitive router decisions summary
+    const decisionEntries = Object.entries(finalState.toolDecisions ?? {})
+    if (decisionEntries.length > 0) {
+      console.info(`[LangGraphAdapter] Tool decisions (${decisionEntries.length} classifier turns):`)
+      for (const [nodeId, decision] of decisionEntries) {
+        console.info(
+          `  ${nodeId}: [${decision.needs.join(', ') || 'none'}] budget=${decision.budget}${decision.reason ? ` — ${decision.reason}` : ''}`
+        )
+      }
+    }
 
     // Sync final state back to ExecutionState
     state.outputs = finalState.outputs
@@ -217,6 +233,21 @@ export class LangGraphAdapter implements Adapter {
     const totalTokensOutput = transcript.reduce((sum, o) => sum + o.tokensOutput, 0)
 
     const totalElapsedMs = Date.now() - state.startedAt
+
+    // Cost estimate from token counts × per-model pricing (USD per million tokens, May 2026)
+    const PRICING: Record<string, { input: number; output: number }> = {
+      'claude-haiku-4-5-20251001': { input: 0.8, output: 4.0 },
+      'claude-haiku-4-5': { input: 0.8, output: 4.0 },
+      'claude-sonnet-4-6': { input: 3.0, output: 15.0 },
+      'claude-opus-4-7': { input: 15.0, output: 75.0 }
+    }
+    const estimatedCostUsd = transcript.reduce((sum, o) => {
+      const p = PRICING[o.model] ?? { input: 3.0, output: 15.0 }
+      return sum + (o.tokensInput * p.input + o.tokensOutput * p.output) / 1_000_000
+    }, 0)
+    console.info(
+      `[LangGraphAdapter] Estimated cost: $${estimatedCostUsd.toFixed(4)} | ${transcript.length} agent turns | ${totalTokensInput}in/${totalTokensOutput}out tokens`
+    )
 
     // Task 6: Determine terminalState by scanning for revision indicators
     // - CLEAN: no terminal-k nodes with k>0 executed

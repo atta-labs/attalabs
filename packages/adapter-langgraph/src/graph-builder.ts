@@ -1,6 +1,7 @@
 import { END, StateGraph } from '@langchain/langgraph'
 import type { AgentOutput, Plan, PlanNode, RevisionCondition } from '@atta/engine'
 import { VadaGraphState, type VadaGraphStateValue } from './graph-state'
+import { createClassifierNode } from './cognitive-router/classifier.js'
 
 /**
  * Runtime context passed to a node executor function.
@@ -74,12 +75,29 @@ function getJsonField(obj: unknown, path: string): unknown {
  * that LangGraph can invoke. Each node in the plan becomes a node function that
  * calls the provided executor.
  *
+ * When apiKey is provided, the cognitive router is enabled: a fast Haiku-based
+ * classifier node is injected before every tool-enabled agent node to decide
+ * which tools are actually needed for the current question. Edges to tool-enabled
+ * nodes are rewired through their corresponding classifier nodes.
+ *
  * @param plan The compiled Plan to translate.
  * @param executor The async function that executes each plan node.
+ * @param apiKey Optional Anthropic API key. Enables cognitive router when present.
  * @returns A compiled StateGraph ready for invocation.
  */
-export function buildStateGraph(plan: Plan, executor: NodeExecutor) {
+export function buildStateGraph(plan: Plan, executor: NodeExecutor, apiKey?: string) {
   const graph = new StateGraph(VadaGraphState)
+
+  // Identify tool-enabled agent nodes (those whose agents declare at least one tool)
+  const toolEnabledNodes = new Set<string>()
+  for (const nodeId of Object.keys(plan.graph.nodes)) {
+    if (nodeId === '__END__') continue
+    const node = plan.graph.nodes[nodeId]!
+    const agent = plan.agents[node.agentName]
+    if (agent?.tools && agent.tools.length > 0) {
+      toolEnabledNodes.add(nodeId)
+    }
+  }
 
   // Add nodes for each plan node (skip __END__ sentinel)
   for (const nodeId of Object.keys(plan.graph.nodes)) {
@@ -91,17 +109,37 @@ export function buildStateGraph(plan: Plan, executor: NodeExecutor) {
     })
   }
 
-  // Add unconditional edges
-  for (const edge of plan.graph.edges) {
-    const toTarget = edge.to === '__END__' ? END : edge.to
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(graph as any).addEdge(edge.from, toTarget)
+  // Inject classifier nodes before each tool-enabled agent node.
+  // classifier-{nodeId} → nodeId (fixed edge added here; incoming edges rewired below).
+  if (apiKey) {
+    for (const nodeId of toolEnabledNodes) {
+      const node = plan.graph.nodes[nodeId]!
+      const agent = plan.agents[node.agentName]!
+      const classifierNodeId = `classifier-${nodeId}`
+      graph.addNode(classifierNodeId, createClassifierNode(nodeId, agent, apiKey))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(graph as any).addEdge(classifierNodeId, nodeId)
+    }
   }
 
-  // Add conditional edges
+  // Resolve a plan-level destination to its actual LangGraph target,
+  // redirecting tool-enabled nodes through their classifier when active.
+  const resolveTarget = (target: string): string => {
+    if (target === '__END__') return END
+    if (apiKey && toolEnabledNodes.has(target)) return `classifier-${target}`
+    return target
+  }
+
+  // Add unconditional edges (rewired through classifiers where applicable)
+  for (const edge of plan.graph.edges) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(graph as any).addEdge(edge.from, resolveTarget(edge.to))
+  }
+
+  // Add conditional edges (ifTrue/ifFalse targets are terminal or __END__ — non-tool-enabled)
   for (const condEdge of plan.graph.conditionalEdges) {
-    const ifTrueTarget = condEdge.ifTrue === '__END__' ? END : condEdge.ifTrue
-    const ifFalseTarget = condEdge.ifFalse === '__END__' ? END : condEdge.ifFalse
+    const ifTrueTarget = resolveTarget(condEdge.ifTrue)
+    const ifFalseTarget = resolveTarget(condEdge.ifFalse)
 
     const routerFn = (state: VadaGraphStateValue): string => {
       let conditionMet: boolean
@@ -126,9 +164,9 @@ export function buildStateGraph(plan: Plan, executor: NodeExecutor) {
       [ifFalseTarget]: ifFalseTarget
     })
   }
-  // Set entry point: connect START to the first node in the plan
+  // Set entry point: connect START to first node (through classifier if tool-enabled)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ;(graph as any).addEdge('__start__', plan.graph.entryNode)
+  ;(graph as any).addEdge('__start__', resolveTarget(plan.graph.entryNode))
 
   // Compile and return
   return graph.compile()
