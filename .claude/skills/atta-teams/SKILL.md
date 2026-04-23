@@ -3,11 +3,11 @@ name: atta-teams
 description: Vāda agent and team configurations. Load when adding/modifying agents, teams, reviewer profiles, or building a verticalized team for a specific domain. Covers the tools-on/tools-off invariant. Do NOT load for engine primitives or adapter runtime.
 ---
 
-# `@atta/teams` — Deliberation Content
+# `@vada/teams` — Deliberation Content
 
 ## Context
 
-`@atta/teams` holds validated Agent and Team configurations. Pure configuration — system prompts, models, tool declarations, workflow composition. No runtime logic. Agents are immutable configs; teams compose them into deliberations.
+`@vada/teams` holds validated Agent and Team configurations. Pure configuration — system prompts, models, tool declarations, workflow composition. No runtime logic. Agents are immutable configs; teams compose them into deliberations.
 
 This is where MOAT-B (validated corpora) will live when verticalized teams arrive. Currently contains generic Crucible, Sparring (default), and A0/A1 baselines.
 
@@ -203,7 +203,7 @@ For use with `vada__consult` (Brokered mode):
 
 1. Create agent in `agents/<profile-name>.ts` following the Agent pattern
 2. Export from `index.ts`
-3. Add to `reviewerProfiles` map in `@atta/mcp-server/src/reviewer-profiles.ts`
+3. Add to `reviewerProfiles` map in `@vada/mcp-server/src/reviewer-profiles.ts`
 4. Update `vada__consult` tool description to mention the new profile
 
 ---
