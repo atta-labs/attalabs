@@ -1,5 +1,5 @@
 {
-  "name": "@atta/mcp-server",
+  "name": "@vada/mcp-server",
   "version": "0.0.1",
   "private": true,
   "type": "module",
