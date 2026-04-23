@@ -20,7 +20,7 @@
     "@atta/engine": "workspace:*",
     "@langchain/langgraph": "^0.2.0",
     "@langchain/core": "^0.3.0",
-    "@langchain/anthropic": "^0.3.0",
+    "@anthropic-ai/sdk": "^0.65.0",
     "handlebars": "^4.7.8"
   },
   "devDependencies": {
