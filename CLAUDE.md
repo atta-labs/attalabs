@@ -160,3 +160,11 @@ In-depth guides for specific domains. Reference when working in that area.
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, per-product isolation |
 | Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |
 | Code Style | [.claude/skills/code-style/SKILL.md](.claude/skills/code-style/SKILL.md) | TypeScript, exports, Biome rules |
+
+---
+
+## Dispatched tasks
+
+When you receive a task dispatched by the Principal, read
+skills/executor-protocol/SKILL.md first. Those rules are mandatory
+for dispatched work.
