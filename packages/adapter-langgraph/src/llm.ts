@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { LlmCallFn, LlmCallResult } from '@atta/engine'
+import { ANTHROPIC_TOOL_REGISTRY } from './tools.js'
 
 export function createDefaultLlmCall(apiKey?: string): LlmCallFn {
   return async ({ model, agent, systemPrompt, userPrompt }) => {
@@ -16,7 +17,22 @@ export function createDefaultLlmCall(apiKey?: string): LlmCallFn {
     let tokensInput = 0
     let tokensOutput = 0
 
+    // Resolve provider tools from agent.tools names
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const resolvedTools: any[] = (agent.tools ?? [])
+      .map((name) => {
+        const tool = ANTHROPIC_TOOL_REGISTRY[name]
+        if (!tool) {
+          console.warn(`[LangGraphAdapter] Agent '${agent.name}' requests unknown tool '${name}' — skipping`)
+        }
+        return tool
+      })
+      .filter(Boolean)
+
     if (agent.outputSchema) {
+      // Structured output: force tool_choice to extract typed JSON.
+      // Tools from agent.tools are intentionally omitted here — outputSchema
+      // agents (ConclusionSynthesizer) produce structured verdicts, not web research.
       const response = await client.messages.create({
         model,
         max_tokens: 4096,
@@ -39,18 +55,24 @@ export function createDefaultLlmCall(apiKey?: string): LlmCallFn {
       structured = (toolUse?.input ?? {}) as Record<string, unknown>
       content = JSON.stringify(structured)
     } else {
+      // Plain text response, optionally with server tools
       const response = await client.messages.create({
         model,
         max_tokens: 4096,
         system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
+        messages: [{ role: 'user', content: userPrompt }],
+        ...(resolvedTools.length > 0 ? { tools: resolvedTools } : {})
       })
 
       tokensInput = response.usage.input_tokens
       tokensOutput = response.usage.output_tokens
 
-      const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text')
-      content = textBlock?.text ?? ''
+      // Concatenate all text blocks — tool_use blocks are intermediate steps
+      content = response.content
+        .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+        .map((b) => b.text)
+        .join('\n')
+        .trim()
     }
 
     const elapsedMs = Date.now() - startTime

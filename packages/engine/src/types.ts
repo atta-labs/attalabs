@@ -116,10 +116,14 @@ interface RoundsWorkflowBase {
 /**
  * RoundsWorkflow with audit + optional revision loop enabled.
  * When `auditAgent` is set, `auditTemplate` and `revisionCondition` are both required.
+ *
+ * Multi-auditor: pass an array to run multiple audit agents sequentially per revision slot.
+ * Revision is triggered if ANY auditor's output satisfies the revisionCondition ("logical OR").
+ * Single-string form still works unchanged.
  */
 export interface RoundsWorkflowWithAudit extends RoundsWorkflowBase {
-  /** Name of the agent that evaluates each round and decides whether to revise. */
-  auditAgent: string
+  /** Name(s) of the agent(s) that evaluate each round. Array = sequential execution; any flag triggers revision. */
+  auditAgent: string | string[]
   /** Handlebars template for the audit agent's user message. */
   auditTemplate: string
   /** Condition applied to the audit agent's output to trigger a revision cycle. */
@@ -432,14 +436,25 @@ export interface PlanConditionalEdge {
 }
 
 /**
- * A condition that checks a specific node's output to determine edge traversal.
+ * A condition that checks node output(s) to determine edge traversal.
+ *
+ * Two forms:
+ * - `targetNode`: check a single node's output (original form, backward compatible)
+ * - `anyOf`: check multiple nodes' outputs — edge fires if ANY satisfies the condition
  */
-export type StateCondition = {
-  /** ID of the node whose output to evaluate against check. */
-  targetNode: string
-  /** The check to apply to that node's output. */
-  check: RevisionCondition
-}
+export type StateCondition =
+  | {
+      /** ID of the node whose output to evaluate against check. */
+      targetNode: string
+      /** The check to apply to that node's output. */
+      check: RevisionCondition
+    }
+  | {
+      /** IDs of nodes to evaluate — condition is satisfied if ANY node's output matches check. */
+      anyOf: string[]
+      /** The check to apply to each node's output. */
+      check: RevisionCondition
+    }
 
 // =============================================================================
 // Group 8: ExecutionState + TemplateState

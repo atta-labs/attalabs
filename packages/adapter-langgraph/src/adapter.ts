@@ -6,7 +6,8 @@ import type {
   ExecutionHooks,
   ExecutionState,
   Plan,
-  RevisionCondition
+  RevisionCondition,
+  StateCondition
 } from '@atta/engine'
 import { buildStateGraph } from './graph-builder'
 import { createDefaultLlmCall } from './llm'
@@ -225,7 +226,6 @@ export class LangGraphAdapter implements Adapter {
 
     // Scan executionOrder to find revision history
     let maxRevisionIndex = 0
-    let finalAuditNode: { node: (typeof state.plan.graph.nodes)[string]; output: AgentOutput } | undefined
     let finalConditionalEdge: (typeof state.plan.graph.conditionalEdges)[number] | undefined
 
     for (const nodeId of state.executionOrder) {
@@ -238,11 +238,10 @@ export class LangGraphAdapter implements Adapter {
         maxRevisionIndex = Math.max(maxRevisionIndex, node.metadata.revisionIndex)
       }
 
-      // Track the final audit node (we only care about its output for condition evaluation)
+      // Track the most recent conditional edge (only audit nodes with k < maxRevisions have one)
       if (node.role === 'audit') {
-        finalAuditNode = { node, output }
-        // Find the conditional edge from this audit node
-        finalConditionalEdge = state.plan.graph.conditionalEdges.find((e) => e.from === nodeId)
+        const edge = state.plan.graph.conditionalEdges.find((e) => e.from === nodeId)
+        if (edge) finalConditionalEdge = edge
       }
     }
 
@@ -250,15 +249,10 @@ export class LangGraphAdapter implements Adapter {
     if (maxRevisionIndex > 0) {
       // Revisions occurred. Check if the final audit would have triggered another revision.
       // If so, and we can't do more, it's MAX_REVISIONS. Otherwise it's REVISED.
-      if (finalAuditNode && finalConditionalEdge) {
-        const auditWouldTrigger = this.evaluateRevisionCondition(
-          finalConditionalEdge.condition.check,
-          finalAuditNode.output
-        )
+      if (finalConditionalEdge) {
+        const auditWouldTrigger = this.evaluateStateCondition(finalConditionalEdge.condition, state.outputs)
 
-        // Infer maxRevisions from the graph structure:
-        // Count audit nodes with the same base name (audit-0, audit-1, etc.)
-        // The highest revision index indicates how many revisions are possible
+        // Infer maxRevisions from graph: highest revisionIndex on a node with a conditional edge
         const maxPossibleRevisions = Math.max(
           ...state.plan.graph.conditionalEdges
             .filter((e) => e.from.includes('audit'))
@@ -314,6 +308,23 @@ export class LangGraphAdapter implements Adapter {
       totalElapsedMs,
       error: errorMessage
     }
+  }
+
+  /**
+   * Evaluates a StateCondition against the full outputs map.
+   * Handles both single-node (targetNode) and multi-node (anyOf) forms.
+   */
+  private evaluateStateCondition(condition: StateCondition, outputs: Record<string, AgentOutput>): boolean {
+    if ('anyOf' in condition) {
+      return condition.anyOf.some((nodeId) => {
+        const output = outputs[nodeId]
+        if (!output) return false
+        return this.evaluateRevisionCondition(condition.check, output)
+      })
+    }
+    const output = outputs[condition.targetNode]
+    if (!output) return false
+    return this.evaluateRevisionCondition(condition.check, output)
   }
 
   /**

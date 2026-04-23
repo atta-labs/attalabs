@@ -104,13 +104,19 @@ export function buildStateGraph(plan: Plan, executor: NodeExecutor) {
     const ifFalseTarget = condEdge.ifFalse === '__END__' ? END : condEdge.ifFalse
 
     const routerFn = (state: VadaGraphStateValue): string => {
-      // Task 5: Evaluate RevisionCondition against target node's output
-      const targetOutput = state.outputs[condEdge.condition.targetNode]
-      if (!targetOutput) {
-        return ifFalseTarget
+      let conditionMet: boolean
+      if ('anyOf' in condEdge.condition) {
+        // Any matching node output triggers the condition
+        conditionMet = condEdge.condition.anyOf.some((nodeId) => {
+          const output = state.outputs[nodeId]
+          if (!output) return false
+          return evaluateRevisionCondition(condEdge.condition.check, output)
+        })
+      } else {
+        const targetOutput = state.outputs[condEdge.condition.targetNode]
+        if (!targetOutput) return ifFalseTarget
+        conditionMet = evaluateRevisionCondition(condEdge.condition.check, targetOutput)
       }
-
-      const conditionMet = evaluateRevisionCondition(condEdge.condition.check, targetOutput)
       return conditionMet ? ifTrueTarget : ifFalseTarget
     }
 

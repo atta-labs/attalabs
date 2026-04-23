@@ -10,12 +10,10 @@ if (!apiKey) {
 
 const adapter = new LangGraphAdapter({ apiKey })
 
-const questions = [
-  'Should a startup prioritize growth speed or sustainable unit economics in its first two years?',
-  'Is it ethical for AI systems to persuade users toward healthier behaviors?'
-]
+const questions = ['Should a startup prioritize growth speed or sustainable unit economics in its first two years?']
 
-const model = process.env.VADA_TEST_MODEL ?? 'claude-sonnet-4-6'
+// Haiku default: much faster for smoke tests. Tools make each round agent slow.
+const model = process.env.VADA_TEST_MODEL ?? 'claude-haiku-4-5-20251001'
 
 for (const question of questions) {
   console.log(`\n${'='.repeat(80)}`)
@@ -23,7 +21,8 @@ for (const question of questions) {
   console.log('='.repeat(80))
 
   const plan = compile({ team: crucible, question, model })
-  const conclusion = await adapter.execute({ plan, customVars: {} })
+  // 20-minute timeout: tools on 12 round agents + 2 audit agents = slow run
+  const conclusion = await adapter.execute({ plan, customVars: {}, timeoutMs: 1_200_000 })
 
   console.log(`\nterminalState: ${conclusion.terminalState}`)
   console.log(`Transcript length: ${conclusion.transcript.length}`)

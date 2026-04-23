@@ -91,11 +91,14 @@ function validateRoundsWorkflow(workflow: RoundsWorkflow): void {
 
   // If auditAgent set, check constraints
   if ('auditAgent' in workflow && workflow.auditAgent !== undefined) {
-    if (workflow.auditAgent === workflow.terminalAgent) {
-      throw new InvalidWorkflowConfigError('RoundsWorkflow.auditAgent cannot be the same as terminalAgent', {
-        workflowType: 'rounds',
-        reason: 'auditAgent == terminalAgent'
-      })
+    const auditAgentNames = Array.isArray(workflow.auditAgent) ? workflow.auditAgent : [workflow.auditAgent]
+    for (const auditName of auditAgentNames) {
+      if (auditName === workflow.terminalAgent) {
+        throw new InvalidWorkflowConfigError(
+          `RoundsWorkflow.auditAgent '${auditName}' cannot be the same as terminalAgent`,
+          { workflowType: 'rounds', reason: `auditAgent '${auditName}' == terminalAgent` }
+        )
+      }
     }
     if (workflow.maxRevisions !== undefined && workflow.maxRevisions < 0) {
       throw new InvalidWorkflowConfigError(`RoundsWorkflow.maxRevisions must be >= 0; got ${workflow.maxRevisions}`, {
@@ -135,11 +138,14 @@ function validateWorkflowReferences(workflow: Workflow, agentNames: Set<string>,
         )
       }
       if ('auditAgent' in workflow && workflow.auditAgent !== undefined) {
-        if (!agentNames.has(workflow.auditAgent)) {
-          throw new InvalidTeamConfigError(
-            `Team '${teamName}' workflow references unknown auditAgent '${workflow.auditAgent}'`,
-            { teamName, reason: `unknown auditAgent: ${workflow.auditAgent}` }
-          )
+        const auditAgentNames = Array.isArray(workflow.auditAgent) ? workflow.auditAgent : [workflow.auditAgent]
+        for (const auditName of auditAgentNames) {
+          if (!agentNames.has(auditName)) {
+            throw new InvalidTeamConfigError(
+              `Team '${teamName}' workflow references unknown auditAgent '${auditName}'`,
+              { teamName, reason: `unknown auditAgent: ${auditName}` }
+            )
+          }
         }
       }
       return

@@ -8,33 +8,29 @@ import { validateTemplate } from '../validate-template.js'
  *
  * Structure for a workflow with:
  *   - R rounds
- *   - M non-terminal, non-audit agents
+ *   - M non-terminal, non-audit agents (the "round agents")
  *   - terminal agent T
- *   - (optional) audit agent A
+ *   - (optional) audit agents A1, A2, ... AN  (array or single string)
  *   - (optional) maxRevisions K (default 1)
- *
- * The graph contains:
- *   Round agents: R * M nodes (round-0-A, round-0-B, ..., round-R-1-M)
- *   Terminal nodes: K + 1 nodes (terminal-0 through terminal-K)
- *   Audit nodes: K + 1 nodes (audit-0 through audit-K)  [only if auditAgent]
  *
  * Without audit:
  *   [round agents in sequence] → terminal-0
  *   Entry: round-0-<first agent>
  *
- * With audit and maxRevisions=K:
- *   [round agents] → terminal-0 → audit-0
- *   audit-0 conditionally → terminal-1 (on REVISE) or __END__
- *   terminal-1 → audit-1
- *   audit-1 conditionally → terminal-2 (on REVISE) or __END__
- *   ...
- *   terminal-K → audit-K  [audit-K has no outgoing edges]
+ * With audit agents [A1, A2] and maxRevisions=K:
+ *   [round agents] → terminal-0 → audit-A1-0 → audit-A2-0
+ *   audit-A2-0 conditionally (anyOf A1-0, A2-0) → terminal-1 or __END__
+ *   terminal-1 → audit-A1-1 → audit-A2-1
+ *   audit-A2-1: no conditional edge (last slot)
+ *
+ * Audit node IDs use the scheme: audit-<AgentName>-<slotIndex>
+ * This is consistent for both single and multi-auditor configs.
  *
  * Caller has validated:
  *   - workflow.type === 'rounds'
  *   - rounds >= 1
  *   - terminalAgent exists in team
- *   - auditAgent, if set, exists in team and differs from terminalAgent
+ *   - each auditAgent, if set, exists in team and differs from terminalAgent
  *   - maxRevisions >= 0 if set
  */
 export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; question: string; model: string }): Plan {
@@ -44,7 +40,14 @@ export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; qu
   const messageTemplate = workflow.messageTemplate
 
   const hasAudit = 'auditAgent' in workflow && workflow.auditAgent !== undefined
-  const auditAgent = hasAudit ? workflow.auditAgent : undefined
+
+  // Normalize auditAgent to array regardless of string | string[] form
+  const auditAgentNames: string[] = hasAudit
+    ? Array.isArray(workflow.auditAgent)
+      ? workflow.auditAgent
+      : [workflow.auditAgent]
+    : []
+
   const auditTemplate = hasAudit ? workflow.auditTemplate : undefined
   const maxRevisions = hasAudit ? (workflow.maxRevisions ?? 1) : 0
 
@@ -56,7 +59,7 @@ export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; qu
   }
 
   // Non-terminal, non-audit agents (the "round agents" that speak each round)
-  const roundAgents = team.agents.filter((a) => a.name !== terminalAgent && (!hasAudit || a.name !== auditAgent))
+  const roundAgents = team.agents.filter((a) => a.name !== terminalAgent && !auditAgentNames.includes(a.name))
 
   if (roundAgents.length === 0) {
     throw new Error(`RoundsWorkflow requires at least one non-terminal, non-audit agent; team '${team.name}' has none`)
@@ -141,43 +144,58 @@ export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; qu
   }
 
   // Audit flow (only if hasAudit)
-  if (hasAudit) {
-    const auditAgentName = auditAgent!
-    const auditTemplateName = auditTemplate!
-
-    // Audit nodes 0 through maxRevisions
+  if (hasAudit && auditTemplate !== undefined && auditAgentNames.length > 0) {
+    // For each revision slot k (0 through maxRevisions):
+    //   Build one audit node per auditor: audit-<AgentName>-<k>
+    //   Chain them sequentially within the slot
+    //   Conditional edge from the LAST auditor: anyOf all audit nodes in the slot
     for (let k = 0; k <= maxRevisions; k++) {
-      const nodeId = `audit-${k}`
-      nodes[nodeId] = {
-        id: nodeId,
-        agentName: auditAgentName,
-        inputTemplate: auditTemplateName,
-        role: 'audit',
-        metadata: {
-          revisionIndex: k
+      // Build audit nodes for this slot
+      for (const auditName of auditAgentNames) {
+        const nodeId = `audit-${auditName}-${k}`
+        nodes[nodeId] = {
+          id: nodeId,
+          agentName: auditName,
+          inputTemplate: auditTemplate,
+          role: 'audit',
+          metadata: {
+            revisionIndex: k
+          }
         }
+      }
+
+      // Sequential edges within this slot: A1-k → A2-k → ... → AN-k
+      for (let i = 0; i < auditAgentNames.length - 1; i++) {
+        edges.push({
+          from: `audit-${auditAgentNames[i]}-${k}`,
+          to: `audit-${auditAgentNames[i + 1]}-${k}`
+        })
       }
     }
 
-    // Terminal-k → Audit-k for each k
+    // Entry edges: terminal-k → first auditor in slot k
+    const firstAuditName = auditAgentNames[0]!
     for (let k = 0; k < numTerminals; k++) {
-      edges.push({ from: `terminal-${k}`, to: `audit-${k}` })
+      edges.push({ from: `terminal-${k}`, to: `audit-${firstAuditName}-${k}` })
     }
 
-    // Conditional edges: audit-k → terminal-(k+1) on REVISE, else __END__
+    // Conditional edges: last auditor in slot k → terminal-(k+1) on revision, else __END__
+    // Only for slots k < maxRevisions (the last slot has no outgoing conditional edge)
+    const lastAuditName = auditAgentNames[auditAgentNames.length - 1]!
     for (let k = 0; k < maxRevisions; k++) {
+      const allAuditNodeIdsInSlot = auditAgentNames.map((name) => `audit-${name}-${k}`)
       conditionalEdges.push({
-        from: `audit-${k}`,
+        from: `audit-${lastAuditName}-${k}`,
         ifTrue: `terminal-${k + 1}`,
         ifFalse: '__END__',
         condition: {
-          targetNode: `audit-${k}`,
+          anyOf: allAuditNodeIdsInSlot,
           check: workflow.revisionCondition
         }
       })
     }
 
-    // Final audit node (audit-maxRevisions) has no conditional edge.
+    // Final audit slot (audit-*-maxRevisions) has no conditional edge.
     // Execution ends there; adapter checks condition to determine
     // terminal state (MAX_REVISIONS vs CLEAN/REVISED).
   }
