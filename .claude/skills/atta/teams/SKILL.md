@@ -82,32 +82,41 @@ Conventions:
 ```ts
 import type { Team } from '@atta/engine';
 import {
-  strategist, critic, synthesizer,
+  strategist, critic,
   conclusionSynthesizer, blindCritic, factChecker
 } from '../agents';
+import { roundMessageTemplate } from '../templates/round-template.js';
+import { auditMessageTemplate } from '../templates/audit-template.js';
 
 export const sparring: Team = {
   name: 'Sparring',
   agents: [
-    strategist, critic, synthesizer,
+    strategist, critic,
     conclusionSynthesizer, blindCritic, factChecker
   ],
   workflow: {
-    kind: 'rounds',
-    agents: ['Strategist', 'Critic'],          // round participants ONLY
+    type: 'rounds',                            // NOT 'kind' — engine uses 'type'
     rounds: 3,
-    roundSynthesizer: 'Synthesizer',
-    conclusionAgent: 'ConclusionSynthesizer',
-    auditAgent: ['BlindCritic', 'FactChecker'], // parallel audit
+    messageTemplate: roundMessageTemplate,     // required
+    terminalAgent: 'ConclusionSynthesizer',   // NOT 'conclusionAgent'
+    auditAgent: ['BlindCritic', 'FactChecker'],
+    auditTemplate: auditMessageTemplate,       // required when auditAgent is set
+    revisionCondition: {                       // required when auditAgent is set
+      type: 'contains',
+      value: 'FLAG',
+      caseSensitive: false,
+    },
     maxRevisions: 1,
   },
 };
 ```
 
 Conventions:
-- `agents` array includes every agent the Team uses (round + synthesizer + conclusion + auditors)
-- `workflow.agents` lists only the debate participants (round agents)
-- `auditAgent` as array runs auditors in parallel; any flag triggers revision
+- `agents` array includes every agent the Team uses (round + conclusion + auditors)
+- Round agents are derived by the engine: `team.agents` minus `terminalAgent` minus `auditAgent`
+- There is NO `roundSynthesizer` concept in the engine — if you want a per-round synthesizer,
+  add a Synthesizer agent to `team.agents`; the engine will include it as a round agent
+- `auditAgent` as array runs auditors sequentially per slot; any flag triggers revision
 - `maxRevisions: 1` — one retry slot. Raising this rarely helps and does cost money
 
 ---
@@ -137,12 +146,13 @@ export const blindCritic: Agent = {
 
 ### `name` is PascalCase and Unique
 
-`workflow.agents` references agents by name string. Typos = compiler errors thrown by `validate.ts`.
+`workflow.terminalAgent` and `workflow.auditAgent` reference agents by name string.
+Typos = validation errors thrown by `validate.ts`.
 
 ```ts
 // ✅
-{ name: 'DevilsAdvocate', ... }       // or name: "Devil's Advocate"
-workflow: { agents: ['DevilsAdvocate'], ... }
+{ name: 'DevilsAdvocate', ... }
+workflow: { terminalAgent: 'ConclusionSynthesizer', auditAgent: ['BlindCritic', 'FactChecker'], ... }
 
 // ❌
 { name: 'devilsAdvocate', ... }       // camelCase; hard to read, inconsistent
