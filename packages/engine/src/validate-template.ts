@@ -67,6 +67,7 @@ export function validateTemplate(template: string, role: PlanNodeRole): void {
   // NOTE: use a for-loop so `continue` always hits the advancement expression.
   // A while-loop with `continue` before `match = regex.exec()` would loop forever.
   const expressionRegex = /\{\{[~]?\s*([^}]+?)\s*[~]?\}\}/g
+  // Using for loop: the while + continue pattern silently loops forever because continue skips the regex.exec() advance.
   for (
     let match = expressionRegex.exec(withoutComments);
     match !== null;

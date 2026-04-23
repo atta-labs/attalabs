@@ -130,3 +130,10 @@ V1 Mastra had one Synthesizer agent that ran both in rounds and as the terminal 
 
 **Revision condition keyword-based for V1 behavior parity**
 V1's `classifyVerdict` function triggered revision when BlindCritic's output contained "FLAG". The port uses `revisionCondition: { type: 'contains', value: 'FLAG', caseSensitive: false }` — a direct translation. The engine supports structured JSON audit output (`json-field-equals`, `json-field-truthy`), but that was not used here. Upgrading BlindCritic to produce structured output during a port introduces a confound: it becomes impossible to distinguish infrastructure changes (adapter, graph topology) from quality changes (audit signal fidelity). Behavior parity during Phase 2 keeps the V1 benchmark results directly comparable. Whether structured audit output improves revision quality is a Phase 6 research question. *File: `apps/vada-ai/web/src/examples/teams/crucible.ts`*
+
+---
+
+## Section 10: Deployment Constraints
+
+**Synchronous `/api/engine/deliberate` route is Phase 2 dev-only**
+The `/api/engine/deliberate` route blocks for the full deliberation (~3 min for Crucible). This is acceptable for local development but is NOT production-safe on Vercel (60s function timeout). Production deployment requires one of: an async job pattern (enqueue → poll for result), a background worker outside Vercel functions, Server-Sent Events for streaming results, or an edge function with a longer timeout where supported. Phase 4 (or Phase 3b if MCP ships first) must address this before any public deployment. *File: `apps/vada-ai/web/src/app/api/engine/deliberate/route.ts`*
