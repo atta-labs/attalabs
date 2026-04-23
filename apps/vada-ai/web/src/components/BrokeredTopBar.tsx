@@ -41,7 +41,6 @@ export function BrokeredTopBar({ logo }: BrokeredTopBarProps) {
       {/* Left: logo + subtitle */}
       <div className='flex flex-col items-start justify-self-start'>
         <div>{logo}</div>
-        <span className='text-xs text-muted-foreground mt-1'>BROKERED</span>
       </div>
       {/* Center: nav links */}
       <div className='flex items-center gap-8 justify-self-center'>

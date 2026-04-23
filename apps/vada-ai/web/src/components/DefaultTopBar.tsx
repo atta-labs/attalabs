@@ -32,7 +32,6 @@ export function DefaultTopBar({ logo }: DefaultTopBarProps) {
       {/* Left: logo + subtitle */}
       <div className='flex flex-col items-start justify-self-start'>
         <div>{logo}</div>
-        <span className='text-xs text-muted-foreground mt-1'>DELIBERATION ENGINE</span>
       </div>
       {/* Center: empty */}
       <div />
