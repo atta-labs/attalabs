@@ -1,5 +1,5 @@
 ---
-name: canvas-animation
+name: ui-canvas-animation
 description: Rules and patterns for the AIACanvas particle system — AIACanvas, AIASphere, AIARing components in @atta/ui/canvas
 ---
 

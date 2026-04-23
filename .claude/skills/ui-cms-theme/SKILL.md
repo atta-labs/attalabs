@@ -1,5 +1,5 @@
 ---
-name: cms-theme
+name: ui-cms-theme
 description: How the CMS theme and UI config system works across all Atta AI products — Sanity schemas, theme generation, font loading, product configs
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: api-routes
+name: ui-api-routes
 description: Patterns for Next.js App Router API routes in the Atta AI monorepo — validation, errors, timeouts, LLM calls
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: engine-layer
+name: atta-engine
 description: Vāda engine internals — Plan compilation, Agent/Workflow/Team types, validation rules, terminal states, and immutability invariants. Load when working inside packages/engine or debugging unexpected Plan graph structure. Do NOT load for adapter/router/provider runtime work.
 ---
 

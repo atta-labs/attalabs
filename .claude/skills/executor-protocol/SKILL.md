@@ -1,3 +1,8 @@
+---
+name: executor-protocol
+description: Executor Protocol — patterns for executing dispatched tasks from the Principal
+---
+
 # Executor Protocol
 
 You are executing a task dispatched by the Principal (Dani), via the Principal's main planning assistant. You are one of multiple executors — likely Sonnet or Haiku. The Principal's assistant drafts task prompts; you execute them.
