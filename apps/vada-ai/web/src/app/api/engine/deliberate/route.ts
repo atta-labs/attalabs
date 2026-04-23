@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { compile } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { crucible } from '@/examples/teams/crucible'
+import { crucible } from '@atta/teams'
 
 export const maxDuration = 300
 

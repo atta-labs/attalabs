@@ -72,7 +72,7 @@ CRITICAL INSTRUCTION — READ THIS BEFORE GENERATING:
 GENERATE THE JSON NOW:
 {{/if}}
 {{else}}
-{{! roundIndex is 0-based; Handlebars treats 0 as falsy, so {{#if roundIndex}} means "not first round" by design }}
+{{!-- roundIndex is 0-based; Handlebars treats 0 as falsy, so {{#if roundIndex}} means "not first round" by design --}}
 {{#if roundIndex}}
 The following is the deliberation transcript so far:
 
