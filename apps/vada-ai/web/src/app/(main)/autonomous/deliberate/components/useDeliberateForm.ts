@@ -176,7 +176,7 @@ export function useDeliberateForm({
       }
     }
 
-    router.push(`/deliberation/${session_id}`)
+    router.push(`/autonomous/deliberation/${session_id}`)
   }
   const handleStart = useCallback(() => handleStartImplRef.current(), [])
 

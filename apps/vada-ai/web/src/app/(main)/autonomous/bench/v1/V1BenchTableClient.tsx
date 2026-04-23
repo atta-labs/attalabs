@@ -103,7 +103,7 @@ const COLUMNS: ColumnDef<V1BenchRow>[] = [
     key: 'sessionId',
     header: 'Session',
     render: (r) => (
-      <Link href={`/deliberation/${r.sessionId}`} className='font-mono text-xs text-primary hover:underline'>
+      <Link href={`/autonomous/deliberation/${r.sessionId}`} className='font-mono text-xs text-primary hover:underline'>
         {r.sessionId.slice(0, 8)}…
       </Link>
     ),

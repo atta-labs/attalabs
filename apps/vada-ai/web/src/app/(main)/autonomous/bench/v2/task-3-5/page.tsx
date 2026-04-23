@@ -34,7 +34,7 @@ export default async function Task35Page() {
             Sonnet 4.6 · Same 7 V1-loss questions · N=3 · Haiku vs Sonnet side-by-side.
           </p>
         </div>
-        <Link href='/bench' className='text-sm text-muted-foreground hover:text-foreground'>
+        <Link href='/autonomous/bench' className='text-sm text-muted-foreground hover:text-foreground'>
           ← Overview
         </Link>
       </div>

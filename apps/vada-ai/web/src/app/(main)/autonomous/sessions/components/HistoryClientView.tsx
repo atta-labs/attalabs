@@ -36,7 +36,7 @@ export function HistoryClientView({ sessions }: { sessions: Session[] }) {
             className='pl-9'
           />
         </div>
-        <NextLink variant='unstyled' href='/deliberate'>
+        <NextLink variant='unstyled' href='/autonomous/deliberate'>
           <Button size='sm' className='gap-1.5'>
             <Plus className='h-3.5 w-3.5' />
             New deliberation

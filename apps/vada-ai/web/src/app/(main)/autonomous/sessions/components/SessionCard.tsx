@@ -31,7 +31,7 @@ export function SessionCard({
   const date = new Date(createdAt)
 
   return (
-    <NextLink variant='card' href={`/deliberation/${id}`}>
+    <NextLink variant='card' href={`/autonomous/deliberation/${id}`}>
       <Card className='border border-border bg-transparent [background:none] py-0 shadow-none'>
         <CardContent className='flex items-start gap-4 px-4 py-3'>
           <Text as='p' size='sm' className='line-clamp-2 flex-1'>

@@ -60,7 +60,10 @@ const ORCH_COLUMNS: ColumnDef<V2OrchestrationRow>[] = [
     header: 'Session',
     render: (r) =>
       r.sessionId ? (
-        <Link href={`/deliberation/${r.sessionId}`} className='font-mono text-xs text-primary hover:underline'>
+        <Link
+          href={`/autonomous/deliberation/${r.sessionId}`}
+          className='font-mono text-xs text-primary hover:underline'
+        >
           {r.sessionId.slice(0, 8)}…
         </Link>
       ) : (

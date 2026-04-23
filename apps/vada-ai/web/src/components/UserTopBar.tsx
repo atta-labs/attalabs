@@ -21,13 +21,13 @@ interface UserTopBarProps {
 }
 
 const PUBLIC_NAV = [
-  { href: '/science', label: 'Science', exact: false },
-  { href: '/trust ', label: 'Trust · Vāda', exact: false }
+  { href: '/autonomous/science', label: 'Science', exact: false },
+  { href: '/autonomous/trust', label: 'Trust · Vāda', exact: false }
 ]
 
 const AUTH_NAV = [
-  { href: '/deliberate', label: 'Deliberate', exact: true },
-  { href: '/sessions', label: 'My Sessions', exact: true }
+  { href: '/autonomous/deliberate', label: 'Deliberate', exact: true },
+  { href: '/autonomous/sessions', label: 'My Sessions', exact: true }
 ]
 
 export function UserTopBar({ logo }: UserTopBarProps) {

@@ -21,7 +21,7 @@ export function TranscriptActions({ input }: { input: TranscriptInput }) {
         Download .md
       </Button>
       <Button type='button' onClick={a.download} className='flex-1'>
-        <NextLink variant='unstyled' href='/deliberate'>
+        <NextLink variant='unstyled' href='/autonomous/deliberate'>
           New deliberation
         </NextLink>
       </Button>

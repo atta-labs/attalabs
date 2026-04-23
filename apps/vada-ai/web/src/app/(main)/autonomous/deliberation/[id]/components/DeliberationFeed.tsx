@@ -126,7 +126,7 @@ function DeliberationScene({
               </Button>
               <NextLink
                 variant='unstyled'
-                href='/deliberate'
+                href='/autonomous/deliberate'
                 className='inline-flex h-7 items-center rounded-md border border-border bg-background px-2 text-xs font-medium transition-colors hover:bg-accent/20'
               >
                 Start Fresh
@@ -186,7 +186,7 @@ function DeliberationScene({
             {benchmark && (
               <div className='mt-4 flex justify-center'>
                 <NextLink
-                  href={`/deliberation/${sessionId}/benchmark`}
+                  href={`/autonomous/deliberation/${sessionId}/benchmark`}
                   variant='unstyled'
                   className='inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground hover:text-foreground'
                 >

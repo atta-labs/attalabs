@@ -26,7 +26,7 @@ const SHORT_DESCRIPTIONS: Record<PresetId, string> = {
     'A fast, two-agent exchange between Strategist and Critic. No synthesis — just raw friction. Three volleys, five max.'
 }
 
-const SCIENCE_URL = '/science/architecture/agents'
+const SCIENCE_URL = '/autonomous/science/architecture/agents'
 
 interface TeamCardGridProps {
   selectedPreset: Preset

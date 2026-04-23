@@ -106,7 +106,7 @@ export function BenchmarkReport(props: BenchmarkReportProps) {
     <div className='mx-auto w-full max-w-[980px] space-y-8 px-5 py-8'>
       {/* Header */}
       <header className='space-y-2'>
-        <NextLink variant='prose' href={`/deliberation/${props.sessionId}`}>
+        <NextLink variant='prose' href={`/autonomous/deliberation/${props.sessionId}`}>
           ← Back to deliberation
         </NextLink>
         <h1 className='font-serif text-2xl'>Benchmark comparison</h1>

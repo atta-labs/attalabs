@@ -136,7 +136,7 @@ export function IdentityBanner() {
           <KeyRound className='size-4 shrink-0 text-muted-foreground' aria-hidden />
           <Text as='small' className='text-sm text-muted-foreground'>
             Pick a model above to add your first API key.{' '}
-            <Link href='/trust' className='underline'>
+            <Link href='/autonomous/trust' className='underline'>
               Your keys stay in your browser.
             </Link>
           </Text>

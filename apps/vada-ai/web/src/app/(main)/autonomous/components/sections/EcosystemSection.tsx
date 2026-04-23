@@ -77,10 +77,10 @@ function CTABlock() {
         Ready to deliberate.
       </Heading>
       <div className='flex flex-row flex-wrap items-center justify-center gap-4'>
-        <Button variant='default' size='lg' onClick={() => router.push('/deliberate')}>
+        <Button variant='default' size='lg' onClick={() => router.push('/autonomous/deliberate')}>
           Deliberate
         </Button>
-        <Button variant='outline' size='lg' onClick={() => router.push('/science')}>
+        <Button variant='outline' size='lg' onClick={() => router.push('/autonomous/science')}>
           Read the Science
         </Button>
       </div>

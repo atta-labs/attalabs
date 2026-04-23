@@ -85,7 +85,7 @@ export async function getAllScienceDocs(): Promise<ScienceDoc[]> {
       description: fm.description,
       section,
       order: fm.order,
-      href: fm.slug,
+      href: fm.slug.replace('/science/', '/autonomous/science/'),
       icon: getScienceIcon(slug),
       filePath
     })

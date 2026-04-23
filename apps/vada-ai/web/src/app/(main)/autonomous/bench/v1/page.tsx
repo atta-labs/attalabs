@@ -25,7 +25,7 @@ export default async function V1BenchPage() {
           <h1 className='font-serif text-2xl font-semibold'>V1 Benchmark</h1>
           <p className='text-sm text-muted-foreground mt-1'>{rows.length} sessions</p>
         </div>
-        <Link href='/bench' className='text-sm text-muted-foreground hover:text-foreground'>
+        <Link href='/autonomous/bench' className='text-sm text-muted-foreground hover:text-foreground'>
           ← Overview
         </Link>
       </div>

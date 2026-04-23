@@ -19,21 +19,21 @@ export default async function BenchIndexPage() {
       id: 'task-2',
       name: 'Task 2 — A0 vs A1 baseline ceiling',
       description: 'Haiku 4.5, 15 questions, N=3. Does rich prompting raise the baseline?',
-      href: '/bench/v2/task-2',
+      href: '/autonomous/bench/v2/task-2',
       models: ['claude-haiku-4-5-20251001']
     },
     {
       id: 'task-3',
       name: 'Task 3 — A0 vs B0 orchestration',
       description: '7 V1-loss questions, N=3, Haiku. Does full Vāda pipeline beat single-shot?',
-      href: '/bench/v2/task-3',
+      href: '/autonomous/bench/v2/task-3',
       models: ['claude-haiku-4-5-20251001']
     },
     {
       id: 'task-3-5',
       name: 'Task 3.5 — Sonnet replication',
       description: 'Same 7 questions on Sonnet 4.6. Haiku vs Sonnet side-by-side.',
-      href: '/bench/v2/task-3-5',
+      href: '/autonomous/bench/v2/task-3-5',
       models: ['claude-sonnet-4-6']
     }
   ]
@@ -77,7 +77,7 @@ export default async function BenchIndexPage() {
       <section className='space-y-3'>
         <div className='flex items-center justify-between'>
           <h2 className='font-serif text-lg font-semibold'>V1 Benchmark</h2>
-          <Link href='/bench/v1' className='text-sm text-primary hover:underline'>
+          <Link href='/autonomous/bench/v1' className='text-sm text-primary hover:underline'>
             View details →
           </Link>
         </div>

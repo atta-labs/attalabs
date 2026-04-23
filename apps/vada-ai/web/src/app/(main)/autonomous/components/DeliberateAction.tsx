@@ -12,7 +12,7 @@ export function DeliberateAction() {
 
   const onClick = () => {
     if (isSignedIn) {
-      router.push('/deliberate')
+      router.push('/autonomous/deliberate')
       return
     }
     openSignUp()

@@ -36,7 +36,7 @@ export default async function Task2Page() {
             Haiku 4.5 · 15 questions · N=3 · Does rich prompting raise the baseline?
           </p>
         </div>
-        <Link href='/bench' className='text-sm text-muted-foreground hover:text-foreground'>
+        <Link href='/autonomous/bench' className='text-sm text-muted-foreground hover:text-foreground'>
           ← Overview
         </Link>
       </div>
