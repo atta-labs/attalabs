@@ -13,8 +13,10 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@atta/adapter-langgraph": "workspace:*",
     "@atta/agents": "workspace:*",
     "@atta/auth": "workspace:*",
+    "@atta/engine": "workspace:*",
     "@atta/cms": "workspace:*",
     "@atta/db": "workspace:*",
     "@atta/identity": "workspace:*",
