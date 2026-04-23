@@ -58,7 +58,7 @@ export async function runConsult(input: ConsultInput, apiKey: string): Promise<C
 
   await logSession({
     id: sessionId,
-    toolName: 'vada__consult',
+    toolName: 'vada__deliberate_brokered',
     reviewerProfile: input.reviewer_profile,
     prompt: input.prompt,
     response: conclusion.content,

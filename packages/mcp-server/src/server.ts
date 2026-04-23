@@ -3,10 +3,11 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { runConsult } from './tools/consult.js'
 import { type ReviewerProfileName, reviewerProfiles } from './reviewer-profiles.js'
 
-const TOOL_DESCRIPTION = `Consult a Vāda reviewer agent for a specific perspective on a question or proposal.
+const BROKERED_TOOL_DESCRIPTION = `Consult a single Vāda reviewer agent for a focused perspective (Brokered mode).
 
 Use when you want one focused critique, strategic analysis, or counter-argument rather
-than a full multi-agent deliberation. Returns the reviewer's response synchronously.
+than a full multi-agent deliberation. Faster and cheaper than vada__deliberate.
+Returns the reviewer's response synchronously.
 
 Reviewer profiles:
   - strategist: builds the strongest possible case for a position, with evidence
@@ -28,8 +29,8 @@ export function createServer(apiKey: string): Server {
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
       {
-        name: 'vada__consult',
-        description: TOOL_DESCRIPTION,
+        name: 'vada__deliberate_brokered',
+        description: BROKERED_TOOL_DESCRIPTION,
         inputSchema: {
           type: 'object' as const,
           properties: {
@@ -50,7 +51,7 @@ export function createServer(apiKey: string): Server {
   }))
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    if (request.params.name !== 'vada__consult') {
+    if (request.params.name !== 'vada__deliberate_brokered') {
       throw new Error(`Unknown tool: ${request.params.name}`)
     }
 

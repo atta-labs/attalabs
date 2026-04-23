@@ -53,7 +53,7 @@ if (dbUrl) {
     const row = rows[0]!
     console.log('Row found:')
     console.log('  id:              ', row.id)
-    console.log('  tool_name:       ', row.toolName)
+    console.log('  tool_name:       ', row.toolName) // should be vada__deliberate_brokered
     console.log('  reviewer_profile:', row.reviewerProfile)
     console.log('  tokens_input:    ', row.tokensInput)
     console.log('  tokens_output:   ', row.tokensOutput)

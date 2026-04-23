@@ -8,9 +8,11 @@ The MCP server lets Claude (or any MCP client) call Vāda reviewer agents direct
 
 ## Available tools
 
-### `vada__consult`
+### `vada__deliberate_brokered`
 
-Consult a single Vāda reviewer agent for a focused perspective.
+Consult a single Vāda reviewer agent for a focused perspective (Brokered mode).
+Faster and cheaper than `vada__deliberate`. Use for single-shot critique, strategic
+analysis, or counter-arguments.
 
 **Parameters:**
 - `prompt` (string) — The question or proposal to review
@@ -20,6 +22,23 @@ Consult a single Vāda reviewer agent for a focused perspective.
 - `response` — The reviewer's full analysis
 - `session_id` — UUID for this consultation
 - `session_url` — `https://vada.ai/s/<id>` (dashboard view, coming soon)
+- `cost_breakdown` — Estimated cost and token counts
+
+### `vada__deliberate`
+
+Run a full multi-agent deliberation (Autonomous mode). Slower and more expensive
+than `vada__deliberate_brokered`. Use for high-stakes decisions where structured
+debate and a full audit trail matter.
+
+**Parameters:**
+- `question` (string) — The question or decision to deliberate on
+- `team` (string, optional) — `sparring` (default, 2 agents) or `crucible` (4+ agents)
+
+**Returns:**
+- `content` — The final conclusion from the deliberation
+- `session_id` — UUID for this session
+- `session_url` — `https://vada.ai/s/<id>` (full audit trail, coming soon)
+- `terminal_state` — `CLEAN`, `REVISED`, or `MAX_REVISIONS`
 - `cost_breakdown` — Estimated cost and token counts
 
 ## Installation (Claude Desktop)
