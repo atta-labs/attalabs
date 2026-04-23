@@ -73,7 +73,7 @@ Agents debate each other. Principal poses the question and observes. The deliber
 
 **MCP tool:** `vada__deliberate(question, team)` → returns Conclusion + session URL.
 
-**Default team: Sparring** (2 agents × 3 rounds, audit layer). Smaller, faster, cheaper than Crucible. Validates the deliberation thesis with fewer moving pieces. Crucible and War Room (6 agents) available for users wanting heavier deliberation.
+**Default team: Sparring** (2 agents × 3 rounds, dual audit layer). Frames as "best for most questions" — not a stripped-down mode, but the right shape for typical deliberations. Crucible (4-7 agents) is visibly available as "heavier deliberation for high-stakes, multi-perspective decisions." War Room (6 agents) is V2+. Team choice is explicit and prominent in the MCP interface; users select based on decision stakes, not as a power-user escape hatch.
 
 **Cost profile:** higher per session (multiple rounds, multiple agents, dual audit, tool use).
 
@@ -96,6 +96,18 @@ The Principal's existing chat agent (Claude in Claude.ai, GPT in ChatGPT) serves
 Different use cases, different cost profiles, different pricing tiers. One product, two front doors.
 
 Brokered Deliberation is mechanically simpler and ships first. Autonomous Deliberation ships second with Sparring as the default team.
+
+### 3.4 Escalation principle
+
+Brokered is the acquisition surface. Autonomous is where the primary moat (MOAT-A auditability) lives. The product must actively escalate users from Brokered to Autonomous for high-stakes decisions — not just offer both and hope users find Autonomous.
+
+Concrete escalation patterns (implementation detail, but shaping principle now):
+- After a Brokered conversation with multiple consultations on the same thread, the Strategist suggests running a formal deliberation
+- UI distinguishes "quick consultation" from "committed decision" as separate user intents
+- The vada.ai dashboard shows Autonomous deliberations with higher prominence than Brokered consultations
+- Enterprise tier bundles Autonomous usage; Brokered alone is Pro tier
+
+Without active escalation, Brokered usage patterns can dominate and Autonomous never builds the corpus of compliance-grade decision records that constitute MOAT-A. This is a product-design imperative, not a UI option.
 
 ---
 
@@ -305,6 +317,16 @@ Informed by Round 23 reviewer convergence:
 2. **At least one verticalized team with 100+ validated corpus questions.** Generic Crucible alone is infrastructure without application. MOAT-B must be realized, not just planned.
 3. **vada.ai dashboard with full transcript + cost attribution.** MOAT-A surface.
 4. **Benchmark data showing measurable value** over single-shot baselines on the verticalized domain.
+
+### Post-launch watchdog metric
+
+After public launch, monitor the **Autonomous usage share** — the percentage of total Vāda traffic that uses `vada__deliberate` rather than `vada__consult`.
+
+- **Healthy:** Autonomous share ≥ 20% after 6 months
+- **Concerning:** Autonomous share 10-20% after 6 months — investigate escalation patterns, UI prompts, pricing friction
+- **Thesis failure signal:** Autonomous share < 10% after 6 months despite active escalation — indicates users don't want deliberation, they want lightweight consulting. Consider pivoting the positioning (become "the best AI consultation router") or killing Autonomous as a product.
+
+This metric is not a vanity number. It directly tests whether the deliberation thesis has product-market fit, or whether Vāda is actually a different product.
 
 ---
 
