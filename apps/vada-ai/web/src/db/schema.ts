@@ -244,3 +244,26 @@ export const userSettings = pgTable('user_settings', {
   faceStyle: varchar('face_style').default('emblematic').notNull(), // 'reductive' | 'emblematic'
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
+
+// ── MCP sessions ──────────────────────────────────────────────────────────────
+// Written by the MCP server (packages/mcp-server). Read-only from the web app.
+// userId is the Clerk user ID string (not a UUID FK) — set via VADA_USER_ID env.
+
+export const mcpSessions = pgTable('mcp_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id'),
+  toolName: text('tool_name').notNull(),
+  reviewerProfile: text('reviewer_profile'),
+  prompt: text('prompt').notNull(),
+  response: text('response').notNull(),
+  terminalState: text('terminal_state'),
+  transcript: jsonb('transcript'),
+  costUsd: text('cost_usd'),
+  tokensInput: integer('tokens_input').notNull(),
+  tokensOutput: integer('tokens_output').notNull(),
+  toolCalls: jsonb('tool_calls'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  durationMs: integer('duration_ms').notNull()
+})
+
+export type McpSession = typeof mcpSessions.$inferSelect
