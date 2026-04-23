@@ -50,6 +50,7 @@ export function DefaultTopBar({ logo }: DefaultTopBarProps) {
           <DropdownMenu>
             <DropdownMenuTrigger className='rounded-full outline-none ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'>
               {user.imageUrl ? (
+                // biome-ignore lint/performance/noImgElement: Clerk avatar URL is external
                 <img src={user.imageUrl} alt='' className='h-6 w-6 rounded-full' />
               ) : (
                 <span className='flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] text-muted-foreground'>
