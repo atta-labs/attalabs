@@ -14,7 +14,10 @@ export async function logSession(data: NewMcpSession): Promise<string | undefine
 
   try {
     const db = createDb(connectionString)
-    const [row] = await db.insert(mcpSessions).values(data).returning({ id: mcpSessions.id })
+    const [row] = await db
+      .insert(mcpSessions)
+      .values({ ...data, userId: data.userId ?? process.env.VADA_USER_ID ?? null })
+      .returning({ id: mcpSessions.id })
     return row?.id
   } catch (err) {
     console.error('[MCP] Failed to persist session:', err)

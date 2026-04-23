@@ -54,12 +54,17 @@ if (dbUrl) {
     console.log('Row found:')
     console.log('  id:              ', row.id)
     console.log('  tool_name:       ', row.toolName) // should be vada__deliberate_brokered
+    console.log('  user_id:         ', row.userId)
     console.log('  reviewer_profile:', row.reviewerProfile)
     console.log('  tokens_input:    ', row.tokensInput)
     console.log('  tokens_output:   ', row.tokensOutput)
     console.log('  cost_usd:        ', row.costUsd)
     console.log('  duration_ms:     ', row.durationMs)
     console.log('  created_at:      ', row.createdAt)
+    if (process.env.VADA_USER_ID && row.userId !== process.env.VADA_USER_ID) {
+      console.error('ERROR: user_id mismatch — expected', process.env.VADA_USER_ID, 'got', row.userId)
+      process.exit(1)
+    }
   } else {
     console.error('ERROR: row not found in DB after insert')
     process.exit(1)
