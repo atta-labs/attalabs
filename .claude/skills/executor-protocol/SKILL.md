@@ -69,6 +69,16 @@ If the Principal's task says "commit requires approval," the sequence is:
 
 Do not ask "ready to commit?" before verification is complete. The approval gate only protects quality if it's informed by real verification evidence.
 
+### Rule 8: Verify commit ancestry, not just commit success
+
+After every commit, run `git log --oneline -3` and confirm the new commit appears as the direct child of the expected parent.
+
+`git commit` succeeding does NOT mean the commit is in the right place. A reset between sessions can leave HEAD at an older ancestor, making a new commit a sibling of prior work rather than its child — silently orphaning those earlier commits. The orphaned files remain on disk (soft/mixed reset), so the working tree looks fine. Only the history is broken.
+
+Root cause from Task 2 recovery: mixed reset moved HEAD back to Task 1's commit; Task 2 commit was then orphaned while the spec-update commit was applied on top. The A0/A1 files survived on disk as untracked, masking the problem until Task 3.
+
+Check: `git show HEAD:some-file-from-last-commit` — if it fails with "exists on disk, but not in HEAD", ancestry is broken. Fix with `git cherry-pick <orphaned-hash>` before proceeding.
+
 ---
 
 ## What a good task report looks like
