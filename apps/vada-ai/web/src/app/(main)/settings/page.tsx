@@ -1,10 +1,13 @@
 import { auth } from '@atta/auth/hooks'
 import { CatalogProvider, getCatalog } from '@atta/models'
 import { Heading, Text } from '@atta/ui/shared'
+import { Separator } from '@atta/ui'
 import { redirect } from 'next/navigation'
 import { getOrCreateUser } from '@/db/queries'
 import { getUserSettings, getUserTeamModels } from '@/db/settings-queries'
+import { CopyButton } from '@/app/(main)/brokered/mcp/components/CopyButton'
 import { SettingsClientPage } from './components/SettingsClientPage'
+import { NextLink } from '@atta/ui/lib/next-link'
 
 export default async function SettingsPage() {
   const { userId: clerkId } = await auth()
@@ -38,6 +41,27 @@ export default async function SettingsPage() {
             initialTeamModels={teamModels}
             initialFaceStyle={settings.faceStyle}
           />
+
+          <Separator className='opacity-20' />
+
+          <div className='space-y-4'>
+            <div className='space-y-1'>
+              <Text as='p' className='font-medium'>
+                Brokered Dashboard Access
+              </Text>
+              <Text as='p' muted className='text-sm'>
+                Set this as <code className='rounded bg-muted px-1 font-mono text-xs'>VADA_USER_ID</code> in your MCP
+                server config to link consultations to your account.
+              </Text>
+            </div>
+            <div className='flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2'>
+              <code className='flex-1 font-mono text-xs text-foreground'>{clerkId}</code>
+              <CopyButton text={clerkId} />
+            </div>
+            <NextLink href='/brokered/mcp' variant='prose' className='text-sm'>
+              MCP install guide →
+            </NextLink>
+          </div>
         </div>
       </div>
     </CatalogProvider>
