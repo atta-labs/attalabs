@@ -132,7 +132,7 @@ export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; qu
   })
 
   // Add __END__ sentinel node (used for conditional edge exit paths)
-  nodes['__END__'] = {
+  nodes.__END__ = {
     id: '__END__',
     agentName: '__END__',
     inputTemplate: '',
