@@ -4,7 +4,7 @@ import { auth } from '@atta/auth/hooks'
 import { UserPreferencesProvider } from '@/lib/user-preferences-context'
 import { getOrCreateUser } from '@/db/queries'
 import { getUserSettings } from '@/db/settings-queries'
-import type { FaceStyle } from '@atta/agents'
+import type { FaceStyle } from '@vada/agents'
 
 export default async function MainLayout({ children }: { children: ReactNode }) {
   const { userId: clerkId } = await auth()

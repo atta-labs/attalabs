@@ -1,5 +1,5 @@
 {
-  "name": "@atta/agents",
+  "name": "@vada/agents",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",

@@ -1,4 +1,4 @@
-// Agent definitions live in @atta/agents — import from there.
+// Agent definitions live in @vada/agents — import from there.
 export {
   AGENTS,
   AGENT_LIST,
@@ -8,4 +8,4 @@ export {
   type AgentName,
   type AgentRole,
   type AgentDef
-} from '@atta/agents'
+} from '@vada/agents'

@@ -1,4 +1,4 @@
-import type { AgentName, AgentRole } from '@atta/agents'
+import type { AgentName, AgentRole } from '@vada/agents'
 import type { RouteProvider } from '@atta/models'
 
 // ── Context ──────────────────────────────────────────────────────────────────

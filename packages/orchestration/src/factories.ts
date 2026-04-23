@@ -1,4 +1,4 @@
-import type { AgentName, AgentRole } from '@atta/agents'
+import type { AgentName, AgentRole } from '@vada/agents'
 import type { DeliberationAgent, DeliberationContext, DeliberationTool } from './types'
 
 export function defineDeliberationAgent(config: {

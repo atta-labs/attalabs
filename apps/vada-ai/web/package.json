@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@atta/adapter-langgraph": "workspace:*",
-    "@atta/agents": "workspace:*",
+    "@vada/agents": "workspace:*",
     "@atta/teams": "workspace:*",
     "@atta/auth": "workspace:*",
     "@atta/engine": "workspace:*",

@@ -2,9 +2,9 @@
 
 import { useCatalog, type RouteProvider } from '@atta/models'
 import { ModelPicker } from '@atta/ui'
-import { VadaAgent as AIAgent, type AgentName } from '@atta/agents'
+import { VadaAgent as AIAgent, type AgentName } from '@vada/agents'
 import { Text } from '@atta/ui/shared'
-import type { AgentDef } from '@atta/agents'
+import type { AgentDef } from '@vada/agents'
 
 import type { TeamModelEntry } from '@/db/settings-queries'
 import { useUserPreferences } from '@/lib/user-preferences-context'

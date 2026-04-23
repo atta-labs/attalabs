@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { AGENTS, AGENT_LIST, TEAM_LIST, type TeamId } from '@atta/agents'
+import { AGENTS, AGENT_LIST, TEAM_LIST, type TeamId } from '@vada/agents'
 
-// Derive role slugs from @atta/agents — single source of truth.
+// Derive role slugs from @vada/agents — single source of truth.
 const agentRoleValues = AGENT_LIST.map((a) => a.role) as [string, ...string[]]
 export const AgentRole = z.enum(agentRoleValues)
 export type AgentRole = z.infer<typeof AgentRole>
@@ -13,7 +13,7 @@ export interface AgentConfig {
   temperature: number
 }
 
-// Temperature is LLM engine config — not part of agent identity in @atta/agents.
+// Temperature is LLM engine config — not part of agent identity in @vada/agents.
 const AGENT_TEMPERATURE: Record<string, number> = {
   strategist: 0.7,
   critic: 0.7,

@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { Text } from '@atta/ui/shared'
-import { AGENTS } from '@atta/agents'
-import type { TeamDef } from '@atta/agents'
+import { AGENTS } from '@vada/agents'
+import type { TeamDef } from '@vada/agents'
 import type { TeamModelEntry } from '@/db/settings-queries'
 import { AgentModelRow } from './AgentModelRow'
 
