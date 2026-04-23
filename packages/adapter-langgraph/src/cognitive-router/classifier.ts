@@ -20,16 +20,31 @@ export function createClassifierNode(agentNodeId: string, agent: Agent, apiKey: 
     const toolList = agent.tools ?? []
     if (toolList.length === 0) return {}
 
+    // Hard-rule: round-Synthesizer always gets all declared tools — no Haiku call needed.
+    // Round-Synthesizers integrate claims across a full debate round; they need evidence
+    // tools to verify and anchor the synthesis. Withholding tools here caused MAX_REVISIONS.
+    if (agent.name.includes('Synthesizer') && !agent.name.includes('Conclusion')) {
+      const decision: ToolDecision = { needs: toolList, budget: 5, reason: 'round-Synthesizer hard-rule: always tools' }
+      console.info(
+        `[Classifier] ${agentNodeId}: needs=[${decision.needs.join(',') || 'none'}] budget=${decision.budget} (${decision.reason})`
+      )
+      return { toolDecisions: { [agentNodeId]: decision } }
+    }
+
     const prompt = `You are a tool-use classifier. The agent "${agent.name}" is about to participate in a structured deliberation.
 
 Question under deliberation: "${state.question}"
 
 Tools available to this agent: ${toolList.join(', ')}
 
-Decide which tools this agent genuinely needs for this specific turn. Be conservative — only include tools that will meaningfully improve answer quality with real evidence.
+Rules:
+- Audit roles (BlindCritic, FactChecker, ConclusionSynthesizer): these audit already-gathered context. Return needs: [] unless the agent's role explicitly requires external verification (FactChecker usually does).
+- Reasoning roles (Strategist, Critic, Devil's Advocate, round-Synthesizer): default to including all declared tools unless the question is clearly contained (e.g., asking the agent to analyze code already in context).
+- When uncertain, include tools. Under-tooling causes the agent to produce unsubstantiated claims; over-tooling at worst wastes a few tokens.
+- Budget default: 5 tool calls per turn. Reduce to 3 only for audit roles when tools ARE included.
 
 Respond with JSON ONLY (no markdown, no explanation):
-{"needs":["tool_name"],"budget":3,"reason":"one line"}`
+{"needs":["tool_name"],"budget":5,"reason":"one line"}`
 
     let decision: ToolDecision
     try {
@@ -55,7 +70,7 @@ Respond with JSON ONLY (no markdown, no explanation):
         reason: typeof parsed.reason === 'string' ? parsed.reason : undefined
       }
     } catch {
-      // Fail open: allow all declared tools
+      // Fail open: allow all declared tools with default budget
       decision = { needs: toolList, budget: 5 }
     }
 
