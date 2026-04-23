@@ -1,4 +1,4 @@
-import { critic, devilsAdvocate, strategist } from '@atta/teams'
+import { critic, devilsAdvocate, strategist } from '@vada/teams'
 
 export const reviewerProfiles = {
   strategist,

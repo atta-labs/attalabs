@@ -1,6 +1,6 @@
 import { compile } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { a0, a1 } from '@atta/teams'
+import { a0, a1 } from '@vada/teams'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {

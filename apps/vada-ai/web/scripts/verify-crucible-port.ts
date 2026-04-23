@@ -1,6 +1,6 @@
 import { compile } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { crucible } from '@atta/teams'
+import { crucible } from '@vada/teams'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {

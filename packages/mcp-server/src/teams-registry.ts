@@ -1,4 +1,4 @@
-import { sparring, crucible } from '@atta/teams'
+import { sparring, crucible } from '@vada/teams'
 
 export const availableTeams = {
   sparring,
