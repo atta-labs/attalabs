@@ -7,6 +7,8 @@ export const mcpSessions = pgTable('mcp_sessions', {
   reviewerProfile: text('reviewer_profile'),
   prompt: text('prompt').notNull(),
   response: text('response').notNull(),
+  terminalState: text('terminal_state'), // CLEAN | REVISED | MAX_REVISIONS | null for brokered
+  transcript: jsonb('transcript'), // AgentOutput[] for deliberate; null for brokered
   costUsd: numeric('cost_usd'),
   tokensInput: integer('tokens_input').notNull(),
   tokensOutput: integer('tokens_output').notNull(),

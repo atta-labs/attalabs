@@ -17,19 +17,25 @@ const db = createDb(connectionString)
 
 await db.execute(sql`
   CREATE TABLE IF NOT EXISTS mcp_sessions (
-    id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id      TEXT,
-    tool_name    TEXT        NOT NULL,
+    id              UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         TEXT,
+    tool_name       TEXT      NOT NULL,
     reviewer_profile TEXT,
-    prompt       TEXT        NOT NULL,
-    response     TEXT        NOT NULL,
-    cost_usd     NUMERIC,
-    tokens_input INTEGER     NOT NULL,
-    tokens_output INTEGER    NOT NULL,
-    tool_calls   JSONB,
-    created_at   TIMESTAMP   DEFAULT NOW() NOT NULL,
-    duration_ms  INTEGER     NOT NULL
+    prompt          TEXT      NOT NULL,
+    response        TEXT      NOT NULL,
+    terminal_state  TEXT,
+    transcript      JSONB,
+    cost_usd        NUMERIC,
+    tokens_input    INTEGER   NOT NULL,
+    tokens_output   INTEGER   NOT NULL,
+    tool_calls      JSONB,
+    created_at      TIMESTAMP DEFAULT NOW() NOT NULL,
+    duration_ms     INTEGER   NOT NULL
   )
 `)
+
+// Add columns for existing tables created before Phase 3b.2
+await db.execute(sql`ALTER TABLE mcp_sessions ADD COLUMN IF NOT EXISTS terminal_state TEXT`)
+await db.execute(sql`ALTER TABLE mcp_sessions ADD COLUMN IF NOT EXISTS transcript JSONB`)
 
 console.info('[migrate] mcp_sessions table ready')
