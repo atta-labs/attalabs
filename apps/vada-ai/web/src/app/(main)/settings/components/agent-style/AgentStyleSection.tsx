@@ -1,5 +1,5 @@
 import { Text } from '@atta/ui/shared'
-import type { FaceStyle } from '@atta/ui/canvas'
+import type { FaceStyle } from '@atta/agents'
 import { FaceStylePicker } from './FaceStylePicker'
 
 interface AgentStyleSectionProps {

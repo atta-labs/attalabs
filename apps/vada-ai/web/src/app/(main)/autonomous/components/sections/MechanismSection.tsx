@@ -1,7 +1,7 @@
 'use client'
 
 import { Heading, Text } from '@atta/ui'
-import { AIAgent, type AgentName, AGENT_COLOR_BY_ROLE } from '@atta/ui/canvas'
+import { VadaAgent as AIAgent, type AgentName, AGENT_COLOR_BY_ROLE } from '@atta/agents'
 import { SectionLabel } from '../primitives/SectionLabel'
 import { SectionWrapper } from '../primitives/SectionWrapper'
 import { TwoColumnSection } from '../primitives/TwoColumnSection'

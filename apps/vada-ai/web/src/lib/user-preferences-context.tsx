@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, type ReactNode } from 'react'
-import type { FaceStyle } from '@atta/ui/canvas'
+import type { FaceStyle } from '@atta/agents'
 
 interface UserPreferencesContextValue {
   faceStyle: FaceStyle

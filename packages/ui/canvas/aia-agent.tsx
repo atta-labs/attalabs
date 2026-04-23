@@ -1,37 +1,12 @@
 'use client'
 
-// ── AIAgent.tsx ───────────────────────────────────────────────────────────────
-// Convenience wrapper around AIASphere that resolves agent color and face from
-// the canonical agent name. Accepts a faceStyle to switch between the two face
-// illustration registers: 'reductive' (gestural, floating features) and
-// 'emblematic' (symbolic portrait with forehead sigil).
-// Standalone mode is handled by AIASphere — no extra setup needed here.
-
-import { AGENT_FACES as REDUCTIVE_FACES } from './agent-faces-minimal'
-import { AGENT_FACES as EMBLEMATIC_FACES } from './agent-faces-full'
 import { AIASphere } from './aia-sphere'
-import { AGENTS, type AgentName } from '@atta/agents'
 import { AgentThinkingText } from '@atta/ui/shared'
 import { ModelIcon as LobeModelIcon } from '@lobehub/icons'
 import type { ReactNode } from 'react'
 import type { SphereState } from './aia-context'
 
-export type { AgentName }
-
-const AGENT_INDEX: Record<AgentName, number> = {
-  Strategist: 0,
-  Critic: 1,
-  "Devil's Advocate": 2,
-  Synthesizer: 3,
-  Researcher: 4,
-  Operator: 5
-}
-
-export type FaceStyle = 'reductive' | 'emblematic'
-
 // Face inset per sphere size — how much to shrink the face relative to the sphere diameter.
-// Larger spheres get a smaller inset (face fills more of the circle).
-// Numeric sizes fall back to the 'md' value.
 const FACE_INSET: Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', string> = {
   xs: '6%',
   sm: '4%',
@@ -49,15 +24,11 @@ const THINKING_TEXT_PX: Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', number> = {
   xl: 9
 }
 
-interface AIAgentProps {
-  /** Agent archetype name — determines color and face illustration. */
-  name: AgentName
-  /**
-   * Face illustration register.
-   * - 'reductive'  — gestural floating features (Glance / minimal)
-   * - 'emblematic' — symbolic portrait with sigil (Glyph / full)
-   */
-  faceStyle?: FaceStyle
+export interface AIAgentProps {
+  /** Agent color — CSS variable or value, applied to sphere and face illustration. */
+  color: string
+  /** Face illustration to render inside the sphere. Pass a ReactNode; resolved by caller. */
+  face?: ReactNode
   /** Sphere size preset or explicit pixel diameter. */
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | number
   /** Sphere animation state. */
@@ -74,7 +45,7 @@ interface AIAgentProps {
   solidBg?: boolean
   /** Whether the sphere is visible (particles still orbit when false). */
   visible?: boolean
-  /** Optional label. Defaults to the agent name. */
+  /** Label rendered below (or around) the sphere. */
   label?: string
   /** Position of the label relative to the sphere. */
   labelPosition?: 'top' | 'top-right' | 'right' | 'bottom-right' | 'bottom' | 'bottom-left' | 'left' | 'top-left'
@@ -82,21 +53,21 @@ interface AIAgentProps {
   noLabel?: boolean
   onClick?: () => void
   className?: string
-  /** Opacity of the face illustration (0–1). Default 0.25. */
+  /** Opacity of the face illustration (0–1). Default 0.5. */
   faceOpacity?: number
   /** Text rendered inside the sphere with the typewriter scramble effect. */
   thinkingText?: string
   /** Content rendered inside the sphere, above the face layer. */
   children?: ReactNode
-  /** Model id (e.g. 'claude-opus-4-7'). When set, a small badge with the model icon is rendered at the sphere's bottom-right. */
+  /** Model id (e.g. 'claude-opus-4-7'). When set, a small badge with the model icon is rendered. */
   model?: string
-  /** Tooltip text shown on hover of the model badge. Typically the model label + version. */
+  /** Tooltip text shown on hover of the model badge. */
   modelLabel?: string
 }
 
 export function AIAgent({
-  name,
-  faceStyle = 'emblematic',
+  color,
+  face,
   size = 'md',
   state = 'idle',
   id,
@@ -116,10 +87,6 @@ export function AIAgent({
   model,
   modelLabel
 }: AIAgentProps) {
-  const index = AGENT_INDEX[name]
-  const color = AGENTS[name]?.color ?? 'var(--foreground)'
-  const faces = faceStyle === 'reductive' ? REDUCTIVE_FACES : EMBLEMATIC_FACES
-  const FaceComponent = faces[index]
   const faceInset =
     typeof size === 'string' ? FACE_INSET[size] : `${Math.round(Math.max(4, Math.min(20, 20 - size / 10)))}%`
   const thinkingFontPx =
@@ -145,18 +112,18 @@ export function AIAgent({
       particleCount={particleCount}
       solidBg={solidBg}
       visible={visible}
-      label={noLabel ? undefined : (label ?? name)}
+      label={noLabel ? undefined : label}
       onClick={onClick}
       className={className}
       labelPosition={labelPosition}
       badge={badge}
     >
-      {FaceComponent && (
+      {face && (
         <div
           className='absolute pointer-events-none z-0'
           style={{ inset: faceInset, top: `calc(${faceInset} + 28%)`, opacity: faceOpacity, color }}
         >
-          <FaceComponent />
+          {face}
         </div>
       )}
       {showMatrix && thinkingText && (

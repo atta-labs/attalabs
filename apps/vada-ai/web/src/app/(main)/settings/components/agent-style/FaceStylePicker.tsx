@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { Text } from '@atta/ui/shared'
-import { AGENT_FACES_MINIMAL, AGENT_FACES_FULL, AGENT_LIST } from '@atta/ui/canvas'
-import type { FaceStyle } from '@atta/ui/canvas'
+import { AGENT_FACES_MINIMAL, AGENT_FACES_FULL, AGENT_LIST } from '@atta/agents'
+import type { FaceStyle } from '@atta/agents'
 
 const STYLE_OPTIONS: Array<{ id: FaceStyle; label: string; description: string }> = [
   {

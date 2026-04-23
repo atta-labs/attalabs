@@ -1,6 +1,6 @@
 'use client'
 
-import { AIAgent, type AgentName } from '@atta/ui/canvas'
+import { VadaAgent as AIAgent, type AgentName } from '@atta/agents'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { TeamCard } from '@atta/ui/shared'
 import { ModelIcon } from '@atta/ui'

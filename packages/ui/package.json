@@ -35,7 +35,6 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@atta/agents": "workspace:*",
     "@atta/auth": "workspace:*",
     "@atta/cms": "workspace:*",
     "@atta/models": "workspace:*",

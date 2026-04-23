@@ -11,8 +11,16 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo"
   },
+  "dependencies": {
+    "@atta/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "devDependencies": {
     "@atta/typescript-config": "workspace:*",
+    "@types/react": "^19.0.0",
     "typescript": "^5.7.0"
   }
 }
