@@ -7,8 +7,8 @@ import { fetchVadaBranding } from '@/lib/branding'
 
 export default async function BrokeredLayout({ children }: { children: ReactNode }) {
   const branding = await fetchVadaBranding()
-  const lightUrl = branding?.logoLockupSolidLight?.url ?? branding?.logoSolidLight?.url
-  const darkUrl = branding?.logoLockupSolidDark?.url ?? branding?.logoSolidDark?.url
+  const lightUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url
+  const darkUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidDark?.url
   const logo =
     lightUrl || darkUrl ? (
       <NextLink variant='unstyled' href='/'>

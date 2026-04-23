@@ -41,8 +41,12 @@ export function AutonomousTopBar({ logo }: AutonomousTopBarProps) {
   return (
     <nav className='grid h-full w-full grid-cols-3 items-center px-4 text-muted-foreground'>
       {/* Left: logo + subtitle */}
-      <div className='flex flex-col items-start justify-self-start'>
+      <div className='flex items-center justify-start gap-1'>
         <div>{logo}</div>
+        <div className='flex flex-col items-center justify-start text-white'>
+          <div>AUTONOMOUS</div>
+          <div className='text-xs text-muted-foreground'>DELIVERATION ENGINE</div>
+        </div>
       </div>
       {/* Center: nav links */}
       <div className='flex items-center gap-8 justify-self-center'>
