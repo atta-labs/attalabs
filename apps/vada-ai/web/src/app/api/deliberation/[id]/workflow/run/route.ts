@@ -1,14 +1,10 @@
-// PRODUCTION: Executes the full deliberation server-side.
+// PRODUCTION: Executes the full deliberation server-side via LangGraph.
 //   ?stream=true  — SSE stream; browser consumes events as deliberation progresses
 //   ?sync=true    — synchronous; bench harness waits for completion
 //   (default)     — fire-and-forget; caller polls /api/sessions/[id]
 //
-// VADA_USE_LANGGRAPH=true routes to the LangGraph adapter (@atta/adapter-langgraph).
-// Default (env unset or false) uses the existing Mastra crucible workflow.
-//
 // SECURITY: apiKey transits server memory for the lifetime of this request only.
-// It is never persisted. SensitiveDataFilter in src/mastra/index.ts redacts it
-// from Langfuse traces. See followups.md (Step 5.5) for the observability note.
+// It is never persisted.
 import 'server-only'
 import { compile } from '@atta/engine'
 import type { ExecutionHooks, Plan } from '@atta/engine'
@@ -18,15 +14,12 @@ import { auth } from '@atta/auth/hooks'
 import { getOrCreateUser, getSessionForUser, getSessionWithTranscript, setSessionTerminalState } from '@/db/queries'
 import { persistTurn } from '@/engine/turn-logic'
 import type { TurnPhase } from '@/engine/types'
-import { mastra } from '@/mastra'
 
 export const maxDuration = 900 // 15 min — required for long SSE streams on Vercel
 
 const KEEPALIVE_INTERVAL_MS = 15_000
 const MAX_DURATION_MS = 15 * 60 * 1_000
 const POLL_INTERVAL_MS = 1_000
-
-const USE_LANGGRAPH = process.env.VADA_USE_LANGGRAPH === 'true'
 
 function sseChunk(data: Record<string, unknown>): Uint8Array {
   return new TextEncoder().encode(`data: ${JSON.stringify(data)}\n\n`)
@@ -52,8 +45,8 @@ function resolveAuditChain(plan: Plan, slotIndex: number): string[] {
   return result
 }
 
-// LangGraph execution path. Compiles the plan, wires onNodeComplete → persistTurn,
-// and awaits completion. Safe to call fire-and-forget (.catch()) or awaited.
+// Compiles the plan, wires onNodeComplete → persistTurn, and awaits completion.
+// Safe to call fire-and-forget (.catch()) or awaited.
 async function runLangGraph(sessionId: string, apiKey: string | undefined): Promise<void> {
   const session = await getSessionWithTranscript(sessionId)
   if (!session) throw new Error(`Session ${sessionId} not found`)
@@ -161,16 +154,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   if (sync) {
-    if (USE_LANGGRAPH) {
-      await runLangGraph(sessionId, apiKey)
-    } else {
-      const wf = mastra.getWorkflow('crucible')
-      const run = await wf.createRun()
-      const result = await run.start({ inputData: { sessionId, apiKey } })
-      if (result.status === 'failed') {
-        return Response.json({ error: 'Workflow failed', details: result.error }, { status: 500 })
-      }
-    }
+    await runLangGraph(sessionId, apiKey)
     const fresh = await getSessionWithTranscript(sessionId)
     return Response.json({
       state: fresh?.state ?? null,
@@ -186,16 +170,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // (page reload, browser back/forward) must not spawn a second run.
     const shouldStart = initial.state === 'PENDING'
     if (shouldStart) {
-      if (USE_LANGGRAPH) {
-        runLangGraph(sessionId, apiKey).catch((err) =>
-          console.error(`[LangGraph] Unhandled error for session ${sessionId}:`, err)
-        )
-      } else {
-        const wf = mastra.getWorkflow('crucible')
-        const run = await wf.createRun()
-        // Fire and forget — SSE poll loop observes progress via DB
-        run.start({ inputData: { sessionId, apiKey } }).catch(() => {})
-      }
+      runLangGraph(sessionId, apiKey).catch((err) =>
+        console.error(`[LangGraph] Unhandled error for session ${sessionId}:`, err)
+      )
     }
 
     let lastEntryCount = initial.transcriptEntries.length
@@ -288,12 +265,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   // Fire and forget — caller polls session state via /api/sessions/[id]
-  if (USE_LANGGRAPH) {
-    runLangGraph(sessionId, apiKey).catch(() => {})
-  } else {
-    const wf = mastra.getWorkflow('crucible')
-    const run = await wf.createRun()
-    run.start({ inputData: { sessionId, apiKey } })
-  }
+  runLangGraph(sessionId, apiKey).catch(() => {})
   return Response.json({ sessionId })
 }
