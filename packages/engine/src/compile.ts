@@ -1,8 +1,8 @@
-import type { CompileParams, Plan } from './types.js'
-import { validateTeam, validateWorkflow } from './validate.js'
-import { compileSolo } from './compilers/solo.js'
-import { compileCustom } from './compilers/custom.js'
-import { compileRounds } from './compilers/rounds.js'
+import type { CompileParams, Plan } from './types'
+import { validateTeam, validateWorkflow } from './validate'
+import { compileSolo } from './compilers/solo'
+import { compileCustom } from './compilers/custom'
+import { compileRounds } from './compilers/rounds'
 
 /**
  * Compile a Team + Question + Model into a Plan.

@@ -1,7 +1,7 @@
 import { END, StateGraph } from '@langchain/langgraph'
 import type { AgentOutput, Plan, PlanNode, RevisionCondition } from '@atta/engine'
 import { VadaGraphState, type VadaGraphStateValue } from './graph-state'
-import { createClassifierNode } from './cognitive-router/classifier.js'
+import { createClassifierNode } from './cognitive-router/classifier'
 
 /**
  * Runtime context passed to a node executor function.

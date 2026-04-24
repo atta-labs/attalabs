@@ -1,4 +1,4 @@
-import type { AgentOutput, ExecutionState, PlanNode, TemplateState } from './types.js'
+import type { AgentOutput, ExecutionState, PlanNode, TemplateState } from './types'
 
 /**
  * Derives the TemplateState from the current ExecutionState and the

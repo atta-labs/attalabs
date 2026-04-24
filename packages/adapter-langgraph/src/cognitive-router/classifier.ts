@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { Agent } from '@atta/engine'
-import type { VadaGraphStateValue, ToolDecision } from '../graph-state.js'
+import type { VadaGraphStateValue, ToolDecision } from '../graph-state'
 
 /**
  * Creates a LangGraph node that classifies which tools a tool-enabled agent

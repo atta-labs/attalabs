@@ -1,5 +1,5 @@
 import { createDb } from '@atta/db'
-import { mcpSessions, type NewMcpSession } from './schema.js'
+import { mcpSessions, type NewMcpSession } from './schema'
 
 /**
  * Persist an MCP session row to Postgres.

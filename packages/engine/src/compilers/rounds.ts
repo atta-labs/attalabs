@@ -1,5 +1,5 @@
-import type { Agent, Plan, PlanConditionalEdge, PlanEdge, PlanGraph, PlanNode, RoundsWorkflow, Team } from '../types.js'
-import { validateTemplate } from '../validate-template.js'
+import type { Agent, Plan, PlanConditionalEdge, PlanEdge, PlanGraph, PlanNode, RoundsWorkflow, Team } from '../types'
+import { validateTemplate } from '../validate-template'
 
 /**
  * Compiles a RoundsWorkflow team into a Plan with a pre-allocated

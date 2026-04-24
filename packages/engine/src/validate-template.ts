@@ -1,5 +1,5 @@
-import type { PlanNodeRole } from './types.js'
-import { TemplateValidationError } from './errors.js'
+import type { PlanNodeRole } from './types'
+import { TemplateValidationError } from './errors'
 
 /**
  * Variables accessible in ALL template contexts, regardless of node role.

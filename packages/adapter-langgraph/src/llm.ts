@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { LlmCallFn, LlmCallResult } from '@atta/engine'
-import { ANTHROPIC_TOOL_REGISTRY } from './tools.js'
+import { ANTHROPIC_TOOL_REGISTRY } from './tools'
 
 export function createDefaultLlmCall(apiKey?: string): LlmCallFn {
   return async ({ model, agent, systemPrompt, userPrompt }) => {

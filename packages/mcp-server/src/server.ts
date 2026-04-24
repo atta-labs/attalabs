@@ -1,8 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
-import { runConsult } from './tools/consult.js'
-import { runDeliberate } from './tools/deliberate.js'
-import { type ReviewerProfileName, reviewerProfiles } from './reviewer-profiles.js'
+import { runConsult } from './tools/consult'
+import { runDeliberate } from './tools/deliberate'
+import { type ReviewerProfileName, reviewerProfiles } from './reviewer-profiles'
 
 const BROKERED_TOOL_DESCRIPTION = `Consult a single Vāda reviewer agent for a focused perspective (Brokered mode).
 

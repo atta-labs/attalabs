@@ -1,7 +1,7 @@
 import { compile } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { lookupTeam } from '../teams-registry.js'
-import { logSession } from '../session-logger.js'
+import { lookupTeam } from '../teams-registry'
+import { logSession } from '../session-logger'
 
 // Sonnet 4.6 pricing (USD per million tokens, May 2026)
 const PRICING = { input: 3.0, output: 15.0 }

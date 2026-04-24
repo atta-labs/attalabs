@@ -7,8 +7,8 @@ import {
   type ExecutionState,
   type LlmCallFn
 } from '@atta/engine'
-import type { NodeExecutor } from './graph-builder.js'
-import type { ToolUseRecord } from './graph-state.js'
+import type { NodeExecutor } from './graph-builder'
+import type { ToolUseRecord } from './graph-state'
 
 /**
  * Creates a NodeExecutor bound to a specific LLM call function and optional hooks.

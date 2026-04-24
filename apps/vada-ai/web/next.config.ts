@@ -16,6 +16,7 @@ export default async function config(): Promise<NextConfig> {
   return {
     images: {
       remotePatterns: [{ protocol: 'https', hostname: 'cdn.sanity.io' }]
-    }
+    },
+    transpilePackages: ['@atta/adapter-langgraph', '@atta/engine']
   }
 }

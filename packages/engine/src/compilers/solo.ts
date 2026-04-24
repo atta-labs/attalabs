@@ -1,4 +1,4 @@
-import type { Plan, PlanGraph, PlanNode, Team } from '../types.js'
+import type { Plan, PlanGraph, PlanNode, Team } from '../types'
 
 /**
  * Compiles a SoloWorkflow team into a Plan with a single node.

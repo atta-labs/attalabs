@@ -1,5 +1,5 @@
-import type { CustomWorkflow, Plan, PlanEdge, PlanGraph, PlanNode, Team } from '../types.js'
-import { validateTemplate } from '../validate-template.js'
+import type { CustomWorkflow, Plan, PlanEdge, PlanGraph, PlanNode, Team } from '../types'
+import { validateTemplate } from '../validate-template'
 
 /**
  * Compiles a CustomWorkflow team into a Plan with one node per step.

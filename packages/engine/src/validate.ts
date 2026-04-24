@@ -1,5 +1,5 @@
-import type { CustomWorkflow, RoundsWorkflow, Team, Workflow } from './types.js'
-import { InvalidTeamConfigError, InvalidWorkflowConfigError } from './errors.js'
+import type { CustomWorkflow, RoundsWorkflow, Team, Workflow } from './types'
+import { InvalidTeamConfigError, InvalidWorkflowConfigError } from './errors'
 
 /**
  * Validates a Team's structural integrity:

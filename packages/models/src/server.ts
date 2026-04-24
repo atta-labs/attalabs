@@ -6,8 +6,8 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { createOllama } from 'ollama-ai-provider-v2'
 import type { LanguageModel } from 'ai'
-import { OLLAMA_BASE_URL } from './providers.js'
-import type { RouteProvider } from './providers.js'
+import { OLLAMA_BASE_URL } from './providers'
+import type { RouteProvider } from './providers'
 
 export function resolveModel(provider: RouteProvider, modelId: string, apiKey?: string): LanguageModel {
   switch (provider) {

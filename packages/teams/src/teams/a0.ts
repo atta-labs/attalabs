@@ -1,5 +1,5 @@
 import type { Team } from '@atta/engine'
-import { a0Solo } from '../agents/a0-solo.js'
+import { a0Solo } from '../agents/a0-solo'
 
 export const a0: Team = {
   name: 'A0',

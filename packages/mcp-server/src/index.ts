@@ -1,5 +1,5 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { createServer } from './server.js'
+import { createServer } from './server'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
