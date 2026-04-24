@@ -1,6 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
-import { runConsult } from './tools/consult'
+import { runConsult, validateAndNormalize } from './tools/consult'
 import { runDeliberate } from './tools/deliberate'
 import { type ReviewerProfileName, reviewerProfiles } from './reviewer-profiles'
 
@@ -152,25 +152,13 @@ export function createServer(apiKey: string): Server {
     const args = request.params.arguments as Record<string, unknown>
 
     if (name === 'vada__consult') {
-      const brief = args.brief
-      const reviewers = args.reviewers
-
-      if (typeof brief !== 'string' || !brief.trim()) {
-        return {
-          content: [{ type: 'text' as const, text: 'Error: brief must be a non-empty string' }],
-          isError: true
-        }
-      }
-      if (
-        !Array.isArray(reviewers) ||
-        reviewers.length < 2 ||
-        !reviewers.every((r) => VALID_PROFILES.includes(r as ReviewerProfileName))
-      ) {
+      const validation = validateAndNormalize(args)
+      if (!validation.valid) {
         return {
           content: [
             {
               type: 'text' as const,
-              text: `Error: reviewers must be an array of 2–5 profiles from: ${VALID_PROFILES.join(', ')}`
+              text: JSON.stringify({ status: 'validation_error', errors: validation.errors }, null, 2)
             }
           ],
           isError: true
@@ -178,7 +166,7 @@ export function createServer(apiKey: string): Server {
       }
 
       try {
-        const result = await runConsult({ brief, reviewers: reviewers as ReviewerProfileName[] }, apiKey)
+        const result = await runConsult(validation.data, apiKey)
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)

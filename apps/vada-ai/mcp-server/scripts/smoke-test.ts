@@ -25,13 +25,16 @@ console.log('='.repeat(60))
 console.log('vada__consult smoke test')
 console.log('='.repeat(60))
 
-const brief = 'Should early-stage startups write tests? Argue against it.'
-const reviewers = ['critic', 'devils_advocate'] as const
+const question = 'Should early-stage startups write tests? Argue against it.'
+const reviewerSpecs = [
+  { profileName: 'critic' as const },
+  { profileName: 'devils_advocate' as const }
+]
 
-console.log(`\nBrief: ${brief}`)
-console.log(`Reviewers: ${reviewers.join(', ')}\n`)
+console.log(`\nQuestion: ${question}`)
+console.log(`Reviewers: ${reviewerSpecs.map((r) => r.profileName).join(', ')}\n`)
 
-const result = await runConsult({ brief, reviewers: [...reviewers] }, apiKey)
+const result = await runConsult({ question, reviewerSpecs }, apiKey)
 
 console.log('--- Responses ---')
 for (const r of result.responses) {
@@ -58,7 +61,7 @@ if (dbUrl) {
     console.log('  id:              ', row.id)
     console.log('  tool_name:       ', row.toolName)
     console.log('  user_id:         ', row.userId)
-    console.log('  reviewer_profile:', row.reviewerProfile)
+    console.log('  reviewer_profile:', row.reviewerProfile ?? '')
     console.log('  tokens_input:    ', row.tokensInput)
     console.log('  tokens_output:   ', row.tokensOutput)
     console.log('  cost_usd:        ', row.costUsd)
