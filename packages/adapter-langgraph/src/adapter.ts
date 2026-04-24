@@ -219,12 +219,6 @@ export class LangGraphAdapter implements Adapter {
       .map((id) => state.outputs[id])
       .filter((o): o is AgentOutput => o !== undefined)
 
-    // Terminal output is the last agent in the execution order
-    const terminalOutput = transcript.length > 0 ? transcript[transcript.length - 1] : undefined
-
-    const content = terminalOutput?.content ?? ''
-    const structured = terminalOutput?.structured
-
     const totalTokensInput = transcript.reduce((sum, o) => sum + o.tokensInput, 0)
     const totalTokensOutput = transcript.reduce((sum, o) => sum + o.tokensOutput, 0)
 
@@ -244,6 +238,25 @@ export class LangGraphAdapter implements Adapter {
     console.info(
       `[LangGraphAdapter] Estimated cost: $${estimatedCostUsd.toFixed(4)} | ${transcript.length} agent turns | ${totalTokensInput}in/${totalTokensOutput}out tokens`
     )
+
+    // Brokered workflow: concatenate all reviewer outputs with headers, always CLEAN.
+    if (state.plan.workflowType === 'brokered') {
+      const content = transcript.map((o) => `## ${o.agentName}\n\n${o.content}`).join('\n\n---\n\n')
+      return {
+        content,
+        structured: undefined,
+        transcript,
+        terminalState: 'CLEAN',
+        totalTokensInput,
+        totalTokensOutput,
+        totalElapsedMs
+      }
+    }
+
+    // Terminal output is the last agent in the execution order (Rounds / Solo / Custom)
+    const terminalOutput = transcript.length > 0 ? transcript[transcript.length - 1] : undefined
+    const content = terminalOutput?.content ?? ''
+    const structured = terminalOutput?.structured
 
     // Task 6: Determine terminalState by scanning for revision indicators
     // - CLEAN: no terminal-k nodes with k>0 executed
