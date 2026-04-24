@@ -4,22 +4,69 @@ import { runConsult } from './tools/consult'
 import { runDeliberate } from './tools/deliberate'
 import { type ReviewerProfileName, reviewerProfiles } from './reviewer-profiles'
 
-const CONSULT_TOOL_DESCRIPTION = `Consult 2–3 Vāda reviewer agents in parallel for focused, orthogonal perspectives (Brokered mode).
+const CONSULT_TOOL_DESCRIPTION = `Invokes Vāda Brokered deliberation — 2-5 specialized reviewers each produce their own perspective on a question. Use when:
 
-Use when you want multiple independent critiques without a full multi-agent deliberation.
-Faster and cheaper than vada__deliberate. Each reviewer runs independently — no cross-reviewer context.
+- The user is making a decision with real stakes
+- Multiple perspectives would catch blind spots a single reasoning pass would miss
+- You want to pressure-test a position before committing
+- The user explicitly asks for reviewer input or deliberation
 
-Reviewer profiles:
-  - strategist: maps the landscape, identifies opportunities and paths forward
-  - critic: identifies weaknesses, blind spots, and unstated assumptions
-  - devils_advocate: argues the opposing view to stress-test an idea
+Do NOT use this for:
+- Simple factual questions ("what's the capital of France")
+- Emotional support or venting
+- Creative brainstorming without stakes
+- Tasks with obviously one right answer
 
-Returns: responses (per-reviewer), session_id, session_url, cost_breakdown.
+The Reviewers (V1)
 
-Example: vada__consult(
-  brief="Should we adopt GraphQL as our primary API layer for a team of 8 engineers?",
-  reviewers=["strategist", "critic"]
-)`
+Core roster (always available):
+
+- strategist: Maps the decision landscape. Surfaces tradeoffs, hidden costs, long-term implications. Asks "what is the real decision here, and what's the cost of being wrong?"
+
+- critic: Probes assumptions. Finds logical gaps, evidence holes, unstated premises. Asks "what has to be true for this to work, and is it?"
+
+- devils_advocate: Challenges the frame entirely. Forces the opposite thesis to sharpen understanding. Asks "what if the question itself is wrong?"
+
+Experimental (flag-gated, may not be available in this installation):
+
+- domain_expert: Context-specific expertise grounded in a named domain (provide 'domain' parameter). Asks "what does this field's standard practice say?"
+
+Writing Briefs
+
+The quality of reviewer responses depends entirely on the quality of your briefs. A good brief includes:
+
+1. Context — what the user is deciding, constraints they face, their stated or implied stakes
+2. The question — clearly stated, in the form of a decision or claim to evaluate
+3. Your current leaning (if any) — disclose your position AND your self-doubt. Let reviewers push back on both.
+4. Cost of being wrong — what happens if this goes badly
+5. Per-reviewer notes — specific concerns or angles you want each reviewer to probe
+
+A bad brief asks "what do you think?" A good brief says "I think X, but I'm uncertain about Y, and the cost of getting Y wrong is Z."
+
+Choosing Reviewers
+
+- Default: 3 reviewers (strategist, critic, devils_advocate)
+- Quick check: 2 reviewers (strategist + critic)
+- Deep dive: 4 reviewers with domain_expert when domain matters
+
+Vary your reviewer selection. Using the same 2 reviewers for every call reduces deliberation quality.
+
+The Response
+
+You receive structured responses per reviewer with:
+- Their role
+- Their response (markdown with Key Points / Risks / Recommendation sections)
+- Latency and model used
+
+Your job after invocation:
+1. Read every reviewer's response fully (they compress reality differently; signal hides in divergence)
+2. Synthesize for the user: map where reviewers converged, where they disagreed, and what unresolved points remain
+3. Flag your own position if it differs from reviewer consensus
+4. Present back to user with proposed next steps or a clear decision question
+
+Latency
+
+Sequential execution in V1. Expect 3× the latency of a single reviewer (~30-60 seconds for 3 reviewers). This is cognitive labor being delegated. Inform the user before invoking.`
 
 const DELIBERATE_TOOL_DESCRIPTION = `Run a multi-agent deliberation on a difficult question. Use when you
 want structured debate across multiple perspectives producing a
