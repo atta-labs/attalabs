@@ -243,4 +243,4 @@ Mitigations:
 - Classifier tuning history: commits `2e6dcb2` (Task 3), Task 4.5 (classifier tuning)
 - Why router is inside adapter: `apps/vada-ai/specs/engine/v2-results/round-23-*.md`
 - Plan structure: **engine-layer** skill
-- Agent configs and tool assignments: **teams-layer** skill
+- Agent configs and tool assignments: **atta-teams** skill (`apps/vada-ai/agents/src/` + `apps/vada-ai/teams/src/`)
