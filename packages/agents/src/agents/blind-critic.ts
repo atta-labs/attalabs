@@ -1,4 +1,4 @@
-import type { Agent } from '@atta/engine'
+import type { Agent } from '@atta/agents'
 
 export const blindCritic: Agent = {
   name: 'BlindCritic',

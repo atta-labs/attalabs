@@ -1,4 +1,4 @@
-import type { Agent } from '@atta/engine'
+import type { Agent } from '@atta/agents'
 
 // System prompt from git history (931c9a6, scripts/bench/v2/prompts.ts A1_RICH_PROMPT).
 // "Grok's V-Baseline-Rich from spec §9.1" — verbatim except the final

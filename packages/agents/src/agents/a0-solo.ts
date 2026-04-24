@@ -1,4 +1,4 @@
-import type { Agent } from '@atta/engine'
+import type { Agent } from '@atta/agents'
 
 // System prompt verbatim from git history (931c9a6, scripts/bench/runner.ts BASELINE_SYSTEM_PROMPT).
 export const a0Solo: Agent = {

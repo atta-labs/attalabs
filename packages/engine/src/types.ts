@@ -15,39 +15,11 @@
  */
 
 // =============================================================================
-// Group 1: Agent
+// Group 1: Agent — defined in @atta/agents, re-exported here for backward compatibility
 // =============================================================================
 
-/**
- * A single AI agent definition — the atomic unit of the Vāda engine.
- *
- * Naming convention: PascalCase, descriptive of function, never version-suffixed.
- * Use "SkepticalAuditor", not "SkepticalAuditorV2". Git tracks iteration.
- *
- * @example
- * const skeptic: Agent = {
- *   name: 'SkepticalAuditor',
- *   description: 'Finds flaws in the previous response',
- *   systemPrompt: 'You are a skeptical auditor...',
- * };
- */
-export interface Agent {
-  /** PascalCase functional name — stable identifier used as key in Plan.agents. No version suffixes. */
-  name: string
-  /** Human-readable description of the agent's role in the deliberation. */
-  description: string
-  /**
-   * System prompt passed to the LLM. May contain Handlebars expressions resolved at
-   * compile time. Zero content injection: the engine never modifies this string.
-   */
-  systemPrompt: string
-  /** Optional tool names the agent may invoke. Tool implementations are adapter-managed. */
-  tools?: string[]
-  /** Model override for this agent. Falls back to the team/experiment-level model if unset. */
-  model?: string
-  /** JSON Schema for structured output. When set, the adapter must enforce structured responses. */
-  outputSchema?: Record<string, unknown>
-}
+import type { Agent } from '@atta/agents'
+export type { Agent, AgentRole } from '@atta/agents'
 
 // =============================================================================
 // Group 3: RevisionCondition (declared before Workflow — Workflow depends on it)
