@@ -4,16 +4,22 @@ import { runConsult } from './tools/consult'
 import { runDeliberate } from './tools/deliberate'
 import { type ReviewerProfileName, reviewerProfiles } from './reviewer-profiles'
 
-const BROKERED_TOOL_DESCRIPTION = `Consult a single Vāda reviewer agent for a focused perspective (Brokered mode).
+const CONSULT_TOOL_DESCRIPTION = `Consult 2–3 Vāda reviewer agents in parallel for focused, orthogonal perspectives (Brokered mode).
 
-Use when you want one focused critique, strategic analysis, or counter-argument rather
-than a full multi-agent deliberation. Faster and cheaper than vada__deliberate.
-Returns the reviewer's response synchronously.
+Use when you want multiple independent critiques without a full multi-agent deliberation.
+Faster and cheaper than vada__deliberate. Each reviewer runs independently — no cross-reviewer context.
 
 Reviewer profiles:
-  - strategist: builds the strongest possible case for a position, with evidence
+  - strategist: maps the landscape, identifies opportunities and paths forward
   - critic: identifies weaknesses, blind spots, and unstated assumptions
-  - devils_advocate: argues the opposing view to stress-test an idea`
+  - devils_advocate: argues the opposing view to stress-test an idea
+
+Returns: responses (per-reviewer), session_id, session_url, cost_breakdown.
+
+Example: vada__consult(
+  brief="Should we adopt GraphQL as our primary API layer for a team of 8 engineers?",
+  reviewers=["strategist", "critic"]
+)`
 
 const DELIBERATE_TOOL_DESCRIPTION = `Run a multi-agent deliberation on a difficult question. Use when you
 want structured debate across multiple perspectives producing a
@@ -52,22 +58,24 @@ export function createServer(apiKey: string): Server {
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
       {
-        name: 'vada__deliberate_brokered',
-        description: BROKERED_TOOL_DESCRIPTION,
+        name: 'vada__consult',
+        description: CONSULT_TOOL_DESCRIPTION,
         inputSchema: {
           type: 'object' as const,
           properties: {
-            prompt: {
+            brief: {
               type: 'string',
-              description: 'The question or proposal to review'
+              description: 'The question or proposal to review (compressed, reviewer-ready framing)'
             },
-            reviewer_profile: {
-              type: 'string',
-              enum: VALID_PROFILES,
-              description: 'Which reviewer perspective to use: strategist, critic, or devils_advocate'
+            reviewers: {
+              type: 'array',
+              items: { type: 'string', enum: VALID_PROFILES },
+              minItems: 2,
+              maxItems: 5,
+              description: 'Reviewer profiles to consult: strategist, critic, devils_advocate (min 2)'
             }
           },
-          required: ['prompt', 'reviewer_profile']
+          required: ['brief', 'reviewers']
         }
       },
       {
@@ -96,22 +104,26 @@ export function createServer(apiKey: string): Server {
     const { name } = request.params
     const args = request.params.arguments as Record<string, unknown>
 
-    if (name === 'vada__deliberate_brokered') {
-      const prompt = args.prompt
-      const reviewerProfile = args.reviewer_profile
+    if (name === 'vada__consult') {
+      const brief = args.brief
+      const reviewers = args.reviewers
 
-      if (typeof prompt !== 'string' || !prompt.trim()) {
+      if (typeof brief !== 'string' || !brief.trim()) {
         return {
-          content: [{ type: 'text' as const, text: 'Error: prompt must be a non-empty string' }],
+          content: [{ type: 'text' as const, text: 'Error: brief must be a non-empty string' }],
           isError: true
         }
       }
-      if (typeof reviewerProfile !== 'string' || !VALID_PROFILES.includes(reviewerProfile as ReviewerProfileName)) {
+      if (
+        !Array.isArray(reviewers) ||
+        reviewers.length < 2 ||
+        !reviewers.every((r) => VALID_PROFILES.includes(r as ReviewerProfileName))
+      ) {
         return {
           content: [
             {
               type: 'text' as const,
-              text: `Error: reviewer_profile must be one of: ${VALID_PROFILES.join(', ')}`
+              text: `Error: reviewers must be an array of 2–5 profiles from: ${VALID_PROFILES.join(', ')}`
             }
           ],
           isError: true
@@ -119,7 +131,7 @@ export function createServer(apiKey: string): Server {
       }
 
       try {
-        const result = await runConsult({ prompt, reviewer_profile: reviewerProfile as ReviewerProfileName }, apiKey)
+        const result = await runConsult({ brief, reviewers: reviewers as ReviewerProfileName[] }, apiKey)
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)

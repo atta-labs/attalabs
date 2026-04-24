@@ -25,16 +25,19 @@ console.log('='.repeat(60))
 console.log('vada__consult smoke test')
 console.log('='.repeat(60))
 
-const prompt = 'Should early-stage startups write tests? Argue against it.'
-const reviewerProfile = 'critic' as const
+const brief = 'Should early-stage startups write tests? Argue against it.'
+const reviewers = ['critic', 'devils_advocate'] as const
 
-console.log(`\nPrompt: ${prompt}`)
-console.log(`Reviewer: ${reviewerProfile}\n`)
+console.log(`\nBrief: ${brief}`)
+console.log(`Reviewers: ${reviewers.join(', ')}\n`)
 
-const result = await runConsult({ prompt, reviewer_profile: reviewerProfile }, apiKey)
+const result = await runConsult({ brief, reviewers: [...reviewers] }, apiKey)
 
-console.log('--- Response ---')
-console.log(result.response)
+console.log('--- Responses ---')
+for (const r of result.responses) {
+  console.log(`\n[${r.reviewer}]`)
+  console.log(r.response)
+}
 console.log()
 console.log('--- Metadata ---')
 console.log('Session ID:  ', result.session_id)
@@ -53,7 +56,7 @@ if (dbUrl) {
     const row = rows[0]!
     console.log('Row found:')
     console.log('  id:              ', row.id)
-    console.log('  tool_name:       ', row.toolName) // should be vada__deliberate_brokered
+    console.log('  tool_name:       ', row.toolName)
     console.log('  user_id:         ', row.userId)
     console.log('  reviewer_profile:', row.reviewerProfile)
     console.log('  tokens_input:    ', row.tokensInput)

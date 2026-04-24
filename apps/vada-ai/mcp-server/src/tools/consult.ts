@@ -9,13 +9,20 @@ const PRICING = { input: 3.0, output: 15.0 }
 
 const DEFAULT_MODEL = process.env.VADA_MODEL ?? 'claude-sonnet-4-6'
 
+const REVIEWER_TEMPLATE = '{{question}}'
+
 export interface ConsultInput {
-  prompt: string
-  reviewer_profile: ReviewerProfileName
+  brief: string
+  reviewers: ReviewerProfileName[]
+}
+
+export interface ReviewerResponse {
+  reviewer: ReviewerProfileName
+  response: string
 }
 
 export interface ConsultOutput {
-  response: string
+  responses: ReviewerResponse[]
   session_id: string
   session_url: string
   cost_breakdown: {
@@ -27,23 +34,28 @@ export interface ConsultOutput {
 }
 
 /**
- * Run a single-turn Vāda reviewer consultation.
+ * Run a multi-reviewer Vāda consultation using BrokeredWorkflow.
  *
- * Compiles a Solo workflow for the requested reviewer profile, executes it
- * via LangGraphAdapter (cognitive router included), persists the session to
- * Postgres, and returns the reviewer's response with cost metadata.
+ * Reviewers run sequentially, independently — no cross-reviewer context.
+ * Returns per-reviewer responses with cost metadata.
  */
 export async function runConsult(input: ConsultInput, apiKey: string): Promise<ConsultOutput> {
-  const agent = reviewerProfiles[input.reviewer_profile]
+  const selectedAgents = input.reviewers.map((r) => reviewerProfiles[r])
 
   const team: Team = {
-    name: 'Consult',
-    description: `Single ${agent.name} review`,
-    agents: [agent],
-    workflow: { type: 'solo' }
+    name: 'BrokeredConsult',
+    description: `Brokered consultation: ${input.reviewers.join(', ')}`,
+    agents: selectedAgents,
+    workflow: {
+      type: 'brokered',
+      reviewers: input.reviewers.map((r) => ({
+        agentName: reviewerProfiles[r].name,
+        messageTemplate: REVIEWER_TEMPLATE
+      }))
+    }
   }
 
-  const plan = compile({ team, question: input.prompt, model: DEFAULT_MODEL })
+  const plan = compile({ team, question: input.brief, model: DEFAULT_MODEL })
 
   const adapter = new LangGraphAdapter({ apiKey })
   const startedAt = Date.now()
@@ -53,14 +65,13 @@ export async function runConsult(input: ConsultInput, apiKey: string): Promise<C
   const estimatedUsd =
     (conclusion.totalTokensInput * PRICING.input + conclusion.totalTokensOutput * PRICING.output) / 1_000_000
 
-  // Generate session ID upfront so it's always available even if DB write fails
   const sessionId = crypto.randomUUID()
 
   await logSession({
     id: sessionId,
-    toolName: 'vada__deliberate_brokered',
-    reviewerProfile: input.reviewer_profile,
-    prompt: input.prompt,
+    toolName: 'vada__consult',
+    reviewerProfile: input.reviewers.join(','),
+    prompt: input.brief,
     response: conclusion.content,
     costUsd: estimatedUsd.toFixed(6),
     tokensInput: conclusion.totalTokensInput,
@@ -69,8 +80,14 @@ export async function runConsult(input: ConsultInput, apiKey: string): Promise<C
     durationMs
   })
 
+  // Map transcript entries to per-reviewer responses
+  const responses: ReviewerResponse[] = conclusion.transcript.map((entry, i) => ({
+    reviewer: input.reviewers[i]!,
+    response: entry.content
+  }))
+
   return {
-    response: conclusion.content,
+    responses,
     session_id: sessionId,
     session_url: `https://vada.ai/s/${sessionId}`,
     cost_breakdown: {
