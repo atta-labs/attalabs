@@ -4,15 +4,16 @@
 // N=3 per variant, persists results to v2_baseline_runs.
 //
 // Usage (from apps/vada-ai/web/):
-//   bun --preload ./scripts/preload-server-only.ts scripts/bench/v2/baseline-ceiling.ts
-//   bun --preload ./scripts/preload-server-only.ts scripts/bench/v2/baseline-ceiling.ts T1 B3
+//   bun scripts/bench/v2/baseline-ceiling.ts
+//   bun scripts/bench/v2/baseline-ceiling.ts T1 B3
 //
 // Requires: .env.local with ANTHROPIC_API_KEY
 
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import { executeConclusionTurn } from '@atta/orchestration/server'
+import { createAnthropic } from '@ai-sdk/anthropic'
+import { generateText } from 'ai'
 import { corpus } from '../corpus'
 import { V2_MODEL_ID, V2_MODEL_PROVIDER, V2_RUNS_PER_CONFIG, assertModelId } from './config'
 import { insertV2BaselineRun, getV2BaselineRun } from './db'
@@ -76,23 +77,23 @@ async function main() {
 
         const start = Date.now()
         try {
-          const result = await executeConclusionTurn({
-            phase: 'synthesize',
-            systemPrompt,
-            userPrompt,
-            model: { provider: V2_MODEL_PROVIDER, modelId: V2_MODEL_ID },
-            apiKey: ANTHROPIC_API_KEY
-          })
-
           assertModelId(V2_MODEL_ID, 'claude-haiku-4-5-20251001')
+          const anthropic = createAnthropic({ apiKey: ANTHROPIC_API_KEY })
+          const result = await generateText({
+            model: anthropic(V2_MODEL_ID),
+            system: systemPrompt,
+            prompt: userPrompt
+          })
+          const responseText = result.text
+          const tokensIn = result.usage.inputTokens
+          const tokensOut = result.usage.outputTokens
+          const elapsedMs = Date.now() - start
 
           let parsedJson: unknown | null = null
           let schemaValid: boolean | null = null
           if (variant.name === 'A1') {
-            const raw = result.content
-            // Strip ```json ... ``` wrapper Haiku often emits
-            const fenceMatch = raw.match(/^```(?:json)?\s*([\s\S]*?)\s*```\s*$/m)
-            const candidate = fenceMatch ? fenceMatch[1]! : raw
+            const fenceMatch = responseText.match(/^```(?:json)?\s*([\s\S]*?)\s*```\s*$/m)
+            const candidate = fenceMatch ? fenceMatch[1]! : responseText
             try {
               parsedJson = JSON.parse(candidate)
               schemaValid = true
@@ -106,21 +107,19 @@ async function main() {
             variant: variant.name,
             runIndex,
             questionText: question.text,
-            responseText: result.content,
+            responseText,
             parsedJson,
             schemaValid, // true if JSON parsed (fence-stripped or bare); null for A0
             modelId: V2_MODEL_ID,
             provider: V2_MODEL_PROVIDER,
-            tokensInput: result.inputTokens,
-            tokensOutput: result.outputTokens,
-            elapsedMs: result.durationMs
+            tokensInput: tokensIn,
+            tokensOutput: tokensOut,
+            elapsedMs
           })
 
-          const elapsed = ((Date.now() - start) / 1000).toFixed(1)
+          const elapsed = (elapsedMs / 1000).toFixed(1)
           const jsonStatus = variant.name === 'A1' ? (parsedJson ? ' ✓JSON' : ' ✗JSON') : ''
-          console.log(
-            `  [${variant.name} run ${runIndex}] ✓ ${result.inputTokens}in/${result.outputTokens}out ${elapsed}s${jsonStatus}`
-          )
+          console.log(`  [${variant.name} run ${runIndex}] ✓ ${tokensIn}in/${tokensOut}out ${elapsed}s${jsonStatus}`)
           totalCompleted++
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err)

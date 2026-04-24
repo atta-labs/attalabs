@@ -1,5 +1,6 @@
+import { createAnthropic } from '@ai-sdk/anthropic'
+import { generateText } from 'ai'
 import { getBenchmarkMetrics } from '@/db/queries'
-import { executeConclusionTurn } from '@atta/orchestration/server'
 import type { BenchmarkQuestion } from './corpus'
 import type { BudgetTracker } from './budget'
 
@@ -115,17 +116,17 @@ export async function runQuestion(question: BenchmarkQuestion, budget: BudgetTra
   if (budget.exhausted) throw new BudgetExhaustedError()
 
   // ── 5. Run baseline ────────────────────────────────────────────────────────
-  const baselineResult = await executeConclusionTurn({
-    phase: 'synthesize',
-    systemPrompt: BASELINE_SYSTEM_PROMPT,
-    userPrompt: question.text,
-    model: { provider: PROVIDER, modelId: MODEL_ID },
-    apiKey: ANTHROPIC_API_KEY
+  const anthropic = createAnthropic({ apiKey: ANTHROPIC_API_KEY })
+  const baselineStart = Date.now()
+  const baselineResult = await generateText({
+    model: anthropic(MODEL_ID),
+    system: BASELINE_SYSTEM_PROMPT,
+    prompt: question.text
   })
-  const baselineAnswer = baselineResult.content
-  const baselineTokensIn = baselineResult.inputTokens
-  const baselineTokensOut = baselineResult.outputTokens
-  const baselineElapsedMs = baselineResult.durationMs
+  const baselineAnswer = baselineResult.text
+  const baselineTokensIn = baselineResult.usage.inputTokens
+  const baselineTokensOut = baselineResult.usage.outputTokens
+  const baselineElapsedMs = Date.now() - baselineStart
   budget.record(baselineTokensIn, baselineTokensOut)
 
   token = await getClerkToken()
@@ -146,17 +147,16 @@ export async function runQuestion(question: BenchmarkQuestion, budget: BudgetTra
   if (budget.exhausted) throw new BudgetExhaustedError()
 
   // ── 6. Run judge ───────────────────────────────────────────────────────────
-  const judgeResult = await executeConclusionTurn({
-    phase: 'audit',
-    systemPrompt: JUDGE_SYSTEM_PROMPT,
-    userPrompt: buildJudgeUserPrompt(question.text, baselineAnswer, recommendation),
-    model: { provider: PROVIDER, modelId: MODEL_ID },
-    apiKey: ANTHROPIC_API_KEY
+  const judgeStart = Date.now()
+  const judgeResult = await generateText({
+    model: anthropic(MODEL_ID),
+    system: JUDGE_SYSTEM_PROMPT,
+    prompt: buildJudgeUserPrompt(question.text, baselineAnswer, recommendation)
   })
-  const judgeResponse = judgeResult.content
-  const judgeTokensIn = judgeResult.inputTokens
-  const judgeTokensOut = judgeResult.outputTokens
-  const judgeElapsedMs = judgeResult.durationMs
+  const judgeResponse = judgeResult.text
+  const judgeTokensIn = judgeResult.usage.inputTokens
+  const judgeTokensOut = judgeResult.usage.outputTokens
+  const judgeElapsedMs = Date.now() - judgeStart
   const diagnosis = DIAGNOSIS_PATTERN.exec(judgeResponse)?.[1]?.toUpperCase() ?? null
   budget.record(judgeTokensIn, judgeTokensOut)
 
