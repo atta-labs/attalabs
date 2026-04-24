@@ -9,7 +9,8 @@ import 'server-only'
 import { compile } from '@atta/engine'
 import type { ExecutionHooks, Plan } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { crucible } from '@vada/teams'
+import { crucible, sparring, warRoom } from '@vada/teams'
+import type { Team } from '@atta/engine'
 import { auth } from '@atta/auth/hooks'
 import { getOrCreateUser, getSessionForUser, getSessionWithTranscript, setSessionTerminalState } from '@/db/queries'
 import { persistTurn } from '@/engine/turn-logic'
@@ -45,6 +46,12 @@ function resolveAuditChain(plan: Plan, slotIndex: number): string[] {
   return result
 }
 
+function selectTeam(agents: string[]): Team {
+  if (agents.includes('researcher') || agents.includes('operator')) return warRoom
+  if (agents.length <= 2) return sparring
+  return crucible
+}
+
 // Compiles the plan, wires onNodeComplete → persistTurn, and awaits completion.
 // Safe to call fire-and-forget (.catch()) or awaited.
 async function runLangGraph(sessionId: string, apiKey: string | undefined): Promise<void> {
@@ -52,7 +59,7 @@ async function runLangGraph(sessionId: string, apiKey: string | undefined): Prom
   if (!session) throw new Error(`Session ${sessionId} not found`)
 
   const plan = compile({
-    team: crucible,
+    team: selectTeam(session.agents),
     question: session.question,
     model: session.modelId ?? 'claude-haiku-4-5-20251001'
   })
