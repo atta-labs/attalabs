@@ -5,7 +5,7 @@
 import 'server-only'
 import { auth } from '@atta/auth/hooks'
 import type { RouteProvider } from '@atta/models'
-import { resolveModel } from '@atta/orchestration/server'
+import { resolveModel } from '@atta/models/server'
 import { generateText } from 'ai'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'

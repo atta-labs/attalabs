@@ -9,11 +9,22 @@
     "./providers": "./src/providers.ts",
     "./catalog": "./src/catalog.ts",
     "./storage": "./src/storage.ts",
-    "./provider": "./src/provider.tsx"
+    "./provider": "./src/provider.tsx",
+    "./server": "./src/server.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.64",
+    "@ai-sdk/google": "^3.0.60",
+    "@ai-sdk/groq": "^3.0.35",
+    "@ai-sdk/openai": "^3.0.53",
+    "@openrouter/ai-sdk-provider": "^2.5.0",
+    "ai": "^6.0.140",
+    "ollama-ai-provider-v2": "^1.5.0",
+    "server-only": "^0.0.1"
   },
   "peerDependencies": {
     "next": "^16.0.0",

@@ -14,7 +14,7 @@ import {
   setSessionTerminalState,
   updateSessionState
 } from '@/db/queries'
-import { classifyVerdict, parseConclusionJson, parseConclusionLenient } from '@atta/orchestration'
+import { classifyVerdict, parseConclusionJson, parseConclusionLenient } from '@/schemas/conclusion'
 import type { TurnPayload } from './types'
 
 const TARGET_PATTERN = /\[TARGET:\s*([^\]]+)\]/i
