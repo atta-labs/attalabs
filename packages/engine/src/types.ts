@@ -156,10 +156,35 @@ export interface CustomWorkflow {
 }
 
 /**
- * The Workflow union — the three execution strategies available to a Team.
+ * A single Brokered reviewer — one agent with its messageTemplate.
+ */
+export interface BrokeredReviewer {
+  /** Must match an Agent.name in the Team's agents array. */
+  agentName: string
+  /** Handlebars template for this reviewer's user message. Available: {{question}}. */
+  messageTemplate: string
+}
+
+/**
+ * Brokered workflow — sequential, independent reviewer consultations.
+ * Each reviewer runs once with no cross-reviewer context.
+ * No rounds, no audit, no revision.
+ *
+ * Used by vada__consult (MCP Brokered mode).
+ * Compile with compileBrokered → sequential chain of solo-role nodes.
+ */
+export interface BrokeredWorkflow {
+  type: 'brokered'
+  reviewers: BrokeredReviewer[]
+  /** V1 only supports sequential execution. Must be false or omitted. */
+  parallel?: false
+}
+
+/**
+ * The Workflow union — the four execution strategies available to a Team.
  * Discriminated on the `type` field.
  */
-export type Workflow = SoloWorkflow | RoundsWorkflow | CustomWorkflow
+export type Workflow = SoloWorkflow | RoundsWorkflow | CustomWorkflow | BrokeredWorkflow
 
 // =============================================================================
 // Group 4: Team and Baseline

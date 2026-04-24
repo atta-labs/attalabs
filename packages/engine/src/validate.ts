@@ -1,4 +1,4 @@
-import type { CustomWorkflow, RoundsWorkflow, Team, Workflow } from './types'
+import type { BrokeredWorkflow, CustomWorkflow, RoundsWorkflow, Team, Workflow } from './types'
 import { InvalidTeamConfigError, InvalidWorkflowConfigError } from './errors'
 
 /**
@@ -70,6 +70,11 @@ export function validateWorkflow(workflow: Workflow, team: Team): void {
       return
     }
 
+    case 'brokered': {
+      validateBrokeredWorkflow(workflow)
+      return
+    }
+
     default: {
       const _exhaustive: never = workflow
       throw new InvalidWorkflowConfigError('Unknown workflow type', {
@@ -118,6 +123,29 @@ function validateCustomWorkflow(workflow: CustomWorkflow): void {
   }
 }
 
+function validateBrokeredWorkflow(workflow: BrokeredWorkflow): void {
+  if (workflow.reviewers.length < 2) {
+    throw new InvalidWorkflowConfigError(
+      `BrokeredWorkflow requires at least 2 reviewers; got ${workflow.reviewers.length}`,
+      { workflowType: 'brokered', reason: `reviewers.length < 2: ${workflow.reviewers.length}` }
+    )
+  }
+  if (workflow.reviewers.length > 5) {
+    throw new InvalidWorkflowConfigError(
+      `BrokeredWorkflow supports at most 5 reviewers; got ${workflow.reviewers.length}`,
+      { workflowType: 'brokered', reason: `reviewers.length > 5: ${workflow.reviewers.length}` }
+    )
+  }
+  for (const reviewer of workflow.reviewers) {
+    if (!reviewer.messageTemplate || reviewer.messageTemplate.trim() === '') {
+      throw new InvalidWorkflowConfigError(
+        `BrokeredWorkflow reviewer '${reviewer.agentName}' has an empty messageTemplate`,
+        { workflowType: 'brokered', reason: `empty messageTemplate for reviewer '${reviewer.agentName}'` }
+      )
+    }
+  }
+}
+
 /**
  * Checks that every agent name referenced by the workflow exists
  * in the agent name set. Called from validateTeam after duplicate
@@ -157,6 +185,18 @@ function validateWorkflowReferences(workflow: Workflow, agentNames: Set<string>,
           throw new InvalidTeamConfigError(
             `Team '${teamName}' workflow step references unknown agent '${step.agent}'`,
             { teamName, reason: `unknown step agent: ${step.agent}` }
+          )
+        }
+      }
+      return
+    }
+
+    case 'brokered': {
+      for (const reviewer of workflow.reviewers) {
+        if (!agentNames.has(reviewer.agentName)) {
+          throw new InvalidTeamConfigError(
+            `Team '${teamName}' brokered workflow references unknown reviewer agent '${reviewer.agentName}'`,
+            { teamName, reason: `unknown reviewer agent: ${reviewer.agentName}` }
           )
         }
       }

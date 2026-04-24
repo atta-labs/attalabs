@@ -3,9 +3,9 @@ import { compile } from '../compile'
 import type { Agent, RoundsWorkflow, Team } from '../types'
 
 // Minimal agents for compile-time tests — no LLM calls involved.
-const roundAgent: Agent = { name: 'RoundAgent', model: 'test', systemPrompt: 'Round.', tools: [] }
-const terminal: Agent = { name: 'Terminal', model: 'test', systemPrompt: 'Terminal.', tools: [] }
-const auditor: Agent = { name: 'Auditor', model: 'test', systemPrompt: 'Audit.', tools: [] }
+const roundAgent: Agent = { name: 'RoundAgent', description: 'Round.', model: 'test', systemPrompt: 'Round.', tools: [] }
+const terminal: Agent = { name: 'Terminal', description: 'Terminal.', model: 'test', systemPrompt: 'Terminal.', tools: [] }
+const auditor: Agent = { name: 'Auditor', description: 'Audit.', model: 'test', systemPrompt: 'Audit.', tools: [] }
 
 const ROUND_TEMPLATE = '{{question}}'
 const AUDIT_TEMPLATE = '{{question}}'
@@ -22,6 +22,7 @@ describe('RoundsWorkflowNoAudit compile', () => {
 
   const team: Team = {
     name: 'TestTeam',
+    description: 'Test team',
     agents: [roundAgent, terminal],
     workflow
   }
@@ -67,6 +68,7 @@ describe('RoundsWorkflowWithAudit maxRevisions:0 compile', () => {
 
   const team: Team = {
     name: 'TestTeam',
+    description: 'Test team',
     agents: [roundAgent, terminal, auditor],
     workflow
   }

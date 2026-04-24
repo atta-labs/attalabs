@@ -3,6 +3,7 @@ import { validateTeam, validateWorkflow } from './validate'
 import { compileSolo } from './compilers/solo'
 import { compileCustom } from './compilers/custom'
 import { compileRounds } from './compilers/rounds'
+import { compileBrokered } from './compilers/brokered'
 
 /**
  * Compile a Team + Question + Model into a Plan.
@@ -29,6 +30,9 @@ export function compile(params: CompileParams): Plan {
 
     case 'custom':
       return compileCustom({ team, workflow: team.workflow, question, model })
+
+    case 'brokered':
+      return compileBrokered({ team, workflow: team.workflow, question, model })
 
     default: {
       const _exhaustive: never = team.workflow
