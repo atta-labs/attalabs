@@ -1,414 +1,225 @@
-# 06 — Implementation Plan
+# 06 — Implementation Plan (V1 Status + Remaining Work)
 
-This document specifies the commit-by-commit plan to build Vāda Brokered V1. Executor (Sonnet) follows this plan, running test gates between commits.
+## What this document is
 
-**Prerequisite:** Task 1 (Mastra removal) completed. Task 2 (package physical moves to `apps/vada-ai/*`) may or may not be done — implementation is independent.
+A status report on Brokered V1 implementation plus the remaining work required before Brokered can ship as a polished product.
 
----
+**Superseded:** The original doc 06 described a 7-commit plan using direct `Promise.allSettled` dispatch, with reviewer personas, partial failure handling, and tool description as discrete commits. That plan assumed Brokered would bypass `@atta/engine`. The actual architecture goes through the engine via `BrokeredWorkflow` (see doc 01). Most of that plan's infrastructure concerns are now solved by the engine + adapter.
 
-## Scope of V1
-
-Build:
-- `vada__deliberate` MCP tool with Shape A interface
-- Strategist, Critic, Devil's Advocate personas (with system prompts from document 03)
-- Domain Expert persona behind feature flag
-- Partial failure handling
-- Session persistence to `mcp_sessions` table
-- Dashboard read path already exists at `/brokered/consultations` — leave alone
-
-Do NOT build:
-- Streaming responses
-- `vada__record_synthesis` tool
-- Reframer, Fatal Flaw Finder, or other experimental personas
-- Rate limiting (add in hardening pass)
-- Observability beyond current Langfuse defaults
+This document reflects what's actually built and what's left.
 
 ---
 
-## Pre-implementation checklist
+## V1 status
 
-Before writing any code:
+### What's built (Phase 4 complete)
 
-- [ ] Read all five prior documents in this folder
-- [ ] Confirm Task 1 (Mastra removal) is complete (all verify scripts pass)
-- [ ] Confirm `@vada/mcp-server` current tool set (there should already be `vada__consult` or `vada__deliberate` from earlier work — check what exists)
-- [ ] Read `.claude/skills/vada-mcp-server/SKILL.md` for current MCP server conventions
-- [ ] Read `.claude/skills/executor-protocol/SKILL.md`
+**Engine support for Brokered flows:**
+- `BrokeredWorkflow` type in `@atta/engine/types.ts`
+- `compileBrokered` produces sequential Plans: `__start__ → reviewer-0 → reviewer-1 → ... → reviewer-N-1`
+- Validation: 2-5 agents, parallel must be false in V1
+- `LangGraphAdapter.buildSuccessfulConclusion` handles Brokered plans (no terminal synthesizer, content assembled from reviewer outputs)
+- Live integration test `verify-brokered-port.ts` passes
+
+**Vāda team config:**
+- `brokeredTrio` team in `@vada/teams`: Strategist + Critic + Devil's Advocate
+- Uses `BrokeredWorkflow` with messageTemplate
+
+**MCP tool:**
+- `vada__consult` wired to `BrokeredWorkflow`
+- Accepts `brief` and `reviewers[]`
+- Returns per-reviewer `responses[]`
+- Session persistence to Postgres via `@atta/db`
+
+**Verified end-to-end:**
+- Live test: 3 reviewers, CLEAN terminal state, $0.06 per run
+- Session recorded in DB
+- Transcript contains reviewer outputs in order
+
+### What's left for V1 polish (Phase 6)
+
+The engine/adapter/team/tool plumbing works. What remains is the product layer — making Brokered a polished tool that Caller Claude can use well.
 
 ---
 
-## Commit plan
+## Remaining V1 work
 
-### Commit 1 — Persona registry scaffolding
+### 1. Tool description teaching Caller Claude how to use Brokered
 
-Create the persona registry infrastructure. No LLM calls yet, just the data structures.
+**Current state:** `vada__consult` has a minimal tool description. Caller Claude may not know when to invoke it, how to write briefs, or what to expect back.
 
-**Files:**
-
-- `packages/mcp-server/src/personas/types.ts` — TypeScript types for PersonaSpec, PersonaResponse, etc.
-- `packages/mcp-server/src/personas/strategist.ts` — Strategist config with system prompt from doc 03
-- `packages/mcp-server/src/personas/critic.ts` — Critic config
-- `packages/mcp-server/src/personas/devils-advocate.ts` — Devil's Advocate config
-- `packages/mcp-server/src/personas/domain-expert.ts` — Domain Expert config (parameterized template)
-- `packages/mcp-server/src/personas/registry.ts` — Exports PERSONAS record + PersonaRole type
-
-**Content of each persona file:**
-
-```typescript
-import type { PersonaSpec } from './types'
-
-export const strategist: PersonaSpec = {
-  role: 'strategist',
-  displayName: 'The Strategist',
-  description: 'Maps the decision landscape...',
-  model: 'claude-sonnet-4-20250514',
-  temperature: 0.7,
-  maxTokens: 800,
-  systemPrompt: `ROLE: The Strategist in a Vāda deliberation...
-    [full system prompt from doc 03]`,
-}
-```
-
-**Validation:**
-- Typecheck 19/19
-- No lint errors
-
-**Commit message:**
-```
-Feat: Scaffold Vāda Brokered persona registry
-
-Adds @vada/mcp-server persona infrastructure with four personas:
-- Strategist: decision landscape, tradeoffs, long-term view
-- Critic: logical rigor, assumptions, evidence
-- Devil's Advocate: frame-breaking, opposite thesis
-- Domain Expert: field-specific grounding (parameterized)
-
-Each persona has a system prompt derived from reviewer introspection
-rounds (see apps/vada-ai/specs/brokered/03-reviewer-personas.md).
-
-No runtime behavior change — pure scaffolding. Next commits wire
-these into the tool handler.
-```
-
-### Commit 2 — Tool schema and validation
-
-Build the `vada__deliberate` tool schema with Zod validation. No dispatching yet — pure input validation that returns mock responses.
-
-**Files:**
-
-- `packages/mcp-server/src/tools/deliberate.ts` — schema + validation + placeholder handler
-- Update `packages/mcp-server/src/server.ts` — register the tool
-
-**Tool schema (from doc 02):**
-
-```typescript
-const DeliberateInputSchema = z.object({
-  context: z.string().min(50),
-  question: z.string().min(10),
-  reviewers: z.array(ReviewerSpecSchema).min(2).max(5),
-  session_title: z.string().optional(),
-  current_leaning: z.string().optional(),
-  stakes: z.string().optional(),
-})
-
-const ReviewerSpecSchema = z.object({
-  role: z.enum(['strategist', 'critic', 'devils_advocate', 'domain_expert']),
-  notes: z.string().min(20).optional(),
-  domain: z.string().optional(),
-}).refine(
-  (spec) => spec.role !== 'domain_expert' || spec.domain !== undefined,
-  { message: 'domain_expert role requires domain parameter' }
-)
-```
-
-**Placeholder handler:**
-
-Returns mocked responses so the tool can be invoked end-to-end without LLM calls. Used for schema validation testing.
-
-**Validation:**
-- Typecheck
-- Smoke test: invoke tool with valid input → returns mock, with invalid input → returns validation error
-
-**Commit message:**
-```
-Feat: vada__deliberate tool schema and validation
-
-Registers the vada__deliberate MCP tool with strict Zod validation.
-Validates: context ≥50 chars, question ≥10 chars, 2-5 reviewers,
-domain_expert requires domain parameter.
-
-Handler returns mocked responses in this commit — actual LLM
-dispatch in commit 3.
-
-Tool is discoverable in Claude Desktop but not yet functional.
-```
-
-### Commit 3 — Reviewer dispatch and response assembly
-
-Wire the actual LLM dispatch. Each reviewer runs in parallel, with timeout handling. Partial failures return gracefully.
-
-**Files:**
-
-- `packages/mcp-server/src/dispatch.ts` — parallel reviewer dispatcher with timeout
-- `packages/mcp-server/src/tools/deliberate.ts` — updated to use real dispatch
-
-**Implementation notes:**
-
-- Use `resolveModel` from `@atta/models` to get the LLM provider client
-- Use `Promise.allSettled` for parallel dispatch (not `Promise.all` — we want partial success)
-- 15s timeout per reviewer via `AbortController`
-- Build each reviewer's full prompt: system prompt + brief construction from input
-
-**Brief construction:**
-
-```
-[User-provided context]
-
-Question: [user-provided question]
-
-[If current_leaning] Current thinking: [current_leaning]
-
-[If stakes] Stakes: [stakes]
-
-[If per-reviewer notes] Specific request for you: [notes]
-```
-
-**Response assembly:**
-
-```typescript
-{
-  status: allSuccess ? 'complete' : someSuccess ? 'partial' : 'failed',
-  session_id: '...',
-  session_url: 'https://vada.ai/s/...',
-  responses: [
-    { role, status: 'success' | 'timeout' | 'error', response?, error_message? }
-  ],
-  total_latency_ms,
-  total_cost_cents,
-}
-```
-
-**Validation:**
-- Typecheck
-- Smoke test: invoke with real API key + real context, confirm all reviewers return
-- Smoke test with fake API key for one provider, confirm partial failure returns correctly
-
-**Commit message:**
-```
-Feat: Parallel reviewer dispatch with partial failure handling
-
-vada__deliberate now makes real LLM calls. Each reviewer runs in
-parallel with 15s timeout. Partial failures return gracefully:
-successful reviewers' responses still reach the caller even if
-one times out.
-
-Uses Promise.allSettled + AbortController for clean timeout.
-Returns status: 'complete' | 'partial' | 'failed' with per-reviewer
-status markers.
-```
-
-### Commit 4 — Session persistence
-
-Write each deliberation to the `mcp_sessions` table for dashboard viewing.
-
-**Files:**
-
-- `packages/mcp-server/src/persistence.ts` — session logger
-- `packages/mcp-server/src/tools/deliberate.ts` — calls persistence before/after dispatch
-
-**Schema (should exist from earlier work, verify):**
-
-```sql
-mcp_sessions:
-  id              uuid primary key
-  user_id         text
-  tool_name       text
-  created_at      timestamp
-  duration_ms     int
-  cost_cents      int
-  transcript      jsonb  -- stores briefs and responses
-  terminal_state  text   -- 'complete' | 'partial' | 'failed'
-  session_title   text
-```
-
-**Writes two records:**
-
-1. Before dispatch: initial record with `status: 'running'`, briefs, no responses yet
-2. After dispatch: update with `status`, responses, latencies, final cost
-
-Writes are best-effort — a failed DB write should not fail the tool call. Log the error; return responses to caller anyway.
-
-**Validation:**
-- Typecheck
-- Smoke test: invoke tool, query DB, confirm row with expected shape
-- Smoke test: simulate DB write failure, confirm tool still returns responses
-
-**Commit message:**
-```
-Feat: Persist Brokered deliberations to mcp_sessions
-
-Writes each vada__deliberate call to the mcp_sessions table for
-audit and dashboard viewing. Records briefs, responses, latencies,
-cost, and terminal state.
-
-Writes are best-effort — failed persistence does not fail the tool
-call. Caller always gets responses even if dashboard data is lost.
-
-Visible in existing /brokered/consultations dashboard.
-```
-
-### Commit 5 — Persona tool description
-
-Update the tool description surfaced to Claude. This is what shapes Claude's usage behavior and is where we teach it how to use Vāda well.
-
-**Files:**
-
-- `packages/mcp-server/src/tools/deliberate.ts` — update tool `description` field
-
-**Content:**
-
-Full tool description from doc 02, section "Tool description (shown to Caller Claude)". This is a long text block (~1200 words) that teaches Claude:
-
-- When to invoke Vāda
-- When NOT to invoke Vāda
-- The reviewer roster and what each does
-- How to write briefs (good vs bad)
+**Required:** Expand the tool description to ~1200 words covering:
+- When to invoke (explicit triggers, recognized triggers)
+- When NOT to invoke (counter-triggers)
+- The reviewer roster and each persona's role
+- How to write briefs (context, question, current leaning, stakes, per-reviewer notes)
 - Reviewer selection guidance
-- What to expect back
-- How to synthesize responses
-- How to handle partial failures
+- What to expect back (structured responses per reviewer)
+- How to synthesize responses for the user
+- How to handle failures
 
-**Validation:**
-- Typecheck
-- Install in Claude Desktop, inspect tool description rendering
-- Invoke with realistic brief, confirm Claude produces good brief
+See doc 02 for the full tool description text.
 
-**Commit message:**
-```
-Feat: Comprehensive tool description for vada__deliberate
+**File:** `apps/vada-ai/mcp-server/src/tools/consult.ts` — update the `description` field in the tool registration.
 
-Expands the MCP tool description from schema-only to include
-full usage guidance: when to invoke, how to write briefs, how
-to synthesize responses. This is what teaches any Claude
-instance how to use Vāda well.
-
-Description content derived from reviewer rounds 1-4
-(apps/vada-ai/specs/brokered/02-mcp-tool-interface.md).
-
-Size: ~1200 words. Long by MCP conventions, but critical for
-orchestration quality.
-```
-
-### Commit 6 — Feature flag for Domain Expert
-
-Gate Domain Expert behind an environment flag so it ships code-ready but disabled by default.
-
-**Files:**
-
-- `packages/mcp-server/src/personas/registry.ts` — conditional export based on flag
-
-**Implementation:**
-
-```typescript
-const DOMAIN_EXPERT_ENABLED = process.env.VADA_DOMAIN_EXPERT === 'true'
-
-export const PERSONAS: Record<string, PersonaSpec> = {
-  strategist,
-  critic,
-  devils_advocate: devilsAdvocate,
-  ...(DOMAIN_EXPERT_ENABLED ? { domain_expert: domainExpert } : {}),
-}
-```
-
-If user requests `domain_expert` when flag is off, return validation error.
-
-**Validation:**
-- Typecheck
-- Smoke test with flag off: domain_expert request returns validation error
-- Smoke test with flag on: domain_expert dispatches correctly
-
-**Commit message:**
-```
-Feat: Gate Domain Expert behind VADA_DOMAIN_EXPERT flag
-
-Ships Domain Expert persona code but disabled by default. Enable
-via env var for early testing. Roster default stays at Strategist
-+ Critic + Devil's Advocate until Domain Expert is validated in
-production use.
-```
-
-### Commit 7 — Tests and smoke scripts
-
-End-to-end verification scripts.
-
-**Files:**
-
-- `packages/mcp-server/scripts/smoke-deliberate.ts` — runs one real deliberation, reports results
-- `packages/mcp-server/scripts/smoke-partial-failure.ts` — simulates one reviewer failing
-- `packages/mcp-server/scripts/smoke-all-personas.ts` — runs each persona separately, confirms system prompts produce expected structure
-
-**Commit message:**
-```
-Test: Smoke scripts for vada__deliberate end-to-end validation
-
-Adds three smoke scripts:
-- smoke-deliberate.ts: full deliberation with all three core personas
-- smoke-partial-failure.ts: validates graceful handling of reviewer failure
-- smoke-all-personas.ts: validates each persona's output format matches spec
-
-These complement the existing verify-* scripts (Autonomous testing).
-```
+**Effort:** Small. Copy content from doc 02 into the tool description block.
 
 ---
 
-## Verification checklist after all commits
+### 2. Reviewer persona system prompts
 
-- [ ] All seven commits land in HEAD ancestry
-- [ ] Typecheck 19/19 passes
-- [ ] Biome clean
-- [ ] Smoke tests all pass:
-  - [ ] `smoke-deliberate.ts` — full deliberation completes
-  - [ ] `smoke-partial-failure.ts` — partial failure handled
-  - [ ] `smoke-all-personas.ts` — persona outputs match spec
-  - [ ] Existing `verify-crucible-port.ts`, `verify-sparring-port.ts`, `verify-baselines.ts` all still pass (don't regress Autonomous)
-- [ ] Manual Claude Desktop test:
-  - [ ] Tool appears in Claude Desktop's MCP tools panel
-  - [ ] Tool description renders correctly
-  - [ ] Invoking tool with valid input returns responses
-  - [ ] Invoking with invalid input returns structured error
-  - [ ] Sessions appear in `/brokered/consultations`
+**Current state:** `@vada/agents` contains Strategist, Critic, Devil's Advocate system prompts from prior work. These were designed for Crucible's multi-round debate. Brokered is single-shot advisory — the prompts may need tuning.
+
+**Required:** Validate that the current system prompts produce sharp Brokered output. Specifically check:
+- Do reviewers hedge less when responding in Brokered context (no other reviewers to react to)?
+- Do required output sections (Key Points / Risks / Recommendation) come through cleanly?
+- Are forbidden phrases actually absent from output?
+
+**Process:** Run 5-10 test briefs through `vada__consult`, evaluate output quality against criteria in doc 03. If prompts need tuning, update agent definitions in `apps/vada-ai/agents/src/`.
+
+**Effort:** Evaluation is a few hours. Prompt tuning (if needed) is a few hours more. Can be combined with item 5 (experiments) as a single R&D cycle.
+
+**File:** `apps/vada-ai/agents/src/{strategist,critic,devils-advocate}.ts`
 
 ---
 
-## Post-V1 followups (not this task)
+### 3. Input schema with strict validation
 
-Flag these as separate tasks for later:
+**Current state:** `vada__consult` accepts `brief` and `reviewers[]`. Validation shape TBD against current implementation.
 
-- **Streaming responses** — user sees partial progress during 20s wait
-- **`vada__record_synthesis`** — Caller Claude records its synthesis for analytics
-- **Rate limiting** — per-user hourly/daily limits
-- **V2 remote HTTP** — deployment for claude.ai custom connectors
-- **Additional personas** — Reframer, Fatal Flaw Finder (validate with production data first)
-- **Cross-provider model assignment** — different LLM per persona (DeepSeek for Critic, etc.)
-- **Observability improvements** — richer Langfuse traces, dashboard analytics on deliberation quality
+**Required per doc 02:**
+- `context`: string, min 50 chars
+- `question`: string, min 10 chars
+- `reviewers`: enum array, 2-5 items, distinct roles
+- `current_leaning`: optional, strongly encouraged
+- `stakes`: optional, strongly encouraged
+- `notes_per_reviewer`: optional per-reviewer guidance
+- `session_title`: optional, for dashboard display
+
+**On validation failure:** Return structured error with specific field hints, not generic error.
+
+**File:** `apps/vada-ai/mcp-server/src/tools/consult.ts` — add Zod validation schema.
+
+**Effort:** Small. Single file change.
 
 ---
 
-## What to report after implementation
+### 4. Session persistence schema additions
 
-For each commit:
-- Hash
-- `git show --stat`
-- Ancestry verification
-- Smoke test results
+**Current state:** `mcp_sessions` table captures basic session info (user_id, tool_name, transcript, cost_cents, duration_ms, terminal_state, created_at).
 
-Overall:
-- Total files changed, lines added
-- Typecheck + Biome final state
-- Full list of smoke test passes
-- Manual Claude Desktop test results
-- Any decisions made not explicit in the prompt
-- Any surprises
-- Open followups
+**Required per doc 07 (UI spec):**
+- `session_title` column for dashboard display
+- `context`, `current_leaning`, `stakes` columns (extracted from brief)
+- `origin` column (claude-desktop / cursor / claude-code / claude-ai / other)
+- `is_shared` boolean
+- `share_token` for public share URLs
 
-**Stop after verification. Do not proceed to additional work.**
+**Origin detection:** MCP client sends `clientInfo` in the handshake. Capture at server init, map to origin string, pass to session writes.
+
+**File:** `apps/vada-ai/db/src/schema/mcp-sessions.ts` (migration) + tool handler updates to populate new columns.
+
+**Effort:** Medium. DB migration + schema update + handler updates. Maybe half a day.
+
+---
+
+### 5. Domain Expert persona behind feature flag
+
+**Current state:** Not built.
+
+**Required:** Add Domain Expert agent to `@vada/agents`. Parameterized system prompt (requires `domain` parameter). Add a second team config (e.g., `brokeredQuartet`) that includes Domain Expert. Feature flag controls availability.
+
+**File:** `apps/vada-ai/agents/src/domain-expert.ts` (new) + `apps/vada-ai/teams/src/teams/brokered-quartet.ts` (new) + flag check in validation.
+
+**Effort:** Small. Following the existing agent + team patterns.
+
+---
+
+### 6. Loud partial failure handling
+
+**Current state:** Plan execution is all-or-nothing. If one reviewer fails, the whole plan fails.
+
+**Required:** When parallel execution lands (Phase 4.5), partial failure becomes possible and needs explicit handling:
+- Successful reviewers' responses still return
+- Failed reviewers marked with status + error message
+- `status: 'partial'` vs `'complete'` vs `'failed'` in response
+
+**Dependency:** Requires parallel execution first.
+
+**Effort:** Part of Phase 4.5. Tracked there.
+
+---
+
+### 7. Dashboard consumption of new data
+
+**Current state:** Dashboard read-only, reads from `mcp_sessions`.
+
+**Required:** Once item 4 adds new columns, dashboard reads and displays them. See doc 07 for full UI spec.
+
+**File:** `apps/vada-ai/web/src/app/(main)/brokered/consultations/` components.
+
+**Effort:** Deferred to doc 07 implementation work. Not part of V1 MCP-side work.
+
+---
+
+## V1 shipping criteria
+
+Brokered V1 ships when:
+
+- ✅ Engine supports BrokeredWorkflow (Phase 4 complete)
+- ✅ MCP tool `vada__consult` works end-to-end (Phase 4 complete)
+- ⏳ Tool description teaches Caller Claude how to use it well (item 1)
+- ⏳ Reviewer personas validated for single-shot output (item 2)
+- ⏳ Input validation returns structured errors (item 3)
+- ⏳ Session persistence captures rich metadata (item 4)
+- ⏳ Domain Expert available behind flag (item 5)
+
+Not required for V1:
+- Parallel execution (Phase 4.5)
+- Partial failure handling (tied to parallel)
+- Dashboard feature parity with doc 07 (own workstream)
+- Web UI integration (deferred until DB schema supports Brokered state)
+
+---
+
+## Suggested commit sequence for remaining items
+
+**Commit 1: Expand tool description.** Copy doc 02's tool description into `vada__consult`. Small, high-impact.
+
+**Commit 2: Add Zod input validation.** Structured errors on validation failure. Clean field-by-field.
+
+**Commit 3: DB schema migration.** Add `session_title`, `context`, `current_leaning`, `stakes`, `origin`, `is_shared`, `share_token` to `mcp_sessions`. Migration commit.
+
+**Commit 4: Tool handler populates new columns.** Read from brief, write to session. MCP origin detection.
+
+**Commit 5: Domain Expert agent + brokeredQuartet team.** Add behind feature flag.
+
+**Commit 6: Prompt validation pass.** Run sample briefs, evaluate quality, tune prompts if needed. Document findings in a short note.
+
+**Commit 7: Final smoke test.** Run verify-brokered-port.ts against all changes. Run a real `vada__consult` call from Claude Desktop. Verify session appears in dashboard.
+
+Typecheck + verify scripts between every commit. Each commit self-contained and reviewable.
+
+**Estimated total effort:** 1-2 days depending on prompt validation depth.
+
+---
+
+## What this replaces
+
+The original doc 06 described:
+- 7 commits centered on building parallel dispatch from scratch
+- Persona registry, tool schema, dispatch parallel handler, session persistence, tool description, feature flag, smoke tests
+
+Phase 4 made most of that moot:
+- The engine handles dispatch (via `compileBrokered` + adapter)
+- Session persistence works (via `@atta/db`)
+- Team config system already existed
+- Parallel is deferred to Phase 4.5
+
+What survived from the original plan and moved forward:
+- Tool description expansion (item 1)
+- Input validation (item 3)
+- Domain Expert feature flag (item 5)
+- Session persistence enrichment (item 4)
+
+The original plan was right about what the product needs; it was wrong about the implementation path. The engine-based approach is cleaner and requires less new code.

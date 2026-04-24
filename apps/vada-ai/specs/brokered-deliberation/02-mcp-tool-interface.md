@@ -1,20 +1,22 @@
 # 02 — MCP Tool Interface
 
-## The tool: `vada__deliberate`
+## The tool: `vada__consult`
 
-One tool. Parallel dispatch to multiple reviewers. Returns structured responses with status per reviewer.
+One tool. Invokes a Vāda team (currently `brokeredTrio`: Strategist + Critic + Devil's Advocate) through the Vāda deliberation engine. Sequential execution in V1. Returns structured responses per reviewer.
+
+The name `vada__consult` is what ships in Phase 4. Earlier specs used `vada__deliberate` aspirationally; the actual tool is named `consult` to distinguish Brokered from Autonomous and to fit naturally as a verb in Caller Claude's vocabulary ("let me consult Vāda on this").
 
 ---
 
 ## Tool description (shown to Caller Claude)
 
-This text is what the MCP protocol surfaces to any AI that connects. Critical for shaping Claude's usage behavior. It teaches Claude when to invoke Vāda, how to write briefs, and what to expect back.
+This text is what the MCP protocol surfaces to any AI that connects. Critical for shaping Claude's usage behavior. Current implementation has a minimal description; Phase 6 expands it to the full text below.
 
 ```
-vada__deliberate
+vada__consult
 
-Dispatches a deliberation to 2-5 reviewers in parallel. Each reviewer 
-brings a distinct cognitive mode to the question. Use this when:
+Invokes Vāda Brokered deliberation — 2-5 specialized reviewers each 
+produce their own perspective on a question. Use when:
 
 - The user is making a decision with real stakes
 - Multiple perspectives would catch blind spots a single reasoning 
@@ -28,7 +30,7 @@ Do NOT use this for:
 - Creative brainstorming without stakes
 - Tasks with obviously one right answer
 
-The Reviewers
+The Reviewers (V1)
 
 Core roster (always available):
 
@@ -44,7 +46,7 @@ Core roster (always available):
   opposite thesis to sharpen understanding. Asks "what if the 
   question itself is wrong?"
 
-Experimental (flag-gated, may not be available):
+Experimental (flag-gated, may not be available in this installation):
 
 - domain_expert: Context-specific expertise grounded in a named 
   domain (provide 'domain' parameter). Asks "what does this field's 
@@ -81,9 +83,7 @@ The Response
 
 You receive structured responses per reviewer with:
 - Their role
-- Their response (soft-structured markdown with Key Points / Risks 
-  / Recommendation sections)
-- Status (success, timeout, error)
+- Their response (markdown with Key Points / Risks / Recommendation sections)
 - Latency and model used
 
 Your job after invocation:
@@ -95,31 +95,27 @@ Your job after invocation:
 4. Present back to user with proposed next steps or a clear decision 
    question
 
-Partial Failures
-
-If one reviewer times out or errors, you'll receive the others 
-successfully. Explicitly note the missing perspective to the user. 
-Don't hallucinate absent reviewers' positions.
-
 Latency
 
-Expect 15-30 seconds. This is cognitive labor being delegated in 
-parallel. Inform the user you're bringing in reviewers before 
-invoking.
+Sequential execution in V1. Expect 3× the latency of a single 
+reviewer (~30-60 seconds for 3 reviewers). This is cognitive labor 
+being delegated. Inform the user before invoking.
 ```
 
 ---
 
-## Input schema
+## Input schema (V1 target)
+
+Current implementation accepts `brief` and `reviewers[]`. Phase 6 expands to structured input:
 
 ```typescript
 {
-  context: string,           // required, min 50 chars
-  question: string,          // required, min 10 chars
-  reviewers: ReviewerSpec[], // required, min 2, max 5
-  session_title?: string,    // optional, for dashboard display
-  current_leaning?: string,  // optional but strongly encouraged
-  stakes?: string,           // optional but strongly encouraged
+  context: string,              // required, min 50 chars
+  question: string,              // required, min 10 chars
+  reviewers: ReviewerSpec[],     // required, 2-5 items
+  session_title?: string,        // optional, for dashboard display
+  current_leaning?: string,      // optional but strongly encouraged
+  stakes?: string,               // optional but strongly encouraged
 }
 
 type ReviewerSpec = {
@@ -131,9 +127,9 @@ type ReviewerSpec = {
 
 ### Parameter notes
 
-**`context`** — shared context every reviewer sees. What the user is deciding, their constraints, their environment. Should be self-contained (reviewer can't see the full conversation).
+**`context`** — shared context every reviewer sees. What the user is deciding, their constraints, their environment. Should be self-contained (reviewers can't see the full conversation).
 
-**`question`** — the specific question being deliberated. Framed as a decision or claim, not an open-ended "what do you think."
+**`question`** — the specific question being deliberated. Framed as a decision or claim, not open-ended.
 
 **`reviewers`** — array of reviewer specs. Minimum 2 because single-reviewer deliberation doesn't produce convergence/divergence. Maximum 5 to prevent context overload.
 
@@ -141,18 +137,18 @@ type ReviewerSpec = {
 
 **`stakes`** — what happens if the decision goes badly. Shifts reviewer reasoning from theoretical optimization to practical risk management.
 
-**`notes` per reviewer** — optional per-reviewer guidance. Example: for the critic, "probe the assumption that we have a month of runway." For the strategist, "focus on opportunity cost of this path."
+**`notes` per reviewer** — optional per-reviewer guidance.
 
-### Validation rules
+### Validation rules (V1 target, Phase 6)
 
 Server-side validation before dispatching:
-- `context` must be ≥ 50 characters (rejects "help?")
+- `context` must be ≥ 50 characters
 - `question` must be ≥ 10 characters
 - `reviewers` must contain at least 2 distinct roles
 - If `domain_expert` is in reviewers, its `domain` field is required
-- Each reviewer's `notes` field (if provided) must be ≥ 20 chars if included
+- Each reviewer's `notes` field (if provided) must be ≥ 20 chars
 
-On validation failure, return structured error that Caller Claude can correct from:
+On validation failure, return structured error:
 ```json
 {
   "status": "validation_error",
@@ -167,9 +163,11 @@ On validation failure, return structured error that Caller Claude can correct fr
 
 ## Return schema
 
+Current implementation returns per-reviewer `responses[]`. Phase 6 adds session metadata:
+
 ```typescript
 {
-  status: 'complete' | 'partial' | 'failed',
+  status: 'complete' | 'failed',
   session_id: string,
   session_url: string,
   responses: ReviewerResponse[],
@@ -177,65 +175,37 @@ On validation failure, return structured error that Caller Claude can correct fr
   total_cost_cents?: number,
 }
 
-type ReviewerResponse = 
-  | {
-      role: 'strategist' | 'critic' | 'devils_advocate' | 'domain_expert',
-      status: 'success',
-      response: string,        // markdown with required sections
-      latency_ms: number,
-      model: string,
-      input_tokens: number,
-      output_tokens: number,
-    }
-  | {
-      role: ReviewerRole,
-      status: 'timeout' | 'error',
-      error_message: string,
-      latency_ms: number,
-    }
+type ReviewerResponse = {
+  role: 'strategist' | 'critic' | 'devils_advocate' | 'domain_expert',
+  response: string,        // markdown with required sections
+  latency_ms: number,
+  model: string,
+  input_tokens: number,
+  output_tokens: number,
+}
 ```
 
-### Status values
+### V1 status on status values
 
-- **`complete`** — all requested reviewers returned successfully
-- **`partial`** — some reviewers succeeded, some failed (timeout/error)
-- **`failed`** — no reviewers returned successfully (rare, usually DB or config issue)
+V1 is sequential and all-or-nothing:
+- **`complete`** — all reviewers returned successfully
+- **`failed`** — plan execution failed (any reason)
+
+Partial success (some reviewers succeed, some fail) requires parallel execution and is deferred to Phase 4.5. When parallel lands:
+- **`partial`** — some reviewers succeeded, some failed
+- Per-reviewer status markers (`'success' | 'timeout' | 'error'`)
 
 ### Response format per reviewer
 
 The `response` string is markdown with required sections defined by the persona's system prompt. See document 03 for exact formats per persona.
 
-Example Strategist response:
-```markdown
-**Key Insight**
-
-The decision framed as "migrate now vs defer" hides a third option: 
-migrate-lite with feature flag. This changes the cost calculus.
-
-**Tradeoffs**
-
-- Full migration: 7 days, high quality, blocks product work
-- Defer: cognitive router gap stays visible to users
-- Migration-lite: 3-4 days, preserves rollback, ships cognitive router
-
-**Recommendation**
-
-Migration-lite. Preserves 2 weeks of runway for product work while 
-closing the product-quality gap.
-
-**Risks / Unknowns**
-
-- SSE reconnect semantics need validation
-- Langfuse span inheritance may differ between Mastra and LangGraph
-```
-
 ---
 
 ## Error handling across the interface
 
-### Validation errors (before dispatch)
+### Validation errors (V1 target, Phase 6)
 
-Return immediately without dispatching any reviewers:
+Return immediately without invoking the engine:
 ```json
 {
   "status": "validation_error",
@@ -244,64 +214,25 @@ Return immediately without dispatching any reviewers:
 }
 ```
 
-Caller Claude should surface the error to user or retry with corrected inputs.
+### Engine execution failures
 
-### Partial failures (during dispatch)
-
-Some reviewers succeeded, some didn't:
-```json
-{
-  "status": "partial",
-  "session_id": "sess_abc",
-  "session_url": "https://vada.ai/s/sess_abc",
-  "responses": [
-    { "role": "strategist", "status": "success", "response": "..." },
-    { "role": "critic", "status": "timeout", "error_message": "15s exceeded" },
-    { "role": "devils_advocate", "status": "success", "response": "..." }
-  ]
-}
-```
-
-Caller Claude synthesizes from the successful ones, explicitly tells user what's missing.
-
-### Total failures
-
-No reviewers succeeded. Usually indicates Vāda configuration issue (DB unreachable, all LLM providers down, invalid auth):
+Plan execution fails (timeout, LLM provider error, internal error):
 ```json
 {
   "status": "failed",
-  "session_id": null,
-  "error_message": "Database connection failed; no session recorded",
+  "session_id": "sess_abc",
+  "error_message": "Reviewer 'strategist' failed: timeout after 60s",
   "responses": []
 }
 ```
 
-Caller Claude should inform user and suggest trying again or proceeding without reviewer input.
-
----
-
-## Rate limiting
-
-V1 limits (per authenticated user):
-- 20 deliberations per hour
-- 100 deliberations per day
-
-Rate limit response:
-```json
-{
-  "status": "rate_limited",
-  "retry_after_seconds": 300,
-  "message": "You've reached 20 deliberations this hour. Try again in 5 minutes."
-}
-```
-
-Caller Claude surfaces this to user directly — it's their quota, not a Vāda-internal issue.
+Caller Claude should inform user and suggest trying again.
 
 ---
 
 ## Example full interaction
 
-### Caller Claude's request
+### Caller Claude's request (V1 target)
 
 ```json
 {
@@ -343,20 +274,19 @@ Caller Claude surfaces this to user directly — it's their quota, not a Vāda-i
 }
 ```
 
-### Vāda's response
+### Vāda's response (V1 target)
 
 ```json
 {
   "status": "complete",
   "session_id": "sess_2b3c4d",
-  "session_url": "https://vada.ai/s/sess_2b3c4d",
-  "total_latency_ms": 18432,
+  "session_url": "https://vada.ai/brokered/consultations/sess_2b3c4d",
+  "total_latency_ms": 48230,
   "total_cost_cents": 12,
   "responses": [
     {
       "role": "strategist",
-      "status": "success",
-      "response": "**Key Insight**\n\nRunway allocation frame ignores...",
+      "response": "**Key Insight**\n\nRunway allocation frame...",
       "latency_ms": 14203,
       "model": "claude-sonnet-4-20250514",
       "input_tokens": 842,
@@ -364,7 +294,6 @@ Caller Claude surfaces this to user directly — it's their quota, not a Vāda-i
     },
     {
       "role": "critic",
-      "status": "success",
       "response": "**Core Assumption Challenged**\n\n...",
       "latency_ms": 16891,
       "model": "claude-sonnet-4-20250514",
@@ -373,9 +302,8 @@ Caller Claude surfaces this to user directly — it's their quota, not a Vāda-i
     },
     {
       "role": "devils_advocate",
-      "status": "success",
       "response": "**What If the Frame is Wrong**\n\n...",
-      "latency_ms": 18432,
+      "latency_ms": 17136,
       "model": "claude-sonnet-4-20250514",
       "input_tokens": 842,
       "output_tokens": 298
@@ -385,3 +313,28 @@ Caller Claude surfaces this to user directly — it's their quota, not a Vāda-i
 ```
 
 Caller Claude receives this, reads each response, synthesizes, presents to user.
+
+---
+
+## V1 implementation notes
+
+### Tool name
+
+Actual tool in Phase 4 shipment: `vada__consult`. This doc uses that name. Earlier spec drafts used `vada__deliberate`; those references have been updated.
+
+### Current shape vs V1 target
+
+Phase 4 delivered a working tool with minimal input/output shape:
+- Input: `{ brief, reviewers[] }`
+- Output: `{ responses[] }`
+
+Phase 6 work migrates to the richer V1 target schema above. Transition should be backward-compatible where possible (new fields optional, existing callers continue to work).
+
+### What caller Claude does today vs what it should do
+
+Today the tool description is minimal. Caller Claude invokes it but doesn't know:
+- When to use Brokered vs just answering directly
+- How to write good briefs
+- How to synthesize responses well
+
+Phase 6 item 1 (expand tool description) addresses this. Until then, Brokered works but isn't used optimally.
