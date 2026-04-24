@@ -1,7 +1,7 @@
 import type { Agent } from '@atta/agents'
 
 /** Display-capable agent archetype names. */
-export type AgentName = 'Strategist' | 'Critic' | "Devil's Advocate" | 'Synthesizer'
+export type AgentName = 'Strategist' | 'Critic' | "Devil's Advocate" | 'Synthesizer' | 'Researcher' | 'Operator'
 
 /**
  * A Vāda agent definition that carries both engine config and display metadata.

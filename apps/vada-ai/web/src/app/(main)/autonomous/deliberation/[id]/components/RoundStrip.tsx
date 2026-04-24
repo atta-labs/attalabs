@@ -13,7 +13,7 @@
 //           style identically.
 
 import { Button, ModelIcon } from '@atta/ui'
-import { VadaAgent as AIAgent, type AgentName } from '@vada/agents-ui'
+import { VadaAgent as AIAgent, type AgentName } from '@/components/VadaAgent'
 import { Copy, Download } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { memo, type CSSProperties, useEffect, useRef } from 'react'

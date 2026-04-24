@@ -2,7 +2,7 @@
 
 import { useIdentity } from '@atta/identity/react'
 import { useToastContext } from '@atta/ui'
-import type { FaceStyle } from '@vada/agents-ui'
+import type { FaceStyle } from '@/components/VadaAgent'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUserPreferences } from '@/lib/user-preferences-context'

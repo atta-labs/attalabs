@@ -1,5 +1,5 @@
 import { Text } from '@atta/ui/shared'
-import { TEAM_LIST } from '@vada/agents-ui'
+import { TEAM_LIST } from '@/lib/teams-metadata'
 import type { TeamModelEntry } from '@/db/settings-queries'
 import { TeamAccordionItem } from './TeamAccordionItem'
 

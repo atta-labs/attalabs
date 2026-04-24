@@ -6,6 +6,5 @@ export {
   AGENT_COLOR_BY_ROLE,
   AGENT_SPHERE_COLORS,
   type AgentName,
-  type AgentRole,
   type AgentDef
-} from '@vada/agents-ui'
+} from '@vada/agents'

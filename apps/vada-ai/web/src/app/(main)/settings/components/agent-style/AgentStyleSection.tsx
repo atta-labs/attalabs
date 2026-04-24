@@ -1,5 +1,5 @@
 import { Text } from '@atta/ui/shared'
-import type { FaceStyle } from '@vada/agents-ui'
+import type { FaceStyle } from '@/components/VadaAgent'
 import { FaceStylePicker } from './FaceStylePicker'
 
 interface AgentStyleSectionProps {

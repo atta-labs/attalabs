@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui'
 import type { TeamModelEntry } from '@/db/settings-queries'
-import type { FaceStyle } from '@vada/agents-ui'
+import type { FaceStyle } from '@/components/VadaAgent'
 import { ApiKeysSection } from './api-keys/ApiKeysSection'
 import { AgentStyleSection } from './agent-style/AgentStyleSection'
 import { TeamsSection } from './teams/TeamsSection'
