@@ -25,3 +25,4 @@ provenance — readers can see how Vāda's thinking evolved.
   (Mastra deprecated in favor of LangGraph)
 - `followups.md` — V1/V2-era open items (most obsolete post-refactor)
 - `step-4-precommit.md` — V2 Step 4 precommit notes (if present)
+- `mastra-audit.md` — Mastra removal audit log (moved from `engine/` after Mastra was fully deleted)
