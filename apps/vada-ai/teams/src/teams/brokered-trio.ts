@@ -5,7 +5,8 @@ const REVIEWER_TEMPLATE = '{{question}}'
 
 export const brokeredTrio: Team = {
   name: 'BrokeredTrio',
-  description: 'Three independent reviewer consultations (Strategist, Critic, Devil\'s Advocate) — no cross-reviewer context',
+  description:
+    "Three independent reviewer consultations (Strategist, Critic, Devil's Advocate) — no cross-reviewer context",
   agents: [strategist, critic, devilsAdvocate],
   workflow: {
     type: 'brokered',

@@ -21,7 +21,9 @@ for (const question of questions) {
 
   const plan = compile({ team: brokeredTrio, question, model })
 
-  console.info(`\nPlan: ${plan.workflowType} | ${Object.keys(plan.graph.nodes).length} nodes | ${plan.graph.edges.length} edges`)
+  console.info(
+    `\nPlan: ${plan.workflowType} | ${Object.keys(plan.graph.nodes).length} nodes | ${plan.graph.edges.length} edges`
+  )
   console.info(`Entry: ${plan.graph.entryNode}`)
 
   const conclusion = await adapter.execute({ plan, customVars: {}, timeoutMs: 600_000 })
@@ -43,8 +45,12 @@ for (const question of questions) {
     process.exit(1)
   }
 
-  console.info(`\nCombined output (first 500 chars):\n${conclusion.content.slice(0, 500)}${conclusion.content.length > 500 ? '...' : ''}`)
-  console.info(`\nTotal: ${conclusion.totalTokensInput}in/${conclusion.totalTokensOutput}out, ${conclusion.totalElapsedMs}ms`)
+  console.info(
+    `\nCombined output (first 500 chars):\n${conclusion.content.slice(0, 500)}${conclusion.content.length > 500 ? '...' : ''}`
+  )
+  console.info(
+    `\nTotal: ${conclusion.totalTokensInput}in/${conclusion.totalTokensOutput}out, ${conclusion.totalElapsedMs}ms`
+  )
 
   if (conclusion.error) {
     console.error(`\nError: ${conclusion.error}`)

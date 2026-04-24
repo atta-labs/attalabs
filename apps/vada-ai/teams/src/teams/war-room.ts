@@ -20,7 +20,17 @@ export const warRoom: Team = {
   name: 'WarRoom',
   description:
     'Six-agent deliberation — Crucible core plus Researcher (evidence) and Operator (execution feasibility) — with dual-auditor revision loop',
-  agents: [strategist, critic, devilsAdvocate, synthesizer, researcher, operator, conclusionSynthesizer, blindCritic, factChecker],
+  agents: [
+    strategist,
+    critic,
+    devilsAdvocate,
+    synthesizer,
+    researcher,
+    operator,
+    conclusionSynthesizer,
+    blindCritic,
+    factChecker
+  ],
   workflow: {
     type: 'rounds',
     rounds: 3,

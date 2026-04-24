@@ -3,8 +3,20 @@ import { compile } from '../compile'
 import type { Agent, RoundsWorkflow, Team } from '../types'
 
 // Minimal agents for compile-time tests — no LLM calls involved.
-const roundAgent: Agent = { name: 'RoundAgent', description: 'Round.', model: 'test', systemPrompt: 'Round.', tools: [] }
-const terminal: Agent = { name: 'Terminal', description: 'Terminal.', model: 'test', systemPrompt: 'Terminal.', tools: [] }
+const roundAgent: Agent = {
+  name: 'RoundAgent',
+  description: 'Round.',
+  model: 'test',
+  systemPrompt: 'Round.',
+  tools: []
+}
+const terminal: Agent = {
+  name: 'Terminal',
+  description: 'Terminal.',
+  model: 'test',
+  systemPrompt: 'Terminal.',
+  tools: []
+}
 const auditor: Agent = { name: 'Auditor', description: 'Audit.', model: 'test', systemPrompt: 'Audit.', tools: [] }
 
 const ROUND_TEMPLATE = '{{question}}'
