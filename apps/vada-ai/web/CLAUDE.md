@@ -1,6 +1,6 @@
 # Vada AI Web — Claude Code Instructions
 
-The Next.js web app for Vada AI. Users submit a question, configure agents, and watch a live deliberation stream powered by a Mastra workflow. Sessions are persisted and resumable.
+The Next.js web app for Vada AI. Users submit a question, configure agents, and watch a live deliberation stream powered by LangGraph via `@atta/adapter-langgraph`. Sessions are persisted and resumable.
 
 ---
 
@@ -41,7 +41,7 @@ apps/vada-ai/web/
 │   │   │       └── useJudgeBenchmark.ts    # Benchmark judge evaluation hook
 │   │   └── api/
 │   │       ├── deliberation/start/         # POST — create session, return sessionId
-│   │       ├── deliberation/[id]/workflow/run/  # POST start Mastra run + GET SSE stream
+│   │       ├── deliberation/[id]/workflow/run/  # POST start LangGraph run + GET SSE stream
 │   │       ├── deliberation/[id]/intervene/     # POST — whisper/directive/stop
 │   │       ├── sessions/                   # GET — list sessions
 │   │       ├── sessions/[id]/              # GET — fetch session state for hydration
@@ -50,27 +50,18 @@ apps/vada-ai/web/
 │   │       ├── sessions/[id]/judge/        # POST — run AI judge evaluation
 │   │       ├── sessions/[id]/export/       # GET — download full session transcript
 │   │       └── settings/                   # GET/POST — API keys + team model config
-│   ├── engine/                            # Deliberation engine (server-only)
-│   │   ├── agents.ts                      # Agent role definitions + configs
-│   │   ├── orchestrator.ts                # Provider call + retry wrapper
+│   ├── engine/                            # Web-side deliberation helpers (server-only)
 │   │   ├── conclusion-rescue.ts           # Conclusion JSON repair/fallback
 │   │   ├── turn-logic.ts                  # persistTurn — single DB write path for transcript
-│   │   ├── types.ts                       # Shared engine types
-│   │   ├── prompts/                       # Agent prompt composition
-│   │   │   ├── compose.ts
-│   │   │   ├── conclusion-prompts.ts
-│   │   │   ├── postures.ts
-│   │   │   ├── round-modifiers.ts
-│   │   │   ├── task-horizons.ts
-│   │   │   └── whisper-modifier.ts
-│   │   └── workflow/                      # Mastra workflow
-│   │       ├── crucible-workflow.ts        # Workflow definition (step graph)
-│   │       └── steps.ts                   # Step implementations + getNextCommand state machine
+│   │   └── types.ts                       # Shared engine types
 │   ├── schemas/                           # Zod schemas (session, conclusion, intervention)
 │   ├── components/                        # Shared UI (IdentityBanner, UserTopBar, etc.)
 │   └── lib/                              # Shared utilities + context
 ├── scripts/                              # Dev verification scripts
-│   └── test-crucible-workflow.ts          # Smoke test — runs full workflow via /workflow/run
+│   ├── verify-sparring-port.ts            # Smoke test — Sparring team end-to-end
+│   ├── verify-crucible-port.ts            # Smoke test — Crucible baseline (V1 migration check)
+│   ├── verify-baselines.ts                # Smoke test — A0/A1 baselines
+│   └── bench/                            # Benchmark harness (corpus, runner, analysis)
 ├── drizzle.config.ts
 └── package.json
 ```
@@ -81,25 +72,25 @@ apps/vada-ai/web/
 
 ### RULE #1: Engine changes require explicit instruction
 
-Do not modify agent prompts, round logic, or workflow steps without explicit instruction. The deliberation flow is intentional and tuned.
+Do not modify agent prompts, round logic, or deliberation flow without explicit instruction. The system is intentionally tuned.
 
 ### RULE #2: Workflow route guards against duplicate runs
 
-The `/workflow/run` route checks `session.state === 'PENDING'` before starting the Mastra workflow. This prevents duplicate runs on page reload or SSE reconnect. Never remove this guard.
+The `/workflow/run` route checks `session.state === 'PENDING'` before starting the LangGraph run. This prevents duplicate runs on page reload or SSE reconnect. Never remove this guard.
 
 ```ts
 const shouldStart = initial.state === 'PENDING'
 if (shouldStart) {
-  const wf = mastra.getWorkflow('crucible')
-  const run = await wf.createRun()
-  run.start({ inputData: { sessionId, apiKey } }).catch(() => {})
+  runLangGraph(sessionId, apiKey).catch((err) =>
+    console.error(`[LangGraph] Unhandled error for session ${sessionId}:`, err)
+  )
 }
 // Always open SSE poll loop — serves both fresh starts and reconnects
 ```
 
 ### RULE #3: persistTurn is the single write path
 
-All workflow steps write agent turns through `persistTurn` in `turn-logic.ts`. The SSE poll loop discovers new entries via DB reads. Never write transcript rows directly outside of `persistTurn`.
+All LangGraph node completions write agent turns through `persistTurn` in `turn-logic.ts` via the `onNodeComplete` execution hook. The SSE poll loop discovers new entries via DB reads. Never write transcript rows directly outside of `persistTurn`.
 
 ### RULE #4: Per-agent model config threads everywhere
 
@@ -112,7 +103,7 @@ Each agent can use a different model. Provider and modelId are stored on the ses
 | Route | Method | Purpose |
 |-------|--------|---------|
 | `/api/deliberation/start` | POST | Create session, return sessionId |
-| `/api/deliberation/[id]/workflow/run` | POST + GET SSE | Start Mastra workflow + stream events |
+| `/api/deliberation/[id]/workflow/run` | POST + GET SSE | Start LangGraph run + stream events |
 | `/api/deliberation/[id]/intervene` | POST | Send whisper/directive/stop intervention |
 | `/api/sessions` | GET | List user's sessions |
 | `/api/sessions/[id]` | GET | Fetch session state for page hydration |
@@ -133,7 +124,7 @@ Each agent can use a different model. Provider and modelId are stored on the ses
 | `ROUND_1` | Agents debating in round 1 |
 | `ROUND_2` | Agents debating in round 2 |
 | `ROUND_3` | Agents debating in round 3 |
-| `CONCLUDING` | Synthesizer producing structured conclusion JSON |
+| `CONCLUDING` | Synthesizer producing structured conclusion |
 | `AUDITING` | Blind critic evaluating the conclusion |
 | `REVISING` | Synthesizer revising after critic rejection |
 | `TERMINAL` | Deliberation complete — check `terminalState` for outcome |
@@ -142,10 +133,11 @@ Each agent can use a different model. Provider and modelId are stored on the ses
 
 | Terminal State | Meaning |
 |----------------|---------|
-| `CLEAN` | Critic accepted the first-pass conclusion |
-| `REVISED` | Critic rejected; revised conclusion accepted |
-| `UNCONVERGED` | Revision also rejected; best available conclusion shown |
-| `SPARRING_COMPLETE` | Legacy — pre-2026-04-18 sessions only; current engine never produces this |
+| `CLEAN` | Audits passed on first conclusion |
+| `REVISED` | Audits flagged; revised conclusion accepted |
+| `MAX_REVISIONS` | Audits kept flagging; revision slots exhausted |
+| `ERROR` | Runtime failure (API error, timeout) |
+| `SPARRING_COMPLETE` | Legacy — pre-2026-04-18 sessions only |
 
 ---
 
@@ -156,8 +148,8 @@ Each agent can use a different model. Provider and modelId are stored on the ses
 | Type | Payload | Effect |
 |------|---------|--------|
 | `state_changed` | `{ state: SessionState }` | Updates round indicators and loading spinners |
-| `agent_completed` | `{ agent: string; round: number; message: string }` | Appends transcript entry |
-| `terminal` | `{ terminalState: string; conclusion: object }` | Closes stream, renders conclusion panel |
+| `agent_completed` | `{ agent: string; round: number; content: string }` | Appends transcript entry |
+| `terminal` | `{ terminalState: string }` | Closes stream, renders conclusion panel |
 | `keepalive` | `{}` | No-op — prevents connection timeout every 15s |
 | `error` | `{ message: string }` | Infra-level failure (not model errors) |
 
@@ -167,12 +159,14 @@ Emission order within each poll cycle: `agent_completed` before `state_changed` 
 
 ## Specifications
 
-Specs live at the product level, not the surface level.
+Specs live at the product level (`apps/vada-ai/specs/`), not the surface level.
 
 | Spec | Path | Purpose |
 |------|------|---------|
-| Use Cases (v0) | [../specs/v0/Vada_Use_cases.md](../specs/v0/Vada_Use_cases.md) | Original use case definitions |
-| Science of Vada (v0) | [../specs/v0/science_of_vada.md](../specs/v0/science_of_vada.md) | Deliberation philosophy and methodology |
+| Product spec | [../specs/vada-product-spec.md](../specs/vada-product-spec.md) | Full product truth |
+| Science of deliberation | [../specs/vada-science-of-deliberation.md](../specs/vada-science-of-deliberation.md) | Deliberation theory |
+| Brokered deliberation | [../specs/brokered-deliberation/](../specs/brokered-deliberation/) | `vada__consult` MCP tool spec (00–06) |
+| Engine design decisions | [../specs/engine/design-decisions.md](../specs/engine/design-decisions.md) | Architectural decisions with rationale |
 
 ---
 
@@ -180,6 +174,8 @@ Specs live at the product level, not the surface level.
 
 - [Vada AI Overview](../CLAUDE.md)
 - [Root CLAUDE.md](../../../CLAUDE.md)
-- [.claude/skills/vada-engine/SKILL.md](../../../.claude/skills/vada-engine/SKILL.md) — Engine architecture and rules
+- [.claude/skills/atta-engine/SKILL.md](../../../.claude/skills/atta-engine/SKILL.md) — Plan compiler internals
+- [.claude/skills/atta-adapter-langgraph/SKILL.md](../../../.claude/skills/atta-adapter-langgraph/SKILL.md) — LangGraph execution + cognitive router
+- [.claude/skills/atta-teams/SKILL.md](../../../.claude/skills/atta-teams/SKILL.md) — Agent and team configs
 - [packages/ui/CLAUDE.md](../../../packages/ui/CLAUDE.md) — UI component library
 - [packages/cms/CLAUDE.md](../../../packages/cms/CLAUDE.md) — CMS theme system
