@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { compile } from '@atta/engine'
 import type { Team } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
+import { createDomainExpert } from '@vada/agents'
 import { reviewerProfiles, type ReviewerProfileName } from '../reviewer-profiles'
 import { logSession } from '../session-logger'
 
@@ -54,9 +55,13 @@ export type ConsultInputLegacy = z.infer<typeof ConsultInputLegacySchema>
 
 // ─── Internal normalized type ─────────────────────────────────────────────────
 
+export type ReviewerSpec =
+  | { profileName: ReviewerProfileName; notes?: string; domain?: never }
+  | { profileName: 'domain_expert'; notes?: string; domain: string }
+
 export interface ConsultInput {
   question: string
-  reviewerSpecs: Array<{ profileName: ReviewerProfileName; notes?: string }>
+  reviewerSpecs: ReviewerSpec[]
   sessionTitle?: string
   contextText?: string
   currentLeaning?: string
@@ -110,13 +115,24 @@ export function validateAndNormalize(args: unknown): ValidationOutcome {
     const result = ConsultInputStructuredSchema.safeParse(args)
     if (!result.success) return { valid: false, errors: mapZodErrors(result.error.issues) }
     const data = result.data
+
+    const domainExpertEnabled = process.env.VADA_DOMAIN_EXPERT === 'true'
+    const hasDomainExpert = data.reviewers.some((r) => r.role === 'domain_expert')
+    if (hasDomainExpert && !domainExpertEnabled) {
+      return { valid: false, errors: [{ field: 'reviewers', reason: 'domain_expert_not_available' }] }
+    }
+
+    const reviewerSpecs: ReviewerSpec[] = data.reviewers.map((r) =>
+      r.role === 'domain_expert'
+        ? { profileName: 'domain_expert' as const, notes: r.notes, domain: r.domain! }
+        : { profileName: r.role as ReviewerProfileName, notes: r.notes }
+    )
+
     return {
       valid: true,
       data: {
         question: composeQuestion(data),
-        reviewerSpecs: data.reviewers
-          .filter((r) => r.role !== 'domain_expert')
-          .map((r) => ({ profileName: r.role as ReviewerProfileName, notes: r.notes })),
+        reviewerSpecs,
         sessionTitle: data.session_title,
         contextText: data.context,
         currentLeaning: data.current_leaning,
@@ -141,7 +157,7 @@ export function validateAndNormalize(args: unknown): ValidationOutcome {
 // ─── Output types ─────────────────────────────────────────────────────────────
 
 export interface ReviewerResponse {
-  reviewer: ReviewerProfileName
+  reviewer: ReviewerProfileName | 'domain_expert'
   response: string
 }
 
@@ -170,7 +186,9 @@ function generateShareToken(): string {
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export async function runConsult(input: ConsultInput, apiKey: string, origin?: string): Promise<ConsultOutput> {
-  const selectedAgents = input.reviewerSpecs.map((s) => reviewerProfiles[s.profileName])
+  const selectedAgents = input.reviewerSpecs.map((s) =>
+    s.profileName === 'domain_expert' ? createDomainExpert(s.domain) : reviewerProfiles[s.profileName]
+  )
 
   const team: Team = {
     name: 'BrokeredConsult',
@@ -178,10 +196,11 @@ export async function runConsult(input: ConsultInput, apiKey: string, origin?: s
     agents: selectedAgents,
     workflow: {
       type: 'brokered',
-      reviewers: input.reviewerSpecs.map((s) => ({
-        agentName: reviewerProfiles[s.profileName].name,
-        messageTemplate: s.notes ? `${BASE_TEMPLATE}\n\n## Your Focus\n${s.notes}` : BASE_TEMPLATE
-      }))
+      reviewers: input.reviewerSpecs.map((s) => {
+        const agentName =
+          s.profileName === 'domain_expert' ? 'Domain Expert' : reviewerProfiles[s.profileName].name
+        return { agentName, messageTemplate: s.notes ? `${BASE_TEMPLATE}\n\n## Your Focus\n${s.notes}` : BASE_TEMPLATE }
+      })
     }
   }
 
@@ -218,7 +237,7 @@ export async function runConsult(input: ConsultInput, apiKey: string, origin?: s
   })
 
   const responses: ReviewerResponse[] = conclusion.transcript.map((entry, i) => ({
-    reviewer: input.reviewerSpecs[i]!.profileName,
+    reviewer: input.reviewerSpecs[i]!.profileName as ReviewerProfileName | 'domain_expert',
     response: entry.content
   }))
 
