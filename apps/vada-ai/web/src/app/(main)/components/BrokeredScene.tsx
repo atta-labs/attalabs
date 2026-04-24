@@ -58,12 +58,14 @@ export function BrokeredScene() {
             state={llmStates[id] ?? 'idle'}
             showMatrix={llmStates[id] === 'speaking'}
             label={label}
+            labelPlacement='absolute'
             labelPosition='right'
-          >
-            <div className='absolute inset-0 flex items-center justify-center pointer-events-none'>
-              <ModelIcon model={model} size={24} type='avatar' />
-            </div>
-          </AIASphere>
+            badge={
+              <span className='flex items-center justify-center rounded-md border border-border bg-card p-0.5 shadow-sm'>
+                <ModelIcon model={model} size={20} type='avatar' />
+              </span>
+            }
+          />
         </div>
       ))}
     </div>
