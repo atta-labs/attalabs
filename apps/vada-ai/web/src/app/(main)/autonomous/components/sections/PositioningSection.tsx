@@ -9,8 +9,8 @@ import { StatusFooter } from '../primitives/StatusFooter'
 import { TwoColumnSection } from '../primitives/TwoColumnSection'
 import { ArchitectureDiagram } from './ArchitectureDiagram'
 
-const P = mdxComponents.p
-const Blockquote = mdxComponents.blockquote
+const P = mdxComponents.p as React.ComponentType<{ children: React.ReactNode; className?: string }>
+const Blockquote = mdxComponents.blockquote as React.ComponentType<{ children: React.ReactNode; className?: string }>
 
 const POSITIONING_AGENTS: Array<{ id: string; name: AgentName }> = [
   { id: 'positioning-strategist', name: 'Strategist' },

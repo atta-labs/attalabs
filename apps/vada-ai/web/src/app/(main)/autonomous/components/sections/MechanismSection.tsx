@@ -10,8 +10,8 @@ import { TwoColumnSection } from '../primitives/TwoColumnSection'
 import { BYOKCallout } from './mechanism/BYOKCallout'
 import type { AgentCardData } from '../primitives/AgentCard'
 
-const P = mdxComponents.p
-const Blockquote = mdxComponents.blockquote
+const P = mdxComponents.p as React.ComponentType<{ children: React.ReactNode; className?: string }>
+const Blockquote = mdxComponents.blockquote as React.ComponentType<{ children: React.ReactNode; className?: string }>
 
 const MECHANISM_AGENTS: AgentCardData[] = [
   {

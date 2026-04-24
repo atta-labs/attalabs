@@ -10,8 +10,8 @@ import { TwoColumnSection } from '../primitives/TwoColumnSection'
 import type { AgentCardData } from '../primitives/AgentCard'
 import type { ConclusionField } from '../primitives/ConclusionCard'
 
-const P = mdxComponents.p
-const Blockquote = mdxComponents.blockquote
+const P = mdxComponents.p as React.ComponentType<{ children: React.ReactNode; className?: string }>
+const Blockquote = mdxComponents.blockquote as React.ComponentType<{ children: React.ReactNode; className?: string }>
 
 // --- Data Arrays ---
 const ROUND_1_AGENTS: AgentCardData[] = [
@@ -127,21 +127,21 @@ export function SeeItWorkSection() {
         A founder is deciding whether to expand internationally.
       </Heading>
 
-      <Text as='p' className='text-muted-foreground leading-relaxed text-base md:text-lg'>
+      <P>
         Most AI tools will simply answer the question you ask. Vāda interrogates the premise.
         <br />
         <br />
         Watch how a standard business dilemma is broken down by four distinct cognitive models. Through orthogonal
         analysis and adversarial friction, the initial binary choice is destroyed and synthesized into a superior
         strategic pivot.
-      </Text>
+      </P>
 
-      <blockquote className='border-l-4 border-foreground bg-muted/20 px-5 py-4 mt-2'>
-        <Text as='p' className='text-base text-foreground leading-relaxed'>
+      <Blockquote>
+        <P>
           The question she walked in with has been replaced by a better question.{' '}
           <span className='font-bold'>That reframe is the product.</span>
-        </Text>
-      </blockquote>
+        </P>
+      </Blockquote>
     </div>
   )
 
