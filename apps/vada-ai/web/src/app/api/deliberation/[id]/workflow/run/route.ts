@@ -1,14 +1,23 @@
-// PRODUCTION: This route executes the full deliberation server-side via the
-// Mastra crucible workflow.
-//   ?stream=true  — SSE stream; browser consumes events as workflow progresses
+// PRODUCTION: Executes the full deliberation server-side.
+//   ?stream=true  — SSE stream; browser consumes events as deliberation progresses
 //   ?sync=true    — synchronous; bench harness waits for completion
 //   (default)     — fire-and-forget; caller polls /api/sessions/[id]
+//
+// VADA_USE_LANGGRAPH=true routes to the LangGraph adapter (@atta/adapter-langgraph).
+// Default (env unset or false) uses the existing Mastra crucible workflow.
 //
 // SECURITY: apiKey transits server memory for the lifetime of this request only.
 // It is never persisted. SensitiveDataFilter in src/mastra/index.ts redacts it
 // from Langfuse traces. See followups.md (Step 5.5) for the observability note.
+import 'server-only'
+import { compile } from '@atta/engine'
+import type { ExecutionHooks, Plan } from '@atta/engine'
+import { LangGraphAdapter } from '@atta/adapter-langgraph'
+import { crucible } from '@vada/teams'
 import { auth } from '@atta/auth/hooks'
-import { getOrCreateUser, getSessionForUser, getSessionWithTranscript } from '@/db/queries'
+import { getOrCreateUser, getSessionForUser, getSessionWithTranscript, setSessionTerminalState } from '@/db/queries'
+import { persistTurn } from '@/engine/turn-logic'
+import type { TurnPhase } from '@/engine/types'
 import { mastra } from '@/mastra'
 
 export const maxDuration = 900 // 15 min — required for long SSE streams on Vercel
@@ -17,12 +26,114 @@ const KEEPALIVE_INTERVAL_MS = 15_000
 const MAX_DURATION_MS = 15 * 60 * 1_000
 const POLL_INTERVAL_MS = 1_000
 
+const USE_LANGGRAPH = process.env.VADA_USE_LANGGRAPH === 'true'
+
 function sseChunk(data: Record<string, unknown>): Uint8Array {
   return new TextEncoder().encode(`data: ${JSON.stringify(data)}\n\n`)
 }
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+// Returns audit agent names for a given revision slot in the order they execute.
+// Traverses the plan's edge chain starting from terminal-<slotIndex>.
+function resolveAuditChain(plan: Plan, slotIndex: number): string[] {
+  const result: string[] = []
+  let current = `terminal-${slotIndex}`
+  while (true) {
+    const edge = plan.graph.edges.find((e) => e.from === current)
+    if (!edge) break
+    const node = plan.graph.nodes[edge.to]
+    if (!node || node.role !== 'audit' || (node.metadata.revisionIndex ?? 0) !== slotIndex) break
+    result.push(node.agentName)
+    current = edge.to
+  }
+  return result
+}
+
+// LangGraph execution path. Compiles the plan, wires onNodeComplete → persistTurn,
+// and awaits completion. Safe to call fire-and-forget (.catch()) or awaited.
+async function runLangGraph(sessionId: string, apiKey: string | undefined): Promise<void> {
+  const session = await getSessionWithTranscript(sessionId)
+  if (!session) throw new Error(`Session ${sessionId} not found`)
+
+  const plan = compile({
+    team: crucible,
+    question: session.question,
+    model: session.modelId ?? 'claude-haiku-4-5-20251001'
+  })
+
+  const adapter = new LangGraphAdapter({ apiKey })
+
+  const hooks: ExecutionHooks = {
+    onNodeComplete: async ({ state, node, output }) => {
+      if (node.role === 'round') {
+        await persistTurn(sessionId, {
+          turnId: node.id,
+          content: output.content,
+          phase: 'run_agent',
+          agent: output.agentName,
+          round: (node.metadata.roundIndex ?? 0) + 1,
+          tokensInput: output.tokensInput,
+          tokensOutput: output.tokensOutput,
+          elapsedMs: output.elapsedMs
+        })
+        return
+      }
+
+      if (node.role === 'terminal') {
+        const phase: TurnPhase = (node.metadata.revisionIndex ?? 0) === 0 ? 'synthesize' : 'revise'
+        await persistTurn(sessionId, {
+          turnId: node.id,
+          content: output.content,
+          phase,
+          tokensInput: output.tokensInput,
+          tokensOutput: output.tokensOutput,
+          elapsedMs: output.elapsedMs
+        })
+        return
+      }
+
+      if (node.role === 'audit') {
+        const slotIndex = node.metadata.revisionIndex ?? 0
+        // Only fire after ALL auditors in this slot have completed.
+        // Uses the edge chain from terminal-<slotIndex> to determine which agents run in this slot.
+        const auditChain = resolveAuditChain(plan, slotIndex)
+        const auditNodesInSlot = auditChain.map((name) => `audit-${name}-${slotIndex}`)
+        const allDone = auditNodesInSlot.every((id) => id in state.outputs)
+        if (!allDone) return
+
+        // Combined verdict: anyOf any auditor in this slot flagging triggers the phase.
+        // Mirrors the engine's anyOf revisionCondition so the DB state reflects the actual
+        // engine decision, not an individual auditor's verdict.
+        const anyFlagged = auditChain.some((name) => {
+          const o = state.outputs[`audit-${name}-${slotIndex}`]
+          return o?.content.toLowerCase().includes('flag') ?? false
+        })
+
+        const phase: TurnPhase = slotIndex === 0 ? 'audit' : 'reaudit'
+        await persistTurn(sessionId, {
+          turnId: node.id,
+          content: anyFlagged ? 'FLAG' : 'PASS',
+          phase,
+          tokensInput: output.tokensInput,
+          tokensOutput: output.tokensOutput,
+          elapsedMs: output.elapsedMs
+        })
+      }
+    }
+  }
+
+  const conclusion = await adapter.execute({ plan, hooks, timeoutMs: 14 * 60 * 1_000 })
+
+  if (conclusion.terminalState === 'FAILED') {
+    console.error(`[LangGraph] Execution failed for session ${sessionId}:`, conclusion.error)
+    const fresh = await getSessionWithTranscript(sessionId)
+    if (fresh && !fresh.terminalState) {
+      await setSessionTerminalState(sessionId, 'ERROR')
+    }
+  }
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -50,11 +161,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   if (sync) {
-    const wf = mastra.getWorkflow('crucible')
-    const run = await wf.createRun()
-    const result = await run.start({ inputData: { sessionId, apiKey } })
-    if (result.status === 'failed') {
-      return Response.json({ error: 'Workflow failed', details: result.error }, { status: 500 })
+    if (USE_LANGGRAPH) {
+      await runLangGraph(sessionId, apiKey)
+    } else {
+      const wf = mastra.getWorkflow('crucible')
+      const run = await wf.createRun()
+      const result = await run.start({ inputData: { sessionId, apiKey } })
+      if (result.status === 'failed') {
+        return Response.json({ error: 'Workflow failed', details: result.error }, { status: 500 })
+      }
     }
     const fresh = await getSessionWithTranscript(sessionId)
     return Response.json({
@@ -67,14 +182,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const initial = await getSessionWithTranscript(sessionId)
     if (!initial) return Response.json({ error: 'Session not found' }, { status: 404 })
 
-    // Only start a new workflow run when the session is PENDING. Reconnects
+    // Only start a new run when the session is PENDING. Reconnects
     // (page reload, browser back/forward) must not spawn a second run.
     const shouldStart = initial.state === 'PENDING'
     if (shouldStart) {
-      const wf = mastra.getWorkflow('crucible')
-      const run = await wf.createRun()
-      // Fire and forget — SSE poll loop observes progress via DB
-      run.start({ inputData: { sessionId, apiKey } }).catch(() => {})
+      if (USE_LANGGRAPH) {
+        runLangGraph(sessionId, apiKey).catch((err) =>
+          console.error(`[LangGraph] Unhandled error for session ${sessionId}:`, err)
+        )
+      } else {
+        const wf = mastra.getWorkflow('crucible')
+        const run = await wf.createRun()
+        // Fire and forget — SSE poll loop observes progress via DB
+        run.start({ inputData: { sessionId, apiKey } }).catch(() => {})
+      }
     }
 
     let lastEntryCount = initial.transcriptEntries.length
@@ -167,8 +288,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   // Fire and forget — caller polls session state via /api/sessions/[id]
-  const wf = mastra.getWorkflow('crucible')
-  const run = await wf.createRun()
-  run.start({ inputData: { sessionId, apiKey } })
+  if (USE_LANGGRAPH) {
+    runLangGraph(sessionId, apiKey).catch(() => {})
+  } else {
+    const wf = mastra.getWorkflow('crucible')
+    const run = await wf.createRun()
+    run.start({ inputData: { sessionId, apiKey } })
+  }
   return Response.json({ sessionId })
 }
