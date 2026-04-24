@@ -1,5 +1,5 @@
 {
-  "name": "@vada/agents",
+  "name": "@vada/agents-ui",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
@@ -12,11 +12,15 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@atta/engine": "workspace:*"
+    "@atta/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@atta/typescript-config": "workspace:*",
-    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
     "typescript": "^5.7.0"
   }
 }

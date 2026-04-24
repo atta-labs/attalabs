@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { Text } from '@atta/ui/shared'
-import { AGENT_FACES_MINIMAL, AGENT_FACES_FULL, AGENT_LIST } from '@vada/agents'
-import type { FaceStyle } from '@vada/agents'
+import { AGENT_FACES_MINIMAL, AGENT_FACES_FULL, AGENT_LIST } from '@vada/agents-ui'
+import type { FaceStyle } from '@vada/agents-ui'
 
 const STYLE_OPTIONS: Array<{ id: FaceStyle; label: string; description: string }> = [
   {

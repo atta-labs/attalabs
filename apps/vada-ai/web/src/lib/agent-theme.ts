@@ -8,4 +8,4 @@ export {
   type AgentName,
   type AgentRole,
   type AgentDef
-} from '@vada/agents'
+} from '@vada/agents-ui'

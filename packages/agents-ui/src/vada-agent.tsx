@@ -1,7 +1,7 @@
 'use client'
 
 import { AIAgent, type AIAgentProps } from '@atta/ui/canvas'
-import { AGENTS, type AgentName } from './agents'
+import { AGENTS, type AgentName } from './metadata'
 import { AGENT_FACES as REDUCTIVE_FACES } from './agent-faces-minimal'
 import { AGENT_FACES as EMBLEMATIC_FACES } from './agent-faces-full'
 

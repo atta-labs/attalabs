@@ -1,9 +1,9 @@
-// ── teams.ts ──────────────────────────────────────────────────────────────────
+// ── teams-metadata.ts ─────────────────────────────────────────────────────────
 // Canonical team compositions for Vada deliberation sessions.
 // A team is a named roster of agents. Engine-level config (temperature, model)
 // lives in the Vada app — teams own only identity and composition.
 
-import type { AgentName } from './agents'
+import type { AgentName } from './metadata'
 
 export type TeamId = 'crucible' | 'war_room' | 'sparring'
 

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { AGENTS, AGENT_LIST, TEAM_LIST, type TeamId } from '@vada/agents'
+import { AGENTS, AGENT_LIST, TEAM_LIST, type TeamId } from '@vada/agents-ui'
 
 // Derive role slugs from @vada/agents — single source of truth.
 const agentRoleValues = AGENT_LIST.map((a) => a.role) as [string, ...string[]]
