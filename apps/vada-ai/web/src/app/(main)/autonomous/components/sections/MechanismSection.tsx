@@ -2,12 +2,16 @@
 
 import { Heading, Text } from '@atta/ui'
 import { VadaAgent as AIAgent, type AgentName } from '@/components/VadaAgent'
+import { mdxComponents } from '@/components/mdx/MDXComponents'
 import { AGENT_COLOR_BY_ROLE } from '@vada/agents'
 import { SectionLabel } from '../primitives/SectionLabel'
 import { SectionWrapper } from '../primitives/SectionWrapper'
 import { TwoColumnSection } from '../primitives/TwoColumnSection'
 import { BYOKCallout } from './mechanism/BYOKCallout'
 import type { AgentCardData } from '../primitives/AgentCard'
+
+const P = mdxComponents.p
+const Blockquote = mdxComponents.blockquote
 
 const MECHANISM_AGENTS: AgentCardData[] = [
   {
@@ -99,16 +103,16 @@ export function MechanismSection() {
           <span className='block text-muted-foreground'>One conclusion.</span>
         </Heading>
 
-        <Text as='p' className='text-muted-foreground leading-relaxed text-base md:text-lg'>
+        <P>
           The geometry of the room forces extreme scrutiny. The Strategist builds, the Critic tears down, the Devil's
           Advocate rejects the entire premise, and the Synthesizer hunts for the signal in the noise.
-        </Text>
+        </P>
 
-        <blockquote className='border-l-4 border-foreground bg-muted/20 px-5 py-4 mt-2'>
-          <Text as='p' className='text-base text-foreground leading-relaxed italic'>
+        <Blockquote>
+          <P>
             "Most AI products hide their uncertainty. <span className='font-bold not-italic'>Vāda names it.</span>"
-          </Text>
-        </blockquote>
+          </P>
+        </Blockquote>
       </div>
 
       <BYOKCallout />

@@ -2,11 +2,15 @@
 
 import { Heading, Text } from '@atta/ui'
 import { VadaAgent as AIAgent, type AgentName } from '@/components/VadaAgent'
+import { mdxComponents } from '@/components/mdx/MDXComponents'
 import { SectionLabel } from '../primitives/SectionLabel'
 import { SectionWrapper } from '../primitives/SectionWrapper'
 import { StatusFooter } from '../primitives/StatusFooter'
 import { TwoColumnSection } from '../primitives/TwoColumnSection'
 import { ArchitectureDiagram } from './ArchitectureDiagram'
+
+const P = mdxComponents.p
+const Blockquote = mdxComponents.blockquote
 
 const POSITIONING_AGENTS: Array<{ id: string; name: AgentName }> = [
   { id: 'positioning-strategist', name: 'Strategist' },
@@ -29,18 +33,18 @@ export function PositioningSection() {
               <span className='block'>Vāda is deliberation.</span>
             </Heading>
 
-            <Text as='p' className='text-muted-foreground max-w-xl leading-relaxed'>
+            <P className='max-w-xl'>
               The AI industry is racing to build better factories. Agent swarms that browse the web, read codebases,
               execute tasks at lightspeed. These are execution tools, and they have a blind spot. They assume the
               question is the right question. Give an execution swarm a bad idea and it will execute it perfectly.
-            </Text>
+            </P>
 
-            <blockquote className='border-l-4 border-secondary pl-5 py-1 max-w-xl'>
-              <Text as='p' className='text-foreground leading-relaxed'>
+            <Blockquote className='max-w-xl'>
+              <P>
                 Vāda sits above execution. You bring a decision to Vāda before you commit resources to it — to
                 stress-test the strategy, attack the assumptions, and find the blind spots.
-              </Text>
-            </blockquote>
+              </P>
+            </Blockquote>
 
             <StatusFooter
               label='Closed-Room Protocol'

@@ -2,12 +2,16 @@
 
 import { Heading, Text } from '@atta/ui'
 import { VadaAgent as AIAgent, type AgentName } from '@/components/VadaAgent'
+import { mdxComponents } from '@/components/mdx/MDXComponents'
 import { cn } from '@atta/ui/lib/utils'
 import { SectionLabel } from '../primitives/SectionLabel'
 import { SectionWrapper } from '../primitives/SectionWrapper'
 import { TwoColumnSection } from '../primitives/TwoColumnSection'
 import type { AgentCardData } from '../primitives/AgentCard'
 import type { ConclusionField } from '../primitives/ConclusionCard'
+
+const P = mdxComponents.p
+const Blockquote = mdxComponents.blockquote
 
 // --- Data Arrays ---
 const ROUND_1_AGENTS: AgentCardData[] = [
