@@ -1,5 +1,5 @@
 import { Badge } from '@atta/ui'
-import { AGENT_COLOR_BY_ROLE } from '@/lib/agent-theme'
+import { AGENT_COLOR_BY_ROLE } from '@vada/agents'
 
 export function AgentBadge({ agentRole, name }: { agentRole: string; name: string }) {
   const color = AGENT_COLOR_BY_ROLE[agentRole] ?? 'var(--muted-foreground)'

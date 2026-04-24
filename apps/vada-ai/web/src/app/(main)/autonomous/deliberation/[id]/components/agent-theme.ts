@@ -1,5 +1,5 @@
-// Deliberation-specific constants. Agent definitions live in @/lib/agent-theme.
-export { AGENT_THEME, AGENT_COLOR_BY_ROLE, AGENT_SPHERE_COLORS } from '@/lib/agent-theme'
+// Deliberation-specific constants. Agent definitions live in @vada/agents.
+export { AGENT_THEME, AGENT_COLOR_BY_ROLE, AGENT_SPHERE_COLORS } from '@vada/agents'
 
 export const ROUND_TITLES: Record<number, string> = {
   1: 'Initial Positions',
