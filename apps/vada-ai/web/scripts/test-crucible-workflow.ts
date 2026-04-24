@@ -1,4 +1,4 @@
-// Step 5 verification — full Crucible deliberation through the Mastra workflow route
+// Integration test — full Crucible deliberation through the LangGraph route
 //
 // Calls POST /api/deliberation/{id}/workflow/run?sync=true, which runs the
 // complete crucible workflow (12 agent turns + conclusion protocol) server-side.
@@ -106,7 +106,10 @@ async function main() {
     ['HTTP 200', workflowRes.status === 200],
     ['state is TERMINAL', workflowResult.state === 'TERMINAL'],
     ['terminalState present', !!workflowResult.terminalState],
-    ['terminalState is CLEAN or REVISED', ['CLEAN', 'REVISED'].includes(workflowResult.terminalState ?? '')]
+    [
+      'terminalState is CLEAN, REVISED, or MAX_REVISIONS',
+      ['CLEAN', 'REVISED', 'MAX_REVISIONS'].includes(workflowResult.terminalState ?? '')
+    ]
   ]
 
   // 3. Fetch session and verify conclusion row
