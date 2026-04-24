@@ -219,4 +219,4 @@ auditAgent: ['BlindCritic', 'FactChecker']
 
 - Why `tools: string[]` and not boolean: `apps/vada-ai/specs/engine/design-decisions.md`
 - Adapter-side execution: **adapter-layer** skill
-- Agent/Team examples: `packages/teams/src/` and **teams-layer** skill
+- Agent/Team examples: `apps/vada-ai/agents/src/` + `apps/vada-ai/teams/src/` and **atta-teams** skill
