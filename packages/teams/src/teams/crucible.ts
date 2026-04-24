@@ -1,11 +1,13 @@
 import type { Team } from '@atta/engine'
-import { strategist } from '../agents/strategist'
-import { critic } from '../agents/critic'
-import { devilsAdvocate } from '../agents/devils-advocate'
-import { synthesizer } from '../agents/synthesizer'
-import { conclusionSynthesizer } from '../agents/conclusion-synthesizer'
-import { blindCritic } from '../agents/blind-critic'
-import { factChecker } from '../agents/fact-checker'
+import {
+  strategist,
+  critic,
+  devilsAdvocate,
+  synthesizer,
+  conclusionSynthesizer,
+  blindCritic,
+  factChecker
+} from '@vada/agents'
 import { roundMessageTemplate } from '../templates/round-template'
 import { auditMessageTemplate } from '../templates/audit-template'
 

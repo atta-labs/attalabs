@@ -17,7 +17,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@atta/engine": "workspace:*"
+    "@atta/engine": "workspace:*",
+    "@vada/agents": "workspace:*"
   },
   "devDependencies": {
     "@atta/typescript-config": "workspace:*",

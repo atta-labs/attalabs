@@ -12,6 +12,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
+    "@atta/engine": "workspace:*",
     "@atta/ui": "workspace:*"
   },
   "peerDependencies": {

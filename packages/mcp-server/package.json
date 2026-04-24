@@ -17,6 +17,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@atta/engine": "workspace:*",
     "@atta/adapter-langgraph": "workspace:*",
+    "@vada/agents": "workspace:*",
     "@vada/teams": "workspace:*",
     "@atta/db": "workspace:*",
     "drizzle-orm": "^0.45.1",
