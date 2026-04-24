@@ -2,8 +2,8 @@
 
 import { AgentSphere, type AgentSphereProps } from '@atta/ui/agents'
 import { AGENTS, type AgentName } from '@vada/agents'
-import { AGENT_FACES as REDUCTIVE_FACES } from './agent-faces/agent-faces-minimal'
-import { AGENT_FACES as EMBLEMATIC_FACES } from './agent-faces/agent-faces-full'
+import { AGENT_FACES as REDUCTIVE_FACES } from './faces/agent-faces-minimal'
+import { AGENT_FACES as EMBLEMATIC_FACES } from './faces/agent-faces-full'
 
 export type FaceStyle = 'reductive' | 'emblematic'
 export type { AgentName }

@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import { Text } from '@atta/ui/shared'
-import { AGENT_FACES as AGENT_FACES_MINIMAL } from '@/components/agent-faces/agent-faces-minimal'
-import { AGENT_FACES as AGENT_FACES_FULL } from '@/components/agent-faces/agent-faces-full'
+import { AGENT_FACES as AGENT_FACES_MINIMAL } from '@/components/agents/faces/agent-faces-minimal'
+import { AGENT_FACES as AGENT_FACES_FULL } from '@/components/agents/faces/agent-faces-full'
 import { AGENT_LIST } from '@vada/agents'
-import type { FaceStyle } from '@/components/VadaAgent'
+import type { FaceStyle } from '@/components/agents'
 
 const STYLE_OPTIONS: Array<{ id: FaceStyle; label: string; description: string }> = [
   {

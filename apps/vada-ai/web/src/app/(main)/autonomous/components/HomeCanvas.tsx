@@ -1,7 +1,7 @@
 'use client'
 
 import { AIACanvas, AIARing } from '@atta/ui/canvas'
-import { VadaAgent as AIAgent, type AgentName } from '@/components/VadaAgent'
+import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
 import { type ReactNode, useRef } from 'react'
 import { useHomeCanvas } from './useHomeCanvas'
 import { useSphereAbsorb } from './useSphereAbsorb'

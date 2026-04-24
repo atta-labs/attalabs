@@ -2,7 +2,7 @@
 
 import { useCatalog, type RouteProvider } from '@atta/models'
 import { ModelPicker } from '@atta/ui'
-import { VadaAgent as AIAgent, type AgentName } from '@/components/VadaAgent'
+import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
 import { Text } from '@atta/ui/shared'
 import type { AgentDef } from '@vada/agents'
 

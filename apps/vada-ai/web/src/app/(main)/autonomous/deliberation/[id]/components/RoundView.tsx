@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { AIARing, useAIAContext } from '@atta/ui/canvas'
-import { VadaAgent as AIAgent, type AgentName } from '@/components/VadaAgent'
+import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
 import { getAgentConfigByName } from '@/schemas'
 import { CenterViewport } from './CenterViewport'
 
