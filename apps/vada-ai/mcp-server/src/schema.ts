@@ -1,4 +1,4 @@
-import { integer, jsonb, numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boolean, integer, jsonb, numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
 export const mcpSessions = pgTable('mcp_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -14,7 +14,14 @@ export const mcpSessions = pgTable('mcp_sessions', {
   tokensOutput: integer('tokens_output').notNull(),
   toolCalls: jsonb('tool_calls'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  durationMs: integer('duration_ms').notNull()
+  durationMs: integer('duration_ms').notNull(),
+  sessionTitle: text('session_title'),
+  context: text('context'),
+  currentLeaning: text('current_leaning'),
+  stakes: text('stakes'),
+  origin: text('origin'),
+  isShared: boolean('is_shared').default(false).notNull(),
+  shareToken: text('share_token').unique()
 })
 
 export type McpSession = typeof mcpSessions.$inferSelect
