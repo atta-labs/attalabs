@@ -58,6 +58,9 @@ export interface ConsultInput {
   question: string
   reviewerSpecs: Array<{ profileName: ReviewerProfileName; notes?: string }>
   sessionTitle?: string
+  contextText?: string
+  currentLeaning?: string
+  stakes?: string
 }
 
 // ─── Structured error types ───────────────────────────────────────────────────
@@ -114,7 +117,10 @@ export function validateAndNormalize(args: unknown): ValidationOutcome {
         reviewerSpecs: data.reviewers
           .filter((r) => r.role !== 'domain_expert')
           .map((r) => ({ profileName: r.role as ReviewerProfileName, notes: r.notes })),
-        sessionTitle: data.session_title
+        sessionTitle: data.session_title,
+        contextText: data.context,
+        currentLeaning: data.current_leaning,
+        stakes: data.stakes
       }
     }
   }
@@ -151,9 +157,19 @@ export interface ConsultOutput {
   }
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function generateShareToken(): string {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+  const bytes = crypto.getRandomValues(new Uint8Array(6))
+  return Array.from(bytes)
+    .map((b) => chars[b % 62])
+    .join('')
+}
+
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
-export async function runConsult(input: ConsultInput, apiKey: string): Promise<ConsultOutput> {
+export async function runConsult(input: ConsultInput, apiKey: string, origin?: string): Promise<ConsultOutput> {
   const selectedAgents = input.reviewerSpecs.map((s) => reviewerProfiles[s.profileName])
 
   const team: Team = {
@@ -191,7 +207,14 @@ export async function runConsult(input: ConsultInput, apiKey: string): Promise<C
     tokensInput: conclusion.totalTokensInput,
     tokensOutput: conclusion.totalTokensOutput,
     toolCalls: null,
-    durationMs
+    durationMs,
+    sessionTitle: input.sessionTitle ?? null,
+    context: input.contextText ?? null,
+    currentLeaning: input.currentLeaning ?? null,
+    stakes: input.stakes ?? null,
+    origin: origin ?? 'other',
+    isShared: false,
+    shareToken: generateShareToken()
   })
 
   const responses: ReviewerResponse[] = conclusion.transcript.map((entry, i) => ({

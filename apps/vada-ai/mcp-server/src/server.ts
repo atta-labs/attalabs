@@ -92,6 +92,16 @@ Runtime: Sparring ~30-90s; Crucible 2-5min. Client timeout permitting.`
 
 const VALID_PROFILES = Object.keys(reviewerProfiles) as ReviewerProfileName[]
 
+function detectOrigin(clientName: string | undefined): string {
+  if (!clientName) return 'other'
+  const name = clientName.toLowerCase()
+  if (name.includes('claude-desktop') || name.includes('claude desktop')) return 'claude-desktop'
+  if (name.includes('cursor')) return 'cursor'
+  if (name.includes('claude-code') || name.includes('claude code')) return 'claude-code'
+  if (name.includes('claude.ai') || name.includes('claude ai') || name.includes('anthropic')) return 'claude-ai'
+  return 'other'
+}
+
 /**
  * Creates and configures the Vāda MCP server.
  *
@@ -166,7 +176,8 @@ export function createServer(apiKey: string): Server {
       }
 
       try {
-        const result = await runConsult(validation.data, apiKey)
+        const origin = detectOrigin(server.getClientVersion()?.name)
+        const result = await runConsult(validation.data, apiKey, origin)
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)
