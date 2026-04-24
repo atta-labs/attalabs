@@ -155,16 +155,12 @@ export class LangGraphAdapter implements Adapter {
    * the Conclusion. Delegates to methods that will be implemented
    * in subsequent tasks.
    */
-  private async runExecution(
-    state: ExecutionState,
-    _hooks: ExecutionHooks,
-    params: ExecuteParams
-  ): Promise<Conclusion> {
+  private async runExecution(state: ExecutionState, hooks: ExecutionHooks, params: ExecuteParams): Promise<Conclusion> {
     // Resolve LLM call: user override > default
     const llmCall = params.llmCall ?? createDefaultLlmCall(this.config.apiKey)
 
-    // Create node executor bound to the LLM function
-    const executor = createNodeExecutor(llmCall)
+    // Create node executor bound to the LLM function and lifecycle hooks
+    const executor = createNodeExecutor(llmCall, hooks)
 
     // Build the LangGraph StateGraph from the Plan.
     // Passing apiKey enables the cognitive router (classifier nodes injected before

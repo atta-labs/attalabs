@@ -1,10 +1,17 @@
 import Handlebars from 'handlebars'
-import { deriveTemplateState, type Agent, type AgentOutput, type ExecutionState, type LlmCallFn } from '@atta/engine'
+import {
+  deriveTemplateState,
+  type Agent,
+  type AgentOutput,
+  type ExecutionHooks,
+  type ExecutionState,
+  type LlmCallFn
+} from '@atta/engine'
 import type { NodeExecutor } from './graph-builder.js'
 import type { ToolUseRecord } from './graph-state.js'
 
 /**
- * Creates a NodeExecutor bound to a specific LLM call function.
+ * Creates a NodeExecutor bound to a specific LLM call function and optional hooks.
  *
  * The returned executor:
  *   1. Reconstructs a transient ExecutionState from the graph state
@@ -12,9 +19,10 @@ import type { ToolUseRecord } from './graph-state.js'
  *   3. Compiles and renders the node's inputTemplate
  *   4. Invokes the LLM with systemPrompt + rendered userPrompt
  *   5. Constructs an AgentOutput from the result
- *   6. Returns partial state with the new output and execution order
+ *   6. Calls hooks.onNodeComplete if provided (swallows errors, consistent with other hooks)
+ *   7. Returns partial state with the new output and execution order
  */
-export function createNodeExecutor(llmCall: LlmCallFn): NodeExecutor {
+export function createNodeExecutor(llmCall: LlmCallFn, hooks?: ExecutionHooks): NodeExecutor {
   return async (graphState, context) => {
     const { node, plan } = context
 
@@ -93,6 +101,21 @@ export function createNodeExecutor(llmCall: LlmCallFn): NodeExecutor {
       model: llmResult.model,
       roundIndex: node.metadata.roundIndex,
       stepIndex: node.metadata.customStepIndex
+    }
+
+    // Fire onNodeComplete hook with state-as-of-this-node. Errors are swallowed and
+    // logged, consistent with how onStart/onComplete are handled in adapter.ts.
+    if (hooks?.onNodeComplete) {
+      const stateAfterNode: ExecutionState = {
+        ...executionStateView,
+        outputs: { ...executionStateView.outputs, [node.id]: agentOutput },
+        executionOrder: [...executionStateView.executionOrder, node.id]
+      }
+      try {
+        await hooks.onNodeComplete({ state: stateAfterNode, node, output: agentOutput })
+      } catch (err) {
+        console.error(`[LangGraphAdapter] onNodeComplete hook failed for node '${node.id}':`, err)
+      }
     }
 
     // Return partial state update. Reducers handle merging.
