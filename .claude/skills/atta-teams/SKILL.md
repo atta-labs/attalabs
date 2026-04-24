@@ -3,35 +3,50 @@ name: atta-teams
 description: Vāda agent and team configurations. Load when adding/modifying agents, teams, reviewer profiles, or building a verticalized team for a specific domain. Covers the tools-on/tools-off invariant. Do NOT load for engine primitives or adapter runtime.
 ---
 
-# `@vada/teams` — Deliberation Content
+# `@vada/agents` + `@vada/teams` — Deliberation Content
 
 ## Context
 
-`@vada/teams` holds validated Agent and Team configurations. Pure configuration — system prompts, models, tool declarations, workflow composition. No runtime logic. Agents are immutable configs; teams compose them into deliberations.
+Agent and team configurations are split across two packages:
 
-This is where MOAT-B (validated corpora) will live when verticalized teams arrive. Currently contains generic Crucible, Sparring (default), and A0/A1 baselines.
+- **`@vada/agents`** (`apps/vada-ai/agents/`) — agent definitions with display metadata (`VadaAgentDef` extends `Agent`). Pure config — system prompts, tool lists, UI colors, face indices.
+- **`@vada/teams`** (`apps/vada-ai/teams/`) — team configs that compose agents into deliberation workflows.
+
+No runtime logic lives in either package. Agents are immutable configs; teams compose them into deliberations.
+
+This is where MOAT-B (validated corpora) will live when verticalized teams arrive. Currently contains generic Crucible, War Room, Sparring (default), and A0/A1 baselines.
 
 ---
 
 ## Architecture
 
 ```
-packages/teams/src/
+apps/vada-ai/agents/src/
 ├── agents/
 │   ├── strategist.ts              # Reasoning; tools ON
 │   ├── critic.ts                  # Reasoning; tools ON
 │   ├── devils-advocate.ts         # Reasoning; tools ON
 │   ├── synthesizer.ts             # Round integrator; tools ON (classifier hard-rule)
+│   ├── researcher.ts              # Evidence grounding; tools ON
+│   ├── operator.ts                # Execution feasibility; tools OFF
 │   ├── conclusion-synthesizer.ts  # Final commit; tools OFF
 │   ├── blind-critic.ts            # Logical audit; tools OFF (blindness is the point)
 │   ├── fact-checker.ts            # Factual audit; tools ON (verification is the point)
 │   ├── a0-solo.ts                 # Naive single-shot baseline
 │   └── a1-solo.ts                 # Rich structured-output baseline
+├── types.ts                       # VadaAgentDef, AgentName
+└── index.ts                       # Public exports
+
+apps/vada-ai/teams/src/
 ├── teams/
-│   ├── crucible.ts                # 4-agent heavy team (legacy default, still available)
 │   ├── sparring.ts                # 2-agent default team
+│   ├── crucible.ts                # 4-agent heavy team
+│   ├── war-room.ts                # 6-agent heavyweight (Crucible + Researcher + Operator)
 │   ├── a0.ts                      # A0 baseline team
 │   └── a1.ts                      # A1 baseline team
+├── templates/
+│   ├── round-template.ts
+│   └── audit-template.ts
 └── index.ts                       # Public exports
 ```
 
@@ -59,18 +74,24 @@ If you find yourself wanting to flip any of these, STOP. Surface to Principal.
 ## Agent Definition Pattern
 
 ```ts
-import type { Agent } from '@atta/engine';
+import type { VadaAgentDef } from '../types'
 
-export const strategist: Agent = {
+export const strategist = {
   name: 'Strategist',                         // PascalCase, matches filename
-  model: 'claude-sonnet-4-5',
+  role: 'strategist',                         // kebab-free slug used by web app
+  displayName: 'The Strategist',
+  tagline: 'Maps the landscape',
+  color: 'var(--agent-strategist)',
+  faceIndex: 0,
+  description: '...',
   tools: ['web_search', 'web_fetch'],         // always string[]; [] for tool-off
   systemPrompt: `You are the Strategist. Your role is to...`,
-};
+} satisfies VadaAgentDef
 ```
 
 Conventions:
-- `name` is PascalCase and unique; filename matches (kebab-case) e.g. `devils-advocate.ts` exports `devilsAdvocate: Agent` with `name: "Devil's Advocate"`
+- `name` is PascalCase and unique; filename matches (kebab-case) e.g. `devils-advocate.ts` exports `devilsAdvocate` with `name: "Devil's Advocate"`
+- `satisfies VadaAgentDef` instead of explicit type — preserves literal types
 - `model` is a literal string matching current Anthropic model names
 - `tools` is always `string[]`. Use `[]` (not omit) for tool-off agents — explicit intent beats silent default
 - `systemPrompt` is role-focused. Round-specific context comes from the adapter at runtime, not the system prompt
@@ -80,13 +101,13 @@ Conventions:
 ## Team Definition Pattern
 
 ```ts
-import type { Team } from '@atta/engine';
+import type { Team } from '@atta/engine'
 import {
   strategist, critic,
   conclusionSynthesizer, blindCritic, factChecker
-} from '../agents';
-import { roundMessageTemplate } from '../templates/round-template.js';
-import { auditMessageTemplate } from '../templates/audit-template.js';
+} from '@vada/agents'
+import { roundMessageTemplate } from '../templates/round-template'
+import { auditMessageTemplate } from '../templates/audit-template'
 
 export const sparring: Team = {
   name: 'Sparring',
@@ -201,9 +222,9 @@ strategist.model = 'claude-haiku-4-5';      // every team now uses haiku
 
 For use with `vada__consult` (Brokered mode):
 
-1. Create agent in `agents/<profile-name>.ts` following the Agent pattern
-2. Export from `index.ts`
-3. Add to `reviewerProfiles` map in `@vada/mcp-server/src/reviewer-profiles.ts`
+1. Create agent in `apps/vada-ai/agents/src/agents/<profile-name>.ts` following the Agent pattern
+2. Export from `apps/vada-ai/agents/src/index.ts`
+3. Add to `reviewerProfiles` map in `apps/vada-ai/mcp-server/src/reviewer-profiles.ts`
 4. Update `vada__consult` tool description to mention the new profile
 
 ---
@@ -255,7 +276,8 @@ Crucible (4-7 agents) is no longer the default team — Sparring (2 agents) is. 
 
 ## When you need more context
 
-- Why tools-on/tools-off split: **adapter-layer** skill + Task 4.5 rationale
-- Agent/Workflow/Team types: **engine-layer** skill
-- Reviewer profile usage: **mcp-server-layer** skill
+- Why tools-on/tools-off split: **atta-adapter-langgraph** skill + Task 4.5 rationale
+- Agent/Workflow/Team types: **atta-engine** skill
+- Reviewer profile usage: **vada-mcp-server** skill
+- Brokered mode concepts: **vada-brokered** skill
 - Pre-launch corpus plan: `apps/vada-ai/specs/vada-product-spec.md` Section 11
