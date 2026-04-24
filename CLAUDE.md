@@ -154,8 +154,13 @@ In-depth guides for specific domains. Reference when working in that area.
 | Monorepo | [.claude/skills/monorepo-structure/SKILL.md](.claude/skills/monorepo-structure/SKILL.md) | Workspace layout, package imports |
 | Git Commits | [.claude/skills/git-commits/SKILL.md](.claude/skills/git-commits/SKILL.md) | Commit format and rules |
 | Canvas Animation | [.claude/skills/canvas-animation/SKILL.md](.claude/skills/canvas-animation/SKILL.md) | AIACanvas, AIASphere, AIARing |
-| Vada Engine | [.claude/skills/vada-engine/SKILL.md](.claude/skills/vada-engine/SKILL.md) | Deliberation engine, sessions, streaming |
+| Vada Architecture | [.claude/skills/vada-architecture/SKILL.md](.claude/skills/vada-architecture/SKILL.md) | Architecture master reference — layer stack, phase status, moat framework |
+| Vada Brokered | [.claude/skills/vada-brokered/SKILL.md](.claude/skills/vada-brokered/SKILL.md) | Brokered mode — `vada__consult`, reviewer personas, Caller Claude protocol |
+| Vada MCP Server | [.claude/skills/vada-mcp-server/SKILL.md](.claude/skills/vada-mcp-server/SKILL.md) | MCP server implementation |
 | Vada Home Sections | [.claude/skills/vada-home-sections/SKILL.md](.claude/skills/vada-home-sections/SKILL.md) | Home page section primitives (SectionWrapper, SectionLabel, StatusFooter, TwoColumnSection) and composition recipe |
+| Atta Engine | [.claude/skills/atta-engine/SKILL.md](.claude/skills/atta-engine/SKILL.md) | Plan compiler — types, validation, compilers, node ID scheme |
+| Atta Adapter | [.claude/skills/atta-adapter-langgraph/SKILL.md](.claude/skills/atta-adapter-langgraph/SKILL.md) | LangGraph execution + cognitive router |
+| Atta Teams | [.claude/skills/atta-teams/SKILL.md](.claude/skills/atta-teams/SKILL.md) | Agent and team configs |
 | Herald Engine | [.claude/skills/herald-engine/SKILL.md](.claude/skills/herald-engine/SKILL.md) | Forensic audit, Skeptical Auditor, signal detection |
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, per-product isolation |
 | Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |
