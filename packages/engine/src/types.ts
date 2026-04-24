@@ -208,18 +208,6 @@ export interface Baseline {
   agent: Agent
 }
 
-/**
- * Converts a Baseline into a solo-workflow Team for use in experiments.
- * Enables baselines to run through the same engine path as full teams,
- * producing comparable Conclusion objects with a consistent transcript structure.
- *
- * @example
- * const team = baselineAsTeam(myBaseline);
- * // team.workflow === { type: 'solo' }
- * // team.agents === [myBaseline.agent]
- */
-export declare function baselineAsTeam(baseline: Baseline): Team
-
 // =============================================================================
 // Group 5: AgentOutput
 // =============================================================================
@@ -527,30 +515,6 @@ export interface TemplateState {
   customVars: Record<string, unknown>
 }
 
-/**
- * Derives the TemplateState for a given node from the current ExecutionState.
- *
- * This is the deterministic contract adapters MUST use to build Handlebars contexts.
- * Centralizing derivation in the engine ensures consistent template behavior
- * across all adapter implementations (Mastra, test harness, future runtimes).
- *
- * @example
- * const ctx = deriveTemplateState(executionState, currentNode);
- * const userPrompt = Handlebars.compile(currentNode.inputTemplate)(ctx);
- */
-export declare function deriveTemplateState(state: ExecutionState, node: PlanNode): TemplateState
-
-/**
- * Validates a Handlebars template string for syntactic correctness and
- * role-appropriate variable usage. Throws on failure.
- *
- * Called at plan compile time so template errors surface before any LLM call is made.
- *
- * @throws {Error} when the template contains syntax errors or references variables
- *   not available for the given PlanNodeRole.
- */
-export declare function validateTemplate(template: string, role: PlanNodeRole): void
-
 // =============================================================================
 // Group 9: Adapter interface + callbacks
 // =============================================================================
@@ -663,19 +627,6 @@ export interface Adapter {
 // =============================================================================
 
 /**
- * Parameters for Engine.deliberate — the primary "run this team" entry point.
- */
-export interface DeliberateParams {
-  team: Team
-  question: string
-  model: string
-  customVars?: Record<string, unknown>
-  llmCall?: LlmCallFn
-  hooks?: ExecutionHooks
-  timeoutMs?: number
-}
-
-/**
  * Parameters for Engine.compile — converts a Team + question into a serializable Plan.
  */
 export interface CompileParams {
@@ -683,74 +634,6 @@ export interface CompileParams {
   question: string
   model: string
 }
-
-/**
- * Parameters for Engine.executePlan — runs a pre-compiled Plan directly.
- * Use this for replay, MCP-served plans, or post-compile inspection workflows.
- */
-export interface ExecutePlanParams {
-  plan: Plan
-  customVars?: Record<string, unknown>
-  llmCall?: LlmCallFn
-  hooks?: ExecutionHooks
-  timeoutMs?: number
-}
-
-/**
- * Parameters for Engine.experiment — runs a full Experiment against a Corpus.
- */
-export interface ExperimentParams {
-  experiment: Experiment
-  /** LLM call override applied to all variant runs in the experiment. */
-  llmCall?: LlmCallFn
-  /** Hooks applied to each individual variant run. */
-  hooks?: ExecutionHooks
-}
-
-/**
- * The Engine interface — the compiler and top-level orchestrator of the Vāda system.
- *
- * Responsibilities:
- * - Compiling Teams into Plans (deterministic, pure, no side effects)
- * - Delegating execution to the bound Adapter
- * - Orchestrating multi-variant experiments with pairwise judge evaluation
- *
- * Use deliberate() for the common case. Use compile() + executePlan() when you
- * need to inspect, store, replay, or serve plans via MCP before executing them.
- */
-export interface Engine {
-  /**
-   * Compiles the team into a plan and executes it end-to-end.
-   * Equivalent to compile(params) followed by executePlan(plan, params).
-   */
-  deliberate(params: DeliberateParams): Promise<Conclusion>
-  /**
-   * Compiles a Team and question into a serializable Plan.
-   * Pure function — no side effects, no LLM calls, no I/O.
-   */
-  compile(params: CompileParams): Plan
-  /**
-   * Executes a pre-compiled Plan, optionally overriding runtime variables.
-   * Use for replay, MCP-served plans, or staged execution.
-   */
-  executePlan(params: ExecutePlanParams): Promise<Conclusion>
-  /**
-   * Runs a full Experiment: executes all variants across the corpus, judges pairwise,
-   * and returns aggregated results with statistical summaries.
-   */
-  experiment(params: ExperimentParams): Promise<ExperimentResult>
-}
-
-/**
- * Creates an Engine instance bound to the given Adapter.
- * The adapter handles all LLM calls and runtime execution; the engine handles compilation.
- *
- * @example
- * import { MastraAdapter } from '@atta/engine-mastra';
- * const engine = createEngine({ adapter: new MastraAdapter() });
- * const conclusion = await engine.deliberate({ team, question, model: 'claude-opus-4-7' });
- */
-export declare function createEngine(params: { adapter: Adapter }): Engine
 
 // =============================================================================
 // Group 11: Corpus
