@@ -24,6 +24,7 @@
     "./lib/color-scheme-toggle": "./lib/color-scheme-toggle.tsx",
     "./lib/next-link": "./lib/next-link.tsx",
     "./canvas": "./canvas/index.ts",
+    "./agents": "./agents/index.ts",
     "./lib/*": "./lib/*.ts",
     "./hooks/*": "./hooks/*.ts",
     "./components/*": "./libraries/basic/installed/*.tsx",
