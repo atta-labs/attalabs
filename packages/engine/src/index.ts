@@ -4,3 +4,7 @@ export { compile } from './compile'
 export { deriveTemplateState } from './derive'
 export { validateTemplate } from './validate-template'
 export { validateTeam, validateWorkflow } from './validate'
+// Phase 7.2 additions
+export { loadSpec } from './spec-loader'
+export { compileSpec, specToTeam } from './compilers/spec'
+export type { DeliberationSpec, SpecAgent, FlowSpec, ReviewerSpec } from './spec-types'
