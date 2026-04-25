@@ -328,6 +328,17 @@ export interface Plan {
   workflowType: Workflow['type']
   /** The compiled execution graph. */
   graph: PlanGraph
+  // Phase 7.2 additions — set by compileSpec(), absent on legacy compile() plans
+  /** YAML spec ID this plan was compiled from (e.g. "crucible-v1"). */
+  specId?: string
+  /** How Conclusion.content is assembled: synthesize = terminal node output; concatenate = all outputs joined. */
+  responseMode?: 'synthesize' | 'concatenate'
+  /** Node ID whose output becomes Conclusion.content. Used instead of last-transcript-entry scan. */
+  responseNode?: string
+  /** Maximum audit revision cycles from the spec. 0 = no audit. */
+  maxRevisions?: number
+  /** Per-agent classifier mode overrides, keyed by Agent.name. */
+  classifierModes?: Record<string, 'auto' | 'skip' | 'always_tools'>
 }
 
 /**
@@ -538,6 +549,10 @@ export interface TemplateState {
   /** Outputs from prior revision cycles at this node's position. */
   previousRevisions?: AgentOutput[]
   customVars: Record<string, unknown>
+  /** Comma-separated list of round agent names in turn order (e.g. "Strategist, Critic, Devil's Advocate, Synthesizer"). */
+  participants: string
+  /** Name of the current agent being invoked (same as agent.name). */
+  agentName: string
 }
 
 // =============================================================================

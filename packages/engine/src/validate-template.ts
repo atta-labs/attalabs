@@ -14,7 +14,9 @@ const BASE_VARIABLES = new Set([
   'outputsByAgent',
   'lastOutputByAgent',
   'auditOutputs',
-  'customVars'
+  'customVars',
+  'participants',
+  'agentName'
 ])
 
 /**

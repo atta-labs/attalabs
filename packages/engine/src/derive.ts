@@ -109,6 +109,15 @@ export function deriveTemplateState(state: ExecutionState, node: PlanNode): Temp
     }
   }
 
+  // participants: round-agent names in turn order (round-0 nodes, JS insertion order)
+  const participants = Object.values(state.plan.graph.nodes)
+    .filter((n) => n.role === 'round' && n.metadata.roundIndex === 0)
+    .map((n) => n.agentName)
+    .join(', ')
+
+  // agentName: the current agent's name
+  const agentName = node.agentName
+
   return {
     question: state.question,
     agent,
@@ -125,6 +134,8 @@ export function deriveTemplateState(state: ExecutionState, node: PlanNode): Temp
     auditOutputs,
     conclusion,
     previousRevisions,
-    customVars: state.customVars
+    customVars: state.customVars,
+    participants,
+    agentName
   }
 }
