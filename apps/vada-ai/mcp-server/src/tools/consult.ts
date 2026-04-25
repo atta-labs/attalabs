@@ -196,7 +196,10 @@ export async function runConsult(input: ConsultInput, apiKey: string, origin?: s
       type: 'brokered',
       reviewers: input.reviewerSpecs.map((s) => {
         const agentName = s.profileName === 'domain_expert' ? 'Domain Expert' : reviewerProfiles[s.profileName].name
-        return { agentName, messageTemplate: s.notes ? `${BASE_TEMPLATE}\n\n## Your Focus\n${s.notes}` : BASE_TEMPLATE }
+        return {
+          agentName,
+          messageTemplate: s.notes ? `${BASE_TEMPLATE}\n\n## Specific Request For You\n${s.notes}` : BASE_TEMPLATE
+        }
       })
     }
   }
