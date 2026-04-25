@@ -6,11 +6,12 @@
 // SECURITY: apiKey transits server memory for the lifetime of this request only.
 // It is never persisted.
 import 'server-only'
-import { compile } from '@atta/engine'
-import type { ExecutionHooks, Plan } from '@atta/engine'
+import { compileSpec } from '@atta/engine'
+import { loadSpec } from '@atta/engine'
+import type { ExecutionHooks, Plan, DeliberationSpec } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { crucible, sparring, warRoom } from '@vada/teams'
-import type { Team } from '@atta/engine'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { auth } from '@atta/auth/hooks'
 import { getOrCreateUser, getSessionForUser, getSessionWithTranscript, setSessionTerminalState } from '@/db/queries'
 import { persistTurn } from '@/engine/turn-logic'
@@ -46,10 +47,21 @@ function resolveAuditChain(plan: Plan, slotIndex: number): string[] {
   return result
 }
 
-function selectTeam(agents: string[]): Team {
-  if (agents.includes('researcher') || agents.includes('operator')) return warRoom
-  if (agents.length <= 2) return sparring
-  return crucible
+function loadYaml(filename: string): DeliberationSpec {
+  const content = readFileSync(join(process.cwd(), 'apps/vada-ai/yamls', filename), 'utf-8')
+  return loadSpec(content)
+}
+
+const SPEC_CACHE: Record<string, DeliberationSpec> = {
+  crucible: loadYaml('crucible-v1.yaml'),
+  sparring: loadYaml('sparring-v1.yaml'),
+  'war-room': loadYaml('war-room-v1.yaml')
+}
+
+function selectSpec(agents: string[]): DeliberationSpec {
+  if (agents.includes('researcher') || agents.includes('operator')) return SPEC_CACHE['war-room']!
+  if (agents.length <= 2) return SPEC_CACHE['sparring']!
+  return SPEC_CACHE['crucible']!
 }
 
 // Compiles the plan, wires onNodeComplete → persistTurn, and awaits completion.
@@ -58,11 +70,8 @@ async function runLangGraph(sessionId: string, apiKey: string | undefined): Prom
   const session = await getSessionWithTranscript(sessionId)
   if (!session) throw new Error(`Session ${sessionId} not found`)
 
-  const plan = compile({
-    team: selectTeam(session.agents),
-    question: session.question,
-    model: session.modelId ?? 'claude-haiku-4-5-20251001'
-  })
+  const spec = selectSpec(session.agents)
+  const plan = compileSpec(spec, session.question, session.modelId ?? 'claude-sonnet-4-6')
 
   const adapter = new LangGraphAdapter({ apiKey })
 
