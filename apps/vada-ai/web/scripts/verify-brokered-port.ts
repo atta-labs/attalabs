@@ -1,6 +1,7 @@
-import { compile } from '@atta/engine'
+import { compileSpec, loadSpec } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { brokeredTrio } from '@vada/teams'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
@@ -9,20 +10,20 @@ if (!apiKey) {
 }
 
 const adapter = new LangGraphAdapter({ apiKey })
-
 const questions = ['What are the key risks of migrating a production monolith to microservices in under 6 months?']
-
 const model = process.env.VADA_TEST_MODEL ?? 'claude-haiku-4-5-20251001'
+
+const spec = loadSpec(readFileSync(join(process.cwd(), '../../yamls/brokered-trio-v1.yaml'), 'utf-8'))
 
 for (const question of questions) {
   console.info(`\n${'='.repeat(80)}`)
   console.info(`Question: ${question}`)
   console.info('='.repeat(80))
 
-  const plan = compile({ team: brokeredTrio, question, model })
+  const plan = compileSpec(spec, question, model)
 
   console.info(
-    `\nPlan: ${plan.workflowType} | ${Object.keys(plan.graph.nodes).length} nodes | ${plan.graph.edges.length} edges`
+    `\nPlan: ${plan.specId} | ${Object.keys(plan.graph.nodes).length} nodes | ${plan.graph.edges.length} edges`
   )
   console.info(`Entry: ${plan.graph.entryNode}`)
 

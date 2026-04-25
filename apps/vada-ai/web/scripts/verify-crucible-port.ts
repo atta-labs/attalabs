@@ -1,6 +1,7 @@
-import { compile } from '@atta/engine'
+import { compileSpec, loadSpec } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { crucible } from '@vada/teams'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
@@ -9,19 +10,17 @@ if (!apiKey) {
 }
 
 const adapter = new LangGraphAdapter({ apiKey })
-
 const questions = ['Should a startup prioritize growth speed or sustainable unit economics in its first two years?']
-
-// Haiku default: much faster for smoke tests. Tools make each round agent slow.
 const model = process.env.VADA_TEST_MODEL ?? 'claude-haiku-4-5-20251001'
+
+const spec = loadSpec(readFileSync(join(process.cwd(), '../../yamls/crucible-v1.yaml'), 'utf-8'))
 
 for (const question of questions) {
   console.log(`\n${'='.repeat(80)}`)
   console.log(`Question: ${question}`)
   console.log('='.repeat(80))
 
-  const plan = compile({ team: crucible, question, model })
-  // 20-minute timeout: tools on 12 round agents + 2 audit agents = slow run
+  const plan = compileSpec(spec, question, model)
   const conclusion = await adapter.execute({ plan, customVars: {}, timeoutMs: 1_200_000 })
 
   console.log(`\nterminalState: ${conclusion.terminalState}`)

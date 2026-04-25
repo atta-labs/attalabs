@@ -1,6 +1,7 @@
-import { compile } from '@atta/engine'
+import { compileSpec, loadSpec } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { sparring } from '@vada/teams'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
@@ -9,17 +10,17 @@ if (!apiKey) {
 }
 
 const adapter = new LangGraphAdapter({ apiKey })
-
 const questions = ['Should a startup prioritize growth speed or sustainable unit economics in its first two years?']
-
 const model = process.env.VADA_TEST_MODEL ?? 'claude-haiku-4-5-20251001'
+
+const spec = loadSpec(readFileSync(join(process.cwd(), '../../yamls/sparring-v1.yaml'), 'utf-8'))
 
 for (const question of questions) {
   console.info(`\n${'='.repeat(80)}`)
   console.info(`Question: ${question}`)
   console.info('='.repeat(80))
 
-  const plan = compile({ team: sparring, question, model })
+  const plan = compileSpec(spec, question, model)
   const conclusion = await adapter.execute({ plan, customVars: {}, timeoutMs: 1_200_000 })
 
   console.info(`\nterminalState: ${conclusion.terminalState}`)

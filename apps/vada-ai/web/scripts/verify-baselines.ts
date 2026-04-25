@@ -1,6 +1,7 @@
-import { compile } from '@atta/engine'
+import { compileSpec, loadSpec } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { a0, a1 } from '@vada/teams'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
@@ -12,13 +13,19 @@ const question = 'Should I use PostgreSQL or MongoDB for a small web app?'
 const model = process.env.VADA_TEST_MODEL ?? 'claude-haiku-4-5-20251001'
 const adapter = new LangGraphAdapter({ apiKey })
 
-for (const team of [a0, a1]) {
+const yamls = [
+  { file: 'a0-baseline-v1.yaml', label: 'A0' },
+  { file: 'a1-baseline-v1.yaml', label: 'A1' }
+]
+
+for (const { file, label } of yamls) {
   console.log(`\n${'='.repeat(72)}`)
-  console.log(`Team: ${team.name} — ${team.description}`)
+  console.log(`Spec: ${label} — ${file}`)
   console.log(`Question: ${question}`)
   console.log('='.repeat(72))
 
-  const plan = compile({ team, question, model })
+  const spec = loadSpec(readFileSync(join(process.cwd(), `../../yamls/${file}`), 'utf-8'))
+  const plan = compileSpec(spec, question, model)
   const conclusion = await adapter.execute({ plan, customVars: {} })
 
   console.log(`terminalState: ${conclusion.terminalState}`)
