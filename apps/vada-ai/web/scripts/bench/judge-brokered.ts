@@ -35,44 +35,45 @@ const BROKERED_JUDGE_SYSTEM_PROMPT = `You are a neutral evaluator comparing two 
 Response A: single-shot Sonnet (no deliberation, one model call).
 Response B: Vāda brokered consultation (multiple independent reviewers — Strategist, Critic, Devil's Advocate — each responding to the same question from their distinct perspective).
 
-Evaluate on these five criteria. Score each 1–5.
+Evaluate on these five criteria. Score each 1–5. Apply the criteria identically to both responses.
 
-1. ALTERNATIVES_CONSIDERED — Did the response surface meaningful options beyond the obvious, or just restate the expected alternatives?
-   1 = only the obvious; 3 = some non-obvious angles; 5 = multiple overlooked alternatives surfaced with analysis
+1. ASSUMPTION_SURFACING — Did the output identify assumptions the Principal did NOT explicitly state in the question? Surfacing unstated assumptions is high-value. Restating assumptions the Principal already named is low-value.
+   1 = only restates stated premises; 3 = surfaces some unstated assumptions; 5 = identifies the load-bearing unstated assumptions and names what would change if they were wrong
 
-2. ASSUMPTIONS_SURFACED — Did the response make the implicit premises of the question explicit and challenge them?
-   1 = no assumptions challenged; 3 = some premises named; 5 = core assumptions identified, challenged, and reframed
+2. ACTIONABLE_SPECIFICITY — Are the recommendations specific enough to act on, or generic principles?
+   1 = pure abstraction with no actionable guidance; 3 = directional but vague ("consider X"); 5 = specific actions with conditions, decision criteria, and tradeoffs
 
-3. ACTIONABLE_SPECIFICITY — Are the recommendations specific enough to act on, or generic principles?
-   1 = pure abstraction; 3 = directional but vague; 5 = specific actions with conditions and tradeoffs
+3. CONFIDENCE_CALIBRATION — Does the response convey appropriate certainty/uncertainty, or is it systematically overconfident or hedging?
+   1 = wildly miscalibrated (confident about uncertain things or uncertain about clear things); 3 = adequate calibration; 5 = well-calibrated: confident where evidence supports, explicitly uncertain where it does not, states what would change the answer
 
-4. CONFIDENCE_CALIBRATION — Does the response convey appropriate certainty/uncertainty, or is it systematically overconfident or hedging?
-   1 = wildly miscalibrated; 3 = adequate calibration; 5 = well-calibrated: confident where evidence supports, uncertain where not
+4. FRAME_QUALITY — Is the output solving the right problem at the right level of abstraction? Did it appropriately challenge or accept the framing of the question?
+   1 = accepts the frame uncritically and answers the wrong question; 3 = notes framing limitations but still answers within them; 5 = correctly identifies whether the framing is sound, reframes if needed, and answers the right question
 
-5. REVIEWER_DIVERGENCE — [Brokered-only] Did the reviewers genuinely compress reality differently, or produce correlated outputs that said the same thing in different words?
-   1 = essentially identical outputs; 3 = different framing, same conclusions; 5 = genuinely orthogonal perspectives with distinct actionable recommendations
-   Note: for Response A (single reviewer), score based on whether it presents multiple genuine perspectives internally.
+5. LENGTH_EFFICIENCY — Is the output denser than it is long? A concise, decisive answer should score higher than a padded one.
+   1 = significant padding: repetition, throat-clearing, restated conclusions, hedging through word count; 3 = adequate density but could be tighter; 5 = every sentence adds information — nothing could be cut without losing signal
+
+When scoring, explicitly adjust for length. A 200-word output that takes a strong position should score higher on LENGTH_EFFICIENCY than a 600-word output that hedges through repetition. If an output is longer but not denser, note the padding in your analysis.
 
 Write a concise analysis (roughly 200–400 words) comparing the two responses on these five criteria. Be specific — quote short passages when making a point. Then output the structured block below EXACTLY (no extra text after it):
 
 ---
-ALTERNATIVES_CONSIDERED: <1-5>
-ASSUMPTIONS_SURFACED: <1-5>
+ASSUMPTION_SURFACING: <1-5>
 ACTIONABLE_SPECIFICITY: <1-5>
 CONFIDENCE_CALIBRATION: <1-5>
-REVIEWER_DIVERGENCE: <1-5>
+FRAME_QUALITY: <1-5>
+LENGTH_EFFICIENCY: <1-5>
 AGGREGATE: <average to 1 decimal>
 VERDICT: <vada_wins|baseline_wins|tie>`
 
 const SCORE_PATTERN =
-  /ALTERNATIVES_CONSIDERED:\s*(\d)\s*\nASSUMPTIONS_SURFACED:\s*(\d)\s*\nACTIONABLE_SPECIFICITY:\s*(\d)\s*\nCONFIDENCE_CALIBRATION:\s*(\d)\s*\nREVIEWER_DIVERGENCE:\s*(\d)\s*\nAGGREGATE:\s*([\d.]+)\s*\nVERDICT:\s*(vada_wins|baseline_wins|tie)/i
+  /ASSUMPTION_SURFACING:\s*(\d)\s*\nACTIONABLE_SPECIFICITY:\s*(\d)\s*\nCONFIDENCE_CALIBRATION:\s*(\d)\s*\nFRAME_QUALITY:\s*(\d)\s*\nLENGTH_EFFICIENCY:\s*(\d)\s*\nAGGREGATE:\s*([\d.]+)\s*\nVERDICT:\s*(vada_wins|baseline_wins|tie)/i
 
 interface ParsedScores {
-  alternativesConsidered: number
-  assumptionsSurfaced: number
+  assumptionSurfacing: number
   actionableSpecificity: number
   confidenceCalibration: number
-  reviewerDivergence: number
+  frameQuality: number
+  lengthEfficiency: number
   aggregate: number
   verdict: 'vada_wins' | 'baseline_wins' | 'tie'
 }
@@ -81,11 +82,11 @@ function parseScores(judgeResponse: string): ParsedScores | null {
   const m = judgeResponse.match(SCORE_PATTERN)
   if (!m) return null
   return {
-    alternativesConsidered: Number.parseInt(m[1]!, 10),
-    assumptionsSurfaced: Number.parseInt(m[2]!, 10),
-    actionableSpecificity: Number.parseInt(m[3]!, 10),
-    confidenceCalibration: Number.parseInt(m[4]!, 10),
-    reviewerDivergence: Number.parseInt(m[5]!, 10),
+    assumptionSurfacing: Number.parseInt(m[1]!, 10),
+    actionableSpecificity: Number.parseInt(m[2]!, 10),
+    confidenceCalibration: Number.parseInt(m[3]!, 10),
+    frameQuality: Number.parseInt(m[4]!, 10),
+    lengthEfficiency: Number.parseInt(m[5]!, 10),
     aggregate: Number.parseFloat(m[6]!),
     verdict: m[7]!.toLowerCase() as 'vada_wins' | 'baseline_wins' | 'tie'
   }
@@ -173,7 +174,7 @@ async function judgeSession(session: typeof mcpSessions.$inferSelect): Promise<v
   }
 
   console.info(
-    `  Scores: alt=${scores.alternativesConsidered} assump=${scores.assumptionsSurfaced} action=${scores.actionableSpecificity} conf=${scores.confidenceCalibration} div=${scores.reviewerDivergence} agg=${scores.aggregate}`
+    `  Scores: asmp=${scores.assumptionSurfacing} action=${scores.actionableSpecificity} conf=${scores.confidenceCalibration} frame=${scores.frameQuality} len=${scores.lengthEfficiency} agg=${scores.aggregate}`
   )
   console.info(`  Verdict: ${scores.verdict}`)
 
@@ -187,11 +188,11 @@ async function judgeSession(session: typeof mcpSessions.$inferSelect): Promise<v
     judgeScore: Math.round(scores.aggregate * 10),
     judgeReasoning: judgeResult.text,
     reviewerScores: {
-      alternativesConsidered: scores.alternativesConsidered,
-      assumptionsSurfaced: scores.assumptionsSurfaced,
+      assumptionSurfacing: scores.assumptionSurfacing,
       actionableSpecificity: scores.actionableSpecificity,
       confidenceCalibration: scores.confidenceCalibration,
-      reviewerDivergence: scores.reviewerDivergence,
+      frameQuality: scores.frameQuality,
+      lengthEfficiency: scores.lengthEfficiency,
       aggregate: scores.aggregate
     },
     baselineLabel: BASELINE_LABEL,

@@ -41,11 +41,11 @@ function CriterionRow({ label, score }: { label: string; score: number }) {
 }
 
 interface ReviewerScores {
-  alternativesConsidered?: number
-  assumptionsSurfaced?: number
+  assumptionSurfacing?: number
   actionableSpecificity?: number
   confidenceCalibration?: number
-  reviewerDivergence?: number
+  frameQuality?: number
+  lengthEfficiency?: number
   aggregate?: number
 }
 
@@ -119,11 +119,8 @@ export default async function BenchRunDetailPage({ params }: { params: Promise<{
             <div className='space-y-1'>
               <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2'>Criteria scores</p>
               <Separator className='opacity-20' />
-              {scores.alternativesConsidered != null && (
-                <CriterionRow label='Alternatives considered' score={scores.alternativesConsidered} />
-              )}
-              {scores.assumptionsSurfaced != null && (
-                <CriterionRow label='Assumptions surfaced' score={scores.assumptionsSurfaced} />
+              {scores.assumptionSurfacing != null && (
+                <CriterionRow label='Assumption surfacing' score={scores.assumptionSurfacing} />
               )}
               {scores.actionableSpecificity != null && (
                 <CriterionRow label='Actionable specificity' score={scores.actionableSpecificity} />
@@ -131,8 +128,9 @@ export default async function BenchRunDetailPage({ params }: { params: Promise<{
               {scores.confidenceCalibration != null && (
                 <CriterionRow label='Confidence calibration' score={scores.confidenceCalibration} />
               )}
-              {scores.reviewerDivergence != null && (
-                <CriterionRow label='Reviewer divergence' score={scores.reviewerDivergence} />
+              {scores.frameQuality != null && <CriterionRow label='Frame quality' score={scores.frameQuality} />}
+              {scores.lengthEfficiency != null && (
+                <CriterionRow label='Length efficiency' score={scores.lengthEfficiency} />
               )}
               {scores.aggregate != null && (
                 <>
