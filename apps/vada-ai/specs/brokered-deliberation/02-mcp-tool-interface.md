@@ -2,7 +2,7 @@
 
 ## The tool: `vada__consult`
 
-One tool. Invokes a Vāda team (currently `brokeredTrio`: Strategist + Critic + Devil's Advocate) through the Vāda deliberation engine. Sequential execution in V1. Returns structured responses per reviewer.
+One tool. The caller specifies a set of reviewers inline; `consult.ts` builds a `DeliberationSpec` from those reviewer specs and dispatches them in parallel through the Vāda deliberation engine. Returns structured responses per reviewer.
 
 The name `vada__consult` is what ships in Phase 4. Earlier specs used `vada__deliberate` aspirationally; the actual tool is named `consult` to distinguish Brokered from Autonomous and to fit naturally as a verb in Caller Claude's vocabulary ("let me consult Vāda on this").
 
@@ -322,19 +322,10 @@ Caller Claude receives this, reads each response, synthesizes, presents to user.
 
 Actual tool in Phase 4 shipment: `vada__consult`. This doc uses that name. Earlier spec drafts used `vada__deliberate`; those references have been updated.
 
-### Current shape vs V1 target
+### Current shape (as of Phase 6 + 7.2)
 
-Phase 4 delivered a working tool with minimal input/output shape:
-- Input: `{ brief, reviewers[] }`
-- Output: `{ responses[] }`
+The V1 target schema described in this doc is now implemented:
+- Input: `{ context, question, reviewers[{role, notes?, domain?}], current_leaning?, stakes?, session_title? }`
+- Output: `{ responses[], session_id, session_url, cost_breakdown }`
 
-Phase 6 work migrates to the richer V1 target schema above. Transition should be backward-compatible where possible (new fields optional, existing callers continue to work).
-
-### What caller Claude does today vs what it should do
-
-Today the tool description is minimal. Caller Claude invokes it but doesn't know:
-- When to use Brokered vs just answering directly
-- How to write good briefs
-- How to synthesize responses well
-
-Phase 6 item 1 (expand tool description) addresses this. Until then, Brokered works but isn't used optimally.
+The legacy `{ brief, reviewers[] }` shape (from Phase 4) has been fully replaced. `consult.ts` builds an inline `DeliberationSpec` from the structured reviewer specs, calls `compileSpec()`, and dispatches in parallel.

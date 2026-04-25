@@ -85,7 +85,7 @@ This mode replicates the Principal's current manual workflow (copy-pasting betwe
 
 **When to use:** exploratory work, iterative questions, cases where the Principal wants to stay in the conversation. Quick consults that don't warrant a full deliberation.
 
-**MCP tool:** `vada__consult(prompt, reviewer_profile)` → returns reviewer response.
+**MCP tool:** `vada__consult(context, question, reviewers[{role}])` → returns structured reviewer responses.
 
 The Principal's existing chat agent (Claude in Claude.ai, GPT in ChatGPT) serves as the Strategist by default. Vāda's role is summoning reviewers on other providers or with other configurations.
 
@@ -137,7 +137,7 @@ Without active escalation, Brokered usage patterns can dominate and Autonomous n
 ┌──────────────────────────▼──────────────────────────────────────────┐
 │              @atta/engine    (Plan Compiler)                        │
 │                                                                     │
-│  Input: Team + Workflow + Question                                  │
+│  Input: YAML spec → loadSpec → compileSpec → Plan                  │
 │  Output: Plan (declarative JSON DAG)                                │
 │  Pure library, zero runtime deps                                    │
 │                                                                     │
@@ -166,10 +166,11 @@ Without active escalation, Brokered usage patterns can dominate and Autonomous n
                            │  per-turn calls
                            │
 ┌──────────────────────────▼──────────────────────────────────────────┐
-│         @atta/teams    (Deliberation Content)                       │
+│  @vada/agents + YAML specs    (Deliberation Content)                │
 │                                                                     │
-│  V1: Sparring (2 agents, default) + Crucible (4-7 agents, heavy)    │
-│      + A0/A1 single-shot baselines (benchmarking)                   │
+│  V1: Sparring, Crucible, War Room, A0/A1 baselines,                 │
+│      Brokered Trio, Brokered Quartet — all as YAML files            │
+│      in apps/vada-ai/yamls/                                         │
 │                                                                     │
 │  V2+: Verticalized teams (Legal, Medical, Security, etc.)           │
 │       with validated corpora                                        │
@@ -214,7 +215,7 @@ Without active escalation, Brokered usage patterns can dominate and Autonomous n
 | Plan compilation | TypeScript, Zod | `@atta/engine` | WEDGE-1 |
 | State machine | `@langchain/langgraph` | Plan→Graph compiler (inside adapter) | — |
 | Cognitive router | Primitives only | **Inside `@atta/adapter-langgraph`** | CAP-1 |
-| Deliberation teams | — | `@atta/teams` | MOAT-B (future) |
+| Deliberation teams | — | `@vada/agents` + YAML specs (`apps/vada-ai/yamls/`) | MOAT-B (future) |
 | Server tools | Provider-native (web_search, etc.) | — | — |
 | Database | Neon Postgres, Drizzle | — | — |
 | Dashboard | Next.js, Tailwind, shadcn | vada.ai app | MOAT-A |

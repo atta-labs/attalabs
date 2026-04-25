@@ -1,3 +1,5 @@
+> **Historical note:** This plan was implemented in Phase 6. The architecture it describes was subsequently refactored in Phase 7.2 (YAML refactor). See `ROADMAP.md` for current state and `specs/yaml-schema-reference.md` for the current architecture. Read below for historical context only.
+
 # 06 — Implementation Plan (V1 Status + Remaining Work)
 
 ## What this document is

@@ -98,6 +98,6 @@ terminal-k → audit-BlindCritic-k → audit-FactChecker-k
 
 ---
 
-## Brokered workflow (Phase 4)
+## Brokered workflow (Phase 7.2 — YAML)
 
-`BrokeredWorkflow` is a separate workflow type (`type: 'brokered'`), not a variant of RoundsWorkflow. Reviewer nodes compile as sequential solo-role nodes with no terminal/audit structure. See `packages/engine/src/compilers/brokered.ts` once implemented.
+Brokered specs are defined in YAML using the `reviewers:` section with `response.mode: concatenate`. There is no separate `BrokeredWorkflow` type in `@atta/engine`; the YAML is compiled via `compileSpec()` which calls `specToTeam()` and then the standard `compile()`. Reviewer nodes are parallel solo-role nodes with no audit, no synthesis, no revision. See `apps/vada-ai/yamls/brokered-trio-v1.yaml` for a reference spec and `specs/yaml-schema-reference.md` for the full schema.

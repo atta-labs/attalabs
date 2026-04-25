@@ -33,9 +33,9 @@ Three distinct roles in every Brokered interaction:
 ## What Vāda V1 delivers
 
 **Already shipped (Phase 4):**
-- One MCP tool: `vada__consult` — dispatches 2-5 reviewers sequentially through the Vāda deliberation engine
-- `BrokeredWorkflow` type in `@atta/engine` — sequential execution, no audit, no synthesis, no revision
-- `brokeredTrio` team in `@vada/teams` — Strategist + Critic + Devil's Advocate
+- One MCP tool: `vada__consult` — dispatches 2-5 reviewers in parallel through the Vāda deliberation engine
+- Brokered specs (`brokered-trio-v1.yaml`, `brokered-quartet-v1.yaml`) in `apps/vada-ai/yamls/` — compiled via `compileSpec` into a reviewer-mode Plan (no audit, no synthesis, no revision)
+- `@vada/agents` — Strategist + Critic + Devil's Advocate system prompts
 - Reviewer system prompts in `@vada/agents` (inherited from Crucible; validated for Brokered use in Phase 6)
 - Session persistence to Postgres for dashboard review and audit
 
@@ -74,7 +74,7 @@ Read in order. Each document assumes the previous ones are understood.
 
 ## Design principles (non-negotiable)
 
-**Vāda uses `@atta/engine` like any other flow.** Brokered goes through the same engine + adapter that Crucible, Sparring, and baselines use. The only difference is the workflow type (`BrokeredWorkflow` vs `RoundsWorkflow`).
+**Vāda uses `@atta/engine` like any other flow.** Brokered goes through the same engine + adapter that Crucible, Sparring, and baselines use. The only difference is the YAML mode: rounds-based specs use a `flow.rounds` section; Brokered uses a `reviewers` section with `response.mode: concatenate`.
 
 **Vāda is stateless across MCP calls.** Each call is independent. No memory of previous calls influences reviewer responses. Session persistence is for audit/dashboard only, not runtime logic.
 

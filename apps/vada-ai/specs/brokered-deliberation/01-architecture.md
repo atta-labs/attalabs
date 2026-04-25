@@ -18,13 +18,13 @@
 │  apps/vada-ai/mcp-server/ (package: @vada/mcp-server)                │
 │                                                                      │
 │  ┌──────────────────────┐    ┌──────────────────────────────────┐   │
-│  │ Tool handler         │    │ Team config                      │   │
-│  │ vada__consult        │───▶│ brokeredTrio from @vada/teams    │   │
-│  │                      │    │ type: 'brokered'                 │   │
-│  │ brief + reviewers[]  │    │ Strategist + Critic + DA         │   │
+│  │ Tool handler         │    │ DeliberationSpec (inline or YAML)│   │
+│  │ vada__consult        │───▶│ built from reviewer specs        │   │
+│  │                      │    │ Strategist + Critic + DA         │   │
+│  │ brief + reviewers[]  │    │ (brokered-trio-v1.yaml or inline)│   │
 │  └──────────┬───────────┘    └──────────────────────────────────┘   │
 │             │                                                        │
-│             │ compile(team, brief) → Plan                            │
+│             │ compileSpec(spec, brief) → Plan                        │
 │             ▼                                                        │
 │  ┌──────────────────────────────────────────────────────────────┐   │
 │  │ @atta/engine                                                  │   │
@@ -82,7 +82,7 @@
 
 6. **Vāda MCP server receives the tool call.** Tool handler validates input. Writes initial session record.
 
-7. **Tool handler compiles a Plan** via `@atta/engine.compile()` using the `brokeredTrio` team (or a team matching the requested reviewers). The `compileBrokered` compiler produces a sequential Plan graph: `__start__ → reviewer-0 → reviewer-1 → ... → reviewer-N-1`.
+7. **Tool handler compiles a Plan** via `@atta/engine.compileSpec()` using an inline `DeliberationSpec` built from the requested reviewers (or a registered YAML spec via `lookupSpec`). The compiled Plan is a sequential graph: `__start__ → reviewer-0 → reviewer-1 → ... → reviewer-N-1`.
 
 8. **LangGraphAdapter executes the Plan.** Each reviewer node runs in sequence. Each reviewer receives the brief via the workflow's `messageTemplate`. The adapter invokes the configured LLM provider (via `@atta/models`) per reviewer and emits `onNodeComplete` hooks.
 
@@ -160,13 +160,13 @@ Same pattern but via HTTPS transport with OAuth-based user identification. Defer
 
 Brokered reuses existing Vāda packages:
 
-- **`@atta/engine`** — compiles `BrokeredWorkflow` team configs into a sequential Plan via `compileBrokered`. This is the same engine that handles Crucible (`RoundsWorkflow`) and A0/A1 baselines (`SoloWorkflow`).
-- **`@atta/adapter-langgraph`** — executes the compiled Plan via LangGraph. The adapter's `buildSuccessfulConclusion` has a Brokered-specific branch that assembles a Conclusion from reviewer outputs without a terminal synthesizer.
+- **`@atta/engine`** — `loadSpec` + `compileSpec` converts a `DeliberationSpec` (from YAML or built inline) into a sequential Plan. Same engine that handles Crucible and Sparring via their respective YAML specs.
+- **`@atta/adapter-langgraph`** — executes the compiled Plan via LangGraph. The adapter assembles a Conclusion from reviewer outputs; Brokered specs use `response.mode: concatenate`, so no terminal synthesizer is needed.
 - **`@atta/models`** — routes each reviewer's LLM call to the correct provider (Anthropic, Google, Groq, OpenAI).
 - **`@atta/db`** — session persistence via Drizzle + Neon Postgres.
 - **`@atta/auth`** — Clerk user ID for session scoping.
-- **`@vada/agents`** — reviewer agent definitions (Strategist, Critic, Devil's Advocate) with system prompts and metadata.
-- **`@vada/teams`** — team compositions including `brokeredTrio` (Strategist + Critic + Devil's Advocate in a `BrokeredWorkflow`).
+- **`@vada/agents`** — reviewer agent definitions (Strategist, Critic, Devil's Advocate) with system prompts and metadata. Used by `consult.ts` directly.
+- **`apps/vada-ai/yamls/`** — YAML specs (`brokered-trio-v1.yaml`, `brokered-quartet-v1.yaml`). Replaced `@vada/teams` (deleted).
 - **`@vada/mcp-server`** — MCP tool handlers that wire the above together.
 
 Brokered does NOT use (V1):
@@ -177,27 +177,29 @@ Brokered does NOT use (V1):
 
 ---
 
-## BrokeredWorkflow type contract
+## Brokered spec contract
 
-Defined in `@atta/engine/types.ts`:
+Brokered deliberations use the `reviewers` section of a `DeliberationSpec` (YAML schema v1.0):
 
-```typescript
-interface BrokeredWorkflow {
-  type: 'brokered'
-  messageTemplate: string       // Handlebars template reviewers receive
-  parallel?: boolean            // V1: must be false or omitted
-  synthesisAgent?: string       // Reserved for V2; ignored in V1
-  synthesisTemplate?: string    // Reserved for V2; ignored in V1
-}
+```yaml
+reviewers:
+  - agent: Strategist
+    message_template: "{{question}}"
+  - agent: Critic
+    message_template: "{{question}}"
+  - agent: "Devil's Advocate"
+    message_template: "{{question}}"
+
+response:
+  mode: concatenate
+  format: "## {agent_name}\n\n{content}\n\n---\n\n"
 ```
 
-V1 constraints enforced by `validateWorkflow`:
-- 2-5 agents in the team
-- `parallel` must be false or omitted
-- `messageTemplate` non-empty
-- If `synthesisAgent` is present, must be one of `team.agents` (reserved but not executed)
+`compileSpec` maps this to a sequential Plan: `__start__ → reviewer-0 → reviewer-1 → ... → reviewer-N-1`.
 
-Plan node role for each reviewer: `'solo'` (reused from Solo workflow — no new PlanNodeRole needed).
+`response.mode: concatenate` instructs the adapter to concatenate reviewer outputs. No terminal synthesizer node is needed.
+
+For the inline path in `consult.ts`, the `DeliberationSpec` is constructed programmatically from the reviewer specs at runtime.
 
 ---
 
