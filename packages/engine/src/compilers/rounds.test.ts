@@ -53,11 +53,6 @@ describe('RoundsWorkflowNoAudit compile', () => {
     expect(plan.graph.conditionalEdges).toHaveLength(0)
   })
 
-  it('sets workflowType to rounds', () => {
-    const plan = compile({ team, question: 'Q', model: 'test' })
-    expect(plan.workflowType).toBe('rounds')
-  })
-
   it('entry node is the first round agent', () => {
     const plan = compile({ team, question: 'Q', model: 'test' })
     expect(plan.graph.entryNode).toBe('round-0-RoundAgent')

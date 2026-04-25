@@ -1,6 +1,5 @@
 export * from './types'
 export * from './errors'
-export { compile } from './compile'
 export { deriveTemplateState } from './derive'
 export { validateTemplate } from './validate-template'
 export { validateTeam, validateWorkflow } from './validate'

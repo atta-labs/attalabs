@@ -213,7 +213,6 @@ export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; qu
     model,
     agents,
     teamName: team.name,
-    workflowType: 'rounds',
     graph
   }
 }

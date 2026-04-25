@@ -324,8 +324,6 @@ export interface Plan {
   agents: Record<string, Agent>
   /** Name of the source Team this plan was compiled from. */
   teamName: string
-  /** Workflow type inherited from the source Team. Derived from Workflow['type']. */
-  workflowType: Workflow['type']
   /** The compiled execution graph. */
   graph: PlanGraph
   // Phase 7.2 additions — set by compileSpec(), absent on legacy compile() plans

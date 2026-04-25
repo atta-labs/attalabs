@@ -38,7 +38,6 @@ export function compileSolo(params: { team: Team; question: string; model: strin
     model,
     agents,
     teamName: team.name,
-    workflowType: 'solo',
     graph
   }
 }

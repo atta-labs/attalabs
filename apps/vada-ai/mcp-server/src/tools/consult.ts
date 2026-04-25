@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { compile } from '@atta/engine'
-import type { Team } from '@atta/engine'
+import { compileSpec } from '@atta/engine'
+import type { DeliberationSpec } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
 import { createDomainExpert, strategist, critic, devilsAdvocate } from '@vada/agents'
 import { logSession } from '../session-logger'
@@ -194,23 +194,30 @@ export async function runConsult(input: ConsultInput, apiKey: string, origin?: s
     s.profileName === 'domain_expert' ? createDomainExpert(s.domain) : reviewerProfiles[s.profileName]
   )
 
-  const team: Team = {
-    name: 'BrokeredConsult',
+  const spec: DeliberationSpec = {
+    schemaVersion: '1.0',
+    id: 'BrokeredConsult',
+    displayName: 'Brokered Consult',
     description: `Brokered consultation: ${input.reviewerSpecs.map((s) => s.profileName).join(', ')}`,
-    agents: selectedAgents,
-    workflow: {
-      type: 'brokered',
-      reviewers: input.reviewerSpecs.map((s) => {
-        const agentName = s.profileName === 'domain_expert' ? 'Domain Expert' : reviewerProfiles[s.profileName].name
-        return {
-          agentName,
-          messageTemplate: s.notes ? `${BASE_TEMPLATE}\n\n## Specific Request For You\n${s.notes}` : BASE_TEMPLATE
-        }
-      })
-    }
+    experimental: false,
+    benchmarked: false,
+    defaults: { model: DEFAULT_MODEL },
+    agents: selectedAgents.map((a) => ({
+      name: a.name,
+      description: a.description,
+      systemPrompt: a.systemPrompt,
+      tools: a.tools
+    })),
+    reviewers: input.reviewerSpecs.map((s) => {
+      const agentName = s.profileName === 'domain_expert' ? 'Domain Expert' : reviewerProfiles[s.profileName].name
+      return {
+        agent: agentName,
+        messageTemplate: s.notes ? `${BASE_TEMPLATE}\n\n## Specific Request For You\n${s.notes}` : BASE_TEMPLATE
+      }
+    })
   }
 
-  const plan = compile({ team, question: input.question, model: DEFAULT_MODEL })
+  const plan = compileSpec(spec, input.question, DEFAULT_MODEL)
 
   const adapter = new LangGraphAdapter({ apiKey })
   const startedAt = Date.now()

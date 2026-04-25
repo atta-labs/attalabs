@@ -59,7 +59,6 @@ export function compileCustom(params: { team: Team; workflow: CustomWorkflow; qu
     model,
     agents,
     teamName: team.name,
-    workflowType: 'custom',
     graph
   }
 }

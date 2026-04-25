@@ -70,7 +70,6 @@ export function compileBrokered(params: {
     model,
     agents: agentsMap,
     teamName: team.name,
-    workflowType: 'brokered',
     graph
   }
 }
