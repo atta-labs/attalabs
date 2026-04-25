@@ -6,55 +6,55 @@ import { VadaAgent } from '@/components/agents'
 import { PrincipalBrain } from './PrincipalBrain'
 import { useBrokeredScene } from './useBrokeredScene'
 
-// C-arc: endpoints open toward Strategist (35vw), apex at far left (~14vw)
+// Vertical column: all aligned at same x, evenly spaced top-to-bottom
 const LLM_SPHERES = [
   {
     id: 'brokered-claude' as const,
     model: 'claude-3-5-sonnet-20241022',
     color: 'hsl(28 90% 60%)',
     label: 'Claude',
-    left: '27vw',
-    top: '14vh'
+    left: '14vw',
+    top: '11vh'
   },
   {
     id: 'brokered-chatgpt' as const,
     model: 'gpt-4o',
     color: 'hsl(264 70% 65%)',
     label: 'ChatGPT',
-    left: '21vw',
-    top: '26vh'
+    left: '14vw',
+    top: '23vh'
   },
   {
     id: 'brokered-gemini' as const,
     model: 'gemini-pro',
     color: 'hsl(210 100% 60%)',
     label: 'Gemini',
-    left: '16vw',
-    top: '37vh'
+    left: '14vw',
+    top: '35vh'
   },
-  { id: 'brokered-grok' as const, model: 'grok-1', color: 'hsl(0 0% 85%)', label: 'Grok', left: '14vw', top: '50vh' },
+  { id: 'brokered-grok' as const, model: 'grok-1', color: 'hsl(0 0% 85%)', label: 'Grok', left: '14vw', top: '47vh' },
   {
     id: 'brokered-mistral' as const,
     model: 'mistral-7b-instruct',
     color: 'hsl(32 95% 58%)',
     label: 'Mistral',
-    left: '17vw',
-    top: '63vh'
+    left: '14vw',
+    top: '59vh'
   },
   {
     id: 'brokered-deepseek' as const,
     model: 'deepseek-chat',
     color: 'hsl(200 85% 58%)',
     label: 'DeepSeek',
-    left: '22vw',
-    top: '74vh'
+    left: '14vw',
+    top: '71vh'
   },
   {
     id: 'brokered-llama' as const,
     model: 'meta-llama-3.1-70b-instruct',
     color: 'hsl(217 89% 62%)',
     label: 'Llama',
-    left: '28vw',
+    left: '14vw',
     top: '83vh'
   }
 ]
@@ -68,21 +68,10 @@ export function BrokeredScene() {
       <div className='absolute -translate-x-1/2 -translate-y-1/2' style={{ left: '50vw', top: '50vh' }}>
         <PrincipalBrain leftActive={brainActive} />
       </div>
-      {/* Routing sphere at brain center — outgoing particles fire from here */}
-      <div className='absolute -translate-x-1/2 -translate-y-1/2' style={{ left: '50vw', top: '50vh' }}>
-        <AIASphere
-          id='principal-brain'
-          size='xs'
-          color='hsl(185 85% 65%)'
-          state='idle'
-          showMatrix={false}
-          visible={false}
-        />
-      </div>
-      {/* Brain entry — incoming return particle arrives at left interior node (~x=-78 in SVG) */}
+      {/* Brain routing sphere — sits at interior-left node (SVG x=-78); particles depart from and arrive here */}
       <div className='absolute -translate-x-1/2 -translate-y-1/2' style={{ left: 'calc(50vw - 78px)', top: '50vh' }}>
         <AIASphere
-          id='principal-brain-entry'
+          id='principal-brain'
           size='xs'
           color='hsl(185 85% 65%)'
           state='idle'

@@ -142,27 +142,23 @@ function buildEdges(nodes: BN[], maxDist: number): [number, number][] {
 const LEFT_EDGES = buildEdges(LEFT_NODES, 54)
 const RIGHT_EDGES = buildEdges(RIGHT_NODES, 54)
 
+// Idle = theme primary (white in dark mode), Active = teal highlight
 const ACTIVE = 'hsl(185 85% 65%)'
-const DIM = 'hsl(210 15% 30%)'
+const DIM = 'var(--primary)'
 
 function nr(d: number) {
-  // Non-linear curve: deep nodes very small, surface nodes significantly larger
-  return 0.7 + d ** 1.7 * 6.8
+  // Non-linear curve: deep nodes very small, surface nodes significantly larger.
+  // Rounded to 2dp to prevent SSR/client floating-point serialization mismatch.
+  return Math.round((0.7 + d ** 1.7 * 6.8) * 100) / 100
 }
 function nodeIdleOp(d: number) {
-  return 0.03 + d * 0.18
-}
-function nodeActiveOp(d: number) {
-  return 0.5 + d * 0.45
+  return Math.round((0.03 + d * 0.18) * 10000) / 10000
 }
 function edgeIdleOp(d: number) {
-  return 0.03 + d * 0.12
-}
-function edgeActiveOp(d: number) {
-  return 0.18 + d * 0.62
+  return Math.round((0.03 + d * 0.12) * 10000) / 10000
 }
 function ew(d: number) {
-  return 0.3 + d * 1.2
+  return Math.round((0.3 + d * 1.2) * 1000) / 1000
 }
 
 // Sort by depth ascending so front nodes render on top in SVG
@@ -173,15 +169,22 @@ export function PrincipalBrain({ leftActive }: { leftActive: boolean }) {
     <>
       <style>{`
         @keyframes bn-fire {
-          0%   { fill-opacity: var(--ni); }
+          0%   { fill-opacity: 0.12; }
           12%  { fill-opacity: 1.0; }
-          50%  { fill-opacity: var(--na); }
-          100% { fill-opacity: var(--na); }
+          100% { fill-opacity: 0.75; }
         }
         @keyframes be-fire {
-          0%   { stroke-opacity: var(--ei); }
-          12%  { stroke-opacity: var(--ep); }
-          100% { stroke-opacity: var(--ea); }
+          0%   { stroke-opacity: 0.04; }
+          12%  { stroke-opacity: 0.82; }
+          100% { stroke-opacity: 0.55; }
+        }
+        @keyframes bn-alive {
+          0%, 100% { fill-opacity: 0.08; }
+          50%       { fill-opacity: 0.28; }
+        }
+        @keyframes be-alive {
+          0%, 100% { stroke-opacity: 0.03; }
+          50%       { stroke-opacity: 0.12; }
         }
       `}</style>
 
@@ -243,10 +246,37 @@ export function PrincipalBrain({ leftActive }: { leftActive: boolean }) {
           const na = LEFT_NODES[a]!
           const nb = LEFT_NODES[b]!
           const d = (na.d + nb.d) / 2
-          const delay = `${Math.round((1 - d) * 220 + ((a + b) % 7) * 18)}ms`
           const ei = edgeIdleOp(d)
-          const ea = edgeActiveOp(d)
-          const ep = Math.min(0.95, ea * 1.4)
+          if (leftActive) {
+            const delay = `${Math.round((1 - d) * 220 + ((a + b) % 7) * 18)}ms`
+            return (
+              <line
+                key={`le-${i}`}
+                x1={na.x}
+                y1={na.y}
+                x2={nb.x}
+                y2={nb.y}
+                style={{ stroke: ACTIVE, strokeWidth: ew(d), animation: `be-fire 0.9s ease ${delay} both` }}
+              />
+            )
+          }
+          if (d > 0.72) {
+            const aliveDelay = `${(a * 31 + b * 17 + i * 53) % 2200}ms`
+            return (
+              <line
+                key={`le-${i}`}
+                x1={na.x}
+                y1={na.y}
+                x2={nb.x}
+                y2={nb.y}
+                style={{
+                  stroke: DIM,
+                  strokeWidth: ew(d) * 0.75,
+                  animation: `be-alive 3.4s ease-in-out ${aliveDelay} infinite`
+                }}
+              />
+            )
+          }
           return (
             <line
               key={`le-${i}`}
@@ -254,23 +284,7 @@ export function PrincipalBrain({ leftActive }: { leftActive: boolean }) {
               y1={na.y}
               x2={nb.x}
               y2={nb.y}
-              style={
-                leftActive
-                  ? ({
-                      '--ei': ei,
-                      '--ep': ep,
-                      '--ea': ea,
-                      stroke: ACTIVE,
-                      strokeWidth: ew(d),
-                      animation: `be-fire 0.9s ease ${delay} both`
-                    } as React.CSSProperties)
-                  : {
-                      stroke: DIM,
-                      strokeWidth: ew(d) * 0.75,
-                      strokeOpacity: ei,
-                      transition: 'stroke 0.6s ease, stroke-opacity 0.6s ease'
-                    }
-              }
+              style={{ stroke: DIM, strokeWidth: ew(d) * 0.75, strokeOpacity: ei }}
             />
           )
         })}
@@ -279,34 +293,36 @@ export function PrincipalBrain({ leftActive }: { leftActive: boolean }) {
         {LEFT_SORTED.map(({ x, y, d, i }) => {
           const r = nr(d)
           const ni = nodeIdleOp(d)
-          const na = nodeActiveOp(d)
-          // Front fires first (small delay), back fires later (larger delay)
-          const delay = `${Math.round((1 - d) * 240 + ((i * 11) % 80))}ms`
           const glowFilter = d > 0.82 ? 'url(#pb-glow-hi)' : d > 0.5 ? 'url(#pb-glow)' : 'none'
-          return (
-            <circle
-              key={`ln-${i}`}
-              cx={x}
-              cy={y}
-              r={r}
-              style={
-                leftActive
-                  ? ({
-                      '--ni': ni,
-                      '--na': na,
-                      fill: ACTIVE,
-                      filter: glowFilter,
-                      animation: `bn-fire 0.9s ease ${delay} both`
-                    } as React.CSSProperties)
-                  : {
-                      fill: DIM,
-                      fillOpacity: ni,
-                      filter: 'none',
-                      transition: 'fill 0.5s ease, fill-opacity 0.5s ease, filter 0.4s ease'
-                    }
-              }
-            />
-          )
+          if (leftActive) {
+            const delay = `${Math.round((1 - d) * 240 + ((i * 11) % 80))}ms`
+            return (
+              <circle
+                key={`ln-${i}`}
+                cx={x}
+                cy={y}
+                r={r}
+                style={{ fill: ACTIVE, filter: glowFilter, animation: `bn-fire 0.9s ease ${delay} both` }}
+              />
+            )
+          }
+          if (d > 0.72) {
+            const aliveDelay = `${(i * 37 + 11) % 2800}ms`
+            return (
+              <circle
+                key={`ln-${i}`}
+                cx={x}
+                cy={y}
+                r={r}
+                style={{
+                  fill: DIM,
+                  filter: d > 0.85 ? 'url(#pb-glow)' : 'none',
+                  animation: `bn-alive ${(2.6 + (i % 4) * 0.5).toFixed(1)}s ease-in-out ${aliveDelay} infinite`
+                }}
+              />
+            )
+          }
+          return <circle key={`ln-${i}`} cx={x} cy={y} r={r} style={{ fill: DIM, fillOpacity: ni, filter: 'none' }} />
         })}
       </svg>
     </>
