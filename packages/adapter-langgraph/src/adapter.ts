@@ -239,8 +239,12 @@ export class LangGraphAdapter implements Adapter {
       `[LangGraphAdapter] Estimated cost: $${estimatedCostUsd.toFixed(4)} | ${transcript.length} agent turns | ${totalTokensInput}in/${totalTokensOutput}out tokens`
     )
 
-    // Brokered workflow: concatenate all reviewer outputs with headers, always CLEAN.
-    if (state.plan.workflowType === 'brokered') {
+    // Concatenate mode: used by brokered/reviewer flows.
+    // YAML plans set responseMode: 'concatenate'. Legacy plans set workflowType: 'brokered'.
+    const isConcatenate =
+      state.plan.responseMode === 'concatenate' || (!state.plan.responseMode && state.plan.workflowType === 'brokered')
+
+    if (isConcatenate) {
       const content = transcript.map((o) => `## ${o.agentName}\n\n${o.content}`).join('\n\n---\n\n')
       return {
         content,
@@ -253,8 +257,26 @@ export class LangGraphAdapter implements Adapter {
       }
     }
 
-    // Terminal output is the last agent in the execution order (Rounds / Solo / Custom)
-    const terminalOutput = transcript.length > 0 ? transcript[transcript.length - 1] : undefined
+    // Terminal output: prefer explicit responseNode from YAML plan.
+    // Fallback: scan executionOrder in reverse for last terminal-role node.
+    // Final fallback: last transcript entry (legacy behavior for plans without responseNode).
+    let terminalOutput: AgentOutput | undefined
+    if (state.plan.responseNode && state.outputs[state.plan.responseNode]) {
+      terminalOutput = state.outputs[state.plan.responseNode]
+    } else {
+      for (let i = state.executionOrder.length - 1; i >= 0; i--) {
+        const nodeId = state.executionOrder[i]!
+        const n = state.plan.graph.nodes[nodeId]
+        if (n?.role === 'terminal') {
+          terminalOutput = state.outputs[nodeId]
+          break
+        }
+      }
+      // Legacy fallback: last transcript entry
+      if (!terminalOutput && transcript.length > 0) {
+        terminalOutput = transcript[transcript.length - 1]
+      }
+    }
     const content = terminalOutput?.content ?? ''
     const structured = terminalOutput?.structured
 
@@ -292,15 +314,20 @@ export class LangGraphAdapter implements Adapter {
       if (finalConditionalEdge) {
         const auditWouldTrigger = this.evaluateStateCondition(finalConditionalEdge.condition, state.outputs)
 
-        // Infer maxRevisions from graph: highest revisionIndex on a node with a conditional edge
-        const maxPossibleRevisions = Math.max(
-          ...state.plan.graph.conditionalEdges
-            .filter((e) => e.from.includes('audit'))
-            .map((e) => {
-              const auditNode = state.plan.graph.nodes[e.from]
-              return auditNode?.metadata.revisionIndex ?? 0
-            })
-        )
+        // Use explicit maxRevisions from plan when available (set by compileSpec).
+        // Fallback: infer from graph conditional edges (legacy plans from compile()).
+        const maxPossibleRevisions =
+          state.plan.maxRevisions != null
+            ? state.plan.maxRevisions
+            : Math.max(
+                0,
+                ...state.plan.graph.conditionalEdges
+                  .filter((e) => e.from.includes('audit'))
+                  .map((e) => {
+                    const auditNode = state.plan.graph.nodes[e.from]
+                    return auditNode?.metadata.revisionIndex ?? 0
+                  })
+              )
 
         // If final audit triggers revision AND we've done all revisions, it's MAX_REVISIONS
         if (auditWouldTrigger && maxRevisionIndex >= maxPossibleRevisions) {
