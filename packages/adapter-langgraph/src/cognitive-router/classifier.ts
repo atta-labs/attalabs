@@ -38,19 +38,6 @@ export function createClassifierNode(
       return { toolDecisions: { [agentNodeId]: decision } }
     }
 
-    // Legacy backward-compat: name-substring hard rule for plans without classifierModes
-    if (!classifierMode && agent.name.includes('Synthesizer') && !agent.name.includes('Conclusion')) {
-      const decision: ToolDecision = {
-        needs: toolList,
-        budget: 5,
-        reason: 'round-Synthesizer hard-rule (legacy name-based)'
-      }
-      console.info(
-        `[Classifier] ${agentNodeId}: needs=[${decision.needs.join(',') || 'none'}] budget=${decision.budget} (${decision.reason})`
-      )
-      return { toolDecisions: { [agentNodeId]: decision } }
-    }
-
     // Auto mode (classifierMode: 'auto' or unset): Haiku call
     const prompt = `You are a tool-use classifier. The agent "${agent.name}" is about to participate in a structured deliberation.
 
