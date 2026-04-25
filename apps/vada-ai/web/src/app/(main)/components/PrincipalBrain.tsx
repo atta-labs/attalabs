@@ -146,13 +146,14 @@ const ACTIVE = 'hsl(185 85% 65%)'
 const DIM = 'hsl(210 15% 30%)'
 
 function nr(d: number) {
-  return 1.4 + d * 5.2
+  // Non-linear curve: deep nodes very small, surface nodes significantly larger
+  return 0.7 + d ** 1.7 * 6.8
 }
 function nodeIdleOp(d: number) {
-  return 0.04 + d * 0.16
+  return 0.03 + d * 0.18
 }
 function nodeActiveOp(d: number) {
-  return 0.65 + d * 0.3
+  return 0.5 + d * 0.45
 }
 function edgeIdleOp(d: number) {
   return 0.03 + d * 0.12

@@ -6,55 +6,56 @@ import { VadaAgent } from '@/components/agents'
 import { PrincipalBrain } from './PrincipalBrain'
 import { useBrokeredScene } from './useBrokeredScene'
 
+// C-arc: endpoints open toward Strategist (35vw), apex at far left (~14vw)
 const LLM_SPHERES = [
   {
     id: 'brokered-claude' as const,
     model: 'claude-3-5-sonnet-20241022',
     color: 'hsl(28 90% 60%)',
     label: 'Claude',
-    left: '17vw',
-    top: '22vh'
+    left: '27vw',
+    top: '14vh'
   },
   {
     id: 'brokered-chatgpt' as const,
     model: 'gpt-4o',
     color: 'hsl(264 70% 65%)',
     label: 'ChatGPT',
-    left: '23vw',
-    top: '32vh'
+    left: '21vw',
+    top: '26vh'
   },
   {
     id: 'brokered-gemini' as const,
     model: 'gemini-pro',
     color: 'hsl(210 100% 60%)',
     label: 'Gemini',
-    left: '15vw',
-    top: '42vh'
+    left: '16vw',
+    top: '37vh'
   },
-  { id: 'brokered-grok' as const, model: 'grok-1', color: 'hsl(0 0% 85%)', label: 'Grok', left: '21vw', top: '54vh' },
+  { id: 'brokered-grok' as const, model: 'grok-1', color: 'hsl(0 0% 85%)', label: 'Grok', left: '14vw', top: '50vh' },
   {
     id: 'brokered-mistral' as const,
     model: 'mistral-7b-instruct',
     color: 'hsl(32 95% 58%)',
     label: 'Mistral',
-    left: '18vw',
-    top: '64vh'
+    left: '17vw',
+    top: '63vh'
   },
   {
     id: 'brokered-deepseek' as const,
     model: 'deepseek-chat',
     color: 'hsl(200 85% 58%)',
     label: 'DeepSeek',
-    left: '24vw',
-    top: '73vh'
+    left: '22vw',
+    top: '74vh'
   },
   {
     id: 'brokered-llama' as const,
     model: 'meta-llama-3.1-70b-instruct',
     color: 'hsl(217 89% 62%)',
     label: 'Llama',
-    left: '16vw',
-    top: '80vh'
+    left: '28vw',
+    top: '83vh'
   }
 ]
 
