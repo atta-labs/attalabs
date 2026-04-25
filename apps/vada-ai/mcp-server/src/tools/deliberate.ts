@@ -1,6 +1,6 @@
-import { compile } from '@atta/engine'
+import { compileSpec } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { lookupTeam } from '../teams-registry'
+import { lookupSpec } from '../spec-registry'
 import { logSession } from '../session-logger'
 
 // Sonnet 4.6 pricing (USD per million tokens, May 2026)
@@ -27,10 +27,8 @@ export interface DeliberateOutput {
 }
 
 export async function runDeliberate(input: DeliberateInput, apiKey: string): Promise<DeliberateOutput> {
-  const teamName = input.team ?? 'sparring'
-  const team = lookupTeam(teamName)
-
-  const plan = compile({ team, question: input.question, model: DEFAULT_MODEL })
+  const spec = lookupSpec(input.team ?? 'sparring')
+  const plan = compileSpec(spec, input.question, DEFAULT_MODEL)
 
   const adapter = new LangGraphAdapter({ apiKey })
   const startedAt = Date.now()
