@@ -2,9 +2,15 @@ import { z } from 'zod'
 import { compile } from '@atta/engine'
 import type { Team } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { createDomainExpert } from '@vada/agents'
-import { reviewerProfiles, type ReviewerProfileName } from '../reviewer-profiles'
+import { createDomainExpert, strategist, critic, devilsAdvocate } from '@vada/agents'
 import { logSession } from '../session-logger'
+
+type ReviewerProfileName = 'strategist' | 'critic' | 'devils_advocate'
+const reviewerProfiles = {
+  strategist,
+  critic,
+  devils_advocate: devilsAdvocate
+} as const
 
 // Sonnet 4.6 pricing (USD per million tokens, May 2026)
 const PRICING = { input: 3.0, output: 15.0 }

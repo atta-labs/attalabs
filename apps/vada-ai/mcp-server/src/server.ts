@@ -2,7 +2,6 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { runConsult, validateAndNormalize } from './tools/consult'
 import { runDeliberate } from './tools/deliberate'
-import { type ReviewerProfileName, reviewerProfiles } from './reviewer-profiles'
 
 const CONSULT_TOOL_DESCRIPTION = `Invokes Vāda Brokered deliberation — 2-5 specialized reviewers each produce their own perspective on a question. Use when:
 
@@ -104,7 +103,7 @@ Parameters:
 
 Runtime: Sparring ~30-90s; Crucible 2-5min. Client timeout permitting.`
 
-const VALID_PROFILES = Object.keys(reviewerProfiles) as ReviewerProfileName[]
+const VALID_PROFILES = ['strategist', 'critic', 'devils_advocate'] as const
 
 function detectOrigin(clientName: string | undefined): string {
   if (!clientName) return 'other'
