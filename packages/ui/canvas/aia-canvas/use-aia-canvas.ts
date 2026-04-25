@@ -126,22 +126,32 @@ export function useAIACanvas(
     ringsRef.current.delete(id)
   }, [])
 
-  const fireDirectedMessage = useCallback((fromId: string, toId: string, speed?: number) => {
-    const spheres = Array.from(spheresRef.current.values())
-    const from = spheres.find((s) => s.id.toLowerCase() === fromId.toLowerCase())
-    const to = spheres.find((s) => s.id.toLowerCase() === toId.toLowerCase())
-    if (!from || !to) return
-    directMessagesRef.current.push({
-      fromX: from.x,
-      fromY: from.y,
-      toX: to.x,
-      toY: to.y,
-      progress: 0,
-      toSphereId: toId,
-      speed
-    })
-    recentEventsRef.current.push({ type: 'message-fired', fromId, toId })
-  }, [])
+  const fireDirectedMessage = useCallback(
+    (fromId: string, toId: string, speed?: number, waypointStyle?: 'vertical-first' | 'horizontal-first') => {
+      const spheres = Array.from(spheresRef.current.values())
+      const from = spheres.find((s) => s.id.toLowerCase() === fromId.toLowerCase())
+      const to = spheres.find((s) => s.id.toLowerCase() === toId.toLowerCase())
+      if (!from || !to) return
+      let waypoint: { x: number; y: number } | undefined
+      if (waypointStyle === 'vertical-first') {
+        waypoint = { x: from.x, y: to.y }
+      } else if (waypointStyle === 'horizontal-first') {
+        waypoint = { x: to.x, y: from.y }
+      }
+      directMessagesRef.current.push({
+        fromX: from.x,
+        fromY: from.y,
+        toX: to.x,
+        toY: to.y,
+        progress: 0,
+        toSphereId: toId,
+        speed,
+        waypoint
+      })
+      recentEventsRef.current.push({ type: 'message-fired', fromId, toId })
+    },
+    []
+  )
 
   const fireSphereOrigin = useCallback((sphereId: string) => {
     recentEventsRef.current.push({ type: 'sphere-origin', sphereId })

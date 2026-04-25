@@ -17,6 +17,7 @@ export interface DirectMessage {
   progress: number
   toSphereId: string
   speed?: number
+  waypoint?: { x: number; y: number } // optional L-path midpoint for grid-following
 }
 
 export interface MatrixDrop {

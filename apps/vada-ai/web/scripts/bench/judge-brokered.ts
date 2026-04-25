@@ -104,8 +104,8 @@ async function runBaseline(
   })
   return {
     text: result.text,
-    tokensIn: result.usage.promptTokens,
-    tokensOut: result.usage.completionTokens,
+    tokensIn: result.usage.inputTokens ?? 0,
+    tokensOut: result.usage.outputTokens ?? 0,
     elapsedMs: Date.now() - start
   }
 }
@@ -126,8 +126,8 @@ async function runJudge(
   })
   return {
     text: result.text,
-    tokensIn: result.usage.promptTokens,
-    tokensOut: result.usage.completionTokens,
+    tokensIn: result.usage.inputTokens ?? 0,
+    tokensOut: result.usage.outputTokens ?? 0,
     elapsedMs: Date.now() - start
   }
 }

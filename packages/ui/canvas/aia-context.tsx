@@ -44,7 +44,14 @@ export interface AIAContextValue {
   unregisterRing: (id: string) => void
   phase: CanvasPhase
   containerRef: RefObject<HTMLDivElement | null>
-  fireDirectedMessage: (fromSphereId: string, toSphereId: string, speed?: number) => void
+  /** 'vertical-first': waypoint = (from.x, to.y) — travels vertically then horizontally.
+   *  'horizontal-first': waypoint = (to.x, from.y) — travels horizontally then vertically. */
+  fireDirectedMessage: (
+    fromSphereId: string,
+    toSphereId: string,
+    speed?: number,
+    waypointStyle?: 'vertical-first' | 'horizontal-first'
+  ) => void
   /** Trigger the gravitational fabric ramp. Call when the ring animation is complete. */
   startGravity: () => void
   /** Trigger the origin birth animation — 3 intense Tron births converge on this sphere. */
