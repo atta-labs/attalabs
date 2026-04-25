@@ -44,7 +44,7 @@ export interface AIAContextValue {
   unregisterRing: (id: string) => void
   phase: CanvasPhase
   containerRef: RefObject<HTMLDivElement | null>
-  fireDirectedMessage: (fromSphereId: string, toSphereId: string) => void
+  fireDirectedMessage: (fromSphereId: string, toSphereId: string, speed?: number) => void
   /** Trigger the gravitational fabric ramp. Call when the ring animation is complete. */
   startGravity: () => void
   /** Trigger the origin birth animation — 3 intense Tron births converge on this sphere. */

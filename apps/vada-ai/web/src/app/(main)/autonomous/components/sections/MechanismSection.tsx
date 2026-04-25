@@ -1,6 +1,6 @@
 'use client'
 
-import { Heading, Text } from '@atta/ui'
+import { Heading } from '@atta/ui'
 import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
 import { mdxComponents } from '@/components/mdx/MDXComponents'
 import { AGENT_COLOR_BY_ROLE } from '@vada/agents'

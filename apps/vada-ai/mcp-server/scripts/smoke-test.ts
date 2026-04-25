@@ -26,10 +26,7 @@ console.log('vada__consult smoke test')
 console.log('='.repeat(60))
 
 const question = 'Should early-stage startups write tests? Argue against it.'
-const reviewerSpecs = [
-  { profileName: 'critic' as const },
-  { profileName: 'devils_advocate' as const }
-]
+const reviewerSpecs = [{ profileName: 'critic' as const }, { profileName: 'devils_advocate' as const }]
 
 console.log(`\nQuestion: ${question}`)
 console.log(`Reviewers: ${reviewerSpecs.map((r) => r.profileName).join(', ')}\n`)

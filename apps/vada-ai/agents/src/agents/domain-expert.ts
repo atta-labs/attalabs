@@ -69,7 +69,7 @@ what domain would be more appropriate, if any.)`
 
 /** Base domain expert — system prompt contains {{DOMAIN}} placeholder. */
 export const domainExpert = {
-  name: "Domain Expert",
+  name: 'Domain Expert',
   role: 'domain_expert',
   displayName: 'The Domain Expert',
   tagline: 'Grounds in field practice',

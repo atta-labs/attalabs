@@ -1,6 +1,6 @@
 {
-  "id": "1519aed1-f725-426d-822d-e04dc6e98e99",
-  "prevId": "d922c23e-b327-4ac6-9ae4-107292e25d4c",
+  "id": "ba5900d0-4c07-4462-ab87-8271e96dcd43",
+  "prevId": "1519aed1-f725-426d-822d-e04dc6e98e99",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -174,6 +174,142 @@
           "columns": ["session_id"]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.benchmark_runs": {
+      "name": "benchmark_runs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "session_type": {
+          "name": "session_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "question_hash": {
+          "name": "question_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "judge_model": {
+          "name": "judge_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "judge_verdict": {
+          "name": "judge_verdict",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "judge_score": {
+          "name": "judge_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "judge_reasoning": {
+          "name": "judge_reasoning",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reviewer_scores": {
+          "name": "reviewer_scores",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "baseline_label": {
+          "name": "baseline_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "baseline_response": {
+          "name": "baseline_response",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "run_label": {
+          "name": "run_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "benchmark_runs_question_hash_idx": {
+          "name": "benchmark_runs_question_hash_idx",
+          "columns": [
+            {
+              "expression": "question_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benchmark_runs_session_type_session_id_idx": {
+          "name": "benchmark_runs_session_type_session_id_idx",
+          "columns": [
+            {
+              "expression": "session_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

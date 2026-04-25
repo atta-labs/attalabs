@@ -76,9 +76,7 @@ export interface ValidationError {
   min?: number
 }
 
-export type ValidationOutcome =
-  | { valid: true; data: ConsultInput }
-  | { valid: false; errors: ValidationError[] }
+export type ValidationOutcome = { valid: true; data: ConsultInput } | { valid: false; errors: ValidationError[] }
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
 
@@ -197,8 +195,7 @@ export async function runConsult(input: ConsultInput, apiKey: string, origin?: s
     workflow: {
       type: 'brokered',
       reviewers: input.reviewerSpecs.map((s) => {
-        const agentName =
-          s.profileName === 'domain_expert' ? 'Domain Expert' : reviewerProfiles[s.profileName].name
+        const agentName = s.profileName === 'domain_expert' ? 'Domain Expert' : reviewerProfiles[s.profileName].name
         return { agentName, messageTemplate: s.notes ? `${BASE_TEMPLATE}\n\n## Your Focus\n${s.notes}` : BASE_TEMPLATE }
       })
     }

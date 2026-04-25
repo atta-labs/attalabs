@@ -278,3 +278,35 @@ export const mcpSessions = pgTable(
 )
 
 export type McpSession = typeof mcpSessions.$inferSelect
+
+// ── Brokered benchmark runs ───────────────────────────────────────────────────
+// Stores judge evaluations of brokered consultations against a single-shot
+// Sonnet baseline. One row per (session_id, judge run). Populated by
+// scripts/bench/judge-brokered.ts — never auto-triggered in V1.
+
+export const benchmarkRuns = pgTable(
+  'benchmark_runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    sessionType: text('session_type').notNull(),
+    sessionId: uuid('session_id').notNull(),
+    questionHash: text('question_hash').notNull(),
+    judgeModel: text('judge_model').notNull(),
+    judgeVerdict: text('judge_verdict').notNull(),
+    judgeScore: integer('judge_score').notNull(),
+    judgeReasoning: text('judge_reasoning').notNull(),
+    reviewerScores: jsonb('reviewer_scores'),
+    baselineLabel: text('baseline_label'),
+    baselineResponse: text('baseline_response'),
+    runLabel: text('run_label'),
+    tags: text('tags').array()
+  },
+  (t) => [
+    index('benchmark_runs_question_hash_idx').on(t.questionHash),
+    index('benchmark_runs_session_type_session_id_idx').on(t.sessionType, t.sessionId)
+  ]
+)
+
+export type BenchmarkRun = typeof benchmarkRuns.$inferSelect
+export type NewBenchmarkRun = typeof benchmarkRuns.$inferInsert

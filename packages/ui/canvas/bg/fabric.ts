@@ -220,7 +220,7 @@ export function resetFabricState(): void {
   originArrivedCount = 0
 }
 
-export function renderFabricBg(state: BgState): void {
+function renderFabricBgCore(state: BgState, splitX?: number): void {
   const { ctx, t, W, H, settleProgress, rings, recentEvents, onSphereAbsorb } = state
 
   const CX = W / 2
@@ -653,8 +653,9 @@ export function renderFabricBg(state: BgState): void {
       }
     }
 
+    const mirrorX = splitX !== undefined && x0 < splitX ? -1 : 1
     return {
-      x: x0 - nx * pull + shimmerX + rippleX + pulseX,
+      x: x0 - nx * pull + (shimmerX + rippleX + pulseX) * mirrorX,
       y: y0 - ny * pull + shimmerY + rippleY + pulseY
     }
   })
@@ -718,8 +719,9 @@ export function renderFabricBg(state: BgState): void {
       }
     }
 
+    const mirrorX = splitX !== undefined && x0 < splitX ? -1 : 1
     return {
-      x: x0 - nx * pull + shimmerX + rippleX + pulseX,
+      x: x0 - nx * pull + (shimmerX + rippleX + pulseX) * mirrorX,
       y: y0 - ny * pull + shimmerY + rippleY + pulseY
     }
   })
@@ -1176,4 +1178,12 @@ export function renderFabricBg(state: BgState): void {
     ctx.fillStyle = g
     ctx.fillRect(0, 0, W, H)
   }
+}
+
+export function renderFabricBg(state: BgState): void {
+  renderFabricBgCore(state)
+}
+
+export function renderSplitFabricBg(state: BgState): void {
+  renderFabricBgCore(state, state.W / 2)
 }

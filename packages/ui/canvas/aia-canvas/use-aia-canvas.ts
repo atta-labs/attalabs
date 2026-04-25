@@ -126,7 +126,7 @@ export function useAIACanvas(
     ringsRef.current.delete(id)
   }, [])
 
-  const fireDirectedMessage = useCallback((fromId: string, toId: string) => {
+  const fireDirectedMessage = useCallback((fromId: string, toId: string, speed?: number) => {
     const spheres = Array.from(spheresRef.current.values())
     const from = spheres.find((s) => s.id.toLowerCase() === fromId.toLowerCase())
     const to = spheres.find((s) => s.id.toLowerCase() === toId.toLowerCase())
@@ -137,7 +137,8 @@ export function useAIACanvas(
       toX: to.x,
       toY: to.y,
       progress: 0,
-      toSphereId: toId
+      toSphereId: toId,
+      speed
     })
     recentEventsRef.current.push({ type: 'message-fired', fromId, toId })
   }, [])

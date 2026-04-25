@@ -12,7 +12,7 @@ export function renderMessages(
 ): void {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i]!
-    msg.progress += 0.07
+    msg.progress += msg.speed ?? 0.07
 
     const t = Math.min(msg.progress, 1)
     const ease = t * t * (3 - 2 * t)

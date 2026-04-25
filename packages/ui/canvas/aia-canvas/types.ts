@@ -16,6 +16,7 @@ export interface DirectMessage {
   toY: number
   progress: number
   toSphereId: string
+  speed?: number
 }
 
 export interface MatrixDrop {
