@@ -15,12 +15,18 @@ Faster and cheaper than `vada__deliberate`. Use for single-shot critique, strate
 analysis, or counter-arguments.
 
 **Parameters:**
-- `brief` (string) — The question or proposal to review (compressed, reviewer-ready framing)
-- `reviewers` (string[]) — Reviewer profiles: `strategist`, `critic`, `devils_advocate` (min 2)
+- `context` (string, min 50 chars) — Shared background every reviewer sees
+- `question` (string, min 10 chars) — The specific decision or claim to evaluate
+- `reviewers` (array, 2–5 items) — Reviewer specs: `{ role: 'strategist' | 'critic' | 'devils_advocate' | 'domain_expert', notes?: string, domain?: string }`
+- `current_leaning` (string, optional) — Caller Claude's current position
+- `stakes` (string, optional) — What goes wrong if the decision is wrong
+- `session_title` (string, optional) — For dashboard display
 
 **Returns:**
-- `responses` — Per-reviewer structured responses (Key Points / Risks / Recommendation)
+- `responses` — Per-reviewer structured responses
 - `session_id` — UUID for this consultation
+- `session_url` — Dashboard URL
+- `cost_breakdown` — Token counts and estimated cost
 
 ### `vada__deliberate` (Autonomous mode)
 
@@ -79,8 +85,8 @@ MCP client (Claude Desktop, Cursor, etc.)
   → stdio transport
   → @vada/mcp-server (vada__consult / vada__deliberate)
   → @atta/adapter-langgraph (cognitive router + LangGraph execution)
-  → @atta/engine (compile workflow → Plan)
-  → @vada/agents + @vada/teams (agent configs)
+  → @atta/engine (YAML → loadSpec → compileSpec → Plan)
+  → @vada/agents + YAML specs (apps/vada-ai/yamls/)
   → Anthropic API (LLM calls + web search)
   → @atta/db (session persistence)
 ```
@@ -92,10 +98,9 @@ apps/vada-ai/mcp-server/src/
 ├── index.ts               # Entry point
 ├── server.ts              # MCP server setup + tool registration
 ├── tools/
-│   ├── consult.ts         # vada__consult (Brokered mode)
+│   ├── consult.ts         # vada__consult (Brokered mode — builds inline DeliberationSpec)
 │   └── deliberate.ts      # vada__deliberate (Autonomous mode)
-├── reviewer-profiles.ts   # Persona registry — system prompts
-├── teams-registry.ts      # Team → engine mapping
+├── spec-registry.ts       # YAML spec loader + lookupSpec(nameOrId) + ALIASES map
 ├── session-logger.ts      # Postgres persistence
 └── schema.ts              # Zod schemas for tool I/O
 ```

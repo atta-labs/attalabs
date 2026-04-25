@@ -21,7 +21,7 @@ Multi-agent deliberation engine. Multiple LLM agents debate a question across ro
 | Package | Path | Purpose |
 |---------|------|---------|
 | `@vada/agents` | `agents/` | Agent definitions (system prompts, tools, display metadata) |
-| `@vada/teams` | `teams/` | Team configs (Sparring, Crucible, War Room, A0/A1 baselines) |
+| YAML specs | `yamls/` | Deliberation configs — Sparring, Crucible, War Room, A0/A1, Brokered |
 
 ## Architecture Layers
 
@@ -30,11 +30,11 @@ User → MCP client / Web UI
          ↓
   @vada/mcp-server      — routes deliberation requests
          ↓
-  @atta/engine          — compiles Team + Workflow → Plan (pure, no runtime)
+  @atta/engine          — YAML → loadSpec → compileSpec → Plan (pure, no runtime)
          ↓
   @atta/adapter-langgraph — executes Plan via LangGraph + Anthropic SDK
          ↓
-  @vada/agents + @vada/teams  — agent configs, system prompts, tool lists
+  @vada/agents + yamls/   — agent configs, system prompts, tool lists
 ```
 
 ## Getting Started

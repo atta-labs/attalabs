@@ -167,6 +167,7 @@ Specs live at the product level (`apps/vada-ai/specs/`), not the surface level.
 | Science of deliberation | [../specs/vada-science-of-deliberation.md](../specs/vada-science-of-deliberation.md) | Deliberation theory |
 | Brokered deliberation | [../specs/brokered-deliberation/](../specs/brokered-deliberation/) | `vada__consult` MCP tool spec (00–06) |
 | Engine design decisions | [../specs/engine/design-decisions.md](../specs/engine/design-decisions.md) | Architectural decisions with rationale |
+| YAML schema reference | [../specs/yaml-schema-reference.md](../specs/yaml-schema-reference.md) | Complete YAML spec schema — fields, templates, modes |
 
 ---
 

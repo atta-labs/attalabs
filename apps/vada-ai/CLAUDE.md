@@ -20,8 +20,7 @@ Vada AI is a multi-agent deliberation engine. Multiple LLM agents debate a quest
 
 | Package | Path | Purpose |
 |---------|------|---------|
-| `@vada/agents` | `agents/` | Agent definitions with display metadata |
-| `@vada/teams` | `teams/` | Team configs (Sparring, Crucible, War Room, A0/A1) |
+| `@vada/agents` | `agents/` | Agent definitions with display metadata (teams are now YAML) |
 | `@vada/mcp-server` | `mcp-server/` | MCP server — `vada__consult` + `vada__deliberate` tools |
 
 ---
@@ -78,3 +77,5 @@ Historical specs — superseded. See [specs/legacy/README.md](specs/legacy/READM
 - [Root CLAUDE.md](../../CLAUDE.md) — Atta AI monorepo routing index
 - [.claude/skills/vada-architecture/SKILL.md](../../.claude/skills/vada-architecture/SKILL.md) — Architecture master reference
 - [.claude/skills/vada-brokered/SKILL.md](../../.claude/skills/vada-brokered/SKILL.md) — Brokered mode in depth
+- [.claude/skills/vada-yaml-authoring/SKILL.md](../../.claude/skills/vada-yaml-authoring/SKILL.md) — Authoring YAML deliberation specs
+- [.claude/skills/atta-teams/SKILL.md](../../.claude/skills/atta-teams/SKILL.md) — Agent definitions only (teams are now YAML)
