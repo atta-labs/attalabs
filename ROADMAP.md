@@ -87,6 +87,31 @@ Scope defined in `apps/vada-ai/specs/brokered-deliberation/`.
 
 ---
 
+## Phase 7.2 — YAML Spec Refactor ✅ COMPLETE
+
+**Commits:** `50c1d89` → `8aa3ad4`, `7a2a715`
+
+Replace all TypeScript deliberation flow definitions with YAML files; make the engine mode-agnostic with zero branches on workflow type.
+
+**Phase A — Add YAML layer (non-breaking):**
+- Created `apps/vada-ai/yamls/` with 7 specs: sparring, crucible, war-room, a0, a1, brokered-trio, brokered-quartet
+- Added `spec-types.ts`, `spec-schema.ts`, `spec-loader.ts` to `@atta/engine`
+- Added `compileSpec(spec, question, model?) → Plan` and `specToTeam()` to engine public API
+- Added `spec-registry.ts` to MCP server (startup fail-fast; `lookupSpec`, `listPublicSpecs`)
+- Migrated `deliberate.ts` and web workflow route to use `compileSpec`
+- Behavioral verification: 5 scripts passed (A0/A1, Brokered, Sparring, Crucible)
+
+**Phase B — Delete TypeScript layer:**
+- Deleted `apps/vada-ai/teams/` (`@vada/teams` package, 12 files, 325 lines)
+- Deleted `teams-registry.ts`, `reviewer-profiles.ts` from MCP server
+- Removed `compile()` from engine public exports; `workflowType` from Plan interface
+- Removed adapter backward-compat code; removed legacy classifier name-substring hard rule
+- Migrated `consult.ts` to build inline `DeliberationSpec` + call `compileSpec()`
+- Re-ran 5 behavioral verifications — all passed
+- Typecheck: 18/18, 0 errors
+
+---
+
 ## Phase 7 — Pre-Launch Requirements
 
 Required before public launch. Order TBD.

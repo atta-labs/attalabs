@@ -21,9 +21,10 @@ Skills live at `.claude/skills/<name>/SKILL.md`. Load via the `Skill` tool.
 
 | Skill | Load When |
 |-------|-----------|
-| `atta-engine` | Plan compiler (`packages/engine/`) — types, validation, compilers, node ID scheme |
+| `atta-engine` | Plan compiler (`packages/engine/`) — YAML public API (`loadSpec`/`compileSpec`), node ID scheme |
 | `atta-adapter-langgraph` | LangGraph execution + cognitive router (`packages/adapter-langgraph/`) |
-| `atta-teams` | Agent and team configs (`apps/vada-ai/agents/`, `apps/vada-ai/teams/`) |
+| `atta-teams` | Agent configs (`apps/vada-ai/agents/`) + YAML specs (`apps/vada-ai/yamls/`) — `@vada/teams` deleted |
+| `vada-yaml-authoring` | How to create and register YAML deliberation specs — both rounds and reviewers patterns |
 
 ### Infrastructure
 
@@ -138,3 +139,4 @@ Historical specs — superseded. Read only if investigating prior design decisio
 | `vada-science-of-deliberation.md` | Foundational deliberation theory |
 | `vada-byok-principles.md` | BYOK architecture principles |
 | `vada-human.md` | Vāda's human-facing narrative |
+| `yaml-schema-reference.md` | Complete YAML deliberation spec schema reference (Phase 7.2+) |
