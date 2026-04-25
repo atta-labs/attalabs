@@ -13,24 +13,45 @@ import type { VadaGraphStateValue, ToolDecision } from '../graph-state'
  * Fails open: if the Haiku call fails or the JSON is malformed, all declared tools
  * are allowed with a default budget of 5.
  */
-export function createClassifierNode(agentNodeId: string, agent: Agent, apiKey: string | undefined) {
+export function createClassifierNode(
+  agentNodeId: string,
+  agent: Agent,
+  apiKey: string | undefined,
+  classifierMode?: 'auto' | 'skip' | 'always_tools'
+) {
   const client = new Anthropic({ apiKey })
 
   return async (state: VadaGraphStateValue): Promise<Partial<VadaGraphStateValue>> => {
     const toolList = agent.tools ?? []
     if (toolList.length === 0) return {}
 
-    // Hard-rule: round-Synthesizer always gets all declared tools — no Haiku call needed.
-    // Round-Synthesizers integrate claims across a full debate round; they need evidence
-    // tools to verify and anchor the synthesis. Withholding tools here caused MAX_REVISIONS.
-    if (agent.name.includes('Synthesizer') && !agent.name.includes('Conclusion')) {
-      const decision: ToolDecision = { needs: toolList, budget: 5, reason: 'round-Synthesizer hard-rule: always tools' }
+    // YAML-driven hard rules (classifierMode set from plan.classifierModes)
+    if (classifierMode === 'always_tools' || classifierMode === 'skip') {
+      const decision: ToolDecision = {
+        needs: toolList,
+        budget: 5,
+        reason: `classifierMode: ${classifierMode}`
+      }
       console.info(
         `[Classifier] ${agentNodeId}: needs=[${decision.needs.join(',') || 'none'}] budget=${decision.budget} (${decision.reason})`
       )
       return { toolDecisions: { [agentNodeId]: decision } }
     }
 
+    // Legacy backward-compat: name-substring hard rule for plans without classifierModes
+    if (!classifierMode && agent.name.includes('Synthesizer') && !agent.name.includes('Conclusion')) {
+      const decision: ToolDecision = {
+        needs: toolList,
+        budget: 5,
+        reason: 'round-Synthesizer hard-rule (legacy name-based)'
+      }
+      console.info(
+        `[Classifier] ${agentNodeId}: needs=[${decision.needs.join(',') || 'none'}] budget=${decision.budget} (${decision.reason})`
+      )
+      return { toolDecisions: { [agentNodeId]: decision } }
+    }
+
+    // Auto mode (classifierMode: 'auto' or unset): Haiku call
     const prompt = `You are a tool-use classifier. The agent "${agent.name}" is about to participate in a structured deliberation.
 
 Question under deliberation: "${state.question}"

@@ -116,7 +116,8 @@ export function buildStateGraph(plan: Plan, executor: NodeExecutor, apiKey?: str
       const node = plan.graph.nodes[nodeId]!
       const agent = plan.agents[node.agentName]!
       const classifierNodeId = `classifier-${nodeId}`
-      graph.addNode(classifierNodeId, createClassifierNode(nodeId, agent, apiKey))
+      const agentClassifierMode = plan.classifierModes?.[agent.name]
+      graph.addNode(classifierNodeId, createClassifierNode(nodeId, agent, apiKey, agentClassifierMode))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(graph as any).addEdge(classifierNodeId, nodeId)
     }
