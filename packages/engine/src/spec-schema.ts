@@ -77,7 +77,10 @@ const ReviewerSpecSchema = z.object({
 export const DeliberationSpecSchema = z
   .object({
     schema_version: z.literal('1.0'),
-    id: z.string().min(1).regex(/^[a-z0-9-]+$/, 'id must be kebab-case'),
+    id: z
+      .string()
+      .min(1)
+      .regex(/^[a-z0-9-]+$/, 'id must be kebab-case'),
     display_name: z.string().min(1),
     description: z.string().min(1),
     experimental: z.boolean().default(false),
@@ -91,15 +94,15 @@ export const DeliberationSpecSchema = z
     reviewers: z.array(ReviewerSpecSchema).optional(),
     response: ResponseSpecSchema.optional()
   })
-  .refine(
-    (d) => d.flow !== undefined || d.reviewers !== undefined,
-    { message: 'spec must have either flow or reviewers', path: ['flow'] }
-  )
-  .refine(
-    (d) => !(d.flow?.rounds !== undefined && d.reviewers !== undefined),
-    { message: 'flow.rounds and reviewers are mutually exclusive', path: ['reviewers'] }
-  )
-  .refine(
-    (d) => !(d.flow?.rounds !== undefined && d.flow?.synthesis === undefined),
-    { message: 'flow.rounds requires flow.synthesis', path: ['flow', 'synthesis'] }
-  )
+  .refine((d) => d.flow !== undefined || d.reviewers !== undefined, {
+    message: 'spec must have either flow or reviewers',
+    path: ['flow']
+  })
+  .refine((d) => !(d.flow?.rounds !== undefined && d.reviewers !== undefined), {
+    message: 'flow.rounds and reviewers are mutually exclusive',
+    path: ['reviewers']
+  })
+  .refine((d) => !(d.flow?.rounds !== undefined && d.flow?.synthesis === undefined), {
+    message: 'flow.rounds requires flow.synthesis',
+    path: ['flow', 'synthesis']
+  })

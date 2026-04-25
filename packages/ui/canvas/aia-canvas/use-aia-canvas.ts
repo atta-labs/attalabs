@@ -153,8 +153,12 @@ export function useAIACanvas(
     []
   )
 
-  const fireSphereOrigin = useCallback((sphereId: string) => {
-    recentEventsRef.current.push({ type: 'sphere-origin', sphereId })
+  const fireSphereOrigin = useCallback((sphereId: string, count?: number, color?: string) => {
+    recentEventsRef.current.push({ type: 'sphere-origin', sphereId, count, color })
+  }, [])
+
+  const fireSphereGather = useCallback((sphereId: string, count: number, color?: string) => {
+    recentEventsRef.current.push({ type: 'sphere-gather', sphereId, count, color })
   }, [])
 
   // ── Imperative handle ────────────────────────────────────────────────────
@@ -362,7 +366,8 @@ export function useAIACanvas(
     containerRef,
     fireDirectedMessage,
     startGravity,
-    fireSphereOrigin
+    fireSphereOrigin,
+    fireSphereGather
   }
 
   return { containerRef, canvasRef, contextValue }

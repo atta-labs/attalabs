@@ -7,66 +7,110 @@ description: Vāda engine internals — Plan compilation, Agent/Workflow/Team ty
 
 ## Context
 
-`@atta/engine` is a **pure library**. It takes a Team + Workflow + question and compiles them into a Plan: a declarative JSON-serializable execution DAG. Zero runtime dependencies. The engine compiles; the adapter executes. These responsibilities never cross.
+`@atta/engine` is a **pure library**. It takes a `DeliberationSpec` (from a YAML file) and compiles it into a Plan: a declarative JSON-serializable execution DAG. Zero runtime dependencies. The engine compiles; the adapter executes. These responsibilities never cross.
 
 The engine has no LangGraph, no Anthropic SDK, no fetch, no LangChain. If you're importing a runtime dependency here, you're in the wrong package.
+
+The authoring interface is: YAML file → `loadSpec()` → `DeliberationSpec` → `compileSpec()` → `Plan`. Direct TypeScript Team/Workflow construction is no longer the public API.
 
 ---
 
 ## Architecture
 
 ```
-Team + Workflow + Question
-        ↓
-   validate.ts (preflight checks)
-        ↓
-   compilers/<kind>.ts
-        ↓
-       Plan (JSON)
-        ↓
-   [handed to adapter]
+YAML file
+    ↓
+loadSpec(yaml: string)       parse + Zod validation
+    ↓
+DeliberationSpec             in-memory typed spec
+    ↓
+compileSpec(spec, question)  internally: specToTeam → compile
+    ↓
+Plan (JSON DAG)
+    ↓
+[handed to adapter]
 ```
 
 File tree:
 
 ```
 packages/engine/src/
-├── types.ts                  # Agent, Workflow, Team, Plan, Conclusion, ToolDecision
-├── validate.ts               # Preflight validation before compilation
+├── types.ts                  # Agent, Workflow, Team, Plan, Conclusion, ToolDecision (internal)
+├── spec-types.ts             # DeliberationSpec, SpecAgent, FlowSpec, ReviewerSpec (public)
+├── spec-schema.ts            # Zod validation schema
+├── spec-loader.ts            # loadSpec(yaml: string) → DeliberationSpec
+├── validate.ts               # Preflight validation before compilation (internal)
 ├── compilers/
-│   ├── solo.ts               # SoloWorkflow → Plan
-│   ├── rounds.ts             # RoundsWorkflow → Plan (most complex)
-│   └── custom.ts             # CustomWorkflow → Plan
+│   ├── spec.ts               # compileSpec(spec, question, model?) → Plan; specToTeam(spec) → Team
+│   ├── solo.ts               # SoloWorkflow → Plan (internal)
+│   ├── rounds.ts             # RoundsWorkflow → Plan (internal, most complex)
+│   └── custom.ts             # CustomWorkflow → Plan (internal)
 └── index.ts                  # Public exports
 ```
 
 ---
 
+## Public API (Phase 7.2+)
+
+```ts
+import { loadSpec, compileSpec, specToTeam } from '@atta/engine'
+import type { DeliberationSpec, SpecAgent, FlowSpec, ReviewerSpec } from '@atta/engine'
+```
+
+| Export | Purpose |
+|--------|---------|
+| `loadSpec(yaml: string)` | Parse + validate YAML → `DeliberationSpec`. Throws on schema violations. |
+| `compileSpec(spec, question, model?)` | `DeliberationSpec` → `Plan`. `model` overrides `spec.defaults.model`. |
+| `specToTeam(spec)` | `DeliberationSpec` → `Team` (internal team shape). Used internally by `compileSpec`. |
+| `DeliberationSpec` | Top-level YAML spec type |
+| `SpecAgent` | Per-agent config in a spec |
+| `FlowSpec` | Rounds + synthesis + audit flow config |
+| `ReviewerSpec` | Per-reviewer config (brokered mode) |
+
+`compile()` is NOT a public export. It remains internal. Call `compileSpec()` instead.
+
+---
+
 ## Core Types
 
-**Agent**
+**DeliberationSpec** — the input. Produced by `loadSpec()`.
 ```ts
-type Agent = {
-  name: string;            // PascalCase, unique within Team
-  model: string;           // e.g. 'claude-sonnet-4-5'
-  systemPrompt: string;    // role-focused, not task-focused
-  tools?: string[];        // logical names; [] for tool-off, never undefined for tool-using
-  outputSchema?: ZodSchema;
-};
+interface DeliberationSpec {
+  schemaVersion: '1.0';
+  id: string;
+  displayName: string;
+  description: string;
+  experimental: boolean;
+  benchmarked: boolean;
+  defaults: { model: string; maxTokens?: number };
+  agents: SpecAgent[];
+  flow?: FlowSpec;        // rounds-based mode
+  reviewers?: ReviewerSpec[];  // brokered mode
+  response?: ResponseSpec;
+}
 ```
 
-**Workflow (tagged union)**
+**SpecAgent**
 ```ts
-type Workflow =
-  | { kind: 'solo'; agent: string }
-  | { kind: 'rounds'; agents: string[]; rounds: number; roundSynthesizer?: string;
-      conclusionAgent?: string; auditAgent?: string | string[]; maxRevisions?: number }
-  | { kind: 'custom'; nodes: PlanNode[]; edges: PlanEdge[] };
+interface SpecAgent {
+  name: string;           // PascalCase, unique within spec
+  description: string;
+  systemPrompt: string;
+  model?: string;         // overrides spec defaults
+  maxTokens?: number;
+  tools?: string[];       // [] for tool-off, absent = no tools
+  outputFormat?: 'text' | 'structured';
+  outputSchema?: Record<string, unknown>;
+  classifier?: { mode: ClassifierMode; budget?: number };
+}
 ```
 
-**Team**
+**ClassifierMode**
 ```ts
-type Team = { name: string; agents: Agent[]; workflow: Workflow };
+type ClassifierMode = 'auto' | 'skip' | 'always_tools'
+// 'auto'         — classifier decides at runtime
+// 'skip'         — no classifier injected, no tools
+// 'always_tools' — classifier skipped, agent's full tool list always on
 ```
 
 **Plan** — compiled output. Pure JSON. Consumed by adapter.
@@ -114,9 +158,10 @@ No fetch, no LangGraph, no Anthropic SDK, no LangChain. If a feature requires ru
 
 ```ts
 // ✅ Pure compilation
-export function compile(workflow: RoundsWorkflow, team: Team): Plan {
-  validate(workflow, team);
-  return { nodes: buildNodes(workflow, team), edges: buildEdges(workflow), entry: '...', exit: '...' };
+export function compileSpec(spec: DeliberationSpec, question: string, model?: string): Plan {
+  const team = specToTeam(spec);
+  validate(team.workflow, team);
+  return compile(team.workflow, team, question);
 }
 
 // ❌ Engine should never do this
@@ -126,15 +171,15 @@ const client = new Anthropic();
 
 ### Plans are Immutable After Compilation
 
-Never modify a Plan after `compile()` returns. No "enrichment passes." If the adapter needs extra data, it lives in LangGraph state, not in the Plan.
+Never modify a Plan after `compileSpec()` returns. No "enrichment passes." If the adapter needs extra data, it lives in LangGraph state, not in the Plan.
 
 ```ts
 // ✅ Compute once, return
-const plan = compile(workflow, team);
+const plan = compileSpec(spec, question);
 return plan;
 
 // ❌ Never mutate
-const plan = compile(workflow, team);
+const plan = compileSpec(spec, question);
 plan.nodes.push(extraNode);  // ← violates immutability
 ```
 
@@ -156,7 +201,7 @@ return compileRounds(workflow, team);  // silently misbehaves on bad input
 The engine never injects prompts, examples, or content into Plans. User-provided Agents go in, structural graph comes out. This is a BYOK principle.
 
 ```ts
-// ✅ Agent's systemPrompt comes from the user
+// ✅ Agent's systemPrompt comes from the spec
 const node = { id, kind: 'agent', agent: agent.name };
 
 // ❌ Engine should never add content
@@ -166,7 +211,7 @@ const node = { id, kind: 'agent', agent: agent.name,
 
 ### `tools: string[]` is the Contract
 
-Never change `Agent.tools` to boolean. The adapter's tool registry maps logical names → Anthropic API types. Boolean erases that mapping.
+Never change `SpecAgent.tools` to boolean. The adapter's tool registry maps logical names → Anthropic API types. Boolean erases that mapping.
 
 ```ts
 // ✅
@@ -175,30 +220,40 @@ tools: []                    // explicit no-tools
 
 // ❌
 tools: true                  // breaks registry mapping
-tools: undefined             // ambiguous — use [] instead
 ```
 
-### Parallel Auditors via `auditAgent: string[]`
+### Parallel Auditors via YAML `audit.agents` array
 
-`RoundsWorkflow.auditAgent` accepts single name or array. Array runs all auditors in parallel; ANY flag triggers revision. Conditional edge uses `anyOf` state condition.
+`FlowSpec.audit.agents` accepts multiple agent names. All run in parallel; ANY flag triggers revision. Matches `logic: any` in YAML.
 
-```ts
-// Single auditor
-auditAgent: 'BlindCritic'
+```yaml
+# Single auditor
+audit:
+  agents: [BlindCritic]
 
-// Parallel auditors — logical + factual
-auditAgent: ['BlindCritic', 'FactChecker']
+# Parallel auditors — logical + factual
+audit:
+  agents: [BlindCritic, FactChecker]
+  revision:
+    logic: any
 ```
 
 ---
 
 ## Adding a New Workflow Variant
 
-1. Add `kind` to `Workflow` union in `types.ts`
-2. Create `compilers/<kind>.ts` exporting `compile(workflow, team): Plan`
-3. Update `validate.ts` to handle new kind
-4. Export from `compilers/index.ts`
-5. Add fixture test showing compiled Plan shape
+Phase 7.2+: new workflow variants are created as YAML files, not TypeScript compilers.
+
+1. Create `apps/vada-ai/yamls/<new-spec>-v1.yaml` following the schema
+2. Register in `apps/vada-ai/mcp-server/src/spec-registry.ts`
+3. Write a verify script in `apps/vada-ai/web/scripts/verify-<new-spec>-port.ts`
+4. Run verify script; confirm transcript length matches expected count
+
+If you need a genuinely new internal execution shape (e.g. a new `kind` of Workflow), then also:
+- Add `kind` to `Workflow` union in `types.ts`
+- Create `compilers/<kind>.ts` exporting `compile(workflow, team): Plan`
+- Update `validate.ts` to handle new kind
+- But this is engine internals — the YAML author never needs to do this
 
 ---
 
@@ -208,15 +263,18 @@ auditAgent: ['BlindCritic', 'FactChecker']
 - ❌ Mutating `Plan` objects after compilation
 - ❌ Validation inside compilers (belongs in `validate.ts`, upstream)
 - ❌ Content injection (prompts, examples) into compiled Plans
-- ❌ `Agent.tools` as boolean or `undefined` for tool-using agents — use `string[]` always, `[]` for explicit none
-- ❌ Renaming node IDs without grepping adapter + mcp-server + teams for dependencies
+- ❌ `SpecAgent.tools` as boolean — use `string[]` always, `[]` for explicit none
+- ❌ Renaming node IDs without grepping adapter + mcp-server for dependencies
 - ❌ Treating `MAX_REVISIONS` as a failure — it's a valid terminal state
 - ❌ Adding new terminal states without Principal approval (contract with adapter + mcp-server)
+- ❌ Calling `compile()` directly from outside the engine — use `compileSpec()`
+- ❌ Importing from `@vada/teams` — that package is deleted; use YAML + `loadSpec` + `compileSpec`
 
 ---
 
 ## When you need more context
 
 - Why `tools: string[]` and not boolean: `apps/vada-ai/specs/engine/design-decisions.md`
-- Adapter-side execution: **adapter-layer** skill
-- Agent/Team examples: `apps/vada-ai/agents/src/` + `apps/vada-ai/teams/src/` and **atta-teams** skill
+- Adapter-side execution: **atta-adapter-langgraph** skill
+- Agent definitions and YAML authoring: **atta-teams** skill + **vada-yaml-authoring** skill
+- YAML schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`

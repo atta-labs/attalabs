@@ -19,7 +19,8 @@ export type BgEvent =
   | { type: 'message-fired'; fromId: string; toId: string }
   | { type: 'sphere-state-changed'; sphereId: string }
   | { type: 'ring-closed'; cx: number; cy: number }
-  | { type: 'sphere-origin'; sphereId: string }
+  | { type: 'sphere-origin'; sphereId: string; count?: number; color?: string }
+  | { type: 'sphere-gather'; sphereId: string; count: number; color?: string }
 
 export type BgRenderer = (state: BgState) => void
 

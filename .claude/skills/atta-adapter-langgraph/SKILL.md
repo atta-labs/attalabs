@@ -107,25 +107,19 @@ Injected BEFORE each tool-enabled agent node. Graph-builder rewires incoming edg
 
 **Bias (tuned in Task 4.5):** err toward INCLUDING tools for reasoning roles. Only strip tools for audit roles.
 
-**Hard-rule — skips classifier to save the Haiku call:**
-```ts
-if (agent.name.includes('Synthesizer') && !agent.name.includes('Conclusion')) {
-  return { needs: agent.tools ?? [], budget: 5, reason: 'round-Synthesizer hard-rule' };
-}
-```
+**Classifier mode is driven entirely by the YAML `classifier.mode` field per agent.** The legacy name-substring hard rule (`agent.name.includes('Synthesizer') && !agent.name.includes('Conclusion')`) has been removed. The `always_tools` mode replaces it: when a YAML agent sets `classifier: { mode: always_tools }`, the classifier node is skipped and the agent's full tool list is always on.
 
-Round-Synthesizers integrate claims across the round. Without tools they can't verify, and audit fails. Hard-ruled to guarantee correct behavior.
+**Role-based defaults in YAML:**
 
-**Role-based defaults in classifier prompt:**
-
-| Agent role | Default tools | Default budget |
-|------------|---------------|----------------|
-| Strategist, Critic, Devil's Advocate | All declared | 5 |
-| round-Synthesizer | All declared (hard-rule, no call) | 5 |
-| FactChecker | All declared | 5 |
-| BlindCritic | None (audit role) | 0 |
-| ConclusionSynthesizer | None (commits answer) | 0 |
-| A0/A1 baselines | None (no classifier injected) | n/a |
+| Agent role | `classifier.mode` | Tools | Why |
+|------------|-------------------|-------|-----|
+| Strategist, Critic, Devil's Advocate | `auto` | Classifier decides | Needs tools; classifier can trim if question doesn't require search |
+| round-Synthesizer | `always_tools` | Always on, no classifier call | Integrates round claims; must be able to verify. Replaces old name-substring hard rule. |
+| FactChecker | `auto` | Classifier decides | Verification is the role |
+| BlindCritic | `skip` | None | Blindness is the audit mechanism |
+| ConclusionSynthesizer | `skip` | None | Commits answer; tools invite re-litigating |
+| A0/A1 baselines | `skip` | None | Single-shot by definition |
+| Brokered reviewers | `skip` | None | Single-shot advisory, no rounds |
 
 ---
 
@@ -232,7 +226,7 @@ Mitigations:
 - ❌ `recursionLimit: 25` (default; insufficient for classifier-augmented graphs)
 - ❌ Mutating state outside LangGraph annotations (causes races with parallel nodes)
 - ❌ Treating `MAX_REVISIONS` as failure (it's a valid terminal state)
-- ❌ Stripping tools from round-Synthesizer (empirical degradation, Task 4.5)
+- ❌ Stripping tools from round-Synthesizer (empirical degradation, Task 4.5 — use `always_tools` in YAML)
 - ❌ Writing transcript entries outside `node-executor.ts` (breaks trace ordering)
 - ❌ Extracting `cognitive-router/` to separate package (Round 23 rejected)
 
@@ -243,4 +237,4 @@ Mitigations:
 - Classifier tuning history: commits `2e6dcb2` (Task 3), Task 4.5 (classifier tuning)
 - Why router is inside adapter: `apps/vada-ai/specs/engine/v2-results/round-23-*.md`
 - Plan structure: **engine-layer** skill
-- Agent configs and tool assignments: **atta-teams** skill (`apps/vada-ai/agents/src/` + `apps/vada-ai/teams/src/`)
+- Agent configs and tool assignments: **atta-teams** skill (`apps/vada-ai/agents/src/` + `apps/vada-ai/yamls/`)

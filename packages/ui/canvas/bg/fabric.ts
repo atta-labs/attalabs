@@ -157,6 +157,10 @@ interface TronParticle {
   approachProgress: number // 0→1 along the straight-line final approach
   approachDist: number // pixel distance to sphere center at detach time — used for speed normalisation
   origin?: boolean // true = spawned by sphere-origin event; arrival counted for onOriginComplete
+  gather?: boolean // true = grid-traversal particle that orbits at perimeter instead of being absorbed
+  gatherOrbiting?: boolean
+  gatherOrbitAngle?: number
+  gatherOrbitRadius?: number
 }
 
 const TRAIL_LEN = 22
@@ -180,6 +184,7 @@ interface TronBirth {
   tendrils: Array<Array<{ r: number; c: number }>> // pre-generated lit grid paths
   charPool: Array<{ dr: number; dc: number; char: string }> // 20 chars, cycled by frame
   origin?: boolean // true = intensified rendering (1.8× glow, more tendrils) for sphere-origin event
+  gather?: boolean // true = particle orbits at perimeter, never absorbed
 }
 let tronBirths: TronBirth[] = []
 let firstParticleSpawned = false
@@ -256,15 +261,18 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
       // Sphere s1 sits at the top of the ring — spreading from it would cluster all
       // births near the top edge. Spreading from screen center fills the whole visible
       // area. Particles then converge upward toward the sphere position.
-      // 5 births, one per 72° sector, staggered distances for varied beam speeds.
-      for (let i = 0; i < 5; i++) {
-        const baseAngle = (i / 5) * Math.PI * 2
+      const count = evt.count ?? 5
+      const particleColor = evt.color ?? target.color
+      // Births spread far enough from the sphere so particles visibly traverse grid squares
+      const minD = Math.max(Math.min(W, H) * 0.3, target.radius * 1.5)
+      const maxD = Math.min(W, H) * 0.45
+      for (let i = 0; i < count; i++) {
+        const baseAngle = (i / count) * Math.PI * 2
         const angle = baseAngle + (Math.random() - 0.5) * Math.PI * 0.35
-        const minD = Math.min(W, H) * 0.1
-        const maxD = Math.min(W, H) * 0.35
-        const dist = minD + (i / 4) * (maxD - minD) + (Math.random() - 0.5) * Math.min(W, H) * 0.04
-        const bx = CX + Math.cos(angle) * dist
-        const by = CY + Math.sin(angle) * dist
+        const distFrac = count > 1 ? i / (count - 1) : 0.5
+        const dist = minD + distFrac * (maxD - minD) + (Math.random() - 0.5) * Math.min(W, H) * 0.04
+        const bx = target.x + Math.cos(angle) * dist
+        const by = target.y + Math.sin(angle) * dist
         const br = Math.round((by / H) * ROWS)
         const bc = Math.round((bx / W) * COLS)
         if (br < 3 || br > ROWS - 3 || bc < 3 || bc > COLS - 3) continue
@@ -274,7 +282,7 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
           r: br,
           c: bc,
           targetSphereId: target.id,
-          color: target.color,
+          color: particleColor,
           startT: t,
           spawned: false,
           tendrils,
@@ -285,6 +293,33 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
       }
       originTotalCount = spawned
       if (spawned > 0) firstParticleSpawned = true
+    }
+    if (evt.type === 'sphere-gather') {
+      const target = state.spheres.find((s) => s.id === evt.sphereId)
+      if (!target) continue
+      const particleColor = evt.color ?? target.color
+      // Spread births far from center so particles traverse the full grid before arriving.
+      // Must exceed sphere.radius * 1.1 (the gather finalApproach trigger) to get grid movement.
+      for (let i = 0; i < evt.count; i++) {
+        const angle = (i / evt.count) * Math.PI * 2 + (Math.random() - 0.5) * 0.25
+        const dist = Math.min(W, H) * (0.55 + Math.random() * 0.1)
+        const bx = CX + Math.cos(angle) * dist
+        const by = CY + Math.sin(angle) * dist
+        const br = Math.round((by / H) * ROWS)
+        const bc = Math.round((bx / W) * COLS)
+        if (br < 2 || br > ROWS - 2 || bc < 2 || bc > COLS - 2) continue
+        tronBirths.push({
+          r: br,
+          c: bc,
+          targetSphereId: target.id,
+          color: particleColor,
+          startT: t,
+          spawned: false,
+          tendrils: generateTendrils(br, bc, 4),
+          charPool: generateCharPool(),
+          gather: true
+        })
+      }
     }
   }
 
@@ -410,6 +445,11 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
     // Resolve sphere once — used for final approach and movement homing
     const sphere = spheres.find((s) => s.id === p.targetSphereId)
 
+    // ── Gather stopped — particle reached perimeter and holds position ──
+    if (p.gatherOrbiting) {
+      return true // hold position, never die
+    }
+
     // ── Final approach — detached from grid, flying straight to sphere center ──
     // Speed is normalised so the particle continues at the same px/frame rate
     // as it had on the grid — no acceleration, no slowdown, seamless transition.
@@ -419,6 +459,30 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
       // 3× grid speed — final approach should feel like a decisive lock-on, not a crawl
       const inc = p.approachDist > 0 ? (p.speed * gridStepPx * 3) / p.approachDist : 1
       p.approachProgress = Math.min(1, p.approachProgress + inc)
+
+      // Gather particles stop at sphere perimeter and start orbiting.
+      // approachDist is distance from detach vertex to sphere center — remaining dist
+      // = approachDist * (1 - approachProgress). Use BASE_VERTS (always available) for angle.
+      if (p.gather && sphere) {
+        const remainingDist = p.approachDist * (1 - p.approachProgress)
+        if (remainingDist <= sphere.radius || p.approachProgress >= 1) {
+          const bv = BASE_VERTS[p.r * STRIDE + p.c]
+          const dx = bv ? bv.bx - sphere.x : 1
+          const dy = bv ? bv.by - sphere.y : 0
+          p.gatherOrbiting = true
+          p.gatherOrbitAngle = Math.atan2(dy, dx)
+          p.gatherOrbitRadius = sphere.radius
+          p.trail = []
+          return true
+        }
+      }
+
+      // Non-gather particles collide at sphere circumference, not center
+      if (!p.gather && sphere && p.approachDist > 0) {
+        const remainingDist = p.approachDist * (1 - p.approachProgress)
+        if (remainingDist <= sphere.radius) p.approachProgress = 1
+      }
+
       if (p.approachProgress >= 1) {
         p.dying = true
         if (sphere) {
@@ -432,20 +496,15 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
           // Local ripple — radial, high amplitude so the mesh visibly distorts outward
           // from the sphere center. Stays local (Gaussian envelope ~45px wide ring).
           ripples.push({ cx: sphere.x, cy: sphere.y, startT: t, life: 1, amp: 55, mode: 'radial' })
-          particleEffects.push({
-            x: sphere.x,
-            y: sphere.y,
-            color: p.color,
-            startT: t,
-            type: 'join',
-            sphereRadius: sphere.radius
-          })
-          // Origin event: 5 particles arrive on the same frame at the same point. Pushing a
-          // halo per particle stacks them into a saturated agent-color dome. Emit only one
-          // halo from the LAST arriving origin particle, flagged so the renderer tones it.
-          const isOriginStack = p.origin === true
-          const isLastOrigin = isOriginStack && originArrivedCount >= originTotalCount && originTotalCount > 0
-          if (!isOriginStack || isLastOrigin) {
+          if (!p.origin) {
+            particleEffects.push({
+              x: sphere.x,
+              y: sphere.y,
+              color: p.color,
+              startT: t,
+              type: 'join',
+              sphereRadius: sphere.radius
+            })
             particleEffects.push({
               x: sphere.x,
               y: sphere.y,
@@ -453,7 +512,7 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
               startT: t,
               type: 'halo',
               sphereRadius: sphere.radius,
-              origin: isOriginStack
+              origin: false
             })
           }
         }
@@ -474,11 +533,13 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
       p.progress -= 1
       p.steps++
 
-      // ── Switch to final approach when grid-position is within 3× sphere radius ─
+      // ── Switch to final approach when close enough to sphere ─
+      // Gather particles traverse more grid (1.1× trigger) so they visibly move through lines.
       if (sphere) {
         const vb = vertBasePos(p.r, p.c)
         const distToSphere = Math.hypot(vb.x - sphere.x, vb.y - sphere.y)
-        if (distToSphere < sphere.radius * 3) {
+        const triggerRadius = p.gather ? sphere.radius * 1.1 : p.origin ? sphere.radius * 1.2 : sphere.radius * 3
+        if (distToSphere < triggerRadius) {
           p.finalApproach = true
           p.approachProgress = 0
           p.approachDist = distToSphere
@@ -526,7 +587,9 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
         })
       }
 
-      const base = dirs.filter(noReversal).filter(outsideRing)
+      // Origin particles must reach their target sphere — skip the ring exclusion zone.
+      // Regular particles avoid the ring area so they don't clip through it visually.
+      const base = p.origin ? dirs.filter(noReversal) : dirs.filter(noReversal).filter(outsideRing)
 
       // Attempt 1: full Tron rules
       let pool = base
@@ -879,40 +942,54 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
     if (!birth.spawned && age >= BIRTH_DURATION) {
       birth.spawned = true
       const targetSphere = spheres.find((s) => s.id === birth.targetSphereId)
-      const colorTaken = !birth.origin && tronParticles.some((q) => !q.dying && q.color === birth.color)
+      const colorTaken =
+        !birth.origin && !birth.gather && tronParticles.some((q) => !q.dying && q.color === birth.color)
       if (targetSphere && !colorTaken) {
         const bvb = vertBasePos(birth.r, birth.c)
         if (birth.origin) {
-          // Origin particles fly directly to sphere center — bypasses grid traversal.
-          // Speed is calibrated so all origin particles arrive after the same number of
-          // frames regardless of their distance (further = faster, closer = slower).
-          const ORIGIN_APPROACH_FRAMES = 90
-          const approachDist = Math.hypot(targetSphere.x - bvb.x, targetSphere.y - bvb.y)
-          const gridStepPx = W / COLS
-          const speed = approachDist > 0 ? approachDist / (gridStepPx * 3 * ORIGIN_APPROACH_FRAMES) : 0.05
-          tronParticles.push({
-            r: birth.r,
-            c: birth.c,
-            targetR: birth.r,
-            targetC: birth.c,
-            progress: 0,
-            dr: 0,
-            dc: 0,
-            speed,
-            color: birth.color,
-            trail: [],
-            ownedEdges: new Set(),
-            visitedVerts: new Set(),
-            didTurn: false,
-            targetSphereId: birth.targetSphereId,
-            steps: 0,
-            opacity: 1,
-            dying: false,
-            finalApproach: true,
-            approachProgress: 0,
-            approachDist,
-            origin: true
-          })
+          // Origin particles traverse the fabric grid like regular particles.
+          const dx = targetSphere.x - bvb.x
+          const dy = targetSphere.y - bvb.y
+          const dirOptions: [number, number][] = [
+            [-1, 0],
+            [1, 0],
+            [0, -1],
+            [0, 1]
+          ]
+          const [bdr, bdc] = dirOptions.reduce((best, cur) =>
+            cur[0] * dy + cur[1] * dx > best[0] * dy + best[1] * dx ? cur : best
+          )
+          const nr = birth.r + bdr
+          const nc = birth.c + bdc
+          if (nr >= 0 && nr <= ROWS && nc >= 0 && nc <= COLS) {
+            tronParticles.push({
+              r: birth.r,
+              c: birth.c,
+              targetR: nr,
+              targetC: nc,
+              progress: 0,
+              dr: bdr,
+              dc: bdc,
+              speed: 0.13 + Math.random() * 0.05,
+              color: birth.color,
+              trail: [],
+              ownedEdges: new Set([edgeKey(birth.r, birth.c, nr, nc)]),
+              visitedVerts: new Set([`${birth.r},${birth.c}`]),
+              didTurn: false,
+              targetSphereId: birth.targetSphereId,
+              steps: 0,
+              opacity: 1,
+              dying: false,
+              finalApproach: false,
+              approachProgress: 0,
+              approachDist: 0,
+              origin: true,
+              gather: false,
+              gatherOrbiting: false,
+              gatherOrbitAngle: 0,
+              gatherOrbitRadius: 0
+            })
+          }
         } else {
           // Normal grid-traversal particle
           const dx = targetSphere.x - bvb.x
@@ -949,7 +1026,11 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
               dying: false,
               finalApproach: false,
               approachProgress: 0,
-              approachDist: 0
+              approachDist: 0,
+              gather: birth.gather ?? false,
+              gatherOrbiting: false,
+              gatherOrbitAngle: 0,
+              gatherOrbitRadius: 0
             })
           }
         }
@@ -968,6 +1049,16 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
   ctx.lineJoin = 'round'
 
   for (const p of tronParticles) {
+    // Orbiting gather particles: just draw the glowing dot at orbit position — no trail
+    if (p.gatherOrbiting) {
+      const gs = spheres.find((s) => s.id === p.targetSphereId)
+      if (!gs) continue
+      const ox = gs.x + Math.cos(p.gatherOrbitAngle ?? 0) * (p.gatherOrbitRadius ?? gs.radius)
+      const oy = gs.y + Math.sin(p.gatherOrbitAngle ?? 0) * (p.gatherOrbitRadius ?? gs.radius)
+      paintParticleHead(ctx, ox, oy, p.color, { opacity: p.opacity })
+      continue
+    }
+
     const curPos = pos[p.r * STRIDE + p.c]
     if (!curPos) continue
 

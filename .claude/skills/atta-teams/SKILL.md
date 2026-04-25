@@ -3,18 +3,18 @@ name: atta-teams
 description: Vāda agent and team configurations. Load when adding/modifying agents, teams, reviewer profiles, or building a verticalized team for a specific domain. Covers the tools-on/tools-off invariant. Do NOT load for engine primitives or adapter runtime.
 ---
 
-# `@vada/agents` + `@vada/teams` — Deliberation Content
+# `@vada/agents` + YAML Specs — Deliberation Content
 
 ## Context
 
-Agent and team configurations are split across two packages:
+Deliberation content is split across two concerns:
 
-- **`@vada/agents`** (`apps/vada-ai/agents/`) — agent definitions with display metadata (`VadaAgentDef` extends `Agent`). Pure config — system prompts, tool lists, UI colors, face indices.
-- **`@vada/teams`** (`apps/vada-ai/teams/`) — team configs that compose agents into deliberation workflows.
+- **`@vada/agents`** (`apps/vada-ai/agents/`) — agent definitions with display metadata (`VadaAgentDef`). Pure config — system prompts, tool lists, UI colors, face indices. Still used directly by `consult.ts` for the Brokered tool.
+- **YAML spec files** (`apps/vada-ai/yamls/`) — deliberation configs that compose agents into workflows. These replaced the deleted `@vada/teams` TypeScript package. All seven built-in specs live here as YAML files.
 
-No runtime logic lives in either package. Agents are immutable configs; teams compose them into deliberations.
+No runtime logic lives in either location. Agents are immutable configs; YAML specs compose them into deliberations.
 
-This is where MOAT-B (validated corpora) will live when verticalized teams arrive. Currently contains generic Crucible, War Room, Sparring (default), and A0/A1 baselines.
+`@vada/teams` is **deleted**. Do not reference or import it.
 
 ---
 
@@ -26,7 +26,7 @@ apps/vada-ai/agents/src/
 │   ├── strategist.ts              # Reasoning; tools ON
 │   ├── critic.ts                  # Reasoning; tools ON
 │   ├── devils-advocate.ts         # Reasoning; tools ON
-│   ├── synthesizer.ts             # Round integrator; tools ON (classifier hard-rule)
+│   ├── synthesizer.ts             # Round integrator; tools ON (always_tools in YAML)
 │   ├── researcher.ts              # Evidence grounding; tools ON
 │   ├── operator.ts                # Execution feasibility; tools OFF
 │   ├── conclusion-synthesizer.ts  # Final commit; tools OFF
@@ -37,41 +37,41 @@ apps/vada-ai/agents/src/
 ├── types.ts                       # VadaAgentDef, AgentName
 └── index.ts                       # Public exports
 
-apps/vada-ai/teams/src/
-├── teams/
-│   ├── sparring.ts                # 2-agent default team
-│   ├── crucible.ts                # 4-agent heavy team
-│   ├── war-room.ts                # 6-agent heavyweight (Crucible + Researcher + Operator)
-│   ├── a0.ts                      # A0 baseline team
-│   └── a1.ts                      # A1 baseline team
-├── templates/
-│   ├── round-template.ts
-│   └── audit-template.ts
-└── index.ts                       # Public exports
+apps/vada-ai/yamls/
+├── sparring-v1.yaml               # 2-agent default (Strategist + Critic, 3 rounds)
+├── crucible-v1.yaml               # 4-agent heavy team
+├── war-room-v1.yaml               # 6-agent heavyweight
+├── a0-baseline-v1.yaml            # Single-agent naive baseline
+├── a1-baseline-v1.yaml            # Single-agent structured-output baseline
+├── brokered-trio-v1.yaml          # 3 reviewers, no rounds (Strategist + Critic + Devil's Advocate)
+└── brokered-quartet-v1.yaml       # 4 reviewers, no rounds
 ```
 
 ---
 
 ## Tool Assignment Matrix
 
-Critical invariant. Tool assignment follows role, not preference. Breaking this matrix has been empirically shown to degrade output (Task 4.5).
+Critical invariant. Tool assignment follows role, not preference. Breaking this matrix has been empirically shown to degrade output (Task 4.5). In YAML, this is controlled via `classifier.mode` per agent.
 
-| Agent | Role type | Tools | Why |
-|-------|-----------|-------|-----|
-| Strategist | Reasoning | ✅ ON | Needs external context to reason |
-| Critic | Reasoning | ✅ ON | Needs external context to critique |
-| Devil's Advocate | Reasoning | ✅ ON | Needs external context to challenge |
-| round-Synthesizer | Integration | ✅ ON | Integrates round claims; verification required. Hard-ruled in router. |
-| FactChecker | Verification | ✅ ON | Verification IS the role |
-| ConclusionSynthesizer | Commit | ❌ OFF | Commits to round's answer; tools invite re-litigating |
-| BlindCritic | Logical audit | ❌ OFF | Blindness is the audit mechanism |
-| A0-Solo, A1-Solo | Baseline | ❌ OFF | Single-shot by definition |
+| Agent | Role type | Tools | classifier.mode | Why |
+|-------|-----------|-------|-----------------|-----|
+| Strategist | Reasoning | ON | `auto` | Needs external context to reason |
+| Critic | Reasoning | ON | `auto` | Needs external context to critique |
+| Devil's Advocate | Reasoning | ON | `auto` | Needs external context to challenge |
+| round-Synthesizer | Integration | ON | `always_tools` | Integrates round claims; verification required. always_tools replaces the old name-substring hard rule. |
+| FactChecker | Verification | ON | `auto` | Verification IS the role |
+| ConclusionSynthesizer | Commit | OFF | `skip` | Commits to round's answer; tools invite re-litigating |
+| BlindCritic | Logical audit | OFF | `skip` | Blindness is the audit mechanism |
+| A0-Solo, A1-Solo | Baseline | OFF | `skip` | Single-shot by definition |
+| Brokered reviewers | Advisory | OFF | `skip` | Single-shot, no rounds |
 
 If you find yourself wanting to flip any of these, STOP. Surface to Principal.
 
 ---
 
 ## Agent Definition Pattern
+
+Agents in `@vada/agents` are still used directly by `consult.ts`. The pattern is unchanged.
 
 ```ts
 import type { VadaAgentDef } from '../types'
@@ -92,53 +92,111 @@ export const strategist = {
 Conventions:
 - `name` is PascalCase and unique; filename matches (kebab-case) e.g. `devils-advocate.ts` exports `devilsAdvocate` with `name: "Devil's Advocate"`
 - `satisfies VadaAgentDef` instead of explicit type — preserves literal types
-- `model` is a literal string matching current Anthropic model names
 - `tools` is always `string[]`. Use `[]` (not omit) for tool-off agents — explicit intent beats silent default
 - `systemPrompt` is role-focused. Round-specific context comes from the adapter at runtime, not the system prompt
 
 ---
 
-## Team Definition Pattern
+## YAML Spec Structure
 
-```ts
-import type { Team } from '@atta/engine'
-import {
-  strategist, critic,
-  conclusionSynthesizer, blindCritic, factChecker
-} from '@vada/agents'
-import { roundMessageTemplate } from '../templates/round-template'
-import { auditMessageTemplate } from '../templates/audit-template'
+A YAML spec defines a complete deliberation. Two modes:
 
-export const sparring: Team = {
-  name: 'Sparring',
-  agents: [
-    strategist, critic,
-    conclusionSynthesizer, blindCritic, factChecker
-  ],
-  workflow: {
-    type: 'rounds',                            // NOT 'kind' — engine uses 'type'
-    rounds: 3,
-    messageTemplate: roundMessageTemplate,     // required
-    terminalAgent: 'ConclusionSynthesizer',   // NOT 'conclusionAgent'
-    auditAgent: ['BlindCritic', 'FactChecker'],
-    auditTemplate: auditMessageTemplate,       // required when auditAgent is set
-    revisionCondition: {                       // required when auditAgent is set
-      type: 'contains',
-      value: 'FLAG',
-      caseSensitive: false,
-    },
-    maxRevisions: 1,
-  },
-};
+**Rounds mode** (autonomous deliberation — sparring, crucible, war-room, baselines):
+```yaml
+schema_version: "1.0"
+id: sparring-v1
+display_name: Sparring
+description: Two-agent debate across three rounds with dual audit and revision.
+
+defaults:
+  model: claude-sonnet-4-6
+
+agents:
+  - name: Strategist
+    description: Maps the landscape...
+    tools: [web_search, web_fetch]
+    classifier:
+      mode: auto
+    system_prompt: |
+      You are the Strategist...
+
+flow:
+  rounds:
+    count: 3
+    agents: [Strategist, Critic]
+    message_template: |
+      {{question}}
+      ...
+  synthesis:
+    agent: ConclusionSynthesizer
+    message_template: |
+      ...
+  audit:
+    agents: [BlindCritic, FactChecker]
+    message_template: |
+      Principal's question: {{question}}
+      Conclusion to Review: {{conclusion}}
+    revision:
+      max: 1
+      trigger:
+        type: contains
+        value: FLAG
+        case_sensitive: false
+      logic: any
 ```
 
-Conventions:
-- `agents` array includes every agent the Team uses (round + conclusion + auditors)
-- Round agents are derived by the engine: `team.agents` minus `terminalAgent` minus `auditAgent`
-- There is NO `roundSynthesizer` concept in the engine — if you want a per-round synthesizer,
-  add a Synthesizer agent to `team.agents`; the engine will include it as a round agent
-- `auditAgent` as array runs auditors sequentially per slot; any flag triggers revision
-- `maxRevisions: 1` — one retry slot. Raising this rarely helps and does cost money
+**Reviewers mode** (brokered — parallel independent advisors, no rounds):
+```yaml
+schema_version: "1.0"
+id: brokered-trio-v1
+display_name: Brokered Trio
+description: Three independent advisory reviewers.
+
+defaults:
+  model: claude-sonnet-4-6
+
+agents:
+  - name: Strategist
+    classifier:
+      mode: skip           # no classifier, single-shot
+    system_prompt: |
+      ...
+
+reviewers:
+  - agent: Strategist
+    message_template: "{{question}}"
+  - agent: Critic
+    message_template: "{{question}}"
+  - agent: "Devil's Advocate"
+    message_template: "{{question}}"
+
+response:
+  mode: concatenate
+  format: "## {agent_name}\n\n{content}\n\n---\n\n"
+```
+
+Full schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`
+
+---
+
+## Spec Registry
+
+`apps/vada-ai/mcp-server/src/spec-registry.ts` loads all 7 YAMLs at startup:
+
+```ts
+import { lookupSpec, listPublicSpecs } from './spec-registry'
+
+// By full spec ID
+const spec = lookupSpec('sparring-v1')
+
+// By short alias (MCP-facing names)
+const spec = lookupSpec('sparring')    // → sparring-v1
+
+// All non-experimental specs
+const specs = listPublicSpecs()
+```
+
+ALIASES map in spec-registry.ts: `sparring`, `crucible`, `war-room`, `a0`, `a1`.
 
 ---
 
@@ -149,51 +207,50 @@ Conventions:
 Do not deviate without Principal approval. Empirically grounded.
 
 ```ts
-// ✅
-export const blindCritic: Agent = {
-  name: 'BlindCritic',
-  model: 'claude-sonnet-4-5',
-  tools: [],                            // explicit, correct for audit role
-  systemPrompt: '...',
-};
+// ✅ In YAML: audit agent, no tools, skip classifier
+- name: BlindCritic
+  classifier:
+    mode: skip
+  system_prompt: ...
 
 // ❌ Breaks audit invariant
-export const blindCritic: Agent = {
-  name: 'BlindCritic',
-  tools: ['web_search'],                // contaminates the blind audit
-  ...
-};
+- name: BlindCritic
+  tools: [web_search]    # contaminates the blind audit
 ```
 
 ### `name` is PascalCase and Unique
 
-`workflow.terminalAgent` and `workflow.auditAgent` reference agents by name string.
-Typos = validation errors thrown by `validate.ts`.
+Agent names in YAML `flow.rounds.agents`, `flow.audit.agents`, `flow.synthesis.agent`, and `reviewers[].agent` must exactly match the `name` field in the corresponding agent definition. Mismatches fail at `loadSpec()` or `compileSpec()`.
 
-```ts
-// ✅
-{ name: 'DevilsAdvocate', ... }
-workflow: { terminalAgent: 'ConclusionSynthesizer', auditAgent: ['BlindCritic', 'FactChecker'], ... }
+```yaml
+# ✅
+agents:
+  - name: ConclusionSynthesizer
+flow:
+  synthesis:
+    agent: ConclusionSynthesizer   # exact match
 
-// ❌
-{ name: 'devilsAdvocate', ... }       // camelCase; hard to read, inconsistent
+# ❌
+flow:
+  synthesis:
+    agent: Conclusion-Synthesizer  # mismatch → runtime error
 ```
 
 ### Export Agent Instances, Not Factories
 
-Agents are configs, not classes. No builders, no factory functions in V1.
+Agents in `@vada/agents` are configs, not classes. No builders, no factory functions.
 
 ```ts
 // ✅
-export const critic: Agent = { name: 'Critic', ... };
+export const critic = { name: 'Critic', ... } satisfies VadaAgentDef;
 
-// ❌ Overkill for V1
-export function createCritic(options?: CriticOptions): Agent { ... }
+// ❌
+export function createCritic(options?: CriticOptions): VadaAgentDef { ... }
 ```
 
 ### Explicit `tools: []` Over Omission
 
-Makes the tool-off invariant visually obvious in code review.
+Makes the tool-off invariant visually obvious in `@vada/agents` code review.
 
 ```ts
 // ✅
@@ -201,19 +258,6 @@ Makes the tool-off invariant visually obvious in code review.
 
 // ❌ Ambiguous
 { name: 'BlindCritic', ... }               // did you forget or intend none?
-```
-
-### Don't Share Agent Objects Across Teams Without Copy
-
-Agents are immutable by convention. If one team mutates a shared agent, every team importing it is affected.
-
-```ts
-// ✅ Shared immutable import (don't mutate after import)
-import { strategist } from '../agents/strategist';
-
-// ❌ Mutating shared agent
-import { strategist } from '../agents/strategist';
-strategist.model = 'claude-haiku-4-5';      // every team now uses haiku
 ```
 
 ---
@@ -224,19 +268,23 @@ For use with `vada__consult` (Brokered mode):
 
 1. Create agent in `apps/vada-ai/agents/src/agents/<profile-name>.ts` following the Agent pattern
 2. Export from `apps/vada-ai/agents/src/index.ts`
-3. Add to `reviewerProfiles` map in `apps/vada-ai/mcp-server/src/reviewer-profiles.ts`
+3. Add to `reviewerProfiles` map in `apps/vada-ai/mcp-server/src/tools/consult.ts`
 4. Update `vada__consult` tool description to mention the new profile
 
 ---
 
-## Adding a New Team
+## Adding a New Team (YAML spec)
 
-1. Define or reuse agents in `agents/`
-2. Create team file in `teams/<team-name>.ts`
-3. Export from `index.ts`
-4. Create smoke test `apps/vada-ai/web/scripts/verify-<team>-port.ts` following the pattern of `verify-crucible-port.ts`
-5. Run smoke test; confirm transcript length matches expected count
-6. Valid terminal states are `CLEAN`, `REVISED`, `MAX_REVISIONS` — all three are success
+1. Create `apps/vada-ai/yamls/<team-name>-v1.yaml`
+2. Define agents inline in the YAML (or reference existing `@vada/agents` names for brokered)
+3. Add to `SPECS` record in `apps/vada-ai/mcp-server/src/spec-registry.ts`
+4. Add short-name ALIAS if exposing via MCP tool
+5. Create verify script `apps/vada-ai/web/scripts/verify-<team-name>-port.ts` following `verify-sparring-port.ts`
+6. Run verify script; confirm transcript length matches expected count
+
+Valid terminal states: `CLEAN`, `REVISED`, `MAX_REVISIONS` — all three are success.
+
+See also: **vada-yaml-authoring** skill for detailed YAML authoring guidance.
 
 ---
 
@@ -246,7 +294,7 @@ Pre-public-launch requirement. Process:
 
 1. Pick domain (Security Architecture, Legal Risk, Medical Deliberation, etc.)
 2. Build 100+ validated corpus questions with expected-quality annotations
-3. Customize agents for the domain (system prompts, possibly model selection)
+3. Create YAML spec with domain-customized agent system prompts
 4. Benchmark against A0/A1 baselines on the corpus
 5. If team beats baselines with statistical significance → ship
 6. If not → iterate on prompts, not architecture
@@ -257,20 +305,22 @@ Pre-public-launch requirement. Process:
 
 Crucible (4-7 agents) is no longer the default team — Sparring (2 agents) is. Round 24 convergence. Crucible stays available as the heavy option for high-stakes multi-perspective decisions.
 
-`verify-crucible-port.ts` is kept as the migration verification script (matches V1 baseline output). Do not remove it.
+`verify-crucible-port.ts` is kept as the migration verification script. Do not remove it.
 
 ---
 
 ## Anti-patterns
 
+- ❌ Importing from `@vada/teams` — that package is deleted
+- ❌ Defining team logic in TypeScript instead of YAML
 - ❌ Adding `tools: ['web_search']` to BlindCritic (breaks blind-audit invariant)
 - ❌ Adding tools to ConclusionSynthesizer (invites re-litigating the round)
 - ❌ Generic "be helpful" system prompts (agents need role-forcing prompts)
 - ❌ `tools: undefined` (use `[]` for explicit none)
 - ❌ Mutating imported agents (shared immutable configs)
-- ❌ Creating agent factories / builders (V1 uses plain configs)
+- ❌ Creating agent factories / builders (plain configs only)
 - ❌ Making Crucible the default again without Round 24+ evidence
-- ❌ Naming mismatch between file and export (filename `strategist.ts` → export `strategist`)
+- ❌ Agent name mismatch between YAML flow references and agent definition
 
 ---
 
@@ -278,6 +328,7 @@ Crucible (4-7 agents) is no longer the default team — Sparring (2 agents) is. 
 
 - Why tools-on/tools-off split: **atta-adapter-langgraph** skill + Task 4.5 rationale
 - Agent/Workflow/Team types: **atta-engine** skill
-- Reviewer profile usage: **vada-mcp-server** skill
+- YAML schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`
+- YAML authoring: **vada-yaml-authoring** skill
 - Brokered mode concepts: **vada-brokered** skill
 - Pre-launch corpus plan: `apps/vada-ai/specs/vada-product-spec.md` Section 11

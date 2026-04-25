@@ -27,15 +27,16 @@ Brokered ships first (simpler). Both must ship before public launch. Brokered �
 ```
 USER CHAT CLIENT            (Claude.ai, Cursor — external)
         ↓ MCP protocol (stdio in V1, HTTP later)
-@vada/mcp-server            WEDGE-2   → see skill: mcp-server-layer
+@vada/mcp-server            WEDGE-2   → see skill: vada-mcp-server
         ↓ Plan request
-@atta/engine                WEDGE-1   → see skill: engine-layer
+@atta/engine                WEDGE-1   → see skill: atta-engine
+  (YAML → loadSpec → compileSpec → Plan)
         ↓ Plan (JSON DAG)
-@atta/adapter-langgraph     CAP-1     → see skill: adapter-layer
+@atta/adapter-langgraph     CAP-1     → see skill: atta-adapter-langgraph
   (includes cognitive router nodes)
         ↓ per-turn dispatch
-@vada/teams                 MOAT-B    → see skill: teams-layer
-  (agents, teams, profiles)
+@vada/agents + YAML specs   MOAT-B    → see skill: atta-teams
+  (agent configs, deliberation YAML files in apps/vada-ai/yamls/)
         ↓ agent config
 PROVIDER APIs               (Anthropic primary; OpenAI/Gemini future)
 
@@ -70,7 +71,7 @@ Use this framework when labeling new work. Do NOT call something a moat unless i
 | 3a.3 | Tools + FactChecker + parallel audit | ✅ committed |
 | 3a.4 | Cognitive router nodes in adapter | ✅ committed |
 | 3a.5 | Classifier tuning (role-based bias) | ✅ committed |
-| **3b.1** | `@vada/mcp-server` + `vada__consult` | 🔨 in progress |
+| **3b.1** | `@vada/mcp-server` + `vada__consult` | ✅ committed |
 | 3b.2 | `vada__deliberate` (Autonomous mode) | queued |
 | 3b.3 | `vada__list_teams` + `vada__get_session` | queued |
 | 3c | vada.ai dashboard (MOAT-A surface) | queued |

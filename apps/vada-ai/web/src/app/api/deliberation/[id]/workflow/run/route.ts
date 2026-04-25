@@ -60,8 +60,8 @@ const SPEC_CACHE: Record<string, DeliberationSpec> = {
 
 function selectSpec(agents: string[]): DeliberationSpec {
   if (agents.includes('researcher') || agents.includes('operator')) return SPEC_CACHE['war-room']!
-  if (agents.length <= 2) return SPEC_CACHE['sparring']!
-  return SPEC_CACHE['crucible']!
+  if (agents.length <= 2) return SPEC_CACHE.sparring!
+  return SPEC_CACHE.crucible!
 }
 
 // Compiles the plan, wires onNodeComplete → persistTurn, and awaits completion.

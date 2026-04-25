@@ -79,7 +79,7 @@ export function specToTeam(spec: DeliberationSpec): Team {
 }
 
 function findResponseNode(plan: Plan): string | undefined {
-  if (plan.graph.nodes['solo']) return 'solo'
+  if (plan.graph.nodes.solo) return 'solo'
   if (plan.graph.nodes['terminal-0']) return 'terminal-0'
   return undefined
 }

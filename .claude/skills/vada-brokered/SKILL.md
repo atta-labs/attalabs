@@ -121,10 +121,9 @@ apps/vada-ai/mcp-server/
 ├── src/
 │   ├── server.ts               # MCP server entry + tool registration
 │   ├── tools/
-│   │   ├── consult.ts          # vada__consult (Brokered mode)
+│   │   ├── consult.ts          # vada__consult (Brokered mode — builds inline DeliberationSpec)
 │   │   └── deliberate.ts       # vada__deliberate (Autonomous mode — do not confuse)
-│   ├── reviewer-profiles.ts    # Persona registry — system prompts
-│   ├── teams-registry.ts       # Team → engine mapping
+│   ├── spec-registry.ts        # YAML spec loader + lookupSpec(nameOrId) + ALIASES map
 │   └── session-logger.ts       # Postgres persistence
 ```
 

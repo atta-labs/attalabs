@@ -43,6 +43,8 @@ export interface AIAgentProps {
   particleCount?: number
   /** Render a dark background circle behind the sphere. */
   solidBg?: boolean
+  /** Opacity of the canvas bg fill (0–1, default 0.5). Only used when solidBg=true. */
+  bgOpacity?: number
   /** Whether the sphere is visible (particles still orbit when false). */
   visible?: boolean
   /** Label rendered below (or around) the sphere. */
@@ -75,6 +77,7 @@ export function AIAgent({
   matrixOpacity = 0.5,
   particleCount = 150,
   solidBg,
+  bgOpacity,
   visible = true,
   label,
   labelPosition,
@@ -111,6 +114,7 @@ export function AIAgent({
       matrixOpacity={matrixOpacity}
       particleCount={particleCount}
       solidBg={solidBg}
+      bgOpacity={bgOpacity}
       visible={visible}
       label={noLabel ? undefined : label}
       onClick={onClick}

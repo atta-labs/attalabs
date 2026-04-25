@@ -54,8 +54,14 @@ export interface AIAContextValue {
   ) => void
   /** Trigger the gravitational fabric ramp. Call when the ring animation is complete. */
   startGravity: () => void
-  /** Trigger the origin birth animation — 3 intense Tron births converge on this sphere. */
-  fireSphereOrigin: (sphereId: string) => void
+  /** Trigger the origin birth animation — intense Tron births converge on this sphere.
+   *  @param count  Number of births to spawn (default 5)
+   *  @param color  Override particle color (default = sphere's registered color) */
+  fireSphereOrigin: (sphereId: string, count?: number, color?: string) => void
+  /** Spawn count Tron particles that travel along fabric grid lines and then orbit
+   *  at the sphere perimeter — they never get absorbed.
+   *  @param color  Override particle color (default = sphere's registered color) */
+  fireSphereGather: (sphereId: string, count: number, color?: string) => void
 }
 
 export const AIAContext = createContext<AIAContextValue | null>(null)

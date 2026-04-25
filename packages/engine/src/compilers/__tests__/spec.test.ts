@@ -104,7 +104,7 @@ describe('compileSpec — smoke tests', () => {
     expect(plan.specId).toBe('solo-test')
     expect(plan.responseMode).toBe('synthesize')
     expect(plan.responseNode).toBe('solo')
-    expect(plan.graph.nodes['solo']).toBeDefined()
+    expect(plan.graph.nodes.solo).toBeDefined()
   })
 
   it('compiles rounds+audit spec', () => {
