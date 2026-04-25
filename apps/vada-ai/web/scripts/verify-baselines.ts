@@ -24,7 +24,7 @@ for (const { file, label } of yamls) {
   console.log(`Question: ${question}`)
   console.log('='.repeat(72))
 
-  const spec = loadSpec(readFileSync(join(process.cwd(), `../../yamls/${file}`), 'utf-8'))
+  const spec = loadSpec(readFileSync(join(process.cwd(), `../yamls/${file}`), 'utf-8'))
   const plan = compileSpec(spec, question, model)
   const conclusion = await adapter.execute({ plan, customVars: {} })
 
