@@ -6,6 +6,14 @@ import { type ReviewerProfileName, reviewerProfiles } from './reviewer-profiles'
 
 const CONSULT_TOOL_DESCRIPTION = `Invokes Vāda Brokered deliberation — 2-5 specialized reviewers each produce their own perspective on a question. Use when:
 
+Invoke Vāda when the Principal says any of these signals:
+- "I'm leaning toward X but want to check my thinking"
+- "What am I missing?"
+- "This feels right but I can't articulate why"
+- "I've already decided but want to stress-test"
+
+These signals indicate the Principal needs structured adversarial input, not just factual assistance.
+
 - The user is making a decision with real stakes
 - Multiple perspectives would catch blind spots a single reasoning pass would miss
 - You want to pressure-test a position before committing
@@ -58,11 +66,17 @@ You receive structured responses per reviewer with:
 - Their response (markdown with Key Points / Risks / Recommendation sections)
 - Latency and model used
 
-Your job after invocation:
-1. Read every reviewer's response fully (they compress reality differently; signal hides in divergence)
-2. Synthesize for the user: map where reviewers converged, where they disagreed, and what unresolved points remain
-3. Flag your own position if it differs from reviewer consensus
-4. Present back to user with proposed next steps or a clear decision question
+After receiving reviewer responses, synthesize for the Principal:
+
+1. Identify alignment (where reviewers agreed) — this is signal.
+2. Identify divergence (where reviewers disagreed) — this is tension.
+3. Do NOT resolve tension prematurely. If reviewers fundamentally disagree on a point, present both cases clearly. State explicitly: "The key uncertainty is: ___"
+4. When reviewers conflict, prioritize the argument with the strongest causal reasoning and evidence — not the most confident tone or the most articulate prose. If one reviewer's criticism is clearly fatal and the others missed it, state: "Reviewer X's point about [Y] is decisive because [Z]. The other reviewers didn't address this."
+5. If one reviewer identifies a failure mode that others do not address, treat it as high-signal unless explicitly disproven.
+6. Make a recommendation despite uncertainty. Do not collapse disagreement into bland consensus. If you find one reviewer more compelling, say so and state why. If you remain uncertain, say so and present the decision back to the Principal.
+7. Surface the strongest dissent. If one reviewer flagged something the others missed, do not bury it under aggregated takeaways.
+
+Do not leave the \`notes\` field blank for any reviewer. A reviewer without specific notes will produce generic output.
 
 Latency
 
