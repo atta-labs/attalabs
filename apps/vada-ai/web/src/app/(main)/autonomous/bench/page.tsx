@@ -121,6 +121,23 @@ export default async function BenchIndexPage() {
         </div>
       </section>
 
+      {/* Brokered bench link */}
+      <section className='space-y-3'>
+        <h2 className='font-serif text-lg font-semibold'>Brokered</h2>
+        <Link href='/brokered/bench'>
+          <Card className='cursor-pointer hover:border-primary/50 transition-colors'>
+            <CardHeader className='pb-2'>
+              <CardTitle className='text-sm'>Brokered Benchmark</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className='text-xs text-muted-foreground'>
+                Judge evaluations of vada__consult sessions vs single-shot Sonnet baseline.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+      </section>
+
       {/* Recent sessions table */}
       <section className='space-y-3'>
         <h2 className='font-serif text-lg font-semibold'>Recent Activity</h2>
