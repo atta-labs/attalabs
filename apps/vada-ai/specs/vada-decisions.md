@@ -420,6 +420,29 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 ---
 
+## D-020 — Shared YAML catalog loader in `@atta/engine`
+
+**Date:** April 26, 2026
+**Status:** Active
+**Area:** Engine — YAML loading
+
+**Decision summary:** Extract `loadYamlFromCatalog(id)` into `@atta/engine` as the single shared entry point for loading deliberation specs from the catalog directory. All callers (web route, MCP server, verify scripts) use this function rather than computing catalog paths themselves.
+
+**Alternatives considered:**
+- Keep per-caller path computation (status quo) — each caller continued to resolve the path to `apps/vada-ai/yamls/` independently
+- Separate `@vada/catalog` package — dedicated package for YAML loading; rejected as over-modular for one function
+- Environment variable injection only — have callers receive the catalog path via env var; rejected because it moves the burden to deployment config rather than code
+
+**Rationale:** Two of three callers had independently broken path computation: the web route used `process.cwd()` (resolves to `apps/vada-ai/web/` in dev), the MCP spec-registry used the wrong `../../../yamls` depth (resolved to `apps/yamls/`). Only the verify scripts worked, but they bypass the runtime loading code entirely. The correct path anchor is `import.meta.url` relative to the engine source file — this resolves correctly in dev, production build, and Bun scripts. Centralizing the function ensures that all callers benefit from the correct implementation and that future path changes require one edit.
+
+**Consequences:**
+- Any caller that needs to load a YAML spec imports `loadYamlFromCatalog` from `@atta/engine`
+- `VADA_YAMLS_DIR` env var available for production path override (evaluated at call time, not module init)
+- Verify scripts that computed their own paths are now using the shared function — script verification and runtime verification exercise the same code path
+- D-017 (no privileged path between web app and MCP) is reinforced: the catalog loader is the concrete code artifact that implements the principle
+
+---
+
 ## How to add an entry
 
 When adding a new decision:

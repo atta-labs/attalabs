@@ -1,20 +1,19 @@
-## Most recent session — April 25-26, 2026
+## Most recent session — April 26, 2026
 
-Phase 7.2 (YAML refactor) completed in a single long session covering:
-- Reviewer prompts audit (Phase 6.7)
-- YAML schema design (Phase 7.1)
-- Phase A + Phase B implementation
-- Documentation hygiene with audit pass
-- Capture of architectural recognitions
+Phase 7.2.1 (YAML catalog loader extraction) completed. Key changes:
+- Extracted `loadYamlFromCatalog(id)` into `@atta/engine/src/catalog-loader.ts`
+- Fixed two broken runtime YAML-loading paths (web route 500ing in dev, MCP spec-registry resolving to wrong directory)
+- Migrated all 4 verify scripts to the shared loader
+- Anchored path resolution to `import.meta.url` — immune to dev server cwd changes
 
-Currently between phases. Phase 8 (synthesizer integration) is next when ready.
+Phase 8 (synthesizer integration) is next when ready.
 
 
 # Vāda — Current State
 
-**Last updated:** April 25, 2026
-**Last milestone:** Phase 7.2 (YAML refactor) complete
-**Next milestone:** Phase 7.5 (architectural recognitions documented) → Phase 8 (synthesizer integration)
+**Last updated:** April 26, 2026
+**Last milestone:** Phase 7.2.1 (YAML catalog loader extracted)
+**Next milestone:** Phase 8 (synthesizer integration)
 
 ---
 
@@ -60,6 +59,9 @@ Sonnet investigated current code, identified 30+ branches that needed to die, pr
 **Phase A:** YAML support added alongside existing TypeScript. 10 commits. New `DeliberationSpec` types, Zod schema, `loadSpec()`, `compileSpec()`, `specToTeam()`, 7 YAML files, MCP `spec-registry`, web app `selectSpec`. All 5 behavioral verifications passed (A0, A1, Crucible, Sparring, Brokered).
 
 **Phase B:** Old TypeScript deleted. `@vada/teams` package removed. Workflow union types removed. Adapter cleaned of mode-specific branches. Classifier name-substring hard rule replaced with `classifierMode` parameter. Documentation updated across skill files, CLAUDE.md files, and spec docs. Audit pass caught 9 stale items in specs and READMEs that the original Phase B scope had missed; all fixed before commit. 5 commits landed clean. Final typecheck 18/18.
+
+### Phase 7.2.1 — YAML catalog loader extraction
+Extracted `loadYamlFromCatalog(id)` from ad-hoc per-caller implementations into `@atta/engine` (`packages/engine/src/catalog-loader.ts`). Fixed two broken runtime YAML-loading paths: the web route was using `process.cwd()` (which resolves to `apps/vada-ai/web/` in dev) and the MCP spec-registry was using the wrong `../../../yamls` depth. Path resolution anchored to `import.meta.url` — immune to dev server cwd changes. `VADA_YAMLS_DIR` env var available for production override.
 
 ---
 
@@ -148,6 +150,9 @@ Reviewer responses are inputs to the product. The synthesized output (convergenc
 
 ### Engine supports anything
 The engine has zero branches on workflow type or mode. Whatever YAML configuration is expressible should be runnable. Even one agent is deliberation.
+
+### Verify scripts are not runtime verification
+The Phase A verify scripts passed while both runtime YAML-loading paths were broken. Scripts compute their own paths; they don't exercise the runtime loading code that the web server and MCP server use. When fixing a runtime bug, verify by running the actual runtime (or a script that calls through the same code path), not by running scripts that bypass it.
 
 ---
 
