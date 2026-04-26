@@ -516,7 +516,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     }
 
     const pSpeedMultiplier = p.speedMultiplier ?? 1.0
-    p.progress += p.speed * pSpeedMultiplier
+    p.progress += p.speed * config.approachSpeedMultiplier * pSpeedMultiplier
     if (p.progress >= 1) {
       const prevR = p.r
       const prevC = p.c
