@@ -32,6 +32,10 @@ Vada AI is a multi-agent deliberation engine. Multiple LLM agents debate a quest
 | Spec | Path | Purpose |
 |------|------|---------|
 | Product spec | [specs/vada-product-spec.md](specs/vada-product-spec.md) | Full product truth — positioning, features, launch requirements |
+| Product recognitions | [specs/vada-product-recognitions.md](specs/vada-product-recognitions.md) | Foundational recognitions about what Vāda is (YAML-driven runtime, not closed app) |
+| Current state | [specs/vada-state.md](specs/vada-state.md) | Current phase, completed milestones, next work |
+| Decisions log | [specs/vada-decisions.md](specs/vada-decisions.md) | Append-only log of architectural decisions and rationale |
+| YAML immutability | [specs/vada-yaml-immutability-principle.md](specs/vada-yaml-immutability-principle.md) | Foundational principle: YAML files are immutable once benchmarked |
 | Science of deliberation | [specs/vada-science-of-deliberation.md](specs/vada-science-of-deliberation.md) | Foundational deliberation theory |
 | BYOK principles | [specs/vada-byok-principles.md](specs/vada-byok-principles.md) | BYOK architecture principles |
 | Vāda human | [specs/vada-human.md](specs/vada-human.md) | Human-facing narrative |
@@ -55,7 +59,14 @@ Vada AI is a multi-agent deliberation engine. Multiple LLM agents debate a quest
 | Spec | Purpose |
 |------|---------|
 | [design-decisions.md](specs/engine/design-decisions.md) | Architectural decisions with rationale |
+| [flow-configurations.md](specs/engine/flow-configurations.md) | Reference for RoundsWorkflow variants (NoAudit, WithAudit, etc.) |
 | [v2-results/](specs/engine/v2-results/) | Reviewer rounds (Gemini, ChatGPT, DeepSeek) on engine design |
+
+### Concepts & Future Work
+
+| Spec | Purpose |
+|------|---------|
+| [vada-calculator-concept.md](specs/vada-calculator-concept.md) | YAML cost calculator UI — estimate deliberation cost before running |
 
 ### Legacy (`specs/legacy/`)
 
