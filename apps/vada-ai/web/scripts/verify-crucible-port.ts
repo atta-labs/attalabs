@@ -11,7 +11,7 @@ const adapter = new LangGraphAdapter({ apiKey })
 const questions = ['Should a startup prioritize growth speed or sustainable unit economics in its first two years?']
 const model = process.env.VADA_TEST_MODEL ?? 'claude-haiku-4-5-20251001'
 
-const spec = loadYamlFromCatalog('crucible-v1')
+const spec = loadYamlFromCatalog('crucible')
 
 for (const question of questions) {
   console.log(`\n${'='.repeat(80)}`)

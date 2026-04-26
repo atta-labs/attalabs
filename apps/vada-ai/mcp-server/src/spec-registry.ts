@@ -3,12 +3,11 @@ import type { DeliberationSpec } from '@atta/engine'
 
 // MCP-only: maps short caller-friendly aliases to canonical spec IDs.
 // New YAMLs without aliases are callable by their full ID.
+// Only short forms that differ from their canonical id need entries here.
+// crucible / sparring / war-room are their own canonical ids now.
 const ALIASES: Record<string, string> = {
-  sparring: 'sparring-v1',
-  crucible: 'crucible-v1',
-  'war-room': 'war-room-v1',
-  a0: 'a0-baseline-v1',
-  a1: 'a1-baseline-v1'
+  a0: 'a0-baseline',
+  a1: 'a1-baseline'
 }
 
 export function lookupSpec(nameOrId: string): DeliberationSpec {

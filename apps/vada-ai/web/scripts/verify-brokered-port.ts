@@ -11,7 +11,7 @@ const adapter = new LangGraphAdapter({ apiKey })
 const questions = ['What are the key risks of migrating a production monolith to microservices in under 6 months?']
 const model = process.env.VADA_TEST_MODEL ?? 'claude-haiku-4-5-20251001'
 
-const spec = loadYamlFromCatalog('brokered-trio-v1')
+const spec = loadYamlFromCatalog('brokered-trio')
 
 for (const question of questions) {
   console.info(`\n${'='.repeat(80)}`)

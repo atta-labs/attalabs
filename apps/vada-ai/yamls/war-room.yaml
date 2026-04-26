@@ -1,5 +1,5 @@
 schema_version: "1.0"
-id: war-room-v1
+id: war-room
 display_name: War Room
 description: Six-agent debate across three rounds with dual audit and revision.
 

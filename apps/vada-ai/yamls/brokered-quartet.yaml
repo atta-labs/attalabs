@@ -1,5 +1,5 @@
 schema_version: "1.0"
-id: brokered-quartet-v1
+id: brokered-quartet
 display_name: Brokered Quartet
 description: Three advisory reviewers plus Domain Expert. Flag-gated.
 experimental: true

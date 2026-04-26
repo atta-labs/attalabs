@@ -1,5 +1,5 @@
 schema_version: "1.0"
-id: brokered-trio-v1
+id: brokered-trio
 display_name: Brokered Trio
 description: Three independent advisory reviewers. No rounds, no audit, no synthesis.
 experimental: true

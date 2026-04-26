@@ -15,7 +15,7 @@ function catalogDir(): string {
 
 /**
  * Load a deliberation spec by ID from the YAML catalog.
- * ID is the filename without the .yaml extension (e.g. 'crucible-v1').
+ * ID is the filename without the .yaml extension (e.g. 'crucible').
  * Throws with the full resolved path on failure for easy debugging.
  */
 export function loadYamlFromCatalog(id: string): DeliberationSpec {

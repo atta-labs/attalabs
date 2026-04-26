@@ -1,5 +1,5 @@
 schema_version: "1.0"
-id: a1-baseline-v1
+id: a1-baseline
 display_name: A1
 description: Single-agent structured answer simulating multi-agent output. Baseline for benchmarking.
 experimental: true

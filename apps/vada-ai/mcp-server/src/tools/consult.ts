@@ -5,8 +5,8 @@ import { logSession } from '../session-logger'
 
 type ReviewerProfileName = 'strategist' | 'critic' | 'devils_advocate'
 
-const BROKERED_TRIO = loadYamlFromCatalog('brokered-trio-v1')
-const BROKERED_QUARTET = loadYamlFromCatalog('brokered-quartet-v1')
+const BROKERED_TRIO = loadYamlFromCatalog('brokered-trio')
+const BROKERED_QUARTET = loadYamlFromCatalog('brokered-quartet')
 
 const ROLE_TO_AGENT_NAME: Record<string, string> = {
   strategist: 'Strategist',

@@ -12,8 +12,8 @@ const model = process.env.VADA_TEST_MODEL ?? 'claude-haiku-4-5-20251001'
 const adapter = new LangGraphAdapter({ apiKey })
 
 const yamls = [
-  { id: 'a0-baseline-v1', label: 'A0' },
-  { id: 'a1-baseline-v1', label: 'A1' }
+  { id: 'a0-baseline', label: 'A0' },
+  { id: 'a1-baseline', label: 'A1' }
 ]
 
 for (const { id, label } of yamls) {

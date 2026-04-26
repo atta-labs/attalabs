@@ -327,7 +327,7 @@ export interface Plan {
   /** The compiled execution graph. */
   graph: PlanGraph
   // Phase 7.2 additions — set by compileSpec(), absent on legacy compile() plans
-  /** YAML spec ID this plan was compiled from (e.g. "crucible-v1"). */
+  /** YAML spec ID this plan was compiled from (e.g. "crucible"). */
   specId?: string
   /** How Conclusion.content is assembled: synthesize = terminal node output; concatenate = all outputs joined. */
   responseMode?: 'synthesize' | 'concatenate'
