@@ -194,15 +194,6 @@ export async function runConsult(input: ConsultInput, apiKey: string, origin?: s
   const hasDomainExpert = input.reviewerSpecs.some((s) => s.profileName === 'domain_expert')
   const baseSpec = hasDomainExpert ? BROKERED_QUARTET : BROKERED_TRIO
 
-  // Build agents — pre-render {{domain}} for DomainExpert
-  const domainInput = input.reviewerSpecs.find((s) => s.profileName === 'domain_expert')
-  const agents = baseSpec.agents.map((a) => {
-    if (a.name === 'DomainExpert' && domainInput?.domain) {
-      return { ...a, systemPrompt: a.systemPrompt.replaceAll('{{domain}}', domainInput.domain) }
-    }
-    return a
-  })
-
   // Build reviewers in the ORDER of input.reviewerSpecs (preserves transcript order)
   const reviewers = input.reviewerSpecs.map((spec) => {
     const agentName = ROLE_TO_AGENT_NAME[spec.profileName]!
@@ -214,8 +205,10 @@ export async function runConsult(input: ConsultInput, apiKey: string, origin?: s
     return { ...yamlReviewer, messageTemplate }
   })
 
-  const clonedSpec = { ...baseSpec, agents, reviewers }
-  const plan = compileSpec(clonedSpec, input.question, DEFAULT_MODEL)
+  const specWithReviewers = { ...baseSpec, reviewers }
+  const domainInput = input.reviewerSpecs.find((s) => s.profileName === 'domain_expert')
+  const customVars = domainInput?.domain ? { domain: domainInput.domain } : undefined
+  const plan = compileSpec(specWithReviewers, input.question, DEFAULT_MODEL, customVars)
 
   const adapter = new LangGraphAdapter({ apiKey })
   const startedAt = Date.now()

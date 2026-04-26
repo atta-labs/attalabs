@@ -96,14 +96,31 @@ function buildClassifierModes(spec: DeliberationSpec): Record<string, 'auto' | '
   return hasAny ? modes : undefined
 }
 
-export function compileSpec(spec: DeliberationSpec, question: string, model?: string): Plan {
-  const team = specToTeam(spec)
+function renderVars(text: string, vars: Record<string, string>): string {
+  return Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{{${k}}}`, v), text)
+}
+
+export function compileSpec(
+  spec: DeliberationSpec,
+  question: string,
+  model?: string,
+  customVars?: Record<string, string>
+): Plan {
+  const resolved =
+    customVars && Object.keys(customVars).length > 0
+      ? {
+          ...spec,
+          agents: spec.agents.map((a) => ({ ...a, systemPrompt: renderVars(a.systemPrompt, customVars) }))
+        }
+      : spec
+
+  const team = specToTeam(resolved)
   const plan = compile({ team, question, model: model ?? spec.defaults.model })
 
-  const responseMode: 'synthesize' | 'concatenate' = spec.reviewers ? 'concatenate' : 'synthesize'
+  const responseMode: 'synthesize' | 'concatenate' = resolved.reviewers ? 'concatenate' : 'synthesize'
   const responseNode = responseMode === 'synthesize' ? findResponseNode(plan) : undefined
-  const maxRevisions = spec.flow?.audit?.revision.max ?? 0
-  const classifierModes = buildClassifierModes(spec)
+  const maxRevisions = resolved.flow?.audit?.revision.max ?? 0
+  const classifierModes = buildClassifierModes(resolved)
 
   return {
     ...plan,
