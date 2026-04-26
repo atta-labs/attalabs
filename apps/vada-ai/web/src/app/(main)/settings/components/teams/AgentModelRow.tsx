@@ -4,13 +4,13 @@ import { useCatalog, type RouteProvider } from '@atta/models'
 import { ModelPicker } from '@atta/ui'
 import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
 import { Text } from '@atta/ui/shared'
-import type { AgentDef } from '@vada/agent-metadata'
+import type { AgentEntry } from '@/components/agents/visuals'
 
 import type { TeamModelEntry } from '@/db/settings-queries'
 import { useUserPreferences } from '@/lib/user-preferences-context'
 
 interface AgentModelRowProps {
-  agent: AgentDef
+  agent: AgentEntry
   teamId: string
   currentModel: { provider: string; modelId: string } | null
   configuredProviders: Set<string>

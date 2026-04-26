@@ -3,7 +3,7 @@
 import { Heading } from '@atta/ui'
 import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
 import { mdxComponents } from '@/components/mdx/MDXComponents'
-import { AGENT_COLOR_BY_ROLE } from '@vada/agent-metadata'
+import { AGENT_COLOR_BY_ROLE } from '@/components/agents/visuals'
 import { SectionLabel } from '../primitives/SectionLabel'
 import { SectionWrapper } from '../primitives/SectionWrapper'
 import { TwoColumnSection } from '../primitives/TwoColumnSection'

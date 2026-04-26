@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from 'react'
 import { useAIAContext } from '@atta/ui/canvas'
-import { AGENT_LIST } from '@vada/agent-metadata'
-import type { AgentName } from '@vada/agent-metadata'
+import { AGENT_LIST } from '@/components/agents/visuals'
+import type { AgentName } from '@/components/agents/visuals'
 
 export interface AgentEntry {
   name: AgentName
@@ -13,7 +13,7 @@ export interface AgentEntry {
 // Use first 3 agents from authoritative AGENT_LIST — no hardcoding
 export const AGENT_SEQUENCE: AgentEntry[] = AGENT_LIST.slice(0, 3).map((a) => ({
   name: a.name as AgentName,
-  color: a.color
+  color: a.visuals.color
 }))
 
 // Particle travel time from origin to sphere center (ms) with approachSpeedMultiplier=1

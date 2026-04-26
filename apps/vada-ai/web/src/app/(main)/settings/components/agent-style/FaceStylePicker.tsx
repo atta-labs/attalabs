@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Text } from '@atta/ui/shared'
 import { AGENT_FACES as AGENT_FACES_MINIMAL } from '@/components/agents/faces/agent-faces-minimal'
 import { AGENT_FACES as AGENT_FACES_FULL } from '@/components/agents/faces/agent-faces-full'
-import { AGENT_LIST } from '@vada/agent-metadata'
+import { AGENT_LIST } from '@/components/agents/visuals'
 import type { FaceStyle } from '@/components/agents'
 
 const STYLE_OPTIONS: Array<{ id: FaceStyle; label: string; description: string }> = [
@@ -75,7 +75,7 @@ export function FaceStylePicker({ value, onChange }: FaceStylePickerProps) {
                 const FaceComponent = faces[i]
                 return FaceComponent ? (
                   <div key={agent.role} className='flex flex-col items-center gap-1'>
-                    <div className='h-16 w-16' style={{ color: agent.color }}>
+                    <div className='h-16 w-16' style={{ color: agent.visuals.color }}>
                       <FaceComponent />
                     </div>
                     <Text as='span' className='font-mono text-[8px] uppercase tracking-widest text-foreground/30'>

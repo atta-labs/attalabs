@@ -4,8 +4,8 @@ import { createSession, getDailySessionCount, getOrCreateUser, initBenchmarkMetr
 import { getDailySessionLimit } from '@/schemas'
 import { ROUTE_PROVIDER_ORDER, type RouteProvider } from '@atta/models'
 import { loadYamlFromCatalog, listPublicSpecs } from '@atta/engine'
-import { AGENTS } from '@vada/agent-metadata'
-import type { AgentName } from '@vada/agent-metadata'
+import { AGENTS } from '@/components/agents/visuals'
+import type { AgentName } from '@/components/agents/visuals'
 import { z } from 'zod'
 
 const providerEnum = z.enum(ROUTE_PROVIDER_ORDER as [RouteProvider, ...RouteProvider[]])
