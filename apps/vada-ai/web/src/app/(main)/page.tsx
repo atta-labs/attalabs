@@ -1,6 +1,6 @@
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Logo } from '@atta/ui/shared'
-import { DefaultTopBar } from '@/components/DefaultTopBar'
+import { HomeTopBar } from '@/components/HomeTopBar'
 import { StickyHeaderTopBar } from '@/components/StickyHeaderTopBar'
 import { fetchVadaBranding } from '@/lib/branding'
 import { ChooserCanvas } from './components/home/ChooserCanvas'
@@ -20,7 +20,7 @@ export default async function VadaChooserPage() {
   return (
     <>
       <StickyHeaderTopBar isBlurred={true} className='z-40 border-b border-border/40'>
-        <DefaultTopBar logo={logo} />
+        <HomeTopBar logo={logo} />
       </StickyHeaderTopBar>
 
       <ChooserCanvas>
