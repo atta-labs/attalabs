@@ -1,13 +1,10 @@
-import type { Agent } from '@atta/agents'
-
 /** Display-capable agent archetype names. */
 export type AgentName = 'Strategist' | 'Critic' | "Devil's Advocate" | 'Synthesizer' | 'Researcher' | 'Operator'
 
-/**
- * A Vāda agent definition that carries both engine config and display metadata.
- * Only the 4 primary deliberation agents implement this interface.
- */
-export interface VadaAgentDef extends Agent {
+/** Display metadata for a Vāda agent — name, visual identity, role slug. Engine config lives in YAML. */
+export interface VadaAgentDef {
+  name: string
+  description: string
   /** Slug used in API responses and schema keys. */
   role: string
   /** Full title with article ("The Strategist"). */

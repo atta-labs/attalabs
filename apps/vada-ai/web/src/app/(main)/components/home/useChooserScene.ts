@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useAIAContext } from '@atta/ui/canvas'
-import { AGENT_LIST } from '@vada/agents'
+import { AGENT_LIST } from '@vada/agent-metadata'
 import type { AgentName } from '@vada/agent-metadata'
 
 export interface AgentEntry {

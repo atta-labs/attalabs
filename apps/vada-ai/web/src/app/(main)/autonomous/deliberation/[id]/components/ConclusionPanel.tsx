@@ -1,7 +1,7 @@
 'use client'
 
 import { ModelIcon } from '@atta/ui'
-import { AGENTS } from '@vada/agents'
+import { AGENTS } from '@vada/agent-metadata'
 import { motion } from 'motion/react'
 import type { CSSProperties } from 'react'
 import ReactMarkdown from 'react-markdown'

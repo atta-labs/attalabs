@@ -2,7 +2,7 @@
 
 import { ModelIcon } from '@atta/ui'
 import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
-import { AGENT_BY_ROLE } from '@vada/agents'
+import { AGENT_BY_ROLE } from '@vada/agent-metadata'
 import type { DeliberationMessage, StreamingMessage } from './useDeliberation'
 
 interface MessageCardProps {

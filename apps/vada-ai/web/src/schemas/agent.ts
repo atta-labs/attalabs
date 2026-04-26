@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { AGENT_LIST } from '@vada/agents'
+import { AGENT_LIST } from '@vada/agent-metadata'
 
 const agentRoleValues = AGENT_LIST.map((a) => a.role) as [string, ...string[]]
 export const AgentRole = z.enum(agentRoleValues)
