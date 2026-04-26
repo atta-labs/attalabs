@@ -33,6 +33,7 @@ interface DeliberationFeedProps {
   initialState?: string
   initialTerminalState?: string | null
   benchmark?: BenchmarkClientState | null
+  teamName?: string
 }
 
 // ── Outer wrapper — AIACanvas provides context for AIASphere in AgentCard ──
@@ -60,7 +61,8 @@ function DeliberationScene({
   initialConclusion = null,
   initialState = 'PENDING',
   initialTerminalState = null,
-  benchmark = null
+  benchmark = null,
+  teamName = 'Deliberation'
 }: DeliberationFeedProps) {
   const s = useDeliberationScene({
     sessionId,
@@ -70,7 +72,8 @@ function DeliberationScene({
     initialConclusion,
     initialState,
     initialTerminalState,
-    defaultProvider: defaultProvider ?? null
+    defaultProvider: defaultProvider ?? null,
+    teamName
   })
 
   // Group messages by round once, keyed on the messages array reference.

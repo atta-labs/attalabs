@@ -1,18 +1,28 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
 import { createSession, getDailySessionCount, getOrCreateUser, initBenchmarkMetrics } from '@/db/queries'
-import { DEFAULT_ROOM, getDailySessionLimit } from '@/schemas'
+import { getDailySessionLimit } from '@/schemas'
 import { ROUTE_PROVIDER_ORDER, type RouteProvider } from '@atta/models'
+import { loadYamlFromCatalog, listPublicSpecs } from '@atta/engine'
+import { AGENTS } from '@vada/agents'
+import type { AgentName } from '@vada/agents'
 import { z } from 'zod'
 
 const providerEnum = z.enum(ROUTE_PROVIDER_ORDER as [RouteProvider, ...RouteProvider[]])
 
 const AgentModelEntry = z.object({ provider: providerEnum, modelId: z.string() })
 
+// Allowed spec IDs — excludes experimental specs (baselines, brokered variants).
+// Evaluated once at module load so every request pays no filesystem cost.
+const ALLOWED_SPEC_IDS = new Set(listPublicSpecs().map((s) => s.id))
+
 // Note: no apiKey, no apiKeys. Keys stay in the browser. See /trust.
 const StartSchema = z.object({
   question: z.string().min(1).max(5000),
-  agents: z.array(z.string()).min(2).max(6).optional(),
+  specId: z
+    .string()
+    .refine((id) => ALLOWED_SPEC_IDS.has(id), { message: 'Unknown spec ID' })
+    .default('crucible-v1'),
   provider: providerEnum.optional(),
   modelId: z.string().optional(),
   agentModels: z.record(z.string(), AgentModelEntry).optional(),
@@ -42,7 +52,9 @@ export async function POST(request: Request) {
     )
   }
 
-  const agents = parsed.data.agents ?? DEFAULT_ROOM.map((a) => a.role)
+  const spec = loadYamlFromCatalog(parsed.data.specId)
+  const roundAgentNames: string[] = spec.flow?.rounds?.agents ?? []
+  const agents = roundAgentNames.map((name) => AGENTS[name as AgentName]?.role ?? name)
 
   // Model connectivity validation happens in the BROWSER with the user's key.
   // The server has no key to probe with — this is the structural BYOK guarantee.
@@ -53,7 +65,8 @@ export async function POST(request: Request) {
     agents,
     parsed.data.provider,
     parsed.data.modelId,
-    parsed.data.agentModels
+    parsed.data.agentModels,
+    parsed.data.specId
   )
   if (parsed.data.benchmark) {
     await initBenchmarkMetrics(session.id)

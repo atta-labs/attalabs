@@ -1,5 +1,6 @@
 import { auth } from '@atta/auth/hooks'
 import { CatalogProvider, getCatalog } from '@atta/models'
+import { listPublicSpecs } from '@atta/engine'
 import { redirect } from 'next/navigation'
 import { getDailySessionCount, getOrCreateUser } from '@/db/queries'
 import { getUserTeamModels } from '@/db/settings-queries'
@@ -16,6 +17,7 @@ export default async function DeliberatePage({ searchParams }: { searchParams: P
     getUserTeamModels(user.id),
     getCatalog()
   ])
+  const specs = listPublicSpecs()
 
   const dailyLimit = getDailySessionLimit()
   const remaining = dailyLimit - dailyCount
@@ -32,6 +34,7 @@ export default async function DeliberatePage({ searchParams }: { searchParams: P
           initialError={error}
           configuredProviders={[]}
           initialTeamModels={teamModels}
+          specs={specs}
         />
       </div>
     </CatalogProvider>

@@ -1,4 +1,5 @@
 import { auth } from '@atta/auth/hooks'
+import { loadYamlFromCatalog } from '@atta/engine'
 import { Text } from '@atta/ui'
 import { redirect } from 'next/navigation'
 import { getBenchmarkMetrics, getSessionWithTranscript } from '@/db/queries'
@@ -55,6 +56,15 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
   // on every round + in the conclusion. Matches the orchestrator's resolution
   // order: session.agentModels[role] wins, otherwise session's global
   // provider/modelId applies to every agent.
+  const teamName = (() => {
+    if (!session.specId) return 'Deliberation'
+    try {
+      return loadYamlFromCatalog(session.specId).displayName
+    } catch {
+      return 'Deliberation'
+    }
+  })()
+
   const agentModels = (session.agentModels as Record<string, { provider: string; modelId: string }> | null) ?? null
   const globalDefault =
     session.provider && session.modelId ? { provider: session.provider, modelId: session.modelId } : null
@@ -88,6 +98,7 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
       initialState={session.state}
       initialTerminalState={session.terminalState ?? null}
       benchmark={benchmarkClient}
+      teamName={teamName}
     />
   )
 }

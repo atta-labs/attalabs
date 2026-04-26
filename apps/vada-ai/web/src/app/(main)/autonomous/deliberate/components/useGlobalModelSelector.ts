@@ -8,6 +8,7 @@ import { useIdentity } from '@atta/identity/react'
 import { type ModelEntry, type RouteProvider, useCatalog } from '@atta/models'
 import { useToastContext } from '@atta/ui'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { SPEC_ID_TO_TEAM_ID } from '@/lib/teams-metadata'
 import type { ModelSelection } from './GlobalModelSelector'
 
 interface UseGlobalModelSelectorProps {
@@ -15,7 +16,7 @@ interface UseGlobalModelSelectorProps {
   onChange: (v: ModelSelection | null) => void
   settingsProviders: string[]
   initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
-  selectedPresetId: string | undefined
+  selectedSpecId: string | undefined
 }
 
 // Persist last picked model locally so the next /deliberate visit pre-selects
@@ -56,7 +57,7 @@ export function useGlobalModelSelector({
   onChange,
   settingsProviders,
   initialTeamModels,
-  selectedPresetId
+  selectedSpecId
 }: UseGlobalModelSelectorProps) {
   const baseCatalog = useCatalog()
   const identity = useIdentity()
@@ -106,8 +107,9 @@ export function useGlobalModelSelector({
   //   3. First catalog entry whose provider currently has a key in memory
   //   4. Nothing — user picks manually
   useEffect(() => {
-    if (selectedPresetId && initialTeamModels.length > 0) {
-      const entry = initialTeamModels.find((m) => m.teamId === selectedPresetId)
+    if (selectedSpecId && initialTeamModels.length > 0) {
+      const teamId = SPEC_ID_TO_TEAM_ID[selectedSpecId]
+      const entry = teamId ? initialTeamModels.find((m) => m.teamId === teamId) : undefined
       if (entry) {
         const route = entry.provider as RouteProvider
         onChange({ provider: route, modelId: entry.modelId, apiKey: storedKeys[route] ?? '' })
@@ -132,15 +134,16 @@ export function useGlobalModelSelector({
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Preset-switch reseed ───────────────────────────────────────────────────
+  // ── Spec-switch reseed ────────────────────────────────────────────────────
   useEffect(() => {
-    if (!selectedPresetId || initialTeamModels.length === 0) return
-    const entry = initialTeamModels.find((m) => m.teamId === selectedPresetId)
+    if (!selectedSpecId || initialTeamModels.length === 0) return
+    const teamId = SPEC_ID_TO_TEAM_ID[selectedSpecId]
+    const entry = teamId ? initialTeamModels.find((m) => m.teamId === teamId) : undefined
     if (!entry) return
     const route = entry.provider as RouteProvider
     const apiKey = storedKeys[route] ?? ''
     onChange({ provider: route, modelId: entry.modelId, apiKey })
-  }, [selectedPresetId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedSpecId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── storedKeys → globalModel.apiKey sync ──────────────────────────────────
   // Keeps globalModel.apiKey current whenever keys arrive asynchronously:

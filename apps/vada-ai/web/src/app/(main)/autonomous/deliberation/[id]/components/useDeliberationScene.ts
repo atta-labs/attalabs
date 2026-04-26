@@ -5,7 +5,6 @@
 
 import { useToastContext } from '@atta/ui'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { PRESETS } from '@/schemas'
 import { useDeliberation } from './useDeliberation'
 
 interface UseDeliberationSceneProps {
@@ -17,6 +16,7 @@ interface UseDeliberationSceneProps {
   initialState: string
   initialTerminalState: string | null
   defaultProvider: string | null
+  teamName?: string
 }
 
 export function useDeliberationScene({
@@ -27,7 +27,8 @@ export function useDeliberationScene({
   initialConclusion,
   initialState,
   initialTerminalState,
-  defaultProvider
+  defaultProvider,
+  teamName = 'Deliberation'
 }: UseDeliberationSceneProps) {
   const { messages, streamingMessage, loadingMessage, streamError, currentState, terminalState, conclusion } =
     useDeliberation(
@@ -51,10 +52,6 @@ export function useDeliberationScene({
         .sort((a, b) => a - b),
     [messages]
   )
-
-  const teamName =
-    PRESETS.find((p) => p.agents.length === agentRoles.length && p.agents.every((a) => agentRoles.includes(a.role)))
-      ?.name ?? 'Deliberation'
 
   const currentRoundNum = currentState.startsWith('ROUND_')
     ? Number.parseInt(currentState.replace('ROUND_', ''), 10)

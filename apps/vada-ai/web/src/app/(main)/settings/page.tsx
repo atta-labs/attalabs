@@ -1,10 +1,12 @@
 import { auth } from '@atta/auth/hooks'
 import { CatalogProvider, getCatalog } from '@atta/models'
+import { listPublicSpecs } from '@atta/engine'
 import { Heading, Text } from '@atta/ui/shared'
 import { Separator } from '@atta/ui'
 import { redirect } from 'next/navigation'
 import { getOrCreateUser } from '@/db/queries'
 import { getUserSettings, getUserTeamModels } from '@/db/settings-queries'
+import { SPEC_ID_TO_TEAM_ID } from '@/lib/teams-metadata'
 import { CopyButton } from '@/app/(main)/brokered/mcp/components/CopyButton'
 import { SettingsClientPage } from './components/SettingsClientPage'
 import { NextLink } from '@atta/ui/lib/next-link'
@@ -19,6 +21,14 @@ export default async function SettingsPage() {
     getUserSettings(user.id),
     getCatalog()
   ])
+  const specs = listPublicSpecs()
+  const teams = specs
+    .filter((s) => SPEC_ID_TO_TEAM_ID[s.id] !== undefined)
+    .map((s) => ({
+      id: SPEC_ID_TO_TEAM_ID[s.id]!,
+      name: s.displayName,
+      agents: s.flow?.rounds?.agents ?? []
+    }))
 
   // API keys live in the browser (passkey-encrypted IndexedDB or in-memory).
   // SettingsClientPage reads them via useIdentity(); initialApiKeys stays [].
@@ -40,6 +50,7 @@ export default async function SettingsPage() {
             initialApiKeys={[]}
             initialTeamModels={teamModels}
             initialFaceStyle={settings.faceStyle}
+            teams={teams}
           />
 
           <Separator className='opacity-20' />

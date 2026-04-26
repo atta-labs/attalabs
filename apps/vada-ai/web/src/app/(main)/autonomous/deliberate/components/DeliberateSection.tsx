@@ -1,5 +1,6 @@
 'use client'
 
+import type { DeliberationSpec } from '@atta/engine'
 import { Button, Checkbox } from '@atta/ui'
 import { GitCompare } from 'lucide-react'
 import { IdentityBanner } from '@/components/IdentityBanner'
@@ -13,6 +14,7 @@ interface DeliberateSectionProps {
   initialError?: string
   configuredProviders: string[]
   initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
+  specs: DeliberationSpec[]
 }
 
 export function DeliberateSection(props: DeliberateSectionProps) {
@@ -23,15 +25,16 @@ export function DeliberateSection(props: DeliberateSectionProps) {
       <QuestionInputArea
         question={form.question}
         onQuestionChange={form.setQuestion}
-        selectedPresetId={form.selectedPreset.id}
+        selectedSpecId={form.selectedSpecId}
         globalModel={form.globalModel}
         onModelChange={form.setGlobalModel}
         configuredProviders={props.configuredProviders}
         initialTeamModels={props.initialTeamModels}
       />
       <TeamCardGrid
-        selectedPreset={form.selectedPreset}
-        onSelectPreset={form.setSelectedPreset}
+        specs={props.specs}
+        selectedSpecId={form.selectedSpecId}
+        onSelectSpec={form.setSelectedSpecId}
         globalModel={form.globalModel}
       />
       <div className='flex items-center justify-between gap-3'>

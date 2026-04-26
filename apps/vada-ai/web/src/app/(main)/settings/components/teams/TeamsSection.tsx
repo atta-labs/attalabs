@@ -1,15 +1,16 @@
 import { Text } from '@atta/ui/shared'
-import { TEAM_LIST } from '@/lib/teams-metadata'
+import type { TeamId } from '@/lib/teams-metadata'
 import type { TeamModelEntry } from '@/db/settings-queries'
 import { TeamAccordionItem } from './TeamAccordionItem'
 
 interface TeamsSectionProps {
+  teams: Array<{ id: TeamId; name: string; agents: string[] }>
   teamModels: TeamModelEntry[]
   configuredProviders: Set<string>
   onModelChanged: (entry: TeamModelEntry) => void
 }
 
-export function TeamsSection({ teamModels, configuredProviders, onModelChanged }: TeamsSectionProps) {
+export function TeamsSection({ teams, teamModels, configuredProviders, onModelChanged }: TeamsSectionProps) {
   return (
     <div className='space-y-4'>
       <div className='space-y-1'>
@@ -22,7 +23,7 @@ export function TeamsSection({ teamModels, configuredProviders, onModelChanged }
       </div>
 
       <div>
-        {TEAM_LIST.map((team) => (
+        {teams.map((team) => (
           <TeamAccordionItem
             key={team.id}
             team={team}

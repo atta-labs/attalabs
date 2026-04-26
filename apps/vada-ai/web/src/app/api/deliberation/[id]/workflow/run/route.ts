@@ -7,7 +7,7 @@
 // It is never persisted.
 import 'server-only'
 import { compileSpec, loadYamlFromCatalog } from '@atta/engine'
-import type { ExecutionHooks, Plan, DeliberationSpec } from '@atta/engine'
+import type { ExecutionHooks, Plan } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
 import { auth } from '@atta/auth/hooks'
 import { getOrCreateUser, getSessionForUser, getSessionWithTranscript, setSessionTerminalState } from '@/db/queries'
@@ -44,25 +44,13 @@ function resolveAuditChain(plan: Plan, slotIndex: number): string[] {
   return result
 }
 
-const SPEC_CACHE: Record<string, DeliberationSpec> = {
-  crucible: loadYamlFromCatalog('crucible-v1'),
-  sparring: loadYamlFromCatalog('sparring-v1'),
-  'war-room': loadYamlFromCatalog('war-room-v1')
-}
-
-function selectSpec(agents: string[]): DeliberationSpec {
-  if (agents.includes('researcher') || agents.includes('operator')) return SPEC_CACHE['war-room']!
-  if (agents.length <= 2) return SPEC_CACHE.sparring!
-  return SPEC_CACHE.crucible!
-}
-
 // Compiles the plan, wires onNodeComplete → persistTurn, and awaits completion.
 // Safe to call fire-and-forget (.catch()) or awaited.
 async function runLangGraph(sessionId: string, apiKey: string | undefined): Promise<void> {
   const session = await getSessionWithTranscript(sessionId)
   if (!session) throw new Error(`Session ${sessionId} not found`)
 
-  const spec = selectSpec(session.agents)
+  const spec = loadYamlFromCatalog(session.specId ?? 'crucible-v1')
   const plan = compileSpec(spec, session.question, session.modelId ?? 'claude-sonnet-4-6')
 
   const adapter = new LangGraphAdapter({ apiKey })

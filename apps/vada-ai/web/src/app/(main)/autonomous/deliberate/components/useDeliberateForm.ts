@@ -1,12 +1,12 @@
 'use client'
 
+import type { DeliberationSpec } from '@atta/engine'
 import { useIdentity } from '@atta/identity/react'
 import { useToastContext } from '@atta/ui'
 import type { FaceStyle } from '@/components/agents'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUserPreferences } from '@/lib/user-preferences-context'
-import { PRESETS, type Preset } from '@/schemas'
 import type { ModelSelection } from './GlobalModelSelector'
 
 // Fire-and-forget — POST to server-side route so the LLM call happens
@@ -38,13 +38,14 @@ interface UseDeliberateFormProps {
   initialError?: string
   configuredProviders: string[]
   initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
+  specs: DeliberationSpec[]
 }
 
 export interface DeliberateFormState {
   question: string
   setQuestion: (q: string) => void
-  selectedPreset: Preset
-  setSelectedPreset: (p: Preset) => void
+  selectedSpecId: string
+  setSelectedSpecId: (id: string) => void
   globalModel: ModelSelection | null
   setGlobalModel: (m: ModelSelection | null) => void
   loading: boolean
@@ -60,10 +61,11 @@ export interface DeliberateFormState {
 export function useDeliberateForm({
   remainingToday,
   dailyLimit,
-  initialError
+  initialError,
+  specs
 }: UseDeliberateFormProps): DeliberateFormState {
   const [question, setQuestion] = useState('')
-  const [selectedPreset, setSelectedPreset] = useState<Preset>(PRESETS[0]!)
+  const [selectedSpecId, setSelectedSpecId] = useState<string>(specs[0]?.id ?? 'crucible-v1')
   const [globalModel, setGlobalModel] = useState<ModelSelection | null>(null)
   const [loading, setLoading] = useState(false)
   const [benchmarkEnabled, setBenchmarkEnabled] = useState(true)
@@ -140,7 +142,7 @@ export function useDeliberateForm({
     // /workflow/run?stream=true when the SSE stream opens. See /trust.
     const body: Record<string, unknown> = {
       question: question.trim(),
-      agents: selectedPreset.agents.map((a) => a.role),
+      specId: selectedSpecId,
       ...(globalModel && {
         provider: globalModel.provider,
         modelId: globalModel.modelId
@@ -183,8 +185,8 @@ export function useDeliberateForm({
   return {
     question,
     setQuestion,
-    selectedPreset,
-    setSelectedPreset,
+    selectedSpecId,
+    setSelectedSpecId,
     globalModel,
     setGlobalModel,
     loading,

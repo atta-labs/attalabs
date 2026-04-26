@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui'
 import type { TeamModelEntry } from '@/db/settings-queries'
 import type { FaceStyle } from '@/components/agents'
+import type { TeamId } from '@/lib/teams-metadata'
 import { ApiKeysSection } from './api-keys/ApiKeysSection'
 import { AgentStyleSection } from './agent-style/AgentStyleSection'
 import { TeamsSection } from './teams/TeamsSection'
@@ -20,9 +21,15 @@ interface SettingsClientPageProps {
   initialApiKeys: Array<{ provider: string; keyHint: string }>
   initialTeamModels: TeamModelEntry[]
   initialFaceStyle: FaceStyle
+  teams: Array<{ id: TeamId; name: string; agents: string[] }>
 }
 
-export function SettingsClientPage({ initialApiKeys, initialTeamModels, initialFaceStyle }: SettingsClientPageProps) {
+export function SettingsClientPage({
+  initialApiKeys,
+  initialTeamModels,
+  initialFaceStyle,
+  teams
+}: SettingsClientPageProps) {
   const [activeTab, setActiveTab] = useState<Tab>('api-keys')
   const [apiKeys, setApiKeys] = useState(initialApiKeys)
   const [teamModels, setTeamModels] = useState(initialTeamModels)
@@ -57,6 +64,7 @@ export function SettingsClientPage({ initialApiKeys, initialTeamModels, initialF
 
       <TabsContent value='teams'>
         <TeamsSection
+          teams={teams}
           teamModels={teamModels}
           configuredProviders={configuredProviders}
           onModelChanged={(entry) => {

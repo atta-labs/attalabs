@@ -21,7 +21,7 @@ interface GlobalModelSelectorProps {
   onChange: (v: ModelSelection | null) => void
   settingsProviders?: string[]
   initialTeamModels?: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
-  selectedPresetId?: string
+  selectedSpecId?: string
 }
 
 export function GlobalModelSelector({
@@ -29,9 +29,9 @@ export function GlobalModelSelector({
   onChange,
   settingsProviders = [],
   initialTeamModels = [],
-  selectedPresetId
+  selectedSpecId
 }: GlobalModelSelectorProps) {
-  const g = useGlobalModelSelector({ value, onChange, settingsProviders, initialTeamModels, selectedPresetId })
+  const g = useGlobalModelSelector({ value, onChange, settingsProviders, initialTeamModels, selectedSpecId })
   return (
     <ModelPicker
       options={g.catalog}

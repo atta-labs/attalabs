@@ -4,12 +4,13 @@ import { useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { Text } from '@atta/ui/shared'
 import { AGENTS } from '@vada/agents'
-import type { TeamDef } from '@/lib/teams-metadata'
+import type { AgentName } from '@vada/agents'
+import type { TeamId } from '@/lib/teams-metadata'
 import type { TeamModelEntry } from '@/db/settings-queries'
 import { AgentModelRow } from './AgentModelRow'
 
 interface TeamAccordionItemProps {
-  team: TeamDef
+  team: { id: TeamId; name: string; agents: string[] }
   teamModels: TeamModelEntry[]
   configuredProviders: Set<string>
   onModelChanged: (entry: TeamModelEntry) => void
@@ -41,7 +42,8 @@ export function TeamAccordionItem({ team, teamModels, configuredProviders, onMod
       {open && (
         <div className='grid grid-cols-2 gap-3 pb-4 pt-1'>
           {team.agents.map((agentName) => {
-            const agent = AGENTS[agentName]
+            const agent = AGENTS[agentName as AgentName]
+            if (!agent) return null
             const saved = teamModels.find((m) => m.teamId === team.id && m.agentRole === agent.role)
             return (
               <AgentModelRow

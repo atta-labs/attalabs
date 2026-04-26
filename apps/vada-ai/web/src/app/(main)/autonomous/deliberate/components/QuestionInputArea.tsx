@@ -6,7 +6,7 @@ import { GlobalModelSelector, type ModelSelection } from './GlobalModelSelector'
 interface QuestionInputAreaProps {
   question: string
   onQuestionChange: (q: string) => void
-  selectedPresetId: string
+  selectedSpecId: string
   globalModel: ModelSelection | null
   onModelChange: (m: ModelSelection | null) => void
   configuredProviders: string[]
@@ -16,7 +16,7 @@ interface QuestionInputAreaProps {
 export function QuestionInputArea({
   question,
   onQuestionChange,
-  selectedPresetId,
+  selectedSpecId,
   globalModel,
   onModelChange,
   configuredProviders,
@@ -39,7 +39,7 @@ export function QuestionInputArea({
           onChange={onModelChange}
           settingsProviders={configuredProviders}
           initialTeamModels={initialTeamModels}
-          selectedPresetId={selectedPresetId}
+          selectedSpecId={selectedSpecId}
         />
       </div>
     </div>
