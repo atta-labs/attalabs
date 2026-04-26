@@ -1,5 +1,4 @@
 import { auth } from '@atta/auth/hooks'
-import { redirect } from 'next/navigation'
 import { Heading, Text } from '@atta/ui/shared'
 import { Separator } from '@atta/ui'
 import { NextLink } from '@atta/ui/lib/next-link'
@@ -24,9 +23,8 @@ function formatDate(date: Date) {
 
 export default async function BrokeredConsultationsPage() {
   const { userId: clerkId } = await auth()
-  if (!clerkId) redirect('/?signin=1')
 
-  const consultations = await listBrokeredConsultations(clerkId)
+  const consultations = await listBrokeredConsultations(clerkId!)
 
   return (
     <div className='px-6 py-12'>

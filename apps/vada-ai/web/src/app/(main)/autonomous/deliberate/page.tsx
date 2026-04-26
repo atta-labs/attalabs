@@ -1,7 +1,6 @@
 import { auth } from '@atta/auth/hooks'
 import { CatalogProvider, getCatalog } from '@atta/models'
 import { listPublicSpecs } from '@atta/engine'
-import { redirect } from 'next/navigation'
 import { getDailySessionCount, getOrCreateUser } from '@/db/queries'
 import { getUserTeamModels } from '@/db/settings-queries'
 import { getDailySessionLimit } from '@/schemas'
@@ -9,9 +8,8 @@ import { DeliberateSection } from './components/DeliberateSection'
 
 export default async function DeliberatePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { userId: clerkId } = await auth()
-  if (!clerkId) redirect('/?signin=1')
 
-  const user = await getOrCreateUser(clerkId, '')
+  const user = await getOrCreateUser(clerkId!, '')
   const [dailyCount, teamModels, catalog] = await Promise.all([
     getDailySessionCount(user.id),
     getUserTeamModels(user.id),

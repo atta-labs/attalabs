@@ -7,15 +7,13 @@ export const metadata: Metadata = {
 
 import { Separator } from '@atta/ui'
 import { Heading, Text } from '@atta/ui/shared'
-import { redirect } from 'next/navigation'
 import { HistoryClientView } from './components/HistoryClientView'
 import { getOrCreateUser, listSessions } from '@/db/queries'
 
 export default async function HistoryPage() {
   const { userId: clerkId } = await auth()
-  if (!clerkId) redirect('/?signin=1')
 
-  const user = await getOrCreateUser(clerkId, '')
+  const user = await getOrCreateUser(clerkId!, '')
   const sessions = await listSessions(user.id)
 
   return (

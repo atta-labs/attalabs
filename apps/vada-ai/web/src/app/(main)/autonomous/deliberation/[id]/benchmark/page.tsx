@@ -1,14 +1,9 @@
-import { auth } from '@atta/auth/hooks'
 import { Text } from '@atta/ui'
-import { redirect } from 'next/navigation'
 import { getBenchmarkMetrics, getSessionWithTranscript } from '@/db/queries'
 import { extractRenderableConclusion } from '@/engine/conclusion-rescue'
 import { BenchmarkReport } from './components/BenchmarkReport'
 
 export default async function BenchmarkPage({ params }: { params: Promise<{ id: string }> }) {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) redirect('/?signin=1')
-
   const { id } = await params
   const session = await getSessionWithTranscript(id)
   if (!session) {

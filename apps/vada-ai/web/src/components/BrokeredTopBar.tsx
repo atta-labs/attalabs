@@ -20,7 +20,7 @@ interface BrokeredTopBarProps {
   logo?: ReactNode
 }
 
-const NAV_ITEMS = [
+const AUTH_NAV = [
   { href: '/brokered/consultations', label: 'Consultations', exact: true },
   { href: '/brokered/mcp', label: 'MCP Install', exact: true }
 ]
@@ -48,11 +48,12 @@ export function BrokeredTopBar({ logo }: BrokeredTopBarProps) {
       </div>
       {/* Center: nav links */}
       <div className='flex items-center gap-8 justify-self-center'>
-        {NAV_ITEMS.map(({ href, label, exact }) => (
-          <NextLink key={href} variant='nav' active={isActive(href, exact)} href={href} className='text-xs'>
-            {label}
-          </NextLink>
-        ))}
+        {user &&
+          AUTH_NAV.map(({ href, label, exact }) => (
+            <NextLink key={href} variant='nav' active={isActive(href, exact)} href={href} className='text-xs'>
+              {label}
+            </NextLink>
+          ))}
       </div>
       {/* Right: scheme toggle + settings + avatar dropdown */}
       <div className='flex items-center gap-3 justify-self-end'>

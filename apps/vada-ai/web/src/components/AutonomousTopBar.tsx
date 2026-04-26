@@ -20,9 +20,12 @@ interface AutonomousTopBarProps {
   logo?: ReactNode
 }
 
-const NAV_ITEMS = [
+const PUBLIC_NAV = [
   { href: '/autonomous/science', label: 'Science', exact: false },
-  { href: '/autonomous/trust', label: 'Trust · Vāda', exact: false },
+  { href: '/autonomous/trust', label: 'Trust · Vāda', exact: false }
+]
+
+const AUTH_NAV = [
   { href: '/autonomous/deliberate', label: 'Deliberate', exact: true },
   { href: '/autonomous/sessions', label: 'My Sessions', exact: true }
 ]
@@ -33,6 +36,7 @@ export function AutonomousTopBar({ logo }: AutonomousTopBarProps) {
   const pathname = usePathname()
 
   const isActive = (href: string, exact: boolean) => (exact ? pathname === href : pathname.startsWith(href))
+  const allLinks = user ? [...PUBLIC_NAV, ...AUTH_NAV] : PUBLIC_NAV
 
   const displayName = user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress
   const email = user?.primaryEmailAddress?.emailAddress
@@ -50,7 +54,7 @@ export function AutonomousTopBar({ logo }: AutonomousTopBarProps) {
       </div>
       {/* Center: nav links */}
       <div className='flex items-center gap-8 justify-self-center'>
-        {NAV_ITEMS.map(({ href, label, exact }) => (
+        {allLinks.map(({ href, label, exact }) => (
           <NextLink key={href} variant='nav' active={isActive(href, exact)} href={href} className='text-xs'>
             {label}
           </NextLink>

@@ -4,7 +4,8 @@ const isProtectedRoute = createRouteMatcher([
   '/autonomous/deliberate(.*)',
   '/autonomous/deliberation(.*)',
   '/autonomous/sessions(.*)',
-  '/settings(.*)'
+  '/settings(.*)',
+  '/brokered/consultations(.*)'
 ])
 
 export default clerkMiddleware(async (auth, req) => {

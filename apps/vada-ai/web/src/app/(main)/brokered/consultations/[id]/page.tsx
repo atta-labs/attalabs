@@ -1,5 +1,5 @@
 import { auth } from '@atta/auth/hooks'
-import { redirect, notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { Heading, Text } from '@atta/ui/shared'
 import { Separator } from '@atta/ui'
 import { NextLink } from '@atta/ui/lib/next-link'
@@ -25,10 +25,9 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 
 export default async function BrokeredConsultationPage({ params }: { params: Promise<{ id: string }> }) {
   const { userId: clerkId } = await auth()
-  if (!clerkId) redirect('/?signin=1')
 
   const { id } = await params
-  const consultation = await getBrokeredConsultation(id, clerkId)
+  const consultation = await getBrokeredConsultation(id, clerkId!)
 
   if (!consultation) notFound()
 
