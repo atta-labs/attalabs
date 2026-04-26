@@ -1,23 +1,24 @@
 import { z } from 'zod'
-import { compileSpec } from '@atta/engine'
-import type { DeliberationSpec } from '@atta/engine'
+import { compileSpec, loadYamlFromCatalog } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { createDomainExpert, strategist, critic, devilsAdvocate } from '@vada/agents'
 import { logSession } from '../session-logger'
 
 type ReviewerProfileName = 'strategist' | 'critic' | 'devils_advocate'
-const reviewerProfiles = {
-  strategist,
-  critic,
-  devils_advocate: devilsAdvocate
-} as const
+
+const BROKERED_TRIO = loadYamlFromCatalog('brokered-trio-v1')
+const BROKERED_QUARTET = loadYamlFromCatalog('brokered-quartet-v1')
+
+const ROLE_TO_AGENT_NAME: Record<string, string> = {
+  strategist: 'Strategist',
+  critic: 'Critic',
+  devils_advocate: "Devil's Advocate",
+  domain_expert: 'DomainExpert'
+}
 
 // Sonnet 4.6 pricing (USD per million tokens, May 2026)
 const PRICING = { input: 3.0, output: 15.0 }
 
 const DEFAULT_MODEL = process.env.VADA_MODEL ?? 'claude-sonnet-4-6'
-
-const BASE_TEMPLATE = '{{question}}'
 
 // ─── Validation schemas ────────────────────────────────────────────────────────
 
@@ -190,34 +191,31 @@ function generateShareToken(): string {
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export async function runConsult(input: ConsultInput, apiKey: string, origin?: string): Promise<ConsultOutput> {
-  const selectedAgents = input.reviewerSpecs.map((s) =>
-    s.profileName === 'domain_expert' ? createDomainExpert(s.domain) : reviewerProfiles[s.profileName]
-  )
+  const hasDomainExpert = input.reviewerSpecs.some((s) => s.profileName === 'domain_expert')
+  const baseSpec = hasDomainExpert ? BROKERED_QUARTET : BROKERED_TRIO
 
-  const spec: DeliberationSpec = {
-    schemaVersion: '1.0',
-    id: 'BrokeredConsult',
-    displayName: 'Brokered Consult',
-    description: `Brokered consultation: ${input.reviewerSpecs.map((s) => s.profileName).join(', ')}`,
-    experimental: false,
-    benchmarked: false,
-    defaults: { model: DEFAULT_MODEL },
-    agents: selectedAgents.map((a) => ({
-      name: a.name,
-      description: a.description,
-      systemPrompt: a.systemPrompt,
-      tools: a.tools
-    })),
-    reviewers: input.reviewerSpecs.map((s) => {
-      const agentName = s.profileName === 'domain_expert' ? 'Domain Expert' : reviewerProfiles[s.profileName].name
-      return {
-        agent: agentName,
-        messageTemplate: s.notes ? `${BASE_TEMPLATE}\n\n## Specific Request For You\n${s.notes}` : BASE_TEMPLATE
-      }
-    })
-  }
+  // Build agents — pre-render {{domain}} for DomainExpert
+  const domainInput = input.reviewerSpecs.find((s) => s.profileName === 'domain_expert')
+  const agents = baseSpec.agents.map((a) => {
+    if (a.name === 'DomainExpert' && domainInput?.domain) {
+      return { ...a, systemPrompt: a.systemPrompt.replaceAll('{{domain}}', domainInput.domain) }
+    }
+    return a
+  })
 
-  const plan = compileSpec(spec, input.question, DEFAULT_MODEL)
+  // Build reviewers in the ORDER of input.reviewerSpecs (preserves transcript order)
+  const reviewers = input.reviewerSpecs.map((spec) => {
+    const agentName = ROLE_TO_AGENT_NAME[spec.profileName]!
+    const yamlReviewer = baseSpec.reviewers!.find((r) => r.agent === agentName)
+    if (!yamlReviewer) throw new Error(`Reviewer '${agentName}' not found in spec '${baseSpec.id}'`)
+    const messageTemplate = spec.notes
+      ? `${yamlReviewer.messageTemplate}\n\n## Specific Request For You\n${spec.notes}`
+      : yamlReviewer.messageTemplate
+    return { ...yamlReviewer, messageTemplate }
+  })
+
+  const clonedSpec = { ...baseSpec, agents, reviewers }
+  const plan = compileSpec(clonedSpec, input.question, DEFAULT_MODEL)
 
   const adapter = new LangGraphAdapter({ apiKey })
   const startedAt = Date.now()

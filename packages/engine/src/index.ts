@@ -6,5 +6,5 @@ export { validateTeam, validateWorkflow } from './validate'
 // Phase 7.2 additions
 export { loadSpec } from './spec-loader'
 export { compileSpec, specToTeam } from './compilers/spec'
-export { loadYamlFromCatalog } from './catalog-loader'
+export { loadYamlFromCatalog, listPublicSpecs } from './catalog-loader'
 export type { DeliberationSpec, SpecAgent, FlowSpec, ReviewerSpec } from './spec-types'

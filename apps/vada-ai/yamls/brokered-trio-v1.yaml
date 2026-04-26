@@ -2,7 +2,7 @@ schema_version: "1.0"
 id: brokered-trio-v1
 display_name: Brokered Trio
 description: Three independent advisory reviewers. No rounds, no audit, no synthesis.
-experimental: false
+experimental: true
 
 defaults:
   model: claude-sonnet-4-6

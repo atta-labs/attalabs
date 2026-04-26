@@ -1,0 +1,1 @@
+ALTER TABLE "sessions" ADD COLUMN "spec_id" varchar;

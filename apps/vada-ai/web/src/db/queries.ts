@@ -30,7 +30,8 @@ export async function createSession(
   agents: string[],
   provider?: string,
   modelId?: string,
-  agentModels?: Record<string, { provider: string; modelId: string }>
+  agentModels?: Record<string, { provider: string; modelId: string }>,
+  specId?: string
 ) {
   const inserted = await db
     .insert(schema.sessions)
@@ -38,6 +39,7 @@ export async function createSession(
       userId,
       question,
       agents,
+      specId: specId ?? null,
       provider: provider ?? null,
       modelId: modelId ?? null,
       agentModels: agentModels ?? null

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadSpec } from './spec-loader'
@@ -27,4 +27,17 @@ export function loadYamlFromCatalog(id: string): DeliberationSpec {
     throw new Error(`loadYamlFromCatalog: cannot read spec '${id}' — tried: ${filePath}`)
   }
   return loadSpec(content)
+}
+
+/**
+ * Returns all non-experimental specs from the catalog, sorted alphabetically by id.
+ * Specs with `experimental: true` are excluded.
+ */
+export function listPublicSpecs(): DeliberationSpec[] {
+  const dir = catalogDir()
+  const ids = readdirSync(dir)
+    .filter((f) => f.endsWith('.yaml'))
+    .map((f) => f.replace(/\.yaml$/, ''))
+    .sort()
+  return ids.map((id) => loadYamlFromCatalog(id)).filter((s) => !s.experimental)
 }

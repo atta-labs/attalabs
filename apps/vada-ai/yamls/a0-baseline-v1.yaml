@@ -2,6 +2,7 @@ schema_version: "1.0"
 id: a0-baseline-v1
 display_name: A0
 description: Single-agent direct answer. No deliberation. Baseline for benchmarking.
+experimental: true
 
 defaults:
   model: claude-sonnet-4-6

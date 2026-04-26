@@ -48,6 +48,7 @@ export const sessions = pgTable('sessions', {
     .notNull(),
   question: text('question').notNull(),
   agents: text('agents').array().notNull(),
+  specId: varchar('spec_id'),
   state: sessionStateEnum('state').default('PENDING').notNull(),
   terminalState: terminalStateEnum('terminal_state'),
   provider: varchar('provider'),
