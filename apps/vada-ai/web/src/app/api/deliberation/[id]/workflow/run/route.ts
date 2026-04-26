@@ -50,7 +50,10 @@ async function runLangGraph(sessionId: string, apiKey: string | undefined): Prom
   const session = await getSessionWithTranscript(sessionId)
   if (!session) throw new Error(`Session ${sessionId} not found`)
 
-  const spec = loadYamlFromCatalog(session.specId ?? 'crucible-v1')
+  if (!session.specId) {
+    throw new Error(`Session ${sessionId} has no specId; cannot resume deliberation.`)
+  }
+  const spec = loadYamlFromCatalog(session.specId)
   const plan = compileSpec(spec, session.question, session.modelId ?? 'claude-sonnet-4-6')
 
   const adapter = new LangGraphAdapter({ apiKey })

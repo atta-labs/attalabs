@@ -65,7 +65,13 @@ export function useDeliberateForm({
   specs
 }: UseDeliberateFormProps): DeliberateFormState {
   const [question, setQuestion] = useState('')
-  const [selectedSpecId, setSelectedSpecId] = useState<string>(specs[0]?.id ?? 'crucible-v1')
+  const [selectedSpecId, setSelectedSpecId] = useState<string>(() => {
+    const first = specs[0]
+    if (!first) {
+      throw new Error('useDeliberateForm: no specs available; cannot initialize selectedSpecId')
+    }
+    return first.id
+  })
   const [globalModel, setGlobalModel] = useState<ModelSelection | null>(null)
   const [loading, setLoading] = useState(false)
   const [benchmarkEnabled, setBenchmarkEnabled] = useState(true)

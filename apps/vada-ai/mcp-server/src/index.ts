@@ -1,5 +1,6 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createServer } from './server'
+import { validateAllSpecs } from './spec-registry'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
@@ -7,6 +8,7 @@ if (!apiKey) {
   process.exit(1)
 }
 
+validateAllSpecs()
 const server = createServer(apiKey)
 const transport = new StdioServerTransport()
 await server.connect(transport)

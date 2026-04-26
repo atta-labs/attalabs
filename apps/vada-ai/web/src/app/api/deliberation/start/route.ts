@@ -19,10 +19,7 @@ const ALLOWED_SPEC_IDS = new Set(listPublicSpecs().map((s) => s.id))
 // Note: no apiKey, no apiKeys. Keys stay in the browser. See /trust.
 const StartSchema = z.object({
   question: z.string().min(1).max(5000),
-  specId: z
-    .string()
-    .refine((id) => ALLOWED_SPEC_IDS.has(id), { message: 'Unknown spec ID' })
-    .default('crucible-v1'),
+  specId: z.string().refine((id) => ALLOWED_SPEC_IDS.has(id), { message: 'Unknown spec ID' }),
   provider: providerEnum.optional(),
   modelId: z.string().optional(),
   agentModels: z.record(z.string(), AgentModelEntry).optional(),
