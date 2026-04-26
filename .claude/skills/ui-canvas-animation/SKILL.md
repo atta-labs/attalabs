@@ -255,6 +255,102 @@ CSS keyframe lives in `packages/ui/styles/canvas.css` (import `@atta/ui/canvas.c
 
 ---
 
+## Fabric Configuration — Per-Page Particle Behavior
+
+Starting Phase 7.4, fabric behavior is **config-driven and isolated per-page**. Three pages → three renderer configs.
+
+### The Problem (Before)
+
+Fabric settings lived globally in `fabric.ts`. Adding chooser-specific behaviors (slow approach, shock waves) broke the autonomous page. Three global settings changed with no per-page isolation:
+
+1. **Approach speed** → `0.1x` (was `0.2x`) — too slow for autonomous
+2. **Force-completion** → commented out — autonomous particles froze at sphere edge
+3. **Shock wave on arrival** → always fired — unintended visual on autonomous
+
+### The Solution: FabricConfig
+
+```ts
+export interface FabricConfig {
+  approachSpeedMultiplier: number     // 0.2 = original, 0.8 = fast, 0.1 = slow
+  forceCompleteAtSphereEdge: boolean  // snap at radius, or smooth approach?
+  shockWaveOnArrival: boolean         // expanding ripple when particle joins
+}
+```
+
+Threaded through `renderFabricBgCore` signature so every page can pass its own config.
+
+### Factory Functions
+
+Instead of passing config as a loose parameter, use factory functions that capture the config and return a renderer:
+
+```ts
+import { createFabricRenderer, createSplitFabricRenderer } from '@atta/ui/canvas'
+
+// Simple single-canvas fabric
+export const renderHomeFabric = createFabricRenderer({
+  approachSpeedMultiplier: 0.8,
+  forceCompleteAtSphereEdge: false,
+  shockWaveOnArrival: true
+})
+
+// Split-mirror fabric (brokered page)
+export const renderBrokeredFabric = createSplitFabricRenderer({
+  approachSpeedMultiplier: 0.8,
+  forceCompleteAtSphereEdge: true,
+  shockWaveOnArrival: false
+})
+```
+
+Each returns a `BgRenderer` function signature, matching what `AIACanvas` expects for the `bg` prop.
+
+### Per-Page Renderer Files
+
+Store page-specific renderers next to the page components:
+
+```
+apps/vada-ai/web/src/app/(main)/
+├── (home)/components/
+│   └── fabric-home.ts                    ← chooser config
+├── autonomous/components/home/
+│   └── fabric-autonomous.ts              ← autonomous config
+└── brokered/components/home/
+    └── fabric-brokered.ts                ← brokered config
+```
+
+**File content (example):**
+```ts
+import { createFabricRenderer } from '@atta/ui/canvas'
+import type { BgRenderer } from '@atta/ui/canvas'
+
+export const renderAutonomousFabric: BgRenderer = createFabricRenderer({
+  approachSpeedMultiplier: 0.8,
+  forceCompleteAtSphereEdge: true,
+  shockWaveOnArrival: false
+})
+```
+
+### Wiring to Canvas Components
+
+Pass the page-specific renderer to `AIACanvas.bg`:
+
+```tsx
+import { renderHomeFabric } from './fabric-home'
+
+<AIACanvas bg={renderHomeFabric} alwaysRenderSpheres wanderDuration={1} ...>
+```
+
+No global state. No cross-page pollution. Each page controls its particle physics.
+
+### Config Tuning Reference
+
+| Setting | Autonomous | Home | Brokered | Effect |
+|---------|-----------|------|----------|--------|
+| `approachSpeedMultiplier` | `0.8` | `0.8` | `0.8` | Particle speed during grid traversal + final approach |
+| `forceCompleteAtSphereEdge` | `true` | `false` | `true` | Snap particles to sphere edge (sharp) vs smooth deceleration |
+| `shockWaveOnArrival` | `false` | `true` | `false` | Expanding ripple when particle joins sphere |
+
+---
+
 ## Fabric ripple on particle join
 
 When a particle joins a sphere, push a high-amplitude radial ripple for a **local** mesh distortion:
@@ -285,27 +381,40 @@ Agent colors arrive as either hex `#rrggbb` (Chrome normalizes custom properties
 
 ## Fabric Background (Tron Particles)
 
-`bg/fabric.ts` is a standalone background renderer — it does NOT use `AIACanvas`. It renders directly onto a canvas element via `drawFabric(state)`.
+`bg/fabric.ts` is a standalone background renderer — it does NOT use `AIACanvas`. It renders directly onto a canvas element via a `BgRenderer` function created by `createFabricRenderer()` or `createSplitFabricRenderer()`.
+
+**Key point: Fabric behavior is now config-driven (see "Fabric Configuration" above).** Pass a `FabricConfig` to the factory to control particle speed, completion behavior, and shock waves per-page.
 
 ```tsx
-import { drawFabric } from '@atta/ui/canvas/bg'
-// Used in HomeCanvas and settings pages as a background layer
+import { createFabricRenderer } from '@atta/ui/canvas'
+
+// Page-specific renderer
+export const renderMyFabric = createFabricRenderer({
+  approachSpeedMultiplier: 0.8,
+  forceCompleteAtSphereEdge: true,
+  shockWaveOnArrival: false
+})
+
+// Use in AIACanvas
+<AIACanvas bg={renderMyFabric} ...>
 ```
 
 **What it renders:**
 1. A displaced grid mesh (two-density layers: coarse + fine) with ripple effects on sphere joins
-2. **Tron particles** — spawn from the grid border, travel along displaced grid edges toward a target agent sphere, then detach for a straight-line final approach and join with a collision glow
+2. **Tron particles** — spawn from the grid border, travel along displaced grid edges toward a target agent sphere, then detach for a straight-line final approach and join with a collision glow (or shock wave, depending on config)
 3. **Birth animations** — before a particle spawns, the origin cell illuminates with matrix characters and energy tendrils
-4. **Closing pulses** — radial ripple effect when a particle joins a sphere
+4. **Closing pulses** — radial ripple effect when a particle joins a sphere (gated by `config.shockWaveOnArrival`)
 
 **Key behaviors:**
 - Colors always sampled from active sphere colors — never hardcoded
 - Particles home toward a specific sphere (`targetSphereId`)
 - `didTurn` flag enforces alternating turn/straight movement (no double turns)
-- `finalApproach` phase: particle detaches from grid and flies straight to sphere center
+- `finalApproach` phase: particle detaches from grid and flies straight to sphere center, speed scaled by `config.approachSpeedMultiplier`
+- `forceCompleteAtSphereEdge`: if `true`, particle snaps to sphere circumference; if `false`, particle decelerates smoothly into the sphere
 - `dying` state: particle stops moving and fades out (trail erosion)
 - Ring exclusion zone: particles avoid the AIARing area (accounts for fabric displacement)
 - Settle gate: particles don't spawn until the canvas has settled
+- **Config isolation:** each page's renderer has its own config, no global state pollution
 
 **State shape passed to `drawFabric`:**
 ```ts
@@ -520,6 +629,8 @@ Partial-pause scope: only the main `animate()` loop is cancelled. The ring's own
 
 ## File Map
 
+### Core Canvas System (packages/ui/canvas/)
+
 ```
 packages/ui/canvas/
 ├── aia-canvas/            — Canvas orchestrator (modular)
@@ -540,9 +651,9 @@ packages/ui/canvas/
 ├── useAIASphere.ts        — Sphere hooks (rAF position tracking, registration)
 ├── aia-ring.tsx           — Ring layout + SVG wave segments (agent colors)
 ├── bg/
-│   ├── fabric.ts          — Tron particle background: grid mesh + particles + birth animations
-│   ├── types.ts           — BgState type
-│   └── index.ts           — Public exports
+│   ├── fabric.ts          — Core Tron renderer: grid mesh + particles + birth animations (config-driven via FabricConfig)
+│   ├── types.ts           — BgState, BgRenderer, FabricConfig types
+│   └── index.ts           — Public exports (createFabricRenderer, createSplitFabricRenderer)
 ├── shared/                — Shared canvas utilities
 │   ├── colors.ts          — CSS variable resolution (resolveColor, getThemeColors)
 │   ├── color-math.ts      — Format conversion (parseColor, withAlpha, brightenForLight, fgAt, rgbToHsl)
@@ -551,6 +662,26 @@ packages/ui/canvas/
 │   ├── constants.ts       — MATRIX_CHARS and tuning constants
 │   └── math.ts            — Trig / numeric helpers
 └── assistant-wave.tsx     — Standalone SVG wave
+```
+
+### Page-Specific Renderers (apps/vada-ai/web/src/app/)
+
+Each page has its own fabric config file that creates a page-specific renderer:
+
+```
+(main)/
+├── (home)/components/
+│   ├── ChooserCanvas.tsx
+│   └── fabric-home.ts         — Chooser page: slow approach, smooth completion, shock waves
+├── autonomous/components/home/
+│   ├── HomeCanvas.tsx
+│   └── fabric-autonomous.ts   — Autonomous page: normal speed, snap completion, no shock
+└── brokered/components/home/
+    ├── SplitChooserCanvas.tsx
+    └── fabric-brokered.ts     — Brokered page: normal speed, snap completion, split-mirror
+```
+
+Each renderer file exports a `BgRenderer` created via `createFabricRenderer()` or `createSplitFabricRenderer()`, capturing its own `FabricConfig`. This isolates particle behavior per-page with zero global state.
 ```
 
 ## After Editing Package Files
