@@ -52,6 +52,7 @@ export interface TurnPayload {
   phase: TurnPhase
   agent?: string
   round?: number
+  structured?: unknown
   tokensInput?: number | null
   tokensOutput?: number | null
   elapsedMs?: number

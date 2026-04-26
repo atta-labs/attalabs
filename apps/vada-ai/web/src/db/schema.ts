@@ -68,6 +68,8 @@ export const transcriptEntries = pgTable('transcript_entries', {
   content: text('content').notNull(),
   target: varchar('target'),
   orderInRound: integer('order_in_round').notNull(),
+  /** Parsed structured JSON output from the synthesis agent. Null for regular round agents and audit agents. */
+  structured: jsonb('structured'),
   createdAt: timestamp('created_at').defaultNow().notNull()
 })
 

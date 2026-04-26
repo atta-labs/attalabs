@@ -80,6 +80,8 @@ async function runLangGraph(sessionId: string, apiKey: string | undefined): Prom
           turnId: node.id,
           content: output.content,
           phase,
+          agent: output.agentName,
+          structured: output.structured,
           tokensInput: output.tokensInput,
           tokensOutput: output.tokensOutput,
           elapsedMs: output.elapsedMs
@@ -235,6 +237,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 round: entry.round,
                 content: entry.content
               })
+              if (entry.structured !== null) {
+                emit({
+                  type: 'synthesis_complete',
+                  agent: entry.agent,
+                  content: entry.content,
+                  structured: entry.structured,
+                  is_revision: entry.orderInRound > 0
+                })
+              }
             }
             lastEntryCount = fresh.transcriptEntries.length
           }

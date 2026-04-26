@@ -149,6 +149,7 @@ Each agent can use a different model. Provider and modelId are stored on the ses
 |------|---------|--------|
 | `state_changed` | `{ state: SessionState }` | Updates round indicators and loading spinners |
 | `agent_completed` | `{ agent: string; round: number; content: string }` | Appends transcript entry |
+| `synthesis_complete` | `{ agent: string; content: string; structured: unknown \| null; is_revision: boolean }` | Fired after `agent_completed` for synthesis/revision entries; carries structured JSON when spec has `output_schema` |
 | `terminal` | `{ terminalState: string }` | Closes stream, renders conclusion panel |
 | `keepalive` | `{}` | No-op — prevents connection timeout every 15s |
 | `error` | `{ message: string }` | Infra-level failure (not model errors) |
