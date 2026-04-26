@@ -2,7 +2,7 @@ import { createSplitFabricRenderer } from '@atta/ui/canvas'
 import type { BgRenderer } from '@atta/ui/canvas'
 
 export const renderBrokeredFabric: BgRenderer = createSplitFabricRenderer({
-  approachSpeedMultiplier: 0.2,
+  approachSpeedMultiplier: 0.8,
   forceCompleteAtSphereEdge: true,
   shockWaveOnArrival: false
 })
