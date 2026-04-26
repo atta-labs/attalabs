@@ -1,0 +1,30 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { loadSpec } from './spec-loader'
+import type { DeliberationSpec } from './spec-types'
+
+// Anchor: this file lives at packages/engine/src/
+// Going up 3 levels reaches the repo root; yamls live at apps/vada-ai/yamls/
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const DEFAULT_CATALOG_DIR = join(__dirname, '../../../apps/vada-ai/yamls')
+
+function catalogDir(): string {
+  return process.env.VADA_YAMLS_DIR ?? DEFAULT_CATALOG_DIR
+}
+
+/**
+ * Load a deliberation spec by ID from the YAML catalog.
+ * ID is the filename without the .yaml extension (e.g. 'crucible-v1').
+ * Throws with the full resolved path on failure for easy debugging.
+ */
+export function loadYamlFromCatalog(id: string): DeliberationSpec {
+  const filePath = join(catalogDir(), `${id}.yaml`)
+  let content: string
+  try {
+    content = readFileSync(filePath, 'utf-8')
+  } catch {
+    throw new Error(`loadYamlFromCatalog: cannot read spec '${id}' — tried: ${filePath}`)
+  }
+  return loadSpec(content)
+}

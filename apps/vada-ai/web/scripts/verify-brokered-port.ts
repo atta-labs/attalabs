@@ -1,7 +1,5 @@
-import { compileSpec, loadSpec } from '@atta/engine'
+import { compileSpec, loadYamlFromCatalog } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
@@ -13,7 +11,7 @@ const adapter = new LangGraphAdapter({ apiKey })
 const questions = ['What are the key risks of migrating a production monolith to microservices in under 6 months?']
 const model = process.env.VADA_TEST_MODEL ?? 'claude-haiku-4-5-20251001'
 
-const spec = loadSpec(readFileSync(join(process.cwd(), '../yamls/brokered-trio-v1.yaml'), 'utf-8'))
+const spec = loadYamlFromCatalog('brokered-trio-v1')
 
 for (const question of questions) {
   console.info(`\n${'='.repeat(80)}`)

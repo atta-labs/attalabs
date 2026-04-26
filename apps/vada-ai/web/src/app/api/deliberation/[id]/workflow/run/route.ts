@@ -6,12 +6,9 @@
 // SECURITY: apiKey transits server memory for the lifetime of this request only.
 // It is never persisted.
 import 'server-only'
-import { compileSpec } from '@atta/engine'
-import { loadSpec } from '@atta/engine'
+import { compileSpec, loadYamlFromCatalog } from '@atta/engine'
 import type { ExecutionHooks, Plan, DeliberationSpec } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { auth } from '@atta/auth/hooks'
 import { getOrCreateUser, getSessionForUser, getSessionWithTranscript, setSessionTerminalState } from '@/db/queries'
 import { persistTurn } from '@/engine/turn-logic'
@@ -47,15 +44,10 @@ function resolveAuditChain(plan: Plan, slotIndex: number): string[] {
   return result
 }
 
-function loadYaml(filename: string): DeliberationSpec {
-  const content = readFileSync(join(process.cwd(), 'apps/vada-ai/yamls', filename), 'utf-8')
-  return loadSpec(content)
-}
-
 const SPEC_CACHE: Record<string, DeliberationSpec> = {
-  crucible: loadYaml('crucible-v1.yaml'),
-  sparring: loadYaml('sparring-v1.yaml'),
-  'war-room': loadYaml('war-room-v1.yaml')
+  crucible: loadYamlFromCatalog('crucible-v1'),
+  sparring: loadYamlFromCatalog('sparring-v1'),
+  'war-room': loadYamlFromCatalog('war-room-v1')
 }
 
 function selectSpec(agents: string[]): DeliberationSpec {
