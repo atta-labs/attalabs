@@ -1,6 +1,7 @@
 import type { BgState } from './types'
 import { fgAt, withAlpha } from '../shared/color-math'
 import { bloomStops, paintParticleHead } from '../shared/paint'
+import { resolveColor } from '../shared/colors'
 
 // ── Fabric configuration ───────────────────────────────────────────────────────
 export interface FabricConfig {
@@ -263,7 +264,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
       // births near the top edge. Spreading from screen center fills the whole visible
       // area. Particles then converge upward toward the sphere position.
       const count = evt.count ?? 5
-      const particleColor = evt.color ?? target.color
+      const particleColor = resolveColor(evt.color ?? target.color)
       const speedMultiplier = evt.speedMultiplier ?? 1.0
       // Births spread far enough from the sphere so particles visibly traverse grid squares
       const minD = Math.max(Math.min(W, H) * 0.3, target.radius * 1.5)
@@ -300,7 +301,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     if (evt.type === 'sphere-gather') {
       const target = state.spheres.find((s) => s.id === evt.sphereId)
       if (!target) continue
-      const particleColor = evt.color ?? target.color
+      const particleColor = resolveColor(evt.color ?? target.color)
       // Spread births far from center so particles traverse the full grid before arriving.
       // Must exceed sphere.radius * 1.1 (the gather finalApproach trigger) to get grid movement.
       for (let i = 0; i < evt.count; i++) {
