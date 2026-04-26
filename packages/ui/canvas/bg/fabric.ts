@@ -10,7 +10,7 @@ export interface FabricConfig {
 }
 
 const DEFAULT_FABRIC_CONFIG: FabricConfig = {
-  approachSpeedMultiplier: 0.2,
+  approachSpeedMultiplier: 1.5,
   forceCompleteAtSphereEdge: true,
   shockWaveOnArrival: false
 }

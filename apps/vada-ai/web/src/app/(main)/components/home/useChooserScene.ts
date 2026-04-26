@@ -2,18 +2,19 @@
 
 import { useEffect, useRef } from 'react'
 import { useAIAContext } from '@atta/ui/canvas'
-import type { AgentName } from '@vada/agents'
+import { AGENT_LIST } from '@vada/agents'
+import type { AgentName } from '@vada/agent-metadata'
 
 export interface AgentEntry {
   name: AgentName
   color: string
 }
 
-export const AGENT_SEQUENCE: AgentEntry[] = [
-  { name: 'Strategist', color: 'hsl(119 21% 45%)' },
-  { name: 'Critic', color: 'hsl(0 49% 57%)' },
-  { name: "Devil's Advocate", color: 'hsl(278 35% 63%)' }
-]
+// Use first 3 agents from authoritative AGENT_LIST — no hardcoding
+export const AGENT_SEQUENCE: AgentEntry[] = AGENT_LIST.slice(0, 3).map((a) => ({
+  name: a.name as AgentName,
+  color: a.color
+}))
 
 // Particle travel time from origin to sphere center (ms) with approachSpeedMultiplier=1
 const PARTICLE_TRAVEL_TIME_MS = 2000

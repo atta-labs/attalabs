@@ -13,7 +13,7 @@ export { operator } from './agents/operator'
 export { conclusionSynthesizer } from './agents/conclusion-synthesizer'
 export { blindCritic } from './agents/blind-critic'
 export { factChecker } from './agents/fact-checker'
-export { domainExpert, createDomainExpert } from './agents/domain-expert'
+export { domainExpert } from './agents/domain-expert'
 
 import { strategist } from './agents/strategist'
 import { critic } from './agents/critic'
