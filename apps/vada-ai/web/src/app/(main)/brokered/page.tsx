@@ -1,55 +1,49 @@
-import { Heading, Text } from '@atta/ui/shared'
-import { Button } from '@atta/ui'
-import { Separator } from '@atta/ui'
-import { NextLink } from '@atta/ui/lib/next-link'
+import Link from 'next/link'
+import { SplitChooserCanvas } from './components/home/SplitChooserCanvas'
+import { BrokeredScene } from './components/home/BrokeredScene'
+import { BrainCardConnector } from '../components/BrainCardConnector'
 
 export default function BrokeredPage() {
   return (
-    <div className='px-6 py-12'>
-      <div className='mx-auto max-w-2xl space-y-12'>
-        {/* Header */}
-        <div className='space-y-4'>
-          <span className='font-mono text-xs text-muted-foreground'>Brokered Deliberation</span>
-          <Heading level={1} className='font-serif text-4xl font-light leading-tight'>
-            On-demand reviewers, in your chat client.
-          </Heading>
-          <Text as='p' muted className='text-lg leading-relaxed'>
-            Brokered Deliberation lets you call Vāda reviewers from your existing chat client via MCP. Get a critic,
-            strategist, or devil&apos;s advocate&apos;s perspective without leaving Claude Desktop, Cursor, or any
-            MCP-compatible client.
-          </Text>
+    <>
+      <SplitChooserCanvas>
+        <BrokeredScene />
+      </SplitChooserCanvas>
+
+      {/* Full-height center divider */}
+      <div className='fixed inset-y-0 left-1/2 w-px bg-border/40 z-10 pointer-events-none' />
+
+      {/* Brain → cards connector */}
+      <BrainCardConnector />
+
+      {/* Mode cards — bottom, one per half */}
+      <div className='fixed inset-0 z-10 pointer-events-none'>
+        <div
+          className='absolute pointer-events-auto'
+          style={{ left: '40vw', top: '86vh', transform: 'translate(-50%, -50%)' }}
+        >
+          <Link
+            href='/brokered'
+            className='flex flex-col gap-2 p-6 rounded-lg border border-border bg-card hover:bg-accent transition-colors min-w-[200px]'
+          >
+            <span className='font-serif text-lg'>Brokered</span>
+            <span className='text-muted-foreground text-sm'>Single focused reviewer via MCP</span>
+          </Link>
         </div>
 
-        <Separator className='opacity-20' />
-
-        {/* Difference from Autonomous */}
-        <div className='space-y-3'>
-          <span className='font-mono text-xs text-muted-foreground'>How it differs</span>
-          <Text as='p' className='leading-relaxed'>
-            Unlike Autonomous Deliberation — where agents debate each other and you observe — Brokered puts you in
-            control. You summon individual reviewers on demand, mid-conversation, without leaving your client.
-          </Text>
-          <NextLink href='/autonomous' variant='prose' className='text-sm'>
-            Autonomous Deliberation →
-          </NextLink>
-        </div>
-
-        <Separator className='opacity-20' />
-
-        {/* CTAs */}
-        <div className='flex flex-col gap-4 sm:flex-row'>
-          <NextLink href='/brokered/mcp' variant='unstyled'>
-            <Button size='lg' className='w-full sm:w-auto'>
-              Set up MCP
-            </Button>
-          </NextLink>
-          <NextLink href='/brokered/consultations' variant='unstyled'>
-            <Button size='lg' variant='outline' className='w-full sm:w-auto'>
-              View consultations
-            </Button>
-          </NextLink>
+        <div
+          className='absolute pointer-events-auto'
+          style={{ left: '60vw', top: '86vh', transform: 'translate(-50%, -50%)' }}
+        >
+          <Link
+            href='/autonomous'
+            className='flex flex-col gap-2 p-6 rounded-lg border border-border bg-card hover:bg-accent transition-colors min-w-[200px]'
+          >
+            <span className='font-serif text-lg'>Autonomous</span>
+            <span className='text-muted-foreground text-sm'>Full multi-agent deliberation with audit trail</span>
+          </Link>
         </div>
       </div>
-    </div>
+    </>
   )
 }

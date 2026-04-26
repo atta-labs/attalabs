@@ -4,6 +4,7 @@ import { AIASphere } from '@atta/ui/canvas'
 import { ModelIcon } from '@atta/ui'
 import { VadaAgent } from '@/components/agents'
 import { PrincipalBrain } from './PrincipalBrain'
+
 import { useBrokeredScene } from './useBrokeredScene'
 
 // Vertical column: all aligned at same x, evenly spaced top-to-bottom
@@ -93,14 +94,14 @@ export function BrokeredScene() {
       </div>
 
       {/* LLM spheres — activate only when their particle arrives */}
-      {LLM_SPHERES.map(({ id, model, color, label, left, top }) => (
+      {LLM_SPHERES.map(({ id, model, color, label, left, top }, idx) => (
         <div key={id} className='absolute -translate-x-1/2 -translate-y-1/2' style={{ left, top }}>
           <AIASphere
             id={id}
             size={90}
             color={color}
             state={llmStates[id]}
-            showMatrix={llmStates[id] !== 'idle'}
+            showMatrix={idx === LLM_SPHERES.length - 1 && llmStates[id] !== 'idle'}
             label={label}
             labelPlacement='absolute'
             labelPosition='bottom'

@@ -81,7 +81,8 @@ export function useBrokeredScene() {
         // ── Step 4: Strategist broadcasts to all LLMs simultaneously ──
         LLM_IDS.forEach((id) => {
           if (!alive) return
-          ctx.fireDirectedMessage('brokered-strategist', id, MSG_SPEED)
+          // horizontal-first: go left to LLM column, then vertical to each LLM row
+          ctx.fireDirectedMessage('brokered-strategist', id, MSG_SPEED, 'horizontal-first')
           // LLM activates only when its particle arrives
           guard(() => setLlmStates((prev) => ({ ...prev, [id]: 'speaking' })), TRAVEL)
           guard(() => setLlmStates((prev) => ({ ...prev, [id]: 'complete' })), TRAVEL + SPEAKING)
@@ -95,7 +96,8 @@ export function useBrokeredScene() {
           const delay = Math.floor(Math.random() * RESPONSE_SPREAD)
           setTimeout(() => {
             if (!alive) return
-            ctx.fireDirectedMessage(id, 'brokered-strategist', MSG_SPEED)
+            // vertical-first: rise/drop to center row, then right to strategist
+            ctx.fireDirectedMessage(id, 'brokered-strategist', MSG_SPEED, 'vertical-first')
           }, delay)
         })
 
@@ -104,13 +106,16 @@ export function useBrokeredScene() {
 
         // ── Step 6: Strategist fires result back to brain ──────────────
         if (!alive) return
-        ctx.fireDirectedMessage('brokered-strategist', 'principal-brain-entry', MSG_SPEED)
+        ctx.fireDirectedMessage('brokered-strategist', 'principal-brain', MSG_SPEED)
 
         // Reset all to sleeping before brain re-illuminates
         guard(() => setStrategistState('idle'), 400)
         guard(() => setLlmStates(IDLE_STATES), 600)
 
-        // Wait for particle to reach brain
+        // Brain illuminates when the return particle arrives
+        guard(() => setBrainActive(true), TRAVEL)
+
+        // Wait for particle to reach brain then brief hold before looping
         await sleep(TRAVEL + 300)
 
         // loop back → brain illuminates again at top

@@ -2,6 +2,19 @@ import type { BgState } from './types'
 import { fgAt, withAlpha } from '../shared/color-math'
 import { bloomStops, paintParticleHead } from '../shared/paint'
 
+// ── Fabric configuration ───────────────────────────────────────────────────────
+export interface FabricConfig {
+  approachSpeedMultiplier: number
+  forceCompleteAtSphereEdge: boolean
+  shockWaveOnArrival: boolean
+}
+
+const DEFAULT_FABRIC_CONFIG: FabricConfig = {
+  approachSpeedMultiplier: 0.2,
+  forceCompleteAtSphereEdge: true,
+  shockWaveOnArrival: false
+}
+
 // ── Grid definition ───────────────────────────────────────────────────────────
 // MARGIN extends the grid beyond each screen edge so displaced outer vertices
 // never leave black gaps at the boundaries.
@@ -161,6 +174,7 @@ interface TronParticle {
   gatherOrbiting?: boolean
   gatherOrbitAngle?: number
   gatherOrbitRadius?: number
+  speedMultiplier?: number // per-particle speed multiplier (default 1.0)
 }
 
 const TRAIL_LEN = 22
@@ -185,25 +199,13 @@ interface TronBirth {
   charPool: Array<{ dr: number; dc: number; char: string }> // 20 chars, cycled by frame
   origin?: boolean // true = intensified rendering (1.8× glow, more tendrils) for sphere-origin event
   gather?: boolean // true = particle orbits at perimeter, never absorbed
+  speedMultiplier?: number // per-particle speed multiplier (default 1.0)
 }
 let tronBirths: TronBirth[] = []
 let firstParticleSpawned = false
 // Tracks convergence of origin particles so onOriginComplete fires at the right moment
 let originTotalCount = 0
 let originArrivedCount = 0
-
-// ── Particle effects — crash explosion or sphere-join glow ────────────────────
-// Spawned when a particle dies. Drawn independently for a short window.
-interface ParticleEffect {
-  x: number // screen position at death (base coords)
-  y: number
-  color: string
-  startT: number
-  type: 'crash' | 'join' | 'halo'
-  sphereRadius?: number // for join/halo effects — used to scale the burst to the sphere size
-  origin?: boolean // halo from the origin event — toned down alpha to avoid green-dome stacking
-}
-let particleEffects: ParticleEffect[] = []
 
 /**
  * Reset all module-level mutable state.
@@ -219,13 +221,12 @@ export function resetFabricState(): void {
   closingPulses = []
   tronParticles = []
   tronBirths = []
-  particleEffects = []
   firstParticleSpawned = false
   originTotalCount = 0
   originArrivedCount = 0
 }
 
-function renderFabricBgCore(state: BgState, splitX?: number): void {
+function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: number): void {
   const { ctx, t, W, H, settleProgress, rings, recentEvents, onSphereAbsorb } = state
 
   const CX = W / 2
@@ -263,6 +264,7 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
       // area. Particles then converge upward toward the sphere position.
       const count = evt.count ?? 5
       const particleColor = evt.color ?? target.color
+      const speedMultiplier = evt.speedMultiplier ?? 1.0
       // Births spread far enough from the sphere so particles visibly traverse grid squares
       const minD = Math.max(Math.min(W, H) * 0.3, target.radius * 1.5)
       const maxD = Math.min(W, H) * 0.45
@@ -287,7 +289,8 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
           spawned: false,
           tendrils,
           charPool,
-          origin: true
+          origin: true,
+          speedMultiplier
         })
         spawned++
       }
@@ -456,8 +459,11 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
     if (p.finalApproach) {
       // Grid step size in px ≈ W/COLS. Convert to progress units using stored distance.
       const gridStepPx = W / COLS
-      // 3× grid speed — final approach should feel like a decisive lock-on, not a crawl
-      const inc = p.approachDist > 0 ? (p.speed * gridStepPx * 3) / p.approachDist : 1
+      const pSpeedMultiplier = p.speedMultiplier ?? 1.0
+      const inc =
+        p.approachDist > 0
+          ? (p.speed * config.approachSpeedMultiplier * pSpeedMultiplier * gridStepPx) / p.approachDist
+          : 1
       p.approachProgress = Math.min(1, p.approachProgress + inc)
 
       // Gather particles stop at sphere perimeter and start orbiting.
@@ -478,7 +484,7 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
       }
 
       // Non-gather particles collide at sphere circumference, not center
-      if (!p.gather && sphere && p.approachDist > 0) {
+      if (!p.gather && sphere && p.approachDist > 0 && config.forceCompleteAtSphereEdge) {
         const remainingDist = p.approachDist * (1 - p.approachProgress)
         if (remainingDist <= sphere.radius) p.approachProgress = 1
       }
@@ -493,26 +499,15 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
               state.onOriginComplete?.()
             }
           }
-          // Local ripple — radial, high amplitude so the mesh visibly distorts outward
-          // from the sphere center. Stays local (Gaussian envelope ~45px wide ring).
-          ripples.push({ cx: sphere.x, cy: sphere.y, startT: t, life: 1, amp: 55, mode: 'radial' })
-          if (!p.origin) {
-            particleEffects.push({
-              x: sphere.x,
-              y: sphere.y,
-              color: p.color,
+          // Shock wave through fabric — expanding ripple from sphere center
+          if (config.shockWaveOnArrival) {
+            closingPulses.push({
+              cx: sphere.x,
+              cy: sphere.y,
               startT: t,
-              type: 'join',
-              sphereRadius: sphere.radius
-            })
-            particleEffects.push({
-              x: sphere.x,
-              y: sphere.y,
-              color: p.color,
-              startT: t,
-              type: 'halo',
-              sphereRadius: sphere.radius,
-              origin: false
+              life: 1,
+              frontColors: [p.color, p.color, p.color],
+              intensity: 1.2
             })
           }
         }
@@ -520,7 +515,8 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
       return true
     }
 
-    p.progress += p.speed
+    const pSpeedMultiplier = p.speedMultiplier ?? 1.0
+    p.progress += p.speed * pSpeedMultiplier
     if (p.progress >= 1) {
       const prevR = p.r
       const prevC = p.c
@@ -538,7 +534,7 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
       if (sphere) {
         const vb = vertBasePos(p.r, p.c)
         const distToSphere = Math.hypot(vb.x - sphere.x, vb.y - sphere.y)
-        const triggerRadius = p.gather ? sphere.radius * 1.1 : p.origin ? sphere.radius * 1.2 : sphere.radius * 3
+        const triggerRadius = p.gather ? sphere.radius : p.origin ? sphere.radius : sphere.radius * 3
         if (distToSphere < triggerRadius) {
           p.finalApproach = true
           p.approachProgress = 0
@@ -699,11 +695,11 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
       const pny = pdy / pdist
 
       const age = t - cp.startT
-      // Three concentric wave fronts with different speeds — like rings on water
+      // Three concentric wave fronts with different speeds — like rings on water, slowed for gentle effect
       const fronts = [
-        { speed: 5, sigma: 90, amp: 28 },
-        { speed: 3, sigma: 120, amp: 18 },
-        { speed: 1.6, sigma: 150, amp: 12 }
+        { speed: 2, sigma: 90, amp: 28 },
+        { speed: 1.2, sigma: 120, amp: 18 },
+        { speed: 0.6, sigma: 150, amp: 12 }
       ]
       for (const f of fronts) {
         const waveFront = age * f.speed
@@ -987,7 +983,8 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
               gather: false,
               gatherOrbiting: false,
               gatherOrbitAngle: 0,
-              gatherOrbitRadius: 0
+              gatherOrbitRadius: 0,
+              speedMultiplier: birth.speedMultiplier ?? 1.0
             })
           }
         } else {
@@ -1030,7 +1027,8 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
               gather: birth.gather ?? false,
               gatherOrbiting: false,
               gatherOrbitAngle: 0,
-              gatherOrbitRadius: 0
+              gatherOrbitRadius: 0,
+              speedMultiplier: birth.speedMultiplier ?? 1.0
             })
           }
         }
@@ -1119,117 +1117,12 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
   }
   ctx.restore()
 
-  // ── Draw particle effects (crash explosions + sphere-join glows) ──────────
-  ctx.save()
-  particleEffects = particleEffects.filter((fx) => {
-    const duration = fx.type === 'crash' ? 22 : fx.type === 'halo' ? 70 : 40
-    const progress = (t - fx.startT) / duration
-    if (progress >= 1) return false
-    const ease = 1 - (1 - progress) ** 2 // ease-out
-
-    if (fx.type === 'halo') {
-      // Slow-blooming glow that extends well beyond the sphere edge — the outer
-      // portion is visible around the DOM sphere, creating an illumination aura.
-      // Peaks at ~30% progress then fades gently.
-      const sr = fx.sphereRadius ?? 48
-      const peakAlpha = Math.sin(progress * Math.PI) // 0→1→0 arc, peaks at midpoint
-      const outerR = sr * (1.2 + ease * 1.8) // grows from 1.2× to 3× sphere radius
-      const alphaScale = fx.origin ? 0.6 : 1.0
-      const grad = ctx.createRadialGradient(fx.x, fx.y, sr * 0.7, fx.x, fx.y, outerR)
-      grad.addColorStop(0, withAlpha(fx.color, peakAlpha * 0.45 * alphaScale))
-      grad.addColorStop(0.4, withAlpha(fx.color, peakAlpha * 0.25 * alphaScale))
-      grad.addColorStop(1, withAlpha(fx.color, 0))
-      ctx.globalAlpha = 1
-      ctx.fillStyle = grad
-      ctx.beginPath()
-      ctx.arc(fx.x, fx.y, outerR, 0, Math.PI * 2)
-      ctx.fill()
-      return true
-    }
-
-    const fxColor = fx.color
-    if (fx.type === 'crash') {
-      // Expanding ring burst
-      const radius = ease * 22
-      ctx.globalAlpha = (1 - progress) * 0.65
-      ctx.strokeStyle = fxColor
-      ctx.lineWidth = 1.5
-      ctx.beginPath()
-      ctx.arc(fx.x, fx.y, radius, 0, Math.PI * 2)
-      ctx.stroke()
-      // Inner flash
-      ctx.globalAlpha = (1 - progress) * 0.35
-      ctx.fillStyle = fxColor
-      ctx.beginPath()
-      ctx.arc(fx.x, fx.y, radius * 0.45, 0, Math.PI * 2)
-      ctx.fill()
-    } else {
-      const sr = fx.sphereRadius ?? 48
-      // Sun rays — expand outward then recede, like a solar flare burst.
-      // sin(progress × π) peaks at 50% then falls back to 0.
-      const rayPeak = Math.sin(progress * Math.PI)
-      const numRays = 10
-      const innerR = sr * 0.18
-      const rayLen = sr * 0.7 * rayPeak
-      ctx.lineWidth = 1.2
-      for (let i = 0; i < numRays; i++) {
-        const angle = (i / numRays) * Math.PI * 2
-        const x1 = fx.x + Math.cos(angle) * innerR
-        const y1 = fx.y + Math.sin(angle) * innerR
-        const x2 = fx.x + Math.cos(angle) * (innerR + rayLen)
-        const y2 = fx.y + Math.sin(angle) * (innerR + rayLen)
-        // Tip fades first, root lingers — gradient feel via two segments
-        const rayAlpha = rayPeak * (1 - progress * 0.6) * 0.75
-        ctx.globalAlpha = rayAlpha
-        ctx.strokeStyle = fxColor
-        ctx.beginPath()
-        ctx.moveTo(x1, y1)
-        ctx.lineTo(x2, y2)
-        ctx.stroke()
-        // Bright tip — agent color, slightly lighter but not white
-        ctx.globalAlpha = rayAlpha * 0.5
-        ctx.strokeStyle = fxColor
-        ctx.lineWidth = 0.7
-        ctx.beginPath()
-        ctx.moveTo((x1 + x2) / 2, (y1 + y2) / 2)
-        ctx.lineTo(x2, y2)
-        ctx.stroke()
-        ctx.lineWidth = 1.2
-      }
-      // Central flash — agent color, intense at start, gone by 40%
-      if (progress < 0.4) {
-        const flashFrac = 1 - progress / 0.4
-        const flashR = sr * 0.22 * flashFrac
-        const flashGrad = ctx.createRadialGradient(fx.x, fx.y, 0, fx.x, fx.y, flashR)
-        flashGrad.addColorStop(0, withAlpha(fx.color, flashFrac * 0.65))
-        flashGrad.addColorStop(0.5, withAlpha(fx.color, flashFrac * 0.35))
-        flashGrad.addColorStop(1, withAlpha(fx.color, 0))
-        ctx.globalAlpha = 1
-        ctx.fillStyle = flashGrad
-        ctx.beginPath()
-        ctx.arc(fx.x, fx.y, flashR, 0, Math.PI * 2)
-        ctx.fill()
-      }
-      // Slow outer ring — expands gently across the sphere, fades last
-      const ringR = sr * 0.1 + ease * sr * 1.1
-      ctx.globalAlpha = (1 - progress) * 0.35
-      ctx.strokeStyle = fxColor
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.arc(fx.x, fx.y, ringR, 0, Math.PI * 2)
-      ctx.stroke()
-    }
-
-    return true
-  })
-  ctx.restore()
-
   // ── Closing pulse glow rings ──────────────────────────────────────────────
-  // Three wave fronts expanding from center — colors from sphere palette.
+  // Three wave fronts expanding from center — colors from sphere palette, slowed for gentle effect.
   const PULSE_FRONTS = [
-    { speed: 5, sigma: 65 },
-    { speed: 3, sigma: 80 },
-    { speed: 1.6, sigma: 100 }
+    { speed: 2, sigma: 65 },
+    { speed: 1.2, sigma: 80 },
+    { speed: 0.6, sigma: 100 }
   ]
   const maxScreen = Math.sqrt(W * W + H * H)
 
@@ -1260,8 +1153,9 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
     ctx.restore()
   }
 
-  // Halo brightens near ring edge as fabric curves inward
-  if (settleProgress > 0.05) {
+  // Halo brightens near ring edge as fabric curves inward — only when a real ring is present.
+  // Without a ring, RING_R is a phantom fallback value and this would draw an unwanted glow circle.
+  if (rings.length > 0 && settleProgress > 0.05) {
     const g = ctx.createRadialGradient(CX, CY, RING_R * 0.7, CX, CY, RING_R * 1.4)
     g.addColorStop(0, fgAt(0))
     g.addColorStop(0.5, fgAt(0.04 * settleProgress))
@@ -1272,9 +1166,17 @@ function renderFabricBgCore(state: BgState, splitX?: number): void {
 }
 
 export function renderFabricBg(state: BgState): void {
-  renderFabricBgCore(state)
+  renderFabricBgCore(state, DEFAULT_FABRIC_CONFIG)
 }
 
 export function renderSplitFabricBg(state: BgState): void {
-  renderFabricBgCore(state, state.W / 2)
+  renderFabricBgCore(state, DEFAULT_FABRIC_CONFIG, state.W / 2)
+}
+
+export function createFabricRenderer(config: FabricConfig): (state: BgState) => void {
+  return (state: BgState) => renderFabricBgCore(state, config)
+}
+
+export function createSplitFabricRenderer(config: FabricConfig): (state: BgState) => void {
+  return (state: BgState) => renderFabricBgCore(state, config, state.W / 2)
 }

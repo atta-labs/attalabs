@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 
 // Must match card positions in page.tsx
 const CARD_Y_FRACTION = 0.86 // cards at 86vh
-const LEFT_CARD_X_FRACTION = 0.3
-const RIGHT_CARD_X_FRACTION = 0.7
+const LEFT_CARD_X_FRACTION = 0.4
+const RIGHT_CARD_X_FRACTION = 0.6
 const SPLIT_Y_FRACTION = 0.76 // where the line branches
 const BRAIN_OFFSET_PX = 100 // brain SVG bottom (viewBox y goes to 130, visual content to ~94)
 
@@ -29,9 +29,10 @@ export function BrainCardConnector() {
   const lx = w * LEFT_CARD_X_FRACTION
   const rx = w * RIGHT_CARD_X_FRACTION
 
+  // Right-angle grid paths: vertical stem → horizontal branch → vertical drop to card
   const downPath = `M${bx},${by} L${bx},${splitY}`
-  const leftPath = `M${bx},${splitY} L${lx},${cardY}`
-  const rightPath = `M${bx},${splitY} L${rx},${cardY}`
+  const leftPath = `M${bx},${splitY} L${lx},${splitY} L${lx},${cardY}`
+  const rightPath = `M${bx},${splitY} L${rx},${splitY} L${rx},${cardY}`
 
   return (
     <>
@@ -118,8 +119,10 @@ export function BrainCardConnector() {
           style={{ animation: 'wire-flow 3.1s linear infinite 1.2s' }}
         />
 
-        {/* ── Junction dot at split ── */}
+        {/* ── Junction dots: T-split + two bend corners ── */}
         <circle cx={bx} cy={splitY} r={2.5} fill={WIRE_COLOR} fillOpacity={0.5} />
+        <circle cx={lx} cy={splitY} r={2} fill={WIRE_COLOR} fillOpacity={0.4} />
+        <circle cx={rx} cy={splitY} r={2} fill={WIRE_COLOR} fillOpacity={0.4} />
       </svg>
     </>
   )

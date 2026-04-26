@@ -153,8 +153,8 @@ export function useAIACanvas(
     []
   )
 
-  const fireSphereOrigin = useCallback((sphereId: string, count?: number, color?: string) => {
-    recentEventsRef.current.push({ type: 'sphere-origin', sphereId, count, color })
+  const fireSphereOrigin = useCallback((sphereId: string, count?: number, color?: string, speedMultiplier?: number) => {
+    recentEventsRef.current.push({ type: 'sphere-origin', sphereId, count, color, speedMultiplier })
   }, [])
 
   const fireSphereGather = useCallback((sphereId: string, count: number, color?: string) => {

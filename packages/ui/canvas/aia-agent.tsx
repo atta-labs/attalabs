@@ -6,14 +6,11 @@ import { ModelIcon as LobeModelIcon } from '@lobehub/icons'
 import type { ReactNode } from 'react'
 import type { SphereState } from './aia-context'
 
-// Face inset per sphere size — how much to shrink the face relative to the sphere diameter.
-const FACE_INSET: Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', string> = {
-  xs: '6%',
-  sm: '4%',
-  md: '2%',
-  lg: '1%',
-  xl: '0%'
-}
+// 8% padding on all sides keeps the face inside the circle clip.
+// The face SVGs are portrait with ~23% empty space at the bottom of their viewBox,
+// so translateY(8%) shifts the rendered content down to visually center it.
+const FACE_PADDING = '8%'
+const FACE_TRANSLATE_Y = '8%'
 
 // Thinking text font size per sphere size — proportional to diameter.
 const THINKING_TEXT_PX: Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', number> = {
@@ -77,7 +74,6 @@ export function AIAgent({
   matrixOpacity = 0.5,
   particleCount = 150,
   solidBg,
-  bgOpacity,
   visible = true,
   label,
   labelPosition,
@@ -90,8 +86,7 @@ export function AIAgent({
   model,
   modelLabel
 }: AIAgentProps) {
-  const faceInset =
-    typeof size === 'string' ? FACE_INSET[size] : `${Math.round(Math.max(4, Math.min(20, 20 - size / 10)))}%`
+  const faceInset = FACE_PADDING
   const thinkingFontPx =
     typeof size === 'string' ? THINKING_TEXT_PX[size] : Math.round(Math.max(4, Math.min(10, size / 14)))
 
@@ -114,7 +109,6 @@ export function AIAgent({
       matrixOpacity={matrixOpacity}
       particleCount={particleCount}
       solidBg={solidBg}
-      bgOpacity={bgOpacity}
       visible={visible}
       label={noLabel ? undefined : label}
       onClick={onClick}
@@ -124,8 +118,8 @@ export function AIAgent({
     >
       {face && (
         <div
-          className='absolute pointer-events-none z-0'
-          style={{ inset: faceInset, top: `calc(${faceInset} + 28%)`, opacity: faceOpacity, color }}
+          className='absolute inset-0 flex items-center justify-center pointer-events-none z-0'
+          style={{ padding: faceInset, transform: `translateY(${FACE_TRANSLATE_Y})`, opacity: faceOpacity, color }}
         >
           {face}
         </div>

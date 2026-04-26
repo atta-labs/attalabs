@@ -1,5 +1,5 @@
 import { cmsClient, createProductClient, getAttaBranding, getVadaBranding, getVitakkaBranding } from '@atta/cms'
-import { HomeHero } from './components/HomeHero'
+import { HomeHero } from './components/home/HomeHero'
 import { SectionsWithCanvas } from './components/SectionsWithCanvas'
 
 export default async function Home() {

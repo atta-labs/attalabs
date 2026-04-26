@@ -6,6 +6,7 @@ import { type ReactNode, useRef } from 'react'
 import { useHomeCanvas } from './useHomeCanvas'
 import { useSphereAbsorb } from './useSphereAbsorb'
 import { useUserPreferences } from '@/lib/user-preferences-context'
+import { renderAutonomousFabric } from './fabric-autonomous'
 
 interface HomeCanvasProps {
   render: (state: { animationStarted: boolean; animationComplete: boolean }) => ReactNode
@@ -101,7 +102,7 @@ export function HomeCanvas({ render }: HomeCanvasProps) {
       {/* Canvas wrapper always visible — fabric persists as background when ring fades */}
       <div className='pointer-events-none fixed inset-0 z-0'>
         <AIACanvas
-          bg='fabric'
+          bg={renderAutonomousFabric}
           wanderDuration={30}
           alwaysRenderSpheres
           autoTriggerGravity={false}

@@ -1,6 +1,13 @@
 // packages/ui/canvas/bg/index.ts
 export type { BgState, BgEvent, BgRenderer, BgVariant } from './types'
-export { renderFabricBg, renderSplitFabricBg, resetFabricState } from './fabric'
+export type { FabricConfig } from './fabric'
+export {
+  renderFabricBg,
+  renderSplitFabricBg,
+  resetFabricState,
+  createFabricRenderer,
+  createSplitFabricRenderer
+} from './fabric'
 
 import type { BgRenderer, BgVariant } from './types'
 import { renderFabricBg, resetFabricState } from './fabric'
