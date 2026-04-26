@@ -15,6 +15,8 @@ export interface DeliberateInput {
 
 export interface DeliberateOutput {
   content: string
+  /** Parsed structured output from the synthesis agent. Null when the spec has no output_schema (e.g. a0-baseline, brokered). */
+  structured: unknown | null
   session_id: string
   session_url: string
   terminal_state: string
@@ -56,6 +58,7 @@ export async function runDeliberate(input: DeliberateInput, apiKey: string): Pro
 
   return {
     content: conclusion.content,
+    structured: conclusion.structured ?? null,
     session_id: sessionId,
     session_url: `https://vada.ai/s/${sessionId}`,
     terminal_state: conclusion.terminalState,

@@ -551,6 +551,32 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 ---
 
+## D-026: Consumers receive both structured and rendered synthesis output
+
+**Date:** April 26, 2026
+**Status:** Active
+**Area:** MCP tool API, web app SSE, database persistence
+
+**Decision summary:** When a Vāda spec declares synthesis with `output_format: structured`, both consumers (MCP `vada__deliberate`, web app SSE/database) receive both the rendered text content and the parsed JSON structured field. The consumer chooses how to use each.
+
+**Alternatives considered:**
+- Per-YAML response envelope declaration controlling what gets returned — adds configuration burden to YAML authors for no gain; consumer can already ignore fields it doesn't need
+- Return only the structured form when available — rendered text is needed for non-machine readers and as a fallback
+- Re-synthesize at the consumer — discards engine work, produces inconsistency between consumers
+- Caller Claude synthesizes from transcript (original brokered model) — works for brokered, but deliberation specs already produce synthesis as a first-class engine output
+
+**Rationale:** The engine produces both fields naturally as part of the existing synthesis pipeline (AgentOutput.content for text, AgentOutput.structured for parsed JSON). The gap was solely at the consumer boundary where both fields were dropped. Surfacing both lets each consumer choose without adding configuration burden to YAML authors. Caller Claude (or any other consumer) has more context about how to present output than the engine does.
+
+**Consequences:**
+- Existing callers reading only `content` continue to work — `structured` is an additive field
+- New callers can build on the structured form without parsing rendered text
+- The web app's deliberation viewer becomes able to render structured fields with proper UI (follow-up work; Phase 8.5 scope)
+- For specs without output_schema (a0-baseline, brokered), `structured` is null; consumers must handle this case
+- Resolves OQ-A (caller decides per-call how to augment) and OQ-B (per-YAML choice; engine surfaces both text and structured)
+- Schema validation enforces: if synthesis agent has `output_format: structured`, it must have `output_schema`; declaring `output_schema` without `output_format: structured` is rejected
+
+---
+
 ## How to add an entry
 
 When adding a new decision:
