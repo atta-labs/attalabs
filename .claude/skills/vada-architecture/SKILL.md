@@ -35,8 +35,8 @@ USER CHAT CLIENT            (Claude.ai, Cursor — external)
 @atta/adapter-langgraph     CAP-1     → see skill: atta-adapter-langgraph
   (includes cognitive router nodes)
         ↓ per-turn dispatch
-@vada/agents + YAML specs   MOAT-B    → see skill: atta-teams
-  (agent configs, deliberation YAML files in apps/vada-ai/yamls/)
+YAML specs + agent visuals  MOAT-B    → see skill: atta-teams
+  (deliberation YAML files in apps/vada-ai/yamls/; agent UI types in web/src/components/agents/visuals/)
         ↓ agent config
 PROVIDER APIs               (Anthropic primary; OpenAI/Gemini future)
 
@@ -66,16 +66,25 @@ Use this framework when labeling new work. Do NOT call something a moat unless i
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| 3a.1 | `@vada/teams` scaffolding + Crucible migration | ✅ committed |
-| 3a.2 | A0/A1 baselines | ✅ committed |
-| 3a.3 | Tools + FactChecker + parallel audit | ✅ committed |
-| 3a.4 | Cognitive router nodes in adapter | ✅ committed |
-| 3a.5 | Classifier tuning (role-based bias) | ✅ committed |
-| **3b.1** | `@vada/mcp-server` + `vada__consult` | ✅ committed |
-| 3b.2 | `vada__deliberate` (Autonomous mode) | queued |
-| 3b.3 | `vada__list_teams` + `vada__get_session` | queued |
-| 3c | vada.ai dashboard (MOAT-A surface) | queued |
-| 6 | One verticalized team + 100+ corpus | required pre-public-launch |
+| 1 | LangGraph foundation; Mastra deleted | ✅ complete |
+| 2 | Package restructure (`@atta/engine`, `@vada/mcp-server`) | ✅ complete |
+| 2.5 | Documentation hygiene | ✅ complete |
+| 4 | Brokered through engine (`vada__consult`) | ✅ complete |
+| 5 | Brokered specs update | ✅ complete |
+| 6 | Brokered V1 polish (DB, Domain Expert, benchmark infra) | ✅ complete |
+| 6.5 | Benchmark infrastructure | ✅ complete |
+| 6.7 | Reviewer prompt audit + rewrite; benchmark architecture flaw found | ✅ complete |
+| 7.1 | YAML schema investigation | ✅ complete |
+| 7.2 | YAML refactor (Phase A + B); TypeScript deleted | ✅ complete |
+| 7.2.1 | YAML catalog loader extracted into `@atta/engine` | ✅ complete |
+| 7.3 | Hardcoded fallbacks eliminated; -v1 suffixes dropped; MCP registry made dynamic | ✅ complete |
+| 8 | Synthesis as first-class engine component | queued |
+| 9 | Real-case Brokered YAML | queued |
+| 10 | Benchmark architecture redesign | queued |
+| 11 | YAML cost calculator UI | queued |
+| 12 | Validation experiments + cost-quality frontier | queued |
+| MOAT-A | vada.ai dashboard (full transcript + cost attribution) | required pre-launch |
+| MOAT-B | One verticalized team + 100+ validated corpus | required pre-launch |
 
 ---
 

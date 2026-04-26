@@ -378,7 +378,7 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 ## D-018: YAMLs are immutable once benchmarked; iterate by forking
 
 **Date:** April 25, 2026 (Phase 7.2 architectural recognition)
-**Status:** Active
+**Status:** Superseded by D-025 (naming convention only; core immutability intent retained)
 
 **Decision:** Once a YAML file has accumulated benchmark run data, it is treated as immutable. Iteration on the configuration happens by forking — copying the file to a new file with a new `id`, modifying the copy, and benchmarking the new version. Both versions remain in the repository.
 
@@ -396,6 +396,8 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 - A `benchmarked: true` flag (in YAML metadata) marks files that should not be modified
 - The catalog grows over time; old YAMLs are historical records, not deletable
 - "Versioning" is data, not code
+
+**Superseded by D-025:** The `-v1` naming convention was dropped in Phase 7.3. The core immutability principle (don't modify benchmarked YAMLs) remains active. See D-025.
 
 ---
 
@@ -440,6 +442,112 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 - `VADA_YAMLS_DIR` env var available for production path override (evaluated at call time, not module init)
 - Verify scripts that computed their own paths are now using the shared function — script verification and runtime verification exercise the same code path
 - D-017 (no privileged path between web app and MCP) is reinforced: the catalog loader is the concrete code artifact that implements the principle
+
+---
+
+## D-021: Agent-metadata package collapsed into web app visuals
+
+**Date:** April 26, 2026
+**Status:** Active
+**Area:** Package architecture
+
+**Decision summary:** The `@vada/agent-metadata` package (display-only metadata for agent visual rendering) was deleted and its types moved directly into `apps/vada-ai/web/src/components/agents/visuals/`.
+
+**Alternatives considered:**
+- Keep as a separate package — over-modular for display-only types with a single consumer
+- Merge into `@atta/ui` — wrong home; Vāda-specific display config doesn't belong in a shared UI library
+
+**Rationale:** The types had one consumer: the web app's rendering layer. A standalone package for a handful of type definitions added workspace overhead without adding abstraction value.
+
+**Consequences:**
+- `@vada/agents` / `@vada/agent-metadata` workspace package deleted
+- Display types colocated with the component that uses them
+- `apps/vada-ai/web/src/components/agents/visuals/` is the new canonical location
+
+---
+
+## D-022: MCP spec-registry rewritten from static SPECS object to dynamic discovery
+
+**Date:** April 26, 2026
+**Status:** Active
+**Area:** MCP server — spec loading
+
+**Decision summary:** `apps/vada-ai/mcp-server/src/spec-registry.ts` no longer maintains a static `SPECS` record. `listPublicSpecs()` delegates to `@atta/engine`'s `listPublicSpecs()` (which uses `readdirSync`). `lookupSpec(id)` calls `loadYamlFromCatalog(id)` on demand. ALIASES remain for short-name UX.
+
+**Alternatives considered:**
+- Keep static SPECS (existing behavior) — drift-prone; adding a YAML requires a code change
+- Move ALIASES into YAML front-matter — rejected; aliases are MCP UX configuration, not authoring concern
+
+**Rationale:** The engine already used `readdirSync` for auto-discovery. The static SPECS record in the MCP server was a second source of truth that would inevitably drift. Any new YAML required both a file creation and a code change.
+
+**Consequences:**
+- `validateAllSpecs()` at startup catches malformed YAMLs (fail-fast)
+- ALIASES (`a0`, `a1`) are the only explicit registry; all other IDs are discovered from the filesystem
+- MCP tool descriptions are generated from the actual live catalog
+
+---
+
+## D-023: Hardcoded spec fallbacks removed — missing specId is an explicit error
+
+**Date:** April 26, 2026
+**Status:** Active
+**Area:** Web app — deliberation routing
+
+**Decision summary:** Three callsites previously fell back to `'crucible-v1'` when `specId` was absent. All now fail explicitly: `useDeliberateForm` throws if no specs are available at initialization; `/deliberation/start` returns 400 if `specId` is not provided; `/workflow/run` throws if `session.specId` is null.
+
+**Alternatives considered:**
+- Keep defaults for backward compatibility with old sessions (handled by Drizzle migration instead)
+- Use the first spec alphabetically as a default (still a hidden assumption)
+
+**Rationale:** Hardcoded fallbacks mask misconfiguration. A missing specId means something went wrong earlier in the flow. Explicit failures surface bugs at the point of failure, not downstream.
+
+**Consequences:**
+- Pre-migration sessions with null `specId` would error on resume; addressed by D-024 migration
+- No implicit "default team" concept in the routing layer
+
+---
+
+## D-024: Drizzle data migration strips -v1 from sessions.spec_id
+
+**Date:** April 26, 2026
+**Status:** Active
+**Area:** Database — sessions table
+
+**Decision summary:** A data-only Drizzle migration (`0015_spec_id_backfill.sql`) strips `-v1` suffixes from existing `sessions.spec_id` values: `UPDATE "sessions" SET "spec_id" = REPLACE("spec_id", '-v1', '') WHERE "spec_id" LIKE '%-v1'`.
+
+**Alternatives considered:**
+- Leave old sessions with -v1 spec IDs (they would 404 on resume after YAML rename)
+- Lazy migration on first access (inconsistent state during rollout window)
+
+**Rationale:** Immediate backfill is deterministic and safe. All `-v1` IDs map cleanly to the new unsuffixed IDs. No ambiguity; migration is idempotent.
+
+**Consequences:**
+- Old sessions resume correctly with new YAML filenames
+- One-time migration; idempotent on re-run
+
+---
+
+## D-025: Catalog versioning dropped; immutability principle scoped to benchmarked YAMLs
+
+**Date:** April 26, 2026
+**Status:** Active (supersedes D-018's naming convention; retains its core immutability intent)
+**Area:** YAML catalog conventions
+
+**Decision summary:** The `-v1` / `-vN` suffix naming convention is dropped. YAML files are named semantically without version suffixes (e.g., `crucible.yaml`, not `crucible-v1.yaml`). Iteration by forking remains correct for benchmarked YAMLs, but the forked name is chosen by the author and need not use numeric suffixes.
+
+**Alternatives considered:**
+- Keep `-v1` suffix as default starter name — adds churn at fork time and implies a multi-version history that doesn't exist yet
+- Use date-based names (e.g., `crucible-2026-04.yaml`) — harder to read in tool descriptions
+- Use git tags for versioning — no filename artifact; consumers need git access to discover history
+
+**Rationale:** Phase 7.3 revealed the naming convention was speculative. All 7 YAMLs carried `-v1` suffixes with no corresponding `-v2` in sight. The convention added visual noise without adding value. Adding a version suffix before an actual fork exists implies a comparison that doesn't exist.
+
+**Consequences:**
+- All 7 YAML files renamed to drop `-v1` (e.g., `crucible.yaml`, `sparring.yaml`)
+- YAML `id` fields updated to match filenames
+- Drizzle migration backfills `sessions.spec_id` (D-024)
+- `vada-yaml-immutability-principle.md` naming section superseded; core principle (don't modify benchmarked YAMLs) remains
+- Recognition 5 in `vada-product-recognitions.md` notes this update
 
 ---
 

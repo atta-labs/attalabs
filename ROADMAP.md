@@ -112,6 +112,58 @@ Replace all TypeScript deliberation flow definitions with YAML files; make the e
 
 ---
 
+## Phase 7.2.1 — YAML Catalog Loader Extraction ✅ COMPLETE
+
+**Date:** April 26, 2026
+
+Extracted `loadYamlFromCatalog(id)` into `@atta/engine/src/catalog-loader.ts` as the single shared YAML-loading entry point. Fixed two broken runtime paths (web route using `process.cwd()`, MCP registry using wrong `../../../yamls` depth). Path anchored to `import.meta.url` — immune to dev server cwd changes.
+
+---
+
+## Phase 7.3 — YAML Catalog Cleanup ✅ COMPLETE
+
+**Date:** April 26, 2026
+
+- Eliminated three hardcoded `crucible-v1` fallbacks from web app (form init, route validation, session resume)
+- Rewrote MCP `spec-registry.ts` from static SPECS object to dynamic `readdirSync`-based discovery; `validateAllSpecs()` added
+- Dropped `-v1` suffixes from all 7 YAML filenames and `id` fields (D-025)
+- Simplified ALIASES map to `a0`, `a1` only
+- Drizzle data migration (`0015_spec_id_backfill.sql`) strips `-v1` from existing `sessions.spec_id`
+- Collapsed `@vada/agent-metadata` package into `web/src/components/agents/visuals/`; deleted the package
+- Added `customVars` Handlebars rendering for `system_prompt` fields
+
+---
+
+## Phase 8 — Synthesis as First-Class Component
+
+Every deliberation YAML gains a mandatory synthesizer configuration. Synthesizer runs as an engine-level agent and returns structured output (convergence, divergence, gaps, proposed solution). Benchmark redesign (Phase 10) depends on this.
+
+---
+
+## Phase 9 — Real-Case Brokered YAML
+
+Define `brokered-real-case.yaml`: multi-round, role-free, synthesis-between-rounds, Principal-terminated. Requires engine extension for Principal-terminated loops (OQ-C). Separate from the parked `brokered-trio.yaml`.
+
+---
+
+## Phase 10 — Benchmark Architecture Redesign
+
+Current benchmark judges raw transcripts (reviewer outputs). Phase 10 redesigns it to judge synthesizer output against single-shot baselines. Depends on Phase 8 (synthesizer must exist to judge it).
+
+---
+
+## Phase 11 — YAML Cost Calculator UI
+
+Users paste/select a YAML and see estimated cost to run it. Pairs with benchmark history for cost-quality frontier analysis. Concept: `apps/vada-ai/specs/vada-calculator-concept.md`.
+
+---
+
+## Phase 12 — Validation Experiments
+
+Stratified test corpus. Run each YAML against corpus. Build benchmark data. Identify cost-quality frontier. Test roles-vs-no-roles, single-round vs multi-round empirically. Determine which YAMLs ship as products vs research.
+
+---
+
 ## Phase 7 — Pre-Launch Requirements
 
 Required before public launch. Order TBD.

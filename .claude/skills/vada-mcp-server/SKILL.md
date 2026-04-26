@@ -7,7 +7,7 @@ description: Vāda MCP server — dual-mode Claude integration and deliberation 
 
 ## Context
 
-The MCP server exposes Vāda's deliberation capabilities as MCP tools. Any MCP-compatible client (Claude.ai, Claude Desktop, Cursor, etc.) can invoke these tools to run deliberations and consultations. The server loads all YAML specs at startup and holds them in memory for the server lifetime.
+The MCP server exposes Vāda's deliberation capabilities as MCP tools. Any MCP-compatible client (Claude.ai, Claude Desktop, Cursor, etc.) can invoke these tools to run deliberations and consultations. YAML specs are auto-discovered from the catalog directory (`apps/vada-ai/yamls/`) using `readdirSync`; `validateAllSpecs()` runs at startup to fail fast on malformed YAMLs.
 
 Location: `apps/vada-ai/mcp-server/src/`
 
@@ -18,7 +18,7 @@ Location: `apps/vada-ai/mcp-server/src/`
 ```
 apps/vada-ai/mcp-server/src/
 ├── server.ts               # MCP server setup; registers all tools
-├── spec-registry.ts        # Loads all 7 YAMLs at startup; lookupSpec / listPublicSpecs
+├── spec-registry.ts        # Dynamic YAML discovery; lookupSpec / listPublicSpecs / validateAllSpecs
 ├── session-logger.ts       # Writes session logs to Postgres via @atta/db
 └── tools/
     ├── consult.ts          # vada__consult — Brokered mode; builds inline DeliberationSpec
@@ -54,30 +54,29 @@ Caller provides a question and a team name. The server looks up the named spec a
 
 ## Spec Registry
 
-`spec-registry.ts` is the authoritative map of all public deliberation specs.
+`spec-registry.ts` provides dynamic access to the YAML catalog. It delegates to `@atta/engine` for discovery — adding a YAML file to `apps/vada-ai/yamls/` is sufficient for it to be accessible.
 
 ```ts
 import { lookupSpec, listPublicSpecs } from './spec-registry'
 
-// Lookup by full spec ID
-const spec = lookupSpec('sparring-v1')
+// Lookup by full spec ID (auto-discovered from filesystem)
+const spec = lookupSpec('sparring')
+const spec = lookupSpec('crucible')
+const spec = lookupSpec('war-room')
 
-// Lookup by short alias
-const spec = lookupSpec('sparring')      // ALIASES['sparring'] → 'sparring-v1'
-const spec = lookupSpec('crucible')      // → 'crucible-v1'
-const spec = lookupSpec('war-room')      // → 'war-room-v1'
-const spec = lookupSpec('a0')            // → 'a0-baseline-v1'
-const spec = lookupSpec('a1')            // → 'a1-baseline-v1'
+// Lookup by short alias (explicit ALIASES map: a0, a1 only)
+const spec = lookupSpec('a0')            // ALIASES['a0'] → 'a0-baseline'
+const spec = lookupSpec('a1')            // ALIASES['a1'] → 'a1-baseline'
 
 // All non-experimental specs (for tool description generation)
 const specs = listPublicSpecs()
 ```
 
-All 7 YAMLs are loaded at startup. A malformed YAML causes a startup crash — preferable to a runtime error mid-session.
+`validateAllSpecs()` runs at startup. A malformed YAML causes a startup crash — preferable to a runtime error mid-session.
 
-SPECS loaded: `crucible-v1`, `sparring-v1`, `war-room-v1`, `a0-baseline-v1`, `a1-baseline-v1`, `brokered-trio-v1`, `brokered-quartet-v1`.
+Current catalog: `crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline`, `brokered-trio`, `brokered-quartet`.
 
-Note: `brokered-trio-v1` and `brokered-quartet-v1` are loaded but have no short-name alias — they are not exposed as named options in `vada__deliberate`. They exist for future use.
+`brokered-trio` and `brokered-quartet` have no short-name alias — they are accessible by full id but not exposed as named options in `vada__deliberate`.
 
 ---
 
@@ -89,18 +88,16 @@ Note: `brokered-trio-v1` and `brokered-quartet-v1` are loaded but have no short-
 
 ## Adding a New Public Spec
 
-1. Create `apps/vada-ai/yamls/<name>-v1.yaml`
-2. Add to the `SPECS` record in `spec-registry.ts`:
+1. Create `apps/vada-ai/yamls/<name>.yaml` (no `-v1` suffix — see D-025)
+2. The spec is **auto-discovered** — no changes to `spec-registry.ts` needed
+3. If it should be addressable by a short alias from `vada__deliberate`, add to the `ALIASES` map:
    ```ts
-   'my-spec-v1': loadYaml('my-spec-v1.yaml'),
+   'my-alias': 'my-spec',
    ```
-3. If it should be addressable by a short name from `vada__deliberate`, add an ALIAS:
+4. Write a verify script in `apps/vada-ai/web/scripts/verify-<name>-port.ts` following `verify-sparring-port.ts`:
    ```ts
-   'my-spec': 'my-spec-v1',
-   ```
-4. Write a verify script in `apps/vada-ai/web/scripts/verify-<name>-port.ts` following the `verify-sparring-port.ts` pattern:
-   ```ts
-   const spec = loadSpec(readFileSync(join(process.cwd(), '../yamls/my-spec-v1.yaml'), 'utf-8'))
+   import { loadYamlFromCatalog, compileSpec } from '@atta/engine'
+   const spec = loadYamlFromCatalog('my-spec')
    const plan = compileSpec(spec, question, model)
    const conclusion = await adapter.execute({ plan, customVars: {} })
    ```
@@ -123,7 +120,7 @@ Note: `brokered-trio-v1` and `brokered-quartet-v1` are loaded but have no short-
 - ❌ Importing from `@vada/teams` — that package is deleted
 - ❌ Calling `compile()` directly — use `compileSpec(spec, question, model)` from `@atta/engine`
 - ❌ Modifying YAML files to add tool names without verifying the tool exists in the adapter registry
-- ❌ Forgetting to add to `SPECS` in `spec-registry.ts` — new YAML files are not auto-discovered
+- ❌ Manually adding to a SPECS object in `spec-registry.ts` — the registry is now dynamic; just create the YAML file
 - ❌ Logging session before the deliberation completes — always log after `adapter.execute()` returns
 
 ---

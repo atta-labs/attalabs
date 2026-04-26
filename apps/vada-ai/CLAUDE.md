@@ -20,8 +20,9 @@ Vada AI is a multi-agent deliberation engine. Multiple LLM agents debate a quest
 
 | Package | Path | Purpose |
 |---------|------|---------|
-| `@vada/agents` | `agents/` | Agent definitions with display metadata (teams are now YAML) |
 | `@vada/mcp-server` | `mcp-server/` | MCP server — `vada__consult` + `vada__deliberate` tools |
+
+Agent display metadata (`VadaAgentVisual` type + per-agent configs) lives in `web/src/components/agents/visuals/` (web-only, no separate package). The `@vada/agents` and `@vada/agent-metadata` packages are **deleted** — do not reference them.
 
 ---
 
@@ -89,4 +90,4 @@ Historical specs — superseded. See [specs/legacy/README.md](specs/legacy/READM
 - [.claude/skills/vada-architecture/SKILL.md](../../.claude/skills/vada-architecture/SKILL.md) — Architecture master reference
 - [.claude/skills/vada-brokered/SKILL.md](../../.claude/skills/vada-brokered/SKILL.md) — Brokered mode in depth
 - [.claude/skills/vada-yaml-authoring/SKILL.md](../../.claude/skills/vada-yaml-authoring/SKILL.md) — Authoring YAML deliberation specs
-- [.claude/skills/atta-teams/SKILL.md](../../.claude/skills/atta-teams/SKILL.md) — Agent definitions only (teams are now YAML)
+- [.claude/skills/atta-teams/SKILL.md](../../.claude/skills/atta-teams/SKILL.md) — YAML specs + agent visuals (teams and agents are all YAML; display types in web/src/components/agents/visuals/)

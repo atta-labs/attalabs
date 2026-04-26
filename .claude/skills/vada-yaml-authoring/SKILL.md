@@ -11,7 +11,7 @@ A YAML spec is a complete, self-contained deliberation configuration. It defines
 
 YAML specs replaced the deleted `@vada/teams` TypeScript package. All deliberation logic that was previously in TypeScript Team/Workflow objects now lives in YAML.
 
-File location: `apps/vada-ai/yamls/<spec-id>-v1.yaml`
+File location: `apps/vada-ai/yamls/<spec-id>.yaml` (no `-v1` suffix — see D-025)
 
 Full schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`
 
@@ -35,11 +35,11 @@ Use for: Brokered Trio, Brokered Quartet, new advisory consultation variants.
 
 ## Quick Recipe: New Rounds-based Spec
 
-Copy from `sparring-v1.yaml` and adapt.
+Copy from `sparring.yaml` and adapt.
 
 ```yaml
 schema_version: "1.0"
-id: my-spec-v1                           # unique slug
+id: my-spec                              # unique slug — no -v1 suffix (see D-025)
 display_name: My Spec
 description: One-sentence description.
 
@@ -138,11 +138,11 @@ flow:
 
 ## Quick Recipe: New Reviewers-based Spec
 
-Copy from `brokered-trio-v1.yaml` and adapt.
+Copy from `brokered-trio.yaml` and adapt.
 
 ```yaml
 schema_version: "1.0"
-id: my-brokered-spec-v1
+id: my-brokered-spec
 display_name: My Brokered Spec
 description: One-sentence description.
 
@@ -179,17 +179,17 @@ response:
 
 ## Registering in spec-registry.ts
 
-After creating the YAML, add it to `apps/vada-ai/mcp-server/src/spec-registry.ts`:
+New YAMLs are **auto-discovered** — `spec-registry.ts` delegates to `@atta/engine`'s `listPublicSpecs()` (which uses `readdirSync`). Just creating the YAML file is enough for it to appear in `listPublicSpecs()`.
+
+To make a spec addressable by a short alias from `vada__deliberate`, add it to the `ALIASES` map in `spec-registry.ts`:
 
 ```ts
-// In SPECS record:
-'my-spec-v1': loadYaml('my-spec-v1.yaml'),
-
-// Optionally add a short-name ALIAS (required for vada__deliberate exposure):
-'my-spec': 'my-spec-v1',
+// Only add if you need a short-name (e.g. 'a0' → 'a0-baseline')
+// Most specs are addressed by their full id and need no alias
+'my-alias': 'my-spec',
 ```
 
-The server loads all specs at startup. A malformed YAML crashes the server on start — this is intentional.
+`validateAllSpecs()` runs at startup — a malformed YAML crashes the server on start. This is intentional (fail-fast).
 
 ---
 
@@ -245,7 +245,7 @@ Only omit `classifier` entirely for agents with no tools declared. For agents wi
 ## Anti-patterns
 
 - ❌ Defining team logic in TypeScript — it belongs in YAML (the `@vada/teams` package is deleted)
-- ❌ Forgetting to add to `SPECS` in `spec-registry.ts` — new YAML files are not auto-discovered
+- ❌ Adding a YAML to `SPECS` in `spec-registry.ts` — the registry is now dynamic; just create the file
 - ❌ Agent name mismatch between `flow` references and agent `name` field — exact case-sensitive match required
 - ❌ Setting `classifier.mode: always_tools` for an audit agent — defeats the audit mechanism
 - ❌ Omitting `classifier` on a tool-enabled agent — be explicit

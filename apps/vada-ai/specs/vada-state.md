@@ -1,10 +1,12 @@
 ## Most recent session — April 26, 2026
 
-Phase 7.2.1 (YAML catalog loader extraction) completed. Key changes:
-- Extracted `loadYamlFromCatalog(id)` into `@atta/engine/src/catalog-loader.ts`
-- Fixed two broken runtime YAML-loading paths (web route 500ing in dev, MCP spec-registry resolving to wrong directory)
-- Migrated all 4 verify scripts to the shared loader
-- Anchored path resolution to `import.meta.url` — immune to dev server cwd changes
+Phase 7.3 (complete YAML migration + catalog cleanup) completed. Key changes:
+- Eliminated three hardcoded `crucible-v1` fallbacks across web app routes and form logic
+- Rewrote MCP `spec-registry.ts` from static `SPECS` object to dynamic `readdirSync`-based discovery; added `validateAllSpecs()` startup check
+- Dropped `-v1` suffixes from all 7 YAML filenames and their `id` fields; simplified ALIASES map to `a0`, `a1` only
+- Wrote Drizzle data migration (`0015_spec_id_backfill.sql`) to strip `-v1` from existing `sessions.spec_id` values
+- Collapsed `@vada/agent-metadata` package into `apps/vada-ai/web/src/components/agents/visuals/`; deleted the package entirely
+- Implemented `customVars` Handlebars rendering in agent `system_prompt` fields
 
 Phase 8 (synthesizer integration) is next when ready.
 
@@ -12,7 +14,7 @@ Phase 8 (synthesizer integration) is next when ready.
 # Vāda — Current State
 
 **Last updated:** April 26, 2026
-**Last milestone:** Phase 7.2.1 (YAML catalog loader extracted)
+**Last milestone:** Phase 7.3 (YAML catalog cleanup; hardcoded fallbacks eliminated; -v1 suffixes dropped)
 **Next milestone:** Phase 8 (synthesizer integration)
 
 ---
@@ -63,6 +65,9 @@ Sonnet investigated current code, identified 30+ branches that needed to die, pr
 ### Phase 7.2.1 — YAML catalog loader extraction
 Extracted `loadYamlFromCatalog(id)` from ad-hoc per-caller implementations into `@atta/engine` (`packages/engine/src/catalog-loader.ts`). Fixed two broken runtime YAML-loading paths: the web route was using `process.cwd()` (which resolves to `apps/vada-ai/web/` in dev) and the MCP spec-registry was using the wrong `../../../yamls` depth. Path resolution anchored to `import.meta.url` — immune to dev server cwd changes. `VADA_YAMLS_DIR` env var available for production override.
 
+### Phase 7.3 — YAML catalog cleanup and complete migration
+Eliminated all hardcoded spec references and static registries. Three `crucible-v1` fallbacks removed from web app (form initialization, route validation, session resume). MCP `spec-registry.ts` rewritten from a static `SPECS` record to dynamic `readdirSync`-based discovery delegating to `@atta/engine`'s `listPublicSpecs()`; `validateAllSpecs()` added for startup fail-fast validation. All 7 YAML filenames and `id` fields stripped of `-v1` suffixes (D-025); ALIASES simplified to `a0`/`a1` only. Drizzle migration backfills `sessions.spec_id` column. `@vada/agent-metadata` package deleted and collapsed into `apps/vada-ai/web/src/components/agents/visuals/`. `customVars` Handlebars rendering added for `system_prompt` fields.
+
 ---
 
 ## What's parked
@@ -70,7 +75,7 @@ Extracted `loadYamlFromCatalog(id)` from ad-hoc per-caller implementations into 
 These exist but are NOT the product direction. They remain as historical artifacts or as configurations that ship for compatibility.
 
 ### Current Brokered V1 (role-based, single-shot)
-Three reviewers (Strategist, Critic, Devil's Advocate) running in parallel for one round. No synthesis at the engine layer. Currently expressed as `brokered-trio-v1.yaml`. This is a parked configuration, not the destination.
+Three reviewers (Strategist, Critic, Devil's Advocate) running in parallel for one round. No synthesis at the engine layer. Currently expressed as `brokered-trio.yaml`. This is a parked configuration, not the destination.
 
 ### Role-based deliberation as theory
 The Strategist/Critic/Devil's Advocate role split was a theoretical decomposition. It has not been validated empirically against role-free configurations. The manual workflow that this project is modeled on does NOT use roles. Whether roles add value over role-free reviewer multiplication is an open empirical question deferred to Phase 12 (validation experiments).
@@ -82,14 +87,11 @@ Single-round deliberation is a structurally weaker approximation of what the man
 
 ## What's in flight
 
-Nothing currently. Phase 7.2 just landed. Awaiting decision on next phase.
+Nothing currently. Phase 7.3 just landed. Awaiting decision on next phase.
 
 ---
 
 ## What's next, sequenced
-
-### Phase 7.5 — Architectural recognitions documented
-Capture the architectural recognitions from the Phase 7.2 session into persistent documents. Includes this state document, `vada-product-recognitions.md`, `vada-decisions.md`, `vada-yaml-immutability-principle.md`. (In progress at the time of this writing.)
 
 ### Phase 8 — Synthesis as first-class component
 Synthesizer becomes a mandatory engine-level concept, not a Caller-Claude responsibility. Every deliberation YAML must include a synthesizer configuration. Synthesizer produces structured output (convergence table, divergence map, new ideas, gaps, proposed solution). The synthesizer's prompt is treated as core IP and benchmarked alongside reviewer prompts.
@@ -121,14 +123,8 @@ A structured synthesis (convergence table, divergence map, gaps, proposal) is mo
 ### OQ-C: How does the engine express Principal-terminated loops?
 Real-case Brokered terminates when the Principal says it's done, not after a fixed number of rounds. Requires engine extension. Could be: external loop control via Caller Claude (Principal continues by re-invoking) or engine-internal with a "continue?" callback.
 
-### OQ-D: System-prompt-as-template
-Domain Expert YAML has `{{domain}}` literals in its system_prompt. Currently `consult.ts` ignores the YAML and uses `createDomainExpert(domain)` factory. Eventually the YAML must be the source of truth, which requires Handlebars rendering of system prompts (not just message templates). Deferred until needed.
-
-### OQ-E: How is YAML immutability enforced technically?
-The principle is that YAMLs are immutable once benchmark data exists. Currently this is honor-system. Could be enforced via: filename-based naming convention, file system permissions after first benchmark run, or a registry that tracks "benchmarked" status and rejects modifications.
-
-### OQ-F: How are YAMLs versioned at the catalog level?
-Each YAML has a unique `id` (e.g., `crucible-v1`). When a fork happens (e.g., `crucible-v2`), how do consumers know about the new version? Auto-detection from directory? Manual registry update? Implications for MCP-exposed tools.
+### OQ-G: How are YAML forks named without the -vN convention?
+D-025 dropped the `-v1` suffix convention. When `crucible.yaml` needs to be iterated (after benchmark data exists), what naming scheme is used for the fork? Semantic names (`crucible-extended.yaml`)? Numeric suffixes reintroduced on first fork (`crucible-v2.yaml`)? Date-based? The answer shapes catalog readability and comparison UX.
 
 ---
 
@@ -153,6 +149,21 @@ The engine has zero branches on workflow type or mode. Whatever YAML configurati
 
 ### Verify scripts are not runtime verification
 The Phase A verify scripts passed while both runtime YAML-loading paths were broken. Scripts compute their own paths; they don't exercise the runtime loading code that the web server and MCP server use. When fixing a runtime bug, verify by running the actual runtime (or a script that calls through the same code path), not by running scripts that bypass it.
+
+### Dynamic YAML discovery prevents registry drift
+The MCP server's static `SPECS` object required a manual code change for every new YAML. The engine's `readdirSync`-based `listPublicSpecs()` auto-discovers new files. When two parts of the system maintain separate registries of the same catalog, they will drift. Delegate to the authoritative source.
+
+### Hardcoded fallbacks mask misconfiguration — fail loud
+`.default('crucible-v1')` on the Zod schema for `specId` silently resolved bad requests to a hardcoded team. Removing it surfaces the true failure mode. Default values in routing layers hide bugs upstream; prefer 400 errors over opaque defaults.
+
+### Don't add version suffixes before you have a fork
+All 7 initial YAMLs were named with `-v1` but none had a `-v2` comparison to justify the suffix. Premature versioning creates churn (renaming at fork time) and implies a multi-version history that doesn't exist. Add numeric suffixes only when an actual fork exists.
+
+### import.meta.url is the correct path anchor for library files
+`process.cwd()` resolves relative to whatever process started the server — different for dev, prod, and scripts. `import.meta.url` resolves relative to the file itself, which is stable across all contexts. Any library file that needs to reference sibling assets should anchor on `import.meta.url`.
+
+### customVars Handlebars rendering enables no-code YAML parameterization
+`{{variable}}` placeholders in YAML `system_prompt` fields are rendered at runtime against `customVars`. This lets a single YAML express parameterizable behavior (domain, context, role) without code changes. The Domain Expert pattern — injecting `{{domain}}` into the system prompt — is the canonical use case.
 
 ---
 

@@ -3,48 +3,36 @@ name: atta-teams
 description: Vāda agent and team configurations. Load when adding/modifying agents, teams, reviewer profiles, or building a verticalized team for a specific domain. Covers the tools-on/tools-off invariant. Do NOT load for engine primitives or adapter runtime.
 ---
 
-# `@vada/agents` + YAML Specs — Deliberation Content
+# YAML Specs + Agent Visuals — Deliberation Content
 
 ## Context
 
 Deliberation content is split across two concerns:
 
-- **`@vada/agents`** (`apps/vada-ai/agents/`) — agent definitions with display metadata (`VadaAgentDef`). Pure config — system prompts, tool lists, UI colors, face indices. Still used directly by `consult.ts` for the Brokered tool.
-- **YAML spec files** (`apps/vada-ai/yamls/`) — deliberation configs that compose agents into workflows. These replaced the deleted `@vada/teams` TypeScript package. All seven built-in specs live here as YAML files.
+- **YAML spec files** (`apps/vada-ai/yamls/`) — deliberation configs that define agents and workflows. These replaced the deleted `@vada/teams` TypeScript package. All seven built-in specs live here as YAML files. Agent system prompts, tool configs, and flow structure are all in YAML.
+- **Agent visuals** (`apps/vada-ai/web/src/components/agents/visuals/`) — display-only metadata for web UI rendering (colors, face indices, display names). No runtime deliberation logic. Used only by the web app.
 
-No runtime logic lives in either location. Agents are immutable configs; YAML specs compose them into deliberations.
+No runtime logic lives in either location. YAML specs compose agents into deliberations; visuals directory provides UI-only rendering config.
 
 `@vada/teams` is **deleted**. Do not reference or import it.
+`@vada/agents` / `@vada/agent-metadata` are **deleted**. Do not reference or import them. See [apps/vada-ai/web/src/components/agents/visuals/](../apps/vada-ai/web/src/components/agents/visuals/) for web-only display types.
 
 ---
 
 ## Architecture
 
 ```
-apps/vada-ai/agents/src/
-├── agents/
-│   ├── strategist.ts              # Reasoning; tools ON
-│   ├── critic.ts                  # Reasoning; tools ON
-│   ├── devils-advocate.ts         # Reasoning; tools ON
-│   ├── synthesizer.ts             # Round integrator; tools ON (always_tools in YAML)
-│   ├── researcher.ts              # Evidence grounding; tools ON
-│   ├── operator.ts                # Execution feasibility; tools OFF
-│   ├── conclusion-synthesizer.ts  # Final commit; tools OFF
-│   ├── blind-critic.ts            # Logical audit; tools OFF (blindness is the point)
-│   ├── fact-checker.ts            # Factual audit; tools ON (verification is the point)
-│   ├── a0-solo.ts                 # Naive single-shot baseline
-│   └── a1-solo.ts                 # Rich structured-output baseline
-├── types.ts                       # VadaAgentDef, AgentName
-└── index.ts                       # Public exports
+apps/vada-ai/web/src/components/agents/visuals/
+└── index.ts                       # VadaAgentVisual type + per-agent display configs (web-only)
 
 apps/vada-ai/yamls/
-├── sparring-v1.yaml               # 2-agent default (Strategist + Critic, 3 rounds)
-├── crucible-v1.yaml               # 4-agent heavy team
-├── war-room-v1.yaml               # 6-agent heavyweight
-├── a0-baseline-v1.yaml            # Single-agent naive baseline
-├── a1-baseline-v1.yaml            # Single-agent structured-output baseline
-├── brokered-trio-v1.yaml          # 3 reviewers, no rounds (Strategist + Critic + Devil's Advocate)
-└── brokered-quartet-v1.yaml       # 4 reviewers, no rounds
+├── sparring.yaml                  # 2-agent default (Strategist + Critic, 3 rounds)
+├── crucible.yaml                  # 4-agent heavy team
+├── war-room.yaml                  # 6-agent heavyweight
+├── a0-baseline.yaml               # Single-agent naive baseline
+├── a1-baseline.yaml               # Single-agent structured-output baseline
+├── brokered-trio.yaml             # 3 reviewers, no rounds (Strategist + Critic + Devil's Advocate)
+└── brokered-quartet.yaml          # 4 reviewers, no rounds (experimental)
 ```
 
 ---
@@ -71,29 +59,11 @@ If you find yourself wanting to flip any of these, STOP. Surface to Principal.
 
 ## Agent Definition Pattern
 
-Agents in `@vada/agents` are still used directly by `consult.ts`. The pattern is unchanged.
+Agents are defined directly in YAML specs. The `@vada/agents` package is deleted — do not reference it.
 
-```ts
-import type { VadaAgentDef } from '../types'
+For `consult.ts` (Brokered mode), reviewer personas are defined inline as `DeliberationSpec` objects built at call time. No separate agent config files.
 
-export const strategist = {
-  name: 'Strategist',                         // PascalCase, matches filename
-  role: 'strategist',                         // kebab-free slug used by web app
-  displayName: 'The Strategist',
-  tagline: 'Maps the landscape',
-  color: 'var(--agent-strategist)',
-  faceIndex: 0,
-  description: '...',
-  tools: ['web_search', 'web_fetch'],         // always string[]; [] for tool-off
-  systemPrompt: `You are the Strategist. Your role is to...`,
-} satisfies VadaAgentDef
-```
-
-Conventions:
-- `name` is PascalCase and unique; filename matches (kebab-case) e.g. `devils-advocate.ts` exports `devilsAdvocate` with `name: "Devil's Advocate"`
-- `satisfies VadaAgentDef` instead of explicit type — preserves literal types
-- `tools` is always `string[]`. Use `[]` (not omit) for tool-off agents — explicit intent beats silent default
-- `systemPrompt` is role-focused. Round-specific context comes from the adapter at runtime, not the system prompt
+For web UI display (colors, face indices), see `apps/vada-ai/web/src/components/agents/visuals/`.
 
 ---
 
@@ -181,22 +151,24 @@ Full schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`
 
 ## Spec Registry
 
-`apps/vada-ai/mcp-server/src/spec-registry.ts` loads all 7 YAMLs at startup:
+`apps/vada-ai/mcp-server/src/spec-registry.ts` provides dynamic access to the YAML catalog via `@atta/engine`:
 
 ```ts
 import { lookupSpec, listPublicSpecs } from './spec-registry'
 
-// By full spec ID
-const spec = lookupSpec('sparring-v1')
+// By full spec ID (auto-discovered from apps/vada-ai/yamls/)
+const spec = lookupSpec('sparring')
+const spec = lookupSpec('crucible')
 
-// By short alias (MCP-facing names)
-const spec = lookupSpec('sparring')    // → sparring-v1
+// By short alias (explicit ALIASES — a0, a1 only)
+const spec = lookupSpec('a0')    // → a0-baseline
+const spec = lookupSpec('a1')    // → a1-baseline
 
 // All non-experimental specs
 const specs = listPublicSpecs()
 ```
 
-ALIASES map in spec-registry.ts: `sparring`, `crucible`, `war-room`, `a0`, `a1`.
+ALIASES map: `a0` → `a0-baseline`, `a1` → `a1-baseline`. No other aliases.
 
 ---
 
@@ -275,10 +247,10 @@ For use with `vada__consult` (Brokered mode):
 
 ## Adding a New Team (YAML spec)
 
-1. Create `apps/vada-ai/yamls/<team-name>-v1.yaml`
-2. Define agents inline in the YAML (or reference existing `@vada/agents` names for brokered)
-3. Add to `SPECS` record in `apps/vada-ai/mcp-server/src/spec-registry.ts`
-4. Add short-name ALIAS if exposing via MCP tool
+1. Create `apps/vada-ai/yamls/<team-name>.yaml` (no `-v1` suffix — see D-025)
+2. Define agents inline in the YAML
+3. The spec is **auto-discovered** — no changes to `spec-registry.ts` needed
+4. Add to ALIASES map only if a short-name is needed for MCP UX
 5. Create verify script `apps/vada-ai/web/scripts/verify-<team-name>-port.ts` following `verify-sparring-port.ts`
 6. Run verify script; confirm transcript length matches expected count
 
@@ -312,15 +284,15 @@ Crucible (4-7 agents) is no longer the default team — Sparring (2 agents) is. 
 ## Anti-patterns
 
 - ❌ Importing from `@vada/teams` — that package is deleted
+- ❌ Importing from `@vada/agents` or `@vada/agent-metadata` — those packages are deleted
 - ❌ Defining team logic in TypeScript instead of YAML
 - ❌ Adding `tools: ['web_search']` to BlindCritic (breaks blind-audit invariant)
 - ❌ Adding tools to ConclusionSynthesizer (invites re-litigating the round)
 - ❌ Generic "be helpful" system prompts (agents need role-forcing prompts)
-- ❌ `tools: undefined` (use `[]` for explicit none)
-- ❌ Mutating imported agents (shared immutable configs)
-- ❌ Creating agent factories / builders (plain configs only)
+- ❌ `tools: undefined` in YAML (use `[]` for explicit none)
 - ❌ Making Crucible the default again without Round 24+ evidence
 - ❌ Agent name mismatch between YAML flow references and agent definition
+- ❌ Adding `-v1` suffix to new YAML filenames before a fork exists (see D-025)
 
 ---
 

@@ -39,6 +39,7 @@ packages/engine/src/
 ├── spec-types.ts             # DeliberationSpec, SpecAgent, FlowSpec, ReviewerSpec (public)
 ├── spec-schema.ts            # Zod validation schema
 ├── spec-loader.ts            # loadSpec(yaml: string) → DeliberationSpec
+├── catalog-loader.ts         # loadYamlFromCatalog(id) + listPublicSpecs() — filesystem catalog access
 ├── validate.ts               # Preflight validation before compilation (internal)
 ├── compilers/
 │   ├── spec.ts               # compileSpec(spec, question, model?) → Plan; specToTeam(spec) → Team
@@ -53,15 +54,17 @@ packages/engine/src/
 ## Public API (Phase 7.2+)
 
 ```ts
-import { loadSpec, compileSpec, specToTeam } from '@atta/engine'
+import { loadSpec, compileSpec, specToTeam, loadYamlFromCatalog, listPublicSpecs } from '@atta/engine'
 import type { DeliberationSpec, SpecAgent, FlowSpec, ReviewerSpec } from '@atta/engine'
 ```
 
 | Export | Purpose |
 |--------|---------|
-| `loadSpec(yaml: string)` | Parse + validate YAML → `DeliberationSpec`. Throws on schema violations. |
+| `loadSpec(yaml: string)` | Parse + validate YAML string → `DeliberationSpec`. Throws on schema violations. |
 | `compileSpec(spec, question, model?)` | `DeliberationSpec` → `Plan`. `model` overrides `spec.defaults.model`. |
 | `specToTeam(spec)` | `DeliberationSpec` → `Team` (internal team shape). Used internally by `compileSpec`. |
+| `loadYamlFromCatalog(id: string)` | Load a spec by ID from the catalog directory (`apps/vada-ai/yamls/`). Throws with resolved path on failure. Anchor: `import.meta.url`. Env var `VADA_YAMLS_DIR` overrides path. |
+| `listPublicSpecs()` | Return all non-experimental specs from the catalog, sorted alphabetically. Uses `readdirSync`. |
 | `DeliberationSpec` | Top-level YAML spec type |
 | `SpecAgent` | Per-agent config in a spec |
 | `FlowSpec` | Rounds + synthesis + audit flow config |

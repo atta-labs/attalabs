@@ -45,6 +45,8 @@ This also changes what gets prioritized. The most valuable artifacts to develop 
 - MCP receives full YAML content per call (consumers can pass any YAML, not just registered ones)
 - The vada.ai web app's deliberation runner uses the same YAML mechanism as third-party MCP consumers — there is no privileged path
 
+**Date strengthened: April 26, 2026 (Phase 7.3)** — Three hardcoded `crucible-v1` fallbacks were removed from the web app and MCP server. The MCP spec-registry was rewritten from a static SPECS object to dynamic `readdirSync`-based discovery. The catalog is now the single source of truth at all layers — adding a new YAML file is sufficient to make it discoverable, with no code change required.
+
 ### What this implies for the future
 
 - Multiple consuming applications (Claude Desktop, Cursor, custom Vāda surfaces) are all first-class
@@ -185,13 +187,14 @@ This also enforces clear thinking. Modifying an existing YAML implies "this is n
 
 ### How this manifests going forward
 
-- Naming convention: YAMLs are named with semantic IDs ending in `-v1`, `-v2`, etc. (e.g., `crucible-v1.yaml`, `brokered-trio-v1.yaml`)
 - Each YAML has a unique `id` field matching its filename
 - Benchmark records reference YAML files by their full id
 - A `benchmarked: true` flag (in YAML or external registry) marks files that should not be modified
 - Forks produce new files with new ids; old files remain in repo
 
 A dedicated principle document, `vada-yaml-immutability-principle.md`, expands on this.
+
+**Date revised: April 26, 2026 (Phase 7.3 / D-025)** — The `-v1` / `-vN` naming convention was dropped. YAML files are now named semantically without version suffixes (`crucible.yaml`, not `crucible-v1.yaml`). The core immutability principle (once benchmarked, do not modify; iterate by forking) is unchanged. The naming convention section of `vada-yaml-immutability-principle.md` is superseded.
 
 ### What this implies for the future
 

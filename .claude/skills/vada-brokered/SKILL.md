@@ -41,7 +41,7 @@ Caller Claude is not a passive relay. It:
 5. **Synthesizes** responses with convergence/divergence analysis
 6. **Presents** a position to the user (not just a list of reviewer outputs)
 
-Caller Claude owns synthesis. Vāda returns raw reviewer responses. Do not build pre-synthesis into the MCP response.
+**V1 only:** Caller Claude synthesizes raw reviewer responses. **D-016** (reversed D-004) moves synthesis to the Vāda engine layer in Phase 8. Once Phase 8 lands, Vāda will produce synthesis and return structured output. Do not build pre-synthesis into the V1 MCP response.
 
 ### Reviewer Personas (Roster A — V1)
 
