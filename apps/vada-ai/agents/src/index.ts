@@ -2,18 +2,12 @@ export type { VadaAgentDef, AgentName } from './types'
 /** Backward-compatible alias — prefer VadaAgentDef in new code. */
 export type { VadaAgentDef as AgentDef } from './types'
 
-export { a0Solo } from './agents/a0-solo'
-export { a1Solo } from './agents/a1-solo'
 export { strategist } from './agents/strategist'
 export { critic } from './agents/critic'
 export { devilsAdvocate } from './agents/devils-advocate'
 export { synthesizer } from './agents/synthesizer'
 export { researcher } from './agents/researcher'
 export { operator } from './agents/operator'
-export { conclusionSynthesizer } from './agents/conclusion-synthesizer'
-export { blindCritic } from './agents/blind-critic'
-export { factChecker } from './agents/fact-checker'
-export { domainExpert } from './agents/domain-expert'
 
 import { strategist } from './agents/strategist'
 import { critic } from './agents/critic'
