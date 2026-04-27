@@ -8,8 +8,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const user = await getOrCreateUser(clerkId, '')
-  const sessions = await listSessions(user.id)
+  await getOrCreateUser(clerkId, '')
+  const sessions = await listSessions(clerkId)
 
   return NextResponse.json({ sessions })
 }

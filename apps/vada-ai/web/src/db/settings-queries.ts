@@ -15,7 +15,7 @@ export interface TeamModelEntry {
 }
 
 export async function upsertUserTeamModel(
-  userId: string,
+  clerkId: string,
   teamId: string,
   agentRole: string,
   provider: string,
@@ -23,14 +23,14 @@ export async function upsertUserTeamModel(
 ): Promise<void> {
   await db
     .insert(schema.userTeamModels)
-    .values({ userId, teamId, agentRole, provider, modelId })
+    .values({ clerkId, teamId, agentRole, provider, modelId })
     .onConflictDoUpdate({
-      target: [schema.userTeamModels.userId, schema.userTeamModels.teamId, schema.userTeamModels.agentRole],
+      target: [schema.userTeamModels.clerkId, schema.userTeamModels.teamId, schema.userTeamModels.agentRole],
       set: { provider, modelId, updatedAt: new Date() }
     })
 }
 
-export async function getUserTeamModels(userId: string): Promise<TeamModelEntry[]> {
+export async function getUserTeamModels(clerkId: string): Promise<TeamModelEntry[]> {
   return db
     .select({
       teamId: schema.userTeamModels.teamId,
@@ -39,15 +39,15 @@ export async function getUserTeamModels(userId: string): Promise<TeamModelEntry[
       modelId: schema.userTeamModels.modelId
     })
     .from(schema.userTeamModels)
-    .where(eq(schema.userTeamModels.userId, userId))
+    .where(eq(schema.userTeamModels.clerkId, clerkId))
 }
 
-export async function deleteUserTeamModel(userId: string, teamId: string, agentRole: string): Promise<void> {
+export async function deleteUserTeamModel(clerkId: string, teamId: string, agentRole: string): Promise<void> {
   await db
     .delete(schema.userTeamModels)
     .where(
       and(
-        eq(schema.userTeamModels.userId, userId),
+        eq(schema.userTeamModels.clerkId, clerkId),
         eq(schema.userTeamModels.teamId, teamId),
         eq(schema.userTeamModels.agentRole, agentRole)
       )
@@ -60,21 +60,21 @@ export interface UserSettingsData {
   faceStyle: 'reductive' | 'emblematic'
 }
 
-export async function getUserSettings(userId: string): Promise<UserSettingsData> {
+export async function getUserSettings(clerkId: string): Promise<UserSettingsData> {
   const rows = await db
     .select({ faceStyle: schema.userSettings.faceStyle })
     .from(schema.userSettings)
-    .where(eq(schema.userSettings.userId, userId))
+    .where(eq(schema.userSettings.clerkId, clerkId))
     .limit(1)
   return { faceStyle: (rows[0]?.faceStyle ?? 'emblematic') as 'reductive' | 'emblematic' }
 }
 
-export async function upsertUserSettings(userId: string, data: Partial<UserSettingsData>): Promise<void> {
+export async function upsertUserSettings(clerkId: string, data: Partial<UserSettingsData>): Promise<void> {
   await db
     .insert(schema.userSettings)
-    .values({ userId, ...data })
+    .values({ clerkId, ...data })
     .onConflictDoUpdate({
-      target: schema.userSettings.userId,
+      target: schema.userSettings.clerkId,
       set: { ...data, updatedAt: new Date() }
     })
 }

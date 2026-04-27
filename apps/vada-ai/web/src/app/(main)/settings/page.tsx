@@ -13,10 +13,10 @@ import { NextLink } from '@atta/ui/lib/next-link'
 export default async function SettingsPage() {
   const { userId: clerkId } = await auth()
 
-  const user = await getOrCreateUser(clerkId!, '')
+  await getOrCreateUser(clerkId!, '')
   const [teamModels, settings, catalog] = await Promise.all([
-    getUserTeamModels(user.id),
-    getUserSettings(user.id),
+    getUserTeamModels(clerkId!),
+    getUserSettings(clerkId!),
     getCatalog()
   ])
   const specs = listPublicSpecs()

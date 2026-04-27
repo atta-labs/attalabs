@@ -39,9 +39,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 })
   }
 
-  const user = await getOrCreateUser(clerkId, '')
+  await getOrCreateUser(clerkId, '')
   const dailyLimit = getDailySessionLimit()
-  const dailyCount = await getDailySessionCount(user.id)
+  const dailyCount = await getDailySessionCount(clerkId)
   if (dailyCount >= dailyLimit) {
     return NextResponse.json(
       { error: `Daily limit reached. You have ${dailyLimit} deliberations per day.` },
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   // The server has no key to probe with — this is the structural BYOK guarantee.
 
   const session = await createSession(
-    user.id,
+    clerkId,
     parsed.data.question,
     agents,
     parsed.data.provider,

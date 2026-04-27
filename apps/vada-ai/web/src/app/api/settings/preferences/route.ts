@@ -16,8 +16,8 @@ export async function PUT(request: Request) {
   const parsed = PutSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
 
-  const user = await getOrCreateUser(clerkId, '')
-  await upsertUserSettings(user.id, { faceStyle: parsed.data.faceStyle })
+  await getOrCreateUser(clerkId, '')
+  await upsertUserSettings(clerkId, { faceStyle: parsed.data.faceStyle })
 
   return NextResponse.json({ ok: true })
 }

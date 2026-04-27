@@ -7,8 +7,8 @@ export async function GET() {
   const { userId: clerkId } = await auth()
   if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const user = await getOrCreateUser(clerkId, '')
-  const [teamModels, settings] = await Promise.all([getUserTeamModels(user.id), getUserSettings(user.id)])
+  await getOrCreateUser(clerkId, '')
+  const [teamModels, settings] = await Promise.all([getUserTeamModels(clerkId), getUserSettings(clerkId)])
 
   // apiKeys is always [] — keys live in the browser, not the DB. Kept in the
   // response shape for transitional backward-compat; clients should read keys

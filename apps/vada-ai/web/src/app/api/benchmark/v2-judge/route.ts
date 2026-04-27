@@ -95,8 +95,8 @@ export async function POST(request: Request) {
   // If a sessionId is provided, validate it belongs to the authenticated user.
   // Bench scripts that run without sessions pass sessionId: null — skip validation.
   if (sessionId) {
-    const user = await getOrCreateUser(clerkId, '')
-    const session = await getSessionForUser(sessionId, user.id)
+    await getOrCreateUser(clerkId, '')
+    const session = await getSessionForUser(sessionId, clerkId)
     if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 403 })
   }
 

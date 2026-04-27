@@ -11,21 +11,21 @@ export async function getOrCreateUser(clerkId: string, email: string) {
   return inserted[0]!
 }
 
-export async function getDailySessionCount(userId: string) {
+export async function getDailySessionCount(clerkId: string) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
   const result = await db
     .select({ count: sql<number>`count(*)` })
     .from(schema.sessions)
-    .where(and(eq(schema.sessions.userId, userId), gte(schema.sessions.createdAt, today)))
+    .where(and(eq(schema.sessions.clerkId, clerkId), gte(schema.sessions.createdAt, today)))
   return Number(result[0]?.count ?? 0)
 }
 
 // --- Sessions ---
 
 export async function createSession(
-  userId: string,
+  clerkId: string,
   question: string,
   agents: string[],
   provider?: string,
@@ -36,7 +36,7 @@ export async function createSession(
   const inserted = await db
     .insert(schema.sessions)
     .values({
-      userId,
+      clerkId,
       question,
       agents,
       specId: specId ?? null,
@@ -66,7 +66,7 @@ export async function setSessionTerminalState(sessionId: string, terminalState: 
     .where(eq(schema.sessions.id, sessionId))
 }
 
-export async function listSessions(userId: string) {
+export async function listSessions(clerkId: string) {
   return db
     .select({
       id: schema.sessions.id,
@@ -77,7 +77,7 @@ export async function listSessions(userId: string) {
       createdAt: schema.sessions.createdAt
     })
     .from(schema.sessions)
-    .where(eq(schema.sessions.userId, userId))
+    .where(eq(schema.sessions.clerkId, clerkId))
     .orderBy(desc(schema.sessions.createdAt))
 }
 
@@ -113,17 +113,17 @@ export async function getSessionWithTranscript(sessionId: string) {
 
 // Returns the session only if it belongs to the given user. Returns null if the
 // session does not exist OR is owned by a different user — never leaks existence.
-export async function getSessionForUser(sessionId: string, userId: string) {
+export async function getSessionForUser(sessionId: string, clerkId: string) {
   const session = await db
     .select()
     .from(schema.sessions)
-    .where(and(eq(schema.sessions.id, sessionId), eq(schema.sessions.userId, userId)))
+    .where(and(eq(schema.sessions.id, sessionId), eq(schema.sessions.clerkId, clerkId)))
     .limit(1)
   return session[0] ?? null
 }
 
-export async function getSessionWithTranscriptForUser(sessionId: string, userId: string) {
-  const session = await getSessionForUser(sessionId, userId)
+export async function getSessionWithTranscriptForUser(sessionId: string, clerkId: string) {
+  const session = await getSessionForUser(sessionId, clerkId)
   if (!session) return null
 
   const entries = await db

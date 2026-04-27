@@ -9,10 +9,10 @@ import { DeliberateSection } from './components/DeliberateSection'
 export default async function DeliberatePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { userId: clerkId } = await auth()
 
-  const user = await getOrCreateUser(clerkId!, '')
+  await getOrCreateUser(clerkId!, '')
   const [dailyCount, teamModels, catalog] = await Promise.all([
-    getDailySessionCount(user.id),
-    getUserTeamModels(user.id),
+    getDailySessionCount(clerkId!),
+    getUserTeamModels(clerkId!),
     getCatalog()
   ])
   const specs = listPublicSpecs()

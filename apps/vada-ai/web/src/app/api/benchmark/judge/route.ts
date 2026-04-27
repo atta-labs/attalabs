@@ -58,9 +58,9 @@ export async function POST(request: Request) {
 
   const { sessionId, question, baselineAnswer, vadaRecommendation, provider, modelId, apiKey } = parsed.data
 
-  const user = await getOrCreateUser(clerkId, '')
+  await getOrCreateUser(clerkId, '')
 
-  const session = await getSessionForUser(sessionId, user.id)
+  const session = await getSessionForUser(sessionId, clerkId)
   if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 403 })
 
   const metrics = await getBenchmarkMetrics(sessionId)

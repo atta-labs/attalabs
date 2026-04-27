@@ -18,8 +18,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
-  const user = await getOrCreateUser(clerkId, '')
-  const session = await getSessionWithTranscriptForUser(id, user.id)
+  await getOrCreateUser(clerkId, '')
+  const session = await getSessionWithTranscriptForUser(id, clerkId)
   if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
 
   const metrics = await getBenchmarkMetrics(id)

@@ -134,12 +134,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { userId: clerkId } = await auth()
   if (!clerkId) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const user = await getOrCreateUser(clerkId, '')
+  await getOrCreateUser(clerkId, '')
   const { id: sessionId } = await params
 
   // Ownership check — all workflow steps trust the sessionId passed via
   // getInitData(), so this is the single auth gate for the entire workflow run.
-  const session = await getSessionForUser(sessionId, user.id)
+  const session = await getSessionForUser(sessionId, clerkId)
   if (!session) return Response.json({ error: 'Session not found' }, { status: 404 })
 
   const url = new URL(req.url)
