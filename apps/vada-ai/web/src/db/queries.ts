@@ -161,6 +161,7 @@ export async function insertTranscriptEntry(data: {
   content: string
   target?: string
   orderInRound: number
+  structured?: unknown
 }) {
   return db.insert(schema.transcriptEntries).values(data).returning()
 }

@@ -114,6 +114,15 @@ export async function persistTurn(sessionId: string, payload: TurnPayload): Prom
         terminalState: 'UNCONVERGED',
         reviewBy: lenient.review_by
       })
+      const synthOrderInRound = session.transcriptEntries.filter((e) => e.round === 0).length
+      await insertTranscriptEntry({
+        sessionId,
+        round: 0,
+        agent: payload.agent ?? 'synthesizer',
+        content: payload.content,
+        orderInRound: synthOrderInRound,
+        ...(payload.structured !== undefined ? { structured: payload.structured } : {})
+      })
       await updateSessionState(sessionId, 'AUDITING')
       return
     }
@@ -168,6 +177,15 @@ export async function persistTurn(sessionId: string, payload: TurnPayload): Prom
         revisedJson: lenient,
         terminalState: 'UNCONVERGED',
         reviewBy: lenient.review_by
+      })
+      const reviseOrderInRound = session.transcriptEntries.filter((e) => e.round === 0).length
+      await insertTranscriptEntry({
+        sessionId,
+        round: 0,
+        agent: payload.agent ?? 'synthesizer',
+        content: payload.content,
+        orderInRound: reviseOrderInRound,
+        ...(payload.structured !== undefined ? { structured: payload.structured } : {})
       })
       await updateSessionState(sessionId, 'AUDITING')
       return

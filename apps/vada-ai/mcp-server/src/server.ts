@@ -87,8 +87,12 @@ committed conclusion with a full audit trail. This is slower and more
 expensive than vada__deliberate_brokered — use for high-stakes decisions where
 the reasoning trail matters.
 
-Returns: content (final conclusion), session_id, session_url (audit
-trail), terminal_state (CLEAN/REVISED/MAX_REVISIONS), cost_breakdown.
+Returns:
+- content: final conclusion text (always present)
+- structured: parsed JSON verdict when the spec declares an output_schema (crucible, sparring, war-room, a1-baseline return { recommendation, key_condition, unresolved_points, review_by }); null for specs without output_schema (e.g. a0-baseline)
+- session_id, session_url: audit trail link
+- terminal_state: CLEAN | REVISED | MAX_REVISIONS
+- cost_breakdown: token counts and estimated USD
 
 Example: vada__deliberate(
   question="Should we migrate from Postgres to CockroachDB given our

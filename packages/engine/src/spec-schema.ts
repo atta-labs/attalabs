@@ -106,3 +106,32 @@ export const DeliberationSpecSchema = z
     message: 'flow.rounds requires flow.synthesis',
     path: ['flow', 'synthesis']
   })
+  .refine(
+    (d) => {
+      const synthAgent = d.flow?.synthesis?.agent
+      if (!synthAgent) return true
+      return d.agents.some((a) => a.name === synthAgent)
+    },
+    (d) => ({
+      message: `flow.synthesis.agent '${d.flow?.synthesis?.agent}' not found in agents list`,
+      path: ['flow', 'synthesis', 'agent']
+    })
+  )
+  .refine(
+    (d) => {
+      const synthAgentName = d.flow?.synthesis?.agent
+      if (!synthAgentName) return true
+      const synthAgent = d.agents.find((a) => a.name === synthAgentName)
+      if (!synthAgent) return true
+      if (synthAgent.output_format === 'structured' && !synthAgent.output_schema) return false
+      return true
+    },
+    (d) => ({
+      message: `synthesis agent '${d.flow?.synthesis?.agent}' declares output_format: structured but has no output_schema`,
+      path: ['agents']
+    })
+  )
+  .refine((d) => d.agents.every((a) => !(a.output_schema !== undefined && a.output_format !== 'structured')), {
+    message: 'agents with output_schema must also declare output_format: structured',
+    path: ['agents']
+  })

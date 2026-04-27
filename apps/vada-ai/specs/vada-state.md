@@ -1,21 +1,19 @@
 ## Most recent session — April 26, 2026
 
-Phase 7.3 (complete YAML migration + catalog cleanup) completed. Key changes:
-- Eliminated three hardcoded `crucible-v1` fallbacks across web app routes and form logic
-- Rewrote MCP `spec-registry.ts` from static `SPECS` object to dynamic `readdirSync`-based discovery; added `validateAllSpecs()` startup check
-- Dropped `-v1` suffixes from all 7 YAML filenames and their `id` fields; simplified ALIASES map to `a0`, `a1` only
-- Wrote Drizzle data migration (`0015_spec_id_backfill.sql`) to strip `-v1` from existing `sessions.spec_id` values
-- Collapsed `@vada/agent-metadata` package into `apps/vada-ai/web/src/components/agents/visuals/`; deleted the package entirely
-- Implemented `customVars` Handlebars rendering in agent `system_prompt` fields
-
-Phase 8 (synthesizer integration) is next when ready.
+Phase 8 (synthesis exposed to consumers) completed. Key changes:
+- `vada__deliberate` MCP tool now returns `structured` field alongside `content`; null when spec has no output_schema
+- Web app SSE adds typed `synthesis_complete` events with `content` + `structured` + `is_revision` flag
+- `transcriptEntries` gains `structured jsonb` column; synthesis phase also inserts a transcript row with structured populated
+- `persistTurn` threads `structured` from engine output through to DB for synthesize and revise phases
+- Schema validation tightened: synthesis agent must exist in agents list; `output_format: structured` requires `output_schema`; `output_schema` without `output_format: structured` is rejected
+- Resolves OQ-A (caller decides per-call) and OQ-B (per-YAML; engine surfaces both)
 
 
 # Vāda — Current State
 
 **Last updated:** April 26, 2026
-**Last milestone:** Phase 7.3 (YAML catalog cleanup; hardcoded fallbacks eliminated; -v1 suffixes dropped)
-**Next milestone:** Phase 8 (synthesizer integration)
+**Last milestone:** Phase 8 (synthesis exposed to consumers; structured field at all consumer boundaries)
+**Next milestone:** Phase 9 (real-case Brokered as a new YAML)
 
 ---
 
@@ -68,6 +66,16 @@ Extracted `loadYamlFromCatalog(id)` from ad-hoc per-caller implementations into 
 ### Phase 7.3 — YAML catalog cleanup and complete migration
 Eliminated all hardcoded spec references and static registries. Three `crucible-v1` fallbacks removed from web app (form initialization, route validation, session resume). MCP `spec-registry.ts` rewritten from a static `SPECS` record to dynamic `readdirSync`-based discovery delegating to `@atta/engine`'s `listPublicSpecs()`; `validateAllSpecs()` added for startup fail-fast validation. All 7 YAML filenames and `id` fields stripped of `-v1` suffixes (D-025); ALIASES simplified to `a0`/`a1` only. Drizzle migration backfills `sessions.spec_id` column. `@vada/agent-metadata` package deleted and collapsed into `apps/vada-ai/web/src/components/agents/visuals/`. `customVars` Handlebars rendering added for `system_prompt` fields.
 
+### Phase 8 — Synthesis exposed to consumers
+The engine already produced structured synthesis via terminal nodes; both MCP and web app consumers stripped the structured field at the boundary. Phase 8 exposes it:
+- `vada__deliberate` returns `structured` alongside `content`; null when the spec has no output_schema (D-026)
+- Web app SSE adds typed `synthesis_complete` events with both content and structured payloads
+- `transcriptEntries` gains a `structured jsonb` column; synthesis and revision phases insert a transcript entry with structured populated
+- `persistTurn` threads `structured` from engine output (AgentOutput.structured) through to DB
+- Schema validation tightened: synthesis agent must exist in agents list; `output_format: structured` requires `output_schema`; declaring `output_schema` without `output_format: structured` is rejected
+- Resolves OQ-A (caller decides per-call) and OQ-B (per-YAML choice; engine surfaces both)
+No schema 2.0 required. The change is at the API boundary, not the spec language.
+
 ---
 
 ## What's parked
@@ -87,14 +95,11 @@ Single-round deliberation is a structurally weaker approximation of what the man
 
 ## What's in flight
 
-Nothing currently. Phase 7.3 just landed. Awaiting decision on next phase.
+Nothing currently. Phase 8 just landed. Awaiting decision on next phase.
 
 ---
 
 ## What's next, sequenced
-
-### Phase 8 — Synthesis as first-class component
-Synthesizer becomes a mandatory engine-level concept, not a Caller-Claude responsibility. Every deliberation YAML must include a synthesizer configuration. Synthesizer produces structured output (convergence table, divergence map, new ideas, gaps, proposed solution). The synthesizer's prompt is treated as core IP and benchmarked alongside reviewer prompts.
 
 ### Phase 9 — Real-case Brokered as a new YAML
 The "real-case" mode reflects what the manual workflow actually does: multi-round, role-free, Principal-terminated, synthesis between rounds. Defined as a new YAML file. May require engine extensions for Principal-terminated loops.
@@ -112,13 +117,7 @@ Stratified test corpus across decision domains. Run each YAML against the corpus
 
 ## Open architectural questions
 
-These were raised but not resolved during Phase 7.2 or earlier. They need answers before being designed into the system.
-
-### OQ-A: Where does Caller Claude augmentation fit when Vāda produces synthesis?
-If Vāda produces synthesis, what does Caller Claude do with it? Pass through as-is? Augment with conversation context? Both options should be possible per use case.
-
-### OQ-B: Does the synthesizer produce text or structured output?
-A structured synthesis (convergence table, divergence map, gaps, proposal) is more useful for downstream automation. A text synthesis is more useful for direct presentation to users. Both? One of each per YAML?
+These were raised but not resolved. They need answers before being designed into the system.
 
 ### OQ-C: How does the engine express Principal-terminated loops?
 Real-case Brokered terminates when the Principal says it's done, not after a fixed number of rounds. Requires engine extension. Could be: external loop control via Caller Claude (Principal continues by re-invoking) or engine-internal with a "continue?" callback.
