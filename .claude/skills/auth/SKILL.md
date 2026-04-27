@@ -1,27 +1,33 @@
 ---
 name: auth
-description: Clerk authentication patterns across all Atta AI products — root layout, middleware, server components, per-product isolation
+description: Clerk authentication patterns across the Atta ecosystem — single Clerk app, subdomain SSO via cookie scope, shared users table
 ---
 
-# Authentication — Atta AI
+# Authentication — Atta Ecosystem
 
 ## Context
 
-All Atta AI products use Clerk via the `@atta/auth` wrapper package. Each product has its own Clerk application and its own local users table. No auth state or user data crosses product boundaries.
+The entire Atta ecosystem uses a **single Clerk application** via the `@atta/auth` wrapper package. Authentication state propagates across all product subdomains via a cookie scoped to the parent domain (`.attalabs.dev`).
+
+Sign in once on any subdomain → signed in everywhere. This is the Google model (`mail.google.com`, `docs.google.com` share one identity).
+
+There is **one shared `users` table** in `@atta/db`, keyed by `clerk_id`. Per-product profile rows reference `clerk_id` as a foreign key. Product-specific data lives in product-specific tables; identity does not.
+
+This replaces an earlier "each product has its own Clerk application" model. Per-product Clerk apps are no longer used.
 
 ---
 
 ## Package Imports
 
 ```ts
-// Root layout provider (via NextWebShell — you usually don't need this directly)
+// Root layout provider (via NextWebShell — usually you don't need this directly)
 import { AuthProvider } from '@atta/auth/provider'
 
 // Middleware
 import { clerkMiddleware, createRouteMatcher } from '@atta/auth/middleware'
 
 // Server components / route handlers
-import { auth, currentUser } from '@atta/auth/hooks'   // Clerk's auth() and currentUser()
+import { auth, currentUser } from '@atta/auth/hooks'
 
 // Client components
 import { useAuth, useUser, useClerk } from '@atta/auth'
@@ -38,46 +44,75 @@ import { buildClerkAppearance } from '@atta/auth'
 
 ## Rules
 
-### RULE #1: AuthProvider is provided by NextWebShell — don't add it again
+### RULE #1: One Clerk app for the entire ecosystem
+
+There is exactly one Clerk application. Its publishable key and secret key are shared across all products in the monorepo. Never create a new Clerk application per product.
+
+```env
+# Same values across all apps in the monorepo
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxx
+CLERK_SECRET_KEY=sk_live_xxx
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+```
+
+### RULE #2: Cookie scope must be the parent domain
+
+Production: `.attalabs.dev`
+Local development: `.attalabs.test`
+
+This is configured in the Clerk dashboard under "Domains" — set the satellite/primary domains so that the session cookie is set with `Domain=.attalabs.dev`. All product subdomains (`vada.attalabs.dev`, `vitakka.attalabs.dev`, `sati.attalabs.dev`, `account.attalabs.dev`) inherit the session.
+
+### RULE #3: AuthProvider is provided by NextWebShell — don't add it again
 
 `NextWebShell` wraps children in `AuthProvider`. Never add a second `AuthProvider` inside a product.
 
 ```tsx
 // ✅ Root layout uses NextWebShell — AuthProvider is included
-<NextWebShell config={config} styleId="herald-theme">{children}</NextWebShell>
+<NextWebShell config={config} styleId="vada-theme">{children}</NextWebShell>
 
 // ❌ Never add AuthProvider manually when using NextWebShell
 <AuthProvider><NextWebShell>...</NextWebShell></AuthProvider>
 ```
 
-### RULE #2: Each product has its own Clerk keys
+### RULE #4: One shared users table
 
-```env
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=   # Product-specific
-CLERK_SECRET_KEY=                    # Product-specific
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-```
-
-**Never share Clerk keys between products.** Each product is a separate Clerk application.
-
-### RULE #3: Each product has its own local users table
-
-Users are synced from Clerk into a local `users` table keyed by `clerk_id`. No cross-product user table sharing.
+Users are synced from Clerk into a single `users` table in `@atta/db`, keyed by `clerk_id`. Per-product data lives in product-specific tables that reference `clerk_id` as a foreign key.
 
 ```ts
-// Per-product pattern in src/db/schema.ts
+// packages/db/src/schema/users.ts (single shared table)
 export const users = pgTable('users', {
   clerkId: varchar('clerk_id', { length: 255 }).primaryKey(),
-  // ...product-specific fields
+  email: varchar('email', { length: 320 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  // shared fields only — no product-specific fields here
+})
+
+// Per-product profile in product-specific schema
+export const vadaProfile = pgTable('vada_profile', {
+  clerkId: varchar('clerk_id', { length: 255 })
+    .primaryKey()
+    .references(() => users.clerkId, { onDelete: 'cascade' }),
+  // ...vada-specific fields
+})
+
+export const sataiProfile = pgTable('sati_profile', {
+  clerkId: varchar('clerk_id', { length: 255 })
+    .primaryKey()
+    .references(() => users.clerkId, { onDelete: 'cascade' }),
+  // ...sati-specific fields
 })
 ```
+
+### RULE #5: account.attalabs.dev is the canonical settings/billing surface
+
+Universal account concerns — billing, subscription, API tokens, MCP access management, profile editing — live at `account.attalabs.dev`. Do not scatter these across product subdomains. Each product can deep-link to `account.attalabs.dev/{section}` when appropriate.
 
 ---
 
 ## Middleware (protecting routes)
 
-Every product that has protected routes needs a `middleware.ts` at the app root (`src/middleware.ts` or root `middleware.ts`):
+Every product that has protected routes needs a `middleware.ts` at the app root:
 
 ```ts
 // middleware.ts
@@ -105,13 +140,12 @@ export const config = {
 ### Server Components / Route Handlers
 
 ```ts
-import { auth } from '@atta/auth/hooks'
+import { auth, currentUser } from '@atta/auth/hooks'
 
-// In an async server component or route handler
 const { userId } = await auth()
 if (!userId) redirect('/sign-in')
 
-// Get full user object (heavier — use only when needed)
+// Heavier — only when needed
 const user = await currentUser()
 ```
 
@@ -134,12 +168,7 @@ function MyComponent() {
 
 ## Sign In / Sign Up Pages
 
-Use Clerk's hosted components at the configured paths:
-
-```
-/sign-in  →  Clerk SignIn component
-/sign-up  →  Clerk SignUp component
-```
+Each product hosts its own sign-in/sign-up routes that delegate to Clerk. Because the cookie is scoped to `.attalabs.dev`, signing in on any product's `/sign-in` produces a session valid across all products.
 
 ```tsx
 // apps/{product}/web/src/app/sign-in/[[...sign-in]]/page.tsx
@@ -149,13 +178,34 @@ export default function SignInPage() {
 }
 ```
 
+For ecosystem-level marketing flows, prefer routing users to `account.attalabs.dev/sign-in` so the entry point is consistent.
+
+---
+
+## Local Development
+
+Production uses `.attalabs.dev`. Locally, use **`.attalabs.test`** (IETF-reserved TLD, no HTTPS enforcement).
+
+`/etc/hosts`:
+```
+127.0.0.1   attalabs.test
+127.0.0.1   vada.attalabs.test
+127.0.0.1   vitakka.attalabs.test
+127.0.0.1   sati.attalabs.test
+127.0.0.1   account.attalabs.test
+```
+
+In the Clerk dashboard, configure a development instance with cookie domain `.attalabs.test`. Use the development Clerk keys in local `.env` files.
+
+Do **not** use `.attalabs.dev` locally — Chrome forces HTTPS on the `.dev` TLD, which makes self-signed certs painful.
+
 ---
 
 ## Clerk Appearance (Theme Integration)
 
-Clerk's UI is automatically themed to match the product's CMS theme via `buildClerkAppearance` inside `NextWebShell`. You never need to configure this manually.
+Clerk's UI is automatically themed to match the active product's CMS theme via `buildClerkAppearance` inside `NextWebShell`. No manual configuration needed.
 
-If you need Clerk appearance outside of `NextWebShell`:
+If Clerk appearance is needed outside `NextWebShell`:
 
 ```ts
 import { buildClerkAppearance } from '@atta/auth'
@@ -177,9 +227,12 @@ const appearance = buildClerkAppearance({
 
 ## Anti-patterns
 
-- ❌ Adding `AuthProvider` inside `NextWebShell` children — it's already provided
-- ❌ Sharing `CLERK_SECRET_KEY` across products
-- ❌ Reading user data from another product's Clerk application
+- ❌ Creating a separate Clerk application per product
+- ❌ Adding `AuthProvider` inside `NextWebShell` children
+- ❌ Setting cookie scope to a product subdomain (`vada.attalabs.dev`) instead of the parent (`.attalabs.dev`) — breaks SSO
+- ❌ Creating a per-product `users` table — there is one shared table; per-product data lives in per-product profile tables referencing `clerk_id`
 - ❌ Storing Clerk's full user object in the database — store only `clerk_id` as FK
 - ❌ Using `useAuth` in a Server Component — use `auth()` from `@atta/auth/hooks`
 - ❌ Checking `isSignedIn` before `isLoaded` — always gate on `isLoaded` first
+- ❌ Building per-product billing/settings UI — those live at `account.attalabs.dev`
+- ❌ Using `.attalabs.dev` for local development — use `.attalabs.test`
