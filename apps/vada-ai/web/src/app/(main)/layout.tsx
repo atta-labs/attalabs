@@ -10,8 +10,8 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
   const { userId: clerkId } = await auth()
   let faceStyle: FaceStyle = 'emblematic'
   if (clerkId) {
-    const user = await getOrCreateUser(clerkId, '')
-    const settings = await getUserSettings(user.id)
+    await getOrCreateUser(clerkId, '')
+    const settings = await getUserSettings(clerkId)
     faceStyle = settings.faceStyle as FaceStyle
   }
 

@@ -35,16 +35,23 @@ export const terminalStateEnum = pgEnum('terminal_state', [
 export const interventionTypeEnum = pgEnum('intervention_type', ['WHISPER', 'DIRECTIVE', 'STOP'])
 
 export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  clerkId: varchar('clerk_id').unique().notNull(),
+  clerkId: varchar('clerk_id', { length: 255 }).primaryKey(),
   email: varchar('email').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull()
 })
 
+export const vadaProfile = pgTable('vada_profile', {
+  clerkId: varchar('clerk_id', { length: 255 })
+    .primaryKey()
+    .references(() => users.clerkId, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+})
+
 export const sessions = pgTable('sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
-    .references(() => users.id)
+  clerkId: varchar('clerk_id', { length: 255 })
+    .references(() => users.clerkId)
     .notNull(),
   question: text('question').notNull(),
   agents: text('agents').array().notNull(),
@@ -227,8 +234,8 @@ export const userTeamModels = pgTable(
   'user_team_models',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id')
-      .references(() => users.id)
+    clerkId: varchar('clerk_id', { length: 255 })
+      .references(() => users.clerkId)
       .notNull(),
     teamId: varchar('team_id').notNull(), // 'crucible' | 'war_room' | 'sparring'
     agentRole: varchar('agent_role').notNull(), // role slug e.g. 'strategist'
@@ -237,13 +244,13 @@ export const userTeamModels = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull()
   },
-  (t) => [unique().on(t.userId, t.teamId, t.agentRole)]
+  (t) => [unique().on(t.clerkId, t.teamId, t.agentRole)]
 )
 
 export const userSettings = pgTable('user_settings', {
-  userId: uuid('user_id')
+  clerkId: varchar('clerk_id', { length: 255 })
     .primaryKey()
-    .references(() => users.id),
+    .references(() => users.clerkId, { onDelete: 'cascade' }),
   faceStyle: varchar('face_style').default('emblematic').notNull(), // 'reductive' | 'emblematic'
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })

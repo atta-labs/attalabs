@@ -51,9 +51,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return new Response('Unauthorized', { status: 401 })
   }
 
-  const user = await getOrCreateUser(clerkId, '')
+  await getOrCreateUser(clerkId, '')
   const { id } = await params
-  const session = await getSessionWithTranscriptForUser(id, user.id)
+  const session = await getSessionWithTranscriptForUser(id, clerkId)
 
   if (!session) {
     return new Response('Session not found', { status: 404 })

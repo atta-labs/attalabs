@@ -1,6 +1,8 @@
 # @atta/auth — Shared Authentication
 
-Shared Clerk authentication utilities for the Atta AI ecosystem. Each product provides its own Clerk keys via environment variables.
+Shared Clerk authentication utilities for the Atta AI ecosystem. The entire ecosystem uses a **single Clerk application** with subdomain SSO via cookie scoping to `.attalabs.dev` (prod) or `.attalabs.test` (dev).
+
+Sign in once on any product subdomain → signed in everywhere.
 
 ## Usage
 
@@ -12,6 +14,8 @@ export default function RootLayout({ children }) {
   return <AuthProvider>{children}</AuthProvider>
 }
 ```
+
+Usually wrapped by `NextWebShell` — do not add `AuthProvider` again if using `NextWebShell`.
 
 ### Middleware
 ```typescript
@@ -25,12 +29,24 @@ export default clerkMiddleware(async (auth, req) => {
 
 ### Server Components
 ```typescript
-import { auth } from '@atta/auth/hooks'
+import { auth, currentUser } from '@atta/auth/hooks'
 const { userId } = await auth()
+```
+
+### Client Components
+```tsx
+'use client'
+import { useAuth, useUser } from '@atta/auth'
+
+function MyComponent() {
+  const { userId, isSignedIn, isLoaded } = useAuth()
+}
 ```
 
 ## Key Rules
 
-- Each app has its own CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-- No user data crosses products
-- Each app maintains its own local users table with clerk_id column
+- **One Clerk application** for the entire ecosystem (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY shared across all products)
+- **One shared `users` table** in `@atta/db`, keyed by `clerk_id`
+- **Per-product profile tables** reference `users.clerk_id` as FK
+- Cookie domain set in Clerk dashboard: `.attalabs.dev` (prod), `.attalabs.test` (dev)
+- No per-product Clerk applications

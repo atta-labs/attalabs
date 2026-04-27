@@ -13,8 +13,8 @@ import { getOrCreateUser, listSessions } from '@/db/queries'
 export default async function HistoryPage() {
   const { userId: clerkId } = await auth()
 
-  const user = await getOrCreateUser(clerkId!, '')
-  const sessions = await listSessions(user.id)
+  await getOrCreateUser(clerkId!, '')
+  const sessions = await listSessions(clerkId!)
 
   return (
     <div className='px-6 py-4'>
