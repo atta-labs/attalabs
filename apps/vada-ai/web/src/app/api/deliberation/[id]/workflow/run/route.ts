@@ -14,10 +14,10 @@ import { getOrCreateUser, getSessionForUser, getSessionWithTranscript, setSessio
 import { persistTurn } from '@/engine/turn-logic'
 import type { TurnPhase } from '@/engine/types'
 
-export const maxDuration = 900 // 15 min — required for long SSE streams on Vercel
+export const maxDuration = 300 // Hobby plan max (5 min)
 
 const KEEPALIVE_INTERVAL_MS = 15_000
-const MAX_DURATION_MS = 15 * 60 * 1_000
+const MAX_DURATION_MS = 5 * 60 * 1_000
 const POLL_INTERVAL_MS = 1_000
 
 function sseChunk(data: Record<string, unknown>): Uint8Array {
