@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "cd ../../.. && bun install --frozen-lockfile && bun turbo run build --filter=@atta/vada-ai-web",
-  "installCommand": "echo 'Install handled by buildCommand'",
+  "buildCommand": "cd ../../.. && bun turbo run build --filter=@atta/vada-ai-web",
+  "installCommand": "cd ../../.. && bun install --frozen-lockfile",
   "outputDirectory": ".next"
 }
