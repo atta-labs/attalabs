@@ -55,7 +55,8 @@
     "lucide-react": "^1.7.0",
     "motion": "^12.38.0",
     "radix-ui": "^1.4.3",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.0.0"
   },
   "peerDependencies": {
     "next": ">=16.0.0",
