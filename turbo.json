@@ -7,6 +7,17 @@
     },
     "build": {
       "dependsOn": ["typecheck", "^build"],
+      "env": [
+        "DATABASE_URL",
+        "CLERK_SECRET_KEY",
+        "ANTHROPIC_API_KEY",
+        "SETTINGS_ENCRYPTION_KEY",
+        "GROQ_API_KEY",
+        "GOOGLE_GENERATIVE_AI_API_KEY",
+        "DEFAULT_PROVIDER",
+        "VADA_USE_LANGGRAPH",
+        "VADA_DAILY_SESSION_LIMIT"
+      ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "dev": {
