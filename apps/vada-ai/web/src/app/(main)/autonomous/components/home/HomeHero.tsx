@@ -13,7 +13,9 @@ export function HomeHero() {
   return (
     <HomeCanvas
       render={({ animationComplete, ringVisible }) => (
-        <div className={`relative z-10 flex flex-col items-center gap-10 transition-opacity duration-150 ${ringVisible ? '' : 'opacity-0 pointer-events-none'}`}>
+        <div
+          className={`relative z-10 flex flex-col items-center gap-10 transition-opacity duration-150 ${ringVisible ? '' : 'opacity-0 pointer-events-none'}`}
+        >
           <div
             className={`flex flex-col items-center gap-4 transition-all duration-700 ease-out ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}
           >

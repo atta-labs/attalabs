@@ -248,9 +248,9 @@ function computeShimmer(bx: number, by: number, t: number): { x: number; y: numb
 // The tangential (rotating) term gives the "wave moving around" feel.
 function computeWaterWave(bx: number, by: number, t: number): { x: number; y: number } {
   // Three plane waves at different angles and speeds
-  const p1 = bx * 1.3 + by * 0.5 - t * 0.013   // NE swell (dominant)
-  const p2 = -bx * 0.6 + by * 1.4 - t * 0.009   // NW counter-swell
-  const p3 = bx * 0.5 - by * 1.0 - t * 0.020    // SE ripple (faster)
+  const p1 = bx * 1.3 + by * 0.5 - t * 0.013 // NE swell (dominant)
+  const p2 = -bx * 0.6 + by * 1.4 - t * 0.009 // NW counter-swell
+  const p3 = bx * 0.5 - by * 1.0 - t * 0.02 // SE ripple (faster)
 
   // Tangential rotation around canvas center — the "wave moving around" feel.
   // 2-lobe pattern (p4 has 2π·2 phase per revolution) rotating slowly.
