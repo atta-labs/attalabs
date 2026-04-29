@@ -2,7 +2,7 @@ import { dark } from '@clerk/themes'
 
 /**
  * Build Clerk appearance from resolved theme colors.
- * Called server-side in the layout so Clerk gets real hex values,
+ * Called server-side in the layout so Clerk gets real computed values,
  * not CSS variables that might not resolve inside its portal.
  *
  * `colorScheme` sets Clerk's baseTheme — variable overrides alone don't
@@ -21,8 +21,10 @@ export function buildClerkAppearance(
     destructive: string
   },
   colorScheme: 'light' | 'dark' = 'light',
-  fontSans?: string
+  fontSans?: string,
+  radius?: string
 ): Record<string, unknown> {
+  const borderRadius = radius ?? '0.5rem'
   return {
     baseTheme: colorScheme === 'dark' ? dark : undefined,
     layout: {
@@ -38,29 +40,50 @@ export function buildClerkAppearance(
       colorText: colors.foreground,
       colorTextSecondary: colors.mutedForeground,
       colorDanger: colors.destructive,
-      borderRadius: '0.5rem',
+      borderRadius,
       ...(fontSans ? { fontFamily: fontSans } : {})
     },
     elements: {
-      formButtonPrimary: {
-        backgroundColor: colors.primary,
-        color: colors.primaryForeground,
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        fontWeight: '600'
+      rootBox: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        boxShadow: 'none'
       },
       card: {
         backgroundColor: colors.card,
         border: `1px solid ${colors.border}`,
         boxShadow: 'none'
       },
-      input: {
-        backgroundColor: colors.card,
-        border: `1px solid ${colors.border}`,
+      modalBackdrop: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      },
+      modalContent: {
+        margin: '0',
+        boxShadow: 'none'
+      },
+      headerTitle: {
         color: colors.foreground,
-        '::placeholder': {
-          color: colors.mutedForeground
-        }
+        fontFamily: 'var(--font-serif)',
+        fontSize: '1.5rem'
+      },
+      headerSubtitle: {
+        color: colors.mutedForeground
+      },
+      formButtonPrimary: {
+        backgroundColor: colors.primary,
+        color: colors.primaryForeground,
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em',
+        fontWeight: '600',
+        borderRadius
+      },
+      formButtonSecondary: {
+        backgroundColor: 'transparent',
+        border: `1px solid ${colors.border}`,
+        color: colors.foreground
       },
       formFieldLabel: {
         color: colors.foreground
@@ -73,33 +96,43 @@ export function buildClerkAppearance(
       formFieldInput__identifier: {
         color: colors.foreground
       },
+      formFieldAction: {
+        color: colors.primary
+      },
+      input: {
+        backgroundColor: colors.card,
+        border: `1px solid ${colors.border}`,
+        color: colors.foreground,
+        '::placeholder': {
+          color: colors.mutedForeground
+        }
+      },
+      otpCodeFieldInput: {
+        backgroundColor: colors.card,
+        border: `1px solid ${colors.border}`,
+        color: colors.foreground
+      },
       socialButtonsBlockButton: {
         backgroundColor: 'transparent',
         border: `1px solid ${colors.border}`,
         color: colors.foreground
       },
-      modalBackdrop: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
+      alternativeMethodsBlockButton: {
+        backgroundColor: 'transparent',
+        border: `1px solid ${colors.border}`,
+        color: colors.foreground
       },
-      modalContent: {
-        margin: '0'
+      selectButton: {
+        backgroundColor: colors.card,
+        border: `1px solid ${colors.border}`,
+        color: colors.foreground
       },
-      rootBox: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center'
+      selectOptionsContainer: {
+        backgroundColor: colors.card,
+        border: `1px solid ${colors.border}`,
+        boxShadow: 'none'
       },
-      footer: {
-        display: 'none'
-      },
-      headerTitle: {
-        color: colors.foreground,
-        fontFamily: 'var(--font-serif)',
-        fontSize: '1.5rem'
-      },
-      headerSubtitle: {
+      backLink: {
         color: colors.mutedForeground
       },
       dividerLine: {
@@ -114,6 +147,9 @@ export function buildClerkAppearance(
       badge: {
         color: colors.mutedForeground,
         backgroundColor: colors.muted
+      },
+      footer: {
+        display: 'none'
       }
     }
   }
