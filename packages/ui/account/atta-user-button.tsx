@@ -2,10 +2,6 @@
 
 import { UserButton } from '@atta/auth'
 
-interface AttaUserButtonProps {
-  afterSignOutUrl?: string
-}
-
 const BUTTON_ELEMENTS = {
   userButtonAvatarBox: {
     width: '1.5rem',
@@ -27,6 +23,6 @@ const BUTTON_ELEMENTS = {
   }
 }
 
-export function AttaUserButton({ afterSignOutUrl = '/' }: AttaUserButtonProps) {
-  return <UserButton afterSignOutUrl={afterSignOutUrl} appearance={{ elements: BUTTON_ELEMENTS }} />
+export function AttaUserButton() {
+  return <UserButton appearance={{ elements: BUTTON_ELEMENTS }} />
 }

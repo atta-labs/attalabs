@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react'
 interface AttaUserProfileProps {
   logoLight?: string
   logoDark?: string
-  routing?: 'hash' | 'virtual'
 }
 
 const PROFILE_ELEMENTS = {
@@ -38,7 +37,7 @@ const PROFILE_ELEMENTS = {
   }
 }
 
-export function AttaUserProfile({ logoLight, logoDark, routing = 'hash' }: AttaUserProfileProps) {
+export function AttaUserProfile({ logoLight, logoDark }: AttaUserProfileProps) {
   const [scheme, setScheme] = useState<'light' | 'dark'>('dark')
 
   useEffect(() => {
@@ -56,7 +55,7 @@ export function AttaUserProfile({ logoLight, logoDark, routing = 'hash' }: AttaU
 
   return (
     <UserProfile
-      routing={routing}
+      routing='hash'
       appearance={{
         elements: PROFILE_ELEMENTS,
         ...(logoImageUrl ? { layout: { logoImageUrl } } : {})
