@@ -145,8 +145,9 @@ export function buildClerkAppearance(
         letterSpacing: '0.1em'
       },
       badge: {
-        color: colors.mutedForeground,
-        backgroundColor: colors.muted
+        color: colors.foreground,
+        backgroundColor: colors.muted,
+        border: `1px solid ${colors.border}`
       },
       footer: {
         display: 'none'
