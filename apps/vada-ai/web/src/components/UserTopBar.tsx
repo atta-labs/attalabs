@@ -12,7 +12,7 @@ import {
 } from '@atta/ui'
 import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { useClerk, useUser } from '@atta/auth'
+import { SignInButton, useClerk, useUser } from '@atta/auth'
 import { LogOut, Settings } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
@@ -31,7 +31,7 @@ const AUTH_NAV = [
 ]
 
 export function UserTopBar({ logo }: UserTopBarProps) {
-  const { signOut, openSignUp } = useClerk()
+  const { signOut } = useClerk()
   const { user } = useUser()
   const pathname = usePathname()
 
@@ -101,9 +101,11 @@ export function UserTopBar({ logo }: UserTopBarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button variant='outline' size='sm' className='text-xs' onClick={() => openSignUp()}>
-            Sign in
-          </Button>
+          <SignInButton mode='modal' fallbackRedirectUrl={pathname}>
+            <Button variant='outline' size='sm' className='text-xs'>
+              Sign in
+            </Button>
+          </SignInButton>
         )}
       </div>
     </nav>

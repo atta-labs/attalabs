@@ -149,11 +149,14 @@ export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() =>
 
   const animationComplete = activeStep >= 6
 
+  // Shockwave: when the fully-formed ring scrolls off screen, fire a closing pulse
+  // so the fabric visibly "snaps back" from where the ring was.
+  const shockwaveFiredRef = useRef(false)
   useEffect(() => {
-    if (!animationComplete) return
-    const id = setTimeout(() => ctx?.startGravity(), 500)
-    return () => clearTimeout(id)
-  }, [animationComplete, ctx])
+    if (!animationComplete || ringVisible || shockwaveFiredRef.current || !ctx) return
+    shockwaveFiredRef.current = true
+    ctx.startGravity()
+  }, [animationComplete, ringVisible, ctx])
 
   return {
     activeAgent,

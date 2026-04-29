@@ -8,12 +8,19 @@ export interface FabricConfig {
   approachSpeedMultiplier: number
   forceCompleteAtSphereEdge: boolean
   shockWaveOnArrival: boolean
+  /** 0 = no gravity fold; 1 = full Gaussian funnel pull toward ring. Default 1. */
+  gravityMultiplier?: number
+  /** Replace the default shimmer with a multi-plane water-surface wave.
+   *  Also allows Tron particles to spawn as soon as phase=settled (no gravity ramp needed). */
+  waterWave?: boolean
 }
 
 const DEFAULT_FABRIC_CONFIG: FabricConfig = {
   approachSpeedMultiplier: 1.5,
   forceCompleteAtSphereEdge: true,
-  shockWaveOnArrival: false
+  shockWaveOnArrival: false,
+  gravityMultiplier: 1,
+  waterWave: false
 }
 
 // ── Grid definition ───────────────────────────────────────────────────────────
@@ -201,6 +208,7 @@ interface TronBirth {
   origin?: boolean // true = intensified rendering (1.8× glow, more tendrils) for sphere-origin event
   gather?: boolean // true = particle orbits at perimeter, never absorbed
   speedMultiplier?: number // per-particle speed multiplier (default 1.0)
+  ambient?: boolean // true = pure visual discharge — emergence plays, no particle spawns after
 }
 let tronBirths: TronBirth[] = []
 let firstParticleSpawned = false
@@ -225,6 +233,37 @@ export function resetFabricState(): void {
   firstParticleSpawned = false
   originTotalCount = 0
   originArrivedCount = 0
+}
+
+// ── Vertex wave helpers ───────────────────────────────────────────────────────
+
+// Default: single diagonal shimmer — subtle, all-over undulation.
+function computeShimmer(bx: number, by: number, t: number): { x: number; y: number } {
+  const phase = bx * 0.55 + by * 0.35 - t * 0.006
+  return { x: Math.sin(phase) * 1.8, y: Math.sin(phase + 0.7) * 1.8 }
+}
+
+// Water wave: three overlapping plane-waves + a rotating tangential component.
+// Interference between the three planes creates an organic, non-repeating surface.
+// The tangential (rotating) term gives the "wave moving around" feel.
+function computeWaterWave(bx: number, by: number, t: number): { x: number; y: number } {
+  // Three plane waves at different angles and speeds
+  const p1 = bx * 1.3 + by * 0.5 - t * 0.013   // NE swell (dominant)
+  const p2 = -bx * 0.6 + by * 1.4 - t * 0.009   // NW counter-swell
+  const p3 = bx * 0.5 - by * 1.0 - t * 0.020    // SE ripple (faster)
+
+  // Tangential rotation around canvas center — the "wave moving around" feel.
+  // 2-lobe pattern (p4 has 2π·2 phase per revolution) rotating slowly.
+  const rAngle = Math.atan2(by - 0.5, bx - 0.5)
+  const p4 = rAngle * 2.0 + t * 0.012
+  const rotAmt = Math.sin(p4) * 2.5
+  const tanX = -Math.sin(rAngle) * rotAmt
+  const tanY = Math.cos(rAngle) * rotAmt
+
+  return {
+    x: Math.sin(p1) * 5.0 + Math.sin(p2) * 3.0 + Math.sin(p3) * 2.0 + tanX,
+    y: Math.sin(p1 + 1.0) * 4.5 + Math.sin(p2 + 0.8) * 2.8 + Math.sin(p3 + 1.3) * 1.8 + tanY
+  }
 }
 
 function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: number): void {
@@ -354,9 +393,11 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   // First particle spawns immediately when the ring finishes forming (no random gate).
   // Subsequent ones use the normal 0.8%/frame probability.
   const spawnNow = !firstParticleSpawned && tronParticles.length + activeBirths === 0
+  // waterWave pages bypass the gravity ramp gate — particles spawn as soon as settled.
+  const canSpawnParticles = config.waterWave ? state.phase === 'settled' : settleProgress >= 1
   if (
     spheres.length > 0 &&
-    settleProgress >= 1 &&
+    canSpawnParticles &&
     tronParticles.length + activeBirths < 5 &&
     (spawnNow || Math.random() < 0.008)
   ) {
@@ -409,6 +450,31 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     }
   }
 
+  // ── Ambient lightning — fabric discharges with no particle, waterWave pages only ──
+  // Small electrical bursts appear randomly across the grid, making the fabric feel alive.
+  // Max 2 concurrent, ~1 new flash every 2–3 seconds at 60fps.
+  if (config.waterWave && canSpawnParticles && Math.random() < 0.005) {
+    const activeAmbient = tronBirths.filter((b) => b.ambient && !b.spawned).length
+    if (activeAmbient < 2) {
+      const ar = 3 + Math.floor(Math.random() * (ROWS - 6))
+      const ac = 4 + Math.floor(Math.random() * (COLS - 8))
+      const palette = spheres.length > 0 ? spheres.map((s) => s.color) : null
+      const color = palette ? palette[Math.floor(Math.random() * palette.length)]! : fgAt(1)
+      tronBirths.push({
+        r: ar,
+        c: ac,
+        targetSphereId: '',
+        color,
+        startT: t,
+        spawned: false,
+        tendrils: generateTendrils(ar, ac, 3 + Math.floor(Math.random() * 2)),
+        charPool: generateCharPool(),
+        origin: true, // 1.8× glow intensity — snappy, electric
+        ambient: true
+      })
+    }
+  }
+
   // Union every particle's full edge history into one lookup set.
   // ownedEdges is unbounded (no TRAIL_LEN cap) so particles never re-enter
   // any edge they have ever traveled — including segments that have faded
@@ -449,8 +515,16 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     // Resolve sphere once — used for final approach and movement homing
     const sphere = spheres.find((s) => s.id === p.targetSphereId)
 
+    // Target sphere vanished (invisible / filtered out) — kill gracefully so the
+    // particle doesn't wander aimlessly forever without a home to converge on.
+    if (!sphere && !p.dying) {
+      p.dying = true
+      return true
+    }
+
     // ── Gather stopped — particle reached perimeter and holds position ──
     if (p.gatherOrbiting) {
+      if (!sphere) return false // sphere gone — remove immediately
       return true // hold position, never die
     }
 
@@ -633,38 +707,15 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     const nx = dx / dist
     const ny = dy / dist
 
-    // ── Unified wave — whole fabric moves as one piece ────────────────────
-    // Low spatial frequency → all vertices nearly in phase → single-sheet undulation
-    const phase = v.bx * 0.55 + v.by * 0.35 - t * 0.006
-    const shimmerX = Math.sin(phase) * 1.8
-    const shimmerY = Math.sin(phase + 0.7) * 1.8
+    const wave = config.waterWave ? computeWaterWave(v.bx, v.by, t) : computeShimmer(v.bx, v.by, t)
 
     // ── Gravitational funnel — Gaussian profile peaked at RING_R ─────────
-    //
-    // Formula: pull(r) = PULL_MAX * u * exp(-u²/2)  where u = dist/RING_R
-    //
-    // Why Gaussian and not 1/(r+k):
-    //   The Gaussian profile peaks at exactly r=RING_R, creating maximum
-    //   fabric compression AT the ring edge — this is what the "planet on
-    //   fabric" diagram looks like. Vertices both near center AND far away
-    //   are nearly undisturbed; the steep curve is concentrated at the ring.
-    //
-    // Pull values (PULL_MAX = 0.55 * RING_R):
-    //   r=0          (center):         pull = 0          — fabric flat inside
-    //   r=0.5*RING_R (inner half):     pull ≈ 0.20*RING_R — mild inward compression
-    //   r=RING_R     (ring edge):      pull ≈ 0.33*RING_R — maximum compression here
-    //   r=2*RING_R   (outer region):   pull ≈ 0.10*RING_R — falling back to flat
-    //   r=3*RING_R   (far edge):       pull ≈ 0.013*RING_R — nearly flat
-    //
-    // No-crossing: d(pull)/dr at r=0 = PULL_MAX/RING_R = 0.55 < 1 ✓
+    // gravityMultiplier=0 disables the pull entirely (fabric stays flat).
     const PULL_MAX = RING_R * 0.55
     const u = dist / RING_R
-    const pull = settleProgress * PULL_MAX * u * Math.exp(-(u * u) / 2)
+    const pull = (config.gravityMultiplier ?? 1) * settleProgress * PULL_MAX * u * Math.exp(-(u * u) / 2)
 
     // ── Ripple displacement ───────────────────────────────────────────────
-    // 'radial' ripples expand outward from their own source (correct for
-    // off-center origins like sphere positions). Default mode applies the
-    // original tangential offset relative to the fabric center.
     let rippleX = 0
     let rippleY = 0
     for (const rp of ripples) {
@@ -684,8 +735,6 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     }
 
     // ── Closing pulse — expanding energy wave from ring center ───────────
-    // Fires once when the ring closes. A large circular wave expands outward
-    // with multiple oscillation bands, decaying over ~4 seconds.
     let pulseX = 0
     let pulseY = 0
     for (const cp of closingPulses) {
@@ -696,7 +745,6 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
       const pny = pdy / pdist
 
       const age = t - cp.startT
-      // Three concentric wave fronts with different speeds — like rings on water, slowed for gentle effect
       const fronts = [
         { speed: 2, sigma: 90, amp: 28 },
         { speed: 1.2, sigma: 120, amp: 18 },
@@ -705,9 +753,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
       for (const f of fronts) {
         const waveFront = age * f.speed
         const envelope = Math.exp(-((pdist - waveFront) ** 2) / (f.sigma * f.sigma))
-        // Oscillation: radial ripple in the wake of the wave front
         const osc = Math.sin(pdist * 0.025 - age * 0.12) * envelope * cp.life * f.amp * (cp.intensity ?? 1)
-        // Radial push + small tangential swirl
         pulseX += pnx * osc - pny * osc * 0.15
         pulseY += pny * osc + pnx * osc * 0.15
       }
@@ -715,8 +761,8 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
 
     const mirrorX = splitX !== undefined && x0 < splitX ? -1 : 1
     return {
-      x: x0 - nx * pull + (shimmerX + rippleX + pulseX) * mirrorX,
-      y: y0 - ny * pull + shimmerY + rippleY + pulseY
+      x: x0 - nx * pull + (wave.x + rippleX + pulseX) * mirrorX,
+      y: y0 - ny * pull + wave.y + rippleY + pulseY
     }
   })
 
@@ -730,13 +776,11 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     const nx = dx / dist
     const ny = dy / dist
 
-    const phase = v.bx * 0.55 + v.by * 0.35 - t * 0.006
-    const shimmerX = Math.sin(phase) * 1.8
-    const shimmerY = Math.sin(phase + 0.7) * 1.8
+    const wave = config.waterWave ? computeWaterWave(v.bx, v.by, t) : computeShimmer(v.bx, v.by, t)
 
     const PULL_MAX = RING_R * 0.55
     const u = dist / RING_R
-    const pull = settleProgress * PULL_MAX * u * Math.exp(-(u * u) / 2)
+    const pull = (config.gravityMultiplier ?? 1) * settleProgress * PULL_MAX * u * Math.exp(-(u * u) / 2)
 
     let rippleX = 0
     let rippleY = 0
@@ -781,8 +825,8 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
 
     const mirrorX = splitX !== undefined && x0 < splitX ? -1 : 1
     return {
-      x: x0 - nx * pull + (shimmerX + rippleX + pulseX) * mirrorX,
-      y: y0 - ny * pull + shimmerY + rippleY + pulseY
+      x: x0 - nx * pull + (wave.x + rippleX + pulseX) * mirrorX,
+      y: y0 - ny * pull + wave.y + rippleY + pulseY
     }
   })
 
@@ -935,9 +979,10 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
       }
     }
 
-    // 5. Spawn the particle when emergence completes
+    // 5. Spawn the particle when emergence completes (ambient births skip this — pure visual)
     if (!birth.spawned && age >= BIRTH_DURATION) {
       birth.spawned = true
+      if (birth.ambient) return true // discharge fades out, no particle follows
       const targetSphere = spheres.find((s) => s.id === birth.targetSphereId)
       const colorTaken =
         !birth.origin && !birth.gather && tronParticles.some((q) => !q.dying && q.color === birth.color)
@@ -1154,9 +1199,9 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     ctx.restore()
   }
 
-  // Halo brightens near ring edge as fabric curves inward — only when a real ring is present.
-  // Without a ring, RING_R is a phantom fallback value and this would draw an unwanted glow circle.
-  if (rings.length > 0 && settleProgress > 0.05) {
+  // Halo brightens near ring edge as fabric curves inward — only when gravity fold is active.
+  // Without a ring or with gravityMultiplier=0 this would draw an unwanted phantom glow circle.
+  if (rings.length > 0 && settleProgress > 0.05 && (config.gravityMultiplier ?? 1) > 0) {
     const g = ctx.createRadialGradient(CX, CY, RING_R * 0.7, CX, CY, RING_R * 1.4)
     g.addColorStop(0, fgAt(0))
     g.addColorStop(0.5, fgAt(0.04 * settleProgress))

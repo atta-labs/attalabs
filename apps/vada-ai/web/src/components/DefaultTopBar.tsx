@@ -11,17 +11,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@atta/ui'
-import { useClerk, useUser } from '@atta/auth'
+import { SignInButton, useClerk, useUser } from '@atta/auth'
 import { LogOut, Settings } from 'lucide-react'
 import { NextLink } from '@atta/ui/lib/next-link'
+import { usePathname } from 'next/navigation'
 
 interface DefaultTopBarProps {
   logo?: ReactNode
 }
 
 export function DefaultTopBar({ logo }: DefaultTopBarProps) {
-  const { signOut, openSignUp } = useClerk()
+  const { signOut } = useClerk()
   const { user } = useUser()
+  const pathname = usePathname()
 
   const displayName = user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress
   const email = user?.primaryEmailAddress?.emailAddress
@@ -76,9 +78,11 @@ export function DefaultTopBar({ logo }: DefaultTopBarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button variant='outline' size='sm' className='text-xs' onClick={() => openSignUp()}>
-            Sign in
-          </Button>
+          <SignInButton mode='modal' fallbackRedirectUrl={pathname}>
+            <Button variant='outline' size='sm' className='text-xs'>
+              Sign in
+            </Button>
+          </SignInButton>
         )}
       </div>
     </nav>

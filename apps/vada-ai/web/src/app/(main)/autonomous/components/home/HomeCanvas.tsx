@@ -9,7 +9,7 @@ import { useUserPreferences } from '@/lib/user-preferences-context'
 import { renderAutonomousFabric } from './fabric-autonomous'
 
 interface HomeCanvasProps {
-  render: (state: { animationStarted: boolean; animationComplete: boolean }) => ReactNode
+  render: (state: { animationStarted: boolean; animationComplete: boolean; ringVisible: boolean }) => ReactNode
 }
 
 interface HomeCanvasInnerProps extends HomeCanvasProps {
@@ -84,7 +84,7 @@ function HomeCanvasInner({ render, registerSphere, onOriginCompleteRef }: HomeCa
             )
           })}
         >
-          {render({ animationStarted, animationComplete })}
+          {render({ animationStarted, animationComplete, ringVisible })}
         </AIARing>
       </div>
     </div>

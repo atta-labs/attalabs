@@ -1,8 +1,7 @@
 'use client'
 
 import { Heading, Text } from '@atta/ui'
-import { Suspense, useEffect, useState } from 'react'
-import { AuthModalTrigger } from '../../../components/home/AuthModalTrigger'
+import { useEffect, useState } from 'react'
 import { DeliberateAction } from '../../../components/home/DeliberateAction'
 import { HomeCanvas } from './HomeCanvas'
 import { LearnMoreAction } from './LearnMoreAction'
@@ -13,12 +12,8 @@ export function HomeHero() {
 
   return (
     <HomeCanvas
-      render={({ animationComplete }) => (
-        <div className='relative z-10 flex flex-col items-center gap-10'>
-          <Suspense fallback={null}>
-            <AuthModalTrigger />
-          </Suspense>
-
+      render={({ animationComplete, ringVisible }) => (
+        <div className={`relative z-10 flex flex-col items-center gap-10 transition-opacity duration-150 ${ringVisible ? '' : 'opacity-0 pointer-events-none'}`}>
           <div
             className={`flex flex-col items-center gap-4 transition-all duration-700 ease-out ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}
           >

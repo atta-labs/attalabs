@@ -255,7 +255,9 @@ export function useAIACanvas(
         phase: phaseState.currentPhase,
         settleProgress: phaseState.settleProgress,
         rings,
-        spheres,
+        // Only expose visible spheres to the bg renderer — invisible spheres
+        // should not receive new fabric particles or trigger collision effects.
+        spheres: spheres.filter((s) => s.visible !== false),
         recentEvents: frameEvents,
         onSphereAbsorb: onSphereAbsorbRef.current,
         onOriginComplete: onOriginCompleteRef.current

@@ -1,9 +1,8 @@
 'use client'
 
 import { Heading, Text } from '@atta/ui/shared'
-import { Suspense, useContext } from 'react'
+import { useContext } from 'react'
 import { ChooserAnimationContext } from './ChooserScene'
-import { AuthModalTrigger } from './AuthModalTrigger'
 import { DeliberateAction } from './DeliberateAction'
 import { LearnMoreAction } from './LearnMoreAction'
 
@@ -14,10 +13,6 @@ export function ChooserHero() {
     <div
       className={`flex flex-col items-center justify-between h-full transition-all duration-700 ease-out ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
     >
-      <Suspense fallback={null}>
-        <AuthModalTrigger />
-      </Suspense>
-
       <div className='flex flex-col items-center'>
         <Heading level={1} className='text-6xl text-foreground font-serif'>
           Vāda

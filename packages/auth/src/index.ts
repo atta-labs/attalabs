@@ -1,4 +1,4 @@
-export { SignInButton, SignUpButton } from '@clerk/nextjs'
+export { SignIn, SignUp, SignInButton, SignUpButton } from '@clerk/nextjs'
 export { buildClerkAppearance } from './clerk-appearance'
 export { useAuth, useClerk, useUser } from './hooks'
 export { clerkMiddleware, createRouteMatcher } from './middleware'

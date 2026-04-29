@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@atta/ui'
-import { useClerk, useUser } from '@atta/auth'
+import { SignInButton, useClerk, useUser } from '@atta/auth'
 import { LogOut, Settings } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
@@ -21,7 +21,7 @@ interface HomeTopBarProps {
 }
 
 export function HomeTopBar({ logo }: HomeTopBarProps) {
-  const { signOut, openSignUp } = useClerk()
+  const { signOut } = useClerk()
   const { user } = useUser()
   const pathname = usePathname()
 
@@ -89,9 +89,11 @@ export function HomeTopBar({ logo }: HomeTopBarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button variant='outline' size='sm' className='text-xs' onClick={() => openSignUp()}>
-            Sign in
-          </Button>
+          <SignInButton mode='modal' fallbackRedirectUrl={pathname}>
+            <Button variant='outline' size='sm' className='text-xs'>
+              Sign in
+            </Button>
+          </SignInButton>
         )}
       </div>
     </nav>

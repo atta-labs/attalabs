@@ -129,6 +129,12 @@ function AIARingInner({
     ctx.updateRing('main-ring', { thinking })
   }, [ctx, thinking])
 
+  // Sync bgOpacity without unregister/re-register (e.g. scroll-driven fade)
+  useEffect(() => {
+    if (!ctx) return
+    ctx.updateRing('main-ring', { bgOpacity })
+  }, [ctx, bgOpacity])
+
   // Animate wave paths — drives wave motion by updating SVG path `d` attributes directly
   // This bypasses React re-renders for maximum performance
   useEffect(() => {

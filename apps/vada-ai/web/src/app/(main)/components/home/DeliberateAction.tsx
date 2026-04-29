@@ -1,26 +1,27 @@
 'use client'
 
-import { useClerk } from '@atta/auth'
+import { SignInButton, useAuth } from '@atta/auth'
 import { Button } from '@atta/ui'
-import { useAuth } from '@atta/auth'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 export function DeliberateAction() {
   const { isSignedIn } = useAuth()
-  const { openSignUp } = useClerk()
   const router = useRouter()
+  const pathname = usePathname()
 
-  const onClick = () => {
-    if (isSignedIn) {
-      router.push('/autonomous/deliberate')
-      return
-    }
-    openSignUp()
+  if (isSignedIn) {
+    return (
+      <Button variant='outline' size='lg' onClick={() => router.push('/autonomous/deliberate')}>
+        Deliberate
+      </Button>
+    )
   }
 
   return (
-    <Button variant='outline' size='lg' onClick={onClick}>
-      Deliberate
-    </Button>
+    <SignInButton mode='modal' fallbackRedirectUrl={pathname}>
+      <Button variant='outline' size='lg'>
+        Deliberate
+      </Button>
+    </SignInButton>
   )
 }

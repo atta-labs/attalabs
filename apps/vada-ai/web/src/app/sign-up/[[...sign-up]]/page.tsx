@@ -1,5 +1,9 @@
-import { redirect } from 'next/navigation'
+import { SignUp } from '@atta/auth'
 
 export default function SignUpPage() {
-  redirect('/?signup=1')
+  return (
+    <div className='flex min-h-screen items-center justify-center'>
+      <SignUp />
+    </div>
+  )
 }
