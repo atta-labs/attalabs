@@ -28,6 +28,7 @@
     "./lib/*": "./lib/*.ts",
     "./hooks/*": "./hooks/*.ts",
     "./components/*": "./libraries/basic/installed/*.tsx",
+    "./account": "./account/index.ts",
     "./scripts/generate-ui": "./scripts/generate-ui.ts"
   },
   "scripts": {
