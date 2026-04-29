@@ -40,7 +40,8 @@ export default async function SettingsPage() {
               Settings
             </Heading>
             <Text as='p' muted className='leading-relaxed'>
-              Configure your intelligence layer — API keys, model assignments per team, and agent aesthetics.
+              Manage your account and configure your intelligence layer — API keys, model assignments per team, and
+              agent aesthetics.
             </Text>
           </div>
 
