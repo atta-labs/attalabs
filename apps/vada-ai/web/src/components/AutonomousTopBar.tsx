@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@atta/ui'
-import { useClerk, useUser } from '@clerk/nextjs'
+import { useClerk, useUser } from '@atta/auth'
 import { LogOut, Settings } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
@@ -31,7 +31,7 @@ const AUTH_NAV = [
 ]
 
 export function AutonomousTopBar({ logo }: AutonomousTopBarProps) {
-  const { signOut, openSignIn } = useClerk()
+  const { signOut, openSignUp } = useClerk()
   const { user } = useUser()
   const pathname = usePathname()
 
@@ -101,7 +101,7 @@ export function AutonomousTopBar({ logo }: AutonomousTopBarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button variant='outline' size='sm' className='text-xs' onClick={() => openSignIn()}>
+          <Button variant='outline' size='sm' className='text-xs' onClick={() => openSignUp()}>
             Sign in
           </Button>
         )}

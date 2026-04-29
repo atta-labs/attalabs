@@ -2,7 +2,7 @@
 
 import { useClerk } from '@atta/auth'
 import { Button } from '@atta/ui'
-import { useAuth } from '@clerk/nextjs'
+import { useAuth } from '@atta/auth'
 import { useRouter } from 'next/navigation'
 
 export function DeliberateAction() {

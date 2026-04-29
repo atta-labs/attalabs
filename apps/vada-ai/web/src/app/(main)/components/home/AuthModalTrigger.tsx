@@ -1,11 +1,11 @@
 'use client'
 
-import { useClerk } from '@clerk/nextjs'
+import { useClerk } from '@atta/auth'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 
 export function AuthModalTrigger() {
-  const { openSignIn, openSignUp } = useClerk()
+  const { openSignUp } = useClerk()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -14,15 +14,14 @@ export function AuthModalTrigger() {
     const signup = searchParams.get('signup')
     if (!signin && !signup) return
 
-    if (signup) openSignUp()
-    else openSignIn()
+    openSignUp()
 
     const next = new URLSearchParams(searchParams)
     next.delete('signin')
     next.delete('signup')
     const qs = next.toString()
     router.replace(qs ? `/?${qs}` : '/', { scroll: false })
-  }, [searchParams, openSignIn, openSignUp, router])
+  }, [searchParams, openSignUp, router])
 
   return null
 }

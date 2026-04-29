@@ -17,6 +17,9 @@ export default async function config(): Promise<NextConfig> {
     images: {
       remotePatterns: [{ protocol: 'https', hostname: 'cdn.sanity.io' }]
     },
-    transpilePackages: ['@atta/adapter-langgraph', '@atta/engine']
+    transpilePackages: ['@atta/adapter-langgraph', '@atta/engine'],
+    outputFileTracingIncludes: {
+      '/**': ['../yamls/**']
+    }
   }
 }

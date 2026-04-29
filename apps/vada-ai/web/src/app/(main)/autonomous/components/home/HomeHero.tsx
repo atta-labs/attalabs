@@ -2,8 +2,8 @@
 
 import { Heading, Text } from '@atta/ui'
 import { Suspense, useEffect, useState } from 'react'
-import { AuthModalTrigger } from './AuthModalTrigger'
-import { DeliberateAction } from './DeliberateAction'
+import { AuthModalTrigger } from '../../../components/home/AuthModalTrigger'
+import { DeliberateAction } from '../../../components/home/DeliberateAction'
 import { HomeCanvas } from './HomeCanvas'
 import { LearnMoreAction } from './LearnMoreAction'
 
