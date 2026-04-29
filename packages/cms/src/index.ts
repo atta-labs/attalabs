@@ -41,5 +41,6 @@ export type {
 export { FIELD_TO_CSS_VAR, SHADOW_TO_CSS_VAR } from './types'
 
 // Utils
+export { buildFaviconIcons } from './utils/favicon'
 export { getGoogleFontsUrl, loadThemeFonts } from './utils/font-loader'
 export { generateThemeCSS, generateThemeCSSForScheme, transformColorGroup } from './utils/theme'

@@ -1,12 +1,16 @@
-import { cmsClient, getVitakkaConfig } from '@atta/cms'
+import { buildFaviconIcons, cmsClient, getVitakkaBranding, getVitakkaConfig } from '@atta/cms'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
 
-export const metadata: Metadata = {
-  title: 'Vitakka',
-  description: 'Directed thought.'
+export async function generateMetadata(): Promise<Metadata> {
+  const branding = await getVitakkaBranding(cmsClient).catch(() => null)
+  return {
+    title: 'Vitakka',
+    description: 'Directed thought.',
+    icons: buildFaviconIcons(branding)
+  }
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
