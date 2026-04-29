@@ -34,8 +34,8 @@ export function buildClerkAppearance(
     variables: {
       colorPrimary: colors.primary,
       colorNeutral: colors.foreground,
-      colorBackground: colors.card,
-      colorInputBackground: colors.card,
+      colorBackground: colors.background,
+      colorInputBackground: colors.background,
       colorInputText: colors.foreground,
       colorText: colors.foreground,
       colorTextSecondary: colors.mutedForeground,
@@ -50,9 +50,12 @@ export function buildClerkAppearance(
         alignItems: 'center',
         boxShadow: 'none'
       },
+      cardBox: {
+        overflow: 'visible'
+      },
       card: {
-        backgroundColor: colors.card,
-        border: `1px solid ${colors.border}`,
+        backgroundColor: colorScheme === 'dark' ? colors.card : colors.background,
+        border: '1px solid var(--border)',
         boxShadow: 'none'
       },
       modalBackdrop: {
@@ -145,8 +148,14 @@ export function buildClerkAppearance(
         letterSpacing: '0.1em'
       },
       badge: {
-        color: colors.mutedForeground,
-        backgroundColor: colors.muted
+        color: 'var(--foreground)',
+        backgroundColor: 'var(--muted)',
+        border: '1px solid var(--border)'
+      },
+      lastAuthenticationStrategyBadge: {
+        color: 'var(--foreground)',
+        backgroundColor: 'var(--background)',
+        border: '1px solid var(--muted)'
       },
       footer: {
         display: 'none'
