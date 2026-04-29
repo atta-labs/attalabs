@@ -67,9 +67,16 @@ export function useGlobalModelSelector({
   // ── Ollama live model fetch ────────────────────────────────────────────────
   // /api/tags on mount. null = not probed, empty = reachable but nothing
   // installed, non-empty = replace hardcoded defaults in the catalog.
+  // Skipped in production — Ollama runs locally only and the CORS preflight
+  // failure would log a console error on every prod page load for no gain.
   const [installedOllama, setInstalledOllama] = useState<ModelEntry[] | null>(null)
   const [ollamaReachable, setOllamaReachable] = useState<boolean | null>(null)
   useEffect(() => {
+    if (process.env.NODE_ENV === 'production') {
+      setInstalledOllama([])
+      setOllamaReachable(false)
+      return
+    }
     let cancelled = false
     fetchInstalledOllamaModels()
       .then((models) => {

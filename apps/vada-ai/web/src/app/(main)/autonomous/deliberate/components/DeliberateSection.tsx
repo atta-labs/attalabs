@@ -2,7 +2,7 @@
 
 import type { DeliberationSpec } from '@atta/engine'
 import { Button, Checkbox } from '@atta/ui'
-import { GitCompare } from 'lucide-react'
+import { GitCompare, Loader2 } from 'lucide-react'
 import { IdentityBanner } from '@/components/IdentityBanner'
 import { QuestionInputArea } from './QuestionInputArea'
 import { TeamCardGrid } from './TeamCardGrid'
@@ -50,7 +50,8 @@ export function DeliberateSection(props: DeliberateSectionProps) {
           <GitCompare className='size-3.5' />
           Run benchmark comparison (single-shot + AI judge)
         </label>
-        <Button onClick={form.handleStart} disabled={!form.canStart}>
+        <Button onClick={form.handleStart} disabled={!form.canStart} className='flex items-center gap-2'>
+          {form.loading && <Loader2 className='size-3.5 animate-spin' />}
           {form.loading ? 'STARTING…' : form.needsUnlock ? 'UNLOCK & DELIBERATE' : 'DELIBERATE'}
         </Button>
       </div>
