@@ -99,10 +99,14 @@ export function useGlobalModelSelector({
   // ── Catalog build ─────────────────────────────────────────────────────────
   // Swap hardcoded Ollama defaults for the live /api/tags list when we have
   // one; otherwise keep defaults so users can discover what to pull.
+  // In production, strip all Ollama entries — Ollama is local-only and has no
+  // place in the picker when the server is Vercel.
   const catalog = useMemo(() => {
-    if (!ollamaReachable || installedOllama === null || installedOllama.length === 0) return baseCatalog
-    const nonOllama = baseCatalog.filter((e) => e.route !== 'ollama')
-    return [...nonOllama, ...installedOllama]
+    const base =
+      ollamaReachable && installedOllama !== null && installedOllama.length > 0
+        ? [...baseCatalog.filter((e) => e.route !== 'ollama'), ...installedOllama]
+        : baseCatalog
+    return process.env.NODE_ENV === 'production' ? base.filter((e) => e.route !== 'ollama') : base
   }, [baseCatalog, ollamaReachable, installedOllama])
 
   // ── Preset / default seeding on mount ──────────────────────────────────────
@@ -173,6 +177,7 @@ export function useGlobalModelSelector({
       ...(identity.state.providers as RouteProvider[])
     ])
     if (ollamaReachable) set.add('ollama')
+    if (process.env.NODE_ENV === 'production') set.delete('ollama')
     return set
   }, [settingsProviders, storedKeys, identity.state.providers, ollamaReachable])
 

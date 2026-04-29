@@ -36,18 +36,10 @@ interface DeliberationFeedProps {
   teamName?: string
 }
 
-// ── Outer wrapper — AIACanvas provides context for AIASphere in RoundStrip ──
-// Canvas is fixed inset-0 so its local coordinate space (0,0 = viewport top)
-// matches sphere viewport coords from getBoundingClientRect(). Using a scrolled
-// parent would offset every particle by the container's top from the viewport.
-// pointer-events-none on the canvas layer; pointer-events-auto re-enabled on
-// the content div so clicks/scroll pass through correctly.
 export function DeliberationFeed(props: DeliberationFeedProps) {
   return (
-    <AIACanvas alwaysRenderSpheres matchContentHeight className='pointer-events-none fixed inset-0 z-0'>
-      <div className='pointer-events-auto relative w-full'>
-        <DeliberationScene {...props} />
-      </div>
+    <AIACanvas alwaysRenderSpheres matchContentHeight>
+      <DeliberationScene {...props} />
     </AIACanvas>
   )
 }

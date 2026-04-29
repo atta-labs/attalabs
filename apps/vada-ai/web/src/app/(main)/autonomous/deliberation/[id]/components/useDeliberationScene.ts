@@ -43,7 +43,7 @@ export function useDeliberationScene({
 
   const isLiveSession = currentState !== 'TERMINAL'
   const showConclusion = !!terminalState
-  const showLoading = ['CONCLUDING', 'AUDITING', 'REVISING'].includes(currentState) && !!loadingMessage
+  const showLoading = ['PENDING', 'CONCLUDING', 'AUDITING', 'REVISING'].includes(currentState) && !!loadingMessage
 
   const rounds = useMemo(
     () =>

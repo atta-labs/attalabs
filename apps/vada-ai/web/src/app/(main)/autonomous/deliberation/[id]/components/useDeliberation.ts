@@ -62,6 +62,7 @@ interface InitialEntry {
 // Loading messages keyed by session state. AUDITING covers both audit and
 // reaudit passes — the state name is the same for both.
 const LOADING_BY_STATE: Record<string, string> = {
+  PENDING: 'Starting deliberation...',
   CONCLUDING: 'Synthesizer is drafting the conclusion...',
   AUDITING: 'Blind Critic is reviewing the conclusion...',
   REVISING: 'Synthesizer is revising...'
