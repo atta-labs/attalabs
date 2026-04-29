@@ -48,7 +48,8 @@ export async function NextWebShell({ children, config, branding, styleId }: Next
         mutedForeground: resolved.get('muted-foreground')!,
         destructive: resolved.get('destructive')!
       },
-      colorScheme
+      colorScheme,
+      theme.typography?.fontSans ?? undefined
     )
   }
 

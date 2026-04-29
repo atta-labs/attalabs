@@ -20,7 +20,8 @@ export function buildClerkAppearance(
     mutedForeground: string
     destructive: string
   },
-  colorScheme: 'light' | 'dark' = 'light'
+  colorScheme: 'light' | 'dark' = 'light',
+  fontSans?: string
 ): Record<string, unknown> {
   return {
     baseTheme: colorScheme === 'dark' ? dark : undefined,
@@ -38,7 +39,7 @@ export function buildClerkAppearance(
       colorTextSecondary: colors.mutedForeground,
       colorDanger: colors.destructive,
       borderRadius: '0.5rem',
-      fontFamily: 'var(--font-sans)'
+      ...(fontSans ? { fontFamily: fontSans } : {})
     },
     elements: {
       formButtonPrimary: {
@@ -109,6 +110,10 @@ export function buildClerkAppearance(
         textTransform: 'uppercase',
         fontSize: '0.75rem',
         letterSpacing: '0.1em'
+      },
+      badge: {
+        color: colors.mutedForeground,
+        backgroundColor: colors.muted
       }
     }
   }
