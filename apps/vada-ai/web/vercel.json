@@ -3,5 +3,6 @@
   "framework": "nextjs",
   "buildCommand": "cd ../../.. && bun turbo run build --filter=@atta/vada-ai-web",
   "installCommand": "cd ../../.. && bun install --frozen-lockfile",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "ignoreCommand": "npx turbo-ignore @atta/vada-ai-web"
 }

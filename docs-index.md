@@ -35,10 +35,6 @@
 - [Atta Naming Decision](./apps/atta-ai/specs/atta-naming-decision.md)
 - [Cetanā (Architect Layer) — Capability Reality Check](./apps/atta-ai/specs/cetana-reality-check.md)
 
-### atta-labs-ai
-
-- [Atta Labs — Concept Document](./apps/atta-labs-ai/specs/atta-labs-concept.md)
-
 ### vada-ai
 
 - [Vāda Brokered Deliberation — Specification](./apps/vada-ai/specs/brokered-deliberation/00-overview.md)
@@ -85,7 +81,5 @@
 ## Root-Level Documentation
 
 - [⚠️ ABSOLUTE RULE — NEVER COMMIT WITHOUT EXPLICIT INSTRUCTION](./CLAUDE.md)
-- [Attā AI — Documentation Index](./DOCS.md)
 - [Atta AI](./README.md)
-- [Attā AI — Roadmap](./ROADMAP.md)
 
