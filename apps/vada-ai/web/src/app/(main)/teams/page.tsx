@@ -1,25 +1,42 @@
-import type { Metadata } from 'next'
-import { Heading, Text } from '@atta/ui/shared'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { loadSpec, compileSpec } from '@atta/engine'
+import { TeamsClient } from './TeamsClient'
 
-export const metadata: Metadata = {
-  title: 'Teams'
+// All current specs are experimental, so listPublicSpecs() returns empty.
+// Load all 7 by ID directly.
+const SPEC_IDS = ['a0-baseline', 'a1-baseline', 'brokered-trio', 'brokered-quartet', 'sparring', 'crucible', 'war-room']
+
+// Placeholder question — only affects template rendering, not graph structure.
+const PLACEHOLDER_QUESTION = 'What is the best approach for this challenge?'
+
+function deriveShapeLabel(spec: ReturnType<typeof loadSpec>): string {
+  if (spec.reviewers && spec.reviewers.length > 0) {
+    return `${spec.reviewers.length} reviewers · no synthesis`
+  }
+  if (spec.flow?.rounds) {
+    const { count, agents } = spec.flow.rounds
+    return `${agents.length} agents · ${count} rounds`
+  }
+  return 'single agent'
 }
 
 export default function TeamsPage() {
-  return (
-    <div className='px-6 py-12'>
-      <div className='mx-auto max-w-2xl space-y-6'>
-        <div className='space-y-4'>
-          <span className='font-mono text-xs text-muted-foreground'>Catalog</span>
-          <Heading level={1} className='font-serif text-4xl font-light leading-tight'>
-            Deliberation Teams
-          </Heading>
-          <Text as='p' muted className='text-lg leading-relaxed'>
-            Browse the catalog of curated deliberation teams. Each team combines agents with specific expertise and
-            perspectives to answer your questions better.
-          </Text>
-        </div>
-      </div>
-    </div>
-  )
+  // process.cwd() in Next.js = apps/vada-ai/web/ at dev time
+  // yamls live at apps/vada-ai/yamls/, one directory up
+  const yamlsDir = join(process.cwd(), '..', 'yamls')
+
+  const specs = SPEC_IDS.map((id) => {
+    const yaml = readFileSync(join(yamlsDir, `${id}.yaml`), 'utf-8')
+    const spec = loadSpec(yaml)
+    const plan = compileSpec(spec, PLACEHOLDER_QUESTION)
+    return {
+      spec,
+      plan,
+      agentCount: spec.agents.length,
+      shapeLabel: deriveShapeLabel(spec)
+    }
+  })
+
+  return <TeamsClient specs={specs} />
 }
