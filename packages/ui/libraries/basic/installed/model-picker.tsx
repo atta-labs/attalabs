@@ -1,5 +1,6 @@
 'use client'
 
+import { useIdentity } from '@atta/identity/react'
 import type { ModelEntry, RouteProvider } from '@atta/models'
 import { PROVIDERS, ROUTE_PROVIDER_ORDER } from '@atta/models'
 import { ProviderIcon } from '@lobehub/icons'
@@ -31,7 +32,7 @@ export interface ModelPickerProps {
   options: ModelEntry[]
   value: ModelPickerValue | null
   onChange: (value: ModelPickerValue) => void
-  configuredRoutes: Set<RouteProvider>
+  configuredRoutes?: Set<RouteProvider>
   // Returning a Promise lets the picker await the caller (e.g. probe the key
   // against the provider) before closing. Throw on failure to keep the key-
   // entry view open and surface the error inline.
@@ -75,6 +76,17 @@ export function ModelPicker({
   const [freeOnly, setFreeOnly] = React.useState(false)
   const [searchValue, setSearchValue] = React.useState('')
   const [expandedGroups, setExpandedGroups] = React.useState<Set<RouteProvider>>(new Set())
+
+  const identity = useIdentity()
+  const identityConfigured = React.useMemo(
+    () =>
+      new Set<RouteProvider>([
+        ...(Object.keys(identity.state.keys) as RouteProvider[]),
+        ...(identity.state.providers as RouteProvider[])
+      ]),
+    [identity.state.keys, identity.state.providers]
+  )
+  const effectiveConfigured = configuredRoutes ?? identityConfigured
 
   const COLLAPSED_LIMIT = 4
   const isSearching = searchValue.trim().length > 0
@@ -138,13 +150,13 @@ export function ModelPicker({
   const selectedEntry = value ? options.find((o) => o.route === value.route && o.modelId === value.modelId) : null
 
   const handleSelect = (entry: ModelEntry) => {
-    if (!configuredRoutes.has(entry.route) && onProvideKey) {
+    if (!effectiveConfigured.has(entry.route) && onProvideKey) {
       setKeyEntryRoute(entry.route)
       setPendingModel(entry)
       setKeyInput('')
       return
     }
-    if (!configuredRoutes.has(entry.route)) return
+    if (!effectiveConfigured.has(entry.route)) return
     onChange({ route: entry.route, modelId: entry.modelId })
     setOpen(false)
   }
@@ -286,7 +298,7 @@ export function ModelPicker({
                       <>
                         <ProviderIcon provider={group.route} size={14} type='avatar' />
                         <span>{group.label}</span>
-                        {configuredRoutes.has(group.route) && (
+                        {effectiveConfigured.has(group.route) && (
                           <span className='ml-auto flex items-center gap-1 font-mono text-[10px] font-normal text-muted-foreground'>
                             <Check className='size-3 text-success' aria-hidden />
                             {routeHints?.[group.route] ? `…${routeHints[group.route]}` : null}
@@ -297,7 +309,7 @@ export function ModelPicker({
                   >
                     {visibleEntries.map((entry) => {
                       const isSelected = value?.route === entry.route && value?.modelId === entry.modelId
-                      const locked = !configuredRoutes.has(entry.route)
+                      const locked = !effectiveConfigured.has(entry.route)
                       return (
                         <CommandItem
                           key={entry.id}

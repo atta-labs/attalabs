@@ -6,38 +6,27 @@ import { AttaUserProfile } from '@atta/ui/account'
 import type { TeamModelEntry } from '@/db/settings-queries'
 import type { FaceStyle } from '@/components/agents'
 import type { TeamId } from '@/lib/teams-metadata'
-import { ApiKeysSection } from './api-keys/ApiKeysSection'
 import { AgentStyleSection } from './agent-style/AgentStyleSection'
 import { TeamsSection } from './teams/TeamsSection'
 
-type Tab = 'account' | 'api-keys' | 'teams' | 'agent-style'
+type Tab = 'account' | 'teams' | 'agent-style'
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'account', label: 'Account' },
-  { id: 'api-keys', label: 'API Keys' },
   { id: 'teams', label: 'Teams' },
   { id: 'agent-style', label: 'Agent Style' }
 ]
 
 interface SettingsClientPageProps {
-  initialApiKeys: Array<{ provider: string; keyHint: string }>
   initialTeamModels: TeamModelEntry[]
   initialFaceStyle: FaceStyle
   teams: Array<{ id: TeamId; name: string; agents: string[] }>
 }
 
-export function SettingsClientPage({
-  initialApiKeys,
-  initialTeamModels,
-  initialFaceStyle,
-  teams
-}: SettingsClientPageProps) {
+export function SettingsClientPage({ initialTeamModels, initialFaceStyle, teams }: SettingsClientPageProps) {
   const [activeTab, setActiveTab] = useState<Tab>('account')
-  const [apiKeys, setApiKeys] = useState(initialApiKeys)
   const [teamModels, setTeamModels] = useState(initialTeamModels)
   const [faceStyle, setFaceStyle] = useState<FaceStyle>(initialFaceStyle)
-
-  const configuredProviders = new Set(apiKeys.map((k) => k.provider))
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tab)}>
@@ -53,26 +42,10 @@ export function SettingsClientPage({
         <AttaUserProfile />
       </TabsContent>
 
-      <TabsContent value='api-keys'>
-        <ApiKeysSection
-          apiKeys={apiKeys}
-          onKeyAdded={(provider, keyHint) => {
-            setApiKeys((prev) => {
-              const next = prev.filter((k) => k.provider !== provider)
-              return [...next, { provider, keyHint }]
-            })
-          }}
-          onKeyRemoved={(provider) => {
-            setApiKeys((prev) => prev.filter((k) => k.provider !== provider))
-          }}
-        />
-      </TabsContent>
-
       <TabsContent value='teams'>
         <TeamsSection
           teams={teams}
           teamModels={teamModels}
-          configuredProviders={configuredProviders}
           onModelChanged={(entry) => {
             setTeamModels((prev) => {
               const next = prev.filter((m) => !(m.teamId === entry.teamId && m.agentRole === entry.agentRole))

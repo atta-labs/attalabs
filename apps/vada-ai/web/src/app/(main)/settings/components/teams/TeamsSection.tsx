@@ -6,11 +6,10 @@ import { TeamAccordionItem } from './TeamAccordionItem'
 interface TeamsSectionProps {
   teams: Array<{ id: TeamId; name: string; agents: string[] }>
   teamModels: TeamModelEntry[]
-  configuredProviders: Set<string>
   onModelChanged: (entry: TeamModelEntry) => void
 }
 
-export function TeamsSection({ teams, teamModels, configuredProviders, onModelChanged }: TeamsSectionProps) {
+export function TeamsSection({ teams, teamModels, onModelChanged }: TeamsSectionProps) {
   return (
     <div className='space-y-4'>
       <div className='space-y-1'>
@@ -24,13 +23,7 @@ export function TeamsSection({ teams, teamModels, configuredProviders, onModelCh
 
       <div>
         {teams.map((team) => (
-          <TeamAccordionItem
-            key={team.id}
-            team={team}
-            teamModels={teamModels}
-            configuredProviders={configuredProviders}
-            onModelChanged={onModelChanged}
-          />
+          <TeamAccordionItem key={team.id} team={team} teamModels={teamModels} onModelChanged={onModelChanged} />
         ))}
       </div>
     </div>

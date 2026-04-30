@@ -45,12 +45,7 @@ export default async function SettingsPage() {
             </Text>
           </div>
 
-          <SettingsClientPage
-            initialApiKeys={[]}
-            initialTeamModels={teamModels}
-            initialFaceStyle={settings.faceStyle}
-            teams={teams}
-          />
+          <SettingsClientPage initialTeamModels={teamModels} initialFaceStyle={settings.faceStyle} teams={teams} />
 
           <Separator className='opacity-20' />
 

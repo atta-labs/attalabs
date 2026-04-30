@@ -13,11 +13,10 @@ interface AgentModelRowProps {
   agent: AgentEntry
   teamId: string
   currentModel: { provider: string; modelId: string } | null
-  configuredProviders: Set<string>
   onChanged: (entry: TeamModelEntry) => void
 }
 
-export function AgentModelRow({ agent, teamId, currentModel, configuredProviders, onChanged }: AgentModelRowProps) {
+export function AgentModelRow({ agent, teamId, currentModel, onChanged }: AgentModelRowProps) {
   const catalog = useCatalog()
   const { faceStyle } = useUserPreferences()
 
@@ -55,7 +54,6 @@ export function AgentModelRow({ agent, teamId, currentModel, configuredProviders
         options={catalog}
         value={pickerValue}
         onChange={({ route, modelId }) => save(route, modelId)}
-        configuredRoutes={configuredProviders as Set<RouteProvider>}
         align='start'
         side='bottom'
       />
