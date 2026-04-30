@@ -144,6 +144,17 @@ function validateBrokeredWorkflow(workflow: BrokeredWorkflow): void {
       )
     }
   }
+  if (workflow.synthesis) {
+    if (!workflow.synthesis.messageTemplate || workflow.synthesis.messageTemplate.trim() === '') {
+      throw new InvalidWorkflowConfigError(
+        `BrokeredWorkflow synthesis agent '${workflow.synthesis.agentName}' has an empty messageTemplate`,
+        {
+          workflowType: 'brokered',
+          reason: `empty messageTemplate for synthesis agent '${workflow.synthesis.agentName}'`
+        }
+      )
+    }
+  }
 }
 
 /**
@@ -199,6 +210,12 @@ function validateWorkflowReferences(workflow: Workflow, agentNames: Set<string>,
             { teamName, reason: `unknown reviewer agent: ${reviewer.agentName}` }
           )
         }
+      }
+      if (workflow.synthesis && !agentNames.has(workflow.synthesis.agentName)) {
+        throw new InvalidTeamConfigError(
+          `Team '${teamName}' brokered synthesis references unknown agent '${workflow.synthesis.agentName}'`,
+          { teamName, reason: `unknown synthesis agent: ${workflow.synthesis.agentName}` }
+        )
       }
       return
     }

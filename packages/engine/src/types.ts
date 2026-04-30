@@ -172,12 +172,23 @@ export interface BrokeredReviewer {
  *
  * Used by vada__consult (MCP Brokered mode).
  * Compile with compileBrokered → sequential chain of solo-role nodes.
+ *
+ * When `synthesis` is present, a final synthesis node runs after all reviewers
+ * and its output becomes the Conclusion content (responseMode: 'synthesize').
+ * Without `synthesis`, all reviewer outputs are concatenated (responseMode: 'concatenate').
  */
 export interface BrokeredWorkflow {
   type: 'brokered'
   reviewers: BrokeredReviewer[]
   /** V1 only supports sequential execution. Must be false or omitted. */
   parallel?: false
+  /** Optional final synthesis step. When present, this agent runs after all reviewers. */
+  synthesis?: {
+    /** Must reference an agent in the Team's agents array. */
+    agentName: string
+    /** Handlebars template for the synthesizer's user message. Available: {{question}}, {{allPreviousOutputs}}. */
+    messageTemplate: string
+  }
 }
 
 /**
@@ -260,6 +271,12 @@ export interface AgentOutput {
   roundIndex?: number
   /** 0-based step index, present for outputs within a CustomWorkflow. */
   stepIndex?: number
+  /**
+   * When present, indicates this agent's LLM call failed.
+   * content and token counts will be empty/zero. The workflow continues;
+   * per-agent errors surface here rather than halting execution.
+   */
+  error?: string
 }
 
 // =============================================================================

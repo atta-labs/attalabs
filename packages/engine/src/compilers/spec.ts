@@ -27,7 +27,15 @@ export function specToTeam(spec: DeliberationSpec): Team {
       reviewers: spec.reviewers.map((r) => ({
         agentName: r.agent,
         messageTemplate: r.messageTemplate
-      }))
+      })),
+      ...(spec.flow?.synthesis
+        ? {
+            synthesis: {
+              agentName: spec.flow.synthesis.agent,
+              messageTemplate: spec.flow.synthesis.messageTemplate
+            }
+          }
+        : {})
     }
     return { name: spec.id, description: spec.description, agents, workflow }
   }
@@ -117,8 +125,14 @@ export function compileSpec(
   const team = specToTeam(resolved)
   const plan = compile({ team, question, model: model ?? spec.defaults.model })
 
-  const responseMode: 'synthesize' | 'concatenate' = resolved.reviewers ? 'concatenate' : 'synthesize'
-  const responseNode = responseMode === 'synthesize' ? findResponseNode(plan) : undefined
+  const hasBrokeredSynthesis = !!resolved.reviewers && !!resolved.flow?.synthesis
+  const responseMode: 'synthesize' | 'concatenate' =
+    resolved.reviewers && !hasBrokeredSynthesis ? 'concatenate' : 'synthesize'
+  const responseNode = hasBrokeredSynthesis
+    ? 'brokered-synthesis'
+    : responseMode === 'synthesize'
+      ? findResponseNode(plan)
+      : undefined
   const maxRevisions = resolved.flow?.audit?.revision.max ?? 0
   const classifierModes = buildClassifierModes(resolved)
 
