@@ -1,31 +1,18 @@
-import { NextLink } from '@atta/ui/lib/next-link'
-import { Logo } from '@atta/ui/shared'
-import { HomeTopBar } from '@/components/HomeTopBar'
-import { StickyHeaderTopBar } from '@/components/StickyHeaderTopBar'
-import { fetchVadaBranding } from '@/lib/branding'
-import { ChooserCanvas } from './components/home/ChooserCanvas'
-import { ChooserHero } from './components/home/ChooserHero'
+import { cmsClient, createProductClient, getAttaBranding, getVadaBranding, getVitakkaBranding } from '@atta/cms'
+import { HomeHero } from './components/home/HomeHero'
+import { SectionsWithCanvas } from './components/SectionsWithCanvas'
 
-export default async function VadaChooserPage() {
-  const branding = await fetchVadaBranding()
-  const lightUrl = branding?.logoLockupSolidLight?.url ?? branding?.logoSolidLight?.url
-  const darkUrl = branding?.logoLockupSolidDark?.url ?? branding?.logoSolidDark?.url
-  const logo =
-    lightUrl || darkUrl ? (
-      <NextLink variant='unstyled' href='/'>
-        <Logo light={lightUrl} dark={darkUrl} alt={branding?.productName ?? 'Vada AI'} size='h-10' />
-      </NextLink>
-    ) : null
+export default async function Home() {
+  const [atta, vada, vitakka] = await Promise.all([
+    getAttaBranding(createProductClient('atta')).catch(() => null),
+    getVadaBranding(cmsClient).catch(() => null),
+    getVitakkaBranding(createProductClient('vitakka')).catch(() => null)
+  ])
 
   return (
     <>
-      <StickyHeaderTopBar isBlurred={true} className='z-40 border-b border-border/40'>
-        <HomeTopBar logo={logo} />
-      </StickyHeaderTopBar>
-
-      <ChooserCanvas>
-        <ChooserHero />
-      </ChooserCanvas>
+      <HomeHero />
+      <SectionsWithCanvas brandings={{ atta, vada, vitakka }} />
     </>
   )
 }

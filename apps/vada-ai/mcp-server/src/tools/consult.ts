@@ -1,13 +1,11 @@
 import { z } from 'zod'
-import { compileSpec, loadYamlFromCatalog } from '@atta/engine'
+import { compileSpec } from '@atta/engine'
 import { LangGraphAdapter, createMultiVendorLlmCall } from '@atta/adapter-langgraph'
 import type { ProviderKeys } from '@atta/adapter-langgraph'
+import { lookupSpec } from '../spec-registry'
 import { logSession } from '../session-logger'
 
 type ReviewerProfileName = 'strategist' | 'critic' | 'devils_advocate'
-
-const BROKERED_TRIO = loadYamlFromCatalog('brokered-trio')
-const BROKERED_QUARTET = loadYamlFromCatalog('brokered-quartet')
 
 const ROLE_TO_AGENT_NAME: Record<string, string> = {
   strategist: 'Strategist',
@@ -31,6 +29,10 @@ export const ReviewerSpecSchema = z.object({
 
 export const ConsultInputStructuredSchema = z
   .object({
+    spec_id: z
+      .string()
+      .optional()
+      .describe('Spec ID to route to. Defaults to brokered-trio. Routes to YAMLs from the catalog.'),
     context: z.string().min(50, 'context must be at least 50 characters'),
     question: z.string().min(10, 'question must be at least 10 characters'),
     reviewers: z
@@ -68,6 +70,7 @@ export type ReviewerSpec =
   | { profileName: 'domain_expert'; notes?: string; domain: string }
 
 export interface ConsultInput {
+  specId?: string
   question: string
   reviewerSpecs: ReviewerSpec[]
   sessionTitle?: string
@@ -137,6 +140,7 @@ export function validateAndNormalize(args: unknown): ValidationOutcome {
     return {
       valid: true,
       data: {
+        specId: data.spec_id,
         question: composeQuestion(data),
         reviewerSpecs,
         sessionTitle: data.session_title,
@@ -154,6 +158,7 @@ export function validateAndNormalize(args: unknown): ValidationOutcome {
   return {
     valid: true,
     data: {
+      specId: undefined,
       question: data.brief,
       reviewerSpecs: data.reviewers.map((r) => ({ profileName: r as ReviewerProfileName }))
     }
@@ -196,23 +201,36 @@ export async function runConsult(
   providerKeys: ProviderKeys,
   origin?: string
 ): Promise<ConsultOutput> {
-  const hasDomainExpert = input.reviewerSpecs.some((s) => s.profileName === 'domain_expert')
-  const baseSpec = hasDomainExpert ? BROKERED_QUARTET : BROKERED_TRIO
+  // Load spec by spec_id (default to brokered-trio for backward compatibility)
+  const baseSpec = lookupSpec(input.specId ?? 'brokered-trio')
 
-  // Build reviewers in the ORDER of input.reviewerSpecs (preserves transcript order)
-  const reviewers = input.reviewerSpecs.map((spec) => {
-    const agentName = ROLE_TO_AGENT_NAME[spec.profileName]!
-    const yamlReviewer = baseSpec.reviewers!.find((r) => r.agent === agentName)
-    if (!yamlReviewer) throw new Error(`Reviewer '${agentName}' not found in spec '${baseSpec.id}'`)
-    const messageTemplate = spec.notes
-      ? `${yamlReviewer.messageTemplate}\n\n## Specific Request For You\n${spec.notes}`
-      : yamlReviewer.messageTemplate
-    return { ...yamlReviewer, messageTemplate }
-  })
+  // Try role-based reviewer selection (for specs like brokered-trio/quartet)
+  // Fall back to spec's default reviewers if role selection isn't applicable
+  let specWithReviewers = baseSpec
+  let customVars: Record<string, string> | undefined
 
-  const specWithReviewers = { ...baseSpec, reviewers }
-  const domainInput = input.reviewerSpecs.find((s) => s.profileName === 'domain_expert')
-  const customVars = domainInput?.domain ? { domain: domainInput.domain } : undefined
+  // Attempt role-based selection if the spec has reviewers and input specifies roles
+  if (baseSpec.reviewers && input.reviewerSpecs.length > 0) {
+    try {
+      const reviewers = input.reviewerSpecs.map((spec) => {
+        const agentName = ROLE_TO_AGENT_NAME[spec.profileName]!
+        const yamlReviewer = baseSpec.reviewers!.find((r) => r.agent === agentName)
+        if (!yamlReviewer) throw new Error(`Reviewer '${agentName}' not found in spec '${baseSpec.id}'`)
+        const messageTemplate = spec.notes
+          ? `${yamlReviewer.messageTemplate}\n\n## Specific Request For You\n${spec.notes}`
+          : yamlReviewer.messageTemplate
+        return { ...yamlReviewer, messageTemplate }
+      })
+
+      specWithReviewers = { ...baseSpec, reviewers }
+      const domainInput = input.reviewerSpecs.find((s) => s.profileName === 'domain_expert')
+      customVars = domainInput?.domain ? { domain: domainInput.domain } : undefined
+    } catch {
+      // Role selection failed; use spec's default reviewers as-is
+      specWithReviewers = baseSpec
+    }
+  }
+
   const plan = compileSpec(specWithReviewers, input.question, DEFAULT_MODEL, customVars)
 
   const llmCall = createMultiVendorLlmCall(providerKeys)
