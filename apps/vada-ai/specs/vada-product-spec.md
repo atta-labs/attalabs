@@ -11,12 +11,12 @@ This document describes what Vāda is, how it's structured, how it's accessed, a
 
 Vāda is a **deliberation engine** accessed primarily as an **MCP (Model Context Protocol) server**. It enables multi-agent deliberation on difficult questions, returning structured conclusions backed by full audit trails.
 
-Vāda operates in two modes (detailed in Section 3):
+Vāda exposes two generic MCP tools (detailed in Section 3):
 
-- **Autonomous Deliberation** — agents debate each other, Principal observes
-- **Brokered Deliberation** — Principal + primary agent orchestrate other reviewers on demand
+- **`vada__deliberate`** — rounds-based teams: agents debate each other, Principal observes
+- **`vada__consult`** — reviewer-chain teams: single-shot advisory dispatch, reviewers respond to specific consultations
 
-Both modes share infrastructure: one engine, one adapter, one MCP surface, one audit trail. They expose different MCP tools for different workflows.
+Both tools share infrastructure: one engine, one adapter, one MCP surface, one audit trail. Team behavior is configured entirely via YAML specs in the Vāda Teams catalog.
 
 Vāda is not a chat app. It is not a multi-model aggregator. It does not compete with frontier models on raw reasoning. It produces **auditable, defensible decisions** — the thing frontier models structurally cannot offer.
 
@@ -61,11 +61,11 @@ Post Round 23 reviewer integration, we distinguish sharply between:
 
 ---
 
-## 3. Two deliberation modes
+## 3. Two MCP tools, YAML-driven teams
 
-Vāda ships two modes of operation. Both run on the same engine, adapter, and MCP surface. They expose different MCP tools.
+Vāda ships two generic MCP tools. Both run on the same engine, adapter, and MCP surface. Team behavior is defined entirely by YAML specs in the Vāda Teams catalog.
 
-### 3.1 Autonomous Deliberation
+### 3.1 `vada__deliberate` — Rounds-based teams
 
 Agents debate each other. Principal poses the question and observes. The deliberation runs to completion, produces a structured Conclusion, and returns.
 
@@ -73,41 +73,41 @@ Agents debate each other. Principal poses the question and observes. The deliber
 
 **MCP tool:** `vada__deliberate(question, team)` → returns Conclusion + session URL.
 
-**Default team: Sparring** (2 agents × 3 rounds, dual audit layer). Frames as "best for most questions" — not a stripped-down mode, but the right shape for typical deliberations. Crucible (4-7 agents) is visibly available as "heavier deliberation for high-stakes, multi-perspective decisions." War Room (6 agents) is V2+. Team choice is explicit and prominent in the MCP interface; users select based on decision stakes, not as a power-user escape hatch.
+**Default team: Sparring** (2 agents × 3 rounds, dual audit layer). Frames as "best for most questions" — not a stripped-down team, but the right shape for typical deliberations. Crucible (4-7 agents) is visibly available as "heavier deliberation for high-stakes, multi-perspective decisions." War Room (6 agents) is V2+. Team choice is explicit and prominent in the MCP interface; users select based on decision stakes, not as a power-user escape hatch.
 
 **Cost profile:** higher per session (multiple rounds, multiple agents, dual audit, tool use).
 
-### 3.2 Brokered Deliberation
+### 3.2 `vada__consult` — Reviewer-chain teams
 
-Principal interacts with ONE primary agent (Strategist) directly. The Principal + Strategist together call on reviewer agents on demand. Reviewers respond to specific consultations; they don't debate each other.
+Principal invokes reviewer agents on demand. Reviewers respond to specific consultations; they don't debate each other.
 
-This mode replicates the Principal's current manual workflow (copy-pasting between chat tabs). The Strategist inside the Principal's chat client coordinates; Vāda handles reviewer dispatch.
+This replicates the Principal's current manual workflow (copy-pasting between chat tabs). Vāda handles reviewer dispatch; the Principal's chat agent orchestrates.
 
 **When to use:** exploratory work, iterative questions, cases where the Principal wants to stay in the conversation. Quick consults that don't warrant a full deliberation.
 
 **MCP tool:** `vada__consult(context, question, reviewers[{role}])` → returns structured reviewer responses.
 
-The Principal's existing chat agent (Claude in Claude.ai, GPT in ChatGPT) serves as the Strategist by default. Vāda's role is summoning reviewers on other providers or with other configurations.
+The Principal's existing chat agent (Claude in Claude.ai, GPT in ChatGPT) acts as coordinator by default. Vāda's role is summoning reviewers on other providers or with other configurations.
 
 **Cost profile:** low per consultation (one reviewer call, no rounds, no full audit).
 
-### 3.3 Why two modes
+### 3.3 Why two tools
 
 Different use cases, different cost profiles, different pricing tiers. One product, two front doors.
 
-Brokered Deliberation is mechanically simpler and ships first. Autonomous Deliberation ships second with Sparring as the default team.
+Reviewer-chain teams (`vada__consult`) are mechanically simpler and ship first. Rounds-based teams (`vada__deliberate`) ship second with Sparring as the default team.
 
 ### 3.4 Escalation principle
 
-Brokered is the acquisition surface. Autonomous is where the primary moat (MOAT-A auditability) lives. The product must actively escalate users from Brokered to Autonomous for high-stakes decisions — not just offer both and hope users find Autonomous.
+`vada__consult` is the acquisition surface. `vada__deliberate` is where the primary moat (MOAT-A auditability) lives. The product must actively escalate users from consult to deliberate for high-stakes decisions — not just offer both and hope users find the rounds-based path.
 
 Concrete escalation patterns (implementation detail, but shaping principle now):
-- After a Brokered conversation with multiple consultations on the same thread, the Strategist suggests running a formal deliberation
+- After multiple `vada__consult` calls on the same thread, the coordinator suggests running a formal deliberation via `vada__deliberate`
 - UI distinguishes "quick consultation" from "committed decision" as separate user intents
-- The vada.ai dashboard shows Autonomous deliberations with higher prominence than Brokered consultations
-- Enterprise tier bundles Autonomous usage; Brokered alone is Pro tier
+- The vada.ai dashboard shows rounds-based deliberations with higher prominence than reviewer-chain consultations
+- Enterprise tier bundles `vada__deliberate` usage; `vada__consult` alone is Pro tier
 
-Without active escalation, Brokered usage patterns can dominate and Autonomous never builds the corpus of compliance-grade decision records that constitute MOAT-A. This is a product-design imperative, not a UI option.
+Without active escalation, consultant usage patterns can dominate and rounds-based deliberation never builds the corpus of compliance-grade decision records that constitute MOAT-A. This is a product-design imperative, not a UI option.
 
 ---
 
@@ -126,7 +126,7 @@ Without active escalation, Brokered usage patterns can dominate and Autonomous n
 ┌──────────────────────────▼──────────────────────────────────────────┐
 │               VĀDA MCP SERVER     [@atta/mcp-server]                │
 │                                                                     │
-│  Tools: vada__deliberate (autonomous) | vada__consult (brokered)    │
+│  Tools: vada__deliberate (rounds-based) | vada__consult (reviewer-chain) │
 │         vada__list_teams | vada__get_session                        │
 │  Logs all sessions to Postgres                                      │
 │                                                                     │
@@ -247,12 +247,12 @@ For type definitions, see `packages/engine/src/types.ts`.
 
 Vāda's primary interface is an MCP server. A user installs it in their MCP-compatible chat client and gains tools:
 
-- `vada__deliberate(question, team)` — autonomous deliberation, returns Conclusion
-- `vada__consult(prompt, reviewer_profile)` — brokered consultation, returns reviewer response
+- `vada__deliberate(question, team)` — rounds-based deliberation, returns Conclusion
+- `vada__consult(prompt, reviewer_profile)` — reviewer-chain consultation, returns reviewer response
 - `vada__list_teams()` — available validated teams
 - `vada__get_session(id)` — transcript of past deliberation
 
-The user's existing chat agent becomes the Principal (autonomous mode) or the Strategist (brokered mode). The user's chat subscription covers Principal/Strategist token cost; Vāda covers reviewer dispatches.
+The user's existing chat agent orchestrates the deliberation. The user's chat subscription covers orchestrator token cost; Vāda covers reviewer dispatches.
 
 ### 6.2 vada.ai web dashboard
 
@@ -314,18 +314,18 @@ Vāda is MCP-native and standalone-usable. Within the Attā ecosystem (separate 
 
 Informed by Round 23 reviewer convergence:
 
-1. **Autonomous + Brokered modes both shipping** in MCP server
+1. **Both `vada__deliberate` and `vada__consult` shipping** in MCP server, with YAML teams catalog
 2. **At least one verticalized team with 100+ validated corpus questions.** Generic Crucible alone is infrastructure without application. MOAT-B must be realized, not just planned.
 3. **vada.ai dashboard with full transcript + cost attribution.** MOAT-A surface.
 4. **Benchmark data showing measurable value** over single-shot baselines on the verticalized domain.
 
 ### Post-launch watchdog metric
 
-After public launch, monitor the **Autonomous usage share** — the percentage of total Vāda traffic that uses `vada__deliberate` rather than `vada__consult`.
+After public launch, monitor the **`vada__deliberate` usage share** — the percentage of total Vāda traffic that uses `vada__deliberate` rather than `vada__consult`.
 
-- **Healthy:** Autonomous share ≥ 20% after 6 months
-- **Concerning:** Autonomous share 10-20% after 6 months — investigate escalation patterns, UI prompts, pricing friction
-- **Thesis failure signal:** Autonomous share < 10% after 6 months despite active escalation — indicates users don't want deliberation, they want lightweight consulting. Consider pivoting the positioning (become "the best AI consultation router") or killing Autonomous as a product.
+- **Healthy:** `vada__deliberate` share ≥ 20% after 6 months
+- **Concerning:** `vada__deliberate` share 10-20% after 6 months — investigate escalation patterns, UI prompts, pricing friction
+- **Thesis failure signal:** `vada__deliberate` share < 10% after 6 months despite active escalation — indicates users don't want deliberation, they want lightweight consulting. Consider pivoting the positioning (become "the best AI consultation router") or deprioritizing rounds-based deliberation as a product.
 
 This metric is not a vanity number. It directly tests whether the deliberation thesis has product-market fit, or whether Vāda is actually a different product.
 

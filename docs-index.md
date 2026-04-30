@@ -20,11 +20,10 @@
 - [Rules for building UI across ALL Atta AI apps — component usage, CSS variables, theming, typography, inline styles, library system](./.claude/skills/ui-components/SKILL.md)
 - [How the @atta/ui multi-library system works — build-time generation (Vada pattern) vs runtime switching (Herald pattern), how to add a new app or library, and how to debug library resolution](./.claude/skills/ui-library-system/SKILL.md)
 - [The complete and ONLY list of CSS color/radius/font tokens allowed in Atta AI UI code. Hardcoded Tailwind palette colors (green-500, zinc-900, blue-400, etc.) and raw hex / oklch / hsl values are FORBIDDEN — always use the semantic tokens defined in @atta/ui/styles/globals.css.](./.claude/skills/ui-theme-tokens/SKILL.md)
-- [Vāda's product structure, two deliberation modes, wedges/capabilities/moats framework, current phase status, and locked architectural decisions. Load before any architectural decision, cross-cutting change, or when drafting executor tasks that span multiple layers.](./.claude/skills/vada-architecture/SKILL.md)
-- [Vāda Brokered mode — single-shot advisory dispatch via MCP. Load when working on vada__deliberate, reviewer personas, caller protocol, or the MCP server tools. Distinct from Autonomous mode (multi-round browser sessions).](./.claude/skills/vada-brokered/SKILL.md)
+- [Vāda's product structure (Vāda Teams catalog), wedges/capabilities/moats framework, current phase status, and locked architectural decisions. Load before any architectural decision, cross-cutting change, or when drafting executor tasks that span multiple layers.](./.claude/skills/vada-architecture/SKILL.md)
 - [Primitives and patterns for building Vāda home-page sections below the canvas hero — SectionWrapper, SectionLabel, StatusFooter, TwoColumnSection, and the section composition convention.](./.claude/skills/vada-home-sections/SKILL.md)
-- [Vāda MCP server — dual-mode Claude integration and deliberation tools](./.claude/skills/vada-mcp-server/SKILL.md)
-- [How to create and register YAML deliberation specs. Load when adding a new team, new deliberation mode, or new brokered spec. Covers both rounds-based and reviewers-based patterns, spec-registry registration, and verify scripts.](./.claude/skills/vada-yaml-authoring/SKILL.md)
+- [Vāda MCP server — generic catalog-driven deliberation tools (vada__consult for single-shot reviewer-chain teams, vada__deliberate for rounds-based teams) routing to YAML team specs compiled by the engine.](./.claude/skills/vada-mcp-server/SKILL.md)
+- [How to create and register YAML deliberation specs. Load when adding a new team or new YAML spec. Covers all four workflow types (Solo, Rounds, Custom, Brokered), spec-registry registration, and verify scripts.](./.claude/skills/vada-yaml-authoring/SKILL.md)
 
 ## Specification Documents
 
@@ -37,14 +36,6 @@
 
 ### vada-ai
 
-- [Vāda Brokered Deliberation — Specification](./apps/vada-ai/specs/brokered-deliberation/00-overview.md)
-- [01 — Architecture](./apps/vada-ai/specs/brokered-deliberation/01-architecture.md)
-- [02 — MCP Tool Interface](./apps/vada-ai/specs/brokered-deliberation/02-mcp-tool-interface.md)
-- [03 — Reviewer Personas](./apps/vada-ai/specs/brokered-deliberation/03-reviewer-personas.md)
-- [04 — Caller Claude Protocol](./apps/vada-ai/specs/brokered-deliberation/04-caller-claude-protocol.md)
-- [05 — Orchestration Rules](./apps/vada-ai/specs/brokered-deliberation/05-orchestration-rules.md)
-- [06 — Implementation Plan (V1 Status + Remaining Work)](./apps/vada-ai/specs/brokered-deliberation/06-implementation-plan.md)
-- [Phase 6 Prompt Validation — Brokered Mode](./apps/vada-ai/specs/brokered-deliberation/phase-6-prompt-validation.md)
 - [Vāda Engine — Design Decisions](./apps/vada-ai/specs/engine/design-decisions.md)
 - [Engine Flow Configurations](./apps/vada-ai/specs/engine/flow-configurations.md)
 - [Blind Critic Investigation — Step 2 REVISED Rate](./apps/vada-ai/specs/engine/v2-results/blind-critic-investigation.md)
@@ -60,8 +51,16 @@
 - [Vāda](./apps/vada-ai/specs/vada-human.md)
 - [Vāda — Product Recognitions](./apps/vada-ai/specs/vada-product-recognitions.md)
 - [Vāda — Product Specification](./apps/vada-ai/specs/vada-product-spec.md)
+- [Vāda Reviewers — Product Specification (v1, revision 4)](./apps/vada-ai/specs/vada-reviewers-spec.md)
+- [`karpathy/llm-council` and `Lykhoyda/ask-llm` — Technical Deep Dive](./apps/vada-ai/specs/vada-reviewers-tech-deep-dive.md)
 - [Vāda · The Science of Deliberation](./apps/vada-ai/specs/vada-science-of-deliberation.md)
 - [Vāda — Current State](./apps/vada-ai/specs/vada-state.md)
+- [Vāda Teams Catalog — Specification](./apps/vada-ai/specs/vada-teams-catalog/00-overview.md)
+- [01 — Architecture](./apps/vada-ai/specs/vada-teams-catalog/01-architecture.md)
+- [02 — MCP Tool Interface](./apps/vada-ai/specs/vada-teams-catalog/02-mcp-tool-interface.md)
+- [03 — Reviewer Personas](./apps/vada-ai/specs/vada-teams-catalog/03-reviewer-personas.md)
+- [04 — Caller Claude Protocol](./apps/vada-ai/specs/vada-teams-catalog/04-caller-claude-protocol.md)
+- [05 — Orchestration Rules](./apps/vada-ai/specs/vada-teams-catalog/05-orchestration-rules.md)
 - [Vāda — YAML Immutability Principle](./apps/vada-ai/specs/vada-yaml-immutability-principle.md)
 - [YAML Deliberation Spec — Schema Reference](./apps/vada-ai/specs/yaml-schema-reference.md)
 
@@ -69,6 +68,8 @@
 
 - [Benchmark Comparison Implementation Plan](./apps/vada-ai/specs/legacy/2026-04-18-benchmark-comparison.md)
 - [Round Strip UI Implementation Plan](./apps/vada-ai/specs/legacy/2026-04-18-round-strip-ui.md)
+- [06 — Implementation Plan (V1 Status + Remaining Work)](./apps/vada-ai/specs/legacy/2026-04-30-brokered-implementation-plan.md)
+- [Phase 6 Prompt Validation — Brokered Mode](./apps/vada-ai/specs/legacy/2026-04-30-phase-6-prompt-validation.md)
 - [Followups](./apps/vada-ai/specs/legacy/followups.md)
 - [Mastra Usage Audit — Phase 2 Task 1](./apps/vada-ai/specs/legacy/mastra-audit.md)
 - [Legacy specs](./apps/vada-ai/specs/legacy/README.md)
