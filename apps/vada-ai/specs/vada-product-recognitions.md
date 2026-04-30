@@ -66,7 +66,7 @@ The reviewer responses are inputs. The synthesis is the deliverable.
 
 ### Why this matters
 
-In Phase 6 / 6.5 / 6.7, Brokered V1 was built without synthesis as an engine-layer concept. Synthesis was relegated to "the consuming Caller Claude does it" — documented in the tool description, not produced by Vāda itself. This decision was inherited from earlier architectural discussions and not questioned closely.
+In Phase 6 / 6.5 / 6.7, the initial reviewer-chain teams (`brokered-trio`, `brokered-quartet`) were built without synthesis as an engine-layer concept. Synthesis was relegated to "the consuming Caller Claude does it" — documented in the tool description, not produced by Vāda itself. This decision was inherited from earlier architectural discussions and not questioned closely.
 
 In Phase 6.7's smoke test, this surfaced as a structural problem. The benchmark judged the raw transcript (three independent reviewer outputs) against a single-shot polished baseline. The raw transcript lost on coherence and length efficiency. This was not a prompt problem — it was a measurement problem: we were measuring the wrong artifact. The artifact that mattered (synthesized output) wasn't being measured because it wasn't being produced by Vāda at all.
 
@@ -91,11 +91,11 @@ Phase 10 redesigns the benchmark to measure synthesizer output, not raw transcri
 
 ---
 
-## Recognition 3: Real-case Brokered is the actual product direction; current Brokered V1 is a parked configuration
+## Recognition 3: Real-case reviewer teams are the actual product direction; current `brokered-trio` / `brokered-quartet` are parked configurations
 
 ### What this means
 
-The Brokered mode that ships in Phase 7.2 (`brokered-trio-v1.yaml`, `brokered-quartet-v1.yaml`) is not the destination. It is a parked configuration that ships for compatibility and to enable benchmarking comparison.
+The reviewer-chain YAMLs that ship in Phase 7.2 (`brokered-trio.yaml`, `brokered-quartet.yaml`) are not the destination. They are parked configurations that ship for compatibility and to enable benchmarking comparison.
 
 The actual product direction — "real-case Brokered" — is structurally different:
 - **Multi-round, not single-shot.** Reviewers respond, are seen, can be addressed, can refine.
@@ -108,14 +108,14 @@ The actual product direction — "real-case Brokered" — is structurally differ
 
 The manual workflow that Vāda is modeled on is itself a "real-case" deliberation. The Principal opens conversations with multiple AI assistants, pastes responses across them, synthesizes via a chat AI with full conversation context, and continues until satisfied. This workflow has been used for months and produces output the Principal trusts.
 
-Brokered V1 is an attempt to externalize this workflow. The externalization made several compromises for engineering tractability:
+The initial `brokered-trio` / `brokered-quartet` YAMLs are an attempt to externalize this workflow. The externalization made several compromises for engineering tractability:
 - Roles were introduced because differentiation via prompts was easier than via models
 - Single-round was chosen because parallel orchestration was complicated
 - Synthesis was delegated because building a synthesizer was deferred
 
 Each compromise was defensible at the time. Together they built something that does NOT replicate what works empirically.
 
-The recognition: keep what we built (it's valuable infrastructure and ships as a parked configuration), but don't mistake it for the destination. The product target is the real-case mode.
+The recognition: keep what we built (it's valuable infrastructure and ships as a parked configuration), but don't mistake it for the destination. The product target is the real-case team.
 
 ### How this manifests going forward
 
@@ -125,15 +125,15 @@ Phase 9 defines `brokered-real-case.yaml` as a new YAML:
 - Synthesizer-between-rounds defined in flow
 - Termination condition: Principal-decides (requires engine extension for this)
 
-This is a separate YAML, not a modification of `brokered-trio-v1.yaml`. The trio remains immutable.
+This is a separate YAML, not a modification of `brokered-trio.yaml`. The trio remains immutable.
 
 ### What this implies for the future
 
-- Brokered V1 and real-case Brokered ship side by side
+- `brokered-trio` / `brokered-quartet` and the real-case YAML ship side by side
 - Users (and Caller Claude) can pick which to use per question
 - Benchmark history accumulates separately for each
 - The cost-quality comparison between them is a real research question
-- Multiple YAML "modes" of real-case may emerge (different round counts, different synthesizer prompts)
+- Multiple YAML variants of real-case may emerge (different round counts, different synthesizer prompts)
 
 ---
 
@@ -249,7 +249,7 @@ The six recognitions are not independent. They form a coherent picture:
 5. Configurations are YAMLs → many will be tried → tracking what works requires immutability → fork-not-modify principle
 6. Comparison requires measuring the right thing → current benchmark measures wrong thing → Phase 10 (benchmark redesign)
 
-Together: Vāda is a YAML-driven runtime where synthesis is the product, where the YAML catalog accumulates as immutable artifacts with benchmark history, where the empirical question of which configurations work is open and being investigated, and where the current shipped V1 is a starting point that's already known to be a parked configuration en route to the real product.
+Together: Vāda is a YAML-driven runtime where synthesis is the product, where the YAML catalog accumulates as immutable artifacts with benchmark history, where the empirical question of which configurations work is open and being investigated, and where the current shipped reviewer-chain YAMLs (`brokered-trio`, `brokered-quartet`) are starting points already known to be parked configurations en route to the real-case team.
 
 ---
 

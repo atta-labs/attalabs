@@ -11,6 +11,8 @@ Phase 8 (synthesis exposed to consumers) completed. Key changes:
 
 # Vāda — Current State
 
+> **Framing note (2026-04-30):** The "Brokered mode" and "Autonomous mode" product categories used in older entries have been retired. Current framing uses the Vāda Teams catalog (YAML specs at `apps/vada-ai/yamls/`). See `vada-reviewers-spec.md` for the in-progress Vāda Reviewers team spec.
+
 **Last updated:** April 26, 2026
 **Last milestone:** Phase 8 (synthesis exposed to consumers; structured field at all consumer boundaries)
 **Next milestone:** Phase 9 (real-case Brokered as a new YAML)
@@ -43,7 +45,7 @@ Vestigial `declare` stubs removed. Vitest added. 8 compile tests passing.
 ### Phase 5 — Brokered specs update
 `brokered-deliberation/00`, `01`, `02`, `06` specs updated to reflect engine-based architecture.
 
-### Phase 6 — Brokered V1 polish
+### Phase 6 — Reviewer-chain teams (brokered-trio, brokered-quartet) polish
 `vada__consult` tool description expanded (~1200 words), Zod input validation, DB migration adding 7 columns, Domain Expert agent added, `brokeredQuartet` flag-gated.
 
 ### Phase 6.5 — Benchmarks infrastructure
@@ -82,14 +84,14 @@ No schema 2.0 required. The change is at the API boundary, not the spec language
 
 These exist but are NOT the product direction. They remain as historical artifacts or as configurations that ship for compatibility.
 
-### Current Brokered V1 (role-based, single-shot)
+### Reviewer-chain teams (brokered-trio, brokered-quartet) — role-based, single-shot
 Three reviewers (Strategist, Critic, Devil's Advocate) running in parallel for one round. No synthesis at the engine layer. Currently expressed as `brokered-trio.yaml`. This is a parked configuration, not the destination.
 
 ### Role-based deliberation as theory
 The Strategist/Critic/Devil's Advocate role split was a theoretical decomposition. It has not been validated empirically against role-free configurations. The manual workflow that this project is modeled on does NOT use roles. Whether roles add value over role-free reviewer multiplication is an open empirical question deferred to Phase 12 (validation experiments).
 
 ### Single-round deliberation
-Single-round deliberation is a structurally weaker approximation of what the manual workflow actually does (iterative refinement with synthesis between rounds, terminated by Principal). It ships in current Brokered V1 but is not the product target.
+Single-round deliberation is a structurally weaker approximation of what the manual workflow actually does (iterative refinement with synthesis between rounds, terminated by Principal). It ships in the current reviewer-chain YAMLs (`brokered-trio`, `brokered-quartet`) but is not the product target.
 
 ---
 
@@ -178,7 +180,7 @@ Existing canonical docs:
 - `apps/vada-ai/specs/vada-product-spec.md` — full product positioning
 - `apps/vada-ai/specs/vada-science-of-deliberation.md` — foundational theory
 - `apps/vada-ai/specs/yaml-schema-reference.md` — YAML schema definitive reference
-- `apps/vada-ai/specs/brokered-deliberation/` — Brokered-mode-specific specs
+- `apps/vada-ai/specs/brokered-deliberation/` — `vada__consult` reviewer-chain specs
 - `ROADMAP.md` — phase tracker
 - `DOCS.md` — documentation index
 
