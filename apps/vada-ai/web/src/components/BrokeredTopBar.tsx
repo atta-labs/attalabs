@@ -21,8 +21,8 @@ interface BrokeredTopBarProps {
 }
 
 const AUTH_NAV = [
-  { href: '/brokered/consultations', label: 'Consultations', exact: true },
-  { href: '/brokered/mcp', label: 'MCP Install', exact: true }
+  { href: '/sessions/consultations', label: 'Consultations', exact: true },
+  { href: '/mcp', label: 'MCP Install', exact: true }
 ]
 
 export function BrokeredTopBar({ logo }: BrokeredTopBarProps) {
