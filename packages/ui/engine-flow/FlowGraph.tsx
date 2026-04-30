@@ -126,7 +126,6 @@ export function FlowGraph({ plan, events, nodeRenderers, className }: FlowGraphP
         proOptions={{ hideAttribution: true }}
         minZoom={0.15}
         maxZoom={2.5}
-        colorMode='system'
       >
         <Background color='var(--border)' gap={20} size={1} />
         <Controls className='!bg-card !border-border !shadow-none' />
