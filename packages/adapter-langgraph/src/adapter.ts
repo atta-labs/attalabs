@@ -239,24 +239,42 @@ export class LangGraphAdapter implements Adapter {
       `[LangGraphAdapter] Estimated cost: $${estimatedCostUsd.toFixed(4)} | ${transcript.length} agent turns | ${totalTokensInput}in/${totalTokensOutput}out tokens`
     )
 
-    // Concatenate mode: used by brokered/reviewer flows.
+    // Concatenate mode: used by brokered/reviewer flows without synthesis.
     const isConcatenate = state.plan.responseMode === 'concatenate'
 
     if (isConcatenate) {
-      const content = transcript.map((o) => `## ${o.agentName}\n\n${o.content}`).join('\n\n---\n\n')
+      const content = transcript
+        .map((o) =>
+          o.error ? `## ${o.agentName}\n\n⚠ Provider error: ${o.error}` : `## ${o.agentName}\n\n${o.content}`
+        )
+        .join('\n\n---\n\n')
+
+      // All reviewers errored → FAILED; any success → CLEAN
+      const allFailed = transcript.length > 0 && transcript.every((o) => !!o.error)
+
       return {
         content,
         structured: undefined,
         transcript,
-        terminalState: 'CLEAN',
+        terminalState: allFailed ? 'FAILED' : 'CLEAN',
         totalTokensInput,
         totalTokensOutput,
-        totalElapsedMs
+        totalElapsedMs,
+        ...(allFailed ? { error: 'All reviewer LLM calls failed' } : {})
       }
     }
 
     // Terminal output: resolved from explicit responseNode set by compileSpec().
     const terminalOutput = state.plan.responseNode ? state.outputs[state.plan.responseNode] : undefined
+
+    // If the terminal/synthesis node itself failed, surface as FAILED conclusion.
+    if (terminalOutput?.error) {
+      return this.buildFailedConclusion(
+        `Terminal node '${state.plan.responseNode}' failed: ${terminalOutput.error}`,
+        state
+      )
+    }
+
     const content = terminalOutput?.content ?? ''
     const structured = terminalOutput?.structured
 

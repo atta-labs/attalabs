@@ -71,13 +71,36 @@ export function createNodeExecutor(llmCall: LlmCallFn, hooks?: ExecutionHooks): 
       ? { ...agent, tools: decision.needs.length > 0 ? decision.needs : undefined }
       : agent
 
-    // Invoke the LLM with (potentially filtered) tool list
-    const llmResult = await llmCall({
-      model,
-      agent: filteredAgent,
-      systemPrompt: agent.systemPrompt,
-      userPrompt: renderedPrompt
-    })
+    // Invoke the LLM with (potentially filtered) tool list.
+    // On failure, return a synthetic error output rather than throwing — the graph
+    // continues to subsequent nodes; per-agent failures surface in AgentOutput.error.
+    let llmResult: Awaited<ReturnType<typeof llmCall>>
+    try {
+      llmResult = await llmCall({
+        model,
+        agent: filteredAgent,
+        systemPrompt: agent.systemPrompt,
+        userPrompt: renderedPrompt
+      })
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      console.error(`[LangGraphAdapter] LLM call failed for node '${node.id}':`, err)
+      const errorOutput: AgentOutput = {
+        agentName: agent.name,
+        content: '',
+        tokensInput: 0,
+        tokensOutput: 0,
+        elapsedMs: 0,
+        model,
+        error: errorMessage,
+        roundIndex: node.metadata.roundIndex,
+        stepIndex: node.metadata.customStepIndex
+      }
+      return {
+        outputs: { [node.id]: errorOutput },
+        executionOrder: [node.id]
+      }
+    }
 
     // Track tool allocation for tool-enabled agents (best-effort — one record per
     // allocated tool since server tools don't emit countable tool_use blocks).
