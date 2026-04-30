@@ -8,18 +8,21 @@ interface AttaUserProfileProps {
   logoDark?: string
 }
 
-const PROFILE_VARIABLES = {
+const PROFILE_VARIABLES_BASE = {
   colorPrimary: 'var(--primary)',
   colorPrimaryForeground: 'var(--primary-foreground)',
   colorNeutral: 'var(--foreground)',
-  colorBackground: 'var(--background)',
   colorForeground: 'var(--foreground)',
   colorDanger: 'var(--destructive)',
   colorMuted: 'var(--muted)',
   colorMutedForeground: 'var(--muted-foreground)',
-  colorInput: 'var(--card)',
   colorInputForeground: 'var(--foreground)'
 }
+
+// Dark: --card=#0A0A0A vs --background=#000000 — only 4% apart, invisible.
+// Use --secondary (#1A1A1A) for dark surfaces to get ~10% separation from black.
+const darkSurface = 'var(--secondary)'
+const lightSurface = 'var(--card)'
 
 const PROFILE_ELEMENTS_SHARED = {
   cardBox: { overflow: 'visible' },
@@ -29,8 +32,6 @@ const PROFILE_ELEMENTS_SHARED = {
   headerSubtitle: { color: 'var(--muted-foreground)' },
   userPreviewMainIdentifier: { color: 'var(--foreground)' },
   userPreviewSecondaryIdentifier: { color: 'var(--muted-foreground)' },
-  pageScrollBox: { backgroundColor: 'var(--background)' },
-  scrollBox: { backgroundColor: 'var(--background)' },
   profileSection: { borderTop: '1px solid var(--border)' },
   profileSectionTitle: { color: 'var(--foreground)' },
   profileSectionPrimaryButton: { backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' },
@@ -56,22 +57,28 @@ export function AttaUserProfile({ logoLight, logoDark }: AttaUserProfileProps) {
 
   const logoImageUrl = scheme === 'dark' ? logoDark : logoLight
 
+  const surface = scheme === 'dark' ? darkSurface : lightSurface
+
   return (
     <UserProfile
       routing='hash'
       appearance={{
         baseTheme: scheme === 'dark' ? clerkDarkTheme : undefined,
-        variables: PROFILE_VARIABLES,
+        variables: {
+          ...PROFILE_VARIABLES_BASE,
+          colorBackground: surface,
+          colorInput: surface
+        },
         elements: {
           ...PROFILE_ELEMENTS_SHARED,
-          card: { backgroundColor: 'var(--card)', border: '1px solid var(--border)' },
+          card: { backgroundColor: surface, border: '1px solid var(--border)' },
           navbar: {
-            backgroundColor: 'var(--card)',
+            backgroundColor: surface,
             borderRight: '1px solid var(--border)',
             color: 'var(--foreground)'
           },
-          pageScrollBox: { backgroundColor: 'var(--card)' },
-          scrollBox: { backgroundColor: 'var(--card)' }
+          pageScrollBox: { backgroundColor: surface },
+          scrollBox: { backgroundColor: surface }
         },
         ...(logoImageUrl ? { layout: { logoImageUrl } } : {})
       }}
