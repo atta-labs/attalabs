@@ -225,14 +225,26 @@ export class LangGraphAdapter implements Adapter {
     const totalElapsedMs = Date.now() - state.startedAt
 
     // Cost estimate from token counts × per-model pricing (USD per million tokens, May 2026)
+    // Unknown models skip cost tracking — returns undefined, not an error.
     const PRICING: Record<string, { input: number; output: number }> = {
+      // Anthropic
       'claude-haiku-4-5-20251001': { input: 0.8, output: 4.0 },
       'claude-haiku-4-5': { input: 0.8, output: 4.0 },
       'claude-sonnet-4-6': { input: 3.0, output: 15.0 },
-      'claude-opus-4-7': { input: 15.0, output: 75.0 }
+      'claude-opus-4-7': { input: 15.0, output: 75.0 },
+      // Google (pricing for ≤200K context window; >200K is higher)
+      'gemini-2.5-pro': { input: 1.25, output: 10.0 },
+      'gemini-2.0-flash': { input: 0.1, output: 0.4 },
+      // OpenAI
+      'gpt-4o': { input: 2.5, output: 10.0 },
+      'gpt-4o-mini': { input: 0.15, output: 0.6 },
+      // xAI (approximate — verify against api.x.ai pricing page)
+      'grok-2': { input: 2.0, output: 10.0 },
+      'grok-3': { input: 3.0, output: 15.0 }
     }
     const estimatedCostUsd = transcript.reduce((sum, o) => {
-      const p = PRICING[o.model] ?? { input: 3.0, output: 15.0 }
+      const p = PRICING[o.model]
+      if (!p) return sum // Unknown models skip cost tracking
       return sum + (o.tokensInput * p.input + o.tokensOutput * p.output) / 1_000_000
     }, 0)
     console.info(

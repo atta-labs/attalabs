@@ -1,5 +1,6 @@
 import { compileSpec } from '@atta/engine'
-import { LangGraphAdapter } from '@atta/adapter-langgraph'
+import { LangGraphAdapter, createMultiVendorLlmCall } from '@atta/adapter-langgraph'
+import type { ProviderKeys } from '@atta/adapter-langgraph'
 import { lookupSpec } from '../spec-registry'
 import { logSession } from '../session-logger'
 
@@ -28,13 +29,14 @@ export interface DeliberateOutput {
   }
 }
 
-export async function runDeliberate(input: DeliberateInput, apiKey: string): Promise<DeliberateOutput> {
+export async function runDeliberate(input: DeliberateInput, providerKeys: ProviderKeys): Promise<DeliberateOutput> {
   const spec = lookupSpec(input.team ?? 'sparring')
   const plan = compileSpec(spec, input.question, DEFAULT_MODEL)
 
-  const adapter = new LangGraphAdapter({ apiKey })
+  const llmCall = createMultiVendorLlmCall(providerKeys)
+  const adapter = new LangGraphAdapter({ apiKey: providerKeys.anthropic })
   const startedAt = Date.now()
-  const conclusion = await adapter.execute({ plan, customVars: {} })
+  const conclusion = await adapter.execute({ plan, customVars: {}, llmCall })
   const durationMs = Date.now() - startedAt
 
   const estimatedUsd =

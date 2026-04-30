@@ -14,6 +14,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc",
+    "test": "bun test",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -21,6 +22,8 @@
     "@langchain/langgraph": "^0.2.0",
     "@langchain/core": "^0.3.0",
     "@anthropic-ai/sdk": "^0.65.0",
+    "@google/generative-ai": "^0.24.0",
+    "openai": "^4.98.0",
     "handlebars": "^4.7.8"
   },
   "devDependencies": {

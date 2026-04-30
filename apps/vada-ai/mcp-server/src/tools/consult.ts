@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { compileSpec, loadYamlFromCatalog } from '@atta/engine'
-import { LangGraphAdapter } from '@atta/adapter-langgraph'
+import { LangGraphAdapter, createMultiVendorLlmCall } from '@atta/adapter-langgraph'
+import type { ProviderKeys } from '@atta/adapter-langgraph'
 import { logSession } from '../session-logger'
 
 type ReviewerProfileName = 'strategist' | 'critic' | 'devils_advocate'
@@ -190,7 +191,11 @@ function generateShareToken(): string {
 
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
-export async function runConsult(input: ConsultInput, apiKey: string, origin?: string): Promise<ConsultOutput> {
+export async function runConsult(
+  input: ConsultInput,
+  providerKeys: ProviderKeys,
+  origin?: string
+): Promise<ConsultOutput> {
   const hasDomainExpert = input.reviewerSpecs.some((s) => s.profileName === 'domain_expert')
   const baseSpec = hasDomainExpert ? BROKERED_QUARTET : BROKERED_TRIO
 
@@ -210,9 +215,10 @@ export async function runConsult(input: ConsultInput, apiKey: string, origin?: s
   const customVars = domainInput?.domain ? { domain: domainInput.domain } : undefined
   const plan = compileSpec(specWithReviewers, input.question, DEFAULT_MODEL, customVars)
 
-  const adapter = new LangGraphAdapter({ apiKey })
+  const llmCall = createMultiVendorLlmCall(providerKeys)
+  const adapter = new LangGraphAdapter({ apiKey: providerKeys.anthropic })
   const startedAt = Date.now()
-  const conclusion = await adapter.execute({ plan, customVars: {} })
+  const conclusion = await adapter.execute({ plan, customVars: {}, llmCall })
   const durationMs = Date.now() - startedAt
 
   const estimatedUsd =
