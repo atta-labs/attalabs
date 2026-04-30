@@ -45,7 +45,8 @@ packages/engine/src/
 │   ├── spec.ts               # compileSpec(spec, question, model?) → Plan; specToTeam(spec) → Team
 │   ├── solo.ts               # SoloWorkflow → Plan (internal)
 │   ├── rounds.ts             # RoundsWorkflow → Plan (internal, most complex)
-│   └── custom.ts             # CustomWorkflow → Plan (internal)
+│   ├── custom.ts             # CustomWorkflow → Plan (internal)
+│   └── brokered.ts           # BrokeredWorkflow → Plan (sequential reviewer chain, internal)
 └── index.ts                  # Public exports
 ```
 
@@ -115,6 +116,17 @@ type ClassifierMode = 'auto' | 'skip' | 'always_tools'
 // 'skip'         — no classifier injected, no tools
 // 'always_tools' — classifier skipped, agent's full tool list always on
 ```
+
+**Workflow** — discriminated union of four types. Internal to the engine; the Plan compiler dispatches by `type` discriminator.
+
+| Type | Discriminator | Compiler | Used by YAMLs |
+|---|---|---|---|
+| Solo | `type: 'solo'` | `compilers/solo.ts` | `a0-baseline`, `a1-baseline` |
+| Rounds | `type: 'rounds'` | `compilers/rounds.ts` | `crucible`, `sparring`, `war-room` |
+| Custom | `type: 'custom'` | `compilers/custom.ts` | (none in catalog today) |
+| Brokered | `type: 'brokered'` | `compilers/brokered.ts` | `brokered-trio`, `brokered-quartet` |
+
+Brokered is structurally similar to Custom (sequential chain of reviewer nodes) but produces `responseMode: 'concatenate'` Plans rather than `'synthesize'`. The two could in principle be unified, but the diff is wider than the value (node ID conventions, downstream session-log dependencies).
 
 **Plan** — compiled output. Pure JSON. Consumed by adapter.
 ```ts
@@ -245,14 +257,16 @@ audit:
 
 ## Adding a New Workflow Variant
 
-Phase 7.2+: new workflow variants are created as YAML files, not TypeScript compilers.
+Phase 7.2+: prefer YAML files for new workflow variants. New TypeScript compilers are exceptional and require shape-level differences that no existing compiler can express (e.g., `BrokeredWorkflow` was added April 2026 to produce `responseMode: 'concatenate'` Plans, which the existing compilers couldn't).
+
+For most additions:
 
 1. Create `apps/vada-ai/yamls/<new-spec>-v1.yaml` following the schema
 2. Register in `apps/vada-ai/mcp-server/src/spec-registry.ts`
 3. Write a verify script in `apps/vada-ai/web/scripts/verify-<new-spec>-port.ts`
 4. Run verify script; confirm transcript length matches expected count
 
-If you need a genuinely new internal execution shape (e.g. a new `kind` of Workflow), then also:
+If your shape genuinely cannot be expressed as YAML over existing compilers (the bar set by Brokered's addition), then also:
 - Add `kind` to `Workflow` union in `types.ts`
 - Create `compilers/<kind>.ts` exporting `compile(workflow, team): Plan`
 - Update `validate.ts` to handle new kind
@@ -268,6 +282,7 @@ If you need a genuinely new internal execution shape (e.g. a new `kind` of Workf
 - ❌ Content injection (prompts, examples) into compiled Plans
 - ❌ `SpecAgent.tools` as boolean — use `string[]` always, `[]` for explicit none
 - ❌ Renaming node IDs without grepping adapter + mcp-server for dependencies
+- ❌ Adding a new workflow type when the same shape can be expressed as a YAML over Solo/Rounds/Custom/Brokered — the bar for new compilers is shape-level features no existing compiler provides
 - ❌ Treating `MAX_REVISIONS` as a failure — it's a valid terminal state
 - ❌ Adding new terminal states without Principal approval (contract with adapter + mcp-server)
 - ❌ Calling `compile()` directly from outside the engine — use `compileSpec()`
