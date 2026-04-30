@@ -13,12 +13,18 @@ import { createDb } from '@atta/db'
 import { mcpSessions } from '../src/schema.js'
 import { eq } from 'drizzle-orm'
 
-const apiKey = process.env.ANTHROPIC_API_KEY
 const dbUrl = process.env.DATABASE_URL
 
-if (!apiKey) {
+if (!process.env.ANTHROPIC_API_KEY) {
   console.error('ANTHROPIC_API_KEY required')
   process.exit(1)
+}
+
+const providerKeys = {
+  anthropic: process.env.ANTHROPIC_API_KEY,
+  google: process.env.GOOGLE_API_KEY,
+  openai: process.env.OPENAI_API_KEY,
+  xai: process.env.XAI_API_KEY
 }
 
 console.log('='.repeat(60))
@@ -31,7 +37,7 @@ const reviewerSpecs = [{ profileName: 'critic' as const }, { profileName: 'devil
 console.log(`\nQuestion: ${question}`)
 console.log(`Reviewers: ${reviewerSpecs.map((r) => r.profileName).join(', ')}\n`)
 
-const result = await runConsult({ question, reviewerSpecs }, apiKey)
+const result = await runConsult({ question, reviewerSpecs }, providerKeys)
 
 console.log('--- Responses ---')
 for (const r of result.responses) {

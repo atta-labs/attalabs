@@ -13,12 +13,18 @@ import { createDb } from '@atta/db'
 import { mcpSessions } from '../src/schema.js'
 import { eq } from 'drizzle-orm'
 
-const apiKey = process.env.ANTHROPIC_API_KEY
 const dbUrl = process.env.DATABASE_URL
 
-if (!apiKey) {
+if (!process.env.ANTHROPIC_API_KEY) {
   console.error('ANTHROPIC_API_KEY required')
   process.exit(1)
+}
+
+const providerKeys = {
+  anthropic: process.env.ANTHROPIC_API_KEY,
+  google: process.env.GOOGLE_API_KEY,
+  openai: process.env.OPENAI_API_KEY,
+  xai: process.env.XAI_API_KEY
 }
 
 console.info('='.repeat(60))
@@ -31,7 +37,7 @@ const team = 'sparring'
 console.info(`\nQuestion: ${question}`)
 console.info(`Team: ${team}\n`)
 
-const result = await runDeliberate({ question, team }, apiKey)
+const result = await runDeliberate({ question, team }, providerKeys)
 
 console.info('--- Content (first 500 chars) ---')
 console.info(result.content.slice(0, 500))

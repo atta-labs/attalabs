@@ -1,5 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import type { ProviderKeys } from '@atta/adapter-langgraph'
 import { runConsult, validateAndNormalize } from './tools/consult'
 import { runDeliberate } from './tools/deliberate'
 
@@ -126,7 +127,7 @@ function detectOrigin(clientName: string | undefined): string {
  * in McpServer's generic inference. The tool is registered with a plain
  * JSON Schema object so no Zod inference is needed at the server layer.
  */
-export function createServer(apiKey: string): Server {
+export function createServer(providerKeys: ProviderKeys): Server {
   const server = new Server({ name: 'vada', version: '1.0.0' }, { capabilities: { tools: {} } })
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -194,7 +195,7 @@ export function createServer(apiKey: string): Server {
 
       try {
         const origin = detectOrigin(server.getClientVersion()?.name)
-        const result = await runConsult(validation.data, apiKey, origin)
+        const result = await runConsult(validation.data, providerKeys, origin)
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)
@@ -220,7 +221,7 @@ export function createServer(apiKey: string): Server {
       }
 
       try {
-        const result = await runDeliberate({ question, team: team as string | undefined }, apiKey)
+        const result = await runDeliberate({ question, team: team as string | undefined }, providerKeys)
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)
