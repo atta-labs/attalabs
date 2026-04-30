@@ -1,11 +1,12 @@
 import { clerkMiddleware, createRouteMatcher } from '@atta/auth/middleware'
 
 const isProtectedRoute = createRouteMatcher([
-  '/autonomous/deliberate(.*)',
-  '/autonomous/deliberation(.*)',
-  '/autonomous/sessions(.*)',
+  '/deliberate(.*)',
+  '/deliberation(.*)',
+  '/sessions(.*)',
   '/settings(.*)',
-  '/brokered/consultations(.*)'
+  '/teams(.*)',
+  '/bench(.*)'
 ])
 
 export default clerkMiddleware(async (auth, req) => {

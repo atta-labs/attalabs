@@ -11,7 +11,7 @@ export function DeliberateAction() {
 
   if (isSignedIn) {
     return (
-      <Button variant='outline' size='lg' onClick={() => router.push('/autonomous/deliberate')}>
+      <Button variant='outline' size='lg' onClick={() => router.push('/deliberate')}>
         Deliberate
       </Button>
     )

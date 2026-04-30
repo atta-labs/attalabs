@@ -6,7 +6,7 @@ import { Separator } from '@atta/ui'
 import { getOrCreateUser } from '@/db/queries'
 import { getUserSettings, getUserTeamModels } from '@/db/settings-queries'
 import { SPEC_ID_TO_TEAM_ID } from '@/lib/teams-metadata'
-import { CopyButton } from '@/app/(main)/brokered/mcp/components/CopyButton'
+import { CopyButton } from '@/app/(main)/mcp/components/CopyButton'
 import { SettingsClientPage } from './components/SettingsClientPage'
 import { NextLink } from '@atta/ui/lib/next-link'
 
@@ -63,7 +63,7 @@ export default async function SettingsPage() {
               <code className='flex-1 font-mono text-xs text-foreground'>{clerkId!}</code>
               <CopyButton text={clerkId!} />
             </div>
-            <NextLink href='/brokered/mcp' variant='prose' className='text-sm'>
+            <NextLink href='/mcp' variant='prose' className='text-sm'>
               MCP install guide →
             </NextLink>
           </div>
