@@ -39,6 +39,7 @@
   "dependencies": {
     "@atta/auth": "workspace:*",
     "@atta/cms": "workspace:*",
+    "@atta/identity": "workspace:*",
     "@atta/models": "workspace:*",
     "@base-ui/react": "^1.3.0",
     "@lobehub/icons": "^5.4.0",

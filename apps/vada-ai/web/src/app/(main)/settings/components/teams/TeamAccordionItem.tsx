@@ -12,11 +12,10 @@ import { AgentModelRow } from './AgentModelRow'
 interface TeamAccordionItemProps {
   team: { id: TeamId; name: string; agents: string[] }
   teamModels: TeamModelEntry[]
-  configuredProviders: Set<string>
   onModelChanged: (entry: TeamModelEntry) => void
 }
 
-export function TeamAccordionItem({ team, teamModels, configuredProviders, onModelChanged }: TeamAccordionItemProps) {
+export function TeamAccordionItem({ team, teamModels, onModelChanged }: TeamAccordionItemProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -51,7 +50,6 @@ export function TeamAccordionItem({ team, teamModels, configuredProviders, onMod
                 agent={agent}
                 teamId={team.id}
                 currentModel={saved ? { provider: saved.provider, modelId: saved.modelId } : null}
-                configuredProviders={configuredProviders}
                 onChanged={onModelChanged}
               />
             )
