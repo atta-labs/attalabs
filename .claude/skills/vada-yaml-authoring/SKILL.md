@@ -1,6 +1,6 @@
 ---
 name: vada-yaml-authoring
-description: How to create and register YAML deliberation specs. Load when adding a new team, new deliberation mode, or new brokered spec. Covers both rounds-based and reviewers-based patterns, spec-registry registration, and verify scripts.
+description: How to create and register YAML deliberation specs. Load when adding a new team or new YAML spec. Covers all four workflow types (Solo, Rounds, Custom, Brokered), spec-registry registration, and verify scripts.
 ---
 
 # YAML Deliberation Specs — Authoring Guide
@@ -17,15 +17,15 @@ Full schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`
 
 ---
 
-## The Two Modes
+## Workflow Types
 
-### Rounds-based (Autonomous)
+### RoundsWorkflow
 
 Agents debate across N rounds. A synthesis agent commits to a conclusion. Auditors check the conclusion; if flagged, the synthesis agent revises (up to `revision.max` times).
 
-Use for: Sparring, Crucible, War Room, A0/A1 baselines, new autonomous deliberation variants.
+Use for: Sparring, Crucible, War Room, A0/A1 baselines, new rounds-based deliberation variants.
 
-### Reviewers-based (Brokered)
+### BrokeredWorkflow
 
 Independent reviewers each see only the question. No cross-visibility, no rounds, no audit. Outputs are concatenated or synthesized.
 
@@ -235,7 +235,7 @@ Valid terminal states: `CLEAN`, `REVISED`, `MAX_REVISIONS` — all three are suc
 | Reasoning agent (Strategist, Critic, Devil's Advocate) | `auto` — let classifier decide per-turn based on whether the question needs web search |
 | Round-Synthesizer (integrates claims across rounds) | `always_tools` — must always have tools for verification; skips the Haiku call overhead |
 | Audit agent (BlindCritic, ConclusionSynthesizer) | `skip` — blindness/commitment is the mechanism; tools would contaminate the role |
-| Brokered reviewer (single-shot, no rounds) | `skip` — single-shot advisory; no classifier overhead needed |
+| BrokeredWorkflow reviewer (single-shot, no rounds) | `skip` — single-shot advisory; no classifier overhead needed |
 | Baseline solo agent (A0, A1) | `skip` — single-shot baseline by definition |
 
 Only omit `classifier` entirely for agents with no tools declared. For agents with tools, always set an explicit `classifier.mode`.

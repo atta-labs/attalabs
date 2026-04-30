@@ -1,6 +1,6 @@
 ---
 name: vada-architecture
-description: Vāda's product structure, two deliberation modes, wedges/capabilities/moats framework, current phase status, and locked architectural decisions. Load before any architectural decision, cross-cutting change, or when drafting executor tasks that span multiple layers.
+description: Vāda's product structure (Vāda Teams catalog), wedges/capabilities/moats framework, current phase status, and locked architectural decisions. Load before any architectural decision, cross-cutting change, or when drafting executor tasks that span multiple layers.
 ---
 
 # Vāda Architecture — Master Reference
@@ -11,14 +11,16 @@ Vāda is a multi-agent deliberation engine shipping as an MCP server. Multiple L
 
 ---
 
-## Two Deliberation Modes
+## Vāda Teams Catalog
 
-| Mode | MCP Tool | Behavior | Cost | Serves |
-|------|----------|----------|------|--------|
-| **Autonomous** | `vada__deliberate` | Agents debate each other, Principal observes, full rounds + audit | Higher | MOAT-A (audit trail) |
-| **Brokered** | `vada__consult` | Principal + Strategist summon individual reviewers on demand, no rounds | Lower | Acquisition surface |
+Vāda exposes deliberation as a catalog of YAML team specs compiled by the Atta engine. Both MCP tools are generic — there are no per-team tools. The catalog currently contains 7 YAML team specs at `apps/vada-ai/yamls/`. New teams are added by authoring YAML and registering with the spec registry.
 
-Brokered ships first (simpler). Both must ship before public launch. Brokered → Autonomous escalation is a product-design imperative, not a UI option.
+| MCP Tool | Behavior | Cost | Serves |
+|----------|----------|------|--------|
+| `vada__deliberate` | Agents debate each other across rounds + synthesis + audit | Higher | MOAT-A (audit trail) |
+| `vada__consult` | Builds an inline reviewer-chain spec; reviewers respond independently, no rounds | Lower | Acquisition surface |
+
+`vada__consult` ships first (simpler). Both must be in active use before public launch. Escalation from `vada__consult` to `vada__deliberate` is a product-design imperative, not a UI option.
 
 ---
 
@@ -69,9 +71,9 @@ Use this framework when labeling new work. Do NOT call something a moat unless i
 | 1 | LangGraph foundation; Mastra deleted | ✅ complete |
 | 2 | Package restructure (`@atta/engine`, `@vada/mcp-server`) | ✅ complete |
 | 2.5 | Documentation hygiene | ✅ complete |
-| 4 | Brokered through engine (`vada__consult`) | ✅ complete |
-| 5 | Brokered specs update | ✅ complete |
-| 6 | Brokered V1 polish (DB, Domain Expert, benchmark infra) | ✅ complete |
+| 4 | `vada__consult` through engine | ✅ complete |
+| 5 | Specs update | ✅ complete |
+| 6 | `vada__consult` V1 polish (DB, Domain Expert, benchmark infra) | ✅ complete |
 | 6.5 | Benchmark infrastructure | ✅ complete |
 | 6.7 | Reviewer prompt audit + rewrite; benchmark architecture flaw found | ✅ complete |
 | 7.1 | YAML schema investigation | ✅ complete |
@@ -79,7 +81,7 @@ Use this framework when labeling new work. Do NOT call something a moat unless i
 | 7.2.1 | YAML catalog loader extracted into `@atta/engine` | ✅ complete |
 | 7.3 | Hardcoded fallbacks eliminated; -v1 suffixes dropped; MCP registry made dynamic | ✅ complete |
 | 8 | Synthesis as first-class engine component | queued |
-| 9 | Real-case Brokered YAML | queued |
+| 9 | Real-case YAML team specs | queued |
 | 10 | Benchmark architecture redesign | queued |
 | 11 | YAML cost calculator UI | queued |
 | 12 | Validation experiments + cost-quality frontier | queued |
@@ -95,10 +97,11 @@ Use this framework when labeling new work. Do NOT call something a moat unless i
 | Cognitive router inside `@atta/adapter-langgraph`, not a separate package | Round 23 reviewer convergence; over-modular for V1 |
 | Sparring (2 agents) = default team, not Crucible (4-7) | Round 24 convergence; simpler, faster, easier to debug |
 | Tools ON for reasoning agents, OFF for audit agents | Task 4.5 empirical finding; restricting reasoning tools degrades output |
-| Brokered MCP tool ships before Autonomous | Round 24; validates distribution without betting on deliberation thesis first |
+| `vada__consult` ships before `vada__deliberate` | Round 24; validates distribution without betting on deliberation thesis first |
 | Direct `@anthropic-ai/sdk` in adapter (not LangChain wrapper) | LangChain wrapper had a `top_p` bug |
 | `Agent.tools: string[]` (not boolean) | Tool-specific config needed; adapter registry maps logical name → Anthropic API type |
 | Recursion limit raised to 150 in LangGraph | Classifier nodes double graph step count; default 25 is insufficient |
+| `BrokeredWorkflow` = the engine's workflow type for single-shot reviewer chains | Distinct from `RoundsWorkflow`; compiled by `compileBrokered` in `@atta/engine` |
 
 ---
 
@@ -112,7 +115,7 @@ Reviewer responses: `apps/vada-ai/specs/engine/v2-results/`.
 
 ## Pre-Public-Launch Requirements
 
-1. Autonomous + Brokered both shipping in MCP
+1. `vada__consult` and `vada__deliberate` both active in MCP
 2. At least one verticalized team with 100+ validated corpus questions (MOAT-B)
 3. vada.ai dashboard with full transcript + cost attribution (MOAT-A)
 4. Benchmark data showing measurable value over A0/A1 baselines
@@ -121,7 +124,7 @@ Reviewer responses: `apps/vada-ai/specs/engine/v2-results/`.
 
 ## Post-Launch Watchdog Metric
 
-Autonomous usage share at 6 months:
+`vada__deliberate` usage share at 6 months:
 
 | Share | Signal |
 |-------|--------|

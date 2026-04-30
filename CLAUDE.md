@@ -155,7 +155,6 @@ In-depth guides for specific domains. Reference when working in that area.
 | Git Commits | [.claude/skills/git-commits/SKILL.md](.claude/skills/git-commits/SKILL.md) | Commit format and rules |
 | Canvas Animation | [.claude/skills/canvas-animation/SKILL.md](.claude/skills/canvas-animation/SKILL.md) | AIACanvas, AIASphere, AIARing |
 | Vada Architecture | [.claude/skills/vada-architecture/SKILL.md](.claude/skills/vada-architecture/SKILL.md) | Architecture master reference — layer stack, phase status, moat framework |
-| Vada Brokered | [.claude/skills/vada-brokered/SKILL.md](.claude/skills/vada-brokered/SKILL.md) | Brokered mode — `vada__consult`, reviewer personas, Caller Claude protocol |
 | Vada MCP Server | [.claude/skills/vada-mcp-server/SKILL.md](.claude/skills/vada-mcp-server/SKILL.md) | MCP server implementation |
 | Vada Home Sections | [.claude/skills/vada-home-sections/SKILL.md](.claude/skills/vada-home-sections/SKILL.md) | Home page section primitives (SectionWrapper, SectionLabel, StatusFooter, TwoColumnSection) and composition recipe |
 | Atta Engine | [.claude/skills/atta-engine/SKILL.md](.claude/skills/atta-engine/SKILL.md) | Plan compiler — types, validation, compilers, node ID scheme |

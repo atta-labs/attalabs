@@ -1,6 +1,6 @@
 ---
 name: vada-mcp-server
-description: Vāda MCP server — dual-mode Claude integration and deliberation tools
+description: Vāda MCP server — generic catalog-driven deliberation tools (vada__consult for single-shot reviewer-chain teams, vada__deliberate for rounds-based teams) routing to YAML team specs compiled by the engine.
 ---
 
 # `@vada/mcp-server` — MCP Server
@@ -21,19 +21,19 @@ apps/vada-ai/mcp-server/src/
 ├── spec-registry.ts        # Dynamic YAML discovery; lookupSpec / listPublicSpecs / validateAllSpecs
 ├── session-logger.ts       # Writes session logs to Postgres via @atta/db
 └── tools/
-    ├── consult.ts          # vada__consult — Brokered mode; builds inline DeliberationSpec
-    └── deliberate.ts       # vada__deliberate — Autonomous mode; uses lookupSpec + compileSpec
+    ├── consult.ts          # vada__consult — builds inline BrokeredWorkflow spec from reviewer profiles
+    └── deliberate.ts       # vada__deliberate — uses lookupSpec + compileSpec for catalog team specs
 ```
 
 ---
 
 ## Tools
 
-### `vada__consult` — Brokered Mode
+### `vada__consult` — Single-Shot Reviewer Chain
 
-Caller Claude selects reviewers by role (`strategist`, `critic`, `devils_advocate`, `domain_expert`), provides a question with context, and each reviewer responds independently with no cross-visibility. No rounds, no synthesis, no audit.
+Caller selects reviewers by role (`strategist`, `critic`, `devils_advocate`, `domain_expert`), provides a question with context, and each reviewer responds independently with no cross-visibility. No rounds, no synthesis, no audit.
 
-`consult.ts` builds an inline `DeliberationSpec` at call time from the reviewer specs. It does NOT use `spec-registry.ts`. It calls `compileSpec()` directly on the constructed spec.
+`consult.ts` builds an inline `DeliberationSpec` (of type `BrokeredWorkflow`) at call time from the reviewer specs. It does NOT use `spec-registry.ts`. It calls `compileSpec()` directly on the constructed spec.
 
 Key behaviors:
 - Validates input with Zod (structured shape with `context` field, or legacy shape with `brief`)
@@ -44,9 +44,9 @@ Key behaviors:
 
 Agent source: agents are imported from `@vada/agents` (`apps/vada-ai/agents/`). The `reviewerProfiles` map in `consult.ts` maps role name strings to agent definitions.
 
-### `vada__deliberate` — Autonomous Mode
+### `vada__deliberate` — Rounds-Based Team Deliberation
 
-Caller provides a question and a team name. The server looks up the named spec and runs a full autonomous deliberation (rounds + synthesis + audit + revision).
+Caller provides a question and a team name. The server looks up the named YAML spec from the catalog and runs a full deliberation (rounds + synthesis + audit + revision).
 
 `deliberate.ts` calls `lookupSpec(teamName)` from `spec-registry.ts`, then `compileSpec(spec, question, model)`.
 
@@ -131,4 +131,3 @@ Current catalog: `crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline
 - Agent definitions: **atta-teams** skill (`apps/vada-ai/agents/src/`)
 - Plan compilation: **atta-engine** skill
 - LangGraph execution: **atta-adapter-langgraph** skill
-- Brokered mode concepts: **vada-brokered** skill

@@ -302,5 +302,4 @@ Crucible (4-7 agents) is no longer the default team — Sparring (2 agents) is. 
 - Agent/Workflow/Team types: **atta-engine** skill
 - YAML schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`
 - YAML authoring: **vada-yaml-authoring** skill
-- Brokered mode concepts: **vada-brokered** skill
 - Pre-launch corpus plan: `apps/vada-ai/specs/vada-product-spec.md` Section 11
