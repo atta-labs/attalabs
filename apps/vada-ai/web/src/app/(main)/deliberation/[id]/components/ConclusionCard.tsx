@@ -15,11 +15,11 @@ export function ConclusionCard({ round, content }: ConclusionCardProps) {
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className='flex w-full justify-end'
     >
-      <div className='w-full max-w-2xl rounded-2xl rounded-br-none border border-[oklch(65%_0.2_145)]/30 bg-[oklch(65%_0.2_145)]/8 p-6'>
-        <span className='mb-2 block text-[10px] uppercase tracking-widest text-[oklch(65%_0.2_145)]/60'>
+      <div className='w-full max-w-2xl rounded-2xl rounded-br-none border border-[color:var(--synthesis)]/30 bg-[color:var(--synthesis)]/8 p-6'>
+        <span className='mb-2 block text-[10px] uppercase tracking-widest text-[color:var(--synthesis)]/60'>
           Round {round} — Synthesis
         </span>
-        <div className='text-lg text-white/90'>{content}</div>
+        <div className='text-lg text-foreground/90'>{content}</div>
       </div>
     </motion.div>
   )

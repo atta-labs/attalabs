@@ -28,9 +28,11 @@ export function CenterViewport({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
-        <span className='shrink-0 text-[9px] uppercase tracking-widest text-[oklch(65%_0.2_145)]/60'>— Synthesis</span>
+        <span className='shrink-0 text-[9px] uppercase tracking-widest text-[color:var(--synthesis)]/60'>
+          — Synthesis
+        </span>
         <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
-          <Text as='p' size='xs' className='whitespace-pre-wrap leading-relaxed text-[oklch(65%_0.2_145)]'>
+          <Text as='p' size='xs' className='whitespace-pre-wrap leading-relaxed text-[color:var(--synthesis)]'>
             {content}
           </Text>
         </div>

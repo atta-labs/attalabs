@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
 import '@atta/ui/canvas.css'
+import '@/styles/globals.css'
 import { MockModeBanner } from '@/components/MockModeBanner'
 import { PreviewThemeListener } from '@/components/theme/preview-theme-listener'
 

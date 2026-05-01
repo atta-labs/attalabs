@@ -1,0 +1,20 @@
+/* Vāda-specific global styles and variables */
+
+/* Agent identity colors used in deliberation UI (MessageCard, AgentCard, etc.) */
+:root {
+  --synthesis: oklch(65% 0.2 145);
+  --agent-strategist:      hsl(119 21% 45%);
+  --agent-critic:          hsl(0 49% 57%);
+  --agent-devils-advocate: hsl(278 35% 63%);
+  --agent-synthesizer:     hsl(43 52% 54%);
+  --agent-researcher:      hsl(207 32% 52%);
+  --agent-operator:        hsl(30 32% 52%);
+}
+
+/* Cascade --agent-color from [data-agent] ancestor for dynamic agent styling */
+[data-agent="strategist"]      { --agent-color: var(--agent-strategist); }
+[data-agent="critic"]          { --agent-color: var(--agent-critic); }
+[data-agent="devils_advocate"] { --agent-color: var(--agent-devils-advocate); }
+[data-agent="synthesizer"]     { --agent-color: var(--agent-synthesizer); }
+[data-agent="researcher"]      { --agent-color: var(--agent-researcher); }
+[data-agent="operator"]        { --agent-color: var(--agent-operator); }
