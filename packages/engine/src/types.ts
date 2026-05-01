@@ -19,7 +19,7 @@
 // =============================================================================
 
 import type { Agent } from '@atta/agents'
-export type { Agent, AgentRole } from '@atta/agents'
+export type { Agent } from '@atta/agents'
 
 // =============================================================================
 // Group 3: RevisionCondition (declared before Workflow — Workflow depends on it)

@@ -20,6 +20,7 @@ export interface SpecAgent {
     mode: ClassifierMode
     budget?: number
   }
+  role?: string
 }
 
 export interface RoundsSpec {

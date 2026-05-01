@@ -55,7 +55,12 @@ function buildColorIndexMap(planNodes: PlanNode[]): Map<string, number> {
 export function planToVisualNodes(plan: Plan): VisualizationOutput {
   // Filter sentinel and revision-terminal nodes — they are graph infrastructure, not render targets
   const allPlanNodes = Object.values(plan.graph.nodes)
-  const renderableNodes = allPlanNodes.filter((n) => n.kind !== 'system-sentinel' && n.kind !== 'revision-terminal')
+  const renderableNodes = allPlanNodes.filter(
+    (n) =>
+      n.kind !== 'system-sentinel' &&
+      n.kind !== 'revision-terminal' &&
+      !(n.kind === 'auditor' && (n.metadata.revisionIndex ?? 0) > 0)
+  )
 
   const workflowType = inferWorkflowType(renderableNodes)
   const colorIndexMap = buildColorIndexMap(renderableNodes)
@@ -211,31 +216,36 @@ export function planToVisualNodes(plan: Plan): VisualizationOutput {
       })
     }
 
-    // Add flow edges only (skip ordering edges — they represent LangGraph wiring, not visual relationships)
-    // Also skip edges involving non-renderable nodes (sentinels, revision-terminals)
+    // Render all plan edges; ordering edges (LangGraph wiring) get a dashed/dimmed style
     for (const edge of plan.graph.edges) {
       if (!renderableIds.has(edge.from) || !renderableIds.has(edge.to)) continue
-      if (edge.kind === 'ordering') continue
-
-      // For rounds: within-round connections are already implicit in layout; add cross-round and synth edges
+      const isOrdering = edge.kind === 'ordering'
       rfEdges.push({
         id: `${edge.from}-${edge.to}`,
         source: edge.from,
         target: edge.to,
         animated: false,
-        style: { stroke: 'var(--border)', strokeWidth: 1.5 }
+        style: isOrdering
+          ? { stroke: 'var(--border)', strokeWidth: 1, strokeDasharray: '4,4', opacity: 0.45 }
+          : { stroke: 'var(--border)', strokeWidth: 1.5 }
       })
     }
 
-    // Add cross-round edges: last agent of round R → first agents of round R+1
+    // Add cross-round fan-out edges: last agent of round R → all agents of round R+1.
+    // Skip IDs already emitted by the plan.graph.edges loop above (ordering edges covering
+    // the same connection would otherwise produce duplicate React Flow keys).
+    const emittedEdgeIds = new Set(rfEdges.map((e) => e.id))
     for (let ri = 0; ri < rounds.length - 1; ri++) {
       const currentRound = rounds[ri]!
       const nextRound = rounds[ri + 1]!
       const lastAgentOfCurrentRound = currentRound.agentNodeIds[currentRound.agentNodeIds.length - 1]
       if (!lastAgentOfCurrentRound) continue
       for (const nextAgentId of nextRound.agentNodeIds) {
+        const edgeId = `${lastAgentOfCurrentRound}-${nextAgentId}`
+        if (emittedEdgeIds.has(edgeId)) continue
+        emittedEdgeIds.add(edgeId)
         rfEdges.push({
-          id: `${lastAgentOfCurrentRound}-${nextAgentId}`,
+          id: edgeId,
           source: lastAgentOfCurrentRound,
           target: nextAgentId,
           animated: false,
@@ -244,18 +254,20 @@ export function planToVisualNodes(plan: Plan): VisualizationOutput {
       }
     }
 
-    // Conditional edges (audit → revision path) — skip ifFalse pointing to sentinels
+    // Conditional edges (audit → revision path) — skip targets that are non-renderable
     for (const ce of plan.graph.conditionalEdges) {
       if (!renderableIds.has(ce.from)) continue
-      rfEdges.push({
-        id: `${ce.from}-true-${ce.ifTrue}`,
-        source: ce.from,
-        target: ce.ifTrue,
-        animated: false,
-        style: { stroke: 'var(--warning)', strokeWidth: 1.5, strokeDasharray: '5,4' },
-        label: 'if flagged',
-        labelStyle: { fontSize: 10, fill: 'var(--muted-foreground)' }
-      })
+      if (renderableIds.has(ce.ifTrue)) {
+        rfEdges.push({
+          id: `${ce.from}-true-${ce.ifTrue}`,
+          source: ce.from,
+          target: ce.ifTrue,
+          animated: false,
+          style: { stroke: 'var(--warning)', strokeWidth: 1.5, strokeDasharray: '5,4' },
+          label: 'if flagged',
+          labelStyle: { fontSize: 10, fill: 'var(--muted-foreground)' }
+        })
+      }
       if (ce.ifFalse !== '__END__' && renderableIds.has(ce.ifFalse)) {
         rfEdges.push({
           id: `${ce.from}-false-${ce.ifFalse}`,
@@ -287,15 +299,17 @@ export function planToVisualNodes(plan: Plan): VisualizationOutput {
     }
     for (const ce of plan.graph.conditionalEdges) {
       if (!renderableIds.has(ce.from)) continue
-      rfEdges.push({
-        id: `${ce.from}-true-${ce.ifTrue}`,
-        source: ce.from,
-        target: ce.ifTrue,
-        animated: false,
-        style: { stroke: 'var(--warning)', strokeWidth: 1.5, strokeDasharray: '5,4' },
-        label: 'if flagged',
-        labelStyle: { fontSize: 10, fill: 'var(--muted-foreground)' }
-      })
+      if (renderableIds.has(ce.ifTrue)) {
+        rfEdges.push({
+          id: `${ce.from}-true-${ce.ifTrue}`,
+          source: ce.from,
+          target: ce.ifTrue,
+          animated: false,
+          style: { stroke: 'var(--warning)', strokeWidth: 1.5, strokeDasharray: '5,4' },
+          label: 'if flagged',
+          labelStyle: { fontSize: 10, fill: 'var(--muted-foreground)' }
+        })
+      }
       if (ce.ifFalse !== '__END__' && renderableIds.has(ce.ifFalse)) {
         rfEdges.push({
           id: `${ce.from}-false-${ce.ifFalse}`,

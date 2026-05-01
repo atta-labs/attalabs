@@ -34,7 +34,8 @@ export function loadSpec(yamlContent: string): DeliberationSpec {
     tools: a.tools,
     outputFormat: a.output_format,
     outputSchema: a.output_schema,
-    classifier: a.classifier ? { mode: a.classifier.mode, budget: a.classifier.budget } : undefined
+    classifier: a.classifier ? { mode: a.classifier.mode, budget: a.classifier.budget } : undefined,
+    role: a.role
   }))
 
   const flow: FlowSpec | undefined = d.flow
