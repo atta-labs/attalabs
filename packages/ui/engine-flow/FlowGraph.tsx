@@ -41,6 +41,7 @@ export interface FlowGraphProps {
 
 export function FlowGraph({ plan, events, rendererSet, className }: FlowGraphProps) {
   const viz = useMemo(() => planToVisualNodes(plan), [plan])
+  const showControls = viz.nodes.length > 6
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => applyLayout(viz), [viz])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
@@ -161,7 +162,7 @@ export function FlowGraph({ plan, events, rendererSet, className }: FlowGraphPro
         zoomOnDoubleClick={false}
       >
         <Background color='var(--border)' gap={20} size={1} />
-        <Controls className='!bg-card !border-border !shadow-none' />
+        {showControls && <Controls className='!bg-card !border-border !shadow-none' />}
       </ReactFlow>
     </div>
   )
