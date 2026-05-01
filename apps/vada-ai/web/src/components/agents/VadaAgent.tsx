@@ -10,7 +10,7 @@ import { VENDORS, inferVendor } from './vendors'
 export type FaceStyle = 'reductive' | 'emblematic'
 export type { AgentName, AgentRole }
 
-interface VadaAgentProps extends Omit<AgentSphereProps, 'color' | 'face'> {
+interface VadaAgentProps extends Omit<AgentSphereProps, 'color' | 'face' | 'faceTranslateY'> {
   /** Agent name — used for name-based lookup when no role is provided. */
   name: string
   /** Agent role — preferred lookup; falls back to name, then vendor. */
@@ -44,6 +44,7 @@ export function VadaAgent({
 
   let face: React.ReactNode | undefined
   let faceOpacity = faceOpacityProp
+  let faceTranslateY: string | undefined
 
   if (agentDef) {
     const faces = faceStyle === 'reductive' ? REDUCTIVE_FACES : EMBLEMATIC_FACES
@@ -52,7 +53,17 @@ export function VadaAgent({
   } else if (model) {
     face = <ModelIcon model={model} size={36} type='avatar' />
     faceOpacity = faceOpacityProp ?? 0.9
+    faceTranslateY = '0'
   }
 
-  return <AgentSphere color={color} face={face} faceOpacity={faceOpacity} label={label ?? name} {...rest} />
+  return (
+    <AgentSphere
+      color={color}
+      face={face}
+      faceOpacity={faceOpacity}
+      faceTranslateY={faceTranslateY}
+      label={label ?? name}
+      {...rest}
+    />
+  )
 }

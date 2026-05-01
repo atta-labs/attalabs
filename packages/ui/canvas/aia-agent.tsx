@@ -54,6 +54,8 @@ export interface AIAgentProps {
   className?: string
   /** Opacity of the face illustration (0–1). Default 0.5. */
   faceOpacity?: number
+  /** translateY applied to the face container. Default '8%' (centers portrait SVGs with empty bottom space). Pass '0' for square icons like vendor logos. */
+  faceTranslateY?: string
   /** Text rendered inside the sphere with the typewriter scramble effect. */
   thinkingText?: string
   /** Content rendered inside the sphere, above the face layer. */
@@ -79,6 +81,7 @@ export function AIAgent({
   labelPosition,
   noLabel = false,
   faceOpacity = 0.5,
+  faceTranslateY = FACE_TRANSLATE_Y,
   thinkingText,
   onClick,
   className,
@@ -119,7 +122,7 @@ export function AIAgent({
       {face && (
         <div
           className='absolute inset-0 flex items-center justify-center pointer-events-none z-0'
-          style={{ padding: faceInset, transform: `translateY(${FACE_TRANSLATE_Y})`, opacity: faceOpacity, color }}
+          style={{ padding: faceInset, transform: `translateY(${faceTranslateY})`, opacity: faceOpacity, color }}
         >
           {face}
         </div>
