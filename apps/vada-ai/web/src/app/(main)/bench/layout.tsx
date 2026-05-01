@@ -15,10 +15,7 @@ export default function BrokeredBenchLayout({ children }: { children: ReactNode 
           <Link href='/bench' className='text-muted-foreground hover:text-accent transition-colors'>
             Overview
           </Link>
-          <Link
-            href='/sessions/consultations'
-            className='text-muted-foreground hover:text-accent transition-colors'
-          >
+          <Link href='/sessions/consultations' className='text-muted-foreground hover:text-accent transition-colors'>
             Consultations →
           </Link>
         </nav>
