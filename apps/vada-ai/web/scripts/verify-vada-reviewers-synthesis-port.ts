@@ -58,9 +58,13 @@ if (!plan?.graph?.nodes) {
 console.info('✓ Plan compiled')
 
 // Verify plan structure (3 reviewers + 1 synthesizer = 4 nodes)
-const agentNodeIds = Object.keys(plan.graph.nodes).filter((id) => id.startsWith('reviewer-') || id === 'brokered-synthesis')
+const agentNodeIds = Object.keys(plan.graph.nodes).filter(
+  (id) => id.startsWith('reviewer-') || id === 'brokered-synthesis'
+)
 if (agentNodeIds.length !== 4) {
-  console.error(`ERROR: expected 4 agent nodes (3 reviewers + synthesizer), got ${agentNodeIds.length}`)
+  console.error(
+    `ERROR: expected 4 agent nodes (3 reviewers + synthesizer), got ${agentNodeIds.length}`
+  )
   process.exit(1)
 }
 console.info('✓ Plan has 4 agent nodes (3 reviewers + synthesizer)')
@@ -79,7 +83,9 @@ if (adapter) {
 
     // Verify expected structure: 3 reviewers + 1 synthesizer
     if (conclusion.transcript.length !== 4) {
-      console.error(`ERROR: expected 4 transcript entries (3 reviewers + synthesizer), got ${conclusion.transcript.length}`)
+      console.error(
+        `ERROR: expected 4 transcript entries (3 reviewers + synthesizer), got ${conclusion.transcript.length}`
+      )
       process.exit(1)
     }
 
@@ -102,7 +108,14 @@ if (adapter) {
     // Try to parse synthesizer output as JSON (with fallback tolerance)
     try {
       const synthesis = JSON.parse(lastEntry.content)
-      const requiredFields = ['participants', 'consensus', 'unique_insights', 'contradictions', 'rejected', 'recommendations']
+      const requiredFields = [
+        'participants',
+        'consensus',
+        'unique_insights',
+        'contradictions',
+        'rejected',
+        'recommendations'
+      ]
       for (const field of requiredFields) {
         if (!(field in synthesis)) {
           throw new Error(`Missing ${field} field`)
@@ -112,10 +125,14 @@ if (adapter) {
     } catch (e) {
       // Check if output contains schema fields as text fallback (degraded parsing)
       const errorMsg = e instanceof Error ? e.message : String(e)
-      if (lastEntry.content.includes('consensus') &&
-          lastEntry.content.includes('unique_insights') &&
-          lastEntry.content.includes('contradictions')) {
-        console.warn(`⚠ Synthesizer output is degraded (${errorMsg}), but schema fields present in text`)
+      if (
+        lastEntry.content.includes('consensus') &&
+        lastEntry.content.includes('unique_insights') &&
+        lastEntry.content.includes('contradictions')
+      ) {
+        console.warn(
+          `⚠ Synthesizer output is degraded (${errorMsg}), but schema fields present in text`
+        )
       } else {
         console.error(`ERROR: synthesizer output missing expected fields: ${errorMsg}`)
         process.exit(1)
