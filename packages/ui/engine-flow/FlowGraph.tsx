@@ -14,30 +14,34 @@ import {
 import '@xyflow/react/dist/style.css'
 import type { Plan } from '@atta/engine'
 import { cn } from '@atta/ui/lib/utils'
-import type { FlowEventSource, FlowEvent, NodeVisualState } from './events'
+import type { FlowEventSource, FlowEvent } from './events'
+import type { FlowRendererSet, NodeVisualState, RoundLabelData } from './types'
 import { planToVisualNodes } from './planToVisualNodes'
+import { applyLayout } from './layouts'
 import { AgentNode } from './nodeRenderers/AgentNode'
 import { SynthesisNode } from './nodeRenderers/SynthesisNode'
 import { RoundLabel } from './nodeRenderers/RoundLabel'
+import { BriefNode } from './nodeRenderers/BriefNode'
+import { AuditBadge } from './nodeRenderers/AuditBadge'
 
-const DEFAULT_NODE_TYPES: NodeTypes = {
+const BASE_NODE_TYPES: NodeTypes = {
   agentNode: AgentNode as ComponentType<NodeProps>,
   synthesisNode: SynthesisNode as ComponentType<NodeProps>,
+  briefNode: BriefNode as ComponentType<NodeProps>,
+  auditNode: AuditBadge as ComponentType<NodeProps>,
   roundLabel: RoundLabel as ComponentType<NodeProps>
 }
 
 export interface FlowGraphProps {
   plan: Plan
   events?: FlowEventSource
-  nodeRenderers?: {
-    agent?: ComponentType<NodeProps>
-    synthesis?: ComponentType<NodeProps>
-  }
+  rendererSet?: FlowRendererSet
   className?: string
 }
 
-export function FlowGraph({ plan, events, nodeRenderers, className }: FlowGraphProps) {
-  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => planToVisualNodes(plan), [plan])
+export function FlowGraph({ plan, events, rendererSet, className }: FlowGraphProps) {
+  const viz = useMemo(() => planToVisualNodes(plan), [plan])
+  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => applyLayout(viz), [viz])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
@@ -47,47 +51,70 @@ export function FlowGraph({ plan, events, nodeRenderers, className }: FlowGraphP
 
   const nodeTypes = useMemo<NodeTypes>(
     () => ({
-      ...DEFAULT_NODE_TYPES,
-      ...(nodeRenderers?.agent ? { agentNode: nodeRenderers.agent } : {}),
-      ...(nodeRenderers?.synthesis ? { synthesisNode: nodeRenderers.synthesis } : {})
+      ...BASE_NODE_TYPES,
+      ...(rendererSet?.agent ? { agentNode: rendererSet.agent.component } : {}),
+      ...(rendererSet?.synthesis ? { synthesisNode: rendererSet.synthesis.component } : {}),
+      ...(rendererSet?.brief ? { briefNode: rendererSet.brief.component } : {}),
+      ...(rendererSet?.audit ? { auditNode: rendererSet.audit.component } : {})
     }),
-    [nodeRenderers]
+    [rendererSet]
   )
 
-  const handleEvent = useCallback((event: FlowEvent) => {
-    switch (event.type) {
-      case 'node:queued':
-        setNodeStates((prev) => ({ ...prev, [event.nodeId]: 'queued' }))
-        break
-      case 'node:start':
-        setNodeStates((prev) => ({ ...prev, [event.nodeId]: 'running' }))
-        break
-      case 'node:streaming':
-        setNodeStates((prev) => ({ ...prev, [event.nodeId]: 'streaming' }))
-        if (event.content) {
-          setStreamingContents((prev) => ({ ...prev, [event.nodeId]: event.content! }))
+  const handleEvent = useCallback(
+    (event: FlowEvent) => {
+      switch (event.type) {
+        case 'node:queued':
+          setNodeStates((prev) => ({ ...prev, [event.nodeId]: 'queued' }))
+          break
+        case 'node:start':
+          setNodeStates((prev) => ({ ...prev, [event.nodeId]: 'running' }))
+          break
+        case 'node:streaming':
+          setNodeStates((prev) => ({ ...prev, [event.nodeId]: 'streaming' }))
+          if (event.content) {
+            setStreamingContents((prev) => ({ ...prev, [event.nodeId]: event.content! }))
+          }
+          break
+        case 'node:complete':
+          setNodeStates((prev) => ({ ...prev, [event.nodeId]: 'complete' }))
+          break
+        case 'node:revised':
+          setNodeStates((prev) => ({ ...prev, [event.nodeId]: 'revised' }))
+          break
+        case 'edge:activate': {
+          const edgeId = `${event.from}-${event.to}`
+          setActiveEdges((prev) => new Set([...prev, edgeId]))
+          break
         }
-        break
-      case 'node:complete':
-        setNodeStates((prev) => ({ ...prev, [event.nodeId]: 'complete' }))
-        break
-      case 'node:revised':
-        setNodeStates((prev) => ({ ...prev, [event.nodeId]: 'revised' }))
-        break
-      case 'edge:activate': {
-        const edgeId = `${event.from}-${event.to}`
-        setActiveEdges((prev) => new Set([...prev, edgeId]))
-        break
+        case 'round:start':
+          setNodes((nds) =>
+            nds.map((n) => {
+              if (n.type !== 'roundLabel') return n
+              const d = n.data as RoundLabelData
+              return { ...n, data: { ...n.data, isActive: d.round === event.round } }
+            })
+          )
+          break
+        case 'round:complete':
+          setNodes((nds) =>
+            nds.map((n) => {
+              if (n.type !== 'roundLabel') return n
+              const d = n.data as RoundLabelData
+              if (d.round === event.round) return { ...n, data: { ...n.data, isActive: false } }
+              return n
+            })
+          )
+          break
+        default:
+          break
       }
-      default:
-        break
-    }
-  }, [])
+    },
+    [setNodes]
+  )
 
   useEffect(() => {
     if (!events) return
-    const unsubscribe = events.subscribe(handleEvent)
-    return unsubscribe
+    return events.subscribe(handleEvent)
   }, [events, handleEvent])
 
   // Sync visual state into node data
@@ -124,8 +151,14 @@ export function FlowGraph({ plan, events, nodeRenderers, className }: FlowGraphP
         fitView
         fitViewOptions={{ padding: 0.15 }}
         proOptions={{ hideAttribution: true }}
-        minZoom={0.15}
-        maxZoom={2.5}
+        minZoom={0.3}
+        maxZoom={1.5}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        panOnScroll={true}
+        zoomOnScroll={false}
+        zoomOnPinch={false}
+        zoomOnDoubleClick={false}
       >
         <Background color='var(--border)' gap={20} size={1} />
         <Controls className='!bg-card !border-border !shadow-none' />

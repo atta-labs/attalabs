@@ -1,4 +1,4 @@
-export type NodeVisualState = 'idle' | 'queued' | 'running' | 'streaming' | 'complete' | 'revised'
+export type { NodeVisualState } from './types'
 
 export type FlowEvent =
   | { type: 'node:queued'; nodeId: string }

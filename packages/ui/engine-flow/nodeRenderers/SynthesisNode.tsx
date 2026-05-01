@@ -2,10 +2,10 @@
 
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { cn } from '@atta/ui/lib/utils'
-import type { SynthesisNodeData } from '../planToVisualNodes'
+import type { SynthesisNodeData } from '../types'
 
 export function SynthesisNode({ data, selected }: NodeProps) {
-  const { label, visualState, streamingContent } = data as SynthesisNodeData
+  const { label, isRoundSynth, visualState, streamingContent } = data as SynthesisNodeData
 
   return (
     <div
@@ -21,10 +21,11 @@ export function SynthesisNode({ data, selected }: NodeProps) {
         selected && 'ring-1 ring-ring'
       )}
     >
-      <Handle type='target' position={Position.Top} className='!size-2.5 !bg-primary !border-primary' />
+      <Handle type='target' position={Position.Left} className='!size-2.5 !bg-primary !border-primary' />
 
-      <div className='font-mono text-[10px] text-primary/70 mb-1 uppercase tracking-widest'>synthesis</div>
-
+      <div className='font-mono text-[10px] text-primary/70 mb-1 uppercase tracking-widest'>
+        {isRoundSynth ? 'round synthesis' : 'synthesis'}
+      </div>
       <div className='font-serif text-base font-medium text-foreground leading-snug'>{label}</div>
 
       {(visualState === 'running' || visualState === 'streaming') && (
@@ -48,7 +49,7 @@ export function SynthesisNode({ data, selected }: NodeProps) {
         </div>
       )}
 
-      <Handle type='source' position={Position.Bottom} className='!size-2.5 !bg-primary !border-primary' />
+      <Handle type='source' position={Position.Right} className='!size-2.5 !bg-primary !border-primary' />
     </div>
   )
 }

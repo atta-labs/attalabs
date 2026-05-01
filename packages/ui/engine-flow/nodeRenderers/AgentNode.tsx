@@ -2,21 +2,19 @@
 
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { cn } from '@atta/ui/lib/utils'
-import type { AgentNodeData } from '../planToVisualNodes'
+import type { AgentNodeData } from '../types'
 
 export function AgentNode({ data, selected }: NodeProps) {
   const { label, role, roundIndex, visualState, streamingContent } = data as AgentNodeData
 
   const roleLabel =
-    role === 'audit'
-      ? 'auditor'
+    role === 'round'
+      ? roundIndex !== undefined
+        ? `round ${roundIndex + 1}`
+        : 'round'
       : role === 'solo'
-        ? 'reviewer'
-        : role === 'round'
-          ? roundIndex !== undefined
-            ? `round ${roundIndex + 1}`
-            : 'round'
-          : role
+        ? 'agent'
+        : role
 
   return (
     <div
@@ -32,10 +30,9 @@ export function AgentNode({ data, selected }: NodeProps) {
         selected && 'ring-1 ring-ring'
       )}
     >
-      <Handle type='target' position={Position.Top} className='!size-2 !bg-muted-foreground !border-border' />
+      <Handle type='target' position={Position.Left} className='!size-2 !bg-muted-foreground !border-border' />
 
       <div className='font-mono text-[10px] text-muted-foreground mb-1 uppercase tracking-wide'>{roleLabel}</div>
-
       <div className='font-sans text-sm font-medium text-foreground leading-snug'>{label}</div>
 
       {(visualState === 'running' || visualState === 'streaming') && (
@@ -66,7 +63,7 @@ export function AgentNode({ data, selected }: NodeProps) {
         </div>
       )}
 
-      <Handle type='source' position={Position.Bottom} className='!size-2 !bg-muted-foreground !border-border' />
+      <Handle type='source' position={Position.Right} className='!size-2 !bg-muted-foreground !border-border' />
     </div>
   )
 }
