@@ -15,8 +15,7 @@ import {
 
 const H_GAP = 60 // horizontal gap between agent columns within a round row
 const BRIEF_GAP = 80 // brief right edge → first agent left edge
-const SYNTH_AUDIT_GAP = 60 // last agent right edge → synthesizer left edge (post-rounds block)
-const AUDIT_H_GAP = 24 // synthesizer right edge → first audit left edge
+const AUDIT_H_GAP = 24 // gap between audit nodes in the centered block below synth
 const ROW_V_GAP = 80 // gap from bottom of round row content to top of next round row
 const POST_ROUNDS_V_GAP = 100 // gap from bottom of last round row to top of post-rounds block
 const TOP_MARGIN = 56 // top of row 0 content (leaves room for round label above)
@@ -42,9 +41,10 @@ export function applyRoundsLayout(viz: VisualizationOutput): { nodes: Node[]; ed
   const maxAgents = Math.max(...rounds.map((r) => r.agentNodeIds.length), 1)
   const agentStartX = BRIEF_NODE_WIDTH + BRIEF_GAP
 
-  // The post-rounds block starts after the widest possible round row
-  const postRoundsX = agentStartX + (maxAgents - 1) * (AGENT_NODE_WIDTH + H_GAP) + AGENT_NODE_WIDTH + SYNTH_AUDIT_GAP
-  const auditStartX = postRoundsX + SYNTHESIS_NODE_WIDTH + AUDIT_H_GAP
+  // Synth centered horizontally under the agent columns
+  const agentColumnsWidth = maxAgents * AGENT_NODE_WIDTH + (maxAgents - 1) * H_GAP
+  const agentColumnsCenterX = agentStartX + agentColumnsWidth / 2
+  const synthX = agentColumnsCenterX - SYNTHESIS_NODE_WIDTH / 2
 
   // Position each round as a horizontal strip of parallel agent nodes
   rounds.forEach((round, rowIdx) => {
@@ -63,35 +63,40 @@ export function applyRoundsLayout(viz: VisualizationOutput): { nodes: Node[]; ed
   const row0CenterY = TOP_MARGIN + MAX_ROW_H / 2
   positionMap.set('__brief__', { x: 0, y: row0CenterY - BRIEF_NODE_HEIGHT / 2 })
 
-  // Post-rounds block: synthesizer + audits, below the last round row
+  // Post-rounds block: synthesizer centered below agents, audits stacked below synth
   const lastRowBottomY = TOP_MARGIN + (rounds.length - 1) * (MAX_ROW_H + ROW_V_GAP) + MAX_ROW_H
-  const postRoundsTopY = lastRowBottomY + POST_ROUNDS_V_GAP
-  const postRoundsCenterY = postRoundsTopY + SYNTHESIS_NODE_HEIGHT / 2
+  const synthTopY = lastRowBottomY + POST_ROUNDS_V_GAP
+  const auditTopY = synthTopY + SYNTHESIS_NODE_HEIGHT + 60 // 60px gap below synth
 
   // The last round carries synthNodeId and auditNodeIds for the post-rounds block
   const lastRound = rounds[rounds.length - 1]
   if (lastRound?.synthNodeId) {
     positionMap.set(lastRound.synthNodeId, {
-      x: postRoundsX,
-      y: postRoundsCenterY - SYNTHESIS_NODE_HEIGHT / 2
+      x: synthX,
+      y: synthTopY
     })
   }
 
-  if (lastRound) {
+  if (lastRound && lastRound.auditNodeIds.length > 0) {
+    const auditBlockWidth =
+      lastRound.auditNodeIds.length * AUDIT_NODE_WIDTH + (lastRound.auditNodeIds.length - 1) * AUDIT_H_GAP
+    const auditStartX = agentColumnsCenterX - auditBlockWidth / 2
+    const auditCenterY = auditTopY + AUDIT_NODE_HEIGHT / 2
+
     lastRound.auditNodeIds.forEach((id, i) => {
       positionMap.set(id, {
         x: auditStartX + i * (AUDIT_NODE_WIDTH + AUDIT_H_GAP),
-        y: postRoundsCenterY - AUDIT_NODE_HEIGHT / 2
+        y: auditCenterY - AUDIT_NODE_HEIGHT / 2
       })
     })
   }
 
   // Any remaining nodes not yet positioned go below the post-rounds block
-  const postRoundsBottomY = postRoundsTopY + SYNTHESIS_NODE_HEIGHT
-  let overflowY = postRoundsBottomY + 40
+  const overflowBaseY = auditTopY + AUDIT_NODE_HEIGHT + 40
+  let overflowY = overflowBaseY
   for (const n of nodes) {
     if (!positionMap.has(n.id) && n.type !== 'roundLabel') {
-      positionMap.set(n.id, { x: postRoundsX, y: overflowY })
+      positionMap.set(n.id, { x: synthX, y: overflowY })
       overflowY += ((n.height as number | undefined) ?? AGENT_NODE_HEIGHT) + 24
     }
   }
@@ -111,9 +116,12 @@ export function applyRoundsLayout(viz: VisualizationOutput): { nodes: Node[]; ed
     if (lastAgent) crossRoundSources.add(lastAgent)
   }
 
-  // Also mark the last-round-to-synthesizer edge as smoothstep
-  const lastRoundLastAgent = lastRound?.agentNodeIds[lastRound.agentNodeIds.length - 1]
-  if (lastRoundLastAgent) crossRoundSources.add(lastRoundLastAgent)
+  // All last-round agents fan into synthesis below — all use smoothstep
+  if (lastRound) {
+    for (const agentId of lastRound.agentNodeIds) {
+      crossRoundSources.add(agentId)
+    }
+  }
 
   const styledEdges = edges.map((e) => {
     return crossRoundSources.has(e.source) ? { ...e, type: 'smoothstep' } : e
