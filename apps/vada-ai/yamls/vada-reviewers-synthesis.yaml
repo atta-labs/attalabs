@@ -160,6 +160,7 @@ agents:
       seem useful.
 
   - name: Synthesizer
+    role: synthesizer
     description: "Synthesizer — produces structured synthesis from reviewer responses"
     model: claude-sonnet-4-6
     classifier:

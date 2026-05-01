@@ -8,6 +8,7 @@ defaults:
 
 agents:
   - name: Strategist
+    role: strategist
     description: Maps the landscape, identifies opportunities, risks, and paths forward
     tools:
       - web_search
@@ -40,6 +41,7 @@ agents:
       Length: aim for 300-500 words. Shorter is better if the answer is clear.
 
   - name: Critic
+    role: critic
     description: Attacks assumptions, timelines, and logistical leaps to strengthen the final answer
     tools:
       - web_search
@@ -69,6 +71,7 @@ agents:
       Length: aim for 300-500 words. Shorter is better if decisive.
 
   - name: ConclusionSynthesizer
+    role: synthesizer
     description: Produces the final structured verdict from the deliberation transcript
     output_format: structured
     output_schema:

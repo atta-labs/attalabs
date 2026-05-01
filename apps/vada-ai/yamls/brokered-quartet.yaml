@@ -9,6 +9,7 @@ defaults:
 
 agents:
   - name: Strategist
+    role: strategist
     description: Maps the landscape, identifies opportunities, risks, and paths forward
     classifier:
       mode: skip
@@ -38,6 +39,7 @@ agents:
       Length: aim for 300-500 words. Shorter is better if the answer is clear.
 
   - name: Critic
+    role: critic
     description: Attacks assumptions, timelines, and logistical leaps to strengthen the final answer
     classifier:
       mode: skip
@@ -65,6 +67,7 @@ agents:
       Length: aim for 300-500 words. Shorter is better if decisive.
 
   - name: "Devil's Advocate"
+    role: devils_advocate
     description: Challenges whether the question itself is the right question
     classifier:
       mode: skip
