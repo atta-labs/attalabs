@@ -21,19 +21,25 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
   }
 
   const branding = await fetchVadaBranding()
-  const lightUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url
-  const darkUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidDark?.url
+  const lightUrl = branding?.logoSolidLight?.url ?? branding?.logoSolidDark?.url
+  const darkUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url
   const logo =
     lightUrl || darkUrl ? (
       <NextLink variant='unstyled' href='/'>
-        <Logo light={lightUrl} dark={darkUrl} alt={branding?.productName ?? 'Vada AI'} size='h-10' />
+        <Logo
+          light={lightUrl}
+          dark={darkUrl}
+          alt={branding?.productName ?? 'Vada AI'}
+          size='h-10'
+          text={['Deliberation', 'Teams']}
+        />
       </NextLink>
     ) : null
 
   return (
     <UserPreferencesProvider faceStyle={faceStyle}>
       <ToastProvider defaultPosition='bottom-right'>
-        <StickyHeaderTopBar isBlurred={true} className='z-40 border-b border-border/40'>
+        <StickyHeaderTopBar isBlurred={true} className='z-40 border-border/40'>
           <UserTopBar logo={logo} />
         </StickyHeaderTopBar>
         <div className='h-dvh overflow-y-auto'>{children}</div>

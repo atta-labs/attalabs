@@ -12,7 +12,7 @@ export function StickyHeaderTopBar({
 }) {
   return (
     <header
-      className={cn('sticky top-0 h-14 flex items-center', isBlurred && 'bg-background/10 backdrop-blur-md', className)}
+      className={cn('sticky top-0 h-14 flex items-center', isBlurred && 'bg-background/40 backdrop-blur-md', className)}
     >
       {children}
     </header>
