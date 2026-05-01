@@ -4,11 +4,11 @@ description: "How Vāda handles your API keys — the BYOK architecture."
 section: Architecture
 ---
 
-# Vāda · BYOK Architecture Principles
+# Vāda · <span className="text-accent">BYOK</span> Architecture Principles
 
 ## The promise
 
-Your keys are never stored in our database. They are never written to any log. They exist on our server only in memory, only during the single request that uses them, and only long enough to make your API call. This is not a policy we follow — it is a structural fact about how the product is built.
+Your keys are never stored in our database. They are never written to any log. They exist on our server <span className="text-accent">only in memory</span>, only during the single request that uses them, and only long enough to make your API call. This is not a policy we follow — it is a <span className="text-accent">structural fact</span> about how the product is built.
 
 ## What that means, concretely
 
@@ -16,20 +16,20 @@ Your keys are never stored in our database. They are never written to any log. T
 
 When you add an Anthropic, OpenAI, Google, or any other model provider's API key to Vāda, that key is stored on your machine. Depending on your setup:
 
-- **Passkey-secured mode:** your keys are encrypted with an encryption key derived from your passkey (Touch ID / Face ID / Windows Hello / hardware key) and stored in your browser's IndexedDB. Only your biometric can decrypt them.
-- **Session-only mode:** your keys live in your browser's memory for the duration of your session. When you close the tab, they are gone.
+- **<span className="text-accent">Passkey-secured mode</span>:** your keys are encrypted with an encryption key derived from your passkey (Touch ID / Face ID / Windows Hello / hardware key) and stored in your browser's IndexedDB. Only your biometric can decrypt them.
+- **<span className="text-accent">Session-only mode</span>:** your keys live in your browser's memory for the duration of your session. When you close the tab, they are gone.
 
 In both modes, the keys live on your device between deliberations. They transit our server only during the deliberation request itself (see the next section).
 
 ### In memory, not in storage
 
-When a deliberation runs, your key is sent from your browser to Vāda's server in the POST body of the deliberation start request. The server holds the key in memory, passes it to the model provider (Anthropic, OpenAI, etc.) to authenticate the API calls, then discards it. The key is never written to disk, never logged, never persisted to the database, and is garbage-collected when the request ends. Transit is over HTTPS. The same applies to benchmark calls: the baseline single-shot and AI judge requests transit server memory under the same contract.
+When a deliberation runs, your key is sent from your browser to Vāda's server in the POST body of the deliberation start request. The server holds the key in memory, passes it to the model provider (Anthropic, OpenAI, etc.) to authenticate the API calls, then discards it. The key is <span className="text-accent">never written to disk</span>, <span className="text-accent">never logged</span>, <span className="text-accent">never persisted to the database</span>, and is garbage-collected when the request ends. Transit is over HTTPS. The same applies to benchmark calls: the baseline single-shot and AI judge requests transit server memory under the same contract.
 
-What Vāda's servers do see: the text of the model responses, which is stored as your deliberation transcript. The server constructs prompts, runs the agent orchestration, and calls the provider — your key authorizes those calls but is not retained once they complete.
+What Vāda's servers do see: the text of the model responses, which is stored as your deliberation transcript. The server constructs prompts, runs the agent orchestration, and calls the provider — your key authorizes those calls but is <span className="text-accent">not retained once they complete</span>.
 
 ### The database has no place for your keys
 
-There is no column, table, or field anywhere in Vāda's database for API keys, provider credentials, or secrets. Even if a team member wanted to store a key server-side, they couldn't — the schema doesn't support it. We can audit this. You can audit this. The codebase is set up so that storing a user's API key server-side is structurally impossible without a deliberate architectural change.
+There is <span className="text-accent">no column, table, or field</span> anywhere in Vāda's database for API keys, provider credentials, or secrets. Even if a team member wanted to store a key server-side, they couldn't — the schema doesn't support it. We can audit this. You can audit this. The codebase is set up so that storing a user's API key server-side is <span className="text-accent">structurally impossible</span> without a deliberate architectural change.
 
 ### No logs contain your keys
 
@@ -70,9 +70,9 @@ We chose not to offer server-side encrypted sync even though it would be cryptog
 
 ## Why this architecture
 
-BYOK products that store your keys server-side — even in encrypted form — create attack surface. A database breach, a rogue employee, a misconfigured log, a subpoena, a legal compulsion. None of those can expose what doesn't exist in storage. By designing Vāda so keys are never written to any storage layer — only held in process memory for the duration of a single request — we take those risks off the table structurally.
+<span className="text-accent">BYOK</span> products that store your keys server-side — even in encrypted form — create <span className="text-accent">attack surface</span>. A database breach, a rogue employee, a misconfigured log, a subpoena, a legal compulsion. None of those can expose what doesn't exist in storage. By designing Vāda so keys are <span className="text-accent">never written to any storage layer</span> — only held in process memory for the duration of a single request — we take those risks off the table structurally.
 
-This also preserves your relationship with the model providers. Your Anthropic bill is yours. Your usage metrics at OpenAI are yours. Your rate limits are yours. Vāda is not a middleman; it's an orchestration layer on top of tools you already own.
+This also preserves your relationship with the model providers. Your Anthropic bill is yours. Your usage metrics at OpenAI are yours. Your rate limits are yours. Vāda is <span className="text-accent">not a middleman</span>; it's an orchestration layer on top of tools you already own.
 
 ## Why this changed
 
