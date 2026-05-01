@@ -9,5 +9,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "scripts"]
+  "exclude": ["node_modules", "scripts", "**/*.test.ts"]
 }
