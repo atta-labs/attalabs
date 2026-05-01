@@ -20,12 +20,12 @@ export function ChatBubble({ children, variant, label }: ChatBubbleProps) {
       <div
         className={`max-w-2xl w-full p-6 border transition-colors ${
           isUser
-            ? 'border-white/20 bg-transparent rounded-2xl rounded-bl-none'
+            ? 'border-foreground/20 bg-transparent rounded-2xl rounded-bl-none'
             : 'border-accent/40 bg-transparent rounded-2xl rounded-br-none'
         }`}
       >
         {label && <span className='block text-[10px] uppercase tracking-widest text-accent/60 mb-2'>{label}</span>}
-        <div className={`text-white/90 ${isUser ? 'font-serif italic text-2xl' : 'text-lg'}`}>{children}</div>
+        <div className={`text-foreground ${isUser ? 'font-serif italic text-2xl' : 'text-lg'}`}>{children}</div>
       </div>
     </motion.div>
   )
