@@ -4,15 +4,26 @@ import { loadSpec, compileSpec } from '@atta/engine'
 import { TeamsClient } from './TeamsClient'
 
 // All current specs are experimental, so listPublicSpecs() returns empty.
-// Load all 7 by ID directly.
-const SPEC_IDS = ['a0-baseline', 'a1-baseline', 'brokered-trio', 'brokered-quartet', 'sparring', 'crucible', 'war-room']
+// Load all 9 by ID directly.
+const SPEC_IDS = [
+  'a0-baseline',
+  'a1-baseline',
+  'brokered-trio',
+  'brokered-quartet',
+  'vada-reviewers',
+  'vada-reviewers-synthesis',
+  'sparring',
+  'crucible',
+  'war-room'
+]
 
 // Placeholder question — only affects template rendering, not graph structure.
 const PLACEHOLDER_QUESTION = 'What is the best approach for this challenge?'
 
 function deriveShapeLabel(spec: ReturnType<typeof loadSpec>): string {
   if (spec.reviewers && spec.reviewers.length > 0) {
-    return `${spec.reviewers.length} reviewers · no synthesis`
+    const hasSynth = spec.response?.mode === 'synthesize'
+    return `${spec.reviewers.length} reviewers · ${hasSynth ? 'with synthesis' : 'no synthesis'}`
   }
   if (spec.flow?.rounds) {
     const { count, agents } = spec.flow.rounds

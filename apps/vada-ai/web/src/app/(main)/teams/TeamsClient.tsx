@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { FlowGraph, mockEventDriver } from '@atta/ui/engine-flow'
-import type { FlowEventSource } from '@atta/ui/engine-flow'
+import { FlowGraph, mockEventDriver, canvasRenderers } from '@atta/ui/engine-flow'
+import type { FlowEventSource, FlowRendererSet } from '@atta/ui/engine-flow'
 import type { Plan } from '@atta/engine'
 import type { DeliberationSpec } from '@atta/engine'
 import { Button, Badge, Separator } from '@atta/ui'
 import { cn } from '@atta/ui/lib/utils'
-import { Play, RotateCcw } from 'lucide-react'
+import { Play, RotateCcw, LayoutGrid, Sparkles } from 'lucide-react'
+
+type RenderMode = 'boxes' | 'agents'
 
 interface SpecEntry {
   spec: DeliberationSpec
@@ -24,6 +26,7 @@ export function TeamsClient({ specs }: TeamsClientProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [driver, setDriver] = useState<FlowEventSource | null>(null)
   const [isRunning, setIsRunning] = useState(false)
+  const [renderMode, setRenderMode] = useState<RenderMode>('boxes')
 
   const selected = specs[selectedIndex]
 
@@ -36,14 +39,11 @@ export function TeamsClient({ specs }: TeamsClientProps) {
   const handleRunDemo = useCallback(() => {
     if (!selected) return
     const newDriver = mockEventDriver(selected.plan, { speed: 1, loop: false })
-    // Wrap to detect completion
     const wrappedDriver: FlowEventSource = {
       subscribe(handler) {
         const unsub = newDriver.subscribe((event) => {
           handler(event)
-          if (event.type === 'flow:complete') {
-            setIsRunning(false)
-          }
+          if (event.type === 'flow:complete') setIsRunning(false)
         })
         return unsub
       }
@@ -58,6 +58,8 @@ export function TeamsClient({ specs }: TeamsClientProps) {
   }, [])
 
   if (!selected) return null
+
+  const rendererSet: FlowRendererSet | undefined = renderMode === 'agents' ? canvasRenderers : undefined
 
   return (
     <div className='flex h-dvh overflow-hidden'>
@@ -113,13 +115,45 @@ export function TeamsClient({ specs }: TeamsClientProps) {
 
           <Separator orientation='vertical' className='h-6' />
 
+          {/* Render mode toggle */}
+          <div className='flex items-center rounded-md border border-border overflow-hidden shrink-0'>
+            <button
+              type='button'
+              onClick={() => setRenderMode('boxes')}
+              className={cn(
+                'flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono transition-colors',
+                renderMode === 'boxes'
+                  ? 'bg-accent text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+              )}
+            >
+              <LayoutGrid className='size-3' />
+              Boxes
+            </button>
+            <button
+              type='button'
+              onClick={() => setRenderMode('agents')}
+              className={cn(
+                'flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono transition-colors border-l border-border',
+                renderMode === 'agents'
+                  ? 'bg-accent text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+              )}
+            >
+              <Sparkles className='size-3' />
+              Agents
+            </button>
+          </div>
+
+          <Separator orientation='vertical' className='h-6' />
+
           <div className='flex items-center gap-2 shrink-0'>
-            {isRunning || driver ? (
+            {(isRunning || driver) && (
               <Button variant='outline' size='sm' onClick={handleReset} className='gap-1.5'>
                 <RotateCcw className='size-3' />
                 Reset
               </Button>
-            ) : null}
+            )}
             <Button size='sm' onClick={handleRunDemo} disabled={isRunning} className='gap-1.5'>
               <Play className='size-3' />
               {isRunning ? 'Running…' : 'Run demo'}
@@ -130,9 +164,10 @@ export function TeamsClient({ specs }: TeamsClientProps) {
         {/* Flow graph */}
         <div className='flex-1 relative'>
           <FlowGraph
-            key={selected.spec.id}
+            key={`${selected.spec.id}-${renderMode}`}
             plan={selected.plan}
             events={driver ?? undefined}
+            rendererSet={rendererSet}
             className='absolute inset-0'
           />
         </div>
