@@ -62,9 +62,7 @@ const agentNodeIds = Object.keys(plan.graph.nodes).filter(
   (id) => id.startsWith('reviewer-') || id === 'brokered-synthesis'
 )
 if (agentNodeIds.length !== 4) {
-  console.error(
-    `ERROR: expected 4 agent nodes (3 reviewers + synthesizer), got ${agentNodeIds.length}`
-  )
+  console.error(`ERROR: expected 4 agent nodes (3 reviewers + synthesizer), got ${agentNodeIds.length}`)
   process.exit(1)
 }
 console.info('✓ Plan has 4 agent nodes (3 reviewers + synthesizer)')
@@ -130,9 +128,7 @@ if (adapter) {
         lastEntry.content.includes('unique_insights') &&
         lastEntry.content.includes('contradictions')
       ) {
-        console.warn(
-          `⚠ Synthesizer output is degraded (${errorMsg}), but schema fields present in text`
-        )
+        console.warn(`⚠ Synthesizer output is degraded (${errorMsg}), but schema fields present in text`)
       } else {
         console.error(`ERROR: synthesizer output missing expected fields: ${errorMsg}`)
         process.exit(1)
