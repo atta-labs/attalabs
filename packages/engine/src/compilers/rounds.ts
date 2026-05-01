@@ -86,6 +86,7 @@ export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; qu
         agentName: agent.name,
         inputTemplate: messageTemplate,
         role: 'round',
+        kind: 'parallel-peer',
         metadata: {
           roundIndex: r,
           totalRounds: rounds
@@ -104,9 +105,9 @@ export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; qu
     }
   }
 
-  // Edges connecting round agents in sequence
+  // Edges connecting round agents in sequence — LangGraph wiring, not semantic data flow
   for (let i = 0; i < allRoundNodeIds.length - 1; i++) {
-    edges.push({ from: allRoundNodeIds[i]!, to: allRoundNodeIds[i + 1]! })
+    edges.push({ from: allRoundNodeIds[i]!, to: allRoundNodeIds[i + 1]!, kind: 'ordering' })
   }
 
   // Terminal nodes (0 through maxRevisions)
@@ -120,18 +121,20 @@ export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; qu
       agentName: terminalAgent,
       inputTemplate: messageTemplate,
       role: 'terminal',
+      // terminal-0 is the primary synthesizer; terminal-1+ are pre-allocated revision slots
+      kind: k === 0 ? 'synthesizer' : 'revision-terminal',
       metadata: {
         totalRounds: rounds,
-        revisionIndex: k,
-        isRevision: k > 0
+        revisionIndex: k
       }
     }
   }
 
-  // Edge from last round agent to terminal-0
+  // Edge from last round agent to terminal-0 — real data flow
   edges.push({
     from: allRoundNodeIds[allRoundNodeIds.length - 1]!,
-    to: 'terminal-0'
+    to: 'terminal-0',
+    kind: 'flow'
   })
 
   // Add __END__ sentinel node (used for conditional edge exit paths)
@@ -140,6 +143,7 @@ export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; qu
     agentName: '__END__',
     inputTemplate: '',
     role: 'solo',
+    kind: 'system-sentinel',
     metadata: {}
   }
 
@@ -158,25 +162,27 @@ export function compileRounds(params: { team: Team; workflow: RoundsWorkflow; qu
           agentName: auditName,
           inputTemplate: auditTemplate,
           role: 'audit',
+          kind: 'auditor',
           metadata: {
             revisionIndex: k
           }
         }
       }
 
-      // Sequential edges within this slot: A1-k → A2-k → ... → AN-k
+      // Sequential edges within this slot: A1-k → A2-k → ... → AN-k (wiring, not semantic flow)
       for (let i = 0; i < auditAgentNames.length - 1; i++) {
         edges.push({
           from: `audit-${auditAgentNames[i]}-${k}`,
-          to: `audit-${auditAgentNames[i + 1]}-${k}`
+          to: `audit-${auditAgentNames[i + 1]}-${k}`,
+          kind: 'ordering'
         })
       }
     }
 
-    // Entry edges: terminal-k → first auditor in slot k
+    // Entry edges: terminal-k → first auditor in slot k (real data flow)
     const firstAuditName = auditAgentNames[0]!
     for (let k = 0; k < numTerminals; k++) {
-      edges.push({ from: `terminal-${k}`, to: `audit-${firstAuditName}-${k}` })
+      edges.push({ from: `terminal-${k}`, to: `audit-${firstAuditName}-${k}`, kind: 'flow' })
     }
 
     // Conditional edges: last auditor in slot k → terminal-(k+1) on revision, else __END__

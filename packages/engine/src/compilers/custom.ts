@@ -31,6 +31,7 @@ export function compileCustom(params: { team: Team; workflow: CustomWorkflow; qu
       agentName: step.agent,
       inputTemplate: step.input,
       role: 'custom-step',
+      kind: 'custom-step',
       metadata: {
         customStepIndex: i
       }
