@@ -1,7 +1,7 @@
 schema_version: "1.0"
 id: war-room
 display_name: War Room
-description: Six-agent debate across three rounds with dual audit and revision.
+description: "Six agents debate across three rounds — strategy, criticism, adversarial framing, synthesis, research, and execution. Comprehensive deliberation for high-stakes decisions."
 
 defaults:
   model: claude-sonnet-4-6

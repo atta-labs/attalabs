@@ -1,7 +1,7 @@
 schema_version: "1.0"
 id: crucible
 display_name: Crucible
-description: Four-agent debate across three rounds with dual audit and revision.
+description: "Four agents debate across three rounds. Strategist proposes, Critic challenges, Devil's Advocate breaks, Synthesizer reconciles. Two auditors verify before delivery."
 
 defaults:
   model: claude-sonnet-4-6

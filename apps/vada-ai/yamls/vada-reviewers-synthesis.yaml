@@ -1,7 +1,7 @@
 schema_version: "1.0"
 id: vada-reviewers-synthesis
-display_name: "Vāda Reviewers — Synthesis"
-description: "Vendor-diverse reviewer pool with structured synthesizer. Returns concatenated reviewer responses plus synthesized Consensus/Unique/Contradictions/Rejected/Recommendations analysis."
+display_name: "Reviewers + Synthesis"
+description: "Three different LLMs review independently, then a synthesizer extracts consensus, contradictions, and unique insights into a structured analysis."
 experimental: false
 benchmarked: false
 
