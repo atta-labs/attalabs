@@ -70,7 +70,7 @@ export default async function ScienceDocPage({ params }: { params: Promise<{ slu
             <NextLink
               variant='unstyled'
               href={next.href}
-              className='group flex items-center gap-2 font-serif text-base text-foreground transition-colors hover:text-primary'
+              className='group flex items-center gap-2 font-serif text-base text-foreground transition-colors hover:text-accent'
             >
               <span>{next.title}</span>
               <ArrowRight className='size-4 transition-transform group-hover:translate-x-0.5' />

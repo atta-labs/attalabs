@@ -23,7 +23,7 @@ export function TeamAccordionItem({ team, teamModels, onModelChanged }: TeamAcco
       <button
         type='button'
         onClick={() => setOpen((v) => !v)}
-        className='flex w-full items-center gap-3 py-3 text-left hover:text-foreground transition-colors'
+        className='flex w-full items-center gap-3 py-3 text-left hover:text-accent transition-colors'
       >
         {open ? (
           <ChevronDown className='h-3.5 w-3.5 shrink-0 text-muted-foreground' />

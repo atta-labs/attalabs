@@ -40,7 +40,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
       <div className='flex items-center justify-between gap-3'>
         <label
           htmlFor='vada-benchmark-checkbox'
-          className='flex shrink-0 items-center gap-2 text-[13px] text-muted-foreground hover:text-foreground'
+          className='flex shrink-0 items-center gap-2 text-[13px] text-muted-foreground hover:text-accent'
         >
           <Checkbox
             id='vada-benchmark-checkbox'

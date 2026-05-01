@@ -15,20 +15,11 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { SignInButton, useClerk, useUser } from '@atta/auth'
 import { LogOut, Settings } from 'lucide-react'
 import { usePathname } from 'next/navigation'
+import { PUBLIC_ROUTES, AUTH_ROUTES } from '@/lib/route-config'
 
 interface UserTopBarProps {
   logo?: ReactNode
 }
-
-const PUBLIC_NAV = [
-  { href: '/trust', label: 'Trust · Vāda', exact: false },
-  { href: '/teams', label: 'Teams', exact: false }
-]
-
-const AUTH_NAV = [
-  { href: '/deliberate', label: 'Deliberate', exact: true },
-  { href: '/sessions', label: 'My Sessions', exact: true }
-]
 
 export function UserTopBar({ logo }: UserTopBarProps) {
   const { signOut } = useClerk()
@@ -37,7 +28,7 @@ export function UserTopBar({ logo }: UserTopBarProps) {
 
   const isActive = (href: string, exact: boolean) => (exact ? pathname === href : pathname.startsWith(href))
 
-  const allLinks = user ? [...PUBLIC_NAV, ...AUTH_NAV] : PUBLIC_NAV
+  const allLinks = user ? [...PUBLIC_ROUTES, ...AUTH_ROUTES] : PUBLIC_ROUTES
   const leftLogo = logo ?? (
     <NextLink variant='unstyled' href='/' className='text-xs text-foreground'>
       VADA.AI

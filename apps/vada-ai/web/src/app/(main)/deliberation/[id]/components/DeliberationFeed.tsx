@@ -186,7 +186,7 @@ function DeliberationScene({
                 <NextLink
                   href={`/deliberation/${sessionId}/benchmark`}
                   variant='unstyled'
-                  className='inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground hover:text-foreground'
+                  className='inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground hover:text-accent'
                 >
                   View benchmark comparison →
                 </NextLink>

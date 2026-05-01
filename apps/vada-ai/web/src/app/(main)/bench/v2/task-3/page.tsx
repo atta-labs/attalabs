@@ -31,7 +31,7 @@ export default async function Task3Page() {
             Haiku 4.5 · 7 V1-loss questions · N=3 · Does Vāda pipeline beat single-shot?
           </p>
         </div>
-        <Link href='/bench' className='text-sm text-muted-foreground hover:text-foreground'>
+        <Link href='/bench' className='text-sm text-muted-foreground hover:text-accent'>
           ← Overview
         </Link>
       </div>

@@ -11,14 +11,14 @@ export type NextLinkProps = ComponentProps<typeof NextLinkPrimitive> & {
 
 const variants: Record<NextLinkVariant, string> = {
   prose: 'text-primary underline underline-offset-2 decoration-primary/40 hover:decoration-primary transition-colors',
-  nav: 'text-muted-foreground transition-colors hover:text-foreground',
-  subtle: 'font-mono text-xs text-muted-foreground transition-colors hover:text-foreground',
+  nav: 'text-muted-foreground transition-colors hover:text-accent',
+  subtle: 'font-mono text-xs text-muted-foreground transition-colors hover:text-accent',
   card: 'block transition-opacity hover:opacity-80',
   destructive: 'text-destructive/70 underline transition-opacity hover:opacity-70',
   unstyled: ''
 }
 
-const activeNav = 'text-foreground font-medium'
+const activeNav = 'text-primary font-medium'
 
 export function NextLink({ variant = 'prose', active, className, ...props }: NextLinkProps) {
   return (
