@@ -1,9 +1,10 @@
 'use client'
 
 import { cn } from '@atta/ui/lib/utils'
-import { Heading, Text } from '@atta/ui/shared'
+import { Heading } from '@atta/ui/shared'
 import type { DeliberationSpec, SpecAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
+import Link from 'next/link'
 
 interface DisplayAgent {
   name: string
@@ -52,8 +53,9 @@ function getShapeLabel(spec: DeliberationSpec): string {
   return 'single shot'
 }
 
-function getFaceLayout(count: number): string {
+function getSphereLayout(count: number): string {
   if (count <= 2) return 'flex justify-center gap-8 py-2'
+  if (count === 3) return 'flex justify-center gap-6 py-2'
   if (count <= 4) return 'grid grid-cols-2 gap-4 justify-items-center py-2'
   return 'grid grid-cols-3 gap-3 justify-items-center py-2'
 }
@@ -78,15 +80,13 @@ export function TeamCard({ spec }: { spec: DeliberationSpec }) {
         <span className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>{shapeLabel}</span>
       </div>
 
-      <Text size='sm' className='text-muted-foreground leading-snug'>
-        {spec.description}
-      </Text>
+      <p className='line-clamp-3 text-sm text-muted-foreground leading-snug min-h-[3.75rem]'>{spec.description}</p>
 
-      <div className={getFaceLayout(agents.length)}>
+      <div className={getSphereLayout(agents.length)}>
         {agents.map((agent) => (
           <VadaAgent
             key={agent.name}
-            id={`tmp-card-${spec.id}-${agent.name}`}
+            id={`card-${spec.id}-${agent.name}`}
             name={agent.name}
             role={agent.role}
             model={agent.model ?? defaultModel}
@@ -97,6 +97,13 @@ export function TeamCard({ spec }: { spec: DeliberationSpec }) {
           />
         ))}
       </div>
+
+      <Link
+        href={`/teams/${spec.id}`}
+        className='self-start font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors'
+      >
+        Learn more →
+      </Link>
     </div>
   )
 }
