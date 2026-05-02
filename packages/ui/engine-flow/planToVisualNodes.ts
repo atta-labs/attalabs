@@ -231,27 +231,26 @@ export function planToVisualNodes(plan: Plan): VisualizationOutput {
       })
     }
 
-    // Add cross-round fan-out edges: last agent of round R → all agents of round R+1.
-    // Skip IDs already emitted by the plan.graph.edges loop above (ordering edges covering
-    // the same connection would otherwise produce duplicate React Flow keys).
+    // Add one cross-round edge per round transition: last agent of round R → first agent of
+    // round R+1. Represents the round's context handing off to the next round without
+    // creating visual noise from all-to-all connections.
     const emittedEdgeIds = new Set(rfEdges.map((e) => e.id))
     for (let ri = 0; ri < rounds.length - 1; ri++) {
       const currentRound = rounds[ri]!
       const nextRound = rounds[ri + 1]!
-      const lastAgentOfCurrentRound = currentRound.agentNodeIds[currentRound.agentNodeIds.length - 1]
-      if (!lastAgentOfCurrentRound) continue
-      for (const nextAgentId of nextRound.agentNodeIds) {
-        const edgeId = `${lastAgentOfCurrentRound}-${nextAgentId}`
-        if (emittedEdgeIds.has(edgeId)) continue
-        emittedEdgeIds.add(edgeId)
-        rfEdges.push({
-          id: edgeId,
-          source: lastAgentOfCurrentRound,
-          target: nextAgentId,
-          animated: false,
-          style: { stroke: 'var(--border)', strokeWidth: 1.5 }
-        })
-      }
+      const lastOfCurrent = currentRound.agentNodeIds[currentRound.agentNodeIds.length - 1]
+      const firstOfNext = nextRound.agentNodeIds[0]
+      if (!lastOfCurrent || !firstOfNext) continue
+      const edgeId = `${lastOfCurrent}-${firstOfNext}`
+      if (emittedEdgeIds.has(edgeId)) continue
+      emittedEdgeIds.add(edgeId)
+      rfEdges.push({
+        id: edgeId,
+        source: lastOfCurrent,
+        target: firstOfNext,
+        animated: false,
+        style: { stroke: 'var(--border)', strokeWidth: 1.5 }
+      })
     }
 
     // Conditional edges (audit → revision path) — skip targets that are non-renderable

@@ -2,21 +2,13 @@
 
 import { useMemo, useEffect, useCallback, useState } from 'react'
 import type { ComponentType } from 'react'
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  useNodesState,
-  useEdgesState,
-  type NodeTypes,
-  type NodeProps
-} from '@xyflow/react'
+import { ReactFlow, Background, useNodesState, useEdgesState, type NodeTypes, type NodeProps } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import type { Plan } from '@atta/engine'
 import { cn } from '@atta/ui/lib/utils'
 import type { FlowEventSource, FlowEvent } from './events'
 import type { FlowRendererSet, NodeVisualState, RoundLabelData } from './types'
-import { planToVisualNodes } from './planToVisualNodes'
+import { planToVisualNodes, AGENT_NODE_HEIGHT, AGENT_NODE_WIDTH } from './planToVisualNodes'
 import { applyLayout } from './layouts'
 import { AgentNode } from './nodeRenderers/AgentNode'
 import { SynthesisNode } from './nodeRenderers/SynthesisNode'
@@ -32,17 +24,42 @@ const BASE_NODE_TYPES: NodeTypes = {
   roundLabel: RoundLabel as ComponentType<NodeProps>
 }
 
+const AUTO_HEIGHT_PADDING = 40
+
 export interface FlowGraphProps {
   plan: Plan
   events?: FlowEventSource
   rendererSet?: FlowRendererSet
   className?: string
+  /** When true, sizes the container to the exact natural content size at zoom=1.
+   *  Wrap the parent in overflow-x-auto — page scrolls vertically, section scrolls
+   *  horizontally only when the diagram is wider than the viewport. */
+  autoHeight?: boolean
 }
 
-export function FlowGraph({ plan, events, rendererSet, className }: FlowGraphProps) {
+export function FlowGraph({ plan, events, rendererSet, className, autoHeight = false }: FlowGraphProps) {
   const viz = useMemo(() => planToVisualNodes(plan), [plan])
-  const showControls = viz.nodes.length > 6
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => applyLayout(viz), [viz])
+
+  // Natural bounding box — used only when autoHeight=true.
+  // Container is sized exactly to the content so ReactFlow renders at zoom=1 with no clipping.
+  const autoHeightStyle = useMemo(() => {
+    if (!autoHeight || initialNodes.length === 0) return null
+    const minX = Math.min(...initialNodes.map((n) => n.position.x))
+    const minY = Math.min(...initialNodes.map((n) => n.position.y))
+    const maxX = Math.max(
+      ...initialNodes.map((n) => n.position.x + ((n.width as number | undefined) ?? AGENT_NODE_WIDTH))
+    )
+    const maxY = Math.max(
+      ...initialNodes.map((n) => n.position.y + ((n.height as number | undefined) ?? AGENT_NODE_HEIGHT))
+    )
+    const w = maxX - minX + AUTO_HEIGHT_PADDING * 2
+    const h = maxY - minY + AUTO_HEIGHT_PADDING * 2
+    return {
+      containerStyle: { width: w, height: h } as React.CSSProperties,
+      viewport: { x: AUTO_HEIGHT_PADDING - minX, y: AUTO_HEIGHT_PADDING - minY, zoom: 1 }
+    }
+  }, [autoHeight, initialNodes])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
@@ -142,27 +159,27 @@ export function FlowGraph({ plan, events, rendererSet, className }: FlowGraphPro
   }, [activeEdges, setEdges])
 
   return (
-    <div className={cn('h-full w-full', className)}>
+    <div className={cn(autoHeight ? undefined : 'h-full w-full', className)} style={autoHeightStyle?.containerStyle}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.15 }}
+        {...(autoHeightStyle
+          ? { defaultViewport: autoHeightStyle.viewport }
+          : { fitView: true, fitViewOptions: { padding: 0.15 } })}
         proOptions={{ hideAttribution: true }}
-        minZoom={0.3}
-        maxZoom={1.5}
+        preventScrolling={false}
         nodesDraggable={false}
         nodesConnectable={false}
-        panOnScroll={true}
+        panOnDrag={false}
+        panOnScroll={false}
         zoomOnScroll={false}
         zoomOnPinch={false}
         zoomOnDoubleClick={false}
       >
         <Background color='var(--border)' gap={20} size={1} />
-        {showControls && <Controls className='!bg-card !border-border !shadow-none' />}
       </ReactFlow>
     </div>
   )
