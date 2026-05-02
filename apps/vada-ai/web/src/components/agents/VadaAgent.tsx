@@ -62,6 +62,9 @@ export function VadaAgent({
       face={face}
       faceOpacity={faceOpacity}
       faceTranslateY={faceTranslateY}
+      // Roled agents: forward model so AgentSphere renders the bottom-right badge.
+      // Unroled agents: model is consumed as the face icon above; no badge needed.
+      model={agentDef ? model : undefined}
       label={label ?? name}
       {...rest}
     />

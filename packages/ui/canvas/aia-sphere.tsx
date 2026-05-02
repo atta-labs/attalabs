@@ -194,13 +194,16 @@ export function AIASphere(props: Parameters<typeof AIASphereInner>[0]) {
   // Position utilities use Tailwind classes.
   const sphereBlock = (
     <div className='relative' style={{ width: diameter, height: diameter }}>
-      <div className='absolute' style={{ inset: -pad }}>
+      {/* pointer-events-none: the ambient canvas padding extends beyond the sphere's bbox
+          and must not intercept clicks on surrounding content (e.g. links above/below the sphere). */}
+      <div className='absolute' style={{ inset: -pad, pointerEvents: 'none' }}>
         {/* No className on AIACanvas — avoids relative/absolute Tailwind class conflict that collapses containerRef height to 0. */}
         {/* Explicit-size inner div drives containerRef height instead. */}
         <AIACanvas wanderDuration={0} alwaysRenderSpheres>
           <div className='relative' style={{ width: canvasSize, height: canvasSize }}>
             {/* Sphere at (pad, pad) aligns the face with the layout anchor. */}
-            <div className='absolute' style={{ top: pad, left: pad }}>
+            {/* pointer-events: auto re-enables pointer events so onClick spheres remain clickable. */}
+            <div className='absolute' style={{ top: pad, left: pad, pointerEvents: 'auto' }}>
               {/* Suppress flow label here — rendered outside the canvas container so it participates in DOM layout flow. */}
               <AIASphereInner {...props} label={labelPlacement !== 'absolute' ? undefined : label} />
             </div>
