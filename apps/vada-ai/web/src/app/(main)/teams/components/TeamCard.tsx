@@ -53,11 +53,31 @@ function getShapeLabel(spec: DeliberationSpec): string {
   return 'single shot'
 }
 
-function getSphereLayout(count: number): string {
-  if (count <= 2) return 'flex justify-center gap-8 py-2'
-  if (count === 3) return 'flex justify-center gap-6 py-2'
-  if (count <= 4) return 'grid grid-cols-2 gap-4 justify-items-center py-2'
-  return 'grid grid-cols-3 gap-3 justify-items-center py-2'
+type SphereSize = 'sm' | 'md' | 'lg' | 'xl'
+
+function Sphere({
+  agent,
+  size,
+  specId,
+  defaultModel
+}: {
+  agent: DisplayAgent
+  size: SphereSize
+  specId: string
+  defaultModel: string
+}) {
+  return (
+    <VadaAgent
+      id={`card-${specId}-${agent.name}`}
+      name={agent.name}
+      role={agent.role}
+      model={agent.role ? undefined : (agent.model ?? defaultModel)}
+      state='speaking'
+      size={size}
+      visible
+      label={agent.role ? undefined : 'REVIEWER'}
+    />
+  )
 }
 
 export function TeamCard({ spec }: { spec: DeliberationSpec }) {
@@ -65,6 +85,54 @@ export function TeamCard({ spec }: { spec: DeliberationSpec }) {
   const count = getAgentCount(spec)
   const shapeLabel = getShapeLabel(spec)
   const defaultModel = spec.defaults.model
+
+  const sphereProps = { specId: spec.id, defaultModel }
+
+  let spheres: React.ReactNode
+
+  if (agents.length <= 2) {
+    // 2 agents: large, fills the row
+    spheres = (
+      <div className='flex justify-around items-center py-4'>
+        {agents.map((a) => (
+          <Sphere key={a.name} agent={a} size='xl' {...sphereProps} />
+        ))}
+      </div>
+    )
+  } else if (agents.length === 3) {
+    // 3 agents: downward triangle — 3-col × 2-row grid
+    // row 1 col 1, row 1 col 3, row 2 col 2
+    const [a0, a1, a2] = [agents.at(0), agents.at(1), agents.at(2)]
+    spheres = (
+      <div className='grid grid-cols-3 grid-rows-2 gap-4 py-2'>
+        <div className='col-start-1 row-start-1 flex justify-center items-center'>
+          {a0 && <Sphere agent={a0} size='md' {...sphereProps} />}
+        </div>
+        <div className='col-start-3 row-start-1 flex justify-center items-center'>
+          {a1 && <Sphere agent={a1} size='md' {...sphereProps} />}
+        </div>
+        <div className='col-start-2 row-start-2 flex justify-center items-center'>
+          {a2 && <Sphere agent={a2} size='md' {...sphereProps} />}
+        </div>
+      </div>
+    )
+  } else if (agents.length <= 4) {
+    spheres = (
+      <div className='grid grid-cols-2 gap-4 justify-items-center py-2'>
+        {agents.map((a) => (
+          <Sphere key={a.name} agent={a} size='md' {...sphereProps} />
+        ))}
+      </div>
+    )
+  } else {
+    spheres = (
+      <div className='grid grid-cols-3 gap-3 justify-items-center py-2'>
+        {agents.map((a) => (
+          <Sphere key={a.name} agent={a} size='md' {...sphereProps} />
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className={cn('flex flex-col gap-4 rounded-lg bg-card p-4', 'border border-border/40')}>
@@ -82,25 +150,11 @@ export function TeamCard({ spec }: { spec: DeliberationSpec }) {
 
       <p className='line-clamp-3 text-sm text-muted-foreground leading-snug min-h-[3.75rem]'>{spec.description}</p>
 
-      <div className={getSphereLayout(agents.length)}>
-        {agents.map((agent) => (
-          <VadaAgent
-            key={agent.name}
-            id={`card-${spec.id}-${agent.name}`}
-            name={agent.name}
-            role={agent.role}
-            model={agent.model ?? defaultModel}
-            state='speaking'
-            size='md'
-            visible
-            label={agent.role ? undefined : 'REVIEWER'}
-          />
-        ))}
-      </div>
+      {spheres}
 
       <Link
         href={`/teams/${spec.id}`}
-        className='self-start font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors'
+        className='inline-block font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors'
       >
         Learn more →
       </Link>
