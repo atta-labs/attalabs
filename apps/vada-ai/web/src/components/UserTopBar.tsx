@@ -22,6 +22,7 @@ interface UserTopBarProps {
 
 const PUBLIC_NAV = [
   { href: '/trust', label: 'Trust · Vāda', exact: false },
+  { href: '/mcp', label: 'MCP Integration', exact: false },
   { href: '/teams', label: 'Teams', exact: false }
 ]
 
