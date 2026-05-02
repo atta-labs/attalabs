@@ -1,9 +1,9 @@
-import { listPublicSpecs } from '@atta/engine'
+import { listPublicSpecs, compileSpec } from '@atta/engine'
 import { notFound } from 'next/navigation'
 import { TeamHeader } from './components/TeamHeader'
-import { AgentGrid } from './components/AgentGrid'
-import { CalculatorStats } from './components/CalculatorStats'
-import { FlowVisualizer } from './components/FlowVisualizer'
+import { TeamDetailTabs } from './components/TeamDetailTabs'
+
+const PLACEHOLDER_QUESTION = 'What is the best approach for this challenge?'
 
 export default async function TeamDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -12,28 +12,13 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ slu
 
   if (!spec) notFound()
 
+  const plan = compileSpec(spec, PLACEHOLDER_QUESTION)
+
   return (
-    <div className='mx-auto max-w-5xl space-y-12 px-4 py-12'>
+    <div className='mx-auto w-full max-w-5xl space-y-8 px-6 py-12'>
       <TeamHeader spec={spec} />
-
-      <section className='space-y-3'>
-        <p className='max-w-2xl text-base text-foreground leading-relaxed'>{spec.description}</p>
-      </section>
-
-      <section className='space-y-4'>
-        <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Agents</h2>
-        <AgentGrid spec={spec} />
-      </section>
-
-      <section className='space-y-4'>
-        <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Estimated Cost</h2>
-        <CalculatorStats spec={spec} />
-      </section>
-
-      <section className='space-y-4'>
-        <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Workflow</h2>
-        <FlowVisualizer spec={spec} />
-      </section>
+      <p className='max-w-2xl text-base text-foreground leading-relaxed'>{spec.description}</p>
+      <TeamDetailTabs spec={spec} plan={plan} />
     </div>
   )
 }
