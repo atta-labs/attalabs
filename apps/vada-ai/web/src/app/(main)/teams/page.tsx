@@ -1,24 +1,25 @@
-import type { Metadata } from 'next'
-import { Heading, Text } from '@atta/ui/shared'
-
-export const metadata: Metadata = {
-  title: 'Teams'
-}
+import { listPublicSpecs } from '@atta/engine'
+import { Heading } from '@atta/ui/shared'
+import { TeamCard } from './components/TeamCard'
 
 export default function TeamsPage() {
+  const specs = listPublicSpecs()
+
   return (
-    <div className='px-6 py-12'>
-      <div className='mx-auto max-w-2xl space-y-6'>
-        <div className='space-y-4'>
-          <span className='font-mono text-xs text-muted-foreground'>Catalog</span>
-          <Heading level={1} className='font-serif text-4xl font-light leading-tight'>
-            Deliberation Teams
-          </Heading>
-          <Text as='p' muted className='text-lg leading-relaxed'>
-            Browse the catalog of curated deliberation teams. Each team combines agents with specific expertise and
-            perspectives to answer your questions better.
-          </Text>
-        </div>
+    <div className='mx-auto max-w-5xl space-y-8 px-4 py-12'>
+      <div className='space-y-1'>
+        <Heading level={1} size='xl' className='font-serif text-foreground'>
+          Teams
+        </Heading>
+        <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>
+          {specs.length} published · agent configurations
+        </p>
+      </div>
+
+      <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
+        {specs.map((spec) => (
+          <TeamCard key={spec.id} spec={spec} />
+        ))}
       </div>
     </div>
   )

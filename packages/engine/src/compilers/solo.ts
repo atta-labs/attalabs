@@ -20,6 +20,7 @@ export function compileSolo(params: { team: Team; question: string; model: strin
     agentName: agent.name,
     inputTemplate: '{{question}}',
     role: 'solo',
+    kind: 'solo-agent',
     metadata: {}
   }
 

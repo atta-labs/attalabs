@@ -1,13 +1,14 @@
 schema_version: "1.0"
 id: crucible
 display_name: Crucible
-description: Four-agent debate across three rounds with dual audit and revision.
+description: "Four agents debate across three rounds. Strategist proposes, Critic challenges, Devil's Advocate breaks, Synthesizer reconciles. Two auditors verify before delivery."
 
 defaults:
   model: claude-sonnet-4-6
 
 agents:
   - name: Strategist
+    role: strategist
     description: Maps the landscape, identifies opportunities, risks, and paths forward
     tools:
       - web_search
@@ -40,6 +41,7 @@ agents:
       Length: aim for 300-500 words. Shorter is better if the answer is clear.
 
   - name: Critic
+    role: critic
     description: Attacks assumptions, timelines, and logistical leaps to strengthen the final answer
     tools:
       - web_search
@@ -69,6 +71,7 @@ agents:
       Length: aim for 300-500 words. Shorter is better if decisive.
 
   - name: "Devil's Advocate"
+    role: devils_advocate
     description: Challenges whether the question itself is the right question
     tools:
       - web_search
@@ -103,6 +106,7 @@ agents:
       Length: aim for 300-500 words. Shorter is better if decisive.
 
   - name: Synthesizer
+    role: synthesizer
     description: Maps borders of agreement and irreducible disagreement across deliberation rounds
     tools:
       - web_search
@@ -118,6 +122,7 @@ agents:
       You are participating in a multi-round deliberation. Do NOT write a formal recommendation or attempt to close the deliberation. Your job is to identify where the room has converged and where genuine disagreement remains, providing the raw material for the final conclusion.
 
   - name: ConclusionSynthesizer
+    role: synthesizer
     description: Produces the final structured verdict from the deliberation transcript
     output_format: structured
     output_schema:

@@ -16,7 +16,8 @@ const SpecAgentSchema = z.object({
       mode: ClassifierModeSchema,
       budget: z.number().optional()
     })
-    .optional()
+    .optional(),
+  role: z.string().optional()
 })
 
 const RoundsSpecSchema = z.object({

@@ -1,16 +1,22 @@
 'use client'
 
 import { AgentSphere, type AgentSphereProps } from '@atta/ui/agents'
-import { AGENTS, type AgentName } from '@/components/agents/visuals'
+import { ModelIcon } from '@atta/ui'
+import { AGENTS, AGENT_BY_ROLE, type AgentName, type AgentRole } from '@/components/agents/visuals'
 import { AGENT_FACES as REDUCTIVE_FACES } from './faces/agent-faces-minimal'
 import { AGENT_FACES as EMBLEMATIC_FACES } from './faces/agent-faces-full'
+import { VENDORS, inferVendor } from './vendors'
 
 export type FaceStyle = 'reductive' | 'emblematic'
-export type { AgentName }
+export type { AgentName, AgentRole }
 
-interface VadaAgentProps extends Omit<AgentSphereProps, 'color' | 'face'> {
-  /** Agent archetype name — determines color and face illustration. */
-  name: AgentName
+interface VadaAgentProps extends Omit<AgentSphereProps, 'color' | 'face' | 'faceTranslateY'> {
+  /** Agent name — used for name-based lookup when no role is provided. */
+  name: string
+  /** Agent role — preferred lookup; falls back to name, then vendor. */
+  role?: AgentRole
+  /** Model string — used to infer vendor color when no role/name match is found. */
+  model?: string
   /**
    * Face illustration register.
    * - 'reductive'  — gestural floating features
@@ -19,12 +25,48 @@ interface VadaAgentProps extends Omit<AgentSphereProps, 'color' | 'face'> {
   faceStyle?: FaceStyle
 }
 
-export function VadaAgent({ name, faceStyle = 'emblematic', label, ...rest }: VadaAgentProps) {
-  const agentDef = AGENTS[name]
-  const color = agentDef?.visuals.color ?? 'var(--foreground)'
-  const faces = faceStyle === 'reductive' ? REDUCTIVE_FACES : EMBLEMATIC_FACES
-  const FaceComponent = faces[agentDef?.visuals.faceIndex ?? 0]
-  const face = FaceComponent ? <FaceComponent /> : undefined
+export function VadaAgent({
+  name,
+  role,
+  model,
+  faceStyle = 'emblematic',
+  label,
+  faceOpacity: faceOpacityProp,
+  ...rest
+}: VadaAgentProps) {
+  const agentDef = role ? (AGENT_BY_ROLE[role] ?? AGENTS[name as AgentName]) : AGENTS[name as AgentName]
 
-  return <AgentSphere color={color} face={face} label={label ?? name} {...rest} />
+  const color = agentDef
+    ? agentDef.visuals.color
+    : model
+      ? (VENDORS[inferVendor(model) ?? 'anthropic']?.color ?? 'var(--foreground)')
+      : 'var(--foreground)'
+
+  let face: React.ReactNode | undefined
+  let faceOpacity = faceOpacityProp
+  let faceTranslateY: string | undefined
+
+  if (agentDef) {
+    const faces = faceStyle === 'reductive' ? REDUCTIVE_FACES : EMBLEMATIC_FACES
+    const FaceComponent = faces[agentDef.visuals.faceIndex]
+    face = FaceComponent ? <FaceComponent /> : undefined
+  } else if (model) {
+    face = <ModelIcon model={model} size={36} type='avatar' />
+    faceOpacity = faceOpacityProp ?? 0.9
+    faceTranslateY = '0'
+  }
+
+  return (
+    <AgentSphere
+      color={color}
+      face={face}
+      faceOpacity={faceOpacity}
+      faceTranslateY={faceTranslateY}
+      // Roled agents: forward model so AgentSphere renders the bottom-right badge.
+      // Unroled agents: model is consumed as the face icon above; no badge needed.
+      model={agentDef ? model : undefined}
+      label={label ?? name}
+      {...rest}
+    />
+  )
 }

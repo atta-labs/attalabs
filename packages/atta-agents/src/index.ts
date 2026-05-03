@@ -1,8 +1,5 @@
 /** Generic agent identity types — shared across all Atta AI products. */
 
-/** A role slug identifying an agent's deliberative function. */
-export type AgentRole = string
-
 /**
  * A single AI agent definition — the atomic unit of the Vāda engine.
  *

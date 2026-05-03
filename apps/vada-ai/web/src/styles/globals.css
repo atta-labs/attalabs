@@ -9,6 +9,14 @@
   --agent-synthesizer:     hsl(43 52% 54%);
   --agent-researcher:      hsl(207 32% 52%);
   --agent-operator:        hsl(30 32% 52%);
+
+  /* Vendor identity colors for non-role agents (vada-reviewers, etc.) */
+  --vendor-anthropic: hsl(27 68% 56%);
+  --vendor-google:    hsl(214 57% 52%);
+  --vendor-openai:    hsl(162 40% 45%);
+  --vendor-xai:       hsl(240 6% 58%);
+  --vendor-meta:      hsl(221 65% 52%);
+  --vendor-deepseek:  hsl(199 52% 50%);
 }
 
 /* Cascade --agent-color from [data-agent] ancestor for dynamic agent styling */

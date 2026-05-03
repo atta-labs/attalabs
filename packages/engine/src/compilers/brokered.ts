@@ -45,15 +45,17 @@ export function compileBrokered(params: {
       agentName: reviewer.agentName,
       inputTemplate: reviewer.messageTemplate,
       role: 'solo',
+      kind: 'parallel-peer',
       metadata: {}
     }
   }
 
-  // Sequential edges between reviewers
+  // Sequential edges between reviewers — LangGraph wiring, not semantic data flow
   for (let i = 0; i < workflow.reviewers.length - 1; i++) {
     edges.push({
       from: `reviewer-${workflow.reviewers[i]!.agentName}`,
-      to: `reviewer-${workflow.reviewers[i + 1]!.agentName}`
+      to: `reviewer-${workflow.reviewers[i + 1]!.agentName}`,
+      kind: 'ordering'
     })
   }
 
@@ -68,10 +70,11 @@ export function compileBrokered(params: {
       agentName: workflow.synthesis.agentName,
       inputTemplate: workflow.synthesis.messageTemplate,
       role: 'terminal',
+      kind: 'synthesizer',
       metadata: {}
     }
 
-    edges.push({ from: lastReviewerNodeId, to: 'brokered-synthesis' })
+    edges.push({ from: lastReviewerNodeId, to: 'brokered-synthesis', kind: 'flow' })
   }
 
   const graph: PlanGraph = {

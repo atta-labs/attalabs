@@ -1,0 +1,185 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, it, expect } from 'vitest'
+import { loadSpec, compileSpec } from '@atta/engine'
+import { planToVisualNodes } from './planToVisualNodes'
+
+// Catalog YAMLs live at apps/vada-ai/yamls/
+// From engine-flow/: up 4 levels (ui/packages/worktree-root) then apps/vada-ai/yamls
+const YAMLS_DIR = join(import.meta.dirname, '../../../apps/vada-ai/yamls')
+
+function visualize(id: string) {
+  const yaml = readFileSync(join(YAMLS_DIR, `${id}.yaml`), 'utf-8')
+  const spec = loadSpec(yaml)
+  const plan = compileSpec(spec, 'Test question')
+  return planToVisualNodes(plan)
+}
+
+const CATALOG_IDS = [
+  'a0-baseline',
+  'a1-baseline',
+  'brokered-trio',
+  'brokered-quartet',
+  'sparring',
+  'crucible',
+  'war-room',
+  'vada-reviewers',
+  'vada-reviewers-synthesis'
+]
+
+describe('planToVisualNodes — all catalog YAMLs', () => {
+  for (const id of CATALOG_IDS) {
+    it(`${id}: no system-sentinel or revision-terminal nodes rendered`, () => {
+      const { nodes } = visualize(id)
+      for (const n of nodes) {
+        // __brief__ is the virtual entry node — not a plan node, always present
+        if (n.id === '__brief__') continue
+        expect(n.id, `sentinel leaked: ${n.id}`).not.toBe('__END__')
+        expect(n.id, `revision-terminal leaked: ${n.id}`).not.toMatch(/^terminal-[1-9]/)
+      }
+    })
+
+    it(`${id}: all rendered nodes have a React Flow type`, () => {
+      const { nodes } = visualize(id)
+      for (const n of nodes) {
+        expect(n.type, `node ${n.id} has no type`).toBeDefined()
+      }
+    })
+  }
+})
+
+describe('planToVisualNodes — solo workflows', () => {
+  it('a0-baseline: one agent node + brief', () => {
+    const { nodes, workflowType } = visualize('a0-baseline')
+    expect(workflowType).toBe('solo')
+    expect(nodes).toHaveLength(2) // brief + solo agent
+    const agentNode = nodes.find((n) => n.id !== '__brief__')
+    expect(agentNode?.type).toBe('agentNode')
+  })
+
+  it('a1-baseline: one agent node + brief', () => {
+    const { nodes, workflowType } = visualize('a1-baseline')
+    expect(workflowType).toBe('solo')
+    expect(nodes).toHaveLength(2)
+  })
+})
+
+describe('planToVisualNodes — brokered workflows', () => {
+  it('brokered-trio: 3 parallel agent nodes, no synthesizer', () => {
+    const { nodes, workflowType, hasSynthesis } = visualize('brokered-trio')
+    expect(workflowType).toBe('brokered')
+    const reviewers = nodes.filter((n) => n.id.startsWith('reviewer-'))
+    expect(reviewers).toHaveLength(3)
+    expect(reviewers.every((n) => n.type === 'agentNode')).toBe(true)
+    expect(hasSynthesis).toBe(false)
+  })
+
+  it('brokered-quartet: 4 parallel agent nodes, no synthesizer', () => {
+    const { nodes, workflowType } = visualize('brokered-quartet')
+    expect(workflowType).toBe('brokered')
+    const reviewers = nodes.filter((n) => n.id.startsWith('reviewer-'))
+    expect(reviewers).toHaveLength(4)
+  })
+
+  it('vada-reviewers: parallel agent nodes, no synthesizer', () => {
+    const { nodes, workflowType, hasSynthesis } = visualize('vada-reviewers')
+    expect(workflowType).toBe('brokered')
+    const reviewers = nodes.filter((n) => n.id.startsWith('reviewer-'))
+    expect(reviewers.length).toBeGreaterThanOrEqual(2)
+    expect(hasSynthesis).toBe(false)
+  })
+
+  it('vada-reviewers-synthesis: parallel agent nodes + synthesis node', () => {
+    const { nodes, workflowType, hasSynthesis } = visualize('vada-reviewers-synthesis')
+    expect(workflowType).toBe('brokered')
+    const synthNodes = nodes.filter((n) => n.type === 'synthesisNode')
+    expect(synthNodes).toHaveLength(1)
+    expect(synthNodes[0]!.id).toBe('brokered-synthesis')
+    expect(hasSynthesis).toBe(true)
+  })
+
+  it('brokered: brief → each reviewer edge exists', () => {
+    const { nodes, edges } = visualize('brokered-trio')
+    const reviewers = nodes.filter((n) => n.id.startsWith('reviewer-'))
+    for (const reviewer of reviewers) {
+      const edge = edges.find((e) => e.source === '__brief__' && e.target === reviewer.id)
+      expect(edge, `missing brief→${reviewer.id} edge`).toBeDefined()
+    }
+  })
+})
+
+describe('planToVisualNodes — rounds workflows', () => {
+  it('sparring: correct round count and agent nodes per round', () => {
+    const { rounds, workflowType } = visualize('sparring')
+    expect(workflowType).toBe('rounds')
+    expect(rounds).toHaveLength(3) // sparring has 3 rounds
+    for (const round of rounds) {
+      expect(round.agentNodeIds).toHaveLength(2) // 2 agents per round
+    }
+  })
+
+  it('sparring: exactly one synthesizer in post-rounds block', () => {
+    const { rounds, nodes } = visualize('sparring')
+    const lastRound = rounds[rounds.length - 1]!
+    expect(lastRound.synthNodeId).toBeDefined()
+    const synthNode = nodes.find((n) => n.id === lastRound.synthNodeId)
+    expect(synthNode?.type).toBe('synthesisNode')
+  })
+
+  it('sparring: audit nodes deduplicated (slot 0 only)', () => {
+    const { rounds, nodes } = visualize('sparring')
+    const lastRound = rounds[rounds.length - 1]!
+    // sparring has 2 auditors (BlindCritic, FactChecker)
+    expect(lastRound.auditNodeIds).toHaveLength(2)
+    for (const auditId of lastRound.auditNodeIds) {
+      const auditNode = nodes.find((n) => n.id === auditId)
+      expect(auditNode?.type).toBe('auditNode')
+    }
+  })
+
+  it('sparring: no per-round synthesizer (synth only in last round)', () => {
+    const { rounds } = visualize('sparring')
+    for (let i = 0; i < rounds.length - 1; i++) {
+      expect(rounds[i]!.synthNodeId, `round ${i} should not have synthNodeId`).toBeUndefined()
+      expect(rounds[i]!.auditNodeIds).toHaveLength(0)
+    }
+  })
+
+  it('crucible: 4 agents per round across 3 rounds', () => {
+    const { rounds, workflowType } = visualize('crucible')
+    expect(workflowType).toBe('rounds')
+    expect(rounds).toHaveLength(3)
+    for (const round of rounds) {
+      expect(round.agentNodeIds).toHaveLength(4)
+    }
+  })
+
+  it('war-room: 6 agents per round', () => {
+    const { rounds } = visualize('war-room')
+    for (const round of rounds) {
+      expect(round.agentNodeIds).toHaveLength(6)
+    }
+  })
+
+  it('rounds: brief connects to all round-0 agents', () => {
+    const { rounds, edges } = visualize('sparring')
+    const round0Agents = rounds[0]!.agentNodeIds
+    for (const agentId of round0Agents) {
+      const edge = edges.find((e) => e.source === '__brief__' && e.target === agentId)
+      expect(edge, `missing brief→${agentId} edge`).toBeDefined()
+    }
+  })
+
+  it('rounds: cross-round edges connect last-agent-of-R to all agents of R+1', () => {
+    const { rounds, edges } = visualize('sparring')
+    for (let ri = 0; ri < rounds.length - 1; ri++) {
+      const currentRound = rounds[ri]!
+      const nextRound = rounds[ri + 1]!
+      const lastAgent = currentRound.agentNodeIds[currentRound.agentNodeIds.length - 1]!
+      for (const nextAgentId of nextRound.agentNodeIds) {
+        const edge = edges.find((e) => e.source === lastAgent && e.target === nextAgentId)
+        expect(edge, `missing cross-round edge ${lastAgent}→${nextAgentId}`).toBeDefined()
+      }
+    }
+  })
+})

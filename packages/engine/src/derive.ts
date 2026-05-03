@@ -124,7 +124,7 @@ export function deriveTemplateState(state: ExecutionState, node: PlanNode): Temp
     roundIndex: node.metadata.roundIndex,
     totalRounds: node.metadata.totalRounds,
     revisionIndex: node.metadata.revisionIndex,
-    isRevision: node.metadata.isRevision === true,
+    isRevision: (node.metadata.revisionIndex ?? 0) > 0,
     isTerminal: node.role === 'terminal',
     allPreviousOutputs,
     outputsByAgent,

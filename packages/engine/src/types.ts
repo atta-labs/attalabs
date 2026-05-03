@@ -19,7 +19,7 @@
 // =============================================================================
 
 import type { Agent } from '@atta/agents'
-export type { Agent, AgentRole } from '@atta/agents'
+export type { Agent } from '@atta/agents'
 
 // =============================================================================
 // Group 3: RevisionCondition (declared before Workflow — Workflow depends on it)
@@ -390,6 +390,8 @@ export interface PlanNode {
   inputTemplate: string
   /** Structural role of this node in the workflow. */
   role: PlanNodeRole
+  /** Categorical classification for visualization and Plan consumers. */
+  kind: PlanNodeKind
   /** Runtime metadata for TemplateState derivation and execution bookkeeping. */
   metadata: PlanNodeMetadata
 }
@@ -405,6 +407,37 @@ export interface PlanNode {
 export type PlanNodeRole = 'solo' | 'round' | 'terminal' | 'audit' | 'custom-step'
 
 /**
+ * Categorical classification of a node for visualization and Plan consumers.
+ * Additive — does not replace PlanNodeRole, which the adapter uses for execution routing.
+ *
+ * - solo-agent: single-agent baselines (A0/A1) — no peers, no synthesis
+ * - parallel-peer: deliberation agent within a parallel group (round agents, brokered reviewers)
+ * - synthesizer: conclusion synthesizer (post-rounds) or brokered synthesis node
+ * - auditor: audit/verification agent
+ * - custom-step: explicit step in a custom sequential workflow
+ * - revision-terminal: pre-allocated conditional revision slot (may never execute)
+ * - system-sentinel: LangGraph routing sentinel (__END__); filter before rendering
+ */
+export type PlanNodeKind =
+  | 'solo-agent'
+  | 'parallel-peer'
+  | 'synthesizer'
+  | 'auditor'
+  | 'custom-step'
+  | 'revision-terminal'
+  | 'system-sentinel'
+
+/**
+ * Categorical classification of an edge for visualization.
+ * Additive — does not affect adapter execution.
+ *
+ * - flow: semantic data dependency (brief → agent, agent → synthesizer)
+ * - ordering: LangGraph wiring artifact with no semantic dependency
+ *   (e.g. sequential chaining within a parallel group)
+ */
+export type PlanEdgeKind = 'flow' | 'ordering'
+
+/**
  * Optional metadata attached to a PlanNode.
  * Used during TemplateState derivation; fields depend on the node's role.
  */
@@ -417,8 +450,6 @@ export interface PlanNodeMetadata {
   revisionIndex?: number
   /** 0-based step index for custom-step nodes. */
   customStepIndex?: number
-  /** True if this is a pre-allocated revision node (not the first execution of this position). */
-  isRevision?: boolean
 }
 
 /**
@@ -427,6 +458,8 @@ export interface PlanNodeMetadata {
 export type PlanEdge = {
   from: string
   to: string
+  /** Categorical classification for visualization. Absent = 'flow'. */
+  kind?: PlanEdgeKind
 }
 
 /**
