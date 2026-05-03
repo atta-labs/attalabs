@@ -32,6 +32,26 @@ async function fireBaselineBenchmark(sessionId: string, question: string, model:
   }
 }
 
+const LAST_TEAM_KEY = 'vada:lastSelectedTeam'
+
+function readLastTeam(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    return window.localStorage.getItem(LAST_TEAM_KEY)
+  } catch {
+    return null
+  }
+}
+
+function writeLastTeam(id: string) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(LAST_TEAM_KEY, id)
+  } catch {
+    // quota exceeded / disabled — harmless
+  }
+}
+
 interface UseDeliberateFormProps {
   remainingToday: number
   dailyLimit: number
@@ -39,6 +59,7 @@ interface UseDeliberateFormProps {
   configuredProviders: string[]
   initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   specs: DeliberationSpec[]
+  initialTeamId?: string
 }
 
 export interface DeliberateFormState {
@@ -62,7 +83,8 @@ export function useDeliberateForm({
   remainingToday,
   dailyLimit,
   initialError,
-  specs
+  specs,
+  initialTeamId
 }: UseDeliberateFormProps): DeliberateFormState {
   const [question, setQuestion] = useState('')
   const [selectedSpecId, setSelectedSpecId] = useState<string>(() => {
@@ -70,6 +92,10 @@ export function useDeliberateForm({
     if (!first) {
       throw new Error('useDeliberateForm: no specs available; cannot initialize selectedSpecId')
     }
+    // Priority: URL param > localStorage > first spec
+    if (initialTeamId && specs.some((s) => s.id === initialTeamId)) return initialTeamId
+    const stored = readLastTeam()
+    if (stored && specs.some((s) => s.id === stored)) return stored
     return first.id
   })
   const [globalModel, setGlobalModel] = useState<ModelSelection | null>(null)
@@ -95,6 +121,11 @@ export function useDeliberateForm({
       )
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist team selection so next visit pre-selects the last used team.
+  useEffect(() => {
+    writeLastTeam(selectedSpecId)
+  }, [selectedSpecId])
 
   const selectedProvider = globalModel?.provider
   // Ollama runs locally with no auth — treat as always-keyed from the

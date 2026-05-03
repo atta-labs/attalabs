@@ -6,7 +6,11 @@ import { getUserTeamModels } from '@/db/settings-queries'
 import { getDailySessionLimit } from '@/schemas'
 import { DeliberateSection } from './components/DeliberateSection'
 
-export default async function DeliberatePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+export default async function DeliberatePage({
+  searchParams
+}: {
+  searchParams: Promise<{ error?: string; team?: string }>
+}) {
   const { userId: clerkId } = await auth()
 
   await getOrCreateUser(clerkId!, '')
@@ -19,7 +23,7 @@ export default async function DeliberatePage({ searchParams }: { searchParams: P
 
   const dailyLimit = getDailySessionLimit()
   const remaining = dailyLimit - dailyCount
-  const { error } = await searchParams
+  const { error, team } = await searchParams
 
   // Provider keys live in the browser — the client reads them via useIdentity().
   // Passing [] keeps the prop shape while deferring the truth source to the browser.
@@ -33,6 +37,7 @@ export default async function DeliberatePage({ searchParams }: { searchParams: P
           configuredProviders={[]}
           initialTeamModels={teamModels}
           specs={specs}
+          initialTeamId={team}
         />
       </div>
     </CatalogProvider>

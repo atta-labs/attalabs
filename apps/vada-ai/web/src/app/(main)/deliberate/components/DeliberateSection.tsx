@@ -5,7 +5,8 @@ import { Button, Checkbox } from '@atta/ui'
 import { GitCompare, Loader2 } from 'lucide-react'
 import { IdentityBanner } from '@/components/IdentityBanner'
 import { QuestionInputArea } from './QuestionInputArea'
-import { TeamCardGrid } from './TeamCardGrid'
+import { TeamPicker } from './TeamPicker'
+import { TeamSummary } from './TeamSummary'
 import { useDeliberateForm } from './useDeliberateForm'
 
 interface DeliberateSectionProps {
@@ -15,10 +16,14 @@ interface DeliberateSectionProps {
   configuredProviders: string[]
   initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   specs: DeliberationSpec[]
+  initialTeamId?: string
 }
 
 export function DeliberateSection(props: DeliberateSectionProps) {
   const form = useDeliberateForm(props)
+
+  const selectedSpec = props.specs.find((s) => s.id === form.selectedSpecId) ?? props.specs[0]
+
   return (
     <div className='flex flex-col gap-4'>
       <IdentityBanner />
@@ -31,12 +36,8 @@ export function DeliberateSection(props: DeliberateSectionProps) {
         configuredProviders={props.configuredProviders}
         initialTeamModels={props.initialTeamModels}
       />
-      <TeamCardGrid
-        specs={props.specs}
-        selectedSpecId={form.selectedSpecId}
-        onSelectSpec={form.setSelectedSpecId}
-        globalModel={form.globalModel}
-      />
+      <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
+      {selectedSpec && <TeamSummary spec={selectedSpec} />}
       <div className='flex items-center justify-between gap-3'>
         <label
           htmlFor='vada-benchmark-checkbox'
