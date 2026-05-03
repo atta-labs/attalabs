@@ -176,7 +176,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       )
     }
 
-    let lastEntryCount = initial.transcriptEntries.length
+    const seenIds = new Set<string>(initial.transcriptEntries.map((e) => e.id))
     let lastState = initial.state
     let lastTerminal = initial.terminalState
 
@@ -227,9 +227,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           // Emit agent_completed BEFORE state_changed so the client appends the
           // message before the round indicator updates (avoids a one-frame flash
           // where the new round strip appears empty).
-          if (fresh.transcriptEntries.length > lastEntryCount) {
-            const newEntries = fresh.transcriptEntries.slice(lastEntryCount)
+          const newEntries = fresh.transcriptEntries.filter((e) => !seenIds.has(e.id))
+          if (newEntries.length > 0) {
             for (const entry of newEntries) {
+              seenIds.add(entry.id)
               emit({
                 type: 'agent_completed',
                 id: entry.id,
@@ -247,7 +248,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 })
               }
             }
-            lastEntryCount = fresh.transcriptEntries.length
           }
 
           if (fresh.state !== lastState) {
