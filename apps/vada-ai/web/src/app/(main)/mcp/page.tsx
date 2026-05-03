@@ -170,7 +170,7 @@ function InstallSteps({
         <ul className='ml-8 space-y-1 text-sm text-muted-foreground'>
           <li>
             Node.js 18+ (
-            <a href='https://nodejs.org' className='underline underline-offset-2' target='_blank' rel='noreferrer'>
+            <a href='https://nodejs.org' className='underline underline-offset-2 hover:text-accent transition-colors' target='_blank' rel='noreferrer'>
               nodejs.org
             </a>
             )
@@ -214,7 +214,7 @@ function InstallSteps({
           <p className='mt-2 text-xs text-muted-foreground'>
             Set <code className='rounded bg-muted px-1 font-mono text-xs'>VADA_USER_ID</code> to your Vāda account ID
             to see consultations in the dashboard. Find it in{' '}
-            <a href='/settings' className='underline underline-offset-2'>
+            <a href='/settings' className='underline underline-offset-2 hover:text-accent transition-colors'>
               Settings
             </a>
             .
@@ -261,9 +261,9 @@ export default function McpPage() {
             Vāda exposes deliberation as MCP tools (<code className='rounded bg-muted px-1 font-mono text-xs'>vada__consult</code>{' '}
             and <code className='rounded bg-muted px-1 font-mono text-xs'>vada__deliberate</code>). Any MCP-compatible
             client can call them. The hosted server runs at{' '}
-            <code className='rounded bg-muted px-1 font-mono text-xs'>https://vada.attalabs.dev/api/mcp</code> — no
-            local install required. Authentication via Vāda API key. Provider model calls run on your configured BYOK
-            keys.
+            <code className='rounded bg-muted px-1 font-mono text-xs'>https://vada.attalabs.dev/api/mcp</code> —{' '}
+            <span className='text-accent'>no local install required</span>. Authentication via Vāda API key. Provider model calls run on your{' '}
+            <span className='text-accent'>configured BYOK keys</span>.
           </Text>
         </div>
 
@@ -374,10 +374,11 @@ export default function McpPage() {
           </Heading>
           <Text as='p' muted className='leading-relaxed'>
             Generate a Vāda API key in{' '}
-            <a href='/settings' className='underline underline-offset-2'>
+            <a href='/settings' className='underline underline-offset-2 hover:text-accent transition-colors'>
               Settings → MCP
             </a>
-            . Paste it as the Bearer token in your client config. Treat it like a password — it gives full access to
+            . Paste it as the Bearer token in your client config.{' '}
+            <span className='text-accent'>Treat it like a password</span> — it gives full access to
             your account&apos;s deliberation tools.
           </Text>
           <div className='space-y-3'>
@@ -385,7 +386,7 @@ export default function McpPage() {
               <StepNumber n={1} />
               <Text as='p' className='text-sm'>
                 Go to{' '}
-                <a href='/settings' className='underline underline-offset-2'>
+                <a href='/settings' className='underline underline-offset-2 hover:text-accent transition-colors'>
                   Settings → MCP
                 </a>{' '}
                 and generate a new API key.
@@ -411,15 +412,16 @@ export default function McpPage() {
           </Heading>
           <Text as='p' muted className='leading-relaxed'>
             The hosted server runs deliberations on your provider keys. Configure them in{' '}
-            <a href='/settings' className='underline underline-offset-2'>
+            <a href='/settings' className='underline underline-offset-2 hover:text-accent transition-colors'>
               Settings → API Keys
             </a>
-            . Keys are encrypted at rest using server-managed keys.
+            . Keys are <span className='text-accent'>encrypted at rest</span> using server-managed keys.
           </Text>
           <Text as='p' muted className='text-sm leading-relaxed'>
-            Unlike the web app&apos;s browser-only BYOK, this is a different trust model: Vāda&apos;s server decrypts
+            Unlike the web app&apos;s browser-only BYOK, this is a{' '}
+            <span className='text-accent'>different trust model</span>: Vāda&apos;s server decrypts
             your keys to make provider calls on your behalf. See the{' '}
-            <a href='/trust' className='underline underline-offset-2'>
+            <a href='/trust' className='underline underline-offset-2 hover:text-accent transition-colors'>
               trust model
             </a>{' '}
             for more detail.
@@ -657,7 +659,7 @@ export default function McpPage() {
                 solution: (
                   <>
                     API key is invalid or has been revoked. Regenerate it in{' '}
-                    <a href='/settings' className='underline underline-offset-2'>
+                    <a href='/settings' className='underline underline-offset-2 hover:text-accent transition-colors'>
                       Settings → MCP
                     </a>
                     .
@@ -669,7 +671,7 @@ export default function McpPage() {
                 solution: (
                   <>
                     The hosted server needs a provider key to make model calls. Configure one in{' '}
-                    <a href='/settings' className='underline underline-offset-2'>
+                    <a href='/settings' className='underline underline-offset-2 hover:text-accent transition-colors'>
                       Settings → API Keys
                     </a>
                     .
