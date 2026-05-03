@@ -1,9 +1,34 @@
 ---
 name: vada-mcp-server
-description: Vāda MCP server — generic catalog-driven deliberation tools (vada__consult for single-shot reviewer-chain teams, vada__deliberate for rounds-based teams) routing to YAML team specs compiled by the engine.
+description: Vāda MCP server — two surfaces: local stdio (current) and hosted HTTP (target). Both expose vada__consult and vada__deliberate tools routed to YAML catalog specs. Load when implementing MCP tools, adding catalog specs, or building/debugging either surface.
 ---
 
 # `@vada/mcp-server` — MCP Server
+
+## Two surfaces
+
+Vāda's MCP server exists as two distinct surfaces that share the same tool surface — the same two tools (`vada__consult`, `vada__deliberate`) routing to the same YAML catalog — but differ in transport, authentication, and key management. The local stdio server is the current implementation; the hosted HTTP server is the documented target architecture, not yet built.
+
+1. **Local stdio server (current implementation — see below)**
+   - Runs on user's machine via `bun run`
+   - User-supplied env vars for provider keys
+   - Sessions log to user-configured `DATABASE_URL`
+   - Used for: local dev, internal testing, users who want full local control
+
+2. **Hosted HTTP server (target — see `apps/vada-ai/specs/mcp-architecture.md`)**
+   - Endpoint: `https://vada.attalabs.dev/api/mcp`
+   - Transport: Streamable HTTP (POST + SSE response stream) per MCP spec
+   - Auth: Vāda API key (bearer token in `Authorization` header)
+   - BYOK: provider keys encrypted at rest, decrypted per-request (server-managed KMS)
+   - Sessions log to Vāda's production DB
+   - Used for: AI assistants (Claude.ai, Cursor, etc.), clients that can't run local processes
+   - Status: target architecture documented. Implementation pending.
+
+Both surfaces expose the same two tools (`vada__consult`, `vada__deliberate`) and route to the same YAML catalog. Transport and key management differ; tool input/output shapes do not.
+
+---
+
+## Local stdio server (current implementation)
 
 ## Context
 
@@ -131,3 +156,32 @@ Current catalog: `crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline
 - Agent definitions: **atta-teams** skill (`apps/vada-ai/agents/src/`)
 - Plan compilation: **atta-engine** skill
 - LangGraph execution: **atta-adapter-langgraph** skill
+
+---
+
+## Hosted HTTP server (target)
+
+Brief summary only. Full architecture detail lives in `apps/vada-ai/specs/mcp-architecture.md` — read that file for the complete spec; do not duplicate here.
+
+**Authentication:**
+- Vāda API key passed as `Authorization: Bearer <vada_pk_...>` header
+- Key generated in Settings → MCP; stored hashed; revocable
+- Per-request validation; user identity resolved from key
+
+**Provider keys (BYOK):**
+- User configures provider keys in Settings → API Keys (Hosted MCP)
+- Encrypted at rest with server-managed envelope encryption (KMS provider TBD)
+- Decrypted only inside the request handler for the duration of the LLM call — never logged, never persisted in plaintext
+- Distinct from web app's browser-only passkey BYOK (different trust model — server CAN decrypt)
+
+**Request lifecycle (brief):**
+- Client POST → bearer token validation → provider key decryption → engine execution → SSE stream back → session log
+- Session URL format: `https://vada.attalabs.dev/s/{sessionId}`
+
+**Differences from local stdio:**
+- No env vars (auth via API key)
+- No local process (HTTP transport)
+- Keys server-managed (vs env var — different trust model)
+- Tool surface identical
+
+**For full architecture detail:** `apps/vada-ai/specs/mcp-architecture.md`
