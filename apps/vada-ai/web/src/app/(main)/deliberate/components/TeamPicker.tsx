@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@atta/ui/components/dropdown-menu'
-import { ChevronDown } from 'lucide-react'
+import { Users2, ChevronsUpDown } from 'lucide-react'
 
 function getAgentCount(spec: DeliberationSpec): number {
   if (spec.flow?.rounds) return spec.flow.rounds.agents.length
@@ -40,36 +40,42 @@ export function TeamPicker({ specs, value, onChange }: TeamPickerProps) {
   const selected = specs.find((s) => s.id === value) ?? specs[0]
 
   return (
-    <div className='flex items-center gap-2'>
-      <span className='font-mono text-xs uppercase tracking-widest text-muted-foreground shrink-0'>Team</span>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant='outline' size='sm' className='gap-2 font-sans text-sm min-w-[200px] justify-between'>
-            <span className='truncate'>{selected?.displayName ?? 'Select team'}</span>
-            <ChevronDown className='size-3.5 shrink-0' />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align='start' className='w-[280px]'>
-          {specs.map((spec) => {
-            const count = getAgentCount(spec)
-            const shape = getShapeLabel(spec)
-            return (
-              <DropdownMenuItem
-                key={spec.id}
-                onSelect={() => onChange(spec.id)}
-                className={spec.id === value ? 'bg-accent' : ''}
-              >
-                <div className='flex flex-col gap-0.5 py-0.5'>
-                  <span className='text-sm font-sans'>{spec.displayName}</span>
-                  <span className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
-                    {count} agents · {shape}
-                  </span>
-                </div>
-              </DropdownMenuItem>
-            )
-          })}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant='ghost'
+          size='sm'
+          className='h-auto gap-1.5 p-0 text-foreground/70 hover:bg-transparent hover:text-foreground'
+        >
+          <span className='flex items-center gap-1.5'>
+            <Users2 className='h-3 w-3' />
+            <span className='font-mono text-[10px] uppercase tracking-widest'>
+              {selected?.displayName ?? 'Select team'}
+            </span>
+          </span>
+          <ChevronsUpDown className='h-3 w-3' />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='start' className='w-[280px]'>
+        {specs.map((spec) => {
+          const count = getAgentCount(spec)
+          const shape = getShapeLabel(spec)
+          return (
+            <DropdownMenuItem
+              key={spec.id}
+              onSelect={() => onChange(spec.id)}
+              className={spec.id === value ? 'bg-accent' : ''}
+            >
+              <div className='flex flex-col gap-0.5 py-0.5'>
+                <span className='text-sm font-sans'>{spec.displayName}</span>
+                <span className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
+                  {count} agents · {shape}
+                </span>
+              </div>
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

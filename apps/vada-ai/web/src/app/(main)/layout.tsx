@@ -42,7 +42,7 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
         <StickyHeaderTopBar isBlurred={true} className='z-40 border-border/40'>
           <UserTopBar logo={logo} />
         </StickyHeaderTopBar>
-        <div className='h-dvh overflow-y-auto'>{children}</div>
+        {children}
       </ToastProvider>
     </UserPreferencesProvider>
   )
