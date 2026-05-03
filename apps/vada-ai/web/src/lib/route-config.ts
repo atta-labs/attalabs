@@ -12,7 +12,8 @@ export interface NavLink {
 /** Routes visible to all users */
 export const PUBLIC_ROUTES: NavLink[] = [
   { href: '/trust', label: 'Trust · Vāda', exact: false },
-  { href: '/teams', label: 'Teams', exact: false }
+  { href: '/teams', label: 'Teams', exact: false },
+  { href: '/mcp', label: 'MCP', exact: false }
 ]
 
 /** Routes visible only to authenticated users */
