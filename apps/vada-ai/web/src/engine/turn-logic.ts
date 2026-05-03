@@ -57,6 +57,23 @@ export async function persistTurn(sessionId: string, payload: TurnPayload): Prom
   }
 
   switch (payload.phase) {
+    case 'reviewer': {
+      // Brokered reviewer turn — insert transcript entry, no session state advancement.
+      // Reviewers run sequentially inside a brokered plan; their outputs appear in
+      // the live SSE feed via the agent_completed event.
+      const round = payload.round ?? 1
+      const agent = payload.agent ?? 'unknown'
+      const entriesInRound = session.transcriptEntries.filter((e) => e.round === round).length
+      await insertTranscriptEntry({
+        sessionId,
+        round,
+        agent,
+        content: payload.content,
+        orderInRound: entriesInRound
+      })
+      return
+    }
+
     case 'run_agent': {
       const round = payload.round ?? 0
       const agent = payload.agent ?? 'unknown'

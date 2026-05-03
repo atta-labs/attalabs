@@ -30,6 +30,7 @@ export function loadSpec(yamlContent: string): DeliberationSpec {
     description: a.description,
     systemPrompt: a.system_prompt,
     model: a.model,
+    editable: a.editable,
     maxTokens: a.max_tokens,
     tools: a.tools,
     outputFormat: a.output_format,

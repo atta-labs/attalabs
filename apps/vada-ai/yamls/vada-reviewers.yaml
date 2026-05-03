@@ -12,6 +12,7 @@ agents:
   - name: Gemini
     description: "Gemini reviewer — critical external perspective via Google's Gemini model"
     model: gemini-2.5-pro
+    editable: true
     classifier:
       mode: skip
     system_prompt: |
@@ -62,6 +63,7 @@ agents:
   - name: GPT
     description: "GPT reviewer — critical external perspective via OpenAI's GPT model"
     model: gpt-4o
+    editable: true
     classifier:
       mode: skip
     system_prompt: |
@@ -112,6 +114,7 @@ agents:
   - name: Grok
     description: "Grok reviewer — critical external perspective via xAI's Grok model"
     model: grok-3
+    editable: true
     classifier:
       mode: skip
     system_prompt: |

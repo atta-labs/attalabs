@@ -4,6 +4,8 @@ import type { DeliberationSpec } from '@atta/engine'
 import { useIdentity } from '@atta/identity/react'
 import { useToastContext } from '@atta/ui'
 import type { FaceStyle } from '@/components/agents'
+import type { ReviewerConfig } from '@/lib/reviewer-models'
+import { getReviewerConfig, setReviewerConfig, validateKeysForConfig } from '@/lib/reviewer-models'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUserPreferences } from '@/lib/user-preferences-context'
@@ -77,6 +79,9 @@ export interface DeliberateFormState {
   setBenchmarkEnabled: (v: boolean) => void
   handleStart: () => Promise<void>
   faceStyle: FaceStyle
+  showReviewerModal: boolean
+  handleModalSave: (config: ReviewerConfig) => void
+  closeReviewerModal: () => void
 }
 
 export function useDeliberateForm({
@@ -101,10 +106,15 @@ export function useDeliberateForm({
   const [globalModel, setGlobalModel] = useState<ModelSelection | null>(null)
   const [loading, setLoading] = useState(false)
   const [benchmarkEnabled, setBenchmarkEnabled] = useState(true)
+  const [showReviewerModal, setShowReviewerModal] = useState(false)
   const router = useRouter()
   const { errorToast } = useToastContext()
   const { faceStyle } = useUserPreferences()
   const identity = useIdentity()
+
+  // Stable ref for selectedSpecId — used by modal save callback
+  const selectedSpecIdRef = useRef(selectedSpecId)
+  selectedSpecIdRef.current = selectedSpecId
 
   useEffect(() => {
     if (initialError) errorToast('Could not start deliberation', initialError)
@@ -146,14 +156,9 @@ export function useDeliberateForm({
 
   const canStart = !!question.trim() && remainingToday > 0 && !loading && hasKeyForSelected
 
-  // Ref-pattern for a truly stable handleStart reference. If we used a plain
-  // useCallback with [question, benchmarkEnabled, ...] deps, the ref would
-  // change on every keystroke and defeat the memo on TeamCardGrid, causing
-  // the agent spheres to flicker on input. The ref-indirection keeps the
-  // exposed callback's identity stable across renders while always calling
-  // the latest closure (which sees fresh state).
-  const handleStartImplRef = useRef<() => Promise<void>>(() => Promise.resolve())
-  handleStartImplRef.current = async () => {
+  // Core dispatch — skips the reviewer config gate (used post-modal-save).
+  const dispatchRef = useRef<() => Promise<void>>(() => Promise.resolve())
+  dispatchRef.current = async () => {
     if (!canStart) return
     setLoading(true)
 
@@ -217,7 +222,41 @@ export function useDeliberateForm({
 
     router.push(`/deliberation/${session_id}`)
   }
+
+  // Ref-pattern for a truly stable handleStart reference. If we used a plain
+  // useCallback with [question, benchmarkEnabled, ...] deps, the ref would
+  // change on every keystroke and defeat the memo on TeamCardGrid, causing
+  // the agent spheres to flicker on input. The ref-indirection keeps the
+  // exposed callback's identity stable across renders while always calling
+  // the latest closure (which sees fresh state).
+  const handleStartImplRef = useRef<() => Promise<void>>(() => Promise.resolve())
+  handleStartImplRef.current = async () => {
+    if (!canStart) return
+    // For specs with editable reviewer agents, gate on a valid stored config.
+    // If the config is missing or stale keys, show the modal instead of dispatching.
+    const spec = specs.find((s) => s.id === selectedSpecId)
+    if (spec) {
+      const editableAgents = spec.agents.filter((a) => a.editable)
+      if (editableAgents.length > 0) {
+        const config = getReviewerConfig(selectedSpecId)
+        const keyMap = identity.state.keys as Record<string, string>
+        if (!config || !validateKeysForConfig(config, keyMap)) {
+          setShowReviewerModal(true)
+          return
+        }
+      }
+    }
+    await dispatchRef.current()
+  }
   const handleStart = useCallback(() => handleStartImplRef.current(), [])
+
+  const handleModalSave = useCallback((config: ReviewerConfig) => {
+    setReviewerConfig(selectedSpecIdRef.current, config)
+    setShowReviewerModal(false)
+    void dispatchRef.current()
+  }, [])
+
+  const closeReviewerModal = useCallback(() => setShowReviewerModal(false), [])
 
   return {
     question,
@@ -233,6 +272,9 @@ export function useDeliberateForm({
     benchmarkEnabled,
     setBenchmarkEnabled,
     handleStart,
-    faceStyle
+    faceStyle,
+    showReviewerModal,
+    handleModalSave,
+    closeReviewerModal
   }
 }

@@ -2,8 +2,10 @@
 
 import type { DeliberationSpec, SpecAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
+import { getReviewerConfig } from '@/lib/reviewer-models'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowRight } from 'lucide-react'
+import { useState } from 'react'
 
 interface DisplayAgent {
   name: string
@@ -61,6 +63,8 @@ export function TeamSummary({ spec }: TeamSummaryProps) {
   const count = getAgentCount(spec)
   const shapeLabel = getShapeLabel(spec)
   const defaultModel = spec.defaults.model
+  // Read once on mount — reflects whatever the user configured in the modal
+  const [userConfig] = useState(() => getReviewerConfig(spec.id))
 
   const spheres = (
     <div className='flex gap-6 overflow-x-auto pb-2'>
@@ -70,7 +74,7 @@ export function TeamSummary({ spec }: TeamSummaryProps) {
           id={`summary-${spec.id}-${a.name}`}
           name={a.name}
           role={a.role}
-          model={a.role ? undefined : (a.model ?? defaultModel)}
+          model={a.role ? undefined : (userConfig?.[a.name] ?? a.model ?? defaultModel)}
           state='speaking'
           size='md'
           visible

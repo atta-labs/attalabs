@@ -44,7 +44,7 @@ export interface DoneCommand {
 
 export type NextCommand = RunAgentCommand | RunConclusionCommand | StateChangeCommand | TerminalCommand | DoneCommand
 
-export type TurnPhase = 'run_agent' | ConclusionPhase
+export type TurnPhase = 'run_agent' | 'reviewer' | ConclusionPhase
 
 export interface TurnPayload {
   turnId: string

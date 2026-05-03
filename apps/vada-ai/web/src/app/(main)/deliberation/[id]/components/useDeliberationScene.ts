@@ -17,6 +17,7 @@ interface UseDeliberationSceneProps {
   initialTerminalState: string | null
   defaultProvider: string | null
   teamName?: string
+  specId?: string
 }
 
 export function useDeliberationScene({
@@ -28,7 +29,8 @@ export function useDeliberationScene({
   initialState,
   initialTerminalState,
   defaultProvider,
-  teamName = 'Deliberation'
+  teamName = 'Deliberation',
+  specId
 }: UseDeliberationSceneProps) {
   const { messages, streamingMessage, loadingMessage, streamError, currentState, terminalState, conclusion } =
     useDeliberation(
@@ -38,7 +40,8 @@ export function useDeliberationScene({
       initialConclusion,
       initialState,
       initialTerminalState,
-      defaultProvider
+      defaultProvider,
+      specId
     )
 
   const isLiveSession = currentState !== 'TERMINAL'

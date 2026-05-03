@@ -5,6 +5,7 @@ import { Button, Checkbox } from '@atta/ui'
 import { GitCompare, Loader2 } from 'lucide-react'
 import { IdentityBanner } from '@/components/IdentityBanner'
 import { QuestionInputArea } from './QuestionInputArea'
+import { ReviewerConfigModal } from './ReviewerConfigModal'
 import { TeamSummary } from './TeamSummary'
 import { useDeliberateForm } from './useDeliberateForm'
 
@@ -56,6 +57,10 @@ export function DeliberateSection(props: DeliberateSectionProps) {
           {form.loading ? 'STARTING…' : form.needsUnlock ? 'UNLOCK & DELIBERATE' : 'DELIBERATE'}
         </Button>
       </div>
+
+      {form.showReviewerModal && selectedSpec && (
+        <ReviewerConfigModal spec={selectedSpec} onSave={form.handleModalSave} onClose={form.closeReviewerModal} />
+      )}
     </div>
   )
 }

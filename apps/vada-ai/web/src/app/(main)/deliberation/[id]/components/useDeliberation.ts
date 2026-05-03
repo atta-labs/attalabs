@@ -10,6 +10,7 @@ import { useIdentity } from '@atta/identity/react'
 import type { RouteProvider } from '@atta/models'
 import { useEffect, useRef, useState } from 'react'
 import { getAgentConfigByName } from '@/schemas'
+import { getReviewerConfig } from '@/lib/reviewer-models'
 
 // ── Exported types (unchanged from pull-loop era API) ─────────────────────────
 
@@ -77,7 +78,8 @@ export function useDeliberation(
   initialConclusion: Record<string, unknown> | null = null,
   initialState = 'PENDING',
   initialTerminalState: string | null = null,
-  defaultProvider: string | null = null
+  defaultProvider: string | null = null,
+  specId?: string
 ) {
   const identity = useIdentity()
   const identityRef = useRef(identity)
@@ -157,12 +159,26 @@ export function useDeliberation(
         }
       }
 
+      // Collect all in-memory provider keys. Only send keys that are present.
+      const allKeys = id.state.keys as Record<string, string>
+      const providerKeys: Record<string, string> = {}
+      for (const [vendor, key] of Object.entries(allKeys)) {
+        if (key) providerKeys[vendor] = key
+      }
+
+      // Read per-reviewer model config from localStorage (if this spec has editable agents).
+      const reviewerConfig = specId ? getReviewerConfig(specId) : null
+
       let res: Response
       try {
         res = await fetch(`/api/deliberation/${sessionId}/workflow/run?stream=true`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey }),
+          body: JSON.stringify({
+            apiKey,
+            ...(Object.keys(providerKeys).length > 0 ? { providerKeys } : {}),
+            ...(reviewerConfig ? { reviewerConfig } : {})
+          }),
           signal: abort.signal
         })
         if (cancelled) return

@@ -94,6 +94,7 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
       initialTerminalState={session.terminalState ?? null}
       benchmark={benchmarkClient}
       teamName={teamName}
+      specId={session.specId ?? undefined}
     />
   )
 }
