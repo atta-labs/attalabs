@@ -22,7 +22,7 @@ export function HomeHero() {
             <Heading level={1} className='text-6xl text-foreground font-serif'>
               Vāda
             </Heading>
-            <Text as='small' className='font-mono uppercase tracking-widest text-muted-foreground'>
+            <Text className='text-xl font-mono uppercase tracking-widest text-muted-foreground'>
               Deliberation Teams
             </Text>
           </div>
