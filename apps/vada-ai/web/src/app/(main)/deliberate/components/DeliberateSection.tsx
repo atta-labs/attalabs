@@ -5,7 +5,6 @@ import { Button, Checkbox } from '@atta/ui'
 import { GitCompare, Loader2 } from 'lucide-react'
 import { IdentityBanner } from '@/components/IdentityBanner'
 import { QuestionInputArea } from './QuestionInputArea'
-import { TeamPicker } from './TeamPicker'
 import { TeamSummary } from './TeamSummary'
 import { useDeliberateForm } from './useDeliberateForm'
 
@@ -31,12 +30,13 @@ export function DeliberateSection(props: DeliberateSectionProps) {
         question={form.question}
         onQuestionChange={form.setQuestion}
         selectedSpecId={form.selectedSpecId}
+        onTeamChange={form.setSelectedSpecId}
+        specs={props.specs}
         globalModel={form.globalModel}
         onModelChange={form.setGlobalModel}
         configuredProviders={props.configuredProviders}
         initialTeamModels={props.initialTeamModels}
       />
-      <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
       {selectedSpec && <TeamSummary spec={selectedSpec} />}
       <div className='flex items-center justify-between gap-3'>
         <label

@@ -62,63 +62,24 @@ export function TeamSummary({ spec }: TeamSummaryProps) {
   const shapeLabel = getShapeLabel(spec)
   const defaultModel = spec.defaults.model
 
-  // Compact sphere grid — use 'sm' size (~60% of 'lg')
-  let spheres: React.ReactNode
-  if (agents.length <= 2) {
-    spheres = (
-      <div className='flex justify-around items-center py-2'>
-        {agents.map((a) => (
-          <VadaAgent
-            key={a.name}
-            id={`summary-${spec.id}-${a.name}`}
-            name={a.name}
-            role={a.role}
-            model={a.role ? undefined : (a.model ?? defaultModel)}
-            state='speaking'
-            size='sm'
-            visible
-            label={a.role ? undefined : 'REVIEWER'}
-          />
-        ))}
-      </div>
-    )
-  } else if (agents.length <= 4) {
-    spheres = (
-      <div className='grid grid-cols-4 gap-3 justify-items-center py-2'>
-        {agents.map((a) => (
-          <VadaAgent
-            key={a.name}
-            id={`summary-${spec.id}-${a.name}`}
-            name={a.name}
-            role={a.role}
-            model={a.role ? undefined : (a.model ?? defaultModel)}
-            state='speaking'
-            size='sm'
-            visible
-            label={a.role ? undefined : 'REVIEWER'}
-          />
-        ))}
-      </div>
-    )
-  } else {
-    spheres = (
-      <div className='grid grid-cols-6 gap-2 justify-items-center py-2'>
-        {agents.map((a) => (
-          <VadaAgent
-            key={a.name}
-            id={`summary-${spec.id}-${a.name}`}
-            name={a.name}
-            role={a.role}
-            model={a.role ? undefined : (a.model ?? defaultModel)}
-            state='speaking'
-            size='xs'
-            visible
-            label={a.role ? undefined : 'REVIEWER'}
-          />
-        ))}
-      </div>
-    )
-  }
+  const spheres = (
+    <div className='flex gap-6 overflow-x-auto pb-2'>
+      {agents.map((a) => (
+        <VadaAgent
+          key={a.name}
+          id={`summary-${spec.id}-${a.name}`}
+          name={a.name}
+          role={a.role}
+          model={a.role ? undefined : (a.model ?? defaultModel)}
+          state='speaking'
+          size='md'
+          visible
+          label={a.role ? undefined : 'REVIEWER'}
+          className='shrink-0'
+        />
+      ))}
+    </div>
+  )
 
   return (
     <div className='rounded-lg border border-border/40 bg-card p-6 space-y-4'>

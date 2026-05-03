@@ -1,12 +1,16 @@
 'use client'
 
+import type { DeliberationSpec } from '@atta/engine'
 import { Textarea } from '@atta/ui'
 import { GlobalModelSelector, type ModelSelection } from './GlobalModelSelector'
+import { TeamPicker } from './TeamPicker'
 
 interface QuestionInputAreaProps {
   question: string
   onQuestionChange: (q: string) => void
   selectedSpecId: string
+  onTeamChange: (id: string) => void
+  specs: DeliberationSpec[]
   globalModel: ModelSelection | null
   onModelChange: (m: ModelSelection | null) => void
   configuredProviders: string[]
@@ -17,6 +21,8 @@ export function QuestionInputArea({
   question,
   onQuestionChange,
   selectedSpecId,
+  onTeamChange,
+  specs,
   globalModel,
   onModelChange,
   configuredProviders,
@@ -25,7 +31,7 @@ export function QuestionInputArea({
   return (
     <div className='relative'>
       <Textarea
-        textareaClassName='text-lg text-left leading-tight placeholder:text-foreground/50 resize-none'
+        textareaClassName='text-lg text-left leading-tight placeholder:text-foreground/50 resize-none pb-10'
         className='w-full'
         placeholder='What decision are you wrestling with?'
         value={question}
@@ -33,6 +39,9 @@ export function QuestionInputArea({
         rows={3}
         size='default'
       />
+      <div className='absolute bottom-2 left-3'>
+        <TeamPicker specs={specs} value={selectedSpecId} onChange={onTeamChange} />
+      </div>
       <div className='absolute bottom-2 right-3'>
         <GlobalModelSelector
           value={globalModel}
