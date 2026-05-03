@@ -7,6 +7,7 @@ const SpecAgentSchema = z.object({
   description: z.string().default(''),
   system_prompt: z.string().min(1),
   model: z.string().optional(),
+  editable: z.boolean().optional(),
   max_tokens: z.number().optional(),
   tools: z.array(z.string()).optional(),
   output_format: z.enum(['text', 'structured']).optional(),

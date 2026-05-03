@@ -12,6 +12,7 @@ export interface SpecAgent {
   description: string
   systemPrompt: string
   model?: string
+  editable?: boolean
   maxTokens?: number
   tools?: string[]
   outputFormat?: 'text' | 'structured'

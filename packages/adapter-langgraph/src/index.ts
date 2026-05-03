@@ -5,7 +5,7 @@
  */
 
 export { LangGraphAdapter } from './adapter'
-export type { LangGraphAdapterConfig } from './adapter'
+export type { LangGraphAdapterConfig, ReviewerConfig } from './adapter'
 export { buildStateGraph } from './graph-builder'
 export type { NodeExecutor, NodeExecutionContext } from './graph-builder'
 export { createDefaultLlmCall, createMultiVendorLlmCall } from './llm'

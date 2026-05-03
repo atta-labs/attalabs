@@ -10,8 +10,12 @@ import type {
   StateCondition
 } from '@atta/engine'
 import { buildStateGraph } from './graph-builder'
-import { createDefaultLlmCall } from './llm'
+import { createDefaultLlmCall, createMultiVendorLlmCall } from './llm'
+import type { ProviderKeys } from './llm'
 import { createNodeExecutor } from './node-executor'
+
+/** agentName → model string overrides applied to the Plan before execution. */
+export type ReviewerConfig = Record<string, string>
 
 /**
  * LangGraph-based implementation of the Vāda Adapter interface.
@@ -156,8 +160,17 @@ export class LangGraphAdapter implements Adapter {
    * in subsequent tasks.
    */
   private async runExecution(state: ExecutionState, hooks: ExecutionHooks, params: ExecuteParams): Promise<Conclusion> {
-    // Resolve LLM call: user override > default
-    const llmCall = params.llmCall ?? createDefaultLlmCall(this.config.apiKey)
+    // Resolve LLM call: user override > multi-vendor keys > single Anthropic key
+    const llmCall =
+      params.llmCall ??
+      (this.config.providerKeys
+        ? createMultiVendorLlmCall(this.config.providerKeys)
+        : createDefaultLlmCall(this.config.apiKey))
+
+    // Apply per-agent model overrides from reviewerConfig before execution.
+    // Walk the plan's agents and swap the model for any agent named in the config.
+    // This is done in the adapter (not the engine) to keep the engine pure.
+    const plan = applyReviewerConfig(state.plan, this.config.reviewerConfig)
 
     // Create node executor bound to the LLM function and lifecycle hooks
     const executor = createNodeExecutor(llmCall, hooks)
@@ -165,9 +178,10 @@ export class LangGraphAdapter implements Adapter {
     // Build the LangGraph StateGraph from the Plan.
     // Passing apiKey enables the cognitive router (classifier nodes injected before
     // each tool-enabled agent node).
-    const graph = buildStateGraph(state.plan, executor, this.config.apiKey)
+    const graph = buildStateGraph(plan, executor, this.config.apiKey)
 
-    // Initial state for the graph run
+    // Initial state for the graph run (use the plan-with-overrides)
+    state.plan = plan
     const initialState = {
       question: state.question,
       customVars: state.customVars,
@@ -483,13 +497,44 @@ export class LangGraphAdapter implements Adapter {
 }
 
 /**
+ * Apply per-agent model overrides from reviewerConfig to a Plan.
+ * Returns a shallow copy with the agents map updated; the original plan is not mutated.
+ */
+function applyReviewerConfig(plan: Plan, reviewerConfig: ReviewerConfig | undefined): Plan {
+  if (!reviewerConfig || Object.keys(reviewerConfig).length === 0) return plan
+
+  const updatedAgents = { ...plan.agents }
+  for (const [agentName, model] of Object.entries(reviewerConfig)) {
+    if (updatedAgents[agentName]) {
+      updatedAgents[agentName] = { ...updatedAgents[agentName]!, model }
+    }
+  }
+  return { ...plan, agents: updatedAgents }
+}
+
+/**
  * Configuration for LangGraphAdapter instances.
  */
 export interface LangGraphAdapterConfig {
   /**
    * Anthropic API key. Defaults to process.env.ANTHROPIC_API_KEY.
+   * Used as the Anthropic key when providerKeys is not supplied.
    */
   apiKey?: string
+
+  /**
+   * Per-vendor API keys for multi-vendor routing.
+   * When set, takes precedence over apiKey for all providers.
+   */
+  providerKeys?: ProviderKeys
+
+  /**
+   * Per-agent model overrides applied to the Plan before execution.
+   * Keys are agent names; values are model ID strings.
+   * Used by the Reviewers teams to let users configure which model
+   * fills each reviewer slot.
+   */
+  reviewerConfig?: ReviewerConfig
 
   /**
    * Default timeout for executions (milliseconds). Can be overridden

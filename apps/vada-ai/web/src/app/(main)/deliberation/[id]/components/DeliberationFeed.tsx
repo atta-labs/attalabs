@@ -34,6 +34,7 @@ interface DeliberationFeedProps {
   initialTerminalState?: string | null
   benchmark?: BenchmarkClientState | null
   teamName?: string
+  specId?: string
 }
 
 export function DeliberationFeed(props: DeliberationFeedProps) {
@@ -57,7 +58,8 @@ function DeliberationScene({
   initialState = 'PENDING',
   initialTerminalState = null,
   benchmark = null,
-  teamName = 'Deliberation'
+  teamName = 'Deliberation',
+  specId
 }: DeliberationFeedProps) {
   const s = useDeliberationScene({
     sessionId,
@@ -68,7 +70,8 @@ function DeliberationScene({
     initialState,
     initialTerminalState,
     defaultProvider: defaultProvider ?? null,
-    teamName
+    teamName,
+    specId
   })
 
   // Group messages by round once, keyed on the messages array reference.
