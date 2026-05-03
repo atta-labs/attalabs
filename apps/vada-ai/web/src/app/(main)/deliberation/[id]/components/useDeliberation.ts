@@ -228,18 +228,21 @@ export function useDeliberation(
               const id = event.id as string
               const config = getAgentConfigByName(agent)
               const { text, replyTarget } = parseContent(content, agent)
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id,
-                  agent,
-                  agentRole: config.role,
-                  round,
-                  content: text,
-                  state: 'complete' as const,
-                  replyTarget
-                }
-              ])
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === id)) return prev
+                return [
+                  ...prev,
+                  {
+                    id,
+                    agent,
+                    agentRole: config.role,
+                    round,
+                    content: text,
+                    state: 'complete' as const,
+                    replyTarget
+                  }
+                ]
+              })
               setLoadingMessage(null)
               continue
             }
