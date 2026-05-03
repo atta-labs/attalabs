@@ -1,41 +1,53 @@
 # Atta Naming Decision
 
-**Date:** April 26, 2026
-**Status:** Locked. Domain bought.
+**Date:** April 26, 2026 (original) — May 3, 2026 (lab vs product domain distinction added)
+**Status:** Locked. AttaLabs domain bought. Final product domain TBD.
 
 ---
 
 ## What's locked
 
-- **Atta** = the ecosystem (parent organization, monorepo, code namespace)
-- **AttaLabs** = the public brand wrapper used only for the domain
-- **`attalabs.dev`** = the domain
-- **No product is named Atta** — Atta refers unambiguously to the ecosystem
+### Brand architecture (clarified May 3, 2026)
 
-## Products
+**Atta** = the ecosystem (parent organization, monorepo, code namespace `@atta/*`).
+
+**AttaLabs** = the *lab* where Atta builds publicly. Permanent home at `attalabs.dev`. This is where Vāda lives now, where each component ships as it's built, where research and experimentation are visible to friends and early users. AttaLabs is **not** the consumer product. It is the public-facing development surface.
+
+**The final product** = lives at its own home, separate from the lab. Target: `atta.ai` if/when the current Japanese owner releases it (possibly 2027). Fallback: `atalabs.app` or another consumer-grade domain. Decided when the consumer product is ready to ship — not before.
+
+This is a sharper distinction than earlier framings. Earlier: AttaLabs was both lab and product home. Now: AttaLabs is permanently the lab. The polished consumer product gets its own name discipline when the time comes.
+
+### Products
 
 - **Vāda** — deliberation engine (Pāli: debate/discourse)
-- **Vitakka** — personal AI thinking partner with longitudinal memory (Pāli: directed thought)
-- **Sati** — memory layer / cross-provider persistent self (Pāli: mindfulness, recollection, memory) — renamed from the previous "Atta-the-product"
-- **Herald** — pluggable MCP tool (English; signals "plugs in" per the naming rule)
+- **Vitakka** — situated cognition layer with artifacts, MCPs, focus continuity (Pāli: directed thought)
+- **Sati** — cross-focus memory (Pāli: mindfulness, recollection)
+- **Cetana** — deliberation-guided execution (Pāli: volition, intention)
+- **Herald** — pluggable MCP tool (English; signals "plugs in")
 
 Naming rule preserved: Pāli name = built by Atta. No Pāli name = it plugs in.
 
-## Domain architecture
+### Domain architecture
 
 ```
-attalabs.dev                → ecosystem hub, engine tools, engine-as-MCP
-vada.attalabs.dev           → Vāda
-vitakka.attalabs.dev        → Vitakka
-sati.attalabs.dev           → Sati
+attalabs.dev                → AttaLabs lab. Engine tools, engine-as-MCP, ecosystem hub.
+vada.attalabs.dev           → Vāda (live)
+vitakka.attalabs.dev        → Vitakka (when shipped)
+sati.attalabs.dev           → Sati (when shipped)
 account.attalabs.dev        → billing / auth / API hub
+cetana.attalabs.dev         → Cetana (when shipped)
+
+[final-product-domain]      → the composed Atta consumer product. Decided when ready.
+                              Candidates: atta.ai, atalabs.app, others.
 
 Local development:
 attalabs.test               → ecosystem hub
 *.attalabs.test             → product subdomains (reserved TLD, no HTTPS enforcement)
 ```
 
-## Authentication architecture
+The composed Atta consumer product will eventually move to its own domain. AttaLabs subdomains continue to host the *components* as research artifacts and the *lab* of ongoing work. Subdomain → final-product migration happens via 301 redirects when ready, similar to how the eventual `atta.ai` migration was originally planned.
+
+### Authentication architecture
 
 - **One Clerk application** for the entire ecosystem (named "Atta" in Clerk dashboard)
 - Cookie scoped to `.attalabs.dev` — propagates across all subdomains
@@ -43,9 +55,9 @@ attalabs.test               → ecosystem hub
 - **One shared `users` table** in `@atta/db`, keyed by `clerk_id`
 - Per-product profile rows reference `clerk_id` as foreign key
 
-This replaces the previous "each product has its own Clerk application" model documented in older versions of `skill-auth.md`.
+When the consumer product moves to its own domain, the Clerk app extends cookie scope. Single sign-in remains. The lab and product share auth.
 
-## Code namespace
+### Code namespace
 
 The code namespace **stays `@atta/*`**. Package names do not change.
 
@@ -56,44 +68,56 @@ The code namespace **stays `@atta/*`**. Package names do not change.
 - `@atta/cms`
 - etc.
 
-AttaLabs is only the public domain wrapper. The ecosystem name in code, conversation, and brand identity is Atta. There is no rename in the codebase.
+AttaLabs is the public lab URL. The consumer product gets its own URL. Neither changes the codebase. The ecosystem name in code, conversation, and brand identity is Atta.
+
+---
 
 ## Why this shape
 
-### Why "Atta" stays as the ecosystem name
+### Why Atta stays as the ecosystem name
 
-The founder has strong, sustained brand attachment to "Atta" (Pāli for "self") because the ecosystem's thesis is creating/preserving the user's self across AI providers. Reviewers across multiple rounds confirmed that founder brand love is a hard constraint, not noise to optimize against.
+The Principal has strong, sustained brand attachment to "Atta" (Pāli for "self") because the ecosystem's thesis is creating and preserving the user's self across AI providers. Reviewers across multiple rounds confirmed founder brand attachment is a hard constraint, not noise to optimize against.
 
-### Why "AttaLabs" for the domain
+### Why "AttaLabs" for the lab
 
-Bare `atta.{premium-tld}` is unavailable:
+Bare `atta.{premium-tld}` was unavailable when the domain was bought (April 2026):
 - `atta.com` — €500K, owned by a domain investor
-- `atta.ai` — owned by a Japanese individual, may free up in 2027
+- `atta.ai` — owned by a Japanese individual, may free in 2027
 - `atta.io`, `atta.net` — taken
 
-"Labs" is an administrative wrapper that places "Atta" in a corporate container without fusing it with another concept-word (unlike "AttaWise" or "AttaCore"). The Pāli root stays clean.
+"Labs" places "Atta" in a corporate container without fusing it with another concept-word. The Pāli root stays clean. And — clarified in round 4 — *Labs* is honest: the public surface of AttaLabs *is* a lab. Components ship there as they're built. Friends try them. Research happens visibly. Calling it "Labs" matches what it actually is.
 
-### Why memory product renamed to Sati
+### Why a separate domain for the final product
 
-The previous arrangement had "Atta" naming both the ecosystem and the memory-layer product. This created persistent ambiguity ("which Atta?") that surfaced in the session start protocol every time. A parent that contains itself is a category error.
+This is the clarification of May 3, 2026.
 
-Sati is the Pāli word for memory/mindfulness/recollection — a more accurate name for a memory layer than Atta was. Sati is also already in Western vocabulary (via mindfulness culture), which aids recognition without baggage for the target audience.
+The consumer product — the composed Atta with Vāda, Vitakka, Sati, Cetana working as one — is qualitatively different from "the AttaLabs lab where Vāda is live and other components are coming." A user installing the consumer product expects polish, completeness, and a coherent experience. A user visiting AttaLabs expects to see a lab — components in different states of development, transparent about what works and what doesn't.
 
-### Why subdomains, not paths
+Conflating the two confuses both audiences:
+- Lab visitors expect rough edges; the consumer product can't have them
+- Product users expect completeness; the lab can't deliver it
 
-- Each product is its own Next.js app — independent deployment
+Separating the domains separates the audiences. AttaLabs stays permanently as the lab. The consumer product gets a polished, separate home when ready.
+
+### Why memory product renamed to Sati (April 2026)
+
+The previous arrangement had "Atta" naming both the ecosystem and the memory-layer product. That created persistent ambiguity. Sati (Pāli for memory/mindfulness/recollection) is more accurate for what the product actually does. The rename freed Atta to refer unambiguously to the ecosystem.
+
+### Why subdomains for the lab, not paths
+
+- Each product is its own Next.js app with independent deployment
 - Subdomain SSO via cookie scope works cleanly with Clerk
 - `vada.attalabs.dev` reads as a product; `attalabs.dev/vada` reads as a page
-- Future migration to `atta.ai` (if/when available) is a clean 1-to-1 mapping
+- Future migration to a final-product domain is a clean 1-to-1 mapping per component (or absorbed into the consumer product)
 
-### Why `.dev`
+### Why `.dev` for AttaLabs
 
-Endorsed by all reviewers in round 4:
 - Google-run, HTTPS-required → trust signals
 - Matches "Labs" register (R&D / experimentation)
 - Strong with the current target audience (developers using Vāda via MCP)
 - No "single app" framing concern that `.app` carries
-- Migration to `atta.ai` later is TLD-independent in cost
+
+The consumer product domain may use `.app` deliberately — *it is* a single app from the user's perspective. That's the right register for the consumer product, the wrong one for the lab.
 
 ### Why no "AI" in the name
 
@@ -102,16 +126,35 @@ Endorsed by all reviewers in round 4:
 - Product names (Vāda, Vitakka, Sati) signal AI clearly without the parent doing it
 - Future-proofs the brand if scope expands
 
-## Future considerations
+---
 
-- **`atta.ai` watch:** monitor for availability in 2027. If it becomes available at a reasonable price, migrate from `attalabs.dev` → `atta.ai`. Migration is straightforward: update Clerk cookie domain, set up 301 redirects from `*.attalabs.dev` to `*.atta.ai`. The brand stays Atta either way; only the URL changes.
-- **Defensive registrations:** `attalabs.co` and `atalabs.dev` (typo defense) deferred until traffic justifies the cost.
+## The consumer product domain decision (deferred)
 
-## What changed in project docs
+When the composed Atta is ready to ship as a consumer product (estimated 2027 based on current sequencing), the domain decision activates. Candidates:
 
-- `memory_user_edits` updated April 26, 2026 to reflect new state
-- `skill-auth.md` rewritten to describe single-Clerk-app architecture
-- `skill-monorepo-structure.md` updated to reference Sati and account hub
-- Session start protocol updated: products are now Vāda, Vitakka, Sati, Herald, or general Atta ecosystem work
+**`atta.ai`** — first preference. Pure Pāli root. Watch for Japanese owner releasing in 2027 (signaled possibility, not confirmed). If available at reasonable cost, acquire and migrate.
 
-Older docs (vada-state.md, vada-product-spec.md, vada-decisions.md, etc.) are intentionally left untouched until next time they are edited; they will be brought into alignment opportunistically.
+**`atalabs.app`** — fallback. "Labs" register acknowledges the AttaLabs lineage; `.app` register fits the consumer product. Less elegant than `atta.ai` but defensible.
+
+**Other options** — `atta.io` or `atta.net` if owners ever sell, alternative spellings, or coined names. All inferior to the first two.
+
+The decision activates when the consumer product is ready, not before. Premature domain commitment is wasted optionality. AttaLabs as the lab is enough until then.
+
+### Migration plan (when activated)
+
+When the consumer product domain is chosen:
+- Clerk cookie scope extends to the new domain
+- 301 redirects from relevant `attalabs.dev` paths to the consumer product
+- AttaLabs continues to host components and lab work
+- Consumer product is the polished surface; AttaLabs is the development surface
+- Marketing tells a unified story: *AttaLabs is where it's built. [Consumer domain] is where it ships.*
+
+---
+
+## What's authoritative
+
+- **Code namespace:** `@atta/*` (immutable)
+- **Lab domain:** `attalabs.dev` (permanent)
+- **Consumer product domain:** TBD when ready (do not commit prematurely)
+- **Naming rule:** Pāli for built-by-Atta, English for plugs-in (immutable)
+- **Brand:** Atta (ecosystem), not AttaLabs (lab) and not the consumer product domain (when chosen)

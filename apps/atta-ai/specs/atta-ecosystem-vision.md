@@ -1,203 +1,269 @@
 # Atta Ecosystem — Vision
 
-**Last updated:** April 27, 2026
-**Status:** Strategic direction document. Not a build specification. The canonical ecosystem vision — supersedes older `Atta_Ecosystem.docx` marketing material and the original `atta-ecosystem-vision.md` four-layer architecture document.
+**Last updated:** May 3, 2026 (post round-4 deliberation)
+**Status:** Strategic direction document. Not a build specification. The canonical ecosystem vision.
+
+This document supersedes prior versions. It incorporates the corrections produced by four rounds of multi-agent deliberation between Principal (Dani), Critic (Claude), and four reviewer agents (Gemini, Grok, DeepSeek, ChatGPT) conducted May 3, 2026.
 
 ---
 
 ## What Atta is
 
-Atta is an ecosystem of AI products rooted in a single belief: **your intelligence — the things you think, decide, explore, and conclude across every AI system you use — should belong to you, not to any single tool.**
+Atta is an ecosystem of AI products built around a single conviction: **your thinking should compound across every AI you use, every focus you work on, and every session you have. It should not be locked inside any single provider's interface.**
 
-The name comes from the Pāli word for *self*. The products in the ecosystem carry names from the same philosophical tradition — each one describing precisely what the product does, drawn from Buddhist cognitive psychology.
+The name comes from the Pāli word for *self*. Products in the ecosystem carry names from the same Buddhist cognitive psychology tradition — each describing precisely what it does.
 
 Atta is not a product. It is the house. The products live inside it.
 
-The public domain is **`attalabs.dev`**. Each product lives at its own subdomain. The code namespace is `@atta/*`. AttaLabs is the public brand wrapper for the domain because bare `atta.{premium-tld}` is unavailable.
+### The category insight
 
----
+The strongest sentence produced across four rounds of strategic review was this:
 
-## The naming rule
+> *"Centralisation of thinking, not centralisation of work."*
 
-If a product has a Pāli name, Atta built it.
-If it does not, it plugs in.
+That sentence is the category. Atta is not a workspace (that's Notion). Atta is not an executor (that's Claude Code, Cursor, Hermes Agent). Atta is not an aggregator (that's Aymo, AiZolo, Poe). Atta is the layer where your *thinking* lives — across all the tools where your *work* happens.
 
-This rule is the system's signature. A user who learns it can predict, from any tool name, whether it's part of the core ecosystem or an integration. The rule applies to all current and future products.
+Think here. Work anywhere.
+
+### The two-layer brand architecture
+
+- **Atta** = the ecosystem (parent organization, monorepo, code namespace `@atta/*`)
+- **AttaLabs** = the lab where Atta builds publicly. Permanent home at `attalabs.dev`. This is where Vāda lives now, where Vitakka and other components ship as they're released, where friends try things, where research and experimentation happen.
+- **The final product** = lives at its own home (`atta.ai` if available, or `atalabs.app`, or another consumer-grade domain). Separate from the lab.
+
+This is a sharper distinction than earlier framings. AttaLabs is not the product. AttaLabs is the *lab* that ships components publicly. The polished consumer product gets its own home, with its own name discipline.
+
+### The naming rule
+
+Pāli name = built by Atta.
+No Pāli name = it plugs in.
+
+Herald is the example: English name, plugs in via MCP, not part of the core ecosystem.
 
 ---
 
 ## The current product set
 
-Four core products. One pluggable tool. Each is independent — stands alone, has its own domain, has its own users — but built to compose with the others through the shared identity layer (Sati) and the shared engine (Vāda when deliberation is needed).
+Four core products. One pluggable tool. Each is independent — but built to compose.
 
-### Vāda — Deliberation
+The composition is the moat. **Coherent longitudinal cognition** — deliberation, memory, focus, provenance, synthesis reinforcing each other over time — is what no single product alone provides. Atomic features are copyable. Cognition that compounds across weeks and months is not.
+
+### Vāda — Episodic Cognition
 
 **Pāli: debate, discourse.**
-**Subdomain: `vada.attalabs.dev`.**
-**Status: V1 in active development. Phase 7.3 complete.**
+**Status: V1 in active development. Multi-vendor adapter shipped. Vāda Reviewers v1 merged May 1.**
+**Public surface: `vada.attalabs.dev`.**
 
-Vāda is a YAML-driven deliberation runtime. The engine executes deliberation configurations expressed entirely as YAML files. Other applications (Claude Desktop, Cursor, custom apps) invoke Vāda via MCP by passing a YAML and a question; the engine runs the YAML and returns the result.
+Vāda is the deliberation primitive. Bring a question, get structured adversarial debate from multiple agents, receive a typed conclusion (recommendation, key_condition, unresolved_points, participants).
 
-Modes (Crucible, Sparring, Brokered, baselines) are not features — they are YAML configurations. The engine is mode-agnostic.
+Vāda alone is not a product for end users. It is an engine. Its public surface today is the MCP server — Claude Desktop, Cursor, and any MCP-compatible host can call Vāda via `vada__consult` with a YAML team specification.
 
-**The product Vāda exposes:** structured deliberation as a tool. Bring a question, select a deliberation configuration, watch agents work through it in structured rounds, receive a typed Conclusion (recommendation, key_condition, unresolved_points, participants).
+**Vāda is replicable as a primitive.** Multi-agent debate is afternoon work with LangGraph. The defensible part is everything around it: posture discipline, synthesis protocols, typed conclusions, multi-vendor routing, BYOK encryption, the YAML catalog. None of those are unique. The combination, calibrated through real use, is.
 
-Conclusions are stateful, versioned, and auditable.
-
-### Vitakka — Focus
+### Vitakka — Situated Cognition
 
 **Pāli: directed thought, applied thought.**
-**Subdomain: `vitakka.attalabs.dev`.**
-**Status: V2 direction. Concept locked, not actively in development.**
+**Status: V2 direction. Concept clarified May 3 — substantially larger and more important than previously framed.**
+**Public surface: `vitakka.attalabs.dev` (when built).**
 
-Vitakka is the **focus layer**. A session starts with an intent (an idea, a project, a topic of inquiry) and builds a conversation toward a conclusion.
+Vitakka is *not* "Vāda with a chat surface." This was the central correction of round 4.
 
-Within a Vitakka focus, the user can:
-- Talk to any model at any time (Claude, Gemini, ChatGPT, Grok, local models via Ollama)
-- Call Vāda for deep deliberation on specific sub-questions with any team configuration
-- Call connected tools (via MCP) without leaving the conversation
-- Accumulate artifacts (documents, code, decisions) as the focus progresses
-- Close the focus with a final conclusion or artifact set
+Vitakka is the layer where deliberation becomes **contextually grounded** within a focus over time:
 
-**Contrast with existing "projects":** Claude projects, ChatGPT projects, Gemini conversations all tie you to one vendor and one model. Vitakka is **model-agnostic from the ground up**. The user owns the focus, not the platform. Moving between models within a single focus is native, not a migration.
+- **Deliberation with artifacts** — docs, code, images, data brought into the focus inform the debate
+- **Deliberation with MCP context** — the system pulls from connected tools mid-deliberation
+- **Deliberation with conversation history** — this round's debate sees the previous rounds in the same focus
+- **Deliberation compaction** — long-running focuses summarize without losing reasoning lineage
+- **Short and long-form invocations** — 30-second checks vs 30-minute investigations, system infers stakes
+- **Accumulating conclusions** — the focus accumulates typed conclusions over time, not as a transcript but as evolving cognition
 
-The core primitive is the Focus: a beginning (intent), a middle (multi-model conversation with Vāda deliberations as needed), and an end (a conclusion or artifact set).
+Each item is non-trivial software. The novel difficulty is not in inventing the primitives — those exist. The novel difficulty is **integrating them without destroying cognitive clarity**.
 
-### Sati — Memory
+**Vitakka is the category innovation.** Round 4 reviewer consensus: atomic debates are copyable. Coherent long-horizon cognition inside a focus is much harder. The center of gravity has shifted from Vāda to Vitakka.
+
+The contrast with existing products: Claude Projects, ChatGPT Projects, and Gemini Gems all tie focuses to one provider. Jenova and Halomate offer multi-model chat with memory but no structured deliberation. Notion has containers but is workspace-shaped (organize work), not cognition-shaped (compound thinking). Vitakta sits in the gap.
+
+The core primitive is the **Focus**: a beginning (intent), a middle (multi-model conversation with Vāda invoked invisibly when stakes are high, with artifacts and MCPs grounding the work), and an end (a conclusion or artifact set, persisted to Sati).
+
+### Sati — Cross-Focus Memory
 
 **Pāli: mindfulness, recollection, memory.**
-**Subdomain: `sati.attalabs.dev`.**
-**Status: V3 direction. Renamed April 26, 2026 (was previously called "Atta-the-product"). Concept locked, no code yet.**
+**Status: V3 direction. Renamed April 26, 2026 (was previously "Atta-the-product"). Concept clarified by round 4.**
+**Public surface: `sati.attalabs.dev` (when built).**
 
-Sati is the **memory substrate** that makes intelligence persist. All Vitakka focuses, Vāda Conclusions, and accepted decisions persist into Sati. Returning to any product brings back the relevant prior state — what was concluded, what was decided, what's still unresolved.
+Sati is the memory substrate that makes intelligence persist *across* focuses, *across* sessions, and *across* AI providers.
 
-What Sati remembers:
-- Closed Vitakka focuses and their artifacts
-- Cumulative Conclusions from Vāda deliberations across focuses
-- The user's evolving thinking patterns and preferences
-- Connections between focuses (themes that recur, questions that link)
+What Sati holds:
+- Closed Vitakta focuses and their accumulated conclusions
+- Cumulative typed conclusions from Vāda deliberations
+- Cross-focus retrieval (a new focus on a related theme inherits relevant prior cognition)
+- Provenance chains — which model said what, what objections existed, what changed
+- The user's evolving thinking patterns (eventual fine-tuning ground; see `atta-finetuning-research.md`)
 
-**Sati is the differentiator no single AI provider will build.** Cross-AI memory — conclusions from a Claude/Gemini debate persist across every future session, regardless of which model is active — requires neutrality. OpenAI won't build it. Anthropic won't. Google won't. The user has to own the memory layer. Sati is that layer.
+Sati's defensibility is structural. Anthropic, OpenAI, and Google will not build cross-AI memory because portable memory means portable users. Mem0, Mimir, and other infrastructure projects build the primitives, but as developer tools, not as user-facing products that compose with deliberation and focus.
 
-The original product concept used the name "Atta" for this layer. The rename to Sati happened in April 2026 because Atta was already serving as the ecosystem name — a parent that contains itself is a category error. Sati is the more accurate Pāli word for what the product actually does (memory, recollection), and the rename freed Atta to refer unambiguously to the ecosystem.
-
-Technical approach: RAG over personal corpus first, fine-tuning later if specific capability gaps emerge. See `atta-finetuning-research.md`.
+**The clarified framing of Sati's value:** memory is not "what happened." Memory is "how your thinking evolved." Sati stores the deltas of cognition, not transcripts.
 
 ### Cetana — Deliberation-Guided Execution
 
 **Pāli: volition, intention, the mental factor that initiates action.**
-**Subdomain: `cetana.attalabs.dev` (future).**
-**Status: V4+ direction. Earliest realistic build: late 2026 / early 2027.**
+**Status: V4+ direction. V0 path is a Vāda YAML team. V0.7 is MCP+CLI. V1 earliest late 2026 / early 2027.**
+**Public surface: `cetana.attalabs.dev` when V1.**
 
-Cetana is **Vāda used as a decision-making authority over a body of work.** Not a single deliberation — a loop:
+Cetana is Vāda used as planning authority over a body of work. Not a single deliberation — a loop:
 
-1. Vāda deliberates on a goal or problem
-2. Produces a structured plan (Conclusion + next-step breakdown)
+1. Vāda deliberates on a goal
+2. Produces a structured plan (typed conclusion + next-step breakdown)
 3. User approves, revises, or rejects
 4. Cetana dispatches the next step to an execution agent (Claude Code, Cursor, MCP-based agent, custom executor)
-5. Executor acts and reports results
-6. Vāda deliberates on the results — are they good? does the plan need revision? is the step complete?
+5. Executor acts and reports
+6. Vāda reviews the results adversarially
 7. Loop continues until terminal state
 
-**Key property: executor-agnostic.** The execution agent could be Claude Code, Cursor, a custom MCP-based agent, or eventually a human with Cetana providing structured guidance. Cetana doesn't care who executes — only that execution happened and can be reviewed.
+**Executor-agnostic.** Cetana doesn't care who executes — Claude Code, Cursor, Hermes Agent, a human. The value is the deliberation-driven coordination, not the execution itself. This explicitly distinguishes Cetana from autonomous-agent products that bundle planning and execution.
 
-**Why this is novel:** competitors use single-voice planners. Cetana's planner is Vāda — multi-agent adversarial deliberation. The Conclusion format is typed and validated, not loose text. Review uses the same adversarial structure on results, not simple "did it work?" checks. The executor is swappable, not bundled. Memory persists via Sati so long-running projects stay coherent across sessions.
-
-**The honest scope:** Cetana V1 is *not* an autonomous architect agent. It's a structured collaboration framework that makes human-supervised AI-assisted architecture work dramatically better than ad-hoc chat sessions. The human stays in the loop where judgment matters; coordination overhead is removed where it doesn't. See `cetana-reality-check.md` for the full capability honesty.
+**Honest scope.** Cetana V1 is not an autonomous architect. It is structured tooling that makes human-supervised AI-assisted work dramatically better than ad-hoc chat sessions. See `cetana-reality-check.md` for the full capability honesty.
 
 ### Herald — Pluggable MCP Tool
 
 **English name (signals "plugs in").**
-**Status: independently developed; not a core ecosystem product.**
+**Status: independently developed. Not a core ecosystem product.**
 
-Herald is a forensic CV-to-job-description match tool that exposes itself via MCP. It plugs into Vitakka or any MCP-compatible host. Atta does not own Herald's roadmap.
-
-Per the naming rule: Herald has no Pāli name, therefore it's not Atta-built. It plugs in.
+Forensic CV-to-job-description match tool. Plugs into Vitakta or any MCP-compatible host. Per the naming rule: no Pāli name, not Atta-built.
 
 ---
 
 ## How the products compose
 
-Each product stands alone. Used together, they create more than the sum.
-
 ```
-                 Atta Ecosystem (attalabs.dev)
-                          │
-  ┌──────────┬────────────┼────────────┬───────────────┐
-  │          │            │            │               │
- Vāda     Vitakka       Sati         Cetana         Herald
-deliberation  focus    memory   exec-guided     CV/JD match
-                       layer   deliberation     (plugs in)
-                          │
-                          ↑
-                 Memory substrate read by
-                 Vitakka, Vāda, Cetana
+              Atta Ecosystem (atta.ai or atalabs.app eventually)
+                                    │
+                                    │
+                 Lab: AttaLabs (attalabs.dev permanently)
+                                    │
+  ┌────────────┬───────────────────┼──────────────────┬──────────────┐
+  │            │                   │                  │              │
+ Vāda       Vitakka              Sati              Cetana         Herald
+episodic    situated         cross-focus       deliberation-    CV/JD match
+cognition   cognition          memory          guided execution  (plugs in)
+                                    │
+                                    ↑
+                  Memory substrate read by Vitakka, Vāda, Cetana
 ```
 
-**Vitakka calls Vāda** when a sub-question deserves adversarial synthesis.
-**Vāda's Conclusions persist into Sati** when the user accepts them.
-**Vitakka loads Sati** to bring relevant prior thinking into the current focus.
-**Cetana calls Vāda** for planning and review; **calls executors** for action; **persists state to Sati** so long-running work stays coherent.
-**Connected tools (Herald, Google Maps, image models, GitHub, anything MCP)** plug into Vitakka, Vāda, or Cetana. They are not Atta products — they extend the ecosystem.
+**Vitakka invokes Vāda** invisibly when a sub-question deserves adversarial synthesis. The user does not press a button.
 
-The shape is:
+**Vāda's typed conclusions persist into Sati** when the user accepts them.
 
-- Atta = the ecosystem; the brand; the philosophy that intelligence is yours
-- Sati = the persistent layer beneath the working products
-- Vitakka = where you think
-- Vāda = where ideas are pressure-tested
-- Cetana = where conclusions are put to work
+**Vitakka loads Sati** to bring relevant prior cognition into the current focus, automatically.
+
+**Cetana invokes Vāda** for planning and review, dispatches to executors, persists state to Sati.
+
+**Connected tools (Herald, Google Maps, image models, GitHub, anything MCP)** plug into Vitakka, Vāda, or Cetana. They extend the ecosystem; they are not Atta products.
+
+### What composition produces
+
+Atomic features are copyable. The composition is what no single competitor will replicate, because the components have to be designed together for the simplicity to hold.
+
+The user experience is simple. The product underneath is not. This is the core discipline.
 
 ---
 
 ## A user journey, told end-to-end
 
-Imagine a decision about your business.
+A founder is making a strategic decision about pricing.
 
-You open Vitakka. You say what you're thinking about. Vitakka loads everything you've concluded before on this subject from Sati — across every AI, every session, every tool. You think with Claude, with Gemini, with whatever intelligence the question deserves.
+She opens Atta. Not because she has a question — because she has a *focus* she's been thinking about for two weeks. Vitakka has the focus loaded already, with three artifacts she dropped in last session (her current pricing page, two competitors' pricing pages, a customer interview transcript). Sati surfaces a typed conclusion from a related focus three weeks ago: "Customer willingness-to-pay scaled with team size, not seat count."
 
-The question gets complex. You want adversarial pressure on a specific claim. Vitakka invokes Vāda — a structured deliberation with agents assigned to different perspectives. Three rounds. Blind critique. The conclusion that survives is one you can trust.
+She types: *"Should we move from per-seat to per-team pricing?"*
 
-During the session, you need job market data. Herald is connected; Vitakka calls it automatically. You need to check a location. Google Maps is connected. You need a visual. An image model is connected. You never leave.
+Atta does not run a debate immediately. It pulls relevant context from the artifacts, checks the prior conclusion, and decides this is a high-stakes question. Vāda invokes invisibly — three reviewers, structured adversarial deliberation, synthesizer producing a typed output. The chat surface shows: *"I'm thinking carefully about this — checking what we concluded last time and pressure-testing both directions."* Thirty seconds later, a response that's notably more nuanced than what one model would have produced. A small icon next to the response says *"3 perspectives reviewed"* — clickable to see the debate, but not necessary to see the answer.
 
-Eventually, the work moves from thinking to executing. You hand the conclusion to Cetana. Cetana plans the implementation steps via Vāda, dispatches each step to Claude Code, reviews the results adversarially, and loops until done. You stay in approval loops on each major decision.
+She refines the question. Adds an artifact. Asks Vāda to consider a new angle. The focus accumulates — not as a chat log, but as a structured set of conclusions that compound.
 
-You close the work. Vitakka proposes what you reached. You accept what's right. The conclusion is saved into Sati — available in every future session, across every AI, for as long as you need it.
+Mid-conversation she needs to send the recommendation to her co-founder. Atta delegates to Notion via MCP — the conclusion exports as a draft strategy doc. She doesn't leave Atta. She doesn't manage the integration.
 
-**Vitakka is where you think. Vāda is where ideas are pressure-tested. Sati is what remembers. Cetana is where conclusions are put to work. Herald and other connected tools extend the ecosystem.**
+She closes the focus. Sati persists what was concluded. Six months later, when she revisits pricing for a new product line, that prior focus surfaces automatically.
 
-Atta is the house that holds it all — and the belief that your intelligence is yours.
+**Vitakta is where she thinks.** **Vāda is where ideas are pressure-tested.** **Sati is what makes thinking compound.** **Cetana** (eventually) **is where conclusions become work.** **Herald and other tools** extend the ecosystem.
+
+Atta is the house that holds it all — and the conviction that the user's thinking is hers.
 
 ---
 
 ## Why this composition is defensible
 
-### Not reinventing, composing
+### What exists elsewhere
 
-What exists elsewhere:
-- Plan-and-execute agents (LangChain, AutoGen, CrewAI)
-- Multi-agent frameworks (CrewAI crews, AutoGen groups)
-- Persistent memory layers (vector stores, long-context models)
-- Project/chat organization (Claude, ChatGPT, Gemini projects)
-- Executor agents (Claude Code, Cursor)
+- Multi-agent frameworks (LangChain, AutoGen, CrewAI) — developer tools, not products
+- Multi-model aggregators (Aymo, AiZolo, Poe, TypingMind) — multi-model UX without deliberation, focus, or portable memory
+- AI memory infrastructure (Mem0, Mimir, MemPalace, MemWire, OpenMemory, Honcho) — primitives, not products
+- Multi-model workspaces (Jenova, Halomate, Mimesys) — closest to the category, missing structured deliberation and longitudinal cognition
+- Knowledge tools with AI (Notion, Heptabase, Obsidian, Roam, Tana) — workspace-shaped, not cognition-shaped
+- Provider Projects (Claude, ChatGPT, Gemini Gems) — single-provider, by design
 
-What doesn't exist as a cohesive ecosystem:
-- Multi-agent **adversarial** deliberation as a planning primitive (Vāda's posture discipline)
-- Containment-disciplined typed Conclusions (Vāda's output structure)
-- Model-agnostic focus layer with Vāda callable mid-conversation (Vitakka)
-- **Cross-AI** memory substrate owned by the user (Sati)
-- Executor-agnostic deliberation-guided execution (Cetana)
-- All four bound by a single identity and naming philosophy (Atta)
+See `atta-market-research.md` for the full landscape.
 
-The synthesis is the product. Each layer has precedents; the specific composition is new.
+### What doesn't exist as a coherent product
+
+- Multi-agent **adversarial** deliberation as a default invocation, not a feature
+- Typed conclusions with provenance as a first-class output, not prose
+- Focus containers with hard memory scoping, designed for sustained problem-solving
+- Cross-AI memory that persists across providers, owned by the user
+- Executor-agnostic deliberation-guided execution
+- All bound by a single coherent ecosystem with neutrality as a structural commitment
+
+The synthesis is the product. Each layer has precedents. The composition does not.
+
+### The structural reason providers cannot build this
+
+This argument does not rest on "providers are unwilling." It rests on **structural conflict of interest:**
+
+- Anthropic, OpenAI, Google optimize for engagement, retention, and model centrality
+- Atta optimizes for epistemic quality, portability, model pluralism, continuity independent of provider
+
+Anthropic *could* ship adversarial mode in Claude Projects. They are the most likely provider to do so — philosophically aligned, MCP is theirs, Claude is positioned as the thoughtful AI. But shipping it requires admitting their model is sometimes wrong, and structurally enabling users to work outside their ecosystem. That conflicts with their business.
+
+This is a *watch-not-worry* observation, not a threat to obsess over. Leading indicators: provider neutrality signals, persistent cognition moves in Claude Projects, invisible deliberation in Claude's main interface. Check monthly. Move on. Build.
 
 ### Defensibility timeline
 
-- **12-18 months:** the synthesis is defensible. No direct competitor.
-- **18-36 months:** frameworks catch up or adjacent products emerge. Need execution-quality moat.
-- **36+ months:** the category exists. Atta is one of several. Brand, user base, and architectural lead determine outcome.
+- **0-12 months:** clear runway. The composition is undefended.
+- **12-24 months:** smaller players (Mimesys, Jenova, a stealth team) may add adjacent features. Speed of execution matters.
+- **24+ months:** if the category proves valuable, providers may pivot. Brand, user base, and architectural lead determine outcome.
 
-Speed-to-market matters. Execution quality matters more. The products that dominate this space will be the ones that get multi-agent dynamics right, not the ones that ship first with hand-wavy deliberation.
+Speed-to-market matters. Execution quality matters more. The disciplined hide-the-work design philosophy matters most. See `atta-build-strategy.md`.
+
+---
+
+## The four-round deliberation that produced this version
+
+Between May 3, 2026, the Principal and four reviewer agents (Gemini, Grok, DeepSeek, ChatGPT) ran four rounds of adversarial review on the Atta positioning. The major corrections that shaped this document:
+
+**Round 1.** "Chat is the wrong unit of work" identified as the central insight. Wedge persona corrected to founders/strategists. Notion identified as primary competitive threat.
+
+**Round 2.** Capability matrix produced. Three columns added that previous framings missed: provenance, typed conclusions, cognitive continuity. Several cell ratings corrected. Anthropic surfaced as a more dangerous threat than treated.
+
+**Round 3.** Principal articulated the "thin thinking layer" framing. Reviewers split on whether it survived. Strong consensus that simplicity is not a moat.
+
+**Round 4.** Principal corrected: simplicity was always a UX claim, never a moat claim. Vitakta corrected from "packaging" to "the substantial middle layer that delivers situated cognition." Vāda repositioned as the primitive, not the category. The strategic center moved to Vitakta's longitudinal cognition.
+
+**The framing that survived all four rounds:**
+
+The user experience is simple. The product underneath is not. The moat is coherent longitudinal cognition. The category is centralisation of thinking, not centralisation of work. The composition is what no provider will build.
+
+---
+
+## Sequencing — what ships when
+
+See `atta-build-strategy.md` for the full sequencing logic. Summary:
+
+1. **Vāda V1** — currently in production at `vada.attalabs.dev`. MCP server. Test from Claude Desktop, Cursor, etc. Validates the deliberation primitive.
+2. **Vitakta V1** — substantial middle layer. Artifacts, MCPs, history, compaction, accumulating conclusions. Ships standalone to AttaLabs because each piece teaches something the next layer depends on.
+3. **Atta V1** — composition layer. Cross-focus memory (Sati), focus indexation, fine-tuning ground. Ships to atta.ai or atalabs.app — the consumer surface, separate from the lab.
+4. **Cetana V0/V0.7/V1** — deliberation-guided execution. Earliest realistic V1: late 2026 / early 2027.
+
+AttaLabs is the lab where each component ships publicly as it's built. The final product is the composed Atta, and it lives at its own polished home when ready.
 
 ---
 
@@ -205,84 +271,51 @@ Speed-to-market matters. Execution quality matters more. The products that domin
 
 ### One sentence
 
-*Atta is the personal AI substrate for people who want to think carefully — composable products covering deliberation, focus, memory, and deliberation-guided work.*
+> **Think here. Work anywhere.**
 
-### Per-product marketing
+Subhead options:
 
-- **Vāda:** *Think deeper on questions that matter. Multi-agent deliberation for high-stakes questions.*
-- **Vitakka:** *Focus without lock-in. A project with every model, with Vāda's brain on call.*
-- **Sati:** *Your thinking, remembered. Persistent memory across every focus, every model, every conclusion.*
-- **Cetana:** *Deliberation-guided execution. Your best thinking, applied to real work.*
+> *Atta is where your thinking compounds. One place for the decisions, drafts, and deliberations that matter — across any model, any tool, any session.*
+
+> *The private memory layer where your high-stakes decisions compound, instead of getting lost in the chat.*
+
+### Per-product framing
+
+- **Vāda:** *Structured deliberation when the answer matters.* Multi-agent adversarial review with typed conclusions.
+- **Vitakka:** *A focus where your thinking compounds.* Multi-model conversation with deliberation invoked invisibly, artifacts grounded, conclusions accumulating.
+- **Sati:** *Your thinking, remembered across every AI.* Cross-focus, cross-provider, cross-session.
+- **Cetana:** *Your best thinking, applied to real work.* Deliberation-guided execution, executor-agnostic.
 
 ### Positioning relative to existing categories
 
-- **Not competing with ChatGPT/Claude.ai** for general chat — those are for simple questions
-- **Not competing with Cursor/Claude Code** for pure execution — those are for when you know what to build
-- **Not competing with LangChain/CrewAI** for agent frameworks — those are developer tools, not end-user products
-- **Competing with the absence of a category** — careful thinkers don't have a unified tool
-- **Adjacent to** Notion, Obsidian, Roam (memory systems), but AI-native from the ground up
-
----
-
-## Sequencing — what ships when
-
-**Now (April 2026):** Vāda V1 in active development. Phase 7.3 complete; Phase 8 (synthesizer) next. Vāda is the active product; everything else is direction.
-
-**Next (mid-2026):** Vāda V1 ships. The ecosystem story is told publicly. `attalabs.dev` becomes the ecosystem hub with engine tools (YAML visualizer, cost calculator) exposed at the parent domain.
-
-**After Vāda revenue milestone:** Vitakka V2 enters active development. Builds on Vāda's deliberation primitive. Sati's RAG infrastructure begins.
-
-**Then:** Sati V1 ships as a standalone product and as the memory substrate for Vitakka and Vāda.
-
-**Late 2026 / early 2027:** Cetana V1 if validation signals emerge (see `cetana-reality-check.md`). Otherwise: held as long-horizon vision, not built speculatively.
-
-**`atta.ai` watch:** if the domain becomes available in 2027 (current owner is Japanese individual; possibly releasing then), the ecosystem migrates from `attalabs.dev` to `atta.ai`. Migration is straightforward — DNS, Clerk cookie domain, 301 redirects from `*.attalabs.dev` to `*.atta.ai`. The brand stays Atta either way; only the URL changes.
+- **Not competing with ChatGPT/Claude/Gemini** for one-shot answers. Those are for ephemeral questions.
+- **Not competing with Cursor/Claude Code/Hermes Agent** for execution. Those are for when you know what to build.
+- **Not competing with LangChain/CrewAI/AutoGen** for agent frameworks. Those are developer tools.
+- **Not competing with Notion/Obsidian/Heptabase** for workspace. Those are for organizing work.
+- **Competing with the absence of a category**: a place for thinking that compounds, structurally neutral, designed for high-stakes judgment.
 
 ---
 
 ## How to use this document
 
-### Now
-Use as the canonical ecosystem narrative. When telling the Atta story to investors, advisors, or new collaborators, this is the source. When scope creep threatens any single product, this is the "is this product's job or another's?" test.
+When the ecosystem story is being told to investors, advisors, friends, or future Claude sessions: this is the source. When scope creep threatens any single product: this is the "is this product's job or another's?" test. When competitive pressure emerges: this is the "what makes us different?" reminder.
 
-### When Vāda V1 ships
-Use to differentiate from single-product deliberation engines. Use to justify why V1 is intentionally scoped — it's part of something bigger.
-
-### When Vitakka is being specified
-Revisit to ensure Vitakka's design supports Vāda callability, Sati persistence, and eventual Cetana integration.
-
-### When Sati is being built
-Revisit to ensure Sati is positioned as the substrate the other products share, not as a feature embedded in Vitakka.
-
-### When Cetana is being specified
-Read alongside `cetana-reality-check.md`. Check the validation signals. Build only if they emerged.
-
-### As a strategic compass
-When competitive pressure emerges, this document is the "what makes us different?" reminder. When tempted to add features that blur product boundaries, return here to preserve scope discipline. When the bigger story needs to be told under uncertainty, the architecture is here.
-
----
-
-## The meta-observation
-
-The way you build the products reveals what the next product should be.
-
-Vāda was built using a manual workflow — Principal (Dani) + Critic (deliberation review) + Builder (Claude Code or similar). That workflow is itself the product Cetana will externalize. The Atta ecosystem is being built using its own architecture in a manual form, which is validation data for what to automate next.
-
-When external users arrive on Vāda, watch whether they exhibit the same patterns. If they do, the roadmap is already half-designed by observation of yourself and early users.
-
-Your own workflow is the beta test for products you haven't built yet. Document it religiously.
+When this document conflicts with what's been built or what's about to be built, this document loses. Ship the truth, then update.
 
 ---
 
 ## Related documents
 
-- `atta-naming-decision.md` — the rename of Atta-the-product to Sati and the AttaLabs domain decision (April 26, 2026)
-- `atta-current-state.md` — concrete state across products and infrastructure as of April 2026
-- `atta-roadmap.md` — phased forward plan for ecosystem-level work (auth migration, new apps, DNS, etc.)
-- `atta-finetuning-research.md` — technical research for Sati's eventual fine-tuning layer (originally written about "Attā v2" — references should be read as Sati v2 throughout)
-- `cetana-reality-check.md` — capability honesty for the Cetana product. Read before specifying Cetana V1.
-- `vada-state.md`, `vada-product-spec.md`, `vada-decisions.md` — Vāda's internal documentation
+- `atta-naming-decision.md` — the rename of Atta-the-product to Sati and the AttaLabs/atta.ai distinction
+- `atta-current-state.md` (project knowledge) — concrete state across products and infrastructure
+- `atta-plan.md` (project knowledge) — active work plan
+- `atta-build-strategy.md` — sequencing, hide-the-work discipline, first-user tests
+- `atta-market-research.md` — competitive landscape and what to watch
+- `atta-finetuning-research.md` — technical research for Sati's eventual fine-tuning layer
+- `vitakka-human.md` — the substantial middle layer described in human terms (corrected May 3)
+- `cetana-reality-check.md` — capability honesty for Cetana
+- `vada-state.md`, `vada-product-spec.md`, `vada-decisions.md` — Vāda internal documentation
 
 ---
 
-*This document is the strategic compass for the Atta ecosystem. It exists to preserve a coherent vision under conditions of execution pressure. When scope decisions get hard, return here.*
+*This document is the strategic compass for the Atta ecosystem. It exists to preserve coherence under execution pressure. When scope decisions get hard, return here.*
