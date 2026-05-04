@@ -3,8 +3,8 @@
 //   ?sync=true    — synchronous; bench harness waits for completion
 //   (default)     — fire-and-forget; caller polls /api/sessions/[id]
 //
-// SECURITY: apiKey transits server memory for the lifetime of this request only.
-// It is never persisted.
+// SECURITY: Provider keys are read from server-side encrypted store per request.
+// Keys are never persisted beyond the request lifetime.
 import 'server-only'
 import { compileSpec, loadYamlFromCatalog } from '@atta/engine'
 import type { ExecutionHooks, Plan } from '@atta/engine'
@@ -15,6 +15,8 @@ import { auth } from '@atta/auth/hooks'
 import { getOrCreateUser, getSessionForUser, getSessionWithTranscript, setSessionTerminalState } from '@/db/queries'
 import { persistTurn } from '@/engine/turn-logic'
 import type { TurnPhase } from '@/engine/types'
+import { decryptVendorKeys } from '@atta/crypto'
+import { getProviderKeys } from '@/db/keys-queries'
 
 export const maxDuration = 300 // Hobby plan max (5 min)
 
@@ -206,25 +208,37 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const session = await getSessionForUser(sessionId, clerkId)
   if (!session) return Response.json({ error: 'Session not found' }, { status: 404 })
 
-  const url = new URL(req.url)
-  const sync = url.searchParams.get('sync') === 'true'
-  const stream = url.searchParams.get('stream') === 'true'
+  const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
+  if (!masterKeyB64) return Response.json({ error: 'Server misconfiguration' }, { status: 500 })
+  const masterKey = Buffer.from(masterKeyB64, 'base64')
 
-  let apiKey: string | undefined
+  const apiKey: string | undefined = undefined
   let providerKeys: ProviderKeys | undefined
+  const existing = await getProviderKeys(clerkId)
+  if (existing) {
+    const decrypted = decryptVendorKeys(
+      existing.encryptedPayload as Parameters<typeof decryptVendorKeys>[0],
+      clerkId,
+      masterKey
+    )
+    if (Object.keys(decrypted).length > 0) {
+      providerKeys = decrypted as ProviderKeys
+    }
+  }
+
   let reviewerConfig: ReviewerConfig | undefined
   try {
     const body = await req.json()
-    if (typeof body?.apiKey === 'string') apiKey = body.apiKey
-    if (body?.providerKeys && typeof body.providerKeys === 'object') {
-      providerKeys = body.providerKeys as ProviderKeys
-    }
     if (body?.reviewerConfig && typeof body.reviewerConfig === 'object') {
       reviewerConfig = body.reviewerConfig as ReviewerConfig
     }
   } catch {
-    // no body or non-JSON — all fields stay undefined (Ollama / keyless path)
+    // no body or non-JSON — fine
   }
+
+  const url = new URL(req.url)
+  const sync = url.searchParams.get('sync') === 'true'
+  const stream = url.searchParams.get('stream') === 'true'
 
   // Pre-dispatch validation: if reviewerConfig is present, verify all configured
   // models have corresponding keys before starting the run.

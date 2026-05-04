@@ -257,7 +257,12 @@ export function DeliberatePanel({
       </div>
 
       {showReviewerModal && selectedSpec && (
-        <ReviewerConfigModal spec={selectedSpec} onSave={onModalSave} onClose={onModalClose} />
+        <ReviewerConfigModal
+          spec={selectedSpec}
+          onSave={onModalSave}
+          onClose={onModalClose}
+          configuredProviders={configuredProviders}
+        />
       )}
     </>
   )

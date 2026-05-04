@@ -1,10 +1,10 @@
 'use client'
 
 import type { DeliberationSpec } from '@atta/engine'
-import { IdentityBanner } from '@/components/IdentityBanner'
 import { QuestionInputArea } from './QuestionInputArea'
 import { DeliberatePanel } from './DeliberatePanel'
 import { useDeliberateForm } from './useDeliberateForm'
+import { MigrationPrompt } from './MigrationPrompt'
 
 interface DeliberateSectionProps {
   remainingToday: number
@@ -21,7 +21,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
 
   return (
     <div className='flex flex-col gap-4'>
-      <IdentityBanner />
+      <MigrationPrompt configuredProviders={props.configuredProviders} />
       <QuestionInputArea question={form.question} onQuestionChange={form.setQuestion} />
       <DeliberatePanel
         specs={props.specs}

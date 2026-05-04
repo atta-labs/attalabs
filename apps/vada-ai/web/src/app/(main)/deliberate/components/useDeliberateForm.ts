@@ -1,7 +1,6 @@
 'use client'
 
 import type { DeliberationSpec } from '@atta/engine'
-import { useIdentity } from '@atta/identity/react'
 import { useToastContext } from '@atta/ui'
 import type { FaceStyle } from '@/components/agents'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
@@ -90,7 +89,8 @@ export function useDeliberateForm({
   dailyLimit,
   initialError,
   specs,
-  initialTeamId
+  initialTeamId,
+  configuredProviders
 }: UseDeliberateFormProps): DeliberateFormState {
   const [question, setQuestion] = useState('')
   const [selectedSpecId, setSelectedSpecId] = useState<string>(() => {
@@ -117,7 +117,6 @@ export function useDeliberateForm({
   const router = useRouter()
   const { errorToast } = useToastContext()
   const { faceStyle } = useUserPreferences()
-  const identity = useIdentity()
 
   // Stable ref for selectedSpecId — used by modal save callback
   const selectedSpecIdRef = useRef(selectedSpecId)
@@ -145,21 +144,10 @@ export function useDeliberateForm({
   }, [selectedSpecId])
 
   const selectedProvider = globalModel?.provider
-  // Ollama runs locally with no auth — treat as always-keyed from the
-  // browser's perspective. If the server isn't running, the deliberation
-  // turn will surface a clear "Could not reach Ollama" error.
-  const hasKeyInMemory =
-    selectedProvider === 'ollama' ||
-    (selectedProvider != null && (identity.hasKey(selectedProvider) || !!globalModel?.apiKey))
-  // Selected provider is saved-on-device but credentials aren't unlocked yet.
-  // DELIBERATE can still run — we'll unlock biometrically on click.
-  const needsUnlock =
-    !hasKeyInMemory &&
-    selectedProvider != null &&
-    identity.state.kind === 'locked' &&
-    identity.state.providers.includes(selectedProvider)
-  const hasKeyForSelected = hasKeyInMemory || needsUnlock
-  const hasAnyKey = Object.keys(identity.state.keys).length > 0 || selectedProvider === 'ollama'
+  const hasKeyForSelected =
+    selectedProvider === 'ollama' || (selectedProvider != null && configuredProviders.includes(selectedProvider))
+  const needsUnlock = false
+  const hasAnyKey = configuredProviders.length > 0 || selectedProvider === 'ollama'
 
   // For specs with editable reviewer agents (e.g. Reviewers team), the global
   // model picker is irrelevant — each agent has its own model configured via
@@ -174,8 +162,7 @@ export function useDeliberateForm({
     if (!hasEditableAgents) return false
     const config = getReviewerConfig(selectedSpecId)
     if (!config) return false
-    const keyMap = identity.state.keys as Record<string, string>
-    return validateKeysForConfig(config, keyMap)
+    return validateKeysForConfig(config, configuredProviders)
   })()
 
   const canStart =
@@ -189,24 +176,6 @@ export function useDeliberateForm({
   dispatchRef.current = async () => {
     if (!canStart) return
     setLoading(true)
-
-    // If the selected provider is saved-but-locked, unlock first. This is the
-    // one-click flow when the user arrives at /deliberate with a pre-seeded
-    // last-used model from localStorage — they shouldn't have to click the
-    // picker just to trigger biometric; hitting DELIBERATE does both.
-    let freshKeys: Record<string, string> | undefined
-    if (needsUnlock) {
-      try {
-        freshKeys = (await identity.unlockWithPasskey()) as Record<string, string>
-      } catch (e) {
-        errorToast(
-          'Could not unlock',
-          e instanceof Error ? e.message : 'Try picking the model from the picker instead.'
-        )
-        setLoading(false)
-        return
-      }
-    }
 
     // The apiKey is not sent to /start. The deliberation page passes it to
     // /workflow/run?stream=true when the SSE stream opens. See /trust.
@@ -239,10 +208,7 @@ export function useDeliberateForm({
     // baseline call in parallel. Intentionally NOT awaited — the user
     // navigates immediately; the fetch settles in the background.
     if (benchmarkEnabled && globalModel) {
-      const baselineApiKey =
-        globalModel.provider === 'ollama'
-          ? 'ollama-local'
-          : (freshKeys?.[globalModel.provider] ?? globalModel.apiKey) || undefined
+      const baselineApiKey = globalModel.provider === 'ollama' ? 'ollama-local' : globalModel.apiKey || undefined
       if (baselineApiKey) {
         void fireBaselineBenchmark(session_id, question.trim(), { ...globalModel, apiKey: baselineApiKey })
       }
@@ -267,8 +233,7 @@ export function useDeliberateForm({
       const editableAgents = spec.agents.filter((a) => a.editable)
       if (editableAgents.length > 0) {
         const config = getReviewerConfig(selectedSpecId)
-        const keyMap = identity.state.keys as Record<string, string>
-        if (!config || !validateKeysForConfig(config, keyMap)) {
+        if (!config || !validateKeysForConfig(config, configuredProviders)) {
           setShowReviewerModal(true)
           return
         }

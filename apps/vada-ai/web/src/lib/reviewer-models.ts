@@ -24,15 +24,15 @@ export function clearReviewerConfig(specId: string): void {
 }
 
 /**
- * Returns true if every model in the config has a corresponding vendor key
- * in the provided keyMap. Accepts both RouteProvider keys (e.g. 'google')
- * and model-prefix resolution.
+ * Returns true if every model in the config has a corresponding configured
+ * provider. Accepts both RouteProvider keys (e.g. 'google') and
+ * model-prefix resolution.
  */
-export function validateKeysForConfig(config: ReviewerConfig, keyMap: Record<string, string>): boolean {
+export function validateKeysForConfig(config: ReviewerConfig, configuredProviders: string[]): boolean {
   for (const model of Object.values(config)) {
     const vendor = resolveVendor(model)
     if (!vendor) return false
-    if (!keyMap[vendor]) return false
+    if (!configuredProviders.includes(vendor)) return false
   }
   return true
 }
