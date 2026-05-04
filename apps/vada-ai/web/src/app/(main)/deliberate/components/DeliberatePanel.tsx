@@ -3,14 +3,14 @@
 import type { DeliberationSpec, SpecAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
 import { Button, Checkbox } from '@atta/ui'
-import { ArrowRight, GitCompare, Loader2, Settings2 } from 'lucide-react'
+import { ArrowRight, GitCompare, Loader2, Lock, Settings2 } from 'lucide-react'
 import { cn } from '@atta/ui/lib/utils'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { TeamPicker } from './TeamPicker'
 import { GlobalModelSelector } from './GlobalModelSelector'
 import type { ModelSelection } from './GlobalModelSelector'
 import { ReviewerConfigModal } from './ReviewerConfigModal'
-import { getReviewerConfig } from '@/lib/reviewer-models'
+import { getReviewerConfig, resolveVendor } from '@/lib/reviewer-models'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
 
 interface DisplayAgent {
@@ -134,6 +134,18 @@ export function DeliberatePanel({
     return a.model ?? defaultModel ?? undefined
   }
 
+  // For editable specs: a slot is available when its resolved model's vendor key is configured.
+  const isSlotAvailable = (a: DisplayAgent): boolean => {
+    if (!hasEditable) return true
+    const model = resolveModel(a)
+    if (!model) return true
+    const vendor = resolveVendor(model)
+    if (!vendor) return false
+    return configuredProviders.includes(vendor)
+  }
+
+  const anySlotLocked = hasEditable && agents.some((a) => !isSlotAvailable(a))
+
   const configureTrigger = (
     <Button
       variant='outline'
@@ -190,21 +202,37 @@ export function DeliberatePanel({
               <ArrowRight className='size-3' />
             </NextLink>
 
-            <div className='flex flex-row gap-3 overflow-x-auto pb-1'>
-              {agents.map((a) => (
-                <VadaAgent
-                  key={a.name}
-                  id={`panel-${selectedSpec.id}-${a.name}`}
-                  name={a.name}
-                  role={a.role}
-                  model={resolveModel(a)}
-                  state='speaking'
-                  size='md'
-                  visible
-                  label={a.role ? undefined : 'REVIEWER'}
-                  className='shrink-0'
-                />
-              ))}
+            <div className='flex flex-col gap-2'>
+              <div className='flex flex-row gap-3 overflow-x-auto pb-1'>
+                {agents.map((a) => {
+                  const available = isSlotAvailable(a)
+                  return (
+                    <div key={a.name} className='relative shrink-0'>
+                      <VadaAgent
+                        id={`panel-${selectedSpec.id}-${a.name}`}
+                        name={a.name}
+                        role={a.role}
+                        model={resolveModel(a)}
+                        state='speaking'
+                        size='md'
+                        visible
+                        label={a.role ? undefined : 'REVIEWER'}
+                        className={cn(!available && 'opacity-60')}
+                      />
+                      {!available && (
+                        <span className='absolute top-[44px] -right-1 z-[2] flex items-center justify-center rounded-md border border-border bg-card p-0.5 shadow-sm'>
+                          <Lock className='size-3 text-muted-foreground' />
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              {anySlotLocked && (
+                <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
+                  Add API keys to unlock — configure models to enable
+                </p>
+              )}
             </div>
           </div>
         )}

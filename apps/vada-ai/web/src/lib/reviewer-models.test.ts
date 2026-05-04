@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { clearReviewerConfig, getReviewerConfig, setReviewerConfig, validateKeysForConfig } from './reviewer-models'
+import {
+  clearReviewerConfig,
+  getReviewerConfig,
+  resolveVendor,
+  setReviewerConfig,
+  validateKeysForConfig
+} from './reviewer-models'
 
 // ── localStorage mock (Node/Bun has no DOM) ──────────────────────────────────
 const store = new Map<string, string>()
@@ -24,6 +30,25 @@ beforeEach(() => {
 
 afterEach(() => {
   store.clear()
+})
+
+describe('resolveVendor', () => {
+  test('returns anthropic for claude- prefix', () => {
+    expect(resolveVendor('claude-3-5-sonnet-20241022')).toBe('anthropic')
+  })
+
+  test('returns google for gemini- prefix', () => {
+    expect(resolveVendor('gemini-2.5-pro')).toBe('google')
+  })
+
+  test('returns openai for gpt- and o4- prefixes', () => {
+    expect(resolveVendor('gpt-4o')).toBe('openai')
+    expect(resolveVendor('o4-mini')).toBe('openai')
+  })
+
+  test('returns null for unknown model prefix', () => {
+    expect(resolveVendor('unknown-model-xyz')).toBeNull()
+  })
 })
 
 describe('validateKeysForConfig', () => {
