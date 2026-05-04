@@ -33,6 +33,15 @@ export async function renameThemeAction(project: ProjectKey, id: string, name: s
   }
 }
 
+export async function publishThemeAction(project: ProjectKey, id: string, vars: Record<string, string>): Promise<void> {
+  try {
+    const { writeClient } = getCmsClientsForProject(project)
+    await writeClient.patch(id).set({ dark: vars }).commit()
+  } catch {
+    throw new Error('Failed to publish theme vars.')
+  }
+}
+
 export async function updateThemeAction(project: ProjectKey, id: string, data: ThemeEditorData): Promise<void> {
   try {
     const { writeClient } = getCmsClientsForProject(project)
