@@ -1,10 +1,26 @@
 'use client'
 
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
+import { ChevronDown, Check } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@atta/ui/basic/components'
 import { PROJECT_CONFIG, PROJECT_KEYS, isValidProject } from '@/lib/project-config'
 import type { ProjectKey } from '@/lib/project-config'
 
-export function ProjectSwitcher() {
+interface ProjectSwitcherProps {
+  logos: Record<ProjectKey, string | null>
+}
+
+function ProjectLogo({ url, fallback }: { url: string | null; fallback: string }) {
+  if (url) return <Image src={url} width={14} height={14} alt='' className='shrink-0' />
+  return (
+    <span className='flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm bg-foreground/20 font-mono text-[8px] font-bold text-foreground'>
+      {fallback}
+    </span>
+  )
+}
+
+export function ProjectSwitcher({ logos }: ProjectSwitcherProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -12,8 +28,7 @@ export function ProjectSwitcher() {
   const firstSegment = segments[0] ?? ''
   const currentProject: ProjectKey = isValidProject(firstSegment) ? firstSegment : 'vada'
 
-  function handleChange(event: React.ChangeEvent<HTMLSelectElement>) {
-    const next = event.target.value
+  function handleSelect(next: string) {
     if (!isValidProject(next)) return
     // biome-ignore lint/suspicious/noDocumentCookie: dev tool — no CookieStore polyfill needed
     document.cookie = `atta-admin-project=${next};path=/;max-age=31536000`
@@ -22,16 +37,28 @@ export function ProjectSwitcher() {
   }
 
   return (
-    <select
-      value={currentProject}
-      onChange={handleChange}
-      className='h-7 w-28 rounded border border-border bg-background px-2 font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring'
-    >
-      {PROJECT_KEYS.map((key) => (
-        <option key={key} value={key}>
-          {PROJECT_CONFIG[key].displayName}
-        </option>
-      ))}
-    </select>
+    <DropdownMenu>
+      <DropdownMenuTrigger className='flex h-7 items-center gap-1.5 rounded border border-border bg-background px-2 font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring'>
+        <ProjectLogo
+          url={logos[currentProject]}
+          fallback={PROJECT_CONFIG[currentProject].displayName[0]?.toUpperCase() ?? '?'}
+        />
+        {PROJECT_CONFIG[currentProject].displayName}
+        <ChevronDown className='h-3 w-3 text-muted-foreground' />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='start'>
+        {PROJECT_KEYS.map((key) => (
+          <DropdownMenuItem
+            key={key}
+            onSelect={() => handleSelect(key)}
+            className='flex items-center gap-2 font-mono text-xs'
+          >
+            <ProjectLogo url={logos[key]} fallback={PROJECT_CONFIG[key].displayName[0]?.toUpperCase() ?? '?'} />
+            {PROJECT_CONFIG[key].displayName}
+            <Check className={`ml-auto h-3 w-3 ${key === currentProject ? 'opacity-100' : 'opacity-0'}`} />
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

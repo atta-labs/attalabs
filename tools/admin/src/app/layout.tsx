@@ -1,10 +1,19 @@
-import { cmsClient, generateThemeCSSForScheme, getGoogleFontsUrl, getVadaConfig } from '@atta/cms'
-import { LibraryProvider } from '@atta/ui/lib/library-provider'
+import {
+  cmsClient,
+  generateThemeCSSForScheme,
+  getAttaBranding,
+  getGoogleFontsUrl,
+  getHeraldBranding,
+  getVadaBranding,
+  getVadaConfig,
+  getVitakkaBranding
+} from '@atta/cms'
 import { ToastProvider } from '@atta/ui/basic/components'
-import type { UILibrary } from '@atta/ui/lib/library-loader'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { AdminShell } from '@/components/admin-shell'
+import { getCmsClientsForProject } from '@/lib/cms-for-project'
+import type { ProjectKey } from '@/lib/project-config'
 import '@atta/ui/globals.css'
 
 export const metadata: Metadata = {
@@ -13,10 +22,23 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const config = await getVadaConfig(cmsClient).catch(() => null)
+  const [config, vadaBranding, attaBranding, heraldBranding, vitakkaBranding] = await Promise.all([
+    getVadaConfig(cmsClient).catch(() => null),
+    getVadaBranding(getCmsClientsForProject('vada').readClient).catch(() => null),
+    getAttaBranding(getCmsClientsForProject('atta').readClient).catch(() => null),
+    getHeraldBranding(getCmsClientsForProject('herald').readClient).catch(() => null),
+    getVitakkaBranding(getCmsClientsForProject('vitakka').readClient).catch(() => null)
+  ])
+
+  const projectLogos: Record<ProjectKey, string | null> = {
+    vada: vadaBranding?.faviconDark?.png32?.url ?? null,
+    atta: attaBranding?.faviconDark?.png32?.url ?? null,
+    herald: heraldBranding?.faviconDark?.png32?.url ?? null,
+    vitakka: vitakkaBranding?.faviconDark?.png32?.url ?? null
+  }
+
   const theme = config?.userInterface?.theme ?? null
   const colorScheme = config?.userInterface?.colorScheme ?? 'dark'
-  const libraryId = (config?.userInterface?.library?.id ?? 'basic') as UILibrary
   const themeCSS = theme ? generateThemeCSSForScheme(theme, colorScheme) : null
   const fontsUrl = theme?.typography ? getGoogleFontsUrl(theme.typography) : null
 
@@ -33,11 +55,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         {themeCSS && <style id='vada-theme' dangerouslySetInnerHTML={{ __html: themeCSS }} />}
       </head>
       <body className='min-h-screen bg-background text-foreground'>
-        <LibraryProvider library={libraryId}>
-          <ToastProvider defaultPosition='bottom-right'>
-            <AdminShell>{children}</AdminShell>
-          </ToastProvider>
-        </LibraryProvider>
+        <ToastProvider defaultPosition='bottom-right'>
+          <AdminShell logos={projectLogos}>{children}</AdminShell>
+        </ToastProvider>
       </body>
     </html>
   )
