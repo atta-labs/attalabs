@@ -4,7 +4,7 @@ import type { DeliberationSpec } from '@atta/engine'
 import { useToastContext } from '@atta/ui'
 import type { FaceStyle } from '@/components/agents'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
-import { getReviewerConfig, setReviewerConfig, validateKeysForConfig } from '@/lib/reviewer-models'
+import { clearReviewerConfig, getReviewerConfig, setReviewerConfig, validateKeysForConfig } from '@/lib/reviewer-models'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUserPreferences } from '@/lib/user-preferences-context'
@@ -114,6 +114,8 @@ export function useDeliberateForm({
   const [loading, setLoading] = useState(false)
   const [benchmarkEnabled, setBenchmarkEnabled] = useState(true)
   const [showReviewerModal, setShowReviewerModal] = useState(false)
+  // Bumped whenever stale configs are cleared — causes DeliberatePanel to re-read localStorage.
+  const [_clearEpoch, setClearEpoch] = useState(0)
   const router = useRouter()
   const { errorToast } = useToastContext()
   const { faceStyle } = useUserPreferences()
@@ -125,6 +127,27 @@ export function useDeliberateForm({
   useEffect(() => {
     if (initialError) errorToast('Could not start deliberation', initialError)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-clear saved reviewer configs whose models' vendor keys no longer exist
+  // server-side. Runs on mount and whenever configuredProviders changes (e.g.
+  // after the user deletes a key in Settings and navigates back here).
+  useEffect(() => {
+    const prefix = 'vada:reviewer-models:'
+    const staleSpecIds = Object.keys(window.localStorage)
+      .filter((k) => k.startsWith(prefix))
+      .map((k) => k.slice(prefix.length))
+      .filter((specId) => {
+        const config = getReviewerConfig(specId)
+        return config !== null && !validateKeysForConfig(config, configuredProviders)
+      })
+
+    if (staleSpecIds.length > 0) {
+      for (const specId of staleSpecIds) {
+        clearReviewerConfig(specId)
+      }
+      setClearEpoch((n) => n + 1)
+    }
+  }, [configuredProviders])
 
   // Surface the daily-limit state explicitly. Without a toast, the Deliberate
   // buttons just grey out and the user is left guessing why nothing happens.

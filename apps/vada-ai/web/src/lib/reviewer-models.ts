@@ -4,7 +4,7 @@ const STORAGE_KEY_PREFIX = 'vada:reviewer-models:'
 export type ReviewerConfig = Record<string, string>
 
 export function getReviewerConfig(specId: string): ReviewerConfig | null {
-  if (typeof window === 'undefined') return null
+  if (typeof localStorage === 'undefined') return null
   try {
     const raw = localStorage.getItem(STORAGE_KEY_PREFIX + specId)
     return raw ? (JSON.parse(raw) as ReviewerConfig) : null
@@ -14,12 +14,12 @@ export function getReviewerConfig(specId: string): ReviewerConfig | null {
 }
 
 export function setReviewerConfig(specId: string, config: ReviewerConfig): void {
-  if (typeof window === 'undefined') return
+  if (typeof localStorage === 'undefined') return
   localStorage.setItem(STORAGE_KEY_PREFIX + specId, JSON.stringify(config))
 }
 
 export function clearReviewerConfig(specId: string): void {
-  if (typeof window === 'undefined') return
+  if (typeof localStorage === 'undefined') return
   localStorage.removeItem(STORAGE_KEY_PREFIX + specId)
 }
 
