@@ -4,7 +4,6 @@
 // is pure presentation that reads the returned object.
 
 import { fetchInstalledOllamaModels, probeProviderKey } from '@atta/identity'
-import { useIdentity } from '@atta/identity/react'
 import { type ModelEntry, type RouteProvider, useCatalog } from '@atta/models'
 import { useToastContext } from '@atta/ui'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -20,8 +19,8 @@ interface UseGlobalModelSelectorProps {
 }
 
 // Persist last picked model locally so the next /deliberate visit pre-selects
-// it. Kept client-only — matches the BYOK story (no server round trip) and is
-// per-device by nature.
+// it. Kept client-only — matches the server-side key story (no round trip) and
+// is per-device by nature.
 const LAST_MODEL_KEY = 'vada:last-model'
 
 interface LastModel {
@@ -60,9 +59,10 @@ export function useGlobalModelSelector({
   selectedSpecId
 }: UseGlobalModelSelectorProps) {
   const baseCatalog = useCatalog()
-  const identity = useIdentity()
-  const storedKeys = identity.state.keys
-  const { successToast, errorToast } = useToastContext()
+  const { successToast } = useToastContext()
+
+  // Providers saved in this session via the inline key-entry dialog
+  const [sessionSavedProviders, setSessionSavedProviders] = useState<RouteProvider[]>([])
 
   // ── Ollama live model fetch ────────────────────────────────────────────────
   // /api/tags on mount. null = not probed, empty = reachable but nothing
@@ -109,13 +109,23 @@ export function useGlobalModelSelector({
     return process.env.NODE_ENV === 'production' ? base.filter((e) => e.route !== 'ollama') : base
   }, [baseCatalog, ollamaReachable, installedOllama])
 
+  // ── Derived picker inputs ──────────────────────────────────────────────────
+  const configuredRoutes = useMemo(() => {
+    const set = new Set<RouteProvider>([...(settingsProviders as RouteProvider[]), ...sessionSavedProviders])
+    if (ollamaReachable) set.add('ollama')
+    if (process.env.NODE_ENV === 'production') set.delete('ollama')
+    return set
+  }, [settingsProviders, sessionSavedProviders, ollamaReachable])
+
+  const routeHints = useMemo<Partial<Record<RouteProvider, string>>>(() => ({}), [])
+
+  const pickerValue = useMemo(() => (value ? { route: value.provider, modelId: value.modelId } : null), [value])
+
   // ── Preset / default seeding on mount ──────────────────────────────────────
   // Seeding priority:
   //   1. Team-preset saved model (if user picked a preset and it has saved models)
-  //   2. Last-used model from localStorage (even if we're locked — the provider
-  //      is available as long as it's in identity.state.providers; the key
-  //      loads on DELIBERATE click via the existing unlock flow)
-  //   3. First catalog entry whose provider currently has a key in memory
+  //   2. Last-used model from localStorage (if provider is configured)
+  //   3. First catalog entry whose provider is configured
   //   4. Nothing — user picks manually
   useEffect(() => {
     if (selectedSpecId && initialTeamModels.length > 0) {
@@ -123,24 +133,23 @@ export function useGlobalModelSelector({
       const entry = teamId ? initialTeamModels.find((m) => m.teamId === teamId) : undefined
       if (entry) {
         const route = entry.provider as RouteProvider
-        onChange({ provider: route, modelId: entry.modelId, apiKey: storedKeys[route] ?? '' })
+        onChange({ provider: route, modelId: entry.modelId, apiKey: '' })
         return
       }
     }
     if (!value) {
       const last = readLastModel()
       if (last) {
-        const providerAvailable =
-          last.provider === 'ollama' || !!storedKeys[last.provider] || identity.state.providers.includes(last.provider)
+        const providerAvailable = last.provider === 'ollama' || configuredRoutes.has(last.provider)
         const inCatalog = baseCatalog.some((e) => e.route === last.provider && e.modelId === last.modelId)
         if (providerAvailable && inCatalog) {
-          onChange({ provider: last.provider, modelId: last.modelId, apiKey: storedKeys[last.provider] ?? '' })
+          onChange({ provider: last.provider, modelId: last.modelId, apiKey: '' })
           return
         }
       }
-      const first = baseCatalog.find((e) => storedKeys[e.route])
+      const first = baseCatalog.find((e) => configuredRoutes.has(e.route))
       if (first) {
-        onChange({ provider: first.route, modelId: first.modelId, apiKey: storedKeys[first.route] ?? '' })
+        onChange({ provider: first.route, modelId: first.modelId, apiKey: '' })
       }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -152,104 +161,20 @@ export function useGlobalModelSelector({
     const entry = teamId ? initialTeamModels.find((m) => m.teamId === teamId) : undefined
     if (!entry) return
     const route = entry.provider as RouteProvider
-    const apiKey = storedKeys[route] ?? ''
-    onChange({ provider: route, modelId: entry.modelId, apiKey })
+    onChange({ provider: route, modelId: entry.modelId, apiKey: '' })
   }, [selectedSpecId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── storedKeys → globalModel.apiKey sync ──────────────────────────────────
-  // Keeps globalModel.apiKey current whenever keys arrive asynchronously:
-  // identity unlock after mount, setKey from any source (including
-  // handleProvideKey when value was null and the onChange guard was false).
-  useEffect(() => {
-    if (!value || value.provider === 'ollama') return
-    const latestKey = storedKeys[value.provider] ?? ''
-    if (latestKey !== value.apiKey) {
-      onChange({ ...value, apiKey: latestKey })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omits value/onChange; sync should only fire when stored keys change, not on every value/onChange identity change
-  }, [storedKeys])
-
-  // ── Derived picker inputs ──────────────────────────────────────────────────
-  const configuredRoutes = useMemo(() => {
-    const set = new Set<RouteProvider>([
-      ...(settingsProviders as RouteProvider[]),
-      ...(Object.keys(storedKeys) as RouteProvider[]),
-      ...(identity.state.providers as RouteProvider[])
-    ])
-    if (ollamaReachable) set.add('ollama')
-    if (process.env.NODE_ENV === 'production') set.delete('ollama')
-    return set
-  }, [settingsProviders, storedKeys, identity.state.providers, ollamaReachable])
-
-  const routeHints = useMemo(() => {
-    const hints: Partial<Record<RouteProvider, string>> = {}
-    for (const [route, key] of Object.entries(storedKeys) as [RouteProvider, string | undefined][]) {
-      if (key && key.length >= 4) hints[route] = key.slice(-4)
-    }
-    return hints
-  }, [storedKeys])
-
-  const pickerValue = useMemo(() => (value ? { route: value.provider, modelId: value.modelId } : null), [value])
-
-  // Persist every selection so next visit can seed from it. Effect watching
-  // `value` covers all write paths (picker change, preset change, key paste)
-  // without having to touch each one.
+  // Persist every selection so next visit can seed from it.
   useEffect(() => {
     if (value) writeLastModel({ provider: value.provider, modelId: value.modelId })
   }, [value?.provider, value?.modelId])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  // Action-triggered unlock: picking a model whose provider has a saved-but-
-  // locked key fires the biometric prompt right here. After unlock we probe
-  // the key, but only DROP it when the probe says `invalid_key`. Rate limits,
-  // model-not-found, and transient/unreachable failures mean the key is still
-  // probably valid — destroying it on those would force a re-entry for a
-  // problem the user can't fix (e.g. Google quota burst).
   const handleChange = useCallback(
-    async (next: { route: RouteProvider; modelId: string }) => {
-      const needsUnlock =
-        identity.state.kind === 'locked' && identity.state.providers.includes(next.route) && !storedKeys[next.route]
-      if (needsUnlock) {
-        try {
-          const freshKeys = await identity.unlockWithPasskey()
-          const storedKey = freshKeys[next.route]
-          // Ollama has no auth to probe — skip the verification step.
-          if (next.route === 'ollama' || !storedKey) {
-            successToast('Unlocked', `Your ${next.route} key is loaded for this session.`)
-            onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKey ?? '' })
-            return
-          }
-          const probe = await probeProviderKey(next.route, storedKey, next.modelId)
-          if (probe.kind === 'invalid_key') {
-            identity.removeKey(next.route)
-            errorToast(
-              `Your saved ${next.route} key is invalid`,
-              `Open the picker and select ${next.route} again to paste a fresh key.`,
-              10000
-            )
-            return
-          }
-          // Keep the key. For non-ok but non-invalid probes, load it anyway
-          // and warn — the user's next deliberation attempt may still work.
-          if (!probe.ok) {
-            errorToast(
-              `${next.route} reachable, but probe warned`,
-              probe.error ?? 'Key loaded, but the probe returned a non-success response.',
-              6000
-            )
-          } else {
-            successToast('Unlocked', `Your ${next.route} key is loaded for this session.`)
-          }
-          onChange({ provider: next.route, modelId: next.modelId, apiKey: storedKey })
-        } catch (e) {
-          errorToast('Could not unlock', e instanceof Error ? e.message : 'Try again or enter keys manually.')
-        }
-        return
-      }
-      const apiKey = storedKeys[next.route] ?? ''
-      onChange({ provider: next.route, modelId: next.modelId, apiKey })
+    (next: { route: RouteProvider; modelId: string }) => {
+      onChange({ provider: next.route, modelId: next.modelId, apiKey: '' })
     },
-    [identity, storedKeys, onChange, successToast, errorToast]
+    [onChange]
   )
 
   // Probe the key against the provider before persisting. We REJECT only on
@@ -263,8 +188,17 @@ export function useGlobalModelSelector({
       if (probe.kind === 'invalid_key') {
         throw new Error(probe.error ?? 'Invalid API key.')
       }
-      identity.setKey(route, key)
-      if (value?.provider === route) onChange({ ...value, apiKey: key })
+      const res = await fetch('/api/keys/provider', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendor: route, key })
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error((data as Record<string, string>).error ?? 'Failed to save key.')
+      }
+      setSessionSavedProviders((prev) => (prev.includes(route) ? prev : [...prev, route]))
+      if (value?.provider === route) onChange({ ...value, apiKey: '' })
       if (probe.ok) {
         successToast('Key verified', `${route} is ready to use.`)
       } else {
@@ -274,7 +208,7 @@ export function useGlobalModelSelector({
         )
       }
     },
-    [value, identity, onChange, successToast]
+    [value, onChange, successToast]
   )
 
   return {

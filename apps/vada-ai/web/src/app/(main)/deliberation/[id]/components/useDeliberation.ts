@@ -1,14 +1,10 @@
 'use client'
 
-// SSE consumer for server-side deliberation via Mastra workflow.
-// The browser POSTs the apiKey to /workflow/run?stream=true; the server runs
-// the full deliberation and emits SSE events as each agent turn completes.
-// Keys transit server memory only for the duration of that request — never
-// persisted. See /trust for the updated BYOK architecture description.
+// SSE consumer for server-side deliberation.
+// Keys are resolved server-side from the user's encrypted key store.
+// reviewerConfig (for Reviewers team) is still sent from the client (localStorage).
 
-import { useIdentity } from '@atta/identity/react'
-import type { RouteProvider } from '@atta/models'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getAgentConfigByName } from '@/schemas'
 import { getReviewerConfig } from '@/lib/reviewer-models'
 
@@ -78,13 +74,9 @@ export function useDeliberation(
   initialConclusion: Record<string, unknown> | null = null,
   initialState = 'PENDING',
   initialTerminalState: string | null = null,
-  defaultProvider: string | null = null,
+  _defaultProvider: string | null = null,
   specId?: string
 ) {
-  const identity = useIdentity()
-  const identityRef = useRef(identity)
-  identityRef.current = identity
-
   const isComplete = initialState === 'TERMINAL'
 
   const [messages, setMessages] = useState<DeliberationMessage[]>(() =>
@@ -126,46 +118,6 @@ export function useDeliberation(
     const abort = new AbortController()
 
     const drive = async () => {
-      // Resolve apiKey before opening the stream so we can show a useful error
-      // rather than letting the server return 200 with no key and fail silently.
-      const id = identityRef.current
-      const keyMap = id.state.keys as Record<string, string>
-      let apiKey: string | undefined
-
-      if (defaultProvider === 'ollama') {
-        apiKey = 'ollama-local'
-      } else if (defaultProvider) {
-        apiKey = keyMap[defaultProvider]
-
-        if (!apiKey && id.state.kind === 'locked' && id.state.providers.includes(defaultProvider as RouteProvider)) {
-          try {
-            const freshKeys = await id.unlockWithPasskey()
-            if (cancelled) return
-            apiKey = (freshKeys as Record<string, string>)[defaultProvider]
-          } catch (e) {
-            if (cancelled) return
-            setStreamError(
-              `Could not unlock ${defaultProvider} key: ${e instanceof Error ? e.message : 'passkey cancelled'}. Reload and try again.`
-            )
-            return
-          }
-        }
-
-        if (!apiKey) {
-          setStreamError(
-            `Missing ${defaultProvider} API key. Add one in settings and reload to continue this deliberation.`
-          )
-          return
-        }
-      }
-
-      // Collect all in-memory provider keys. Only send keys that are present.
-      const allKeys = id.state.keys as Record<string, string>
-      const providerKeys: Record<string, string> = {}
-      for (const [vendor, key] of Object.entries(allKeys)) {
-        if (key) providerKeys[vendor] = key
-      }
-
       // Read per-reviewer model config from localStorage (if this spec has editable agents).
       const reviewerConfig = specId ? getReviewerConfig(specId) : null
 
@@ -175,8 +127,6 @@ export function useDeliberation(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            apiKey,
-            ...(Object.keys(providerKeys).length > 0 ? { providerKeys } : {}),
             ...(reviewerConfig ? { reviewerConfig } : {})
           }),
           signal: abort.signal
@@ -299,7 +249,7 @@ export function useDeliberation(
       cancelled = true
       abort.abort()
     }
-  }, [sessionId, isComplete, defaultProvider])
+  }, [sessionId, isComplete])
 
   return {
     messages,

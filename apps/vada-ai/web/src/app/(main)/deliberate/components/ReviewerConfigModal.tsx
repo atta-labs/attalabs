@@ -2,7 +2,6 @@
 
 import type { DeliberationSpec, SpecAgent } from '@atta/engine'
 import { probeProviderKey } from '@atta/identity'
-import { useIdentity } from '@atta/identity/react'
 import type { RouteProvider } from '@atta/models'
 import { useCatalog } from '@atta/models'
 import { Button, ModelPicker, useToastContext } from '@atta/ui'
@@ -15,6 +14,7 @@ interface ReviewerConfigModalProps {
   spec: DeliberationSpec
   onSave: (config: ReviewerConfig) => void
   onClose: () => void
+  configuredProviders: string[]
 }
 
 function resolveVendor(model: string): RouteProvider | null {
@@ -25,8 +25,7 @@ function resolveVendor(model: string): RouteProvider | null {
   return null
 }
 
-export function ReviewerConfigModal({ spec, onSave, onClose }: ReviewerConfigModalProps) {
-  const identity = useIdentity()
+export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders }: ReviewerConfigModalProps) {
   const catalog = useCatalog()
   const { successToast } = useToastContext()
 
@@ -45,22 +44,28 @@ export function ReviewerConfigModal({ spec, onSave, onClose }: ReviewerConfigMod
     )
   })
 
-  const storedKeys = identity.state.keys as Partial<Record<RouteProvider, string>>
+  const [sessionSavedProviders, setSessionSavedProviders] = useState<RouteProvider[]>([])
 
   const configuredRoutes = useMemo(() => {
-    const set = new Set<RouteProvider>([
-      ...(Object.keys(storedKeys) as RouteProvider[]),
-      ...(identity.state.providers as RouteProvider[])
-    ])
+    const set = new Set<RouteProvider>([...(configuredProviders as RouteProvider[]), ...sessionSavedProviders])
     return set
-  }, [storedKeys, identity.state.providers])
+  }, [configuredProviders, sessionSavedProviders])
 
   const handleProvideKey = async (route: RouteProvider, key: string) => {
     const probe = await probeProviderKey(route, key)
     if (probe.kind === 'invalid_key') {
       throw new Error(probe.error ?? 'Invalid API key.')
     }
-    identity.setKey(route, key)
+    const res = await fetch('/api/keys/provider', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vendor: route, key })
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error((data as Record<string, string>).error ?? 'Failed to save key.')
+    }
+    setSessionSavedProviders((prev) => (prev.includes(route) ? prev : [...prev, route]))
     if (probe.ok) {
       successToast('Key verified', `${route} is ready to use.`)
     } else {
@@ -71,10 +76,7 @@ export function ReviewerConfigModal({ spec, onSave, onClose }: ReviewerConfigMod
   const allConfigured = editableAgents.every((a) => {
     const sel = selections[a.name]
     if (!sel) return false
-    // Key must be present (in-memory or in providers list = locked but known)
-    const hasKey =
-      storedKeys[sel.route] || (identity.state.kind === 'locked' && identity.state.providers.includes(sel.route))
-    return !!hasKey
+    return configuredRoutes.has(sel.route)
   })
 
   const handleSave = () => {
