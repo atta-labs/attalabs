@@ -62,7 +62,7 @@ export async function runDeliberate(input: DeliberateInput, providerKeys: Provid
     content: conclusion.content,
     structured: conclusion.structured ?? null,
     session_id: sessionId,
-    session_url: `https://vada.ai/s/${sessionId}`,
+    session_url: `https://vada.attalabs.dev/sessions/${sessionId}`,
     terminal_state: conclusion.terminalState,
     cost_breakdown: {
       estimated_usd: estimatedUsd,

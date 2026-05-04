@@ -272,7 +272,7 @@ export async function runConsult(
   return {
     responses,
     session_id: sessionId,
-    session_url: `https://vada.ai/s/${sessionId}`,
+    session_url: `https://vada.attalabs.dev/sessions/${sessionId}`,
     cost_breakdown: {
       estimated_usd: estimatedUsd,
       tokens_input: conclusion.totalTokensInput,
