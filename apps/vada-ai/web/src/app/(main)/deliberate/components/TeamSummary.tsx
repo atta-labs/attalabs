@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import type { DeliberationSpec, SpecAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
 import { getReviewerConfig } from '@/lib/reviewer-models'
@@ -56,9 +57,11 @@ function getShapeLabel(spec: DeliberationSpec): string {
 
 interface TeamSummaryProps {
   spec: DeliberationSpec
+  pickers?: ReactNode
+  actions?: ReactNode
 }
 
-export function TeamSummary({ spec }: TeamSummaryProps) {
+export function TeamSummary({ spec, pickers, actions }: TeamSummaryProps) {
   const agents = getDisplayAgents(spec)
   const count = getAgentCount(spec)
   const shapeLabel = getShapeLabel(spec)
@@ -66,47 +69,55 @@ export function TeamSummary({ spec }: TeamSummaryProps) {
   // Read once on mount — reflects whatever the user configured in the modal
   const [userConfig] = useState(() => getReviewerConfig(spec.id))
 
-  const spheres = (
-    <div className='flex gap-6 overflow-x-auto pb-2'>
-      {agents.map((a) => (
-        <VadaAgent
-          key={a.name}
-          id={`summary-${spec.id}-${a.name}`}
-          name={a.name}
-          role={a.role}
-          model={a.role ? undefined : (userConfig?.[a.name] ?? a.model ?? defaultModel)}
-          state='speaking'
-          size='md'
-          visible
-          label={a.role ? undefined : 'REVIEWER'}
-          className='shrink-0'
-        />
-      ))}
-    </div>
-  )
-
   return (
-    <div className='rounded-lg border border-border/40 bg-card p-6 space-y-4'>
-      <div className='flex items-start justify-between gap-4'>
-        <div className='space-y-1'>
-          <h2 className='font-serif text-xl text-foreground leading-tight'>{spec.displayName}</h2>
-          <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
-            {count} agents · {shapeLabel}
-          </p>
+    <div className='rounded-lg border border-border/40 bg-card overflow-hidden'>
+      <div className='grid grid-cols-2'>
+        {/* Left: title + pickers + spheres row */}
+        <div className='p-6 border-r border-border/40 flex flex-col gap-4'>
+          <div className='flex items-start justify-between gap-3'>
+            <div className='space-y-0.5'>
+              <h2 className='font-serif text-xl text-foreground leading-tight'>{spec.displayName}</h2>
+              <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
+                {count} agents · {shapeLabel}
+              </p>
+            </div>
+            {pickers && <div className='flex items-center gap-2 shrink-0'>{pickers}</div>}
+          </div>
+
+          <div className='flex flex-row gap-4 overflow-x-auto pb-1'>
+            {agents.map((a) => (
+              <VadaAgent
+                key={a.name}
+                id={`summary-${spec.id}-${a.name}`}
+                name={a.name}
+                role={a.role}
+                model={a.role ? undefined : (userConfig?.[a.name] ?? a.model ?? defaultModel)}
+                state='speaking'
+                size='md'
+                visible
+                label={a.role ? undefined : 'REVIEWER'}
+                className='shrink-0'
+              />
+            ))}
+          </div>
         </div>
-        <NextLink
-          href={`/teams/${spec.id}`}
-          variant='prose'
-          className='flex items-center gap-1 text-xs shrink-0 mt-0.5'
-        >
-          Learn more
-          <ArrowRight className='size-3' />
-        </NextLink>
+
+        {/* Right: description + learn more + actions */}
+        <div className='p-6 flex flex-col gap-3'>
+          <p className='text-sm text-foreground leading-relaxed'>{spec.description}</p>
+
+          <NextLink
+            href={`/teams/${spec.id}`}
+            variant='prose'
+            className='flex items-center gap-1 text-xs w-fit'
+          >
+            Learn more
+            <ArrowRight className='size-3' />
+          </NextLink>
+
+          {actions && <div className='mt-auto pt-2'>{actions}</div>}
+        </div>
       </div>
-
-      <p className='text-sm text-foreground leading-relaxed'>{spec.description}</p>
-
-      {spheres}
     </div>
   )
 }

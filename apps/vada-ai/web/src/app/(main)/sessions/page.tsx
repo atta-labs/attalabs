@@ -17,7 +17,7 @@ export default async function HistoryPage() {
   const sessions = await listSessions(clerkId!)
 
   return (
-    <div className='px-6 py-4'>
+    <div className='px-6 py-12'>
       <div className='mx-auto max-w-2xl space-y-10'>
         {/* Header */}
         <div className='space-y-4'>

@@ -1,56 +1,22 @@
 'use client'
 
-import type { DeliberationSpec } from '@atta/engine'
 import { Textarea } from '@atta/ui'
-import { GlobalModelSelector, type ModelSelection } from './GlobalModelSelector'
-import { TeamPicker } from './TeamPicker'
 
 interface QuestionInputAreaProps {
   question: string
   onQuestionChange: (q: string) => void
-  selectedSpecId: string
-  onTeamChange: (id: string) => void
-  specs: DeliberationSpec[]
-  globalModel: ModelSelection | null
-  onModelChange: (m: ModelSelection | null) => void
-  configuredProviders: string[]
-  initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
 }
 
-export function QuestionInputArea({
-  question,
-  onQuestionChange,
-  selectedSpecId,
-  onTeamChange,
-  specs,
-  globalModel,
-  onModelChange,
-  configuredProviders,
-  initialTeamModels
-}: QuestionInputAreaProps) {
+export function QuestionInputArea({ question, onQuestionChange }: QuestionInputAreaProps) {
   return (
-    <div className='relative'>
-      <Textarea
-        textareaClassName='text-lg text-left leading-tight placeholder:text-foreground/50 resize-none pb-10'
-        className='w-full'
-        placeholder='What decision are you wrestling with?'
-        value={question}
-        onChange={(e) => onQuestionChange(e.target.value)}
-        rows={3}
-        size='default'
-      />
-      <div className='absolute bottom-2 left-3'>
-        <TeamPicker specs={specs} value={selectedSpecId} onChange={onTeamChange} />
-      </div>
-      <div className='absolute bottom-2 right-3'>
-        <GlobalModelSelector
-          value={globalModel}
-          onChange={onModelChange}
-          settingsProviders={configuredProviders}
-          initialTeamModels={initialTeamModels}
-          selectedSpecId={selectedSpecId}
-        />
-      </div>
-    </div>
+    <Textarea
+      textareaClassName='text-lg text-left leading-tight placeholder:text-foreground/50 resize-none py-3'
+      className='w-full px-4'
+      placeholder='What decision are you wrestling with?'
+      value={question}
+      onChange={(e) => onQuestionChange(e.target.value)}
+      rows={3}
+      size='default'
+    />
   )
 }
