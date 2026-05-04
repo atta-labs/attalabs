@@ -5,7 +5,8 @@ import type { DeliberationSpec, SpecAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
 import { getReviewerConfig } from '@/lib/reviewer-models'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { ArrowRight } from 'lucide-react'
+import { Button } from '@atta/ui'
+import { ArrowRight, Settings2 } from 'lucide-react'
 import { useState } from 'react'
 
 interface DisplayAgent {
@@ -59,20 +60,22 @@ interface TeamSummaryProps {
   spec: DeliberationSpec
   pickers?: ReactNode
   actions?: ReactNode
+  onConfigure?: () => void
 }
 
-export function TeamSummary({ spec, pickers, actions }: TeamSummaryProps) {
+export function TeamSummary({ spec, pickers, actions, onConfigure }: TeamSummaryProps) {
   const agents = getDisplayAgents(spec)
   const count = getAgentCount(spec)
   const shapeLabel = getShapeLabel(spec)
   const defaultModel = spec.defaults.model
-  // Read once on mount — reflects whatever the user configured in the modal
   const [userConfig] = useState(() => getReviewerConfig(spec.id))
+
+  const hasEditable = spec.agents.some((a) => a.editable)
 
   return (
     <div className='rounded-lg border border-border/40 bg-card overflow-hidden'>
       <div className='grid grid-cols-2'>
-        {/* Left: title + pickers + spheres row */}
+        {/* Left: title + pickers + spheres + configure button */}
         <div className='p-6 border-r border-border/40 flex flex-col gap-4'>
           <div className='flex items-start justify-between gap-3'>
             <div className='space-y-0.5'>
@@ -100,17 +103,25 @@ export function TeamSummary({ spec, pickers, actions }: TeamSummaryProps) {
               />
             ))}
           </div>
+
+          {hasEditable && onConfigure && (
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={onConfigure}
+              className='w-fit flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest'
+            >
+              <Settings2 className='size-3' />
+              Configure models
+            </Button>
+          )}
         </div>
 
         {/* Right: description + learn more + actions */}
         <div className='p-6 flex flex-col gap-3'>
           <p className='text-sm text-foreground leading-relaxed'>{spec.description}</p>
 
-          <NextLink
-            href={`/teams/${spec.id}`}
-            variant='prose'
-            className='flex items-center gap-1 text-xs w-fit'
-          >
+          <NextLink href={`/teams/${spec.id}`} variant='prose' className='flex items-center gap-1 text-xs w-fit'>
             Learn more
             <ArrowRight className='size-3' />
           </NextLink>
