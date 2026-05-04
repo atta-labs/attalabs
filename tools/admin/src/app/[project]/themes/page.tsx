@@ -23,6 +23,7 @@ export default async function ThemesPage({ params }: { params: Promise<{ project
 
   return (
     <ThemesBrowseClient
+      key={validProject}
       project={validProject}
       themes={themes}
       currentThemeId={config?.userInterface?.theme?._id ?? null}

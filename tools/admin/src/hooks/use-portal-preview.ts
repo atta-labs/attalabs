@@ -27,6 +27,17 @@ export function usePortalPreview({
   const onReadyRef = useRef(onReady)
   onReadyRef.current = onReady
 
+  // When portalUrl changes (project switch), reset ready state and force a fresh iframe.
+  // Without this, React reuses the component instance across navigations, leaving isReady=true
+  // from the previous project and delivering messages to the wrong frame.
+  const prevPortalUrlRef = useRef(portalUrl)
+  useEffect(() => {
+    if (prevPortalUrlRef.current === portalUrl) return
+    prevPortalUrlRef.current = portalUrl
+    setIsReady(false)
+    setIframeKey((k) => k + 1)
+  }, [portalUrl])
+
   const iframeSrc = customIframeSrc ?? `${portalUrl}?preview=true`
 
   const sendMessage: SendMessageFn = useCallback(

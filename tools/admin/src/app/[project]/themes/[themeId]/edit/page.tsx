@@ -36,5 +36,5 @@ export default async function ThemeEditPage({ params }: { params: Promise<{ proj
 
   if (!theme) notFound()
 
-  return <ThemeEditorClient project={validProject} theme={theme} />
+  return <ThemeEditorClient key={`${validProject}-${themeId}`} project={validProject} theme={theme} />
 }
