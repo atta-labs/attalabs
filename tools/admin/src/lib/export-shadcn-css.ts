@@ -1,5 +1,5 @@
 import { FIELD_TO_CSS_VAR, SHADOW_TO_CSS_VAR } from '@atta/cms'
-import type { ThemeEditorData } from '@/app/themes/_types'
+import type { ThemeEditorData } from '@/app/[project]/themes/_types'
 
 const TYPOGRAPHY_FIELD_TO_CSS_VAR: Record<string, string> = {
   fontSans: 'font-sans',

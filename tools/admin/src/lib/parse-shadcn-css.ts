@@ -1,5 +1,5 @@
 import { FIELD_TO_CSS_VAR, SHADOW_TO_CSS_VAR } from '@atta/cms'
-import { COLOR_FIELD_NAMES, SHADOW_FIELDS, type ThemeColors } from '@/app/themes/_types'
+import { COLOR_FIELD_NAMES, SHADOW_FIELDS, type ThemeColors } from '@/app/[project]/themes/_types'
 
 export interface ParsedShadcnCss {
   light: ThemeColors
