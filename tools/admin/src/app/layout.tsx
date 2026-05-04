@@ -1,5 +1,6 @@
 import { cmsClient, generateThemeCSSForScheme, getGoogleFontsUrl, getVadaConfig } from '@atta/cms'
 import { LibraryProvider } from '@atta/ui/lib/library-provider'
+import { ToastProvider } from '@atta/ui/basic/components'
 import type { UILibrary } from '@atta/ui/lib/library-loader'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
@@ -33,7 +34,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </head>
       <body className='min-h-screen bg-background text-foreground'>
         <LibraryProvider library={libraryId}>
-          <AdminShell>{children}</AdminShell>
+          <ToastProvider defaultPosition='bottom-right'>
+            <AdminShell>{children}</AdminShell>
+          </ToastProvider>
         </LibraryProvider>
       </body>
     </html>
