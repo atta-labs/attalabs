@@ -172,16 +172,17 @@ export function ThemeEditorClient({ theme, project }: ThemeEditorClientProps) {
     <>
       <div className='flex items-center gap-1 rounded-md border border-border p-0.5'>
         {(['dark', 'light'] as const).map((s) => (
-          <button
+          <Button
             key={s}
-            type='button'
+            variant='ghost'
+            size='sm'
             onClick={() => setColorScheme(s)}
-            className={`rounded px-2 py-0.5 font-mono text-[10px] tracking-widest uppercase transition-colors ${
+            className={`px-2 py-0.5 font-mono text-[10px] tracking-widest uppercase ${
               colorScheme === s ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {s}
-          </button>
+          </Button>
         ))}
       </div>
       <Button type='button' size='sm' variant='outline' onClick={() => setImportOpen(true)}>

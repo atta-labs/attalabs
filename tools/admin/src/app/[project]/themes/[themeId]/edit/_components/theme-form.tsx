@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@atta/ui/components/button'
 import { Input } from '@atta/ui/components/input'
 import { Slider } from '@atta/ui/components/slider'
 import { Textarea } from '@atta/ui/components/textarea'
@@ -226,16 +227,17 @@ export function ThemeForm({ data, onChange, colorScheme }: ThemeFormProps) {
         <div className='flex flex-col gap-2.5 rounded-md border border-border/50 bg-background/40 p-3'>
           <div className='flex items-center justify-between'>
             <span className='font-mono text-[10px] tracking-widest uppercase text-muted-foreground'>Scale</span>
-            <button
-              type='button'
+            <Button
+              variant='outline'
+              size='sm'
               onClick={handleResetSliders}
               disabled={isSliderDefault}
-              className='flex items-center gap-1 rounded border border-border/60 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40'
               aria-label='Reset shadow scale sliders'
+              className='gap-1 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'
             >
               <RotateCcw className='h-3 w-3' />
               Reset
-            </button>
+            </Button>
           </div>
 
           <div className='flex items-center gap-3'>
