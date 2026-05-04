@@ -1,10 +1,9 @@
 {
   "extends": "@atta/typescript-config/base.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
     "outDir": "./dist",
     "types": ["vitest/globals"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

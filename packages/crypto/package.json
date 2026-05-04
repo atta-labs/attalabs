@@ -1,14 +1,11 @@
 {
-  "name": "@atta/auth",
+  "name": "@atta/crypto",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./provider": "./src/provider.tsx",
-    "./middleware": "./src/middleware.ts",
-    "./hooks": "./src/hooks.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -18,17 +15,8 @@
     "test:watch": "vitest",
     "clean": "rm -rf dist .turbo"
   },
-  "dependencies": {
-    "@clerk/nextjs": "^7.0.7",
-    "@clerk/themes": "^2.4.57"
-  },
-  "peerDependencies": {
-    "react": "^19.0.0",
-    "next": "^16.0.0"
-  },
   "devDependencies": {
     "@atta/typescript-config": "workspace:*",
-    "@types/react": "^19.0.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"
   }
