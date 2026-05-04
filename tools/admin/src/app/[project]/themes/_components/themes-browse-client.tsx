@@ -1,15 +1,17 @@
 'use client'
 
 import type { CMSTheme } from '@atta/cms'
+import { Button, useToastContext } from '@atta/ui/basic/components'
 import { Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import type { ThemeData } from '@/components/theme/utils'
+import { FontPicker } from '@/components/portal/font-picker'
 import { usePortalPreview } from '@/hooks/use-portal-preview'
 import { PortalPreviewFrame } from '@/components/portal/portal-preview-frame'
 import { setActiveThemeAction } from '../actions'
 import { CreateThemeDialog } from './create-theme-dialog'
-import { PreviewToolbar } from './preview-toolbar'
 import { FourSquareSwatch } from './four-square-swatch'
 import { PROJECT_CONFIG } from '@/lib/project-config'
 import type { ProjectKey } from '@/lib/project-config'
@@ -59,8 +61,14 @@ export function ThemesBrowseClient({ project, themes, currentThemeId, currentCol
   })
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
+  const { successToast, errorToast } = useToastContext()
   const [selectedFontSans, setSelectedFontSans] = useState<string | undefined>(undefined)
   const [createOpen, setCreateOpen] = useState(false)
+  const [headerSlot, setHeaderSlot] = useState<Element | null>(null)
+
+  useEffect(() => {
+    setHeaderSlot(document.getElementById('admin-header-slot'))
+  }, [])
 
   const selectedTheme = themes.find((t) => t._id === selectedId) ?? null
   const selectedScheme = selectedId ? (schemeByTheme[selectedId] ?? 'dark') : 'dark'
@@ -122,38 +130,43 @@ export function ThemesBrowseClient({ project, themes, currentThemeId, currentCol
         await setActiveThemeAction(project, selectedId, selectedScheme)
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
+        successToast('Theme activated', `${selectedTheme?.name ?? 'Theme'} is now the active theme.`)
       } catch {
-        console.error('Failed to set active theme')
+        errorToast('Activation failed', 'Could not set the active theme. Try again.')
       }
     })
-  }
-
-  function handleOpenCreate() {
-    setCreateOpen(true)
   }
 
   const hasChanges =
     selectedId !== currentThemeId || selectedScheme !== currentColorScheme || selectedFontSans !== undefined
 
+  const headerContent = (
+    <>
+      <FontPicker value={selectedFontSans} onChange={handleFontChange} />
+      <span className='text-border'>|</span>
+      {selectedId && (
+        <Button variant='outline' size='sm' asChild className='font-mono text-[10px]'>
+          <Link href={`/${project}/themes/${selectedId}/edit`}>Edit Theme</Link>
+        </Button>
+      )}
+      <Button size='sm' onClick={handlePublish} disabled={!hasChanges || isPending} className='font-mono text-[10px]'>
+        {isPending ? 'Saving...' : saved ? 'Saved!' : 'Set Active Theme'}
+      </Button>
+      <Button variant='outline' size='sm' onClick={() => setCreateOpen(true)} className='font-mono text-[10px]'>
+        Create Theme
+      </Button>
+    </>
+  )
+
   return (
     <>
+      {headerSlot && createPortal(headerContent, headerSlot)}
       <CreateThemeDialog open={createOpen} onOpenChange={setCreateOpen} project={project} />
       <div className='flex h-full gap-0'>
         <div className='flex w-72 shrink-0 flex-col border-r border-border'>
           <div className='border-b border-border px-4 py-3'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <h2 className='font-serif text-lg tracking-tight'>Themes</h2>
-                <p className='font-mono text-[10px] text-muted-foreground'>{themes.length} available</p>
-              </div>
-              <button
-                type='button'
-                onClick={handleOpenCreate}
-                className='rounded-md border border-border px-2.5 py-1 font-mono text-[10px] transition-colors hover:bg-foreground/5'
-              >
-                Create
-              </button>
-            </div>
+            <h2 className='font-serif text-lg tracking-tight'>Themes</h2>
+            <p className='font-mono text-[10px] text-muted-foreground'>{themes.length} available</p>
           </div>
 
           <div className='flex-1 overflow-y-auto'>
@@ -198,27 +211,22 @@ export function ThemesBrowseClient({ project, themes, currentThemeId, currentCol
                   </div>
                   {hasBoth && (
                     <div
-                      role='radiogroup'
-                      className='flex shrink-0 flex-col gap-1'
+                      className='flex shrink-0 flex-col gap-0.5'
                       onClick={(e) => e.stopPropagation()}
                       onKeyDown={(e) => e.stopPropagation()}
                     >
                       {(['dark', 'light'] as const).map((s) => (
-                        <label
+                        <Button
                           key={s}
-                          className={`flex cursor-pointer items-center gap-1 text-xs ${
-                            thisScheme === s ? 'text-foreground' : 'text-muted-foreground'
+                          variant='ghost'
+                          size='sm'
+                          onClick={() => handleSchemeChange(theme._id, s)}
+                          className={`h-5 px-1.5 font-mono text-[9px] uppercase tracking-widest ${
+                            thisScheme === s ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground'
                           }`}
                         >
-                          <input
-                            type='radio'
-                            name={`scheme-${theme._id}`}
-                            checked={thisScheme === s}
-                            onChange={() => handleSchemeChange(theme._id, s)}
-                            className='h-3 w-3 accent-primary'
-                          />
                           {s.charAt(0).toUpperCase() + s.slice(1)}
-                        </label>
+                        </Button>
                       ))}
                     </div>
                   )}
@@ -244,17 +252,6 @@ export function ThemesBrowseClient({ project, themes, currentThemeId, currentCol
           title='Preview'
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}
-          toolbar={
-            <PreviewToolbar
-              fontSans={selectedFontSans}
-              onFontChange={handleFontChange}
-              hasChanges={hasChanges}
-              isPending={isPending}
-              saved={saved}
-              onPublish={handlePublish}
-              editHref={selectedId ? `/${project}/themes/${selectedId}/edit` : null}
-            />
-          }
         >
           <iframe ref={iframeRef} key={iframeKey} src={iframeSrc} className='h-full w-full border-0' title='Preview' />
         </PortalPreviewFrame>
