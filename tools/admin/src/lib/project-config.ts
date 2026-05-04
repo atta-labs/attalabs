@@ -28,7 +28,7 @@ export const PROJECT_CONFIG = {
 } as const
 
 export type ProjectKey = keyof typeof PROJECT_CONFIG
-export const PROJECT_KEYS = Object.keys(PROJECT_CONFIG) as ProjectKey[]
+export const PROJECT_KEYS = Object.keys(PROJECT_CONFIG) as Array<keyof typeof PROJECT_CONFIG>
 export const DEFAULT_PROJECT: ProjectKey = 'vada'
 
 export function isValidProject(key: string): key is ProjectKey {
