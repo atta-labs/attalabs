@@ -4,38 +4,44 @@ import { decryptVendorKeys, encryptVendorKeys } from '@atta/crypto'
 import { deleteProviderKeys, getProviderKeys, upsertProviderKeys } from '@/db/keys-queries'
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ vendor: string }> }) {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  try {
+    const { userId: clerkId } = await auth()
+    if (!clerkId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-  const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
-  if (!masterKeyB64) {
+    const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
+    if (!masterKeyB64) {
+      return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
+    }
+    const masterKey = Buffer.from(masterKeyB64, 'base64')
+
+    const { vendor } = await params
+
+    const existing = await getProviderKeys(clerkId)
+    if (existing === null) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+
+    const keys = decryptVendorKeys(
+      existing.encryptedPayload as Parameters<typeof decryptVendorKeys>[0],
+      clerkId,
+      masterKey
+    )
+
+    delete keys[vendor]
+
+    if (Object.keys(keys).length === 0) {
+      await deleteProviderKeys(clerkId)
+    } else {
+      const encryptedPayload = encryptVendorKeys(keys, clerkId, masterKey)
+      await upsertProviderKeys(clerkId, encryptedPayload)
+    }
+
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error('[/api/keys/provider/[vendor]] error:', err instanceof Error ? err.message : err)
+    console.error('[/api/keys/provider/[vendor]] stack:', err instanceof Error ? err.stack : 'no stack')
     return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
   }
-  const masterKey = Buffer.from(masterKeyB64, 'base64')
-
-  const { vendor } = await params
-
-  const existing = await getProviderKeys(clerkId)
-  if (existing === null) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-
-  const keys = decryptVendorKeys(
-    existing.encryptedPayload as Parameters<typeof decryptVendorKeys>[0],
-    clerkId,
-    masterKey
-  )
-
-  delete keys[vendor]
-
-  if (Object.keys(keys).length === 0) {
-    await deleteProviderKeys(clerkId)
-  } else {
-    const encryptedPayload = encryptVendorKeys(keys, clerkId, masterKey)
-    await upsertProviderKeys(clerkId, encryptedPayload)
-  }
-
-  return NextResponse.json({ ok: true })
 }
