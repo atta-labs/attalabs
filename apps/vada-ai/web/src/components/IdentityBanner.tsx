@@ -118,7 +118,14 @@ export function IdentityBanner() {
                 : `Save ${b.unsavedProviders.length} new keys with passkey`}
             </Button>
           )}
-          <Button type='button' size='sm' variant='ghost' onClick={b.signOut} disabled={b.busy}>
+          <Button
+            type='button'
+            size='sm'
+            variant='ghost'
+            onClick={b.signOut}
+            disabled={b.busy}
+            className='text-destructive hover:text-destructive'
+          >
             Sign out
           </Button>
           <Button type='button' size='sm' variant='outline' onClick={b.promptForget} disabled={b.busy}>
@@ -232,7 +239,14 @@ export function IdentityBanner() {
                 : `Save ${b.unsavedProviders.length} new keys with passkey`}
             </Button>
           )}
-          <Button type='button' size='sm' variant='ghost' onClick={b.signOut} disabled={b.busy}>
+          <Button
+            type='button'
+            size='sm'
+            variant='ghost'
+            onClick={b.signOut}
+            disabled={b.busy}
+            className='text-destructive hover:text-destructive'
+          >
             Sign out
           </Button>
           <Button type='button' size='sm' variant='outline' onClick={b.promptForget} disabled={b.busy}>

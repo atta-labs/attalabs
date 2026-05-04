@@ -12,13 +12,13 @@ export interface NavLink {
 /** Routes visible to all users */
 export const PUBLIC_ROUTES: NavLink[] = [
   { href: '/trust', label: 'Trust · Vāda', exact: false },
-  { href: '/teams', label: 'Teams', exact: false },
-  { href: '/mcp', label: 'MCP', exact: false }
+  { href: '/teams', label: 'Teams', exact: false }
 ]
 
 /** Routes visible only to authenticated users */
 export const AUTH_ROUTES: NavLink[] = [
   { href: '/deliberate', label: 'Deliberate', exact: true },
+  { href: '/mcp', label: 'MCP', exact: false },
   { href: '/sessions', label: 'My Sessions', exact: true }
 ]
 

@@ -150,14 +150,14 @@ export function TeamCard({ spec }: { spec: DeliberationSpec }) {
 
       <p className='line-clamp-3 text-sm text-muted-foreground leading-snug min-h-[3.75rem]'>{spec.description}</p>
 
-      {spheres}
-
       <Link
         href={`/teams/${spec.id}`}
-        className='mt-auto inline-block font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors'
+        className='inline-block font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors'
       >
         Learn more →
       </Link>
+
+      {spheres}
     </div>
   )
 }
