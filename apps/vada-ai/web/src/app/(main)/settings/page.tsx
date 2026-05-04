@@ -8,6 +8,7 @@ import { getUserSettings, getUserTeamModels } from '@/db/settings-queries'
 import { SPEC_ID_TO_TEAM_ID } from '@/lib/teams-metadata'
 import { CopyButton } from '@/app/(main)/mcp/components/CopyButton'
 import { SettingsClientPage } from './components/SettingsClientPage'
+import { KeysSection } from './components/KeysSection'
 import { NextLink } from '@atta/ui/lib/next-link'
 
 export default async function SettingsPage() {
@@ -46,6 +47,8 @@ export default async function SettingsPage() {
           </div>
 
           <SettingsClientPage initialTeamModels={teamModels} initialFaceStyle={settings.faceStyle} teams={teams} />
+
+          <KeysSection />
 
           <Separator className='opacity-20' />
 
