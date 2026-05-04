@@ -5,6 +5,12 @@ import type { ModelEntry, RouteProvider } from '@atta/models'
 import { PROVIDERS, ROUTE_PROVIDER_ORDER } from '@atta/models'
 import { ProviderIcon } from '@lobehub/icons'
 import { Check, ChevronsUpDown, ExternalLink, Lock } from 'lucide-react'
+
+const LOBEHUB_MODEL_PREFIXES = ['claude-', 'gpt-', 'o1-', 'o3-', 'o4-', 'gemini-', 'deepseek-', 'llama-']
+function hasModelIcon(modelId: string): boolean {
+  const lower = modelId.toLowerCase()
+  return LOBEHUB_MODEL_PREFIXES.some((p) => lower.startsWith(p))
+}
 import * as React from 'react'
 
 import { cn } from '../../../lib/utils'
@@ -190,7 +196,11 @@ export function ModelPicker({
     >
       {selectedEntry ? (
         <span className='flex items-center gap-1.5'>
-          <ModelIcon model={selectedEntry.modelId} size={14} type='avatar' />
+          {hasModelIcon(selectedEntry.modelId) ? (
+            <ModelIcon model={selectedEntry.modelId} size={14} type='avatar' />
+          ) : (
+            <ProviderIcon provider={selectedEntry.route} size={14} type='avatar' />
+          )}
           <span className='font-mono text-[10px] uppercase tracking-widest'>{selectedEntry.label}</span>
         </span>
       ) : (
@@ -205,7 +215,11 @@ export function ModelPicker({
       {keyEntryRoute && pendingModel ? (
         <div className='flex flex-col gap-3 p-3'>
           <div className='flex items-center gap-2'>
-            <ModelIcon model={pendingModel.modelId} size={16} type='avatar' />
+            {hasModelIcon(pendingModel.modelId) ? (
+              <ModelIcon model={pendingModel.modelId} size={16} type='avatar' />
+            ) : (
+              <ProviderIcon provider={pendingModel.route} size={16} type='avatar' />
+            )}
             <p className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
               {PROVIDERS[keyEntryRoute].label} key required
             </p>
@@ -318,7 +332,11 @@ export function ModelPicker({
                           onSelect={() => handleSelect(entry)}
                           className='flex items-center gap-2 pl-6 pr-3'
                         >
-                          <ModelIcon model={entry.modelId} size={16} type='avatar' />
+                          {hasModelIcon(entry.modelId) ? (
+                            <ModelIcon model={entry.modelId} size={16} type='avatar' />
+                          ) : (
+                            <ProviderIcon provider={entry.route} size={16} type='avatar' />
+                          )}
                           <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
                             <span className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
                               {entry.label}

@@ -1,8 +1,8 @@
 'use client'
 
 import { AgentSphere, type AgentSphereProps } from '@atta/ui/agents'
-import { ModelIcon } from '@atta/ui'
 import { AGENTS, AGENT_BY_ROLE, type AgentName, type AgentRole } from '@/components/agents/visuals'
+import { ModelOrProviderIcon } from './ModelOrProviderIcon'
 import { AGENT_FACES as REDUCTIVE_FACES } from './faces/agent-faces-minimal'
 import { AGENT_FACES as EMBLEMATIC_FACES } from './faces/agent-faces-full'
 import { VENDORS, inferVendor } from './vendors'
@@ -51,7 +51,7 @@ export function VadaAgent({
     const FaceComponent = faces[agentDef.visuals.faceIndex]
     face = FaceComponent ? <FaceComponent /> : undefined
   } else if (model) {
-    face = <ModelIcon model={model} size={36} type='avatar' />
+    face = <ModelOrProviderIcon model={model} size={36} />
     faceOpacity = faceOpacityProp ?? 0.9
     faceTranslateY = '0'
   }
