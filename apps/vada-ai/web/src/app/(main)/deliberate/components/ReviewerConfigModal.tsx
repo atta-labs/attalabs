@@ -5,9 +5,10 @@ import { probeProviderKey } from '@atta/identity'
 import { useIdentity } from '@atta/identity/react'
 import type { RouteProvider } from '@atta/models'
 import { useCatalog } from '@atta/models'
-import { Button, Card, ModelPicker, useToastContext } from '@atta/ui'
-import { X } from 'lucide-react'
+import { Button, ModelPicker, useToastContext } from '@atta/ui'
+import { Dialog, DialogContent, DialogTitle } from '@atta/ui/components/dialog'
 import { useMemo, useState } from 'react'
+import { getReviewerConfig } from '@/lib/reviewer-models'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
 
 interface ReviewerConfigModalProps {
@@ -29,17 +30,20 @@ export function ReviewerConfigModal({ spec, onSave, onClose }: ReviewerConfigMod
   const catalog = useCatalog()
   const { successToast } = useToastContext()
 
-  const editableAgents: SpecAgent[] = useMemo(() => spec.agents.filter((a) => a.editable), [spec.agents])
+  // Show all agents so role agents (e.g. Synthesizer) can also be configured
+  const editableAgents: SpecAgent[] = useMemo(() => spec.agents, [spec.agents])
 
-  // Per-agent selected model (keyed by agent name)
-  const [selections, setSelections] = useState<Record<string, { route: RouteProvider; modelId: string } | null>>(() =>
-    Object.fromEntries(
+  // Per-agent selected model — seed from saved config first, fall back to YAML default
+  const [selections, setSelections] = useState<Record<string, { route: RouteProvider; modelId: string } | null>>(() => {
+    const saved = getReviewerConfig(spec.id)
+    return Object.fromEntries(
       editableAgents.map((a) => {
-        const vendor = a.model ? resolveVendor(a.model) : null
-        return [a.name, vendor && a.model ? { route: vendor, modelId: a.model } : null]
+        const model = saved?.[a.name] ?? a.model
+        const vendor = model ? resolveVendor(model) : null
+        return [a.name, vendor && model ? { route: vendor, modelId: model } : null]
       })
     )
-  )
+  })
 
   const storedKeys = identity.state.keys as Partial<Record<RouteProvider, string>>
 
@@ -87,38 +91,43 @@ export function ReviewerConfigModal({ spec, onSave, onClose }: ReviewerConfigMod
   // Production catalog: strip Ollama (reviewer slots need hosted models)
   const reviewerCatalog = useMemo(() => catalog.filter((e) => e.route !== 'ollama'), [catalog])
 
-  return (
-    <div
-      className='fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm'
-      role='dialog'
-      aria-modal='true'
-      aria-labelledby='reviewer-config-title'
-    >
-      <Card className='relative w-full max-w-md p-6 space-y-6 border-border shadow-xl mx-4'>
-        <Button
-          onClick={onClose}
-          variant='ghost'
-          size='icon'
-          className='absolute right-4 top-4 size-7 text-muted-foreground hover:text-foreground'
-          aria-label='Close'
-          type='button'
-        >
-          <X className='size-4' />
-        </Button>
+  // Build a label for each agent: editable slots → "REVIEWER N", role agents → role name
+  const reviewerLabels = (() => {
+    const labels: Record<string, string> = {}
+    let n = 1
+    for (const a of editableAgents) {
+      if (a.editable) {
+        labels[a.name] = `REVIEWER ${n++}`
+      } else if (a.role) {
+        labels[a.name] = a.role.toUpperCase().replace(/-/g, ' ')
+      } else {
+        labels[a.name] = a.name.toUpperCase()
+      }
+    }
+    return labels
+  })()
 
+  return (
+    <Dialog
+      open
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose()
+      }}
+    >
+      <DialogContent className='w-full max-w-md space-y-6 border-border bg-card p-6'>
         <div className='space-y-1'>
-          <h2 id='reviewer-config-title' className='font-serif text-lg text-foreground'>
-            Configure Reviewers
-          </h2>
+          <DialogTitle className='font-serif text-lg text-foreground'>Configure models</DialogTitle>
           <p className='text-sm text-muted-foreground'>
-            Pick a model for each reviewer slot. All three need unlocked API keys to run.
+            Pick a model for each slot. All need unlocked API keys to run.
           </p>
         </div>
 
         <div className='space-y-4'>
           {editableAgents.map((agent) => (
             <div key={agent.name} className='space-y-1.5'>
-              <div className='text-[11px] font-mono uppercase tracking-widest text-muted-foreground'>{agent.name}</div>
+              <div className='text-[11px] font-mono uppercase tracking-widest text-muted-foreground'>
+                {reviewerLabels[agent.name]}
+              </div>
               <ModelPicker
                 options={reviewerCatalog}
                 value={selections[agent.name] ?? null}
@@ -135,13 +144,13 @@ export function ReviewerConfigModal({ spec, onSave, onClose }: ReviewerConfigMod
 
         <div className='flex gap-3 pt-2'>
           <Button onClick={handleSave} disabled={!allConfigured} className='flex-1'>
-            Save & Run
+            Save
           </Button>
           <Button onClick={onClose} variant='outline' className='flex-1'>
             Cancel
           </Button>
         </div>
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

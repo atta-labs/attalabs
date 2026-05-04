@@ -6,6 +6,7 @@
 
 import type { ModelConfig, RouteProvider } from '@atta/models'
 import { ModelPicker } from '@atta/ui'
+import type { ReactNode } from 'react'
 import { useGlobalModelSelector } from './useGlobalModelSelector'
 
 export interface ModelSelection {
@@ -22,6 +23,7 @@ interface GlobalModelSelectorProps {
   settingsProviders?: string[]
   initialTeamModels?: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   selectedSpecId?: string
+  trigger?: ReactNode
 }
 
 export function GlobalModelSelector({
@@ -29,7 +31,8 @@ export function GlobalModelSelector({
   onChange,
   settingsProviders = [],
   initialTeamModels = [],
-  selectedSpecId
+  selectedSpecId,
+  trigger
 }: GlobalModelSelectorProps) {
   const g = useGlobalModelSelector({ value, onChange, settingsProviders, initialTeamModels, selectedSpecId })
   return (
@@ -41,6 +44,7 @@ export function GlobalModelSelector({
       routeHints={g.routeHints}
       onProvideKey={g.handleProvideKey}
       mode='modal'
+      trigger={trigger}
       settingsHref='/settings'
       settingsLabel='Configure defaults →'
     />

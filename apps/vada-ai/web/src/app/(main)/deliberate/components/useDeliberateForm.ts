@@ -82,6 +82,7 @@ export interface DeliberateFormState {
   showReviewerModal: boolean
   handleModalSave: (config: ReviewerConfig) => void
   closeReviewerModal: () => void
+  openReviewerModal: () => void
 }
 
 export function useDeliberateForm({
@@ -97,12 +98,18 @@ export function useDeliberateForm({
     if (!first) {
       throw new Error('useDeliberateForm: no specs available; cannot initialize selectedSpecId')
     }
-    // Priority: URL param > localStorage > first spec
+    // URL param takes priority. localStorage is read in useEffect to avoid SSR/client mismatch.
     if (initialTeamId && specs.some((s) => s.id === initialTeamId)) return initialTeamId
-    const stored = readLastTeam()
-    if (stored && specs.some((s) => s.id === stored)) return stored
     return first.id
   })
+
+  // Hydrate from localStorage after mount — runs client-only so SSR and initial
+  // client render always agree on the server-safe value above.
+  useEffect(() => {
+    if (initialTeamId) return
+    const stored = readLastTeam()
+    if (stored && specs.some((s) => s.id === stored)) setSelectedSpecId(stored)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [globalModel, setGlobalModel] = useState<ModelSelection | null>(null)
   const [loading, setLoading] = useState(false)
   const [benchmarkEnabled, setBenchmarkEnabled] = useState(true)
@@ -154,7 +161,28 @@ export function useDeliberateForm({
   const hasKeyForSelected = hasKeyInMemory || needsUnlock
   const hasAnyKey = Object.keys(identity.state.keys).length > 0 || selectedProvider === 'ollama'
 
-  const canStart = !!question.trim() && remainingToday > 0 && !loading && hasKeyForSelected
+  // For specs with editable reviewer agents (e.g. Reviewers team), the global
+  // model picker is irrelevant — each agent has its own model configured via
+  // the ReviewerConfigModal. Don't gate canStart on hasKeyForSelected for these
+  // specs; the modal will enforce key presence before dispatching.
+  const currentSpec = specs.find((s) => s.id === selectedSpecId)
+  const hasEditableAgents = currentSpec?.agents.some((a) => a.editable) ?? false
+
+  // For editable specs: reviewer config must be saved and keys must be present.
+  // For non-editable specs: a global model must be selected with an unlocked key.
+  const hasValidReviewerConfig = (() => {
+    if (!hasEditableAgents) return false
+    const config = getReviewerConfig(selectedSpecId)
+    if (!config) return false
+    const keyMap = identity.state.keys as Record<string, string>
+    return validateKeysForConfig(config, keyMap)
+  })()
+
+  const canStart =
+    !!question.trim() &&
+    remainingToday > 0 &&
+    !loading &&
+    (hasEditableAgents ? hasValidReviewerConfig : hasKeyForSelected)
 
   // Core dispatch — skips the reviewer config gate (used post-modal-save).
   const dispatchRef = useRef<() => Promise<void>>(() => Promise.resolve())
@@ -253,10 +281,10 @@ export function useDeliberateForm({
   const handleModalSave = useCallback((config: ReviewerConfig) => {
     setReviewerConfig(selectedSpecIdRef.current, config)
     setShowReviewerModal(false)
-    void dispatchRef.current()
   }, [])
 
   const closeReviewerModal = useCallback(() => setShowReviewerModal(false), [])
+  const openReviewerModal = useCallback(() => setShowReviewerModal(true), [])
 
   return {
     question,
@@ -275,6 +303,7 @@ export function useDeliberateForm({
     faceStyle,
     showReviewerModal,
     handleModalSave,
-    closeReviewerModal
+    closeReviewerModal,
+    openReviewerModal
   }
 }
