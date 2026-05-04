@@ -2,7 +2,7 @@
 
 import { AIACanvas, AIARing } from '@atta/ui/canvas'
 import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
-import React, { type ReactNode, useRef } from 'react'
+import React, { type ReactNode, useCallback, useRef } from 'react'
 import { useHomeCanvas } from './useHomeCanvas'
 import { useSphereAbsorb } from './useSphereAbsorb'
 import { useUserPreferences } from '@/lib/user-preferences-context'
@@ -36,9 +36,11 @@ function AgentSphereWithRotatingLabel({
 }) {
   const [nextWordCallback, setNextWordCallback] = React.useState<(() => void) | null>(null)
 
-  const encryptedLabel = useRotatingEncryptedLabel(AGENT_WORD_LISTS[name] ?? [], (callback) => {
+  const handleParticleAbsorb = useCallback((callback: () => void) => {
     setNextWordCallback(() => callback)
-  })
+  }, [])
+
+  const encryptedLabel = useRotatingEncryptedLabel(AGENT_WORD_LISTS[name] ?? [], handleParticleAbsorb)
 
   // Register this sphere's callback with the absorption handler
   React.useEffect(() => {
@@ -94,9 +96,9 @@ function HomeCanvasInner({ render, registerSphere, onOriginCompleteRef, labelCal
   const { faceStyle } = useUserPreferences()
 
   // Register particle absorption callback for each sphere's label
-  const handleSphereAbsorb = (sphereId: string, callback: () => void) => {
+  const handleSphereAbsorb = useCallback((sphereId: string, callback: () => void) => {
     labelCallbacksRef.current.set(sphereId, callback)
-  }
+  }, [])
 
   const isTouched = (index: number) => activeStep > index
   const getSphereState = (id: string, index: number) => {
