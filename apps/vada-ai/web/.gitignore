@@ -1,0 +1,3 @@
+.vercel
+.env.local.backup
+.env.local.production-snapshot
