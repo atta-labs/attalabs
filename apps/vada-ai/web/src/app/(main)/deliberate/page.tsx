@@ -4,7 +4,8 @@ import { listPublicSpecs } from '@atta/engine'
 import { getDailySessionCount, getOrCreateUser } from '@/db/queries'
 import { getUserTeamModels } from '@/db/settings-queries'
 import { getDailySessionLimit } from '@/schemas'
-import { getProviderKeys } from '@/db/keys-queries'
+import { getProviderKeys } from '@atta/db/queries'
+import { db } from '@/db'
 import { decryptVendorKeys } from '@atta/crypto'
 import { DeliberateSection } from './components/DeliberateSection'
 
@@ -20,7 +21,7 @@ export default async function DeliberatePage({
     getDailySessionCount(clerkId!),
     getUserTeamModels(clerkId!),
     getCatalog(),
-    getProviderKeys(clerkId!)
+    getProviderKeys(db, clerkId!)
   ])
   const specs = listPublicSpecs()
 

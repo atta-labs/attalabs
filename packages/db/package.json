@@ -6,7 +6,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./helpers": "./src/helpers.ts"
+    "./helpers": "./src/helpers.ts",
+    "./queries": "./src/queries/keys.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -14,7 +15,8 @@
   },
   "dependencies": {
     "drizzle-orm": "^0.45.1",
-    "@neondatabase/serverless": "^1.0.2"
+    "@neondatabase/serverless": "^1.0.2",
+    "@atta/crypto": "workspace:*"
   },
   "devDependencies": {
     "@atta/typescript-config": "workspace:*",

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
 import { decryptVendorKeys } from '@atta/crypto'
-import { getProviderKeys } from '@/db/keys-queries'
+import { getProviderKeys } from '@atta/db/queries'
+import { db } from '@/db'
 
 const SUPPORTED_VENDORS = ['anthropic', 'google', 'openai', 'xai'] as const
 
@@ -18,7 +19,7 @@ export async function GET() {
     }
     const masterKey = Buffer.from(masterKeyB64, 'base64')
 
-    const existing = await getProviderKeys(clerkId)
+    const existing = await getProviderKeys(db, clerkId)
     if (existing === null) {
       return NextResponse.json({ status: {} })
     }

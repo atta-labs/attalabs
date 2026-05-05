@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
 import { decryptVendorKeys, encryptVendorKeys } from '@atta/crypto'
-import { getProviderKeys, upsertProviderKeys } from '@/db/keys-queries'
+import { getProviderKeys, upsertProviderKeys } from '@atta/db/queries'
+import { db } from '@/db'
 
 export async function POST(request: Request) {
   try {
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'vendor and key must not be empty' }, { status: 400 })
     }
 
-    const existing = await getProviderKeys(clerkId)
+    const existing = await getProviderKeys(db, clerkId)
     const currentKeys: Record<string, string> =
       existing !== null
         ? decryptVendorKeys(existing.encryptedPayload as Parameters<typeof decryptVendorKeys>[0], clerkId, masterKey)
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
 
     const merged = { ...currentKeys, [vendor]: key }
     const encryptedPayload = encryptVendorKeys(merged, clerkId, masterKey)
-    await upsertProviderKeys(clerkId, encryptedPayload)
+    await upsertProviderKeys(db, clerkId, encryptedPayload)
 
     return NextResponse.json({ ok: true })
   } catch (err) {
