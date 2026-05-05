@@ -4,8 +4,8 @@ import { verifyApiKeyBearer } from '@atta/auth'
 import { decryptVendorKeys } from '@atta/crypto'
 import type { EncryptedVendorKeys } from '@atta/crypto'
 import type { ProviderKeys } from '@atta/adapter-langgraph'
+import { getProviderKeys } from '@atta/db/queries'
 import { db, schema } from '@/db'
-import { getProviderKeys } from '@/db/keys-queries'
 import { createServer } from '@vada/mcp-server/server'
 
 // ── In-process rate limiter ───────────────────────────────────────────────────
@@ -79,7 +79,7 @@ async function handleMcp(request: Request): Promise<Response> {
   const masterKey = Buffer.from(masterKeyB64, 'base64')
 
   // 4. Load provider keys for this user
-  const providerRow = await getProviderKeys(result.clerkId)
+  const providerRow = await getProviderKeys(db, result.clerkId)
   if (!providerRow) {
     return new Response(JSON.stringify({ error: 'No provider keys configured' }), {
       status: 400,

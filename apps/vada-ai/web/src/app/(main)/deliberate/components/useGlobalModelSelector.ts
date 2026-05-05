@@ -6,60 +6,30 @@
 import { fetchInstalledOllamaModels, probeProviderKey } from '@atta/identity'
 import { type ModelEntry, type RouteProvider, useCatalog } from '@atta/models'
 import { useToastContext } from '@atta/ui'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { SPEC_ID_TO_TEAM_ID } from '@/lib/teams-metadata'
+import { getReviewerConfig, setReviewerConfig } from '@/lib/reviewer-models'
 import type { ModelSelection } from './GlobalModelSelector'
 
 interface UseGlobalModelSelectorProps {
   value: ModelSelection | null
   onChange: (v: ModelSelection | null) => void
   settingsProviders: string[]
-  initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   selectedSpecId: string | undefined
-}
-
-// Persist last picked model locally so the next /deliberate visit pre-selects
-// it. Kept client-only — matches the server-side key story (no round trip) and
-// is per-device by nature.
-const LAST_MODEL_KEY = 'vada:last-model'
-
-interface LastModel {
-  provider: RouteProvider
-  modelId: string
-}
-
-function readLastModel(): LastModel | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(LAST_MODEL_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<LastModel>
-    if (!parsed.provider || typeof parsed.modelId !== 'string') return null
-    return { provider: parsed.provider as RouteProvider, modelId: parsed.modelId }
-  } catch {
-    return null
-  }
-}
-
-function writeLastModel(v: LastModel | null) {
-  if (typeof window === 'undefined') return
-  try {
-    if (v) window.localStorage.setItem(LAST_MODEL_KEY, JSON.stringify(v))
-    else window.localStorage.removeItem(LAST_MODEL_KEY)
-  } catch {
-    // quota exceeded / disabled — harmless, move on
-  }
+  /** Agent names for the active spec — used to write one model for all agents. */
+  specAgentNames: string[]
 }
 
 export function useGlobalModelSelector({
   value,
   onChange,
   settingsProviders,
-  initialTeamModels,
-  selectedSpecId
+  selectedSpecId,
+  specAgentNames
 }: UseGlobalModelSelectorProps) {
   const baseCatalog = useCatalog()
   const { successToast } = useToastContext()
+  const router = useRouter()
 
   // Providers saved in this session via the inline key-entry dialog
   const [sessionSavedProviders, setSessionSavedProviders] = useState<RouteProvider[]>([])
@@ -97,10 +67,6 @@ export function useGlobalModelSelector({
   }, [])
 
   // ── Catalog build ─────────────────────────────────────────────────────────
-  // Swap hardcoded Ollama defaults for the live /api/tags list when we have
-  // one; otherwise keep defaults so users can discover what to pull.
-  // In production, strip all Ollama entries — Ollama is local-only and has no
-  // place in the picker when the server is Vercel.
   const catalog = useMemo(() => {
     const base =
       ollamaReachable && installedOllama !== null && installedOllama.length > 0
@@ -117,64 +83,42 @@ export function useGlobalModelSelector({
     return set
   }, [settingsProviders, sessionSavedProviders, ollamaReachable])
 
-  const routeHints = useMemo<Partial<Record<RouteProvider, string>>>(() => ({}), [])
-
   const pickerValue = useMemo(() => (value ? { route: value.provider, modelId: value.modelId } : null), [value])
 
-  // ── Preset / default seeding on mount ──────────────────────────────────────
-  // Seeding priority:
-  //   1. Team-preset saved model (if user picked a preset and it has saved models)
-  //   2. Last-used model from localStorage (if provider is configured)
-  //   3. First catalog entry whose provider is configured
-  //   4. Nothing — user picks manually
+  // ── Per-team seeding ──────────────────────────────────────────────────────
+  // Reads from the unified vada:team:<specId> storage (same key/format as the
+  // reviewer modal). Takes the first agent's model to seed the picker — for
+  // non-editable teams all agents share the same model anyway.
   useEffect(() => {
-    if (selectedSpecId && initialTeamModels.length > 0) {
-      const teamId = SPEC_ID_TO_TEAM_ID[selectedSpecId]
-      const entry = teamId ? initialTeamModels.find((m) => m.teamId === teamId) : undefined
+    if (!selectedSpecId) return
+    const stored = getReviewerConfig(selectedSpecId)
+    const firstAgent = specAgentNames[0]
+    const modelId = firstAgent ? stored?.[firstAgent] : undefined
+    if (modelId) {
+      const entry = baseCatalog.find((e) => e.modelId === modelId)
       if (entry) {
-        const route = entry.provider as RouteProvider
-        onChange({ provider: route, modelId: entry.modelId, apiKey: '' })
-        return
-      }
-    }
-    if (!value) {
-      const last = readLastModel()
-      if (last) {
-        const providerAvailable = last.provider === 'ollama' || configuredRoutes.has(last.provider)
-        const inCatalog = baseCatalog.some((e) => e.route === last.provider && e.modelId === last.modelId)
-        if (providerAvailable && inCatalog) {
-          onChange({ provider: last.provider, modelId: last.modelId, apiKey: '' })
+        const providerAvailable = entry.route === 'ollama' || configuredRoutes.has(entry.route)
+        if (providerAvailable) {
+          onChange({ provider: entry.route, modelId: entry.modelId, apiKey: '' })
           return
         }
       }
-      const first = baseCatalog.find((e) => configuredRoutes.has(e.route))
-      if (first) {
-        onChange({ provider: first.route, modelId: first.modelId, apiKey: '' })
-      }
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Spec-switch reseed ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!selectedSpecId || initialTeamModels.length === 0) return
-    const teamId = SPEC_ID_TO_TEAM_ID[selectedSpecId]
-    const entry = teamId ? initialTeamModels.find((m) => m.teamId === teamId) : undefined
-    if (!entry) return
-    const route = entry.provider as RouteProvider
-    onChange({ provider: route, modelId: entry.modelId, apiKey: '' })
+    onChange(null)
   }, [selectedSpecId]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Persist every selection so next visit can seed from it.
-  useEffect(() => {
-    if (value) writeLastModel({ provider: value.provider, modelId: value.modelId })
-  }, [value?.provider, value?.modelId])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleChange = useCallback(
     (next: { route: RouteProvider; modelId: string }) => {
+      // Write immediately so the sphere display refreshes in the same render
+      // cycle. The format is the same as the reviewer modal — agentName → modelId.
+      if (selectedSpecId && specAgentNames.length > 0) {
+        const config = Object.fromEntries(specAgentNames.map((n) => [n, next.modelId]))
+        setReviewerConfig(selectedSpecId, config)
+      }
       onChange({ provider: next.route, modelId: next.modelId, apiKey: '' })
     },
-    [onChange]
+    [onChange, selectedSpecId, specAgentNames]
   )
 
   // Probe the key against the provider before persisting. We REJECT only on
@@ -199,6 +143,10 @@ export function useGlobalModelSelector({
       }
       setSessionSavedProviders((prev) => (prev.includes(route) ? prev : [...prev, route]))
       if (value?.provider === route) onChange({ ...value, apiKey: '' })
+      // Re-run the server component so configuredProviders prop reflects the
+      // newly saved key. Without this, the panel keeps showing locked spheres
+      // because page.tsx fetched configuredProviders before this key existed.
+      router.refresh()
       if (probe.ok) {
         successToast('Key verified', `${route} is ready to use.`)
       } else {
@@ -208,13 +156,12 @@ export function useGlobalModelSelector({
         )
       }
     },
-    [value, onChange, successToast]
+    [value, onChange, successToast, router]
   )
 
   return {
     catalog,
     configuredRoutes,
-    routeHints,
     pickerValue,
     handleChange,
     handleProvideKey

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
-import { revokeApiKey } from '@/db/keys-queries'
+import { revokeApiKey } from '@atta/db/queries'
+import { db } from '@/db'
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { userId: clerkId } = await auth()
@@ -10,7 +11,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params
 
-  const found = await revokeApiKey(id, clerkId)
+  const found = await revokeApiKey(db, id, clerkId)
   if (!found) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }

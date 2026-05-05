@@ -79,8 +79,9 @@ describe('validateKeysForConfig', () => {
     expect(validateKeysForConfig({ R: 'o4-mini' }, ['openai'])).toBe(true)
   })
 
-  test('xai prefix grok- is recognised', () => {
-    expect(validateKeysForConfig({ R: 'grok-3' }, ['xai'])).toBe(true)
+  test('grok- prefix routes via openrouter (xAI is not a RouteProvider)', () => {
+    expect(validateKeysForConfig({ R: 'grok-3' }, ['openrouter'])).toBe(true)
+    expect(validateKeysForConfig({ R: 'grok-3' }, ['xai'])).toBe(false)
   })
 })
 

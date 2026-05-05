@@ -16,7 +16,8 @@ import { getOrCreateUser, getSessionForUser, getSessionWithTranscript, setSessio
 import { persistTurn } from '@/engine/turn-logic'
 import type { TurnPhase } from '@/engine/types'
 import { decryptVendorKeys } from '@atta/crypto'
-import { getProviderKeys } from '@/db/keys-queries'
+import { getProviderKeys } from '@atta/db/queries'
+import { db } from '@/db'
 
 export const maxDuration = 300 // Hobby plan max (5 min)
 
@@ -214,7 +215,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const apiKey: string | undefined = undefined
   let providerKeys: ProviderKeys | undefined
-  const existing = await getProviderKeys(clerkId)
+  const existing = await getProviderKeys(db, clerkId)
   if (existing) {
     const decrypted = decryptVendorKeys(
       existing.encryptedPayload as Parameters<typeof decryptVendorKeys>[0],

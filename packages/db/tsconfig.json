@@ -1,7 +1,8 @@
 {
   "extends": "@atta/typescript-config/base.json",
   "compilerOptions": {
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

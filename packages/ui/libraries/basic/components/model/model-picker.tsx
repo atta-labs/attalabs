@@ -13,8 +13,9 @@ function hasModelIcon(modelId: string): boolean {
 }
 import * as React from 'react'
 
-import { cn } from '../../../lib/utils'
-import { Button } from './button'
+import { cn } from '../../../../lib/utils'
+import { Badge } from '../../installed/badge'
+import { Button } from '../../installed/button'
 import {
   Command,
   CommandEmpty,
@@ -23,11 +24,11 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator
-} from './command'
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './dialog'
-import { Input } from './input'
+} from '../../installed/command'
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '../../installed/dialog'
+import { Input } from '../../installed/input'
 import { ModelIcon } from './model-icon'
-import { Popover, PopoverContent, PopoverTrigger } from './popover'
+import { Popover, PopoverContent, PopoverTrigger } from '../../installed/popover'
 
 export interface ModelPickerValue {
   route: RouteProvider
@@ -43,10 +44,6 @@ export interface ModelPickerProps {
   // against the provider) before closing. Throw on failure to keep the key-
   // entry view open and surface the error inline.
   onProvideKey?: (route: RouteProvider, key: string) => void | Promise<void>
-  // Last-4 (or any short identifier) of each configured key, rendered next
-  // to the provider heading so the user can cross-reference with their
-  // provider dashboard. Never pass the full key.
-  routeHints?: Partial<Record<RouteProvider, string>>
   trigger?: React.ReactNode
   align?: 'start' | 'center' | 'end'
   side?: 'top' | 'bottom' | 'left' | 'right'
@@ -63,7 +60,6 @@ export function ModelPicker({
   onChange,
   configuredRoutes,
   onProvideKey,
-  routeHints,
   trigger,
   align = 'start',
   side = 'bottom',
@@ -313,10 +309,12 @@ export function ModelPicker({
                         <ProviderIcon provider={group.route} size={14} type='avatar' />
                         <span>{group.label}</span>
                         {effectiveConfigured.has(group.route) && (
-                          <span className='ml-auto flex items-center gap-1 font-mono text-[10px] font-normal text-muted-foreground'>
-                            <Check className='size-3 text-success' aria-hidden />
-                            {routeHints?.[group.route] ? `…${routeHints[group.route]}` : null}
-                          </span>
+                          <Badge
+                            variant='outline'
+                            className='ml-auto border-success/40 font-normal text-[10px] text-success'
+                          >
+                            Configured
+                          </Badge>
                         )}
                       </>
                     }
@@ -338,7 +336,12 @@ export function ModelPicker({
                             <ProviderIcon provider={entry.route} size={16} type='avatar' />
                           )}
                           <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
-                            <span className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
+                            <span
+                              className={cn(
+                                'font-mono text-[11px] uppercase tracking-widest',
+                                isSelected ? 'text-success' : 'text-foreground'
+                              )}
+                            >
                               {entry.label}
                             </span>
                             {entry.description && (
@@ -348,7 +351,7 @@ export function ModelPicker({
                           {locked ? (
                             <Lock className='h-3 w-3 shrink-0 text-muted-foreground' aria-label='API key required' />
                           ) : isSelected ? (
-                            <Check className='h-3.5 w-3.5 shrink-0 text-foreground' />
+                            <Check className='h-3.5 w-3.5 shrink-0 text-success' />
                           ) : null}
                         </CommandItem>
                       )

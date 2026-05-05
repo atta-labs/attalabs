@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
 import { decryptVendorKeys, encryptVendorKeys } from '@atta/crypto'
-import { deleteProviderKeys, getProviderKeys, upsertProviderKeys } from '@/db/keys-queries'
+import { deleteProviderKeys, getProviderKeys, upsertProviderKeys } from '@atta/db/queries'
+import { db } from '@/db'
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ vendor: string }> }) {
   try {
@@ -18,7 +19,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     const { vendor } = await params
 
-    const existing = await getProviderKeys(clerkId)
+    const existing = await getProviderKeys(db, clerkId)
     if (existing === null) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
@@ -32,10 +33,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     delete keys[vendor]
 
     if (Object.keys(keys).length === 0) {
-      await deleteProviderKeys(clerkId)
+      await deleteProviderKeys(db, clerkId)
     } else {
       const encryptedPayload = encryptVendorKeys(keys, clerkId, masterKey)
-      await upsertProviderKeys(clerkId, encryptedPayload)
+      await upsertProviderKeys(db, clerkId, encryptedPayload)
     }
 
     return NextResponse.json({ ok: true })

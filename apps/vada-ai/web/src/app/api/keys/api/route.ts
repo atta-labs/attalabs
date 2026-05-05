@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
 import { generateApiKey } from '@atta/crypto'
-import { createApiKey, listApiKeys } from '@/db/keys-queries'
+import { createApiKey, listApiKeys } from '@atta/db/queries'
+import { db } from '@/db'
 
 export async function POST(request: Request) {
   const { userId: clerkId } = await auth()
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
   }
 
   const { plaintext, hash } = generateApiKey('vada')
-  const row = await createApiKey(clerkId, trimmed, hash)
+  const row = await createApiKey(db, clerkId, trimmed, hash)
 
   return NextResponse.json({
     key: {
@@ -50,7 +51,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const rows = await listApiKeys(clerkId)
+  const rows = await listApiKeys(db, clerkId)
 
   return NextResponse.json({
     keys: rows.map((row) => ({

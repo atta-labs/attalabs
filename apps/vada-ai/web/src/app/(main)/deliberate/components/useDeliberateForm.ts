@@ -1,16 +1,11 @@
 'use client'
 
 import type { DeliberationSpec } from '@atta/engine'
+import { useCatalog } from '@atta/models'
 import { useToastContext } from '@atta/ui'
 import type { FaceStyle } from '@/components/agents'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
-import {
-  clearReviewerConfig,
-  getReviewerConfig,
-  resolveVendor,
-  setReviewerConfig,
-  validateKeysForConfig
-} from '@/lib/reviewer-models'
+import { getReviewerConfig, resolveVendor, setReviewerConfig, validateKeysForConfig } from '@/lib/reviewer-models'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUserPreferences } from '@/lib/user-preferences-context'
@@ -64,7 +59,6 @@ interface UseDeliberateFormProps {
   dailyLimit: number
   initialError?: string
   configuredProviders: string[]
-  initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   specs: DeliberationSpec[]
   initialTeamId?: string
 }
@@ -120,11 +114,12 @@ export function useDeliberateForm({
   const [loading, setLoading] = useState(false)
   const [benchmarkEnabled, setBenchmarkEnabled] = useState(true)
   const [showReviewerModal, setShowReviewerModal] = useState(false)
-  // Bumped whenever stale configs are cleared — causes DeliberatePanel to re-read localStorage.
-  const [_clearEpoch, setClearEpoch] = useState(0)
   const router = useRouter()
   const { errorToast } = useToastContext()
   const { faceStyle } = useUserPreferences()
+  // Catalog drives vendor resolution for arbitrary models (Groq, DeepSeek, etc.)
+  // so we don't whack-a-mole prefix lists for every new provider in models.dev.
+  const catalog = useCatalog()
 
   // Stable ref for selectedSpecId — used by modal save callback
   const selectedSpecIdRef = useRef(selectedSpecId)
@@ -134,26 +129,12 @@ export function useDeliberateForm({
     if (initialError) errorToast('Could not start deliberation', initialError)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-clear saved reviewer configs whose models' vendor keys no longer exist
-  // server-side. Runs on mount and whenever configuredProviders changes (e.g.
-  // after the user deletes a key in Settings and navigates back here).
-  useEffect(() => {
-    const prefix = 'vada:reviewer-models:'
-    const staleSpecIds = Object.keys(window.localStorage)
-      .filter((k) => k.startsWith(prefix))
-      .map((k) => k.slice(prefix.length))
-      .filter((specId) => {
-        const config = getReviewerConfig(specId)
-        return config !== null && !validateKeysForConfig(config, configuredProviders)
-      })
-
-    if (staleSpecIds.length > 0) {
-      for (const specId of staleSpecIds) {
-        clearReviewerConfig(specId)
-      }
-      setClearEpoch((n) => n + 1)
-    }
-  }, [configuredProviders])
+  // NOTE: Previously auto-cleared reviewer configs whose vendor keys weren't in
+  // `configuredProviders`. Disabled because `configuredProviders` is server-fetched
+  // at page load and doesn't refresh after the user adds a key inline (modal /
+  // popover "Provide Key"). The effect would wipe just-saved configs, leaving empty
+  // spheres. Lock badges in the panel already signal misconfigured slots — the user
+  // can re-pick or remove keys explicitly.
 
   // Surface the daily-limit state explicitly. Without a toast, the Deliberate
   // buttons just grey out and the user is left guessing why nothing happens.
@@ -188,7 +169,7 @@ export function useDeliberateForm({
     if (!hasEditableAgents) return false
     const config = getReviewerConfig(selectedSpecId)
     if (!config) return false
-    return validateKeysForConfig(config, configuredProviders)
+    return validateKeysForConfig(config, configuredProviders, catalog)
   })()
 
   // For non-editable specs: check all agents' effective model vendors have keys.
@@ -205,7 +186,7 @@ export function useDeliberateForm({
     return agentNames.every((name) => {
       const model = agentMap.get(name)?.model ?? defaultModel
       if (!model) return false
-      const vendor = resolveVendor(model)
+      const vendor = resolveVendor(model, catalog)
       if (!vendor) return false
       return configuredProviders.includes(vendor)
     })
@@ -279,7 +260,7 @@ export function useDeliberateForm({
       const editableAgents = spec.agents.filter((a) => a.editable)
       if (editableAgents.length > 0) {
         const config = getReviewerConfig(selectedSpecId)
-        if (!config || !validateKeysForConfig(config, configuredProviders)) {
+        if (!config || !validateKeysForConfig(config, configuredProviders, catalog)) {
           setShowReviewerModal(true)
           return
         }

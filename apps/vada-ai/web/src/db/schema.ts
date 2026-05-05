@@ -13,6 +13,12 @@ import {
   varchar
 } from 'drizzle-orm/pg-core'
 
+// Ecosystem-shared tables — live in @atta/db; imported here for local FK references
+import { users } from '@atta/db'
+
+export { users, apiKeys, userProviderKeys, mcpSessions } from '@atta/db'
+export type { ApiKey, NewApiKey, McpSession, UserProviderKeys, NewUserProviderKeys } from '@atta/db'
+
 export const sessionStateEnum = pgEnum('session_state', [
   'PENDING',
   'ROUND_1',
@@ -33,12 +39,6 @@ export const terminalStateEnum = pgEnum('terminal_state', [
 ])
 
 export const interventionTypeEnum = pgEnum('intervention_type', ['WHISPER', 'DIRECTIVE', 'STOP'])
-
-export const users = pgTable('users', {
-  clerkId: varchar('clerk_id', { length: 255 }).primaryKey(),
-  email: varchar('email').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull()
-})
 
 export const vadaProfile = pgTable('vada_profile', {
   clerkId: varchar('clerk_id', { length: 255 })
@@ -227,8 +227,6 @@ export const v2OrchestrationRuns = pgTable(
 )
 
 // ── Settings ─────────────────────────────────────────────────────────────────
-// Note: there is no user_api_keys table. Keys live only in the user's browser.
-// See /trust for the BYOK architecture guarantee.
 
 export const userTeamModels = pgTable(
   'user_team_models',
@@ -254,41 +252,6 @@ export const userSettings = pgTable('user_settings', {
   faceStyle: varchar('face_style').default('emblematic').notNull(), // 'reductive' | 'emblematic'
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
-
-// ── MCP sessions ──────────────────────────────────────────────────────────────
-// Written by the MCP server (packages/mcp-server). Read-only from the web app.
-// userId is the Clerk user ID string (not a UUID FK) — set via VADA_USER_ID env.
-
-export const mcpSessions = pgTable(
-  'mcp_sessions',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    userId: text('user_id'),
-    toolName: text('tool_name').notNull(),
-    reviewerProfile: text('reviewer_profile'),
-    prompt: text('prompt').notNull(),
-    response: text('response').notNull(),
-    terminalState: text('terminal_state'),
-    transcript: jsonb('transcript'),
-    costUsd: text('cost_usd'),
-    tokensInput: integer('tokens_input').notNull(),
-    tokensOutput: integer('tokens_output').notNull(),
-    toolCalls: jsonb('tool_calls'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    durationMs: integer('duration_ms').notNull(),
-    sessionTitle: text('session_title'),
-    context: text('context'),
-    currentLeaning: text('current_leaning'),
-    stakes: text('stakes'),
-    origin: text('origin'),
-    isShared: boolean('is_shared').default(false).notNull(),
-    shareToken: text('share_token').unique(),
-    mcpApiKeyId: uuid('mcp_api_key_id').references(() => apiKeys.id)
-  },
-  (t) => [index('mcp_sessions_user_id_idx').on(t.userId)]
-)
-
-export type McpSession = typeof mcpSessions.$inferSelect
 
 // ── Brokered benchmark runs ───────────────────────────────────────────────────
 // Stores judge evaluations of brokered consultations against a single-shot
@@ -321,40 +284,3 @@ export const benchmarkRuns = pgTable(
 
 export type BenchmarkRun = typeof benchmarkRuns.$inferSelect
 export type NewBenchmarkRun = typeof benchmarkRuns.$inferInsert
-
-// ── API keys ──────────────────────────────────────────────────────────────────
-// Bearer tokens issued to users for MCP and external integrations.
-// Plaintext is shown once at creation time; only the SHA-256 hash is stored.
-
-export const apiKeys = pgTable(
-  'api_keys',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    clerkId: text('clerk_id').notNull(),
-    name: text('name').notNull(),
-    product: text('product').notNull().default('vada'),
-    keyHash: text('key_hash').notNull().unique(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    lastUsedAt: timestamp('last_used_at'),
-    revokedAt: timestamp('revoked_at')
-  },
-  (t) => [index('api_keys_clerk_id_idx').on(t.clerkId), index('api_keys_key_hash_idx').on(t.keyHash)]
-)
-
-export type ApiKey = typeof apiKeys.$inferSelect
-export type NewApiKey = typeof apiKeys.$inferInsert
-
-// ── User provider keys ────────────────────────────────────────────────────────
-// Server-side encrypted vendor API keys (Anthropic, Google, OpenAI, xAI).
-// One row per user. Payload is AES-256-GCM envelope from @atta/crypto.
-
-export const userProviderKeys = pgTable('user_provider_keys', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  clerkId: text('clerk_id').notNull().unique(),
-  encryptedPayload: jsonb('encrypted_payload').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull()
-})
-
-export type UserProviderKeys = typeof userProviderKeys.$inferSelect
-export type NewUserProviderKeys = typeof userProviderKeys.$inferInsert

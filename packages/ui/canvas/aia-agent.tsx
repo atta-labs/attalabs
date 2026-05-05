@@ -64,6 +64,13 @@ export interface AIAgentProps {
   model?: string
   /** Tooltip text shown on hover of the model badge. */
   modelLabel?: string
+  /**
+   * Optional override for the model badge contents. When provided, replaces the
+   * default LobeModelIcon. Lets consumers (e.g. VadaAgent) inject a catalog-aware
+   * icon that falls back to a provider logo for non-Lobehub-recognized models —
+   * keeps @atta/ui/canvas free of @atta/models dependency.
+   */
+  modelIcon?: ReactNode
 }
 
 export function AIAgent({
@@ -87,7 +94,8 @@ export function AIAgent({
   className,
   children,
   model,
-  modelLabel
+  modelLabel,
+  modelIcon
 }: AIAgentProps) {
   const faceInset = FACE_PADDING
   const thinkingFontPx =
@@ -98,7 +106,7 @@ export function AIAgent({
       title={modelLabel ?? model}
       className='flex items-center justify-center rounded-md border border-border bg-card p-0.5 shadow-sm'
     >
-      <LobeModelIcon model={model} size={20} type='avatar' />
+      {modelIcon ?? <LobeModelIcon model={model} size={20} type='avatar' />}
     </span>
   ) : undefined
 

@@ -577,6 +577,31 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 ---
 
+## D-027: Unified team agent model storage — single localStorage key for all team types
+
+**Date:** May 5, 2026
+**Status:** Active
+
+**Decision summary:** All team configurations (Reviewers, Sparring, Crucible, War Room, and any future team) use a single localStorage key format: `vada:team:<specId>` → `Record<agentName, string>`. The value maps each agent name to its modelId. There is no distinction in storage between editable reviewer-chain teams and non-editable role-based teams.
+
+**Alternatives considered:**
+- Two separate keys: `vada:reviewer-models:<specId>` (per-agent config) and `vada:team-model:<specId>` (global selection) — was the previous implementation; required divergent code paths per team type
+- Three keys with a type discriminator — adds encoding overhead for no readability gain
+- DB persistence for selected models — was briefly in place (`userTeamModels` table) but caused a regression where stale DB entries always overrode localStorage selections (see below); removed in favour of client-only persistence
+
+**Rationale:** From the YAML's perspective, every team is the same structure — a list of agents with names. The distinction between "editable" and "non-editable" is a UI hint (whether to show the ReviewerConfigModal vs. the GlobalModelSelector), not a data distinction. Both UIs should write the same format to the same location. `resolveModel` then has a single read path (`teamConfig?.[agentName]`) with no branching on team type.
+
+The DB-backed `userTeamModels` table was removed because it caused a revert-to-Claude bug: the DB rows (seeded before the Teams tab was removed) had priority in the seeding effect, overriding whatever the user had picked in localStorage on every page refresh.
+
+**Consequences:**
+- `STORAGE_KEY_PREFIX` in `reviewer-models.ts` changed from `'vada:reviewer-models:'` to `'vada:team:'`; all other functions unchanged
+- `useGlobalModelSelector` reads/writes via `getReviewerConfig`/`setReviewerConfig` instead of its own key/format; `specAgentNames` prop added so the global picker writes all agent names when the user picks one model
+- `resolveModel` in `DeliberatePanel` collapses from a conditional expression to one line: `teamConfig?.[a.name] ?? undefined`
+- DB `getUserTeamModels` query no longer called from the deliberate page; one fewer DB round-trip on page load
+- Adding a new team type in the future requires no storage layer changes — it inherits the unified key automatically
+
+---
+
 ## How to add an entry
 
 When adding a new decision:

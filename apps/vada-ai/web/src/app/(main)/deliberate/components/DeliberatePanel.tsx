@@ -6,12 +6,14 @@ import { Button, Checkbox } from '@atta/ui'
 import { ArrowRight, GitCompare, Loader2, Lock, Settings2 } from 'lucide-react'
 import { cn } from '@atta/ui/lib/utils'
 import { NextLink } from '@atta/ui/lib/next-link'
+import { useEffect, useMemo, useState } from 'react'
 import { TeamPicker } from './TeamPicker'
 import { GlobalModelSelector } from './GlobalModelSelector'
 import type { ModelSelection } from './GlobalModelSelector'
 import { ReviewerConfigModal } from './ReviewerConfigModal'
 import { getReviewerConfig, resolveVendor } from '@/lib/reviewer-models'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
+import { useCatalog } from '@atta/models'
 
 interface DisplayAgent {
   name: string
@@ -86,7 +88,6 @@ interface DeliberatePanelProps {
   globalModel: ModelSelection | null
   onGlobalModelChange: (m: ModelSelection | null) => void
   configuredProviders: string[]
-  initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   benchmarkEnabled: boolean
   onBenchmarkChange: (v: boolean) => void
   onStart: () => void
@@ -106,7 +107,6 @@ export function DeliberatePanel({
   globalModel,
   onGlobalModelChange,
   configuredProviders,
-  initialTeamModels,
   benchmarkEnabled,
   onBenchmarkChange,
   onStart,
@@ -121,29 +121,35 @@ export function DeliberatePanel({
   const selectedSpec = specs.find((s) => s.id === selectedSpecId) ?? specs[0]
   const agents = selectedSpec ? getDisplayAgents(selectedSpec) : []
   const hasEditable = selectedSpec?.agents.some((a) => a.editable) ?? false
-  const defaultModel = selectedSpec?.defaults.model ?? ''
-  // Re-reads localStorage on every render so spheres update immediately after config save
-  const userConfig = getReviewerConfig(selectedSpecId)
+  const specAgentNames = useMemo(() => agents.map((a) => a.name), [agents])
+  const catalog = useCatalog()
 
-  // Resolve the model to display on each agent sphere.
-  // Role agents: model shows as a bottom-right vendor badge.
-  // Non-role agents: model shows as a centered ModelIcon face.
-  const resolveModel = (a: DisplayAgent): string | undefined => {
-    if (userConfig?.[a.name]) return userConfig[a.name]
-    if (globalModel?.modelId) return globalModel.modelId
-    // Editable reviewer slots: show nothing until explicitly configured — the spec-level
-    // defaultModel must not bleed into these spheres when no user config is saved.
-    const specAgent = selectedSpec?.agents.find((ag) => ag.name === a.name)
-    if (specAgent?.editable) return undefined
-    return a.model ?? defaultModel ?? undefined
-  }
+  // localStorage is undefined on the server. Reading it during render produces
+  // different HTML on server vs client → hydration mismatch. Defer to after
+  // mount so the first client render matches the server (no userConfig), then
+  // re-render with the real value once we're hydrated. We re-read on every
+  // render after mount so spheres update immediately when the modal saves.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  // Single source of truth: vada:team:<specId> — same key/format for every
+  // team type. GlobalModelSelector writes all agent names when user picks one
+  // model; ReviewerConfigModal writes per-agent. resolveModel reads from one place.
+  const teamConfig: ReviewerConfig | null = mounted ? getReviewerConfig(selectedSpecId) : null
 
-  // A slot is available when its resolved model's vendor key is configured.
+  const resolveModel = (a: DisplayAgent): string | undefined => teamConfig?.[a.name] ?? undefined
+
+  // A slot is available when a model is resolved AND its vendor key is configured.
+  // Empty editable slots (no model picked yet) are NOT available — they need configuration.
+  // Ollama is local — no key concept — so a model routed via 'ollama' is always available
+  // when picked (the picker only surfaces ollama models if the local server is reachable).
   const isSlotAvailable = (a: DisplayAgent): boolean => {
     const model = resolveModel(a)
-    if (!model) return true
-    const vendor = resolveVendor(model)
+    if (!model) return false
+    const vendor = resolveVendor(model, catalog)
     if (!vendor) return false
+    if (vendor === 'ollama') return true
     return configuredProviders.includes(vendor)
   }
 
@@ -206,7 +212,7 @@ export function DeliberatePanel({
             </NextLink>
 
             <div className='flex flex-col gap-2'>
-              <div className='flex flex-row gap-3 overflow-x-auto pb-1'>
+              <div className='flex flex-row flex-wrap gap-3 pb-1'>
                 {agents.map((a) => {
                   const available = isSlotAvailable(a)
                   return (
@@ -270,8 +276,8 @@ export function DeliberatePanel({
               value={globalModel}
               onChange={onGlobalModelChange}
               settingsProviders={configuredProviders}
-              initialTeamModels={initialTeamModels}
               selectedSpecId={selectedSpecId}
+              specAgentNames={specAgentNames}
               trigger={configureTrigger}
             />
           )}
