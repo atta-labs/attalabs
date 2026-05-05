@@ -56,6 +56,11 @@ export function VadaAgent({
     faceTranslateY = '0'
   }
 
+  // Catalog-aware badge icon — falls back to provider logo for non-Lobehub models
+  // (Groq's Compound, Allam, etc.). Without this, the badge renders as an empty
+  // square because LobeModelIcon doesn't recognize those model IDs.
+  const badgeIcon = model ? <ModelOrProviderIcon model={model} size={20} /> : undefined
+
   return (
     <AgentSphere
       color={color}
@@ -65,6 +70,7 @@ export function VadaAgent({
       // Roled agents: forward model so AgentSphere renders the bottom-right badge.
       // Unroled agents: model is consumed as the face icon above; no badge needed.
       model={agentDef ? model : undefined}
+      modelIcon={agentDef ? badgeIcon : undefined}
       label={label ?? name}
       {...rest}
     />

@@ -1,5 +1,6 @@
 'use client'
 
+import { findModelEntryByModelId, useCatalog } from '@atta/models'
 import { ModelIcon } from '@atta/ui'
 import { ProviderIcon } from '@lobehub/icons'
 import { inferVendor } from './vendors'
@@ -19,10 +20,14 @@ interface ModelOrProviderIconProps {
 }
 
 export function ModelOrProviderIcon({ model, size = 36 }: ModelOrProviderIconProps) {
+  const catalog = useCatalog()
   if (hasModelIcon(model)) {
     return <ModelIcon model={model} size={size} type='avatar' />
   }
-  const vendor = inferVendor(model)
+  // Catalog is the source of truth for which brand to show. Falls back to
+  // prefix-matching for the four core vendors when the model isn't in catalog.
+  const entry = findModelEntryByModelId(catalog, model)
+  const vendor = entry?.displayProvider ?? inferVendor(model)
   if (vendor) {
     return <ProviderIcon provider={vendor} size={size} type='avatar' />
   }
