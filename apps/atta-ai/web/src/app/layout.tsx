@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { buildFaviconIcons, cmsClient, getAttaBranding, getAttaConfig } from '@atta/cms'
 import { IdentityProvider } from '@atta/identity/react'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'

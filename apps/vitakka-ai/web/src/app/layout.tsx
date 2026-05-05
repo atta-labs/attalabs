@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { buildFaviconIcons, cmsClient, getVitakkaBranding, getVitakkaConfig } from '@atta/cms'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import type { Metadata } from 'next'

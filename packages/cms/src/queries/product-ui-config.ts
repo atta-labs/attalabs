@@ -36,7 +36,10 @@ export async function getProductUiConfig(
   documentType: string,
   documentId: string
 ): Promise<PortalUiConfig | null> {
-  return client.fetch(PRODUCT_UI_QUERY(documentType, documentId))
+  // Bypass Sanity CDN so theme changes from the admin are visible immediately.
+  // useCdn: true (production default) caches responses and delays propagation after saves.
+  const liveClient = client.withConfig({ useCdn: false })
+  return liveClient.fetch(PRODUCT_UI_QUERY(documentType, documentId))
 }
 
 export async function getHeraldConfig(client: SanityClient): Promise<PortalUiConfig | null> {
