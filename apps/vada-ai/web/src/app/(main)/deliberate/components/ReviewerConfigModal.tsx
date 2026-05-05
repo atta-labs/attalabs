@@ -6,8 +6,9 @@ import type { RouteProvider } from '@atta/models'
 import { useCatalog } from '@atta/models'
 import { Button, ModelPicker, useToastContext } from '@atta/ui'
 import { Dialog, DialogContent, DialogTitle } from '@atta/ui/components/dialog'
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { getReviewerConfig } from '@/lib/reviewer-models'
+import { getReviewerConfig, resolveVendor as resolveVendorFromCatalog } from '@/lib/reviewer-models'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
 
 interface ReviewerConfigModalProps {
@@ -17,28 +18,23 @@ interface ReviewerConfigModalProps {
   configuredProviders: string[]
 }
 
-function resolveVendor(model: string): RouteProvider | null {
-  if (model.startsWith('claude-')) return 'anthropic'
-  if (model.startsWith('gemini-')) return 'google'
-  if (model.startsWith('gpt-') || model.startsWith('o4-')) return 'openai'
-  // xai is not yet a RouteProvider — grok slots start empty in the modal
-  return null
-}
-
 export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders }: ReviewerConfigModalProps) {
   const catalog = useCatalog()
   const { successToast } = useToastContext()
+  const router = useRouter()
 
   // Show all agents so role agents (e.g. Synthesizer) can also be configured
   const editableAgents: SpecAgent[] = useMemo(() => spec.agents, [spec.agents])
 
-  // Per-agent selected model — seed from saved config first, fall back to YAML default
+  // Per-agent selected model.
+  // Editable slots: only seed from saved user config — never from YAML default.
+  // Non-editable slots (e.g. Synthesizer): seed from YAML model since it's fixed by the spec.
   const [selections, setSelections] = useState<Record<string, { route: RouteProvider; modelId: string } | null>>(() => {
     const saved = getReviewerConfig(spec.id)
     return Object.fromEntries(
       editableAgents.map((a) => {
-        const model = saved?.[a.name] ?? a.model
-        const vendor = model ? resolveVendor(model) : null
+        const model = a.editable ? saved?.[a.name] : (saved?.[a.name] ?? a.model)
+        const vendor = model ? (resolveVendorFromCatalog(model, catalog) as RouteProvider | null) : null
         return [a.name, vendor && model ? { route: vendor, modelId: model } : null]
       })
     )
@@ -66,6 +62,11 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
       throw new Error((data as Record<string, string>).error ?? 'Failed to save key.')
     }
     setSessionSavedProviders((prev) => (prev.includes(route) ? prev : [...prev, route]))
+    // Re-run page.tsx so the parent's `configuredProviders` prop reflects the
+    // newly saved key. Without this, after the modal saves and closes, the
+    // panel's slot-availability check still uses the stale prop and renders a
+    // lock for the model the user just enabled.
+    router.refresh()
     if (probe.ok) {
       successToast('Key verified', `${route} is ready to use.`)
     } else {
