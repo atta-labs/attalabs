@@ -4,7 +4,13 @@ import type { DeliberationSpec } from '@atta/engine'
 import { useToastContext } from '@atta/ui'
 import type { FaceStyle } from '@/components/agents'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
-import { clearReviewerConfig, getReviewerConfig, resolveVendor, setReviewerConfig, validateKeysForConfig } from '@/lib/reviewer-models'
+import {
+  clearReviewerConfig,
+  getReviewerConfig,
+  resolveVendor,
+  setReviewerConfig,
+  validateKeysForConfig
+} from '@/lib/reviewer-models'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUserPreferences } from '@/lib/user-preferences-context'
