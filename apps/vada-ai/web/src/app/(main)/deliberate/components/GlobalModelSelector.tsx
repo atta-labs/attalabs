@@ -21,8 +21,8 @@ interface GlobalModelSelectorProps {
   value: ModelSelection | null
   onChange: (v: ModelSelection | null) => void
   settingsProviders?: string[]
-  initialTeamModels?: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   selectedSpecId?: string
+  specAgentNames?: string[]
   trigger?: ReactNode
 }
 
@@ -30,11 +30,11 @@ export function GlobalModelSelector({
   value,
   onChange,
   settingsProviders = [],
-  initialTeamModels = [],
   selectedSpecId,
+  specAgentNames = [],
   trigger
 }: GlobalModelSelectorProps) {
-  const g = useGlobalModelSelector({ value, onChange, settingsProviders, initialTeamModels, selectedSpecId })
+  const g = useGlobalModelSelector({ value, onChange, settingsProviders, selectedSpecId, specAgentNames })
   return (
     <ModelPicker
       options={g.catalog}

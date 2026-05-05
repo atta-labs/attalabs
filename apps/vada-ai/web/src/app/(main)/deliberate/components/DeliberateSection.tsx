@@ -11,7 +11,6 @@ interface DeliberateSectionProps {
   dailyLimit: number
   initialError?: string
   configuredProviders: string[]
-  initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   specs: DeliberationSpec[]
   initialTeamId?: string
 }
@@ -26,7 +25,6 @@ export function DeliberateSection(props: DeliberateSectionProps) {
       <DeliberatePanel
         specs={props.specs}
         configuredProviders={props.configuredProviders}
-        initialTeamModels={props.initialTeamModels}
         selectedSpecId={form.selectedSpecId}
         onSelectSpec={form.setSelectedSpecId}
         globalModel={form.globalModel}

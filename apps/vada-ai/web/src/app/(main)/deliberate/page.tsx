@@ -2,7 +2,6 @@ import { auth } from '@atta/auth/hooks'
 import { CatalogProvider, getCatalog, ROUTE_PROVIDER_ORDER } from '@atta/models'
 import { listPublicSpecs } from '@atta/engine'
 import { getDailySessionCount, getOrCreateUser } from '@/db/queries'
-import { getUserTeamModels } from '@/db/settings-queries'
 import { getDailySessionLimit } from '@/schemas'
 import { getProviderKeys } from '@atta/db/queries'
 import { db } from '@/db'
@@ -17,9 +16,8 @@ export default async function DeliberatePage({
   const { userId: clerkId } = await auth()
 
   await getOrCreateUser(clerkId!, '')
-  const [dailyCount, teamModels, catalog, providerRow] = await Promise.all([
+  const [dailyCount, catalog, providerRow] = await Promise.all([
     getDailySessionCount(clerkId!),
-    getUserTeamModels(clerkId!),
     getCatalog(),
     getProviderKeys(db, clerkId!)
   ])
@@ -59,7 +57,6 @@ export default async function DeliberatePage({
           dailyLimit={dailyLimit}
           initialError={error}
           configuredProviders={configuredProviders}
-          initialTeamModels={teamModels}
           specs={specs}
           initialTeamId={team}
         />

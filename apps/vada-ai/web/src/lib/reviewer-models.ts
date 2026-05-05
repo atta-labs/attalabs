@@ -1,9 +1,9 @@
 import type { ModelEntry } from '@atta/models'
 import { findModelEntryByModelId } from '@atta/models'
 
-const STORAGE_KEY_PREFIX = 'vada:reviewer-models:'
+const STORAGE_KEY_PREFIX = 'vada:team:'
 
-/** agentName → modelId string */
+/** agentName → modelId — same format for every team type */
 export type ReviewerConfig = Record<string, string>
 
 export function getReviewerConfig(specId: string): ReviewerConfig | null {

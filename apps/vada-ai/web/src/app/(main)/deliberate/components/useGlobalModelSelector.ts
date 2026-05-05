@@ -8,55 +8,24 @@ import { type ModelEntry, type RouteProvider, useCatalog } from '@atta/models'
 import { useToastContext } from '@atta/ui'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { SPEC_ID_TO_TEAM_ID } from '@/lib/teams-metadata'
+import { getReviewerConfig, setReviewerConfig } from '@/lib/reviewer-models'
 import type { ModelSelection } from './GlobalModelSelector'
 
 interface UseGlobalModelSelectorProps {
   value: ModelSelection | null
   onChange: (v: ModelSelection | null) => void
   settingsProviders: string[]
-  initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   selectedSpecId: string | undefined
-}
-
-// Per-team picked model, persisted client-side so each team remembers its own
-// selection. Keyed by spec.id — switching teams loads that team's last pick.
-const TEAM_MODEL_KEY_PREFIX = 'vada:team-model:'
-
-interface LastModel {
-  provider: RouteProvider
-  modelId: string
-}
-
-function readTeamModel(specId: string): LastModel | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(TEAM_MODEL_KEY_PREFIX + specId)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<LastModel>
-    if (!parsed.provider || typeof parsed.modelId !== 'string') return null
-    return { provider: parsed.provider as RouteProvider, modelId: parsed.modelId }
-  } catch {
-    return null
-  }
-}
-
-function writeTeamModel(specId: string, v: LastModel | null) {
-  if (typeof window === 'undefined') return
-  try {
-    if (v) window.localStorage.setItem(TEAM_MODEL_KEY_PREFIX + specId, JSON.stringify(v))
-    else window.localStorage.removeItem(TEAM_MODEL_KEY_PREFIX + specId)
-  } catch {
-    // quota exceeded / disabled — harmless, move on
-  }
+  /** Agent names for the active spec — used to write one model for all agents. */
+  specAgentNames: string[]
 }
 
 export function useGlobalModelSelector({
   value,
   onChange,
   settingsProviders,
-  initialTeamModels,
-  selectedSpecId
+  selectedSpecId,
+  specAgentNames
 }: UseGlobalModelSelectorProps) {
   const baseCatalog = useCatalog()
   const { successToast } = useToastContext()
@@ -98,10 +67,6 @@ export function useGlobalModelSelector({
   }, [])
 
   // ── Catalog build ─────────────────────────────────────────────────────────
-  // Swap hardcoded Ollama defaults for the live /api/tags list when we have
-  // one; otherwise keep defaults so users can discover what to pull.
-  // In production, strip all Ollama entries — Ollama is local-only and has no
-  // place in the picker when the server is Vercel.
   const catalog = useMemo(() => {
     const base =
       ollamaReachable && installedOllama !== null && installedOllama.length > 0
@@ -121,47 +86,39 @@ export function useGlobalModelSelector({
   const pickerValue = useMemo(() => (value ? { route: value.provider, modelId: value.modelId } : null), [value])
 
   // ── Per-team seeding ──────────────────────────────────────────────────────
-  // Runs on mount AND every time selectedSpecId changes. Configs are PER TEAM
-  // — switching teams must load that team's saved pick, not bleed the previous
-  // team's selection across.
-  // Seeding priority for the active team:
-  //   1. Team-preset saved model (DB, set via Teams tab if present)
-  //   2. Last pick for THIS team (localStorage)
-  //   3. Cleared — user picks manually for this team
+  // Reads from the unified vada:team:<specId> storage (same key/format as the
+  // reviewer modal). Takes the first agent's model to seed the picker — for
+  // non-editable teams all agents share the same model anyway.
   useEffect(() => {
     if (!selectedSpecId) return
-    const teamId = SPEC_ID_TO_TEAM_ID[selectedSpecId]
-    const dbEntry = teamId ? initialTeamModels.find((m) => m.teamId === teamId) : undefined
-    if (dbEntry) {
-      onChange({ provider: dbEntry.provider as RouteProvider, modelId: dbEntry.modelId, apiKey: '' })
-      return
-    }
-    const stored = readTeamModel(selectedSpecId)
-    if (stored) {
-      const providerAvailable = stored.provider === 'ollama' || configuredRoutes.has(stored.provider)
-      const inCatalog = baseCatalog.some((e) => e.route === stored.provider && e.modelId === stored.modelId)
-      if (providerAvailable && inCatalog) {
-        onChange({ provider: stored.provider, modelId: stored.modelId, apiKey: '' })
-        return
+    const stored = getReviewerConfig(selectedSpecId)
+    const firstAgent = specAgentNames[0]
+    const modelId = firstAgent ? stored?.[firstAgent] : undefined
+    if (modelId) {
+      const entry = baseCatalog.find((e) => e.modelId === modelId)
+      if (entry) {
+        const providerAvailable = entry.route === 'ollama' || configuredRoutes.has(entry.route)
+        if (providerAvailable) {
+          onChange({ provider: entry.route, modelId: entry.modelId, apiKey: '' })
+          return
+        }
       }
     }
     onChange(null)
   }, [selectedSpecId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist every selection under the active team's key so switching back
-  // restores that team's pick.
-  useEffect(() => {
-    if (!selectedSpecId) return
-    if (value) writeTeamModel(selectedSpecId, { provider: value.provider, modelId: value.modelId })
-    else writeTeamModel(selectedSpecId, null)
-  }, [selectedSpecId, value?.provider, value?.modelId])
-
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleChange = useCallback(
     (next: { route: RouteProvider; modelId: string }) => {
+      // Write immediately so the sphere display refreshes in the same render
+      // cycle. The format is the same as the reviewer modal — agentName → modelId.
+      if (selectedSpecId && specAgentNames.length > 0) {
+        const config = Object.fromEntries(specAgentNames.map((n) => [n, next.modelId]))
+        setReviewerConfig(selectedSpecId, config)
+      }
       onChange({ provider: next.route, modelId: next.modelId, apiKey: '' })
     },
-    [onChange]
+    [onChange, selectedSpecId, specAgentNames]
   )
 
   // Probe the key against the provider before persisting. We REJECT only on

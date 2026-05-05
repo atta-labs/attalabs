@@ -59,7 +59,6 @@ interface UseDeliberateFormProps {
   dailyLimit: number
   initialError?: string
   configuredProviders: string[]
-  initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   specs: DeliberationSpec[]
   initialTeamId?: string
 }

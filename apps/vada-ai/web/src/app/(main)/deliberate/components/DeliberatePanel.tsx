@@ -6,7 +6,7 @@ import { Button, Checkbox } from '@atta/ui'
 import { ArrowRight, GitCompare, Loader2, Lock, Settings2 } from 'lucide-react'
 import { cn } from '@atta/ui/lib/utils'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { TeamPicker } from './TeamPicker'
 import { GlobalModelSelector } from './GlobalModelSelector'
 import type { ModelSelection } from './GlobalModelSelector'
@@ -88,7 +88,6 @@ interface DeliberatePanelProps {
   globalModel: ModelSelection | null
   onGlobalModelChange: (m: ModelSelection | null) => void
   configuredProviders: string[]
-  initialTeamModels: Array<{ teamId: string; agentRole: string; provider: string; modelId: string }>
   benchmarkEnabled: boolean
   onBenchmarkChange: (v: boolean) => void
   onStart: () => void
@@ -108,7 +107,6 @@ export function DeliberatePanel({
   globalModel,
   onGlobalModelChange,
   configuredProviders,
-  initialTeamModels,
   benchmarkEnabled,
   onBenchmarkChange,
   onStart,
@@ -123,8 +121,7 @@ export function DeliberatePanel({
   const selectedSpec = specs.find((s) => s.id === selectedSpecId) ?? specs[0]
   const agents = selectedSpec ? getDisplayAgents(selectedSpec) : []
   const hasEditable = selectedSpec?.agents.some((a) => a.editable) ?? false
-  // Catalog drives vendor resolution — same source of truth as the picker, so
-  // any model the user can pick (Groq, DeepSeek, OpenRouter, …) resolves correctly.
+  const specAgentNames = useMemo(() => agents.map((a) => a.name), [agents])
   const catalog = useCatalog()
 
   // localStorage is undefined on the server. Reading it during render produces
@@ -136,25 +133,12 @@ export function DeliberatePanel({
   useEffect(() => {
     setMounted(true)
   }, [])
-  const userConfig: ReviewerConfig | null = mounted ? getReviewerConfig(selectedSpecId) : null
+  // Single source of truth: vada:team:<specId> — same key/format for every
+  // team type. GlobalModelSelector writes all agent names when user picks one
+  // model; ReviewerConfigModal writes per-agent. resolveModel reads from one place.
+  const teamConfig: ReviewerConfig | null = mounted ? getReviewerConfig(selectedSpecId) : null
 
-  // Resolve the model to display on each agent sphere.
-  // Role agents: model shows as a bottom-right vendor badge.
-  // Non-role agents: model shows as a centered ModelIcon face.
-  const resolveModel = (a: DisplayAgent): string | undefined => {
-    const specAgent = selectedSpec?.agents.find((ag) => ag.name === a.name)
-    // Editable reviewer slots: only show what the user explicitly configured.
-    if (specAgent?.editable) return userConfig?.[a.name] ?? undefined
-    // Non-editable role agents: same principle — never bleed YAML defaults into
-    // the badge. The sphere is a contract with the user; only render what was
-    // explicitly picked (per-agent userConfig, then team globalModel). The
-    // engine still falls back to the YAML model at execution time — that's the
-    // spec author's job — but the user-visible badge stays empty until the
-    // user has chosen.
-    if (userConfig?.[a.name]) return userConfig[a.name]
-    if (globalModel?.modelId) return globalModel.modelId
-    return undefined
-  }
+  const resolveModel = (a: DisplayAgent): string | undefined => teamConfig?.[a.name] ?? undefined
 
   // A slot is available when a model is resolved AND its vendor key is configured.
   // Empty editable slots (no model picked yet) are NOT available — they need configuration.
@@ -292,8 +276,8 @@ export function DeliberatePanel({
               value={globalModel}
               onChange={onGlobalModelChange}
               settingsProviders={configuredProviders}
-              initialTeamModels={initialTeamModels}
               selectedSpecId={selectedSpecId}
+              specAgentNames={specAgentNames}
               trigger={configureTrigger}
             />
           )}
