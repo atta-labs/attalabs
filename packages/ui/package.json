@@ -29,6 +29,8 @@
     "./agents": "./agents/index.ts",
     "./lib/*": "./lib/*.ts",
     "./hooks/*": "./hooks/*.ts",
+    "./components/button": "./libraries/basic/components/interactive/button.tsx",
+    "./components/badge": "./libraries/basic/components/display/badge.tsx",
     "./components/*": "./libraries/basic/installed/*.tsx",
     "./account": "./account/index.ts",
     "./scripts/generate-ui": "./scripts/generate-ui.ts"

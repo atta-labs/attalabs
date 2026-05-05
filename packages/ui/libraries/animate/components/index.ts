@@ -2,8 +2,8 @@
 
 // Types
 export type * from '../../../types'
-// Display — falls back to basic
-export { Badge } from '../../basic/installed/badge'
+// Display — falls back to basic wrapper
+export { Badge } from '../../basic/components/display/badge'
 // Content — falls back to basic
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../basic/installed/card'
 // Form — falls back to basic
@@ -28,8 +28,7 @@ export { Textarea } from '../../basic/installed/textarea'
 
 // Shared
 export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
-export { Button } from '../installed/button'
-export { buttonVariants } from '../../basic/installed/button'
+export { Button, buttonVariants } from './interactive/button'
 // Display — falls back to basic for Toast
 export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger, useCollapsible } from '../installed/collapsible'
