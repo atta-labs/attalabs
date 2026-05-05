@@ -37,7 +37,7 @@ export function validateKeysForConfig(config: ReviewerConfig, configuredProvider
   return true
 }
 
-function resolveVendor(model: string): string | null {
+export function resolveVendor(model: string): string | null {
   if (model.startsWith('claude-')) return 'anthropic'
   if (model.startsWith('gemini-')) return 'google'
   if (model.startsWith('gpt-') || model.startsWith('o4-')) return 'openai'
