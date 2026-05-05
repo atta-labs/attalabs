@@ -22,7 +22,7 @@
 - [The complete and ONLY list of CSS color/radius/font tokens allowed in Atta AI UI code, AND the doctrine for which token to reach for in which situation. Hardcoded Tailwind palette colors (green-500, zinc-900, blue-400, etc.), raw hex / oklch / hsl values, and absolute colors (text-white, bg-black) are FORBIDDEN — always use the semantic tokens defined in @atta/ui/styles/globals.css according to the role doctrine below.](./.claude/skills/ui-theme-tokens/SKILL.md)
 - [Vāda's product structure (Vāda Teams catalog), wedges/capabilities/moats framework, current phase status, and locked architectural decisions. Load before any architectural decision, cross-cutting change, or when drafting executor tasks that span multiple layers.](./.claude/skills/vada-architecture/SKILL.md)
 - [Primitives and patterns for building Vāda home-page sections below the canvas hero — SectionWrapper, SectionLabel, StatusFooter, TwoColumnSection, and the section composition convention.](./.claude/skills/vada-home-sections/SKILL.md)
-- [Vāda MCP server — generic catalog-driven deliberation tools (vada__consult for single-shot reviewer-chain teams, vada__deliberate for rounds-based teams) routing to YAML team specs compiled by the engine.](./.claude/skills/vada-mcp-server/SKILL.md)
+- [Vāda MCP server — two surfaces: local stdio (current) and hosted HTTP (target). Both expose vada__consult and vada__deliberate tools routed to YAML catalog specs. Load when implementing MCP tools, adding catalog specs, or building/debugging either surface.](./.claude/skills/vada-mcp-server/SKILL.md)
 - [How to create and register YAML deliberation specs. Load when adding a new team or new YAML spec. Covers all four workflow types (Solo, Rounds, Custom, Brokered), spec-registry registration, and verify scripts.](./.claude/skills/vada-yaml-authoring/SKILL.md)
 
 ## Specification Documents
@@ -46,6 +46,7 @@
 - [V2 Step 3.5 Part 2 Analysis — A0S vs B0S Orchestration-Alone on Sonnet 4.6](./apps/vada-ai/specs/engine/v2-results/step-2-analysis-sonnet.md)
 - [V2 Step 2 Analysis — A0 vs B0 Orchestration-Alone on Haiku 4.5](./apps/vada-ai/specs/engine/v2-results/step-2-analysis.md)
 - [V2 Task 3.5 Analysis — Sonnet 4.6 Replication](./apps/vada-ai/specs/engine/v2-results/step-3-5-sonnet-replication.md)
+- [Vāda MCP Architecture — Hosted Target](./apps/vada-ai/specs/mcp-architecture.md)
 - [Vāda · BYOK Gap Report](./apps/vada-ai/specs/vada-byok-gap-report.md)
 - [Vāda · BYOK Architecture (Current State)](./apps/vada-ai/specs/vada-byok-principles.md)
 - [Vāda YAML Cost Calculator — Concept Document](./apps/vada-ai/specs/vada-calculator-concept.md)
