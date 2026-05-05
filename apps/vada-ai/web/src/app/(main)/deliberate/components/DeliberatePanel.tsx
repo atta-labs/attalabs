@@ -131,6 +131,10 @@ export function DeliberatePanel({
   const resolveModel = (a: DisplayAgent): string | undefined => {
     if (userConfig?.[a.name]) return userConfig[a.name]
     if (globalModel?.modelId) return globalModel.modelId
+    // Editable reviewer slots: show nothing until explicitly configured — the spec-level
+    // defaultModel must not bleed into these spheres when no user config is saved.
+    const specAgent = selectedSpec?.agents.find((ag) => ag.name === a.name)
+    if (specAgent?.editable) return undefined
     return a.model ?? defaultModel ?? undefined
   }
 
