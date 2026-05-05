@@ -74,6 +74,18 @@ function ProviderKeyRow({ vendor, label, configured, onSaved }: ProviderKeyRowPr
           {label}
         </Text>
         <div className='flex-1' />
+        {configured && !editing && (
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            onClick={handleRemove}
+            disabled={removing}
+            className='h-7 w-7 px-0 text-destructive hover:text-destructive'
+          >
+            <Trash2 className='size-3.5' />
+          </Button>
+        )}
         {configured ? (
           <Badge variant='outline' className='text-success border-success/40 text-xs'>
             Configured
@@ -83,31 +95,17 @@ function ProviderKeyRow({ vendor, label, configured, onSaved }: ProviderKeyRowPr
             Not set
           </Badge>
         )}
-        <div className='flex items-center gap-1'>
-          {configured && !editing && (
-            <Button
-              type='button'
-              variant='ghost'
-              size='sm'
-              onClick={handleRemove}
-              disabled={removing}
-              className='h-7 w-7 px-0 text-destructive hover:text-destructive'
-            >
-              <Trash2 className='size-3.5' />
-            </Button>
-          )}
-          {!editing && (
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => setEditing(true)}
-              className='h-7 w-16 text-xs'
-            >
-              {configured ? 'Update' : 'Add'}
-            </Button>
-          )}
-        </div>
+        {!editing && (
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => setEditing(true)}
+            className='h-7 w-16 text-xs'
+          >
+            {configured ? 'Update' : 'Add'}
+          </Button>
+        )}
       </div>
 
       {editing && (
