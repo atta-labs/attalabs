@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent } from '@atta/ui'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui'
 import { AttaUserProfile, ProviderKeysSection, ApiKeysSection } from '@atta/ui/account'
 import type { FaceStyle } from '@/components/agents'
 import { AgentStyleSection } from './agent-style/AgentStyleSection'
@@ -37,14 +37,14 @@ export function SettingsClientPage({ initialFaceStyle }: SettingsClientPageProps
       </TabsContent>
 
       <TabsContent value='api-keys'>
-        <Card>
-          <CardContent className='pt-6'>
-            <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
-              <ProviderKeysSection />
-              <ApiKeysSection productLabel='Vāda' />
-            </div>
-          </CardContent>
-        </Card>
+        <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+          <div className='rounded-lg border border-border/40 bg-card p-6'>
+            <ProviderKeysSection />
+          </div>
+          <div className='rounded-lg border border-border/40 bg-card p-6'>
+            <ApiKeysSection productLabel='Vāda' />
+          </div>
+        </div>
       </TabsContent>
 
       <TabsContent value='agent-style'>

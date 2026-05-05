@@ -69,22 +69,21 @@ function ProviderKeyRow({ vendor, label, configured, onSaved }: ProviderKeyRowPr
 
   return (
     <div className='space-y-2'>
-      <div className='flex items-center justify-between gap-3'>
-        <div className='flex items-center gap-3'>
-          <Text as='span' className='text-sm font-medium'>
-            {label}
-          </Text>
-          {configured ? (
-            <Badge variant='outline' className='text-success border-success/40 text-xs'>
-              Configured
-            </Badge>
-          ) : (
-            <Badge variant='outline' className='text-muted-foreground border-border text-xs'>
-              Not set
-            </Badge>
-          )}
-        </div>
-        <div className='flex items-center gap-2'>
+      <div className='flex items-center gap-3'>
+        <Text as='span' className='text-sm font-medium'>
+          {label}
+        </Text>
+        <div className='flex-1' />
+        {configured ? (
+          <Badge variant='outline' className='text-success border-success/40 text-xs'>
+            Configured
+          </Badge>
+        ) : (
+          <Badge variant='outline' className='text-muted-foreground border-border text-xs'>
+            Not set
+          </Badge>
+        )}
+        <div className='flex items-center gap-1'>
           {configured && !editing && (
             <Button
               type='button'
@@ -92,10 +91,9 @@ function ProviderKeyRow({ vendor, label, configured, onSaved }: ProviderKeyRowPr
               size='sm'
               onClick={handleRemove}
               disabled={removing}
-              className='h-7 text-xs text-destructive hover:text-destructive'
+              className='h-7 w-7 px-0 text-destructive hover:text-destructive'
             >
               <Trash2 className='size-3.5' />
-              {removing ? 'Removing…' : 'Remove'}
             </Button>
           )}
           {!editing && (
