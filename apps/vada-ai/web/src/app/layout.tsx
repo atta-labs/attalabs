@@ -7,7 +7,7 @@ import '@atta/ui/globals.css'
 import '@atta/ui/canvas.css'
 import '@/styles/globals.css'
 import { MockModeBanner } from '@/components/MockModeBanner'
-import { PreviewThemeListener } from '@/components/theme/preview-theme-listener'
+import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getVadaBranding(cmsClient).catch(() => null)

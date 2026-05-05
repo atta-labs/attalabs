@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
 import type { UILibrary } from '@atta/ui/lib/library-loader'
 import { LibraryProvider } from '@atta/ui/lib/library-provider'
-import { PreviewThemeListener } from '@/components/theme/PreviewThemeListener'
+import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 import { getUserByUsername } from '@/db/queries'
 import { getGoogleFontsUrl } from '@atta/cms'
 

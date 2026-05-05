@@ -23,6 +23,7 @@
     "./lib/color-scheme": "./lib/color-scheme.ts",
     "./lib/color-scheme-toggle": "./lib/color-scheme-toggle.tsx",
     "./lib/next-link": "./lib/next-link.tsx",
+    "./lib/preview-theme-listener": "./lib/preview-theme-listener.tsx",
     "./canvas": "./canvas/index.ts",
     "./engine-flow": "./engine-flow/index.ts",
     "./agents": "./agents/index.ts",

@@ -2,7 +2,7 @@
 
 import type { CMSTheme } from '@atta/cms'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
-import type { ThemeData } from '@/components/theme/utils'
+import type { ThemeData } from '@atta/ui/lib/preview-theme-utils'
 import { usePortalPreview } from '@/hooks/usePortalPreview'
 import { PortalPreviewFrame } from './PortalPreviewFrame'
 import { PreviewToolbar } from './PreviewToolbar'

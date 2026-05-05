@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
 import '@atta/ui/canvas.css'
-import { PreviewThemeListener } from '@/components/theme/preview-theme-listener'
+import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getAttaBranding(cmsClient).catch(() => null)
