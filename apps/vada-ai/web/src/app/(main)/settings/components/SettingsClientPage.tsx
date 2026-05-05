@@ -2,17 +2,18 @@
 
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui'
-import { AttaUserProfile } from '@atta/ui/account'
+import { AttaUserProfile, ProviderKeysSection, ApiKeysSection } from '@atta/ui/account'
 import type { TeamModelEntry } from '@/db/settings-queries'
 import type { FaceStyle } from '@/components/agents'
 import type { TeamId } from '@/lib/teams-metadata'
 import { AgentStyleSection } from './agent-style/AgentStyleSection'
 import { TeamsSection } from './teams/TeamsSection'
 
-type Tab = 'account' | 'teams' | 'agent-style'
+type Tab = 'account' | 'api-keys' | 'teams' | 'agent-style'
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'account', label: 'Account' },
+  { id: 'api-keys', label: 'API Keys' },
   { id: 'teams', label: 'Teams' },
   { id: 'agent-style', label: 'Agent Style' }
 ]
@@ -40,6 +41,13 @@ export function SettingsClientPage({ initialTeamModels, initialFaceStyle, teams 
 
       <TabsContent value='account'>
         <AttaUserProfile />
+      </TabsContent>
+
+      <TabsContent value='api-keys'>
+        <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+          <ProviderKeysSection />
+          <ApiKeysSection productLabel='Vāda' />
+        </div>
       </TabsContent>
 
       <TabsContent value='teams'>
