@@ -4,19 +4,20 @@ import { useState, useEffect, useCallback } from 'react'
 import { Button, Input, Badge } from '@atta/ui'
 import { Text } from '@atta/ui/shared'
 import { Trash2, Eye, EyeOff } from 'lucide-react'
+import { PROVIDERS, ROUTE_PROVIDER_ORDER, type RouteProvider } from '@atta/models'
 
-type Vendor = 'anthropic' | 'google' | 'openai' | 'xai'
+// Vendor list derived from @atta/models so settings, the picker, and the status
+// endpoint all see the same set. Ollama is excluded — it's a local-runtime
+// toggle, not a vendor key, and is managed via its own probe.
+type Vendor = Exclude<RouteProvider, 'ollama'>
 
 type ProviderStatus = Partial<Record<Vendor, true>>
 
 type ProviderStatusResponse = { status: ProviderStatus }
 
-const VENDORS: Array<{ id: Vendor; label: string }> = [
-  { id: 'anthropic', label: 'Anthropic' },
-  { id: 'google', label: 'Google' },
-  { id: 'openai', label: 'OpenAI' },
-  { id: 'xai', label: 'xAI' }
-]
+const VENDORS: Array<{ id: Vendor; label: string }> = ROUTE_PROVIDER_ORDER.filter(
+  (id): id is Vendor => id !== 'ollama'
+).map((id) => ({ id, label: PROVIDERS[id].label }))
 
 type ProviderKeyRowProps = {
   vendor: Vendor

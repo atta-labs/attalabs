@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
 import { decryptVendorKeys } from '@atta/crypto'
 import { getProviderKeys } from '@atta/db/queries'
+import { ROUTE_PROVIDER_ORDER } from '@atta/models'
 import { db } from '@/db'
 
-const SUPPORTED_VENDORS = ['anthropic', 'google', 'openai', 'xai'] as const
+// Single source of truth: @atta/models. Excludes ollama (local toggle, not a key).
+const SUPPORTED_VENDORS = ROUTE_PROVIDER_ORDER.filter((id) => id !== 'ollama')
 
 export async function GET() {
   try {
