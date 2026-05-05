@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button, Input, Badge } from '@atta/ui'
 import { Text } from '@atta/ui/shared'
-import { Plus, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Trash2, Eye, EyeOff } from 'lucide-react'
 
 type Vendor = 'anthropic' | 'google' | 'openai' | 'xai'
 
@@ -97,8 +97,13 @@ function ProviderKeyRow({ vendor, label, configured, onSaved }: ProviderKeyRowPr
             </Button>
           )}
           {!editing && (
-            <Button type='button' variant='ghost' size='sm' onClick={() => setEditing(true)} className='h-7 text-xs'>
-              <Plus className='size-3.5' />
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => setEditing(true)}
+              className='h-7 w-16 text-xs'
+            >
               {configured ? 'Update' : 'Add'}
             </Button>
           )}
