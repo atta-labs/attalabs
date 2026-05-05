@@ -1,2 +1,6 @@
 export { AttaUserProfile } from './atta-user-profile'
 export { AttaUserButton } from './atta-user-button'
+export { CopyButton } from './copy-button'
+export { ProviderKeysSection } from './provider-keys-section'
+export { ApiKeysSection } from './api-keys-section'
+export type { ApiKeysSectionProps } from './api-keys-section'
