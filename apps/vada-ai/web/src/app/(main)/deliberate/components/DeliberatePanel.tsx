@@ -134,9 +134,8 @@ export function DeliberatePanel({
     return a.model ?? defaultModel ?? undefined
   }
 
-  // For editable specs: a slot is available when its resolved model's vendor key is configured.
+  // A slot is available when its resolved model's vendor key is configured.
   const isSlotAvailable = (a: DisplayAgent): boolean => {
-    if (!hasEditable) return true
     const model = resolveModel(a)
     if (!model) return true
     const vendor = resolveVendor(model)
@@ -144,7 +143,7 @@ export function DeliberatePanel({
     return configuredProviders.includes(vendor)
   }
 
-  const anySlotLocked = hasEditable && agents.some((a) => !isSlotAvailable(a))
+  const anySlotLocked = agents.some((a) => !isSlotAvailable(a))
 
   const configureTrigger = (
     <Button
