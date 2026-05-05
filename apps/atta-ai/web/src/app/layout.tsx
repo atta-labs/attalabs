@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
 import '@atta/ui/canvas.css'
+import { PreviewThemeListener } from '@/components/theme/preview-theme-listener'
 
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getAttaBranding(cmsClient).catch(() => null)
@@ -22,7 +23,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   ])
 
   return (
-    <NextWebShell config={config} branding={branding} styleId='atta-theme'>
+    <NextWebShell config={config} branding={branding} styleId='atta-theme' cookieName='atta-color-scheme'>
+      <PreviewThemeListener />
       <IdentityProvider>{children}</IdentityProvider>
     </NextWebShell>
   )

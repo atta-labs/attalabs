@@ -25,7 +25,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   ])
 
   return (
-    <NextWebShell config={config} branding={branding} styleId='vada-theme'>
+    <NextWebShell config={config} branding={branding} styleId='vada-theme' cookieName='vada-color-scheme'>
       <PreviewThemeListener />
       <MockModeBanner />
       <IdentityProvider>{children}</IdentityProvider>

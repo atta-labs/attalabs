@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const config = await getVitakkaConfig(cmsClient).catch(() => null)
   return (
-    <NextWebShell config={config} styleId='vitakka-theme'>
+    <NextWebShell config={config} styleId='vitakka-theme' cookieName='vitakka-color-scheme'>
       <main className='flex flex-col min-h-screen'>{children}</main>
     </NextWebShell>
   )

@@ -3,13 +3,8 @@
 import { Button } from '@atta/ui'
 import { Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import {
-  COLOR_SCHEME_ATTRIBUTE,
-  COLOR_SCHEME_COOKIE,
-  COLOR_SCHEME_COOKIE_MAX_AGE,
-  DEFAULT_SCHEME,
-  type ColorScheme
-} from './color-scheme'
+import { COLOR_SCHEME_ATTRIBUTE, COLOR_SCHEME_COOKIE_MAX_AGE, DEFAULT_SCHEME, type ColorScheme } from './color-scheme'
+import { useCookieName } from './cookie-name-context'
 
 /**
  * One-click sun/moon toggle. SSR has already set <html data-theme="..."> to
@@ -19,6 +14,7 @@ import {
  * Pure client side — no router refresh, no network round-trip on flip.
  */
 export function ColorSchemeToggle() {
+  const cookieName = useCookieName()
   const [scheme, setScheme] = useState<ColorScheme>(DEFAULT_SCHEME)
 
   // Read the SSR-applied attribute after hydration. Doing this in an effect
@@ -33,7 +29,7 @@ export function ColorSchemeToggle() {
     const next: ColorScheme = scheme === 'dark' ? 'light' : 'dark'
     document.documentElement.setAttribute(COLOR_SCHEME_ATTRIBUTE, next)
     // biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API lacks Safari/Firefox support; document.cookie is the cross-browser write path
-    document.cookie = `${COLOR_SCHEME_COOKIE}=${next}; Path=/; Max-Age=${COLOR_SCHEME_COOKIE_MAX_AGE}; SameSite=Lax`
+    document.cookie = `${cookieName}=${next}; Path=/; Max-Age=${COLOR_SCHEME_COOKIE_MAX_AGE}; SameSite=Lax`
     setScheme(next)
   }
 

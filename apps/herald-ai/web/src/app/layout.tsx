@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const config = await getHeraldConfig(cmsClient).catch(() => null)
   return (
-    <NextWebShell config={config} styleId='herald-theme'>
+    <NextWebShell config={config} styleId='herald-theme' cookieName='herald-color-scheme'>
       {children}
     </NextWebShell>
   )

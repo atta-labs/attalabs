@@ -5,6 +5,7 @@ import type { CMSBranding, PortalUiConfig } from '@atta/cms'
 import { cookies } from 'next/headers'
 import type { ReactNode } from 'react'
 import { COLOR_SCHEME_COOKIE, resolveColorScheme, type ColorScheme } from './color-scheme'
+import { CookieNameProvider } from './cookie-name-context'
 import { LibraryProvider } from './library-provider'
 import type { UILibrary } from './library-loader'
 import { ToastProvider } from '../libraries/basic/components/display/toast'
@@ -14,14 +15,21 @@ interface NextWebShellProps {
   config: PortalUiConfig | null
   branding?: CMSBranding | null
   styleId: string
+  cookieName?: string
 }
 
-export async function NextWebShell({ children, config, branding, styleId }: NextWebShellProps) {
+export async function NextWebShell({
+  children,
+  config,
+  branding,
+  styleId,
+  cookieName = COLOR_SCHEME_COOKIE
+}: NextWebShellProps) {
   const theme = config?.userInterface?.theme ?? null
   const cmsScheme = config?.userInterface?.colorScheme as ColorScheme | undefined
 
   const cookieStore = await cookies()
-  const cookieScheme = cookieStore.get(COLOR_SCHEME_COOKIE)?.value
+  const cookieScheme = cookieStore.get(cookieName)?.value
   const colorScheme: ColorScheme = resolveColorScheme(cookieScheme, cmsScheme)
 
   const faviconSet = colorScheme === 'dark' ? branding?.faviconDark : branding?.faviconLight
@@ -86,7 +94,9 @@ export async function NextWebShell({ children, config, branding, styleId }: Next
         {themeCSS && <style id={styleId} dangerouslySetInnerHTML={{ __html: themeCSS }} />}
         <AuthProvider appearance={appearance}>
           <LibraryProvider library={libraryId}>
-            <ToastProvider defaultPosition='bottom-right'>{children}</ToastProvider>
+            <CookieNameProvider cookieName={cookieName}>
+              <ToastProvider defaultPosition='bottom-right'>{children}</ToastProvider>
+            </CookieNameProvider>
           </LibraryProvider>
         </AuthProvider>
       </body>
