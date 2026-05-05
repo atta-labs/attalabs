@@ -6,6 +6,7 @@
 import { fetchInstalledOllamaModels, probeProviderKey } from '@atta/identity'
 import { type ModelEntry, type RouteProvider, useCatalog } from '@atta/models'
 import { useToastContext } from '@atta/ui'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SPEC_ID_TO_TEAM_ID } from '@/lib/teams-metadata'
 import type { ModelSelection } from './GlobalModelSelector'
@@ -18,20 +19,19 @@ interface UseGlobalModelSelectorProps {
   selectedSpecId: string | undefined
 }
 
-// Persist last picked model locally so the next /deliberate visit pre-selects
-// it. Kept client-only — matches the server-side key story (no round trip) and
-// is per-device by nature.
-const LAST_MODEL_KEY = 'vada:last-model'
+// Per-team picked model, persisted client-side so each team remembers its own
+// selection. Keyed by spec.id — switching teams loads that team's last pick.
+const TEAM_MODEL_KEY_PREFIX = 'vada:team-model:'
 
 interface LastModel {
   provider: RouteProvider
   modelId: string
 }
 
-function readLastModel(): LastModel | null {
+function readTeamModel(specId: string): LastModel | null {
   if (typeof window === 'undefined') return null
   try {
-    const raw = window.localStorage.getItem(LAST_MODEL_KEY)
+    const raw = window.localStorage.getItem(TEAM_MODEL_KEY_PREFIX + specId)
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<LastModel>
     if (!parsed.provider || typeof parsed.modelId !== 'string') return null
@@ -41,11 +41,11 @@ function readLastModel(): LastModel | null {
   }
 }
 
-function writeLastModel(v: LastModel | null) {
+function writeTeamModel(specId: string, v: LastModel | null) {
   if (typeof window === 'undefined') return
   try {
-    if (v) window.localStorage.setItem(LAST_MODEL_KEY, JSON.stringify(v))
-    else window.localStorage.removeItem(LAST_MODEL_KEY)
+    if (v) window.localStorage.setItem(TEAM_MODEL_KEY_PREFIX + specId, JSON.stringify(v))
+    else window.localStorage.removeItem(TEAM_MODEL_KEY_PREFIX + specId)
   } catch {
     // quota exceeded / disabled — harmless, move on
   }
@@ -60,6 +60,7 @@ export function useGlobalModelSelector({
 }: UseGlobalModelSelectorProps) {
   const baseCatalog = useCatalog()
   const { successToast } = useToastContext()
+  const router = useRouter()
 
   // Providers saved in this session via the inline key-entry dialog
   const [sessionSavedProviders, setSessionSavedProviders] = useState<RouteProvider[]>([])
@@ -121,53 +122,41 @@ export function useGlobalModelSelector({
 
   const pickerValue = useMemo(() => (value ? { route: value.provider, modelId: value.modelId } : null), [value])
 
-  // ── Preset / default seeding on mount ──────────────────────────────────────
-  // Seeding priority:
-  //   1. Team-preset saved model (if user picked a preset and it has saved models)
-  //   2. Last-used model from localStorage (if provider is configured)
-  //   3. First catalog entry whose provider is configured
-  //   4. Nothing — user picks manually
+  // ── Per-team seeding ──────────────────────────────────────────────────────
+  // Runs on mount AND every time selectedSpecId changes. Configs are PER TEAM
+  // — switching teams must load that team's saved pick, not bleed the previous
+  // team's selection across.
+  // Seeding priority for the active team:
+  //   1. Team-preset saved model (DB, set via Teams tab if present)
+  //   2. Last pick for THIS team (localStorage)
+  //   3. Cleared — user picks manually for this team
   useEffect(() => {
-    if (selectedSpecId && initialTeamModels.length > 0) {
-      const teamId = SPEC_ID_TO_TEAM_ID[selectedSpecId]
-      const entry = teamId ? initialTeamModels.find((m) => m.teamId === teamId) : undefined
-      if (entry) {
-        const route = entry.provider as RouteProvider
-        onChange({ provider: route, modelId: entry.modelId, apiKey: '' })
+    if (!selectedSpecId) return
+    const teamId = SPEC_ID_TO_TEAM_ID[selectedSpecId]
+    const dbEntry = teamId ? initialTeamModels.find((m) => m.teamId === teamId) : undefined
+    if (dbEntry) {
+      onChange({ provider: dbEntry.provider as RouteProvider, modelId: dbEntry.modelId, apiKey: '' })
+      return
+    }
+    const stored = readTeamModel(selectedSpecId)
+    if (stored) {
+      const providerAvailable = stored.provider === 'ollama' || configuredRoutes.has(stored.provider)
+      const inCatalog = baseCatalog.some((e) => e.route === stored.provider && e.modelId === stored.modelId)
+      if (providerAvailable && inCatalog) {
+        onChange({ provider: stored.provider, modelId: stored.modelId, apiKey: '' })
         return
       }
     }
-    if (!value) {
-      const last = readLastModel()
-      if (last) {
-        const providerAvailable = last.provider === 'ollama' || configuredRoutes.has(last.provider)
-        const inCatalog = baseCatalog.some((e) => e.route === last.provider && e.modelId === last.modelId)
-        if (providerAvailable && inCatalog) {
-          onChange({ provider: last.provider, modelId: last.modelId, apiKey: '' })
-          return
-        }
-      }
-      const first = baseCatalog.find((e) => configuredRoutes.has(e.route))
-      if (first) {
-        onChange({ provider: first.route, modelId: first.modelId, apiKey: '' })
-      }
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Spec-switch reseed ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!selectedSpecId || initialTeamModels.length === 0) return
-    const teamId = SPEC_ID_TO_TEAM_ID[selectedSpecId]
-    const entry = teamId ? initialTeamModels.find((m) => m.teamId === teamId) : undefined
-    if (!entry) return
-    const route = entry.provider as RouteProvider
-    onChange({ provider: route, modelId: entry.modelId, apiKey: '' })
+    onChange(null)
   }, [selectedSpecId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist every selection so next visit can seed from it.
+  // Persist every selection under the active team's key so switching back
+  // restores that team's pick.
   useEffect(() => {
-    if (value) writeLastModel({ provider: value.provider, modelId: value.modelId })
-  }, [value?.provider, value?.modelId])
+    if (!selectedSpecId) return
+    if (value) writeTeamModel(selectedSpecId, { provider: value.provider, modelId: value.modelId })
+    else writeTeamModel(selectedSpecId, null)
+  }, [selectedSpecId, value?.provider, value?.modelId])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleChange = useCallback(
@@ -199,6 +188,10 @@ export function useGlobalModelSelector({
       }
       setSessionSavedProviders((prev) => (prev.includes(route) ? prev : [...prev, route]))
       if (value?.provider === route) onChange({ ...value, apiKey: '' })
+      // Re-run the server component so configuredProviders prop reflects the
+      // newly saved key. Without this, the panel keeps showing locked spheres
+      // because page.tsx fetched configuredProviders before this key existed.
+      router.refresh()
       if (probe.ok) {
         successToast('Key verified', `${route} is ready to use.`)
       } else {
@@ -208,7 +201,7 @@ export function useGlobalModelSelector({
         )
       }
     },
-    [value, onChange, successToast]
+    [value, onChange, successToast, router]
   )
 
   return {
