@@ -46,12 +46,12 @@ export {
   CommandShortcut
 } from '../installed/command'
 // Model
-export { ModelIcon, type ModelIconProps } from '../installed/model-icon'
+export { ModelIcon, type ModelIconProps } from './model/model-icon'
 export {
   ModelPicker,
   type ModelPickerProps,
   type ModelPickerValue
-} from '../installed/model-picker'
+} from './model/model-picker'
 // Layout
 export { Separator } from './layout/separator'
 export { Slider } from '../installed/slider'

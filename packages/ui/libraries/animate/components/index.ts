@@ -63,12 +63,12 @@ export {
   CommandShortcut
 } from '../../basic/installed/command'
 // Model
-export { ModelIcon, type ModelIconProps } from '../../basic/installed/model-icon'
+export { ModelIcon, type ModelIconProps } from '../../basic/components/model/model-icon'
 export {
   ModelPicker,
   type ModelPickerProps,
   type ModelPickerValue
-} from '../../basic/installed/model-picker'
+} from '../../basic/components/model/model-picker'
 // Sidebar — falls back to basic
 export {
   Sidebar,

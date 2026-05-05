@@ -41,7 +41,6 @@ export function GlobalModelSelector({
       value={g.pickerValue}
       onChange={g.handleChange}
       configuredRoutes={g.configuredRoutes}
-      routeHints={g.routeHints}
       onProvideKey={g.handleProvideKey}
       mode='modal'
       trigger={trigger}

@@ -38,12 +38,12 @@ export {
 export { Input } from '../installed/input'
 export { Checkbox } from './form/checkbox'
 // Model
-export { ModelIcon, type ModelIconProps } from '../../basic/installed/model-icon'
+export { ModelIcon, type ModelIconProps } from '../../basic/components/model/model-icon'
 export {
   ModelPicker,
   type ModelPickerProps,
   type ModelPickerValue
-} from '../../basic/installed/model-picker'
+} from '../../basic/components/model/model-picker'
 // Layout — falls back to basic
 export { Separator } from '../../basic/installed/separator'
 // Form — falls back to basic

@@ -118,8 +118,6 @@ export function useGlobalModelSelector({
     return set
   }, [settingsProviders, sessionSavedProviders, ollamaReachable])
 
-  const routeHints = useMemo<Partial<Record<RouteProvider, string>>>(() => ({}), [])
-
   const pickerValue = useMemo(() => (value ? { route: value.provider, modelId: value.modelId } : null), [value])
 
   // ── Per-team seeding ──────────────────────────────────────────────────────
@@ -207,7 +205,6 @@ export function useGlobalModelSelector({
   return {
     catalog,
     configuredRoutes,
-    routeHints,
     pickerValue,
     handleChange,
     handleProvideKey

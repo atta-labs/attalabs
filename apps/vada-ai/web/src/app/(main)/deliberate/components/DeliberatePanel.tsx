@@ -123,7 +123,6 @@ export function DeliberatePanel({
   const selectedSpec = specs.find((s) => s.id === selectedSpecId) ?? specs[0]
   const agents = selectedSpec ? getDisplayAgents(selectedSpec) : []
   const hasEditable = selectedSpec?.agents.some((a) => a.editable) ?? false
-  const defaultModel = selectedSpec?.defaults.model ?? ''
   // Catalog drives vendor resolution — same source of truth as the picker, so
   // any model the user can pick (Groq, DeepSeek, OpenRouter, …) resolves correctly.
   const catalog = useCatalog()
@@ -144,12 +143,17 @@ export function DeliberatePanel({
   // Non-role agents: model shows as a centered ModelIcon face.
   const resolveModel = (a: DisplayAgent): string | undefined => {
     const specAgent = selectedSpec?.agents.find((ag) => ag.name === a.name)
-    // Editable reviewer slots: only show if explicitly configured — globalModel and
-    // spec-level defaultModel must not bleed in when no user config is saved.
+    // Editable reviewer slots: only show what the user explicitly configured.
     if (specAgent?.editable) return userConfig?.[a.name] ?? undefined
+    // Non-editable role agents: same principle — never bleed YAML defaults into
+    // the badge. The sphere is a contract with the user; only render what was
+    // explicitly picked (per-agent userConfig, then team globalModel). The
+    // engine still falls back to the YAML model at execution time — that's the
+    // spec author's job — but the user-visible badge stays empty until the
+    // user has chosen.
     if (userConfig?.[a.name]) return userConfig[a.name]
     if (globalModel?.modelId) return globalModel.modelId
-    return a.model ?? defaultModel ?? undefined
+    return undefined
   }
 
   // A slot is available when a model is resolved AND its vendor key is configured.
@@ -224,7 +228,7 @@ export function DeliberatePanel({
             </NextLink>
 
             <div className='flex flex-col gap-2'>
-              <div className='flex flex-row gap-3 overflow-x-auto pb-1'>
+              <div className='flex flex-row flex-wrap gap-3 pb-1'>
                 {agents.map((a) => {
                   const available = isSlotAvailable(a)
                   return (
