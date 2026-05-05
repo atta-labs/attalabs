@@ -1,20 +1,20 @@
-## Most recent session — April 26, 2026
+## Most recent session — May 5, 2026
 
-Phase 8 (synthesis exposed to consumers) completed. Key changes:
-- `vada__deliberate` MCP tool now returns `structured` field alongside `content`; null when spec has no output_schema
-- Web app SSE adds typed `synthesis_complete` events with `content` + `structured` + `is_revision` flag
-- `transcriptEntries` gains `structured jsonb` column; synthesis phase also inserts a transcript row with structured populated
-- `persistTurn` threads `structured` from engine output through to DB for synthesize and revise phases
-- Schema validation tightened: synthesis agent must exist in agents list; `output_format: structured` requires `output_schema`; `output_schema` without `output_format: structured` is rejected
-- Resolves OQ-A (caller decides per-call) and OQ-B (per-YAML; engine surfaces both)
+BYOK + Settings restructure (branch: `feat/shared-keys-ui`). Key changes:
+- Settings tabs restructured: Teams tab removed; Account / API Keys / Agent Style remain
+- `ProviderKeysSection` and `ApiKeysSection` extracted to `packages/ui/account/` — shared across products
+- Ecosystem schemas (`providerKeys`, `userPreferences`) moved from `apps/vada-ai/web` to `@atta/db`; query layer migrated
+- Unified team agent model storage: `vada:team:<specId>` → `Record<agentName, string>` for all team types (D-027); replaces separate `vada:reviewer-models:` and `vada:team-model:` keys
+- DB `getUserTeamModels` call removed from deliberate page; stale DB entries were overriding localStorage selections on every refresh (revert-to-Claude bug) — fixed
+- `GlobalModelSelector` writes to unified storage via `specAgentNames` prop; `resolveModel` in `DeliberatePanel` reads from single source
 
 
 # Vāda — Current State
 
 > **Framing note (2026-04-30):** The "Brokered mode" and "Autonomous mode" product categories used in older entries have been retired. Current framing uses the Vāda Teams catalog (YAML specs at `apps/vada-ai/yamls/`). See `vada-reviewers-spec.md` for the in-progress Vāda Reviewers team spec.
 
-**Last updated:** April 26, 2026
-**Last milestone:** Phase 8 (synthesis exposed to consumers; structured field at all consumer boundaries)
+**Last updated:** May 5, 2026
+**Last milestone:** BYOK + Settings restructure (shared-keys-ui branch) — unified team storage, UI component extraction, schema migration
 **Next milestone:** Phase 9 (real-case Brokered as a new YAML)
 
 ---
@@ -68,6 +68,9 @@ Extracted `loadYamlFromCatalog(id)` from ad-hoc per-caller implementations into 
 ### Phase 7.3 — YAML catalog cleanup and complete migration
 Eliminated all hardcoded spec references and static registries. Three `crucible-v1` fallbacks removed from web app (form initialization, route validation, session resume). MCP `spec-registry.ts` rewritten from a static `SPECS` record to dynamic `readdirSync`-based discovery delegating to `@atta/engine`'s `listPublicSpecs()`; `validateAllSpecs()` added for startup fail-fast validation. All 7 YAML filenames and `id` fields stripped of `-v1` suffixes (D-025); ALIASES simplified to `a0`/`a1` only. Drizzle migration backfills `sessions.spec_id` column. `@vada/agent-metadata` package deleted and collapsed into `apps/vada-ai/web/src/components/agents/visuals/`. `customVars` Handlebars rendering added for `system_prompt` fields.
 
+### BYOK + Settings restructure (`feat/shared-keys-ui`)
+Settings page restructured: Teams tab removed (model selection moved inline to deliberation panel). `ProviderKeysSection` and `ApiKeysSection` extracted to `packages/ui/account/` as shared components. Ecosystem DB schemas (`providerKeys`, `userPreferences`) moved to `@atta/db`. Team agent model storage unified to a single localStorage key format `vada:team:<specId>` → `Record<agentName, string>` for all team types; stale DB seeding that caused revert-to-Claude bug removed.
+
 ### Phase 8 — Synthesis exposed to consumers
 The engine already produced structured synthesis via terminal nodes; both MCP and web app consumers stripped the structured field at the boundary. Phase 8 exposes it:
 - `vada__deliberate` returns `structured` alongside `content`; null when the spec has no output_schema (D-026)
@@ -97,7 +100,7 @@ Single-round deliberation is a structurally weaker approximation of what the man
 
 ## What's in flight
 
-Nothing currently. Phase 8 just landed. Awaiting decision on next phase.
+Nothing currently. BYOK + Settings restructure just landed. Awaiting decision on next phase.
 
 ---
 
