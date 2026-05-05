@@ -131,12 +131,15 @@ export function DeliberatePanel({
   const resolveModel = (a: DisplayAgent): string | undefined => {
     if (userConfig?.[a.name]) return userConfig[a.name]
     if (globalModel?.modelId) return globalModel.modelId
+    // Editable reviewer slots: show nothing until explicitly configured — the spec-level
+    // defaultModel must not bleed into these spheres when no user config is saved.
+    const specAgent = selectedSpec?.agents.find((ag) => ag.name === a.name)
+    if (specAgent?.editable) return undefined
     return a.model ?? defaultModel ?? undefined
   }
 
-  // For editable specs: a slot is available when its resolved model's vendor key is configured.
+  // A slot is available when its resolved model's vendor key is configured.
   const isSlotAvailable = (a: DisplayAgent): boolean => {
-    if (!hasEditable) return true
     const model = resolveModel(a)
     if (!model) return true
     const vendor = resolveVendor(model)
@@ -144,7 +147,7 @@ export function DeliberatePanel({
     return configuredProviders.includes(vendor)
   }
 
-  const anySlotLocked = hasEditable && agents.some((a) => !isSlotAvailable(a))
+  const anySlotLocked = agents.some((a) => !isSlotAvailable(a))
 
   const configureTrigger = (
     <Button

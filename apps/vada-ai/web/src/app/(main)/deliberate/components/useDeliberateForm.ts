@@ -4,7 +4,7 @@ import type { DeliberationSpec } from '@atta/engine'
 import { useToastContext } from '@atta/ui'
 import type { FaceStyle } from '@/components/agents'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
-import { clearReviewerConfig, getReviewerConfig, setReviewerConfig, validateKeysForConfig } from '@/lib/reviewer-models'
+import { clearReviewerConfig, getReviewerConfig, resolveVendor, setReviewerConfig, validateKeysForConfig } from '@/lib/reviewer-models'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUserPreferences } from '@/lib/user-preferences-context'
@@ -167,8 +167,6 @@ export function useDeliberateForm({
   }, [selectedSpecId])
 
   const selectedProvider = globalModel?.provider
-  const hasKeyForSelected =
-    selectedProvider === 'ollama' || (selectedProvider != null && configuredProviders.includes(selectedProvider))
   const needsUnlock = false
   const hasAnyKey = configuredProviders.length > 0 || selectedProvider === 'ollama'
 
@@ -180,7 +178,6 @@ export function useDeliberateForm({
   const hasEditableAgents = currentSpec?.agents.some((a) => a.editable) ?? false
 
   // For editable specs: reviewer config must be saved and keys must be present.
-  // For non-editable specs: a global model must be selected with an unlocked key.
   const hasValidReviewerConfig = (() => {
     if (!hasEditableAgents) return false
     const config = getReviewerConfig(selectedSpecId)
@@ -188,11 +185,31 @@ export function useDeliberateForm({
     return validateKeysForConfig(config, configuredProviders)
   })()
 
+  // For non-editable specs: check all agents' effective model vendors have keys.
+  // Effective model = global override (if set) or the agent's YAML default.
+  const hasKeysForNonEditableSpec = (() => {
+    if (!currentSpec) return false
+    if (globalModel) {
+      if (globalModel.provider === 'ollama') return true
+      return configuredProviders.includes(globalModel.provider)
+    }
+    const agentNames = currentSpec.flow?.rounds?.agents ?? currentSpec.agents.map((a) => a.name)
+    const agentMap = new Map(currentSpec.agents.map((a) => [a.name, a]))
+    const defaultModel = currentSpec.defaults.model ?? ''
+    return agentNames.every((name) => {
+      const model = agentMap.get(name)?.model ?? defaultModel
+      if (!model) return false
+      const vendor = resolveVendor(model)
+      if (!vendor) return false
+      return configuredProviders.includes(vendor)
+    })
+  })()
+
   const canStart =
     !!question.trim() &&
     remainingToday > 0 &&
     !loading &&
-    (hasEditableAgents ? hasValidReviewerConfig : hasKeyForSelected)
+    (hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec)
 
   // Core dispatch — skips the reviewer config gate (used post-modal-save).
   const dispatchRef = useRef<() => Promise<void>>(() => Promise.resolve())
