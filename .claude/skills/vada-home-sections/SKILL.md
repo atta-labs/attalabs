@@ -1,6 +1,8 @@
 ---
 name: vada-home-sections
 description: Primitives and patterns for building Vāda home-page sections below the canvas hero — SectionWrapper, SectionLabel, StatusFooter, TwoColumnSection, and the section composition convention.
+paths:
+  - "apps/vada-ai/web/src/app/(home)/**"
 ---
 
 # Vāda Home Sections — Composition System
@@ -150,7 +152,7 @@ The numbered label (`02 / …`) is editorial — it reflects the user's scroll o
 
 These are enforced across every section:
 
-- **Semantic tokens only.** `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `text-success`, `border-border`, `border-success/40`, etc. **Never** hardcoded hex, `oklch(…)`, `hsl(…)`, or palette classes like `text-green-500`. Full reference: `.claude/skills/theme-tokens/SKILL.md`.
+- **Semantic tokens only.** `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `text-success`, `border-border`, `border-success/40`, etc. **Never** hardcoded hex, `oklch(…)`, `hsl(…)`, or palette classes like `text-green-500`. Full reference: `.claude/skills/ui-theme-tokens/SKILL.md`.
 - **No raw HTML primitives.** Use `Heading` / `Text` from `@atta/ui` — never raw `<h1>` / `<p>`. `<section>`, `<div>`, `<blockquote>` are semantic HTML and allowed.
 - **Icons only from `lucide-react`.**
 - **No inline styles.** `style={{}}` is forbidden except for runtime-computed numeric values.
@@ -277,6 +279,6 @@ Section-specific sub-components (like `PositioningDiagram`) live in `components/
 ## Related
 
 - `.claude/skills/ui-components/SKILL.md` — UI component rules across the monorepo
-- `.claude/skills/theme-tokens/SKILL.md` — complete list of allowed CSS tokens
-- `.claude/skills/canvas-animation/SKILL.md` — the `HomeCanvas` hero above §2
+- `.claude/skills/ui-theme-tokens/SKILL.md` — complete list of allowed CSS tokens
+- `.claude/skills/ui-canvas-animation/SKILL.md` — the `HomeCanvas` hero above §2
 - `apps/vada-ai/web/CLAUDE.md` — Vāda web app architecture

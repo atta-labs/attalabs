@@ -176,7 +176,7 @@ import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
 </div>
 ```
 
-The shared cookie name, attribute name, default scheme, and `resolveColorScheme()` helper live in `@atta/ui/lib/color-scheme` — `NextWebShell` (server) and the toggle (client) both import from there. See `.claude/skills/cms-theme/SKILL.md` for the full architecture.
+The shared cookie name, attribute name, default scheme, and `resolveColorScheme()` helper live in `@atta/ui/lib/color-scheme` — `NextWebShell` (server) and the toggle (client) both import from there. See `.claude/skills/ui-cms-theme/SKILL.md` for the full architecture.
 
 ---
 
@@ -256,4 +256,4 @@ bun run validate:ui-contract
 - [canvas/CLAUDE.md](canvas/CLAUDE.md) — Canvas particle animation system
 - [.claude/skills/ui-components/SKILL.md](../../.claude/skills/ui-components/SKILL.md) — Full UI rules
 - [.claude/skills/ui-library-system/SKILL.md](../../.claude/skills/ui-library-system/SKILL.md) — Library system, build-time generation, contract validation
-- [.claude/skills/cms-theme/SKILL.md](../../.claude/skills/cms-theme/SKILL.md) — Theme loading from CMS
+- [.claude/skills/ui-cms-theme/SKILL.md](../../.claude/skills/ui-cms-theme/SKILL.md) — Theme loading from CMS

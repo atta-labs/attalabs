@@ -109,4 +109,3 @@ apps/vada-ai/mcp-server/src/
 
 - [../CLAUDE.md](../CLAUDE.md) — Vāda AI product overview
 - [../specs/brokered-deliberation/](../specs/brokered-deliberation/) — Brokered mode full spec
-- [.claude/skills/vada-brokered/SKILL.md](../../../.claude/skills/vada-brokered/SKILL.md) — Brokered implementation guide

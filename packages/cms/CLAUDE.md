@@ -146,7 +146,7 @@ SANITY_API_TOKEN=<token> bun run seed:branding:herald   # document shell only, n
 
 Tokens are in `apps/{product}-ai/web/.env.local`.
 
-See `.claude/skills/branding/SKILL.md` for the full guide including variant selection rules and per-product geometry.
+See `.claude/skills/ui-branding/SKILL.md` for the full guide including variant selection rules and per-product geometry.
 
 ---
 
@@ -216,5 +216,5 @@ Colors are stored as plain hex or any CSS color format. `generateThemeCSSForSche
 
 - [Root CLAUDE.md](../../CLAUDE.md) — Monorepo routing index
 - [packages/ui/CLAUDE.md](../ui/CLAUDE.md) — UI component library
-- [.claude/skills/cms-theme/SKILL.md](../../.claude/skills/cms-theme/SKILL.md) — Full SSR theme loading guide
-- [.claude/skills/branding/SKILL.md](../../.claude/skills/branding/SKILL.md) — Branding schema, queries, seed script, logo variant rules
+- [.claude/skills/ui-cms-theme/SKILL.md](../../.claude/skills/ui-cms-theme/SKILL.md) — Full SSR theme loading guide
+- [.claude/skills/ui-branding/SKILL.md](../../.claude/skills/ui-branding/SKILL.md) — Branding schema, queries, seed script, logo variant rules

@@ -142,21 +142,24 @@ NEVER include `Generated with [Claude Code]` or `Co-Authored-By: Claude` attribu
 
 In-depth guides for specific domains. Reference when working in that area.
 
+> **⛔ Skill-check enforcement is active in this repo.** A `PreToolUse` hook (`.claude/hooks/check-skill.sh`) blocks any `Edit` / `Write` / `NotebookEdit` whose file path matches a `paths:` glob in a skill's `SKILL.md` frontmatter — until that skill has been invoked via the `Skill` tool in the current session. The `.claude/skills/` directory is the authoritative source of truth for this codebase: read each invoked skill as architecture (the first section describes structure and invariants — those are the design anchors), not as a checklist of gotchas. Wired in `.claude/settings.json`; do not disable without explicit approval.
+
 | Skill | File | Use For |
 |-------|------|---------|
 | UI Components | [.claude/skills/ui-components/SKILL.md](.claude/skills/ui-components/SKILL.md) | Component usage, CSS variables, theming |
-| Theme Tokens | [.claude/skills/theme-tokens/SKILL.md](.claude/skills/theme-tokens/SKILL.md) | Complete list of semantic color/font/radius tokens — hardcoded palette colors forbidden |
+| Theme Tokens | [.claude/skills/ui-theme-tokens/SKILL.md](.claude/skills/ui-theme-tokens/SKILL.md) | Complete list of semantic color/font/radius tokens — hardcoded palette colors forbidden |
 | UI Library System | [.claude/skills/ui-library-system/SKILL.md](.claude/skills/ui-library-system/SKILL.md) | Build-time generation, runtime switching, adding apps/libraries |
-| CMS Theme | [.claude/skills/cms-theme/SKILL.md](.claude/skills/cms-theme/SKILL.md) | SSR theme loading, fonts, Sanity studios |
-| Branding | [.claude/skills/branding/SKILL.md](.claude/skills/branding/SKILL.md) | Logos, favicons, brand assets, seed script |
-| API Routes | [.claude/skills/api-routes/SKILL.md](.claude/skills/api-routes/SKILL.md) | Route patterns, validation, LLM calls |
+| CMS Theme | [.claude/skills/ui-cms-theme/SKILL.md](.claude/skills/ui-cms-theme/SKILL.md) | SSR theme loading, fonts, Sanity studios |
+| Branding | [.claude/skills/ui-branding/SKILL.md](.claude/skills/ui-branding/SKILL.md) | Logos, favicons, brand assets, seed script |
+| API Routes | [.claude/skills/ui-api-routes/SKILL.md](.claude/skills/ui-api-routes/SKILL.md) | Route patterns, validation, LLM calls |
 | Database | [.claude/skills/database/SKILL.md](.claude/skills/database/SKILL.md) | Drizzle schema, queries, migrations |
 | Monorepo | [.claude/skills/monorepo-structure/SKILL.md](.claude/skills/monorepo-structure/SKILL.md) | Workspace layout, package imports |
 | Git Commits | [.claude/skills/git-commits/SKILL.md](.claude/skills/git-commits/SKILL.md) | Commit format and rules |
-| Canvas Animation | [.claude/skills/canvas-animation/SKILL.md](.claude/skills/canvas-animation/SKILL.md) | AIACanvas, AIASphere, AIARing |
+| Canvas Animation | [.claude/skills/ui-canvas-animation/SKILL.md](.claude/skills/ui-canvas-animation/SKILL.md) | AIACanvas, AIASphere, AIARing |
 | Vada Architecture | [.claude/skills/vada-architecture/SKILL.md](.claude/skills/vada-architecture/SKILL.md) | Architecture master reference — layer stack, phase status, moat framework |
 | Vada MCP Server | [.claude/skills/vada-mcp-server/SKILL.md](.claude/skills/vada-mcp-server/SKILL.md) | MCP server implementation |
 | Vada Home Sections | [.claude/skills/vada-home-sections/SKILL.md](.claude/skills/vada-home-sections/SKILL.md) | Home page section primitives (SectionWrapper, SectionLabel, StatusFooter, TwoColumnSection) and composition recipe |
+| Vada YAML Authoring | [.claude/skills/vada-yaml-authoring/SKILL.md](.claude/skills/vada-yaml-authoring/SKILL.md) | Authoring deliberation YAML specs — workflow types, spec-registry, verify scripts |
 | Atta Engine | [.claude/skills/atta-engine/SKILL.md](.claude/skills/atta-engine/SKILL.md) | Plan compiler — types, validation, compilers, node ID scheme |
 | Atta Adapter | [.claude/skills/atta-adapter-langgraph/SKILL.md](.claude/skills/atta-adapter-langgraph/SKILL.md) | LangGraph execution + cognitive router |
 | Atta Teams | [.claude/skills/atta-teams/SKILL.md](.claude/skills/atta-teams/SKILL.md) | Agent and team configs |

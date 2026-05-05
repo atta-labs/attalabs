@@ -1,6 +1,8 @@
 ---
 name: model-picker
 description: Shared searchable AI-model picker for all Atta AI products — ModelPicker component, dynamic catalog from models.dev, overlay curation, CatalogProvider SSR pattern
+paths:
+  - "packages/models/**"
 ---
 
 # Model Picker — Atta AI

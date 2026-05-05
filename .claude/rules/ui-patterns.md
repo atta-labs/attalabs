@@ -48,7 +48,7 @@ All colors **MUST** use semantic tokens mapped to CSS variables. Hardcoded Tailw
 
 > There is no `info` / `blue` token. Use `primary` for informational/in-progress states with visual weight, or `muted-foreground` for neutral ones.
 
-**Full reference:** [.claude/skills/theme-tokens/SKILL.md](../skills/theme-tokens/SKILL.md) — complete list, why it matters, and how to add a new token if one is truly missing.
+**Full reference:** [.claude/skills/ui-theme-tokens/SKILL.md](../skills/ui-theme-tokens/SKILL.md) — complete list, why it matters, and how to add a new token if one is truly missing.
 
 ---
 
@@ -92,7 +92,7 @@ Font values come from the CMS theme. Never hardcode font-family names.
 
 Colors, fonts, and UI library (basic/retro/animate/brutal) are set per-product in Sanity CMS and injected at root layout via `NextWebShell`. Never hardcode theme values — they change per product and per theme.
 
-See `.claude/skills/cms-theme/SKILL.md` for full details.
+See `.claude/skills/ui-cms-theme/SKILL.md` for full details.
 
 ---
 

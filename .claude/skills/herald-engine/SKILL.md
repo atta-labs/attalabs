@@ -1,6 +1,8 @@
 ---
 name: herald-engine
 description: Herald AI forensic match engine — Skeptical Auditor prompt rules, match API behavior, signal detection, caching, timeout, and fallback
+paths:
+  - "apps/herald-ai/**"
 ---
 
 # Herald Engine — Forensic Match Audit

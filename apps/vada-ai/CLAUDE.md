@@ -88,6 +88,5 @@ Historical specs — superseded. See [specs/legacy/README.md](specs/legacy/READM
 
 - [Root CLAUDE.md](../../CLAUDE.md) — Atta AI monorepo routing index
 - [.claude/skills/vada-architecture/SKILL.md](../../.claude/skills/vada-architecture/SKILL.md) — Architecture master reference
-- [.claude/skills/vada-brokered/SKILL.md](../../.claude/skills/vada-brokered/SKILL.md) — Brokered mode in depth
 - [.claude/skills/vada-yaml-authoring/SKILL.md](../../.claude/skills/vada-yaml-authoring/SKILL.md) — Authoring YAML deliberation specs
 - [.claude/skills/atta-teams/SKILL.md](../../.claude/skills/atta-teams/SKILL.md) — YAML specs + agent visuals (teams and agents are all YAML; display types in web/src/components/agents/visuals/)
