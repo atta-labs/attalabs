@@ -2,7 +2,15 @@
 
 import type { CMSTheme } from '@atta/cms'
 import { Button, useToastContext } from '@atta/ui/basic/components'
-import { Pencil } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@atta/ui/components/dialog'
+import { Copy, Download, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
@@ -10,6 +18,7 @@ import type { ThemeData } from '@/components/theme/utils'
 import { FontPicker } from '@/components/portal/font-picker'
 import { usePortalPreview } from '@/hooks/use-portal-preview'
 import { PortalPreviewFrame } from '@/components/portal/portal-preview-frame'
+import { exportShadcnCss } from '@/lib/export-shadcn-css'
 import { setActiveThemeAction } from '../actions'
 import { CreateThemeDialog } from './create-theme-dialog'
 import { FourSquareSwatch } from './four-square-swatch'
@@ -64,6 +73,8 @@ export function ThemesBrowseClient({ project, themes, currentThemeId, currentCol
   const { successToast, errorToast } = useToastContext()
   const [selectedFontSans, setSelectedFontSans] = useState<string | undefined>(undefined)
   const [createOpen, setCreateOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
+  const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
   const [headerSlot, setHeaderSlot] = useState<Element | null>(null)
 
   useEffect(() => {
@@ -83,6 +94,29 @@ export function ThemesBrowseClient({ project, themes, currentThemeId, currentCol
     }
     return map
   }, [themes])
+
+  const exportedCss = useMemo(() => {
+    if (!exportOpen || !selectedTheme) return ''
+    return exportShadcnCss({
+      name: selectedTheme.name ?? '',
+      light: (selectedTheme.light ?? {}) as Record<string, string>,
+      dark: (selectedTheme.dark ?? {}) as Record<string, string>,
+      typography: selectedTheme.typography ?? {},
+      spacing: selectedTheme.spacing ?? {},
+      shadows: (selectedTheme.shadows ?? {}) as Record<string, string>
+    })
+  }, [exportOpen, selectedTheme])
+
+  async function handleCopy() {
+    if (!exportedCss) return
+    try {
+      await navigator.clipboard.writeText(exportedCss)
+      setCopyState('copied')
+      setTimeout(() => setCopyState('idle'), 1500)
+    } catch {
+      setCopyState('idle')
+    }
+  }
 
   const buildMessage = useCallback(() => {
     if (!selectedTheme) return null
@@ -149,6 +183,16 @@ export function ThemesBrowseClient({ project, themes, currentThemeId, currentCol
           <Link href={`/${project}/themes/${selectedId}/edit`}>Edit Theme</Link>
         </Button>
       )}
+      <Button
+        variant='outline'
+        size='sm'
+        onClick={() => setExportOpen(true)}
+        disabled={!selectedTheme}
+        className='font-mono text-[10px]'
+      >
+        <Download className='h-3.5 w-3.5' />
+        Export
+      </Button>
       <Button size='sm' onClick={handlePublish} disabled={!hasChanges || isPending} className='font-mono text-[10px]'>
         {isPending ? 'Saving...' : saved ? 'Saved!' : 'Set Active Theme'}
       </Button>
@@ -162,6 +206,26 @@ export function ThemesBrowseClient({ project, themes, currentThemeId, currentCol
     <>
       {headerSlot && createPortal(headerContent, headerSlot)}
       <CreateThemeDialog open={createOpen} onOpenChange={setCreateOpen} project={project} />
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className='w-[min(44rem,calc(100vw-2rem))]'>
+          <DialogHeader>
+            <DialogTitle>Export theme</DialogTitle>
+            <DialogDescription>shadcn-style CSS — paste into your project&apos;s globals.css.</DialogDescription>
+          </DialogHeader>
+          <pre className='max-h-[60vh] overflow-auto rounded-md border border-input bg-background/60 p-3 font-mono text-[11px] leading-relaxed text-foreground/90'>
+            {exportedCss}
+          </pre>
+          <DialogFooter>
+            <Button type='button' variant='ghost' onClick={() => setExportOpen(false)}>
+              Close
+            </Button>
+            <Button type='button' onClick={handleCopy} disabled={!exportedCss}>
+              <Copy className='h-3.5 w-3.5' />
+              {copyState === 'copied' ? 'Copied!' : 'Copy to clipboard'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className='flex h-full gap-0'>
         <div className='flex w-72 shrink-0 flex-col border-r border-border'>
           <div className='border-b border-border px-4 py-3'>
