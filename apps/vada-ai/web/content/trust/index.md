@@ -1,95 +1,87 @@
 ---
 title: "Trust · Vāda"
-description: "How Vāda handles your API keys — the BYOK architecture."
+description: "How Vāda handles your API keys — the current BYOK architecture."
 section: Architecture
 ---
 
-# Vāda · <span className="text-accent">BYOK</span> Architecture Principles
+# Vāda · <span className="text-accent">BYOK</span> Architecture
 
 ## The promise
 
-Your keys are never stored in our database. They are never written to any log. They exist on our server <span className="text-accent">only in memory</span>, only during the single request that uses them, and only long enough to make your API call. This is not a policy we follow — it is a <span className="text-accent">structural fact</span> about how the product is built.
+Your provider API keys are stored on Vāda's servers, <span className="text-accent">encrypted at rest</span>, and decrypted only inside the request that uses them. When the request ends, the plaintext key leaves memory. The plaintext is never logged, never returned in a response, never persisted to disk. The encryption is bound to your user identity, so the only way to decrypt your keys is in the context of an authenticated request from you.
 
-## What that means, concretely
+This is not a policy we follow. It's how the system is built.
 
-### Your keys stay in your browser
+## What changed in May 2026
 
-When you add an Anthropic, OpenAI, Google, or any other model provider's API key to Vāda, that key is stored on your machine. Depending on your setup:
+Earlier versions of Vāda kept your keys in your browser only — encrypted with a passkey, stored in IndexedDB, and sent to our server only as part of each deliberation request. We never persisted them. That model was strictly stronger for at-rest privacy, but it had one structural limitation: it required you to be in your browser. An AI assistant connecting to Vāda from a different machine — say, Claude.ai using our hosted MCP server — has no access to your browser's encrypted store.
 
-- **<span className="text-accent">Passkey-secured mode</span>:** your keys are encrypted with an encryption key derived from your passkey (Touch ID / Face ID / Windows Hello / hardware key) and stored in your browser's IndexedDB. Only your biometric can decrypt them.
-- **<span className="text-accent">Session-only mode</span>:** your keys live in your browser's memory for the duration of your session. When you close the tab, they are gone.
+When we shipped hosted MCP in May 2026, we had to choose: stay browser-only and skip hosted MCP, or accept a deliberate trust escalation. We chose the latter. This page describes the resulting architecture honestly.
 
-In both modes, the keys live on your device between deliberations. They transit our server only during the deliberation request itself (see the next section).
+## Where your keys live, end-to-end
 
-### In memory, not in storage
+### At rest
 
-When a deliberation runs, your key is sent from your browser to Vāda's server in the POST body of the deliberation start request. The server holds the key in memory, passes it to the model provider (Anthropic, OpenAI, etc.) to authenticate the API calls, then discards it. The key is <span className="text-accent">never written to disk</span>, <span className="text-accent">never logged</span>, <span className="text-accent">never persisted to the database</span>, and is garbage-collected when the request ends. Transit is over HTTPS. The same applies to benchmark calls: the baseline single-shot and AI judge requests transit server memory under the same contract.
+Your keys are stored in Vāda's database in the `user_provider_keys` table — one row per provider per user. The key material is <span className="text-accent">envelope-encrypted</span> with AES-256-GCM. The encryption uses Additional Authenticated Data (AAD) bound to your Clerk user ID, so a row swap between users is detectable on decrypt.
 
-What Vāda's servers do see: the text of the model responses, which is stored as your deliberation transcript. The server constructs prompts, runs the agent orchestration, and calls the provider — your key authorizes those calls but is <span className="text-accent">not retained once they complete</span>.
+The master encryption key is held in our production environment as an environment variable. A future version will migrate this master key to a managed KMS; the schema already reserves a `kms_key_id` column to support per-row migration without breaking existing ciphertexts.
 
-### The database has no place for your keys
+### In memory, during a request
 
-There is <span className="text-accent">no column, table, or field</span> anywhere in Vāda's database for API keys, provider credentials, or secrets. Even if a team member wanted to store a key server-side, they couldn't — the schema doesn't support it. We can audit this. You can audit this. The codebase is set up so that storing a user's API key server-side is <span className="text-accent">structurally impossible</span> without a deliberate architectural change.
+When you click Deliberate (or when an MCP client makes a tool call):
 
-### No logs contain your keys
+1. The server authenticates the request — Clerk session for the web app, bearer token (Vāda API key) for hosted MCP.
+2. The server reads the encrypted key row(s) needed for the request.
+3. The server decrypts each key in the request handler, instantiates the provider SDK with the plaintext, and makes the LLM call.
+4. The plaintext key leaves scope. The handler returns. Garbage collection cleans up.
 
-Server logs, error reports, and analytics capture request metadata, not request body content — because your keys are never written to any log sink, only held in process memory for the duration of the request. Langfuse traces (our observability layer) are configured with a `SensitiveDataFilter` that redacts any field named `apiKey` before it leaves the process.
+The plaintext key is <span className="text-accent">never</span> logged, <span className="text-accent">never</span> returned in a response body or error payload, <span className="text-accent">never</span> written to a database column or cache, <span className="text-accent">never</span> included in error tracking payloads. It exists only as a Node.js variable inside one request handler, for the duration of that one request.
 
-## What Vāda does store
+### Other paths
 
-So you understand exactly where the line is, here's what Vāda's servers actually persist:
+- **Probe** (validating a key when you save it) — your browser calls the provider directly to check the key is responsive. The server doesn't see the key in this path.
+- **Ollama discovery** — your browser calls `localhost:11434` directly. Vāda doesn't see your local Ollama setup.
 
-- Your deliberation questions
-- The transcripts of each round (what each agent said)
-- The conclusions produced (recommendation, key condition, unresolved points)
-- The terminal state of each deliberation (Clean / Revised / Unconverged)
-- Your user account metadata (email, authentication identifiers, preferences)
-- The models you've assigned to each agent role (but not the keys that authorize those models)
+## What Vāda stores
 
-All of the above is the content of the deliberation work you did using Vāda. None of it is the credentials you used to do it.
+So you know exactly where the line is, here's what Vāda's servers persist:
 
-## What this costs you
+- Your deliberation questions and round transcripts
+- Conclusions and structured synthesis output
+- Your account metadata via Clerk (Clerk ID, email)
+- Model assignments per agent (in localStorage, not the DB)
+- Encrypted provider API keys (the rows in `user_provider_keys`)
+- Vāda API keys for hosted MCP, hashed with SHA-256 (the rows in `api_keys`)
+- Hosted MCP session logs (which tools were called, when)
 
-The structural BYOK architecture has real tradeoffs. We think they're worth it, but you should know them:
+## Your threat model — explicit accounting
 
-- **Browser-bound keys.** If you switch browsers or devices, you re-enter your keys (or unlock with a passkey synced through your OS / password manager). There is no "server-side sync" of keys because there is no server-side copy.
-- **No credential recovery.** If you delete your passkey, clear your browser data, or lose your device without a synced passkey, your stored encrypted keys are unrecoverable. We cannot reset or restore them because we never had them.
-- **You are responsible for key rotation.** If your API key is compromised — on any site, not just Vāda — you rotate it at the provider and update it in Vāda. We can't help you there because we can't see what key you're using.
+A Vāda operator with database access alone <span className="text-accent">cannot read your keys</span>. They would need both database access AND the master encryption key to decrypt. The encryption is real, not theatrical.
 
-## Using Vāda across devices
+A Vāda operator with database access AND the master key can decrypt your keys. This is true. Two-key compromise is required.
 
-Because your keys live on your device rather than on our servers, each device you use Vāda on is a sovereign identity.
+A Vāda compromise during an active request can expose any keys decrypted in that handler's memory. This is the same as before for in-flight requests — but now it's a category we ship intentionally rather than a known caveat.
 
-**First time on a new device:** Enter your API keys once. Optionally set up a passkey on the new device to unlock biometrically on return visits. The whole process takes under a minute.
+A subpoena reaching Vāda for stored data CAN compel decryption. Pre-May-2026 there was nothing at rest to compel. This is honest, not a dealbreaker.
 
-**Switching between devices frequently:** Use a password manager (1Password, Bitwarden, iCloud Keychain, Google Password Manager) to store your API keys. Pasting a key from your password manager into a new device is the same workflow you likely already use for other sensitive credentials.
+Hosted MCP API keys are distinct from provider keys. API keys (`vada_*`) are bearer tokens used to authenticate MCP clients. They're hashed with SHA-256 — the keys have 256 bits of randomness, which makes brute-force infeasible. You generate them in Settings → API Keys and revoke them individually.
 
-**Sync between your own devices:** We're working on an end-to-end encrypted device-linking flow that lets you sync your keys between devices you own — through a QR code scan, with the encryption happening entirely between your devices, never through our server. Until that ships, treat each device as its own setup.
+## Cross-device behavior
 
-We chose not to offer server-side encrypted sync even though it would be cryptographically defensible. "Your keys are encrypted in our database" is a weaker story than "your keys never reach our storage." We prefer the stronger story — and the architectural constraint that enforces it.
+Because keys are now stored server-side, switching devices is transparent. Sign in on a new device — your keys are already there. This is a behavior change from the prior model, where each device had its own IndexedDB copy.
 
-## Why this architecture
+## Key rotation
 
-<span className="text-accent">BYOK</span> products that store your keys server-side — even in encrypted form — create <span className="text-accent">attack surface</span>. A database breach, a rogue employee, a misconfigured log, a subpoena, a legal compulsion. None of those can expose what doesn't exist in storage. By designing Vāda so keys are <span className="text-accent">never written to any storage layer</span> — only held in process memory for the duration of a single request — we take those risks off the table structurally.
+Rotate at the provider, then update in Vāda Settings → API Keys. Vāda has no visibility into upstream rotation events.
 
-This also preserves your relationship with the model providers. Your Anthropic bill is yours. Your usage metrics at OpenAI are yours. Your rate limits are yours. Vāda is <span className="text-accent">not a middleman</span>; it's an orchestration layer on top of tools you already own.
+## How to verify these claims
 
-## Why this changed
+If you want to audit our claims yourself:
 
-Earlier versions of Vāda made API calls directly from your browser to model providers. We moved these calls server-side because the new architecture (Mastra workflow orchestration) requires server-side execution to produce accurate traces, coordinate multi-agent deliberations reliably, and give you a better experience.
+- The hosted MCP route handler is at `apps/vada-ai/web/src/app/api/mcp/route.ts`. It does bearer auth, decryption, tool dispatch in one file.
+- Bearer validation: `packages/auth/src/api-key-auth.ts`'s `verifyApiKeyBearer` function. SHA-256 hash + DB lookup.
+- Envelope encryption: `packages/crypto/`. AES-256-GCM with AAD = clerkId.
+- DB schemas: `packages/db/src/schema/keys.ts`.
+- Web app deliberation route: `apps/vada-ai/web/src/app/api/deliberation/[id]/workflow/run/route.ts`. Reads keys from DB by `clerkId`; doesn't accept keys in the request body.
 
-The privacy tradeoff: your key now transits our server memory during each deliberation. We protected this by ensuring the key is never written to any storage, never logged, and is dropped as soon as the request completes. This is a stronger posture than most BYOK products, just architecturally different from our earlier one.
-
-## How to verify our claims
-
-- **Check the database schema.** Drizzle schema files in the repository contain every table and column. Search for `api_key`, `credential`, `token` — you won't find any.
-- **Check the identity package.** The `@atta/identity` package source is open for inspection. Look at where keys are stored (`packages/identity/src/storage.ts`) and where they're read. Trace the call graph — the key is sent to exactly one destination: Vāda's `/workflow/run` endpoint. No analytics, no telemetry, no error reporters, no third-party sinks.
-- **Check the workflow route.** `/api/deliberation/[id]/workflow/run` is the only route that accepts a key. Read the source — you'll see the key flowing to provider calls and never to storage.
-- **Check the network tab.** You'll see the deliberation start as a POST to Vāda's `/api/deliberation/[id]/workflow/run` (the POST body contains your key), then an SSE stream back. The server uses your key to make provider calls on your behalf — those calls happen server-side, not in your browser. You can verify what the server does with your key by inspecting the workflow endpoint source code, which is in the repository.
-- **Check the observability config.** Our Langfuse integration includes a `SensitiveDataFilter` that redacts `apiKey` from all traces before they leave the process.
-
-If any of the above is untrue, that is a critical security bug and we want to know about it.
-
----
-
-*The BYOK promise is worth nothing if it's just a policy. We made the database constraint structural because policies can slip and schemas cannot. The server-transit model is honest: your key enters our process, does its job, and leaves. No storage. No logs. No copies.*
+If anything in this page is contradicted by the code, that's a critical bug we want to know about.
