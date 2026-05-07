@@ -5,7 +5,7 @@ const LAYERS: [string, string][] = [
   ['Plan Compiler', 'Validates structure, builds the execution graph'],
   ['LangGraph', 'State machine executes the compiled plan'],
   ['Cognitive Router', 'Intent · tool filtering · budget · cost per turn'],
-  ['Audit Trail', 'Structured conclusions with full deliberation transcript'],
+  ['Audit Trail', 'Structured conclusions with full deliberation transcript']
 ]
 
 export function AttaEngineSection() {

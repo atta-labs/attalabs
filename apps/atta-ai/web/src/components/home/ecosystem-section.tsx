@@ -18,39 +18,39 @@ const PRODUCTS: Product[] = [
     subtitle: 'From Pāli: Deliberation',
     description: 'Multi-agent deliberation engine. The first product.',
     status: 'Live',
-    url: 'https://vada.attalabs.dev',
+    url: 'https://vada.attalabs.dev'
   },
   {
     name: 'Herald',
     subtitle: 'Pluggable MCP tool',
     description: 'Forensic CV-to-job-description match tool. English name — plugs in to Atta.',
-    status: 'Live',
+    status: 'Live'
   },
   {
     name: 'Vitakka',
     subtitle: 'From Pāli: Directed thought',
     description: 'Personal AI thinking partner. Resumes after Vāda revenue milestone.',
-    status: 'Paused',
+    status: 'Paused'
   },
   {
     name: 'Sati',
     subtitle: 'From Pāli: Mindfulness',
     description: 'Cross-provider memory layer. Builds downstream of Vitakka.',
-    status: 'Conceptual',
+    status: 'Conceptual'
   },
   {
     name: 'Cetana',
     subtitle: 'From Pāli: Intention',
     description: 'Deliberation-guided execution. Long-horizon.',
-    status: 'Future',
-  },
+    status: 'Future'
+  }
 ]
 
 const badgeClass: Record<ProductStatus, string> = {
   Live: 'bg-primary text-primary-foreground',
   Paused: 'border-muted-foreground/30 text-muted-foreground/70',
   Conceptual: 'border-muted-foreground/20 text-muted-foreground/50',
-  Future: 'border-muted-foreground/10 text-muted-foreground/40',
+  Future: 'border-muted-foreground/10 text-muted-foreground/40'
 }
 
 export function EcosystemSection() {
@@ -77,9 +77,7 @@ export function EcosystemSection() {
             const card = (
               <Card
                 className={`h-full border-border/40 bg-background/40 ${
-                  isLive
-                    ? 'transition-colors duration-300 group-hover:border-primary/40'
-                    : 'cursor-default opacity-60'
+                  isLive ? 'transition-colors duration-300 group-hover:border-primary/40' : 'cursor-default opacity-60'
                 }`}
               >
                 <CardHeader className='pb-3'>
@@ -93,10 +91,7 @@ export function EcosystemSection() {
                     {product.description}
                   </Text>
                   <div className='flex items-center justify-between'>
-                    <Badge
-                      className={`text-xs ${badgeClass[product.status]}`}
-                      variant={isLive ? 'default' : 'outline'}
-                    >
+                    <Badge className={`text-xs ${badgeClass[product.status]}`} variant={isLive ? 'default' : 'outline'}>
                       {product.status}
                     </Badge>
                     {product.url && (
@@ -111,7 +106,13 @@ export function EcosystemSection() {
             )
 
             return isLive && product.url ? (
-              <a key={product.name} href={product.url} target='_blank' rel='noopener noreferrer' className='group block'>
+              <a
+                key={product.name}
+                href={product.url}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='group block'
+              >
                 {card}
               </a>
             ) : (
