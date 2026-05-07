@@ -12,8 +12,8 @@ import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getAttaBranding(cmsClient).catch(() => null)
   return {
-    title: 'Atta — Yours.',
-    description: 'An ecosystem for careful thinking.',
+    title: 'Atta — Where deep thinking happens',
+    description: 'A place for deep thinking with AI. Bring any model. Deliberate across them. Keep what matters.',
     icons: buildFaviconIcons(branding)
   }
 }
