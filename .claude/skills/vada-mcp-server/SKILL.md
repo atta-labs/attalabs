@@ -18,14 +18,14 @@ Vāda's MCP server exists as two distinct surfaces that share the same tool surf
    - Sessions log to user-configured `DATABASE_URL`
    - Used for: local dev, internal testing, users who want full local control
 
-2. **Hosted HTTP server (target — see `apps/vada-ai/specs/mcp-architecture.md`)**
+2. **Hosted HTTP server (live in production since May 4, 2026 — see `apps/vada-ai/specs/mcp-architecture.md`)**
    - Endpoint: `https://vada.attalabs.dev/api/mcp`
    - Transport: Streamable HTTP (POST + SSE response stream) per MCP spec
    - Auth: Vāda API key (bearer token in `Authorization` header)
-   - BYOK: provider keys encrypted at rest, decrypted per-request (server-managed KMS)
+   - BYOK: provider keys envelope-encrypted at rest (AES-256-GCM, env-var master key), decrypted per-request
    - Sessions log to Vāda's production DB
    - Used for: AI assistants (Claude.ai, Cursor, etc.), clients that can't run local processes
-   - Status: target architecture documented. Implementation pending.
+   - Status: shipped May 4, 2026 (PRs #9 + #10). Phases 1-4 of the original implementation plan are complete. Phase 5 (session URL fix) and Phase 6 (hardening: rate limiting, audit log) remain as future work.
 
 Both surfaces expose the same two tools (`vada__consult`, `vada__deliberate`) and route to the same YAML catalog. Transport and key management differ; tool input/output shapes do not.
 
@@ -52,6 +52,14 @@ apps/vada-ai/mcp-server/src/
     ├── consult.ts          # vada__consult — builds inline BrokeredWorkflow spec from reviewer profiles
     └── deliberate.ts       # vada__deliberate — uses lookupSpec + compileSpec for catalog team specs
 ```
+
+The hosted HTTP server lives at:
+
+```
+apps/vada-ai/web/src/app/api/mcp/route.ts   # Next.js Route Handler — Streamable HTTP transport, bearer auth, dispatches the same tools
+```
+
+It uses the same `consult.ts` / `deliberate.ts` tool implementations as the stdio server (composed differently for HTTP), and the route adds a bearer-validation step (`verifyApiKeyBearer` from `@atta/auth`) before dispatch and a provider-key decryption step (envelope decryption from `@atta/crypto`) inside the request handler.
 
 ---
 
@@ -162,20 +170,20 @@ Current catalog: `crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline
 
 ---
 
-## Hosted HTTP server (target)
+## Hosted HTTP server (shipped — May 4, 2026)
 
 Brief summary only. Full architecture detail lives in `apps/vada-ai/specs/mcp-architecture.md` — read that file for the complete spec; do not duplicate here.
 
 **Authentication:**
-- Vāda API key passed as `Authorization: Bearer <vada_pk_...>` header
-- Key generated in Settings → MCP; stored hashed; revocable
-- Per-request validation; user identity resolved from key
+- Vāda API key passed as `Authorization: Bearer <vada_...>` header
+- Key generated in Settings → API Keys; stored as SHA-256 hex digest in `api_keys` table; revocable per-key
+- Per-request validation via `verifyApiKeyBearer` in `packages/auth/src/api-key-auth.ts`; user identity (`clerkId`) resolved from the looked-up row
 
 **Provider keys (BYOK):**
-- User configures provider keys in Settings → API Keys (Hosted MCP)
-- Encrypted at rest with server-managed envelope encryption (KMS provider TBD)
+- User configures provider keys in Settings → API Keys
+- Encrypted at rest in the `user_provider_keys` table with envelope encryption (AES-256-GCM, AAD-bound to `clerkId`, master key from `MASTER_ENCRYPTION_KEY` env var; `kms_key_id` column reserved for future KMS migration)
 - Decrypted only inside the request handler for the duration of the LLM call — never logged, never persisted in plaintext
-- Distinct from web app's browser-only passkey BYOK (different trust model — server CAN decrypt)
+- Same store backs the web app's deliberate page (single canonical key store as of D-028; the prior browser-only IndexedDB BYOK was demoted from canonical role on May 4, 2026)
 
 **Request lifecycle (brief):**
 - Client POST → bearer token validation → provider key decryption → engine execution → SSE stream back → session log

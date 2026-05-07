@@ -9,7 +9,7 @@ paths:
 
 ## Context
 
-Each app uses Neon Postgres + Drizzle ORM. Each product maintains its own local `users` table keyed by `clerk_id`. No cross-product data sharing.
+Each app uses Neon Postgres + Drizzle ORM. Identity (the `users` table) and ecosystem-shared concerns (provider keys, API keys, MCP sessions) live in `packages/db/` (`@atta/db`) and are shared across products. Product-specific tables stay in each product's app-local schema (`apps/{product}/web/src/db/schema.ts`). The split is documented as a deliberate exception to per-product isolation, driven by hosted MCP (D-029) and the shared keys UI extraction (D-030) — see `vada-decisions.md` for rationale.
 
 ---
 
@@ -18,8 +18,9 @@ Each app uses Neon Postgres + Drizzle ORM. Each product maintains its own local 
 ### Schema
 - **MUST** use `snake_case` for all column names
 - **MUST** store JSON fields as `text` — serialize/deserialize manually
-- **MUST** use `clerk_id` as primary key for user tables
-- **MUST NOT** share user tables across products — each app has its own
+- **MUST** use `clerk_id` as primary key (or FK) for user-scoped tables
+- The `users` table is shared across products in `packages/db/src/schema/users.ts`. Per-product profile tables (e.g., `apps/vada-ai/web/src/db/schema.ts` `userSettings`) reference `users.clerk_id` as a FK.
+- Ecosystem-shared key tables (`api_keys`, `user_provider_keys`, `mcp_sessions`) live in `packages/db/src/schema/keys.ts` (per D-030). These are read by any product that exposes hosted MCP or BYOK Settings.
 
 ```ts
 import { boolean, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
@@ -37,6 +38,27 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 ```
+
+### Ecosystem-shared vs product-local schemas
+
+`packages/db/src/schema/`:
+- `users.ts` — identity (`users`)
+- `keys.ts` — `api_keys`, `user_provider_keys`, `mcp_sessions` (per D-030)
+
+`apps/{product}/web/src/db/schema.ts`:
+- product-specific tables (deliberation transcripts, benchmarks, per-product preferences like `userSettings`, etc.)
+
+When adding a new table, ask: "Will any other product in the ecosystem need to read this table?" If yes (or plausibly so within a year), put it in `packages/db/`. If no, app-local. Default to app-local; promote to ecosystem-shared only when the use case is concrete.
+
+### Envelope encryption for sensitive columns
+
+Where a column holds user-provided secrets (e.g., `user_provider_keys.key_ciphertext`), the storage pattern is:
+1. Plaintext is encrypted via `@atta/crypto`'s envelope encryption — AES-256-GCM with AAD bound to the user's `clerk_id`.
+2. The ciphertext, IV, and a `kms_key_id` version identity are stored.
+3. Decryption happens only inside request handlers, never in cron jobs or analytics paths.
+4. The `MASTER_ENCRYPTION_KEY` env var holds the master key in V1; the `kms_key_id` column reserves migration to KMS-managed keys for V2.
+
+If you're adding a column that holds a user-provided secret, follow the `user_provider_keys` pattern. Do not store secrets in plaintext columns.
 
 ### JSON Fields
 - **MUST** serialize before writing, deserialize after reading — never store raw objects
@@ -110,6 +132,8 @@ src/db/
 - ❌ Raw SQL strings — use Drizzle query builder
 - ❌ Inline queries in components or route handlers — always use `queries.ts`
 - ❌ Storing parsed JSON objects directly — serialize to text first
-- ❌ Sharing user tables across products — each product is isolated
+- ❌ Defining a new product-local `users` table — the shared table in `@atta/db` is canonical; reference it by FK
+- ❌ Storing user-provided secrets (API keys, OAuth tokens, etc.) in plaintext columns — follow the `user_provider_keys` envelope encryption pattern
+- ❌ Putting product-specific tables in `@atta/db` because they "feel ecosystem-shaped" — defer to app-local; promote later when a second consumer is concrete
 - ❌ Throwing on missing rows — return `null` and handle in caller
 - ❌ Forgetting `updatedAt: new Date()` on updates

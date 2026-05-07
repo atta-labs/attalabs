@@ -602,6 +602,97 @@ The DB-backed `userTeamModels` table was removed because it caused a revert-to-C
 
 ---
 
+## D-028: Server-side as canonical key store; IndexedDB demoted from key-storage role
+
+**Date:** May 4, 2026 (PR #13, `refactor/single-source-keys`)
+**Status:** Active
+
+**Decision summary:** Server-side `user_provider_keys` table (envelope-encrypted at rest) is the single canonical store for user provider API keys. Browser-side IndexedDB-via-passkey is no longer the canonical store; `@atta/identity` is no longer responsible for storing provider keys. Both UI surfaces (Settings → API Keys; the `/deliberate` model picker's inline key dialog) read and write the same server-side store via `POST /api/keys/provider`. This reverses the "two stores with sync" architecture briefly in place earlier in the same week.
+
+**Alternatives considered:**
+- Keep two stores with sync (the architecture in place between PRs #9-10 and #13) — required reconciliation logic and surfaced a sync bug within minutes of feature use; the lock-icon UX promised "browser-only" trust that the existence of the server-side hosted-MCP store had already invalidated
+- Drop server-side storage and stay browser-only — incompatible with hosted MCP (an MCP client on Claude Desktop has no access to the user's browser IndexedDB or passkey context)
+- Encrypt server-side only, drop IndexedDB entirely — the option chosen
+- Drop hosted MCP entirely to preserve browser-only BYOK — would have killed the dogfooding goal that day 4 work
+
+**Rationale:** Once hosted MCP shipped (D-029), the server had to hold a decryptable copy of provider keys for any user who wanted to dogfood Vāda via Claude.ai. The `/deliberate` page's lock-icon row, "Sign out," and "Forget this device" affordances had been the UX surface that made browser-only BYOK tangible to users — but with hosted MCP active, those affordances no longer reflected reality (signing out of the browser store didn't sign the user out of the server store, which now had the same keys). Two stores with synchronized state added complexity that served no user-visible purpose, while creating a real bug: the sync was last-write-wins and could revert intentional changes. The UX coherence question — "what does this button do, and is the resulting state honest?" — only had a clean answer once IndexedDB was removed from the canonical role.
+
+**Consequences:**
+- `user_provider_keys` is the single source of truth for provider keys; envelope-encrypted with AES-256-GCM, AAD-bound to `user_id`; master key from `MASTER_ENCRYPTION_KEY` env var (KMS migration via `kms_key_id` field reserved for future)
+- `/deliberate` page top-bar key UI removed: lock-icon row, "Sign out" button, "Forget this device" button, `IdentityBanner`, `useIdentityBanner`
+- Inline "ANTHROPIC KEY REQUIRED" dialog in the model picker preserved as a fast-path, but it now writes to the server via `POST /api/keys/provider` rather than to IndexedDB
+- `MigrationPrompt` ships as a one-time UX nudge for users who had keys in IndexedDB pre-reversal, asking them to migrate
+- `@atta/identity` package retained — it is still mounted via `IdentityProvider` in `apps/vada-ai/web/src/app/layout.tsx` and `apps/atta-ai/web/src/app/layout.tsx`, and continues to provide key-adjacent utilities: `probeProviderKey` (validate a typed key is responsive before persisting server-side), `fetchInstalledOllamaModels` (local Ollama discovery, browser-direct), and the `useIdentity` hook used by `MigrationPrompt`, the judge benchmark hook, and the shared model picker
+- Workflow run route (`/api/deliberation/[id]/workflow/run`) no longer accepts `apiKey` / `apiKeys` in the request body — it reads the user's provider keys from the DB by `clerkId` and decrypts inside the handler
+- Old `vada-byok-principles.md` framing (transit-mode, IndexedDB at rest) is superseded by this entry; the doc is rewritten in place to describe the current single-source architecture, with a brief history note preserving prior framing
+- `vada-byok-gap-report.md` becomes largely moot: Gap 1's Path A vs Path B dichotomy doesn't apply (we picked neither — keys are server-side at rest, decrypted only inside request handlers). Gap 2 (multi-vendor adapter) was closed May 1 in separate work. Gaps 3 and 4 are about `@atta/identity`-as-key-store and are no longer the relevant question. The doc is updated with resolution status, kept as historical record.
+
+---
+
+## D-029: Hosted MCP server architecture (shipped)
+
+**Date:** May 4, 2026 (PRs #9 + #10, `feat/mcp-server`)
+**Status:** Active
+
+**Decision summary:** Hosted MCP server shipped end-to-end. Endpoint at `https://vada.attalabs.dev/api/mcp`. Streamable HTTP transport per the MCP specification. Bearer-token authentication via SHA-256-hashed API keys (`vada_*`) stored in the `api_keys` table. Provider keys stored separately in `user_provider_keys` with envelope encryption (AES-256-GCM, AAD-bound to user_id, env-var-derived master key, version field for future KMS migration). Both `vada__consult` and `vada__deliberate` tools wired through. This is a deliberate trust-model escalation distinct from the prior browser-only BYOK story.
+
+**Alternatives considered:**
+- Stay stdio-only — would have made dogfooding via Claude.ai impossible; Claude.ai has no way to spawn a local stdio process for an MCP server
+- KMS-managed master key (AWS KMS, GCP Cloud KMS, HashiCorp Vault) for envelope encryption — deferred to V2; env-var master with `kms_key_id` version field on the row preserves migration path
+- bcrypt for API key hashing — slow per-request; unnecessary given key entropy (32 bytes random base64url) and the fact that the database lookup uses a unique index on the hash column
+- OAuth instead of bearer tokens — MCP OAuth client support across consumer clients is patchy as of mid-2026; bearer tokens work universally
+- Per-key tool scoping (e.g., key authorized only for `vada__consult`) — not designed; future work
+- Production domain `vada.ai` instead of `vada.attalabs.dev` — `vada.ai` is the long-term target but not held; using `vada.attalabs.dev` until the domain question resolves
+
+**Rationale:** Dogfooding Vāda via Claude.ai requires a hosted endpoint Claude.ai can connect to — which means HTTP, an authentication mechanism the MCP client supports universally (bearer header), and a way for the server to call provider APIs on behalf of the authenticated user (server-side decryptable provider keys). Each piece of this — envelope encryption, separate API key vs provider key tables, SHA-256 hash with prefix lookup — was the simplest mechanism that satisfies the threat model without introducing infrastructure (KMS, bcrypt-as-rate-limit) that V1 doesn't yet need.
+
+The trust-model escalation is real and intentional: the prior browser-only BYOK story was strictly stronger than what hosted MCP can offer (server cannot decrypt what it cannot reach). Users opting into hosted MCP accept that Vāda's server holds an encrypted copy of their provider keys, decrypted only inside request handlers. This is documented separately.
+
+**Consequences:**
+- Hosted route handler at `apps/vada-ai/web/src/app/api/mcp/route.ts`
+- `verifyApiKeyBearer` in `packages/auth/src/api-key-auth.ts` parses the `Authorization: Bearer <vada_...>` header, computes SHA-256 hex digest, looks up by hash via the unique index on `api_keys.key_hash`
+- `generateApiKey('vada')` in `packages/crypto/src/api-keys.ts` produces `vada_<base64url(32 random bytes)>` with the SHA-256 hash returned alongside; plaintext shown to user exactly once at creation
+- `api_keys` table columns: `id` (uuid PK), `clerk_id`, `name`, `product` (default `'vada'`), `key_hash` (unique-indexed), `created_at`, `last_used_at`, `revoked_at`. No bcrypt cost, no plaintext column
+- `user_provider_keys` table holds envelope-encrypted provider keys with `kms_key_id` version field for future KMS migration; one row per provider per user
+- `MASTER_ENCRYPTION_KEY` env var holds the 32-byte base64-encoded master key on Vercel production; AAD on each ciphertext binds it to the user's `clerkId` so a row swap between users is detectable on decrypt
+- Per-product key generation supported by the `product` column on `api_keys` — Vitakka and other future products would mint their own `vitakka_*` etc.
+- Settings → API Keys section provides UI for provider key management AND Vāda API key generation; both surfaces extracted to `@atta/ui/account` (D-030)
+- Discovered during deployment: Vercel's "Sensitive" flag on environment variables hides the Value field on Edit, allowing a paste-into-Notes mistake to remain invisible. `vercel env pull` is the only reliable verification path. Captured as a calibration lesson, not an architectural fact.
+- `mcp-architecture.md` rewritten from "Target architecture. Implementation pending." to describe shipped reality; KMS-related "TBD" notes resolved as "deferred to V2"
+- `vada-mcp-server/SKILL.md` updated to describe two live surfaces (stdio + hosted) rather than one current + one target
+- Implementation Phases 1-4 from the original architecture doc are complete; Phase 5 (session URL fix in stdio server, addressing the `vada.ai` hardcode bug) and Phase 6 (rate limiting, audit log retention, hardening) remain as future work
+
+---
+
+## D-030: Shared `@atta/ui/account` components and ecosystem-shared key schemas in `@atta/db`
+
+**Date:** May 5, 2026 (PR `feat/shared-keys-ui`)
+**Status:** Active
+
+**Decision summary:** `ProviderKeysSection` and `ApiKeysSection` extracted from `apps/vada-ai/web/src/app/(main)/settings/components/` into `packages/ui/account/` as shared components — usable by any future Atta product's Settings page. Ecosystem-shared key tables (`api_keys`, `user_provider_keys`, `mcp_sessions`) moved from `apps/vada-ai/web/src/db/schema.ts` to `packages/db/src/schema/keys.ts`. Vāda-specific tables (including `userSettings` for face-style preference) stay in the app-local schema. The Settings → Teams tab is removed; team agent model selection moves inline to the deliberation panel via D-027's unified storage.
+
+**Alternatives considered:**
+- α — Per-product convention with shared query layer only — would have kept schema definitions duplicated in each product's `db/schema.ts`, inviting drift the moment a column was added in one product but not the other
+- β — Move ecosystem-shared tables to `@atta/db` as a documented exception to per-product schema convention (the option chosen)
+- γ — Stand up a dedicated `apps/account/web` hub at `account.attalabs.dev` and host the shared Settings UI there, with each product's `/settings` redirecting — adds a deployment surface and a redirect step for what is fundamentally a presentation-layer share
+
+**Rationale:** With hosted MCP shipped (D-029) and provider keys + API keys becoming first-class ecosystem concerns rather than Vāda-specific ones, the schemas describing them belong at the ecosystem layer. A future Vitakka or Sati Settings page that needs to show "your provider keys" or "your API keys for hosted MCP" must read the same tables — duplicating the schema in `apps/vitakka-ai/` would guarantee divergence. Moving the schemas to `@atta/db` accepts a narrow, documented exception to the per-product schema convention rather than spreading the exception via copy-paste.
+
+The shared UI components follow the same logic: `ProviderKeysSection` and `ApiKeysSection` are the same UI in any product context. Extraction to `@atta/ui/account` (alongside the existing `<AttaUserProfile />` Clerk wrapper) lets the Vāda Settings page compose them today and the next product's Settings page compose them tomorrow.
+
+The decision NOT to build `account.attalabs.dev` as a redirect hub is deliberate — it would add a deployment surface, a redirect step, and a domain-routing boundary for no functional gain over component-level sharing. Each product's `/settings` URL stays product-local; the components inside are shared.
+
+**Consequences:**
+- `packages/ui/account/` exports `ProviderKeysSection`, `ApiKeysSection`, alongside the existing `AttaUserProfile`
+- `packages/db/src/schema/keys.ts` holds `apiKeys`, `userProviderKeys`, `mcpSessions` — read by both Vāda's web app and (future) any other product's web app
+- Per-product DB schema files (e.g., `apps/vada-ai/web/src/db/schema.ts`) keep product-specific tables: for Vāda, that includes `userSettings` (single column: `face_style`), benchmark tables, deliberation transcripts, and so on
+- API route handlers (`/api/keys/provider`, `/api/keys/api`, `/api/mcp`) stay per-product and import shared query helpers from `packages/db/src/queries/keys.ts` (or equivalent)
+- Settings tab structure (Vāda): Account / API Keys / Agent Style. The Teams tab is removed; team agent model selection moves inline to the deliberation panel and shares storage with the picker via D-027
+- `auth/SKILL.md` RULE #5 ("`account.attalabs.dev` is the canonical settings/billing surface") is wrong as of this decision and gets rewritten — the canonical pattern is product-local `/settings` URLs composing shared `@atta/ui/account` components
+- Future products that want a Settings page can adopt the shared components without a separate hub; cross-product navigation between Settings surfaces is via the SSO cookie scope already in place (auth/SKILL.md RULE #2)
+
+---
+
 ## How to add an entry
 
 When adding a new decision:
