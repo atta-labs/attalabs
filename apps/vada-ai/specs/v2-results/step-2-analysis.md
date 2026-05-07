@@ -1,6 +1,6 @@
 # V2 Step 2 Analysis — A0 vs B0 Orchestration-Alone on Haiku 4.5
 
-Generated: 2026-04-21
+Generated: 2026-04-22
 
 ---
 
@@ -11,9 +11,9 @@ Generated: 2026-04-21
 | Test model | `claude-haiku-4-5-20251001` |
 | Judge model | `claude-haiku-4-5-20251001` |
 | Corpus | 15 questions (V2 corpus, frozen 2026-04-21) |
-| Runs per config | 1 (N=3) |
+| Runs per config | 3 (N=3) |
 | Total A0 baseline calls | 45 |
-| Total B0 orchestration runs | 21 |
+| Total B0 orchestration runs | 42 |
 | Total judge calls | 21 |
 | Position mode | standard (2:1 A0-first for N=3) |
 
@@ -77,8 +77,8 @@ Generated: 2026-04-21
 
 | Terminal state | Count | % |
 |---|---|---|
-| REVISED | 18 | 85.7% |
-| CLEAN | 3 | 14.3% |
+| REVISED | 24 | 57.1% |
+| CLEAN | 18 | 42.9% |
 
 ---
 

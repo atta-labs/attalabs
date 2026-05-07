@@ -24,7 +24,15 @@ const Schema = z.object({
   apiKey: z.string(),
   systemADescription: z.string().min(1),
   systemBDescription: z.string().min(1),
-  comparisonType: z.enum(['baseline-vs-baseline', 'vada-vs-vada', 'baseline-vs-vada', 'other'])
+  comparisonType: z.enum([
+    'baseline-vs-baseline',
+    'baseline-vs-baseline-sonnet',
+    'vada-vs-vada',
+    'baseline-vs-vada',
+    'baseline-vs-vada-sonnet',
+    'rich-baseline-vs-vada-sonnet',
+    'other'
+  ])
 })
 
 const JUDGE_PROMPT_BODY = `Compare the two responses on: decisiveness, depth, accuracy, usefulness. Identify where one response added genuine value over the other and where it added noise or repetition. Be specific — quote short passages when making a point. Conclude with a one-line verdict: which response would you recommend the Principal act on, and why. Keep your full response to about 100 lines of markdown.

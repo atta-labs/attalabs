@@ -44,14 +44,22 @@ export async function getV2BaselineRunsForQuestion(questionId: string, variant: 
 }
 
 // Check if this exact run has already been judged.
-// Keyed on (question, systemADescription, runIndex) — all three required to prevent
-// same-slot dedup when multiple run indices share the same slot assignment.
-export async function getExistingV2JudgeResult(questionText: string, systemADescription: string, runIndex: number) {
+// Keyed on (comparisonType, question, systemADescription, runIndex) — all four required.
+// comparisonType prevents cross-comparison collisions when the same (question, slotA, runIndex)
+// appears in multiple experiments (e.g. baseline-vs-baseline-sonnet and baseline-vs-vada-sonnet
+// both place A0S in slot A for even run indices, causing false dedup hits without this key).
+export async function getExistingV2JudgeResult(
+  questionText: string,
+  systemADescription: string,
+  runIndex: number,
+  comparisonType: string
+) {
   const rows = await db
     .select({ id: schema.v2JudgeResults.id, diagnosis: schema.v2JudgeResults.diagnosis })
     .from(schema.v2JudgeResults)
     .where(
       and(
+        eq(schema.v2JudgeResults.comparisonType, comparisonType),
         eq(schema.v2JudgeResults.question, questionText),
         eq(schema.v2JudgeResults.systemADescription, systemADescription),
         eq(schema.v2JudgeResults.runIndex, runIndex)
