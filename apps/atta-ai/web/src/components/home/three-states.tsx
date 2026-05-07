@@ -12,12 +12,7 @@ export function ThreeStates() {
 
         <div className='grid grid-cols-1 gap-5 md:grid-cols-3'>
           {/* Vāda — live, clickable */}
-          <a
-            href='https://vada.attalabs.dev'
-            target='_blank'
-            rel='noopener noreferrer'
-            className='group block'
-          >
+          <a href='https://vada.attalabs.dev' target='_blank' rel='noopener noreferrer' className='group block'>
             <Card className='h-full border-border/40 bg-background/40 backdrop-blur-sm transition-colors duration-300 group-hover:border-primary/40'>
               <CardHeader className='pb-3'>
                 <CardTitle className='font-serif text-xl text-foreground'>Vāda</CardTitle>
@@ -51,8 +46,7 @@ export function ThreeStates() {
               </CardHeader>
               <CardContent className='flex flex-col justify-between gap-4 pt-0'>
                 <Text as='p' className='text-sm leading-relaxed text-muted-foreground'>
-                  Stay with one line of thought. Resume where you left off. The focus container for
-                  everything else.
+                  Stay with one line of thought. Resume where you left off. The focus container for everything else.
                 </Text>
                 <Badge variant='outline' className='w-fit border-muted-foreground/20 text-xs text-muted-foreground/70'>
                   In development
@@ -71,13 +65,10 @@ export function ThreeStates() {
             </CardHeader>
             <CardContent className='flex flex-col justify-between gap-4 pt-0'>
               <Text as='p' className='text-sm leading-relaxed text-muted-foreground'>
-                The composed wrapper. Use the products separately, or use them together — with
-                shared memory across all of them.
+                The composed wrapper. Use the products separately, or use them together — with shared memory across all
+                of them.
               </Text>
-              <Badge
-                variant='outline'
-                className='w-fit border-muted-foreground/10 text-xs text-muted-foreground/40'
-              >
+              <Badge variant='outline' className='w-fit border-muted-foreground/10 text-xs text-muted-foreground/40'>
                 Composing
               </Badge>
             </CardContent>

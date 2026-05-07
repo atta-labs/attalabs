@@ -9,9 +9,9 @@ export function PaliFooter() {
           Why Pāli?
         </Heading>
         <Text as='p' className='mb-6 text-base leading-relaxed text-muted-foreground'>
-          Each Pāli term is a precise concept from a tradition that thought carefully about minds.
-          Vāda is debate. Vitakka is directed thought. Atta is the self that continues. Names that
-          already mean what we want them to mean.
+          Each Pāli term is a precise concept from a tradition that thought carefully about minds. Vāda is debate.
+          Vitakka is directed thought. Atta is the self that continues. Names that already mean what we want them to
+          mean.
         </Text>
         <Text as='p' className='mb-16 text-sm italic text-muted-foreground/60'>
           Pāli name = built by Atta. Anything else plugs in.

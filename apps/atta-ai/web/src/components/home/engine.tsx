@@ -8,19 +8,13 @@ export function Engine() {
           The engine
         </Heading>
         <Text as='p' className='mb-12 text-base leading-relaxed text-muted-foreground'>
-          Every Atta product is built on the same deliberation engine. The engine that runs Vāda's
-          debates is the same engine that will run Vitakka's focused work — and Atta's composed
-          self. One substrate, different surfaces.
+          Every Atta product is built on the same deliberation engine. The engine that runs Vāda's debates is the same
+          engine that will run Vitakka's focused work — and Atta's composed self. One substrate, different surfaces.
         </Text>
 
         {/* Architecture diagram */}
         <div className='mb-6'>
-          <svg
-            viewBox='0 0 480 270'
-            className='w-full text-foreground'
-            aria-hidden='true'
-            role='presentation'
-          >
+          <svg viewBox='0 0 480 270' className='w-full text-foreground' aria-hidden='true' role='presentation'>
             {/* Product name labels */}
             <text
               x='95'
@@ -120,46 +114,18 @@ export function Engine() {
             </text>
 
             {/* Column captions */}
-            <text
-              x='95'
-              y='248'
-              textAnchor='middle'
-              fontSize='10'
-              fill='currentColor'
-              fillOpacity={0.3}
-            >
+            <text x='95' y='248' textAnchor='middle' fontSize='10' fill='currentColor' fillOpacity={0.3}>
               deliberation primitives
             </text>
-            <text
-              x='240'
-              y='248'
-              textAnchor='middle'
-              fontSize='10'
-              fill='currentColor'
-              fillOpacity={0.3}
-            >
+            <text x='240' y='248' textAnchor='middle' fontSize='10' fill='currentColor' fillOpacity={0.3}>
               focus continuity
             </text>
-            <text
-              x='385'
-              y='248'
-              textAnchor='middle'
-              fontSize='10'
-              fill='currentColor'
-              fillOpacity={0.3}
-            >
+            <text x='385' y='248' textAnchor='middle' fontSize='10' fill='currentColor' fillOpacity={0.3}>
               composed self
             </text>
 
             {/* Time / persistence arrow */}
-            <text
-              x='465'
-              y='266'
-              textAnchor='end'
-              fontSize='9'
-              fill='currentColor'
-              fillOpacity={0.18}
-            >
+            <text x='465' y='266' textAnchor='end' fontSize='9' fill='currentColor' fillOpacity={0.18}>
               time / persistence →
             </text>
           </svg>
