@@ -13,9 +13,9 @@ BYOK + Settings restructure (branch: `feat/shared-keys-ui`). Key changes:
 
 > **Framing note (2026-04-30):** The "Brokered mode" and "Autonomous mode" product categories used in older entries have been retired. Current framing uses the Vāda Teams catalog (YAML specs at `apps/vada-ai/yamls/`). See `vada-reviewers-spec.md` for the in-progress Vāda Reviewers team spec.
 
-**Last updated:** May 5, 2026
-**Last milestone:** BYOK + Settings restructure (shared-keys-ui branch) — unified team storage, UI component extraction, schema migration
-**Next milestone:** Phase 9 (real-case Brokered as a new YAML)
+**Last updated:** May 7, 2026
+**Last milestone:** Doc audit (May 6) closing the May 4-5 sprint — hosted MCP shipped, single-source-keys reversal, shared-keys-ui merged.
+**Next milestone:** Track B Item 3b — Reviewer prompt iteration.
 
 ---
 
@@ -81,6 +81,18 @@ The engine already produced structured synthesis via terminal nodes; both MCP an
 - Resolves OQ-A (caller decides per-call) and OQ-B (per-YAML choice; engine surfaces both)
 No schema 2.0 required. The change is at the API boundary, not the spec language.
 
+### Phase 9 — Hosted MCP server shipped (May 4, 2026)
+PRs #9 + #10 landed server end-to-end. Endpoint: `https://vada.attalabs.dev/api/mcp`. Streamable HTTP transport. Bearer auth via SHA-256-hashed `vada_*` API keys (`packages/auth/src/api-key-auth.ts`). Provider keys envelope-encrypted in `user_provider_keys` (AES-256-GCM, AAD-bound to clerkId, `MASTER_ENCRYPTION_KEY` env var, `kms_key_id` reserved for future KMS migration). Both `vada__consult` and `vada__deliberate` tools wired through. See `apps/vada-ai/specs/mcp-architecture.md` for full spec, `vada-decisions.md` D-029 for the architectural decision. Phase 5 (stdio session URL fix) and Phase 6 (rate limiting, audit log, hardening) remain as future work.
+
+### Phase 10 — Single-source-keys reversal (May 4, 2026)
+PR #13 demoted IndexedDB from canonical provider-key storage. Server-side `user_provider_keys` is now the single source of truth. Both UI surfaces (Settings → API Keys; the `/deliberate` model picker's inline key dialog) write to the server via `POST /api/keys/provider`. The `/deliberate` page's lock-icon row, "Sign," and "Forget this device" affordances were removed. `@atta/identity` package retained — `IdentityProvider` mounted in vada-ai and atta-ai layouts; `probeProviderKey` (validate before save), `fetchInstalledOllamaModels` (local Ollama discovery), `MigrationPrompt` (one-time UX nudge for users with pre-reversal IndexedDB keys), `useIdentity` hook used by judge benchmark + model picker. The package no longer holds canonical keys. See D-028.
+
+### Phase 11 — Shared keys UI + ecosystem schemas (May 5, 2026)
+`feat/shared-keys-ui` merged. `ProviderKeysSection` and `ApiKeysSection` extracted to `packages/ui/account/` as shared components. Ecosystem-shared key tables (`apiKeys`, `userProviderKeys`, `mcpSessions`) moved from `apps/vada-ai/web/src/db/schema.ts` to `packages/db/src/schema/keys.ts`. Vāda-specific tables (including `userSettings` for face-style preference) stay in app-local schema. Settings tabs restructured: Account / API Keys / Agent Style. Teams tab removed; team agent model selection moves inline via D-027's unified `vada:team:<specId>` localStorage key. See D-030.
+
+### Phase 12 — Doc audit pass (May 6, 2026)
+PR `docs/may-5-reality-sync` synced 7 repo files to May 4-5 reality: `vada-decisions.md` (D-028, D-029, D-030 appended), `mcp-architecture.md` (target → shipped), `vada-byok-principles.md` (rewritten in place), `vada-byok-gap-report.md` (resolution status block prepended), `vada-mcp-server/SKILL.md`, `auth/SKILL.md`, `database/SKILL.md`. Out-of-scope deferrals were addressed in a follow-up cleanup pass (this PR).
+
 ---
 
 ## What's parked
@@ -100,14 +112,23 @@ Single-round deliberation is a structurally weaker approximation of what the man
 
 ## What's in flight
 
-Nothing currently. BYOK + Settings restructure just landed. Awaiting decision on next phase.
+Nothing currently. Doc cleanup closing out the May 4-5 sprint period. Next focused work is reviewer prompt iteration (Track B Item 3b).
 
 ---
 
 ## What's next, sequenced
 
-### Phase 9 — Real-case Brokered as a new YAML
-The "real-case" mode reflects what the manual workflow actually does: multi-round, role-free, Principal-terminated, synthesis between rounds. Defined as a new YAML file. May require engine extensions for Principal-terminated loops.
+### Phase 13 — Reviewer prompt iteration (Track B Item 3b)
+Interactive D pair-mode session. Invoke `vada__consult` with `spec_id: "vada-reviewers"`, read the 3 reviewer responses, judge whether the prompt is producing the right behavior, tweak, re-run. §4.1.1 of the rev 4 spec is the starting prompt. Best done in a fresh session with uninterrupted attention. NOT a brief-and-dispatch task.
+
+### Phase 14 — Synthesizer prompt iteration (Track B Item 3c)
+Same shape as Phase 13. §4.1.2 of the rev 4 spec is the starting prompt.
+
+### Phase 15 — First Vāda Reviewers benchmark run (Track B Item 4)
+Six conditions per test case (A0, A1, VR-NS, VR-S-same, VR-S-cross, MW-where-available). Manual judging by Claude in fresh context, Dani as final arbiter. Per-question-type breakdown required.
+
+### Phase 16 — Iterate or ship Vāda Reviewers v1 (Track B Item 5)
+Decide recommended synthesis mode based on benchmark data, not philosophy.
 
 ### Phase 10 — Benchmark architecture redesign
 Current benchmark judges raw transcript concatenation, NOT what users actually receive (synthesized output). This is a structural flaw discovered in Phase 6.7's smoke test analysis. Judge must measure synthesized output (with augmentation if applicable) against single-shot baseline. Apples-to-apples comparison.
@@ -168,6 +189,15 @@ All 7 initial YAMLs were named with `-v1` but none had a `-v2` comparison to jus
 
 ### customVars Handlebars rendering enables no-code YAML parameterization
 `{{variable}}` placeholders in YAML `system_prompt` fields are rendered at runtime against `customVars`. This lets a single YAML express parameterizable behavior (domain, context, role) without code changes. The Domain Expert pattern — injecting `{{domain}}` into the system prompt — is the canonical use case.
+
+### UX coherence walkthrough must precede architectural lock
+"What does the user click? What does it mean? What state do they end up in?" — should have killed the two-store sync architecture immediately if asked when the hosted MCP architecture was first locked. Cost: a sync bug surfaced within minutes of feature use, multiple review rounds, and an architectural reversal (D-028) within the same week.
+
+### SHA-256 + unique index is the right hash mechanism for high-entropy bearer tokens
+bcrypt's per-request CPU cost is unjustified when the token has 256 bits of randomness and the lookup uses an indexed unique constraint. The hosted MCP API key path uses SHA-256 hex digest with `api_keys.key_hash` unique-indexed.
+
+### Sycophancy at architectural decision points is dangerous
+Reflexive flipping when challenged is as bad as defending a wrong choice. The right answer requires reasoning, not capitulation. Multiple challenges across the May 4 debugging marathon required pushing past the temptation to immediately reverse course.
 
 ---
 
