@@ -16,9 +16,16 @@ if [[ -z "$file_path" ]]; then
   exit 0
 fi
 
-# Resolve repo root from this script's location: <repo>/.claude/hooks/check-skill.sh
-script_dir=$(cd "$(dirname "$0")" && pwd)
-repo_root=$(cd "$script_dir/../.." && pwd)
+# Resolve repo root. Prefer $CLAUDE_PROJECT_DIR (set by the harness — points to the
+# active worktree's checkout), so the hook reads the SAME .claude/skills/ that the
+# Skill tool's registry was built from. Falls back to the script's own location for
+# the case where the hook runs outside the harness.
+#
+# Without this, when running in a worktree the hook reads main repo's skills (via
+# the script's path) while the Skill tool reads the worktree's — divergence in
+# `paths:` frontmatter creates a Catch-22 where the hook requires a skill that the
+# Skill tool's registry doesn't recognize.
+repo_root="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 skills_dir="$repo_root/.claude/skills"
 
 if [[ ! -d "$skills_dir" ]]; then
