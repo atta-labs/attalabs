@@ -1,8 +1,9 @@
+import { AttaEngineSection } from '@/components/home/atta-engine-section'
 import { BreadthStrip } from '@/components/home/breadth-strip'
-import { Engine } from '@/components/home/engine'
+import { EcosystemSection } from '@/components/home/ecosystem-section'
 import { HomeHero } from '@/components/home/HomeHero'
 import { PaliFooter } from '@/components/home/pali-footer'
-import { ThreeStates } from '@/components/home/three-states'
+import { VadaTeamsBlurb } from '@/components/home/vada-teams-blurb'
 import { Workshop } from '@/components/home/workshop'
 
 export default function HomePage() {
@@ -10,9 +11,10 @@ export default function HomePage() {
     <>
       <HomeHero />
       <div className='relative z-10 bg-background'>
-        <ThreeStates />
+        <VadaTeamsBlurb />
+        <AttaEngineSection />
         <BreadthStrip />
-        <Engine />
+        <EcosystemSection />
         <Workshop />
         <PaliFooter />
       </div>
