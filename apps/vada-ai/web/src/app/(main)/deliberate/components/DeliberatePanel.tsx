@@ -129,12 +129,12 @@ export function DeliberatePanel({
   // Role agents: model shows as a bottom-right vendor badge.
   // Non-role agents: model shows as a centered ModelIcon face.
   const resolveModel = (a: DisplayAgent): string | undefined => {
+    const specAgent = selectedSpec?.agents.find((ag) => ag.name === a.name)
+    // Editable reviewer slots: only show if explicitly configured — globalModel and
+    // spec-level defaultModel must not bleed in when no user config is saved.
+    if (specAgent?.editable) return userConfig?.[a.name] ?? undefined
     if (userConfig?.[a.name]) return userConfig[a.name]
     if (globalModel?.modelId) return globalModel.modelId
-    // Editable reviewer slots: show nothing until explicitly configured — the spec-level
-    // defaultModel must not bleed into these spheres when no user config is saved.
-    const specAgent = selectedSpec?.agents.find((ag) => ag.name === a.name)
-    if (specAgent?.editable) return undefined
     return a.model ?? defaultModel ?? undefined
   }
 
