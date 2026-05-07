@@ -15,7 +15,7 @@ In this role, the Caller Claude:
 - Asks permission before invoking Vāda (unless explicitly asked)
 - Writes high-quality briefs
 - Invokes `vada__deliberate` with appropriate reviewer selection
-- Synthesizes responses into a coherent summary for the user
+- Receives Vāda's synthesizer output (rendered + structured) and integrates it conversationally for the user
 - Flags its own position when it diverges from reviewer consensus
 - Escalates to the user (Principal) when judgment is required
 
@@ -197,46 +197,44 @@ Reviewers in earlier rounds flagged a real risk: the Caller Claude may default t
 
 ---
 
-## Synthesizing responses
+## Integrating Vāda's synthesis
 
-When Vāda returns responses, the Caller Claude does the real product work. Synthesis happens in three phases.
+Synthesis is produced by Vāda's engine, not by Caller Claude. Every deliberation YAML that includes a synthesizer agent will return both rendered text content and (when the spec defines an output schema) a structured JSON synthesis object. Caller Claude can integrate the synthesis into its conversation but is not responsible for producing it. See `apps/vada-ai/specs/vada-decisions.md` D-016 for the architectural reversal and D-026 for how the structured/rendered fields surface to consumers.
 
-### Phase 1: Read every reviewer fully
+When Vāda returns its synthesizer output, the Caller Claude integrates it in three steps.
 
-No skimming. Each reviewer compresses reality differently; signal hides in the difference. If you only read #1 thoroughly and skim #2 and #3, your synthesis will over-weight #1.
+### Step 1: Read Vāda's synthesis fully
+
+No skimming. The synthesis captures convergence, divergence, and proposed conclusions from all reviewer responses. If a `structured` JSON object is present alongside the rendered text, inspect both — the structured field carries machine-readable conclusions (Consensus / Unique / Contradictions / Rejected / Recommendations).
 
 Specifically look for:
 
-- **What each reviewer emphasized** — Strategist will emphasize tradeoffs; Critic will emphasize assumptions; Devil's Advocate will emphasize the opposite frame. Note where each reviewer pushed hardest.
+- **What the synthesis concluded** — the convergence finding and any proposed solution or recommendation
+- **Where reviewers diverged** — contradictions the synthesizer surfaced; these are the live uncertainty zones
+- **Unique insights** — points raised by only one reviewer that the synthesizer flagged as non-redundant
+- **Unresolved items** — gaps or values tradeoffs the synthesis left explicitly open
 
-- **What each reviewer DIDN'T say** — Absence is signal. If Critic didn't flag any missing information, that's different from Critic flagging three gaps.
+### Step 2: Map what remains unresolved
 
-- **The verdicts** — Each reviewer gives a verdict-like conclusion (Recommendation, Verdict, or Opposite Thesis). Note alignment and divergence.
+Review Vāda's convergence/divergence analysis for open questions:
 
-### Phase 2: Map convergence and divergence
+**Where the synthesis shows consensus:**
+- Did all reviewers land on the same recommendation? Does the synthesis reflect this?
+- Are there consensus items that require the user's sign-off?
 
-Produce an internal map:
-
-**Where reviewers converged:**
-- Did they all land on the same recommendation?
-- Did they independently raise the same concern?
-- Did they agree on what the real decision is?
-
-**Where reviewers diverged:**
-- Who disagreed with whom, on what?
-- Is the disagreement about facts, framing, or values?
-- Did anyone raise something no one else addressed?
+**Where the synthesis shows contradiction:**
+- Which contradictions are fact disputes vs framing vs values?
+- Does resolving one require information only the user has?
 
 **What's unresolved:**
-- Questions the reviewers raised that haven't been answered
-- Information gaps that prevent a definitive answer
-- Values tradeoffs that require the user's judgment
+- Information gaps or values tradeoffs the synthesis left explicitly open
+- Questions that need the user's judgment to close
 
-### Phase 3: Flag your own position
+### Step 3: Flag your own position
 
-After reading reviewers, the Caller Claude may find:
+After reading Vāda's synthesis, the Caller Claude may find:
 
-- **Agreement with consensus** — synthesize and present
+- **Agreement with consensus** — integrate and present
 - **Dissent from consensus** — disclose explicitly: "Reviewers converged on X. I actually think Y because Z. Here's why I might be wrong..."
 - **Shift in own position** — "I came in leaning toward X. After reading reviewers, I think Y now. Here's what changed my mind..."
 
@@ -263,8 +261,9 @@ I consulted [reviewer names] on this. Here's what came back.
 [1-3 bullets of new angles]
 
 **My reading:**
-[Your synthesis — what you think given the responses. Be explicit 
-about whether you agree with consensus or dissent.]
+[Your integration of Vāda's synthesis — whether you agree with the 
+conclusions, and what you'd add or push back on. Be explicit about 
+whether you agree with consensus or dissent.]
 
 **What I need from you:**
 [A specific question or decision point, or an "okay to proceed?"]
