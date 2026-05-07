@@ -1,8 +1,20 @@
 # Vāda · BYOK Gap Report
 
-**Status:** Draft, April 30, 2026.
-**Purpose:** Catalog the gap between the original BYOK promise and the current implementation. Sequence the work needed to close it. Companion to `vada-byok-principles.md` (current state) — that doc is what Vāda IS, this doc is what needs to change.
+**Status:** Historical (April 30, 2026 framework, mostly superseded May 4, 2026).
+**Resolution:** All four gaps have been addressed, though not all on the paths originally proposed. See "Resolution status" block immediately below. Document retained for historical record; current architecture is described in `vada-byok-principles.md`.
+**Original purpose:** Catalog the gap between the original BYOK promise and the April 30 implementation. Sequence the work needed to close it.
 **Audit basis:** Sonnet investigation report, April 30, 2026.
+
+---
+
+## Resolution status (May 6, 2026)
+
+- **Gap 1 (server-side key transit):** Closed by single-source-keys reversal (D-028, May 4). The Path A vs Path B framework no longer applies — Vāda did not move to browser-direct calls (Path A), nor did it harden transit-mode (Path B). Instead: keys are now server-side encrypted at rest, decrypted only inside request handlers (Path C, not enumerated in report). This was driven by the requirement to ship hosted MCP (D-029) which mandates server-decryptable keys.
+- **Gap 2 (multi-vendor adapter):** Closed May 1, 2026. `packages/adapter-langgraph/src/llm.ts` now routes by model prefix (claude-* → Anthropic, gemini-* → Google, gpt-*/o4-* → OpenAI, grok-* → xAI) using per-vendor official SDKs.
+- **Gap 3 (implementation hygiene in `@atta/identity`):** Mostly moot. The package is preserved (per D-028) but no longer holds canonical provider keys. Hygiene items 3a-3e described in this report were specific to the IndexedDB-as-canonical-store architecture; with that role demoted, the issues no longer apply in their original form. If the surviving utilities (`probeProviderKey`, `fetchInstalledOllamaModels`, `MigrationPrompt`) develop new hygiene needs, they can be addressed individually.
+- **Gap 4 (`packages/identity/src/invoke.ts` dead code):** No longer relevant in the form described. The "browser-direct V2" path the file was a seed for is no longer the design direction — V2 hardening directions are different (KMS migration, audit log, per-key scoping). The file's status now is: review at convenience, delete or document per current relevance.
+
+The rest of this document is preserved as-is for historical context. **Do not treat its recommendations as current.** Current architecture is documented in `vada-byok-principles.md` (rewritten May 6, 2026) and the relevant decision log entries (D-028, D-029, D-030 in `vada-decisions.md`).
 
 ---
 

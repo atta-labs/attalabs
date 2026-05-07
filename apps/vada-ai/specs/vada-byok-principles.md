@@ -1,144 +1,151 @@
 # Vāda · BYOK Architecture (Current State)
 
-**Status:** Implementation reality as of April 30, 2026.
-**Audit basis:** `brief-byok-architecture-investigation.md` (Sonnet investigation, April 30, 2026).
-**Companion doc:** `vada-byok-gap-report.md` — what needs to change to honor the original BYOK promise.
+**Status:** Implementation reality as of May 6, 2026.
+**Last major change:** May 4, 2026 — single-source-keys reversal (D-028) and hosted MCP shipped (D-029). See `vada-decisions.md` for the architectural decision history.
 
-This document describes how BYOK actually works in Vāda today. It supersedes the earlier `vada-byok-principles.md` which described the intended architecture; the gap between intent and reality is captured in the companion gap report.
+This document describes how BYOK actually works in Vāda today.
+
+---
+
+## Architecture history (one paragraph)
+
+Before May 4, 2026, Vāda used a transit-mode model: provider API keys were encrypted in your browser via a passkey-derived AES-256-GCM key (stored in IndexedDB), and transited Vāda's server in cleartext request bodies during deliberation runs. The server held them only in memory for the duration of a single request. This model gave a strong "no key at rest on our servers" story but constrained Vāda to web-app-only deliberation — an MCP client running on Claude Desktop or Cursor cannot reach a user's browser IndexedDB or passkey.
+
+On May 4, 2026, the hosted MCP server shipped (D-029), which required server-side decryptable provider keys to call provider APIs on the user's behalf. A brief intermediate architecture (PRs #9-10) tried to maintain both stores with synchronization, but the UX implications — especially the lock-icon "Sign out / Forget device" affordances on the deliberate page that no longer reflected reality once the server held a copy of every key — surfaced a sync bug within minutes of feature use. PR #13 (single-source-keys reversal) demoted IndexedDB from canonical key storage and made server-side `user_provider_keys` the single source of truth.
+
+The current model is **server-side at rest, decrypted per-request**: provider keys are envelope-encrypted in `user_provider_keys`, decrypted only inside the API route handler for the duration of the LLM call, then garbage-collected. This is a deliberate trust escalation from the prior model — Vāda's server holds an encrypted copy of your keys it can decrypt — and is documented honestly here rather than papered over.
 
 ---
 
 ## What Vāda does today
 
-You bring your own API keys. Vāda encrypts them in your browser with a passkey-derived key. The keys are usable only on the device you set them up on. Your account on Vāda's server has no copy of them.
+You bring your own API keys. They are stored in Vāda's database, **envelope-encrypted at rest** in the `user_provider_keys` table. The encryption is bound to your user identity (your Clerk `clerkId` is the AAD on every ciphertext), so a row swap between users is detectable on decrypt. The master key is held in the `MASTER_ENCRYPTION_KEY` environment variable on Vāda's production deployment; KMS migration is reserved as future work via the `kms_key_id` column on each row.
 
-When you run a deliberation, your browser sends the relevant API key to Vāda's server in the request body. Vāda's server uses that key in memory for the duration of the request to call the model provider. The server does not persist the key.
-
-This is **transit-mode BYOK** — keys never sit at rest on our servers, but they do pass through during request handling.
+When you run a deliberation — whether through the web app or through hosted MCP — Vāda's server fetches your encrypted key for the relevant provider, decrypts it inside the request handler using the master key, calls the provider on your behalf, and lets the plaintext key go out of scope. The plaintext is never logged, never persisted, never returned in any response body or error payload.
 
 ---
 
 ## Where keys live, end-to-end
 
-### At rest (your device)
+### At rest (Vāda's database)
 
-When you save your keys with a passkey:
+- **Table:** `user_provider_keys` (defined in `packages/db/src/schema/keys.ts`, ecosystem-shared per D-030)
+- **One row per `(clerk_id, provider)` pair.** Providers: `anthropic`, `google`, `openai`, `xai`.
+- **Columns:** `id`, `user_id`, `provider`, `key_ciphertext`, `key_iv`, `kms_key_id`, `created_at`, `updated_at`.
+- **Encryption:** AES-256-GCM. The data key is derived from the master key in `MASTER_ENCRYPTION_KEY` env var; AAD on each ciphertext is the user's `clerkId`. Implementation in `packages/crypto/`.
+- **`kms_key_id` versioning:** carries a version identity (`'env:v1'` in current shipped state) so that a future migration to KMS-managed master keys can be performed per-row without breaking existing ciphertexts.
 
-- **Storage:** browser IndexedDB, database `atta-identity`, store `credentials`, single record keyed `'primary'`.
-- **Encryption:** AES-256-GCM. Key derived from your authenticator's WebAuthn PRF output (`new TextEncoder().encode('vada-api-keys-v1')` as PRF salt). The first 32 bytes of PRF output become the AES key, imported as a non-extractable `CryptoKey`. No PBKDF2/HKDF stretching between PRF and AES key.
-- **IV:** fresh 12-byte random IV per encryption. Stored alongside ciphertext.
-- **Plaintext metadata stored next to the ciphertext:** the list of providers that have keys (so the UI can show locked/unlocked indicators without unlocking). This is by design — provider names are not secrets.
-- **Per-origin scope:** WebAuthn `rpId` is `window.location.hostname` at call time. Keys saved on `vada.attalabs.dev` are not reachable from other Atta subdomains or from `attalabs.test` (local dev).
-- **Forget-device:** clears the IndexedDB record. Does not remove the OS-level passkey from the keychain (you must remove that manually if you want to fully reset).
+### Storage schema (api_keys — for hosted MCP authentication)
 
-### In your browser memory (during a session)
+Separate from provider keys. The `api_keys` table holds Vāda API keys (`vada_*`) used as bearer tokens by MCP clients. Stored as SHA-256 hex digests with a unique index on `key_hash` — direct lookup, no bcrypt. Plaintext is shown once at creation and not recoverable. See D-029 for the full hosted MCP authentication architecture.
 
-`@atta/identity` runs an `IdentityProvider` React context. It exposes:
+### In transit and in request memory
 
-- `state.keys` — `ApiKeyMap`, the in-memory plaintext key-by-provider map. Empty unless unlocked or freshly typed.
-- `state.providers` — `RouteProvider[]`, the plaintext list saved alongside the ciphertext.
-- `state.kind` — one of `initializing | no-stored-credential | locked | unlocked`.
+When you click Deliberate on the web app, or when an MCP client (e.g., Claude.ai connected via hosted MCP) sends a tool call:
 
-State transitions:
+1. Server receives the request.
+   - Web app: authenticated by Clerk session cookie.
+   - MCP: authenticated by `Authorization: Bearer vada_...` header → SHA-256 hashed → looked up in `api_keys` → user resolved.
+2. Server reads the encrypted provider key row(s) needed for the request from `user_provider_keys` by `clerkId`.
+3. Server decrypts the key(s) in the request handler using `MASTER_ENCRYPTION_KEY` and AAD of the user's `clerkId`. Decryption fails loud if AAD doesn't match.
+4. Provider SDK is instantiated with the plaintext key in memory. LLM call(s) happen.
+5. Plaintext key leaves scope. The route handler returns. GC collects.
 
-```
-initializing  → no-stored-credential : nothing in IndexedDB
-initializing  → locked               : record found in IndexedDB
-locked        → unlocked             : passkey biometric → PRF → AES → decrypt
-locked        → no-stored-credential : forget-device
-unlocked      → locked               : sign-out (when stored credential exists)
-unlocked      → no-stored-credential : sign-out (no credential) or forget-device
-no-stored-cred → unlocked            : save-with-passkey on a key just typed
-```
+The plaintext key is **never**:
+- Logged (structured or unstructured)
+- Returned in any response body or error payload
+- Written to a database column, cache, or temporary storage
+- Included in error tracking payloads
 
-The provider re-encrypts and writes to IndexedDB on every change to `state.keys` while `state.kind === 'unlocked'`. Persistence failures are silent — memory keeps working, next mutation retries.
+### Other paths
 
-### In transit (browser → Vāda server)
+- **Probe** (validate a key at save time before storing it server-side) — direct browser → provider call via `dangerouslyAllowBrowser: true`. Lives in `@atta/identity`'s `probeProviderKey`. Used by the model picker dialog and reviewer config modal to confirm a typed key is responsive before persisting it server-side.
+- **Ollama discovery** — direct browser → `localhost:11434/api/tags`. Lives in `@atta/identity`'s `fetchInstalledOllamaModels`. Local Ollama auth is whatever the user's local Ollama setup uses; Vāda doesn't see those keys.
 
-When you click Deliberate (or Run benchmark, or invoke the judge), the browser:
+### `@atta/identity` package — what survived
 
-1. Reads the relevant key from `identity.state.keys[provider]`.
-2. POSTs the key in the request body to one of these routes:
-   - `/api/deliberation/[id]/workflow/run`
-   - `/api/benchmark/baseline`
-   - `/api/benchmark/judge`
-   - `/api/benchmark/v2-judge`
-3. The route extracts `apiKey` from the body, instantiates the provider SDK, calls the provider, streams responses back to the browser.
-4. The key is held in request-scoped Node.js memory for the duration of the request and is not persisted.
+The `@atta/identity` package is preserved and still mounted in production via `IdentityProvider` in both `apps/vada-ai/web/src/app/layout.tsx` and `apps/atta-ai/web/src/app/layout.tsx`. Its surviving role:
 
-Other paths bypass the server:
-- **Probe** (validate a key at save time) — direct browser → provider call via `dangerouslyAllowBrowser: true`.
-- **Ollama discovery** — direct browser → `localhost:11434/api/tags`.
+- `probeProviderKey` — pre-save key validation (browser-direct provider ping)
+- `fetchInstalledOllamaModels` — Ollama discovery (browser-direct local request)
+- `useIdentity` hook — used by `MigrationPrompt`, the judge benchmark hook, the shared model picker
+- `MigrationPrompt` — one-time UX surface for users with pre-reversal IndexedDB-stored keys, prompting them to migrate
 
-### Server-side persistence audit
-
-Confirmed by the April 30 investigation:
-- No DB column anywhere has API keys, secrets, or credentials. Schema search across `packages/db/src/` returned no matches.
-- Settings API endpoint `/api/settings` returns `apiKeys: []` always.
-- No `SETTINGS_ENCRYPTION_KEY` usage anywhere in code (declared in `.env` but not read).
-- No server-side encryption code path exists for keys (because nothing is stored to encrypt).
+What the package no longer does: hold canonical provider keys, store keys at rest in IndexedDB, gate deliberation runs on a passkey unlock.
 
 ---
 
-## Important caveats — read before relying on the BYOK story
+## Trust model — explicit accounting
 
-1. **Keys transit Vāda's server in cleartext request bodies.** This means:
-   - Vercel platform-level access logs could capture them if logging is misconfigured.
-   - A server compromise during a request window exposes in-flight keys.
-   - Error tracking (Sentry, etc.) could capture request bodies if not scoped to exclude `apiKey`.
-   - Subpoena reaching Vāda mid-request could capture an in-flight key.
-   - These are real risks even though no key is stored at rest.
+This is a **deliberate trust escalation** compared to the pre-May-4 architecture. You should know what changed:
 
-2. **The LangGraph adapter is Anthropic-only.** `packages/adapter-langgraph/src/llm.ts` imports only `@anthropic-ai/sdk`. If a user selects OpenAI / Google / Mistral / DeepSeek / xAI / Meta in the UI, the Anthropic SDK is still called with that provider's key, which will fail. There is no provider routing layer in the adapter today.
+1. **Vāda's server holds an encrypted copy of your provider keys it can decrypt.** Pre-May-4, the server never had a copy at rest. Today it does. This is the cost of supporting hosted MCP — there is no other way for an MCP client running on a separate machine to make provider calls on your behalf.
 
-3. **`packages/identity/src/invoke.ts` is dead code.** It implements a browser-direct provider call using `dangerouslyAllowBrowser: true`. It was the architecture that would have honored the original "browser-direct" promise. It is not imported anywhere in the production deliberation flow.
+2. **The encryption is real, but operators control the master key.** Master key lives in `MASTER_ENCRYPTION_KEY` on Vercel. AAD-binding to `clerkId` prevents row swaps. KMS migration would harden this further; that's V2 work.
 
-4. **No KDF between PRF and AES key.** PRF output is used directly as raw AES key material. WebAuthn PRF specifies that PRF output is suitable for direct use as key material, but a PBKDF2/HKDF round would be defense-in-depth.
+3. **Decryption only happens inside request handlers.** No cron jobs decrypt. No analytics decrypt. The only code paths that decrypt are: `/api/deliberation/[id]/workflow/run` (web app) and `/api/mcp` (hosted MCP). Both decrypt only the keys needed for the specific request.
 
-5. **No link between WebAuthn `user.id` and Clerk user ID.** Each `createPasskeyWithPrf` call generates a fresh random 16-byte `user.id`. If the user creates multiple passkeys, they appear in the OS keychain as indistinguishable entries.
-
-6. **`createdAt` is overwritten on every key mutation.** The `StoredCredential.createdAt` field is set to `Date.now()` every time the re-encrypt effect fires, so it does not reflect when the passkey was originally created.
-
-7. **`updatePasskey` in `useIdentityBanner.ts` does not create a new passkey.** It triggers unlock + re-encrypt only. The name is misleading.
+4. **What this means for your threat model:**
+   - A Vāda operator with database access AND `MASTER_ENCRYPTION_KEY` access can decrypt your keys. Two-key compromise required.
+   - A Vāda compromise during a request window exposes any keys decrypted in that handler's memory. Same as before for in-flight requests, with the added detail that this is now a category we ship intentionally rather than a known wart.
+   - Subpoena reaching Vāda for stored data CAN compel decryption; pre-May-4 there was nothing at rest to compel. This is honest, not a dealbreaker.
+   - `MigrationPrompt` is shipped for users with pre-May-4 IndexedDB keys; once migrated, the IndexedDB copy is removed.
 
 ---
 
-## What Vāda does store on the server
+## What Vāda stores in addition to encrypted keys
 
 - Your deliberation questions
 - Round transcripts (each agent's turns)
 - Conclusions (recommendation, key condition, unresolved points)
 - Terminal state per deliberation (Clean / Revised / Unconverged)
 - User account metadata via Clerk (Clerk ID, email, etc.)
-- Model assignments per agent role
-
-None of the above includes API keys, provider credentials, or secrets.
+- Model assignments per agent role (in localStorage; no longer DB-backed per D-027)
+- Vāda API keys for hosted MCP — SHA-256 hashed (`api_keys` table)
+- Session logs from hosted MCP invocations (`mcp_sessions` table)
 
 ---
 
-## Cross-device and recovery
+## Cross-device behavior
 
-- **First-time on a new device:** enter API keys, optionally save with a passkey on that device. Each device is a sovereign identity.
-- **Lost passkey / cleared browser data:** keys are unrecoverable. Vāda has no copy.
-- **Key rotation:** rotate at the provider, update in Vāda. Vāda has no visibility into upstream rotation.
+Because keys are now stored server-side, switching devices is transparent — your keys follow your account. This is a behavior change from the pre-May-4 model, where each device had its own IndexedDB copy.
+
+- **First-time on a new device:** sign in. Your keys are already there.
+- **Lost device:** keys remain in Vāda's database, available from any other signed-in device.
+- **Key rotation:** rotate at the provider, update in Vāda Settings → API Keys. Vāda has no visibility into upstream rotation.
 
 ---
 
 ## How to verify these claims yourself
 
-- **DB schema:** `grep -rn "api_key\|apiKey\|credential\|secret" packages/db/src/` — should return no key-related columns.
-- **API surface:** check route handlers under `apps/vada-ai/web/src/app/api/`. Routes that accept `apiKey` in the body: `deliberation/[id]/workflow/run/route.ts`, `benchmark/baseline/route.ts`, `benchmark/judge/route.ts`, `benchmark/v2-judge/route.ts`. No other route accepts a key.
-- **Server-side provider calls:** search for SDK instantiation with user keys: `grep -rn "new Anthropic" packages/ apps/`. Hits in `packages/adapter-langgraph/src/llm.ts` and benchmark routes.
-- **Browser-direct calls:** the probe at `packages/identity/src/probe.ts` (key validation) and Ollama at `packages/identity/src/ollama.ts`. Deliberation traffic does NOT go browser-direct today.
-- **Network tab:** during a deliberation, the request to your provider goes from your browser to `vada.attalabs.dev/api/deliberation/[id]/workflow/run`. The actual `api.anthropic.com` call originates from Vāda's server, not your browser.
+- **Hosted MCP route:** `apps/vada-ai/web/src/app/api/mcp/route.ts` — bearer auth + provider key decryption + tool dispatch in one file.
+- **Bearer validation:** `packages/auth/src/api-key-auth.ts`'s `verifyApiKeyBearer` — SHA-256 hash + DB lookup.
+- **API key generation:** `packages/crypto/src/api-keys.ts`'s `generateApiKey` — random base64url + SHA-256 hash.
+- **Provider key envelope encryption:** `packages/crypto/` — AES-256-GCM with AAD = `clerkId`.
+- **DB schema:** `packages/db/src/schema/keys.ts` — `apiKeys`, `userProviderKeys`, `mcpSessions` table definitions.
+- **Web app deliberation route:** `apps/vada-ai/web/src/app/api/deliberation/[id]/workflow/run/route.ts` — note that the route no longer accepts `apiKey` in the body; it reads encrypted keys from DB and decrypts inside the handler.
+- **Network tab:** during a deliberation, the browser POSTs only the question and configuration to Vāda. The provider call happens server-side.
 
 ---
 
 ## Where this design wants to go
 
-The current architecture is one phase of a planned evolution. The original BYOK principles document described a future state where:
-- Provider API calls originate browser-side
-- Server has no exposure to keys, even in transit
-- LangGraph orchestration is split: control plane on server, model invocation on client
+Future hardening, captured for completeness:
 
-That future state is captured in `vada-byok-gap-report.md` as the work that needs to happen to get there. Until that work is done, this document is the truth of what Vāda is.
+- **KMS migration (V2):** move the master key from `MASTER_ENCRYPTION_KEY` env var to a KMS-managed key. The `kms_key_id` column is reserved for this — per-row migration without breaking existing ciphertexts.
+- **Audit log for key access events:** record per-decryption events (which clerkId, which provider, which route) for security audit. Retention policy TBD.
+- **Per-key tool scoping:** restrict an individual `api_keys` row to specific tools (e.g., a key authorized for `vada__consult` but not `vada__deliberate`). Useful for embedded integrations.
+- **Hosted MCP rate limiting:** per-user / per-key invocation caps. Pricing-tier dependent.
+
+These are V2 work, not V1 commitments.
+
+---
+
+## Related documents
+
+- `vada-decisions.md` — D-028 (single-source-keys reversal), D-029 (hosted MCP architecture), D-030 (shared `@atta/ui/account` + ecosystem-shared schemas)
+- `mcp-architecture.md` — full hosted MCP architecture spec
+- `vada-byok-gap-report.md` — historical gap analysis from April 30; mostly superseded by D-028
+- `.claude/skills/auth/SKILL.md` — Clerk auth model
+- `.claude/skills/database/SKILL.md` — Drizzle patterns + ecosystem-shared tables
+- `.claude/skills/vada-mcp-server/SKILL.md` — MCP server (both surfaces) implementation guide

@@ -106,9 +106,13 @@ export const sataiProfile = pgTable('sati_profile', {
 })
 ```
 
-### RULE #5: account.attalabs.dev is the canonical settings/billing surface
+### RULE #5: Settings UI is product-local; share at the component level via `@atta/ui/account`
 
-Universal account concerns — billing, subscription, API tokens, MCP access management, profile editing — live at `account.attalabs.dev`. Do not scatter these across product subdomains. Each product can deep-link to `account.attalabs.dev/{section}` when appropriate.
+There is no `account.attalabs.dev` hub. Each product hosts its own `/settings` URL (e.g., `vada.attalabs.dev/settings`, `vitakka.attalabs.dev/settings`). Cross-product sharing of the Settings UI happens via shared components in `@atta/ui/account` — currently `<AttaUserProfile />` (themed Clerk profile wrapper), `ProviderKeysSection`, and `ApiKeysSection`. A future product's Settings page composes these alongside any product-specific sections.
+
+Why: standing up a redirect hub at `account.attalabs.dev` would add a deployment surface and a redirect step for what is fundamentally a presentation-layer share. Components are the right level to share at. SSO via the parent-domain cookie scope (RULE #2) handles cross-product navigation.
+
+This rule was previously written as "`account.attalabs.dev` is the canonical settings/billing surface." That is no longer accurate as of May 5, 2026 (D-030).
 
 ---
 
@@ -180,7 +184,7 @@ export default function SignInPage() {
 }
 ```
 
-For ecosystem-level marketing flows, prefer routing users to `account.attalabs.dev/sign-in` so the entry point is consistent.
+For ecosystem-level marketing flows, route users to whichever product's `/sign-in` is most contextually relevant; the SSO cookie scope means the resulting session works across the ecosystem.
 
 ---
 
@@ -194,7 +198,6 @@ Production uses `.attalabs.dev`. Locally, use **`.attalabs.test`** (IETF-reserve
 127.0.0.1   vada.attalabs.test
 127.0.0.1   vitakka.attalabs.test
 127.0.0.1   sati.attalabs.test
-127.0.0.1   account.attalabs.test
 ```
 
 In the Clerk dashboard, configure a development instance with cookie domain `.attalabs.test`. Use the development Clerk keys in local `.env` files.
@@ -236,5 +239,6 @@ const appearance = buildClerkAppearance({
 - ❌ Storing Clerk's full user object in the database — store only `clerk_id` as FK
 - ❌ Using `useAuth` in a Server Component — use `auth()` from `@atta/auth/hooks`
 - ❌ Checking `isSignedIn` before `isLoaded` — always gate on `isLoaded` first
-- ❌ Building per-product billing/settings UI — those live at `account.attalabs.dev`
+- ❌ Building Settings UI fully from scratch in a new product — compose `@atta/ui/account` shared components first (`<AttaUserProfile />`, `ProviderKeysSection`, `ApiKeysSection`), add product-specific sections only where the shared components don't fit
+- ❌ Standing up a redirect hub at `account.attalabs.dev` — sharing happens at the component level, not via redirects
 - ❌ Using `.attalabs.dev` for local development — use `.attalabs.test`
