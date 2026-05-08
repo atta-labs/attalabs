@@ -137,28 +137,28 @@ export function TeamCard({ spec }: { spec: DeliberationSpec }) {
   return (
     <Card className='gap-4 py-0'>
       <CardContent className='flex flex-col gap-4 p-4'>
-      <div className='flex flex-col gap-1'>
-        <div className='flex items-baseline justify-between gap-3'>
-          <Heading level={3} size='lg' className='font-serif text-foreground'>
-            {spec.displayName}
-          </Heading>
-          <span className='shrink-0 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
-            {count} agents
-          </span>
+        <div className='flex flex-col gap-1'>
+          <div className='flex items-baseline justify-between gap-3'>
+            <Heading level={3} size='lg' className='font-serif text-foreground'>
+              {spec.displayName}
+            </Heading>
+            <span className='shrink-0 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
+              {count} agents
+            </span>
+          </div>
+          <span className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>{shapeLabel}</span>
         </div>
-        <span className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>{shapeLabel}</span>
-      </div>
 
-      <p className='line-clamp-3 text-sm text-muted-foreground leading-snug min-h-[3.75rem]'>{spec.description}</p>
+        <p className='line-clamp-3 text-sm text-muted-foreground leading-snug min-h-[3.75rem]'>{spec.description}</p>
 
-      <Link
-        href={`/teams/${spec.id}`}
-        className='inline-block font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors'
-      >
-        Learn more →
-      </Link>
+        <Link
+          href={`/teams/${spec.id}`}
+          className='inline-block font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors'
+        >
+          Learn more →
+        </Link>
 
-      {spheres}
+        {spheres}
       </CardContent>
     </Card>
   )

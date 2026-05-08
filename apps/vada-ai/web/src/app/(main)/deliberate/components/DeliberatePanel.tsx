@@ -195,58 +195,58 @@ export function DeliberatePanel({
         {/* ── Right card ── */}
         {selectedSpec && (
           <Card className='gap-4 py-0'>
-          <CardContent className='flex flex-col gap-4 p-4'>
-            <div className='space-y-0.5'>
-              <h2 className='font-serif text-xl text-foreground leading-tight'>{selectedSpec.displayName}</h2>
-              <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
-                {getAgentCount(selectedSpec)} agents · {getShapeLabel(selectedSpec)}
-              </p>
-            </div>
-
-            <p className='text-sm text-foreground leading-relaxed'>{selectedSpec.description}</p>
-
-            <NextLink
-              href={`/teams/${selectedSpec.id}`}
-              variant='prose'
-              className='flex items-center gap-1 text-xs w-fit'
-            >
-              Learn more
-              <ArrowRight className='size-3' />
-            </NextLink>
-
-            <div className='flex flex-col gap-2'>
-              <div className='flex flex-row flex-wrap gap-3 pb-1'>
-                {agents.map((a) => {
-                  const available = isSlotAvailable(a)
-                  return (
-                    <div key={a.name} className='relative shrink-0'>
-                      <VadaAgent
-                        id={`panel-${selectedSpec.id}-${a.name}`}
-                        name={a.name}
-                        role={a.role}
-                        model={resolveModel(a)}
-                        state='speaking'
-                        size='md'
-                        visible
-                        label={a.role ? undefined : 'REVIEWER'}
-                        className={cn(!available && 'opacity-60')}
-                      />
-                      {!available && (
-                        <span className='absolute top-[44px] -right-1 z-[2] flex items-center justify-center rounded-md border border-border bg-card p-0.5 shadow-sm'>
-                          <Lock className='size-3 text-muted-foreground' />
-                        </span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-              {anySlotLocked && (
+            <CardContent className='flex flex-col gap-4 p-4'>
+              <div className='space-y-0.5'>
+                <h2 className='font-serif text-xl text-foreground leading-tight'>{selectedSpec.displayName}</h2>
                 <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
-                  Add API keys to unlock — configure models to enable
+                  {getAgentCount(selectedSpec)} agents · {getShapeLabel(selectedSpec)}
                 </p>
-              )}
-            </div>
-          </CardContent>
+              </div>
+
+              <p className='text-sm text-foreground leading-relaxed'>{selectedSpec.description}</p>
+
+              <NextLink
+                href={`/teams/${selectedSpec.id}`}
+                variant='prose'
+                className='flex items-center gap-1 text-xs w-fit'
+              >
+                Learn more
+                <ArrowRight className='size-3' />
+              </NextLink>
+
+              <div className='flex flex-col gap-2'>
+                <div className='flex flex-row flex-wrap gap-3 pb-1'>
+                  {agents.map((a) => {
+                    const available = isSlotAvailable(a)
+                    return (
+                      <div key={a.name} className='relative shrink-0'>
+                        <VadaAgent
+                          id={`panel-${selectedSpec.id}-${a.name}`}
+                          name={a.name}
+                          role={a.role}
+                          model={resolveModel(a)}
+                          state='speaking'
+                          size='md'
+                          visible
+                          label={a.role ? undefined : 'REVIEWER'}
+                          className={cn(!available && 'opacity-60')}
+                        />
+                        {!available && (
+                          <span className='absolute top-[44px] -right-1 z-[2] flex items-center justify-center rounded-md border border-border bg-card p-0.5 shadow-sm'>
+                            <Lock className='size-3 text-muted-foreground' />
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                {anySlotLocked && (
+                  <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
+                    Add API keys to unlock — configure models to enable
+                  </p>
+                )}
+              </div>
+            </CardContent>
           </Card>
         )}
       </div>

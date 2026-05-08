@@ -216,8 +216,8 @@ export function ThemeEditorClient({ theme, project }: ThemeEditorClientProps) {
             value={importText}
             onChange={(e) => setImportText(e.target.value)}
             rows={14}
-            placeholder=':root {&#10;  --background: oklch(1 0 0);&#10;  --foreground: oklch(0.15 0 0);&#10;  ...&#10;}&#10;&#10;.dark {&#10;  --background: oklch(0.15 0 0);&#10;  ...&#10;}'
-            className='rounded-md border border-input bg-background/60 px-2 py-1.5 font-mono text-xs'
+            placeholder=':root {&#10;  --background: oklch(1 0);&#10;  --foreground: oklch(0.15 0);&#10;  ...&#10;}&#10;&#10;.dark {&#10;  --background: oklch(0.15 0);&#10;  ...&#10;}'
+            className='max-h-[50vh] overflow-y-auto rounded-md border border-input bg-background/60 px-2 py-1.5 font-mono text-xs'
           />
           {importMessage && <p className='font-mono text-xs text-muted-foreground'>{importMessage}</p>}
           <DialogFooter>
