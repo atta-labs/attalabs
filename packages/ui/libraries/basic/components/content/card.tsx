@@ -12,7 +12,7 @@ import {
 } from '../../installed/card'
 
 function Card({ className, ...props }: React.ComponentProps<'div'>) {
-  return <CardPrimitive className={cn('border border-border', className)} {...props} />
+  return <CardPrimitive className={cn('bg-card border border-border', className)} {...props} />
 }
 
 export {
