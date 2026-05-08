@@ -66,9 +66,6 @@
 }
 
 @layer base {
-  :root {
-    --gradient-card: none;
-  }
   * {
     @apply border-border outline-ring/50;
   }
