@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Button, Input, Badge } from '@atta/ui'
 import { Text } from '@atta/ui/shared'
 import { Trash2, Eye, EyeOff } from 'lucide-react'
+import { ProviderIcon } from '@lobehub/icons'
 import { PROVIDERS, ROUTE_PROVIDER_ORDER, type RouteProvider } from '@atta/models'
 
 // Vendor list derived from @atta/models so settings, the picker, and the status
@@ -71,6 +72,7 @@ function ProviderKeyRow({ vendor, label, configured, onSaved }: ProviderKeyRowPr
   return (
     <div className='space-y-2'>
       <div className='flex items-center gap-3'>
+        <ProviderIcon provider={vendor} size={20} type='avatar' />
         <Text as='span' className='text-sm font-medium'>
           {label}
         </Text>
@@ -87,47 +89,51 @@ function ProviderKeyRow({ vendor, label, configured, onSaved }: ProviderKeyRowPr
             <Trash2 className='size-3.5' />
           </Button>
         )}
-        {configured ? (
-          <Badge variant='outline' className='text-success border-success/40 text-xs'>
-            Configured
-          </Badge>
-        ) : (
-          <Badge variant='outline' className='text-muted-foreground border-border text-xs'>
-            Not set
-          </Badge>
-        )}
         {!editing && (
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={() => setEditing(true)}
-            className='h-7 w-16 text-xs'
-          >
-            {configured ? 'Update' : 'Add'}
-          </Button>
+          <>
+            {configured ? (
+              <Badge variant='outline' className='text-success border-success/40 text-xs'>
+                Configured
+              </Badge>
+            ) : (
+              <Badge variant='outline' className='text-muted-foreground border-border text-xs'>
+                Not set
+              </Badge>
+            )}
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => setEditing(true)}
+              className='h-7 w-16 text-xs'
+            >
+              {configured ? 'Update' : 'Add'}
+            </Button>
+          </>
         )}
       </div>
 
       {editing && (
         <div className='flex items-center gap-2'>
-          <div className='relative flex-1'>
+          <div className='flex-1'>
             <Input
               type={showValue ? 'text' : 'password'}
               placeholder={`Paste your ${label} API key…`}
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              className='pr-9 text-sm font-mono'
+              className='text-sm font-mono'
+              rightSection={
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => setShowValue((v) => !v)}
+                  className='h-auto shrink-0 px-1 text-muted-foreground hover:text-foreground'
+                >
+                  {showValue ? <EyeOff className='size-3.5' /> : <Eye className='size-3.5' />}
+                </Button>
+              }
             />
-            <Button
-              type='button'
-              variant='ghost'
-              size='sm'
-              onClick={() => setShowValue((v) => !v)}
-              className='absolute inset-y-0 right-1 h-auto px-2 text-muted-foreground hover:text-foreground'
-            >
-              {showValue ? <EyeOff className='size-3.5' /> : <Eye className='size-3.5' />}
-            </Button>
           </div>
           <Button
             type='button'

@@ -102,7 +102,7 @@ function RevealedKeyBox({ newKey, onDismiss }: RevealedKeyBoxProps) {
         </Badge>
       </div>
       <div className='flex items-center gap-2 rounded border border-border bg-background px-3 py-2'>
-        <code className='flex-1 break-all font-mono text-xs text-foreground'>{newKey.plaintext}</code>
+        <code className='min-w-0 flex-1 truncate font-mono text-xs text-foreground'>{newKey.plaintext}</code>
         <CopyButton text={newKey.plaintext} />
       </div>
       <Text as='p' muted className='text-xs'>

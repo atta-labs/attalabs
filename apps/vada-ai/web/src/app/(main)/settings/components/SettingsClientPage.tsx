@@ -6,11 +6,12 @@ import { AttaUserProfile, ProviderKeysSection, ApiKeysSection } from '@atta/ui/a
 import type { FaceStyle } from '@/components/agents'
 import { AgentStyleSection } from './agent-style/AgentStyleSection'
 
-type Tab = 'account' | 'api-keys' | 'agent-style'
+type Tab = 'account' | 'vada-api-keys' | 'provider-keys' | 'agent-style'
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'account', label: 'Account' },
-  { id: 'api-keys', label: 'API Keys' },
+  { id: 'vada-api-keys', label: 'Vāda API Keys' },
+  { id: 'provider-keys', label: 'Provider API Keys' },
   { id: 'agent-style', label: 'Agent Style' }
 ]
 
@@ -36,14 +37,15 @@ export function SettingsClientPage({ initialFaceStyle }: SettingsClientPageProps
         <AttaUserProfile />
       </TabsContent>
 
-      <TabsContent value='api-keys'>
-        <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
-          <div className='rounded-lg border border-border/40 bg-card p-6'>
-            <ProviderKeysSection />
-          </div>
-          <div className='rounded-lg border border-border/40 bg-card p-6'>
-            <ApiKeysSection productLabel='Vāda' />
-          </div>
+      <TabsContent value='vada-api-keys'>
+        <div className='rounded-lg border border-border/40 bg-card p-6'>
+          <ApiKeysSection productLabel='Vāda' />
+        </div>
+      </TabsContent>
+
+      <TabsContent value='provider-keys'>
+        <div className='rounded-lg border border-border/40 bg-card p-6'>
+          <ProviderKeysSection />
         </div>
       </TabsContent>
 

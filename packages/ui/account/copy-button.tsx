@@ -14,7 +14,7 @@ export function CopyButton({ text }: { text: string }) {
   }
 
   return (
-    <Button type='button' variant='ghost' size='sm' onClick={onClick} className='h-7 gap-1.5 text-xs'>
+    <Button type='button' variant='ghost' size='sm' onClick={onClick} className='h-7 shrink-0 gap-1.5 text-xs'>
       {copied ? <Check className='size-3.5' /> : <Copy className='size-3.5' />}
       {copied ? 'Copied' : 'Copy'}
     </Button>
