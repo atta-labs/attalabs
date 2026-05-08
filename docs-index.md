@@ -54,7 +54,7 @@
 - [Vāda](./apps/vada-ai/specs/vada-human.md)
 - [Vāda — Product Recognitions](./apps/vada-ai/specs/vada-product-recognitions.md)
 - [Vāda — Product Specification](./apps/vada-ai/specs/vada-product-spec.md)
-- [Vāda Reviewers — Product Specification (v1, revision 4)](./apps/vada-ai/specs/vada-reviewers-spec.md)
+- [Vāda Reviewers — Product Specification (v1, revision 5)](./apps/vada-ai/specs/vada-reviewers-spec.md)
 - [`karpathy/llm-council` and `Lykhoyda/ask-llm` — Technical Deep Dive](./apps/vada-ai/specs/vada-reviewers-tech-deep-dive.md)
 - [Vāda · The Science of Deliberation](./apps/vada-ai/specs/vada-science-of-deliberation.md)
 - [Vāda — Current State](./apps/vada-ai/specs/vada-state.md)

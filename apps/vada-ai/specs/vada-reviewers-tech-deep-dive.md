@@ -826,6 +826,18 @@ The Vāda Reviewers v1 spec (`vada-reviewers-spec.md`) is intentionally narrow. 
 
 **Risk 4: The brief is the magic, and the brief is hard to write well.** Vāda Reviewers' team is a thin coordinator. Most of the cognitive work is in the brief the primary AI constructs. If briefs are bad, reviewers are bad, regardless of how well the team is built. v2 should consider a brief-authoring helper or template library.
 
+### 9.6 Methodological note — framework examples vs production patterns (added May 8, 2026)
+
+A cross-vendor research synthesis on multi-agent orchestration patterns (Gemini, Grok, ChatGPT — May 2026) surfaced an important methodological lesson that informs how this document should be read and how future research inputs to the spec should be evaluated.
+
+**Framework examples (CrewAI, AutoGen, LangGraph tutorials, etc.) tend to be toy-grade.** They prioritize demonstrating breadth of capability over modeling rigorous production patterns. Multi-agent examples in framework documentation often show free-form conversational agents critiquing each other in ways that look impressive in a demo but degrade auditability and reliability at scale. A reviewer who cites "this is how CrewAI does it" or "AutoGen has this pattern" is providing weaker evidence than they appear to be, because the framework's own examples are not battle-tested.
+
+**Production patterns from Anthropic, Google, OpenAI, and serious open-source projects (ask-llm, llm-council, this document's primary references) are higher signal.** These have been deployed against real workloads, encountered real failure modes (issue #23 in ask-llm being the canonical example), and incorporated mitigations the framework examples don't show. When a research input cites Anthropic's upstream `code-review` plugin or ask-llm's `brainstorm-coordinator`, the evidence is stronger than when it cites a CrewAI tutorial — even if the CrewAI tutorial is more elaborate.
+
+**For Vāda Reviewers and future Vāda Teams:** when evaluating new patterns to lift, weight production patterns higher than framework patterns. The §1.1 reference table in `vada-reviewers-spec.md` reflects this — its sources are production projects, not framework tutorials. Future research syntheses informing the spec should preserve this discipline.
+
+**This is not a dismissal of frameworks** — they're valuable for prototyping and for demonstrating that a pattern is *possible*. The dismissal is of treating framework examples as evidence that a pattern is *production-grade*. Different epistemic categories.
+
 ---
 
 ## 10. Recommendations to reviewers

@@ -716,3 +716,37 @@ When the rationale of an existing entry is wrong but the decision still holds:
 1. Add a brief "Date revised:" note at the bottom of the entry
 2. Note what was wrong and what's now understood
 3. Don't rewrite the original rationale — preserve the historical reasoning
+
+## D-031: Reviewer prompt rev 5 — Persona+Goal+Posture+Output structure, verification block, phantom consensus detection
+
+**Date:** May 8, 2026
+**Status:** Active
+**Area:** Vāda Reviewers — reviewer + synthesizer system prompts
+
+**Decision summary:** Three additions to the Vāda Reviewers v1 prompt design, captured as rev 5 of `vada-reviewers-spec.md` (§4.1.1, §4.1.2, §3.7). (1) Reviewer system prompt restructured as four explicit labeled sections — Persona, Goal, Posture, Output — replacing the rev 4 prose-ordered prompt with the same content laid out in maintainable sections. (2) Reviewer system prompt now requires a `<verification>` block at the start of every response, enumerating the facts the reviewer is treating as given before critique begins. (3) Synthesizer system prompt now requires phantom consensus detection — when two or more reviewers reach the same surface conclusion through incompatible reasoning, the synthesizer marks the consensus item with `phantom_consensus: true` and explains the underlying disagreement in a `rationale` field on the schema. The synthesizer also de-prioritizes phantom-flagged consensus in recommendations, regardless of GROUNDED/INFERRED status.
+
+**Alternatives considered:**
+- Adopt specific personas per reviewer (e.g., "Forensic Financial Auditor with 20 years in fraud detection") as the cross-vendor research thread suggested — rejected because it contradicts Vāda Reviewers' uniform-role design (§3.4 of the spec). Vendor diversity comes from binding, not from role differentiation. Persona stays generic ("external critical reviewer"); specific personas remain a v2 candidate (§6.2).
+- Bake the verification block into the brief template (§4.1.3) rather than the system prompt — rejected because the verification block applies regardless of brief content. Putting it in the brief means brief authors might omit it; putting it in the system prompt enforces it across all calls.
+- Add phantom consensus detection as a v2 enhancement rather than v1 — rejected because the cost is one prompt instruction and one schema field, while the benefit (preventing the primary AI from over-weighting illusory consensus) is felt on every synthesis call.
+- Spawn a separate "principles doc" capturing the cross-vendor research synthesis rather than patching the spec — rejected because the rev 4 spec already absorbed most of the research findings (DO-NOT-FLAG, GROUNDED/INFERRED tagging, structured synthesis schema). The remaining gaps were small and surgical and belong in the spec, not in a parallel document that would risk drifting from implementation.
+
+**Rationale:** A cross-vendor research thread (Gemini, Grok, ChatGPT — May 2026) on multi-agent orchestration patterns surfaced five convergent patterns. Three of those five were already in `vada-reviewers-spec.md` rev 4 (the DO-NOT-FLAG list, GROUNDED/INFERRED tagging, the structured synthesis schema with grounded-over-inferred weighting). The remaining two — verification block and phantom consensus detection — plus the structural refinement of the reviewer prompt into Persona+Goal+Posture+Output sections, are independently defensible additions whose cost is low and whose value is realized on every reviewer/synthesizer call.
+
+The Persona+Goal+Posture+Output restructure is maintenance, not innovation: same content, more maintainable layout. The verification block is the addition with the most uncertain payoff — it depends on reviewers actually following the format across vendors — but is defensible on first principles (committing to a reading before critiquing is good epistemic hygiene) and the v1 benchmark will surface compliance reliability as observable in transcripts. Phantom consensus detection has the highest potential value if it works and the highest false-flag risk; the prompt instruction errs on the side of `phantom_consensus: false` when in doubt (real consensus default; phantom requires *incompatible* reasoning, not merely *different* reasoning).
+
+The decision to patch the existing spec rather than create a new principles doc reflects a calibration lesson from the same session: research syntheses often duplicate existing spec work; checking the spec first usually reveals the right move is a small patch rather than a parallel document.
+
+**Consequences:**
+- `vada-reviewers-spec.md` rev 5 published, replacing rev 4 as the implementation baseline
+- §4.1.1 reviewer prompt restructured into Persona+Goal+Posture+Output; verification block requirement added under OUTPUT section
+- §4.1.2 synthesizer prompt includes phantom consensus detection in CONSENSUS section, verification-block divergence flagging in PARTICIPANTS section, and de-prioritization rule for phantom-flagged consensus in RECOMMENDATIONS section
+- §3.7 synthesizer output schema gains `phantom_consensus: boolean` and `rationale: string` fields on consensus items
+- §1.1 implementation-reference table gains three rev 5 entries (Persona+Goal+Posture+Output structural pattern, verification block, phantom consensus detection) attributed to "Cross-vendor research convergence (Gemini, Grok, ChatGPT — May 2026)"
+- §7.8 (new) — open question on verification block compliance reliability across vendors
+- §7.9 (new) — open question on phantom consensus detection achievability by the synthesizer
+- §8 lock list updated with rev 5 additions
+- Implementation sequence (§9) unchanged — rev 5 prompts replace rev 4 prompts as the baseline for steps 6-7 (reviewer + synthesizer prompt iteration)
+- Track B Item 3b (Reviewer prompt iteration) starts from rev 5 prompts, not rev 4
+- No engine changes required — prompt content lives in YAML free-text fields; no schema or compiler changes
+- `vada-reviewers-tech-deep-dive.md` Section 9.6 added — methodological note on framework-vs-production patterns, reflecting the calibration lesson that prompted the rev 5 patch approach

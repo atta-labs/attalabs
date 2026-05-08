@@ -274,3 +274,80 @@ When tempted to write another strategic review: stop. Check the relevant first-u
 When the personal-project framing feels stretched: check which conversion moment has actually happened. Be honest. The framing is useful as long as it's accurate.
 
 When competitive pressure tempts a faster ship: check `atta-market-research.md` for the threats that actually matter and the indicators to watch. Speed matters; panic doesn't.
+
+
+---
+
+## Vāda Desktop — distribution path for individual prosumers
+
+*Added May 8, 2026.*
+
+This section captures Vāda Desktop as a product surface, not as an engine implementation detail. Already documented technically in `vada-reviewers-spec.md` §3.5 (CLI mode, v1.5) and `vada-reviewers-tech-deep-dive.md` Section 9 (Karpathy `llm-council` precedent). What was missing — and what this section adds — is the **product framing**: subscription-paid execution as the lowest-friction distribution path for individual prosumers.
+
+### The friction the BYOK model creates
+
+Vāda's hosted MCP and web app both use BYOK (bring-your-own-key) for provider API access: users supply their Anthropic, OpenAI, Google, xAI keys, and Vāda calls those APIs on their behalf. This works for technical users who already have API keys. It does not work for the broader user base.
+
+**Most prosumers don't have API keys.** They have subscriptions. They pay $20/month to Anthropic for Claude Pro / Max, $20/month to OpenAI for ChatGPT Plus, $20/month to Google for Gemini Advanced, $8/month to X for Premium. None of these subscriptions expose API access. Prosumers who want to use Vāda's vendor-diverse Reviewers either need to acquire (and pay separately for) API keys for each vendor — multiplying their AI spend — or skip Vāda entirely.
+
+This is a real distribution problem. The Karpathy `llm-council` open-source release demonstrated the pattern that solves it: instead of using HTTP APIs, the tool spawns CLI subprocesses (Claude Code CLI, Gemini CLI, Codex CLI, Ollama) that authenticate with the user's existing subscription. Same vendor-diverse deliberation, zero API keys, paid for by subscriptions the user already has.
+
+### What Vāda Desktop is
+
+A desktop app (Tauri or Electron, TBD) that runs Vāda's engine locally and uses CLI subprocesses as the providers. The architecture:
+
+- Same `@atta/engine` as the hosted Vāda — Plan compilation, LangGraph execution, all Vāda Teams (Reviewers, Sparring, Crucible, War Room) selectable from the same YAML catalog
+- `LlmCallFn` adapter routes by model prefix as today (claude-* → Anthropic, gemini-* → Google, etc.) but the leaf-level "how do I actually call the model" function gets a second implementation: instead of an HTTP API client, spawn a CLI subprocess
+- Subprocess discipline per `vada-reviewers-spec.md` §3.5: `mktemp -d` workdir, redirect-to-file, `trap` cleanup, `wait` per PID
+- User authenticates each CLI once with their existing subscription; Desktop never sees plaintext credentials
+- Runs entirely on the user's machine; no servers, no centralized infrastructure
+
+The engine doesn't change. The teams don't change. The YAMLs don't change. The leaf-level provider call gets a sibling implementation that uses subprocesses instead of HTTP APIs.
+
+### Why this is a real product surface, not just an engine detail
+
+The natural read of "CLI mode" — and the read currently in the spec — is that it's an engine implementation choice with a fidelity benefit (CLIs run inside the vendor's product harness, closer to chat-product behavior than raw API calls). That's true but secondary.
+
+The **primary** read is that CLI mode is the distribution path that lets Vāda reach individual prosumers without forcing them to adopt API keys. The desktop app is the packaging that makes this real:
+
+- **Single download.** Tauri/Electron binaries for macOS, Windows, Linux. User installs once.
+- **First-run setup.** App walks the user through authenticating each CLI they want to use (Claude Code CLI for Claude, Gemini CLI for Gemini, Codex CLI for OpenAI, Ollama for local). Each CLI does its own subscription auth flow. App doesn't handle credentials.
+- **Vāda Teams from day one.** Same catalog (Reviewers, Sparring, Crucible, War Room) as hosted Vāda. Same UI surfaces (deliberate page, sessions history, settings). The engine is shared.
+- **Zero recurring cost to Vāda.** No servers. No API key management. No envelope encryption (D-029) because there are no keys to encrypt. The user's existing subscriptions pay for the model time.
+- **Open source.** Same legal/ToS posture as Aider, llm-council, and Continue: user-on-own-machine using their own subscriptions, tolerated by vendors because it's not commercial subscription exploitation.
+
+### How it fits the Atta build sequence
+
+Vāda Desktop is **not** the next thing to build. The sequence in this document — Vāda V1 (shipped) → reviewer prompt iteration → first benchmark run → Vitakta — is unchanged. Vāda Desktop slots in **after** Vāda Reviewers v1 ships, when the cognitive design has been validated and the question shifts to distribution.
+
+**Why not before Reviewers v1 ships:** the prompts and synthesizer (rev 5 in `vada-reviewers-spec.md`) are still being iterated. Building Desktop UX around prompts that may still change is wasted work.
+
+**Why not as part of Vitakta:** Vitakka is a different product (the situated-cognition layer; see `vitakka-human.md`). Vāda Desktop is Vāda — same engine, same teams, different distribution. Vitakta's roadmap is independent.
+
+**Why this is a parallel product surface, not a replacement:** the hosted Vāda at `vada.attalabs.dev` continues to exist for users who want a hosted service (teams, businesses, anyone paying for someone else's infrastructure). Vāda Desktop is for individual prosumers who want their own subscriptions to cover the cost. Two surfaces, one engine, one team catalog.
+
+**Estimated effort:** ~1-2 days of engine adapter work to add CLI subprocess routing (already specced as v1.5 in `vada-reviewers-spec.md` §3.5, engine constraint #6). ~2-3 weeks of desktop UI work (Tauri/Electron, first-run flow, Vāda Teams browser, sessions view, settings). Earliest realistic ship: Q3 2026, conditional on Vāda Reviewers v1 shipping first.
+
+### Open questions
+
+These are not blocking and don't need answers yet. They activate when Vāda Desktop work begins.
+
+- **Pāli name or "Vāda Desktop"?** The Atta naming rule (Pāli = built by Atta) suggests a Pāli name. But Vāda Desktop is *the same product* as hosted Vāda, in a different surface. "Vāda Desktop" reads as a packaging variant, which is closer to the truth. Decide closer to ship.
+- **Open source or commercial?** Karpathy's `llm-council` is open source MIT. Aider is open source Apache 2. Continue is open source Apache 2. The pattern in this product space is open source. Vāda Desktop probably ships open source as part of Vāda's existing public surface — separate commercial product surfaces (hosted, team, enterprise) remain hosted-only and remain potential revenue paths.
+- **How does it relate to the Anthropic Claude Apps marketplace path?** When Anthropic's marketplace matures, Vāda becomes installable as a Claude App inside claude.ai — at which point Anthropic users can use Vāda without leaving their chat surface, paid for by their Claude subscription. Does Vāda Desktop become redundant for Anthropic users in that world? Probably partially — Anthropic-only users may default to the Claude App; cross-vendor users (who want Gemini AND GPT AND Grok in their reviewer pool) still need Desktop because Claude Apps can only call Claude.
+- **Tauri vs Electron?** Bundle size, developer experience, and Bun compatibility all push toward Tauri. Electron is the safer, better-known choice. Decide closer to ship.
+- **Does Desktop replace the hosted MCP entirely for individual users?** Probably not. Hosted MCP works for users who don't want to install anything; Desktop works for users who want lower friction and lower cost. Both serve real audiences. Keeping both is the conservative call.
+
+### Why this matters for the Atta build philosophy
+
+The "hide the work" discipline at the heart of this document is most testable on Vāda Desktop. A non-technical user installing the app should NOT see "configure your CLI subprocess discipline" or "select your provider routing" — they should see "connect your subscriptions" and then "ask me anything." If Vāda Desktop ships with surface complexity that exposes the subprocess machinery, the discipline has failed visibly. If it ships with calm onboarding that hides the machinery, the discipline has held under real product conditions.
+
+This is also where the personal-project-to-product conversion (described elsewhere in this document) accelerates. Vāda Desktop is the surface that lets non-technical prosumers experience Vāda. The conversion from "lab tool for technical users" to "product for individual prosumers" happens, in practice, when Desktop ships.
+
+### Related documents
+
+- `vada-reviewers-spec.md` §3.5 — CLI mode v1.5 specification, including mandatory subprocess discipline
+- `vada-reviewers-tech-deep-dive.md` Section 9 — Karpathy `llm-council` analysis, ask-llm subprocess pattern
+- `atta-plan.md` "Vāda Desktop — CLI-subprocess providers (post-Reviewers-v1)" — current parking-lot status and dispatch criteria
+- `atta-ecosystem-vision.md` — broader Atta layering (Vāda → Vitakta → Sati → Atta)
+- `cetana-reality-check.md` — separate execution-layer product, V4+ horizon

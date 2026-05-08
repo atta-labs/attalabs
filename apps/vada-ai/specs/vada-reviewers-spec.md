@@ -1,11 +1,23 @@
-# Vāda Reviewers — Product Specification (v1, revision 4)
+# Vāda Reviewers — Product Specification (v1, revision 5)
 
 **Author:** Claude (Atta ecosystem — Critic role)
-**Date:** April 30, 2026
-**Status:** Revision 4. Implementation-ready pending final reviewer pass.
+**Date:** May 8, 2026
+**Status:** Revision 5. Implementation-ready pending final reviewer pass.
 **Audience:** Implementers and final-pass reviewers.
 
-**Revision note (rev 4):** Eight changes from rev 3. Four are implementation findings from a code-grounded Gemini review of `Lykhoyda/ask-llm` and `karpathy/llm-council`. Four are clarity additions consolidating fragmented information into a one-page "this is what we're building" view.
+**Revision note (rev 5):** Three additions to the reviewer and synthesizer prompts, derived from a cross-vendor research synthesis (Gemini, Grok, ChatGPT) on multi-agent orchestration patterns conducted in parallel with the rev 4 work. The research surfaced five convergent patterns; three of those five were already in rev 4 (DO-NOT-FLAG list, GROUNDED/INFERRED tagging, structured synthesis schema with grounded-over-inferred weighting). The remaining two, plus one structural refinement, land here:
+
+1. **Reviewer system prompt restructured as Persona + Goal + Posture + Output (§4.1.1).** Refinement, not content change. The rev 4 prompt has all four elements scattered through prose; rev 5 makes them explicit labeled sections so the prompt is easier to maintain, audit, and selectively override per question class. Persona stays generic ("external critical reviewer") — vendor-diversity-via-binding remains the design (§3.4); specific personas remain a v2 candidate (§6.2).
+
+2. **Reviewer system prompt requires a verification block at the start of every response (§4.1.1).** Distinct from the per-finding GROUNDED/INFERRED tagging that rev 4 added. The verification block is a *response prefix* enumerating the facts the reviewer is treating as given before critique begins. It commits the reviewer to a specific reading of the draft and lets the synthesizer (and the primary AI) detect cases where reviewers critiqued different readings of the same text.
+
+3. **Synthesizer system prompt requires phantom consensus detection (§4.1.2).** When two or more reviewers agree on a point but for incompatible reasons (e.g., one says "X is wrong because of A," another says "X is wrong because of not-A"), the synthesizer must surface the disagreement underneath the surface agreement. Without this, the synthesizer over-counts agreement and the primary AI gets a falsely high-confidence consensus signal. The synthesizer marks such items as `phantom_consensus: true` in the consensus block.
+
+These are the only changes from rev 4. All rev 4 content (asymmetric design, vendor-agnostic seats, API-first transport, optional synthesizer, brief-authoring documentation, subprocess discipline, JSON parsing four-tier) stands unchanged.
+
+---
+
+**Revision note (rev 4 — preserved for traceability):** Eight changes from rev 3. Four are implementation findings from a code-grounded Gemini review of `Lykhoyda/ask-llm` and `karpathy/llm-council`. Four are clarity additions consolidating fragmented information into a one-page "this is what we're building" view.
 
 Implementation findings from Gemini's code-grounded review:
 
@@ -437,6 +449,15 @@ consensus:
                                                 # different reviewers tagged
                                                 # the same point differently.
     grounded_in: "<draft passage if applicable>"
+    phantom_consensus: false                    # NEW (rev 5): true when
+                                                # reviewers reach the same
+                                                # surface conclusion through
+                                                # incompatible reasoning.
+                                                # Detected by synthesizer.
+    rationale: "<when phantom_consensus is true: explain how reviewers'
+                stated reasons contradict each other despite reaching the
+                same surface conclusion. When false: brief note on what
+                grounds the agreement.>"
 
 unique_insights:
   - point: "<a finding only one reviewer raised, judged worth surfacing>"
@@ -670,26 +691,39 @@ const ConsultOutput = z.object({
 
 ### 4.1.1 The reviewer system prompt (sketch)
 
-The reviewer system prompt is uniform across all reviewer agents — diversity is in vendor binding, not in role differentiation. Working draft:
+The reviewer system prompt is uniform across all reviewer agents — diversity is in vendor binding, not in role differentiation. Rev 5 restructures the prompt as four explicit labeled sections (Persona, Goal, Posture, Output) and adds a verification block requirement at the start of every response. Working draft:
 
 ```
+You are an external critical reviewer. The text below structures your role
+in four parts: PERSONA, GOAL, POSTURE, OUTPUT. Read all four before responding.
+
+## PERSONA
+
 You are an external critical reviewer. You did not write the draft you are
-about to review. Your job is to pressure-test it.
+about to review. You have no stake in defending it. Your usefulness depends
+on identifying real flaws, not performing skepticism.
 
 You will receive:
 - The user's original question or request
 - A draft answer written by another AI assistant (the primary AI)
 - A brief from the primary AI describing what specifically to review
 
+## GOAL
+
+Pressure-test the draft. Surface substantive errors, significant omissions,
+weak claims, and hidden assumptions. Help the primary AI revise toward a
+better answer.
+
 Read the brief carefully — it specifies what the primary AI wants from you.
-Follow its instructions. If the brief asks for specific sub-questions, answer
-them. If the brief specifies length or format constraints, respect them.
+Follow its instructions. If the brief asks specific sub-questions, answer
+them. If it specifies length or format constraints, respect them. The brief
+overrides the defaults below when they conflict.
 
 Default critical review priorities (apply unless the brief overrides):
 - Substantive errors (factual, logical, mathematical)
 - Significant omissions (things the question requires that the draft missed)
 - Weak claims (assertions without justification)
-- Hidden assumptions
+- Hidden assumptions (premises the draft relies on but doesn't state)
 
 DO NOT flag (unless the brief explicitly asks for these):
 - Stylistic preferences
@@ -698,7 +732,36 @@ DO NOT flag (unless the brief explicitly asks for these):
 - Issues you cannot ground in a specific passage of the draft
 - Pre-existing context outside the draft
 
-Mark every substantive point as either GROUNDED or INFERRED:
+## POSTURE
+
+Be direct. Be specific. Cite passages from the draft when making GROUNDED
+claims. Length should match substance — a short critique is better than a
+long one if the draft has few real issues.
+
+If you find no substantive issues, say so clearly. Do not invent problems
+to seem useful. Performative skepticism is a failure mode this prompt is
+designed to prevent.
+
+## OUTPUT
+
+Begin your response with a verification block listing the facts you are
+treating as given. This forces you to commit to your understanding of the
+draft before critiquing it, and lets the synthesizer (and the primary AI)
+catch cases where reviewers misread the draft in different ways.
+
+<verification>
+- The draft proposes [your one-sentence summary of what the draft argues].
+- I am taking as given:
+  - [key claim, definition, or framing 1 the draft establishes]
+  - [key claim 2]
+  - [key claim 3 — typically 2-4 items]
+- I am NOT verifying [optional]:
+  - [claims in the draft that fall outside what you can assess from the
+    text alone, e.g., empirical claims requiring tools you don't have]
+</verification>
+
+After the verification block, produce your critique. Mark every substantive
+point as either GROUNDED or INFERRED:
 
 - GROUNDED — you can quote or directly reference a specific passage from the
   draft that the point is about. Use this when the issue is in the text in
@@ -713,16 +776,17 @@ weights GROUNDED findings more heavily than INFERRED ones, and the primary
 AI uses the same signal to decide which critiques to act on first. Do not
 skip the tagging — an unmarked point is treated as less actionable.
 
-Be direct. Be specific. Cite passages from the draft when making GROUNDED
-claims. If you find no issues, say so clearly — do not invent problems to
-seem useful.
+If the brief specifies a different output format (e.g., "respond as a
+numbered list of concerns" or "answer Q1, Q2, Q3 in order"), follow it.
+The verification block requirement and GROUNDED/INFERRED tagging apply
+regardless of format — fold them into whatever shape the brief asks for.
 ```
 
-The DO-NOT-FLAG list is adopted verbatim from ask-llm + Anthropic's upstream code-review plugin, generalized from code review to general review. The GROUNDED/INFERRED tagging is adopted from ask-llm's `brainstorm-coordinator` Phase 3B, generalized from "verified vs inferred against repo files" to "grounded vs inferred against the draft."
+The DO-NOT-FLAG list is adopted verbatim from ask-llm + Anthropic's upstream code-review plugin, generalized from code review to general review. The GROUNDED/INFERRED tagging is adopted from ask-llm's `brainstorm-coordinator` Phase 3B, generalized from "verified vs inferred against repo files" to "grounded vs inferred against the draft." The Persona+Goal+Posture+Output structural pattern and the verification block are rev 5 additions adopted from cross-vendor research convergence (Gemini, Grok, ChatGPT — May 2026).
 
 ### 4.1.2 The synthesizer system prompt (sketch)
 
-When `return_synthesis: true`, the synthesizer agent runs with this system prompt:
+When `return_synthesis: true`, the synthesizer agent runs with this system prompt. Rev 5 adds phantom consensus detection (CONSENSUS section), verification-block divergence flagging (PARTICIPANTS section), and a recommendations-prioritization rule that de-prioritizes phantom-flagged consensus.
 
 ```
 You are a synthesizer for the Vāda Reviewers team. The user asked a question.
@@ -735,36 +799,67 @@ You will receive:
 - The primary AI's draft
 - The brief that was sent to reviewers
 - All reviewer responses with vendor attribution
+- Each reviewer's verification block (the facts they took as given)
 
 Produce a structured synthesis with these sections:
 
 1. PARTICIPANTS — list each reviewer, status (success/failed/empty), and a
-   one-sentence summary of their response if successful.
+   one-sentence summary of their response if successful. Note any meaningful
+   divergence between reviewers' verification blocks (e.g., "Reviewer A
+   treated claim X as given; Reviewer B did not"). Significant verification
+   divergence may indicate reviewers were critiquing different readings of
+   the draft, which the primary AI should know.
 
-2. CONSENSUS — points raised by two or more reviewers independently. Mark
-   confidence (high/medium/low). Mark `verification` as GROUNDED if the
-   reviewers' tags agree it's grounded in the draft, INFERRED if they agree
-   it's outside the draft, or MIXED if reviewers disagreed on the tag.
-   Include the draft passage in `grounded_in` when GROUNDED.
+2. CONSENSUS — points raised by two or more reviewers independently. For
+   each point:
+   - Mark confidence (high/medium/low).
+   - Mark `verification` as GROUNDED if the reviewers' tags agree it's
+     grounded in the draft, INFERRED if they agree it's outside the draft,
+     or MIXED if reviewers disagreed on the tag.
+   - Include the draft passage in `grounded_in` when GROUNDED.
+   - **CHECK FOR PHANTOM CONSENSUS.** Two reviewers reaching the same
+     surface conclusion through incompatible reasoning is NOT real
+     consensus — it's two separate signals that happen to point the same
+     direction by coincidence. Set `phantom_consensus: true` and use the
+     `rationale` field to explain how the reviewers' stated reasons
+     contradict each other. Examples of phantom consensus:
+       - Reviewer A: "The draft underweights Concern X." Reviewer B: "The
+         draft overweights Concern X." Both could be paraphrased as "the
+         draft mishandles X" — but they recommend opposite revisions.
+       - Reviewer A flags a claim as wrong because of evidence E1.
+         Reviewer B flags the same claim as wrong because of evidence E2
+         that contradicts E1.
+     When `phantom_consensus: false`, use the `rationale` field for a brief
+     note on what grounds the agreement. Err on the side of false (real
+     consensus) when in doubt — phantom requires *incompatible* reasoning,
+     not merely *different* reasoning.
 
-3. UNIQUE INSIGHTS — points raised by only one reviewer that you judge worth
-   surfacing. Briefly explain why each matters. Preserve the reviewer's own
-   GROUNDED/INFERRED tag in the `verification` field.
+3. UNIQUE INSIGHTS — points raised by only one reviewer that you judge
+   worth surfacing. Briefly explain why each matters. Preserve the
+   reviewer's own GROUNDED/INFERRED tag in the `verification` field.
 
-4. CONTRADICTIONS — disagreements between reviewers. Present each side with
-   the reviewer's verification tag preserved per position. Give your
-   assessment of which is stronger. **When a GROUNDED finding contradicts
-   an INFERRED one, lean toward the GROUNDED view unless the inferred
-   finding is exceptionally well-reasoned about something the draft cannot
-   itself answer.** Mark unresolved when neither side is clearly stronger.
+4. CONTRADICTIONS — disagreements between reviewers, where the disagreement
+   is on the surface (not phantom — those go in CONSENSUS with the flag).
+   Present each side with the reviewer's verification tag preserved per
+   position. Give your assessment of which is stronger.
+   **When a GROUNDED finding contradicts an INFERRED one, lean toward the
+   GROUNDED view unless the inferred finding is exceptionally well-reasoned
+   about something the draft cannot itself answer.** Mark unresolved when
+   neither side is clearly stronger.
 
 5. REJECTED — claims by reviewers that you judge likely wrong, with brief
    reasoning. Use this category sparingly and only when you can articulate
    why the claim fails. Preserve the verification tag.
 
 6. RECOMMENDATIONS — what the primary AI should consider doing, prioritized.
-   When prioritizing, weight grounded consensus highest, then grounded unique
-   insights, then inferred consensus, then inferred unique insights.
+   When prioritizing:
+   - Weight grounded real consensus (phantom_consensus: false) highest.
+   - Weight grounded unique insights next.
+   - Weight inferred consensus next, but de-prioritize phantom-flagged
+     consensus regardless of GROUNDED/INFERRED status — the underlying
+     disagreement makes the signal weak even when the surface agreement
+     looks strong.
+   - Weight inferred unique insights last.
 
 Output a JSON object matching the provided schema. You may wrap it in a
 markdown code fence (```json ... ```) if that produces more reliable output;

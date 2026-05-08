@@ -2,7 +2,7 @@
 
 **Status:** Shipped (May 4, 2026 — PRs #9 + #10). Phase 5 (stdio session URL fix) and Phase 6 (rate limiting, audit log retention, hardening) remain as future work.
 **Owner:** Vāda
-**Last updated:** May 6, 2026
+**Last updated:** May 8, 2026
 
 ---
 
@@ -58,6 +58,8 @@ Authorization: Bearer <key>
 MCP OAuth support across clients is inconsistent as of mid-2026. Some clients implement the full OAuth device flow; others support only static tokens. API keys work with every MCP client that supports hosted servers — they are a Bearer token in a header, nothing else required on the client side.
 
 OAuth adds meaningful complexity (authorization server, token exchange, refresh) and buys little in practice when clients cannot reliably use it. This decision should be reconsidered for V2 once the MCP ecosystem matures.
+
+**Update May 7-8, 2026 — known issue with Claude.ai's connector broker.** Empirically, Claude.ai's web interface fails to connect to self-hosted MCP servers using bearer-token authentication, returning broker errors of the form `ofid_*` ("Couldn't reach the MCP server"). The same Vāda hosted MCP endpoint at `https://vada.attalabs.dev/api/mcp` works correctly via Claude Code CLI (`claude mcp add --transport http --header "Authorization: Bearer vada_..."`) but is rejected by Claude.ai's custom connector flow before reaching the server. By contrast, vendor-hosted MCP servers using OAuth (notably GitHub at `api.githubcopilot.com/mcp/`) connect successfully from Claude.ai. This appears to be a code-path difference inside Anthropic's broker, not an issue with Vāda's server. Workaround for Vāda users today: Claude Code CLI is the working integration path. Future hardening (Track E12 in `atta-plan.md`) may add OAuth as an alternative to bearer-token auth — same endpoint, different authentication mechanism — to recover Claude.ai web compatibility if it remains broken on Anthropic's side. Empirically confirmed May 7-8, 2026.
 
 ---
 
@@ -203,6 +205,31 @@ All error responses are JSON. No raw stack traces or internal identifiers are re
 
 ---
 
+## Known integration issues
+
+### Claude.ai web custom connector — broker bug
+
+**Status:** Active issue on Anthropic's side (May 7-8, 2026 confirmation). Workaround available via Claude Code CLI.
+
+**Symptom:** Adding `https://vada.attalabs.dev/api/mcp` as a custom connector in Claude.ai (Settings → Connectors) fails with broker errors of the form `ofid_*` ("Couldn't reach the MCP server"). The failure occurs before Anthropic's broker forwards the request to Vāda's server — Vāda receives no traffic for these failed connections.
+
+**Scope:** The same Vāda endpoint works correctly when added to Claude Code CLI:
+
+```
+claude mcp add --transport http vada https://vada.attalabs.dev/api/mcp \
+  --header "Authorization: Bearer vada_<your_key>"
+```
+
+Cursor, ChatGPT custom connectors, and other MCP clients have not been comprehensively tested but appear to work via different connector flows.
+
+**Cause (inferred):** Different code paths inside Anthropic's connector broker for self-hosted bearer-auth MCP servers vs vendor-hosted OAuth-using MCP servers. GitHub's hosted MCP at `api.githubcopilot.com/mcp/` connects successfully from Claude.ai web via OAuth, suggesting the OAuth path is healthier than the bearer-token path for self-hosted servers right now.
+
+**Workaround for Vāda users today:** Use Claude Code CLI for hosted MCP integration. The local stdio server (`@vada/mcp-server`) remains available for users who prefer that path.
+
+**Future work (Track E12 in `atta-plan.md`):** Add OAuth flow as an alternative to bearer-token authentication on the hosted MCP endpoint. Users who want to connect from Claude.ai web could opt into OAuth, which exercises a different code path on Anthropic's broker and is empirically more reliable. The bearer-token path remains the default for non-Claude.ai-web clients (which work today). This is hardening, not a v1 priority — gated on whether Claude.ai web adoption matters for Vāda users in practice.
+
+---
+
 ## What this replaces / supplements
 
 The hosted server **supplements** the local stdio server; it does not replace it. Users who prefer full local control, zero network dependency, or the web app BYOK model can continue using the stdio server.
@@ -248,6 +275,7 @@ The hosted server is the path for users who:
 - KMS unavailability handling and retries
 - Error tracking integration (ensure provider keys are scrubbed from payloads)
 - Audit log for key access events (retention policy TBD)
+- OAuth as an alternative to bearer-token authentication (Track E12 — addresses Claude.ai web broker bug; see "Known integration issues" above)
 
 ---
 
@@ -268,3 +296,5 @@ The hosted server is the path for users who:
 7. ~~**Production domain:**~~ **Resolved (May 4, 2026):** `vada.attalabs.dev` is the production endpoint. Migration to `vada.ai` is a separate future question and would require its own coordinated update across this doc, the stdio server's session URL hardcode, and external integrations.
 
 8. **Domain expert availability:** the `domain_expert` reviewer role in `vada__consult` is currently feature-flagged. Whether it is available on the hosted server by default, or gated by plan, is TBD.
+
+9. **OAuth alternative for Claude.ai web compatibility:** Anthropic's connector broker bug (see "Known integration issues") prevents Claude.ai web users from connecting to hosted Vāda via bearer-token auth. Workaround is Claude Code CLI. Whether to invest in OAuth as an alternative authentication mechanism on the hosted endpoint is gated on (a) whether Anthropic fixes the broker bug, and (b) whether Claude.ai web adoption is a priority. Tracked as Track E12 in `atta-plan.md`. Empirically confirmed May 7-8, 2026.

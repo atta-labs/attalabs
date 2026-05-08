@@ -139,3 +139,70 @@ V1's `classifyVerdict` function triggered revision when BlindCritic's output con
 
 **Synchronous `/api/engine/deliberate` route is Phase 2 dev-only**
 The `/api/engine/deliberate` route blocks for the full deliberation (~3 min for Crucible). This is acceptable for local development but is NOT production-safe on Vercel (60s function timeout). Production deployment requires one of: an async job pattern (enqueue → poll for result), a background worker outside Vercel functions, Server-Sent Events for streaming results, or an edge function with a longer timeout where supported. Phase 4 (or Phase 3b if MCP ships first) must address this before any public deployment. *File: `apps/vada-ai/web/src/app/api/engine/deliberate/route.ts`*
+
+---
+
+## Section 11: Schema 2.0 candidate primitives — research-grounded forward look
+
+*Added May 8, 2026.*
+
+A cross-vendor research synthesis (Gemini, Grok, ChatGPT) on multi-agent orchestration patterns, conducted in parallel with the rev 5 work on `vada-reviewers-spec.md`, surfaced three architectural primitives that are not currently expressible in the engine's YAML schema and that show up convergently across production multi-agent systems (Anthropic's code-review plugin pattern, Google's agent frameworks, LangGraph production patterns). They are documented here as **candidate Schema 2.0 primitives** — not adopted, not blocked, but tracked so that when Schema 2.0 work begins, the analysis is already done.
+
+### 11.1 Conditional routing — auditor decisions about which reviewer runs next
+
+**What it is:** an audit node that doesn't just decide "revise yes/no" but instead routes work back to a *specific* upstream reviewer based on what the audit found. E.g., if the audit detects a fact-check failure, route to the fact-checker reviewer for revision; if it detects a logic gap, route to the strategist; otherwise terminate.
+
+**Why it's not currently expressible:** Section 4 of this document describes pre-allocation over true cycles (`revision-0`, `revision-1`, ...) for the *same* terminal agent. The engine doesn't currently support routing the revision to a *different* upstream agent based on audit content. Conditional edges exist (`PlanConditionalEdge`) but their target is fixed at compile time, not chosen from audit output.
+
+**Where it shows up in production:** Anthropic's `code-review` plugin upstream pattern routes per-finding validation to specific subagents. ask-llm's `gemini-reviewer` validates per-finding and drops issues that don't survive (effectively a route-to-validator-then-filter pattern). Multi-vendor research convergence.
+
+**What would need to change in the engine:**
+- `PlanConditionalEdge` gains a way to express target selection from audit output (e.g., `target: { from_field: 'route_to_agent' }`).
+- Engine validates at compile time that all possible targets exist as nodes in the plan.
+- Adapter executes the audit, extracts the target, advances to the selected node.
+
+**Risk:** infinite-loop potential if the audit can route back to itself. The pre-allocation discipline (Section 4) was explicitly designed to avoid this. Schema 2.0 must preserve the "no true cycles" invariant — possibly by limiting conditional routing to nodes earlier in the execution order, or by retaining the pre-allocation pattern but allowing each pre-allocated revision slot to be a different agent.
+
+### 11.2 Worker-tier subagent spawning — cheap models verifying expensive models
+
+**What it is:** a high-tier reviewer (Sonnet, Opus) makes a claim with a citation; a low-tier worker (Haiku, Flash) is spawned to verify the citation against ground truth (file content, web fetch, database query); the verified-or-not result feeds back into the parent reviewer's output before it leaves the node.
+
+**Why it's not currently expressible:** the engine treats each agent as a single LLM call. There's no mechanism for an agent to spawn a subagent, get its result, and incorporate the result before returning. Tool calls exist within an agent's prompt context, but spawning a fully separate agent (with its own system prompt, model, output schema) as a subroutine isn't a primitive.
+
+**Where it shows up in production:** Anthropic's code-review plugin uses Haiku for cheap eligibility checks before spawning expensive Sonnet auditors; ask-llm's per-finding validation pattern uses subagents to verify claims. The pattern is "expensive model proposes, cheap model verifies" — a productivity-and-cost optimization.
+
+**What would need to change in the engine:**
+- New node kind: `SubagentSpawnNode` or equivalent — an agent that, as part of its work, spawns one or more configured subagents and integrates their output.
+- Subagent results need a representation in `ExecutionState` distinct from peer-agent outputs (subagent outputs are not part of the deliberation visible to other peer agents — they're internal to the parent agent's reasoning).
+- Cost tracking needs to roll up subagent costs to their parent.
+
+**Risk:** complexity. The engine's design discipline (Sections 1, 11 — engine as compiler, no engine branches on workflow type) cuts against adding a node kind that has substantially different runtime behavior. The strongest argument for Schema 2.0 here is that the alternative — expressing subagent spawning in the YAML as a separate explicit node with hand-wired data flow — quickly becomes unwieldy for the cases where subagents are short-lived helpers, not deliberation participants.
+
+### 11.3 Stateful scratchpad edges — hidden draft passing between nodes
+
+**What it is:** an edge between two nodes that carries information the receiving node uses but that is not part of the deliberation transcript. E.g., a "primary author" agent produces a draft AND a private "thinking-out-loud" scratchpad; the next agent in the chain receives both, but only the draft is visible to peer reviewers and to the user.
+
+**Why it's not currently expressible:** the engine's `ExecutionState` and `TemplateState` model treats agent output as a single visible artifact (`AgentOutput.content` plus optional `structured`). There's no separation between "what this agent says publicly" and "what this agent passes privately to the next stage." Templates can render any output projection, but they can't selectively hide outputs from some readers and show them to others.
+
+**Where it shows up in production:** less universal than 11.1 and 11.2 — this primitive is more visible in research patterns (e.g., chain-of-thought hidden from final user, visible to subsequent agents) than in shipped products. Showed up in the cross-vendor research as a convergent pattern but with weaker production grounding than the other two.
+
+**What would need to change in the engine:**
+- `AgentOutput` gains a `private_to: AgentRef[]` or `visibility: 'public' | 'pipeline'` field.
+- `deriveTemplateState` (Section 3) becomes visibility-aware: when building context for a node, include private outputs only if the requesting node is in the allowed set.
+- Storage and replay need to preserve private outputs but mark them as such (so a UI can choose not to show them).
+
+**Risk:** introduces a privacy model where one didn't exist. The engine has been simpler partly because *every* output is visible to every downstream consumer. Adding private state increases reasoning load for anyone debugging a deliberation ("why didn't this agent see that output?" becomes a new question class).
+
+### 11.4 What's NOT pressure for Schema 2.0
+
+The cross-vendor research also surfaced patterns that are *not* convergent and that the engine should resist absorbing:
+
+- **Autonomous agent loops** (agents deciding to re-invoke themselves, agents in dynamic conversation with each other without a pre-defined graph). The engine's pre-allocation discipline (Section 4) and pure-data-plan commitment (Section 1) are deliberate counter-positions. The research signal here is mixed; many production systems have *abandoned* autonomous loops in favor of explicit graphs because of debuggability and reliability. The engine's current direction is correct.
+- **Dynamic graph construction at runtime** (the graph itself changes based on agent output). Same reasoning. Schema 2.0 should add primitives the YAML can express, not move graph construction out of compile time.
+- **Free-form conversational chatter between agents** (CrewAI / AutoGen demo style). The methodological note in `vada-reviewers-tech-deep-dive.md` §9.6 (added May 8, 2026) covers this: framework demos prioritize impressive-looking interactions over auditability and reliability. Schema 2.0 should not absorb framework demo patterns.
+
+### 11.5 Sequencing — when Schema 2.0 happens
+
+Schema 2.0 is not blocked, not in flight, and not the next engine work. Reviewer prompt iteration (Track B Item 3b in `atta-plan.md`) is the priority. The benchmark (Item 4) follows. After that, the question of whether Vāda Reviewers v2 features (cross-ranking, source verification) need engine support will surface naturally — and the analysis above will be ready for use.
+
+The right time to actually write a Schema 2.0 spec is when a v2 Vāda Team requires one of these primitives and the YAML can't express it. Until then, this section is a forward-looking placeholder.
