@@ -18,7 +18,9 @@ export function Logo({ light, dark, alt = '', size = 'h-6', className, text }: L
 
   const logoPart = (
     <>
+      {/* biome-ignore lint/performance/noImgElement: shared agnostic library can't use next/image */}
       {light && <img src={light} alt={alt} className={cn(size, 'w-auto', dark ? 'dark:hidden' : '', className)} />}
+      {/* biome-ignore lint/performance/noImgElement: shared agnostic library can't use next/image */}
       {dark && <img src={dark} alt={alt} className={cn(size, 'w-auto', 'hidden dark:block', className)} />}
     </>
   )

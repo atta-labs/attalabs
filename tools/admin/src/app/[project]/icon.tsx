@@ -32,14 +32,22 @@ function resolveColor(v: string | { value: string } | undefined): string | undef
   return typeof v === 'string' ? v : v.value
 }
 
+function normalizeOklch(color: string): string {
+  if (color.includes('oklch(0')) return '#000'
+  if (color.includes('oklch(1')) return '#fff'
+  return color
+}
+
 function themeBackground(theme: CMSTheme | null, scheme: ColorScheme): string {
   const colors = scheme === 'dark' ? theme?.dark : theme?.light
-  return resolveColor(colors?.background) ?? (scheme === 'dark' ? '#0f172a' : '#ffffff')
+  const color = resolveColor(colors?.background) ?? (scheme === 'dark' ? '#0f172a' : '#ffffff')
+  return normalizeOklch(color)
 }
 
 function themePrimary(theme: CMSTheme | null, scheme: ColorScheme): string {
   const colors = scheme === 'dark' ? theme?.dark : theme?.light
-  return resolveColor(colors?.primary) ?? 'rgba(255,255,255,0.3)'
+  const color = resolveColor(colors?.primary) ?? 'rgba(255,255,255,0.3)'
+  return normalizeOklch(color)
 }
 
 export const size = { width: 32, height: 32 }
@@ -85,6 +93,7 @@ export default async function Icon({ params }: { params: Promise<{ project: stri
       }}
     >
       {faviconUrl ? (
+        // biome-ignore lint/performance/noImgElement: ImageResponse doesn't support next/image
         <img src={faviconUrl} width={22} height={22} style={{ objectFit: 'contain' }} />
       ) : (
         <div style={{ color: scheme === 'dark' ? 'white' : 'black', fontSize: 16, fontWeight: 700 }}>
