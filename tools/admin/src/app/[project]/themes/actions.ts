@@ -57,8 +57,9 @@ export async function updateThemeAction(project: ProjectKey, id: string, data: T
         shadows: data.shadows ?? {}
       })
       .commit()
-  } catch {
-    throw new Error('Failed to update theme.')
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    throw new Error(`Failed to update theme: ${message}`)
   }
 }
 
