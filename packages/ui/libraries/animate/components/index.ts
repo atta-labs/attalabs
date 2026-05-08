@@ -7,7 +7,7 @@ export { Badge } from '../../basic/components/display/badge'
 // Content — falls back to basic
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../basic/installed/card'
 // Form — falls back to basic
-export { Input } from '../../basic/installed/input'
+export { Input, InputBlock } from './form/input'
 export { Checkbox } from './form/checkbox'
 // Layout — falls back to basic
 export { Separator } from '../../basic/installed/separator'
@@ -24,7 +24,7 @@ export {
   TableHeader,
   TableRow
 } from '../../basic/installed/table'
-export { Textarea } from '../../basic/installed/textarea'
+export { Textarea } from './form/textarea'
 
 // Shared
 export { AgentThinkingText, Flex, Heading, Text } from '../../shared'

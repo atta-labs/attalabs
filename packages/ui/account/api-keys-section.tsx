@@ -59,11 +59,6 @@ function ApiKeyRow({ apiKey, onRevoked }: ApiKeyRowProps) {
           <Text as='span' className='text-sm font-medium'>
             {apiKey.name}
           </Text>
-          {isRevoked && (
-            <Badge variant='outline' className='text-muted-foreground border-border text-xs'>
-              Revoked
-            </Badge>
-          )}
         </div>
         <Text as='p' muted className='text-xs'>
           Created {formatDate(apiKey.createdAt)} ·{' '}

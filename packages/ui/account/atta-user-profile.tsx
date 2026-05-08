@@ -19,9 +19,7 @@ const PROFILE_VARIABLES_BASE = {
   colorInputForeground: 'var(--foreground)'
 }
 
-// Dark: --card=#0A0A0A vs --background=#000000 — only 4% apart, invisible.
-// Use --secondary (#1A1A1A) for dark surfaces to get ~10% separation from black.
-const darkSurface = 'var(--secondary)'
+const darkSurface = 'var(--card)'
 const lightSurface = 'var(--card)'
 
 const PROFILE_ELEMENTS_SHARED = {

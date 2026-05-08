@@ -10,7 +10,7 @@ export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 export { Badge } from './display/badge'
 export { Toast, ToastProvider, useToastContext } from './display/toast'
 // Form
-export { Input } from './form/input'
+export { Input, InputBlock } from './form/input'
 export { Textarea } from './form/textarea'
 export { Checkbox } from './form/checkbox'
 export { Button, buttonVariants } from './interactive/button'

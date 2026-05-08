@@ -1,64 +1,20 @@
+import type * as React from 'react'
+import { Input as InputPrimitive } from '@base-ui/react/input'
+
 import { cn } from '../../../lib/utils'
-import { cva, type VariantProps } from 'class-variance-authority'
-import * as React from 'react'
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
-
-const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, type, ...props }, ref) => {
+function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
   return (
-    <input
+    <InputPrimitive
       type={type}
+      data-slot='input'
       className={cn(
-        'size-full bg-transparent ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none text-base',
+        'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40',
         className
       )}
-      ref={ref}
       {...props}
     />
   )
-})
+}
 
-const rootVariants = cva('py-1 px-2 flex gap-1 items-center transition duration-200', {
-  variants: {
-    variant: {
-      // outline
-      default: 'border border-border bg-input focus-within:border-ring rounded-[var(--radius)]',
-      underlined:
-        'border-b border-border bg-transparent focus-within:border-b-2 focus-within:border-ring rounded-none px-0',
-      filled: 'bg-muted text-foreground focus-within:bg-muted/80 rounded-[var(--radius)]',
-      ghost: 'bg-transparent text-foreground focus-within:bg-muted rounded-[var(--radius)]',
-      neubrutalism:
-        'border border-foreground rounded-sm shadow-[2px_2px_0px_hsl(var(--muted-foreground))] focus-within:bg-accent/20'
-      // with floating label
-    },
-    size: {
-      sm: 'h-8',
-      default: 'h-10',
-      lg: 'h-12'
-    }
-  },
-  defaultVariants: {
-    variant: 'default',
-    size: 'default'
-  }
-})
-
-type InputBlockProps = {
-  className?: string
-  leftSection?: React.ReactNode
-  rightSection?: React.ReactNode
-  children: React.ReactNode
-} & VariantProps<typeof rootVariants>
-
-const InputBlock = ({ size, variant, className = '', leftSection, rightSection, children }: InputBlockProps) => (
-  <div className={cn('w-full', rootVariants({ variant, size }), className)}>
-    {leftSection && leftSection}
-    {children}
-    {rightSection && rightSection}
-  </div>
-)
-
-export { Input, InputBlock }
-
-Input.displayName = 'Input'
-InputBlock.displayName = 'InputBlock'
+export { Input }

@@ -35,7 +35,7 @@ export {
   CommandSeparator,
   CommandShortcut
 } from '../../basic/installed/command'
-export { Input } from '../installed/input'
+export { Input, InputBlock } from './form/input'
 export { Checkbox } from './form/checkbox'
 // Model
 export { ModelIcon, type ModelIconProps } from '../../basic/components/model/model-icon'
@@ -61,13 +61,13 @@ export {
 } from '../../basic/installed/table'
 // Shared
 export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
-export { Button, buttonVariants } from '../installed/button'
+export { Button, buttonVariants } from './interactive/button'
 // Content
-export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../installed/card'
+export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './content/card'
 // Display — falls back to basic for Toast
 export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
 // Form — retro has its own textarea, falls back to basic for input
-export { Textarea } from '../installed/textarea'
+export { Textarea } from './form/textarea'
 // Sidebar — falls back to basic
 export {
   Sidebar,
