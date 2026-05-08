@@ -44,8 +44,8 @@ export {
   type ModelPickerProps,
   type ModelPickerValue
 } from '../../basic/components/model/model-picker'
-// Layout — falls back to basic
-export { Separator } from '../../basic/installed/separator'
+// Layout — falls back to basic wrapper
+export { Separator } from '../../basic/components/layout/separator'
 // Form — falls back to basic
 export { Slider } from '../../basic/installed/slider'
 // Table — falls back to basic

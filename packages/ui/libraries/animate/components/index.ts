@@ -4,8 +4,15 @@
 export type * from '../../../types'
 // Display — falls back to basic wrapper
 export { Badge } from '../../basic/components/display/badge'
-// Content — falls back to basic
-export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../basic/installed/card'
+// Content — falls back to basic wrapper
+export {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from '../../basic/components/content/card'
 // Form — falls back to basic
 export { Input, InputBlock } from './form/input'
 export { Checkbox } from './form/checkbox'

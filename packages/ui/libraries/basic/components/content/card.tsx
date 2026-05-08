@@ -1,5 +1,7 @@
 'use client'
 
+import { cn } from '../../../../lib/utils'
+import type * as React from 'react'
 import {
   CardContent as CardContentPrimitive,
   CardDescription as CardDescriptionPrimitive,
@@ -9,11 +11,15 @@ import {
   CardTitle as CardTitlePrimitive
 } from '../../installed/card'
 
+function Card({ className, ...props }: React.ComponentProps<'div'>) {
+  return <CardPrimitive className={cn('border border-border', className)} {...props} />
+}
+
 export {
   CardContentPrimitive as CardContent,
   CardDescriptionPrimitive as CardDescription,
   CardFooterPrimitive as CardFooter,
   CardHeaderPrimitive as CardHeader,
-  CardPrimitive as Card,
+  Card,
   CardTitlePrimitive as CardTitle
 }
