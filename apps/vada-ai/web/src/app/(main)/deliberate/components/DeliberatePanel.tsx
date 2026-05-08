@@ -62,13 +62,12 @@ function MiniTeamCard({
   onClick: () => void
 }) {
   return (
-    <button
-      type='button'
+    <Button
+      variant={isSelected ? 'default' : 'outline'}
       onClick={onClick}
       className={cn(
-        'flex flex-col items-center gap-1 rounded-md border p-3 text-center transition-colors w-full cursor-pointer',
-        'hover:border-primary/60 hover:bg-accent/50',
-        isSelected ? 'border-primary bg-accent' : 'border-border/40 bg-card'
+        'flex flex-col items-center gap-1 h-auto py-3 px-2 text-center',
+        isSelected && 'bg-accent hover:bg-accent border-primary'
       )}
     >
       <span className='font-sans text-xs font-medium text-foreground line-clamp-2 leading-tight'>
@@ -77,7 +76,7 @@ function MiniTeamCard({
       <span className='font-mono text-[9px] uppercase tracking-widest text-muted-foreground'>
         {getAgentCount(spec)} agents · {getShapeLabel(spec)}
       </span>
-    </button>
+    </Button>
   )
 }
 
