@@ -39,10 +39,12 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
   return (
     <UserPreferencesProvider faceStyle={faceStyle}>
       <ToastProvider defaultPosition='bottom-right'>
-        <StickyHeaderTopBar isBlurred={true} className='z-40 border-border/40'>
-          <UserTopBar logo={logo} />
-        </StickyHeaderTopBar>
-        {children}
+        <div className='h-screen flex flex-col'>
+          <StickyHeaderTopBar isBlurred={true} className='z-40 border-border/40'>
+            <UserTopBar logo={logo} />
+          </StickyHeaderTopBar>
+          <div className='flex-1'>{children}</div>
+        </div>
       </ToastProvider>
     </UserPreferencesProvider>
   )

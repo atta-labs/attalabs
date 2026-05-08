@@ -50,8 +50,8 @@ export default async function DeliberatePage({
   }
 
   return (
-    <CatalogProvider catalog={catalog}>
-      <div className='mx-auto w-full max-w-5xl flex-1 pt-10 pb-4 px-6'>
+    <CatalogProvider catalog={catalog} className='h-full flex flex-col justify-center'>
+      <div className='mx-auto w-full max-w-5xl px-6'>
         <DeliberateSection
           remainingToday={remaining}
           dailyLimit={dailyLimit}
