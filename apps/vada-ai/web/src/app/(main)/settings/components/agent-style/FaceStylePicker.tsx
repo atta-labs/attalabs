@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useToastContext } from '@atta/ui'
 import { Text } from '@atta/ui/shared'
+import { CheckCircle2 } from 'lucide-react'
 import { AGENT_FACES as AGENT_FACES_MINIMAL } from '@/components/agents/faces/agent-faces-minimal'
 import { AGENT_FACES as AGENT_FACES_FULL } from '@/components/agents/faces/agent-faces-full'
 import { AGENT_LIST } from '@/components/agents/visuals'
@@ -27,6 +29,7 @@ interface FaceStylePickerProps {
 
 export function FaceStylePicker({ value, onChange }: FaceStylePickerProps) {
   const [pending, setPending] = useState(false)
+  const { successToast, errorToast } = useToastContext()
 
   const select = async (style: FaceStyle) => {
     if (pending || style === value) return
@@ -40,8 +43,10 @@ export function FaceStylePicker({ value, onChange }: FaceStylePickerProps) {
         body: JSON.stringify({ faceStyle: style })
       })
       if (!res.ok) throw new Error()
+      successToast('Agent style saved.')
     } catch {
       onChange(previous)
+      errorToast('Failed to save agent style.')
     } finally {
       setPending(false)
     }
@@ -60,13 +65,23 @@ export function FaceStylePicker({ value, onChange }: FaceStylePickerProps) {
               value === opt.id ? 'border-foreground/60 bg-muted/20' : 'border-border/20 hover:border-border/40'
             }`}
           >
-            <div className='text-left'>
-              <Text as='p' className='font-mono text-[11px] uppercase tracking-widest text-foreground/80'>
-                {opt.label}
-              </Text>
-              <Text as='p' size='xs' muted className='mt-0.5 leading-snug'>
-                {opt.description}
-              </Text>
+            <div className='flex items-start justify-between gap-2'>
+              <div className='text-left'>
+                <Text as='p' className='font-mono text-[11px] uppercase tracking-widest text-foreground/80'>
+                  {opt.label}
+                </Text>
+                <Text as='p' size='xs' muted className='mt-0.5 leading-snug'>
+                  {opt.description}
+                </Text>
+              </div>
+              {value === opt.id && (
+                <div className='flex shrink-0 items-center gap-1 text-success'>
+                  <CheckCircle2 className='size-3.5' />
+                  <Text as='span' className='font-mono text-[10px] uppercase tracking-widest text-success'>
+                    Selected
+                  </Text>
+                </div>
+              )}
             </div>
 
             {/* 2-column grid of all 6 agent faces */}

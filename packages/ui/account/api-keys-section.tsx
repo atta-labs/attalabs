@@ -70,17 +70,23 @@ function ApiKeyRow({ apiKey, onRevoked }: ApiKeyRowProps) {
           {apiKey.lastUsedAt ? `Last used ${formatDate(apiKey.lastUsedAt)}` : 'Never used'}
         </Text>
       </div>
-      <Button
-        type='button'
-        variant='ghost'
-        size='sm'
-        onClick={handleRevoke}
-        disabled={isRevoked || revoking}
-        className='h-7 shrink-0 text-xs text-destructive hover:text-destructive disabled:text-muted-foreground'
-      >
-        <Trash2 className='size-3.5' />
-        {revoking ? 'Revoking…' : 'Revoke'}
-      </Button>
+      {isRevoked ? (
+        <Badge variant='outline' className='shrink-0 border-destructive/40 text-destructive text-xs'>
+          Revoked
+        </Badge>
+      ) : (
+        <Button
+          type='button'
+          variant='ghost'
+          size='sm'
+          onClick={handleRevoke}
+          disabled={revoking}
+          className='h-7 shrink-0 text-xs text-destructive hover:text-destructive'
+        >
+          <Trash2 className='size-3.5' />
+          {revoking ? 'Revoking…' : 'Revoke'}
+        </Button>
+      )}
     </div>
   )
 }
