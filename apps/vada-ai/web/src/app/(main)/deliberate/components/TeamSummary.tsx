@@ -5,7 +5,7 @@ import type { DeliberationSpec, SpecAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
 import { getReviewerConfig } from '@/lib/reviewer-models'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { Button } from '@atta/ui'
+import { Button, Card, CardContent } from '@atta/ui'
 import { ArrowRight, Settings2 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -73,7 +73,8 @@ export function TeamSummary({ spec, pickers, actions, onConfigure }: TeamSummary
   const hasEditable = spec.agents.some((a) => a.editable)
 
   return (
-    <div className='rounded-lg border border-border/40 bg-card overflow-hidden'>
+    <Card className='overflow-hidden py-0'>
+      <CardContent className='p-0'>
       <div className='grid grid-cols-2'>
         {/* Left: title + pickers + spheres + configure button */}
         <div className='p-6 border-r border-border/40 flex flex-col gap-4'>
@@ -129,6 +130,7 @@ export function TeamSummary({ spec, pickers, actions, onConfigure }: TeamSummary
           {actions && <div className='mt-auto pt-2'>{actions}</div>}
         </div>
       </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

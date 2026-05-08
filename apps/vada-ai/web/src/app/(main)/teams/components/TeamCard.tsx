@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@atta/ui/lib/utils'
+import { Card, CardContent } from '@atta/ui'
 import { Heading } from '@atta/ui/shared'
 import type { DeliberationSpec, SpecAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
@@ -135,7 +135,8 @@ export function TeamCard({ spec }: { spec: DeliberationSpec }) {
   }
 
   return (
-    <div className={cn('flex flex-col gap-4 rounded-lg bg-card p-4', 'border border-border/40')}>
+    <Card className='gap-4 py-0'>
+      <CardContent className='flex flex-col gap-4 p-4'>
       <div className='flex flex-col gap-1'>
         <div className='flex items-baseline justify-between gap-3'>
           <Heading level={3} size='lg' className='font-serif text-foreground'>
@@ -158,6 +159,7 @@ export function TeamCard({ spec }: { spec: DeliberationSpec }) {
       </Link>
 
       {spheres}
-    </div>
+      </CardContent>
+    </Card>
   )
 }

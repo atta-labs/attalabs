@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Button, Input, Badge } from '@atta/ui'
+import { Button, Input, Badge, Card, CardContent } from '@atta/ui'
 import { Text } from '@atta/ui/shared'
 import { Plus, Trash2 } from 'lucide-react'
 import { CopyButton } from './copy-button'
@@ -93,26 +93,28 @@ type RevealedKeyBoxProps = {
 
 function RevealedKeyBox({ newKey, onDismiss }: RevealedKeyBoxProps) {
   return (
-    <div className='space-y-2 rounded-lg border border-border bg-muted/30 p-3'>
-      <div className='flex items-start justify-between gap-2'>
-        <Text as='p' className='text-sm font-medium'>
-          {newKey.name}
+    <Card className='bg-muted/30 py-0'>
+      <CardContent className='space-y-2 p-4'>
+        <div className='flex items-start justify-between gap-2'>
+          <Text as='p' className='text-sm font-medium'>
+            {newKey.name}
+          </Text>
+          <Badge variant='outline' className='text-success border-success/40 shrink-0 text-xs'>
+            New
+          </Badge>
+        </div>
+        <div className='flex items-center gap-2 rounded border border-border bg-background px-3 py-2'>
+          <code className='min-w-0 flex-1 truncate font-mono text-xs text-foreground'>{newKey.plaintext}</code>
+          <CopyButton text={newKey.plaintext} />
+        </div>
+        <Text as='p' muted className='text-xs'>
+          Store this key securely. It won't be shown again.
         </Text>
-        <Badge variant='outline' className='text-success border-success/40 shrink-0 text-xs'>
-          New
-        </Badge>
-      </div>
-      <div className='flex items-center gap-2 rounded border border-border bg-background px-3 py-2'>
-        <code className='min-w-0 flex-1 truncate font-mono text-xs text-foreground'>{newKey.plaintext}</code>
-        <CopyButton text={newKey.plaintext} />
-      </div>
-      <Text as='p' muted className='text-xs'>
-        Store this key securely. It won't be shown again.
-      </Text>
-      <Button type='button' variant='ghost' size='sm' onClick={onDismiss} className='h-7 text-xs'>
-        Dismiss
-      </Button>
-    </div>
+        <Button type='button' variant='ghost' size='sm' onClick={onDismiss} className='h-7 text-xs'>
+          Dismiss
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
 

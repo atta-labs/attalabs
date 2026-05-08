@@ -2,7 +2,7 @@
 
 import type { DeliberationSpec, SpecAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
-import { Button, Checkbox } from '@atta/ui'
+import { Button, Checkbox, Card, CardContent } from '@atta/ui'
 import { ArrowRight, GitCompare, Loader2, Lock, Settings2 } from 'lucide-react'
 import { cn } from '@atta/ui/lib/utils'
 import { NextLink } from '@atta/ui/lib/next-link'
@@ -170,29 +170,32 @@ export function DeliberatePanel({
     <>
       <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
         {/* ── Left card ── */}
-        <div className='rounded-lg border border-border/40 bg-card p-4 flex flex-col gap-4'>
-          <div className='space-y-0.5'>
-            <h2 className='font-serif text-xl text-foreground leading-tight'>Pick your team</h2>
-            <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Pick your team</p>
-          </div>
-          <div className='sr-only'>
-            <TeamPicker specs={specs} value={selectedSpecId} onChange={onSelectSpec} />
-          </div>
-          <div className='grid grid-cols-2 gap-2'>
-            {specs.map((spec) => (
-              <MiniTeamCard
-                key={spec.id}
-                spec={spec}
-                isSelected={spec.id === selectedSpecId}
-                onClick={() => onSelectSpec(spec.id)}
-              />
-            ))}
-          </div>
-        </div>
+        <Card className='gap-4 py-0'>
+          <CardContent className='flex flex-col gap-4 p-4'>
+            <div className='space-y-0.5'>
+              <h2 className='font-serif text-xl text-foreground leading-tight'>Pick your team</h2>
+              <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Pick your team</p>
+            </div>
+            <div className='sr-only'>
+              <TeamPicker specs={specs} value={selectedSpecId} onChange={onSelectSpec} />
+            </div>
+            <div className='grid grid-cols-2 gap-2'>
+              {specs.map((spec) => (
+                <MiniTeamCard
+                  key={spec.id}
+                  spec={spec}
+                  isSelected={spec.id === selectedSpecId}
+                  onClick={() => onSelectSpec(spec.id)}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* ── Right card ── */}
         {selectedSpec && (
-          <div className='rounded-lg border border-border/40 bg-card p-4 flex flex-col gap-4'>
+          <Card className='gap-4 py-0'>
+          <CardContent className='flex flex-col gap-4 p-4'>
             <div className='space-y-0.5'>
               <h2 className='font-serif text-xl text-foreground leading-tight'>{selectedSpec.displayName}</h2>
               <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
@@ -243,7 +246,8 @@ export function DeliberatePanel({
                 </p>
               )}
             </div>
-          </div>
+          </CardContent>
+          </Card>
         )}
       </div>
 
