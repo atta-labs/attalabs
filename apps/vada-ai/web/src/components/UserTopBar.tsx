@@ -40,7 +40,7 @@ export function UserTopBar({ logo }: UserTopBarProps) {
   const initial = (displayName || email || '?').charAt(0).toUpperCase()
 
   return (
-    <nav className='grid h-full w-full grid-cols-3 items-center px-4 text-muted-foreground'>
+    <nav className='grid h-full w-full grid-cols-3 items-center px-4 py-3 text-muted-foreground'>
       {/* Left: logo */}
       <div className='flex items-center justify-self-start'>{leftLogo}</div>
       {/* Center: nav links */}
