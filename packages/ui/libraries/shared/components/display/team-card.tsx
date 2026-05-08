@@ -1,6 +1,7 @@
 'use client'
 
 import type * as React from 'react'
+import { Card, CardContent } from '../../../basic/components/content/card'
 import { Button } from '../../../basic/components/interactive/button'
 import { cn } from '../../../../lib/utils'
 import { Heading } from '../typography/heading'
@@ -35,71 +36,73 @@ export function TeamCard({
   className
 }: TeamCardProps) {
   return (
-    <div
+    <Card
       role='radio'
       aria-checked={selected}
       tabIndex={0}
       data-selected={selected || undefined}
       onClick={onSelect}
-      onKeyDown={(event) => {
+      onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
           onSelect()
         }
       }}
       className={cn(
-        'group relative flex flex-col gap-4 rounded-lg bg-card p-4',
+        'group relative flex flex-col gap-4',
         'border-2 transition-all duration-200 ease-out',
         'outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
         selected ? 'cursor-default border-primary' : 'cursor-pointer border-transparent hover:border-border/40',
         className
       )}
     >
-      <div className='flex flex-col'>
-        <div className='flex items-baseline justify-between gap-3'>
-          <Heading
-            level={3}
-            size='lg'
-            className={cn(
-              'font-serif transition-colors duration-200',
-              selected ? 'text-foreground' : 'text-foreground/60'
-            )}
-          >
-            {title}
-          </Heading>
-          {titleAside && <div className='shrink-0'>{titleAside}</div>}
+      <CardContent className='flex flex-col gap-4 pt-6'>
+        <div className='flex flex-col'>
+          <div className='flex items-baseline justify-between gap-3'>
+            <Heading
+              level={3}
+              size='lg'
+              className={cn(
+                'font-serif transition-colors duration-200',
+                selected ? 'text-foreground' : 'text-foreground/60'
+              )}
+            >
+              {title}
+            </Heading>
+            {titleAside && <div className='shrink-0'>{titleAside}</div>}
+          </div>
+          {model && <div>{model}</div>}
         </div>
-        {model && <div>{model}</div>}
-      </div>
 
-      <div
-        className={cn(
-          'text-sm leading-snug transition-colors duration-200',
-          selected ? 'text-muted-foreground' : 'text-foreground/40'
-        )}
-      >
-        {description}
-      </div>
-
-      <div className={cn('flex-1 transition-all duration-200 ease-out', !selected && 'opacity-60 grayscale')}>
-        {faces}
-      </div>
-
-      {ctaLabel && onCtaClick && (
-        <Button
-          variant='default'
-          size='default'
-          className='w-full'
-          onClick={(event) => {
-            event.stopPropagation()
-            onCtaClick()
-          }}
-          onKeyDown={(event) => event.stopPropagation()}
-          disabled={!selected || ctaDisabled}
+        <div
+          className={cn(
+            'text-sm leading-snug transition-colors duration-200',
+            selected ? 'text-muted-foreground' : 'text-foreground/40'
+          )}
         >
-          {ctaLabel}
-        </Button>
-      )}
+          {description}
+        </div>
+
+        <div className={cn('flex-1 transition-all duration-200 ease-out', !selected && 'opacity-60 grayscale')}>
+          {faces}
+        </div>
+
+        {ctaLabel && onCtaClick && (
+          <Button
+            variant='default'
+            size='default'
+            className='w-full'
+            onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+              event.stopPropagation()
+              onCtaClick()
+            }}
+            onKeyDown={(event: React.KeyboardEvent<HTMLButtonElement>) => event.stopPropagation()}
+            disabled={!selected || ctaDisabled}
+          >
+            {ctaLabel}
+          </Button>
+        )}
+      </CardContent>
 
       {!selected && (
         <div
@@ -112,6 +115,6 @@ export function TeamCard({
           )}
         />
       )}
-    </div>
+    </Card>
   )
 }
