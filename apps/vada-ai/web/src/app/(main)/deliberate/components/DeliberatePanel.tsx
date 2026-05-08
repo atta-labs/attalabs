@@ -65,15 +65,14 @@ function MiniTeamCard({
     <Button
       variant={isSelected ? 'default' : 'outline'}
       onClick={onClick}
-      className={cn(
-        'flex flex-col items-center justify-center gap-2 h-auto py-3 px-2 text-center w-full',
-        isSelected && 'bg-accent hover:bg-accent border-primary'
-      )}
+      className={cn('text-center h-auto w-full', isSelected && 'bg-accent hover:bg-accent border-primary')}
     >
-      <span className='font-sans text-sm font-semibold text-foreground leading-tight w-full'>{spec.displayName}</span>
-      <span className='font-mono text-[8px] uppercase tracking-widest text-muted-foreground w-full'>
-        {getAgentCount(spec)} agents · {getShapeLabel(spec)}
-      </span>
+      <div className='flex flex-col items-center justify-center gap-2  text-center w-full'>
+        <span className='font-sans text-sm font-semibold text-foreground leading-tight w-full'>{spec.displayName}</span>
+        <span className='font-mono text-[8px] uppercase tracking-widest text-muted-foreground w-full'>
+          {getAgentCount(spec)} agents · {getShapeLabel(spec)}
+        </span>
+      </div>
     </Button>
   )
 }
