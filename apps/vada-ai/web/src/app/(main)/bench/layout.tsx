@@ -9,7 +9,7 @@ export default function BrokeredBenchLayout({ children }: { children: ReactNode 
 
   return (
     <div className='min-h-dvh bg-background'>
-      <header className='border-b border-border bg-muted/20 px-6 py-3'>
+      <header className='border-b border-border bg-muted/20 px-4 py-3'>
         <nav className='flex items-center gap-6 text-sm'>
           <span className='font-mono font-semibold text-foreground'>/bench</span>
           <Link href='/bench' className='text-muted-foreground hover:text-accent transition-colors'>
