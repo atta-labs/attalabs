@@ -4,7 +4,7 @@ import type { ProviderKeys } from '@atta/adapter-langgraph'
 import { runConsult, validateAndNormalize } from './tools/consult'
 import { runDeliberate } from './tools/deliberate'
 
-const CONSULT_TOOL_DESCRIPTION = `Invokes Vāda Brokered deliberation — 2-5 specialized reviewers each produce their own perspective on a question. Use when:
+const CONSULT_TOOL_DESCRIPTION = `Single-shot multi-reviewer consultation — 2-5 specialized reviewers each produce their own perspective on a question. Use when:
 
 Invoke Vāda when the Principal says any of these signals:
 - "I'm leaning toward X but want to check my thinking"
@@ -35,10 +35,6 @@ Core roster (always available):
 
 - devils_advocate: Challenges the frame entirely. Forces the opposite thesis to sharpen understanding. Asks "what if the question itself is wrong?"
 
-Experimental (flag-gated, may not be available in this installation):
-
-- domain_expert: Context-specific expertise grounded in a named domain (provide 'domain' parameter). Asks "what does this field's standard practice say?"
-
 Writing Briefs
 
 The quality of reviewer responses depends entirely on the quality of your briefs. A good brief includes:
@@ -55,7 +51,6 @@ Choosing Reviewers
 
 - Default: 3 reviewers (strategist, critic, devils_advocate)
 - Quick check: 2 reviewers (strategist + critic)
-- Deep dive: 4 reviewers with domain_expert when domain matters
 
 Vary your reviewer selection. Using the same 2 reviewers for every call reduces deliberation quality.
 
@@ -82,11 +77,7 @@ Latency
 
 Sequential execution in V1. Expect 3× the latency of a single reviewer (~30-60 seconds for 3 reviewers). This is cognitive labor being delegated. Inform the user before invoking.`
 
-const DELIBERATE_TOOL_DESCRIPTION = `Run a multi-agent deliberation on a difficult question. Use when you
-want structured debate across multiple perspectives producing a
-committed conclusion with a full audit trail. This is slower and more
-expensive than vada__deliberate_brokered — use for high-stakes decisions where
-the reasoning trail matters.
+const DELIBERATE_TOOL_DESCRIPTION = `Multi-round deliberation with revision — agents debate across rounds with dual-auditor review producing a committed conclusion with a full audit trail. Use when you want structured debate across multiple perspectives. This is slower and more expensive than vada__consult — use for high-stakes decisions where the reasoning trail matters.
 
 Returns:
 - content: final conclusion text (always present)
@@ -103,10 +94,14 @@ Example: vada__deliberate(
 
 Parameters:
   question: The question or decision to deliberate on
-  team (optional): "sparring" (default, 2 agents) or "crucible"
-                   (4-7 agents, heavier)
+  team (optional): Team spec to use. Default: "sparring".
+    - "sparring": 2 agents, fastest, good default
+    - "crucible": 4-7 agents, heavier, higher coverage
+    - "war-room": 6 agents, high-pressure adversarial format
+    - "vada-reviewers": reviewer panel, structured critique
+    - "vada-reviewers-synthesis": reviewer panel with synthesis pass
 
-Runtime: Sparring ~30-90s; Crucible 2-5min. Client timeout permitting.`
+Runtime: Sparring ~30-90s; Crucible/war-room 2-5min. Client timeout permitting.`
 
 const VALID_PROFILES = ['strategist', 'critic', 'devils_advocate'] as const
 
@@ -138,19 +133,60 @@ export function createServer(providerKeys: ProviderKeys): Server {
         inputSchema: {
           type: 'object' as const,
           properties: {
-            brief: {
+            spec_id: {
               type: 'string',
-              description: 'The question or proposal to review (compressed, reviewer-ready framing)'
+              description: 'Spec ID to route to. Defaults to brokered-trio.'
+            },
+            context: {
+              type: 'string',
+              minLength: 50,
+              description: 'Shared background every reviewer sees. Min 50 chars.'
+            },
+            question: {
+              type: 'string',
+              minLength: 10,
+              description: 'The specific decision or claim to evaluate. Min 10 chars.'
             },
             reviewers: {
               type: 'array',
-              items: { type: 'string', enum: VALID_PROFILES },
+              items: {
+                type: 'object',
+                properties: {
+                  role: {
+                    type: 'string',
+                    enum: VALID_PROFILES,
+                    description: 'Reviewer role.'
+                  },
+                  notes: {
+                    type: 'string',
+                    minLength: 20,
+                    description: 'Specific concern or angle for this reviewer to probe. Min 20 chars.'
+                  },
+                  domain: {
+                    type: 'string',
+                    description: 'Domain context (reserved for future env-flag-gated domain_expert role).'
+                  }
+                },
+                required: ['role']
+              },
               minItems: 2,
               maxItems: 5,
-              description: 'Reviewer profiles to consult: strategist, critic, devils_advocate (min 2)'
+              description: 'Reviewer specs. Min 2, max 5, distinct roles.'
+            },
+            session_title: {
+              type: 'string',
+              description: 'Session label for dashboard display.'
+            },
+            current_leaning: {
+              type: 'string',
+              description: "Caller's current position, including self-doubt. Reviewers push back on both."
+            },
+            stakes: {
+              type: 'string',
+              description: 'What goes wrong if the decision is wrong.'
             }
           },
-          required: ['brief', 'reviewers']
+          required: ['context', 'question', 'reviewers']
         }
       },
       {
@@ -165,8 +201,10 @@ export function createServer(providerKeys: ProviderKeys): Server {
             },
             team: {
               type: 'string',
-              enum: ['sparring', 'crucible'],
-              description: 'sparring (default, 2 agents) or crucible (4-7 agents, heavier)'
+              // Hardcoded from listPublicSpecs() result — see spec-registry.ts for source of truth.
+              // TODO: derive dynamically once listPublicSpecs() is sync-callable at registration time.
+              enum: ['sparring', 'crucible', 'war-room', 'vada-reviewers', 'vada-reviewers-synthesis'],
+              description: 'sparring (default, 2 agents), crucible (4-7 agents), war-room (6 agents, adversarial), vada-reviewers, vada-reviewers-synthesis'
             }
           },
           required: ['question']

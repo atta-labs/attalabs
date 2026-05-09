@@ -8,16 +8,15 @@ The MCP server lets Claude (or any MCP client) call Vāda reviewer agents direct
 
 ## Available tools
 
-### `vada__consult` (Brokered mode)
+### `vada__consult`
 
-Consult 2–N Vāda reviewer agents in parallel for focused, orthogonal perspectives.
-Faster and cheaper than `vada__deliberate`. Use for single-shot critique, strategic
-analysis, or counter-arguments.
+Single-shot multi-reviewer consultation. Consult 2–5 Vāda reviewer agents for focused, orthogonal perspectives.
+Faster and cheaper than `vada__deliberate`. Use for single-shot critique, strategic analysis, or counter-arguments.
 
 **Parameters:**
 - `context` (string, min 50 chars) — Shared background every reviewer sees
 - `question` (string, min 10 chars) — The specific decision or claim to evaluate
-- `reviewers` (array, 2–5 items) — Reviewer specs: `{ role: 'strategist' | 'critic' | 'devils_advocate' | 'domain_expert', notes?: string, domain?: string }`
+- `reviewers` (array, 2–5 items) — Reviewer specs: `{ role: 'strategist' | 'critic' | 'devils_advocate', notes?: string }`
 - `current_leaning` (string, optional) — Caller Claude's current position
 - `stakes` (string, optional) — What goes wrong if the decision is wrong
 - `session_title` (string, optional) — For dashboard display
@@ -28,13 +27,18 @@ analysis, or counter-arguments.
 - `session_url` — Dashboard URL
 - `cost_breakdown` — Token counts and estimated cost
 
-### `vada__deliberate` (Autonomous mode)
+### `vada__deliberate`
 
-Run a full multi-agent deliberation. Multiple agents debate across rounds with dual-auditor revision. Slower and more expensive than `vada__consult`. Use for high-stakes decisions where structured debate and a full audit trail matter.
+Multi-round deliberation with revision. Multiple agents debate across rounds with dual-auditor review. Slower and more expensive than `vada__consult`. Use for high-stakes decisions where structured debate and a full audit trail matter.
 
 **Parameters:**
 - `question` (string) — The question or decision to deliberate on
-- `team` (string, optional) — `sparring` (default, 2 agents) or `crucible` (4+ agents) or `war_room` (6 agents)
+- `team` (string, optional) — Team spec to use. Default: `sparring`.
+  - `sparring` — 2 agents, fastest, good default
+  - `crucible` — 4–7 agents, higher coverage
+  - `war-room` — 6 agents, high-pressure adversarial format
+  - `vada-reviewers` — reviewer panel, structured critique
+  - `vada-reviewers-synthesis` — reviewer panel with synthesis pass
 
 **Returns:**
 - `content` — The final conclusion from the deliberation
@@ -42,7 +46,42 @@ Run a full multi-agent deliberation. Multiple agents debate across rounds with d
 - `terminal_state` — `CLEAN`, `REVISED`, or `MAX_REVISIONS`
 - `cost_breakdown` — Estimated cost and token counts
 
-## Installation (Claude Desktop)
+## Installation (Hosted MCP)
+
+The Vāda MCP server is live at `https://vada.attalabs.dev/api/mcp`. No local process required.
+
+**Auth:** Vāda API key passed as a Bearer token. Generate one in Settings → API Keys on vada.attalabs.dev.
+
+**Transport:** Streamable HTTP (POST + SSE response stream).
+
+**Verify the server is up:**
+```bash
+curl -s -X POST https://vada.attalabs.dev/api/mcp \
+  -H "Authorization: Bearer vada_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"curl","version":"0.0.1"}}}' | jq .
+```
+
+**Claude Code CLI (`~/.claude.json` or project `.mcp.json`):**
+```json
+{
+  "mcpServers": {
+    "vada": {
+      "type": "http",
+      "url": "https://vada.attalabs.dev/api/mcp",
+      "headers": {
+        "Authorization": "Bearer vada_xxxxxxxx"
+      }
+    }
+  }
+}
+```
+
+> **Note (Track E12):** Claude.ai web's connector broker currently has a bug affecting bearer-auth MCP servers (`ofid_*` errors). Claude Code CLI is the working integration today. Monitor Track E12 for resolution.
+
+## Installation (Claude Desktop — stdio)
+
+Runs the MCP server as a local process on your machine. Provider keys are read from environment variables.
 
 1. Build or run the server:
    ```bash
@@ -68,7 +107,9 @@ Run a full multi-agent deliberation. Multiple agents debate across rounds with d
 
 3. Restart Claude Desktop.
 
-## Environment variables
+## Environment variables (stdio installs only)
+
+For hosted MCP, provider keys are per-user and envelope-encrypted at rest — no server-side env vars required. See [vada-byok-principles.md](../specs/vada-byok-principles.md) for the key management architecture.
 
 | Variable | Required | Description |
 |---|---|---|
@@ -98,8 +139,8 @@ apps/vada-ai/mcp-server/src/
 ├── index.ts               # Entry point
 ├── server.ts              # MCP server setup + tool registration
 ├── tools/
-│   ├── consult.ts         # vada__consult (Brokered mode — builds inline DeliberationSpec)
-│   └── deliberate.ts      # vada__deliberate (Autonomous mode)
+│   ├── consult.ts         # vada__consult (builds inline DeliberationSpec)
+│   └── deliberate.ts      # vada__deliberate (multi-round team deliberation)
 ├── spec-registry.ts       # YAML spec loader + lookupSpec(nameOrId) + ALIASES map
 ├── session-logger.ts      # Postgres persistence
 └── schema.ts              # Zod schemas for tool I/O
@@ -108,4 +149,4 @@ apps/vada-ai/mcp-server/src/
 ## Related
 
 - [../CLAUDE.md](../CLAUDE.md) — Vāda AI product overview
-- [../specs/brokered-deliberation/](../specs/brokered-deliberation/) — Brokered mode full spec
+- [../specs/vada-teams-catalog/](../specs/vada-teams-catalog/) — Team specs and deliberation design
