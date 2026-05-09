@@ -1,15 +1,19 @@
 # Atta — Active Plan
 
-**This file lives in Claude.ai project knowledge.**
-**Updated by any Claude agent during working sessions.**
+**This file lives in the repo at `project-management/plan.md`.**
+**Updated by any Claude agent during working sessions, via GitHub MCP.**
 
-What's being worked on, what's next, what's blocked. Dynamic — changes as work progresses. See `atta-coordination.md` for update rules.
+What's being worked on, what's next, what's blocked. Dynamic — changes as work progresses. See `coordination.md` for update rules.
 
-For current state (Vāda phase, auth status, DNS, etc.), see `atta-current-state.md`.
+For current state (Vāda phase, auth status, DNS, etc.), see `state.md`.
 
 ---
 
 ## In flight now
+
+**Cetana V0 build starting (May 9, 2026).** Slice -1 escalation prototype passed end-to-end on May 9 — 13/13 pass criteria including 7-minute cognitive continuity. Architecture validated. Throwaway prototype at `~/code/cetana-prototype/` (deletes after V0 ships). Next: build `apps/cetana-ai/` inside the monorepo. Single Bun service, single MCP server with namespaced `cetana.*` tools, GitHub Issues backing, JSONL runtime logs, no UI in V0. ~2-3 days. See V0 build brief (next session).
+
+**PM docs migrated to repo (May 9, 2026).** Project-management files (`coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md`) moved from Claude.ai project knowledge to repo at `project-management/` via PR #22. Eliminates manual upload loop, gives files git history, prepares for Cetana V0 (which reads/writes these files programmatically).
 
 **Hosted MCP shipped end-to-end (May 4).** Live at `https://vada.attalabs.dev/api/mcp`. Bearer auth, envelope-encrypted provider keys, both MCP tools wired through. See D-029.
 
@@ -19,9 +23,9 @@ For current state (Vāda phase, auth status, DNS, etc.), see `atta-current-state
 
 **Doc audit PR merged (May 6).** Branch `docs/may-5-reality-sync`, commit `aa03a51`. 7 repo files synced to May 4-5 reality.
 
-**Currently active work:** none in flight. Two-day intensive sprint ended May 5; doc audit closed out the period May 6.
+**Currently active work:** Cetana V0 build (next session). All other May work closed.
 
-**Next focused work:** dogfood hosted MCP via Claude.ai (generate Vāda API key, configure connector, use Vāda from Claude.ai — the goal that drove the May 4-5 sprint, still uncompleted). Then Track B Item 3b — Reviewer prompt iteration.
+**Next focused work:** Cetana V0 build (`apps/cetana-ai/`). Then Track B Item 3b — Reviewer prompt iteration, dispatched through Cetana V0 to validate the orchestration loop on real Vāda work.
 
 ---
 
@@ -42,7 +46,7 @@ Track A: 5 of 5 complete.
 - ✅ **Item 1: Engine readiness check**
 - ✅ **Item 2: Engine + adapter prerequisites**
 - ✅ **Item 3a: Vāda Reviewers v1 YAML authoring**
-- ⏭ **Item 3b: Reviewer system prompt iteration.** Interactive phase. Invoke `vada__consult` with `spec_id: "vada-reviewers"`, read 3 reviewer responses, judge whether the prompt is producing the right behavior, tweak, re-run. §4.1.1 of rev 4 spec is the starting prompt. Best done in a fresh session with uninterrupted attention.
+- ⏭ **Item 3b: Reviewer system prompt iteration.** Interactive phase. Now planned to dispatch through Cetana V0 once it ships. Invoke `vada__consult` with `spec_id: "vada-reviewers"`, read 3 reviewer responses, judge whether the prompt is producing the right behavior, tweak, re-run. §4.1.1 of rev 4 spec is the starting prompt.
 - ⏭ **Item 3c: Synthesizer system prompt iteration.** Same shape as 3b. §4.1.2 of rev 4 spec is the starting prompt.
 - ⏭ **Item 4: First benchmark run.** Six conditions per test case (A0, A1, VR-NS, VR-S-same, VR-S-cross, MW-where-available). Manual judging by Claude in fresh context, Dani as final arbiter. Per-question-type breakdown required.
 - ⏭ **Item 5: Iterate or ship.** Decide recommended synthesis mode based on data, not philosophy.
@@ -80,15 +84,24 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 - ⏭ **E11: Per-key tool scoping** — restrict an API key to specific tools. Useful for embedded integrations.
 - ⏭ **E12: OAuth as alternative to bearer-token auth** — Anthropic's claude.ai connector broker has a known bug (`ofid_*` errors) that fails self-hosted MCP servers using bearer-token auth, while OAuth-using vendor-hosted MCP servers (e.g., GitHub at `api.githubcopilot.com/mcp/`) work. Until Anthropic fixes the broker bug, Claude.ai web users cannot connect to hosted Vāda; workaround is Claude Code CLI which works today. If Claude.ai web adoption matters for users, V2 hardening should add OAuth flow as an alternative to bearer auth — different code path on Anthropic's side, more likely to work through the broker. Empirically confirmed May 7-8, 2026.
 
+### Track F — Cetana V0 (NEW, in flight May 9)
+
+- ✅ **F1: Slice -1 escalation prototype** — May 9. 13/13 pass. Validated `cetana_request_input` MCP tool round-trip including 7-minute cognitive continuity. Throwaway prototype at `~/code/cetana-prototype/`.
+- ⏭ **F2: V0 Coordinator build at `apps/cetana-ai/`.** Single Bun service inside the monorepo, single MCP server with namespaced `cetana.*` tools. Reuses `@atta/db`. ~2-3 days.
+- ⏭ **F3: Worktree manager** — git worktree create/cleanup with hooks for `.env` etc. Part of F2.
+- ⏭ **F4: GitHub Octokit integration** — fetch issues by number, post comments, open PRs on completion. Part of F2.
+- ⏭ **F5: First real-world dispatch** — Track B Item 3b (Reviewer prompt iteration) becomes the first real Cetana V0 dispatch.
+- ⏭ **F6: 2-week dogfood evaluation** — after V0 ships and is used for at least 5 real Atta tasks, decide whether Cetana V1 (Tauri shell, dashboard, native notifications) is justified.
+
 ---
 
 ## Up next — sequencing recommendation
 
-**Currently:** doc audit PR merged. Closing out the May 4-5 period.
+**Currently:** PM docs migrated to repo (PR #22). May 9 content updates landing now.
 
-**Immediate next step:** Generate Vāda API key in Settings → API Keys, configure Claude.ai connector with `https://vada.attalabs.dev/api/mcp` + bearer token, test via a real Claude.ai conversation. This is the dogfooding goal that drove the May 4-5 sprint and remains uncompleted.
+**Immediate next step:** Cetana V0 build session. Brief drafting + dispatch. ~2-3 days.
 
-**Next focused (interactive) session:** Track B Item 3b — Reviewer prompt iteration. Different mode of work — not brief-dispatch. Best done with an hour or two of uninterrupted attention.
+**After V0 ships:** Generate Vāda API key in Settings → API Keys, configure Claude Code with `https://vada.attalabs.dev/api/mcp` + bearer token. Then Track B Item 3b (Reviewer prompt iteration) dispatched via Cetana V0 — first real-world dispatch.
 
 **Then:** Synthesizer prompt iteration (3c), then first benchmark run (Item 4).
 
@@ -99,8 +112,8 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 
 **Held / not blocking:**
 - Hosted MCP hardening (Track E7-E11) — when ready to invest weeks
-- Cetana V0 — don't build now
-- CCPM / APM evaluation — see "Open / unresolved" below
+- Cetana V1 (Tauri shell + dashboard) — deferred until V0 proves daily-driver value over 2 weeks
+- ~~CCPM / APM evaluation~~ — superseded by Cetana V0 unblock May 9 (the interactive escalation primitive is the differentiator they lack)
 
 ---
 
@@ -110,7 +123,8 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 - **Vercel env audit** — confirm no stray `NEXT_PUBLIC_CLERK_*FALLBACK_REDIRECT_URL` env vars. 5 minutes.
 - **Worktree cleanup** — many redundant after May 4-6 merges. Run `git worktree list` and remove anything pointing to merged branches. Includes `.worktrees/doc-audit-may-5` after `docs/may-5-reality-sync` merges.
 - **Add OpenAI + xAI keys server-side** — Anthropic key already configured; need OpenAI and xAI to verify multi-vendor routing on hosted MCP for full Reviewers benchmark.
-- **Generate Vāda API key + configure Claude.ai connector** — final step in dogfooding setup; hosted MCP is live but not yet used end-to-end via Claude.ai. Settings → API Keys.
+- **Generate Vāda API key + configure Claude Desktop / Claude Code connector** — final step in dogfooding setup; hosted MCP is live but not yet used end-to-end. Settings → API Keys.
+- **Delete `~/code/cetana-prototype/`** — after Cetana V0 ships and is verified working. The throwaway from Slice -1 has served its purpose.
 
 ---
 
@@ -118,24 +132,9 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 
 These need decision but are not blocking:
 
-### Investigate CCPM / APM (existing agentic-PM frameworks) — defer to post-Reviewer-iteration
+### ~~Investigate CCPM / APM~~ (RESOLVED May 9, 2026)
 
-Two existing tools landed on Claude's radar (May 6 chat) that are uncannily close to what Cetana V0/V0.7 specs:
-
-- **`automazeio/ccpm`** — Project management skill for Claude Code agents. Uses GitHub Issues + git worktrees for parallel agent execution. Project state lives in files (`.claude/prds/`, `.claude/epics/<name>/`). PRD → Epic → Task → Issue → Code → Commit flow. Harness-agnostic per agentskills.io standard. https://github.com/automazeio/ccpm
-- **`sdi2200262/agentic-project-management` (APM)** — Spec-driven multi-agent workflow framework. Planner / Manager / Worker agent roles. Supports Claude Code, Codex CLI, Cursor, etc. Has APM Auto (autonomous subagent dispatch via Claude Code) and APM Semi (collaborative human-and-agent execution). https://github.com/sdi2200262/agentic-project-management
-- **Reference:** `wshobson/agents` — Claude Code multi-agent orchestration patterns. https://github.com/wshobson/agents
-
-**Why this matters:** if either fits the actual Atta workflow, Cetana V1 might become "a Vāda team plus CCPM" rather than a custom build. That changes the cetana-reality-check.md sequencing — V0 (`pm-orchestrator.yaml`) might still happen, but V0.7 (MCP + CLI exposing the four coordination files) might be replaced by adopting the existing tool. Either way the experiment produces information that sharpens the Cetana spec.
-
-**Why defer:** May 4-5 work isn't fully closed yet — hosted MCP not yet dogfooded, reviewer prompt iteration not started. Adding a third investigation thread now risks none of them closing. Earliest realistic V1 Cetana build was already late 2026 / early 2027 per the reality-check spec; no urgency.
-
-**Plan:** sandbox CCPM in a throwaway project (NOT the Atta monorepo) for ~90 minutes after reviewer prompt iteration ships and hosted MCP is dogfooded. Use a real but isolated Atta task (e.g., the Trust page rewrite) as the test case. Output: a one-page evaluation note added here saying either "this fits, plan migration" or "doesn't fit, here's what's missing — informs Cetana V0/V0.7 spec."
-
-**Hard constraints when the experiment runs:**
-- Sandbox only — no migrating Atta to CCPM during the evaluation regardless of how well it goes
-- Time-box hard at 90 minutes; if 2 hours in and excited, stop, that's the warning sign
-- 24-hour cooling period after evaluation before any migration decision
+Superseded by Cetana V0 unblock. Slice -1 validated the interactive `cetana_request_input` escalation primitive (agent calls a custom MCP tool when blocked, tool blocks until external reply, agent receives reply as tool result and continues coherently). This is the differentiator vs CCPM/APM/Conductor — none have interactive pause/resume. Building Cetana V0 directly inside the monorepo is now the right move; CCPM evaluation is moot.
 
 ### Vāda Reviewers post-benchmark decisions
 
@@ -159,19 +158,20 @@ After Vāda Reviewers v1 benchmark, decide what happens to `a0-baseline`, `a1-ba
 
 Decision based on benchmark data and post-launch user feedback.
 
-### Cetana V0 / V0.7 — PM tooling on top of Vāda
+### ~~Cetana V0 / V0.7~~ (RESOLVED May 9, 2026)
 
-Two-step path from `cetana-reality-check.md`:
+Original two-step path from `cetana-reality-check.md` (V0 = `pm-orchestrator.yaml`, V0.7 = MCP+CLI, V1 = full UI) is collapsed. Cetana V0 is now: full Coordinator + Claude Desktop strategist integration + GitHub Issues backing + escalation-based interactive execution, built directly inside `apps/cetana-ai/` in the monorepo. Validated by Slice -1 escalation prototype on May 9. UI deferred to V1 if and only if V0 proves daily-driver value over 2 weeks.
 
-- **V0** is `pm-orchestrator.yaml` — a Vāda Teams YAML for PM deliberation
-- **V0.7** is the MCP + CLI built on top
-- **V1** adds automated adversarial review, persistent decision records, state machine, UI
+`cetana-reality-check.md` retained as historical reference but no longer the active sequencing plan.
 
-**Sequence:** V0 first (hours of work). V0.7 if V0 proves useful. V1 if V0.7 proves useful.
+### Cetana V1 — Tauri shell + dashboard (deferred to post-V0 daily use)
 
-**Open question:** Is V0.7 actually Cetana, or a separate product? Also see "Investigate CCPM / APM" above — V0.7 may be replaced by adopting an existing tool.
+After V0 ships and is used for at least 5 real Atta tasks (target: Reviewer prompt iteration first), evaluate whether the Tauri shell + dashboard + native notifications + menu bar status are worth building.
 
-**Don't build now.** Vāda Reviewers prompt iteration ships first.
+**Hard guardrails for that evaluation:**
+- Don't build V1 if V0 alone reduces friction enough
+- Don't build V1 mid-Vāda-work — only between major work streams
+- Time-box V1 build hard at the original ~7-day estimate; if 2 weeks in, stop and reassess
 
 ### Vāda Desktop — CLI-subprocess providers (post-Reviewers-v1)
 
@@ -179,18 +179,18 @@ Karpathy's `llm-council` (https://github.com/karpathy/llm-council) is the preced
 
 **What it would be:** A desktop app (Tauri/Electron) that runs Vāda's engine locally. CLI subprocesses (Claude Code, Gemini CLI, Codex CLI, Grok CLI, Ollama) replace HTTP API clients as the "providers." User authenticates each CLI once with their existing subscription. Vendor-diverse Reviewers runs without BYOK.
 
-**Why it matters as a product surface (not just an engine implementation choice):** subscription-paid execution is the lowest-friction distribution path for individual prosumers. Most users with Claude Pro / ChatGPT Plus / Gemini subscriptions don't have API keys. The hosted Vāda's BYOK model is friction. Vāda Desktop with CLI subprocesses lets users use what they already pay for. Same legal/ToS posture as Aider and llm-council itself — tolerated by vendors because it's user-on-own-machine, not commercial subscription exploitation. Open source.
+**Why it matters as a product surface:** subscription-paid execution is the lowest-friction distribution path for individual prosumers. Most users with Claude Pro / ChatGPT Plus / Gemini subscriptions don't have API keys. The hosted Vāda's BYOK model is friction. Vāda Desktop with CLI subprocesses lets users use what they already pay for. Same legal/ToS posture as Aider and llm-council itself — tolerated by vendors because it's user-on-own-machine, not commercial subscription exploitation. Open source.
 
-**What it would require:** ~1-2 days adapter work (route Vāda's `LlmCallFn` to CLI subprocesses for matching model prefixes — already specced as v1.5 engine constraint #6), plus the desktop UI build (~2-3 weeks). Engine, teams, YAMLs unchanged. Subprocess discipline from `vada-reviewers-spec.md` §3.5 is the reference implementation (mktemp -d, redirect-to-file, trap cleanup, wait per PID).
+**What it would require:** ~1-2 days adapter work (route Vāda's `LlmCallFn` to CLI subprocesses for matching model prefixes — already specced as v1.5 engine constraint #6), plus the desktop UI build (~2-3 weeks). Engine, teams, YAMLs unchanged.
 
 **Why not now:** Reviewer prompt iteration ships first. Building Desktop UX around prompts that may still change is wasted work. After Reviewers v1 ships, Desktop becomes the obvious next distribution path for individual prosumers.
 
 **Open questions:**
 - Does this product get a Pāli name, or is it "Vāda Desktop" — same product, different surface?
-- Does Vāda Desktop ship as part of Vāda's open-source surface area, or as a separate commercial product? (Top-of-funnel vs. revenue path.)
-- How does it relate to the Anthropic Claude Apps marketplace path? When that marketplace matures, does Vāda Desktop become redundant for Anthropic users (who'd just install Vāda inside claude.ai), or does it remain the cross-vendor option?
+- Does Vāda Desktop ship as part of Vāda's open-source surface area, or as a separate commercial product?
+- How does it relate to the Anthropic Claude Apps marketplace path?
 
-**Plan:** evaluate after Reviewer prompt iteration ships and hosted MCP is dogfooded. Same earliest-realistic-V1 timeline as Cetana (late 2026 / early 2027).
+**Plan:** evaluate after Reviewer prompt iteration ships and hosted MCP is dogfooded.
 
 ### DB schema management
 
@@ -207,10 +207,17 @@ Patch opportunistically when touched for other work:
 - `apps/vada-ai/specs/vada-teams-catalog/02-mcp-tool-interface.md` — references old `apiKey` body parameter on workflow/run route. Post-D-028, the route reads keys from DB by `clerkId` and does NOT accept `apiKey` in the request body. The MCP tool interface description is stale.
 - `apps/vada-ai/specs/vada-teams-catalog/04-caller-claude-protocol.md` — references "Caller Claude owns synthesis" which was reversed by D-016
 - `apps/vada-ai/CLAUDE.md` — Settings tab table still shows Teams tab
+- `apps/atta-ai/specs/cetana-reality-check.md` — V0/V0.7/V1 sequencing collapsed by May 9 unblock; file retained as historical reference but no longer the active plan
 
 ---
 
-## Recently completed (April 28 – May 8, 2026)
+## Recently completed (April 28 – May 9, 2026)
+
+### May 9 — Cetana V0 unblock + PM docs migration
+- Slice -1 escalation prototype: 13/13 pass. Custom MCP tool `cetana_request_input` blocks for 7 minutes, returns reply via external file write, agent resumes coherently with no context loss. Cognitive continuity validated.
+- Throwaway prototype at `~/code/cetana-prototype/` (slated for deletion after V0 ships).
+- PM docs migrated to repo: `coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md` moved from Claude.ai project knowledge to `project-management/` via PR #22.
+- May 9 content updates: this commit.
 
 ### May 8 — rev 5 of Vāda Reviewers spec + ecosystem doc updates
 - `vada-reviewers-spec.md` rev 5: three additions to reviewer + synthesizer prompts (Persona+Goal+Posture+Output structure, verification block requirement, phantom consensus detection). Derived from cross-vendor research synthesis (Gemini, Grok, ChatGPT — May 2026). See D-031.
@@ -275,6 +282,9 @@ Lessons accumulated through April-May:
 - **When something feels uncannily like a spec we already wrote, check if we already wrote it.** May 6: Claude got excited about a project management framework idea before noticing it was already specced as Cetana V0/V0.7. Pattern: pivots to "shiny new architectural ideas" mid-execution. Counter: pause, search project knowledge for the closest existing concept, then decide whether to investigate.
 - **Research synthesis often duplicates existing spec work.** May 8: a parallel research thread (Gemini, Grok, ChatGPT — multi-agent orchestration patterns) returned five "convergent patterns." Three were already in `vada-reviewers-spec.md` rev 4. The fix wasn't a new principles doc — it was a rev 5 patch to the existing spec. Always check the relevant spec first; new research usually patches existing specs rather than spawning new ones. Standalone principles docs risk drifting from implementation.
 - **Self-hosted MCP servers with bearer-token auth currently fail through Claude.ai's connector broker.** May 7-8: Vāda's hosted MCP at `vada.attalabs.dev/api/mcp` is healthy and works via Claude Code CLI, but Claude.ai web rejects it with `ofid_*` broker errors. GitHub's hosted MCP at `api.githubcopilot.com/mcp/` works via OAuth. Different code paths in Anthropic's broker. Workaround for Vāda users today: Claude Code CLI. Future hardening: add OAuth as an alternative to bearer auth (Track E12).
+- **Validate the existential dependency before building the product around it.** May 9: Cetana V0 was almost designed and partially built before validating that Claude Code (headless mode) could actually call a custom MCP tool that blocks for arbitrary duration and resumes coherently. Slice -1 prototype (~100 lines, 2 hours) settled the question definitively. Generalizable rule: if the entire product depends on one technical mechanism nobody has confirmed at runtime, prototype that mechanism in isolation before designing anything around it.
+- **Reviewer pressure-testing materially improved the Cetana architecture.** May 9: Multi-AI synthesis caught a fatal architectural assumption (web Claude.ai cannot reach localhost MCP servers — only Claude Desktop can). Without that catch, V0 would have been built on impossible plumbing. Generalizable rule: when an architecture depends on a transport assumption, verify it against vendor docs before locking the spec.
+- **PM docs in repo > project knowledge.** May 9: migrating `coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md` from Claude.ai project knowledge to `project-management/` in the repo eliminated the manual upload loop. Now any Claude session reads/writes them via GitHub MCP. Cetana V0 will read/write them programmatically. The project knowledge layer was operationally heavy and gave nothing the repo didn't already provide.
 
 ---
 
@@ -295,3 +305,5 @@ Lessons accumulated through April-May:
 - ❌ Adding bcrypt cost to high-entropy bearer-token validation when SHA-256 + unique index is sufficient
 - ❌ Maintaining "two stores with sync" architectures unless there's a user-visible reason for the second store to exist
 - ❌ Pivoting to investigate a new architectural idea mid-execution without first checking whether it's already specced and parked in the project's own docs
+- ❌ Designing a product around a technical mechanism without first prototyping the mechanism in isolation to confirm it works
+- ❌ Locking transport architecture without confirming transport assumptions against vendor docs

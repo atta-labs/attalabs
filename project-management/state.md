@@ -1,9 +1,9 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** May 6, 2026 (post hosted MCP + single-source-keys + shared-keys-ui + doc audit)
+**Last updated:** May 9, 2026 (post Cetana V0 unblock via Slice -1 escalation prototype)
 **Purpose:** Single snapshot of where everything stands across the Atta ecosystem.
 
-This doc lives in Claude.ai project knowledge. For non-project-knowledge docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and ask for content on demand. See `atta-coordination.md` for how the two-layer doc system works.
+This doc lives in the repo at `project-management/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
 
 Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
 
@@ -116,25 +116,31 @@ See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: fil
 
 **Next:** Buildout downstream of Vitakka resuming.
 
-### Cetana — *long-horizon, V4+ direction (with V0/V0.7 path)*
+### Cetana — *V0 build in flight as of May 9, 2026*
 
-**Status:** Concept locked in `apps/atta-ai/specs/atta-ecosystem-vision.md` and `apps/atta-ai/specs/cetana-reality-check.md`. No code yet.
+**Status:** Architecture validated via Slice -1 escalation prototype on May 9, 2026 (13/13 pass, including 7-minute cognitive continuity). V0 build starting in the monorepo at `apps/cetana-ai/`. Originally specced as late-2026/early-2027 work; pulled forward because copy-paste friction between Claude.ai (strategist) and Claude Code (executor) is now blocking Vāda iteration directly.
 
-**What it is:** Deliberation-guided execution. Vāda used as a planning authority over a body of work.
+**What it is:** Local Mac orchestration tool that lets Claude Desktop chat (the strategist) dispatch Claude Code agents (the executors) into the Atta repo via MCP, watch them work, and unblock them when they hit decision points.
 
-**V0 path (`pm-orchestrator.yaml`):** A Vāda Teams YAML for project-management deliberation. No new product — just another team in the catalog.
+**Validated load-bearing mechanism (Slice -1, May 9):** Agent calls custom MCP tool `cetana_request_input` when blocked, tool blocks until principal/strategist replies via external write, agent receives reply as tool result and continues coherently with no context loss. Tested across a 7-minute pause; first post-resume sentence was a clean continuation, zero re-planning, zero redundant reads. This is the differentiator vs CCPM/APM/Conductor (none have interactive pause/resume).
 
-**V0.7 path (MCP + CLI):** Server exposing the four coordination files as live MCP tools, plus an `atta` CLI for terminal access.
+**Architecture (locked May 9, 2026):**
+- Claude Desktop = strategist (uses local stdio MCP; web Claude.ai cannot reach localhost per Anthropic docs)
+- GitHub Issues + Labels + Milestones = roadmap, tasks, briefs, PRs (no Projects V2)
+- Cetana Coordinator = single Bun service inside `apps/cetana-ai/`, exposes one MCP server with namespaced `cetana.*` tools (`dispatch_task`, `list_active_tasks`, `reply_to_blocked_task`, `request_input`)
+- Claude Code = executor, spawned per task, runs in git worktree at `~/code/atta/.worktrees/issue-{N}/`
+- JSONL append-only logs at `~/.cetana/tasks/*.jsonl` for runtime state (SQLite later if/when schema stabilizes)
+- No UI in V0. CLI + `tail -f` on JSONL. Tauri shell + dashboard deferred to V1 if and only if V0 proves daily-driver value over 2 weeks of real use.
 
-**V1:** Adds automated adversarial review on completed task results, persistent decision records, state machine, UI.
+**V0 reuses ecosystem packages:** `@atta/db`, `@atta/auth`, `@atta/ui` (when UI ships in V1), Atta monorepo conventions.
 
-**Domain:** `cetana.attalabs.dev` (when V1 built).
+**Domain:** `cetana.attalabs.dev` reserved for if/when Cetana becomes a public product. V0 is internal tooling.
 
-**Open consideration (May 6):** Existing agentic-PM frameworks (CCPM, APM) ship close to what Cetana V0/V0.7 specs. Sandboxed evaluation deferred to post-Reviewer-iteration. May change Cetana sequencing if either tool fits. See `atta-plan.md` "Investigate CCPM / APM" section.
+**Open consideration superseded:** Existing agentic-PM frameworks (CCPM, APM) were parked for evaluation post-Reviewer-iteration. That evaluation is now moot — Cetana V0 with the validated escalation primitive does what CCPM/APM do *plus* the interactive pause/resume layer they lack.
 
-**Next:** Don't build now. Reviewer prompt iteration ships first.
+**Throwaway prototype:** `~/code/cetana-prototype/` (outside monorepo) — slated for deletion after V0 ships.
 
-**Earliest realistic V1 build:** late 2026 / early 2027.
+**Next:** Build `apps/cetana-ai/` V0 (~2-3 days). Then dispatch reviewer prompt iteration (Track B Item 3b) through it. UI decisions deferred to post-V0 daily use.
 
 ### Herald — *pluggable MCP tool*
 
@@ -148,6 +154,7 @@ Forensic CV-to-job-description match tool that exposes itself via MCP. Plugs int
 
 - `apps/vada-ai/` — Vāda product (web + mcp-server). Production-deployed at `vada.attalabs.dev`. Web hosts the hosted MCP route at `apps/vada-ai/web/src/app/api/mcp/route.ts`.
 - `apps/atta-ai/` — ecosystem hub. Production-deployed at `attalabs.dev` (April 28). Hosts engine tools and engine-as-MCP.
+- `apps/cetana-ai/` — Cetana V0 in active build (architecture validated May 9, 2026 via Slice -1 escalation prototype). Coordinator + MCP server. No UI in V0. Pulled forward from late-2026 timeline.
 - `apps/herald-ai/` — Herald product (web + mobile + mcp). Separate auth.
 - `apps/vitakka-ai/` — scaffold; product paused.
 
@@ -237,13 +244,15 @@ When `@atta/db` consolidates further, decide whether to keep `db:push` or move t
 
 ## Doc system
 
-This ecosystem uses a two-layer doc model — see `atta-coordination.md` for full rules.
+This ecosystem uses the repo as the source of truth for project management. See `coordination.md` for full rules.
 
-**Project knowledge (Claude.ai) — 4 files:** `atta-coordination.md`, `atta-current-state.md`, `atta-plan.md`, `docs-index.md`.
+**Project-management files (in repo at `project-management/`):** `coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md`. Plus `docs-index.md` at repo root.
 
-**Repo — everything else.**
+**Everything else is repo specs/skills/code, indexed by `docs-index.md`.**
 
-### Recently shipped (April 28 – May 6, 2026)
+### Recently shipped (April 28 – May 9, 2026)
+
+**May 9 — Cetana V0 unblock.** Slice -1 escalation prototype passed end-to-end (13/13 mechanical + cognitive criteria, 7-minute cognitive continuity test). PM docs migrated from Claude.ai project knowledge to repo at `project-management/` (PR #22). May 9 content updates landing now (this commit).
 
 **May 6 — doc audit PR (`docs/may-5-reality-sync`).** 7 repo files synced to May 4-5 reality:
 - D-028, D-029, D-030 appended to `vada-decisions.md`
@@ -286,12 +295,13 @@ This ecosystem uses a two-layer doc model — see `atta-coordination.md` for ful
 - `apps/vada-ai/specs/vada-teams-catalog/04-caller-claude-protocol.md` — references "Caller Claude owns synthesis" which was reversed by D-016
 - `apps/vada-ai/CLAUDE.md` — Settings tab table still shows Teams tab
 - Trust page content in `apps/vada-ai/web/.../trust/...` — references browser-only BYOK; needs full rewrite for current trust model
+- `apps/atta-ai/specs/cetana-reality-check.md` — V0/V0.7/V1 sequencing now superseded by May 9 unblock; V0 build is in flight directly. File still useful as historical reference but no longer the active plan.
 
 ---
 
 ## What exists physically vs. what's planned
 
-**Exists in code (May 6, 2026):**
+**Exists in code (May 9, 2026):**
 - `apps/vada-ai/web` — Vāda web app with full teams catalog surface, production-deployed
 - `apps/vada-ai/web/src/app/api/mcp/route.ts` — hosted MCP route, live
 - `apps/vada-ai/mcp-server` — Vāda's local stdio MCP server with generic `spec_id` routing
@@ -304,21 +314,24 @@ This ecosystem uses a two-layer doc model — see `atta-coordination.md` for ful
 - 9 YAML teams in `apps/vada-ai/yamls/`
 - Calculator + vendor registry
 - `apps/vada-ai/specs/vada-reviewers-spec.md` (rev 4)
+- `project-management/` directory with `coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md` (migrated from project knowledge May 9)
 
 **Specced but not yet built / iterated:**
-- Reviewer system prompt iteration (Track B Item 3b)
+- `apps/cetana-ai/` V0 build — architecture validated May 9, build session is the next focused work
+- Reviewer system prompt iteration (Track B Item 3b) — to be dispatched through Cetana once V0 ships
 - Synthesizer system prompt iteration (3c)
 - Vāda Reviewers benchmark (Item 4)
 
 **Drafted briefs awaiting dispatch:**
-(none currently — all closed or superseded by May 4-5 work)
+- Cetana V0 build brief (next session)
 
 **Does not exist yet:**
 - `apps/account/web` — DEFERRED indefinitely. D-030 decision: no `account.attalabs.dev` hub.
 - `apps/sati-ai/*` — Sati doesn't exist
-- `apps/cetana-ai/*` — Cetana doesn't exist (V0 is just a YAML)
+- `apps/cetana-ai/*` — directory created/scaffolded by next session
 - Hosted MCP hardening: rate limiting, audit log retention, KMS migration, per-key tool scoping (V2 work)
 - Trust + MCP page content rewrites
+- Cetana V1 surfaces (Tauri shell, dashboard, native notifications) — deferred until V0 proves daily-driver value over 2 weeks
 
 ---
 
@@ -328,11 +341,12 @@ This ecosystem uses a two-layer doc model — see `atta-coordination.md` for ful
 - **~~OQ-cross-2~~ (RESOLVED May 5):** No billing hub at `account.attalabs.dev`. Sharing at component level via `@atta/ui/account` (D-030).
 - **OQ-cross-3:** `atta.ai` migration — eager vs. wait for natural rebuild moment?
 - **OQ-cross-4:** When `@atta/db` consolidates further, keep `db:push` or move to tracked migrations?
-- **OQ-cross-5:** Cetana V0/V0.7 naming — is V0.7 (MCP+CLI) actually Cetana, or a separate product?
+- **~~OQ-cross-5~~ (RESOLVED May 9):** V0.7 path collapsed. Cetana V0 directly implements the validated escalation primitive inside the monorepo at `apps/cetana-ai/`. No separate MCP+CLI step.
 - **~~OQ-cross-6~~ (RESOLVED May 4):** Neither Path A nor Path B from the gap report. Server-side at rest, envelope-encrypted, decrypted only in request handlers (D-028).
 - **~~OQ-cross-7~~ (RESOLVED May 5):** API key management lives in product-local Settings, composed from shared `@atta/ui/account` components (D-030).
 - **OQ-cross-8:** Fate of the experimental YAMLs after Vāda Reviewers v1 benchmark.
 - **~~OQ-cross-9~~ (RESOLVED May 3):** Engine vocabulary architecture — Choice A. `PlanNodeKind` + `PlanEdgeKind` shipped.
-- **OQ-cross-10 (NEW May 6):** Does Cetana V0/V0.7 get superseded by adopting an existing agentic-PM framework (CCPM or APM)? Both ship the core mechanics in cetana-reality-check.md. Sandboxed evaluation deferred to post-Reviewer-iteration. See `atta-plan.md` "Investigate CCPM / APM" section.
+- **~~OQ-cross-10~~ (RESOLVED May 9):** Cetana V0 is not superseded by CCPM/APM. The interactive pause/resume layer (Slice -1 validated) is the differentiator. Sandboxed evaluation no longer needed.
+- **OQ-cross-11 (NEW May 9):** Does Cetana V1 (Tauri shell + dashboard) ship after 2 weeks of V0 daily use, or does V0 prove sufficient indefinitely?
 
 Vāda-internal open questions live in `apps/vada-ai/specs/vada-state.md`.
