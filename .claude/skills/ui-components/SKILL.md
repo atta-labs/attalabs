@@ -1,9 +1,6 @@
 ---
 name: ui-components
 description: Rules for building UI across ALL Atta AI apps — component usage, CSS variables, theming, typography, inline styles, library system
-paths:
-  - "packages/ui/**"
-  - "tools/admin/**"
 ---
 
 # UI Components — Atta AI (All Products)

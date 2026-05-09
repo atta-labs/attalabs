@@ -1,8 +1,6 @@
 ---
 name: ui-library-system
 description: How the @atta/ui multi-library system works — build-time generation (Vada pattern) vs runtime switching (Herald pattern), how to add a new app or library, and how to debug library resolution
-paths:
-  - "packages/ui/libraries/**"
 ---
 
 # UI Library System — Atta AI

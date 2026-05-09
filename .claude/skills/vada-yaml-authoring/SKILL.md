@@ -1,8 +1,6 @@
 ---
 name: vada-yaml-authoring
 description: How to create and register YAML deliberation specs. Load when adding a new team or new YAML spec. Covers all four workflow types (Solo, Rounds, Custom, Brokered), spec-registry registration, and verify scripts.
-paths:
-  - "apps/vada-ai/yamls/**"
 ---
 
 # YAML Deliberation Specs — Authoring Guide

@@ -1,8 +1,6 @@
 ---
 name: auth
 description: Clerk authentication patterns across the Atta ecosystem — single Clerk app, subdomain SSO via cookie scope, shared users table
-paths:
-  - "packages/auth/**"
 ---
 
 # Authentication — Atta Ecosystem
