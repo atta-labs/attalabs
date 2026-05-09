@@ -204,7 +204,8 @@ export function createServer(providerKeys: ProviderKeys): Server {
               // Hardcoded from listPublicSpecs() result — see spec-registry.ts for source of truth.
               // TODO: derive dynamically once listPublicSpecs() is sync-callable at registration time.
               enum: ['sparring', 'crucible', 'war-room', 'vada-reviewers', 'vada-reviewers-synthesis'],
-              description: 'sparring (default, 2 agents), crucible (4-7 agents), war-room (6 agents, adversarial), vada-reviewers, vada-reviewers-synthesis'
+              description:
+                'sparring (default, 2 agents), crucible (4-7 agents), war-room (6 agents, adversarial), vada-reviewers, vada-reviewers-synthesis'
             }
           },
           required: ['question']
