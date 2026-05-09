@@ -32,8 +32,8 @@ export function Logo({ light, dark, alt = '', size = 'h-6', className, text }: L
       <div className={cn(size, 'flex items-center')}>{text[0]}</div>
     ) : (
       <div className='flex flex-col'>
-        <span className='text-sm uppercase'>{text[0]}</span>
-        <span className='text-sm uppercase text-accent'>{text[1]}</span>
+        <span className='text-sm uppercase font-mono'>{text[0]}</span>
+        <span className='text-sm uppercase font-mono text-accent'>{text[1]}</span>
       </div>
     )
 
