@@ -1,0 +1,2 @@
+packages/cms/src/branding/**
+packages/cms/scripts/seed-**

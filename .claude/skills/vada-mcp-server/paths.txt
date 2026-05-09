@@ -1,0 +1,2 @@
+apps/vada-ai/web/mcp/**
+apps/vada-ai/mcp-server/**

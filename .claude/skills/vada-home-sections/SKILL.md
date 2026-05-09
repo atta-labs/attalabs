@@ -1,8 +1,6 @@
 ---
 name: vada-home-sections
 description: Primitives and patterns for building Vāda home-page sections below the canvas hero — SectionWrapper, SectionLabel, StatusFooter, TwoColumnSection, and the section composition convention.
-paths:
-  - "apps/vada-ai/web/src/app/(home)/**"
 ---
 
 # Vāda Home Sections — Composition System

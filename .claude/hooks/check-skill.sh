@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # PreToolUse hook for Edit / Write / NotebookEdit.
-# Reads paths: globs from each .claude/skills/<name>/SKILL.md frontmatter and
+# Reads path globs from each .claude/skills/<name>/paths.txt and
 # BLOCKS the tool call until every matching skill has been invoked via the
 # Skill tool in the current session (recorded by track-skill.sh).
 #
-# Source of truth = each skill's own SKILL.md (single file describes itself).
+# Source of truth = each skill's own paths.txt (one glob per line).
 set -euo pipefail
 
 input=$(cat)
@@ -32,31 +32,20 @@ if [[ ! -d "$skills_dir" ]]; then
   exit 0
 fi
 
-# Collect every skill whose paths: frontmatter glob matches this file_path.
+# Collect every skill whose paths.txt glob matches this file_path.
 required=()
 for skill_path in "$skills_dir"/*/; do
   skill_name=$(basename "$skill_path")
   skill_md="${skill_path}SKILL.md"
   [[ -f "$skill_md" ]] || continue
 
-  # Extract `paths:` block from YAML frontmatter (between the first two ---).
-  # Lists of `  - "..."` lines; stop on first non-indented line.
-  paths=$(awk '
-    /^---$/ { c++; if (c == 2) exit; next }
-    c == 1 {
-      if (/^paths:[[:space:]]*$/) { in_paths = 1; next }
-      if (in_paths) {
-        if (/^[[:space:]]+-[[:space:]]+/) {
-          line = $0
-          sub(/^[[:space:]]+-[[:space:]]+"?/, "", line)
-          sub(/"?[[:space:]]*$/, "", line)
-          print line
-          next
-        }
-        if (/^[a-zA-Z_]/) { in_paths = 0 }
-      }
-    }
-  ' "$skill_md")
+  # Read paths from the sibling paths.txt file (one glob per line; # comments OK).
+  paths_file="${skill_path}paths.txt"
+  if [[ -f "$paths_file" ]]; then
+    paths=$(grep -v '^[[:space:]]*#' "$paths_file" | grep -v '^[[:space:]]*$' || true)
+  else
+    paths=""
+  fi
 
   [[ -z "$paths" ]] && continue
 

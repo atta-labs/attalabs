@@ -1,0 +1,1 @@
+apps/vada-ai/web/src/app/(home)/**

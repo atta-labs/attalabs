@@ -1,0 +1,1 @@
+apps/vada-ai/yamls/**

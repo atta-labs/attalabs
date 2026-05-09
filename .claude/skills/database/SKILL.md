@@ -1,8 +1,6 @@
 ---
 name: database
 description: Drizzle ORM patterns for Neon Postgres — schema, queries, JSON fields, migrations across Atta AI apps
-paths:
-  - "packages/db/**"
 ---
 
 # Database — Atta AI

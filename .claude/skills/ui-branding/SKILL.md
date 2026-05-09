@@ -1,9 +1,6 @@
 ---
 name: ui-branding
 description: How the branding document system works — Sanity schema, logo/favicon asset queries, per-product geometry, and the seed script for uploading assets
-paths:
-  - "packages/cms/src/branding/**"
-  - "packages/cms/scripts/seed-**"
 ---
 
 # Branding System — Atta AI
