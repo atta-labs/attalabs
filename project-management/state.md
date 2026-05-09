@@ -1,0 +1,1 @@
+PLACEHOLDER — see migration commit message. Content from Claude.ai project knowledge will be committed here in this same commit. The actual state.md content is the May 6 version of atta-current-state.md.
