@@ -1,11 +1,28 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** May 9, 2026 (post Cetana V0 unblock + MCP contract fixes)
+**Last updated:** May 10, 2026 (v3 operational model shipped + Cetana v3 adoption)
 **Purpose:** Single snapshot of where everything stands across the Atta ecosystem.
 
 This doc lives in the repo at `project-management/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
 
 Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
+
+---
+
+## Operational model
+
+**v3 operational model adopted May 10, 2026.** The coordination model has migrated from an informal Claude.ai project-knowledge-based workflow to a formalized state-machine-governed model with three conversational roles (Principal, Team Leader, Developer) plus Archivist automation.
+
+Key v3 model artifacts (all in `project-management/`):
+- `state-machine.md` — the constitution: artifact states, role authority matrix, decision schema, lock mechanism, tiered documentation, ratification windows
+- `decisions.md` — global cross-product decision log, D-001 to D-016
+- `roles/principal.md`, `roles/team-leader.md`, `roles/developer.md` — role references
+- `reviewer-prompt.md` — template for adversarial multi-AI reviewer rounds
+- `ratification-queue.md` — append-only queue for decisions awaiting Principal ratification
+
+The `.claude/skills/brief-authoring/SKILL.md` is the canonical brief authoring guide (moved from `project-management/brief-authoring-rules.md` and updated for v3 fields: tier, principal_delegate, spike, Type 1/2 declaration, lock acknowledgment).
+
+PM docs are now in the repo (not Claude.ai project knowledge). Any Claude session reads them via GitHub MCP or direct worktree access.
 
 ---
 
@@ -117,31 +134,31 @@ See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: fil
 
 **Next:** Buildout downstream of Vitakka resuming.
 
-### Cetana — *V0 shipped May 10, 2026*
+### Cetana — *V0 shipped May 10, 2026; v3 operational model adopted May 10, 2026*
 
-**Status:** V0 shipped via PR on `feat/cetana-v0`. Architecture validated via Slice -1 escalation prototype on May 9, 2026 (13/13 pass, including 7-minute cognitive continuity). V0 now live inside the monorepo at `apps/cetana-ai/`. First real dispatch: Track B Item 3b (Reviewer prompt iteration).
+**Status:** V0 shipped via PR #25 on `feat/cetana-v0`. Architecture validated via Slice -1 escalation prototype on May 9, 2026 (13/13 pass, including 7-minute cognitive continuity). V0 now live inside the monorepo at `apps/cetana-ai/`. The v3 operational model (Principal → Team Leader → Developer → Archivist) is now the active coordination model for all Atta work.
 
-**What it is:** Local Mac orchestration tool that lets Claude Desktop chat (the strategist) dispatch Claude Code agents (the executors) into the Atta repo via MCP, watch them work, and unblock them when they hit decision points.
+**What it is:** Local Mac orchestration coordinator that lets Claude Desktop (Team Leader, Strategist mode) dispatch Claude Code agents (Developers) into the Atta repo via MCP, watch them work, and unblock them when they hit decision points.
 
-**Validated load-bearing mechanism (Slice -1, May 9):** Agent calls custom MCP tool `cetana_request_input` when blocked, tool blocks until principal/strategist replies via external write, agent receives reply as tool result and continues coherently with no context loss. Tested across a 7-minute pause; first post-resume sentence was a clean continuation, zero re-planning, zero redundant reads. This is the differentiator vs CCPM/APM/Conductor (none have interactive pause/resume).
+**Validated load-bearing mechanism (Slice -1, May 9):** Agent calls custom MCP tool `cetana_request_input` when blocked, tool blocks until Principal replies via external write, agent receives reply as tool result and continues coherently with no context loss. Tested across a 7-minute pause; first post-resume sentence was a clean continuation, zero re-planning, zero redundant reads.
 
 **Architecture (locked May 9, 2026):**
-- Claude Desktop = strategist (uses local stdio MCP; web Claude.ai cannot reach localhost per Anthropic docs)
+- Claude Desktop = Team Leader (Strategist mode) — local stdio MCP only; web Claude.ai cannot reach localhost
 - GitHub Issues + Labels + Milestones = roadmap, tasks, briefs, PRs (no Projects V2)
-- Cetana Coordinator = single Bun service inside `apps/cetana-ai/`, exposes one MCP server with namespaced `cetana.*` tools (`dispatch_task`, `list_active_tasks`, `reply_to_blocked_task`, `request_input`)
-- Claude Code = executor, spawned per task, runs in git worktree at `~/code/atta/.worktrees/issue-{N}/`
+- Cetana Coordinator = single Bun service inside `apps/cetana-ai/`, exposes MCP tools (`cetana.dispatch_task`, `cetana.list_active_tasks`, `cetana.reply_to_blocked_task`, `cetana_request_input`)
+- Claude Code = Developer/Executor, spawned per task, runs in git worktree at `~/code/atta/.worktrees/issue-{N}/`
 - JSONL append-only logs at `~/.cetana/tasks/*.jsonl` for runtime state (SQLite later if/when schema stabilizes)
 - No UI in V0. CLI + `tail -f` on JSONL. Tauri shell + dashboard deferred to V1 if and only if V0 proves daily-driver value over 2 weeks of real use.
 
-**V0 reuses ecosystem packages:** `@atta/db`, `@atta/auth`, `@atta/ui` (when UI ships in V1), Atta monorepo conventions.
+**v3 operational model specced (May 10, 2026):**
+- `cetana_request_input` severity field specced (D-016 in `cetana-decisions.md`) — `execution` / `strategy` / `product` routing. **Code implementation is a follow-up task** — the field is in the spec, not yet in `src/tools/request-input.ts`.
+- Brief validation gate specced (D-017) — `.github/workflows/archivist.yml` stub in this PR. Real implementation is a follow-up task.
+- Spec renamed from `cetana-v0-spec.md` to `cetana-spec.md` (D-018, Lock: YES).
+- Archivist confirmed as GitHub Action (not Cetana component) — see D-019.
 
 **Domain:** `cetana.attalabs.dev` reserved for if/when Cetana becomes a public product. V0 is internal tooling.
 
-**Open consideration superseded:** Existing agentic-PM frameworks (CCPM, APM) were parked for evaluation post-Reviewer-iteration. That evaluation is now moot — Cetana V0 with the validated escalation primitive does what CCPM/APM do *plus* the interactive pause/resume layer they lack.
-
-**Throwaway prototype:** `~/code/cetana-prototype/` (outside monorepo) — slated for deletion after V0 ships.
-
-**Next:** Build `apps/cetana-ai/` V0 (~2-3 days). Then dispatch reviewer prompt iteration (Track B Item 3b) through it. UI decisions deferred to post-V0 daily use.
+**Next:** First real task dispatch through Cetana (Track B Item 3b — Reviewer prompt iteration). Severity routing code implementation. Archivist real implementation.
 
 ### Herald — *pluggable MCP tool*
 

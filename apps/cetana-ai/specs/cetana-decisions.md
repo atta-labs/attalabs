@@ -243,3 +243,78 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 - `McpServer.tool(name, description, zodShape, handler)`: triggers TypeScript error `TS2589: Type instantiation is excessively deep` due to complex Zod generic inference. Same issue observed in the Vāda MCP server.
 
 **Consequences:** More boilerplate in the server entry points (explicit schema registration). Behavior is identical — Zod validates inputs inside the handler. The pattern is consistent with how the Vāda MCP server is implemented.
+
+---
+
+## D-016 — `cetana_request_input` accepts a `severity` field
+
+**Date:** 2026-05-10
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+
+**Context:** In v3 operational model, escalations have three distinct tiers: `execution` (TL Brief Author mode), `strategy` (TL Strategist mode), `product` (Principal, ratification window). Without a severity signal, the Team Leader must infer routing from the question text — unreliable, especially when the question is ambiguous.
+
+**Decision:** The `cetana_request_input` input schema includes a required `severity` field: `'execution' | 'strategy' | 'product'`. The executor records severity in `question.json`. `list_active_tasks` surfaces severity alongside the question text.
+
+**Alternatives considered:**
+- Inferring severity from question keywords: fragile and non-deterministic.
+- Separate tools per severity (`cetana_request_execution_input`, etc.): clutters the executor's tool registry and adds cognitive load for the Developer.
+
+**Consequences:** The Developer must explicitly classify escalations at call time, which forces clarity. The schema change is backwards-incompatible with V0 usage (currently no severity field). Code implementation is a follow-up task — the field is specced but not yet wired in `src/tools/request-input.ts`. The severity is declared in the spec so that `cetana_request_input` callers know the contract before the code ships.
+
+---
+
+## D-017 — Brief validation gate via Archivist GitHub Action (V0.7 stub)
+
+**Date:** 2026-05-10
+**Status:** ACTIVE
+**Type:** 2
+**Lock:** NO
+
+**Context:** Briefs dispatched to Developers should be validated for tier field, lock acknowledgments, and Type 1 declarations before execution begins. Without a validation gate, structural brief errors reach the Developer during execution — wasting a commit cycle.
+
+**Decision:** Implement a brief validation GitHub Action (`archivist.yml`, job `brief-validation`) triggered on PR open. In V0.7, the job is a stub that exits 0. In V1, it checks: tier field present, lock acknowledgments for locked decisions, `principal_delegate:` for Tier 3 work. Spec is in `cetana-spec.md` Section 6.
+
+**Alternatives considered:**
+- Validate at dispatch time (`cetana.dispatch_task`): catches errors before the worktree is created but requires brief parsing logic in the coordinator — a different concern from CI.
+- No validation gate: acceptable for V0 since all briefs are TL-authored and Principal-approved, but becomes a risk as brief complexity grows.
+
+**Consequences:** Developers get a pre-flight check on brief structure. The stub means no immediate value, but the scaffolding is in place for real implementation. Real implementation is a follow-up task.
+
+---
+
+## D-018 — Spec filename is `cetana-spec.md`, not `cetana-v0-spec.md`
+
+**Date:** 2026-05-10
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** YES
+
+**Context:** The spec was originally named `cetana-v0-spec.md`. This creates a naming pattern conflict with `project-management/decisions.md` D-013 (global), which locks all spec filenames to `{product}-spec.md` with no version suffixes.
+
+**Decision:** Rename `apps/cetana-ai/specs/cetana-v0-spec.md` → `apps/cetana-ai/specs/cetana-spec.md` via `git mv`. Version and lock state are tracked inside the file via the `Status:` header. The filename is stable across V0 → V1 → V2 iterations.
+
+**Alternatives considered:**
+- Keep `cetana-v0-spec.md` and add a `cetana-spec.md` alias: creates two canonical files, ambiguity about which is authoritative.
+
+**Consequences:** Any existing links to `cetana-v0-spec.md` (e.g., in README, skill files) must be updated to `cetana-spec.md`. This PR handles all in-repo references. Conforms to global D-013.
+
+---
+
+## D-019 — Cetana remains orchestration-focused; Archivist is a separate GitHub Action
+
+**Date:** 2026-05-10
+**Status:** ACTIVE
+**Type:** 2
+**Lock:** NO
+
+**Context:** The v3 operational model adds an Archivist role (post-merge documentation sync, drift detection). Could Cetana host the Archivist logic (as a new MCP tool or a new coordinator component)?
+
+**Decision:** No. Cetana is the dispatch + escalation layer. Archivist is a GitHub Action — a separate CI concern triggered by PR events, not by MCP tool calls. The two are distinct: Cetana operates at task-execution time; Archivist operates at PR merge time. Mixing them would violate the separation of concerns established in v3.
+
+**Alternatives considered:**
+- Cetana as Archivist host: single runtime, fewer moving parts. Rejected because Cetana requires Claude Desktop to be running — GitHub Actions run independently of any local process.
+- Archivist as a separate long-running service: over-engineered for V0.7, which is a stub anyway.
+
+**Consequences:** The Archivist and Cetana codebases stay separate. `.github/workflows/archivist.yml` is the Archivist entry point. Future Archivist logic does not go into `apps/cetana-ai/coordinator/`. Conforms to the v3 role separation in `project-management/state-machine.md`.
