@@ -29,6 +29,7 @@
     "format-and-lint:fix": "biome check --fix .",
     "check": "turbo typecheck && biome check .",
     "docs:index": "node scripts/generate-docs-index.mjs",
+    "verify-docs": "bun run scripts/verify-docs.ts",
     "db": "bash scripts/db-studio.sh",
     "clean": "turbo clean",
     "prepare": "husky"

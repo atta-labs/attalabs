@@ -1,0 +1,57 @@
+# Archivist — V0.7 stub
+#
+# Three jobs, all no-ops. Real implementation is V1.
+#
+# brief-validation: Validates brief structure on PR open (tier field, lock acknowledgments,
+#   Type 1 declarations). V1 will block merge when validation fails.
+#
+# post-merge: Triggered after merge to main. Syncs PM docs, appends decision log entries,
+#   labels Issues closed by the PR. V1 will diff spec changes and flag contradictions.
+#
+# daily-drift: Runs on schedule. Checks for spec drift (spec references code paths that
+#   no longer exist; decision log entries reference PRs that were reverted). V1 will open
+#   Issues for contradictions that block Tier 3 work.
+
+name: Archivist
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 2 * * *"  # daily at 02:00 UTC
+
+jobs:
+  brief-validation:
+    name: Brief Validation (stub)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stub — exits 0
+        run: |
+          echo "brief-validation V0.7 stub — all checks skipped"
+          echo "V1 will check: tier field, lock acknowledgments, Type 1 declarations"
+          exit 0
+
+  post-merge:
+    name: Post-Merge Sync (stub)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stub — exits 0
+        run: |
+          echo "post-merge V0.7 stub — all sync skipped"
+          echo "V1 will sync PM docs and label closed Issues"
+          exit 0
+
+  daily-drift:
+    name: Daily Drift Check (stub)
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stub — exits 0
+        run: |
+          echo "daily-drift V0.7 stub — drift check skipped"
+          echo "V1 will detect spec/code divergence and open contradiction Issues"
+          exit 0

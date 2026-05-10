@@ -1,6 +1,6 @@
 ---
 name: cetana-coordinator
-description: Cetana Coordinator internals — MCP servers, worktree manager, JSONL events, GitHub Octokit integration. Load when working in apps/cetana-ai/coordinator/. Do NOT load for high-level Cetana questions; read apps/cetana-ai/specs/cetana-v0-spec.md instead.
+description: Cetana Coordinator internals — MCP servers, worktree manager, JSONL events, GitHub Octokit integration. Load when working in apps/cetana-ai/coordinator/. Do NOT load for high-level Cetana questions; read apps/cetana-ai/specs/cetana-spec.md instead.
 ---
 
 # Cetana Coordinator — Working Guide
@@ -15,8 +15,11 @@ Load when:
 - Modifying either MCP server entry point
 
 Do NOT load for:
-- High-level architectural questions → read `apps/cetana-ai/specs/cetana-v0-spec.md`
+- High-level architectural questions → read `apps/cetana-ai/specs/cetana-spec.md`
 - "How does Cetana work overall?" → read `apps/cetana-ai/README.md` and the spec
+- v3 operational model questions (roles, authority, tiers) → read `project-management/state-machine.md`
+
+**v3 model context:** Cetana is the dispatch + escalation layer of the v3 operational model. The Team Leader (Strategist mode) uses Cetana to dispatch Developer agents. The Developer uses `cetana_request_input` to escalate. The Archivist is a separate GitHub Action — it does not live in `apps/cetana-ai/coordinator/`.
 
 ---
 
@@ -94,22 +97,42 @@ Each tool file exports a **factory function** that takes `{ state: StateManager,
 
 ## 6. How to Add a New `cetana.*` Tool
 
+0. **Log the decision first.** If the new tool changes user-visible behavior, append a D-### entry to `cetana-decisions.md` before writing code. The decision log entry is the design anchor — write it while your reasoning is fresh.
 1. Create `src/tools/<tool-name>.ts` with factory function export
 2. If Strategist-side: register in `mcp-server-strategist.ts`
 3. If Executor-side: register in `mcp-server-executor.ts`
 4. Add schema validation unit test in `tests/tools.test.ts`
-5. Document in `cetana-v0-spec.md` Section 4
-6. Add a decision entry in `cetana-decisions.md` if it changes user-visible behavior
+5. Document in `cetana-spec.md` Section 4
+6. Add a decision entry in `cetana-decisions.md` if it changes user-visible behavior (if you did step 0, update that entry with implementation details)
 
 ---
 
-## 7. Filesystem-Based IPC
+## 7. Severity Field on `cetana_request_input`
+
+The `cetana_request_input` schema includes a `severity` field: `'execution' | 'strategy' | 'product'`. This field is specced in `cetana-spec.md` Section 4 and D-016 in `cetana-decisions.md`.
+
+**Current state (V0):** The field is in the spec but not yet implemented in `src/tools/request-input.ts`. The input schema does not validate it yet. Code follow-up task is tracked separately.
+
+**When implemented:** The executor writes `severity` into `question.json`. The strategist reads it in `list_active_tasks` and surfaces it to the Team Leader so they can route immediately without reading the question text.
+
+Routing:
+| Severity | Who resolves | GitHub label |
+|----------|-------------|--------------|
+| `execution` | Team Leader (Brief Author mode) | `needs:execution-input` |
+| `strategy` | Team Leader (Strategist mode) | `needs:strategy-input` |
+| `product` | Principal (ratification window) | `needs:principal-input` |
+
+**Do not add severity logic without also adding the GitHub label posting** — the label is what surfaces the blocked task to the correct person outside of Claude Desktop.
+
+---
+
+## 8. Filesystem-Based IPC
 
 How the Strategist server and Executor server communicate when the agent is blocked:
 
 ```
-Executor calls cetana_request_input(question)
-  → writes ~/.cetana/tasks/{taskId}/question.json
+Executor calls cetana_request_input(question, severity)
+  → writes ~/.cetana/tasks/{taskId}/question.json (includes severity)
   → appends task.blocked event to JSONL
   → polls ~/.cetana/tasks/{taskId}/reply.json every 1 second (30 min timeout)
 
@@ -130,7 +153,7 @@ This is intentional (see D-008). No network dependency. Human-inspectable. Prove
 
 ---
 
-## 8. Worktree Path Conventions
+## 9. Worktree Path Conventions
 
 Worktrees live at: `~/code/atta/.worktrees/issue-{N}/`
 Branch name: `feat/issue-{N}`
@@ -142,7 +165,7 @@ Worktrees are created by `createWorktree()` in `dispatch-task.ts` and never auto
 
 ---
 
-## 9. Spawning Claude Code
+## 10. Spawning Claude Code
 
 The exact `claude -p` invocation (from `claude-spawner.ts`):
 
@@ -176,7 +199,7 @@ stdout/stderr are both streamed as `task.progress` events (claude uses stderr fo
 
 ---
 
-## 10. Common Pitfalls
+## 11. Common Pitfalls
 
 - **`path.expandUser()` does not exist in Node.js.** Use `os.homedir()` and `path.join()`. Caught in Slice -1.
 - **MCP tool descriptions are load-bearing.** Agents pick tools based on description text. `cetana_request_input`'s description says "wait patiently" — this is deliberate to prevent the agent from timing out.
@@ -184,10 +207,12 @@ stdout/stderr are both streamed as `task.progress` events (claude uses stderr fo
 - **Do not auto-remove worktrees.** Manual cleanup only in V0. Removing a worktree mid-PR-review destroys uncommitted state.
 - **Use `--include-partial-messages` and `--verbose`.** Slice -1 used these; they ensure all output is captured in stream-json.
 - **The strategist and executor servers append `task.unblocked` independently.** Both the reply-to-blocked-task handler (strategist) and the request-input poller (executor) append `task.unblocked`. This means two `task.unblocked` events appear in the JSONL per escalation — that is expected and intentional. `StateManager.applyEvent` handles it idempotently.
+- **Archivist logic does not go in the coordinator.** The Archivist is a GitHub Action, not a Cetana component. If you're adding post-merge or drift-detection logic, it goes in `.github/workflows/archivist.yml` — not in `mcp-server-strategist.ts` or a new MCP tool. See D-019.
+- **The spec filename is `cetana-spec.md`, not `cetana-v0-spec.md`.** D-018 renamed the file and locked the naming convention. Any link or reference to `cetana-v0-spec.md` is stale and should be updated.
 
 ---
 
-## 11. Testing Conventions
+## 12. Testing Conventions
 
 - **Test runner:** `bun test`
 - **Unit tests:** `tests/` directory alongside source

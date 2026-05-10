@@ -2,11 +2,12 @@
 
 ## Skills
 
-- [Cetana Coordinator internals — MCP servers, worktree manager, JSONL events, GitHub Octokit integration. Load when working in apps/cetana-ai/coordinator/.](./.claude/skills/cetana-coordinator/SKILL.md)
 - [LangGraph execution + cognitive router internals. Load when working in packages/adapter-langgraph — modifying graph execution, agent dispatch, tool filtering, classifier logic, cost tracking, state reducers, or debugging MAX_REVISIONS / latency issues. Do NOT load for pure Plan compilation (engine-layer) or team config (teams-layer).](./.claude/skills/atta-adapter-langgraph/SKILL.md)
 - [Vāda engine internals — Plan compilation, Agent/Workflow/Team types, validation rules, terminal states, and immutability invariants. Load when working inside packages/engine or debugging unexpected Plan graph structure. Do NOT load for adapter/router/provider runtime work.](./.claude/skills/atta-engine/SKILL.md)
 - [Vāda agent and team configurations. Load when adding/modifying agents, teams, reviewer profiles, or building a verticalized team for a specific domain. Covers the tools-on/tools-off invariant. Do NOT load for engine primitives or adapter runtime.](./.claude/skills/atta-teams/SKILL.md)
 - [Clerk authentication patterns across the Atta ecosystem — single Clerk app, subdomain SSO via cookie scope, shared users table](./.claude/skills/auth/SKILL.md)
+- [Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers required sections, model selection, v3 model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), and anti-patterns.](./.claude/skills/brief-authoring/SKILL.md)
+- [Cetana Coordinator internals — MCP servers, worktree manager, JSONL events, GitHub Octokit integration. Load when working in apps/cetana-ai/coordinator/. Do NOT load for high-level Cetana questions; read apps/cetana-ai/specs/cetana-spec.md instead.](./.claude/skills/cetana-coordinator/SKILL.md)
 - [Enforces TypeScript, export, import, and Biome code style rules across the Atta AI monorepo](./.claude/skills/code-style/SKILL.md)
 - [Drizzle ORM patterns for Neon Postgres — schema, queries, JSON fields, migrations across Atta AI apps](./.claude/skills/database/SKILL.md)
 - [Executor Protocol — patterns for executing dispatched tasks from the Principal](./.claude/skills/executor-protocol/SKILL.md)
@@ -28,12 +29,6 @@
 
 ## Specification Documents
 
-### cetana-ai
-
-- [Cetana V0 — Locked Architecture Specification](./apps/cetana-ai/specs/cetana-v0-spec.md)
-- [Cetana — Experiment Log](./apps/cetana-ai/specs/cetana-experiment-log.md)
-- [Cetana — Decision Log](./apps/cetana-ai/specs/cetana-decisions.md)
-
 ### atta-ai
 
 - [Atta — Build Strategy](./apps/atta-ai/specs/atta-build-strategy.md)
@@ -42,6 +37,12 @@
 - [Atta — Market Research](./apps/atta-ai/specs/atta-market-research.md)
 - [Atta Naming Decision](./apps/atta-ai/specs/atta-naming-decision.md)
 - [Cetanā (Architect Layer) — Capability Reality Check](./apps/atta-ai/specs/cetana-reality-check.md)
+
+### cetana-ai
+
+- [Cetana — Decision Log](./apps/cetana-ai/specs/cetana-decisions.md)
+- [Cetana — Experiment Log](./apps/cetana-ai/specs/cetana-experiment-log.md)
+- [Cetana — Locked Architecture Specification](./apps/cetana-ai/specs/cetana-spec.md)
 
 ### vada-ai
 
@@ -95,13 +96,6 @@
 
 - [Vitakka](./apps/vitakka-ai/specs/vitakka-human.md)
 - [Vitakka — Technical Specification](./apps/vitakka-ai/specs/vitakka-spec.md)
-
-## Project Management
-
-- [Coordination — how the system works](./project-management/coordination.md)
-- [Current State — ecosystem snapshot](./project-management/state.md)
-- [Active Plan — tracks and sequencing](./project-management/plan.md)
-- [Brief Authoring Rules — how to write executor briefs](./project-management/brief-authoring-rules.md)
 
 ## Root-Level Documentation
 

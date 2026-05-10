@@ -1,6 +1,7 @@
-# Cetana V0 — Locked Architecture Specification
+# Cetana — Locked Architecture Specification
 
-**Status:** Locked — May 9, 2026
+**Status:** draft
+**Locked:** May 9, 2026
 **Author:** Dani + Sonnet (Claude Code)
 **Version:** V0
 
@@ -8,13 +9,20 @@
 
 ## 1. Purpose
 
-Cetana is the Atta ecosystem's local Mac orchestration tool. Its name comes from Pāli (cetanā — volition, intention), following the ecosystem's naming convention: Pāli name = built by Atta.
+Cetana is the Atta ecosystem's local Mac orchestration coordinator. Its name comes from Pāli (cetanā — volition, intention), following the ecosystem's naming convention: Pāli name = built by Atta.
 
-Cetana V0 is internal tooling. It lets Claude Desktop (the Strategist) dispatch Claude Code agents (Executors) into the Atta monorepo, watch them work, and unblock them when they hit decision points — all over MCP.
+Cetana is internal tooling. It lets Claude Desktop (the Team Leader, Strategist mode) dispatch Claude Code agents (Developers/Executors) into the Atta monorepo, watch them work, and unblock them when they hit decision points — all over MCP. It is the dispatch and escalation layer of the v3 operational model: Principal → Team Leader → Developer → Archivist.
+
+Cetana's role in the v3 model:
+- **Team Leader** uses Cetana's Strategist tools (`cetana.dispatch_task`, `cetana.list_active_tasks`, `cetana.reply_to_blocked_task`) to orchestrate Developers
+- **Developer** uses Cetana's Executor tool (`cetana_request_input`) to escalate blocked decisions
+- **Archivist** (future, V0.7+) is a GitHub Action triggered by PR events — not a Cetana component
+
+For the full authority model and escalation routing, see `project-management/state-machine.md`.
 
 Future public surface: `cetana.attalabs.dev`, if and only if V0 proves daily-driver value over two weeks of real use and a V1 build is justified.
 
-**The problem V0 solves:** Copy-paste friction between Claude.ai (Strategist) and Claude Code CLI (Executor) was costing 30–60 minutes per Vāda iteration cycle. Cetana V0 reduces that to: type a brief in Claude Desktop, watch it run, reply when blocked, get notified on completion.
+**The problem V0 solves:** Copy-paste friction between Claude Desktop (Team Leader) and Claude Code CLI (Developer) was costing 30–60 minutes per iteration cycle. Cetana V0 reduces that to: type a brief in Claude Desktop, watch it run, reply when blocked, get notified on completion.
 
 ---
 
@@ -108,7 +116,7 @@ See `cetana-experiment-log.md` for the full journey.
 
 ### `cetana.dispatch_task` (Strategist-side)
 
-**When to call:** Strategist is ready to hand off a task to an executor agent.
+**When to call:** Team Leader is ready to hand off a task to a Developer agent.
 
 **Input:**
 ```typescript
@@ -130,15 +138,15 @@ See `cetana-experiment-log.md` for the full journey.
 
 ### `cetana.list_active_tasks` (Strategist-side)
 
-**When to call:** Strategist wants to know what's running or blocked.
+**When to call:** Team Leader wants to know what's running or blocked.
 
 **Input:** `{}`
 
-**Output:** Human-readable text listing running and blocked tasks. Blocked tasks include the pending question text so the Strategist can formulate a reply.
+**Output:** Human-readable text listing running and blocked tasks. Blocked tasks include the pending question text and severity (when provided) so the Team Leader can route appropriately.
 
 ### `cetana.reply_to_blocked_task` (Strategist-side)
 
-**When to call:** Strategist sees a blocked task and wants to unblock it.
+**When to call:** Team Leader sees a blocked task and wants to unblock it.
 
 **Input:**
 ```typescript
@@ -157,18 +165,24 @@ See `cetana-experiment-log.md` for the full journey.
 
 ### `cetana_request_input` (Executor-side — no dot prefix)
 
-**When to call:** Executor agent is blocked on a decision and needs Principal input.
+**When to call:** Developer agent is blocked on a decision and needs input.
 
 **Input:**
 ```typescript
 {
-  question: string   // The question to ask the principal
+  question: string    // The question to ask
+  severity: 'execution' | 'strategy' | 'product'
 }
 ```
 
+The `severity` field signals who needs to resolve the escalation:
+- `execution` — missing detail, deprecated dependency, flag not anticipated. Team Leader handles in Brief Author mode. GitHub label: `needs:execution-input`.
+- `strategy` — brief assumes approach A but the codebase went a different direction. Team Leader handles in Strategist mode. GitHub label: `needs:strategy-input`.
+- `product` — brief would require a Type 1 decision not specified in the brief. Principal must resolve at a ratification window. GitHub label: `needs:principal-input`.
+
 **Side effects:**
 1. Reads `CETANA_TASK_ID` from env (set by the spawner in `mcp-config.json`)
-2. Writes `~/.cetana/tasks/{taskId}/question.json`
+2. Writes `~/.cetana/tasks/{taskId}/question.json` (includes `severity`)
 3. Appends `task.blocked` event to JSONL
 4. Polls `reply.json` every 1 second (timeout: 30 minutes)
 5. On reply: cleans up both IPC files, appends `task.unblocked`, returns reply text to agent
@@ -176,9 +190,42 @@ See `cetana-experiment-log.md` for the full journey.
 
 **The load-bearing invariant:** The tool blocks synchronously from the agent's perspective. The agent's turn does not complete until the reply arrives. This is what makes cognitive continuity possible.
 
+> **Code follow-up:** The `severity` field is specced here but not yet implemented in `src/tools/request-input.ts`. Implementation is tracked as a follow-up task after this spec ships. See cetana-decisions.md D-016.
+
 ---
 
-## 5. Filesystem Layout
+## 5. Severity Routing
+
+When `cetana_request_input` is called with a severity, the routing is:
+
+| Severity | Who resolves | GitHub label | TL mode |
+|----------|-------------|--------------|---------|
+| `execution` | Team Leader | `needs:execution-input` | Brief Author mode |
+| `strategy` | Team Leader | `needs:strategy-input` | Strategist mode |
+| `product` | Principal (at ratification window) | `needs:principal-input` | N/A — escalate |
+
+The Team Leader monitors `needs:execution-input` and `needs:strategy-input` labels. The Principal monitors `needs:principal-input` only.
+
+`list_active_tasks` surfaces severity alongside the question text so the Team Leader can immediately identify which mode to switch to and whether to escalate before replying.
+
+---
+
+## 6. Brief Validation Gate (V0.7 stub — not yet implemented)
+
+A brief validation gate runs via GitHub Actions on PR open events. In V0.7, this is a stub that exits 0. In V1, it checks:
+
+- Brief has a tier field (`tier: 0`, `tier: 1`, or `tier: 3`)
+- If `tier: 3`, a `principal_delegate:` field is present or the PR targets main
+- If the brief references a locked decision (e.g., "uses approach X"), that the lock is acknowledged with `Conforms to lock: D-###`
+- If the brief challenges a lock, `Challenges lock: D-###` is present and the decision log shows PENDING ratification
+
+For the current stub implementation, see `.github/workflows/archivist.yml` (brief-validation job exits 0).
+
+The full gate logic is tracked as a future task. See cetana-decisions.md D-017.
+
+---
+
+## 7. Filesystem Layout
 
 ```
 ~/.cetana/
@@ -187,7 +234,7 @@ See `cetana-experiment-log.md` for the full journey.
     ├── {task-uuid}.jsonl          # JSONL event log per task (append-only)
     └── {task-uuid}/
         ├── mcp-config.json        # Per-task executor MCP config
-        ├── question.json          # Written by executor server when blocked
+        ├── question.json          # Written by executor server when blocked (includes severity)
         └── reply.json             # Written by strategist server to unblock
 
 ~/code/atta/
@@ -221,16 +268,16 @@ apps/cetana-ai/
 
 The strategist MCP server and executor MCP server communicate via the filesystem under `~/.cetana/tasks/{taskId}/`:
 
-- Executor writes `question.json` → strategist reads it via `list_active_tasks` and surfaces to Principal
+- Executor writes `question.json` → strategist reads it via `list_active_tasks` and surfaces to Team Leader
 - Strategist writes `reply.json` → executor polls for it and returns the reply to the agent
 
 This is intentional, not lazy. It has no network dependency, survives process restarts, is human-inspectable, and requires zero additional infrastructure. The same pattern was proven in Slice -1 (the prototype used `~/.cetana-prototype/` as the IPC directory).
 
 ---
 
-## 6. V0 Scope vs. Deferred
+## 8. V0 Scope vs. Deferred
 
-### In V0
+### In V0 (shipped May 10, 2026)
 
 - Four MCP tools (dispatch_task, list_active_tasks, reply_to_blocked_task, cetana_request_input)
 - Git worktrees per task (created on dispatch, cleaned up manually)
@@ -239,6 +286,13 @@ This is intentional, not lazy. It has no network dependency, survives process re
 - In-memory StateManager with JSONL hydration on startup
 - Filesystem-based IPC for question/reply handoff
 - Two MCP server entry points from one codebase
+- `cetana_request_input` schema includes `severity` field (code follow-up in next PR)
+
+### V0.7 stubs (docs + CI scaffolding)
+
+- `scripts/verify-docs.ts` — exits 0; V1 adds real checks
+- `.github/workflows/archivist.yml` — three no-op jobs (brief-validation, post-merge, daily-drift)
+- Brief validation gate specced but not implemented (see Section 6)
 
 ### V1 (deferred until V0 proves daily-driver value)
 
@@ -246,6 +300,8 @@ This is intentional, not lazy. It has no network dependency, survives process re
 - Auto-cleanup of merged worktrees
 - `cancel_task`, `get_task_lifecycle`, `retry_task` MCP tools
 - Cross-session state persistence improvements
+- Severity routing implementation in `request-input.ts` + GitHub label posting
+- Brief validation gate real implementation in Archivist action
 
 ### V2+ (deferred indefinitely)
 
@@ -257,7 +313,7 @@ This is intentional, not lazy. It has no network dependency, survives process re
 
 ---
 
-## 7. Open Questions for Actual Use
+## 9. Open Questions for Actual Use
 
 These are deliberately deferred until V0 has been used for real tasks.
 
@@ -265,4 +321,5 @@ These are deliberately deferred until V0 has been used for real tasks.
 - **What happens when a worktree creation fails?** (e.g., branch `feat/issue-{N}` already exists). Current behavior: throws. Should we recover? Defer until observed.
 - **Should GitHub PR creation be automated on executor completion?** Currently the executor is briefed to open PRs itself. The coordinator doesn't do it. If executors consistently forget, add it to the `onExit` handler. Defer.
 - **Does the 30-minute timeout on `cetana_request_input` need to be configurable?** For now it's hardcoded. Add to `config.json` when observed to be too short or too long.
-- **How should the Strategist be reminded about blocked tasks?** Currently passive — Strategist must call `list_active_tasks`. Native notifications would require Tauri (V1). Workaround: the executor posts a GitHub comment when blocked, so the Principal can watch GitHub for activity.
+- **How should the Team Leader be reminded about blocked tasks?** Currently passive — Team Leader must call `list_active_tasks`. Native notifications would require Tauri (V1). Workaround: the executor posts a GitHub comment when blocked, so the Principal can watch GitHub for activity.
+- **How does severity appear in `list_active_tasks` output?** Currently the tool output is plain text. Severity field should be clearly surfaced to make routing immediate. Implement alongside severity routing code follow-up.

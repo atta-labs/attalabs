@@ -1,3 +1,19 @@
+> **Status: retired — May 10, 2026**
+>
+> This document described the original V0 → V0.7 → V1 sequencing plan for Cetana (then called "Cetanā the Architect Layer"). It was superseded in two steps:
+>
+> 1. **May 9, 2026 — Slice -1 prototype** validated the blocking escalation primitive and collapsed the three-step path into a direct V0 build. The V0/V0.7/V1 sequence in this doc no longer reflects the actual plan.
+> 2. **May 10, 2026 — v3 operational model** formalized Cetana's role as the dispatch + escalation layer (Team Leader → Developer) and introduced the Archivist as a separate GitHub Action. The "Architect Agent" framing in this doc predates that model.
+>
+> **Current references:**
+> - `apps/cetana-ai/specs/cetana-spec.md` — current locked architecture
+> - `apps/cetana-ai/specs/cetana-experiment-log.md` — full journey from this doc through Slice -1 to V0 ship
+> - `project-management/state-machine.md` — v3 operational model (roles, authority, dispatch)
+>
+> The original content below is retained as historical record. Do not cite it as current design.
+
+---
+
 # Cetanā (Architect Layer) — Capability Reality Check
 
 Written: April 20, 2026, late in a 10-hour Mastra migration session.

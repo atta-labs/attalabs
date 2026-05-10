@@ -193,3 +193,45 @@ The `cetana-reality-check.md` is retained as historical record but is no longer 
 The `question.json` / `reply.json` handoff pattern was proven in Slice -1 and ported to V0 without alteration. It has no network dependency, requires no additional infrastructure, survives process restarts (both files are human-readable), and is debuggable with `ls` and `cat`. The cost is that the strategist MCP server and executor MCP server cannot exchange state via in-memory channels — they're separate processes — but JSONL logs already cover that need.
 
 SQLite would have required schema decisions and migration tooling before the data model was stable. JSONL defers those decisions while remaining append-only and inspectable.
+
+---
+
+## Section 7 — Phase 4: V3 Operational Model Adoption (May 10, 2026)
+
+### What changed
+
+Cetana V0 shipped with two roles: Strategist (Claude Desktop) and Executor (Claude Code). The v3 operational model clarified and formalized these roles as Team Leader and Developer, added the Principal as the explicit authority above them, and introduced the Archivist as a fourth role (GitHub Action, not a runtime component).
+
+This phase integrated Cetana into the v3 model documentation without changing the V0 code — the architecture was already correct. The changes were naming, spec updates, and new documentation artifacts.
+
+### Key decisions logged in this phase
+
+**D-016 — severity field on `cetana_request_input`:** The v3 model requires escalations to carry a severity: `execution` (TL handles in Brief Author mode), `strategy` (TL handles in Strategist mode), `product` (Principal handles at ratification window). The field is now in the spec. Code implementation is a follow-up task — the schema is declared so Developers know the contract before the implementation lands.
+
+**D-017 — Brief Validation Gate (stub):** A GitHub Action (`archivist.yml`, job `brief-validation`) validates brief structure on PR open. V0.7 stub exits 0. Real implementation is deferred to V1.
+
+**D-018 — Spec filename locked to `cetana-spec.md`:** Renamed from `cetana-v0-spec.md` to conform to the global D-013 lock. Version state is tracked inside the file via `Status:` header, not in the filename. Lock: YES.
+
+**D-019 — Archivist is a GitHub Action, not a Cetana component:** Cetana handles dispatch + escalation at task-execution time. Archivist handles post-merge documentation sync at PR-merge time. These are different triggers, different contexts, and appropriately separate components.
+
+### New PM artifacts created in this phase
+
+The following files were added to the repo as part of v3 operational model adoption:
+
+- `project-management/state-machine.md` — the constitution; artifact states, roles, authority matrix, decision schema, lock mechanism, tiered documentation, ratification windows
+- `project-management/decisions.md` — global cross-product decision log, D-001 to D-016
+- `project-management/roles/principal.md` — what the Principal owns and does not own; communication style
+- `project-management/roles/team-leader.md` — TL modes (Strategist / Brief Author), tools, anti-patterns
+- `project-management/roles/developer.md` — Developer execution rules, stop conditions, verification checklist, anti-patterns
+- `project-management/reviewer-prompt.md` — template for stateless AI adversarial reviewer rounds
+- `project-management/ratification-queue.md` — append-only queue of decisions and Tier 3 merges awaiting Principal ratification
+- `project-management/coordination.md` — rewritten from v2 (Claude.ai project knowledge model) to v3 (git-based, role-aware session start protocol)
+- `.claude/skills/brief-authoring/SKILL.md` — migrated from `project-management/brief-authoring-rules.md`; v3 model integration section added
+- `scripts/verify-docs.ts` — V0.7 stub, exits 0; real implementation is follow-up
+- `.github/workflows/archivist.yml` — V0.7 stub with three no-op jobs
+
+### What this did NOT change
+
+The V0 coordinator code (`apps/cetana-ai/coordinator/src/`) was not modified in this phase. Severity routing on `cetana_request_input` is specced but requires a code follow-up PR. The Archivist action is scaffolded but not implemented.
+
+The blocking escalation mechanism, the five-layer stack, the filesystem-based IPC, and all Cetana architecture decisions from Phases 1–3 remain unchanged.

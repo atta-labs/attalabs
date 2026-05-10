@@ -1,6 +1,13 @@
+---
+name: brief-authoring
+description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers required sections, model selection, v3 model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), and anti-patterns.
+---
+
 # Brief Authoring Rules
 
-Every executor brief Dani writes or dispatches must follow these rules. They exist because vague briefs produce vague work, and well-structured briefs can be handed to any executor — Claude Code, a future Cetana dispatch, or a parallel agent — with no additional context.
+Every task brief the Team Leader writes or dispatches must follow these rules. They exist because vague briefs produce vague work, and well-structured briefs can be handed to any Developer agent — Claude Code via Cetana dispatch, or a direct paste — with no additional context.
+
+**This skill is in Brief Author mode.** Load it when the Team Leader is authoring or reviewing a brief. Do not load for strategy or architectural questions — those are Strategist mode.
 
 ---
 
@@ -95,6 +102,73 @@ What the executor opens/commits/creates at the end. Specific:
 | Cross-cutting review (reads many files, judges correctness) | Opus |
 
 When dispatching via Cetana, specify the model explicitly in the brief header and in the `cetana.dispatch_task` call (pass it in the brief text itself — the dispatcher uses `defaults.claudeModel` from config, but the brief can override via `--model` flag in the spawned command if needed).
+
+---
+
+## V3 Model Integration
+
+Every brief authored under the v3 operational model must include the following fields in the Header block or an adjacent metadata block. These fields gate dispatch and ratification.
+
+### Required metadata fields
+
+```
+**Tier:** [0 | 1 | 3]
+```
+
+- **Tier 0** — trivial change. Tier 0 checklist: typecheck, lint, tests, PR description.
+- **Tier 1** — implementation. Tier 1 checklist: all Tier 0 items + specs updated + `bun run verify-docs --pr` passes.
+- **Tier 3** — product/roadmap change. Tier 3 checklist: all Tier 1 items + decision log entry + PM docs updated + lock entry if applicable.
+
+When in doubt, assign Tier 3 — the cost of over-tiering is a slightly heavier checklist; the cost of under-tiering is a missing decision log entry that a future agent re-litigates.
+
+### Optional metadata fields
+
+```
+**principal_delegate:** [scope of any authority delegated to the Developer]
+```
+
+Present only when the Principal explicitly delegates a decision. Without this field, all contested choices escalate via `cetana_request_input`. Scope must be specific: "Developer may choose the output format" not "Developer may decide architecture."
+
+```
+**spike:** true
+```
+
+Present only for exploratory briefs. Spike briefs reduce to: typecheck + lint + decision log entry capturing what was tried and learned. Spike code does not merge to main.
+
+### Type 1/2 declaration
+
+If the brief executes a Type 1 (irreversible) decision, the brief must state:
+
+```
+**Executes Type 1 decision:** D-### — [one-line description]
+**Ratified:** [date ratified or "PENDING — do not dispatch until ratified"]
+```
+
+A brief is not dispatchable if it executes a PENDING Type 1 decision. Dispatch requires explicit ratification.
+
+### Lock acknowledgment
+
+If the brief touches an area covered by a lock (see `project-management/decisions.md` entries with `Lock: YES`):
+
+```
+**Conforms to lock:** D-### — [brief description]
+```
+
+OR, if the brief explicitly challenges the lock:
+
+```
+**Challenges lock:** D-### — [brief description]
+**Rationale:** [why the lock should be revised]
+```
+
+A lock challenge is a Type 1 decision and requires Principal ratification before dispatch.
+
+### Briefs are frozen after dispatch
+
+Once a brief is dispatched via `cetana.dispatch_task`, it is frozen. The Developer executes what was dispatched — they do not receive mid-task amendments. If scope needs to change after dispatch:
+1. Stop the task (via `cetana.reply_to_blocked_task` with stop instructions)
+2. Author a new brief with the revised scope
+3. Dispatch the new brief
 
 ---
 

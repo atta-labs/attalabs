@@ -11,6 +11,14 @@ For current state (Vāda phase, auth status, DNS, etc.), see `state.md`.
 
 ## In flight now
 
+**v3 operational model shipped (May 10, 2026).** State-machine-governed coordination model with three conversational roles (Principal, Team Leader, Developer) + Archivist automation. New files: `state-machine.md` (constitution), `decisions.md` (global D-001 to D-016), three role docs, `reviewer-prompt.md`, `ratification-queue.md`. Coordination.md rewritten. Brief-authoring-rules migrated to `.claude/skills/brief-authoring/SKILL.md` with v3 fields. Cetana spec renamed to `cetana-spec.md` (D-018 locked). Archivist V0.7 stub in `.github/workflows/archivist.yml`. `scripts/verify-docs.ts` stub added.
+
+**Code follow-up items from v3 model (NOT in this PR — next tasks):**
+- `cetana_request_input` severity routing implementation in `src/tools/request-input.ts` + GitHub label posting (D-016)
+- Archivist V0.7 real implementation: brief-validation job checks tier field + lock acknowledgments (D-017)
+- `verify-docs.ts` V1 implementation: spec Status blocks, decision log field validation, docs-index sync (D-010)
+- Spec ratification pass: read all current specs, add `Status: draft` or `Status: ratified` blocks as appropriate
+
 **Cetana V0 shipped (May 10, 2026).** Full coordinator built at `apps/cetana-ai/coordinator/`. Three specs, one skill, brief-authoring-rules migrated, prototype deleted. First real dispatch: Track B Item 3b (Reviewer prompt iteration). Configure Claude Desktop with the strategist MCP server, then dispatch.
 
 **MCP contract surfaces + skill registration fixed (May 9, 2026).** PRs #20 and #21 merged. Skill registration unblocked across 17 skills (paths decoupled from SKILL.md frontmatter into sibling `paths.txt`). Vāda's `vada__consult` and `vada__deliberate` MCP tool surfaces aligned with deployed runtime — structured input schema, expanded team enum, stale references and `domain_expert` removed, README retired old terminology and added hosted MCP section. Hosted MCP empirically dogfooded via curl (server healthy) and Claude.ai web (Track E12 broker bug reconfirmed — `ofid_*` errors). Claude Code CLI is the working integration today.
