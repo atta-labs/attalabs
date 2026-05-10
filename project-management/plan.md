@@ -181,25 +181,6 @@ After V0 ships and is used for at least 5 real Atta tasks (target: Reviewer prom
 - Don't build V1 mid-Vāda-work — only between major work streams
 - Time-box V1 build hard at the original ~7-day estimate; if 2 weeks in, stop and reassess
 
-### Vāda Desktop — CLI-subprocess providers (post-Reviewers-v1)
-
-Karpathy's `llm-council` (https://github.com/karpathy/llm-council) is the precedent: a local tool that spawns multiple LLM CLIs in parallel and runs council-style deliberation. Vāda Desktop is the polished, engine-backed version of the same pattern, already partially specced as v1.5 in `vada-reviewers-spec.md` §3.5 and analyzed in `vada-reviewers-tech-deep-dive.md` Section 9.
-
-**What it would be:** A desktop app (Tauri/Electron) that runs Vāda's engine locally. CLI subprocesses (Claude Code, Gemini CLI, Codex CLI, Grok CLI, Ollama) replace HTTP API clients as the "providers." User authenticates each CLI once with their existing subscription. Vendor-diverse Reviewers runs without BYOK.
-
-**Why it matters as a product surface:** subscription-paid execution is the lowest-friction distribution path for individual prosumers. Most users with Claude Pro / ChatGPT Plus / Gemini subscriptions don't have API keys. The hosted Vāda's BYOK model is friction. Vāda Desktop with CLI subprocesses lets users use what they already pay for. Same legal/ToS posture as Aider and llm-council itself — tolerated by vendors because it's user-on-own-machine, not commercial subscription exploitation. Open source.
-
-**What it would require:** ~1-2 days adapter work (route Vāda's `LlmCallFn` to CLI subprocesses for matching model prefixes — already specced as v1.5 engine constraint #6), plus the desktop UI build (~2-3 weeks). Engine, teams, YAMLs unchanged.
-
-**Why not now:** Reviewer prompt iteration ships first. Building Desktop UX around prompts that may still change is wasted work. After Reviewers v1 ships, Desktop becomes the obvious next distribution path for individual prosumers.
-
-**Open questions:**
-- Does this product get a Pāli name, or is it "Vāda Desktop" — same product, different surface?
-- Does Vāda Desktop ship as part of Vāda's open-source surface area, or as a separate commercial product?
-- How does it relate to the Anthropic Claude Apps marketplace path?
-
-**Plan:** evaluate after Reviewer prompt iteration ships and hosted MCP is dogfooded.
-
 ### DB schema management
 
 When `@atta/db` consolidates further, decide whether to keep `db:push` or move to tracked migrations. No urgency.
@@ -221,7 +202,12 @@ Patch opportunistically when touched for other work:
 
 ---
 
-## Recently completed (April 28 – May 9, 2026)
+## Recently completed (April 28 – May 10, 2026)
+
+### May 10 — plan.md audit (this PR)
+- Removed fabricated "Vāda Desktop — CLI-subprocess providers" parking-lot section. The section described a Tauri/Electron Vāda desktop product line that was never specified in any Vāda spec. It conflated `vada-reviewers-spec.md` §3.5's CLI transport-mode option (subprocess wrapping of vendor CLIs as a Vāda transport choice) with an imagined separate desktop product surface.
+- CLI/desktop wrapper concepts are real explorations but they belong on the Atta ecosystem side (chat-subscription auth, prosumer distribution), not as Vāda product line items. They have no current canonical spec; if/when they do, they get referenced in `plan.md` rather than re-specced inline.
+- Two new calibration lessons added (parking-lot items must cite canonical specs; product-attribution discipline) and one new anti-pattern.
 
 ### May 9 — Cetana V0 unblock + PM docs migration
 - Slice -1 escalation prototype: 13/13 pass. Custom MCP tool `cetana_request_input` blocks for 7 minutes, returns reply via external file write, agent resumes coherently with no context loss. Cognitive continuity validated.
@@ -239,7 +225,7 @@ Patch opportunistically when touched for other work:
 - `vada-decisions.md` D-031: rev-4-to-rev-5 reasoning recorded.
 - `vada-reviewers-tech-deep-dive.md` Section 9.6: methodological note on framework-vs-production patterns.
 - `mcp-architecture.md`: known-issue note added on Claude.ai connector broker bug.
-- `atta-plan.md`: Vāda Desktop parking-lot item, Track E12 OAuth hardening watchpoint, calibration lessons on principles-vs-specs and broker bug.
+- `atta-plan.md`: Track E12 OAuth hardening watchpoint, calibration lessons on principles-vs-specs and broker bug.
 - `atta-coordination.md`: GitHub MCP connection note.
 
 ### May 6 — doc audit
@@ -303,6 +289,8 @@ Lessons accumulated through April-May:
 - **Anthropic's SKILL.md frontmatter accepts only `name` and `description`.** May 9: project-specific metadata (path globs, ownership, tags) must live outside the frontmatter — sibling files in the skill directory, not custom frontmatter fields. The Skill tool silently drops skills with non-standard frontmatter; the failure is invisible until an agent tries to invoke the skill, which exposed the issue when skill-check enforcement collided with Skill tool registration. Generalizable rule: never extend Anthropic-defined contracts inline; keep custom data adjacent in separate files.
 - **MCP tool inputSchema is the only contract clients see.** May 9: `vada__consult`'s validator accepted both legacy and structured shapes for ages, but only the legacy shape was declared in `inputSchema`. No MCP client ever sent the richer shape because they read the schema. Generalizable rule: when a runtime accepts more than the published contract advertises, the published contract is the actual constraint. Update the schema together with the validator, or callers will only ever exercise the floor.
 - **Trust no executor completion claim without raw command output for every required deliverable.** May 9: three executor self-reports during a single session were either incomplete or factually wrong (one didn't push to origin despite reporting "done"; one tried to disable a hook unilaterally; one fabricated a summary instead of running the verification commands the brief required). The brief's deliverable contract is the contract — partial reports get rejected and re-asked, raw output for every line item or no merge. Cost of demanding raw output is small; cost of merging on a confident summary is large.
+- **Fabricated parking-lot items can land in canonical PM docs.** May 10: A "Vāda Desktop — CLI-subprocess providers" parking-lot item was discovered in `plan.md` describing a Tauri/Electron Vāda product line that was never specified in any Vāda spec. It conflated `vada-reviewers-spec.md` §3.5's CLI transport-mode option (subprocess wrapping of vendor CLIs as a Vāda transport choice) with an imagined separate desktop product surface. Removed via this audit. Generalizable rule: parking-lot items in `plan.md` that introduce architecture, business model, or product-line claims must cite the canonical spec they elaborate on. Items without a spec citation are themselves the spec, with all the risk of fabrication that implies.
+- **Product attribution discipline.** May 10: CLI/desktop wrapper exploration is a real and ongoing thread, but it lives at the Atta ecosystem level (chat-subscription auth model, prosumer distribution questions) — not on Vāda's product line. Vāda is positioned per `atta-ecosystem-vision.md` as the deliberation primitive accessed via MCP, with optional CLI subprocess transport (`vada-reviewers-spec.md` §3.5). When a cross-cutting product idea arises, name which Atta product it belongs to before writing it down — and if no current product fits, treat it as exploration in `atta-finetuning-research.md` style (research notes, not roadmap) rather than committing it to `plan.md` as a Track or parking-lot item.
 
 ---
 
@@ -328,3 +316,5 @@ Lessons accumulated through April-May:
 - ❌ Adding custom fields to SKILL.md frontmatter (Anthropic Skill tool drops the skill silently)
 - ❌ Letting MCP tool inputSchema and runtime validator drift — schema is the only contract clients see
 - ❌ Accepting executor "done" reports that skip the brief's deliverable contract; demand raw command output line by line
+- ❌ Adding parking-lot items to `plan.md` that introduce product, architecture, or business-model claims without citing the canonical spec they elaborate on — items without citations are themselves the spec, and Claude sessions will hallucinate them
+- ❌ Misattributing cross-cutting product ideas to a single product when they actually belong at the ecosystem level — name the right Atta product (or correctly classify it as exploration) before committing to `plan.md`
