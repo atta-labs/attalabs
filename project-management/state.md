@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** May 9, 2026 (post Cetana V0 unblock via Slice -1 escalation prototype)
+**Last updated:** May 9, 2026 (post Cetana V0 unblock + MCP contract fixes)
 **Purpose:** Single snapshot of where everything stands across the Atta ecosystem.
 
 This doc lives in the repo at `project-management/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -58,6 +58,7 @@ The 4 experimental YAMLs are filtered out of the public `/teams` catalog by the 
 - **Per-node error capture** — `AgentOutput.error?` field; partial failures complete with `terminalState: CLEAN`.
 - **Engine vocabulary refactor (May 3)** — `PlanNodeKind` (7 values) and `PlanEdgeKind` (flow, ordering) emitted by all 4 compilers. Resolves OQ-cross-9 as Choice A.
 - **Role/engine separation (May 3)** — `AgentRole` deleted from `@atta/agents`. Vendor identity is first-class for unroled agents (Vāda Reviewers' Gemini/GPT/Grok = no role, vendor IS identity).
+- **MCP contract surfaces aligned with deployed runtime (May 9, PR #21):** `vada__consult` inputSchema declares structured shape (`context`, `question`, `reviewers[{role, notes?, domain?}]`, plus optional `spec_id`, `current_leaning`, `stakes`, `session_title`); `vada__deliberate` `team` enum expanded to all 5 published specs.
 - `vada__consult` accepts generic `spec_id` — routes to any YAML in the catalog
 - `vada__deliberate` MCP tool returns `structured` field alongside `content`
 - 9 YAML team specs in catalog (5 published, 4 experimental)
@@ -92,7 +93,7 @@ Flat routes at `apps/vada-ai/web/src/app/(main)/`:
 
 **Domain:** `vada.attalabs.dev` (production live). Auto-deploys from `main` via Vercel.
 
-**Next:** Generate Vāda API key + configure Claude.ai connector + dogfood hosted MCP via Claude.ai. Then reviewer prompt iteration (Track B Item 3b — interactive Dani + Sonnet pair-mode), then synthesizer prompt iteration (3c), then first benchmark run (Item 4).
+**Next:** Reviewer prompt iteration (Track B Item 3b) dispatched through Cetana V0 once it ships. Hosted MCP empirically dogfooded May 9 via curl — server healthy, Claude.ai web blocked by Track E12 broker bug (`ofid_*`), Claude Code CLI is the working integration. Then synthesizer prompt iteration (3c), then first benchmark run (Item 4).
 
 See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: file may be slightly stale post-May-4-5; flagged for next cleanup pass).
 
@@ -228,7 +229,7 @@ Two specs:
 **BYOK:** server-side envelope-encrypted in `user_provider_keys`; same store backs the web app's deliberate page (single canonical store per D-028).
 **Two MCP tools:** `vada__consult`, `vada__deliberate`. Identical input/output shapes to the local stdio server.
 
-**Status:** Shipped May 4 via PRs #9 + #10. Phases 1-4 of the implementation plan complete. Phase 5 (stdio session URL fix — `vada.ai` hardcode bug) and Phase 6 (rate limiting, audit log, hardening) remain as future work.
+**Status:** Shipped May 4 via PRs #9 + #10. Phases 1-4 of the implementation plan complete. Phase 5 (stdio session URL fix — `vada.ai` hardcode bug) and Phase 6 (rate limiting, audit log, hardening) remain as future work. Tool contract surfaces aligned with deployed runtime May 9 via PR #21 (structured input schema, expanded team enum, stale references removed). Empirically dogfooded May 9 via curl (server healthy) and Claude.ai web (Track E12 broker bug reconfirmed — Claude Code CLI is the working integration today).
 
 See `apps/vada-ai/specs/mcp-architecture.md` for full spec, `vada-decisions.md` D-029 for the architectural decision.
 
@@ -253,6 +254,11 @@ This ecosystem uses the repo as the source of truth for project management. See 
 ### Recently shipped (April 28 – May 9, 2026)
 
 **May 9 — Cetana V0 unblock.** Slice -1 escalation prototype passed end-to-end (13/13 mechanical + cognitive criteria, 7-minute cognitive continuity test). PM docs migrated from Claude.ai project knowledge to repo at `project-management/` (PR #22). May 9 content updates landing now (this commit).
+
+**May 9 — MCP contract fixes + skill registration unblock (PRs #20 + #21).**
+- **PR #20** (`fix/skill-paths-decouple`, commit `865c6c9`) — moved per-skill path globs from custom `paths:` SKILL.md frontmatter into sibling `paths.txt` files. Skill tool was silently dropping any skill with non-standard frontmatter fields, causing the skill-check enforcement hook to demand skills the Skill tool refused to load (Catch-22). 17 skills affected. Hook updated to read `paths.txt` instead of parsing frontmatter.
+- **PR #21** (`fix/mcp-schema-drift`, commit `26c20ba`) — aligned Vāda's `vada__consult` and `vada__deliberate` MCP tool surfaces with deployed runtime. `vada__consult` inputSchema now declares structured shape (`context`, `question`, `reviewers[{role, notes?, domain?}]`, plus optional `spec_id`, `current_leaning`, `stakes`, `session_title`) — matching `ConsultInputStructuredSchema`. `vada__deliberate` `team` enum expanded to all 5 published specs. Stale `vada__deliberate_brokered` reference and `domain_expert` description removed. README retired Brokered/Autonomous mode framing, fixed broken specs link, added hosted MCP installation section. Validator (`validateAndNormalize`) untouched; both legacy and structured shapes still accepted.
+- **Hosted MCP empirically dogfooded.** Server verified end-to-end via curl (`initialize` + `tools/list` clean with bearer auth). Claude.ai web connector returns `ofid_5a58c66b85d09d04` — Track E12 broker bug reconfirmed. Claude Code CLI is the working integration today.
 
 **May 6 — doc audit PR (`docs/may-5-reality-sync`).** 7 repo files synced to May 4-5 reality:
 - D-028, D-029, D-030 appended to `vada-decisions.md`
@@ -296,6 +302,8 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - `apps/vada-ai/CLAUDE.md` — Settings tab table still shows Teams tab
 - Trust page content in `apps/vada-ai/web/.../trust/...` — references browser-only BYOK; needs full rewrite for current trust model
 - `apps/atta-ai/specs/cetana-reality-check.md` — V0/V0.7/V1 sequencing now superseded by May 9 unblock; V0 build is in flight directly. File still useful as historical reference but no longer the active plan.
+- `.claude/skills/vada-mcp-server/SKILL.md` — references `domain_expert` reviewer role in the "Adding a New Reviewer Profile" how-to; harmless (it's a how-to, not current-state description) but worth aligning when `VADA_DOMAIN_EXPERT` env flag flips.
+- `apps/vada-ai/mcp-server/src/server.ts` — runtime error string "team must be 'sparring' or 'crucible'" no longer matches expanded enum (programmer-error path only; low impact).
 
 ---
 
@@ -304,7 +312,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 **Exists in code (May 9, 2026):**
 - `apps/vada-ai/web` — Vāda web app with full teams catalog surface, production-deployed
 - `apps/vada-ai/web/src/app/api/mcp/route.ts` — hosted MCP route, live
-- `apps/vada-ai/mcp-server` — Vāda's local stdio MCP server with generic `spec_id` routing
+- `apps/vada-ai/mcp-server` — Vāda's local stdio MCP server with generic `spec_id` routing; tool contract surfaces aligned with runtime May 9 (PR #21)
 - `apps/atta-ai/mcp-server` — engine-as-MCP server
 - `apps/atta-ai/web` — atta hub, production-deployed
 - `apps/herald-ai/*` — Herald surfaces (separate auth)
@@ -315,6 +323,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - Calculator + vendor registry
 - `apps/vada-ai/specs/vada-reviewers-spec.md` (rev 4)
 - `project-management/` directory with `coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md` (migrated from project knowledge May 9)
+- `.claude/skills/*/paths.txt` — per-skill path globs decoupled from SKILL.md frontmatter (PR #20 May 9, 17 skills)
 
 **Specced but not yet built / iterated:**
 - `apps/cetana-ai/` V0 build — architecture validated May 9, build session is the next focused work
