@@ -2,26 +2,31 @@ import { eq } from 'drizzle-orm'
 import { db, schema } from '.'
 
 export async function getUserByClerkId(clerkId: string) {
-  const rows = await db.select().from(schema.users).where(eq(schema.users.clerkId, clerkId)).limit(1)
+  const rows = await db.select().from(schema.heraldProfiles).where(eq(schema.heraldProfiles.clerkId, clerkId)).limit(1)
   return rows[0] ?? null
 }
 
 export async function getUserByUsername(username: string) {
-  const rows = await db.select().from(schema.users).where(eq(schema.users.username, username)).limit(1)
+  const rows = await db
+    .select()
+    .from(schema.heraldProfiles)
+    .where(eq(schema.heraldProfiles.username, username))
+    .limit(1)
   return rows[0] ?? null
 }
 
 export async function isUsernameTaken(username: string): Promise<boolean> {
   const rows = await db
-    .select({ username: schema.users.username })
-    .from(schema.users)
-    .where(eq(schema.users.username, username))
+    .select({ username: schema.heraldProfiles.username })
+    .from(schema.heraldProfiles)
+    .where(eq(schema.heraldProfiles.username, username))
     .limit(1)
   return rows.length > 0
 }
 
 export async function createUser(data: {
   clerkId: string
+  email: string
   username: string
   githubHandle?: string
   name: string
@@ -33,7 +38,9 @@ export async function createUser(data: {
   projects?: Array<{ title: string; description: string }>
   experience?: Array<{ company: string; role: string; period: string; highlights: string[] }>
 }) {
-  // Check if user already exists — update if so, insert if not
+  // Ensure shared users row exists before inserting profile (FK requirement)
+  await db.insert(schema.users).values({ clerkId: data.clerkId, email: data.email }).onConflictDoNothing()
+
   const existing = await getUserByClerkId(data.clerkId)
 
   const values = {
@@ -52,12 +59,9 @@ export async function createUser(data: {
   }
 
   if (existing) {
-    await db.update(schema.users).set(values).where(eq(schema.users.clerkId, data.clerkId))
+    await db.update(schema.heraldProfiles).set(values).where(eq(schema.heraldProfiles.clerkId, data.clerkId))
   } else {
-    await db.insert(schema.users).values({
-      clerkId: data.clerkId,
-      ...values
-    })
+    await db.insert(schema.heraldProfiles).values({ clerkId: data.clerkId, ...values })
   }
 }
 
@@ -66,7 +70,7 @@ export async function updateUserUI(
   ui: { themeId: string; colorScheme: string; library: string; fontSans?: string | null }
 ) {
   await db
-    .update(schema.users)
+    .update(schema.heraldProfiles)
     .set({
       themeId: ui.themeId,
       colorScheme: ui.colorScheme,
@@ -74,7 +78,7 @@ export async function updateUserUI(
       fontSans: ui.fontSans !== undefined ? ui.fontSans : undefined,
       updatedAt: new Date()
     })
-    .where(eq(schema.users.clerkId, clerkId))
+    .where(eq(schema.heraldProfiles.clerkId, clerkId))
 }
 
 export async function updateUser(
@@ -98,5 +102,5 @@ export async function updateUser(
   if (data.stack !== undefined) updates.stack = JSON.stringify(data.stack)
   if (data.githubHandle !== undefined) updates.githubHandle = data.githubHandle
 
-  await db.update(schema.users).set(updates).where(eq(schema.users.clerkId, clerkId))
+  await db.update(schema.heraldProfiles).set(updates).where(eq(schema.heraldProfiles.clerkId, clerkId))
 }

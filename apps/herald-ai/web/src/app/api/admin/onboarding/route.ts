@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
 import { createUser, isUsernameTaken } from '@/db/queries'
@@ -26,8 +26,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Username is already taken' }, { status: 409 })
     }
 
+    const clerkUser = await currentUser()
+    const email = clerkUser?.emailAddresses[0]?.emailAddress ?? ''
+
     await createUser({
       clerkId: userId,
+      email,
       username,
       githubHandle: githubHandle || undefined,
       name,

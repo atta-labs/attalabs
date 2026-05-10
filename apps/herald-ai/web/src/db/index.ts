@@ -1,8 +1,20 @@
-import { neon } from '@neondatabase/serverless'
-import { drizzle } from 'drizzle-orm/neon-http'
+import { createDb } from '@atta/db'
 import * as schema from './schema'
 
-const sql = neon(process.env.DATABASE_URL!)
+type DbInstance = ReturnType<typeof createDb>
 
-export const db = drizzle(sql, { schema })
+let _db: DbInstance | undefined
+
+function getDb(): DbInstance {
+  if (!_db) {
+    _db = createDb(process.env.DATABASE_URL!, schema)
+  }
+  return _db
+}
+
+export const db = new Proxy({} as DbInstance, {
+  get(_, prop) {
+    return Reflect.get(getDb(), prop)
+  }
+})
 export { schema }
