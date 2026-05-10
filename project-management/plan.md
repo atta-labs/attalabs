@@ -13,6 +13,8 @@ For current state (Vāda phase, auth status, DNS, etc.), see `state.md`.
 
 **Cetana V0 build starting (May 9, 2026).** Slice -1 escalation prototype passed end-to-end on May 9 — 13/13 pass criteria including 7-minute cognitive continuity. Architecture validated. Throwaway prototype at `~/code/cetana-prototype/` (deletes after V0 ships). Next: build `apps/cetana-ai/` inside the monorepo. Single Bun service, single MCP server with namespaced `cetana.*` tools, GitHub Issues backing, JSONL runtime logs, no UI in V0. ~2-3 days. See V0 build brief (next session).
 
+**MCP contract surfaces + skill registration fixed (May 9, 2026).** PRs #20 and #21 merged. Skill registration unblocked across 17 skills (paths decoupled from SKILL.md frontmatter into sibling `paths.txt`). Vāda's `vada__consult` and `vada__deliberate` MCP tool surfaces aligned with deployed runtime — structured input schema, expanded team enum, stale references and `domain_expert` removed, README retired old terminology and added hosted MCP section. Hosted MCP empirically dogfooded via curl (server healthy) and Claude.ai web (Track E12 broker bug reconfirmed — `ofid_*` errors). Claude Code CLI is the working integration today.
+
 **PM docs migrated to repo (May 9, 2026).** Project-management files (`coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md`) moved from Claude.ai project knowledge to repo at `project-management/` via PR #22. Eliminates manual upload loop, gives files git history, prepares for Cetana V0 (which reads/writes these files programmatically).
 
 **Hosted MCP shipped end-to-end (May 4).** Live at `https://vada.attalabs.dev/api/mcp`. Bearer auth, envelope-encrypted provider keys, both MCP tools wired through. See D-029.
@@ -75,6 +77,7 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 - ✅ **E4: Settings UI for hosted MCP provider keys** — shipped via `feat/shared-keys-ui`. `ProviderKeysSection` in Settings → API Keys. Single-source-keys reversal (D-028) means same store backs web app + hosted MCP.
 - ✅ **E5: Database schema for `user_provider_keys`** — shipped May 4 (PR #10), migrated to `@atta/db` May 5 (D-030).
 - ✅ **E1: `feat/deliberate-redesign`** — superseded by the inline model picker UX changes that landed during single-source-keys + shared-keys-ui.
+- ✅ **E6: MCP tool contract surfaces aligned with deployed runtime** — shipped May 9 (PR #21). `vada__consult` structured inputSchema, `vada__deliberate` expanded team enum, stale references and `domain_expert` removed, README updated with hosted MCP section.
 
 **Hardening remaining (E7+, future):**
 - ⏭ **E7: Stdio session URL fix** — stdio MCP server hardcodes `vada.ai` for session URLs; should be `vada.attalabs.dev`. Small fix, separate PR.
@@ -82,7 +85,7 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 - ⏭ **E9: Audit log retention** — per-decryption events for security audit. Retention policy TBD.
 - ⏭ **E10: KMS migration** — move master key from env var to KMS-managed. `kms_key_id` column already reserved.
 - ⏭ **E11: Per-key tool scoping** — restrict an API key to specific tools. Useful for embedded integrations.
-- ⏭ **E12: OAuth as alternative to bearer-token auth** — Anthropic's claude.ai connector broker has a known bug (`ofid_*` errors) that fails self-hosted MCP servers using bearer-token auth, while OAuth-using vendor-hosted MCP servers (e.g., GitHub at `api.githubcopilot.com/mcp/`) work. Until Anthropic fixes the broker bug, Claude.ai web users cannot connect to hosted Vāda; workaround is Claude Code CLI which works today. If Claude.ai web adoption matters for users, V2 hardening should add OAuth flow as an alternative to bearer auth — different code path on Anthropic's side, more likely to work through the broker. Empirically confirmed May 7-8, 2026.
+- ⏭ **E12: OAuth as alternative to bearer-token auth** — Anthropic's claude.ai connector broker has a known bug (`ofid_*` errors) that fails self-hosted MCP servers using bearer-token auth, while OAuth-using vendor-hosted MCP servers (e.g., GitHub at `api.githubcopilot.com/mcp/`) work. Until Anthropic fixes the broker bug, Claude.ai web users cannot connect to hosted Vāda; workaround is Claude Code CLI which works today. If Claude.ai web adoption matters for users, V2 hardening should add OAuth flow as an alternative to bearer auth — different code path on Anthropic's side, more likely to work through the broker. Empirically reconfirmed May 9, 2026 (third independent reproduction; consistent `ofid_*` failure mode).
 
 ### Track F — Cetana V0 (NEW, in flight May 9)
 
@@ -93,11 +96,15 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 - ⏭ **F5: First real-world dispatch** — Track B Item 3b (Reviewer prompt iteration) becomes the first real Cetana V0 dispatch.
 - ⏭ **F6: 2-week dogfood evaluation** — after V0 ships and is used for at least 5 real Atta tasks, decide whether Cetana V1 (Tauri shell, dashboard, native notifications) is justified.
 
+### Track G — Tooling hygiene (NEW, ad-hoc)
+
+- ✅ **G1: Skill paths decoupled from SKILL.md frontmatter (May 9, PR #20).** Per-skill globs moved to sibling `paths.txt` files; hook updated to read from there. Restored Skill tool registration for 17 skills.
+
 ---
 
 ## Up next — sequencing recommendation
 
-**Currently:** PM docs migrated to repo (PR #22). May 9 content updates landing now.
+**Currently:** PM docs migrated to repo (PR #22). May 9 MCP fixes shipped (PRs #20 + #21). May 9 content updates landing now.
 
 **Immediate next step:** Cetana V0 build session. Brief drafting + dispatch. ~2-3 days.
 
@@ -121,10 +128,11 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 
 - **Vitakka Clerk app deletion** — unused, no users, no consumers. 2 minutes.
 - **Vercel env audit** — confirm no stray `NEXT_PUBLIC_CLERK_*FALLBACK_REDIRECT_URL` env vars. 5 minutes.
-- **Worktree cleanup** — many redundant after May 4-6 merges. Run `git worktree list` and remove anything pointing to merged branches. Includes `.worktrees/doc-audit-may-5` after `docs/may-5-reality-sync` merges.
+- **Worktree cleanup** — many redundant after May 4-9 merges. Run `git worktree list` and remove anything pointing to merged branches. Includes `.worktrees/skill-paths-decouple` and `.worktrees/mcp-schema-drift` after PRs #20 + #21 merge.
 - **Add OpenAI + xAI keys server-side** — Anthropic key already configured; need OpenAI and xAI to verify multi-vendor routing on hosted MCP for full Reviewers benchmark.
 - **Generate Vāda API key + configure Claude Desktop / Claude Code connector** — final step in dogfooding setup; hosted MCP is live but not yet used end-to-end. Settings → API Keys.
 - **Delete `~/code/cetana-prototype/`** — after Cetana V0 ships and is verified working. The throwaway from Slice -1 has served its purpose.
+- **Rotate any Vāda API keys exposed in chat transcripts** — May 9 dogfooding session pasted a real `vada_*` key into Claude.ai conversation history. Revoke and regenerate before reuse.
 
 ---
 
@@ -208,6 +216,8 @@ Patch opportunistically when touched for other work:
 - `apps/vada-ai/specs/vada-teams-catalog/04-caller-claude-protocol.md` — references "Caller Claude owns synthesis" which was reversed by D-016
 - `apps/vada-ai/CLAUDE.md` — Settings tab table still shows Teams tab
 - `apps/atta-ai/specs/cetana-reality-check.md` — V0/V0.7/V1 sequencing collapsed by May 9 unblock; file retained as historical reference but no longer the active plan
+- `.claude/skills/vada-mcp-server/SKILL.md` — references `domain_expert` reviewer role in "Adding a New Reviewer Profile" how-to; harmless but worth aligning when `VADA_DOMAIN_EXPERT` env flag flips
+- `apps/vada-ai/mcp-server/src/server.ts` — runtime error string "team must be 'sparring' or 'crucible'" no longer matches expanded enum (programmer-error path; low impact)
 
 ---
 
@@ -217,7 +227,12 @@ Patch opportunistically when touched for other work:
 - Slice -1 escalation prototype: 13/13 pass. Custom MCP tool `cetana_request_input` blocks for 7 minutes, returns reply via external file write, agent resumes coherently with no context loss. Cognitive continuity validated.
 - Throwaway prototype at `~/code/cetana-prototype/` (slated for deletion after V0 ships).
 - PM docs migrated to repo: `coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md` moved from Claude.ai project knowledge to `project-management/` via PR #22.
-- May 9 content updates: this commit.
+- May 9 content updates: earlier commit on PR #22.
+
+### May 9 — MCP contract fixes + skill registration unblock
+- **PR #20** (`fix/skill-paths-decouple`, commit `865c6c9`) merged. Moved per-skill path globs from custom `paths:` SKILL.md frontmatter into sibling `paths.txt` files. Skill tool's frontmatter parser silently drops skills with non-standard fields; the skill-check enforcement hook was demanding skills the Skill tool refused to load. 17 skills affected. Hook updated to read `paths.txt` instead of parsing frontmatter.
+- **PR #21** (`fix/mcp-schema-drift`, commit `26c20ba`) merged. Aligned Vāda's `vada__consult` and `vada__deliberate` MCP surfaces with deployed runtime: structured inputSchema (`context`, `question`, `reviewers[{role, notes?, domain?}]`, plus optional `spec_id`, `current_leaning`, `stakes`, `session_title`); team enum expanded to all 5 published specs; stale `vada__deliberate_brokered` reference and `domain_expert` description removed; README retired Brokered/Autonomous mode framing, fixed broken specs link, added hosted MCP installation section. Validator (`validateAndNormalize`) untouched — both legacy and structured shapes still accepted.
+- **Hosted MCP dogfooded.** Server verified end-to-end via curl (`initialize` + `tools/list` clean with bearer auth). Claude.ai web returns `ofid_5a58c66b85d09d04` — Track E12 broker bug reconfirmed (third independent reproduction). Claude Code CLI works.
 
 ### May 8 — rev 5 of Vāda Reviewers spec + ecosystem doc updates
 - `vada-reviewers-spec.md` rev 5: three additions to reviewer + synthesizer prompts (Persona+Goal+Posture+Output structure, verification block requirement, phantom consensus detection). Derived from cross-vendor research synthesis (Gemini, Grok, ChatGPT — May 2026). See D-031.
@@ -281,10 +296,13 @@ Lessons accumulated through April-May:
 - **Sycophancy at architectural decision points is dangerous.** Reflexive flipping when challenged is just as bad as defending a wrong choice. The right answer requires reasoning, not capitulation.
 - **When something feels uncannily like a spec we already wrote, check if we already wrote it.** May 6: Claude got excited about a project management framework idea before noticing it was already specced as Cetana V0/V0.7. Pattern: pivots to "shiny new architectural ideas" mid-execution. Counter: pause, search project knowledge for the closest existing concept, then decide whether to investigate.
 - **Research synthesis often duplicates existing spec work.** May 8: a parallel research thread (Gemini, Grok, ChatGPT — multi-agent orchestration patterns) returned five "convergent patterns." Three were already in `vada-reviewers-spec.md` rev 4. The fix wasn't a new principles doc — it was a rev 5 patch to the existing spec. Always check the relevant spec first; new research usually patches existing specs rather than spawning new ones. Standalone principles docs risk drifting from implementation.
-- **Self-hosted MCP servers with bearer-token auth currently fail through Claude.ai's connector broker.** May 7-8: Vāda's hosted MCP at `vada.attalabs.dev/api/mcp` is healthy and works via Claude Code CLI, but Claude.ai web rejects it with `ofid_*` broker errors. GitHub's hosted MCP at `api.githubcopilot.com/mcp/` works via OAuth. Different code paths in Anthropic's broker. Workaround for Vāda users today: Claude Code CLI. Future hardening: add OAuth as an alternative to bearer auth (Track E12).
+- **Self-hosted MCP servers with bearer-token auth currently fail through Claude.ai's connector broker.** May 7-8: Vāda's hosted MCP at `vada.attalabs.dev/api/mcp` is healthy and works via Claude Code CLI, but Claude.ai web rejects it with `ofid_*` broker errors. GitHub's hosted MCP at `api.githubcopilot.com/mcp/` works via OAuth. Different code paths in Anthropic's broker. Workaround for Vāda users today: Claude Code CLI. Future hardening: add OAuth as an alternative to bearer auth (Track E12). Reconfirmed May 9 (third reproduction; consistent failure mode).
 - **Validate the existential dependency before building the product around it.** May 9: Cetana V0 was almost designed and partially built before validating that Claude Code (headless mode) could actually call a custom MCP tool that blocks for arbitrary duration and resumes coherently. Slice -1 prototype (~100 lines, 2 hours) settled the question definitively. Generalizable rule: if the entire product depends on one technical mechanism nobody has confirmed at runtime, prototype that mechanism in isolation before designing anything around it.
 - **Reviewer pressure-testing materially improved the Cetana architecture.** May 9: Multi-AI synthesis caught a fatal architectural assumption (web Claude.ai cannot reach localhost MCP servers — only Claude Desktop can). Without that catch, V0 would have been built on impossible plumbing. Generalizable rule: when an architecture depends on a transport assumption, verify it against vendor docs before locking the spec.
 - **PM docs in repo > project knowledge.** May 9: migrating `coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md` from Claude.ai project knowledge to `project-management/` in the repo eliminated the manual upload loop. Now any Claude session reads/writes them via GitHub MCP. Cetana V0 will read/write them programmatically. The project knowledge layer was operationally heavy and gave nothing the repo didn't already provide.
+- **Anthropic's SKILL.md frontmatter accepts only `name` and `description`.** May 9: project-specific metadata (path globs, ownership, tags) must live outside the frontmatter — sibling files in the skill directory, not custom frontmatter fields. The Skill tool silently drops skills with non-standard frontmatter; the failure is invisible until an agent tries to invoke the skill, which exposed the issue when skill-check enforcement collided with Skill tool registration. Generalizable rule: never extend Anthropic-defined contracts inline; keep custom data adjacent in separate files.
+- **MCP tool inputSchema is the only contract clients see.** May 9: `vada__consult`'s validator accepted both legacy and structured shapes for ages, but only the legacy shape was declared in `inputSchema`. No MCP client ever sent the richer shape because they read the schema. Generalizable rule: when a runtime accepts more than the published contract advertises, the published contract is the actual constraint. Update the schema together with the validator, or callers will only ever exercise the floor.
+- **Trust no executor completion claim without raw command output for every required deliverable.** May 9: three executor self-reports during a single session were either incomplete or factually wrong (one didn't push to origin despite reporting "done"; one tried to disable a hook unilaterally; one fabricated a summary instead of running the verification commands the brief required). The brief's deliverable contract is the contract — partial reports get rejected and re-asked, raw output for every line item or no merge. Cost of demanding raw output is small; cost of merging on a confident summary is large.
 
 ---
 
@@ -307,3 +325,6 @@ Lessons accumulated through April-May:
 - ❌ Pivoting to investigate a new architectural idea mid-execution without first checking whether it's already specced and parked in the project's own docs
 - ❌ Designing a product around a technical mechanism without first prototyping the mechanism in isolation to confirm it works
 - ❌ Locking transport architecture without confirming transport assumptions against vendor docs
+- ❌ Adding custom fields to SKILL.md frontmatter (Anthropic Skill tool drops the skill silently)
+- ❌ Letting MCP tool inputSchema and runtime validator drift — schema is the only contract clients see
+- ❌ Accepting executor "done" reports that skip the brief's deliverable contract; demand raw command output line by line
