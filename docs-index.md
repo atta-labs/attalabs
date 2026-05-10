@@ -2,6 +2,7 @@
 
 ## Skills
 
+- [Cetana Coordinator internals — MCP servers, worktree manager, JSONL events, GitHub Octokit integration. Load when working in apps/cetana-ai/coordinator/.](./.claude/skills/cetana-coordinator/SKILL.md)
 - [LangGraph execution + cognitive router internals. Load when working in packages/adapter-langgraph — modifying graph execution, agent dispatch, tool filtering, classifier logic, cost tracking, state reducers, or debugging MAX_REVISIONS / latency issues. Do NOT load for pure Plan compilation (engine-layer) or team config (teams-layer).](./.claude/skills/atta-adapter-langgraph/SKILL.md)
 - [Vāda engine internals — Plan compilation, Agent/Workflow/Team types, validation rules, terminal states, and immutability invariants. Load when working inside packages/engine or debugging unexpected Plan graph structure. Do NOT load for adapter/router/provider runtime work.](./.claude/skills/atta-engine/SKILL.md)
 - [Vāda agent and team configurations. Load when adding/modifying agents, teams, reviewer profiles, or building a verticalized team for a specific domain. Covers the tools-on/tools-off invariant. Do NOT load for engine primitives or adapter runtime.](./.claude/skills/atta-teams/SKILL.md)
@@ -26,6 +27,12 @@
 - [How to create and register YAML deliberation specs. Load when adding a new team or new YAML spec. Covers all four workflow types (Solo, Rounds, Custom, Brokered), spec-registry registration, and verify scripts.](./.claude/skills/vada-yaml-authoring/SKILL.md)
 
 ## Specification Documents
+
+### cetana-ai
+
+- [Cetana V0 — Locked Architecture Specification](./apps/cetana-ai/specs/cetana-v0-spec.md)
+- [Cetana — Experiment Log](./apps/cetana-ai/specs/cetana-experiment-log.md)
+- [Cetana — Decision Log](./apps/cetana-ai/specs/cetana-decisions.md)
 
 ### atta-ai
 
@@ -88,6 +95,13 @@
 
 - [Vitakka](./apps/vitakka-ai/specs/vitakka-human.md)
 - [Vitakka — Technical Specification](./apps/vitakka-ai/specs/vitakka-spec.md)
+
+## Project Management
+
+- [Coordination — how the system works](./project-management/coordination.md)
+- [Current State — ecosystem snapshot](./project-management/state.md)
+- [Active Plan — tracks and sequencing](./project-management/plan.md)
+- [Brief Authoring Rules — how to write executor briefs](./project-management/brief-authoring-rules.md)
 
 ## Root-Level Documentation
 

@@ -11,7 +11,7 @@ For current state (Vāda phase, auth status, DNS, etc.), see `state.md`.
 
 ## In flight now
 
-**Cetana V0 build starting (May 9, 2026).** Slice -1 escalation prototype passed end-to-end on May 9 — 13/13 pass criteria including 7-minute cognitive continuity. Architecture validated. Throwaway prototype at `~/code/cetana-prototype/` (deletes after V0 ships). Next: build `apps/cetana-ai/` inside the monorepo. Single Bun service, single MCP server with namespaced `cetana.*` tools, GitHub Issues backing, JSONL runtime logs, no UI in V0. ~2-3 days. See V0 build brief (next session).
+**Cetana V0 shipped (May 10, 2026).** Full coordinator built at `apps/cetana-ai/coordinator/`. Three specs, one skill, brief-authoring-rules migrated, prototype deleted. First real dispatch: Track B Item 3b (Reviewer prompt iteration). Configure Claude Desktop with the strategist MCP server, then dispatch.
 
 **PM docs migrated to repo (May 9, 2026).** Project-management files (`coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md`) moved from Claude.ai project knowledge to repo at `project-management/` via PR #22. Eliminates manual upload loop, gives files git history, prepares for Cetana V0 (which reads/writes these files programmatically).
 
@@ -23,9 +23,9 @@ For current state (Vāda phase, auth status, DNS, etc.), see `state.md`.
 
 **Doc audit PR merged (May 6).** Branch `docs/may-5-reality-sync`, commit `aa03a51`. 7 repo files synced to May 4-5 reality.
 
-**Currently active work:** Cetana V0 build (next session). All other May work closed.
+**Currently active work:** Cetana V0 PR open on `feat/cetana-v0`. Pending merge.
 
-**Next focused work:** Cetana V0 build (`apps/cetana-ai/`). Then Track B Item 3b — Reviewer prompt iteration, dispatched through Cetana V0 to validate the orchestration loop on real Vāda work.
+**Next focused work:** Configure Claude Desktop with Cetana strategist MCP server. Then Track B Item 3b — Reviewer prompt iteration, dispatched through Cetana V0 (F5). This validates the orchestration loop on real Vāda work.
 
 ---
 
@@ -87,9 +87,9 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 ### Track F — Cetana V0 (NEW, in flight May 9)
 
 - ✅ **F1: Slice -1 escalation prototype** — May 9. 13/13 pass. Validated `cetana_request_input` MCP tool round-trip including 7-minute cognitive continuity. Throwaway prototype at `~/code/cetana-prototype/`.
-- ⏭ **F2: V0 Coordinator build at `apps/cetana-ai/`.** Single Bun service inside the monorepo, single MCP server with namespaced `cetana.*` tools. Reuses `@atta/db`. ~2-3 days.
-- ⏭ **F3: Worktree manager** — git worktree create/cleanup with hooks for `.env` etc. Part of F2.
-- ⏭ **F4: GitHub Octokit integration** — fetch issues by number, post comments, open PRs on completion. Part of F2.
+- ✅ **F2: V0 Coordinator build at `apps/cetana-ai/`.** Single Bun service, two MCP server entry points, 4 tools, 38 passing tests. Shipped May 10.
+- ✅ **F3: Worktree manager** — `worktree.ts` with create/remove/list. Part of F2.
+- ✅ **F4: GitHub Octokit integration** — `github.ts` with getIssue, postComment, openPR. Part of F2.
 - ⏭ **F5: First real-world dispatch** — Track B Item 3b (Reviewer prompt iteration) becomes the first real Cetana V0 dispatch.
 - ⏭ **F6: 2-week dogfood evaluation** — after V0 ships and is used for at least 5 real Atta tasks, decide whether Cetana V1 (Tauri shell, dashboard, native notifications) is justified.
 

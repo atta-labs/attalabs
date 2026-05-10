@@ -116,9 +116,9 @@ See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: fil
 
 **Next:** Buildout downstream of Vitakka resuming.
 
-### Cetana — *V0 build in flight as of May 9, 2026*
+### Cetana — *V0 shipped May 10, 2026*
 
-**Status:** Architecture validated via Slice -1 escalation prototype on May 9, 2026 (13/13 pass, including 7-minute cognitive continuity). V0 build starting in the monorepo at `apps/cetana-ai/`. Originally specced as late-2026/early-2027 work; pulled forward because copy-paste friction between Claude.ai (strategist) and Claude Code (executor) is now blocking Vāda iteration directly.
+**Status:** V0 shipped via PR on `feat/cetana-v0`. Architecture validated via Slice -1 escalation prototype on May 9, 2026 (13/13 pass, including 7-minute cognitive continuity). V0 now live inside the monorepo at `apps/cetana-ai/`. First real dispatch: Track B Item 3b (Reviewer prompt iteration).
 
 **What it is:** Local Mac orchestration tool that lets Claude Desktop chat (the strategist) dispatch Claude Code agents (the executors) into the Atta repo via MCP, watch them work, and unblock them when they hit decision points.
 
@@ -317,7 +317,6 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - `project-management/` directory with `coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md` (migrated from project knowledge May 9)
 
 **Specced but not yet built / iterated:**
-- `apps/cetana-ai/` V0 build — architecture validated May 9, build session is the next focused work
 - Reviewer system prompt iteration (Track B Item 3b) — to be dispatched through Cetana once V0 ships
 - Synthesizer system prompt iteration (3c)
 - Vāda Reviewers benchmark (Item 4)
@@ -328,7 +327,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 **Does not exist yet:**
 - `apps/account/web` — DEFERRED indefinitely. D-030 decision: no `account.attalabs.dev` hub.
 - `apps/sati-ai/*` — Sati doesn't exist
-- `apps/cetana-ai/*` — directory created/scaffolded by next session
+- `apps/cetana-ai/coordinator/` — V0 shipped May 10 (feat/cetana-v0 PR)
 - Hosted MCP hardening: rate limiting, audit log retention, KMS migration, per-key tool scoping (V2 work)
 - Trust + MCP page content rewrites
 - Cetana V1 surfaces (Tauri shell, dashboard, native notifications) — deferred until V0 proves daily-driver value over 2 weeks

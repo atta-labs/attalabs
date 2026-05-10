@@ -1,0 +1,195 @@
+# Cetana — Experiment Log
+
+**Purpose:** Full journey of how Cetana came to be and what was learned. Future Claude reads this to understand WHY the architecture is what it is, without re-litigating decisions.
+
+---
+
+## Section 1 — Phase 0: Architecture Exploration (April–May 2026)
+
+### The problem
+
+By late April 2026, Vāda's reviewer prompt iteration (Track B Item 3b) required many rapid dispatch cycles: invoke a team, read 3 reviewer responses, judge whether the prompts are producing the right behavior, tweak, re-run. Each cycle involved:
+
+1. Copy a brief from Claude.ai to a new Claude Code CLI session
+2. Watch the session run (sometimes monitoring multiple windows)
+3. Copy results back to Claude.ai for synthesis and judgment
+4. Tweak the brief, repeat
+
+This was costing 30–60 minutes per iteration — not because the work was hard, but because the coordination overhead was brutal. The actual agent work took 3–5 minutes. The surrounding context switches, copy-pasting, and re-establishing context took 5–10x that.
+
+The question: is there existing tooling that handles this better, or do we need to build something?
+
+### Tool landscape survey
+
+Surveyed in May 2026:
+
+- **Conductor.build** — multi-agent orchestration platform. Cloud-hosted, not local. No interactive pause/resume.
+- **Vibe Kanban / Bloop** — shut down. Dead end.
+- **Nimbalyst** — project management overlay. Not agentic.
+- **CCPM (Claude Code Project Manager, ~8.1k GitHub stars)** — dispatches Claude Code sessions, tracks tasks. No interactive pause/resume when agent hits a decision point.
+- **APM (Agent Project Manager)** — similar to CCPM. Same gap.
+- **Cursor 3 Agents** — parallel Cursor agents in shared workspace. No structured pause/resume.
+- **Claude Cowork + Dispatch** — Claude.ai-side session management. Cannot reach localhost MCP.
+- **claude-army** — batch dispatch, no interactive escalation.
+
+**Conclusion:** Nothing combined roadmap + dispatch + interactive pause/resume in one surface for a solo developer workflow. The interactive pause/resume layer was missing everywhere.
+
+---
+
+## Section 2 — Phase 0: Multi-AI Reviewer Rounds (May 2026)
+
+Architecture was stress-tested through four rounds of multi-AI synthesis before any code was written.
+
+### Round 1 — Initial architecture sketch
+
+Submitted to Gemini, Grok, DeepSeek, and ChatGPT-shaped reviewers for adversarial review. Key catches:
+
+- **Two MCP servers was over-engineering.** Original design had a separate "strategist server" and "executor server" as independent packages. Reviewers converged: same codebase, two entry points. Collapsed to one coordinator package.
+- **Tauri shell in V0 was scope creep.** All reviewers flagged this. Dashboard demoted to V1. "Removed the highest-risk fake-progress surface."
+- **Stream-json regex pattern matching for escalation was brittle.** Original design detected escalation by watching Claude's stdout for patterns. Reviewers: use a dedicated MCP tool that blocks — deterministic, not fragile. This became the Slice -1 mandate.
+
+### Round 2 — Refined architecture
+
+After incorporating Round 1 feedback:
+
+- **Reviewer C:** "Build the bash prototype before the Bun service." This was the right call. Became the Slice -1 mandate. Eliminated the risk of building V0 around an unvalidated assumption.
+- **Dashboard demoted:** confirmed. V0 = CLI + `tail -f`.
+- **Single MCP server:** confirmed. Two entry points (`mcp-server-strategist.ts`, `mcp-server-executor.ts`) sharing core modules.
+
+### Round 3 — Architecture validated against vendor docs
+
+**Critical catch from Reviewer D:**
+
+> "Web Claude.ai cannot reach localhost MCP servers per Anthropic's architecture. Only Claude Desktop supports local stdio MCP transport."
+
+This was a fatal architectural assumption Claude had been carrying: that the Strategist could be a web Claude.ai session with an HTTP MCP server on localhost. That path is dead. Web Claude.ai runs in a sandboxed browser environment that cannot make localhost connections.
+
+**Fix:** Strategist must be Claude Desktop (local stdio). Tunnel + remote dispatch deferred to V2.
+
+**Why this matters:** If this assumption had survived into the V0 build, the entire transport layer would have been wrong. The architecture review cycle caught it at zero implementation cost. Generalizable lesson: verify transport assumptions against vendor docs before locking the spec.
+
+### Round 4 — Final pre-build review
+
+Two refinements added:
+
+1. **Slice -1 must test cognitive continuity (long pause), not just IPC.** The mechanical test (does the tool block? does the reply arrive?) was necessary but not sufficient. The real question was: does the agent maintain coherent context across an arbitrary-length pause? A 7-minute pause was added to the test protocol as a hard requirement.
+
+2. **Subjective pass criterion added:** "Did this feel better than copy-paste?" Not just a mechanical pass/fail — Principal (Dani) had to feel it in the UX.
+
+Final scope: 4 MCP tools, no Tauri, no dashboard, JSONL not SQLite, worktrees not branches.
+
+---
+
+## Section 3 — Phase 1: Slice -1 Escalation Prototype (May 9, 2026)
+
+### Setup
+
+Built at `~/code/cetana-prototype/` (outside monorepo — throwaway). ~100 lines of code across 5 files:
+
+- `escalation-server.ts` — the MCP server with `cetana_request_input` tool
+- `.mcp.json` — MCP config pointing Claude Code at the escalation server
+- `prompt.txt` — test brief asking the agent to call `cetana_request_input` before creating a file
+- `run-test.sh` — orchestration script: spawn Claude Code, poll for question, wait for human reply, verify
+- `test-repo/` — minimal git repo for Claude Code to work in
+
+### The test
+
+```
+prompt.txt:
+You are testing an escalation mechanism. Your task:
+- Call cetana_request_input to ask "What word should I put in choice.txt?"
+- Wait for the response
+- Create choice.txt with exactly that word
+- Verify and exit
+```
+
+### What happened
+
+1. Claude Code loaded the MCP server via stdio
+2. Listed tools — `cetana_request_input` appeared in the registry
+3. Called the tool with the question
+4. Tool wrote `question.txt` to `~/.cetana-prototype/` and began polling for `reply.txt`
+5. `run-test.sh` surfaced the question to the Principal
+6. Principal waited 7 minutes (deliberate pause to test cognitive continuity)
+7. Principal wrote `echo 'pizza' > ~/.cetana-prototype/reply.txt`
+8. Tool read `reply.txt`, deleted both files, returned `"pizza"` to the agent
+9. Agent's first post-resume sentence: **"The principal chose pizza. Creating choice.txt now."**
+10. `choice.txt` created with content `pizza`
+11. Process exited 0
+
+**Bug found and fixed mid-test:** `path.expandUser()` doesn't exist in Node.js. The agent caught this immediately and substituted `os.homedir()`. Clean recovery, no re-planning.
+
+### Results: 13/13 pass
+
+**Mechanical (8/8):** MCP loaded ✓, tool listed ✓, tool called ✓, blocked ✓, reply received ✓, agent resumed ✓, file created ✓, exit 0 ✓
+
+**Cognitive continuity (5/5):** No redundant reads ✓, no re-planning ✓, no duplicated work ✓, no hallucination ✓, sequential events ✓
+
+Wall-clock: 7m38s. Claude Code 2.1.118, Bun 1.2.14, macOS.
+
+### Subjective verdict
+
+"This felt better than copy-paste." — Principal
+
+---
+
+## Section 4 — Phase 2: V0 Build (May 9–10, 2026)
+
+V0 built inside the Atta monorepo at `apps/cetana-ai/` via a single build session on `feat/cetana-v0`. The Slice -1 prototype's IPC pattern (filesystem-based question/reply handoff via `~/.cetana/tasks/{taskId}/`) was ported directly — same mechanism, monorepo conventions.
+
+Architecture as locked in Phase 0 was implemented without alteration:
+- One coordinator package with two MCP server entry points
+- Four MCP tools (3 Strategist-side, 1 Executor-side)
+- JSONL append-only logs
+- Worktrees for task isolation
+- GitHub Issues as task backing
+
+The Slice -1 prototype was deleted as the final step.
+
+See `cetana-v0-spec.md` for the locked architecture. See `cetana-decisions.md` for the full decision log.
+
+---
+
+## Section 5 — Phase 3: V1 Evaluation (Deferred)
+
+**Plan:** 2 weeks of V0 daily use on real Atta tasks (starting with Vāda Reviewer prompt iteration, Track B Item 3b). Then evaluate whether Tauri shell + dashboard + native notifications + menu bar status are worth building.
+
+**Hard guardrails:**
+- Don't build V1 if V0 alone reduces friction enough
+- Don't build V1 mid-Vāda-work — only between major work streams
+- Time-box V1 build at 7 days; if 2 weeks in, stop and reassess
+- "V0 proved daily-driver sufficient" is a valid outcome — V1 is not mandatory
+
+---
+
+## Section 6 — Calibration Lessons
+
+### Validate the existential dependency before building the product
+
+Cetana V0 was almost designed and partially specced before validating that Claude Code (headless mode) could actually call a custom MCP tool that blocks for arbitrary duration and resumes coherently. The Slice -1 prototype (~100 lines, ~2 hours) settled the question definitively.
+
+Generalizable: if the entire product depends on one technical mechanism nobody has confirmed at runtime, prototype that mechanism in isolation before designing anything around it.
+
+### Reviewer pressure-testing materially improved the architecture
+
+Multi-AI synthesis (Round 3) caught the fatal transport assumption: web Claude.ai cannot reach localhost MCP servers. Without that catch, V0 would have been built on impossible plumbing. The fix was architectural, not cosmetic — had it been discovered during implementation, it would have required rebuilding the transport layer.
+
+Generalizable: when an architecture depends on a transport assumption, verify it against vendor docs before locking the spec.
+
+### PM docs in repo beat project knowledge
+
+Migrating `coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md` from Claude.ai project knowledge to `project-management/` in the repo eliminated the manual upload loop. Any Claude session can read/write them via GitHub MCP. Cetana V0 will read/write them programmatically. The project knowledge layer added operational overhead with no compensating benefit.
+
+### The V0 → V0.7 → V1 path collapsed
+
+The original `cetana-reality-check.md` (April 2026) described a three-step path: V0 = YAML deliberation team inside Vāda, V0.7 = MCP + CLI exposing coordination state, V1 = full UI + state machine. That path was designed before the Slice -1 prototype existed.
+
+Slice -1 changed the picture entirely. The blocking escalation primitive was validated. The transport assumption (Claude Desktop required, not web Claude.ai) was confirmed. The "cheap YAML team" step became unnecessary — V0 could directly implement the full coordinator with interactive pause/resume. The path collapsed to: V0 (full coordinator) → V1 (Tauri UI, if needed).
+
+The `cetana-reality-check.md` is retained as historical record but is no longer the active sequencing plan.
+
+### Filesystem-based IPC is the right call for V0
+
+The `question.json` / `reply.json` handoff pattern was proven in Slice -1 and ported to V0 without alteration. It has no network dependency, requires no additional infrastructure, survives process restarts (both files are human-readable), and is debuggable with `ls` and `cat`. The cost is that the strategist MCP server and executor MCP server cannot exchange state via in-memory channels — they're separate processes — but JSONL logs already cover that need.
+
+SQLite would have required schema decisions and migration tooling before the data model was stable. JSONL defers those decisions while remaining append-only and inspectable.
