@@ -77,11 +77,22 @@ Key behaviors:
 
 Agent source: agents are imported from `@vada/agents` (`apps/vada-ai/agents/`). The `reviewerProfiles` map in `consult.ts` maps role name strings to agent definitions.
 
+**Per-reviewer model overrides (`reviewer_config`, May 11, PR #31).** Optional `reviewer_config: Record<agentName, modelId>` parameter overrides the per-agent YAML default model on a per-call basis. Used primarily for configurable teams like Vāda Reviewers and Vāda Reviewers + Synthesis where each slot is independently vendor-bound. Example: `reviewer_config: { "Gemini": "gemini-2.5-pro", "GPT": "gpt-4o" }`. Validated against the vendor registry (`packages/models/src/vendors.ts`):
+
+- Each `[agentName, modelId]` is resolved via `findModelEntryByModelId(catalog, modelId)` (catalog-aware) or `resolveVendorByPrefix(modelId)` (fallback)
+- Refused with structured `local_only_vendor` error if the resolved vendor has `localOnly: true` (e.g., `ollama`) — hosted MCP is production by definition
+- Refused with structured `missing_provider_key` error if `providerKeys[vendorId]` is absent server-side
+- Errors include resolved `vendorId`, `modelId`, and `agentName` for client-side reporting
+
+The resolved vendor map flows through `agentVendorOverrides` into `createMultiVendorLlmCall` and `LangGraphAdapter`, correctly routing cross-vendor models like `deepseek-r1-distill-llama-70b` served by Groq (which prefix matching alone would misidentify as DeepSeek). See D-032 in `vada-decisions.md`.
+
 ### `vada__deliberate` — Rounds-Based Team Deliberation
 
 Caller provides a question and a team name. The server looks up the named YAML spec from the catalog and runs a full deliberation (rounds + synthesis + audit + revision).
 
 `deliberate.ts` calls `lookupSpec(teamName)` from `spec-registry.ts`, then `compileSpec(spec, question, model)`.
+
+The `team` enum is pruned to the currently published specs only: `vada-reviewers`, `vada-reviewers-synthesis` (PR #31, May 11). Experimental specs (`crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline`, `brokered-trio`, `brokered-quartet`) remain accessible by explicit `spec_id` via `vada__consult` but are not advertised in the `vada__deliberate` enum.
 
 ---
 
@@ -93,21 +104,20 @@ Caller provides a question and a team name. The server looks up the named YAML s
 import { lookupSpec, listPublicSpecs } from './spec-registry'
 
 // Lookup by full spec ID (auto-discovered from filesystem)
-const spec = lookupSpec('sparring')
-const spec = lookupSpec('crucible')
-const spec = lookupSpec('war-room')
+const spec = lookupSpec('vada-reviewers')
+const spec = lookupSpec('vada-reviewers-synthesis')
 
 // Lookup by short alias (explicit ALIASES map: a0, a1 only)
 const spec = lookupSpec('a0')            // ALIASES['a0'] → 'a0-baseline'
 const spec = lookupSpec('a1')            // ALIASES['a1'] → 'a1-baseline'
 
 // All non-experimental specs (for tool description generation)
-const specs = listPublicSpecs()
+const specs = listPublicSpecs()          // Returns: vada-reviewers, vada-reviewers-synthesis (as of May 11)
 ```
 
 `validateAllSpecs()` runs at startup. A malformed YAML causes a startup crash — preferable to a runtime error mid-session.
 
-Current catalog: `crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline`, `brokered-trio`, `brokered-quartet`.
+Current catalog (May 11, 2026): 9 YAMLs total — **2 published** (`vada-reviewers`, `vada-reviewers-synthesis`), **7 experimental** (`crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline`, `brokered-trio`, `brokered-quartet`). Crucible, Sparring, and War Room were marked `experimental: true` in PR #31 — flow design, system prompts, and inter-agent interactions all need iteration before they should be re-exposed publicly. All experimental specs remain accessible by explicit `spec_id` via `vada__consult` but are filtered from the public `/teams` page and from the `vada__deliberate` enum.
 
 `brokered-trio` and `brokered-quartet` have no short-name alias — they are accessible by full id but not exposed as named options in `vada__deliberate`.
 
@@ -155,6 +165,7 @@ Current catalog: `crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline
 - ❌ Modifying YAML files to add tool names without verifying the tool exists in the adapter registry
 - ❌ Manually adding to a SPECS object in `spec-registry.ts` — the registry is now dynamic; just create the YAML file
 - ❌ Logging session before the deliberation completes — always log after `adapter.execute()` returns
+- ❌ Re-implementing prefix-based vendor resolution inside the MCP server — `consult.ts` consults the vendor registry (`@atta/models`) via `findModelEntryByModelId` + `resolveVendorByPrefix` fallback. There is no separate `resolveModelVendor` in this package.
 
 ---
 
@@ -164,6 +175,7 @@ Current catalog: `crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline
 - Agent definitions: **atta-teams** skill (`apps/vada-ai/agents/src/`)
 - Plan compilation: **atta-engine** skill
 - LangGraph execution: **atta-adapter-langgraph** skill
+- Vendor registry + SDK-shape dispatch: D-032 in `apps/vada-ai/specs/vada-decisions.md` + `packages/models/src/vendors.ts`
 
 ---
 
@@ -190,6 +202,6 @@ Brief summary only. Full architecture detail lives in `apps/vada-ai/specs/mcp-ar
 - No env vars (auth via API key)
 - No local process (HTTP transport)
 - Keys server-managed (vs env var — different trust model)
-- Tool surface identical
+- Tool surface identical, including `reviewer_config` parameter on `vada__consult` (May 11, PR #31)
 
 **For full architecture detail:** `apps/vada-ai/specs/mcp-architecture.md`

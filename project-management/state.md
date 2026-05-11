@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** May 10, 2026 (v3 operational model shipped + Cetana v3 adoption)
+**Last updated:** May 11, 2026 (vendor registry consolidation shipped — PR #31)
 **Purpose:** Single snapshot of where everything stands across the Atta ecosystem.
 
 This doc lives in the repo at `project-management/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -42,11 +42,11 @@ Canonical decision doc: `apps/atta-ai/specs/atta-naming-decision.md`.
 
 ### Vāda — *production live; hosted MCP shipped; reviewer prompt iteration phase next*
 
-**Status:** Live at `https://vada.attalabs.dev`. Vāda Teams is the catalog of YAML team specifications compiled by the Atta engine. Vāda Reviewers v1 (vendor-diverse team) registered. **Hosted MCP server live at `https://vada.attalabs.dev/api/mcp` (May 4).** **Single-source-keys reversal locked (May 4) — server-side `user_provider_keys` is canonical, IndexedDB demoted.** **`feat/shared-keys-ui` merged (May 5) — `ProviderKeysSection` / `ApiKeysSection` extracted to `@atta/ui/account`, ecosystem-shared key schemas moved to `@atta/db`.** Reviewer prompt iteration phase is next (Track B Item 3b).
+**Status:** Live at `https://vada.attalabs.dev`. Vāda Teams is the catalog of YAML team specifications compiled by the Atta engine. Vāda Reviewers v1 (vendor-diverse team) registered. **Hosted MCP server live at `https://vada.attalabs.dev/api/mcp` (May 4).** **Single-source-keys reversal locked (May 4) — server-side `user_provider_keys` is canonical, IndexedDB demoted.** **`feat/shared-keys-ui` merged (May 5) — `ProviderKeysSection` / `ApiKeysSection` extracted to `@atta/ui/account`, ecosystem-shared key schemas moved to `@atta/db`.** **Vendor registry consolidation shipped (May 11, PR #31) — single source of truth for vendor metadata, SDK shapes, baseURLs, and routing across all 12 supported vendors.** Reviewer prompt iteration phase is next (Track B Item 3b).
 
 **Web app structure:** Routes are flat. Home is at `/`. The `/autonomous/*` and `/brokered/*` route trees no longer exist.
 
-#### Vāda Teams catalog (current state — 9 YAMLs, 5 published)
+#### Vāda Teams catalog (current state — 9 YAMLs, 2 published)
 
 All YAMLs at `apps/vada-ai/yamls/`. Use Sonnet (`claude-sonnet-4-6`) by default; Vāda Reviewers uses vendor-diverse defaults.
 
@@ -56,13 +56,13 @@ All YAMLs at `apps/vada-ai/yamls/`. Use Sonnet (`claude-sonnet-4-6`) by default;
 | `a1-baseline` | A1 | Single agent, structured output | Benchmarking baseline (experimental) |
 | `brokered-trio` | Brokered Trio | 3 reviewers parallel (Strategist + Critic + Devil's Advocate), single-shot, no synthesis | Engine demo (experimental) |
 | `brokered-quartet` | Brokered Quartet | Brokered Trio + Domain Expert | Engine demo (experimental) |
-| `crucible` | Crucible | 4 agents × 3 rounds with dual audit and revision | Published |
-| `sparring` | Sparring | 2 agents × 3 rounds with dual audit and revision | Published |
-| `war-room` | War Room | 6 agents × 3 rounds with dual audit and revision | Published |
-| `vada-reviewers` | Reviewers | 3 vendor-diverse reviewers (Gemini + GPT + Grok), uniform critic role, single-shot, no synthesizer | Published — pending prompt iteration |
+| `crucible` | Crucible | 4 agents × 3 rounds with dual audit and revision | Experimental (unpublished May 11, PR #31) |
+| `sparring` | Sparring | 2 agents × 3 rounds with dual audit and revision | Experimental (unpublished May 11, PR #31) |
+| `war-room` | War Room | 6 agents × 3 rounds with dual audit and revision | Experimental (unpublished May 11, PR #31) |
+| `vada-reviewers` | Reviewers | 3 vendor-diverse reviewers (configurable per slot), uniform critic role, single-shot, no synthesizer | Published — pending prompt iteration |
 | `vada-reviewers-synthesis` | Reviewers + Synthesis | Same 3 reviewers + Anthropic Synthesizer producing structured JSON | Published — pending prompt iteration |
 
-The 4 experimental YAMLs are filtered out of the public `/teams` catalog by the `experimental: true` flag (`listPublicSpecs()` returns the 5 published only). Their fate (keep, retire, evolve) depends on data from the Vāda Reviewers benchmark.
+The 7 experimental YAMLs are filtered out of the public `/teams` catalog by the `experimental: true` flag (`listPublicSpecs()` returns the 2 published only). Crucible, Sparring, and War Room were marked experimental in PR #31 — flow design, system prompts, and inter-agent interactions all need iteration before they should be re-exposed publicly. Vāda Reviewers and Reviewers + Synthesis are the focused public surface area. Fate of the experimental YAMLs depends on data from the Vāda Reviewers benchmark.
 
 #### What's built
 
@@ -70,15 +70,17 @@ The 4 experimental YAMLs are filtered out of the public `/teams` catalog by the 
 - **Single-source-keys reversal (May 4):** server-side canonical store; IndexedDB demoted from key-storage role; `@atta/identity` preserved for probe/Ollama/migration utilities. See D-028.
 - **Shared keys UI + ecosystem schemas (May 5):** `ProviderKeysSection` and `ApiKeysSection` in `@atta/ui/account`; `apiKeys`, `userProviderKeys`, `mcpSessions` in `packages/db/src/schema/keys.ts`; `userSettings` (face-style) stays in `apps/vada-ai/web/src/db/schema.ts`. Settings tab structure: Account / API Keys / Agent Style. Teams tab removed; team agent model selection moved inline (per D-027 unified storage). See D-030.
 - LangGraph-only execution path (Mastra removed)
-- **Multi-vendor LlmCallFn** in `@atta/adapter-langgraph` — routes by model prefix (claude-* → Anthropic, gemini-* → Google, gpt-*/o4-* → OpenAI, grok-* → xAI). Per-vendor official SDKs. Closes BYOK Gap 2.
+- **Vendor registry (May 11, PR #31):** Single source of truth at `packages/models/src/vendors.ts`. 12 vendors registered (anthropic, openai, google, xai, groq, openrouter, deepseek, cerebras, mistral, together, fireworks, ollama). Each entry: `sdkShape`, `baseURL`, `keyConvention`, `modelPrefixes`, `envVar`, `localOnly`. `VendorId = keyof typeof VENDORS` replaces the prior 5-wide `RouteProvider` union. See D-032.
+- **SDK-shape dispatch in `@atta/adapter-langgraph` (May 11, PR #31):** Adapter dispatches by SDK shape (3 branches: `anthropic`, `google-genai`, `openai-compat`) rather than per-vendor switch. `ProviderKeys = Partial<Record<VendorId, string>>` accepts all 12 vendors. `createMultiVendorLlmCall` gains `agentVendorOverrides` — catalog-resolved vendor map keyed by agent name; correctly routes cross-vendor models like `deepseek-r1-distill-llama-70b` served by Groq (which prefix matching alone misidentifies as `deepseek`). Closes BYOK Gap 2 in its final form.
 - **`BrokeredWorkflow.synthesis?` field** in `@atta/engine` — optional synthesizer node.
 - **Per-node error capture** — `AgentOutput.error?` field; partial failures complete with `terminalState: CLEAN`.
 - **Engine vocabulary refactor (May 3)** — `PlanNodeKind` (7 values) and `PlanEdgeKind` (flow, ordering) emitted by all 4 compilers. Resolves OQ-cross-9 as Choice A.
 - **Role/engine separation (May 3)** — `AgentRole` deleted from `@atta/agents`. Vendor identity is first-class for unroled agents (Vāda Reviewers' Gemini/GPT/Grok = no role, vendor IS identity).
-- **MCP contract surfaces aligned with deployed runtime (May 9, PR #21):** `vada__consult` inputSchema declares structured shape (`context`, `question`, `reviewers[{role, notes?, domain?}]`, plus optional `spec_id`, `current_leaning`, `stakes`, `session_title`); `vada__deliberate` `team` enum expanded to all 5 published specs.
+- **MCP contract surfaces aligned with deployed runtime (May 9, PR #21):** `vada__consult` inputSchema declares structured shape (`context`, `question`, `reviewers[{role, notes?, domain?}]`, plus optional `spec_id`, `current_leaning`, `stakes`, `session_title`); `vada__deliberate` `team` enum expanded then pruned (May 11, PR #31) to the 2 currently published specs (`vada-reviewers`, `vada-reviewers-synthesis`).
+- **MCP `reviewer_config` parameter (May 11, PR #31):** `vada__consult` accepts an optional `reviewer_config: Record<agentName, modelId>` field, validated against the vendor registry, refused with structured `local_only_vendor` or `missing_provider_key` errors. Mirrors the web UI's per-slot model configurability; closes the contract gap between MCP and web for the Reviewers and Reviewers + Synthesis teams.
 - `vada__consult` accepts generic `spec_id` — routes to any YAML in the catalog
 - `vada__deliberate` MCP tool returns `structured` field alongside `content`
-- 9 YAML team specs in catalog (5 published, 4 experimental)
+- 9 YAML team specs in catalog (2 published, 7 experimental — see Vāda Teams catalog table above)
 - Domain Expert agent (uses Handlebars `customVars`)
 - Benchmarks infrastructure (`benchmark_runs` table, judge script, `/bench` dashboard)
 - YAML-driven specs replacing TypeScript mode logic
@@ -100,7 +102,7 @@ Flat routes at `apps/vada-ai/web/src/app/(main)/`:
 - `/deliberation` — in-flight session viewer (SSE streaming)
 - `/sessions` — unified history
 - `/sessions/consultations/[id]` — brokered consultation detail
-- `/teams` — catalog page (5 published cards) with animated agent spheres
+- `/teams` — catalog page (2 published cards) with animated agent spheres
 - `/teams/[slug]` — detail page with agent grid, cost calculator with model picker, embedded flow visualization
 - `/trust` — Trust Vāda page (existing content; rewrite pending — references browser-only BYOK which is no longer current)
 - `/mcp` — MCP server documentation page
@@ -110,7 +112,7 @@ Flat routes at `apps/vada-ai/web/src/app/(main)/`:
 
 **Domain:** `vada.attalabs.dev` (production live). Auto-deploys from `main` via Vercel.
 
-**Next:** Reviewer prompt iteration (Track B Item 3b) dispatched through Cetana V0 once it ships. Hosted MCP empirically dogfooded May 9 via curl — server healthy, Claude.ai web blocked by Track E12 broker bug (`ofid_*`), Claude Code CLI is the working integration. Then synthesizer prompt iteration (3c), then first benchmark run (Item 4).
+**Next:** Reviewer prompt iteration (Track B Item 3b) dispatched through Cetana V0 once it ships. Hosted MCP empirically dogfooded May 9 via curl — server healthy, Claude.ai web blocked by Track E12 broker bug (`ofid_*`), Claude Code CLI is the working integration. Then synthesizer prompt iteration (3c), then first benchmark run (Item 4). With the vendor registry consolidation now shipped, the empirical Reviewers deliberate test (Groq-served DeepSeek in a configurable slot) is unblocked on both web and MCP.
 
 See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: file may be slightly stale post-May-4-5; flagged for next cleanup pass).
 
@@ -184,7 +186,7 @@ Forensic CV-to-job-description match tool that exposes itself via MCP. Plugs int
 
 - `@atta/engine` — Plan compiler. Includes optional `BrokeredWorkflow.synthesis` field; per-node error capture; PlanNodeKind/PlanEdgeKind emission across all compilers.
 - `@atta/agents` — agent primitives. `AgentRole` deleted (May 3) — role is presentation, not engine.
-- `@atta/adapter-langgraph` — LangGraph execution + cognitive router. Multi-vendor: routes by model prefix to Anthropic / Google / OpenAI / xAI per-vendor SDKs.
+- `@atta/adapter-langgraph` — LangGraph execution + cognitive router. Dispatches by SDK shape (3 branches: `anthropic`, `google-genai`, `openai-compat`) reading `vendorId` from the catalog-resolved override map or vendor registry prefix fallback. Supports all 12 vendors in the registry. See D-032.
 - `@atta/auth` — Clerk wrapper + bearer-token validation. Includes `verifyApiKeyBearer` for hosted MCP. Single Clerk app SSO model.
 - `@atta/crypto` — envelope encryption for sensitive columns (AES-256-GCM, AAD-bound). API key generation + SHA-256 hashing. Master key from `MASTER_ENCRYPTION_KEY` env var; `kms_key_id` field reserved for future KMS migration.
 - `@atta/db` — Drizzle ORM + Neon client. Single shared `users` table keyed by `clerk_id`. Ecosystem-shared key tables live here too: `apiKeys`, `userProviderKeys`, `mcpSessions` in `packages/db/src/schema/keys.ts`.
@@ -193,7 +195,7 @@ Forensic CV-to-job-description match tool that exposes itself via MCP. Plugs int
 - `@atta/storage` — Cloudflare R2 client.
 - `@atta/identity` — preserved post-May-4 reversal but no longer canonical key store. Surviving roles: `probeProviderKey` (validate before save), `fetchInstalledOllamaModels` (local Ollama discovery), `MigrationPrompt` (one-time UX for users with pre-reversal IndexedDB keys), `useIdentity` hook used by judge benchmark + model picker. Mounted via `IdentityProvider` in vada-ai and atta-ai layouts.
 - `@atta/typescript-config` — base + nextjs tsconfig.
-- `@atta/models` — model registry.
+- `@atta/models` — model catalog AND vendor registry. Catalog (models.dev-derived) plus `vendors.ts` (12 vendors, SDK shapes, baseURLs, key conventions). Single source of truth for vendor metadata across the entire monorepo. See D-032.
 
 `@xyflow/react` is a direct dependency of `apps/vada-ai/web`.
 
@@ -245,10 +247,11 @@ Two specs:
 **Auth:** Vāda API key (bearer token in `Authorization` header). SHA-256 hashed in `api_keys` table.
 **BYOK:** server-side envelope-encrypted in `user_provider_keys`; same store backs the web app's deliberate page (single canonical store per D-028).
 **Two MCP tools:** `vada__consult`, `vada__deliberate`. Identical input/output shapes to the local stdio server.
+**Per-slot model configurability:** `vada__consult` accepts optional `reviewer_config: Record<agentName, modelId>` (May 11, PR #31), validated against the vendor registry; same shape as the web UI's per-slot model override.
 
-**Status:** Shipped May 4 via PRs #9 + #10. Phases 1-4 of the implementation plan complete. Phase 5 (stdio session URL fix — `vada.ai` hardcode bug) and Phase 6 (rate limiting, audit log, hardening) remain as future work. Tool contract surfaces aligned with deployed runtime May 9 via PR #21 (structured input schema, expanded team enum, stale references removed). Empirically dogfooded May 9 via curl (server healthy) and Claude.ai web (Track E12 broker bug reconfirmed — Claude Code CLI is the working integration today).
+**Status:** Shipped May 4 via PRs #9 + #10. Phases 1-4 of the implementation plan complete. Phase 5 (stdio session URL fix — `vada.ai` hardcode bug) and Phase 6 (rate limiting, audit log, hardening) remain as future work. Tool contract surfaces aligned with deployed runtime May 9 via PR #21 (structured input schema, expanded team enum, stale references removed). Vendor registry consolidation shipped May 11 via PR #31 (`reviewer_config` for MCP, sdkShape-based dispatch, 12 supported vendors). Empirically dogfooded May 9 via curl (server healthy) and Claude.ai web (Track E12 broker bug reconfirmed — Claude Code CLI is the working integration today).
 
-See `apps/vada-ai/specs/mcp-architecture.md` for full spec, `vada-decisions.md` D-029 for the architectural decision.
+See `apps/vada-ai/specs/mcp-architecture.md` for full spec, `vada-decisions.md` D-029 for the hosted MCP architectural decision, D-032 for the vendor registry consolidation.
 
 ---
 
@@ -268,13 +271,24 @@ This ecosystem uses the repo as the source of truth for project management. See 
 
 **Everything else is repo specs/skills/code, indexed by `docs-index.md`.**
 
-### Recently shipped (April 28 – May 9, 2026)
+### Recently shipped (April 28 – May 11, 2026)
 
-**May 9 — Cetana V0 unblock.** Slice -1 escalation prototype passed end-to-end (13/13 mechanical + cognitive criteria, 7-minute cognitive continuity test). PM docs migrated from Claude.ai project knowledge to repo at `project-management/` (PR #22). May 9 content updates landing now (this commit).
+**May 11 — Vendor registry consolidation (PR #31).**
+- Single source of truth at `packages/models/src/vendors.ts` — 12 vendors registered (anthropic, openai, google, xai, groq, openrouter, deepseek, cerebras, mistral, together, fireworks, ollama). Each entry: `sdkShape`, `baseURL`, `keyConvention`, `modelPrefixes`, `envVar`, `localOnly`.
+- 4 prior divergent prefix-resolution implementations (in transform, adapter, route, reviewer-models) collapsed to 1.
+- `@atta/adapter-langgraph` dispatch is now SDK-shape-based (3 branches: `anthropic`, `google-genai`, `openai-compat`) instead of per-vendor switch.
+- `ProviderKeys = Partial<Record<VendorId, string>>` accepts all 12 vendors. `createMultiVendorLlmCall` gains `agentVendorOverrides` for catalog-resolved cross-vendor routing — fixes `deepseek-r1-distill-llama-70b` (Groq-served) misrouting to the DeepSeek endpoint via prefix alone.
+- `vada__consult` MCP tool gains optional `reviewer_config: Record<agentName, modelId>` parameter, validated against the registry, refuses `local_only_vendor` and `missing_provider_key` with structured errors. Mirrors the web UI's existing per-slot model override.
+- `vada__deliberate` team enum pruned to the 2 currently published specs (`vada-reviewers`, `vada-reviewers-synthesis`).
+- Crucible, Sparring, War Room marked `experimental: true` — unpublished from public `/teams` catalog while keeping YAMLs in repo for bench harness and future iteration.
+- Tech debt PR #31 included: `providers.ts` backward-compat shim removed; 6 consumer files (`model-picker`, `provider-keys-section`, `identity/keymap`, `identity/storage`, `identity/react`, `identity/errors`) plus 12 `apps/vada-ai/web/src/` files migrated from `RouteProvider`/`PROVIDERS`/`ROUTE_PROVIDER_ORDER` to `VendorId`/`VENDORS`/`VENDOR_ORDER`. Architecture fully consolidated, no half-migrated state.
+- See D-032 for full decision detail.
+
+**May 10 — Cetana V0 shipped (PR #25) + v3 operational model adopted.** State-machine-governed coordination model with three conversational roles (Principal, Team Leader, Developer) + Archivist automation. Cetana coordinator built at `apps/cetana-ai/`. Slice -1 escalation prototype validated; throwaway prototype deleted.
 
 **May 9 — MCP contract fixes + skill registration unblock (PRs #20 + #21).**
 - **PR #20** (`fix/skill-paths-decouple`, commit `865c6c9`) — moved per-skill path globs from custom `paths:` SKILL.md frontmatter into sibling `paths.txt` files. Skill tool was silently dropping any skill with non-standard frontmatter fields, causing the skill-check enforcement hook to demand skills the Skill tool refused to load (Catch-22). 17 skills affected. Hook updated to read `paths.txt` instead of parsing frontmatter.
-- **PR #21** (`fix/mcp-schema-drift`, commit `26c20ba`) — aligned Vāda's `vada__consult` and `vada__deliberate` MCP tool surfaces with deployed runtime. `vada__consult` inputSchema now declares structured shape (`context`, `question`, `reviewers[{role, notes?, domain?}]`, plus optional `spec_id`, `current_leaning`, `stakes`, `session_title`) — matching `ConsultInputStructuredSchema`. `vada__deliberate` `team` enum expanded to all 5 published specs. Stale `vada__deliberate_brokered` reference and `domain_expert` description removed. README retired Brokered/Autonomous mode framing, fixed broken specs link, added hosted MCP installation section. Validator (`validateAndNormalize`) untouched; both legacy and structured shapes still accepted.
+- **PR #21** (`fix/mcp-schema-drift`, commit `26c20ba`) — aligned Vāda's `vada__consult` and `vada__deliberate` MCP tool surfaces with deployed runtime. `vada__consult` inputSchema now declares structured shape (`context`, `question`, `reviewers[{role, notes?, domain?}]`, plus optional `spec_id`, `current_leaning`, `stakes`, `session_title`) — matching `ConsultInputStructuredSchema`. `vada__deliberate` `team` enum expanded to all 5 published specs (later pruned to 2 in PR #31). Stale `vada__deliberate_brokered` reference and `domain_expert` description removed. README retired Brokered/Autonomous mode framing, fixed broken specs link, added hosted MCP installation section. Validator (`validateAndNormalize`) untouched; both legacy and structured shapes still accepted.
 - **Hosted MCP empirically dogfooded.** Server verified end-to-end via curl (`initialize` + `tools/list` clean with bearer auth). Claude.ai web connector returns `ofid_5a58c66b85d09d04` — Track E12 broker bug reconfirmed. Claude Code CLI is the working integration today.
 
 **May 6 — doc audit PR (`docs/may-5-reality-sync`).** 7 repo files synced to May 4-5 reality:
@@ -320,40 +334,42 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - Trust page content in `apps/vada-ai/web/.../trust/...` — references browser-only BYOK; needs full rewrite for current trust model
 - `apps/atta-ai/specs/cetana-reality-check.md` — V0/V0.7/V1 sequencing now superseded by May 9 unblock; V0 build is in flight directly. File still useful as historical reference but no longer the active plan.
 - `.claude/skills/vada-mcp-server/SKILL.md` — references `domain_expert` reviewer role in the "Adding a New Reviewer Profile" how-to; harmless (it's a how-to, not current-state description) but worth aligning when `VADA_DOMAIN_EXPERT` env flag flips.
-- `apps/vada-ai/mcp-server/src/server.ts` — runtime error string "team must be 'sparring' or 'crucible'" no longer matches expanded enum (programmer-error path only; low impact).
+- `.claude/skills/atta-adapter-langgraph/SKILL.md` — may describe per-vendor switch dispatch rather than SDK-shape dispatch (post-PR-31); needs read + update on next touch.
+- `.claude/skills/model-picker/SKILL.md` — may reference the prior `RouteProvider` / `PROVIDERS` symbols rather than `VendorId` / `VENDORS` (post-PR-31); needs read + update on next touch.
 
 ---
 
 ## What exists physically vs. what's planned
 
-**Exists in code (May 9, 2026):**
+**Exists in code (May 11, 2026):**
 - `apps/vada-ai/web` — Vāda web app with full teams catalog surface, production-deployed
-- `apps/vada-ai/web/src/app/api/mcp/route.ts` — hosted MCP route, live
-- `apps/vada-ai/mcp-server` — Vāda's local stdio MCP server with generic `spec_id` routing; tool contract surfaces aligned with runtime May 9 (PR #21)
+- `apps/vada-ai/web/src/app/api/mcp/route.ts` — hosted MCP route, live; uses vendor registry for `reviewerConfig` validation
+- `apps/vada-ai/mcp-server` — Vāda's local stdio MCP server with generic `spec_id` routing; tool contract surfaces aligned with runtime May 9 (PR #21); `reviewer_config` parameter added May 11 (PR #31)
 - `apps/atta-ai/mcp-server` — engine-as-MCP server
 - `apps/atta-ai/web` — atta hub, production-deployed
+- `apps/cetana-ai/coordinator/` — Cetana V0 coordinator, shipped May 10 (PR #25)
 - `apps/herald-ai/*` — Herald surfaces (separate auth)
 - `apps/vitakka-ai/` — scaffold; paused
 - All `@atta/*` packages including `@atta/crypto`, `@atta/ui/account`, `@atta/db` ecosystem-shared key schemas
+- `packages/models/src/vendors.ts` — vendor registry (12 vendors); single source of truth for SDK shapes, baseURLs, key conventions, prefix fallbacks (PR #31)
 - `@atta/ui/engine-flow` module
-- 9 YAML teams in `apps/vada-ai/yamls/`
+- 9 YAML teams in `apps/vada-ai/yamls/` (2 published, 7 experimental as of May 11)
 - Calculator + vendor registry
-- `apps/vada-ai/specs/vada-reviewers-spec.md` (rev 4)
-- `project-management/` directory with `coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md` (migrated from project knowledge May 9)
+- `apps/vada-ai/specs/vada-reviewers-spec.md` (rev 5)
+- `project-management/` directory with `coordination.md`, `state.md`, `plan.md`, `state-machine.md`, `decisions.md`, role refs, ratification queue (v3 operational model — May 10)
 - `.claude/skills/*/paths.txt` — per-skill path globs decoupled from SKILL.md frontmatter (PR #20 May 9, 17 skills)
 
 **Specced but not yet built / iterated:**
-- Reviewer system prompt iteration (Track B Item 3b) — to be dispatched through Cetana once V0 ships
+- Reviewer system prompt iteration (Track B Item 3b) — to be dispatched through Cetana once V0 is configured
 - Synthesizer system prompt iteration (3c)
 - Vāda Reviewers benchmark (Item 4)
 
 **Drafted briefs awaiting dispatch:**
-- Cetana V0 build brief (next session)
+(none currently)
 
 **Does not exist yet:**
 - `apps/account/web` — DEFERRED indefinitely. D-030 decision: no `account.attalabs.dev` hub.
 - `apps/sati-ai/*` — Sati doesn't exist
-- `apps/cetana-ai/coordinator/` — V0 shipped May 10 (feat/cetana-v0 PR)
 - Hosted MCP hardening: rate limiting, audit log retention, KMS migration, per-key tool scoping (V2 work)
 - Trust + MCP page content rewrites
 - Cetana V1 surfaces (Tauri shell, dashboard, native notifications) — deferred until V0 proves daily-driver value over 2 weeks
@@ -369,9 +385,10 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - **~~OQ-cross-5~~ (RESOLVED May 9):** V0.7 path collapsed. Cetana V0 directly implements the validated escalation primitive inside the monorepo at `apps/cetana-ai/`. No separate MCP+CLI step.
 - **~~OQ-cross-6~~ (RESOLVED May 4):** Neither Path A nor Path B from the gap report. Server-side at rest, envelope-encrypted, decrypted only in request handlers (D-028).
 - **~~OQ-cross-7~~ (RESOLVED May 5):** API key management lives in product-local Settings, composed from shared `@atta/ui/account` components (D-030).
-- **OQ-cross-8:** Fate of the experimental YAMLs after Vāda Reviewers v1 benchmark.
+- **OQ-cross-8:** Fate of the (now 7) experimental YAMLs after Vāda Reviewers v1 benchmark.
 - **~~OQ-cross-9~~ (RESOLVED May 3):** Engine vocabulary architecture — Choice A. `PlanNodeKind` + `PlanEdgeKind` shipped.
 - **~~OQ-cross-10~~ (RESOLVED May 9):** Cetana V0 is not superseded by CCPM/APM. The interactive pause/resume layer (Slice -1 validated) is the differentiator. Sandboxed evaluation no longer needed.
 - **OQ-cross-11 (NEW May 9):** Does Cetana V1 (Tauri shell + dashboard) ship after 2 weeks of V0 daily use, or does V0 prove sufficient indefinitely?
+- **OQ-cross-12 (NEW May 11):** When a vendor's SDK shape diverges from existing branches (e.g., a vendor that uses streaming-only with a non-OpenAI-compatible response shape, or that requires AWS Sigv4 auth), should the adapter gain a 4th `sdkShape` branch or should we proxy through OpenRouter? Likely the former when latency matters, the latter when it doesn't. Decide per case when it next comes up.
 
 Vāda-internal open questions live in `apps/vada-ai/specs/vada-state.md`.
