@@ -17,7 +17,7 @@ export type CetanaEvent =
 
 export async function appendEvent(taskId: string, event: CetanaEvent): Promise<void> {
   await mkdir(TASKS_DIR, { recursive: true })
-  await appendFile(taskLogPath(taskId), JSON.stringify(event) + '\n', 'utf-8')
+  await appendFile(taskLogPath(taskId), `${JSON.stringify(event)}\n`, 'utf-8')
 }
 
 export async function readEvents(taskId: string): Promise<CetanaEvent[]> {
