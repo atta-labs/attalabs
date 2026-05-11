@@ -4,13 +4,13 @@
 // useGlobalModelSelector. See that file for the Ollama fetch, catalog build,
 // preset seeding, action-triggered passkey unlock, and key-probe flow.
 
-import type { ModelConfig, RouteProvider } from '@atta/models'
+import type { ModelConfig, VendorId } from '@atta/models'
 import { ModelPicker } from '@atta/ui'
 import type { ReactNode } from 'react'
 import { useGlobalModelSelector } from './useGlobalModelSelector'
 
 export interface ModelSelection {
-  provider: RouteProvider
+  provider: VendorId
   modelId: string
   apiKey: string
 }

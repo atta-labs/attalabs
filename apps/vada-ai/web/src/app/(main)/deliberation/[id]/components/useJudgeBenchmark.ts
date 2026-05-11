@@ -12,7 +12,7 @@
 // memory only, per /trust.
 
 import { useIdentity } from '@atta/identity/react'
-import type { RouteProvider } from '@atta/models'
+import type { VendorId } from '@atta/models'
 import { useEffect, useRef } from 'react'
 import type { BenchmarkClientState } from './DeliberationFeed'
 
@@ -22,7 +22,7 @@ interface UseJudgeBenchmarkProps {
   benchmark: BenchmarkClientState | null
   terminalReached: boolean
   conclusion: Record<string, unknown> | null
-  defaultProvider: RouteProvider | null
+  defaultProvider: VendorId | null
   defaultModelId: string | null
 }
 
@@ -52,7 +52,7 @@ export function useJudgeBenchmark({
     // the user has a key for that provider, use it instead of the participant
     // model. Falls back to participant model when no override is configured or
     // the user lacks a key for the override provider.
-    const envJudgeProvider = process.env.NEXT_PUBLIC_VADA_JUDGE_PROVIDER as RouteProvider | undefined
+    const envJudgeProvider = process.env.NEXT_PUBLIC_VADA_JUDGE_PROVIDER as VendorId | undefined
     const envJudgeModelId = process.env.NEXT_PUBLIC_VADA_JUDGE_MODEL
     const overrideKey =
       envJudgeProvider && envJudgeModelId
@@ -60,7 +60,7 @@ export function useJudgeBenchmark({
           ? 'ollama-local'
           : (identity.state.keys[envJudgeProvider] as string | undefined)
         : undefined
-    const judgeProvider: RouteProvider =
+    const judgeProvider: VendorId =
       envJudgeProvider && envJudgeModelId && overrideKey ? envJudgeProvider : defaultProvider
     const judgeModelId: string = envJudgeProvider && envJudgeModelId && overrideKey ? envJudgeModelId : defaultModelId
     const judgeApiKey =

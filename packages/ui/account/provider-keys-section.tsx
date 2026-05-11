@@ -5,23 +5,23 @@ import { Button, Input, Badge } from '@atta/ui'
 import { Text } from '@atta/ui/shared'
 import { Trash2, Eye, EyeOff } from 'lucide-react'
 import { ProviderIcon } from '@lobehub/icons'
-import { PROVIDERS, ROUTE_PROVIDER_ORDER, type RouteProvider } from '@atta/models'
+import { VENDORS, VENDOR_ORDER, type VendorId } from '@atta/models'
 
 // Vendor list derived from @atta/models so settings, the picker, and the status
 // endpoint all see the same set. Ollama is excluded — it's a local-runtime
 // toggle, not a vendor key, and is managed via its own probe.
-type Vendor = Exclude<RouteProvider, 'ollama'>
+type NonOllamaVendor = Exclude<VendorId, 'ollama'>
 
-type ProviderStatus = Partial<Record<Vendor, true>>
+type ProviderStatus = Partial<Record<NonOllamaVendor, true>>
 
 type ProviderStatusResponse = { status: ProviderStatus }
 
-const VENDORS: Array<{ id: Vendor; label: string }> = ROUTE_PROVIDER_ORDER.filter(
-  (id): id is Vendor => id !== 'ollama'
-).map((id) => ({ id, label: PROVIDERS[id].label }))
+const VENDOR_LIST: Array<{ id: NonOllamaVendor; label: string }> = VENDOR_ORDER.filter(
+  (id): id is NonOllamaVendor => id !== 'ollama'
+).map((id) => ({ id, label: VENDORS[id].label }))
 
 type ProviderKeyRowProps = {
-  vendor: Vendor
+  vendor: NonOllamaVendor
   label: string
   configured: boolean
   onSaved: () => void
@@ -194,7 +194,7 @@ export function ProviderKeysSection() {
         </Text>
       ) : (
         <div className='divide-y divide-border'>
-          {VENDORS.map((v) => (
+          {VENDOR_LIST.map((v) => (
             <div key={v.id} className='py-3 first:pt-0 last:pb-0'>
               <ProviderKeyRow
                 vendor={v.id}

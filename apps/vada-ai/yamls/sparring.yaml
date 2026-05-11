@@ -2,6 +2,7 @@ schema_version: "1.0"
 id: sparring
 display_name: Sparring
 description: "Two agents go head-to-head across three rounds. Strategist and Critic stress-test each other's reasoning before a synthesizer reconciles their final positions."
+experimental: true
 
 defaults:
   model: claude-sonnet-4-6

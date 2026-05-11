@@ -1,8 +1,8 @@
 'use client'
 
 import { useIdentity } from '@atta/identity/react'
-import type { ModelEntry, RouteProvider } from '@atta/models'
-import { PROVIDERS, ROUTE_PROVIDER_ORDER } from '@atta/models'
+import type { ModelEntry, VendorId } from '@atta/models'
+import { VENDORS, VENDOR_ORDER, getVendor } from '@atta/models'
 import { ProviderIcon } from '@lobehub/icons'
 import { Check, ChevronsUpDown, ExternalLink, Lock } from 'lucide-react'
 
@@ -31,7 +31,7 @@ import { ModelIcon } from './model-icon'
 import { Popover, PopoverContent, PopoverTrigger } from '../../installed/popover'
 
 export interface ModelPickerValue {
-  route: RouteProvider
+  route: VendorId
   modelId: string
 }
 
@@ -39,11 +39,11 @@ export interface ModelPickerProps {
   options: ModelEntry[]
   value: ModelPickerValue | null
   onChange: (value: ModelPickerValue) => void
-  configuredRoutes?: Set<RouteProvider>
+  configuredRoutes?: Set<VendorId>
   // Returning a Promise lets the picker await the caller (e.g. probe the key
   // against the provider) before closing. Throw on failure to keep the key-
   // entry view open and surface the error inline.
-  onProvideKey?: (route: RouteProvider, key: string) => void | Promise<void>
+  onProvideKey?: (route: VendorId, key: string) => void | Promise<void>
   trigger?: React.ReactNode
   align?: 'start' | 'center' | 'end'
   side?: 'top' | 'bottom' | 'left' | 'right'
@@ -69,7 +69,7 @@ export function ModelPicker({
   mode = 'popover'
 }: ModelPickerProps) {
   const [open, setOpen] = React.useState(false)
-  const [keyEntryRoute, setKeyEntryRoute] = React.useState<RouteProvider | null>(null)
+  const [keyEntryRoute, setKeyEntryRoute] = React.useState<VendorId | null>(null)
   const [pendingModel, setPendingModel] = React.useState<ModelEntry | null>(null)
   const [keyInput, setKeyInput] = React.useState('')
   const [saving, setSaving] = React.useState(false)
@@ -77,23 +77,29 @@ export function ModelPicker({
   const [flagshipOnly, setFlagshipOnly] = React.useState(false)
   const [freeOnly, setFreeOnly] = React.useState(false)
   const [searchValue, setSearchValue] = React.useState('')
-  const [expandedGroups, setExpandedGroups] = React.useState<Set<RouteProvider>>(new Set())
+  const [expandedGroups, setExpandedGroups] = React.useState<Set<VendorId>>(new Set())
 
   const identity = useIdentity()
   const identityConfigured = React.useMemo(
     () =>
-      new Set<RouteProvider>([
-        ...(Object.keys(identity.state.keys) as RouteProvider[]),
-        ...(identity.state.providers as RouteProvider[])
+      new Set<VendorId>([
+        ...(Object.keys(identity.state.keys) as VendorId[]),
+        ...(identity.state.providers as VendorId[])
       ]),
     [identity.state.keys, identity.state.providers]
   )
   const effectiveConfigured = configuredRoutes ?? identityConfigured
 
+  const keyPlaceholder = React.useMemo(() => {
+    if (!keyEntryRoute) return 'Your API key'
+    const v = getVendor(keyEntryRoute)
+    return v.localOnly ? 'no key needed — press Save to enable' : v.keyPrefix ? `${v.keyPrefix}…` : 'Your API key'
+  }, [keyEntryRoute])
+
   const COLLAPSED_LIMIT = 4
   const isSearching = searchValue.trim().length > 0
 
-  const toggleGroup = (route: RouteProvider) => {
+  const toggleGroup = (route: VendorId) => {
     setExpandedGroups((prev) => {
       const next = new Set(prev)
       if (next.has(route)) next.delete(route)
@@ -123,7 +129,7 @@ export function ModelPicker({
   }, [options, flagshipOnly, freeOnly])
 
   const grouped = React.useMemo(() => {
-    const byRoute = new Map<RouteProvider, ModelEntry[]>()
+    const byRoute = new Map<VendorId, ModelEntry[]>()
     for (const opt of filteredOptions) {
       const bucket = byRoute.get(opt.route) ?? []
       bucket.push(opt)
@@ -135,9 +141,9 @@ export function ModelPicker({
       balanced: 2,
       fast: 3
     }
-    return ROUTE_PROVIDER_ORDER.filter((r) => byRoute.has(r)).map((r) => ({
+    return VENDOR_ORDER.filter((r) => byRoute.has(r)).map((r) => ({
       route: r,
-      label: PROVIDERS[r].label,
+      label: VENDORS[r].label,
       entries: byRoute
         .get(r)!
         .slice()
@@ -217,14 +223,14 @@ export function ModelPicker({
               <ProviderIcon provider={pendingModel.route} size={16} type='avatar' />
             )}
             <p className='font-mono text-[11px] uppercase tracking-widest text-foreground'>
-              {PROVIDERS[keyEntryRoute].label} key required
+              {VENDORS[keyEntryRoute].label} key required
             </p>
           </div>
           <Input
             type='password'
             autoComplete='off'
             autoFocus
-            placeholder={PROVIDERS[keyEntryRoute].keyPlaceholder}
+            placeholder={keyPlaceholder}
             value={keyInput}
             onChange={(e) => {
               setKeyInput(e.target.value)

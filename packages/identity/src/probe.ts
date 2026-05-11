@@ -15,7 +15,7 @@
 // "no real provider calls are being made" — and lets a developer use any
 // fake string as a key for UI testing without hitting a 401 at save time.
 
-import { OLLAMA_BASE_URL, type RouteProvider } from '@atta/models'
+import { OLLAMA_BASE_URL, VENDORS, type VendorId } from '@atta/models'
 import { isMockModeActive } from './mock'
 
 // `kind` lets callers distinguish a dead key from a transient/environmental
@@ -29,16 +29,21 @@ export interface ProbeResult {
   error?: string
 }
 
-// Default probe models per provider. Chosen for broad account availability —
-// if a user's key lacks access to these specific models they'll get a 404
-// which the UI should treat as "key is probably valid, pick a different model".
-const DEFAULT_PROBE_MODEL: Record<RouteProvider, string> = {
+// Default probe models per vendor. Chosen for broad account availability.
+// New openai-compat vendors fall back to a minimal chat probe via registry baseURL.
+const DEFAULT_PROBE_MODEL: Partial<Record<VendorId, string>> = {
   anthropic: 'claude-haiku-4-5-20251001',
   openai: 'gpt-4o-mini',
   google: 'gemini-2.5-flash',
   groq: 'llama-3.3-70b-versatile',
   openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
-  ollama: 'llama3.3'
+  ollama: 'llama3.3',
+  xai: 'grok-3-mini',
+  deepseek: 'deepseek-chat',
+  cerebras: 'llama3.1-8b',
+  mistral: 'mistral-small-latest',
+  together: 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',
+  fireworks: 'accounts/fireworks/models/llama-v3p1-8b-instruct'
 }
 
 async function probeOllama(): Promise<ProbeResult> {
@@ -101,18 +106,15 @@ async function postAndClassify(url: string, headers: Record<string, string>, bod
   }
 }
 
-export async function probeProviderKey(
-  provider: RouteProvider,
-  apiKey: string,
-  modelId?: string
-): Promise<ProbeResult> {
+export async function probeProviderKey(provider: VendorId, apiKey: string, modelId?: string): Promise<ProbeResult> {
   // See comment at the top of this file. Mock mode = no real provider call,
   // including the validation probe itself.
   if (isMockModeActive()) return { ok: true, kind: 'ok' }
 
   if (provider === 'ollama') return probeOllama()
 
-  const model = modelId ?? DEFAULT_PROBE_MODEL[provider]
+  const model = modelId ?? DEFAULT_PROBE_MODEL[provider] ?? 'default'
+
   switch (provider) {
     case 'anthropic':
       return postAndClassify(
@@ -124,24 +126,6 @@ export async function probeProviderKey(
         },
         { model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 16 }
       )
-    case 'openai':
-      return postAndClassify(
-        'https://api.openai.com/v1/chat/completions',
-        { Authorization: `Bearer ${apiKey}` },
-        { model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 16, stop: ['\n'] }
-      )
-    case 'groq':
-      return postAndClassify(
-        'https://api.groq.com/openai/v1/chat/completions',
-        { Authorization: `Bearer ${apiKey}` },
-        { model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 16, stop: ['\n'] }
-      )
-    case 'openrouter':
-      return postAndClassify(
-        'https://openrouter.ai/api/v1/chat/completions',
-        { Authorization: `Bearer ${apiKey}` },
-        { model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 16, stop: ['\n'] }
-      )
     case 'google':
       return postAndClassify(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
@@ -151,16 +135,19 @@ export async function probeProviderKey(
           generationConfig: { maxOutputTokens: 16, stopSequences: ['\n'] }
         }
       )
+    default: {
+      // All openai-compat vendors: use the registry's baseURL.
+      const vendor = VENDORS[provider]
+      const baseURL = vendor?.baseURL ?? `https://api.${provider}.com/v1`
+      return postAndClassify(
+        `${baseURL}/chat/completions`,
+        { Authorization: `Bearer ${apiKey}` },
+        { model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 16, stop: ['\n'] }
+      )
+    }
   }
 }
 
-export function providerLabel(p: RouteProvider): string {
-  return {
-    anthropic: 'Anthropic',
-    openai: 'OpenAI',
-    google: 'Google',
-    groq: 'Groq',
-    openrouter: 'OpenRouter',
-    ollama: 'Ollama'
-  }[p]
+export function providerLabel(p: VendorId): string {
+  return VENDORS[p]?.label ?? p
 }

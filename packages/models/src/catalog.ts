@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache'
 
-import type { DisplayProvider, RouteProvider } from './providers'
+import type { VendorId } from './vendors'
 import { FALLBACK_CATALOG } from './fallback'
 import { fetchModelsDev } from './sources/models-dev'
 import { OLLAMA_DEFAULT_CATALOG } from './sources/ollama-defaults'
@@ -9,8 +9,11 @@ import { transformModelsDev } from './transform'
 export interface ModelEntry {
   id: string
   modelId: string
-  displayProvider: DisplayProvider
-  route: RouteProvider
+  /** Brand used for icon rendering (@lobehub/icons). Independent of vendorId. */
+  displayProvider: string
+  vendorId: VendorId
+  /** @deprecated Use vendorId — kept for backward compat while consumers migrate */
+  route: VendorId
   label: string
   description?: string
   tier: 'frontier' | 'balanced' | 'fast' | 'reasoning'
@@ -45,8 +48,8 @@ export async function getCatalog(): Promise<ModelEntry[]> {
   }
 }
 
-export function findModelEntry(catalog: ModelEntry[], route: RouteProvider, modelId: string): ModelEntry | undefined {
-  return catalog.find((e) => e.route === route && e.modelId === modelId)
+export function findModelEntry(catalog: ModelEntry[], vendorId: VendorId, modelId: string): ModelEntry | undefined {
+  return catalog.find((e) => e.vendorId === vendorId && e.modelId === modelId)
 }
 
 export function findModelEntryByModelId(catalog: ModelEntry[], modelId: string): ModelEntry | undefined {

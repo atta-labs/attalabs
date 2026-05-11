@@ -1,10 +1,10 @@
-import type { RouteProvider } from '@atta/models'
+import type { VendorId } from '@atta/models'
 import type { SessionState, TerminalState } from '@/schemas'
 
 export type ConclusionPhase = 'synthesize' | 'audit' | 'revise' | 'reaudit'
 
 export interface ModelRef {
-  provider: RouteProvider
+  provider: VendorId
   modelId: string
 }
 

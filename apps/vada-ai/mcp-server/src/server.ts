@@ -73,6 +73,14 @@ After receiving reviewer responses, synthesize for the Principal:
 
 Do not leave the \`notes\` field blank for any reviewer. A reviewer without specific notes will produce generic output.
 
+Per-Reviewer Model Overrides (reviewer_config)
+
+By default all reviewers use the same model. Pass reviewer_config to override per reviewer:
+
+  reviewer_config: { "Strategist": "gemini-2.5-pro", "Critic": "claude-opus-4-7" }
+
+Agent names match the role display names: Strategist, Critic, Devil's Advocate. Every model listed must have a corresponding provider key configured server-side or the call fails with missing_provider_key. Omit reviewer_config to use the server default for all reviewers.
+
 Latency
 
 Sequential execution in V1. Expect 3× the latency of a single reviewer (~30-60 seconds for 3 reviewers). This is cognitive labor being delegated. Inform the user before invoking.`
@@ -81,7 +89,7 @@ const DELIBERATE_TOOL_DESCRIPTION = `Multi-round deliberation with revision — 
 
 Returns:
 - content: final conclusion text (always present)
-- structured: parsed JSON verdict when the spec declares an output_schema (crucible, sparring, war-room, a1-baseline return { recommendation, key_condition, unresolved_points, review_by }); null for specs without output_schema (e.g. a0-baseline)
+- structured: parsed JSON verdict when the spec declares an output_schema
 - session_id, session_url: audit trail link
 - terminal_state: CLEAN | REVISED | MAX_REVISIONS
 - cost_breakdown: token counts and estimated USD
@@ -89,19 +97,16 @@ Returns:
 Example: vada__deliberate(
   question="Should we migrate from Postgres to CockroachDB given our
             multi-region requirements?",
-  team="sparring"
+  team="vada-reviewers"
 )
 
 Parameters:
   question: The question or decision to deliberate on
-  team (optional): Team spec to use. Default: "sparring".
-    - "sparring": 2 agents, fastest, good default
-    - "crucible": 4-7 agents, heavier, higher coverage
-    - "war-room": 6 agents, high-pressure adversarial format
-    - "vada-reviewers": reviewer panel, structured critique
+  team (optional): Team spec to use. Default: "vada-reviewers".
+    - "vada-reviewers": reviewer panel with rounds + audit
     - "vada-reviewers-synthesis": reviewer panel with synthesis pass
 
-Runtime: Sparring ~30-90s; Crucible/war-room 2-5min. Client timeout permitting.`
+Runtime: ~30-120s depending on question complexity. Client timeout permitting.`
 
 const VALID_PROFILES = ['strategist', 'critic', 'devils_advocate'] as const
 
@@ -173,6 +178,12 @@ export function createServer(providerKeys: ProviderKeys): Server {
               maxItems: 5,
               description: 'Reviewer specs. Min 2, max 5, distinct roles.'
             },
+            reviewer_config: {
+              type: 'object',
+              additionalProperties: { type: 'string' },
+              description:
+                'Optional. Maps agent display name to model ID. Overrides per-agent YAML defaults. Example: { "Strategist": "gemini-2.5-pro", "Critic": "claude-opus-4-7" }. Every model must have a corresponding provider key configured server-side, or the call fails with missing_provider_key.'
+            },
             session_title: {
               type: 'string',
               description: 'Session label for dashboard display.'
@@ -203,9 +214,8 @@ export function createServer(providerKeys: ProviderKeys): Server {
               type: 'string',
               // Hardcoded from listPublicSpecs() result — see spec-registry.ts for source of truth.
               // TODO: derive dynamically once listPublicSpecs() is sync-callable at registration time.
-              enum: ['sparring', 'crucible', 'war-room', 'vada-reviewers', 'vada-reviewers-synthesis'],
-              description:
-                'sparring (default, 2 agents), crucible (4-7 agents), war-room (6 agents, adversarial), vada-reviewers, vada-reviewers-synthesis'
+              enum: ['vada-reviewers', 'vada-reviewers-synthesis'],
+              description: 'vada-reviewers (default, reviewer panel), vada-reviewers-synthesis (with synthesis pass)'
             }
           },
           required: ['question']

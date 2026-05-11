@@ -3,7 +3,7 @@
 // plaintext (no secret material) for UI rendering before unlock. The
 // `encryptedKeys` blob is only decryptable with the passkey-derived AES key.
 
-import type { RouteProvider } from '@atta/models'
+import type { VendorId } from '@atta/models'
 
 const DB_NAME = 'atta-identity'
 const STORE = 'credentials'
@@ -15,7 +15,7 @@ export interface StoredCredential {
   credentialId: ArrayBuffer
   encryptedKeys: ArrayBuffer
   iv: Uint8Array
-  providers: RouteProvider[]
+  providers: VendorId[]
   createdAt: number
   updatedAt: number
 }

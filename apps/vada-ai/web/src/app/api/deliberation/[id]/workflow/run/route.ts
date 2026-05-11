@@ -10,6 +10,7 @@ import { compileSpec, loadYamlFromCatalog } from '@atta/engine'
 import type { ExecutionHooks, Plan } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
 import type { ProviderKeys } from '@atta/adapter-langgraph'
+import { getCatalog, resolveVendorByPrefix, findModelEntryByModelId, type VendorId } from '@atta/models'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
 import { auth } from '@atta/auth/hooks'
 import { getOrCreateUser, getSessionForUser, getSessionWithTranscript, setSessionTerminalState } from '@/db/queries'
@@ -55,7 +56,8 @@ async function runLangGraph(
   sessionId: string,
   apiKey: string | undefined,
   providerKeys?: ProviderKeys,
-  reviewerConfig?: ReviewerConfig
+  reviewerConfig?: ReviewerConfig,
+  agentVendorOverrides?: Record<string, VendorId>
 ): Promise<void> {
   const session = await getSessionWithTranscript(sessionId)
   if (!session) throw new Error(`Session ${sessionId} not found`)
@@ -66,32 +68,11 @@ async function runLangGraph(
   const spec = loadYamlFromCatalog(session.specId)
   const plan = compileSpec(spec, session.question, session.modelId ?? 'claude-sonnet-4-6')
 
-  // Pre-dispatch validation: each reviewer's configured model must have a provider key.
-  if (reviewerConfig && providerKeys) {
-    for (const [agentName, model] of Object.entries(reviewerConfig)) {
-      const vendor = resolveModelVendor(model)
-      if (!vendor) {
-        throw new Error(`Unrecognized model '${model}' for reviewer '${agentName}'`)
-      }
-      if (!providerKeys[vendor as keyof ProviderKeys]) {
-        const err: { error: string; agent: string; model: string; vendor: string } = {
-          error: 'missing_provider_key',
-          agent: agentName,
-          model,
-          vendor
-        }
-        throw Object.assign(new Error(`Missing provider key for ${vendor} (reviewer: ${agentName})`), {
-          httpStatus: 400,
-          body: err
-        })
-      }
-    }
-  }
-
   const adapter = new LangGraphAdapter({
     apiKey,
     providerKeys: providerKeys && Object.keys(providerKeys).length > 0 ? providerKeys : undefined,
-    reviewerConfig
+    reviewerConfig,
+    agentVendorOverrides
   })
 
   const hooks: ExecutionHooks = {
@@ -188,15 +169,6 @@ async function runLangGraph(
   }
 }
 
-/** Resolve which vendor a model string belongs to (matches createMultiVendorLlmCall logic). */
-function resolveModelVendor(model: string): string | null {
-  if (model.startsWith('claude-')) return 'anthropic'
-  if (model.startsWith('gemini-')) return 'google'
-  if (model.startsWith('gpt-') || model.startsWith('o4-')) return 'openai'
-  if (model.startsWith('grok-')) return 'xai'
-  return null
-}
-
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { userId: clerkId } = await auth()
   if (!clerkId) return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -241,23 +213,35 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const sync = url.searchParams.get('sync') === 'true'
   const stream = url.searchParams.get('stream') === 'true'
 
-  // Pre-dispatch validation: if reviewerConfig is present, verify all configured
-  // models have corresponding keys before starting the run.
+  // Build catalog-resolved vendor map for cross-vendor models (e.g. deepseek-r1 served by Groq).
+  // Catalog lookup is authoritative; prefix-based fallback handles models not in the catalog.
+  let agentVendorOverrides: Record<string, VendorId> | undefined
+  if (reviewerConfig && Object.keys(reviewerConfig).length > 0) {
+    const catalog = await getCatalog()
+    agentVendorOverrides = {}
+    for (const [agentName, modelId] of Object.entries(reviewerConfig)) {
+      const entry = findModelEntryByModelId(catalog, modelId)
+      const vendorId = entry?.vendorId ?? resolveVendorByPrefix(modelId)
+      if (vendorId) agentVendorOverrides[agentName] = vendorId
+    }
+    if (Object.keys(agentVendorOverrides).length === 0) agentVendorOverrides = undefined
+  }
+
+  // Pre-dispatch validation: verify all configured models resolved and have provider keys.
   if (reviewerConfig) {
     for (const [agentName, model] of Object.entries(reviewerConfig)) {
-      const vendor = resolveModelVendor(model)
+      const vendor = agentVendorOverrides?.[agentName]
       if (!vendor) {
         return Response.json({ error: `Unrecognized model '${model}' for reviewer '${agentName}'` }, { status: 400 })
       }
-      const hasKey = providerKeys?.[vendor as keyof ProviderKeys]
-      if (!hasKey) {
+      if (!providerKeys?.[vendor]) {
         return Response.json({ error: 'missing_provider_key', agent: agentName, model, vendor }, { status: 400 })
       }
     }
   }
 
   if (sync) {
-    await runLangGraph(sessionId, apiKey, providerKeys, reviewerConfig)
+    await runLangGraph(sessionId, apiKey, providerKeys, reviewerConfig, agentVendorOverrides)
     const fresh = await getSessionWithTranscript(sessionId)
     return Response.json({
       state: fresh?.state ?? null,
@@ -273,7 +257,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // (page reload, browser back/forward) must not spawn a second run.
     const shouldStart = initial.state === 'PENDING'
     if (shouldStart) {
-      runLangGraph(sessionId, apiKey, providerKeys, reviewerConfig).catch((err) =>
+      runLangGraph(sessionId, apiKey, providerKeys, reviewerConfig, agentVendorOverrides).catch((err) =>
         console.error(`[LangGraph] Unhandled error for session ${sessionId}:`, err)
       )
     }
@@ -377,6 +361,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   // Fire and forget — caller polls session state via /api/sessions/[id]
-  runLangGraph(sessionId, apiKey, providerKeys, reviewerConfig).catch(() => {})
+  runLangGraph(sessionId, apiKey, providerKeys, reviewerConfig, agentVendorOverrides).catch(() => {})
   return Response.json({ sessionId })
 }

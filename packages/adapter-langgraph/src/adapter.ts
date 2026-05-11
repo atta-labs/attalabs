@@ -9,6 +9,7 @@ import type {
   RevisionCondition,
   StateCondition
 } from '@atta/engine'
+import type { VendorId } from '@atta/models'
 import { buildStateGraph } from './graph-builder'
 import { createDefaultLlmCall, createMultiVendorLlmCall } from './llm'
 import type { ProviderKeys } from './llm'
@@ -164,7 +165,7 @@ export class LangGraphAdapter implements Adapter {
     const llmCall =
       params.llmCall ??
       (this.config.providerKeys
-        ? createMultiVendorLlmCall(this.config.providerKeys)
+        ? createMultiVendorLlmCall(this.config.providerKeys, this.config.agentVendorOverrides)
         : createDefaultLlmCall(this.config.apiKey))
 
     // Apply per-agent model overrides from reviewerConfig before execution.
@@ -535,6 +536,13 @@ export interface LangGraphAdapterConfig {
    * fills each reviewer slot.
    */
   reviewerConfig?: ReviewerConfig
+
+  /**
+   * Catalog-resolved vendorId per agent name. Overrides prefix-based
+   * vendor resolution for cross-vendor models (e.g. deepseek-r1-distill
+   * served by Groq has vendorId='groq' in the catalog).
+   */
+  agentVendorOverrides?: Record<string, VendorId>
 
   /**
    * Default timeout for executions (milliseconds). Can be overridden
