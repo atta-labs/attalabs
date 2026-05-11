@@ -1,5 +1,5 @@
 import { auth } from '@atta/auth/hooks'
-import { CatalogProvider, getCatalog, ROUTE_PROVIDER_ORDER } from '@atta/models'
+import { CatalogProvider, getCatalog, VENDOR_ORDER } from '@atta/models'
 import { listPublicSpecs } from '@atta/engine'
 import { getDailySessionCount, getOrCreateUser } from '@/db/queries'
 import { getDailySessionLimit } from '@/schemas'
@@ -41,7 +41,7 @@ export default async function DeliberatePage({
         // Intersect with current RouteProvider set so orphan vendors from prior
         // schema versions (e.g. xAI before it routed via OpenRouter) don't leak
         // into the UI as "configured" — Settings can no longer manage them.
-        const validVendors: ReadonlySet<string> = new Set(ROUTE_PROVIDER_ORDER)
+        const validVendors: ReadonlySet<string> = new Set(VENDOR_ORDER)
         configuredProviders = Object.keys(decrypted).filter((k) => Boolean(decrypted[k]) && validVendors.has(k))
       } catch {
         // decryption failed — fall back to empty

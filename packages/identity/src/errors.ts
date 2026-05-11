@@ -1,17 +1,17 @@
-import type { RouteProvider } from '@atta/models'
+import type { VendorId } from '@atta/models'
 
 export type ErrorKind = 'invalid_key' | 'rate_limit' | 'model_not_found' | 'transient' | 'unknown'
 
 export interface ClassifiedError {
   kind: ErrorKind
   userMessage: string
-  provider: RouteProvider
+  provider: VendorId
   recoverable: boolean
   retryAfterSeconds?: number
 }
 
-function providerLabel(p: RouteProvider): string {
-  const labels: Partial<Record<RouteProvider, string>> = {
+function providerLabel(p: VendorId): string {
+  const labels: Partial<Record<VendorId, string>> = {
     anthropic: 'Anthropic',
     openai: 'OpenAI',
     google: 'Google',
@@ -62,7 +62,7 @@ function extractDeepestMessage(err: Error): string {
   return err.message
 }
 
-export function classifyProviderError(err: unknown, provider: RouteProvider): ClassifiedError {
+export function classifyProviderError(err: unknown, provider: VendorId): ClassifiedError {
   if (!(err instanceof Error)) {
     return {
       kind: 'unknown',

@@ -4,10 +4,6 @@ import type { VendorId } from './vendors'
 export type { VendorId, Vendor, SdkShape, KeyConvention } from './vendors'
 export { VENDORS, VENDOR_ORDER, OLLAMA_BASE_URL, getVendor, isLocalOnly, resolveVendorByPrefix } from './vendors'
 
-// Backward-compat shim (RouteProvider = VendorId alias; PROVIDERS; ROUTE_PROVIDER_ORDER)
-export type { RouteProvider, DisplayProvider, ProviderMeta } from './providers'
-export { PROVIDERS, ROUTE_PROVIDER_ORDER } from './providers'
-
 // Catalog
 export type { ModelEntry } from './catalog'
 export { getCatalog, findModelEntry, findModelEntryByModelId } from './catalog'

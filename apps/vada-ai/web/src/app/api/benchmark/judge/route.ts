@@ -3,7 +3,7 @@
 // apiKey transits server memory for this request only. See /trust.
 import 'server-only'
 import { auth } from '@atta/auth/hooks'
-import type { RouteProvider } from '@atta/models'
+import type { VendorId } from '@atta/models'
 import { resolveModel } from '@atta/models/server'
 import { generateText } from 'ai'
 import { NextResponse } from 'next/server'
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   if (metrics.judgeResponse) return NextResponse.json({ error: 'Judge already recorded' }, { status: 409 })
 
   const start = Date.now()
-  const model = resolveModel(provider as RouteProvider, modelId, apiKey)
+  const model = resolveModel(provider as VendorId, modelId, apiKey)
   const result = await generateText({
     model,
     system: JUDGE_SYSTEM_PROMPT,

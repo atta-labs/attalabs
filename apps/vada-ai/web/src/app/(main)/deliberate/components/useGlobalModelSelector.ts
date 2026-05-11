@@ -4,7 +4,7 @@
 // is pure presentation that reads the returned object.
 
 import { fetchInstalledOllamaModels, probeProviderKey } from '@atta/identity'
-import { type ModelEntry, type RouteProvider, useCatalog } from '@atta/models'
+import { type ModelEntry, type VendorId, useCatalog } from '@atta/models'
 import { useToastContext } from '@atta/ui'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -32,7 +32,7 @@ export function useGlobalModelSelector({
   const router = useRouter()
 
   // Providers saved in this session via the inline key-entry dialog
-  const [sessionSavedProviders, setSessionSavedProviders] = useState<RouteProvider[]>([])
+  const [sessionSavedProviders, setSessionSavedProviders] = useState<VendorId[]>([])
 
   // ── Ollama live model fetch ────────────────────────────────────────────────
   // /api/tags on mount. null = not probed, empty = reachable but nothing
@@ -77,7 +77,7 @@ export function useGlobalModelSelector({
 
   // ── Derived picker inputs ──────────────────────────────────────────────────
   const configuredRoutes = useMemo(() => {
-    const set = new Set<RouteProvider>([...(settingsProviders as RouteProvider[]), ...sessionSavedProviders])
+    const set = new Set<VendorId>([...(settingsProviders as VendorId[]), ...sessionSavedProviders])
     if (ollamaReachable) set.add('ollama')
     if (process.env.NODE_ENV === 'production') set.delete('ollama')
     return set
@@ -109,7 +109,7 @@ export function useGlobalModelSelector({
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleChange = useCallback(
-    (next: { route: RouteProvider; modelId: string }) => {
+    (next: { route: VendorId; modelId: string }) => {
       // Write immediately so the sphere display refreshes in the same render
       // cycle. The format is the same as the reviewer modal — agentName → modelId.
       if (selectedSpecId && specAgentNames.length > 0) {
@@ -126,7 +126,7 @@ export function useGlobalModelSelector({
   // model-not-found / unreachable, accept the key (it's fine; the environment
   // is the problem) but warn so the user knows their next run may fail.
   const handleProvideKey = useCallback(
-    async (route: RouteProvider, key: string) => {
+    async (route: VendorId, key: string) => {
       const modelId = value?.provider === route ? value.modelId : undefined
       const probe = await probeProviderKey(route, key, modelId)
       if (probe.kind === 'invalid_key') {

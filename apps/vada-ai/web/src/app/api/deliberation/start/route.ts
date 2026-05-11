@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
 import { createSession, getDailySessionCount, getOrCreateUser, initBenchmarkMetrics } from '@/db/queries'
 import { getDailySessionLimit } from '@/schemas'
-import { ROUTE_PROVIDER_ORDER, type RouteProvider } from '@atta/models'
+import { VENDOR_ORDER, type VendorId } from '@atta/models'
 import { loadYamlFromCatalog, listPublicSpecs } from '@atta/engine'
 import { AGENTS } from '@/components/agents/visuals'
 import type { AgentName } from '@/components/agents/visuals'
 import { z } from 'zod'
 
-const providerEnum = z.enum(ROUTE_PROVIDER_ORDER as [RouteProvider, ...RouteProvider[]])
+const providerEnum = z.enum(VENDOR_ORDER as [VendorId, ...VendorId[]])
 
 const AgentModelEntry = z.object({ provider: providerEnum, modelId: z.string() })
 

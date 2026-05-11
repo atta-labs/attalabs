@@ -3,7 +3,7 @@
 // In-memory `keys` during an unlocked session; encrypted at rest in IndexedDB
 // via a passkey-derived AES-GCM key. See /trust for the architecture promise.
 
-import type { RouteProvider } from '@atta/models'
+import type { VendorId } from '@atta/models'
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { decryptJson, encryptJson, importKeyFromPrfOutput } from './crypto'
 import { type ApiKeyMap, hasProviderKey, missingProviders as computeMissing } from './keymap'
@@ -15,16 +15,16 @@ export type IdentityStateKind = 'initializing' | 'no-stored-credential' | 'locke
 export interface IdentityState {
   kind: IdentityStateKind
   keys: ApiKeyMap
-  providers: RouteProvider[]
+  providers: VendorId[]
 }
 
 export interface IdentityValue {
   state: IdentityState
-  setKey: (provider: RouteProvider, key: string) => void
-  removeKey: (provider: RouteProvider) => void
+  setKey: (provider: VendorId, key: string) => void
+  removeKey: (provider: VendorId) => void
   signOut: () => void
-  hasKey: (provider: RouteProvider) => boolean
-  missingProviders: (required: Set<RouteProvider>) => RouteProvider[]
+  hasKey: (provider: VendorId) => boolean
+  missingProviders: (required: Set<VendorId>) => VendorId[]
   savePasskey: () => Promise<void>
   // Returns the decrypted keymap so callers can use it immediately without
   // waiting for React state to propagate on the next render.
@@ -41,7 +41,7 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
   // mount-time IndexedDB check resolves. Otherwise consumers would flash the
   // "no credential" banner for ~1 frame before the stored credential loads.
   const [stateKind, setStateKind] = useState<IdentityStateKind>('initializing')
-  const [providers, setProviders] = useState<RouteProvider[]>([])
+  const [providers, setProviders] = useState<VendorId[]>([])
   const [passkeySupported, setPasskeySupported] = useState(false)
   const cryptoKeyRef = useRef<CryptoKey | null>(null)
   const credentialIdRef = useRef<ArrayBuffer | null>(null)
@@ -83,22 +83,22 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
           credentialId,
           encryptedKeys: ciphertext,
           iv,
-          providers: Object.keys(keys) as RouteProvider[],
+          providers: Object.keys(keys) as VendorId[],
           createdAt: now,
           updatedAt: now
         })
-        setProviders(Object.keys(keys) as RouteProvider[])
+        setProviders(Object.keys(keys) as VendorId[])
       } catch {
         // Persistence failure — in-memory session keeps working; next mutation will retry
       }
     })()
   }, [keys, stateKind])
 
-  const setKey = useCallback((provider: RouteProvider, key: string) => {
+  const setKey = useCallback((provider: VendorId, key: string) => {
     setKeys((prev) => ({ ...prev, [provider]: key }))
   }, [])
 
-  const removeKey = useCallback((provider: RouteProvider) => {
+  const removeKey = useCallback((provider: VendorId) => {
     setKeys((prev) => {
       const next = { ...prev }
       delete next[provider]
@@ -112,9 +112,9 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
     if (credentialIdRef.current) setStateKind('locked')
   }, [])
 
-  const hasKey = useCallback((p: RouteProvider) => hasProviderKey(keys, p), [keys])
+  const hasKey = useCallback((p: VendorId) => hasProviderKey(keys, p), [keys])
 
-  const missing = useCallback((req: Set<RouteProvider>) => computeMissing(keys, req), [keys])
+  const missing = useCallback((req: Set<VendorId>) => computeMissing(keys, req), [keys])
 
   const savePasskey = useCallback(async () => {
     if (!passkeySupported) throw new Error('Passkeys are not supported in this browser')
@@ -126,7 +126,7 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
     const cryptoKey = await importKeyFromPrfOutput(result.prfOutput)
     const { ciphertext, iv } = await encryptJson(cryptoKey, keys)
     const now = Date.now()
-    const providerList = Object.keys(keys) as RouteProvider[]
+    const providerList = Object.keys(keys) as VendorId[]
     await saveCredential({
       credentialId: result.credentialId,
       encryptedKeys: ciphertext,

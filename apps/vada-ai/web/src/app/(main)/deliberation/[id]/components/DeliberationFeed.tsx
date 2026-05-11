@@ -3,7 +3,7 @@
 // Presentational only. State + effects + scroll handling + error toasting
 // all live in useDeliberationScene. TranscriptActions uses its own hook.
 
-import type { RouteProvider } from '@atta/models'
+import type { VendorId } from '@atta/models'
 import { Button } from '@atta/ui'
 import { AIACanvas } from '@atta/ui/canvas'
 import { NextLink } from '@atta/ui/lib/next-link'
@@ -96,7 +96,7 @@ function DeliberationScene({
     benchmark,
     terminalReached: !!s.terminalState,
     conclusion: s.conclusion,
-    defaultProvider: (defaultProvider ?? null) as RouteProvider | null,
+    defaultProvider: (defaultProvider ?? null) as VendorId | null,
     defaultModelId
   })
 

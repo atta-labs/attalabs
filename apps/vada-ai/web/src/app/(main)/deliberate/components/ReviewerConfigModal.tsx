@@ -2,7 +2,7 @@
 
 import type { DeliberationSpec, SpecAgent } from '@atta/engine'
 import { probeProviderKey } from '@atta/identity'
-import type { RouteProvider } from '@atta/models'
+import type { VendorId } from '@atta/models'
 import { useCatalog } from '@atta/models'
 import { Button, ModelPicker, useToastContext } from '@atta/ui'
 import { Dialog, DialogContent, DialogTitle } from '@atta/ui/components/dialog'
@@ -29,25 +29,25 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
   // Per-agent selected model.
   // Editable slots: only seed from saved user config — never from YAML default.
   // Non-editable slots (e.g. Synthesizer): seed from YAML model since it's fixed by the spec.
-  const [selections, setSelections] = useState<Record<string, { route: RouteProvider; modelId: string } | null>>(() => {
+  const [selections, setSelections] = useState<Record<string, { route: VendorId; modelId: string } | null>>(() => {
     const saved = getReviewerConfig(spec.id)
     return Object.fromEntries(
       editableAgents.map((a) => {
         const model = a.editable ? saved?.[a.name] : (saved?.[a.name] ?? a.model)
-        const vendor = model ? (resolveVendorFromCatalog(model, catalog) as RouteProvider | null) : null
+        const vendor = model ? (resolveVendorFromCatalog(model, catalog) as VendorId | null) : null
         return [a.name, vendor && model ? { route: vendor, modelId: model } : null]
       })
     )
   })
 
-  const [sessionSavedProviders, setSessionSavedProviders] = useState<RouteProvider[]>([])
+  const [sessionSavedProviders, setSessionSavedProviders] = useState<VendorId[]>([])
 
   const configuredRoutes = useMemo(() => {
-    const set = new Set<RouteProvider>([...(configuredProviders as RouteProvider[]), ...sessionSavedProviders])
+    const set = new Set<VendorId>([...(configuredProviders as VendorId[]), ...sessionSavedProviders])
     return set
   }, [configuredProviders, sessionSavedProviders])
 
-  const handleProvideKey = async (route: RouteProvider, key: string) => {
+  const handleProvideKey = async (route: VendorId, key: string) => {
     const probe = await probeProviderKey(route, key)
     if (probe.kind === 'invalid_key') {
       throw new Error(probe.error ?? 'Invalid API key.')
