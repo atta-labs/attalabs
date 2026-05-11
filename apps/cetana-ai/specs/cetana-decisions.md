@@ -318,3 +318,88 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 - Archivist as a separate long-running service: over-engineered for V0.7, which is a stub anyway.
 
 **Consequences:** The Archivist and Cetana codebases stay separate. `.github/workflows/archivist.yml` is the Archivist entry point. Future Archivist logic does not go into `apps/cetana-ai/coordinator/`. Conforms to the v3 role separation in `project-management/state-machine.md`.
+
+---
+
+## D-020 — CLI is the canonical interface; any future UI is a renderer over CLI verbs
+
+**Date:** 2026-05-11
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** YES
+
+**Context:** V0.5 adds a CLI surface to Cetana. A natural follow-on question is whether the CLI exists alongside a future UI, or whether the CLI is the foundation that any future UI builds on top of. This determines whether future UI work can bypass the CLI layer or must route through it.
+
+**Decision:** The CLI is the canonical interface. The five CLI verbs (`init`, `watch`, `status`, `abort`, `reply`) are the stable external contract. Any future UI — Tauri dashboard, web view, menu bar app — renders CLI output or calls the same underlying modules the CLI calls. No UI bypasses the CLI layer with its own direct module calls that the CLI doesn't also make.
+
+**Alternatives considered:**
+- CLI and UI as parallel surfaces sharing only coordinator modules: rejected. Parallel surfaces diverge. A UI that calls modules directly will inevitably call them differently, creating two code paths that must both be kept correct. Maintenance cost compounds.
+- UI-first with CLI as a debug fallback: rejected. V0 already establishes that the orchestration loop works via CLI (`tail -f`). V0.5 formalizes that. Reversing the primacy to make CLI secondary would invalidate V0 learnings.
+
+**Consequences:** Future briefs proposing a Tauri dashboard, web view, or any other UI surface must reference this decision. The UI implements `cetana watch` output rendering, not its own state polling. This keeps the CLI honest — if the CLI surface is adequate, the V1 UI investment is genuinely deferred (per D-023); if the CLI is inadequate, the gap is visible in CLI output rather than hidden behind UI polish.
+
+---
+
+## D-021 — Install gate: `cetana init` must work end-to-end on a fresh machine
+
+**Date:** 2026-05-11
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** YES
+
+**Context:** V0 requires the user to manually edit `~/.cetana/config.json` to set GitHub owner, repo, token, and model defaults. This is a friction point that makes V0 harder to share or use across machines. V0.5 Step 1 adds `cetana init` to address this. The question is what "done" means for Step 1.
+
+**Decision:** Step 1 (CLI scaffold + `cetana init`) is not done until `cetana init` runs on a machine with no pre-existing `~/.cetana/config.json` and produces a working config file without the user editing JSON by hand. The verification is: delete `~/.cetana/config.json`, run `cetana init`, answer prompts, dispatch a real task. If the task dispatches correctly, Step 1 is done. If any step requires manual JSON editing, Step 1 is not done.
+
+**Alternatives considered:**
+- Declare Step 1 done when `cetana init` compiles and runs: rejected. "Compiles and runs" is not verification. The install gate is the correct bar for Step 1 because `cetana init` exists to solve the fresh-machine problem — if it doesn't solve that problem, it hasn't shipped.
+- Skip `cetana init` and document the JSON format: rejected. Documentation-as-workaround is exactly the friction V0.5 is removing. Keeping manual JSON editing as the path adds training cost and error surface.
+
+**Consequences:** Developers implementing Step 1 must test against a wiped `~/.cetana/` directory before marking the PR ready. This is the only way to confirm the install gate passes. Any PR that ships `cetana init` with untested fresh-machine behavior is not merged.
+
+---
+
+## D-022 — CLI is a thin client over the same coordinator modules; no parallel code paths
+
+**Date:** 2026-05-11
+**Status:** ACTIVE
+**Type:** 2
+**Lock:** NO
+
+**Context:** With a CLI entry point added alongside the two MCP server entry points, there is a risk of duplicating state management, IPC logic, or JSONL handling in the CLI layer. Each duplication creates a divergence point.
+
+**Decision:** The CLI is a thin client. All CLI commands call the same exported functions from `paths.ts`, `config.ts`, `events.ts`, `state.ts`, `worktree.ts`, and the tool handlers. No business logic lives in `cli.ts`. `cli.ts` handles argument parsing, user prompts (for `cetana init`), and output formatting — nothing else.
+
+If a CLI command needs behavior that doesn't exist as a coordinator module export, the correct action is to add the export to the coordinator module — not to implement the logic inline in `cli.ts`.
+
+**Alternatives considered:**
+- CLI with its own state reconstruction (reads JSONL directly instead of using StateManager): rejected. StateManager is the authoritative hydration path. A second reader would diverge silently as new event types are added.
+- CLI as a separate package: rejected. No benefit for internal tooling. Reuses same package; only the entry point differs.
+
+**Consequences:** Adding a CLI command means reading the coordinator module API and adding the call. It does not mean writing new business logic. If a developer finds themselves writing state logic in `cli.ts`, they are violating this decision and should refactor the logic into the appropriate coordinator module instead.
+
+---
+
+## D-023 — V1 UI requires documented evidence from V0.5 dogfood; three objective conditions
+
+**Date:** 2026-05-11
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** YES
+
+**Context:** D-006 deferred the Tauri dashboard to V1 contingent on V0 proving daily-driver value over 2 weeks. V0.5 adds a CLI surface. After V0.5, the question of whether to build V1 recurs. "2 weeks of use" is not an objective gate — it doesn't specify volume, concurrency, or what evidence is required. This decision formalizes the gate.
+
+**Decision:** The V1 UI is authorized if and only if all three conditions are met during real Cetana use (V0 + V0.5 combined):
+
+1. **≥20 tasks** dispatched through Cetana
+2. **≥3 tasks running concurrently** at some point
+3. **Documented "wish this were visual" moments** — written up as specific situations (not vague preferences) where the CLI surface was actively insufficient. Each moment must describe: what was being done, why the CLI output was inadequate, and what a UI would have made easier
+
+All three must be documented in the ratification queue before V1 is authorized. Starting from the date F9 (Step 5 — `cetana reply`) merges to main, a 4-week dogfood window begins. If after 4 weeks fewer than 20 tasks have been dispatched, the gate is not met and V1 is deferred. Revisit after another 4 weeks or when the task count is met.
+
+**Alternatives considered:**
+- "2 weeks + 5 tasks" from D-006: rejected as underspecified. Five tasks is too low a threshold to observe concurrent management behavior. "2 weeks" with no task count allows the gate to pass trivially.
+- No gate; build V1 immediately: rejected. Building a Tauri dashboard before knowing whether the orchestration loop is daily-driver-useful is exactly the investment risk D-006 identified. V0.5 reduces some friction; it doesn't change the underlying question.
+- Gate on "Principal decides": rejected as subjective. The three conditions are designed to be checkable without a judgment call. "Documented moments" is the closest to subjective, and "specific situations with concrete examples" is the bar, not "I think a dashboard would be nice."
+
+**Consequences:** Before any V1 UI brief is written, the ratification queue must contain evidence that all three conditions are met. The TL is responsible for maintaining the count (tasks dispatched, whether ≥3 were concurrent) and for documenting friction moments as they occur during real work. Waiting until V1 is proposed to reconstruct the evidence retroactively is not acceptable — the moments must be written at the time they occur.

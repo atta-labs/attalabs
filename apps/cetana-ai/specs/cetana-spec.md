@@ -323,3 +323,67 @@ These are deliberately deferred until V0 has been used for real tasks.
 - **Does the 30-minute timeout on `cetana_request_input` need to be configurable?** For now it's hardcoded. Add to `config.json` when observed to be too short or too long.
 - **How should the Team Leader be reminded about blocked tasks?** Currently passive — Team Leader must call `list_active_tasks`. Native notifications would require Tauri (V1). Workaround: the executor posts a GitHub comment when blocked, so the Principal can watch GitHub for activity.
 - **How does severity appear in `list_active_tasks` output?** Currently the tool output is plain text. Severity field should be clearly surfaced to make routing immediate. Implement alongside severity routing code follow-up.
+
+---
+
+## 10. V0.5 — CLI Surface
+
+**Status:** target
+**Target:** implement after V0 is validated in first real-world dispatch
+
+### Purpose
+
+V0.5 adds a CLI surface that makes the coordinator usable without Claude Desktop. In V0, the only way to interact with Cetana is through Claude Desktop's MCP tool interface. Every status check, reply to a blocked task, and dispatch requires opening Claude Desktop. For terminal sessions this creates friction: task status is invisible unless you ask Claude Desktop, and unblocking a task requires context-switching to a chat interface.
+
+The CLI surface solves this with five composable commands:
+- `cetana init` — one-time setup, writes `~/.cetana/config.json` interactively
+- `cetana watch` — live-tails active task progress (streams `task.progress` events from all active JSONL logs)
+- `cetana status` — point-in-time view of running, blocked, and recently completed tasks
+- `cetana abort <taskId>` — kills a running task, appends `task.failed`, cleans up IPC files
+- `cetana reply <taskId> "<reply>"` — unblocks a blocked task; same semantics as `cetana.reply_to_blocked_task`
+
+These commands surface the same operations as the MCP tools. The CLI is a thin client over the same coordinator modules — no parallel implementation. See D-022.
+
+### V0.5 CLI ladder (5 incremental PRs)
+
+The CLI ships incrementally. Each step is a self-contained PR with a working, verified deliverable. No step begins until the previous step is merged and verified in at least one real task.
+
+**Step 1 — CLI scaffold + `cetana init`**
+
+Entry point at `apps/cetana-ai/coordinator/src/cli.ts`. The `cetana init` command walks the user through `~/.cetana/config.json` interactively — GitHub owner, repo, token, model defaults. The config JSON is generated from CLI prompts; no manual JSON editing required.
+
+**Install gate (D-021, Lock: YES):** Step 1 is not done until `cetana init` runs on a fresh machine (no pre-existing config) and produces a working config file without the user touching JSON by hand.
+
+**Step 2 — `cetana watch`**
+
+Streams `task.progress` events from all active JSONL logs to stdout in real time. Equivalent to running `tail -f` on all active task files simultaneously. Blocked tasks are displayed with their pending question, severity, and time-blocked.
+
+**Step 3 — `cetana status`**
+
+Point-in-time summary: running tasks (pid, issue, elapsed), blocked tasks (question text, severity, time-blocked), recently completed tasks (within last 24 hours). Same underlying data as `cetana.list_active_tasks` output. Blocked tasks display severity so routing is immediate.
+
+**Step 4 — `cetana abort` + `cetana resume`**
+
+`cetana abort <taskId>` kills the claude subprocess (if running), writes a `task.failed` event to JSONL, removes IPC files. `cetana resume <taskId> "<amended-brief>"` re-dispatches a previously failed or aborted task. The same worktree is reused; a new task ID is generated. The original task's JSONL log is retained as the audit trail.
+
+**Step 5 — `cetana reply` (reply ergonomics)**
+
+`cetana reply <taskId> "<reply>"` writes `reply.json` and appends `task.unblocked`, unblocking the Developer without opening Claude Desktop. This completes the full orchestration loop from the terminal: `cetana watch` (monitor) → `cetana reply` (unblock) → `cetana watch` (continue monitoring).
+
+### Architecture constraint (D-022)
+
+The CLI is a thin client. All five commands call the same functions from the existing coordinator modules (`paths.ts`, `config.ts`, `events.ts`, `state.ts`, `worktree.ts`) and tool handlers. No business logic lives in the CLI layer. No parallel implementation of state management, IPC, or JSONL handling. The CLI entry point reads from and writes to the same filesystem paths as the MCP server entry points.
+
+If the CLI and MCP servers would need to diverge (different state interpretation, different IPC paths), that is a signal that the coordinator module needs refactoring — not that the CLI should carry its own logic.
+
+### V1 UI dogfood gate (D-023, Lock: YES)
+
+After V0.5 ships, the V1 UI (Tauri shell + dashboard + native notifications + menu bar status) is gated on three objective conditions being met during real use:
+
+1. **≥20 tasks** dispatched through Cetana total (V0 + V0.5 combined)
+2. **≥3 tasks running concurrently** at some point
+3. **Documented "wish this were visual" moments** — specific situations where the CLI surface is actively insufficient, written up with concrete examples (not "dashboards are nicer" — "I was managing 3 concurrent tasks and could not parse the watch output")
+
+All three must be met. Starting from the date F9 (Step 5 — `cetana reply`) merges to main, a 4-week dogfood window begins. If after 4 weeks the gate is not met, V1 is deferred indefinitely. The point: V1 must be built on observed friction, not assumed preference. D-006 (No UI in V0) established the principle; D-023 formalizes the evaluation criteria.
+
+For the V1 scope if the gate passes, see Section 8 (V1 deferred items).
