@@ -7,8 +7,12 @@ export async function getUserByClerkId(clerkId: string) {
 }
 
 export async function getUserByUsername(username: string) {
-  const rows = await db.select().from(schema.users).where(eq(schema.users.username, username)).limit(1)
-  return rows[0] ?? null
+  try {
+    const rows = await db.select().from(schema.users).where(eq(schema.users.username, username)).limit(1)
+    return rows[0] ?? null
+  } catch {
+    return null
+  }
 }
 
 export async function isUsernameTaken(username: string): Promise<boolean> {
