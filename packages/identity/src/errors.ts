@@ -11,15 +11,21 @@ export interface ClassifiedError {
 }
 
 function providerLabel(p: RouteProvider): string {
-  const labels: Record<RouteProvider, string> = {
+  const labels: Partial<Record<RouteProvider, string>> = {
     anthropic: 'Anthropic',
     openai: 'OpenAI',
     google: 'Google',
     groq: 'Groq',
     openrouter: 'OpenRouter',
-    ollama: 'Ollama'
+    ollama: 'Ollama',
+    xai: 'xAI',
+    deepseek: 'DeepSeek',
+    cerebras: 'Cerebras',
+    mistral: 'Mistral',
+    together: 'Together AI',
+    fireworks: 'Fireworks AI'
   }
-  return labels[p]
+  return labels[p] ?? p
 }
 
 // Dig through the Vercel AI SDK's error wrappers to find the most informative

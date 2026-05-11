@@ -1,34 +1,31 @@
 import type { ModelEntry } from './catalog'
 import { OVERLAY } from './overlay'
-import type { DisplayProvider, RouteProvider } from './providers'
+import type { VendorId } from './vendors'
 import type { ModelsDevModel, ModelsDevResponse } from './sources/models-dev'
 
-// models.dev provider ID → our native RouteProvider (when we ship a native adapter)
-const NATIVE_ROUTE_BY_MODELS_DEV_ID: Record<string, RouteProvider> = {
+// models.dev provider ID → VendorId (for vendors with a native SDK entry in the registry)
+const MODELSDEV_TO_VENDOR_ID: Record<string, VendorId> = {
   anthropic: 'anthropic',
   openai: 'openai',
   google: 'google',
-  groq: 'groq'
+  groq: 'groq',
+  xai: 'xai',
+  deepseek: 'deepseek',
+  cerebras: 'cerebras',
+  mistral: 'mistral',
+  together: 'together',
+  fireworks: 'fireworks'
 }
 
 // Providers where only overlay-listed models are shown. Prevents deprecated
 // aliases (e.g. claude-3-5-haiku-latest) from models.dev leaking into the picker.
 const OVERLAY_ONLY_PROVIDERS: Set<string> = new Set(['anthropic'])
 
-// models.dev provider IDs we route via OpenRouter
-const OPENROUTER_ALLOWED_PROVIDERS: Set<string> = new Set([
-  'xai',
-  'deepseek',
-  'mistral',
-  'cerebras',
-  'meta',
-  'qwen',
-  'alibaba',
-  'google-vertex-anthropic'
-])
+// models.dev provider IDs with no native registry entry — proxied via OpenRouter.
+const OPENROUTER_PROXY_PROVIDERS: Set<string> = new Set(['meta', 'qwen', 'alibaba', 'google-vertex-anthropic'])
 
-// models.dev provider ID → DisplayProvider (what ModelIcon renders)
-const DISPLAY_PROVIDER_BY_MODELS_DEV_ID: Record<string, DisplayProvider> = {
+// models.dev provider ID → displayProvider string (what ModelIcon/ProviderIcon renders)
+const DISPLAY_PROVIDER_BY_MODELS_DEV_ID: Record<string, string> = {
   anthropic: 'anthropic',
   openai: 'openai',
   google: 'google',
@@ -42,17 +39,17 @@ const DISPLAY_PROVIDER_BY_MODELS_DEV_ID: Record<string, DisplayProvider> = {
   qwen: 'meta'
 }
 
-function resolveRoute(providerId: string): RouteProvider | null {
-  if (NATIVE_ROUTE_BY_MODELS_DEV_ID[providerId]) return NATIVE_ROUTE_BY_MODELS_DEV_ID[providerId]
-  if (OPENROUTER_ALLOWED_PROVIDERS.has(providerId)) return 'openrouter'
+function resolveVendorId(providerId: string): VendorId | null {
+  const native = MODELSDEV_TO_VENDOR_ID[providerId]
+  if (native) return native
+  if (OPENROUTER_PROXY_PROVIDERS.has(providerId)) return 'openrouter'
   return null
 }
 
-function resolveModelIdForRoute(route: RouteProvider, providerId: string, rawModelId: string): string {
-  if (route === 'openrouter') {
-    // OpenRouter expects vendor-prefixed IDs. models.dev's 'xai' maps to OR's 'x-ai'.
-    const orVendor = providerId === 'xai' ? 'x-ai' : providerId
-    return `${orVendor}/${rawModelId}`
+function resolveModelIdForVendor(vendorId: VendorId, providerId: string, rawModelId: string): string {
+  if (vendorId === 'openrouter') {
+    // OpenRouter expects vendor-prefixed IDs.
+    return `${providerId}/${rawModelId}`
   }
   return rawModelId
 }
@@ -64,8 +61,8 @@ function deriveCost(model: ModelsDevModel): 'free' | 'paid' {
 }
 
 function buildEntry(providerId: string, modelKey: string, model: ModelsDevModel): ModelEntry | null {
-  const route = resolveRoute(providerId)
-  if (!route) return null
+  const vendorId = resolveVendorId(providerId)
+  if (!vendorId) return null
 
   const displayProvider = DISPLAY_PROVIDER_BY_MODELS_DEV_ID[providerId]
   if (!displayProvider) return null
@@ -76,13 +73,14 @@ function buildEntry(providerId: string, modelKey: string, model: ModelsDevModel)
   // For overlay-only providers, skip models not explicitly curated.
   if (OVERLAY_ONLY_PROVIDERS.has(providerId) && !overlayEntry) return null
 
-  const modelId = resolveModelIdForRoute(route, providerId, rawId)
+  const modelId = resolveModelIdForVendor(vendorId, providerId, rawId)
 
   return {
     id: `${providerId}/${rawId}`,
     modelId,
     displayProvider,
-    route,
+    vendorId,
+    route: vendorId,
     label: model.name ?? rawId,
     description: overlayEntry?.description,
     tier: overlayEntry?.tier ?? 'balanced',

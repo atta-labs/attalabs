@@ -5,7 +5,7 @@
 // Ollama's tag format (e.g. "qwen2.5:14b") is used as the modelId when we
 // later invoke the model — same string, no translation needed.
 
-import type { DisplayProvider, ModelEntry, RouteProvider } from '@atta/models'
+import type { ModelEntry } from '@atta/models'
 import { OLLAMA_BASE_URL } from '@atta/models'
 
 interface OllamaTagEntry {
@@ -23,8 +23,8 @@ interface OllamaTagsResponse {
   models?: OllamaTagEntry[]
 }
 
-// Map Ollama model families to our DisplayProvider so the icon matches.
-function resolveDisplayProvider(family: string | undefined, name: string): DisplayProvider {
+// Map Ollama model families to a displayProvider string so the icon matches.
+function resolveDisplayProvider(family: string | undefined, name: string): string {
   const n = name.toLowerCase()
   const f = (family ?? '').toLowerCase()
   if (n.startsWith('llama') || f.includes('llama')) return 'meta'
@@ -62,7 +62,6 @@ export async function fetchInstalledOllamaModels(): Promise<ModelEntry[]> {
   if (!res.ok) throw new Error(`Ollama /api/tags responded ${res.status}`)
   const body = (await res.json()) as OllamaTagsResponse
   const models = body.models ?? []
-  const route: RouteProvider = 'ollama'
   return models.map((m): ModelEntry => {
     const size = humanSize(m.size)
     const paramSize = m.details?.parameter_size
@@ -71,7 +70,8 @@ export async function fetchInstalledOllamaModels(): Promise<ModelEntry[]> {
       id: `ollama/${m.name}`,
       modelId: m.name,
       displayProvider: resolveDisplayProvider(m.details?.family, m.name),
-      route,
+      vendorId: 'ollama',
+      route: 'ollama',
       label: labelize(m.name, paramSize),
       description,
       tier: 'balanced',

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { compileSpec } from '@atta/engine'
 import { LangGraphAdapter, createMultiVendorLlmCall } from '@atta/adapter-langgraph'
 import type { ProviderKeys } from '@atta/adapter-langgraph'
+import { getCatalog, findModelEntryByModelId, isLocalOnly, resolveVendorByPrefix, type VendorId } from '@atta/models'
 import { lookupSpec } from '../spec-registry'
 import { logSession } from '../session-logger'
 
@@ -39,6 +40,10 @@ export const ConsultInputStructuredSchema = z
       .array(ReviewerSpecSchema)
       .min(2, 'at least 2 reviewers required')
       .max(5, 'at most 5 reviewers allowed'),
+    reviewer_config: z
+      .record(z.string())
+      .optional()
+      .describe('Maps agent display name to model ID. Every model must have a configured provider key.'),
     session_title: z.string().optional(),
     current_leaning: z.string().optional(),
     stakes: z.string().optional()
@@ -73,6 +78,8 @@ export interface ConsultInput {
   specId?: string
   question: string
   reviewerSpecs: ReviewerSpec[]
+  /** Maps agent display name → modelId; used to build agentVendorOverrides in runConsult. */
+  reviewerConfig?: Record<string, string>
   sessionTitle?: string
   contextText?: string
   currentLeaning?: string
@@ -143,6 +150,7 @@ export function validateAndNormalize(args: unknown): ValidationOutcome {
         specId: data.spec_id,
         question: composeQuestion(data),
         reviewerSpecs,
+        reviewerConfig: data.reviewer_config,
         sessionTitle: data.session_title,
         contextText: data.context,
         currentLeaning: data.current_leaning,
@@ -233,8 +241,47 @@ export async function runConsult(
 
   const plan = compileSpec(specWithReviewers, input.question, DEFAULT_MODEL, customVars)
 
-  const llmCall = createMultiVendorLlmCall(providerKeys)
-  const adapter = new LangGraphAdapter({ apiKey: providerKeys.anthropic })
+  // Build agentVendorOverrides from reviewerConfig. Catalog lookup is authoritative
+  // (handles cross-vendor models like deepseek-r1-distill-llama-70b served by Groq).
+  let agentVendorOverrides: Record<string, VendorId> | undefined
+  if (input.reviewerConfig && Object.keys(input.reviewerConfig).length > 0) {
+    const catalog = await getCatalog()
+    agentVendorOverrides = {}
+    for (const [agentName, modelId] of Object.entries(input.reviewerConfig)) {
+      const entry = findModelEntryByModelId(catalog, modelId)
+      const vendorId = entry?.vendorId ?? resolveVendorByPrefix(modelId)
+      if (!vendorId) continue
+      if (isLocalOnly(vendorId)) {
+        throw Object.assign(
+          new Error(
+            `Model '${modelId}' routes to '${vendorId}' which is local-only and cannot be used in a hosted execution context.`
+          ),
+          {
+            code: 'local_only_vendor',
+            vendorId,
+            modelId,
+            agentName
+          }
+        )
+      }
+      if (!providerKeys[vendorId]) {
+        throw Object.assign(
+          new Error(`Missing provider key for '${vendorId}' (required by model '${modelId}' on agent '${agentName}').`),
+          {
+            code: 'missing_provider_key',
+            vendorId,
+            modelId,
+            agentName
+          }
+        )
+      }
+      agentVendorOverrides[agentName] = vendorId
+    }
+    if (Object.keys(agentVendorOverrides).length === 0) agentVendorOverrides = undefined
+  }
+
+  const llmCall = createMultiVendorLlmCall(providerKeys, agentVendorOverrides)
+  const adapter = new LangGraphAdapter({ apiKey: providerKeys.anthropic, agentVendorOverrides })
   const startedAt = Date.now()
   const conclusion = await adapter.execute({ plan, customVars: {}, llmCall })
   const durationMs = Date.now() - startedAt

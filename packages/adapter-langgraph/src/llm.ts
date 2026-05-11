@@ -2,30 +2,14 @@ import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import OpenAI from 'openai'
 import type { LlmCallFn, LlmCallResult } from '@atta/engine'
+import { getVendor, resolveVendorByPrefix, type VendorId } from '@atta/models'
 import { ANTHROPIC_TOOL_REGISTRY } from './tools'
 
 /**
- * API keys for each supported provider.
- * Omit a key to disable that provider (calls to its models will throw).
+ * API keys keyed by VendorId. Omit a key to disable that vendor (calls throw).
+ * Falls back to the vendor's envVar (e.g. ANTHROPIC_API_KEY) when not supplied.
  */
-export type ProviderKeys = {
-  anthropic?: string
-  google?: string
-  openai?: string
-  xai?: string
-}
-
-/**
- * Resolve which provider a model ID belongs to.
- * Returns null for unrecognized prefixes.
- */
-function resolveProvider(model: string): 'anthropic' | 'google' | 'openai' | 'xai' | null {
-  if (model.startsWith('claude-')) return 'anthropic'
-  if (model.startsWith('gemini-')) return 'google'
-  if (model.startsWith('gpt-') || model.startsWith('o4-')) return 'openai'
-  if (model.startsWith('grok-')) return 'xai'
-  return null
-}
+export type ProviderKeys = Partial<Record<VendorId, string>>
 
 // ─── Google handler ───────────────────────────────────────────────────────────
 
@@ -52,7 +36,7 @@ async function callGoogle(params: {
   return { content, tokensInput, tokensOutput }
 }
 
-// ─── OpenAI / xAI handler ────────────────────────────────────────────────────
+// ─── OpenAI-compat handler ────────────────────────────────────────────────────
 
 async function callOpenAICompat(params: {
   model: string
@@ -84,33 +68,40 @@ async function callOpenAICompat(params: {
 // ─── Main factory ─────────────────────────────────────────────────────────────
 
 /**
- * Creates a multi-vendor LlmCallFn that dispatches by model prefix:
- *   claude-*         → Anthropic SDK (full feature support: tools, structured output)
- *   gemini-*         → Google Generative AI SDK
- *   gpt-*, o4-*      → OpenAI SDK
- *   grok-*           → xAI via OpenAI-compatible SDK (api.x.ai/v1)
+ * Creates a multi-vendor LlmCallFn. Vendor is resolved per-call by:
+ *   1. agentVendorOverrides[agent.name]  — catalog-resolved (handles cross-vendor models like
+ *      deepseek-r1-distill-llama-70b served by Groq)
+ *   2. resolveVendorByPrefix(model)      — prefix-based fallback
  *
- * Throws a descriptive error when:
- *   - the model prefix is unrecognized
- *   - the matched provider has no configured API key
+ * Dispatch is sdkShape-based (not per-provider hardcoded):
+ *   anthropic    → Anthropic SDK (tools + structured output)
+ *   google-genai → Google Generative AI SDK
+ *   openai-compat → OpenAI SDK + vendor's registered baseURL (covers openai, groq, xai,
+ *                   deepseek, cerebras, mistral, together, fireworks, openrouter, ollama)
  */
-export function createMultiVendorLlmCall(keys: ProviderKeys): LlmCallFn {
+export function createMultiVendorLlmCall(
+  keys: ProviderKeys,
+  agentVendorOverrides?: Record<string, VendorId>
+): LlmCallFn {
   return async ({ model, agent, systemPrompt, userPrompt }) => {
-    const provider = resolveProvider(model)
+    const vendorId = agentVendorOverrides?.[agent.name] ?? resolveVendorByPrefix(model)
 
-    if (provider === null) {
-      throw new Error(`Unrecognized model prefix: '${model}'. Supported: claude-*, gemini-*, gpt-*, o4-*, grok-*`)
+    if (vendorId === null) {
+      throw new Error(
+        `Unrecognized model '${model}' for agent '${agent.name}'. Add it to agentVendorOverrides or register its prefix in the vendor registry.`
+      )
     }
+
+    const vendor = getVendor(vendorId)
+    const key = keys[vendorId] ?? (vendor.envVar ? process.env[vendor.envVar] : undefined)
 
     const startTime = Date.now()
 
     // ── Anthropic ─────────────────────────────────────────────────────────────
-    if (provider === 'anthropic') {
-      // Preserve the Anthropic path exactly — same logic as the original createDefaultLlmCall
-      const key = keys.anthropic ?? process.env.ANTHROPIC_API_KEY
+    if (vendor.sdkShape === 'anthropic') {
       if (!key) {
         throw new Error(
-          `No API key configured for provider 'anthropic' (model: ${model}). Set ANTHROPIC_API_KEY env var.`
+          `No API key configured for vendor '${vendorId}' (model: ${model}). Set ${vendor.envVar ?? 'an API key'}.`
         )
       }
 
@@ -121,7 +112,6 @@ export function createMultiVendorLlmCall(keys: ProviderKeys): LlmCallFn {
       let tokensInput = 0
       let tokensOutput = 0
 
-      // Resolve provider tools from agent.tools names
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const resolvedTools: any[] = (agent.tools ?? [])
         .map((name) => {
@@ -134,9 +124,6 @@ export function createMultiVendorLlmCall(keys: ProviderKeys): LlmCallFn {
         .filter(Boolean)
 
       if (agent.outputSchema) {
-        // Structured output: force tool_choice to extract typed JSON.
-        // Tools from agent.tools are intentionally omitted here — outputSchema
-        // agents (ConclusionSynthesizer) produce structured verdicts, not web research.
         const response = await client.messages.create({
           model,
           max_tokens: 4096,
@@ -159,7 +146,6 @@ export function createMultiVendorLlmCall(keys: ProviderKeys): LlmCallFn {
         structured = (toolUse?.input ?? {}) as Record<string, unknown>
         content = JSON.stringify(structured)
       } else {
-        // Plain text response, optionally with server tools
         const response = await client.messages.create({
           model,
           max_tokens: 4096,
@@ -171,7 +157,6 @@ export function createMultiVendorLlmCall(keys: ProviderKeys): LlmCallFn {
         tokensInput = response.usage.input_tokens
         tokensOutput = response.usage.output_tokens
 
-        // Concatenate all text blocks — tool_use blocks are intermediate steps
         content = response.content
           .filter((b): b is Anthropic.TextBlock => b.type === 'text')
           .map((b) => b.text)
@@ -180,15 +165,15 @@ export function createMultiVendorLlmCall(keys: ProviderKeys): LlmCallFn {
       }
 
       const elapsedMs = Date.now() - startTime
-      const result: LlmCallResult = { content, structured, tokensInput, tokensOutput, elapsedMs, model }
-      return result
+      return { content, structured, tokensInput, tokensOutput, elapsedMs, model }
     }
 
     // ── Google ────────────────────────────────────────────────────────────────
-    if (provider === 'google') {
-      const key = keys.google ?? process.env.GOOGLE_API_KEY
+    if (vendor.sdkShape === 'google-genai') {
       if (!key) {
-        throw new Error(`No API key configured for provider 'google' (model: ${model}). Set GOOGLE_API_KEY env var.`)
+        throw new Error(
+          `No API key configured for vendor '${vendorId}' (model: ${model}). Set ${vendor.envVar ?? 'an API key'}.`
+        )
       }
 
       const { content, tokensInput, tokensOutput } = await callGoogle({
@@ -202,37 +187,20 @@ export function createMultiVendorLlmCall(keys: ProviderKeys): LlmCallFn {
       return { content, structured: undefined, tokensInput, tokensOutput, elapsedMs, model }
     }
 
-    // ── OpenAI ────────────────────────────────────────────────────────────────
-    if (provider === 'openai') {
-      const key = keys.openai ?? process.env.OPENAI_API_KEY
-      if (!key) {
-        throw new Error(`No API key configured for provider 'openai' (model: ${model}). Set OPENAI_API_KEY env var.`)
+    // ── OpenAI-compat (openai, groq, xai, deepseek, cerebras, mistral, together, fireworks, openrouter, ollama) ──
+    if (vendor.sdkShape === 'openai-compat') {
+      if (!vendor.localOnly && !key) {
+        throw new Error(
+          `No API key configured for vendor '${vendorId}' (model: ${model}). Set ${vendor.envVar ?? 'an API key'}.`
+        )
       }
 
       const { content, tokensInput, tokensOutput } = await callOpenAICompat({
         model,
         systemPrompt,
         userPrompt,
-        apiKey: key
-      })
-
-      const elapsedMs = Date.now() - startTime
-      return { content, structured: undefined, tokensInput, tokensOutput, elapsedMs, model }
-    }
-
-    // ── xAI (OpenAI-compatible) ───────────────────────────────────────────────
-    if (provider === 'xai') {
-      const key = keys.xai ?? process.env.XAI_API_KEY
-      if (!key) {
-        throw new Error(`No API key configured for provider 'xai' (model: ${model}). Set XAI_API_KEY env var.`)
-      }
-
-      const { content, tokensInput, tokensOutput } = await callOpenAICompat({
-        model,
-        systemPrompt,
-        userPrompt,
-        apiKey: key,
-        baseURL: 'https://api.x.ai/v1'
+        apiKey: key ?? '',
+        baseURL: vendor.baseURL
       })
 
       const elapsedMs = Date.now() - startTime
@@ -240,13 +208,12 @@ export function createMultiVendorLlmCall(keys: ProviderKeys): LlmCallFn {
     }
 
     // TypeScript exhaustiveness guard — should never be reached
-    throw new Error(`[createMultiVendorLlmCall] Unhandled provider: ${provider}`)
+    throw new Error(`[createMultiVendorLlmCall] Unhandled sdkShape for vendor '${vendorId}'`)
   }
 }
 
 /**
- * Backward-compatible wrapper — creates an Anthropic-only LlmCallFn.
- * Existing code passing a single ANTHROPIC_API_KEY continues to work unchanged.
+ * Backward-compatible wrapper — Anthropic-only LlmCallFn.
  */
 export function createDefaultLlmCall(apiKey?: string): LlmCallFn {
   return createMultiVendorLlmCall({ anthropic: apiKey })

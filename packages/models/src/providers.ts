@@ -1,18 +1,12 @@
-// Where the AI SDK request actually routes.
-export type RouteProvider = 'anthropic' | 'google' | 'groq' | 'openai' | 'openrouter' | 'ollama'
+// Backward-compatibility shim — do not use in new code.
+// Import from @atta/models using VendorId / VENDORS / VENDOR_ORDER instead.
+import type { VendorId, Vendor } from './vendors'
+import { VENDORS, VENDOR_ORDER, OLLAMA_BASE_URL as _OLLAMA_BASE_URL } from './vendors'
 
-// Which brand logo the UI shows — independent of routing.
-export type DisplayProvider =
-  | 'anthropic'
-  | 'google'
-  | 'groq'
-  | 'openai'
-  | 'xai'
-  | 'deepseek'
-  | 'mistral'
-  | 'cerebras'
-  | 'meta'
-  | 'ollama'
+/** @deprecated Use VendorId from vendors.ts */
+export type RouteProvider = VendorId
+/** @deprecated displayProvider on ModelEntry is now just string */
+export type DisplayProvider = string
 
 export interface ProviderMeta {
   id: RouteProvider
@@ -22,59 +16,26 @@ export interface ProviderMeta {
   envVar: string
 }
 
-export const PROVIDERS: Record<RouteProvider, ProviderMeta> = {
-  anthropic: {
-    id: 'anthropic',
-    label: 'Anthropic',
-    keyPrefix: 'sk-ant-',
-    keyPlaceholder: 'sk-ant-…',
-    envVar: 'ANTHROPIC_API_KEY'
-  },
-  google: {
-    id: 'google',
-    label: 'Google',
-    keyPrefix: 'AIza',
-    keyPlaceholder: 'AIza…',
-    envVar: 'GOOGLE_GENERATIVE_AI_API_KEY'
-  },
-  groq: {
-    id: 'groq',
-    label: 'Groq',
-    keyPrefix: 'gsk_',
-    keyPlaceholder: 'gsk_…',
-    envVar: 'GROQ_API_KEY'
-  },
-  openai: {
-    id: 'openai',
-    label: 'OpenAI',
-    keyPrefix: 'sk-',
-    keyPlaceholder: 'sk-…',
-    envVar: 'OPENAI_API_KEY'
-  },
-  openrouter: {
-    id: 'openrouter',
-    label: 'OpenRouter',
-    keyPrefix: 'sk-or-',
-    keyPlaceholder: 'sk-or-…',
-    envVar: 'OPENROUTER_API_KEY'
-  },
-  // Ollama runs locally — no auth by default. The "key" slot is a sentinel
-  // (any non-empty string) meaning "user has enabled Ollama"; the actual
-  // base URL is hardcoded to localhost:11434. See the setup note the probe
-  // surfaces when the server isn't reachable.
-  ollama: {
-    id: 'ollama',
-    label: 'Ollama (local)',
-    keyPrefix: '',
-    keyPlaceholder: 'no key needed — press Save to enable',
-    envVar: 'OLLAMA_BASE_URL'
-  }
-}
+export const PROVIDERS: Record<RouteProvider, ProviderMeta> = Object.fromEntries(
+  Object.entries(VENDORS).map(([id, v]) => {
+    const vendor = v as Vendor
+    return [
+      id as RouteProvider,
+      {
+        id: id as RouteProvider,
+        label: vendor.label,
+        keyPrefix: vendor.keyPrefix ?? '',
+        keyPlaceholder: vendor.localOnly
+          ? 'no key needed — press Save to enable'
+          : vendor.keyPrefix
+            ? `${vendor.keyPrefix}…`
+            : 'Your API key',
+        envVar: vendor.envVar ?? ''
+      } satisfies ProviderMeta
+    ]
+  })
+) as Record<RouteProvider, ProviderMeta>
 
-// Convenience ordering for UI rendering (native providers first, proxy last,
-// local inference at the end)
-export const ROUTE_PROVIDER_ORDER: RouteProvider[] = ['anthropic', 'openai', 'google', 'groq', 'openrouter', 'ollama']
+export const ROUTE_PROVIDER_ORDER: RouteProvider[] = VENDOR_ORDER
 
-// Default Ollama endpoint. Users who run Ollama on a different port or host
-// will need to update this constant (or we add per-user baseURL in V2).
-export const OLLAMA_BASE_URL = 'http://localhost:11434'
+export const OLLAMA_BASE_URL = _OLLAMA_BASE_URL

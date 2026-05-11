@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@atta/engine": "workspace:*",
+    "@atta/models": "workspace:*",
     "@langchain/langgraph": "^0.2.0",
     "@langchain/core": "^0.3.0",
     "@anthropic-ai/sdk": "^0.65.0",

@@ -30,7 +30,7 @@ export interface DeliberateOutput {
 }
 
 export async function runDeliberate(input: DeliberateInput, providerKeys: ProviderKeys): Promise<DeliberateOutput> {
-  const spec = lookupSpec(input.team ?? 'sparring')
+  const spec = lookupSpec(input.team ?? 'vada-reviewers')
   const plan = compileSpec(spec, input.question, DEFAULT_MODEL)
 
   const llmCall = createMultiVendorLlmCall(providerKeys)

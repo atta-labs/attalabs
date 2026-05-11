@@ -1,5 +1,5 @@
 import type { ModelEntry } from '@atta/models'
-import { findModelEntryByModelId } from '@atta/models'
+import { findModelEntryByModelId, resolveVendorByPrefix } from '@atta/models'
 
 const STORAGE_KEY_PREFIX = 'vada:team:'
 
@@ -49,20 +49,14 @@ export function validateKeysForConfig(
 }
 
 /**
- * Resolves a model's vendor (provider key). Catalog lookup is preferred — it
- * matches what the picker uses and works for any model. Prefix fallback covers
- * native routes when a catalog isn't available (e.g. server-side or stripped
- * model strings). xAI is NOT a RouteProvider — Grok models route via OpenRouter,
- * so a bare 'grok-3' string resolves to 'openrouter'.
+ * Resolves a model's vendorId. Catalog lookup is authoritative (covers cross-vendor
+ * models like deepseek-r1-distill served by Groq); prefix-based fallback handles
+ * models not in the catalog.
  */
 export function resolveVendor(model: string, catalog?: ModelEntry[]): string | null {
   if (catalog) {
     const entry = findModelEntryByModelId(catalog, model)
-    if (entry) return entry.route
+    if (entry) return entry.vendorId
   }
-  if (model.startsWith('claude-')) return 'anthropic'
-  if (model.startsWith('gemini-')) return 'google'
-  if (model.startsWith('gpt-') || model.startsWith('o4-')) return 'openai'
-  if (model.startsWith('grok-')) return 'openrouter'
-  return null
+  return resolveVendorByPrefix(model)
 }
