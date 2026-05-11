@@ -11,6 +11,8 @@ For current state (Vāda phase, auth status, DNS, etc.), see `state.md`.
 
 ## In flight now
 
+**Cetana V0.5 CLI surface — spec PR in progress (May 11, 2026).** Docs-only PR on `docs/cetana-v05-cli-spec` locking the V0.5 CLI ladder design. Five-step incremental PR sequence: `cetana init` (scaffold + install gate) / `cetana watch` / `cetana status` / `cetana abort`+`cetana resume` / `cetana reply`. Adds D-020–D-023. Locked decisions: CLI as canonical interface (D-020, Lock: YES), install gate (D-021, Lock: YES), thin-client architecture (D-022), V1 UI dogfood gate (D-023, Lock: YES). Track F extended to F13.
+
 **Vendor registry consolidation shipped (May 11, 2026 — PR #31).** Single source of truth at `packages/models/src/vendors.ts` (12 vendors). 4 prior prefix-resolution implementations collapsed to 1. Adapter dispatches by SDK shape (3 branches: `anthropic`, `google-genai`, `openai-compat`). `vada__consult` MCP tool gains `reviewer_config` parameter mirroring the web UI. Crucible/Sparring/War Room marked `experimental: true` (unpublished from public catalog). `providers.ts` backward-compat shim deleted; 6 consumer files + 12 web-app files migrated from `RouteProvider`/`PROVIDERS` to `VendorId`/`VENDORS`. No half-merged state on main. See D-032.
 
 **v3 operational model shipped (May 10, 2026).** State-machine-governed coordination model with three conversational roles (Principal, Team Leader, Developer) + Archivist automation. New files: `state-machine.md` (constitution), `decisions.md` (global D-001 to D-016), three role docs, `reviewer-prompt.md`, `ratification-queue.md`. Coordination.md rewritten. Brief-authoring-rules migrated to `.claude/skills/brief-authoring/SKILL.md` with v3 fields. Cetana spec renamed to `cetana-spec.md` (D-018 locked). Archivist V0.7 stub in `.github/workflows/archivist.yml`. `scripts/verify-docs.ts` stub added.
@@ -37,7 +39,7 @@ For current state (Vāda phase, auth status, DNS, etc.), see `state.md`.
 
 **Currently active work:** Configure Claude Desktop with Cetana strategist MCP server; dispatch Track B Item 3b (Reviewer prompt iteration) as first real Cetana V0 dispatch.
 
-**Next focused work:** Reviewer prompt iteration. With vendor registry consolidation now shipped (PR #31), the empirical Reviewers test on the web UI (third slot configured to a Groq-served DeepSeek model) is unblocked.
+**Next focused work:** V0.5 CLI ladder (F5–F9). Start with Step 1 (F5): CLI scaffold + `cetana init`. Once the CLI surface is working (Steps 1–5 merged), first real-world dispatch (F10): configure Claude Desktop with the strategist MCP server and dispatch Track B Item 3b.
 
 ---
 
@@ -98,14 +100,21 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 - ⏭ **E11: Per-key tool scoping** — restrict an API key to specific tools. Useful for embedded integrations.
 - ⏭ **E12: OAuth as alternative to bearer-token auth** — Anthropic's claude.ai connector broker has a known bug (`ofid_*` errors) that fails self-hosted MCP servers using bearer-token auth, while OAuth-using vendor-hosted MCP servers (e.g., GitHub at `api.githubcopilot.com/mcp/`) work. Until Anthropic fixes the broker bug, Claude.ai web users cannot connect to hosted Vāda; workaround is Claude Code CLI which works today. If Claude.ai web adoption matters for users, V2 hardening should add OAuth flow as an alternative to bearer auth — different code path on Anthropic's side, more likely to work through the broker. Empirically reconfirmed May 9, 2026 (third independent reproduction; consistent `ofid_*` failure mode).
 
-### Track F — Cetana V0 (NEW, in flight May 9)
+### Track F — Cetana V0 + V0.5 CLI surface (in flight May 9)
 
 - ✅ **F1: Slice -1 escalation prototype** — May 9. 13/13 pass. Validated `cetana_request_input` MCP tool round-trip including 7-minute cognitive continuity. Throwaway prototype at `~/code/cetana-prototype/`.
 - ✅ **F2: V0 Coordinator build at `apps/cetana-ai/`.** Single Bun service, two MCP server entry points, 4 tools, 38 passing tests. Shipped May 10.
 - ✅ **F3: Worktree manager** — `worktree.ts` with create/remove/list. Part of F2.
 - ✅ **F4: GitHub Octokit integration** — `github.ts` with getIssue, postComment, openPR. Part of F2.
-- ⏭ **F5: First real-world dispatch** — Track B Item 3b (Reviewer prompt iteration) becomes the first real Cetana V0 dispatch.
-- ⏭ **F6: 2-week dogfood evaluation** — after V0 ships and is used for at least 5 real Atta tasks, decide whether Cetana V1 (Tauri shell, dashboard, native notifications) is justified.
+- ⏭ **F5: V0.5 Step 1 — CLI scaffold + `cetana init`.** Entry point at `src/cli.ts`. Interactive config wizard writes `~/.cetana/config.json` without manual JSON editing. Install gate (D-021): verified on a fresh machine before PR merges.
+- ⏭ **F6: V0.5 Step 2 — `cetana watch`.** Live-tails all active JSONL logs to stdout. Blocked tasks shown with question text, severity, and time-blocked.
+- ⏭ **F7: V0.5 Step 3 — `cetana status`.** Point-in-time summary of running, blocked, and recently completed tasks. Same data as `cetana.list_active_tasks`.
+- ⏭ **F8: V0.5 Step 4 — `cetana abort` + `cetana resume`.** Abort kills subprocess + appends `task.failed`. Resume re-dispatches in the same worktree with a new task ID.
+- ⏭ **F9: V0.5 Step 5 — `cetana reply`.** Unblocks a blocked task from the terminal without opening Claude Desktop. Completes the full orchestration loop from CLI.
+- ⏭ **F10: First real-world dispatch** — Track B Item 3b (Reviewer prompt iteration). Validates the orchestration loop on real Vāda work. Now planned with V0.5 CLI surface available.
+- ⏭ **F11: V0.5 dogfood period** — 20+ tasks dispatched through Cetana (V0 + V0.5 combined). Document "wish this were visual" moments as they occur. Required for D-023 gate.
+- ⏭ **F12: V1 UI gate evaluation** — check D-023 conditions: ≥20 tasks, ≥3 concurrent, documented friction moments. TL presents evidence to ratification queue. Principal decides.
+- ⏭ **F13: V1 build** — Tauri shell + dashboard + native notifications + menu bar status. Only if D-023 gate passes in F12.
 
 ### Track G — Architecture & tooling hygiene (ad-hoc)
 
