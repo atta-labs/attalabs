@@ -23,6 +23,39 @@ Do NOT load for:
 
 ---
 
+## V0.5 — CLI is the primary surface (shipped May 12, 2026)
+
+After PR #43 merged, Cetana V0.5 Step 1 is shipped. The `cetana` CLI binary is the canonical operator interface (D-020 — locked).
+
+### User flow (5 commands, one terminal, agent does the work)
+
+1. **`cetana init`** — interactive setup, no manual JSON editing. Run once per machine.
+2. **`cetana dispatch <issue-number>`** — fetches GitHub issue body as brief, spawns Claude Code in fresh worktree, starts JSONL log.
+3. **`cetana list`** — current task state with heartbeat-based CRASHED detection.
+4. **`cetana reply <task-id> "<message>"`** — unblock an agent that called `cetana_request_input`.
+5. **Review the PR on GitHub.**
+
+### What's still V0 (MCP server)
+
+The strategist and executor MCP servers remain at `apps/cetana-ai/coordinator/src/`. They expose `cetana.dispatch_task`, `cetana.list_active_tasks`, `cetana.reply_to_blocked_task`, and `cetana_request_input`. These let Claude Desktop drive Cetana via existing MCP tool surfaces.
+
+The CLI is a different entry point on the same Coordinator modules (D-022). No parallel orchestration code. Coordinator modules used by CLI: `StateManager`, `createDispatchTask`, `createReplyToBlockedTask`, `readEvents`, `worktree.ts`, `github.ts`, `paths.ts`, `config.ts`.
+
+### What's coming (F6-F9)
+
+- **F6 — `cetana watch <task-id>`** — human-readable, color-coded, auto-refreshing JSONL renderer.
+- **F7 — `cetana status`** — detailed multi-task fleet view.
+- **F8 — `cetana abort` + `cetana resume`** — failure recovery.
+- **F9 — `cetana reply <task-id>`** — `$EDITOR` integration for multi-line replies.
+
+After F9, 4-week dogfood window begins per D-023.
+
+### Install gate (D-021, D-025)
+
+Future install-touching PRs must follow D-025's path-coverage requirement: enumerate distinct user paths, provide raw terminal output per path, Principal physically runs documented commands before merge approval.
+
+---
+
 ## 2. Directory Structure
 
 ```

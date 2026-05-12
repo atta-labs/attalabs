@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** May 11, 2026 (vendor registry consolidation shipped — PR #31)
+**Last updated:** May 12, 2026 (Cetana V0.5 Step 1 shipped — PRs #39/#42/#43; operational model: v3 + Cetana V0.5 Step 1 live)
 **Purpose:** Single snapshot of where everything stands across the Atta ecosystem.
 
 This doc lives in the repo at `project-management/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -136,13 +136,19 @@ See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: fil
 
 **Next:** Buildout downstream of Vitakka resuming.
 
-### Cetana — *V0 shipped May 10, 2026; v3 operational model adopted May 10, 2026*
+### Cetana — *V0.5 Step 1 shipped, Principal-verified (May 12, 2026)*
 
-**Status:** V0 shipped via PR #25 on `feat/cetana-v0`. Architecture validated via Slice -1 escalation prototype on May 9, 2026 (13/13 pass, including 7-minute cognitive continuity). V0 now live inside the monorepo at `apps/cetana-ai/`. The v3 operational model (Principal → Team Leader → Developer → Archivist) is now the active coordination model for all Atta work.
+**Cetana — V0.5 Step 1 shipped, Principal-verified (May 12, 2026)**
 
-**What it is:** Local Mac orchestration coordinator that lets Claude Desktop (Team Leader, Strategist mode) dispatch Claude Code agents (Developers) into the Atta repo via MCP, watch them work, and unblock them when they hit decision points.
+V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 Step 1 (F5) shipped May 12 across three PRs (#39 initial, #42 install command fix, #43 abort hang fix). Install gate D-021 verified end-to-end by Principal.
 
-**Validated load-bearing mechanism (Slice -1, May 9):** Agent calls custom MCP tool `cetana_request_input` when blocked, tool blocks until Principal replies via external write, agent receives reply as tool result and continues coherently with no context loss. Tested across a 7-minute pause; first post-resume sentence was a clean continuation, zero re-planning, zero redundant reads.
+**Current capability:** `cetana init`, `cetana dispatch <issue>`, `cetana list`, `cetana reply <id> "msg"`, `cetana logs <id>`. Hierarchical config. Heartbeat-based CRASHED detection. 26 passing tests.
+
+**Locked decisions:** D-020 (CLI canonical), D-021 (install gate non-negotiable), D-022 (thin client over Coordinator), D-023 (4-week dogfood gate), D-025 (install gate path coverage).
+
+**Next:** F6 (`cetana watch`) — ready to dispatch.
+
+**What it is:** Local Mac orchestration coordinator that lets Claude Desktop (Team Leader, Strategist mode) dispatch Claude Code agents (Developers) into the Atta repo via MCP, watch them work, and unblock them when they hit decision points. The `cetana` CLI binary (D-020 — locked) is the canonical operator interface as of V0.5.
 
 **Architecture (locked May 9, 2026):**
 - Claude Desktop = Team Leader (Strategist mode) — local stdio MCP only; web Claude.ai cannot reach localhost
@@ -150,17 +156,9 @@ See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: fil
 - Cetana Coordinator = single Bun service inside `apps/cetana-ai/`, exposes MCP tools (`cetana.dispatch_task`, `cetana.list_active_tasks`, `cetana.reply_to_blocked_task`, `cetana_request_input`)
 - Claude Code = Developer/Executor, spawned per task, runs in git worktree at `~/code/atta/.worktrees/issue-{N}/`
 - JSONL append-only logs at `~/.cetana/tasks/*.jsonl` for runtime state (SQLite later if/when schema stabilizes)
-- No UI in V0. CLI + `tail -f` on JSONL. Tauri shell + dashboard deferred to V1 if and only if V0 proves daily-driver value over 2 weeks of real use.
-
-**v3 operational model specced (May 10, 2026):**
-- `cetana_request_input` severity field specced (D-016 in `cetana-decisions.md`) — `execution` / `strategy` / `product` routing. **Code implementation is a follow-up task** — the field is in the spec, not yet in `src/tools/request-input.ts`.
-- Brief validation gate specced (D-017) — `.github/workflows/archivist.yml` stub in this PR. Real implementation is a follow-up task.
-- Spec renamed from `cetana-v0-spec.md` to `cetana-spec.md` (D-018, Lock: YES).
-- Archivist confirmed as GitHub Action (not Cetana component) — see D-019.
+- CLI binary = canonical operator interface (D-020 locked). Tauri shell + dashboard deferred to V1 if and only if V0 proves daily-driver value (D-023 gate: ≥20 tasks, ≥3 concurrent, documented friction moments).
 
 **Domain:** `cetana.attalabs.dev` reserved for if/when Cetana becomes a public product. V0 is internal tooling.
-
-**Next:** First real task dispatch through Cetana (Track B Item 3b — Reviewer prompt iteration). Severity routing code implementation. Archivist real implementation.
 
 ### Herald — *pluggable MCP tool*
 
@@ -271,7 +269,13 @@ This ecosystem uses the repo as the source of truth for project management. See 
 
 **Everything else is repo specs/skills/code, indexed by `docs-index.md`.**
 
-### Recently shipped (April 28 – May 11, 2026)
+### Recently shipped (April 28 – May 12, 2026)
+
+**May 12 — Cetana V0.5 Step 1 (F5) shipped — PRs #39, #42, #43.**
+- PR #39: `@atta/cetana-cli` package at `apps/cetana-ai/cli/`. Five commands: `init`, `dispatch`, `list`, `reply`, `logs`. Hierarchical config. Heartbeat-based CRASHED detection. 25 tests pass.
+- PR #42: Install command corrected (`bun --cwd apps/cetana-ai/cli link` → `cd apps/cetana-ai/cli && bun link`). First install-gate violation discovered post-merge.
+- PR #43: `cetana init` abort path hang fixed (`process.stdin.destroy()` on abort branch). Regression test added. D-021 verified end-to-end by Principal.
+- D-025 added: install gate path-coverage requirement for all future install-gate-touching PRs.
 
 **May 11 — Vendor registry consolidation (PR #31).**
 - Single source of truth at `packages/models/src/vendors.ts` — 12 vendors registered (anthropic, openai, google, xai, groq, openrouter, deepseek, cerebras, mistral, together, fireworks, ollama). Each entry: `sdkShape`, `baseURL`, `keyConvention`, `modelPrefixes`, `envVar`, `localOnly`.

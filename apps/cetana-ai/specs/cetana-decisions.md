@@ -403,3 +403,35 @@ All three must be documented in the ratification queue before V1 is authorized. 
 - Gate on "Principal decides": rejected as subjective. The three conditions are designed to be checkable without a judgment call. "Documented moments" is the closest to subjective, and "specific situations with concrete examples" is the bar, not "I think a dashboard would be nice."
 
 **Consequences:** Before any V1 UI brief is written, the ratification queue must contain evidence that all three conditions are met. The TL is responsible for maintaining the count (tasks dispatched, whether ≥3 were concurrent) and for documenting friction moments as they occur during real work. Waiting until V1 is proposed to reconstruct the evidence retroactively is not acceptable — the moments must be written at the time they occur.
+
+---
+
+## D-025 — Install gate path coverage requirement
+
+**Date:** 2026-05-12
+**Status:** ACTIVE
+**Type:** 2 (governance refinement — extends D-021)
+**Supersedes:** —
+**Lock:** YES — install-gate PRs cannot bypass path coverage
+**Ratifies:** —
+**Authored by:** Team Leader (chat session, May 12, 2026)
+**Ratified by:** Principal (chat session, May 12, 2026)
+**Context:** PR #39 (F5) shipped claiming the D-021 install gate passed. Within 24 hours, two distinct install-gate failures surfaced during Principal validation:
+1. PR #42: documented install command (`bun --cwd apps/cetana-ai/cli link`) did not work — the agent verified a different command than what got documented.
+2. PR #43: `cetana init` abort path (user declines overwrite) hung the process — the agent only tested the happy path.
+
+Both failures were Principal-runnable, proving the install gate as written in D-021 ("agent verifies install works") was insufficient.
+**Decision:** Install-gate PRs MUST cover every code path a user can hit, not just the happy path. Specifically:
+1. Brief authors must enumerate distinct user paths (fresh install / existing config accept / existing config decline / network error / permission error / etc.) in the brief's verification section.
+2. Agent verification output must include EXACT terminal output (copy-pasted, not paraphrased) for each enumerated path.
+3. PR descriptions claiming "install gate verified" without per-path terminal output are insufficient — TL spec review must reject them.
+4. Principal must physically run the documented commands before approval for any install-gate-touching PR.
+**Alternatives rejected:**
+- "Trust agent verification by default" (rejected: two failures in 24 hours proved this fails).
+- "Require integration tests for every path" (rejected: not all paths are mockable; adds friction without signal).
+- "Add a `cetana doctor` diagnostic command" (deferred: useful but doesn't replace verification discipline).
+**Consequences:**
+- F6-F9 briefs that touch install behavior or CLI invocation paths must follow D-025 verification protocol.
+- Spec reviews must check for per-path terminal output as a hard gate.
+- Briefs without enumerated path coverage in their verification section are malformed.
+- Calibration lessons in `lessons.md` reinforce this for all future agents.
