@@ -176,6 +176,16 @@ Current branches: `anthropic`, `google-genai`, `openai-compat` (which covers Ope
 
 Likely answer: 4th branch when latency matters (direct call beats proxy hop), OpenRouter when it doesn't. Decide per case when it next comes up. Not blocking anything today.
 
+### Cetana V0.7+ — MCP wrapping of spec templates
+
+Parked idea from Spec Kit evaluation (May 12, 2026): expose Cetana's brief authoring templates as MCP tools so Claude Desktop can scaffold a well-formed brief without the TL writing from scratch. Rough sketch:
+
+- `cetana.scaffold_brief(type: 'feature' | 'bug' | 'refactor', title: string)` → returns a pre-filled brief skeleton with all required sections and `[NEEDS CLARIFICATION]` markers pre-inserted for common unknowns
+- Templates stored as SKILL.md-adjacent markdown files, not code — easy to update without redeployment
+- Depends on: Cetana V0 being stable + brief-authoring pattern being settled (not before V0.5 ships)
+
+Not blocking anything. Revisit when V0.5 CLI surface is shipping and TL brief authoring is the bottleneck.
+
 ### DB schema management
 
 When `@atta/db` consolidates further, decide whether to keep `db:push` or move to tracked migrations. No urgency.

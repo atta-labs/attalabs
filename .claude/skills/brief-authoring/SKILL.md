@@ -172,6 +172,47 @@ Once a brief is dispatched via `cetana.dispatch_task`, it is frozen. The Develop
 
 ---
 
+## Handling ambiguity in briefs
+
+When authoring a brief, you will sometimes encounter requirements where the answer depends on context you don't have — architecture decisions not yet made, Principal preferences not yet stated, or external constraints not yet known.
+
+**Use `[NEEDS CLARIFICATION]` inline markers** to surface these gaps explicitly rather than guessing or leaving them implicit.
+
+```
+[NEEDS CLARIFICATION: Which DB table owns this? users or sessions?]
+[NEEDS CLARIFICATION: Should this endpoint require auth? Not stated in roadmap.md.]
+[NEEDS CLARIFICATION: Timeout value — 30s or 60s? Both have precedent in codebase.]
+```
+
+### When to use `[NEEDS CLARIFICATION]`
+
+Use it when:
+- Two reasonable interpretations exist and picking the wrong one would require a re-do
+- The brief references an architectural decision that hasn't been logged in `decisions.md`
+- A constraint (auth, timeout, error behavior) is implied but not stated
+- You're unsure whether an existing pattern applies here
+
+Do not use it for:
+- Stylistic preferences — pick one and note it in the brief
+- Things resolvable by reading the codebase — read it first
+- Pure implementation details — the Developer decides those
+
+### Resolution protocol
+
+Before dispatching a brief with `[NEEDS CLARIFICATION]` markers:
+1. Collect all markers and present them to the Principal as a numbered list
+2. Wait for resolution on each — do not dispatch with unresolved markers
+3. Replace each resolved marker with the answer inline in the brief
+4. If the Principal defers one ("Developer decides"), replace with `[DEVELOPER DECIDES: ...]` so the executor knows it's intentional
+
+### Mapping to cetana_request_input
+
+A `[NEEDS CLARIFICATION]` in a brief maps to a potential `cetana_request_input` escalation during execution. If the ambiguity is pre-flight (known before dispatch), resolve it in the brief. If it surfaces mid-execution, the Developer uses `cetana_request_input` to escalate — but a well-authored brief should anticipate most of these.
+
+Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention only — Spec Kit CLI not adopted.
+
+---
+
 ## Anti-patterns
 
 - ❌ "Implement X as you see fit" — executor has no taste, only instructions

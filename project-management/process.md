@@ -384,3 +384,52 @@ For the technical architecture of the system implementing this process (Cetana V
 For the role descriptions referenced throughout, see `roles/principal.md`, `roles/team-leader.md`, `roles/developer.md`.
 
 For brief authoring rules, see `.claude/skills/brief-authoring/SKILL.md`.
+
+---
+
+## Spec format guidance
+
+Specs produced during process phases should follow this format. Adopted from GitHub Spec Kit's spec-template (May 12, 2026 evaluation) — see `~/spec-kit-sandbox/output/spec-kit-evaluation.md` on the Principal's machine for the source analysis.
+
+### Required sections
+
+**1. User stories (prioritized).** Each story has:
+- Priority: P1 (must), P2 (should), P3 (nice-to-have)
+- Story: "As a [role], I want to [action], so that [benefit]"
+- Independent Test: how this story is verified in isolation
+
+**2. Acceptance scenarios.** Given/When/Then format. One or more per user story.
+- Given [precondition]
+- When [action]
+- Then [outcome]
+
+**3. Success criteria (measurable, user-focused, technology-agnostic).** Examples:
+- "User completes signup in under 60 seconds on a cold-cache mobile load"
+- "First-page render shows headline within 200ms p95"
+
+NOT examples: "function returns void," "uses Drizzle ORM," "passes typecheck" — these are implementation details, not user-facing success.
+
+**4. Edge cases.** Explicit enumeration of edge cases the spec accounts for. One bullet each.
+
+**5. `[NEEDS CLARIFICATION]` markers.** Wherever the spec author identifies a real ambiguity, mark it inline as `[NEEDS CLARIFICATION: specific question]`. Do NOT silently guess. Each marker is a candidate escalation point during execution.
+
+### When this format applies
+
+- New product specs (`apps/[product]/specs/[product]-spec.md`) — when authored or rewritten
+- Major feature specs (anything Tier 1 or Tier 3)
+- Cetana dispatch briefs — the "Goal" section uses this format
+
+When this format does NOT apply:
+- Tier 0 tasks (typos, dep bumps) — no spec needed
+- Decision log entries — use D-NNN schema in `state-machine.md` Section 6
+- Calibration lessons, anti-patterns — narrative format
+
+### Retroactive migration
+
+Existing specs in `apps/*/specs/` are NOT migrated by this PR. They stay in their current format until naturally touched. When a spec is rewritten for other reasons, it adopts this format.
+
+### Why this format
+
+GitHub Spec Kit's evaluation (May 12) found their spec-template format produces measurably better-structured artifacts than ad-hoc spec writing. The structure forces explicit priority, makes ambiguities visible, and ties success to user-observable outcomes rather than implementation details.
+
+Atta adopts the format without adopting Spec Kit the tool — see `roadmap.md` "Open / unresolved" for the V0.7+ question of whether Cetana eventually wraps Spec Kit templates as MCP tools.
