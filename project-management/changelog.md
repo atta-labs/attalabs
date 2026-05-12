@@ -8,6 +8,17 @@
 
 ---
 
+## 2026-05-12 — Fix: `cetana init` abort-path hang (D-021 follow-up)
+
+`cetana init` printed "Aborted" when user declined overwriting existing config, but the process did not return shell control — required Ctrl+C. Root cause: `setupStdinReader()` called `process.stdin.resume()` putting stdin into flowing mode, holding an event loop ref; the abort branch returned without closing the stream, so for interactive (TTY) stdin — which never emits 'end' — the process hung indefinitely. Fix: `process.stdin.destroy()` in the abort branch, which closes the stream and releases the event loop ref (1-line change in `init.ts`). Regression test added in `commands.test.ts` verifying the abort path exits within 2 seconds with code 0.
+
+Second D-021 install-gate violation discovered post-merge (PR #42 was the first). Calibration lesson added to `lessons.md`: install gate verification must cover every code path, not just the happy path.
+
+PR: #43
+Reproduction verified fixed: `echo n | cetana init` exits cleanly with code 0.
+
+---
+
 ## 2026-05-12 — Fix: F5 install gate documentation correction
 
 PR #39 (Cetana V0.5 Step 1) shipped with a broken install command in `apps/cetana-ai/README.md` and `apps/cetana-ai/cli/README.md`. The documented invocation `bun link --cwd apps/cetana-ai/cli` failed on Principal's machine with "Script not found 'link'" because `bun link` is not a workspace script and `--cwd` doesn't apply to it. Correct invocation is `(cd apps/cetana-ai/cli && bun link)` (run from inside the package directory via subshell).
