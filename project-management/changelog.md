@@ -8,6 +8,18 @@
 
 ---
 
+## 2026-05-12 — Cetana V0.5 Step 1: CLI scaffold + init (F5 complete)
+
+Shipped the `cetana` CLI binary at `apps/cetana-ai/cli/`. Five commands: `init`, `dispatch`, `list`, `reply`, `logs`. Hierarchical config (local `.cetana.json` overrides global `~/.cetana/config.json`). Heartbeat-based CRASHED detection. Install gate verified end-to-end on fresh checkout.
+
+PR: #39
+Commit: 039768c
+Conforms to: D-020 (CLI canonical), D-021 (install gate), D-022 (thin client over Coordinator).
+
+After this PR: Cetana V0 is usable without manual JSON editing. Next: F6 (`cetana watch`).
+
+---
+
 ## 2026-05-11 — Vendor registry consolidation (PR #31)
 
 - **Two commits on the branch.** `2db31eb` shipped the architectural refactor (registry + SDK-shape dispatch + MCP `reviewer_config` + experimental flag on three YAMLs). `08a041b` shipped the tech-debt cleanup (delete `providers.ts` shim, migrate 6 ecosystem consumers + 12 web-app files). `58926a1` fixed a Vercel build issue (declared `@atta/models` as a workspace dep in `@vada/mcp-server`, masked locally by Bun's hoisted node_modules but exposed by Vercel's `--frozen-lockfile`).

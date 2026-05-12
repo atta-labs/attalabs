@@ -1,0 +1,7 @@
+{
+  "extends": "@atta/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*", "tests/**/*"]
+}

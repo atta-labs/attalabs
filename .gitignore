@@ -49,3 +49,6 @@ next-env.d.ts
 .superpowers/
 .worktrees/
 .claude/worktrees/
+
+# Cetana local config
+.cetana.json

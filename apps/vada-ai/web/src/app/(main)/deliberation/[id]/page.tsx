@@ -55,7 +55,7 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
     if (!session.specId) return { teamName: 'Deliberation', hasSynthesizer: false }
     try {
       const spec = loadYamlFromCatalog(session.specId)
-      return { teamName: spec.displayName, hasSynthesizer: !!(spec.flow?.synthesis) }
+      return { teamName: spec.displayName, hasSynthesizer: !!spec.flow?.synthesis }
     } catch {
       return { teamName: 'Deliberation', hasSynthesizer: false }
     }
