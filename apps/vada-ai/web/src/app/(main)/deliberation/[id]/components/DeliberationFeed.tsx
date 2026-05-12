@@ -35,6 +35,7 @@ interface DeliberationFeedProps {
   benchmark?: BenchmarkClientState | null
   teamName?: string
   specId?: string
+  hasSynthesizer?: boolean
 }
 
 export function DeliberationFeed(props: DeliberationFeedProps) {
@@ -59,7 +60,8 @@ function DeliberationScene({
   initialTerminalState = null,
   benchmark = null,
   teamName = 'Deliberation',
-  specId
+  specId,
+  hasSynthesizer = true
 }: DeliberationFeedProps) {
   const s = useDeliberationScene({
     sessionId,
@@ -174,7 +176,7 @@ function DeliberationScene({
 
         {s.showConclusion && s.terminalState && !s.isTerminalButEmpty && (
           <div className='pb-24 pt-4'>
-            <ConclusionPanel terminalState={s.terminalState} conclusion={s.conclusion} agentModels={agentModels} />
+            <ConclusionPanel terminalState={s.terminalState} conclusion={s.conclusion} agentModels={agentModels} hasSynthesizer={hasSynthesizer} />
             <TranscriptActions
               input={{
                 question,
