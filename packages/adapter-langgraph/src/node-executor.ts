@@ -71,10 +71,11 @@ export function createNodeExecutor(llmCall: LlmCallFn, hooks?: ExecutionHooks): 
       ? { ...agent, tools: decision.needs.length > 0 ? decision.needs : undefined }
       : agent
 
-    // Invoke the LLM with (potentially filtered) tool list.
-    // On failure, return a synthetic error output rather than throwing — the graph
-    // continues to subsequent nodes; per-agent failures surface in AgentOutput.error.
-    let llmResult: Awaited<ReturnType<typeof llmCall>>
+    // Invoke the LLM. On failure, build a synthetic error output and continue —
+    // the graph proceeds to subsequent nodes. Both paths call onNodeComplete so
+    // downstream consumers (e.g. persistTurn) always see every node result.
+    let llmResult: Awaited<ReturnType<typeof llmCall>> | null = null
+    let callErrorMsg: string | null = null
     try {
       llmResult = await llmCall({
         model,
@@ -83,51 +84,50 @@ export function createNodeExecutor(llmCall: LlmCallFn, hooks?: ExecutionHooks): 
         userPrompt: renderedPrompt
       })
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err)
+      callErrorMsg = err instanceof Error ? err.message : String(err)
       console.error(`[LangGraphAdapter] LLM call failed for node '${node.id}':`, err)
-      const errorOutput: AgentOutput = {
-        agentName: agent.name,
-        content: '',
-        tokensInput: 0,
-        tokensOutput: 0,
-        elapsedMs: 0,
-        model,
-        error: errorMessage,
-        roundIndex: node.metadata.roundIndex,
-        stepIndex: node.metadata.customStepIndex
-      }
-      return {
-        outputs: { [node.id]: errorOutput },
-        executionOrder: [node.id]
-      }
     }
 
-    // Track tool allocation for tool-enabled agents (best-effort — one record per
+    // Build AgentOutput from success or error result.
+    const agentOutput: AgentOutput = callErrorMsg
+      ? {
+          agentName: agent.name,
+          content: '',
+          tokensInput: 0,
+          tokensOutput: 0,
+          elapsedMs: 0,
+          model,
+          error: callErrorMsg,
+          roundIndex: node.metadata.roundIndex,
+          stepIndex: node.metadata.customStepIndex
+        }
+      : {
+          agentName: agent.name,
+          content: llmResult!.content,
+          structured: llmResult!.structured,
+          tokensInput: llmResult!.tokensInput,
+          tokensOutput: llmResult!.tokensOutput,
+          elapsedMs: llmResult!.elapsedMs,
+          model: llmResult!.model,
+          roundIndex: node.metadata.roundIndex,
+          stepIndex: node.metadata.customStepIndex
+        }
+
+    // Track tool allocation for successful calls (best-effort — one record per
     // allocated tool since server tools don't emit countable tool_use blocks).
     const enabledTools = decision?.needs ?? agent.tools ?? []
-    const toolUseUpdates: ToolUseRecord[] = enabledTools.map((toolName) => ({
-      agentNodeId: node.id,
-      toolName,
-      inputTokens: llmResult.tokensInput,
-      outputTokens: llmResult.tokensOutput,
-      durationMs: llmResult.elapsedMs
-    }))
+    const toolUseUpdates: ToolUseRecord[] = callErrorMsg
+      ? []
+      : enabledTools.map((toolName) => ({
+          agentNodeId: node.id,
+          toolName,
+          inputTokens: llmResult!.tokensInput,
+          outputTokens: llmResult!.tokensOutput,
+          durationMs: llmResult!.elapsedMs
+        }))
 
-    // Build AgentOutput
-    const agentOutput: AgentOutput = {
-      agentName: agent.name,
-      content: llmResult.content,
-      structured: llmResult.structured,
-      tokensInput: llmResult.tokensInput,
-      tokensOutput: llmResult.tokensOutput,
-      elapsedMs: llmResult.elapsedMs,
-      model: llmResult.model,
-      roundIndex: node.metadata.roundIndex,
-      stepIndex: node.metadata.customStepIndex
-    }
-
-    // Fire onNodeComplete hook with state-as-of-this-node. Errors are swallowed and
-    // logged, consistent with how onStart/onComplete are handled in adapter.ts.
+    // Fire onNodeComplete hook for BOTH success and error outputs. Errors are
+    // swallowed and logged, consistent with how onStart/onComplete are handled.
     if (hooks?.onNodeComplete) {
       const stateAfterNode: ExecutionState = {
         ...executionStateView,
@@ -136,8 +136,8 @@ export function createNodeExecutor(llmCall: LlmCallFn, hooks?: ExecutionHooks): 
       }
       try {
         await hooks.onNodeComplete({ state: stateAfterNode, node, output: agentOutput })
-      } catch (err) {
-        console.error(`[LangGraphAdapter] onNodeComplete hook failed for node '${node.id}':`, err)
+      } catch (hookErr) {
+        console.error(`[LangGraphAdapter] onNodeComplete hook failed for node '${node.id}':`, hookErr)
       }
     }
 

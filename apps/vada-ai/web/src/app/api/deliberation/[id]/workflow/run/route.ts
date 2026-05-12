@@ -79,9 +79,11 @@ async function runLangGraph(
     onNodeComplete: async ({ state, node, output }) => {
       if (node.role === 'solo') {
         // Brokered reviewer node — persist to transcript so it appears in the live SSE feed.
+        // When the LLM call failed, store the error as visible content so the client
+        // renders an error card rather than silently dropping the slot.
         await persistTurn(sessionId, {
           turnId: node.id,
-          content: output.content,
+          content: output.error ? `⚠ Reviewer error: ${output.error}` : output.content,
           phase: 'reviewer',
           agent: output.agentName,
           round: 1,
