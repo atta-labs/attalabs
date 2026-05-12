@@ -12,8 +12,8 @@
 
 Shipped the `cetana` CLI binary at `apps/cetana-ai/cli/`. Five commands: `init`, `dispatch`, `list`, `reply`, `logs`. Hierarchical config (local `.cetana.json` overrides global `~/.cetana/config.json`). Heartbeat-based CRASHED detection. Install gate verified end-to-end on fresh checkout.
 
-PR: #<to-fill-after-PR-open>
-Commit: <to-fill-after-commit>
+PR: #39
+Commit: 039768c
 Conforms to: D-020 (CLI canonical), D-021 (install gate), D-022 (thin client over Coordinator).
 
 After this PR: Cetana V0 is usable without manual JSON editing. Next: F6 (`cetana watch`).
