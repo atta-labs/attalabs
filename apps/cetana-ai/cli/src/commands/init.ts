@@ -127,6 +127,7 @@ export async function initCommand(_args: string[]): Promise<void> {
     const overwrite = await promptYesNo(`Existing config found at ${existingPath}. Overwrite?`, false)
     if (!overwrite) {
       console.info('Aborted. Existing config unchanged.')
+      process.stdin.destroy()
       return
     }
   }

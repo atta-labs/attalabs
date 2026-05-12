@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test'
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const CLI_PATH = join(import.meta.dir, '../src/index.ts')
@@ -69,6 +70,52 @@ describe('cetana dispatch without config', () => {
       expect(stderr).toContain('cetana init')
     }
   }, 10000)
+})
+
+describe('cetana init abort path', () => {
+  it('exits cleanly (code 0) when user declines overwrite of existing config', async () => {
+    // Run from the repo root so detectGitRepo() succeeds; set HOME to a temp dir
+    // so the global config path points to our pre-seeded dummy config.
+    const REPO_ROOT = join(import.meta.dir, '../../../../')
+    const tmpHome = `/tmp/cetana-test-${Date.now()}`
+
+    mkdirSync(`${tmpHome}/.cetana`, { recursive: true })
+    writeFileSync(
+      `${tmpHome}/.cetana/config.json`,
+      JSON.stringify({
+        github: { owner: 'test', repo: 'test' },
+        defaults: { claudeModel: 'claude-sonnet-4-7', permissionMode: 'acceptEdits' }
+      })
+    )
+
+    const proc = Bun.spawn(['bun', 'run', CLI_PATH, 'init'], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+      stdin: new TextEncoder().encode('n\n'),
+      env: { ...process.env, HOME: tmpHome },
+      cwd: REPO_ROOT
+    })
+
+    try {
+      const result = await Promise.race([
+        proc.exited.then((exitCode) => ({ timedOut: false as const, exitCode })),
+        new Promise<{ timedOut: true; exitCode: null }>((resolve) =>
+          setTimeout(() => resolve({ timedOut: true, exitCode: null }), 2000)
+        )
+      ])
+
+      if (result.timedOut) {
+        proc.kill()
+        throw new Error('cetana init hung on abort path — process did not exit within 2 seconds')
+      }
+
+      const stdout = await new Response(proc.stdout).text()
+      expect(result.exitCode).toBe(0)
+      expect(stdout).toContain('Aborted')
+    } finally {
+      rmSync(tmpHome, { recursive: true, force: true })
+    }
+  }, 5000)
 })
 
 describe('cetana list with no tasks', () => {
