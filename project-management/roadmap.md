@@ -176,6 +176,16 @@ Current branches: `anthropic`, `google-genai`, `openai-compat` (which covers Ope
 
 Likely answer: 4th branch when latency matters (direct call beats proxy hop), OpenRouter when it doesn't. Decide per case when it next comes up. Not blocking anything today.
 
+### Cetana V0.7+ — MCP wrapping of Spec Kit templates
+
+Parked idea from Spec Kit evaluation (May 12, 2026): expose MCP tools that wrap Spec Kit's spec/plan/tasks templates:
+
+- `cetana.specify(description)` → produces a `spec.md` artifact using Spec Kit's spec-template format
+- `cetana.plan(spec_path)` → produces a `plan.md` artifact using Spec Kit's plan-template format
+- `cetana.tasks(plan_path)` → produces a `tasks.md` artifact using Spec Kit's tasks-template format
+
+Not blocking anything. Depends on Cetana V0 being stable and the brief-authoring pattern being settled (not before V0.5 ships).
+
 ### DB schema management
 
 When `@atta/db` consolidates further, decide whether to keep `db:push` or move to tracked migrations. No urgency.
