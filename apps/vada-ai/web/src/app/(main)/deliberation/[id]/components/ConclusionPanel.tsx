@@ -13,9 +13,10 @@ interface ConclusionPanelProps {
   terminalState: string
   conclusion: Record<string, unknown> | null
   agentModels?: Record<string, { provider: string; modelId: string }> | null
+  hasSynthesizer?: boolean
 }
 
-export function ConclusionPanel({ terminalState, conclusion, agentModels }: ConclusionPanelProps) {
+export function ConclusionPanel({ terminalState, conclusion, agentModels, hasSynthesizer = true }: ConclusionPanelProps) {
   const badge = TERMINAL_BADGE[terminalState as TerminalStateKey] ?? TERMINAL_BADGE.UNCONVERGED
   const criticVerdict = typeof conclusion?._criticVerdict === 'string' ? (conclusion._criticVerdict as string) : null
   const isFlagged = terminalState === 'UNCONVERGED' && !!criticVerdict
@@ -218,8 +219,16 @@ export function ConclusionPanel({ terminalState, conclusion, agentModels }: Conc
                 </div>
               )}
           </>
+        ) : hasSynthesizer ? (
+          <p className='m-0 text-sm text-muted-foreground'>
+            The synthesizer did not produce a renderable conclusion. The reviewer outputs above are still available; copy
+            the transcript to preserve them.
+          </p>
         ) : (
-          <p className='m-0 text-sm '>The agents could not produce a conclusion that survived independent review.</p>
+          <p className='m-0 text-sm text-muted-foreground'>
+            This team produces parallel reviewer outputs without a unified conclusion. Each reviewer's response above is
+            independent — read them together to form your own judgment.
+          </p>
         )}
       </div>
     </motion.div>

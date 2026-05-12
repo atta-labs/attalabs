@@ -51,12 +51,13 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
   // on every round + in the conclusion. Matches the orchestrator's resolution
   // order: session.agentModels[role] wins, otherwise session's global
   // provider/modelId applies to every agent.
-  const teamName = (() => {
-    if (!session.specId) return 'Deliberation'
+  const { teamName, hasSynthesizer } = (() => {
+    if (!session.specId) return { teamName: 'Deliberation', hasSynthesizer: false }
     try {
-      return loadYamlFromCatalog(session.specId).displayName
+      const spec = loadYamlFromCatalog(session.specId)
+      return { teamName: spec.displayName, hasSynthesizer: !!(spec.flow?.synthesis) }
     } catch {
-      return 'Deliberation'
+      return { teamName: 'Deliberation', hasSynthesizer: false }
     }
   })()
 
@@ -95,6 +96,7 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
       benchmark={benchmarkClient}
       teamName={teamName}
       specId={session.specId ?? undefined}
+      hasSynthesizer={hasSynthesizer}
     />
   )
 }
