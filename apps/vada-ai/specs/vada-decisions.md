@@ -794,3 +794,82 @@ The decision to unpublish Crucible/Sparring/War Room in the same PR — rather t
 - Tests added in `packages/adapter-langgraph/src/vendor-registry.test.ts` (structural invariants on the registry; `resolveVendorByPrefix` correctness; `isLocalOnly` behavior — 30 tests). `llm.test.ts` updated with new error messages and cross-vendor dispatch tests. All 50 tests pass.
 - Empirical deliverable closed: a user with a Groq key can configure a Reviewer slot to `deepseek-r1-distill-llama-70b` and successfully dispatch from BOTH web UI and MCP `vada__consult`. Catalog-resolved `vendorId='groq'` flows through `agentVendorOverrides` to Groq's `baseURL` with the Groq key. Same path on both surfaces.
 - Open question OQ-cross-12 (in `state.md`): when a future vendor's SDK shape genuinely diverges (e.g., streaming-only with non-OpenAI-compatible response shape, AWS SigV4 auth, or a fundamentally different request shape), decide per case whether to add a 4th `sdkShape` branch (one new adapter + one switch branch; preferred when latency matters) or route through OpenRouter (zero adapter code; preferred when latency doesn't).
+
+---
+
+## D-033: Generic flow refactor — universal round-based YAML schema (stack-wide)
+
+**Date:** May 12, 2026
+**Status:** Active (design ratified; implementation pending across 4 sequenced PRs)
+**Area:** YAML schema, engine compiler, MCP server, web route handler, SSE event contract, UI renderer
+**Design doc:** `apps/vada-ai/specs/generic-flow-refactor.md`
+
+**Decision summary:** The three structurally distinct YAML shapes that exist today — brokered-no-synthesis (`vada-reviewers`), brokered-with-synthesis (`vada-reviewers-synthesis`), and rounds-based (`sparring`, `crucible`, `war-room`) — collapse into one universal schema: **a flow is a sequence of rounds**. Each round has agents, layout, name, repeats, failure semantics, and optional declarative revision via `on_failure: { action, target, signal }`. Synthesizer is just a single-agent round. Audit is just a round. Revision is data-driven, not a code special case.
+
+The schema is implemented end-to-end across the stack:
+
+- **Schema + types:** one `Flow` type with `rounds: Round[]`. The discriminated union of `BrokeredWorkflow`/`RoundsWorkflow`/`SoloWorkflow` is deleted. `validateFlow` replaces the per-workflow validators.
+- **Engine compiler:** one `compileFlow(flow, question, model) → Plan` function. Walks rounds, emits Plan nodes and edges (including conditional revision edges for `on_failure: revise`). All 9 catalog YAMLs migrated to the new schema. Old compilers deleted.
+- **Data flow:** the engine populates a uniform Handlebars template context (`rounds.<id>.outputs`, `currentRound.prior_agents`, `currentRound.repeat_index`, `revision.*`). Each round's `message_template` references prior round outputs by id. This is Option A from the design — implicit template context, not explicit `inputs:` declaration. Explicit `inputs:` is deferred to future work.
+- **Within-round input:** `message_template` lives on the round (default for all agents in the round) with optional per-agent override. Removes the duplication of `{{question}}` × 3 in today's `vada-reviewers.yaml`. Conceptually: a round has one input fanned out to N agents.
+- **MCP server:** `reviewer_config` (D-032) is renamed to `agent_config: Record<agentName, modelId>` to match the new vocabulary. Flat keying — same agent uses same model across all rounds it appears in.
+- **SSE event contract:** the special-cased `state_changed: ROUND_N | CONCLUDING | AUDITING | REVISING` events are replaced by generic `round_started { round_id, name, repeat_index }`, `round_completed { round_id, repeat_index, signal_matched? }`, and `revision_started { source_round_id, target_round_id, revision_index }`. `agent_completed` carries `round_id` (string) + `repeat_index` (0-based int) instead of integer `round`. `synthesis_complete` is removed — synthesis-style agents emit `agent_completed` with the existing optional `structured` field per D-026.
+- **UI renderer:** rounds-era components (`RoundStrip`, `Round`, `RoundView`, `useRoundStrip`) deleted. New components (`FlowFeed`, `RoundColumn`, `AgentGrid`, `AgentChain`, `AgentCard`, `useFlowState`) render one column per round, top-to-bottom, centered. Parallel rounds render agents as a grid; serial rounds render agents in a chain with arrows; multi-repeat rounds stack repeats with "Round N of M" dividers; revised rounds stack original and revision with the original marked superseded.
+
+This is Path β from the prior `generic-flow-ui-design.md` exploration — the full stack migration, not a UI-only normalization layer. Path α (UI-only adapter, schema unchanged) was rejected because piecemeal cleanup leaves the YAML schema as a permanent bug-magnet; the Principal directive was "refactor must fix the entire stack."
+
+**Alternatives considered:**
+
+- α — Path α from the prior design: normalize in the UI only, leave YAML schema as-is. Rejected. The UI is the bottleneck right now but the schema is the root cause; the same architectural drift would reappear at the next consumer that needs to interpret the YAML.
+- β — Stack-wide refactor with the round-based universal schema (this decision).
+- γ — Keep three discriminated YAML shapes but unify behind a single TypeScript type. Rejected. The discriminator becomes a code branch the engine must handle; D-011 said the engine has zero branches on workflow type. Three shapes in the YAML = three code paths somewhere, even if abstracted.
+- δ — Migrate the engine but keep the UI rounds-era. Rejected. The UI breaks for single-round teams today (the Bug #1 from May 11). The refactor doesn't deliver user-visible value without the UI rewrite.
+- ε — Migrate the YAML schema to a generic primitive (functional composition, graph nodes, etc.) rather than rounds. Rejected as over-abstraction. Rounds are the natural unit of deliberation thinking; users already think in rounds. A more abstract schema would push complexity to YAML authors.
+
+On the revision question specifically:
+
+- A — Keep revision implicitly via `on_failure: revise_previous` (smallest schema). Rejected — too magical, hard to read.
+- B — Drop revision entirely from v1. Sparring/crucible/war-room don't audit-revise. Cleaner architecture, but loses a real feature. Principal rejected: "we need to build something generic now, even if we don't use it today."
+- C — Model revision as declarative `on_failure: { action, target, signal }` with `target` referencing a prior round id (this decision). Heaviest schema, most explicit. Generic primitive: any round can declare any retry pattern.
+
+**Rationale:**
+
+The May 11 audit surfaced three structurally distinct YAML shapes the codebase has been carrying since Phase 7.2. D-011 committed to "engine has zero branches on workflow type" — but the YAML schema kept three. The engine compilers had three. The UI had hardcoded assumptions matching only one. PR #31 (vendor registry, May 11) showed what consolidation looks like done right: a many-to-few asymmetry (many vendors → few SDK shapes) captured as data + 3 code branches. D-033 applies the same pattern to flow shapes: many flows → one universal round-based schema.
+
+The conceptual model — **a round is a phase that takes accumulated state and produces an array of outputs** — is generic enough to express every current and future deliberation pattern without code changes. Synthesizer is just a round with one agent. Audit is just a round whose agents emit signals. Revision is a declarative pattern on `on_failure`. There is no special case the engine needs to know about; everything is YAML.
+
+The Principal observation that "a round with 3 reviewers has 3 inputs, not 1" was a real correction to the first design. The schema now treats `message_template` as living on the round (default for all agents) with optional per-agent override. A round has ONE conceptual input (its message_template, rendered against accumulated state); the engine fans that input to N agents. This is what vendor diversity looks like in YAML: declare the template once, not N times.
+
+Declarative revision (Option C) was chosen over dropping revision (Option B) per Principal direction: "I know I don't use it, but we need to build something generic now." This is the right call. If we drop revision, the architecture has a special case (rounds-with-audit need different schema). If we keep revision as a non-generic special case, we've kicked the architectural problem down the road. The generic `on_failure: { action, target, signal }` mechanism costs schema weight but pays back the moment any future flow needs retry semantics.
+
+The data flow model (uniform template context, Option A) over explicit `inputs:` declaration is the v1 pragmatic choice. Today's engine already populates `outputsByRound`, `lastOutputByAgent`, `reviewerResponses`, etc. via Handlebars. Generalizing this to `rounds.<id>.outputs` is one rename and one new variable mapping (`currentRound.*`). Adding explicit `inputs:` declaration would be architecturally cleaner (validatable data flow, visible without reading templates) but it doubles the schema surface for a benefit that's only realized at validation time. It's a non-breaking future addition.
+
+The naming convention — "round" everywhere instead of "phase" — matches today's codebase vocabulary, today's YAML field names (`flow.rounds`), and today's user mental model. Renaming would have rebuilt vocabulary across the team and the codebase for no benefit. The decision-doc's earlier `phase` framing was Claude's error; reverted at Principal direction.
+
+**Consequences:**
+
+- All 9 catalog YAMLs migrated to the new schema in PR 2 of the refactor sequence. Old YAML field shapes (`reviewers:`, `flow.synthesis:`, `flow.audit:` blocks) gone.
+- `packages/engine/src/types.ts` removes `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, and the workflow discriminated union. Adds `Flow`, `Round`, `AgentInRound`, `OnFailureSpec` types.
+- `packages/engine/src/compile.ts` is one `compileFlow` function. Old per-workflow compilers (`compileBrokered`, `compileRounds`, `compileSolo`) deleted. (D-014's `compileCustom` was already deleted.)
+- `validateFlow` enforces: rounds.length >= 1; all round ids unique; `on_failure.target` references prior rounds; `agents[].name` references the top-level `agents` array; `repeats >= 1`; `max_revisions >= 1` when action=`revise`; either round has `message_template` OR every agent in the round has its own; a round with zero agents is rejected.
+- `apps/vada-ai/mcp-server`: `reviewer_config` renamed to `agent_config: Record<agentName, modelId>` (D-032's registry-backed validation preserved). Cosmetic name change to match new vocabulary.
+- `/api/deliberation/[id]/workflow/run` route emits new SSE events (`round_started`, `round_completed`, `revision_started`) and drops `state_changed: ROUND_N` and `synthesis_complete`. `agent_completed` payload becomes `{ id, agent, round_id, repeat_index, content, structured?, error? }`. PR 3 temporarily emits both old and new events for transition; cleanup PR removes the old emission once UI consumes new.
+- UI renderer rewritten: `RoundStrip`, `Round`, `RoundView`, `useRoundStrip` deleted. New components `FlowFeed`, `RoundColumn`, `AgentGrid`, `AgentChain`, `AgentCard`, `useFlowState` introduced. The "Agents are getting ready…" empty state is gone — phase columns render on mount with `pending` agent cards that fill in as events arrive. Fixes Bug #1 from May 11.
+- Conclusion fallback text from PR #38 (May 12) remains correct under the new architecture: a team without a single-agent synthesis-style round renders "This team produces parallel reviewer outputs without a unified conclusion…" — derived now from the spec's round topology rather than the `flow.synthesis` field.
+- Vendor registry from D-032 (May 11) is unchanged. SDK-shape dispatch is orthogonal to flow shape. `agentVendorOverrides` populated by `agent_config` instead of `reviewer_config`.
+- D-026 (consumers receive both rendered text and structured synthesis output) preserved. Structured output now flows through generic `agent_completed.structured` field rather than the special-cased `synthesis_complete` event.
+- D-027 (unified team agent model storage at `vada:team:<specId>` localStorage key) preserved. The picker continues writing per-agent modelId selections; D-033 just renames the SSE/MCP surface from "reviewer" to "agent" for consistency.
+- D-022 (dynamic spec registry via `readdirSync`) preserved. Adding a new YAML to the catalog requires no code changes (auto-discovered).
+- D-011 (engine has zero branches on workflow type) is finally delivered fully. The compiler has no switch on workflow kind because there is no workflow kind — there's just `rounds[]`. The branching that does exist is per-round (parallel vs serial layout, repeats > 1, on_failure.action) and is data-driven.
+- D-013 (delete `@vada/teams`) preserved. Teams remain a YAML concept; the new schema is a refinement of how the YAML expresses that concept.
+- Migration of existing sessions: no data migration needed. `sessions.spec_id` is a stable identifier; the new YAML at the same id describes the same flow. Old transcripts have agent names that still exist in the new YAML's top-level `agents:` block. Old session SSE events were already persisted to `transcript_entries`; the UI on session resume reads from the DB, not from a fresh SSE stream.
+- Audit/revision signal robustness: v1 ships with `signal.type: 'contains'` only (current behavior). `signal.type: 'matches'` (regex) and `signal.type: 'structured_field'` (look at JSON field of agent output) are noted as future additions when use cases surface — they're additive to the OnFailureSpec discriminated union with no breaking change.
+- Rollout: 4 PRs sequenced on `feat/generic-flow-refactor`:
+  - PR 1: schema + types + validation (Haiku, ~1 day)
+  - PR 2: `compileFlow` + YAML migration (Sonnet, ~2 days)
+  - PR 3: MCP server + route handler + new SSE events (Sonnet, ~1 day)
+  - PR 4: UI rewrite (Sonnet, ~2-3 days)
+  - Cleanup PR: drop deprecated event emission (~½ day, mechanical)
+- Open question on explicit `inputs:` declaration (Option B from the data flow design section) parked as future work. Non-breaking when added later.
+- Open questions OQ-1 through OQ-10 from the design doc all resolved at design ratification (Principal: "All confirmed, proceed with D-033").
+- The `design/generic-flow-ui` branch with the abandoned UI-only Path α design doc (`generic-flow-ui-design.md`) is superseded by this entry and the doc lives on `design/generic-flow-refactor` as `generic-flow-refactor.md`. Old branch + old doc to be deleted once D-033 PR merges.

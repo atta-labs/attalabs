@@ -71,7 +71,7 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 - ✅ **F2: V0 Coordinator build at `apps/cetana-ai/`.** Single Bun service, two MCP server entry points, 4 tools, 38 passing tests. Shipped May 10.
 - ✅ **F3: Worktree manager** — `worktree.ts` with create/remove/list. Part of F2.
 - ✅ **F4: GitHub Octokit integration** — `github.ts` with getIssue, postComment, openPR. Part of F2.
-- ⏭ **F5: V0.5 Step 1 — CLI scaffold + `cetana init`.** Entry point at `src/cli.ts`. Interactive config wizard writes `~/.cetana/config.json` without manual JSON editing. Install gate (D-021): verified on a fresh machine before PR merges.
+- ✅ **F5: V0.5 Step 1 — CLI scaffold + `cetana init`.** Shipped 2026-05-12 (PR #39). `apps/cetana-ai/cli/` package. Interactive config wizard, hierarchical config, heartbeat-based CRASHED detection, 25 tests. Install gate (D-021) verified.
 - ⏭ **F6: V0.5 Step 2 — `cetana watch`.** Live-tails all active JSONL logs to stdout. Blocked tasks shown with question text, severity, and time-blocked.
 - ⏭ **F7: V0.5 Step 3 — `cetana status`.** Point-in-time summary of running, blocked, and recently completed tasks. Same data as `cetana.list_active_tasks`.
 - ⏭ **F8: V0.5 Step 4 — `cetana abort` + `cetana resume`.** Abort kills subprocess + appends `task.failed`. Resume re-dispatches in the same worktree with a new task ID.
