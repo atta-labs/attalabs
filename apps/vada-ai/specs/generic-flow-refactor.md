@@ -2,7 +2,7 @@
 
 **Status:** Draft, not ratified
 **Author:** Claude (Critic/Synthesizer) with Dani (Principal)
-**Date:** May 12, 2026
+**Date:** May 12, 2026 (amended)
 **Branch:** `design/generic-flow-refactor`
 **Scope:** Stack-wide. New YAML schema → engine compilers → MCP server → web route handler → UI renderer. All 9 catalog YAMLs migrated.
 
@@ -38,12 +38,17 @@ Flow {
 Round {
   id              string             // unique within the flow
   name            string             // display name shown in UI ("Reviewers", "Sparring", "Synthesis", "Audit")
-  agents          AgentRef[]         // 1 or more agents (ordered if layout=serial; set if layout=parallel)
+  agents          AgentInRound[]     // 1 or more agents (ordered if layout=serial; set if layout=parallel)
   layout          'parallel' | 'serial'
   repeats         number             // defaults to 1 — how many times this round runs back-to-back
-  message_template?  string          // template for the round (used by all agents in the round)
+  message_template?  string          // ROUND-LEVEL TEMPLATE — default for all agents in this round
   agent_failure   'abort' | 'continue'    // if one agent fails, do we abort the round or continue?
   on_failure?     OnFailureSpec      // what to do if this round emits a "failure signal" (see below)
+}
+
+AgentInRound {
+  name            string             // references an entry in the flow's top-level `agents` array
+  message_template?  string          // OPTIONAL — overrides the round's message_template for this agent only
 }
 
 OnFailureSpec {
@@ -53,7 +58,9 @@ OnFailureSpec {
   signal          { type: 'contains' | 'equals' | 'matches', value: string, case_sensitive?: boolean }
 }
 
-AgentRef = same as today's Agent definition (name, model, system_prompt, tools, classifier, output_format, output_schema)
+// The top-level `agents` array still holds the full agent definitions (name, model, system_prompt, tools, classifier, output_format, output_schema).
+// Round entries reference these by name and may override only the message_template (the per-call input).
+// The system_prompt, model, tools, etc. always come from the top-level definition — never overridable per round.
 ```
 
 The flow runs rounds in order. Each round receives the accumulated flow state (original prompt + all prior round outputs) and produces a new array of outputs. The flow's final output is the last round's output.
@@ -70,6 +77,179 @@ Revision is declarative:
 - `max_revisions` caps the loop
 
 This generalizes today's hardcoded audit→synthesis revision loop. Future flows can declare more complex retry patterns without engine code changes.
+
+## Data flow — how rounds connect to each other (NEW SECTION)
+
+The engine threads state from one round to the next via a **uniform Handlebars template context**. Each round's `message_template` is rendered against this context before being sent to the round's agents.
+
+### What's in the template context
+
+At any round, the template has access to:
+
+| Variable | Type | Description |
+|---|---|---|
+| `question` | string | The original user input (the brief) |
+| `rounds.<round_id>.outputs` | array | All agent outputs from a completed prior round. Each entry: `{ agent: string, content: string, structured?: object, error?: string }`. Available only for rounds that have completed. |
+| `rounds.<round_id>.repeats[N].outputs` | array | For multi-repeat rounds, the outputs from each individual repeat. `repeats[0]` is the first repeat, etc. |
+| `currentRound.prior_agents` | array | For serial-layout rounds: agents in the current round that have already run in this repeat. Empty for the first agent. Same shape as `rounds.<id>.outputs`. |
+| `currentRound.repeat_index` | number | For multi-repeat rounds: which repeat we're currently in (0-based) |
+| `revision.source_round_id` | string \| undefined | When the round is being re-run via `on_failure: revise`, the id of the round whose signal triggered the revision |
+| `revision.source_outputs` | array \| undefined | The outputs of the source round that triggered the revision (e.g., the audit's FLAG output) |
+| `revision.index` | number \| undefined | The revision attempt counter (0 = original run, 1 = first revision, etc.) |
+
+Custom variables defined at the flow level (e.g., `customVars.domain` for the Domain Expert) remain accessible as `customVars.<name>`.
+
+### How a round references prior round outputs
+
+The round's `message_template` references the data it needs by id:
+
+```yaml
+- id: synthesis
+  name: Synthesis
+  agents: [Synthesizer]
+  message_template: |
+    Question: {{question}}
+    Reviewer responses:
+    {{#each rounds.review.outputs}}
+    [{{this.agent}}] {{this.content}}
+    {{/each}}
+    Please synthesize.
+```
+
+The template is the contract. The data flow is invisible in the round's structure (no `inputs:` declaration), but the template makes it readable. The engine populates `rounds.review.outputs` automatically once the `review` round completes; if the template references `rounds.someNonExistentRound.outputs`, the variable resolves to `undefined` and the template renders an empty section.
+
+### Why implicit-template-context (Option A) and not explicit `inputs:` (Option B)
+
+The schema could require each round to declare `inputs: { reviewer_responses: rounds.review.outputs }` and the template would only see what's declared. This would make data flow validatable and explicit. It's the architecturally cleaner choice.
+
+For v1 of this refactor we go with Option A (implicit) for three reasons:
+
+1. **Today's engine already works this way.** Migration doesn't require touching template content beyond the round-shape changes.
+2. **YAML schema weight.** Adding `inputs:` doubles the round-spec surface area for a benefit that's only visible at validation time, not at runtime.
+3. **Easy to upgrade later.** Adding `inputs:` as an optional field in a future PR is non-breaking — when present, validate it; when absent, fall back to implicit.
+
+This is captured as future work in the post-refactor backlog.
+
+### Multi-round template examples
+
+**Sparring's `spar` round template** (multi-repeat, serial):
+
+```yaml
+- id: spar
+  name: Sparring
+  agents: [Strategist, Critic]
+  layout: serial
+  repeats: 3
+  message_template: |
+    {{#if currentRound.repeat_index}}
+    Prior repeats:
+    {{#each rounds.spar.repeats}}
+    [Repeat {{@index}}]
+    {{#each this.outputs}}{{this.agent}}: {{this.content}}{{/each}}
+    {{/each}}
+    
+    Prior agents in this repeat:
+    {{#each currentRound.prior_agents}}{{this.agent}}: {{this.content}}{{/each}}
+    {{else}}
+    {{question}}
+    {{/if}}
+```
+
+This template reads cleanly: on the first repeat, just the question. On subsequent repeats, the prior repeats' transcripts plus any prior agents that ran in the current repeat. The same template fires for both Strategist and Critic; Strategist sees `currentRound.prior_agents = []` (first agent in the serial chain), Critic sees Strategist's just-produced output.
+
+**Sparring's synthesis round** (single agent, references prior round explicitly):
+
+```yaml
+- id: synthesis
+  name: Synthesis
+  agents: [ConclusionSynthesizer]
+  layout: parallel
+  message_template: |
+    {{#if revision.index}}
+    The original question is: "{{question}}"
+    Deliberation transcript:
+    {{#each rounds.spar.repeats}}{{#each this.outputs}}{{this.agent}}: {{this.content}}{{/each}}{{/each}}
+    
+    Your previous conclusion was flagged:
+    {{rounds.synthesis.outputs.0.content}}
+    
+    Auditor objection:
+    {{revision.source_outputs.0.content}}
+    
+    CRITICAL: ...
+    {{else}}
+    The original question is: "{{question}}"
+    Deliberation transcript:
+    {{#each rounds.spar.repeats}}{{#each this.outputs}}{{this.agent}}: {{this.content}}{{/each}}{{/each}}
+    GENERATE JSON NOW.
+    {{/if}}
+```
+
+Note the `revision.index` branching — the engine populates `revision.*` variables only when this round is being re-run after an audit FLAG. The template handles both the original synthesis path and the revision path in one place.
+
+## Within-round input model — message_template at round vs agent level (NEW SECTION)
+
+A round can have N agents. The question: where does the message_template live?
+
+**Decision:** `message_template` lives on the round (default for all agents) with optional per-agent override.
+
+### Default case — same prompt to all agents in the round
+
+For vendor-diverse reviewers (Vāda Reviewers), all three agents get the same prompt. The prompt is the same; only the model varies. The round declares one template:
+
+```yaml
+- id: review
+  name: Reviewers
+  agents:                          # simplified — name-only references
+    - name: Gemini
+    - name: GPT
+    - name: Grok
+  layout: parallel
+  message_template: "{{question}}"   # same template applied to all 3 agents
+```
+
+The engine renders the template once per agent (since each agent has its own system_prompt and its own template context might vary slightly via `currentRound.*`), but the template source is shared.
+
+### Override case — one agent needs a different prompt
+
+For flows where a specific agent needs different framing (rare today, possible tomorrow), the agent-level template overrides the round default:
+
+```yaml
+- id: review
+  name: Reviewers
+  agents:
+    - name: Gemini
+      message_template: "{{question}} (please be concise — under 200 words)"
+    - name: GPT
+      # no override → uses round default
+    - name: Grok
+      # no override → uses round default
+  layout: parallel
+  message_template: "{{question}}"
+```
+
+### Round-level template is the default; agent-level template overrides it
+
+The semantics:
+
+- Round has `message_template` → that's the default for any agent in the round that doesn't have its own
+- Agent (within the round) has `message_template` → overrides the round default for that specific agent
+- If a round has `message_template` AND every agent has its own → the round-level one becomes a fallback for any future agent added to the round
+- Validation: a round must have either a round-level `message_template` OR every agent in the round must have its own. The engine rejects rounds where neither is present.
+
+### Why this shape
+
+1. **Removes duplication.** Today's `vada-reviewers.yaml` declares `message_template: "{{question}}"` three times. New schema: declare once.
+2. **Matches design intent.** Vendor diversity = "same prompt, different models." The schema's natural default reflects this.
+3. **Preserves flexibility.** Per-agent overrides for the rare case.
+4. **Conceptually correct.** A round has ONE input (its message_template, rendered against accumulated state). The engine fans that input out to N agents. The round HAS one input even though it CONTAINS N agents.
+5. **Generalizes to serial rounds.** Strategist and Critic in sparring share one round-level template that branches via `{{#if currentRound.prior_agents}}` — Strategist sees no prior agents (it's first); Critic sees Strategist's output. Single template, branching on context.
+
+### Agent definitions still live at the flow level
+
+The top-level `agents` array holds full agent definitions (system_prompt, model, tools, classifier, output_format, etc.). Rounds reference agents by name and may only override the `message_template`. The system_prompt, model, etc. are flow-level properties — they describe who the agent IS, not how it's used in a given round.
+
+This separation matches today's schema and keeps the migration mechanical.
 
 ## Mapping each current YAML to the new schema
 
@@ -96,7 +276,10 @@ agents:
 rounds:
   - id: review
     name: Reviewers
-    agents: [Gemini, GPT, Grok]
+    agents:
+      - name: Gemini
+      - name: GPT
+      - name: Grok
     layout: parallel
     message_template: "{{question}}"
     agent_failure: continue          # vendor diversity — partial is fine
@@ -116,22 +299,27 @@ agents:
 rounds:
   - id: review
     name: Reviewers
-    agents: [Gemini, GPT, Grok]
+    agents:
+      - name: Gemini
+      - name: GPT
+      - name: Grok
     layout: parallel
     message_template: "{{question}}"
     agent_failure: continue
   - id: synthesis
     name: Synthesis
-    agents: [Synthesizer]
+    agents:
+      - name: Synthesizer
     layout: parallel              # single agent — layout is moot, parallel is the natural default
     message_template: |
-      The original question is: "{{question}}"
-      Reviewer responses: {{#each reviewerResponses}}[{{this.vendor}}] {{this.response}}{{/each}}
-      Please synthesize...
+      Question: {{question}}
+      Reviewer responses:
+      {{#each rounds.review.outputs}}[{{this.agent}}] {{this.content}}{{/each}}
+      Please synthesize.
     agent_failure: abort          # synthesis failure = no conclusion
 ```
 
-### `sparring` — 3 rounds
+### `sparring` — 3 rounds (spar, synthesis, audit)
 ```yaml
 id: sparring
 display_name: Sparring
@@ -140,30 +328,44 @@ agents:
 rounds:
   - id: spar
     name: Sparring
-    agents: [Strategist, Critic]
+    agents:
+      - name: Strategist
+      - name: Critic
     layout: serial
     repeats: 3
     message_template: |
-      {{#if roundIndex}}The following is the deliberation transcript so far: ...{{else}}{{question}}{{/if}}
+      {{#if currentRound.repeat_index}}
+      Prior repeats: {{#each rounds.spar.repeats}}...{{/each}}
+      Prior agents in this repeat: {{#each currentRound.prior_agents}}...{{/each}}
+      {{else}}
+      {{question}}
+      {{/if}}
     agent_failure: abort           # a missing Strategist breaks the Critic's input
 
   - id: synthesis
     name: Synthesis
-    agents: [ConclusionSynthesizer]
+    agents:
+      - name: ConclusionSynthesizer
     layout: parallel
     message_template: |
-      The original question is: "{{question}}"
-      Deliberation transcript: {{#each outputsByRound}}...{{/each}}
-      ... CRITICAL INSTRUCTION ...
+      {{#if revision.index}}
+      Revision instructions: {{revision.source_outputs.0.content}} ...
+      {{else}}
+      Original question: "{{question}}"
+      Deliberation transcript: {{#each rounds.spar.repeats}}...{{/each}}
+      GENERATE JSON NOW.
+      {{/if}}
     agent_failure: abort
 
   - id: audit
     name: Audit
-    agents: [BlindCritic, FactChecker]
+    agents:
+      - name: BlindCritic
+      - name: FactChecker
     layout: parallel
     message_template: |
       Principal's question: {{question}}
-      Conclusion to Review: {{conclusion}}
+      Conclusion to Review: {{rounds.synthesis.outputs.0.content}}
     agent_failure: continue
     on_failure:
       action: revise
@@ -188,7 +390,8 @@ agents:
 rounds:
   - id: answer
     name: Answer
-    agents: [A0]
+    agents:
+      - name: A0
     layout: parallel
     message_template: "{{question}}"
     agent_failure: abort
@@ -202,17 +405,19 @@ Same shape as `vada-reviewers`, different agent count.
 ## Cross-stack changes
 
 ### Schema + types (`@atta/engine`, `@vada/cms` for Sanity if it mirrors)
-- New TypeScript types in `packages/engine/src/types.ts`: `Flow`, `Round`, `AgentRef`, `OnFailureSpec`
+- New TypeScript types in `packages/engine/src/types.ts`: `Flow`, `Round`, `AgentInRound`, `OnFailureSpec`
 - Delete: `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, the workflow discriminated union
 - New: `validateFlow(spec)` replaces the per-workflow validators
 - Validation rules:
   - `rounds.length >= 1`
   - All round `id`s unique within a flow
   - All `on_failure.target` references point to a prior round (no forward references, no cycles beyond `max_revisions`)
-  - All `agents` referenced in any round exist in the top-level `agents` array
+  - All `agents[].name` referenced in any round exist in the top-level `agents` array
   - For `layout: serial`, agents are ordered; for `parallel`, ordering is ignored
   - `repeats >= 1`
   - `max_revisions >= 1` when `action='revise'`
+  - Either round has `message_template` OR every agent in the round has its own `message_template`
+  - A round with zero agents is rejected
 
 ### Engine compiler (`@atta/engine/src/compile.ts`)
 - One function: `compileFlow(flow, question, model) → Plan`
@@ -223,9 +428,9 @@ Same shape as `vada-reviewers`, different agent count.
 
 ### MCP server (`apps/vada-ai/mcp-server`)
 - `vada__consult` tool input shape:
-  - Today's `reviewers[]` field becomes a generic `agent_overrides[]` (since reviewers aren't a special concept anymore — just agents in a round)
-  - OR: keep `reviewers[]` as a UX-friendly alias that maps to "agents in the first round of the flow"
-  - Lean: keep `reviewers[]` semantically as "the override list," but document that it means "the agents in the first round." For flows where the first round is the only round (vada-reviewers, brokered-trio), this is intuitive. For flows where the first round is part of a longer flow (sparring's first round of "spar"), per-agent overrides still target those agents — the name `reviewers` becomes slightly misleading but the mechanism is right.
+  - Today's `reviewers[]` field stays as a UX-friendly alias mapping to "agents in the first round of the flow"
+  - For flows where the first round is the only round (vada-reviewers, brokered-trio), this is intuitive
+  - For flows where the first round is part of a longer flow (sparring), per-agent overrides still target those agents
 - `vada__deliberate` tool input shape unchanged (just `team` enum + brief)
 - `reviewer_config: Record<agentName, modelId>` (from PR #31) becomes `agent_config: Record<agentName, modelId>`, applied across all rounds where that agent appears. Name change is cosmetic — same validation, same registry-backed lookup.
 - The hosted MCP route at `apps/vada-ai/web/src/app/api/mcp/route.ts` passes through to the same tools.
@@ -247,13 +452,13 @@ The current event types are:
 In the new architecture, the special-cased states (`ROUND_N`, `CONCLUDING`, `AUDITING`, `REVISING`) get replaced by generic round-level events:
 
 - `keepalive` — unchanged
-- `agent_completed` — `{ id, agent, round_id, repeat_index, content, error? }` — `round_id` replaces the integer `round`; `repeat_index` is which iteration within a multi-repeat round (0 for non-repeating rounds)
+- `agent_completed` — `{ id, agent, round_id, repeat_index, content, structured?, error? }` — `round_id` replaces the integer `round`; `repeat_index` is which iteration within a multi-repeat round (0 for non-repeating rounds); `structured` field present for agents with `output_format: structured`
 - `round_started` — `{ round_id, name, repeat_index }` — emitted when the engine begins a round (or a new repeat of one)
 - `round_completed` — `{ round_id, repeat_index, signal_matched?: 'revise' | 'abort' | null }` — emitted when a round's agents have all settled; includes the signal-matched action if `on_failure` triggered
 - `revision_started` — `{ source_round_id, target_round_id, revision_index }` — emitted when an `on_failure: revise` triggers a re-run
 - `terminal` — `{ terminalState }` — unchanged
 
-The UI binds these events to the rounds it knows about from the spec. `state_changed` goes away entirely. `synthesis_complete` goes away — synthesis is just an `agent_completed` event for an agent in a single-agent round.
+The UI binds these events to the rounds it knows about from the spec. `state_changed` goes away entirely. `synthesis_complete` goes away — synthesis is just an `agent_completed` event for an agent in a single-agent round; the `structured` field on that event is what the UI checks for to render the structured conclusion panel.
 
 ### UI renderer (`apps/vada-ai/web/src/app/(main)/deliberation/[id]/`)
 - Delete: `RoundStrip.tsx`, `Round.tsx`, `RoundView.tsx`, `useRoundStrip.ts`, the empty-state "Agents are getting ready…" logic
@@ -283,7 +488,7 @@ Working branch: `feat/generic-flow-refactor` (separate from `design/generic-flow
 - New `validateFlow` function
 - New JSON schema for IDE autocomplete (optional)
 - Delete old workflow types (`BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`)
-- Unit tests on `validateFlow` covering happy paths + every validation rule + revision-target reference rules
+- Unit tests on `validateFlow` covering happy paths + every validation rule + revision-target reference rules + template-required validation
 - Doesn't touch compilers, YAML files, or UI. Just types and validation.
 - The compiler still builds against the new types — `compileFlow` is a stub that throws. Existing compilers are deleted in PR 2.
 - This PR will break the build until PR 2 lands. Land them back-to-back, or land PR 1 with stubs that match the old surface during transition.
@@ -293,25 +498,25 @@ Lean: ship PR 1 with a `// TODO: refactor in PR 2` comment in the engine that sa
 ### PR 2 — `compileFlow` + YAML migration (Sonnet, ~2 days)
 - One implementation of `compileFlow` that walks rounds and emits PlanNodes
 - All 9 catalog YAMLs migrated to the new schema (hand-converted, validated by `validateFlow`)
+- Template context resolution: engine populates `rounds.<id>.outputs`, `currentRound.*`, `revision.*` automatically
 - Old compilers deleted
-- Existing engine tests updated to use the new YAMLs (the test harness reads catalog YAMLs to construct test cases)
+- Existing engine tests updated to use the new YAMLs
 - The route handler unchanged at this point — it calls `compileFlow` instead of the old per-shape compilers, but the SSE events still use old event names
 
-Verification: every existing benchmark run in `/bench` reproduces (since the same YAMLs, just in new schema, should produce equivalent Plans, which produce equivalent execution).
+Verification: every existing benchmark run in `/bench` reproduces.
 
 ### PR 3 — MCP server + route handler + new SSE events (Sonnet, ~1 day)
 - `vada__consult` and `vada__deliberate` updated for new agent_config shape
-- Route handler emits new SSE event names (`round_started`, `round_completed`, `revision_started`) and drops the old ones (`state_changed: ROUND_N` etc.)
-- The UI still consumes old events at this point — temporarily, the route emits BOTH old and new events as a transition. This lets PR 4 land independently of PR 3.
+- Route handler emits new SSE event names (`round_started`, `round_completed`, `revision_started`) and drops the old ones
+- Temporarily emit BOTH old and new events to let PR 4 land independently
 
 ### PR 4 — UI rewrite (Sonnet, ~2-3 days)
 - New components: `FlowFeed`, `RoundColumn`, `AgentGrid`, `AgentChain`, `AgentCard`, `useFlowState`
 - Delete: `RoundStrip`, `Round`, `RoundView`, `useRoundStrip`, dead empty-state logic
 - New event-handling: subscribe to `round_started`, `round_completed`, `revision_started`, `agent_completed`
 - Drop subscriptions to deprecated events
-- After this PR, PR 3's dual-event emission can be cleaned up in a small follow-up
 
-Total: 4 PRs, 5-7 days end-to-end if dispatched serially. Faster if PR 2 + PR 3 + PR 4 are dispatched in parallel after PR 1 ratifies the types.
+Total: 4 PRs, 5-7 days end-to-end if dispatched serially.
 
 ### Cleanup PR — Drop deprecated event emission (~½ day, mechanical)
 - Route handler stops emitting old events
@@ -323,51 +528,37 @@ Total: 4 PRs, 5-7 days end-to-end if dispatched serially. Faster if PR 2 + PR 3 
 - Lean: default to `continue` for parallel rounds (vendor diversity assumption), `abort` for serial rounds (the chain breaks without a link). Override per round as needed.
 
 **OQ-2 — Round names vs round ids.** Today, `round` in SSE events is an integer (`round: 1`, `round: 2`). In the new architecture, do we send `round_id` (string, matches the YAML) or keep an integer index, or both?
-- Lean: `round_id` (string) is the canonical identifier sent in SSE events. Plus `repeat_index` (integer, 0-based) for multi-repeat rounds. Drop integer round numbers from the API surface entirely — they were brittle indexing into hardcoded structures.
+- Lean: `round_id` (string) is the canonical identifier sent in SSE events. Plus `repeat_index` (integer, 0-based) for multi-repeat rounds. Drop integer round numbers from the API surface entirely.
 
 **OQ-3 — How does the UI label round repeats?**
-- For `repeats: 3` rounds (sparring/crucible/war-room): labels "Round 1," "Round 2," "Round 3" within the round column? Or "Repeat 1/3," "Repeat 2/3," "Repeat 3/3"? Or just no labels (let the user infer from the divider)?
-- Lean: "Round 1 of 3" style. Clear, no jargon, matches how users described it pre-refactor.
+- Lean: "Round 1 of 3" style.
 
 **OQ-4 — Does `agent_config` still target by agent name only, or does it need round-id awareness?**
-- Today's `reviewer_config` is `Record<agentName, modelId>` — implicitly scoped to the first round because that's where reviewers live.
-- New schema: an agent named `Strategist` appears in `sparring`'s `spar` round AND potentially future rounds. Does `agent_config["Strategist"] = "claude-opus-4-7"` apply to ALL Strategist uses across all rounds, or do we need `agent_config[round_id][agent_name]`?
-- Lean: keep flat `Record<agentName, modelId>` — applies to that agent wherever it appears. Per-round-per-agent overrides are a future feature if anyone asks. Same agent doing the same job in multiple rounds should use the same model in most cases.
+- Lean: keep flat `Record<agentName, modelId>` — applies to that agent wherever it appears. Per-round-per-agent overrides are a future feature if anyone asks.
 
-**OQ-5 — What happens to `output_format: structured` agents (today's `ConclusionSynthesizer`, the future `Synthesizer` in `vada-reviewers-synthesis`)?**
-- Today these emit a `synthesis_complete` event with a `structured` field
-- New architecture: they emit `agent_completed` like everyone else; the `structured` field is part of `agent_completed`'s payload when present
-- Lean: yes — `agent_completed` payload becomes `{ id, agent, round_id, repeat_index, content, structured?: object, error? }`. The UI checks for the `structured` field and renders it via the existing `ConclusionPanel` logic if present.
+**OQ-5 — What happens to `output_format: structured` agents?**
+- Lean: `agent_completed` payload becomes `{ id, agent, round_id, repeat_index, content, structured?: object, error? }`. The UI checks for the `structured` field and renders it via the existing `ConclusionPanel` logic if present. `synthesis_complete` event goes away.
 
 **OQ-6 — Should `display_name` and `description` apply to the flow, the round, or both?**
-- Today: flow has both.
-- New: flow has both, AND each round has a `name`. Does a round also need a `description`?
 - Lean: round has `name` (required, shown in UI), `description?` (optional, shown in tooltip on hover if present). Same as flow.
 
 **OQ-7 — Audit "FLAG" signal robustness.**
-- Today's audit uses `contains: "FLAG"` (case-insensitive). The `on_failure.signal` in the new schema generalizes this. But the SIGNAL itself is fragile — an agent that emits "I would not FLAG this conclusion as flawed" matches the contains-FLAG check. Today this is a known limitation per `vada-state.md`.
-- Lean: keep `contains` semantics for v1. Add `signal.type: 'matches'` (regex) and `signal.type: 'structured_field'` (look at JSON field of the agent output) as future work — they're trivial to add to the union but require iteration on use cases first.
+- Lean: keep `contains` semantics for v1. Add `signal.type: 'matches'` (regex) and `signal.type: 'structured_field'` as future work.
 
-**OQ-8 — Empty rounds (rounds with no agents).**
-- Should the schema reject these at validation time, or allow them as "deliberate no-op rounds" for some future use case?
-- Lean: reject. A round must have at least one agent. Empty rounds are a bug or a malformed flow.
+**OQ-8 — Empty rounds (rounds with no agents).** Reject at validation. Already in the validation rules above.
 
-**OQ-9 — Inline vs referenced agent definitions in rounds.**
-- Today: `agents:` is top-level; `flow.rounds.agents:` references by name.
-- New: same — `rounds[N].agents` is an array of names (string), referencing the top-level `agents:` definitions.
-- Confirm? This avoids duplicating agent specs in multiple rounds.
-- Lean: confirmed. Reference-by-name is the right model.
+**OQ-9 — Inline vs referenced agent definitions in rounds.** Reference by name. Already in the schema above.
 
-**OQ-10 — Migration of existing sessions.**
-- Existing `sessions` table rows have `spec_id` referencing today's YAML structure. If a user resumes an old session after the refactor lands, the YAML they reference is now in the new schema.
-- Lean: this is fine because spec_id is a stable identifier. The new YAML at the same id describes the same flow. Old transcripts have agent names that still exist in the new YAML's `agents:` block. UI renders them in the new layout from new SSE events. NO data migration needed.
+**OQ-10 — Migration of existing sessions.** No data migration needed. spec_id is a stable identifier.
 
 ## What I need from you, Dani
 
 1. **Confirm the conceptual model.** Universal rounds, declarative revision, `on_failure` schema.
-2. **Resolve OQ-1 through OQ-10.** Most have explicit leans; push back where wrong.
-3. **Confirm the rollout sequencing.** 4 PRs as described, or different shape?
-4. **Confirm the docs trail.** Design doc here, D-033 entry in `vada-decisions.md`, then exec briefs sequenced.
-5. **Anything you want flagged but I missed.**
+2. **Confirm the data flow model.** Implicit template context (Option A), with `inputs:` declaration as future work.
+3. **Confirm the within-round input model.** `message_template` at round level, optional agent-level override.
+4. **Resolve OQ-1 through OQ-10.** Most have explicit leans; push back where wrong.
+5. **Confirm the rollout sequencing.** 4 PRs as described, or different shape?
+6. **Confirm the docs trail.** Design doc here, D-033 entry in `vada-decisions.md`, then exec briefs sequenced.
+7. **Anything you want flagged but I missed.**
 
 Once these are settled, I write the D-033 decision log entry (added to the same `design/generic-flow-refactor` branch as a second commit), and then the first brief (PR 1 — schema + types).
