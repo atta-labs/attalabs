@@ -1,4 +1,5 @@
 import type { ModelEntry } from './catalog'
+import { isDecommissioned } from './deprecations'
 import { OVERLAY } from './overlay'
 import type { VendorId } from './vendors'
 import type { ModelsDevModel, ModelsDevResponse } from './sources/models-dev'
@@ -101,5 +102,5 @@ export function transformModelsDev(data: ModelsDevResponse): ModelEntry[] {
       }
     }
   }
-  return entries
+  return entries.filter((entry) => !isDecommissioned(entry.modelId))
 }
