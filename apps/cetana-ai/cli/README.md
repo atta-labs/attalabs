@@ -6,7 +6,7 @@ Cetana V0.5 CLI — five commands for managing Cetana tasks from the terminal wi
 
 ```bash
 cd /path/to/attaai
-bun link --cwd apps/cetana-ai/cli
+(cd apps/cetana-ai/cli && bun link)
 cetana init
 ```
 

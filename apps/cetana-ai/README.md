@@ -6,7 +6,7 @@ Local Mac orchestration for Atta. Claude Desktop (Strategist) dispatches Claude 
 
 ```bash
 cd /path/to/attaai
-bun link --cwd apps/cetana-ai/cli
+(cd apps/cetana-ai/cli && bun link)
 cetana init
 cetana dispatch <issue-number>
 ```

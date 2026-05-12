@@ -8,6 +8,16 @@
 
 ---
 
+## 2026-05-12 — Fix: F5 install gate documentation correction
+
+PR #39 (Cetana V0.5 Step 1) shipped with a broken install command in `apps/cetana-ai/README.md` and `apps/cetana-ai/cli/README.md`. The documented invocation `bun link --cwd apps/cetana-ai/cli` failed on Principal's machine with "Script not found 'link'" because `bun link` is not a workspace script and `--cwd` doesn't apply to it. Correct invocation is `(cd apps/cetana-ai/cli && bun link)` (run from inside the package directory via subshell).
+
+The agent's install-gate verification in PR #39 used the working command but documented a different one. D-021's install gate (Lock: YES) was technically violated.
+
+Calibration lesson added to `lessons.md`: install gate verification must produce Principal-runnable artifacts.
+
+---
+
 ## 2026-05-12 — Cetana V0.5 Step 1: CLI scaffold + init (F5 complete)
 
 Shipped the `cetana` CLI binary at `apps/cetana-ai/cli/`. Five commands: `init`, `dispatch`, `list`, `reply`, `logs`. Hierarchical config (local `.cetana.json` overrides global `~/.cetana/config.json`). Heartbeat-based CRASHED detection. Install gate verified end-to-end on fresh checkout.
