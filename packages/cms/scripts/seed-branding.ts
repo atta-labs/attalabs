@@ -77,7 +77,7 @@ const PRODUCT_DATA = {
     paliRoot: 'Herald',
     paliMeaning: 'announcement',
     tagline: 'Forensic audit and signal detection for public figures',
-    shapeNotes: 'Logo TBD. Blade curves are organic and intentional — they must not be straightened.',
+    shapeNotes: 'Blade curves are organic and intentional — they must not be straightened.',
     ...SHARED_VARIANT_TEXT
   },
   atta: {
@@ -212,9 +212,7 @@ async function main() {
 
   const doc: Record<string, unknown> = { ...PRODUCT_DATA[SEED_PRODUCT] }
 
-  const hasAssets = SEED_PRODUCT !== 'herald'
-
-  if (hasAssets) {
+  if (fs.existsSync(path.join(LOGOS_DIR, SEED_PRODUCT))) {
     const productDir = path.join(LOGOS_DIR, SEED_PRODUCT)
     if (!fs.existsSync(productDir)) {
       console.error(`Assets directory not found: ${productDir}`)
@@ -258,8 +256,6 @@ async function main() {
 
     console.log('\nUploading favicon set — dark...')
     doc.faviconDark = await uploadFaviconSet(SEED_PRODUCT, 'dark')
-  } else {
-    console.log('Herald: skipping asset upload (logos TBD)')
   }
 
   // Create or replace the branding document
