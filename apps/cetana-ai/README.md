@@ -1,29 +1,75 @@
-# Cetana V0
+# Cetana V0 / V0.5
 
 Local Mac orchestration for Atta. Claude Desktop (Strategist) dispatches Claude Code agents (Executors) into git worktrees of this monorepo, watches them work, and unblocks them when they hit decision points — all over MCP.
 
-## Quick start
+## Quick start (CLI — V0.5)
 
-### 1. Install dependencies
-
-From the monorepo root: `bun install` (installs everything).
-
-### 2. Configure
-
-On first run, `~/.cetana/config.json` is created automatically with defaults:
-
-```json
-{
-  "github": { "owner": "daniboomerang", "repo": "atta.ai" },
-  "defaults": { "claudeModel": "claude-sonnet-4-7", "permissionMode": "acceptEdits" }
-}
+```bash
+cd /path/to/attaai
+bun link --cwd apps/cetana-ai/cli
+cetana init
+cetana dispatch <issue-number>
 ```
 
-To use a GitHub token explicitly (instead of `gh auth token` fallback), add `"token": "ghp_..."` to the `github` object.
+`cetana init` walks you through setup interactively — no manual JSON editing required.
 
-### 3. Connect Claude Desktop
+## Daily use
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+### `cetana init`
+
+One-time interactive setup. Detects your git repo and GitHub auth, writes config (repo-local `.cetana.json` or global `~/.cetana/config.json`), and runs a smoke test.
+
+```bash
+cetana init
+```
+
+### `cetana dispatch <issue-number>`
+
+Dispatch a Claude Code agent for a GitHub issue. Creates a worktree, spawns the agent, returns a task ID.
+
+```bash
+cetana dispatch 29
+cetana dispatch 42 --brief-file ~/briefs/issue-42.md
+cetana dispatch 29 --model claude-opus-4-5
+```
+
+### `cetana list`
+
+Point-in-time view of running and blocked tasks.
+
+```bash
+cetana list
+cetana list --json
+```
+
+### `cetana reply <task-id> "<message>"`
+
+Unblock a blocked agent from the terminal without opening Claude Desktop.
+
+```bash
+cetana reply abc12345 "Use the acceptEdits permission mode"
+```
+
+### `cetana logs <task-id>`
+
+Stream raw JSONL events for a task.
+
+```bash
+cetana logs abc12345
+cetana logs abc12345 --follow
+cetana logs abc12345 --since 2026-05-12T10:00:00Z
+```
+
+---
+
+## MCP surface (Claude Desktop — V0)
+
+The original V0 interface: Claude Desktop connects to the Strategist MCP server and dispatches tasks via MCP tools.
+
+### Setup
+
+1. Install dependencies: `bun install` from monorepo root.
+2. Connect Claude Desktop. Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -38,37 +84,31 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 Replace `/Users/YOU/code/atta` with your actual path. Restart Claude Desktop.
 
-### 4. Verify
+3. Verify: in Claude Desktop chat: `List active Cetana tasks` → should return `No active tasks.`
 
-In Claude Desktop chat: `List active Cetana tasks` → should return `No active tasks.`
+### MCP tools
 
-## Usage
+- **`cetana.dispatch_task`** — dispatch an agent for a GitHub issue
+- **`cetana.list_active_tasks`** — view running and blocked tasks
+- **`cetana.reply_to_blocked_task`** — unblock a blocked agent
+- **`cetana_request_input`** (executor-side) — agent calls this when blocked
 
-### Dispatch a task
+---
 
-> "Dispatch Cetana task for GitHub Issue #42 with this brief: [your brief here]"
+## Config
 
-Cetana creates a worktree at `~/code/atta/.worktrees/issue-42/`, spawns a Claude Code agent, posts a GitHub comment, and returns a `taskId`.
+Cetana uses a hierarchical config: repo-local `.cetana.json` takes precedence over global `~/.cetana/config.json`.
 
-### Monitor tasks
-
-> "List active Cetana tasks"
-
-Shows running tasks and any pending questions from blocked agents.
-
-### Unblock an agent
-
-When an agent calls `cetana_request_input`, it blocks and surfaces a question. Unblock via:
-
-> "Reply to Cetana task {taskId}: [your answer]"
-
-The agent resumes immediately with your reply as the tool result.
-
-### Watch logs
-
-```bash
-tail -f ~/.cetana/tasks/<task-id>.jsonl
+```json
+{
+  "github": { "owner": "daniboomerang", "repo": "atta.ai" },
+  "defaults": { "claudeModel": "claude-sonnet-4-7", "permissionMode": "acceptEdits" }
+}
 ```
+
+To use a GitHub token explicitly (instead of `gh auth token` fallback), add `"token": "ghp_..."` to the `github` object.
+
+---
 
 ## Worktree cleanup
 
@@ -79,9 +119,19 @@ git worktree remove ~/code/atta/.worktrees/issue-{N}
 git worktree prune
 ```
 
-## See also
+---
 
-- `apps/cetana-ai/specs/cetana-v0-spec.md` — locked V0 architecture
+## Architecture
+
+```
+apps/cetana-ai/
+├── cli/              # @atta/cetana-cli — V0.5 CLI binary (this PR)
+├── coordinator/      # @atta/cetana-coordinator — MCP server entry points + shared modules
+└── specs/            # Architecture spec, decisions log, experiment log
+```
+
+See also:
+- `apps/cetana-ai/specs/cetana-spec.md` — locked V0/V0.5 architecture (Section 10: CLI surface)
+- `apps/cetana-ai/specs/cetana-decisions.md` — decision log (D-001+), especially D-020–D-023
 - `apps/cetana-ai/specs/cetana-experiment-log.md` — full journey (Slice -1, architecture reviews)
-- `apps/cetana-ai/specs/cetana-decisions.md` — decision log (D-001+)
-- `.claude/skills/cetana-coordinator/SKILL.md` — for working inside the codebase
+- `.claude/skills/cetana-coordinator/SKILL.md` — for working inside the coordinator codebase

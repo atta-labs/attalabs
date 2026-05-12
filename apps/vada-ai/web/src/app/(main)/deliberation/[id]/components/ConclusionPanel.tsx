@@ -16,7 +16,12 @@ interface ConclusionPanelProps {
   hasSynthesizer?: boolean
 }
 
-export function ConclusionPanel({ terminalState, conclusion, agentModels, hasSynthesizer = true }: ConclusionPanelProps) {
+export function ConclusionPanel({
+  terminalState,
+  conclusion,
+  agentModels,
+  hasSynthesizer = true
+}: ConclusionPanelProps) {
   const badge = TERMINAL_BADGE[terminalState as TerminalStateKey] ?? TERMINAL_BADGE.UNCONVERGED
   const criticVerdict = typeof conclusion?._criticVerdict === 'string' ? (conclusion._criticVerdict as string) : null
   const isFlagged = terminalState === 'UNCONVERGED' && !!criticVerdict
@@ -221,8 +226,8 @@ export function ConclusionPanel({ terminalState, conclusion, agentModels, hasSyn
           </>
         ) : hasSynthesizer ? (
           <p className='m-0 text-sm text-muted-foreground'>
-            The synthesizer did not produce a renderable conclusion. The reviewer outputs above are still available; copy
-            the transcript to preserve them.
+            The synthesizer did not produce a renderable conclusion. The reviewer outputs above are still available;
+            copy the transcript to preserve them.
           </p>
         ) : (
           <p className='m-0 text-sm text-muted-foreground'>

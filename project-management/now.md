@@ -38,7 +38,7 @@
 
 **Currently active work:** Configure Claude Desktop with Cetana strategist MCP server; dispatch Track B Item 3b (Reviewer prompt iteration) as first real Cetana V0 dispatch.
 
-**Next focused work:** V0.5 CLI ladder (F5–F9). Start with Step 1 (F5): CLI scaffold + `cetana init`. Once the CLI surface is working (Steps 1–5 merged), first real-world dispatch (F10): configure Claude Desktop with the strategist MCP server and dispatch Track B Item 3b.
+**Next focused work:** V0.5 CLI ladder — F5 ✅ merged. Next is F6: `cetana watch` (live-tail all active JSONL logs to stdout). Once the CLI surface is working (Steps 1–5 merged), first real-world dispatch (F10): configure Claude Desktop with the strategist MCP server and dispatch Track B Item 3b.
 
 ---
 

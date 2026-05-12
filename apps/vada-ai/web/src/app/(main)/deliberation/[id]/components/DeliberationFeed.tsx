@@ -176,7 +176,12 @@ function DeliberationScene({
 
         {s.showConclusion && s.terminalState && !s.isTerminalButEmpty && (
           <div className='pb-24 pt-4'>
-            <ConclusionPanel terminalState={s.terminalState} conclusion={s.conclusion} agentModels={agentModels} hasSynthesizer={hasSynthesizer} />
+            <ConclusionPanel
+              terminalState={s.terminalState}
+              conclusion={s.conclusion}
+              agentModels={agentModels}
+              hasSynthesizer={hasSynthesizer}
+            />
             <TranscriptActions
               input={{
                 question,
