@@ -186,6 +186,30 @@ Parked idea from Spec Kit evaluation (May 12, 2026): expose MCP tools that wrap 
 
 Not blocking anything. Depends on Cetana V0 being stable and the brief-authoring pattern being settled (not before V0.5 ships).
 
+### Cetana as a Vāda team flow — composing orchestration and deliberation
+
+Surfaced May 12, 2026 (post-F5 reflection). Today Cetana orchestrates execution and Vāda orchestrates deliberation; they don't compose. The interesting V0.7+ direction: integrate them so Cetana can dispatch Vāda deliberations as part of its workflow.
+
+Concrete example: when a Cetana-dispatched agent opens a PR, Cetana could automatically fire a Vāda deliberation team — spec reviewer + code reviewer + risk auditor + Principal-perspective synthesizer — and post the team's synthesis as a PR comment. Principal reads the synthesis, makes the final merge call. Cetana never decides; it surfaces deliberation when deliberation is warranted.
+
+Why this could be the right architecture for V0.7+:
+- Cetana already has the MCP surface and event substrate
+- Vāda already has reviewer teams and synthesis primitives
+- The two systems are complementary, not redundant: Cetana = execution loop, Vāda = deliberation loop
+- The Principal interface stays simple: see a synthesis, decide
+
+Why this is NOT V0.5 work:
+- V0.5 is locked as the CLI ladder (PR #33). Vāda integration is a different shape entirely.
+- Cetana's orchestration loop itself needs to be validated via the 4-week dogfood before adding deliberation hooks.
+- Premature integration would couple two systems before either has stabilized.
+- The Principal-throughput question (see `lessons.md` anti-pattern on review-rigor degradation) is unresolved.
+
+When to revisit: after F11 (V0.5 dogfood window) generates evidence about which decisions during dispatch would benefit from Vāda deliberation. Likely candidates: spec coherence review on PRs, risk audits for Tier 3 work, multi-AI reviewer rounds triggered automatically by `[NEEDS CLARIFICATION]` markers.
+
+Related: the existing "Cetana V0.7+ MCP wrapping of Spec Kit templates" entry above. Both are about Cetana growing beyond orchestration. The wrapping idea is about *authoring* artifacts; this Vāda integration is about *deliberating over* artifacts. They could land together or separately.
+
+Track: opens after F12 (V1 UI gate evaluation) closes.
+
 ### DB schema management
 
 When `@atta/db` consolidates further, decide whether to keep `db:push` or move to tracked migrations. No urgency.
