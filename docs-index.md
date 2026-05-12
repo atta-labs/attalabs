@@ -43,6 +43,8 @@
 - [Cetana — Decision Log](./apps/cetana-ai/specs/cetana-decisions.md)
 - [Cetana — Experiment Log](./apps/cetana-ai/specs/cetana-experiment-log.md)
 - [Cetana — Locked Architecture Specification](./apps/cetana-ai/specs/cetana-spec.md)
+- [Cetana V0 / V0.5 — README](./apps/cetana-ai/README.md)
+- [@atta/cetana-cli — CLI README](./apps/cetana-ai/cli/README.md)
 
 ### vada-ai
 
@@ -96,6 +98,13 @@
 
 - [Vitakka](./apps/vitakka-ai/specs/vitakka-human.md)
 - [Vitakka — Technical Specification](./apps/vitakka-ai/specs/vitakka-spec.md)
+
+## Project Management
+
+- [Atta — Now](./project-management/now.md) — active work, next steps, manual tasks (changes daily)
+- [Atta — Roadmap](./project-management/roadmap.md) — tracks + sequencing + open questions
+- [Atta — Changelog](./project-management/changelog.md) — append-only completed work log
+- [Atta — Lessons](./project-management/lessons.md) — calibration lessons + anti-patterns
 
 ## Root-Level Documentation
 

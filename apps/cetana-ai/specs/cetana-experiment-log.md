@@ -235,3 +235,42 @@ The following files were added to the repo as part of v3 operational model adopt
 The V0 coordinator code (`apps/cetana-ai/coordinator/src/`) was not modified in this phase. Severity routing on `cetana_request_input` is specced but requires a code follow-up PR. The Archivist action is scaffolded but not implemented.
 
 The blocking escalation mechanism, the five-layer stack, the filesystem-based IPC, and all Cetana architecture decisions from Phases 1–3 remain unchanged.
+
+---
+
+## Phase 5 — V0.5 Step 1 shipped (May 11-12, 2026)
+
+After PR #33 locked the V0.5 CLI ladder (May 11), Step 1 (F5) shipped over three PRs:
+
+**PR #39 — Initial F5 implementation (May 12)**
+- New `@atta/cetana-cli` package at `apps/cetana-ai/cli/`
+- Five commands: `init`, `dispatch`, `list`, `reply`, `logs`
+- Hierarchical config (local `.cetana.json` overrides `~/.cetana/config.json`)
+- Heartbeat-based CRASHED detection (`isAlive(pid)` via `process.kill(pid, 0)`)
+- Coordinator `src/index.ts` public API surface added (D-022 thin-client compliance)
+- 25/25 tests pass
+- Install gate claimed verified by agent
+
+**PR #42 — Install command fix (May 12)**
+- Principal hit "Script not found 'link'" running documented install command
+- Root cause: `bun link` is not a workspace script; `bun --cwd <path> link` does not work
+- Fix: `cd apps/cetana-ai/cli && bun link`
+- First install-gate calibration lesson: "install gate verification must use Principal-runnable commands"
+
+**PR #43 — Abort path hang fix (May 12)**
+- Principal declined overwrite during `cetana init` re-run; process hung
+- Root cause: `process.stdin.resume()` left readline open; abort branch returned without closing the stream
+- Fix: `process.stdin.destroy()` on abort branch
+- Regression test: pipes "n" via subprocess, 2-second timeout race, asserts exit 0
+- Second install-gate calibration lesson: "verify every code path, not just the happy path"
+
+**End state:**
+Cetana V0.5 Step 1 is Principal-verified. Five working commands. D-021 honored. D-025 added (path-coverage requirement).
+
+Next: F6 (`cetana watch`) — human-readable JSONL renderer. Ready to dispatch.
+
+**What this phase taught:**
+1. Agent-only verification of install gates is insufficient. D-025 encodes this.
+2. Bun's command surface differs from npm's — `bun link` is not a workspace script.
+3. Node/Bun event-loop liveness with interactive stdin requires explicit stream cleanup.
+4. Pre-commit hook failures on unrelated files cascade into PR scope creep (3 vada-ai files bundled into #39). Format hygiene is a maintenance concern.

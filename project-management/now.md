@@ -10,7 +10,7 @@
 
 ## In flight now
 
-**Cetana V0.5 CLI surface — spec PR in progress (May 11, 2026).** Docs-only PR on `docs/cetana-v05-cli-spec` locking the V0.5 CLI ladder design. Five-step incremental PR sequence: `cetana init` (scaffold + install gate) / `cetana watch` / `cetana status` / `cetana abort`+`cetana resume` / `cetana reply`. Adds D-020–D-023. Locked decisions: CLI as canonical interface (D-020, Lock: YES), install gate (D-021, Lock: YES), thin-client architecture (D-022), V1 UI dogfood gate (D-023, Lock: YES). Track F extended to F13.
+**Cetana V0.5 Step 1 (F5) shipped, Principal-verified (May 12, 2026).** Three PRs: #39 (initial), #42 (install command fix), #43 (abort hang fix). Install gate D-021 honored end-to-end. D-025 added: install gate path coverage requirement. Next: F6 (`cetana watch`) — ready to dispatch.
 
 **Vendor registry consolidation shipped (May 11, 2026 — PR #31).** Single source of truth at `packages/models/src/vendors.ts` (12 vendors). 4 prior prefix-resolution implementations collapsed to 1. Adapter dispatches by SDK shape (3 branches: `anthropic`, `google-genai`, `openai-compat`). `vada__consult` MCP tool gains `reviewer_config` parameter mirroring the web UI. Crucible/Sparring/War Room marked `experimental: true` (unpublished from public catalog). `providers.ts` backward-compat shim deleted; 6 consumer files + 12 web-app files migrated from `RouteProvider`/`PROVIDERS` to `VendorId`/`VENDORS`. No half-merged state on main. See D-032.
 
@@ -38,7 +38,7 @@
 
 **Currently active work:** Configure Claude Desktop with Cetana strategist MCP server; dispatch Track B Item 3b (Reviewer prompt iteration) as first real Cetana V0 dispatch.
 
-**Next focused work:** V0.5 CLI ladder — F5 ✅ merged. Next is F6: `cetana watch` (live-tail all active JSONL logs to stdout). Once the CLI surface is working (Steps 1–5 merged), first real-world dispatch (F10): configure Claude Desktop with the strategist MCP server and dispatch Track B Item 3b.
+**Next focused work:** Cetana V0.5 Step 2 — `cetana watch` (F6). Human-readable, color-coded, auto-refreshing JSONL renderer. Estimated 2-3 hours agent work.
 
 ---
 

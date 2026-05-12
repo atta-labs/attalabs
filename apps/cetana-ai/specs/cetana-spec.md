@@ -348,25 +348,45 @@ These commands surface the same operations as the MCP tools. The CLI is a thin c
 
 The CLI ships incrementally. Each step is a self-contained PR with a working, verified deliverable. No step begins until the previous step is merged and verified in at least one real task.
 
-**Step 1 — CLI scaffold + `cetana init`**
+#### Step 1 (F5) — Scaffold + init ✅ SHIPPED (May 12, 2026)
 
-Entry point at `apps/cetana-ai/coordinator/src/cli.ts`. The `cetana init` command walks the user through `~/.cetana/config.json` interactively — GitHub owner, repo, token, model defaults. The config JSON is generated from CLI prompts; no manual JSON editing required.
+PR #39 (initial implementation), PR #42 (install command fix), PR #43 (abort path hang fix).
 
-**Install gate (D-021, Lock: YES):** Step 1 is not done until `cetana init` runs on a fresh machine (no pre-existing config) and produces a working config file without the user touching JSON by hand.
+The `cetana` binary at `apps/cetana-ai/cli/` ships with five commands working as a thin client over `@atta/cetana-coordinator`:
 
-**Step 2 — `cetana watch`**
+- `cetana init` — interactive setup with hierarchical config (local `.cetana.json` overrides global `~/.cetana/config.json`). Detects repo via `git rev-parse`, confirms `gh auth status`, writes config, runs StateManager smoke test. No manual JSON editing required.
+- `cetana dispatch <issue-number>` — fetches issue body as brief, creates worktree at `.worktrees/issue-N`, spawns Claude Code subprocess, starts JSONL event log.
+- `cetana list` — terse list with heartbeat-based CRASHED detection (PID liveness check via `process.kill(pid, 0)`).
+- `cetana reply <task-id> "<message>"` — one-line reply form (editor integration is F9).
+- `cetana logs <task-id> [--follow] [--since]` — raw JSONL event stream.
+
+**Install gate (D-021) verified end-to-end by Principal on May 12, 2026:**
+```bash
+cd apps/cetana-ai/cli && bun link
+cetana init    # interactive setup, no manual JSON editing
+cetana list    # confirms StateManager wiring
+echo n | cetana init    # confirms abort path exits cleanly
+```
+
+**Bugs discovered post-merge and fixed:**
+- PR #42: README documented `bun --cwd apps/cetana-ai/cli link` which Bun does not support. Corrected to `cd apps/cetana-ai/cli && bun link`.
+- PR #43: `cetana init` abort path hung because `process.stdin.resume()` left the readline open. Fixed with `process.stdin.destroy()` on the abort branch. Regression test added.
+
+Both discoveries surfaced D-025 (install gate path coverage requirement).
+
+**Step 2 (F6) — `cetana watch`** — **Status: ready to dispatch**
 
 Streams `task.progress` events from all active JSONL logs to stdout in real time. Equivalent to running `tail -f` on all active task files simultaneously. Blocked tasks are displayed with their pending question, severity, and time-blocked.
 
-**Step 3 — `cetana status`**
+**Step 3 (F7) — `cetana status`** — **Status: blocked on F6**
 
 Point-in-time summary: running tasks (pid, issue, elapsed), blocked tasks (question text, severity, time-blocked), recently completed tasks (within last 24 hours). Same underlying data as `cetana.list_active_tasks` output. Blocked tasks display severity so routing is immediate.
 
-**Step 4 — `cetana abort` + `cetana resume`**
+**Step 4 (F8) — `cetana abort` + `cetana resume`** — **Status: blocked on F7**
 
 `cetana abort <taskId>` kills the claude subprocess (if running), writes a `task.failed` event to JSONL, removes IPC files. `cetana resume <taskId> "<amended-brief>"` re-dispatches a previously failed or aborted task. The same worktree is reused; a new task ID is generated. The original task's JSONL log is retained as the audit trail.
 
-**Step 5 — `cetana reply` (reply ergonomics)**
+**Step 5 (F9) — `cetana reply` (reply ergonomics)** — **Status: blocked on F8**
 
 `cetana reply <taskId> "<reply>"` writes `reply.json` and appends `task.unblocked`, unblocking the Developer without opening Claude Desktop. This completes the full orchestration loop from the terminal: `cetana watch` (monitor) → `cetana reply` (unblock) → `cetana watch` (continue monitoring).
 
@@ -375,6 +395,25 @@ Point-in-time summary: running tasks (pid, issue, elapsed), blocked tasks (quest
 The CLI is a thin client. All five commands call the same functions from the existing coordinator modules (`paths.ts`, `config.ts`, `events.ts`, `state.ts`, `worktree.ts`) and tool handlers. No business logic lives in the CLI layer. No parallel implementation of state management, IPC, or JSONL handling. The CLI entry point reads from and writes to the same filesystem paths as the MCP server entry points.
 
 If the CLI and MCP servers would need to diverge (different state interpretation, different IPC paths), that is a signal that the coordinator module needs refactoring — not that the CLI should carry its own logic.
+
+### User flow (5 commands, one terminal, agent does the work)
+
+After F5 ships, the canonical user flow is:
+
+1. **`cetana init`** — once, ever. Detects repo, writes config, smoke-tests connection.
+2. **`cetana dispatch <issue-number>`** — when work needs doing. Reads issue body as brief, spawns Claude Code in fresh worktree, starts JSONL log.
+3. **`cetana list`** — check what's running. Shows ongoing, blocked, or crashed tasks with any pending questions inline.
+4. **`cetana reply <task-id> "<message>"`** — when an agent escalates via `cetana_request_input`. Your answer unblocks the agent; cognitive continuity preserved.
+5. **Review PR on GitHub** — when the agent opens a PR. Standard GitHub workflow.
+
+What the Principal does NOT do:
+- No Claude Desktop config editing (MCP server remains but isn't required for CLI workflow)
+- No worktree management — Cetana creates and tracks them
+- No JSONL parsing manually (`cetana logs` is there if needed)
+- No re-explaining context when replying — the escalation primitive preserves task state
+- No setting up GitHub labels per task — Cetana applies based on severity routing
+
+The brief is the most important artifact. The agent is only as good as the brief.
 
 ### V1 UI dogfood gate (D-023, Lock: YES)
 
