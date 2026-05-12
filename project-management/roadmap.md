@@ -176,15 +176,15 @@ Current branches: `anthropic`, `google-genai`, `openai-compat` (which covers Ope
 
 Likely answer: 4th branch when latency matters (direct call beats proxy hop), OpenRouter when it doesn't. Decide per case when it next comes up. Not blocking anything today.
 
-### Cetana V0.7+ — MCP wrapping of spec templates
+### Cetana V0.7+ — MCP wrapping of Spec Kit templates
 
-Parked idea from Spec Kit evaluation (May 12, 2026): expose Cetana's brief authoring templates as MCP tools so Claude Desktop can scaffold a well-formed brief without the TL writing from scratch. Rough sketch:
+Parked idea from Spec Kit evaluation (May 12, 2026): expose MCP tools that wrap Spec Kit's spec/plan/tasks templates:
 
-- `cetana.scaffold_brief(type: 'feature' | 'bug' | 'refactor', title: string)` → returns a pre-filled brief skeleton with all required sections and `[NEEDS CLARIFICATION]` markers pre-inserted for common unknowns
-- Templates stored as SKILL.md-adjacent markdown files, not code — easy to update without redeployment
-- Depends on: Cetana V0 being stable + brief-authoring pattern being settled (not before V0.5 ships)
+- `cetana.specify(description)` → produces a `spec.md` artifact using Spec Kit's spec-template format
+- `cetana.plan(spec_path)` → produces a `plan.md` artifact using Spec Kit's plan-template format
+- `cetana.tasks(plan_path)` → produces a `tasks.md` artifact using Spec Kit's tasks-template format
 
-Not blocking anything. Revisit when V0.5 CLI surface is shipping and TL brief authoring is the bottleneck.
+Not blocking anything. Depends on Cetana V0 being stable and the brief-authoring pattern being settled (not before V0.5 ships).
 
 ### DB schema management
 
