@@ -325,3 +325,30 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - No delegation (all decisions wait for window): rejected. Operationally impractical for tasks that run while the Principal is offline.
 
 **Consequences:** Briefs for work dispatched during Principal-offline periods should include `principal_delegate: TL` with explicit scope. The TL makes Type 2 decisions, marks them PENDING in the decision log, and converts PENDING → ACTIVE after the next ratification window confirms.
+
+
+---
+
+## D-024 — Split plan.md into now/roadmap/changelog/lessons
+
+**Date:** 2026-05-11
+**Status:** ACTIVE
+**Type:** 2
+**Authored by:** TL (plan decomposition session, May 2026)
+**Ratified by:** TL (Type 2)
+
+**Context:** `project-management/plan.md` became a PR-conflict hotspot. Three PRs in 48 hours (PRs #28, #32, #33) all conflicted on it because the file mixes content with very different update cadences: active tasks (daily), track status (sprint), completed work (per-PR append), and lessons (monthly). Any session touching any one of those concerns edits the same file, creating merge conflicts.
+
+**Decision:** Split `plan.md` into four focused files:
+- `now.md` — active work, next 3 things, blocked, manual tasks (changes daily)
+- `roadmap.md` — tracks A-G, sequencing, open questions (changes each sprint)
+- `changelog.md` — append-only completed work log, most recent first (append per PR; never edit existing entries)
+- `lessons.md` — calibration lessons + anti-patterns (append-only; monthly review)
+
+`plan.md` is replaced with a redirect stub pointing to the four files. The stub is retained for ~3 months (target: ~2026-08-11) for any existing references, then deleted.
+
+**Alternatives rejected:**
+- Sectioning within plan.md using collapsible headings: rejected. The file is Git-tracked markdown; collapsing sections does not prevent merge conflicts — different sessions still edit the same byte range.
+- Keeping a single file and enforcing append-only: rejected. Append-only works for changelog and lessons, but now.md and roadmap.md require in-place updates (e.g., marking a track item complete).
+
+**Consequences:** `coordination.md` session-start protocol updated to reference four files. `state-machine.md` mutation matrix updated. `docs-index.md` regenerated. Any automation (Archivist, Cetana) that reads or writes `plan.md` must be updated to route to the appropriate new file.

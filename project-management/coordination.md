@@ -15,7 +15,10 @@ If you are starting a fresh session and need to orient:
 2. `project-management/state-machine.md` — the constitution; artifact states, roles, permissions, decision schema
 3. `project-management/roles/{your-role}.md` — Team Leader, Developer, or Principal reference
 4. `project-management/state.md` — what is true right now across the ecosystem
-5. `project-management/plan.md` — what is active, what is next, what is blocked
+5. `project-management/now.md` — what is active, what is next, what is blocked
+6. `project-management/roadmap.md` — tracks A-G, sequencing, open questions (read on first visit or sprint review)
+7. `project-management/changelog.md` — what shipped (skim headers; read entries when context needed)
+8. `project-management/lessons.md` — calibration lessons + anti-patterns (read when authoring briefs or post-mortems)
 
 For deeper context on the operational model design:
 - `project-management/diagrams/process-flow.md` — six mermaid diagrams covering actor responsibilities, artifact lifecycle, ratification flow, severity routing, tier gating
@@ -41,7 +44,10 @@ Do not generate strategy or author briefs until you have read `state-machine.md`
 |------|---------|----------------|
 | `project-management/coordination.md` | This file. Rules, names, how to work. | Rare (system changes only) |
 | `project-management/state.md` | What is true right now across the ecosystem. | Whenever state changes |
-| `project-management/plan.md` | Active work, what is next, what is blocked. | Frequently (any session) |
+| `project-management/now.md` | Active work, next 3 things, blocked, manual tasks. | Daily |
+| `project-management/roadmap.md` | Tracks A-G, sequencing, open questions. | Each sprint |
+| `project-management/changelog.md` | Append-only completed work log. | Per PR (append only) |
+| `project-management/lessons.md` | Calibration lessons + anti-patterns. | Monthly review |
 | `project-management/decisions.md` | Global cross-product decision log. | When decisions are made |
 | `docs-index.md` | Discovery map of repo content. Auto-generated. | When repo files added/removed/renamed |
 
@@ -85,7 +91,7 @@ The correct protocol depends on which role you occupy. Role is determined by env
 
 1. **Read `state-machine.md`** — confirm you understand the authority matrix and decision schema.
 2. **Read `roles/team-leader.md`** — confirm which mode you're in (Strategist vs Brief Author).
-3. **Read `state.md` and `plan.md`** — orient on current ecosystem state.
+3. **Read `state.md` and `now.md`** — orient on current ecosystem state. Read `roadmap.md` on first visit or sprint review.
 4. **Check `decisions.md` and `ratification-queue.md`** — any PENDING items needing attention at today's window?
 5. **Determine the product in scope** — before answering anything substantive, apply the spec-check gate (below).
 
@@ -157,11 +163,16 @@ State changes include: a product phase advances, a new app ships or scaffolds, a
 
 The Team Leader updates `state.md` in the repo (via commit or PR) before the session ends. For minor updates, commit directly on the current branch. For state changes accompanying Tier 3 work, the state update goes in the same PR.
 
-### When the plan changes, update `plan.md`
+### When the plan changes, update the appropriate PM file
 
-Plan changes include: new work becomes active, priorities shift, a blocker is discovered or resolved, a phase completes.
+Plan changes route to different files depending on the type:
 
-`plan.md` uses an append-oriented in-flight section: when work moves through states, add a new entry at the top rather than editing old entries. Completed work is clearly marked done; do not delete historical entries.
+- **Active work changes** (new dispatch, priority shift, blocker resolved, phase completes) → update `now.md`
+- **Track status changes** (item completed, track closed, sequencing updated) → update `roadmap.md`
+- **Work completes and ships** (PR merged, feature delivered) → append to `changelog.md` (most recent first; never edit existing entries)
+- **Lesson learned or anti-pattern identified** → append to `lessons.md`
+
+`now.md` uses an append-oriented in-flight section: when work moves through states, add a new entry at the top rather than editing old entries. Completed work is clearly marked done; do not delete historical entries.
 
 ### When repo structure changes, regenerate `docs-index.md`
 
@@ -182,7 +193,10 @@ During conversation: log to `project-management/decisions.md` (global) or the ap
 | Global decision log | `project-management/decisions.md` in repo |
 | Per-product decision log | `apps/{product}/specs/{product}-decisions.md` in repo |
 | Current state (product phase, what shipped, etc.) | `project-management/state.md` in repo |
-| Active work plan, what is next, what is blocked | `project-management/plan.md` in repo |
+| Active work, next 3 things, manual tasks | `project-management/now.md` in repo |
+| Tracks A-G, sequencing, open questions | `project-management/roadmap.md` in repo |
+| Completed work log (append only) | `project-management/changelog.md` in repo |
+| Calibration lessons + anti-patterns | `project-management/lessons.md` in repo |
 | Items awaiting Principal ratification | `project-management/ratification-queue.md` in repo |
 | Adding/removing/renaming a repo file | Repo + regenerate index: `bun docs:index` |
 | Fundamental coordination rules | This file (`project-management/coordination.md`) in repo |
@@ -193,7 +207,7 @@ During conversation: log to `project-management/decisions.md` (global) or the ap
 
 - ❌ Putting tactical day-to-day plans in product specs (creates commit churn)
 - ❌ Putting technical architecture docs in ephemeral conversation artifacts
-- ❌ Updating state.md without updating plan.md when both should change (e.g., advancing a phase in state but not reflecting it in the plan's in-flight section)
+- ❌ Updating state.md without updating now.md when both should change (e.g., advancing a phase in state but not reflecting it in now.md's in-flight section)
 - ❌ Pretending to have read a spec that isn't in context — always ask Dani by exact path, or use GitHub MCP when available
 - ❌ Renaming `@atta/*` packages to `@attalabs/*` — code namespace is Atta, AttaLabs is only the public URL
 - ❌ Treating Atta as a product — it is the ecosystem only

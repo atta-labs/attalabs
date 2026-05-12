@@ -99,7 +99,10 @@ Rows = artifact types. Columns = roles. Each cell describes what the role can do
 | **Specs** (`apps/*/specs/*.md`) | Approves PR; ratifies via D-### if spec-only | Coherence review on PR; can open spec-only PRs | Writes in PR per brief scope | Validates cross-references; flags stale specs in drift cron |
 | **Decision logs** (per-product + global) | Approves Type 1 entries; ratifies PENDING Type 2 at windows | Appends Type 2 entries; announces Type 1 to ratification queue | Appends in PR per brief scope | Validates D-### sequence and supersession integrity |
 | **Skills** (`.claude/skills/*/SKILL.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale skill references in drift cron |
-| **`state.md`**, **`plan.md`** | Approves PR | Writes in PR (append-style for `plan.md` "in flight" entries) | Flags state changes needed in PR description | — |
+| **`state.md`**, **`now.md`** | Approves PR | Writes in PR (append-style for `now.md` "in flight" entries) | Flags state changes needed in PR description | — |
+| **`roadmap.md`** | Approves PR | Writes in PR (sprint-level updates) | — | Flags stale track status in drift cron |
+| **`changelog.md`** | Approves PR | Appends entries per PR (never edits existing) | — | — |
+| **`lessons.md`** | Approves PR | Appends lessons; monthly review | — | — |
 | **`coordination.md`**, **`state-machine.md`** | Approves PR; final authority on system-level rule changes | Proposes changes via PR | — | Flags inconsistencies in drift cron |
 | **`thinking.md`** | Reads | Writes freely in any TL session (best-effort, optional) | Reads | Flags if untouched >7 days in drift cron |
 | **`ratification-queue.md`** | Approves/rejects/defers items at ratification windows | Appends items; marks resolved after Principal action | Appends items via escalation (`severity: product`) | — |
@@ -127,7 +130,7 @@ When two artifacts make conflicting claims, which one wins? The answer depends o
 2. Ratified specs (specs with `Status: ratified` header + supporting D-### — see Section 5)
 3. Shipped code (main branch — what actually runs)
 4. Aspirational specs (`Status: target` — describes future state, does not outrank running code)
-5. PM docs (`state.md`, `plan.md`) — status snapshots
+5. PM docs (`state.md`, `now.md`, `roadmap.md`, `changelog.md`, `lessons.md`) — status snapshots
 6. Skills + `thinking.md` — operational guidance, not constitutional claims
 7. Briefs / Issues / PR descriptions — intent at time of writing
 8. Conversation logs / Cetana JSONL logs — lowest; ephemeral, not curated
