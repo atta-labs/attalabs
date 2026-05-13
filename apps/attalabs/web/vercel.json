@@ -1,0 +1,4 @@
+{
+  "buildCommand": "bun turbo run build --filter=@atta/attalabs-web",
+  "ignoreCommand": "npx turbo-ignore @atta/attalabs-web"
+}
