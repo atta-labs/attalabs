@@ -343,10 +343,12 @@ function buildRevisionCondition(signal: {
   value: string
   caseSensitive?: boolean
 }): RevisionCondition {
-  if (signal.type === 'contains') {
-    return { type: 'contains', value: signal.value, caseSensitive: signal.caseSensitive ?? false }
+  if (signal.type !== 'contains') {
+    throw new Error(
+      `Unsupported signal type '${signal.type}'. v2 engine supports only 'contains'. ` +
+        `Update the flow YAML to use signal.type: 'contains', or extend compileFlow to handle '${signal.type}'.`
+    )
   }
-  // 'equals' and 'matches' → treat as contains for v2 (only 'contains' in use today)
   return { type: 'contains', value: signal.value, caseSensitive: signal.caseSensitive ?? false }
 }
 
