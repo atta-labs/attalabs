@@ -4,12 +4,13 @@ const product = process.env.SANITY_STUDIO_PRODUCT
 const isAtta = product === 'atta'
 const isVada = product === 'vada'
 const isVitakka = product === 'vitakka'
+const isAttalabs = product === 'attalabs'
 
 export default defineCliConfig({
   api: {
     projectId:
       process.env.SANITY_STUDIO_PROJECT_ID ||
-      (isAtta ? '892o2m9f' : isVada ? 'ofnj2ojb' : isVitakka ? 'o56nzgrr' : 'e9gbd2d1'),
+      (isAtta ? '892o2m9f' : isVada ? 'ofnj2ojb' : isVitakka ? 'o56nzgrr' : isAttalabs ? 'l5n0n8nn' : 'e9gbd2d1'),
     dataset: process.env.SANITY_STUDIO_DATASET || 'production'
   },
   deployment: {
@@ -21,6 +22,8 @@ export default defineCliConfig({
           ? 'pmbemd30l0taw6d61c0uyz5v'
           : isVitakka
             ? 'm457f9vl1jcgy3gkunej99wx'
-            : 'dl47uh4y5jmv2on69nzc6yt0')
+            : isAttalabs
+              ? 'kru5173ij5xavsb6fn4jiz47'
+              : 'dl47uh4y5jmv2on69nzc6yt0')
   }
 })
