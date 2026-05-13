@@ -542,6 +542,8 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 **Rationale:** Phase 7.3 revealed the naming convention was speculative. All 7 YAMLs carried `-v1` suffixes with no corresponding `-v2` in sight. The convention added visual noise without adding value. Adding a version suffix before an actual fork exists implies a comparison that doesn't exist.
 
+**Note (May 13, 2026):** This entry is the Vāda-internal D-025. The global `decisions.md` D-025 is the v2 naming framing (AttaLabs vs Atta). Same number, different logs — disambiguate references by naming the log.
+
 **Consequences:**
 - All 7 YAML files renamed to drop `-v1` (e.g., `crucible.yaml`, `sparring.yaml`)
 - YAML `id` fields updated to match filenames
@@ -800,7 +802,7 @@ The decision to unpublish Crucible/Sparring/War Room in the same PR — rather t
 ## D-033: Generic flow refactor — universal round-based YAML schema (stack-wide)
 
 **Date:** May 12, 2026
-**Status:** Active (design ratified; implementation pending across 4 sequenced PRs)
+**Status:** Active. Design ratified; PRs #41 + #47 + #48 shipped May 12-13, 2026. PR 3 (MCP `agent_config` rename + new SSE events) and PR 4 (UI rewrite) deferred — see `generic-flow-refactor.md` for the deferred-work breakdown.
 **Area:** YAML schema, engine compiler, MCP server, web route handler, SSE event contract, UI renderer
 **Design doc:** `apps/vada-ai/specs/generic-flow-refactor.md`
 
@@ -817,6 +819,18 @@ The schema is implemented end-to-end across the stack:
 - **UI renderer:** rounds-era components (`RoundStrip`, `Round`, `RoundView`, `useRoundStrip`) deleted. New components (`FlowFeed`, `RoundColumn`, `AgentGrid`, `AgentChain`, `AgentCard`, `useFlowState`) render one column per round, top-to-bottom, centered. Parallel rounds render agents as a grid; serial rounds render agents in a chain with arrows; multi-repeat rounds stack repeats with "Round N of M" dividers; revised rounds stack original and revision with the original marked superseded.
 
 This is Path β from the prior `generic-flow-ui-design.md` exploration — the full stack migration, not a UI-only normalization layer. Path α (UI-only adapter, schema unchanged) was rejected because piecemeal cleanup leaves the YAML schema as a permanent bug-magnet; the Principal directive was "refactor must fix the entire stack."
+
+**Implementation status (May 13, 2026 update):**
+
+PR #41 (Flow types + Zod schema + validateFlow), PR #47 (greenfield `compileFlow` + 9 YAML migration + 29 consumer files + v1 engine surface deletion), and PR #48 (D-034 cleanup — signal-type rejection + RevisionCondition tighten) have shipped. Five pragmatic deviations from the original design were captured honestly in `generic-flow-refactor.md`:
+
+1. `compileFlow` keeps shape detection (4 branches) over `flow.rounds` topology rather than emitting a fully generic Plan graph. Adapter and route handler depend on v1 Plan node ids; rewriting them in lockstep was out of scope. Captured as OQ-I in `vada-state.md`.
+2. TemplateState shape unchanged. v2 YAMLs still use v1 template variable names (`outputsByRound`, `lastOutputByAgent`, `conclusion`, etc.). The round-namespaced context (`rounds.<id>.outputs`, `currentRound.*`, `revision.*`) was not implemented. Captured as OQ-H in `vada-state.md`.
+3. PR 3 (MCP `agent_config` rename + new SSE events) deferred. `reviewer_config` and the v1 SSE event vocabulary still ship.
+4. PR 4 (UI rewrite) deferred. `RoundStrip`/`Round`/`RoundView`/`useRoundStrip` still in place; the "Agents are getting ready…" empty state still present.
+5. Synthesis template bug fix landed inside PR #47. The v1 `vada-reviewers-synthesis.yaml` template referenced `{{reviewerResponses}}` — a variable the engine never populated. The PR #47 migration replaced it with `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}`.
+
+All 10 original Open Questions resolved (most as designed, some deferred to PR 3 / PR 4). See the Implementation Status section in `generic-flow-refactor.md` for the per-OQ resolution table.
 
 **Alternatives considered:**
 
@@ -865,11 +879,67 @@ The naming convention — "round" everywhere instead of "phase" — matches toda
 - Migration of existing sessions: no data migration needed. `sessions.spec_id` is a stable identifier; the new YAML at the same id describes the same flow. Old transcripts have agent names that still exist in the new YAML's top-level `agents:` block. Old session SSE events were already persisted to `transcript_entries`; the UI on session resume reads from the DB, not from a fresh SSE stream.
 - Audit/revision signal robustness: v1 ships with `signal.type: 'contains'` only (current behavior). `signal.type: 'matches'` (regex) and `signal.type: 'structured_field'` (look at JSON field of agent output) are noted as future additions when use cases surface — they're additive to the OnFailureSpec discriminated union with no breaking change.
 - Rollout: 4 PRs sequenced on `feat/generic-flow-refactor`:
-  - PR 1: schema + types + validation (Haiku, ~1 day)
-  - PR 2: `compileFlow` + YAML migration (Sonnet, ~2 days)
-  - PR 3: MCP server + route handler + new SSE events (Sonnet, ~1 day)
-  - PR 4: UI rewrite (Sonnet, ~2-3 days)
-  - Cleanup PR: drop deprecated event emission (~½ day, mechanical)
+  - PR 1: schema + types + validation (Haiku, ~1 day) — SHIPPED as PR #41 May 12
+  - PR 2: `compileFlow` + YAML migration (Sonnet, ~2 days) — SHIPPED as PR #47 May 13 with full v1 surface deletion + 29 consumer files
+  - PR 3: MCP server + route handler + new SSE events (Sonnet, ~1 day) — DEFERRED
+  - PR 4: UI rewrite (Sonnet, ~2-3 days) — DEFERRED
+  - Cleanup PR: drop deprecated event emission (~½ day, mechanical) — N/A since PR 3 deferred
+  - D-034 cleanup PR: signal-type rejection + RevisionCondition tighten — SHIPPED as PR #48 May 13 (not in original plan)
 - Open question on explicit `inputs:` declaration (Option B from the data flow design section) parked as future work. Non-breaking when added later.
-- Open questions OQ-1 through OQ-10 from the design doc all resolved at design ratification (Principal: "All confirmed, proceed with D-033").
-- The `design/generic-flow-ui` branch with the abandoned UI-only Path α design doc (`generic-flow-ui-design.md`) is superseded by this entry and the doc lives on `design/generic-flow-refactor` as `generic-flow-refactor.md`. Old branch + old doc to be deleted once D-033 PR merges.
+- Open questions OQ-1 through OQ-10 from the design doc all resolved at design ratification (Principal: "All confirmed, proceed with D-033"). Implementation-time resolution status captured in `generic-flow-refactor.md`.
+- The `design/generic-flow-ui` branch with the abandoned UI-only Path α design doc (`generic-flow-ui-design.md`) is superseded by this entry and the doc lives on `design/generic-flow-refactor` as `generic-flow-refactor.md`.
+
+---
+
+## D-034: Signal-type rejection + RevisionCondition single-variant tighten
+
+**Date:** May 13, 2026 (PR #48, `chore/d033-signal-and-revision-cleanup`)
+**Status:** Active
+**Area:** Engine — `compile-flow.ts`, `types.ts`; adapter — `adapter.ts`, `graph-builder.ts`
+
+**Decision summary:** Two hardening changes identified during PR #47 (D-033 PR 2) diff review. (1) `compile-flow.ts` `buildRevisionCondition` now throws explicitly when it encounters `signal.type: 'equals'` or `signal.type: 'matches'` instead of silently coercing them to `'contains'`. (2) `RevisionCondition` in `types.ts` collapses from a 3-variant discriminated union (`contains` / `json-field-equals` / `json-field-truthy`) to a single-variant interface (`type: 'contains'`); the dead `json-field-equals` and `json-field-truthy` adapter switch-case branches and the orphaned `getJsonField` helper are deleted from `packages/adapter-langgraph/src/adapter.ts` and `graph-builder.ts`.
+
+**Alternatives considered:**
+- Keep the silent fallthrough — silently coercing `equals`/`matches` to `contains` masks YAML authoring errors and makes the engine surface look like it supports patterns it doesn't. Rejected.
+- Keep the 3-variant `RevisionCondition` union for forward extensibility — the union variants were unreachable from any v2 YAML. The schema (`flow-schema.ts`) preserves all three types in `signal.type` for forward extensibility; the compiler is honest about emitting only `contains`. The union in `types.ts` was an over-design that promised behaviour the runtime didn't have. Rejected — collapse to single-variant interface preserves the discriminator field for future expansion without misleading consumers.
+- Remove `equals` and `matches` from the schema entirely — rejected. The schema (`flow-schema.ts`) is a forward-compatibility surface; reserving the types for a future engine implementation is cheaper than discovering them later as a contract gap. Compiler refuses; schema accepts. Honest split.
+- Add `equals` and `matches` to the engine — rejected as out of scope. v1 ships `contains` only. The two reserved types remain available for future implementation when a use case surfaces.
+
+**Rationale:**
+
+PR #47 diff review surfaced two related issues. First, `buildRevisionCondition` had this branch structure:
+
+```ts
+if (signal.type === 'contains') {
+  return { type: 'contains', value: signal.value, caseSensitive: signal.caseSensitive ?? false }
+}
+// 'equals' and 'matches' → treat as contains for v2 (only 'contains' in use today)
+return { type: 'contains', value: signal.value, caseSensitive: signal.caseSensitive ?? false }
+```
+
+The silent fallthrough was correct for the v2 catalog (no YAML uses `equals` or `matches`) but it masked YAML authoring errors — a typo in `signal.type` would silently coerce to `contains` with no indication that the schema-valid input had been re-interpreted. The right behaviour is for the engine to be honest: if it can't handle a signal type, it should refuse the input loudly and direct the YAML author to either fix the type or extend the engine. The schema layer's forward-extensibility (accepting all three types as syntactically valid) is preserved; the engine layer's honesty is restored.
+
+Second, `RevisionCondition` was declared as a 3-variant discriminated union:
+
+```ts
+export type RevisionCondition =
+  | { type: 'contains'; value: string; caseSensitive?: boolean }
+  | { type: 'json-field-equals'; path: string; value: unknown }
+  | { type: 'json-field-truthy'; path: string }
+```
+
+The `json-field-equals` and `json-field-truthy` variants were left over from a pre-v2 design (which had two ways to express revision conditions — substring matching for text outputs and JSON path matching for structured outputs). They were never reachable from any v2 YAML (v2 only emits `contains`). The adapter and `graph-builder` still had switch-case branches handling these variants, plus a `getJsonField` helper used exclusively by them — all dead code. Collapsing the union to a single-variant interface (`type: 'contains'`) and deleting the dead switch cases is a mechanical cleanup that doesn't change runtime behaviour. The single-variant interface preserves the `type` discriminator so future expansion to a real union (when `equals` or `matches` are implemented) doesn't break consumers.
+
+The two changes are paired because they share a common cause: forward-extensibility in the schema is fine, but forward-extensibility in the type system that promises behaviour the engine doesn't have is misleading. The schema (`flow-schema.ts`) reserves `equals` and `matches` for future. The engine type system (`types.ts`) reflects what's actually implemented.
+
+**Consequences:**
+
+- `compile-flow.ts` `buildRevisionCondition` throws explicitly on unsupported signal types with a message naming the unsupported type and pointing to the resolution (update YAML or extend `compileFlow`).
+- `types.ts` `RevisionCondition` is a single-variant interface with `type: 'contains'`. The discriminator field is preserved for forward extensibility; when `equals` or `matches` are implemented, the interface becomes a discriminated union again with no breaking change to existing consumers.
+- `packages/adapter-langgraph/src/adapter.ts`: `json-field-equals` and `json-field-truthy` case blocks removed from `evaluateRevisionCondition`. The remaining `contains` case is the only one left.
+- `packages/adapter-langgraph/src/graph-builder.ts`: same removal in `evaluateRevisionCondition`. The orphaned `getJsonField` helper is deleted (no callers).
+- `compile-flow.test.ts` gains a test that mutates a sparring flow's audit round to use `signal.type: 'equals'` and asserts that `compileFlow` throws with the exact message naming the unsupported type. 68 engine tests pass total (was 67 in PR #47).
+- Net diff: +35 / -86 across 5 files. Cleanup PR — what it looks like when the previous PR's work is honest enough to expose its own follow-up.
+- Documentation: this entry plus the changelog and `vada-state.md` Phase 14 entry. The skill docs (`atta-engine/SKILL.md`, `vada-yaml-authoring/SKILL.md`) reflect the single-variant `RevisionCondition` and the engine-throws-on-unsupported-signal-types behaviour in the in-flight docs cleanup PR.
+- No schema change. `flow-schema.ts` still accepts `equals` and `matches` at parse time. The schema is the forward-compatibility surface; the compiler is the implementation honesty surface.
+- Future work: when `signal.type: 'equals'` or `'matches'` actually needs to ship, the work is (1) implement evaluation in `compile-flow.ts buildRevisionCondition`, (2) expand `RevisionCondition` back to a discriminated union, (3) restore the corresponding adapter switch-case branches, (4) add test coverage. The structural separation between schema (permissive) and compiler (strict) means this future expansion is additive, not breaking.
