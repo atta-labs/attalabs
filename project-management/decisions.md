@@ -352,3 +352,44 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Keeping a single file and enforcing append-only: rejected. Append-only works for changelog and lessons, but now.md and roadmap.md require in-place updates (e.g., marking a track item complete).
 
 **Consequences:** `coordination.md` session-start protocol updated to reference four files. `state-machine.md` mutation matrix updated. `docs-index.md` regenerated. Any automation (Archivist, Cetana) that reads or writes `plan.md` must be updated to route to the appropriate new file.
+
+---
+
+## D-025 — v2 naming and framing: AttaLabs vs Atta; no -AI suffix; Pāli rule demoted
+
+**Date:** 2026-05-12
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Principal (v2 naming pressure-testing session — Strategic/UX, Gemini, Grok reviewer rounds, May 12, 2026)
+**Ratified by:** Principal
+
+**Context:** The v1 framing (locked April 26, 2026) treated Atta as "the ecosystem" with no product carrying the name; AttaLabs as a "public domain wrapper only"; the rule "Pāli = built by Atta" as structural; Herald as "plugs in via MCP, not a core product"; Sati as the renamed "Atta-the-product" (memory layer). Three rounds of multi-reviewer review revealed structural problems: the Atta brand was the founder's strongest brand attachment and was being given away by the v1 framing; the "Pāli = built by Atta" rule was confusing once Cetana (Pāli, but internal dev tooling) was clarified as not part of Atta; the `-AI` suffix on product brands (HeraldAI, VadaAI) was 2023-era dated and weakened distinctive Pāli names; the two-ecosystem distinction (AttaLabs dev lab vs Atta-internal composition) was implicit and a frequent source of confusion in conversations.
+
+**Decision:** Lock the v2 framing:
+
+1. **Atta is the product** — the deep-thinking AI composed of Vāda + Vitakka + Sati. Not merely a code namespace, not "the ecosystem only." Target consumer domain `atta.ai` if/when available (not owned; Japanese individual owner, may free 2027); fallback options preserved.
+2. **AttaLabs is the dev/lab ecosystem** — permanent home at `attalabs.dev`. Contains multiple products: Atta, Vāda, Vitakka, Sati (layers), Herald, Cetana, the Atta Engine.
+3. **Two ecosystems at different scales** — both legitimate uses of the word "ecosystem": (a) AttaLabs ecosystem = the dev lab containing many products; (b) Atta ecosystem = the internal composition of Vāda + Vitakka + Sati that makes Atta-the-product. Specs and docs use the qualifier when ambiguity matters.
+4. **No `-AI` suffix on any product brand** — all bare: Atta, Vāda, Vitakka, Sati, Herald, Cetana. AI category signal via page content and site metadata (`<title>`, OpenGraph, link previews), not via brand.
+5. **Pāli rule demoted** from structural ("Pāli = built by Atta") to elective aesthetic. Mandatory inside Atta only (Atta, Vāda, Vitakka, Sati are Pāli). Elective elsewhere — Cetana is Pāli but not part of Atta; Herald is non-Pāli but built by Dani. Pāli is a naming preference the founder may exercise, not a signal of ownership.
+6. **Cetana is not part of Atta** — internal dev tooling for the Atta team (local Mac orchestration). Sibling product in AttaLabs. Future public surface (`cetana.attalabs.dev`) conditional on V0/V0.5 dogfood criteria.
+7. **Herald is a standalone AttaLabs product** — built by Dani. Not "plugs in" (v1 framing retired). Can be invoked by Atta or any MCP-compatible host as one of many external tools.
+8. **Sati's standalone surface scope is deferred** — Sati is the memory layer inside Atta; whether it has its own standalone surface is decided as Atta build progresses (OQ-cross-13).
+
+**Alternatives rejected:**
+- Keep v1 (Atta = ecosystem, no product named Atta): rejected. Strong reviewer consensus across all three rounds that this gives away the brand the founder is actually building.
+- Add `-AI` suffix to bare brands (AttaAI, VadaAI, HeraldAI) as transitional naming: rejected. Mid-life rebrands are expensive and confusing; commit to clean names from day one. No leading AI brand (Anthropic, Mistral, Cohere, Perplexity, Cursor, Linear, Lovable, v0) carries the suffix.
+- Keep "Pāli = built by Atta" as a structural rule with Cetana as the exception: rejected. The rule predicts the wrong thing (Cetana is Pāli but not part of Atta) and Herald demonstrates the rule fails the other way (English but built by Dani). Demoting to aesthetic resolves both cases.
+
+**Consequences:**
+- Canonical doc: `apps/atta-ai/specs/atta-naming-decision.md` (full rewrite v2).
+- Strategic positioning doc: `apps/atta-ai/specs/atta-ecosystem-vision.md` (framing updated; strategic content preserved).
+- Root `README.md` and `CLAUDE.md` updated.
+- `project-management/coordination.md` "names" section + anti-patterns updated.
+- `project-management/state.md` "Brand & domain" + per-product sections updated.
+- All updates in PR #46 (this PR).
+- Follow-up: `apps/atta-ai/specs/atta-build-strategy.md` Cetana "Layer 4" section needs realignment to current V0/V0.5 internal-tooling reality (separate PR).
+- Open question OQ-cross-13 added to `state.md`: Sati standalone surface decision.
+
+**Ratifies:** `apps/atta-ai/specs/atta-naming-decision.md` (v2 rewrite at SHA of commit `6af1a47` on `docs/naming-and-framing-audit-may-12`).
