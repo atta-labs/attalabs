@@ -136,6 +136,7 @@ export type HeraldConfig = PortalUiConfig
 export type AttaConfig = PortalUiConfig
 export type VitakkaConfig = PortalUiConfig
 export type VadaConfig = PortalUiConfig
+export type AttalabsConfig = PortalUiConfig
 
 export const SHADOW_TO_CSS_VAR: Record<string, string> = {
   shadow2xs: 'shadow-2xs',
