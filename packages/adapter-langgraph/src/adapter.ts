@@ -423,37 +423,9 @@ export class LangGraphAdapter implements Adapter {
         return contentStr.toLowerCase().includes(searchStr.toLowerCase())
       }
 
-      case 'json-field-equals': {
-        if (!output.structured) return false
-        const value = this.getJsonField(output.structured, condition.path)
-        return value === condition.value
-      }
-
-      case 'json-field-truthy': {
-        if (!output.structured) return false
-        const value = this.getJsonField(output.structured, condition.path)
-        return Boolean(value)
-      }
-
       default:
         return false
     }
-  }
-
-  /**
-   * Extract a value from a JSON object using dot-notation path.
-   * Example: getJsonField({ result: { verdict: 'yes' } }, 'result.verdict') => 'yes'
-   */
-  private getJsonField(obj: unknown, path: string): unknown {
-    const parts = path.split('.')
-    let current = obj
-    for (const part of parts) {
-      if (typeof current !== 'object' || current === null) {
-        return undefined
-      }
-      current = (current as Record<string, unknown>)[part]
-    }
-    return current
   }
 
   /**

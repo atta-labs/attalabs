@@ -37,35 +37,7 @@ function evaluateRevisionCondition(condition: RevisionCondition, output: AgentOu
       }
       return contentStr.toLowerCase().includes(searchStr.toLowerCase())
     }
-
-    case 'json-field-equals': {
-      if (!output.structured) return false
-      const value = getJsonField(output.structured, condition.path)
-      return value === condition.value
-    }
-
-    case 'json-field-truthy': {
-      if (!output.structured) return false
-      const value = getJsonField(output.structured, condition.path)
-      return Boolean(value)
-    }
   }
-}
-
-/**
- * Extract a value from a JSON object using dot-notation path.
- * Example: getJsonField({ result: { verdict: 'yes' } }, 'result.verdict') => 'yes'
- */
-function getJsonField(obj: unknown, path: string): unknown {
-  const parts = path.split('.')
-  let current = obj
-  for (const part of parts) {
-    if (typeof current !== 'object' || current === null) {
-      return undefined
-    }
-    current = (current as Record<string, unknown>)[part]
-  }
-  return current
 }
 
 /**

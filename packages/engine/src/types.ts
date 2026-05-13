@@ -28,33 +28,19 @@ export type { Agent } from '@atta/agents'
 /**
  * A condition evaluated against an audit agent's output to decide whether to trigger revision.
  *
- * Three types cover V1 needs. AND/OR compound conditions are intentionally excluded —
- * complexity belongs in the audit agent's prompt, not in config.
- * All JSON paths use simple dot-notation (e.g. "result.verdict"), not JSONPath.
+ * v2 ships with substring matching only. The schema (`FlowSchema` in flow-schema.ts) accepts
+ * 'contains' | 'equals' | 'matches' for forward extensibility, but `compileFlow` currently
+ * emits only `contains` Plans. When `equals` or `matches` are added to the engine, this
+ * type becomes a discriminated union again.
  */
-export type RevisionCondition =
-  | {
-      /** Triggers revision if the agent's text output contains the given substring. */
-      type: 'contains'
-      /** Substring to search for in the agent's content field. */
-      value: string
-      /** Whether the substring search is case-sensitive. Defaults to true. */
-      caseSensitive?: boolean
-    }
-  | {
-      /** Triggers revision if the JSON field at `path` strictly equals `value`. */
-      type: 'json-field-equals'
-      /** Dot-notation path into the parsed JSON output, e.g. "result.verdict". */
-      path: string
-      /** The comparison target. Must be a JSON-serializable primitive. */
-      value: unknown
-    }
-  | {
-      /** Triggers revision if the JSON field at `path` is truthy. */
-      type: 'json-field-truthy'
-      /** Dot-notation path into the parsed JSON output, e.g. "result.needsRevision". */
-      path: string
-    }
+export interface RevisionCondition {
+  /** Discriminator (single-variant in v2; preserved for forward extensibility). */
+  type: 'contains'
+  /** Substring to search for in the agent's content field. */
+  value: string
+  /** Whether the substring search is case-sensitive. Defaults to false. */
+  caseSensitive?: boolean
+}
 
 // =============================================================================
 // Group 2: (removed — Workflow union and variants live in YAML specs / compileFlow)

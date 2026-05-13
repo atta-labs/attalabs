@@ -330,6 +330,23 @@ describe('compileFlow — rounds-audit shape', () => {
 
 // ── classifierModes ───────────────────────────────────────────────────────────
 
+describe('compileFlow — unsupported signal types', () => {
+  it('throws when signal.type is "equals" (not yet implemented in v2)', () => {
+    const flow = loadYaml('sparring')
+    const auditRoundIndex = flow.rounds.findIndex((r) => r.onFailure?.action === 'revise')
+    expect(auditRoundIndex).toBeGreaterThanOrEqual(0)
+    const mutated: typeof flow = {
+      ...flow,
+      rounds: flow.rounds.map((r, i) =>
+        i === auditRoundIndex && r.onFailure
+          ? { ...r, onFailure: { ...r.onFailure, signal: { ...r.onFailure.signal, type: 'equals' as const } } }
+          : r
+      )
+    }
+    expect(() => compileFlow(mutated, 'test question')).toThrow("Unsupported signal type 'equals'")
+  })
+})
+
 describe('compileFlow — classifierModes', () => {
   it('is undefined when no agents declare classifier', () => {
     const plan = compileFlow(soloFlow(), QUESTION)
