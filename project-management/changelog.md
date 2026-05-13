@@ -8,6 +8,96 @@
 
 ---
 
+## 2026-05-13 — Chore: D-033 cleanup — signal-type rejection + RevisionCondition tighten (D-034)
+
+Follow-up to PR #47. Two hardening changes identified during PR #47's diff review.
+
+- **`buildRevisionCondition` throws on unsupported signal types.** Was silently coercing `signal.type: 'equals' | 'matches'` to `'contains'`, masking YAML authoring errors. Now throws explicitly with an actionable message naming the unsupported type. `compile-flow.ts`.
+- **`RevisionCondition` collapsed to single-variant interface.** The v1 union had three variants (`contains`, `json-field-equals`, `json-field-truthy`); only `contains` was ever reachable from a v2 YAML. Collapsed to a plain interface with `type: 'contains'` (discriminator preserved for forward extensibility). `types.ts`.
+- **Dead adapter switch-case branches deleted.** `json-field-equals` and `json-field-truthy` case blocks removed from `packages/adapter-langgraph/src/adapter.ts` and `graph-builder.ts`, plus the orphaned `getJsonField` helper (no callers).
+- **Test coverage.** New test in `compile-flow.test.ts` mutates a sparring flow's audit round to use `signal.type: 'equals'`, asserts `compileFlow` throws with the exact message. 68 engine tests total.
+
+5 files touched, +35/-86. Net deletion of 51 lines — what a cleanup PR should look like.
+
+PR: #48
+Commit: `c83b4311a7aca187d6b0cb38b0d185b447bf28ff` on `chore/d033-signal-and-revision-cleanup`.
+Conforms to: `vada-decisions.md` D-033 (universal flow schema).
+Logged as: `vada-decisions.md` D-034.
+
+---
+
+## 2026-05-13 — Refactor: Universal round-based schema + compileFlow (D-033 PR 2)
+
+The architectural heavy lift of D-033. Vāda's YAML schema, engine compiler, and 29 consumer files migrated to the v2 universal round-based model in a single atomic PR.
+
+- **Schema v2:** every flow is `{ schema_version: "2.0", id, defaults, agents, rounds }`. The three v1 shapes (brokered-no-synthesis, brokered-with-synthesis, rounds-based) collapsed into one model. Synthesizer = single-agent round. Audit = round. Revision = declarative via `on_failure: { action: revise, target, max_revisions, signal }`.
+- **Engine compiler:** `compileFlow(flow, question, model?, customVars?) → Plan` replaces `compileSpec` + per-shape compilers. Greenfield 386-line implementation, no v1 shims. Shape detection at the top emits matching v1 Plan node ids (`solo`, `reviewer-{name}`, `brokered-synthesis`, `round-{r}-{name}`, `terminal-{k}`, `audit-{name}-{k}`, `__END__`) so the adapter executes the graph identically across shapes.
+- **Catalog migration:** all 9 YAMLs hand-converted to `schema_version: "2.0"`. Every one validated by `validateFlow`. Behavioural verification: all existing engine tests pass against the migrated catalog (67/67).
+- **Engine API surface:** `index.ts` now exports `loadFlow`, `compileFlow`, `validateFlow`, `resolveAgentFailure`, `InvalidFlowConfigError`, `Flow`, `FlowSchema`, and supporting types. Old exports (`loadSpec`, `compileSpec`, `specToTeam`, `Team`, `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow`, `Workflow`) all **deleted**. No backwards-compat shim.
+- **Engine internals deleted:** `spec-types.ts`, `spec-schema.ts`, `spec-loader.ts`, `validate.ts`, `compile.ts`, the entire `compilers/` directory (`spec.ts`, `solo.ts`, `rounds.ts`, `custom.ts`, `brokered.ts`).
+- **Consumer migration:** 29 files updated. MCP servers (`consult.ts`, `deliberate.ts`), route handler, 6 UI components (`DeliberatePanel`, `TeamPicker`, `TeamSummary`, `TeamHeader`, `AgentTab`, `calculator.ts`), verify scripts, and `apps/vada-ai/web/src/lib/flow-helpers.ts` (new — 39 lines, shared shape detection extracted out of every consumer).
+- **Synthesis template bug fix:** `vada-reviewers-synthesis` synthesizer template was `{{reviewerResponses}}` — a variable the engine never populated. Synthesizer was running blind in production. Migration replaced with `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}`. Caught during PR #47 diff review; fixed atomically with the migration.
+- **`deliberation/page.tsx`:** `hasSynthesizer` detection now uses round structure instead of inspecting the deleted workflow union.
+- **`start/route.ts`:** `agents` now read from `spec.rounds[0].agents` instead of the deleted `Team.agents`.
+- **`planToVisualNodes.test.ts`:** updated cross-round edge test to match new node-id emission.
+
+60 files touched, +477/-2637. The architecturally cleanest path was chosen over the backwards-compat shim the agent originally proposed — Principal rejected the half-merge in favour of full migration. Result: a fully consistent codebase with no half-merged state.
+
+PR: #47
+Commit: `45521c72cdab5e881202b92a9f83d5682523c706` on `feat/generic-flow-refactor-pr2`.
+Conforms to: `vada-decisions.md` D-033.
+Tests: 67 engine, 33 UI; 21/21 typecheck; biome clean.
+
+---
+
+## 2026-05-13 — Docs: v2 naming + framing audit (D-025 global)
+
+Cross-product brand architecture refactor. Three rounds of multi-reviewer pressure-testing (Strategic/UX, Gemini, Grok) converged on a corrected framing of the AttaLabs vs Atta distinction. The original v1 framing ("Atta is the ecosystem; no product is named Atta") was giving away the brand the founder was actually building. The corrected v2 framing locks the following:
+
+- **AttaLabs** = the dev/lab ecosystem at `attalabs.dev`. Multiple products live inside.
+- **Atta** = a product within AttaLabs. The deep-thinking AI composed of Vāda + Vitakka + Sati. Target consumer domain `atta.ai` if/when available; not yet deployed.
+- **Two ecosystems at different scales**: AttaLabs ecosystem (dev lab containing many products) and Atta ecosystem (internal composition of Vāda + Vitakka + Sati). Both legitimate; specs use the qualifier when ambiguity matters.
+- **No `-AI` suffix on any product brand.** Atta, Vāda, Vitakka, Sati, Herald, Cetana are all bare. AI category signal carried via page content and site metadata.
+- **Pāli rule demoted** from structural ("Pāli = built by Atta") to elective aesthetic. Mandatory inside Atta only. Cetana is Pāli but not part of Atta; Herald is non-Pāli but built by Dani.
+- **Cetana is not part of Atta** — internal dev tooling, sibling AttaLabs product. Future public surface conditional on V0/V0.5 dogfood criteria.
+- **Herald is a standalone AttaLabs product**, no longer "plugs in."
+- **Sati standalone surface scope deferred** — OQ-cross-13 added.
+
+Files updated in this PR:
+- `apps/atta-ai/specs/atta-naming-decision.md` (canonical v2 rewrite)
+- `apps/atta-ai/specs/atta-ecosystem-vision.md` (strategic content preserved; framing updated)
+- Root `README.md` and `CLAUDE.md`
+- `project-management/coordination.md` (names section + anti-patterns)
+- `project-management/state.md` (Brand & domain section + per-product sections)
+- `project-management/decisions.md` (new entry D-025 — Type 1, Lock: NO, ratified by Principal)
+
+D-### numbering history of this PR is captured in the commit log: the framing was initially logged as D-033, then renumbered to D-034 (D-033 was already taken by the generic flow refactor in `vada-decisions.md` — but the agent didn't realise that D-033 was per-product, not global), then renumbered to D-025 once the audit discovered the global log only ended at D-024. The "D-025-D-033" references in `state.md` that initially confused the audit were per-product entries in `cetana-decisions.md` and `vada-decisions.md`, not global. The D-### overlap between logs is now disambiguated throughout the repo by naming the log (e.g. "global D-025" vs "vada-decisions.md D-025").
+
+PR: #46
+Commit: `311a743bbb2cd0a5f90ff28b3f70dc3f7ab85640` on `docs/naming-and-framing-audit-may-12`.
+Logged as: global `decisions.md` D-025.
+Calibration lesson worth surfacing: when two logs (global + per-product) can have overlapping D-### numbers, every reference must name the log. Captured in `vada-state.md` calibration notes; should propagate to `lessons.md` on next touch.
+
+---
+
+## 2026-05-12 — Feat: Flow types + Zod schema + validateFlow (D-033 PR 1)
+
+Foundational schema work for the generic flow refactor. Introduces the new universal round-based schema alongside the existing v1 schema; old types stay alive. PR #47 consumes the new types in sequence.
+
+- **New files:**
+  - `packages/engine/src/flow-types.ts` — `Flow`, `Round`, `AgentInRound`, `OnFailureSpec`, and supporting types
+  - `packages/engine/src/flow-schema.ts` — Zod schema for the new YAML shape; `schema_version` `'2.0'` denotes the new round-based structure
+  - `packages/engine/src/validate-flow.ts` — `validateFlow()` enforces the 10 validation rules from D-033 (rounds non-empty, unique ids, no forward `on_failure.target` references, agent refs exist, template required somewhere, etc.)
+  - `packages/engine/src/__tests__/validate-flow.test.ts` — unit tests covering every validation rule + 4 catalog-shape happy-path tests (30 tests total)
+- **Updated:** `packages/engine/src/index.ts` exports the new types, schema, validator. Old exports unchanged.
+- Nothing else in the monorepo imports from these new files yet — PR #47 wires up the migration. Build stays green; all 21 packages typecheck; all existing engine tests pass.
+
+PR: #41
+Commit: `86ed9cca5efa5c5aec8766e7bcb192f49ea73367` on `feat/generic-flow-refactor-pr1`.
+Conforms to: `vada-decisions.md` D-033 (design); ratifies the schema + types portion of that design.
+
+---
+
 ## 2026-05-12 — Fix: `cetana init` abort-path hang (D-021 follow-up)
 
 `cetana init` printed "Aborted" when user declined overwriting existing config, but the process did not return shell control — required Ctrl+C. Root cause: `setupStdinReader()` called `process.stdin.resume()` putting stdin into flowing mode, holding an event loop ref; the abort branch returned without closing the stream, so for interactive (TTY) stdin — which never emits 'end' — the process hung indefinitely. Fix: `process.stdin.destroy()` in the abort branch, which closes the stream and releases the event loop ref (1-line change in `init.ts`). Regression test added in `commands.test.ts` verifying the abort path exits within 2 seconds with code 0.
