@@ -352,8 +352,8 @@ When this document conflicts with what's been built or what's about to be built,
 ## Related documents
 
 - `atta-naming-decision.md` — canonical brand architecture: AttaLabs vs Atta, no `-AI` suffix, Pāli rule demoted, domain decisions
-- `atta-current-state.md` (project knowledge) — concrete state across products and infrastructure
-- `atta-plan.md` (project knowledge) — active work plan
+- `project-management/state.md` — concrete state across products and infrastructure (in repo)
+- `project-management/now.md`, `roadmap.md`, `changelog.md`, `lessons.md` — active work plan, sequencing, completed work log, calibration lessons (in repo)
 - `atta-build-strategy.md` — sequencing, hide-the-work discipline, first-user tests
 - `atta-market-research.md` — competitive landscape and what to watch
 - `atta-finetuning-research.md` — technical research for Sati's eventual fine-tuning layer
