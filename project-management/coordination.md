@@ -59,7 +59,7 @@ Everything else. All skills (`.claude/skills/*/SKILL.md`), all specs (`apps/*/sp
 
 ## The names — operational reference
 
-These names matter every session. Locked v2 framing (May 12, 2026 — see D-033).
+These names matter every session. Locked v2 framing (May 12, 2026 — see D-034).
 
 ### Two ecosystems at different scales
 
@@ -88,11 +88,11 @@ Both legitimate uses of the word. When context-sensitive, prefer the explicit qu
 
 ### Naming convention — no `-AI` suffix on any product brand
 
-Locked May 12, 2026 (D-033). All product brands are bare: **Atta, Vāda, Vitakka, Sati, Herald, Cetana**. Never `AttaAI`, `VadaAI`, `HeraldAI`, `CetanaAI`. The AI category signal is carried via page content and site metadata (link previews, `<title>` tags, OpenGraph), not via the brand.
+Locked May 12, 2026 (D-034). All product brands are bare: **Atta, Vāda, Vitakka, Sati, Herald, Cetana**. Never `AttaAI`, `VadaAI`, `HeraldAI`, `CetanaAI`. The AI category signal is carried via page content and site metadata (link previews, `<title>` tags, OpenGraph), not via the brand.
 
 ### Naming aesthetic — Pāli is preferred inside Atta, elective elsewhere
 
-Locked May 12, 2026 (D-033). The earlier rule "Pāli name = built by Atta" was structural in v1. It is now demoted to a naming aesthetic:
+Locked May 12, 2026 (D-034). The earlier rule "Pāli name = built by Atta" was structural in v1. It is now demoted to a naming aesthetic:
 
 - **Inside Atta**: Pāli names are mandatory. Atta, Vāda, Vitakka, Sati are all Pāli.
 - **Inside AttaLabs more broadly**: Pāli is common but elective. Cetana has a Pāli name because the founder preferred it; that does not make it part of Atta. Herald has an English name because it fits the product's character. Future AttaLabs products may go either way.
@@ -230,9 +230,9 @@ During conversation: log to `project-management/decisions.md` (global) or the ap
 - ❌ Updating state.md without updating now.md when both should change (e.g., advancing a phase in state but not reflecting it in now.md's in-flight section)
 - ❌ Pretending to have read a spec that isn't in context — always ask Dani by exact path, or use GitHub MCP when available
 - ❌ Renaming `@atta/*` packages to `@attalabs/*` — code namespace is Atta, AttaLabs is only the public URL
-- ❌ Treating Atta as merely a code namespace or "the ecosystem only" — Atta is **the product**, the deep-thinking AI composed of Vāda + Vitakka + Sati (D-033)
-- ❌ Adding `-AI` suffix to any product brand (D-033 locked May 12, 2026 — Atta, Vāda, Vitakka, Sati, Herald, Cetana are all bare)
-- ❌ Treating "Pāli name = built by Atta" as a structural rule (demoted to elective aesthetic May 12, 2026 — D-033)
+- ❌ Treating Atta as merely a code namespace or "the ecosystem only" — Atta is **the product**, the deep-thinking AI composed of Vāda + Vitakka + Sati (D-034)
+- ❌ Adding `-AI` suffix to any product brand (D-034 locked May 12, 2026 — Atta, Vāda, Vitakka, Sati, Herald, Cetana are all bare)
+- ❌ Treating "Pāli name = built by Atta" as a structural rule (demoted to elective aesthetic May 12, 2026 — D-034)
 - ❌ Treating Herald as "plugs in" or external — Herald is a sibling AttaLabs product built by Dani, not part of Atta but lives in the same lab
 - ❌ Treating Cetana as part of Atta — Cetana is internal dev tooling, sibling AttaLabs product
 - ❌ Generating strategy or reviewer briefs before reading the specs the index points to (spec-check gate)
