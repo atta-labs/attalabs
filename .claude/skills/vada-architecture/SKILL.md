@@ -7,43 +7,72 @@ description: Vāda's product structure (Vāda Teams catalog), wedges/capabilitie
 
 ## Context
 
-Vāda is a multi-agent deliberation engine shipping as an MCP server. Multiple LLM agents debate or are consulted, dual audit checks the output, and conclusions return with a full audit trail. Accessed from any MCP-compatible chat client (Claude.ai, Cursor, Claude Desktop, etc.). Part of the Attā ecosystem (Attā = future memory substrate, Vitakka = future chat client, Vāda = deliberation, current focus).
+Vāda is a YAML-driven deliberation runtime shipping as an MCP server. Multiple LLM agents debate, are consulted, or are critically reviewed; an optional synthesizer reconciles their outputs; auditors verify the result; revision fires when audits flag the conclusion. Accessed from any MCP-compatible chat client (Claude.ai web, Claude Desktop, Claude Code CLI, Cursor, etc.). Part of the Atta ecosystem (Sati = future memory substrate, Vitakka = future thinking partner, Vāda = deliberation, current focus).
+
+The product surface is the catalog of YAML team specs at `apps/vada-ai/yamls/`. The engine treats every YAML identically — there are no per-team code branches. As of D-033 (May 12-13, 2026), the YAML schema is `2.0` and all flows are expressed as a sequence of rounds.
 
 ---
 
 ## Vāda Teams Catalog
 
-Vāda exposes deliberation as a catalog of YAML team specs compiled by the Atta engine. Both MCP tools are generic — there are no per-team tools. The catalog currently contains 7 YAML team specs at `apps/vada-ai/yamls/`. New teams are added by authoring YAML and registering with the spec registry.
+Vāda exposes deliberation as a catalog of YAML team specs compiled by the Atta engine. Both MCP tools are generic — there are no per-team tools. The catalog currently contains 9 YAML team specs at `apps/vada-ai/yamls/` (2 published, 7 experimental). New teams are added by authoring YAML and dropping the file into the directory — the engine's `listPublicSpecs()` discovers it dynamically.
 
 | MCP Tool | Behavior | Cost | Serves |
 |----------|----------|------|--------|
-| `vada__deliberate` | Agents debate each other across rounds + synthesis + audit | Higher | MOAT-A (audit trail) |
-| `vada__consult` | Builds an inline reviewer-chain spec; reviewers respond independently, no rounds | Lower | Acquisition surface |
+| `vada__deliberate` | Compiles a YAML spec and runs the full flow end-to-end. Returns synthesized output + structured field when the spec declares one. | Variable per spec | MOAT-A (audit trail) |
+| `vada__consult` | Routes to a YAML spec via `spec_id`; constructs a Flow in-memory with role-selected reviewers; runs and returns reviewer responses. | Lower | Acquisition surface |
 
-`vada__consult` ships first (simpler). Both must be in active use before public launch. Escalation from `vada__consult` to `vada__deliberate` is a product-design imperative, not a UI option.
+Both surfaces are live. `vada__consult` accepts an optional `reviewer_config: Record<agentName, modelId>` (D-032) mirroring the web UI's per-slot model configurability, validated against the vendor registry.
+
+| Catalog YAML | Display name | Shape (v2) | Status |
+|---|---|---|---|
+| `a0-baseline` | A0 | solo | Experimental (baseline) |
+| `a1-baseline` | A1 | solo | Experimental (baseline, structured) |
+| `brokered-trio` | Brokered Trio | brokered-no-synth | Experimental |
+| `brokered-quartet` | Brokered Quartet | brokered-no-synth | Experimental |
+| `vada-reviewers` | Reviewers | brokered-no-synth | **Published** |
+| `vada-reviewers-synthesis` | Reviewers + Synthesis | brokered-synth | **Published** |
+| `sparring` | Sparring | rounds-audit | Experimental (PR #31 unpublished) |
+| `crucible` | Crucible | rounds-audit | Experimental (PR #31 unpublished) |
+| `war-room` | War Room | rounds-audit | Experimental (PR #31 unpublished) |
 
 ---
 
 ## Layer Stack
 
 ```
-USER CHAT CLIENT            (Claude.ai, Cursor — external)
-        ↓ MCP protocol (stdio in V1, HTTP later)
+USER CHAT CLIENT            (Claude.ai web, Claude Desktop, Claude Code CLI, Cursor — external)
+        ↓ MCP protocol (stdio for local installs; hosted HTTP at vada.attalabs.dev/api/mcp)
 @vada/mcp-server            WEDGE-2   → see skill: vada-mcp-server
         ↓ Plan request
 @atta/engine                WEDGE-1   → see skill: atta-engine
-  (YAML → loadSpec → compileSpec → Plan)
+  (YAML → loadFlow → compileFlow → Plan)
         ↓ Plan (JSON DAG)
 @atta/adapter-langgraph     CAP-1     → see skill: atta-adapter-langgraph
-  (includes cognitive router nodes)
+  (includes cognitive router nodes; SDK-shape dispatch per D-032 vendor registry)
         ↓ per-turn dispatch
-YAML specs + agent visuals  MOAT-B    → see skill: atta-teams
-  (deliberation YAML files in apps/vada-ai/yamls/; agent UI types in web/src/components/agents/visuals/)
+YAML specs + agent visuals  MOAT-B    → see skill: vada-yaml-authoring
+  (v2 deliberation YAML files in apps/vada-ai/yamls/; agent UI types in web/src/components/agents/visuals/)
         ↓ agent config
-PROVIDER APIs               (Anthropic primary; OpenAI/Gemini future)
+PROVIDER APIs               (12 vendors registered in @atta/models: anthropic, openai, google, xai, groq,
+                             openrouter, deepseek, cerebras, mistral, together, fireworks, ollama)
 
-PARALLEL AUDIT: Postgres → vada.ai dashboard   MOAT-A  (Phase 3c)
+PARALLEL AUDIT: Neon Postgres → vada.attalabs.dev dashboard   MOAT-A (live)
 ```
+
+---
+
+## v2 schema (D-033) — what changed
+
+Prior to D-033, the engine supported three structurally distinct YAML shapes (brokered-no-synthesis, brokered-with-synthesis, rounds-based) each with its own compiler (`compileBrokered`, `compileRounds`, `compileSolo`) and its own discriminated workflow union type (`BrokeredWorkflow | RoundsWorkflow | SoloWorkflow`). D-033 collapsed all of this into one model:
+
+- **Schema layer** is uniform: every flow is `{ schema_version, id, defaults, agents, rounds }`. A round has `id, name, layout, agents, message_template, repeats?, agent_failure?, on_failure?`. Validation enforces 10 structural and semantic rules; `validateFlow` throws `InvalidFlowConfigError` on any violation.
+- **Compiler layer** has one entrypoint: `compileFlow(flow, question, model?, customVars?) → Plan`. It detects four shapes from the flow's topology (`solo`, `brokered-no-synth`, `brokered-synth`, `rounds-audit`) and emits matching Plan node ids (`solo`, `reviewer-{name}`, `brokered-synthesis`, `round-{r}-{name}`, `terminal-{k}`, `audit-{name}-{k}`, `__END__`). The detection is a pragmatic compromise: the adapter and route handler depend on v1 node-id conventions, so `compileFlow` preserves them while the schema itself is fully generic.
+- **Revision** is declarative on `on_failure`: an audit round can specify `{ action: revise, target: <prior-round-id>, max_revisions, signal: { type, value, case_sensitive? } }`. The engine emits the conditional edge structure (`terminal-k → audit-{first}-{k}` flow edge plus `audit-{last}-{k} → terminal-{k+1} | __END__` conditional edge with `anyOf` evaluation) automatically.
+- **Template variables** in v2 YAMLs still use the v1 `TemplateState` shape (`outputsByRound`, `lastOutputByAgent`, `conclusion`, etc.) — the adapter was not refactored as part of D-033. See OQ-H in `vada-state.md`.
+- **Workflow types deleted**: `Team`, `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow`, and the `Workflow` discriminated union are gone. The Plan graph types (`Plan`, `PlanNode`, `PlanEdge`, `PlanGraph`, `PlanNodeRole`, `PlanNodeKind`, `PlanEdgeKind`) survive — they describe the compiled output, not the input.
+
+For the full schema documentation, see `apps/vada-ai/specs/yaml-schema-reference.md`. For the design rationale, see `apps/vada-ai/specs/generic-flow-refactor.md` and D-033 in `vada-decisions.md`.
 
 ---
 
@@ -80,34 +109,51 @@ Use this framework when labeling new work. Do NOT call something a moat unless i
 | 7.2 | YAML refactor (Phase A + B); TypeScript deleted | ✅ complete |
 | 7.2.1 | YAML catalog loader extracted into `@atta/engine` | ✅ complete |
 | 7.3 | Hardcoded fallbacks eliminated; -v1 suffixes dropped; MCP registry made dynamic | ✅ complete |
-| 8 | Synthesis as first-class engine component | queued |
-| 9 | Real-case YAML team specs | queued |
-| 10 | Benchmark architecture redesign | queued |
-| 11 | YAML cost calculator UI | queued |
-| 12 | Validation experiments + cost-quality frontier | queued |
-| MOAT-A | vada.ai dashboard (full transcript + cost attribution) | required pre-launch |
+| 8 | Synthesis exposed to consumers (structured field) | ✅ complete |
+| 9 | Hosted MCP server | ✅ complete (May 4) |
+| 10 | Single-source-keys reversal | ✅ complete (May 4) |
+| 11 | Shared keys UI + ecosystem schemas | ✅ complete (May 5) |
+| 12 | Doc audit pass | ✅ complete (May 6) |
+| 13 | Vendor registry consolidation (D-032) | ✅ complete (May 11) |
+| 14 | D-033 generic flow refactor + D-034 cleanup | ✅ complete (May 12-13) |
+| 15 | Reviewer prompt iteration (Track B Item 3b) | queued |
+| 16 | Synthesizer prompt iteration (Track B Item 3c) | queued |
+| 17 | First Vāda Reviewers benchmark run (Track B Item 4) | queued |
+| 18 | Benchmark architecture redesign | queued |
+| 19 | YAML cost calculator UI | queued |
+| 20 | Validation experiments + cost-quality frontier | queued |
+| MOAT-A | vada.attalabs.dev dashboard (full transcript + cost attribution) | required pre-launch |
 | MOAT-B | One verticalized team + 100+ validated corpus | required pre-launch |
 
 ---
 
 ## Locked Architectural Decisions
 
-| Decision | Reason |
-|----------|--------|
-| Cognitive router inside `@atta/adapter-langgraph`, not a separate package | Round 23 reviewer convergence; over-modular for V1 |
-| Sparring (2 agents) = default team, not Crucible (4-7) | Round 24 convergence; simpler, faster, easier to debug |
-| Tools ON for reasoning agents, OFF for audit agents | Task 4.5 empirical finding; restricting reasoning tools degrades output |
-| `vada__consult` ships before `vada__deliberate` | Round 24; validates distribution without betting on deliberation thesis first |
-| Direct `@anthropic-ai/sdk` in adapter (not LangChain wrapper) | LangChain wrapper had a `top_p` bug |
-| `Agent.tools: string[]` (not boolean) | Tool-specific config needed; adapter registry maps logical name → Anthropic API type |
-| Recursion limit raised to 150 in LangGraph | Classifier nodes double graph step count; default 25 is insufficient |
-| `BrokeredWorkflow` = the engine's workflow type for single-shot reviewer chains | Distinct from `RoundsWorkflow`; compiled by `compileBrokered` in `@atta/engine` |
+| Decision | Reason | Reference |
+|----------|--------|-----------|
+| Cognitive router inside `@atta/adapter-langgraph`, not a separate package | Round 23 reviewer convergence; over-modular for V1 | — |
+| Sparring (2 agents) = default rounds-audit team, not Crucible (4-7) | Round 24 convergence; simpler, faster, easier to debug | — |
+| Tools ON for reasoning agents, OFF for audit agents | Task 4.5 empirical finding; restricting reasoning tools degrades output | — |
+| `vada__consult` ships before `vada__deliberate` | Round 24; validates distribution without betting on deliberation thesis first | — |
+| Direct `@anthropic-ai/sdk` in adapter (not LangChain wrapper) | LangChain wrapper had a `top_p` bug | — |
+| `Agent.tools: string[]` (not boolean) | Tool-specific config needed; adapter registry maps logical name → Anthropic API type | — |
+| Recursion limit raised to 150 in LangGraph | Classifier nodes double graph step count; default 25 is insufficient | — |
+| Spec ratification via explicit metadata block (not assumption) | Prevents spec/implementation drift like the BYOK gap | D-005 |
+| Decision logs are append-only | Audit trail preserved across supersession events | D-006 |
+| Active YAML specs are unversioned (`crucible.yaml`, not `crucible-v1.yaml`) | Versioning belongs in git history + decision logs; filenames are stable | D-013, D-025 |
+| Single source of truth for vendor metadata at `packages/models/src/vendors.ts` | Four prior prefix-resolution implementations had diverged | D-032 |
+| Adapter dispatches by SDK shape (3 branches: anthropic, google-genai, openai-compat) | Vendor count grows; SDK shape count is small and stable | D-032 |
+| Universal round-based YAML schema (v2) | One model expresses every deliberation pattern; engine compiler treats them uniformly | D-033 |
+| `compileFlow` shape detection preserves v1 Plan node ids | Adapter and route handler depend on the ids; deliberate pragmatic weakening of "zero branches" | D-033 |
+| `RevisionCondition` single-variant (`type: 'contains'`); engine throws on `equals`/`matches` | Honest engine surface; schema reserves the types for future extensibility | D-034 |
 
 ---
 
 ## Reviewer Round Pattern
 
-Architectural decisions get pressure-tested via informal rounds with Gemini, ChatGPT, DeepSeek. Rounds are numbered (17-24 so far). When a major architectural question arises, consider drafting a reviewer round before committing.
+Architectural decisions get pressure-tested via informal rounds with Gemini, ChatGPT, DeepSeek, Grok. Rounds are numbered (17-24+ so far). When a major architectural question arises, consider drafting a reviewer round before committing.
+
+The Vāda Reviewers product team itself (`vada-reviewers.yaml`, `vada-reviewers-synthesis.yaml`) is the productized version of this manual workflow — the same pattern Vāda uses to validate its own design choices is the pattern Vāda sells.
 
 Reviewer responses: `apps/vada-ai/specs/engine/v2-results/`.
 
@@ -115,10 +161,10 @@ Reviewer responses: `apps/vada-ai/specs/engine/v2-results/`.
 
 ## Pre-Public-Launch Requirements
 
-1. `vada__consult` and `vada__deliberate` both active in MCP
-2. At least one verticalized team with 100+ validated corpus questions (MOAT-B)
-3. vada.ai dashboard with full transcript + cost attribution (MOAT-A)
-4. Benchmark data showing measurable value over A0/A1 baselines
+1. `vada__consult` and `vada__deliberate` both active in MCP — ✅ both live
+2. At least one verticalized team with 100+ validated corpus questions (MOAT-B) — queued
+3. vada.attalabs.dev dashboard with full transcript + cost attribution (MOAT-A) — live
+4. Benchmark data showing measurable value over A0/A1 baselines — queued (depends on Phases 17-20)
 
 ---
 
@@ -136,10 +182,10 @@ Reviewer responses: `apps/vada-ai/specs/engine/v2-results/`.
 
 ## What Vāda is NOT
 
-- ❌ A chat app (no dedicated UI)
+- ❌ A chat app (no dedicated UI for free-form chat)
 - ❌ A multi-model aggregator (Poe/Perplexity style)
 - ❌ A frontier model competitor
-- ❌ A developer framework (users don't write code)
+- ❌ A developer framework (users don't write code; they author YAMLs)
 - ❌ A chain-of-thought tool (distinct from sequential-thinking MCP)
 
 ---
@@ -147,6 +193,9 @@ Reviewer responses: `apps/vada-ai/specs/engine/v2-results/`.
 ## Full docs
 
 - `apps/vada-ai/specs/vada-product-spec.md` — full product truth
-- `apps/vada-ai/specs/engine/design-decisions.md` — tech decisions with rationale
+- `apps/vada-ai/specs/yaml-schema-reference.md` — v2 YAML schema definitive reference
+- `apps/vada-ai/specs/generic-flow-refactor.md` — D-033 design document
+- `apps/vada-ai/specs/vada-decisions.md` — architectural decision log
+- `apps/vada-ai/specs/vada-state.md` — current implementation state and open questions
 - `apps/vada-ai/specs/vada-science-of-deliberation.md` — foundational theory
 - `apps/vada-ai/specs/engine/v2-results/` — reviewer rounds
