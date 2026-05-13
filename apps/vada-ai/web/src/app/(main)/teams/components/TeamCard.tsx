@@ -2,9 +2,10 @@
 
 import { Card, CardContent } from '@atta/ui'
 import { Heading } from '@atta/ui/shared'
-import type { DeliberationSpec, SpecAgent } from '@atta/engine'
+import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
 import Link from 'next/link'
+import { getDisplayAgentNames, getFlowAgentCount, getFlowShapeLabel } from '@/lib/flow-helpers'
 
 interface DisplayAgent {
   name: string
@@ -12,45 +13,13 @@ interface DisplayAgent {
   model: string | undefined
 }
 
-function getDisplayAgents(spec: DeliberationSpec): DisplayAgent[] {
-  const agentMap = new Map<string, SpecAgent>(spec.agents.map((a) => [a.name, a]))
-
+function getDisplayAgents(flow: Flow): DisplayAgent[] {
+  const agentMap = new Map<string, FlowAgent>(flow.agents.map((a) => [a.name, a]))
   const lookup = (name: string): DisplayAgent => {
     const a = agentMap.get(name)
     return { name, role: a?.role as AgentRole | undefined, model: a?.model }
   }
-
-  if (spec.flow?.rounds) {
-    return spec.flow.rounds.agents.map(lookup)
-  }
-  if (spec.reviewers && spec.reviewers.length > 0) {
-    const reviewers = spec.reviewers.map((r) => lookup(r.agent))
-    const synthName = spec.flow?.synthesis?.agent
-    if (synthName) reviewers.push(lookup(synthName))
-    return reviewers
-  }
-  return spec.agents.slice(0, 1).map((a) => lookup(a.name))
-}
-
-function getAgentCount(spec: DeliberationSpec): number {
-  if (spec.flow?.rounds) return spec.flow.rounds.agents.length
-  if (spec.reviewers) {
-    const hasSynth = spec.flow?.synthesis != null
-    return spec.reviewers.length + (hasSynth ? 1 : 0)
-  }
-  return 1
-}
-
-function getShapeLabel(spec: DeliberationSpec): string {
-  if (spec.flow?.rounds) {
-    const { count } = spec.flow.rounds
-    return `${count} rounds`
-  }
-  if (spec.reviewers) {
-    const hasSynth = spec.flow?.synthesis != null
-    return hasSynth ? 'reviewers + synthesis' : 'parallel reviewers'
-  }
-  return 'single shot'
+  return getDisplayAgentNames(flow).map(lookup)
 }
 
 type SphereSize = 'sm' | 'md' | 'lg' | 'xl'
@@ -80,10 +49,10 @@ function Sphere({
   )
 }
 
-export function TeamCard({ spec }: { spec: DeliberationSpec }) {
+export function TeamCard({ spec }: { spec: Flow }) {
   const agents = getDisplayAgents(spec)
-  const count = getAgentCount(spec)
-  const shapeLabel = getShapeLabel(spec)
+  const count = getFlowAgentCount(spec)
+  const shapeLabel = getFlowShapeLabel(spec)
   const defaultModel = spec.defaults.model
 
   const sphereProps = { specId: spec.id, defaultModel }
@@ -91,7 +60,6 @@ export function TeamCard({ spec }: { spec: DeliberationSpec }) {
   let spheres: React.ReactNode
 
   if (agents.length <= 2) {
-    // 2 agents: large, fills the row
     spheres = (
       <div className='flex justify-around items-center py-4'>
         {agents.map((a) => (
@@ -100,8 +68,6 @@ export function TeamCard({ spec }: { spec: DeliberationSpec }) {
       </div>
     )
   } else if (agents.length === 3) {
-    // 3 agents: downward triangle — 3-col × 2-row grid
-    // row 1 col 1, row 1 col 3, row 2 col 2
     const [a0, a1, a2] = [agents.at(0), agents.at(1), agents.at(2)]
     spheres = (
       <div className='grid grid-cols-3 grid-rows-2 gap-4 py-2'>

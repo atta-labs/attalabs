@@ -1,4 +1,4 @@
-schema_version: "1.0"
+schema_version: "2.0"
 id: crucible
 display_name: Crucible
 description: "Four agents debate across three rounds. Strategist proposes, Critic challenges, Devil's Advocate breaks, Synthesizer reconciles. Two auditors verify before delivery."
@@ -199,14 +199,16 @@ agents:
       If a central factual claim is demonstrably incorrect: output "FLAG: [exact claim] — [what the evidence shows]".
       Report at most one FLAG — the most consequential error only. Vague objections are not actionable.
 
-flow:
-  rounds:
-    count: 3
+rounds:
+  - id: debate
+    name: Debate
+    layout: serial
+    repeats: 3
     agents:
-      - Strategist
-      - Critic
-      - "Devil's Advocate"
-      - Synthesizer
+      - name: Strategist
+      - name: Critic
+      - name: "Devil's Advocate"
+      - name: Synthesizer
     message_template: |
       {{#if roundIndex}}
       The following is the deliberation transcript so far:
@@ -232,8 +234,11 @@ flow:
       Your current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]
       {{/if}}
 
-  synthesis:
-    agent: ConclusionSynthesizer
+  - id: synthesis
+    name: Synthesis
+    layout: serial
+    agents:
+      - name: ConclusionSynthesizer
     message_template: |
       {{#if isRevision}}
       The original question is: "{{question}}"
@@ -302,19 +307,22 @@ flow:
       GENERATE THE JSON NOW:
       {{/if}}
 
-  audit:
+  - id: audit
+    name: Audit
+    layout: serial
     agents:
-      - BlindCritic
-      - FactChecker
+      - name: BlindCritic
+      - name: FactChecker
     message_template: |
       Principal's question: {{question}}
 
       Conclusion to Review:
       {{conclusion}}
-    revision:
-      max: 1
-      trigger:
+    on_failure:
+      action: revise
+      target: synthesis
+      max_revisions: 1
+      signal:
         type: contains
         value: FLAG
         case_sensitive: false
-      logic: any

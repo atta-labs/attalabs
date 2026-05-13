@@ -6,7 +6,7 @@
 // SECURITY: Provider keys are read from server-side encrypted store per request.
 // Keys are never persisted beyond the request lifetime.
 import 'server-only'
-import { compileSpec, loadYamlFromCatalog } from '@atta/engine'
+import { compileFlow, loadYamlFromCatalog } from '@atta/engine'
 import type { ExecutionHooks, Plan } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
 import type { ProviderKeys } from '@atta/adapter-langgraph'
@@ -65,8 +65,8 @@ async function runLangGraph(
   if (!session.specId) {
     throw new Error(`Session ${sessionId} has no specId; cannot resume deliberation.`)
   }
-  const spec = loadYamlFromCatalog(session.specId)
-  const plan = compileSpec(spec, session.question, session.modelId ?? 'claude-sonnet-4-6')
+  const flow = loadYamlFromCatalog(session.specId)
+  const plan = compileFlow(flow, session.question, session.modelId ?? 'claude-sonnet-4-6')
 
   const adapter = new LangGraphAdapter({
     apiKey,

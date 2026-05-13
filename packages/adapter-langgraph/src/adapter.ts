@@ -291,7 +291,7 @@ export class LangGraphAdapter implements Adapter {
       }
     }
 
-    // Terminal output: resolved from explicit responseNode set by compileSpec().
+    // Terminal output: resolved from explicit responseNode set by compileFlow().
     const terminalOutput = state.plan.responseNode ? state.outputs[state.plan.responseNode] : undefined
 
     // If the terminal/synthesis node itself failed, surface as FAILED conclusion.
@@ -339,7 +339,7 @@ export class LangGraphAdapter implements Adapter {
       if (finalConditionalEdge) {
         const auditWouldTrigger = this.evaluateStateCondition(finalConditionalEdge.condition, state.outputs)
 
-        // maxRevisions is always set by compileSpec().
+        // maxRevisions is always set by compileFlow().
         const maxPossibleRevisions = state.plan.maxRevisions ?? 0
 
         // If final audit triggers revision AND we've done all revisions, it's MAX_REVISIONS

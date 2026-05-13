@@ -1,4 +1,4 @@
-schema_version: "1.0"
+schema_version: "2.0"
 id: vada-reviewers-synthesis
 display_name: "Reviewers + Synthesis"
 description: "Three different LLMs review independently, then a synthesizer extracts consensus, contradictions, and unique insights into a structured analysis."
@@ -220,28 +220,31 @@ agents:
       You are not the primary AI. You do not close the loop with the user. Your
       output is an input to the primary AI's conversational integration.
 
-reviewers:
-  - agent: Gemini
-    message_template: "{{question}}"
-  - agent: GPT
-    message_template: "{{question}}"
-  - agent: Grok
-    message_template: "{{question}}"
+rounds:
+  - id: review
+    name: Independent Review
+    layout: parallel
+    agents:
+      - name: Gemini
+        message_template: "{{question}}"
+      - name: GPT
+        message_template: "{{question}}"
+      - name: Grok
+        message_template: "{{question}}"
 
-flow:
-  synthesis:
-    agent: Synthesizer
+  - id: synthesis
+    name: Synthesis
+    layout: serial
+    agents:
+      - name: Synthesizer
     message_template: |
       The original question is: "{{question}}"
 
       Reviewer responses (vendor-attributed):
-      {{#each reviewerResponses}}
-      [{{this.vendor}}] {{this.response}}
+      {{#each allPreviousOutputs}}
+      [{{this.agentName}}] {{this.content}}
       {{/each}}
 
       Please synthesize these responses into the structured format defined in your system prompt: Participants, Consensus, Unique Insights, Contradictions, Rejected, Recommendations.
 
       Weight GROUNDED findings over INFERRED ones when resolving contradictions. Output only JSON (optionally wrapped in ```json ... ```).
-
-response:
-  mode: synthesize

@@ -1,4 +1,4 @@
-schema_version: "1.0"
+schema_version: "2.0"
 id: a0-baseline
 display_name: A0
 description: Single-agent direct answer. No deliberation. Baseline for benchmarking.
@@ -12,7 +12,10 @@ agents:
     description: Naive single-shot baseline — direct answer, no framing
     system_prompt: "Answer the user's question directly. No framing, no caveats. If code is useful, include it."
 
-flow:
-  synthesis:
-    agent: A0
+rounds:
+  - id: answer
+    name: Answer
+    layout: serial
+    agents:
+      - name: A0
     message_template: "{{question}}"

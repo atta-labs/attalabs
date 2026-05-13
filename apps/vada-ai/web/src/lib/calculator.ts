@@ -1,4 +1,5 @@
-import type { DeliberationSpec } from '@atta/engine'
+import type { Flow } from '@atta/engine'
+import { detectShape } from './flow-helpers'
 
 export const MODEL_PRICES: Record<string, { input: number; output: number }> = {
   'claude-sonnet-4-6': { input: 3.0, output: 15.0 },
@@ -64,19 +65,25 @@ function synthInput(roundCount: number, agentCount: number): { low: number; high
   }
 }
 
-export function calculateCost(spec: DeliberationSpec, modelId: string): CalculatorResult {
+export function calculateCost(flow: Flow, modelId: string): CalculatorResult {
   const steps: StepEstimate[] = []
   const prices = MODEL_PRICES[modelId] ?? MODEL_PRICES['claude-sonnet-4-6']!
+  const shape = detectShape(flow)
 
-  if (spec.flow?.rounds) {
-    const { count: roundCount, agents: roundAgents } = spec.flow.rounds
-    const agentCount = roundAgents.length
+  if (shape === 'rounds-audit') {
+    const debateRound = flow.rounds[0]!
+    const auditRoundIdx = flow.rounds.findIndex((r) => r.onFailure?.action === 'revise')
+    const synthRound = flow.rounds[auditRoundIdx - 1]
+    const auditRound = flow.rounds[auditRoundIdx]!
+
+    const roundCount = debateRound.repeats ?? 1
+    const agentCount = debateRound.agents.length
 
     for (let ri = 0; ri < roundCount; ri++) {
-      for (const agentName of roundAgents) {
+      for (const agent of debateRound.agents) {
         const input = roundAgentInput(ri, agentCount)
         steps.push({
-          name: `${agentName} (round ${ri + 1})`,
+          name: `${agent.name} (round ${ri + 1})`,
           role: 'roundAgent',
           inputLow: input.low,
           inputHigh: input.high,
@@ -87,9 +94,9 @@ export function calculateCost(spec: DeliberationSpec, modelId: string): Calculat
     }
 
     const synthInp = synthInput(roundCount, agentCount)
-    const synthAgent = spec.flow.synthesis?.agent ?? 'Synthesizer'
+    const synthAgentName = synthRound?.agents[0]?.name ?? 'Synthesizer'
     steps.push({
-      name: synthAgent,
+      name: synthAgentName,
       role: 'synthesizer',
       inputLow: synthInp.low,
       inputHigh: synthInp.high,
@@ -97,10 +104,9 @@ export function calculateCost(spec: DeliberationSpec, modelId: string): Calculat
       outputHigh: OUTPUT_TOKENS.synthesizer.high
     })
 
-    const auditAgents = spec.flow?.audit?.agents ?? []
-    for (const auditor of auditAgents) {
+    for (const agent of auditRound.agents) {
       steps.push({
-        name: auditor,
+        name: agent.name,
         role: 'auditor',
         inputLow: BRIEF_TOKENS + SYSTEM_PROMPT_TOKENS + OUTPUT_TOKENS.synthesizer.low,
         inputHigh: BRIEF_TOKENS + SYSTEM_PROMPT_TOKENS + OUTPUT_TOKENS.synthesizer.high,
@@ -108,10 +114,30 @@ export function calculateCost(spec: DeliberationSpec, modelId: string): Calculat
         outputHigh: OUTPUT_TOKENS.auditor.high
       })
     }
-  } else if (spec.reviewers) {
-    for (const reviewer of spec.reviewers) {
+
+    const agentCount2 = debateRound.agents.length
+    const inputLow = steps.reduce((sum, s) => sum + s.inputLow, 0)
+    const inputHigh = steps.reduce((sum, s) => sum + s.inputHigh, 0)
+    const outputLow = steps.reduce((sum, s) => sum + s.outputLow, 0)
+    const outputHigh = steps.reduce((sum, s) => sum + s.outputHigh, 0)
+    const costLow = (inputLow * prices.input + outputLow * prices.output) / 1_000_000
+    const costHigh = (inputHigh * prices.input + outputHigh * prices.output) / 1_000_000
+    return {
+      stepCount: steps.length,
+      agentCount: agentCount2,
+      steps,
+      inputTokens: { low: inputLow, high: inputHigh },
+      outputTokens: { low: outputLow, high: outputHigh },
+      cost: { low: costLow, high: costHigh }
+    }
+  }
+
+  if (shape === 'brokered-no-synth' || shape === 'brokered-synth') {
+    const reviewRound = flow.rounds[0]!
+
+    for (const agent of reviewRound.agents) {
       steps.push({
-        name: reviewer.agent,
+        name: agent.name,
         role: 'reviewer',
         inputLow: BRIEF_TOKENS + SYSTEM_PROMPT_TOKENS,
         inputHigh: BRIEF_TOKENS + SYSTEM_PROMPT_TOKENS,
@@ -120,11 +146,12 @@ export function calculateCost(spec: DeliberationSpec, modelId: string): Calculat
       })
     }
 
-    if (spec.flow?.synthesis) {
-      const reviewerOutputLow = spec.reviewers.length * OUTPUT_TOKENS.reviewer.low
-      const reviewerOutputHigh = spec.reviewers.length * OUTPUT_TOKENS.reviewer.high
+    if (shape === 'brokered-synth') {
+      const synthRound = flow.rounds[flow.rounds.length - 1]!
+      const reviewerOutputLow = reviewRound.agents.length * OUTPUT_TOKENS.reviewer.low
+      const reviewerOutputHigh = reviewRound.agents.length * OUTPUT_TOKENS.reviewer.high
       steps.push({
-        name: spec.flow.synthesis.agent ?? 'Synthesizer',
+        name: synthRound.agents[0]!.name,
         role: 'synthesizer',
         inputLow: BRIEF_TOKENS + SYSTEM_PROMPT_TOKENS + reviewerOutputLow,
         inputHigh: BRIEF_TOKENS + SYSTEM_PROMPT_TOKENS + reviewerOutputHigh,
@@ -132,31 +159,43 @@ export function calculateCost(spec: DeliberationSpec, modelId: string): Calculat
         outputHigh: OUTPUT_TOKENS.synthesizer.high
       })
     }
-  } else {
-    steps.push({
-      name: spec.agents[0]?.name ?? 'Agent',
-      role: 'roundAgent',
-      inputLow: BRIEF_TOKENS + SYSTEM_PROMPT_TOKENS,
-      inputHigh: BRIEF_TOKENS + SYSTEM_PROMPT_TOKENS,
-      outputLow: OUTPUT_TOKENS.roundAgent.low,
-      outputHigh: OUTPUT_TOKENS.roundAgent.high
-    })
+
+    const agentCount = reviewRound.agents.length + (shape === 'brokered-synth' ? 1 : 0)
+    const inputLow = steps.reduce((sum, s) => sum + s.inputLow, 0)
+    const inputHigh = steps.reduce((sum, s) => sum + s.inputHigh, 0)
+    const outputLow = steps.reduce((sum, s) => sum + s.outputLow, 0)
+    const outputHigh = steps.reduce((sum, s) => sum + s.outputHigh, 0)
+    const costLow = (inputLow * prices.input + outputLow * prices.output) / 1_000_000
+    const costHigh = (inputHigh * prices.input + outputHigh * prices.output) / 1_000_000
+    return {
+      stepCount: steps.length,
+      agentCount,
+      steps,
+      inputTokens: { low: inputLow, high: inputHigh },
+      outputTokens: { low: outputLow, high: outputHigh },
+      cost: { low: costLow, high: costHigh }
+    }
   }
+
+  // solo
+  steps.push({
+    name: flow.agents[0]?.name ?? 'Agent',
+    role: 'roundAgent',
+    inputLow: BRIEF_TOKENS + SYSTEM_PROMPT_TOKENS,
+    inputHigh: BRIEF_TOKENS + SYSTEM_PROMPT_TOKENS,
+    outputLow: OUTPUT_TOKENS.roundAgent.low,
+    outputHigh: OUTPUT_TOKENS.roundAgent.high
+  })
 
   const inputLow = steps.reduce((sum, s) => sum + s.inputLow, 0)
   const inputHigh = steps.reduce((sum, s) => sum + s.inputHigh, 0)
   const outputLow = steps.reduce((sum, s) => sum + s.outputLow, 0)
   const outputHigh = steps.reduce((sum, s) => sum + s.outputHigh, 0)
-
   const costLow = (inputLow * prices.input + outputLow * prices.output) / 1_000_000
   const costHigh = (inputHigh * prices.input + outputHigh * prices.output) / 1_000_000
-
-  const agentCount =
-    spec.flow?.rounds?.agents.length ?? (spec.reviewers ? spec.reviewers.length + (spec.flow?.synthesis ? 1 : 0) : 1)
-
   return {
     stepCount: steps.length,
-    agentCount,
+    agentCount: 1,
     steps,
     inputTokens: { low: inputLow, high: inputHigh },
     outputTokens: { low: outputLow, high: outputHigh },

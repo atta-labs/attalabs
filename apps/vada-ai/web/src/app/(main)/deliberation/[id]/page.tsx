@@ -55,7 +55,10 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
     if (!session.specId) return { teamName: 'Deliberation', hasSynthesizer: false }
     try {
       const spec = loadYamlFromCatalog(session.specId)
-      return { teamName: spec.displayName, hasSynthesizer: !!spec.flow?.synthesis }
+      const hasSynth =
+        spec.rounds.some((r) => r.onFailure?.action === 'revise') ||
+        (spec.rounds.length > 1 && spec.rounds[spec.rounds.length - 1]!.agents.length === 1)
+      return { teamName: spec.displayName, hasSynthesizer: hasSynth }
     } catch {
       return { teamName: 'Deliberation', hasSynthesizer: false }
     }

@@ -1,5 +1,5 @@
-import { loadSpec } from '@atta/engine'
-import { compileSpec } from '@atta/engine'
+import { loadFlow } from '@atta/engine'
+import { compileFlow } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -35,7 +35,7 @@ if (reviewersWithoutKeys.length > 0) {
 
 // Load the YAML spec
 const specYaml = readFileSync(join(import.meta.dir, '../../yamls/vada-reviewers.yaml'), 'utf-8')
-const spec = loadSpec(specYaml)
+const spec = loadFlow(specYaml)
 
 console.info(`\n✓ Spec loaded: ${spec.id}`)
 if (!spec.reviewers) {
@@ -64,9 +64,9 @@ Brief: Pressure-test this recommendation. Is API-mode-first the right choice? Wo
 
 Original question: Should Vāda Reviewers v1 ship with API mode only or with both API and CLI modes?`
 
-const plan = compileSpec(spec, testQuestion, compilationModel)
+const plan = compileFlow(spec, testQuestion, compilationModel)
 if (!plan?.graph?.nodes) {
-  console.error('ERROR: compileSpec returned invalid plan')
+  console.error('ERROR: compileFlow returned invalid plan')
   process.exit(1)
 }
 console.info('✓ Plan compiled')

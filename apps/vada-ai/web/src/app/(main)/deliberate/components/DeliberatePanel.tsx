@@ -1,6 +1,6 @@
 'use client'
 
-import type { DeliberationSpec, SpecAgent } from '@atta/engine'
+import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
 import { Button, Checkbox, Card, CardContent } from '@atta/ui'
 import { ArrowRight, GitCompare, Loader2, Lock, Settings2 } from 'lucide-react'
@@ -14,6 +14,7 @@ import { ReviewerConfigModal } from './ReviewerConfigModal'
 import { getReviewerConfig, resolveVendor } from '@/lib/reviewer-models'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
 import { useCatalog } from '@atta/models'
+import { getDisplayAgentNames, getFlowAgentCount, getFlowShapeLabel } from '@/lib/flow-helpers'
 
 interface DisplayAgent {
   name: string
@@ -21,46 +22,16 @@ interface DisplayAgent {
   model: string | undefined
 }
 
-function getDisplayAgents(spec: DeliberationSpec): DisplayAgent[] {
-  const agentMap = new Map<string, SpecAgent>(spec.agents.map((a) => [a.name, a]))
+function getDisplayAgents(flow: Flow): DisplayAgent[] {
+  const agentMap = new Map<string, FlowAgent>(flow.agents.map((a) => [a.name, a]))
   const lookup = (name: string): DisplayAgent => {
     const a = agentMap.get(name)
     return { name, role: a?.role as AgentRole | undefined, model: a?.model }
   }
-  if (spec.flow?.rounds) return spec.flow.rounds.agents.map(lookup)
-  if (spec.reviewers && spec.reviewers.length > 0) {
-    const reviewers = spec.reviewers.map((r) => lookup(r.agent))
-    const synthName = spec.flow?.synthesis?.agent
-    if (synthName) reviewers.push(lookup(synthName))
-    return reviewers
-  }
-  return spec.agents.slice(0, 1).map((a) => lookup(a.name))
+  return getDisplayAgentNames(flow).map(lookup)
 }
 
-function getAgentCount(spec: DeliberationSpec): number {
-  if (spec.flow?.rounds) return spec.flow.rounds.agents.length
-  if (spec.reviewers) {
-    const hasSynth = spec.flow?.synthesis != null
-    return spec.reviewers.length + (hasSynth ? 1 : 0)
-  }
-  return 1
-}
-
-function getShapeLabel(spec: DeliberationSpec): string {
-  if (spec.flow?.rounds) return `${spec.flow.rounds.count} rounds`
-  if (spec.reviewers) return spec.flow?.synthesis != null ? 'reviewers + synthesis' : 'parallel reviewers'
-  return 'single shot'
-}
-
-function MiniTeamCard({
-  spec,
-  isSelected,
-  onClick
-}: {
-  spec: DeliberationSpec
-  isSelected: boolean
-  onClick: () => void
-}) {
+function MiniTeamCard({ spec, isSelected, onClick }: { spec: Flow; isSelected: boolean; onClick: () => void }) {
   return (
     <Button
       variant={isSelected ? 'default' : 'outline'}
@@ -70,7 +41,7 @@ function MiniTeamCard({
       <div className='flex flex-col items-center justify-center gap-2  text-center w-full'>
         <span className='font-sans text-sm font-semibold text-foreground leading-tight w-full'>{spec.displayName}</span>
         <span className='font-mono text-[8px] uppercase tracking-widest text-muted-foreground w-full'>
-          {getAgentCount(spec)} agents · {getShapeLabel(spec)}
+          {getFlowAgentCount(spec)} agents · {getFlowShapeLabel(spec)}
         </span>
       </div>
     </Button>
@@ -78,7 +49,7 @@ function MiniTeamCard({
 }
 
 interface DeliberatePanelProps {
-  specs: DeliberationSpec[]
+  specs: Flow[]
   selectedSpecId: string
   onSelectSpec: (id: string) => void
   globalModel: ModelSelection | null
@@ -120,26 +91,14 @@ export function DeliberatePanel({
   const specAgentNames = useMemo(() => agents.map((a) => a.name), [agents])
   const catalog = useCatalog()
 
-  // localStorage is undefined on the server. Reading it during render produces
-  // different HTML on server vs client → hydration mismatch. Defer to after
-  // mount so the first client render matches the server (no userConfig), then
-  // re-render with the real value once we're hydrated. We re-read on every
-  // render after mount so spheres update immediately when the modal saves.
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
   }, [])
-  // Single source of truth: vada:team:<specId> — same key/format for every
-  // team type. GlobalModelSelector writes all agent names when user picks one
-  // model; ReviewerConfigModal writes per-agent. resolveModel reads from one place.
   const teamConfig: ReviewerConfig | null = mounted ? getReviewerConfig(selectedSpecId) : null
 
   const resolveModel = (a: DisplayAgent): string | undefined => teamConfig?.[a.name] ?? undefined
 
-  // A slot is available when a model is resolved AND its vendor key is configured.
-  // Empty editable slots (no model picked yet) are NOT available — they need configuration.
-  // Ollama is local — no key concept — so a model routed via 'ollama' is always available
-  // when picked (the picker only surfaces ollama models if the local server is reachable).
   const isSlotAvailable = (a: DisplayAgent): boolean => {
     const model = resolveModel(a)
     if (!model) return false
@@ -195,7 +154,7 @@ export function DeliberatePanel({
               <div className='space-y-0.5'>
                 <h2 className='font-serif text-xl text-foreground leading-tight'>{selectedSpec.displayName}</h2>
                 <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
-                  {getAgentCount(selectedSpec)} agents · {getShapeLabel(selectedSpec)}
+                  {getFlowAgentCount(selectedSpec)} agents · {getFlowShapeLabel(selectedSpec)}
                 </p>
               </div>
 

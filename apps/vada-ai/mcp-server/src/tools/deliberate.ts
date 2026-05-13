@@ -1,4 +1,4 @@
-import { compileSpec } from '@atta/engine'
+import { compileFlow } from '@atta/engine'
 import { LangGraphAdapter, createMultiVendorLlmCall } from '@atta/adapter-langgraph'
 import type { ProviderKeys } from '@atta/adapter-langgraph'
 import { lookupSpec } from '../spec-registry'
@@ -30,8 +30,8 @@ export interface DeliberateOutput {
 }
 
 export async function runDeliberate(input: DeliberateInput, providerKeys: ProviderKeys): Promise<DeliberateOutput> {
-  const spec = lookupSpec(input.team ?? 'vada-reviewers')
-  const plan = compileSpec(spec, input.question, DEFAULT_MODEL)
+  const flow = lookupSpec(input.team ?? 'vada-reviewers')
+  const plan = compileFlow(flow, input.question, DEFAULT_MODEL)
 
   const llmCall = createMultiVendorLlmCall(providerKeys)
   const adapter = new LangGraphAdapter({ apiKey: providerKeys.anthropic })

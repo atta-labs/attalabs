@@ -1,4 +1,4 @@
-import { loadSpec, compileSpec } from '@atta/engine'
+import { loadFlow, compileFlow } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
 import { RunInputSchema, type RunInput } from '../schema'
 
@@ -33,9 +33,9 @@ export async function runDeliberation(input: unknown, apiKey: string): Promise<R
 
 async function executeDeliberation(input: RunInput, apiKey: string): Promise<RunOutput> {
   try {
-    const spec = loadSpec(input.yaml)
+    const flow = loadFlow(input.yaml)
     const model = input.modelOverrides?.default ?? DEFAULT_MODEL
-    const plan = compileSpec(spec, input.question, model)
+    const plan = compileFlow(flow, input.question, model)
 
     const adapter = new LangGraphAdapter({ apiKey })
     const startedAt = Date.now()

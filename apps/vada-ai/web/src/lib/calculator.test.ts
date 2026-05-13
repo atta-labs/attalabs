@@ -1,20 +1,14 @@
 import { test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { loadSpec } from '@atta/engine'
+import { loadFlow } from '@atta/engine'
 import { calculateCost } from './calculator'
 
 const YAMLS_DIR = join(import.meta.dirname, '../../../yamls')
 
 function loadYaml(id: string) {
-  // Try versioned name first, then unversioned
-  try {
-    const yaml = readFileSync(join(YAMLS_DIR, `${id}-v1.yaml`), 'utf-8')
-    return loadSpec(yaml)
-  } catch {
-    const yaml = readFileSync(join(YAMLS_DIR, `${id}.yaml`), 'utf-8')
-    return loadSpec(yaml)
-  }
+  const yaml = readFileSync(join(YAMLS_DIR, `${id}.yaml`), 'utf-8')
+  return loadFlow(yaml)
 }
 
 test('crucible costs more than vada-reviewers', () => {

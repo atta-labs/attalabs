@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { DeliberationSpec } from '@atta/engine'
+import type { Flow } from '@atta/engine'
 import { Button } from '@atta/ui/components/button'
 import {
   DropdownMenu,
@@ -20,7 +20,7 @@ function fmtCost(n: number): string {
   return `$${n.toFixed(2)}`
 }
 
-export function CalculatorStats({ spec }: { spec: DeliberationSpec }) {
+export function CalculatorStats({ spec }: { spec: Flow }) {
   const defaultModelId = Object.keys(MODEL_PRICES).includes(spec.defaults.model)
     ? spec.defaults.model
     : 'claude-sonnet-4-6'

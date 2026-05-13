@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
-import { loadSpec, compileSpec } from '@atta/engine'
+import { loadFlow, compileFlow } from '@atta/engine'
 import { planToVisualNodes } from './planToVisualNodes'
 
 // Catalog YAMLs live at apps/vada-ai/yamls/
@@ -10,8 +10,8 @@ const YAMLS_DIR = join(import.meta.dirname, '../../../apps/vada-ai/yamls')
 
 function visualize(id: string) {
   const yaml = readFileSync(join(YAMLS_DIR, `${id}.yaml`), 'utf-8')
-  const spec = loadSpec(yaml)
-  const plan = compileSpec(spec, 'Test question')
+  const flow = loadFlow(yaml)
+  const plan = compileFlow(flow, 'Test question')
   return planToVisualNodes(plan)
 }
 
@@ -170,16 +170,17 @@ describe('planToVisualNodes — rounds workflows', () => {
     }
   })
 
-  it('rounds: cross-round edges connect last-agent-of-R to all agents of R+1', () => {
+  it('rounds: cross-round edge connects last-agent-of-R to first-agent-of-R+1', () => {
+    // Implementation emits a single representative edge per round transition (last→first)
+    // to avoid visual noise from all-to-all fan-out.
     const { rounds, edges } = visualize('sparring')
     for (let ri = 0; ri < rounds.length - 1; ri++) {
       const currentRound = rounds[ri]!
       const nextRound = rounds[ri + 1]!
       const lastAgent = currentRound.agentNodeIds[currentRound.agentNodeIds.length - 1]!
-      for (const nextAgentId of nextRound.agentNodeIds) {
-        const edge = edges.find((e) => e.source === lastAgent && e.target === nextAgentId)
-        expect(edge, `missing cross-round edge ${lastAgent}→${nextAgentId}`).toBeDefined()
-      }
+      const firstOfNext = nextRound.agentNodeIds[0]!
+      const edge = edges.find((e) => e.source === lastAgent && e.target === firstOfNext)
+      expect(edge, `missing cross-round edge ${lastAgent}→${firstOfNext}`).toBeDefined()
     }
   })
 })

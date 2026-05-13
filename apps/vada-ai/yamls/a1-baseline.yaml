@@ -1,4 +1,4 @@
-schema_version: "1.0"
+schema_version: "2.0"
 id: a1-baseline
 display_name: A1
 description: Single-agent structured answer simulating multi-agent output. Baseline for benchmarking.
@@ -66,7 +66,10 @@ agents:
       - For technical questions with a clear best practice, state it cleanly while still including relevant conditionals and caveats.
       - Favor precision and information density.
 
-flow:
-  synthesis:
-    agent: A1
+rounds:
+  - id: answer
+    name: Answer
+    layout: serial
+    agents:
+      - name: A1
     message_template: "{{question}}"

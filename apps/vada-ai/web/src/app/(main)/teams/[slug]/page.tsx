@@ -1,4 +1,4 @@
-import { listPublicSpecs, compileSpec } from '@atta/engine'
+import { listPublicSpecs, compileFlow } from '@atta/engine'
 import { notFound } from 'next/navigation'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { TeamHeader } from './components/TeamHeader'
@@ -14,7 +14,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ slu
 
   if (!spec) notFound()
 
-  const plan = compileSpec(spec, PLACEHOLDER_QUESTION)
+  const plan = compileFlow(spec, PLACEHOLDER_QUESTION)
 
   return (
     <div className='mx-auto w-full max-w-5xl space-y-8 px-6 py-12'>

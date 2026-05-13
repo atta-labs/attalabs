@@ -1,4 +1,4 @@
-import { compileSpec, loadYamlFromCatalog } from '@atta/engine'
+import { compileFlow, loadYamlFromCatalog } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
@@ -18,7 +18,7 @@ for (const question of questions) {
   console.log(`Question: ${question}`)
   console.log('='.repeat(80))
 
-  const plan = compileSpec(spec, question, model)
+  const plan = compileFlow(spec, question, model)
   const conclusion = await adapter.execute({ plan, customVars: {}, timeoutMs: 1_200_000 })
 
   console.log(`\nterminalState: ${conclusion.terminalState}`)

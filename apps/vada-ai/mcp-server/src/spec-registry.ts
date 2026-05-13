@@ -1,5 +1,5 @@
 import { listPublicSpecs as engineListPublicSpecs, loadYamlFromCatalog } from '@atta/engine'
-import type { DeliberationSpec } from '@atta/engine'
+import type { Flow } from '@atta/engine'
 
 // MCP-only: maps short caller-friendly aliases to canonical spec IDs.
 // New YAMLs without aliases are callable by their full ID.
@@ -10,7 +10,7 @@ const ALIASES: Record<string, string> = {
   a1: 'a1-baseline'
 }
 
-export function lookupSpec(nameOrId: string): DeliberationSpec {
+export function lookupSpec(nameOrId: string): Flow {
   const id = ALIASES[nameOrId] ?? nameOrId
   try {
     return loadYamlFromCatalog(id)
@@ -20,7 +20,7 @@ export function lookupSpec(nameOrId: string): DeliberationSpec {
   }
 }
 
-export function listPublicSpecs(): DeliberationSpec[] {
+export function listPublicSpecs(): Flow[] {
   return engineListPublicSpecs()
 }
 

@@ -57,192 +57,14 @@ export type RevisionCondition =
     }
 
 // =============================================================================
-// Group 2: Workflow union + three variants
+// Group 2: (removed — Workflow union and variants live in YAML specs / compileFlow)
 // =============================================================================
 
-/**
- * A solo workflow — a single agent runs once and produces the conclusion directly.
- * No rounds, no auditing, no revision loop.
- */
-export interface SoloWorkflow {
-  type: 'solo'
-}
-
-/**
- * Base fields shared by all RoundsWorkflow variants.
- * Not exported directly — use RoundsWorkflow (the union) at call sites.
- */
-interface RoundsWorkflowBase {
-  type: 'rounds'
-  /** Number of pre-allocated round nodes. Each agent in the team runs once per round. */
-  rounds: number
-  /**
-   * Handlebars template for the user message sent to each agent per round.
-   * See TemplateState for the full list of available template variables.
-   */
-  messageTemplate: string
-  /** Name of the agent whose final output becomes the Conclusion content. */
-  terminalAgent: string
-}
-
-/**
- * RoundsWorkflow with audit + optional revision loop enabled.
- * When `auditAgent` is set, `auditTemplate` and `revisionCondition` are both required.
- *
- * Multi-auditor: pass an array to run multiple audit agents sequentially per revision slot.
- * Revision is triggered if ANY auditor's output satisfies the revisionCondition ("logical OR").
- * Single-string form still works unchanged.
- */
-export interface RoundsWorkflowWithAudit extends RoundsWorkflowBase {
-  /** Name(s) of the agent(s) that evaluate each round. Array = sequential execution; any flag triggers revision. */
-  auditAgent: string | string[]
-  /** Handlebars template for the audit agent's user message. */
-  auditTemplate: string
-  /** Condition applied to the audit agent's output to trigger a revision cycle. */
-  revisionCondition: RevisionCondition
-  /** Maximum revision cycles before forcing termination with MAX_REVISIONS. Defaults to 1. */
-  maxRevisions?: number
-}
-
-/**
- * RoundsWorkflow without audit — N rounds with no revision loop.
- * All audit fields are compile-time excluded.
- */
-export interface RoundsWorkflowNoAudit extends RoundsWorkflowBase {
-  auditAgent?: never
-  auditTemplate?: never
-  revisionCondition?: never
-  maxRevisions?: never
-}
-
-/**
- * A rounds-based workflow where one or more agents collaborate over N rounds,
- * optionally including an audit+revision loop.
- *
- * Discriminated on the presence of `auditAgent`:
- * - With auditAgent: full revision loop with condition checking
- * - Without auditAgent: N rounds, terminal agent concludes, no revisions
- */
-export type RoundsWorkflow = RoundsWorkflowWithAudit | RoundsWorkflowNoAudit
-
-/** Type alias for the audit-enabled rounds variant. Useful in Plan compilation logic. */
-export type RoundsAuditConfig = RoundsWorkflowWithAudit
-/** Type alias for the shared rounds base fields. Useful in Plan compilation logic. */
-export type RoundsConfigBase = RoundsWorkflowBase
-
-/**
- * A single step in a custom workflow.
- * `input` is a Handlebars template with access to question and prior step outputs.
- */
-export interface WorkflowStep {
-  /** Name of the agent to invoke for this step. Must exist in the Team's agents array. */
-  agent: string
-  /**
-   * Handlebars template for the user message passed to this agent.
-   * Available variables: {{question}}, {{step0.output}}, {{step1.output}}, …
-   */
-  input: string
-}
-
-/**
- * A fully custom workflow defined as an ordered sequence of steps.
- * Each step nominates an agent and a Handlebars-templated input.
- */
-export interface CustomWorkflow {
-  type: 'custom'
-  config: {
-    steps: WorkflowStep[]
-  }
-}
-
-/**
- * A single Brokered reviewer — one agent with its messageTemplate.
- */
-export interface BrokeredReviewer {
-  /** Must match an Agent.name in the Team's agents array. */
-  agentName: string
-  /** Handlebars template for this reviewer's user message. Available: {{question}}. */
-  messageTemplate: string
-}
-
-/**
- * Brokered workflow — sequential, independent reviewer consultations.
- * Each reviewer runs once with no cross-reviewer context.
- * No rounds, no audit, no revision.
- *
- * Used by vada__consult (MCP Brokered mode).
- * Compile with compileBrokered → sequential chain of solo-role nodes.
- *
- * When `synthesis` is present, a final synthesis node runs after all reviewers
- * and its output becomes the Conclusion content (responseMode: 'synthesize').
- * Without `synthesis`, all reviewer outputs are concatenated (responseMode: 'concatenate').
- */
-export interface BrokeredWorkflow {
-  type: 'brokered'
-  reviewers: BrokeredReviewer[]
-  /** V1 only supports sequential execution. Must be false or omitted. */
-  parallel?: false
-  /** Optional final synthesis step. When present, this agent runs after all reviewers. */
-  synthesis?: {
-    /** Must reference an agent in the Team's agents array. */
-    agentName: string
-    /** Handlebars template for the synthesizer's user message. Available: {{question}}, {{allPreviousOutputs}}. */
-    messageTemplate: string
-  }
-}
-
-/**
- * The Workflow union — the four execution strategies available to a Team.
- * Discriminated on the `type` field.
- */
-export type Workflow = SoloWorkflow | RoundsWorkflow | CustomWorkflow | BrokeredWorkflow
-
 // =============================================================================
-// Group 4: Team and Baseline
+// Group 4: (removed — Team and Baseline replaced by Flow YAML specs)
 // =============================================================================
 
-/**
- * A named team of agents with a shared workflow strategy.
- * The Team is the primary unit of configuration for the Vāda engine.
- *
- * @example
- * const team: Team = {
- *   name: 'EthicsReview',
- *   description: 'Three-round ethical analysis with skeptical audit',
- *   agents: [philosopher, skeptic, synthesizer],
- *   workflow: { type: 'rounds', rounds: 3, messageTemplate: '...', terminalAgent: 'Synthesizer', auditAgent: 'Skeptic', auditTemplate: '...', revisionCondition: { type: 'contains', value: 'REVISE' } },
- * };
- */
-export interface Team {
-  /** Display name — PascalCase, function-first, no version suffixes. */
-  name: string
-  /** Human-readable description of the team's purpose and deliberation strategy. */
-  description: string
-  /** Inline agent definitions. Agent names must be unique within the team. */
-  agents: Agent[]
-  /** Execution strategy for this team. */
-  workflow: Workflow
-}
-
-/**
- * A single-agent baseline for comparison against multi-agent teams in experiments.
- * Baselines can participate in experiments via baselineAsTeam().
- *
- * @example
- * const baseline: Baseline = {
- *   name: 'SingleShot',
- *   description: 'Direct LLM response without deliberation',
- *   agent: { name: 'Baseline', description: 'Direct responder', systemPrompt: 'Answer concisely.' },
- * };
- */
-export interface Baseline {
-  /** Display name for this baseline configuration. */
-  name: string
-  /** Human-readable description of the baseline strategy. */
-  description: string
-  /** The single agent that produces the baseline response. */
-  agent: Agent
-}
+// NOTE: Groups 2 and 4 removed. RevisionCondition (below) is kept — used by Plan types.
 
 // =============================================================================
 // Group 5: AgentOutput
@@ -343,7 +165,7 @@ export interface Plan {
   teamName: string
   /** The compiled execution graph. */
   graph: PlanGraph
-  // Phase 7.2 additions — set by compileSpec(), absent on legacy compile() plans
+  // Set by compileFlow()
   /** YAML spec ID this plan was compiled from (e.g. "crucible"). */
   specId?: string
   /** How Conclusion.content is assembled: synthesize = terminal node output; concatenate = all outputs joined. */
@@ -711,19 +533,6 @@ export interface Adapter {
 }
 
 // =============================================================================
-// Group 10: Engine interface
-// =============================================================================
-
-/**
- * Parameters for Engine.compile — converts a Team + question into a serializable Plan.
- */
-export interface CompileParams {
-  team: Team
-  question: string
-  model: string
-}
-
-// =============================================================================
 // Group 11: Corpus
 // =============================================================================
 
@@ -798,8 +607,8 @@ export interface ExperimentVariant {
   name: string
   /** Human-readable label for display in dashboards. */
   label: string
-  /** The team that represents this variant. Use baselineAsTeam() for Baseline variants. */
-  team: Team
+  /** The YAML spec ID that represents this variant (e.g. "sparring", "a0-baseline"). */
+  specId: string
   /** Override the experiment-level model for this variant only. */
   modelOverride?: string
 }

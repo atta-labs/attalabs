@@ -69,25 +69,19 @@ export function validateFlow(flow: Flow): void {
     // Rule 4: all agent names referenced in rounds exist in flow.agents
     for (const agentInRound of round.agents) {
       if (!agentNames.has(agentInRound.name)) {
-        throw new InvalidFlowConfigError(
-          `round '${round.id}' references unknown agent '${agentInRound.name}'`,
-          {
-            rule: 'rule-4-agent-refs-exist',
-            reason: `agent '${agentInRound.name}' not found in flow.agents`
-          }
-        )
+        throw new InvalidFlowConfigError(`round '${round.id}' references unknown agent '${agentInRound.name}'`, {
+          rule: 'rule-4-agent-refs-exist',
+          reason: `agent '${agentInRound.name}' not found in flow.agents`
+        })
       }
     }
 
     // Rule 5: repeats >= 1 when present
     if (round.repeats !== undefined && round.repeats < 1) {
-      throw new InvalidFlowConfigError(
-        `round '${round.id}' repeats must be >= 1; got ${round.repeats}`,
-        {
-          rule: 'rule-5-repeats-min-1',
-          reason: `repeats < 1: ${round.repeats}`
-        }
-      )
+      throw new InvalidFlowConfigError(`round '${round.id}' repeats must be >= 1; got ${round.repeats}`, {
+        rule: 'rule-5-repeats-min-1',
+        reason: `repeats < 1: ${round.repeats}`
+      })
     }
 
     // Rule 8: round must have message_template OR every agent must have its own
@@ -109,22 +103,16 @@ export function validateFlow(flow: Flow): void {
       if (action === 'revise') {
         // Rule 7: action='revise' requires both target and max_revisions
         if (target === undefined) {
-          throw new InvalidFlowConfigError(
-            `round '${round.id}' on_failure action='revise' requires target`,
-            {
-              rule: 'rule-7-revise-requires-target-and-max',
-              reason: "action is 'revise' but target is missing"
-            }
-          )
+          throw new InvalidFlowConfigError(`round '${round.id}' on_failure action='revise' requires target`, {
+            rule: 'rule-7-revise-requires-target-and-max',
+            reason: "action is 'revise' but target is missing"
+          })
         }
         if (maxRevisions === undefined) {
-          throw new InvalidFlowConfigError(
-            `round '${round.id}' on_failure action='revise' requires max_revisions`,
-            {
-              rule: 'rule-7-revise-requires-target-and-max',
-              reason: "action is 'revise' but max_revisions is missing"
-            }
-          )
+          throw new InvalidFlowConfigError(`round '${round.id}' on_failure action='revise' requires max_revisions`, {
+            rule: 'rule-7-revise-requires-target-and-max',
+            reason: "action is 'revise' but max_revisions is missing"
+          })
         }
 
         // Rule 6: max_revisions >= 1 when action='revise'
@@ -141,22 +129,16 @@ export function validateFlow(flow: Flow): void {
         // Rule 3: on_failure.target must reference a prior round (no forward refs, no self-refs)
         const targetIdx = roundIndexMap.get(target)
         if (targetIdx === undefined) {
-          throw new InvalidFlowConfigError(
-            `round '${round.id}' on_failure.target '${target}' does not exist`,
-            {
-              rule: 'rule-3-no-forward-target-refs',
-              reason: `target round '${target}' not found in flow.rounds`
-            }
-          )
+          throw new InvalidFlowConfigError(`round '${round.id}' on_failure.target '${target}' does not exist`, {
+            rule: 'rule-3-no-forward-target-refs',
+            reason: `target round '${target}' not found in flow.rounds`
+          })
         }
         if (targetIdx >= roundIdx) {
-          throw new InvalidFlowConfigError(
-            `round '${round.id}' on_failure.target '${target}' is not a prior round`,
-            {
-              rule: 'rule-3-no-forward-target-refs',
-              reason: `target '${target}' at index ${targetIdx} is not prior to '${round.id}' at index ${roundIdx}`
-            }
-          )
+          throw new InvalidFlowConfigError(`round '${round.id}' on_failure.target '${target}' is not a prior round`, {
+            rule: 'rule-3-no-forward-target-refs',
+            reason: `target '${target}' at index ${targetIdx} is not prior to '${round.id}' at index ${roundIdx}`
+          })
         }
       }
     }

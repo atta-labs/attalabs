@@ -1,6 +1,6 @@
 'use client'
 
-import type { DeliberationSpec } from '@atta/engine'
+import type { Flow } from '@atta/engine'
 import { useCatalog } from '@atta/models'
 import { useToastContext } from '@atta/ui'
 import type { FaceStyle } from '@/components/agents'
@@ -59,7 +59,7 @@ interface UseDeliberateFormProps {
   dailyLimit: number
   initialError?: string
   configuredProviders: string[]
-  specs: DeliberationSpec[]
+  specs: Flow[]
   initialTeamId?: string
 }
 
@@ -180,7 +180,7 @@ export function useDeliberateForm({
       if (globalModel.provider === 'ollama') return true
       return configuredProviders.includes(globalModel.provider)
     }
-    const agentNames = currentSpec.flow?.rounds?.agents ?? currentSpec.agents.map((a) => a.name)
+    const agentNames = currentSpec.rounds[0]?.agents.map((a) => a.name) ?? currentSpec.agents.map((a) => a.name)
     const agentMap = new Map(currentSpec.agents.map((a) => [a.name, a]))
     const defaultModel = currentSpec.defaults.model ?? ''
     return agentNames.every((name) => {
