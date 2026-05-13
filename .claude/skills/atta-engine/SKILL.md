@@ -1,31 +1,31 @@
 ---
 name: atta-engine
-description: Vāda engine internals — Plan compilation, Agent/Workflow/Team types, validation rules, terminal states, and immutability invariants. Load when working inside packages/engine or debugging unexpected Plan graph structure. Do NOT load for adapter/router/provider runtime work.
+description: Vāda engine internals — Flow compilation, Plan graph types, validation rules, terminal states, and immutability invariants. Load when working inside packages/engine or debugging unexpected Plan graph structure. Do NOT load for adapter/router/provider runtime work.
 ---
 
-# `@atta/engine` — Plan Compiler
+# `@atta/engine` — Plan Compiler (v2)
 
 ## Context
 
-`@atta/engine` is a **pure library**. It takes a `DeliberationSpec` (from a YAML file) and compiles it into a Plan: a declarative JSON-serializable execution DAG. Zero runtime dependencies. The engine compiles; the adapter executes. These responsibilities never cross.
+`@atta/engine` is a **pure library**. It takes a `Flow` (parsed from a v2 YAML file) and compiles it into a Plan: a declarative JSON-serializable execution DAG. Zero runtime dependencies. The engine compiles; the adapter executes. These responsibilities never cross.
 
 The engine has no LangGraph, no Anthropic SDK, no fetch, no LangChain. If you're importing a runtime dependency here, you're in the wrong package.
 
-The authoring interface is: YAML file → `loadSpec()` → `DeliberationSpec` → `compileSpec()` → `Plan`. Direct TypeScript Team/Workflow construction is no longer the public API.
+As of D-033 (May 12-13, 2026, PRs #41 + #47), the engine operates on a single universal round-based schema. The authoring interface is: YAML file → `loadFlow()` → `Flow` → `compileFlow()` → `Plan`. The prior `DeliberationSpec` / `compileSpec` / `Team` / `Workflow` union types are deleted.
 
 ---
 
 ## Architecture
 
 ```
-YAML file
+YAML file (schema_version: "2.0")
     ↓
-loadSpec(yaml: string)       parse + Zod validation
+loadFlow(yaml: string)        parse + Zod validation + validateFlow()
     ↓
-DeliberationSpec             in-memory typed spec
+Flow                          in-memory typed flow (rounds-based)
     ↓
-compileSpec(spec, question)  internally: specToTeam → compile
-    ↓
+compileFlow(flow, question, model?, customVars?)
+    ↓ (shape detection: solo | brokered-no-synth | brokered-synth | rounds-audit)
 Plan (JSON DAG)
     ↓
 [handed to adapter]
@@ -35,115 +35,246 @@ File tree:
 
 ```
 packages/engine/src/
-├── types.ts                  # Agent, Workflow, Team, Plan, Conclusion, ToolDecision (internal)
-├── spec-types.ts             # DeliberationSpec, SpecAgent, FlowSpec, ReviewerSpec (public)
-├── spec-schema.ts            # Zod validation schema
-├── spec-loader.ts            # loadSpec(yaml: string) → DeliberationSpec
-├── catalog-loader.ts         # loadYamlFromCatalog(id) + listPublicSpecs() — filesystem catalog access
-├── validate.ts               # Preflight validation before compilation (internal)
-├── compilers/
-│   ├── spec.ts               # compileSpec(spec, question, model?) → Plan; specToTeam(spec) → Team
-│   ├── solo.ts               # SoloWorkflow → Plan (internal)
-│   ├── rounds.ts             # RoundsWorkflow → Plan (internal, most complex)
-│   ├── custom.ts             # CustomWorkflow → Plan (internal)
-│   └── brokered.ts           # BrokeredWorkflow → Plan (sequential reviewer chain, internal)
+├── types.ts                  # Plan, PlanNode, PlanEdge, PlanGraph, PlanNodeRole, PlanNodeKind,
+│                             # PlanEdgeKind, RevisionCondition, ExecutionState, TemplateState,
+│                             # Adapter, ExecuteParams, ExecutionHooks, AgentOutput, Conclusion,
+│                             # Corpus, Experiment, ExperimentResult (re-exports Agent from @atta/agents)
+├── flow-types.ts             # Flow, Round, FlowAgent, AgentInRound, OnFailureSpec, FailureSignal
+├── flow-schema.ts            # Zod schema (FlowSchema); schema_version '2.0'
+├── flow-loader.ts            # loadFlow(yaml: string) → Flow
+├── validate-flow.ts          # validateFlow(flow) — 10 structural + semantic rules
+├── compile-flow.ts           # compileFlow(flow, question, model?, customVars?) → Plan
+│                             # Shape detection + per-shape compilation logic in one file
+├── catalog-loader.ts         # loadYamlFromCatalog(id) + listPublicSpecs() + validateAllSpecs()
+├── errors.ts                 # InvalidFlowConfigError + supporting error types
+├── derive.ts                 # deriveTemplateState(state, node) — projection from ExecutionState
+├── validate-template.ts      # Handlebars template syntax validation
 └── index.ts                  # Public exports
 ```
 
+The `spec-types.ts`, `spec-schema.ts`, `spec-loader.ts`, `compile.ts`, and `compilers/*.ts` files were all deleted in PR #47. There is no per-shape compiler module anymore — `compile-flow.ts` is the single entrypoint.
+
 ---
 
-## Public API (Phase 7.2+)
+## Public API
 
 ```ts
-import { loadSpec, compileSpec, specToTeam, loadYamlFromCatalog, listPublicSpecs } from '@atta/engine'
-import type { DeliberationSpec, SpecAgent, FlowSpec, ReviewerSpec } from '@atta/engine'
+import {
+  loadFlow,
+  compileFlow,
+  validateFlow,
+  resolveAgentFailure,
+  loadYamlFromCatalog,
+  listPublicSpecs,
+  validateAllSpecs,
+  deriveTemplateState,
+  InvalidFlowConfigError,
+  FlowSchema,
+} from '@atta/engine'
+
+import type {
+  Flow,
+  Round,
+  FlowAgent,
+  AgentInRound,
+  OnFailureSpec,
+  FailureSignal,
+  Plan,
+  PlanNode,
+  PlanEdge,
+  PlanGraph,
+  PlanNodeRole,
+  PlanNodeKind,
+  PlanEdgeKind,
+  RevisionCondition,
+  AgentOutput,
+  Conclusion,
+  ExecutionState,
+  TemplateState,
+  Adapter,
+  ExecuteParams,
+  ExecutionHooks,
+  Agent,
+} from '@atta/engine'
 ```
 
 | Export | Purpose |
 |--------|---------|
-| `loadSpec(yaml: string)` | Parse + validate YAML string → `DeliberationSpec`. Throws on schema violations. |
-| `compileSpec(spec, question, model?)` | `DeliberationSpec` → `Plan`. `model` overrides `spec.defaults.model`. |
-| `specToTeam(spec)` | `DeliberationSpec` → `Team` (internal team shape). Used internally by `compileSpec`. |
-| `loadYamlFromCatalog(id: string)` | Load a spec by ID from the catalog directory (`apps/vada-ai/yamls/`). Throws with resolved path on failure. Anchor: `import.meta.url`. Env var `VADA_YAMLS_DIR` overrides path. |
-| `listPublicSpecs()` | Return all non-experimental specs from the catalog, sorted alphabetically. Uses `readdirSync`. |
-| `DeliberationSpec` | Top-level YAML spec type |
-| `SpecAgent` | Per-agent config in a spec |
-| `FlowSpec` | Rounds + synthesis + audit flow config |
-| `ReviewerSpec` | Per-reviewer config (brokered mode) |
+| `loadFlow(yaml: string)` | Parse + validate YAML string → `Flow`. Throws on Zod or `validateFlow` violations. |
+| `compileFlow(flow, question, model?, customVars?)` | `Flow` → `Plan`. Shape detected from rounds topology. `model` overrides `flow.defaults.model`. `customVars` is interpolated into agent system prompts via Handlebars. |
+| `validateFlow(flow)` | Throws `InvalidFlowConfigError` on any of 10 rule violations. Called by `loadFlow` and by `compileFlow` defensively. |
+| `resolveAgentFailure(round)` | Returns the effective `agent_failure` policy for a round: explicit declaration wins; default is `continue` for `parallel`, `abort` for `serial` (Rule 10). |
+| `loadYamlFromCatalog(id)` | Load a spec by ID from `apps/vada-ai/yamls/`. Path anchored to `import.meta.url`; `VADA_YAMLS_DIR` env var overrides. |
+| `listPublicSpecs()` | All non-experimental specs in the catalog, sorted alphabetically. `readdirSync`-based — auto-discovers new YAMLs. |
+| `validateAllSpecs()` | Boot-time validation across the catalog. Throws on any malformed YAML; called from MCP server and web route handler at startup. |
+| `deriveTemplateState(state, node)` | Adapter contract: produces the Handlebars context for a node from `ExecutionState`. Adapters MUST use this rather than constructing template state manually. |
+| `InvalidFlowConfigError` | Thrown by `validateFlow` for any rule violation. Includes path + violated rule. |
+| `FlowSchema` | Zod schema; consumers can call `FlowSchema.parse()` directly for partial validation. |
 
-`compile()` is NOT a public export. It remains internal. Call `compileSpec()` instead.
+There is no longer a `compile()` or `compileSpec()` export. `specToTeam` is gone. Direct construction of internal "Team" or "Workflow" objects is not supported — author YAMLs and load through `loadFlow`.
 
 ---
 
 ## Core Types
 
-**DeliberationSpec** — the input. Produced by `loadSpec()`.
+### Flow — the input
+
 ```ts
-interface DeliberationSpec {
-  schemaVersion: '1.0';
-  id: string;
-  displayName: string;
-  description: string;
-  experimental: boolean;
-  benchmarked: boolean;
-  defaults: { model: string; maxTokens?: number };
-  agents: SpecAgent[];
-  flow?: FlowSpec;        // rounds-based mode
-  reviewers?: ReviewerSpec[];  // brokered mode
-  response?: ResponseSpec;
+interface Flow {
+  schemaVersion: '2.0'
+  id: string                  // kebab-case, matches filename
+  displayName: string
+  description: string
+  experimental: boolean
+  benchmarked: boolean
+  defaults: { model: string; maxTokens?: number }
+  agents: FlowAgent[]
+  rounds: Round[]             // non-empty
 }
 ```
 
-**SpecAgent**
+### Round
+
 ```ts
-interface SpecAgent {
-  name: string;           // PascalCase, unique within spec
-  description: string;
-  systemPrompt: string;
-  model?: string;         // overrides spec defaults
-  maxTokens?: number;
-  tools?: string[];       // [] for tool-off, absent = no tools
-  outputFormat?: 'text' | 'structured';
-  outputSchema?: Record<string, unknown>;
-  classifier?: { mode: ClassifierMode; budget?: number };
+interface Round {
+  id: string                  // kebab-case, unique within flow
+  name: string                // human-readable display name
+  layout: 'serial' | 'parallel'
+  repeats?: number            // default 1, must be >= 1
+  agents: AgentInRound[]      // non-empty
+  messageTemplate?: string    // round-level default
+  agentFailure?: 'abort' | 'continue'
+  onFailure?: OnFailureSpec
+}
+
+interface AgentInRound {
+  name: string                // must exist in top-level Flow.agents
+  messageTemplate?: string    // per-agent override; if absent, falls back to round.messageTemplate
 }
 ```
 
-**ClassifierMode**
+### OnFailureSpec
+
 ```ts
-type ClassifierMode = 'auto' | 'skip' | 'always_tools'
-// 'auto'         — classifier decides at runtime
-// 'skip'         — no classifier injected, no tools
-// 'always_tools' — classifier skipped, agent's full tool list always on
+interface OnFailureSpec {
+  action: 'abort' | 'continue' | 'revise'
+  target?: string             // round id; required when action='revise'; must be a PRIOR round
+  maxRevisions?: number       // required when action='revise'; >= 1
+  signal: FailureSignal       // how failure is detected
+}
+
+interface FailureSignal {
+  type: 'contains' | 'equals' | 'matches'  // schema accepts all three; engine implements 'contains' only
+  value: string
+  caseSensitive?: boolean
+}
 ```
 
-**Workflow** — discriminated union of four types. Internal to the engine; the Plan compiler dispatches by `type` discriminator.
+The schema accepts `equals` and `matches` for forward extensibility. `compileFlow` throws explicitly via `buildRevisionCondition` if it encounters either — see D-034. v2 ships with substring matching only.
 
-| Type | Discriminator | Compiler | Used by YAMLs |
-|---|---|---|---|
-| Solo | `type: 'solo'` | `compilers/solo.ts` | `a0-baseline`, `a1-baseline` |
-| Rounds | `type: 'rounds'` | `compilers/rounds.ts` | `crucible`, `sparring`, `war-room` |
-| Custom | `type: 'custom'` | `compilers/custom.ts` | (none in catalog today) |
-| Brokered | `type: 'brokered'` | `compilers/brokered.ts` | `brokered-trio`, `brokered-quartet` |
+### FlowAgent
 
-Brokered is structurally similar to Custom (sequential chain of reviewer nodes) but produces `responseMode: 'concatenate'` Plans rather than `'synthesize'`. The two could in principle be unified, but the diff is wider than the value (node ID conventions, downstream session-log dependencies).
-
-**Plan** — compiled output. Pure JSON. Consumed by adapter.
 ```ts
-type Plan = { nodes: PlanNode[]; edges: PlanEdge[]; entry: string; exit: string };
+interface FlowAgent {
+  name: string                // free-form (often PascalCase), unique within flow
+  description?: string
+  systemPrompt: string        // Handlebars-rendered against customVars at compile time
+  model?: string
+  maxTokens?: number
+  tools?: string[]
+  classifier?: { mode: 'auto' | 'skip' | 'always_tools'; budget?: number }
+  outputFormat?: 'text' | 'structured'
+  outputSchema?: Record<string, unknown>
+  role?: string               // presentation hint for UI rendering — engine does not consume
+  editable?: boolean          // UI hint: surface in reviewer config picker
+}
 ```
 
-**Conclusion** — final output from adapter (engine defines the shape, adapter produces it).
+The `role` field is the UI's concern — the engine treats it as opaque metadata. `AgentRole` as an engine concept was deleted in May (vendor identity replaces role for unroled agents like Vāda Reviewers' Gemini/GPT/Grok slots).
+
+### Plan + graph types
+
+```ts
+interface Plan {
+  schemaVersion: '1.0'        // Plan schema version, distinct from Flow schema version
+  question: string
+  model: string
+  agents: Record<string, Agent>
+  teamName: string            // historically the team name; now flow.id
+  graph: PlanGraph
+  specId?: string
+  responseMode?: 'synthesize' | 'concatenate'
+  responseNode?: string
+  maxRevisions?: number
+  classifierModes?: Record<string, 'auto' | 'skip' | 'always_tools'>
+}
+
+interface PlanGraph {
+  nodes: Record<string, PlanNode>
+  edges: PlanEdge[]
+  conditionalEdges: PlanConditionalEdge[]
+  entryNode: string
+}
+
+interface PlanNode {
+  id: string                  // see "Node ID Scheme" below
+  agentName: string
+  inputTemplate: string       // Handlebars
+  role: PlanNodeRole          // execution routing (adapter)
+  kind: PlanNodeKind          // categorical classification (visualization)
+  metadata: PlanNodeMetadata
+}
+
+type PlanNodeRole = 'solo' | 'round' | 'terminal' | 'audit' | 'custom-step'
+
+type PlanNodeKind =
+  | 'solo-agent'
+  | 'parallel-peer'
+  | 'synthesizer'
+  | 'auditor'
+  | 'custom-step'
+  | 'revision-terminal'
+  | 'system-sentinel'
+
+type PlanEdgeKind = 'flow' | 'ordering'
+```
+
+The `Team`, `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow`, and `Workflow` discriminated union are **deleted**. Plan graph types are the engine's output surface.
+
+---
+
+## Compilation behaviour (shape detection)
+
+`compileFlow` detects four shapes from the flow's topology and emits matching Plan node ids. The adapter and route handler depend on the v1 node-id conventions, so `compileFlow` preserves them. This is documented as a deliberate pragmatic weakening of the "engine has zero branches" ideal in D-033 — see OQ-I in `vada-state.md`.
+
+| Detected shape | Trigger | Node ids emitted |
+|----------------|---------|------------------|
+| `solo` | 1 round, 1 agent | `solo` |
+| `brokered-no-synth` | 1+ rounds, last round has >1 agent, no `on_failure: revise` | `reviewer-{AgentName}` |
+| `brokered-synth` | 2+ rounds, last round has exactly 1 agent, no `on_failure: revise` | `reviewer-{AgentName}` + `brokered-synthesis` |
+| `rounds-audit` | Any round has `on_failure.action: 'revise'` | `round-{r}-{AgentName}`, `terminal-{k}`, `audit-{Name}-{k}`, `__END__` |
+
+`{r}` = repeat index within a round (0-based). `{k}` = revision slot index (0-based; 0 = first execution, k = kth revision). `__END__` is the LangGraph routing sentinel; filter it before rendering.
+
+### Conditional edge wiring (rounds-audit)
+
+For each revision slot `k` from 0 to `maxRevisions - 1`:
+
+- Flow edge: `terminal-{k}` → `audit-{firstAuditor}-{k}`
+- Ordering edges within audit slot: `audit-{name}-{k}` → `audit-{nextName}-{k}`
+- Conditional edge from last auditor in slot: `audit-{lastAuditor}-{k}` → `terminal-{k+1}` (if any auditor signals) OR `__END__` (otherwise). Evaluation uses `anyOf` across all audit node outputs in the slot.
+
+The terminal node at slot `k+1` is pre-allocated even if it never executes. The Plan is a DAG with no cycles — each revision path is a distinct pre-allocated node sequence.
 
 ---
 
 ## Terminal States
 
-Set on `Conclusion.terminalState`. All are valid completion states — do not treat any as a failure except `FAILED`.
+Set on `Conclusion.terminalState`. All but `FAILED` are valid completion states.
 
 | State | Meaning |
 |-------|---------|
-| `CLEAN` | Audits passed on first conclusion |
+| `CLEAN` | Audits passed on first conclusion (or no audit configured) |
 | `REVISED` | Audits flagged; revision accepted |
 | `MAX_REVISIONS` | Audits kept flagging; revision slots exhausted. System working correctly. |
 | `FAILED` | Runtime error (API failure, timeout, crash). The only one that indicates a bug. |
@@ -152,16 +283,38 @@ Set on `Conclusion.terminalState`. All are valid completion states — do not tr
 
 ## Node ID Scheme
 
-Downstream code (adapter, mcp-server, dashboard) depends on these IDs. Grep before renaming.
+Downstream code (adapter, mcp-server, dashboard, calculator, UI flow visualizer) depends on these IDs. Grep before renaming.
 
 | Node type | ID pattern | Example |
 |-----------|-----------|---------|
-| Round agent | `round-{roundIndex}-{agentName}` | `round-0-Strategist` |
-| Round synthesizer | `round-{roundIndex}-{synthesizerName}` | `round-0-Synthesizer` |
-| Conclusion | `conclusion-{agentName}` | `conclusion-ConclusionSynthesizer` |
-| Audit | `audit-{agentName}-{slotIndex}` | `audit-BlindCritic-0` |
+| Solo (single round, single agent) | `solo` | `solo` |
+| Brokered reviewer | `reviewer-{agentName}` | `reviewer-Gemini` |
+| Brokered synthesizer | `brokered-synthesis` | `brokered-synthesis` |
+| Round agent (rounds-audit) | `round-{repeatIndex}-{agentName}` | `round-0-Strategist` |
+| Terminal / revision slot | `terminal-{revisionIndex}` | `terminal-0`, `terminal-1` |
+| Audit agent | `audit-{agentName}-{revisionIndex}` | `audit-BlindCritic-0` |
+| LangGraph sentinel | `__END__` | (filter before render) |
 
-`slotIndex` increments with each revision cycle.
+The historical `round-{r}-{synthesizerName}` and `conclusion-{agentName}` ids no longer exist — terminal/synthesis nodes are now `terminal-{k}` or `brokered-synthesis` depending on shape.
+
+---
+
+## Validation Rules (D-033)
+
+`validateFlow` enforces 10 rules. All raise `InvalidFlowConfigError`.
+
+| Rule | Description |
+|------|-------------|
+| 1 | `rounds.length >= 1` |
+| 2 | Round ids unique within a flow |
+| 3 | `on_failure.target` references a **prior** round (no forward or self references) |
+| 4 | Every `agents[].name` referenced in a round exists in the top-level `agents` array |
+| 5 | `repeats >= 1` when present |
+| 6 | `max_revisions >= 1` when `action='revise'` |
+| 7 | `action='revise'` requires both `target` and `max_revisions` |
+| 8 | Either the round has `message_template` OR every agent in the round has its own |
+| 9 | Rounds with zero agents are rejected |
+| 10 | `agent_failure` default derivation: `continue` for `parallel`, `abort` for `serial`. Explicit always wins. (Applied by `resolveAgentFailure()`, not `validateFlow` directly.) |
 
 ---
 
@@ -173,60 +326,63 @@ No fetch, no LangGraph, no Anthropic SDK, no LangChain. If a feature requires ru
 
 ```ts
 // ✅ Pure compilation
-export function compileSpec(spec: DeliberationSpec, question: string, model?: string): Plan {
-  const team = specToTeam(spec);
-  validate(team.workflow, team);
-  return compile(team.workflow, team, question);
+export function compileFlow(flow: Flow, question: string, model?: string): Plan {
+  validateFlow(flow)
+  return /* shape detection + per-shape compilation */
 }
 
 // ❌ Engine should never do this
-import Anthropic from '@anthropic-ai/sdk';
-const client = new Anthropic();
+import Anthropic from '@anthropic-ai/sdk'
+const client = new Anthropic()
 ```
 
 ### Plans are Immutable After Compilation
 
-Never modify a Plan after `compileSpec()` returns. No "enrichment passes." If the adapter needs extra data, it lives in LangGraph state, not in the Plan.
+Never modify a Plan after `compileFlow()` returns. No "enrichment passes." If the adapter needs extra data, it lives in LangGraph state, not in the Plan.
 
 ```ts
 // ✅ Compute once, return
-const plan = compileSpec(spec, question);
-return plan;
+const plan = compileFlow(flow, question)
+return plan
 
 // ❌ Never mutate
-const plan = compileSpec(spec, question);
-plan.nodes.push(extraNode);  // ← violates immutability
+const plan = compileFlow(flow, question)
+plan.graph.nodes['extra'] = extraNode  // ← violates immutability
 ```
 
 ### Validate Before Compile
 
-`validate.ts` runs as a preflight. Compilers assume input is valid. Adding validation inside a compiler hides errors behind stack traces.
+`validateFlow` runs as a preflight. Per-shape compilation logic assumes the input is valid. Adding validation inside the per-shape branches hides errors behind stack traces.
 
 ```ts
-// ✅
-validate(workflow, team);   // throws if invalid
-return compileRounds(workflow, team);
-
-// ❌
-return compileRounds(workflow, team);  // silently misbehaves on bad input
+// ✅ The current entrypoint structure
+export function compileFlow(flow: Flow, question: string, model?: string, customVars?: Record<string, string>): Plan {
+  validateFlow(flow)
+  const shape = detectShape(flow)
+  switch (shape) {
+    case 'solo': return compileSolo(flow, base)
+    case 'brokered-no-synth': return compileBrokeredNoSynth(flow, base)
+    case 'brokered-synth': return compileBrokeredSynth(flow, base)
+    case 'rounds-audit': return compileRoundsAudit(flow, base)
+  }
+}
 ```
 
 ### Content-Agnostic
 
-The engine never injects prompts, examples, or content into Plans. User-provided Agents go in, structural graph comes out. This is a BYOK principle.
+The engine never injects prompts, examples, or content into Plans. User-provided Agents go in, structural graph comes out. This is a BYOK principle and a D-033 ratification commitment.
 
 ```ts
-// ✅ Agent's systemPrompt comes from the spec
-const node = { id, kind: 'agent', agent: agent.name };
+// ✅ Agent's systemPrompt comes from the flow (Handlebars-rendered against customVars)
+const node = { id, agentName, inputTemplate, role, kind, metadata }
 
 // ❌ Engine should never add content
-const node = { id, kind: 'agent', agent: agent.name,
-               systemPromptOverride: 'You must also...' };
+const node = { ..., systemPromptOverride: 'You must also...' }
 ```
 
 ### `tools: string[]` is the Contract
 
-Never change `SpecAgent.tools` to boolean. The adapter's tool registry maps logical names → Anthropic API types. Boolean erases that mapping.
+Never change `FlowAgent.tools` to boolean. The adapter's tool registry maps logical names → Anthropic API types. Boolean erases that mapping.
 
 ```ts
 // ✅
@@ -237,40 +393,41 @@ tools: []                    // explicit no-tools
 tools: true                  // breaks registry mapping
 ```
 
-### Parallel Auditors via YAML `audit.agents` array
+### Parallel Auditors via Audit Round Agents Array
 
-`FlowSpec.audit.agents` accepts multiple agent names. All run in parallel; ANY flag triggers revision. Matches `logic: any` in YAML.
+The audit round's `agents` array accepts multiple agent names. They run with `anyOf` semantics in the conditional edge — if ANY auditor's output triggers the signal, revision fires.
 
 ```yaml
 # Single auditor
-audit:
-  agents: [BlindCritic]
+- id: audit
+  name: Audit
+  layout: serial
+  agents:
+    - name: BlindCritic
+  on_failure: { action: revise, target: synthesis, max_revisions: 1, signal: { type: contains, value: FLAG } }
 
 # Parallel auditors — logical + factual
-audit:
-  agents: [BlindCritic, FactChecker]
-  revision:
-    logic: any
+- id: audit
+  name: Audit
+  layout: serial
+  agents:
+    - name: BlindCritic
+    - name: FactChecker
+  on_failure: { action: revise, target: synthesis, max_revisions: 1, signal: { type: contains, value: FLAG } }
 ```
 
 ---
 
-## Adding a New Workflow Variant
+## Adding YAML specs is the workflow
 
-Phase 7.2+: prefer YAML files for new workflow variants. New TypeScript compilers are exceptional and require shape-level differences that no existing compiler can express (e.g., `BrokeredWorkflow` was added April 2026 to produce `responseMode: 'concatenate'` Plans, which the existing compilers couldn't).
+The "adding a new workflow variant" pattern from v1 is gone. The v2 schema accommodates every shape we've needed to date with no engine code changes. New specs are authored as YAMLs and dropped into `apps/vada-ai/yamls/`:
 
-For most additions:
-
-1. Create `apps/vada-ai/yamls/<new-spec>-v1.yaml` following the schema
-2. Register in `apps/vada-ai/mcp-server/src/spec-registry.ts`
-3. Write a verify script in `apps/vada-ai/web/scripts/verify-<new-spec>-port.ts`
+1. Write `<new-spec>.yaml` per `vada-yaml-authoring` SKILL (unversioned filename — D-013 + D-025)
+2. Set `experimental: true` if it should be hidden from `listPublicSpecs()`
+3. Write a verify script in `apps/vada-ai/web/scripts/verify-<spec>-port.ts` using `loadFlow` + `compileFlow`
 4. Run verify script; confirm transcript length matches expected count
 
-If your shape genuinely cannot be expressed as YAML over existing compilers (the bar set by Brokered's addition), then also:
-- Add `kind` to `Workflow` union in `types.ts`
-- Create `compilers/<kind>.ts` exporting `compile(workflow, team): Plan`
-- Update `validate.ts` to handle new kind
-- But this is engine internals — the YAML author never needs to do this
+Genuine engine-level changes (new node kinds, new template variables, new conditional edge semantics) are now rare and require explicit decision-log entry.
 
 ---
 
@@ -278,15 +435,15 @@ If your shape genuinely cannot be expressed as YAML over existing compilers (the
 
 - ❌ Runtime dependencies in engine (fetch, SDKs, state machines)
 - ❌ Mutating `Plan` objects after compilation
-- ❌ Validation inside compilers (belongs in `validate.ts`, upstream)
+- ❌ Validation inside the per-shape compilation branches (belongs in `validateFlow`, upstream)
 - ❌ Content injection (prompts, examples) into compiled Plans
-- ❌ `SpecAgent.tools` as boolean — use `string[]` always, `[]` for explicit none
-- ❌ Renaming node IDs without grepping adapter + mcp-server for dependencies
-- ❌ Adding a new workflow type when the same shape can be expressed as a YAML over Solo/Rounds/Custom/Brokered — the bar for new compilers is shape-level features no existing compiler provides
+- ❌ `FlowAgent.tools` as boolean — use `string[]` always, `[]` for explicit none
+- ❌ Renaming node IDs without grepping adapter + mcp-server + UI + calculator for dependencies
+- ❌ Adding a new shape branch in `compileFlow` when the YAML topology can be expressed under one of the four existing shapes — the bar for new shape branches is genuine structural difference (e.g., dynamic fan-out, code/tool nodes)
 - ❌ Treating `MAX_REVISIONS` as a failure — it's a valid terminal state
 - ❌ Adding new terminal states without Principal approval (contract with adapter + mcp-server)
-- ❌ Calling `compile()` directly from outside the engine — use `compileSpec()`
-- ❌ Importing from `@vada/teams` — that package is deleted; use YAML + `loadSpec` + `compileSpec`
+- ❌ Calling internal shape compilation functions (`compileSolo`, `compileBrokeredNoSynth`, etc.) directly — they are not exported; use `compileFlow`
+- ❌ Importing from `@vada/teams` or `@atta/engine`'s deleted modules (`spec-types`, `spec-schema`, `spec-loader`, `compile`, `compilers/*`) — these are all gone post-PR #47
 
 ---
 
@@ -294,5 +451,8 @@ If your shape genuinely cannot be expressed as YAML over existing compilers (the
 
 - Why `tools: string[]` and not boolean: `apps/vada-ai/specs/engine/design-decisions.md`
 - Adapter-side execution: **atta-adapter-langgraph** skill
-- Agent definitions and YAML authoring: **atta-teams** skill + **vada-yaml-authoring** skill
+- YAML authoring: **vada-yaml-authoring** skill
 - YAML schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`
+- D-033 design rationale: `apps/vada-ai/specs/generic-flow-refactor.md`
+- D-033 + D-034 entries: `apps/vada-ai/specs/vada-decisions.md`
+- Vāda current state: `apps/vada-ai/specs/vada-state.md` (Phase 14 + OQ-H + OQ-I)
