@@ -15,24 +15,24 @@ export function HomeHero() {
           <div
             className={`flex flex-col items-center gap-2 transition-opacity duration-400 ease-out ${ringVisible ? 'opacity-100' : 'opacity-0'}`}
           >
-            <Text className='text-xl font-mono uppercase tracking-widest text-muted-foreground'>The</Text>
+            <Text className='text-xl font-mono uppercase tracking-widest text-muted-foreground'>THE</Text>
             <Heading level={1} className='text-6xl font-serif text-foreground'>
-              The Atta
+              AttaLabs
             </Heading>
-            <Text className='text-xl font-mono uppercase tracking-widest text-muted-foreground'>Ecosystem</Text>
+            <Text className='text-xl font-mono uppercase tracking-widest text-muted-foreground'>LAB</Text>
           </div>
           <div className='flex flex-col items-center gap-2'>
             <Text
               as='p'
               className={`text-balance text-xl text-center text-foreground transition-opacity duration-800 ease-out ${animationComplete ? 'opacity-100' : 'opacity-0'}`}
             >
-              Where deep thinking happens
+              A lab building thinking tools
             </Text>
             <Text
               as='p'
               className={`text-balance text-xl text-center text-foreground transition-opacity duration-900 ease-out ${animationComplete ? 'opacity-100' : 'opacity-0'}`}
             >
-              with any AI.
+              Where we build the thinking layer.
             </Text>
           </div>
         </div>
