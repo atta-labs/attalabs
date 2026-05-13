@@ -1,10 +1,32 @@
 # Generic Flow Refactor — Design
 
-**Status:** Draft, not ratified
+**Status:** Implementation complete — ratified via D-033, shipped May 12-13, 2026
+**Implementation PRs:** #41 (schema + types + validation), #47 (compileFlow + migration + consumer updates), D-034 cleanup PR (signal rejection + RevisionCondition single-variant)
 **Author:** Claude (Critic/Synthesizer) with Dani (Principal)
-**Date:** May 12, 2026 (amended)
-**Branch:** `design/generic-flow-refactor`
-**Scope:** Stack-wide. New YAML schema → engine compilers → MCP server → web route handler → UI renderer. All 9 catalog YAMLs migrated.
+**Date:** May 12, 2026 (drafted); May 13, 2026 (marked complete)
+**Branch:** `design/generic-flow-refactor` (design doc); `feat/generic-flow-refactor-pr1`, `feat/generic-flow-refactor-pr2` (implementation)
+**Scope:** Stack-wide. New YAML schema → engine compiler → MCP server → web route handler → UI renderer. All 9 catalog YAMLs migrated.
+
+## Implementation status (added May 13, 2026)
+
+**Shipped:**
+- PR #41 — Schema + types + validation. `flow-types.ts`, `flow-schema.ts` (schema_version `'2.0'`), `validate-flow.ts` (164 lines, 10 rules), `__tests__/validate-flow.test.ts` (590 lines), `index.ts` exports. 108 tests pass.
+- PR #47 — Greenfield `compileFlow` (386 lines) with shape detection emitting the same Plan node ids the adapter expects (`solo`, `reviewer-{name}`, `brokered-synthesis`, `round-{r}-{name}`, `terminal-{k}`, `audit-{name}-{k}`, `__END__`). All 9 YAMLs migrated to `schema_version: "2.0"`. Old code deleted: `spec-types.ts`, `spec-schema.ts`, `spec-loader.ts`, `compile.ts`, all `compilers/*.ts`. The `Team`, `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow`, and `Workflow` discriminated union deleted from `types.ts`. 29 consumer files updated: route handler, both MCP tool files, 6 UI components reading the spec shape, verify scripts, `apps/vada-ai/web/src/lib/flow-helpers.ts` (new, 39 lines, shared shape detection for the UI). Bug fix: `vada-reviewers-synthesis` synthesis template now uses `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}` (was `{{reviewerResponses}}`, which the engine never populated — the synthesizer ran blind in production).
+- D-034 cleanup PR — `compile-flow.ts` `buildRevisionCondition` throws explicitly on unsupported signal types instead of silently treating `equals`/`matches` as `contains`. `RevisionCondition` in `types.ts` collapsed to single-variant interface (`type: 'contains'`); unused `json-field-equals` and `json-field-truthy` variants removed; adapter switch tables in `adapter.ts` and `graph-builder.ts` lost their dead case blocks.
+
+**Pragmatic weakenings from the original design (honestly captured):**
+
+1. **Shape detection in compiler, not generic walker.** The D-033 ideal was "one compiler with zero branches on shape." In practice, `compileFlow` contains a `switch (shape)` over four detected shapes (`solo`, `brokered-no-synth`, `brokered-synth`, `rounds-audit`) and emits matching v1 node ids so the adapter and route handler can execute the graph identically. Reason: the adapter, route handler, and UI all depend on the v1 node-id conventions; a generic walker would have required updating all of them in lockstep. The schema layer is fully generic (one shape, no discriminators); the compiler keeps shape detection for v1 compatibility. Captured as OQ-I in `vada-state.md`.
+
+2. **`TemplateState` left on v1 shape.** The design doc proposed round-namespaced template variables (`rounds.<id>.outputs`, `currentRound.prior_agents`, `revision.source_outputs`, etc.). PR #47 left the adapter's `TemplateState` and `deriveTemplateState` unchanged — v2 YAMLs use the v1 variable names (`outputsByRound`, `lastOutputByAgent`, `currentRoundOutputs`, `allPreviousOutputs`, `conclusion`, `auditOutputs`, etc.). The migration of v1 YAMLs to v2 schema preserved their templates verbatim. The round-namespaced refactor is captured as OQ-H in `vada-state.md` and is future work.
+
+3. **SSE events still match v1 semantics.** PR 3 (MCP server `agent_config` rename + new SSE events `round_started` / `round_completed` / `revision_started` replacing `state_changed: ROUND_N | CONCLUDING | AUDITING | REVISING`) was specified in this design doc but not shipped in #47. The route handler still emits the v1 event shape; the UI still subscribes to it. PR 3 is queued as a separate dispatchable change. The current event names work — they're just less aligned with the v2 mental model than they could be.
+
+4. **UI rewrite (PR 4) not shipped.** The `FlowFeed` / `RoundColumn` / `AgentGrid` / `AgentChain` / `AgentCard` component refactor described below was scoped but deferred. The existing `RoundStrip` UI continues to render v2-compiled Plans correctly via the unchanged adapter and the v1 SSE events. The "Agents are getting ready…" empty-state bug that motivated the UI rewrite is still latent; it surfaces only on `brokered-no-synth` shapes during the period before `agent_completed` events arrive. Captured as a known issue to address in PR 4.
+
+**Net outcome:** The schema and engine layer fully ship the v2 model. The adapter, SSE, and UI layers remain on v1 framing — they read the v2-compiled Plan correctly because `compileFlow` emits v1-compatible node ids and the adapter is unchanged. Future PRs 3 and 4 close the loop. The pragmatic compromise was deliberate: ship the schema migration cleanly across all consumers in a single PR (#47) rather than partial migrations across many PRs.
+
+---
 
 ## Purpose
 
@@ -27,7 +49,13 @@ The win:
 
 This is Path β from the prior design doc (the abandoned UI-only Path α). The refactor touches the entire stack precisely because piecemeal cleanup leaves the schema as a permanent bug-magnet.
 
+> **What actually shipped (post-implementation note):** Items 1, 2, and 3 above shipped fully. Item 4 (one UI renderer) is partial — the UI continues to render v2 Plans correctly but uses v1 components; the unified renderer is PR 4 work. Item 5 (cleaner mental model) shipped at the schema and engine layer; the adapter and UI carry residual v1 vocabulary.
+
+---
+
 ## The conceptual model
+
+> *Reference for the schema as shipped. Subset of this lives at `apps/vada-ai/specs/yaml-schema-reference.md` (the canonical authoring reference).*
 
 ```
 Flow {
@@ -78,13 +106,19 @@ Revision is declarative:
 
 This generalizes today's hardcoded audit→synthesis revision loop. Future flows can declare more complex retry patterns without engine code changes.
 
-## Data flow — how rounds connect to each other (NEW SECTION)
+> **As shipped:** the schema reserves `type: 'equals'` and `type: 'matches'` for forward extensibility. The engine implements `contains` only (D-034). `compileFlow` throws explicitly on `equals` or `matches`. No catalog YAML uses anything but `contains` today.
+
+---
+
+## Data flow — how rounds connect to each other
+
+> **Status: design intent; not yet shipped at the adapter layer (OQ-H).** PR #47 preserved the v1 `TemplateState` shape and migrated v2 YAMLs to use the v1 variable names. The round-namespaced context described below is the eventual target.
 
 The engine threads state from one round to the next via a **uniform Handlebars template context**. Each round's `message_template` is rendered against this context before being sent to the round's agents.
 
-### What's in the template context
+### What's in the template context (target shape)
 
-At any round, the template has access to:
+At any round, the template would have access to:
 
 | Variable | Type | Description |
 |---|---|---|
@@ -99,7 +133,11 @@ At any round, the template has access to:
 
 Custom variables defined at the flow level (e.g., `customVars.domain` for the Domain Expert) remain accessible as `customVars.<name>`.
 
-### How a round references prior round outputs
+### What ships today (v1 TemplateState — see OQ-H)
+
+v2 YAMLs use the v1 variable names listed in `apps/vada-ai/specs/yaml-schema-reference.md` Template Variables section: `{{outputsByRound.[0]}}`, `{{currentRoundOutputs}}`, `{{lastOutputByAgent.AgentName}}`, `{{allPreviousOutputs}}`, `{{conclusion}}`, `{{auditOutputs}}`, `{{isRevision}}`, `{{participants}}`. The round-id namespacing above is the deferred target; the adapter refactor that introduces it is captured as OQ-H.
+
+### How a round references prior round outputs (target shape)
 
 The round's `message_template` references the data it needs by id:
 
@@ -130,435 +168,132 @@ For v1 of this refactor we go with Option A (implicit) for three reasons:
 
 This is captured as future work in the post-refactor backlog.
 
-### Multi-round template examples
+---
 
-**Sparring's `spar` round template** (multi-repeat, serial):
+## Within-round input model — `message_template` at round vs agent level
 
-```yaml
-- id: spar
-  name: Sparring
-  agents: [Strategist, Critic]
-  layout: serial
-  repeats: 3
-  message_template: |
-    {{#if currentRound.repeat_index}}
-    Prior repeats:
-    {{#each rounds.spar.repeats}}
-    [Repeat {{@index}}]
-    {{#each this.outputs}}{{this.agent}}: {{this.content}}{{/each}}
-    {{/each}}
-    
-    Prior agents in this repeat:
-    {{#each currentRound.prior_agents}}{{this.agent}}: {{this.content}}{{/each}}
-    {{else}}
-    {{question}}
-    {{/if}}
-```
+**Decision:** `message_template` lives on the round (default for all agents) with optional per-agent override. **Shipped as designed.**
 
-This template reads cleanly: on the first repeat, just the question. On subsequent repeats, the prior repeats' transcripts plus any prior agents that ran in the current repeat. The same template fires for both Strategist and Critic; Strategist sees `currentRound.prior_agents = []` (first agent in the serial chain), Critic sees Strategist's just-produced output.
+Validation Rule 8 enforces: a round must have either a round-level `message_template` OR every agent in the round must have its own. Rounds where neither is present are rejected.
 
-**Sparring's synthesis round** (single agent, references prior round explicitly):
+The full reasoning, examples, and "round-level template is the default; agent-level template overrides" semantics in the original design doc carried over verbatim into the schema. See `yaml-schema-reference.md` for the canonical reference.
 
-```yaml
-- id: synthesis
-  name: Synthesis
-  agents: [ConclusionSynthesizer]
-  layout: parallel
-  message_template: |
-    {{#if revision.index}}
-    The original question is: "{{question}}"
-    Deliberation transcript:
-    {{#each rounds.spar.repeats}}{{#each this.outputs}}{{this.agent}}: {{this.content}}{{/each}}{{/each}}
-    
-    Your previous conclusion was flagged:
-    {{rounds.synthesis.outputs.0.content}}
-    
-    Auditor objection:
-    {{revision.source_outputs.0.content}}
-    
-    CRITICAL: ...
-    {{else}}
-    The original question is: "{{question}}"
-    Deliberation transcript:
-    {{#each rounds.spar.repeats}}{{#each this.outputs}}{{this.agent}}: {{this.content}}{{/each}}{{/each}}
-    GENERATE JSON NOW.
-    {{/if}}
-```
-
-Note the `revision.index` branching — the engine populates `revision.*` variables only when this round is being re-run after an audit FLAG. The template handles both the original synthesis path and the revision path in one place.
-
-## Within-round input model — message_template at round vs agent level (NEW SECTION)
-
-A round can have N agents. The question: where does the message_template live?
-
-**Decision:** `message_template` lives on the round (default for all agents) with optional per-agent override.
-
-### Default case — same prompt to all agents in the round
-
-For vendor-diverse reviewers (Vāda Reviewers), all three agents get the same prompt. The prompt is the same; only the model varies. The round declares one template:
-
-```yaml
-- id: review
-  name: Reviewers
-  agents:                          # simplified — name-only references
-    - name: Gemini
-    - name: GPT
-    - name: Grok
-  layout: parallel
-  message_template: "{{question}}"   # same template applied to all 3 agents
-```
-
-The engine renders the template once per agent (since each agent has its own system_prompt and its own template context might vary slightly via `currentRound.*`), but the template source is shared.
-
-### Override case — one agent needs a different prompt
-
-For flows where a specific agent needs different framing (rare today, possible tomorrow), the agent-level template overrides the round default:
-
-```yaml
-- id: review
-  name: Reviewers
-  agents:
-    - name: Gemini
-      message_template: "{{question}} (please be concise — under 200 words)"
-    - name: GPT
-      # no override → uses round default
-    - name: Grok
-      # no override → uses round default
-  layout: parallel
-  message_template: "{{question}}"
-```
-
-### Round-level template is the default; agent-level template overrides it
-
-The semantics:
-
-- Round has `message_template` → that's the default for any agent in the round that doesn't have its own
-- Agent (within the round) has `message_template` → overrides the round default for that specific agent
-- If a round has `message_template` AND every agent has its own → the round-level one becomes a fallback for any future agent added to the round
-- Validation: a round must have either a round-level `message_template` OR every agent in the round must have its own. The engine rejects rounds where neither is present.
-
-### Why this shape
-
-1. **Removes duplication.** Today's `vada-reviewers.yaml` declares `message_template: "{{question}}"` three times. New schema: declare once.
-2. **Matches design intent.** Vendor diversity = "same prompt, different models." The schema's natural default reflects this.
-3. **Preserves flexibility.** Per-agent overrides for the rare case.
-4. **Conceptually correct.** A round has ONE input (its message_template, rendered against accumulated state). The engine fans that input out to N agents. The round HAS one input even though it CONTAINS N agents.
-5. **Generalizes to serial rounds.** Strategist and Critic in sparring share one round-level template that branches via `{{#if currentRound.prior_agents}}` — Strategist sees no prior agents (it's first); Critic sees Strategist's output. Single template, branching on context.
-
-### Agent definitions still live at the flow level
-
-The top-level `agents` array holds full agent definitions (system_prompt, model, tools, classifier, output_format, etc.). Rounds reference agents by name and may only override the `message_template`. The system_prompt, model, etc. are flow-level properties — they describe who the agent IS, not how it's used in a given round.
-
-This separation matches today's schema and keeps the migration mechanical.
+---
 
 ## Mapping each current YAML to the new schema
 
-### `vada-reviewers` — 1 round
-```yaml
-id: vada-reviewers
-display_name: Reviewers
-description: "Three different LLMs review your problem in parallel..."
-defaults:
-  model: claude-sonnet-4-6
-agents:
-  - name: Gemini
-    model: gemini-2.5-pro
-    system_prompt: |
-      You are an external critical reviewer...
-  - name: GPT
-    model: gpt-4o
-    system_prompt: |
-      You are an external critical reviewer...
-  - name: Grok
-    model: grok-3
-    system_prompt: |
-      You are an external critical reviewer...
-rounds:
-  - id: review
-    name: Reviewers
-    agents:
-      - name: Gemini
-      - name: GPT
-      - name: Grok
-    layout: parallel
-    message_template: "{{question}}"
-    agent_failure: continue          # vendor diversity — partial is fine
-```
+> **Status: all 9 YAMLs migrated in PR #47.** Final shipped YAMLs at `apps/vada-ai/yamls/*.yaml`. Inspect the live files for the production templates; the snippets below capture the design-time mapping intent.
 
-### `vada-reviewers-synthesis` — 2 rounds
-```yaml
-id: vada-reviewers-synthesis
-display_name: "Reviewers + Synthesis"
-agents:
-  - name: Gemini, GPT, Grok  (as above)
-  - name: Synthesizer
-    role: synthesizer
-    model: claude-sonnet-4-6
-    system_prompt: |
-      You are a synthesizer for the Vāda Reviewers team...
-rounds:
-  - id: review
-    name: Reviewers
-    agents:
-      - name: Gemini
-      - name: GPT
-      - name: Grok
-    layout: parallel
-    message_template: "{{question}}"
-    agent_failure: continue
-  - id: synthesis
-    name: Synthesis
-    agents:
-      - name: Synthesizer
-    layout: parallel              # single agent — layout is moot, parallel is the natural default
-    message_template: |
-      Question: {{question}}
-      Reviewer responses:
-      {{#each rounds.review.outputs}}[{{this.agent}}] {{this.content}}{{/each}}
-      Please synthesize.
-    agent_failure: abort          # synthesis failure = no conclusion
-```
+### `vada-reviewers` — 1 round (brokered-no-synth)
+1 round, layout `parallel`, 3 agents, `message_template: "{{question}}"`. Final YAML preserves all reviewer system prompts verbatim.
 
-### `sparring` — 3 rounds (spar, synthesis, audit)
-```yaml
-id: sparring
-display_name: Sparring
-agents:
-  - name: Strategist, Critic, ConclusionSynthesizer, BlindCritic, FactChecker  (as today)
-rounds:
-  - id: spar
-    name: Sparring
-    agents:
-      - name: Strategist
-      - name: Critic
-    layout: serial
-    repeats: 3
-    message_template: |
-      {{#if currentRound.repeat_index}}
-      Prior repeats: {{#each rounds.spar.repeats}}...{{/each}}
-      Prior agents in this repeat: {{#each currentRound.prior_agents}}...{{/each}}
-      {{else}}
-      {{question}}
-      {{/if}}
-    agent_failure: abort           # a missing Strategist breaks the Critic's input
+### `vada-reviewers-synthesis` — 2 rounds (brokered-synth)
+Round 1 = parallel reviewers (as above). Round 2 = single-agent serial synthesis round. Bug fix in PR #47: synthesis template changed from `{{reviewerResponses}}` (never populated) to `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}`.
 
-  - id: synthesis
-    name: Synthesis
-    agents:
-      - name: ConclusionSynthesizer
-    layout: parallel
-    message_template: |
-      {{#if revision.index}}
-      Revision instructions: {{revision.source_outputs.0.content}} ...
-      {{else}}
-      Original question: "{{question}}"
-      Deliberation transcript: {{#each rounds.spar.repeats}}...{{/each}}
-      GENERATE JSON NOW.
-      {{/if}}
-    agent_failure: abort
+### `sparring` — 3 rounds (rounds-audit) — `debate` (repeats: 3), `synthesis`, `audit`
+Debate uses `repeats: 3` and serial layout. Synthesis is a single-agent serial round. Audit has `on_failure: { action: revise, target: synthesis, max_revisions: 1, signal: { type: contains, value: FLAG } }`.
 
-  - id: audit
-    name: Audit
-    agents:
-      - name: BlindCritic
-      - name: FactChecker
-    layout: parallel
-    message_template: |
-      Principal's question: {{question}}
-      Conclusion to Review: {{rounds.synthesis.outputs.0.content}}
-    agent_failure: continue
-    on_failure:
-      action: revise
-      target: synthesis
-      max_revisions: 1
-      signal:
-        type: contains
-        value: FLAG
-        case_sensitive: false
-```
+### `crucible` — same shape as sparring with 4 debate agents
+### `war-room` — same shape as sparring with 6 debate agents
 
-### `crucible` — same as sparring with 4 spar agents
-### `war-room` — same as sparring with 6 spar agents
+### `a0-baseline`, `a1-baseline` — 1 round, 1 agent (solo)
 
-### `a0-baseline`, `a1-baseline` — 1 round with 1 agent
-```yaml
-id: a0-baseline
-display_name: A0
-agents:
-  - name: A0
-    model: claude-sonnet-4-6
-rounds:
-  - id: answer
-    name: Answer
-    agents:
-      - name: A0
-    layout: parallel
-    message_template: "{{question}}"
-    agent_failure: abort
-```
-
-### `brokered-trio`, `brokered-quartet` — 1 round with N agents
-Same shape as `vada-reviewers`, different agent count.
+### `brokered-trio`, `brokered-quartet` — same shape as `vada-reviewers`, different agent counts (brokered-no-synth)
 
 **Every YAML in the catalog fits one structure.** Adding a new flow is "describe its rounds in YAML." Zero engine code, zero UI code.
 
+---
+
 ## Cross-stack changes
 
-### Schema + types (`@atta/engine`, `@vada/cms` for Sanity if it mirrors)
-- New TypeScript types in `packages/engine/src/types.ts`: `Flow`, `Round`, `AgentInRound`, `OnFailureSpec`
-- Delete: `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, the workflow discriminated union
-- New: `validateFlow(spec)` replaces the per-workflow validators
-- Validation rules:
-  - `rounds.length >= 1`
-  - All round `id`s unique within a flow
-  - All `on_failure.target` references point to a prior round (no forward references, no cycles beyond `max_revisions`)
-  - All `agents[].name` referenced in any round exist in the top-level `agents` array
-  - For `layout: serial`, agents are ordered; for `parallel`, ordering is ignored
-  - `repeats >= 1`
-  - `max_revisions >= 1` when `action='revise'`
-  - Either round has `message_template` OR every agent in the round has its own `message_template`
-  - A round with zero agents is rejected
+### Schema + types (`@atta/engine`) — shipped in PR #41
+- New TypeScript types in `packages/engine/src/flow-types.ts`: `Flow`, `Round`, `AgentInRound`, `OnFailureSpec`, `FailureSignal`, `FlowAgent`
+- Deleted in PR #47: `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow`, the `Workflow` discriminated union, `Team`
+- New: `validateFlow(flow)` enforcing 10 rules (see `validate-flow.ts`)
+- Validation rules shipped as designed.
 
-### Engine compiler (`@atta/engine/src/compile.ts`)
-- One function: `compileFlow(flow, question, model) → Plan`
-- Replaces: `compileBrokered`, `compileRounds`, `compileSolo`, `compileCustom` (already deleted per D-014)
-- Plan structure stays as-is (PlanNode + PlanEdge, per PR #31). The compiler just walks the rounds and emits nodes accordingly.
-- For `on_failure: { action: 'revise', target, max_revisions }`, the compiler emits a conditional edge from the failing round's terminal back to the target round, with a revision counter on the state.
-- Terminal state determination unchanged: CLEAN / ERROR / UNCONVERGED based on which agents produced output.
+### Engine compiler — shipped in PR #47
+- One entrypoint: `compileFlow(flow, question, model?, customVars?) → Plan` in `packages/engine/src/compile-flow.ts`
+- Replaces: `compileBrokered`, `compileRounds`, `compileSolo`, `compileCustom` (all deleted)
+- Plan structure preserved — `PlanNode` + `PlanEdge` + `PlanConditionalEdge` unchanged.
+- For `on_failure: { action: 'revise', target, max_revisions }`, the compiler pre-allocates `terminal-{k}` nodes for k from 0 to max_revisions, and pre-allocates audit slots for each terminal. Conditional edges wire `audit-{lastAuditor}-{k}` → `terminal-{k+1}` (if signal) or `__END__` (otherwise).
 
-### MCP server (`apps/vada-ai/mcp-server`)
-- `vada__consult` tool input shape:
-  - Today's `reviewers[]` field stays as a UX-friendly alias mapping to "agents in the first round of the flow"
-  - For flows where the first round is the only round (vada-reviewers, brokered-trio), this is intuitive
-  - For flows where the first round is part of a longer flow (sparring), per-agent overrides still target those agents
-- `vada__deliberate` tool input shape unchanged (just `team` enum + brief)
-- `reviewer_config: Record<agentName, modelId>` (from PR #31) becomes `agent_config: Record<agentName, modelId>`, applied across all rounds where that agent appears. Name change is cosmetic — same validation, same registry-backed lookup.
-- The hosted MCP route at `apps/vada-ai/web/src/app/api/mcp/route.ts` passes through to the same tools.
+### MCP server — partially shipped
+- `vada__consult` and `vada__deliberate` continue to operate on the same input shapes — they pass through to `compileFlow` and the v1 Plan node ids are emitted unchanged.
+- `reviewer_config` → `agent_config` rename: **NOT YET SHIPPED.** Queued as PR 3.
 
-### Web route handler (`apps/vada-ai/web/src/app/api/deliberation/[id]/workflow/run/route.ts`)
-- Reads the new schema via `loadYamlFromCatalog`
-- Same `agentVendorOverrides` construction as today (PR #31 vendor registry stays)
-- Calls `compileFlow` instead of the old per-workflow compilers
-- SSE event names: see "Streaming contract" below
+### Web route handler — shipped in PR #47
+- Reads the new schema via `loadYamlFromCatalog` and the v2-aware `validateAllSpecs` at startup.
+- Calls `compileFlow` instead of the old per-workflow compilers.
+- Continues to construct `agentVendorOverrides` for D-032 sdkShape dispatch.
+- SSE events: still emit v1 names (`agent_completed` with integer `round` field, `state_changed`, `synthesis_complete`, `terminal`). PR 3 work.
 
-### SSE streaming contract
-The current event types are:
-- `keepalive`
-- `agent_completed` — `{ id, agent, round, content }` — note: `round` is a number today
-- `state_changed` — `{ state: "ROUND_N" | "TERMINAL" | "CONCLUDING" | "AUDITING" | "REVISING" | ... }`
-- `synthesis_complete` — `{ agent, content, structured, is_revision }`
-- `terminal` — `{ terminalState }`
-
-In the new architecture, the special-cased states (`ROUND_N`, `CONCLUDING`, `AUDITING`, `REVISING`) get replaced by generic round-level events:
-
-- `keepalive` — unchanged
-- `agent_completed` — `{ id, agent, round_id, repeat_index, content, structured?, error? }` — `round_id` replaces the integer `round`; `repeat_index` is which iteration within a multi-repeat round (0 for non-repeating rounds); `structured` field present for agents with `output_format: structured`
-- `round_started` — `{ round_id, name, repeat_index }` — emitted when the engine begins a round (or a new repeat of one)
-- `round_completed` — `{ round_id, repeat_index, signal_matched?: 'revise' | 'abort' | null }` — emitted when a round's agents have all settled; includes the signal-matched action if `on_failure` triggered
-- `revision_started` — `{ source_round_id, target_round_id, revision_index }` — emitted when an `on_failure: revise` triggers a re-run
-- `terminal` — `{ terminalState }` — unchanged
-
-The UI binds these events to the rounds it knows about from the spec. `state_changed` goes away entirely. `synthesis_complete` goes away — synthesis is just an `agent_completed` event for an agent in a single-agent round; the `structured` field on that event is what the UI checks for to render the structured conclusion panel.
-
-### UI renderer (`apps/vada-ai/web/src/app/(main)/deliberation/[id]/`)
-- Delete: `RoundStrip.tsx`, `Round.tsx`, `RoundView.tsx`, `useRoundStrip.ts`, the empty-state "Agents are getting ready…" logic
-- New: `FlowFeed.tsx`, `RoundColumn.tsx`, `AgentGrid.tsx`, `AgentChain.tsx`, `AgentCard.tsx`, `useFlowState.ts`
-- `FlowFeed` reads the `rounds` array from the spec (loaded server-side in `page.tsx`) and renders one `RoundColumn` per round, top-to-bottom, centered.
-- `RoundColumn`:
-  - Header: round `name` + status badge
-  - Body: agents rendered in `AgentGrid` (parallel) or `AgentChain` (serial) layout
-  - For `repeats > 1`: multiple `AgentGrid`/`AgentChain` rows separated by a "Round N of M" divider
-  - For `on_failure: revise` triggered: the round below shows both the original run and the revised run stacked, with the original marked "superseded by revision"
-- `AgentCard`:
-  - Avatar (the existing `<AIASphere>` cluster per agent)
-  - Streaming content as it arrives
-  - Error banner if `output.error` is set (showing the actual error message — leverages PR #35)
-- Each card streams independently as its `agent_completed` event arrives. Cards exist on mount in `pending` state; they fill in as events arrive. No more "Agents are getting ready…" empty state.
-- Horizontal scroll within `AgentGrid`/`AgentChain` when the agent count exceeds the viewport (your OQ-1 request)
+### UI — partially shipped
+- `apps/vada-ai/web/src/lib/flow-helpers.ts` (new, 39 lines) provides shape detection for the UI: `detectShape`, `getDisplayAgentNames`, `getFlowAgentCount`, `getFlowShapeLabel`. Consumed by `DeliberatePanel`, `TeamPicker`, `TeamSummary`, `TeamHeader`, `AgentTab`, `calculator.ts`.
+- The existing `RoundStrip` components continue to render v2-compiled Plans correctly because the adapter emits v1-shape node ids and SSE events.
+- New `FlowFeed` / `RoundColumn` / `AgentGrid` / `AgentChain` / `AgentCard` components: **NOT YET SHIPPED.** Queued as PR 4.
 
 ### Decision log entry
-A new `D-033` in `vada-decisions.md` captures this refactor. References D-011 ("engine has zero branches on workflow type" — this finally delivers that promise across the full stack), D-013 (`@vada/teams` deletion — same direction, but the YAML schema was still two-shape), D-018 → D-025 (YAML immutability — preserved, no `-v1` suffix needed since every YAML keeps its own id), D-029 (hosted MCP, unchanged), D-030 (ecosystem-shared keys, unchanged), D-032 (vendor registry, unchanged — sdkShape dispatch is orthogonal to the flow shape).
+D-033 in `apps/vada-ai/specs/vada-decisions.md` — ACTIVE. D-034 (cleanup) follows.
 
-## Rollout — 4 PRs sequenced on a feature branch
+A global D-017 in `project-management/decisions.md` references D-033 as a cross-product architectural decision (added in this docs cleanup PR).
 
-Working branch: `feat/generic-flow-refactor` (separate from `design/generic-flow-refactor` where this doc lives).
+---
 
-### PR 1 — Schema + types + validation (Haiku-level, ~1 day)
-- New types in `packages/engine/src/types.ts`
-- New `validateFlow` function
-- New JSON schema for IDE autocomplete (optional)
-- Delete old workflow types (`BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`)
-- Unit tests on `validateFlow` covering happy paths + every validation rule + revision-target reference rules + template-required validation
-- Doesn't touch compilers, YAML files, or UI. Just types and validation.
-- The compiler still builds against the new types — `compileFlow` is a stub that throws. Existing compilers are deleted in PR 2.
-- This PR will break the build until PR 2 lands. Land them back-to-back, or land PR 1 with stubs that match the old surface during transition.
+## Rollout — 4 PRs sequenced
 
-Lean: ship PR 1 with a `// TODO: refactor in PR 2` comment in the engine that satisfies the old compiler signatures temporarily by delegating to `compileFlow` stubs. The build stays green; the runtime fails for any flow execution until PR 2.
+Original sequencing was 4 PRs. Two shipped, two deferred.
 
-### PR 2 — `compileFlow` + YAML migration (Sonnet, ~2 days)
-- One implementation of `compileFlow` that walks rounds and emits PlanNodes
-- All 9 catalog YAMLs migrated to the new schema (hand-converted, validated by `validateFlow`)
-- Template context resolution: engine populates `rounds.<id>.outputs`, `currentRound.*`, `revision.*` automatically
-- Old compilers deleted
-- Existing engine tests updated to use the new YAMLs
-- The route handler unchanged at this point — it calls `compileFlow` instead of the old per-shape compilers, but the SSE events still use old event names
+### PR 1 — Schema + types + validation ✅ SHIPPED
+PR #41. As specified.
 
-Verification: every existing benchmark run in `/bench` reproduces.
+### PR 2 — `compileFlow` + YAML migration ✅ SHIPPED
+PR #47. As specified, with the following deltas from the original plan:
+- Migrated 9 YAMLs (the design doc said 9; the figure is correct)
+- Deleted old types in the same PR rather than after (Principal rejected the proposed backwards-compat shim)
+- Updated 29 consumer files in the same PR (route handler, MCP tool files, 6 UI components, verify scripts, new `flow-helpers.ts`)
+- Bug fix: `vada-reviewers-synthesis` synthesis template (was `{{reviewerResponses}}`, never populated)
 
-### PR 3 — MCP server + route handler + new SSE events (Sonnet, ~1 day)
-- `vada__consult` and `vada__deliberate` updated for new agent_config shape
-- Route handler emits new SSE event names (`round_started`, `round_completed`, `revision_started`) and drops the old ones
-- Temporarily emit BOTH old and new events to let PR 4 land independently
+### PR 3 — MCP server + route handler + new SSE events — DEFERRED
+Specified in this design doc but not shipped in #47. Queued as separate work. Scope:
+- `vada__consult` and `vada__deliberate` `reviewer_config` parameter renamed to `agent_config` (validated against vendor registry, same shape, name-only change)
+- Route handler emits new SSE event names (`round_started`, `round_completed`, `revision_started`) and drops the old special-cased states (`state_changed: ROUND_N | CONCLUDING | AUDITING | REVISING`)
+- Temporary dual emission to let PR 4 land independently
 
-### PR 4 — UI rewrite (Sonnet, ~2-3 days)
-- New components: `FlowFeed`, `RoundColumn`, `AgentGrid`, `AgentChain`, `AgentCard`, `useFlowState`
-- Delete: `RoundStrip`, `Round`, `RoundView`, `useRoundStrip`, dead empty-state logic
-- New event-handling: subscribe to `round_started`, `round_completed`, `revision_started`, `agent_completed`
-- Drop subscriptions to deprecated events
+### PR 4 — UI rewrite — DEFERRED
+New components (`FlowFeed`, `RoundColumn`, `AgentGrid`, `AgentChain`, `AgentCard`, `useFlowState`). Subscribes to PR 3's new SSE event names. Drops the existing `RoundStrip` / `Round` / `RoundView` / `useRoundStrip` components.
 
-Total: 4 PRs, 5-7 days end-to-end if dispatched serially.
+### D-034 cleanup ✅ SHIPPED
+Mechanical follow-up identified during PR #47 diff review:
+- `compile-flow.ts` `buildRevisionCondition` throws on unsupported signal types instead of silently treating `equals`/`matches` as `contains`
+- `RevisionCondition` in `types.ts` collapsed to single-variant interface
+- Adapter switch tables in `adapter.ts` and `graph-builder.ts` lost their dead `json-field-equals` / `json-field-truthy` case blocks (scope expansion from the original 3-file brief to 5 files after stop condition triggered)
 
-### Cleanup PR — Drop deprecated event emission (~½ day, mechanical)
-- Route handler stops emitting old events
-- Verify no callers depend on them
+---
 
-## Open questions for Principal review
+## Open questions for Principal review — resolutions
 
-**OQ-1 — `agent_failure` defaulting.** Should each round have to declare `agent_failure` explicitly, or is there a sensible default?
-- Lean: default to `continue` for parallel rounds (vendor diversity assumption), `abort` for serial rounds (the chain breaks without a link). Override per round as needed.
+**OQ-1 — `agent_failure` defaulting.** ✅ Resolved as proposed. Default: `continue` for `parallel`, `abort` for `serial`. Override per round. Implemented as Rule 10 / `resolveAgentFailure()`.
 
-**OQ-2 — Round names vs round ids.** Today, `round` in SSE events is an integer (`round: 1`, `round: 2`). In the new architecture, do we send `round_id` (string, matches the YAML) or keep an integer index, or both?
-- Lean: `round_id` (string) is the canonical identifier sent in SSE events. Plus `repeat_index` (integer, 0-based) for multi-repeat rounds. Drop integer round numbers from the API surface entirely.
+**OQ-2 — Round names vs round ids.** Resolved as `round_id` (string) is canonical at the schema layer. SSE event shape is **deferred to PR 3** — still v1 (integer `round` field) today.
 
-**OQ-3 — How does the UI label round repeats?**
-- Lean: "Round 1 of 3" style.
+**OQ-3 — How does the UI label round repeats?** Deferred to PR 4 (UI rewrite).
 
-**OQ-4 — Does `agent_config` still target by agent name only, or does it need round-id awareness?**
-- Lean: keep flat `Record<agentName, modelId>` — applies to that agent wherever it appears. Per-round-per-agent overrides are a future feature if anyone asks.
+**OQ-4 — Does `agent_config` still target by agent name only?** Resolved as flat `Record<agentName, modelId>`. Rename from `reviewer_config` deferred to PR 3.
 
-**OQ-5 — What happens to `output_format: structured` agents?**
-- Lean: `agent_completed` payload becomes `{ id, agent, round_id, repeat_index, content, structured?: object, error? }`. The UI checks for the `structured` field and renders it via the existing `ConclusionPanel` logic if present. `synthesis_complete` event goes away.
+**OQ-5 — `output_format: structured` agents.** Resolved. `AgentOutput.structured` field carries the parsed structured payload. SSE event renaming (`synthesis_complete` → `agent_completed` with `structured` field) deferred to PR 3.
 
-**OQ-6 — Should `display_name` and `description` apply to the flow, the round, or both?**
-- Lean: round has `name` (required, shown in UI), `description?` (optional, shown in tooltip on hover if present). Same as flow.
+**OQ-6 — `display_name`/`description` apply to flow, round, or both?** Resolved: round has `name` (required), no `description` field. Flow has both. Schema implemented.
 
-**OQ-7 — Audit "FLAG" signal robustness.**
-- Lean: keep `contains` semantics for v1. Add `signal.type: 'matches'` (regex) and `signal.type: 'structured_field'` as future work.
+**OQ-7 — Audit "FLAG" signal robustness.** Resolved: keep `contains` for v1. `equals` and `matches` reserved in schema but rejected by engine (D-034). Future work to implement.
 
-**OQ-8 — Empty rounds (rounds with no agents).** Reject at validation. Already in the validation rules above.
+**OQ-8 — Empty rounds.** ✅ Resolved. Validation Rule 9 rejects.
 
-**OQ-9 — Inline vs referenced agent definitions in rounds.** Reference by name. Already in the schema above.
+**OQ-9 — Inline vs referenced agent definitions in rounds.** ✅ Resolved. Reference by name.
 
-**OQ-10 — Migration of existing sessions.** No data migration needed. spec_id is a stable identifier.
+**OQ-10 — Migration of existing sessions.** ✅ Resolved. No data migration needed; `spec_id` is a stable identifier.
 
-## What I need from you, Dani
+New open questions surfaced during implementation:
 
-1. **Confirm the conceptual model.** Universal rounds, declarative revision, `on_failure` schema.
-2. **Confirm the data flow model.** Implicit template context (Option A), with `inputs:` declaration as future work.
-3. **Confirm the within-round input model.** `message_template` at round level, optional agent-level override.
-4. **Resolve OQ-1 through OQ-10.** Most have explicit leans; push back where wrong.
-5. **Confirm the rollout sequencing.** 4 PRs as described, or different shape?
-6. **Confirm the docs trail.** Design doc here, D-033 entry in `vada-decisions.md`, then exec briefs sequenced.
-7. **Anything you want flagged but I missed.**
-
-Once these are settled, I write the D-033 decision log entry (added to the same `design/generic-flow-refactor` branch as a second commit), and then the first brief (PR 1 — schema + types).
+- **OQ-H** (`vada-state.md`) — Adapter refactor to round-namespaced TemplateState. Future work.
+- **OQ-I** (`vada-state.md`) — Shape detection in `compileFlow` vs generic walker. Currently shape detection; could be revisited when adapter is refactored.
