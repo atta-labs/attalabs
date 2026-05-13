@@ -14,7 +14,7 @@ export function PaliFooter() {
           mean.
         </Text>
         <Text as='p' className='mb-16 text-sm italic text-muted-foreground/60'>
-          Pāli name = built by Atta. Anything else plugs in.
+          Pāli names are mandatory inside Atta. Elective elsewhere in the lab.
         </Text>
 
         <div className='text-center'>
