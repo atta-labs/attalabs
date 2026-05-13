@@ -7,13 +7,22 @@ const product = process.env.SANITY_STUDIO_PRODUCT
 const isAtta = product === 'atta'
 const isVada = product === 'vada'
 const isVitakka = product === 'vitakka'
+const isAttalabs = product === 'attalabs'
 
 export default defineConfig({
-  name: isAtta ? 'atta' : isVada ? 'vada' : isVitakka ? 'vitakka' : 'herald',
-  title: isAtta ? 'Atta CMS' : isVada ? 'Vada CMS' : isVitakka ? 'Vitakka CMS' : 'Herald CMS',
+  name: isAtta ? 'atta' : isVada ? 'vada' : isVitakka ? 'vitakka' : isAttalabs ? 'attalabs' : 'herald',
+  title: isAtta
+    ? 'Atta CMS'
+    : isVada
+      ? 'Vada CMS'
+      : isVitakka
+        ? 'Vitakka CMS'
+        : isAttalabs
+          ? 'AttalLabs CMS'
+          : 'Herald CMS',
   projectId:
     process.env.SANITY_STUDIO_PROJECT_ID ||
-    (isAtta ? '892o2m9f' : isVada ? 'ofnj2ojb' : isVitakka ? 'o56nzgrr' : 'e9gbd2d1'),
+    (isAtta ? '892o2m9f' : isVada ? 'ofnj2ojb' : isVitakka ? 'o56nzgrr' : isAttalabs ? 'l5n0n8nn' : 'e9gbd2d1'),
   dataset: process.env.SANITY_STUDIO_DATASET || 'production',
   plugins: [
     structureTool({
@@ -87,30 +96,67 @@ export default defineConfig({
                           ])
                       )
                   ])
-              : S.list()
-                  .title('Herald Content')
-                  .items([
-                    S.listItem()
-                      .title('Herald Config')
-                      .child(S.document().schemaType('heraldConfig').documentId('heraldConfig').title('Herald Config')),
-                    S.listItem()
-                      .title('Branding')
-                      .child(
-                        S.document().schemaType('branding').documentId('branding-herald').title('Herald Branding')
-                      ),
-                    S.listItem()
-                      .title('User Interface')
-                      .child(
-                        S.list()
-                          .title('Herald User Interface')
-                          .items([
-                            S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Herald Themes')),
-                            S.listItem()
-                              .title('Libraries')
-                              .child(S.documentTypeList('library').title('Herald Libraries'))
-                          ])
-                      )
-                  ])
+              : isAttalabs
+                ? S.list()
+                    .title('AttalLabs Content')
+                    .items([
+                      S.listItem()
+                        .title('AttalLabs Config')
+                        .child(
+                          S.document()
+                            .schemaType('attalabsConfig')
+                            .documentId('attalabsConfig')
+                            .title('AttalLabs Config')
+                        ),
+                      S.listItem()
+                        .title('Branding')
+                        .child(
+                          S.document()
+                            .schemaType('branding')
+                            .documentId('branding-attalabs')
+                            .title('AttalLabs Branding')
+                        ),
+                      S.listItem()
+                        .title('User Interface')
+                        .child(
+                          S.list()
+                            .title('AttalLabs User Interface')
+                            .items([
+                              S.listItem()
+                                .title('Themes')
+                                .child(S.documentTypeList('uiTheme').title('AttalLabs Themes')),
+                              S.listItem()
+                                .title('Libraries')
+                                .child(S.documentTypeList('library').title('AttalLabs Libraries'))
+                            ])
+                        )
+                    ])
+                : S.list()
+                    .title('Herald Content')
+                    .items([
+                      S.listItem()
+                        .title('Herald Config')
+                        .child(
+                          S.document().schemaType('heraldConfig').documentId('heraldConfig').title('Herald Config')
+                        ),
+                      S.listItem()
+                        .title('Branding')
+                        .child(
+                          S.document().schemaType('branding').documentId('branding-herald').title('Herald Branding')
+                        ),
+                      S.listItem()
+                        .title('User Interface')
+                        .child(
+                          S.list()
+                            .title('Herald User Interface')
+                            .items([
+                              S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Herald Themes')),
+                              S.listItem()
+                                .title('Libraries')
+                                .child(S.documentTypeList('library').title('Herald Libraries'))
+                            ])
+                        )
+                    ])
     }),
     visionTool()
   ],

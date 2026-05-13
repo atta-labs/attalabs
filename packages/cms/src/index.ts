@@ -10,11 +10,18 @@ export {
   PROJECT_IDS,
   type ProductKey
 } from './client'
-export { getAttaBranding, getHeraldBranding, getVadaBranding, getVitakkaBranding } from './queries/branding'
+export {
+  getAttaBranding,
+  getAttalabsBranding,
+  getHeraldBranding,
+  getVadaBranding,
+  getVitakkaBranding
+} from './queries/branding'
 export { getLibraries, getLibraryById } from './queries/library'
 // Queries
 export {
   getAttaConfig,
+  getAttalabsConfig,
   getHeraldConfig,
   getProductUiConfig,
   getVadaConfig,
@@ -24,6 +31,7 @@ export { getThemeById, getThemeByName, getThemeList, getThemes } from './queries
 // Types
 export type {
   AttaConfig,
+  AttalabsConfig,
   CMSBranding,
   CMSBrandingFaviconSet,
   CMSBrandingFile,

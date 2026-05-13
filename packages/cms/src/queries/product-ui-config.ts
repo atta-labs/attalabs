@@ -57,3 +57,7 @@ export async function getVitakkaConfig(client: SanityClient): Promise<PortalUiCo
 export async function getVadaConfig(client: SanityClient): Promise<PortalUiConfig | null> {
   return getProductUiConfig(client, 'vadaConfig', 'vadaConfig')
 }
+
+export async function getAttalabsConfig(client: SanityClient): Promise<PortalUiConfig | null> {
+  return getProductUiConfig(client, 'attalabsConfig', 'attalabsConfig')
+}

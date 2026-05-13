@@ -15,7 +15,8 @@ export const PROJECT_IDS = {
   herald: 'e9gbd2d1',
   atta: '892o2m9f',
   vada: 'ofnj2ojb',
-  vitakka: 'o56nzgrr'
+  vitakka: 'o56nzgrr',
+  attalabs: 'l5n0n8nn'
 } as const
 
 export type ProductKey = keyof typeof PROJECT_IDS
