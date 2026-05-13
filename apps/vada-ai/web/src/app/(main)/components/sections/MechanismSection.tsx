@@ -1,116 +1,142 @@
 'use client'
 
 import { Heading } from '@atta/ui'
-import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
 import { mdxComponents } from '@/components/mdx/MDXComponents'
-import { AGENT_COLOR_BY_ROLE } from '@/components/agents/visuals'
 import { SectionLabel } from '../primitives/SectionLabel'
 import { SectionWrapper } from '../primitives/SectionWrapper'
 import { TwoColumnSection } from '../primitives/TwoColumnSection'
 import { BYOKCallout } from './mechanism/BYOKCallout'
-import type { AgentCardData } from '../primitives/AgentCard'
 
 const P = mdxComponents.p as React.ComponentType<{ children: React.ReactNode; className?: string }>
 const Blockquote = mdxComponents.blockquote as React.ComponentType<{ children: React.ReactNode; className?: string }>
 
-const MECHANISM_AGENTS: AgentCardData[] = [
-  {
-    agent: 'strategist',
-    name: 'Strategist',
-    role: 'Maps the landscape.',
-    voice: 'Maps the landscape. Here is the map.'
-  },
-  {
-    agent: 'critic',
-    name: 'Critic',
-    role: 'Finds what is wrong.',
-    voice: 'Finds what is wrong. Here is where the map is wrong.'
-  },
-  {
-    agent: 'devils_advocate',
-    name: "Devil's Advocate",
-    role: 'Rejects the frame.',
-    voice: 'Rejects the frame. We should not be making a map at all.'
-  },
-  {
-    agent: 'synthesizer',
-    name: 'Synthesizer',
-    role: 'Draws threads together.',
-    voice: 'Draws threads together. Here is what we know, and here is what we broke.'
-  }
-]
+/**
+ * Illustrative YAML — generic agent names (a, b, c), no roles, no team identity.
+ * The point is to show the SHAPE of a team definition, not to publish a real team.
+ */
+const ILLUSTRATIVE_YAML = `schema_version: "2.0"
+id: example-team
+name: An example team
 
-// --- SVG Helpers for the Network Topology ---
-function OrthogonalGeometry() {
+agents:
+  - name: agent_a
+    model: anthropic/claude-sonnet
+  - name: agent_b
+    model: openai/gpt-4
+  - name: agent_c
+    model: google/gemini
+
+flow:
+  rounds:
+    - id: open
+      layout: parallel
+      agents: [agent_a, agent_b, agent_c]
+      message_template: "{{question}}"
+
+    - id: respond
+      layout: parallel
+      agents: [agent_a, agent_b, agent_c]
+      message_template: "{{previousRound}}"
+
+    - id: synthesize
+      layout: sequential
+      agents: [agent_a]
+      message_template: "{{allPreviousOutputs}}"
+`
+
+function YamlBlock() {
   return (
-    <svg viewBox='0 0 180 140' className='w-full'>
-      <circle cx='50' cy='40' r='9' fill={AGENT_COLOR_BY_ROLE.strategist} />
-      <circle cx='130' cy='40' r='9' fill={AGENT_COLOR_BY_ROLE.critic} />
-      <circle cx='50' cy='110' r='9' fill={AGENT_COLOR_BY_ROLE.synthesizer} />
-      <circle cx='130' cy='110' r='9' fill={AGENT_COLOR_BY_ROLE.devils_advocate} />
-    </svg>
+    <div className='border-[1.5px] border-foreground bg-background'>
+      <div className='flex justify-between items-center border-b border-border px-3 py-2'>
+        <span className='font-mono text-[9px] tracking-[0.2em] uppercase font-medium'>team.yaml</span>
+        <span className='font-mono text-[9px] tracking-[0.14em] text-muted-foreground uppercase'>declarative</span>
+      </div>
+      <pre className='p-4 font-mono text-[10px] leading-[1.6] text-foreground/85 overflow-x-auto whitespace-pre'>
+        <code>{ILLUSTRATIVE_YAML}</code>
+      </pre>
+    </div>
   )
 }
 
-function AdversarialGeometry() {
+/**
+ * Compiled flow — abstract round columns, no names, no labels.
+ * Maps 1:1 with the rounds in ILLUSTRATIVE_YAML so the visual parity is obvious.
+ */
+function CompiledFlowBlock() {
+  // 3 rounds matching the YAML: parallel/parallel/sequential
+  const rounds = [
+    { id: 'open', layout: 'parallel', count: 3 },
+    { id: 'respond', layout: 'parallel', count: 3 },
+    { id: 'synthesize', layout: 'sequential', count: 1 }
+  ]
+
   return (
-    <svg viewBox='0 0 180 140' className='w-full text-border'>
-      <line x1='50' y1='40' x2='130' y2='110' stroke='currentColor' strokeWidth='1.5' />
-      <line x1='130' y1='40' x2='50' y2='110' stroke='currentColor' strokeWidth='1.5' />
-      <line x1='50' y1='40' x2='130' y2='40' stroke='currentColor' strokeWidth='1.5' />
-      <line x1='50' y1='110' x2='130' y2='110' stroke='currentColor' strokeWidth='1.5' />
-      <line x1='50' y1='40' x2='50' y2='110' stroke='currentColor' strokeWidth='1.5' />
-      <line x1='130' y1='40' x2='130' y2='110' stroke='currentColor' strokeWidth='1.5' />
-
-      <circle cx='50' cy='40' r='9' fill={AGENT_COLOR_BY_ROLE.strategist} />
-      <circle cx='130' cy='40' r='9' fill={AGENT_COLOR_BY_ROLE.critic} />
-      <circle cx='50' cy='110' r='9' fill={AGENT_COLOR_BY_ROLE.synthesizer} />
-      <circle cx='130' cy='110' r='9' fill={AGENT_COLOR_BY_ROLE.devils_advocate} />
-    </svg>
-  )
-}
-
-function ConvergenceGeometry() {
-  return (
-    <svg viewBox='0 0 180 140' className='w-full text-border'>
-      <line x1='50' y1='40' x2='90' y2='75' stroke='currentColor' strokeWidth='1.5' />
-      <line x1='130' y1='40' x2='90' y2='75' stroke='currentColor' strokeWidth='1.5' />
-      <line x1='50' y1='110' x2='90' y2='75' stroke='currentColor' strokeWidth='1.5' />
-      <line x1='130' y1='110' x2='90' y2='75' stroke='currentColor' strokeWidth='1.5' />
-
-      {/* Central "Resolved" Node */}
-      <circle cx='90' cy='75' r='10' fill='none' stroke='hsl(var(--foreground))' strokeWidth='1.5' />
-      <line x1='85' y1='70' x2='95' y2='80' stroke='hsl(var(--foreground))' strokeWidth='1' />
-      <line x1='95' y1='70' x2='85' y2='80' stroke='hsl(var(--foreground))' strokeWidth='1' />
-
-      <circle cx='50' cy='40' r='9' fill={AGENT_COLOR_BY_ROLE.strategist} />
-      <circle cx='130' cy='40' r='9' fill={AGENT_COLOR_BY_ROLE.critic} />
-      <circle cx='50' cy='110' r='9' fill={AGENT_COLOR_BY_ROLE.synthesizer} />
-      <circle cx='130' cy='110' r='9' fill={AGENT_COLOR_BY_ROLE.devils_advocate} />
-    </svg>
+    <div className='border-[1.5px] border-foreground bg-background'>
+      <div className='flex justify-between items-center border-b border-border px-3 py-2'>
+        <span className='font-mono text-[9px] tracking-[0.2em] uppercase font-medium'>compiled flow</span>
+        <span className='font-mono text-[9px] tracking-[0.14em] text-muted-foreground uppercase'>executable</span>
+      </div>
+      <div className='p-4 flex flex-col gap-3'>
+        {rounds.map((round, idx) => (
+          <div key={round.id} className='flex flex-col gap-1.5'>
+            <div className='flex items-center justify-between'>
+              <span className='font-mono text-[9px] tracking-[0.18em] uppercase text-muted-foreground'>
+                round · {round.id}
+              </span>
+              <span className='font-mono text-[8px] tracking-[0.14em] uppercase text-muted-foreground/70'>
+                {round.layout}
+              </span>
+            </div>
+            <div className={round.layout === 'parallel' ? 'grid grid-cols-3 gap-1.5' : 'flex flex-col gap-1.5'}>
+              {Array.from({ length: round.count }, (_, i) => (
+                <div key={i} className='h-6 border border-border bg-muted/30 flex items-center justify-center'>
+                  <div className='w-1.5 h-1.5 rounded-full bg-foreground/60' />
+                </div>
+              ))}
+            </div>
+            {idx < rounds.length - 1 && (
+              <div className='flex justify-center py-0.5'>
+                <div className='font-mono text-[10px] text-foreground/50'>↓</div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
 export function MechanismSection() {
-  // THE TEXT COLUMN (LEFT SIDE)
   const textColumn = (
     <div className='flex flex-col gap-10 md:gap-14 lg:sticky lg:top-24'>
       <div className='flex flex-col gap-6 md:gap-8'>
-        <SectionLabel>03 / The Mechanism</SectionLabel>
+        <SectionLabel>03 / The Engine</SectionLabel>
 
         <Heading level={2} className='font-serif text-4xl md:text-5xl lg:text-6xl text-foreground leading-tight'>
-          <span className='block'>Four agents. Three rounds.</span>
-          <span className='block text-muted-foreground'>One conclusion.</span>
+          <span className='block'>One engine.</span>
+          <span className='block text-muted-foreground'>Any team you can describe.</span>
         </Heading>
 
         <P>
-          The geometry of the room forces extreme scrutiny. The Strategist builds, the Critic tears down, the Devil's
-          Advocate rejects the entire premise, and the Synthesizer hunts for the signal in the noise.
+          Every deliberation runs on the Atta Engine — a compiler that turns a team definition into an executable flow.
+          The team is the configuration. The engine is the runtime.
+        </P>
+
+        <P>
+          A team is defined in YAML. A team is a sequence of rounds. A round has agents. Agents have models, prompts,
+          and a place in the flow. Add an audit gate or a revision loop by describing it. The engine handles parallel
+          execution, state passing, conditional routing, and the audit trail.
+        </P>
+
+        <P>
+          To ship a new team, write a YAML file. To change a team's behavior, change the YAML. There is no team-specific
+          code. Whatever the YAML says, the engine runs.
         </P>
 
         <Blockquote>
           <P>
-            "Most AI products hide their uncertainty. <span className='font-bold not-italic'>Vāda names it.</span>"
+            <span className='font-bold not-italic'>The engine is the product.</span> The teams are the language you
+            speak to it.
           </P>
         </Blockquote>
       </div>
@@ -119,7 +145,6 @@ export function MechanismSection() {
     </div>
   )
 
-  // THE DIAGRAM COLUMN (RIGHT SIDE)
   const diagramColumn = (
     <div className='relative w-full p-4 sm:p-6 lg:p-8 border border-border bg-background/80'>
       {/* Blueprint Grid Mask Layer */}
@@ -138,101 +163,46 @@ export function MechanismSection() {
       />
 
       <div className='relative z-10'>
-        {/* Blueprint Header */}
         <div className='flex items-baseline justify-between mb-10 hidden sm:flex'>
           <div className='font-mono text-[9px] uppercase tracking-[0.24em] text-muted-foreground'>
-            Schema-03 · The Mechanism
+            Schema-03 · The Engine
           </div>
           <div className='font-serif text-sm font-medium text-foreground italic'>Vāda</div>
         </div>
 
-        {/* The Agent Ring */}
-        <div className='flex flex-wrap justify-center gap-6 sm:gap-10 mb-10'>
-          {MECHANISM_AGENTS.map((agent) => {
-            const agentNameMap: Record<string, AgentName> = {
-              strategist: 'Strategist',
-              critic: 'Critic',
-              devils_advocate: "Devil's Advocate",
-              synthesizer: 'Synthesizer'
-            }
-            const agentName = agentNameMap[agent.agent] || (agent.agent as AgentName)
-            return (
-              <div key={agent.agent} className='flex flex-col items-center gap-3 w-20'>
-                <AIAgent
-                  id={`mechanism-${agent.agent}`}
-                  name={agentName}
-                  size='sm'
-                  state='speaking'
-                  showMatrix={true}
-                  particleCount={30}
-                />
-                <div className='text-center'>
-                  <div className='text-[10px] sm:text-[11px] text-muted-foreground leading-tight'>{agent.role}</div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        {/* YAML → compileFlow → executable plan */}
+        <div className='grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-3 items-stretch mb-6'>
+          <YamlBlock />
 
-        {/* The Rounds */}
-        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6'>
-          <div className='border-[1.5px] border-foreground bg-background'>
-            <div className='flex justify-between items-center border-b border-border px-3 py-2'>
-              <span className='font-mono text-[9px] tracking-[0.2em] uppercase font-medium'>Round 1</span>
-              <span className='font-mono text-[9px] tracking-[0.14em] text-muted-foreground uppercase'>Orthogonal</span>
-            </div>
-            <div className='p-4 flex justify-center'>
-              <OrthogonalGeometry />
-            </div>
+          <div className='hidden lg:flex flex-col items-center justify-center px-2 gap-2'>
+            <div className='font-mono text-[8px] tracking-[0.18em] uppercase text-muted-foreground'>compileFlow</div>
+            <div className='text-2xl text-foreground/70 font-mono'>→</div>
+          </div>
+          <div className='flex lg:hidden items-center justify-center py-2 gap-2'>
+            <div className='font-mono text-[8px] tracking-[0.18em] uppercase text-muted-foreground'>compileFlow</div>
+            <div className='text-xl text-foreground/70 font-mono'>↓</div>
           </div>
 
-          <div className='border-[1.5px] border-foreground bg-background'>
-            <div className='flex justify-between items-center border-b border-border px-3 py-2'>
-              <span className='font-mono text-[9px] tracking-[0.2em] uppercase font-medium'>Round 2</span>
-              <span className='font-mono text-[9px] tracking-[0.14em] text-muted-foreground uppercase'>
-                Adversarial
-              </span>
-            </div>
-            <div className='p-4 flex justify-center'>
-              <AdversarialGeometry />
-            </div>
-          </div>
-
-          <div className='border-[1.5px] border-foreground bg-background'>
-            <div className='flex justify-between items-center border-b border-border px-3 py-2'>
-              <span className='font-mono text-[9px] tracking-[0.2em] uppercase font-medium'>Round 3</span>
-              <span className='font-mono text-[9px] tracking-[0.14em] text-muted-foreground uppercase'>
-                Convergence
-              </span>
-            </div>
-            <div className='p-4 flex justify-center'>
-              <ConvergenceGeometry />
-            </div>
-          </div>
+          <CompiledFlowBlock />
         </div>
 
-        <div className='text-center font-serif italic text-sm text-muted-foreground mb-8'>
-          The language between rounds is never compressed. The specific words are the data.
+        <div className='text-center font-serif italic text-sm text-muted-foreground mb-8 max-w-md mx-auto'>
+          A team is declarative data. The engine is the only code that executes a deliberation.
         </div>
 
-        {/* The Pipeline */}
+        {/* The pipeline downstream — generic stages */}
         <div className='border-[1.5px] border-foreground bg-background grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr_auto_1fr] items-stretch'>
           <div className='p-4 flex flex-col justify-center'>
-            <div className='font-mono text-[9px] tracking-[0.14em] font-bold uppercase mb-2 flex items-center gap-2'>
-              Conclusion
-              <span className='font-normal border border-success text-success px-1.5 py-0.5 tracking-[0.1em] rounded-sm'>
-                CLEAN
-              </span>
-            </div>
+            <div className='font-mono text-[9px] tracking-[0.14em] font-bold uppercase mb-2'>Engine output</div>
             <ul className='space-y-1 text-[11px] text-muted-foreground'>
               <li className='flex items-center gap-2'>
-                <span className='text-[6px]'>■</span> Recommendation
+                <span className='text-[6px]'>■</span> Structured conclusion
               </li>
               <li className='flex items-center gap-2'>
-                <span className='text-[6px]'>■</span> Key condition
+                <span className='text-[6px]'>■</span> Full transcript
               </li>
               <li className='flex items-center gap-2'>
-                <span className='text-[6px]'>■</span> Unresolved
+                <span className='text-[6px]'>■</span> Cost & timing metrics
               </li>
             </ul>
           </div>
@@ -245,10 +215,10 @@ export function MechanismSection() {
           <div className='p-4 flex flex-col items-center justify-center text-center border-y lg:border-y-0 border-border'>
             <div className='text-lg text-foreground mb-1'>⊘</div>
             <div className='font-mono text-[9px] tracking-[0.16em] font-bold uppercase text-foreground mb-1'>
-              Blind Critic
+              Optional audit
             </div>
             <div className='font-serif italic text-[11px] text-muted-foreground leading-tight'>
-              Sees only the initial question and the final conclusion.
+              If the team defines one. The engine evaluates the signal and routes to revision or accepts.
             </div>
           </div>
 
@@ -260,11 +230,11 @@ export function MechanismSection() {
           <div className='p-4 flex flex-col justify-center gap-2'>
             <div className='pl-2 border-l-[3px] border-success'>
               <div className='font-mono text-[8px] tracking-[0.14em] font-bold uppercase text-success'>Clean</div>
-              <div className='text-[10px] text-muted-foreground'>Passed on first review.</div>
+              <div className='text-[10px] text-muted-foreground'>Passed.</div>
             </div>
             <div className='pl-2 border-l-[3px] border-warning'>
               <div className='font-mono text-[8px] tracking-[0.14em] font-bold uppercase text-warning'>Revised</div>
-              <div className='text-[10px] text-muted-foreground'>Caught a problem, fixed it.</div>
+              <div className='text-[10px] text-muted-foreground'>Audit caught something. Team fixed it.</div>
             </div>
             <div className='pl-2 border-l-[3px] border-destructive'>
               <div className='font-mono text-[8px] tracking-[0.14em] font-bold uppercase text-destructive'>
