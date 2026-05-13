@@ -59,27 +59,47 @@ Everything else. All skills (`.claude/skills/*/SKILL.md`), all specs (`apps/*/sp
 
 ## The names — operational reference
 
-These names matter every session.
+These names matter every session. Locked v2 framing (May 12, 2026 — see D-033).
 
-### Ecosystem and brand
+### Two ecosystems at different scales
 
-- **Atta** — the ecosystem. Parent organization, monorepo, code namespace `@atta/*`.
-- **AttaLabs** — the public domain wrapper only. Used because bare `atta.{premium-tld}` is unavailable.
-- `attalabs.dev` — the domain. Bought April 26, 2026.
-- The code namespace stays `@atta/*`. AttaLabs is only the URL.
-- There is **no product named Atta** anymore. Atta refers unambiguously to the ecosystem.
+- **AttaLabs ecosystem** = the dev/lab ecosystem. Permanent home at `attalabs.dev`. Where Dani builds AI products. Multiple products live here — some related to Atta, some not.
+- **Atta ecosystem** = the internal composition of Vāda + Vitakka + Sati that makes up Atta-the-product. A smaller scale.
+
+Both legitimate uses of the word. When context-sensitive, prefer the explicit qualifier ("AttaLabs ecosystem" vs "Atta ecosystem" vs "Atta-internal composition") to avoid ambiguity.
+
+### Brand architecture
+
+- **AttaLabs** = the dev/lab. Permanent home at `attalabs.dev`. Multiple products inside.
+- **Atta** = a product within AttaLabs. The deep-thinking AI composed of Vāda + Vitakka + Sati. Target consumer domain: `atta.ai` if available, fallback options preserved. Not yet deployed.
+- **The Atta Engine** = the agent-flow execution substrate (`@atta/engine` + `@atta/adapter-langgraph`). Powers Vāda today; will power Vitakka and Atta. Lives in AttaLabs.
+- **Code namespace** stays `@atta/*`. The monorepo's name, not a brand. Code for any AttaLabs product can live under it.
 
 ### Products
 
-- **Vāda** — deliberation engine. V1 active. Pāli for "debate/discourse." Subdomain: `vada.attalabs.dev`.
-- **Vitakka** — focus / thinking partner. V2 direction, paused. Pāli for "directed thought." Subdomain: `vitakka.attalabs.dev`.
-- **Sati** — memory layer / cross-provider persistent self. V3 direction, conceptual. Pāli for "memory, mindfulness." Subdomain: `sati.attalabs.dev`.
-- **Cetana** — the local Mac orchestration coordinator. V0 shipped May 10, 2026. Pāli for "volition, intention."
-- **Herald** — pluggable MCP tool. NOT a core product. English name (signals "plugs in"). Forensic CV/JD match.
+| Product | What it is | Domain |
+|---|---|---|
+| **Atta** | The deep-thinking AI. Composed of Vāda + Vitakka + Sati. Not yet deployed. | TBD; target `atta.ai` |
+| **Vāda** | Deliberation engine. V1 live. Standalone product + deliberation layer inside Atta. Pāli for "debate/discourse." | `vada.attalabs.dev` |
+| **Vitakka** | Focused-thinking product. Not yet built. Standalone product + focus / situated-cognition layer inside Atta. Pāli for "directed thought." | `vitakka.attalabs.dev` (when built) |
+| **Sati** | Memory layer inside Atta. Standalone surface scope deferred (may or may not exist). Pāli for "mindfulness, recollection." | TBD |
+| **Cetana** | Internal dev tooling for the Atta team — local Mac orchestration coordinator. V0/V0.5 in active development. NOT part of Atta. Future public product surface conditional on V0/V0.5 proving daily-driver value. Pāli for "volition, intention." | (internal use only today); `cetana.attalabs.dev` conditional future |
+| **Herald** | Standalone forensic CV/JD match tool. NOT part of Atta. Sibling product in AttaLabs. English name. | `herald.attalabs.dev` (when deployed) |
 
-### Naming rule
+### Naming convention — no `-AI` suffix on any product brand
 
-Pāli name = built by Atta. No Pāli name = it plugs in. This rule applies to all current and future products.
+Locked May 12, 2026 (D-033). All product brands are bare: **Atta, Vāda, Vitakka, Sati, Herald, Cetana**. Never `AttaAI`, `VadaAI`, `HeraldAI`, `CetanaAI`. The AI category signal is carried via page content and site metadata (link previews, `<title>` tags, OpenGraph), not via the brand.
+
+### Naming aesthetic — Pāli is preferred inside Atta, elective elsewhere
+
+Locked May 12, 2026 (D-033). The earlier rule "Pāli name = built by Atta" was structural in v1. It is now demoted to a naming aesthetic:
+
+- **Inside Atta**: Pāli names are mandatory. Atta, Vāda, Vitakka, Sati are all Pāli.
+- **Inside AttaLabs more broadly**: Pāli is common but elective. Cetana has a Pāli name because the founder preferred it; that does not make it part of Atta. Herald has an English name because it fits the product's character. Future AttaLabs products may go either way.
+
+Pāli is no longer a *signal of ownership*. It is a *naming preference* the founder may exercise as products call for it.
+
+For the canonical detail and reasoning, see `apps/atta-ai/specs/atta-naming-decision.md`.
 
 ---
 
@@ -210,7 +230,11 @@ During conversation: log to `project-management/decisions.md` (global) or the ap
 - ❌ Updating state.md without updating now.md when both should change (e.g., advancing a phase in state but not reflecting it in now.md's in-flight section)
 - ❌ Pretending to have read a spec that isn't in context — always ask Dani by exact path, or use GitHub MCP when available
 - ❌ Renaming `@atta/*` packages to `@attalabs/*` — code namespace is Atta, AttaLabs is only the public URL
-- ❌ Treating Atta as a product — it is the ecosystem only
+- ❌ Treating Atta as merely a code namespace or "the ecosystem only" — Atta is **the product**, the deep-thinking AI composed of Vāda + Vitakka + Sati (D-033)
+- ❌ Adding `-AI` suffix to any product brand (D-033 locked May 12, 2026 — Atta, Vāda, Vitakka, Sati, Herald, Cetana are all bare)
+- ❌ Treating "Pāli name = built by Atta" as a structural rule (demoted to elective aesthetic May 12, 2026 — D-033)
+- ❌ Treating Herald as "plugs in" or external — Herald is a sibling AttaLabs product built by Dani, not part of Atta but lives in the same lab
+- ❌ Treating Cetana as part of Atta — Cetana is internal dev tooling, sibling AttaLabs product
 - ❌ Generating strategy or reviewer briefs before reading the specs the index points to (spec-check gate)
 - ❌ Adding version suffixes to spec filenames (D-013 is locked — `cetana-spec.md` not `cetana-v0-spec.md`)
 - ❌ Making a Type 1 decision in the TL's absence without flagging it as PENDING for Principal ratification
