@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** May 12, 2026 (Cetana V0.5 Step 1 shipped — PRs #39/#42/#43; operational model: v3 + Cetana V0.5 Step 1 live; v2 naming framing locked — D-033, PR #46)
+**Last updated:** May 12, 2026 (Cetana V0.5 Step 1 shipped — PRs #39/#42/#43; operational model: v3 + Cetana V0.5 Step 1 live; v2 naming framing locked — D-034, PR #46)
 **Purpose:** Single snapshot of where everything stands across the AttaLabs ecosystem.
 
 This doc lives in the repo at `project-management/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -15,7 +15,7 @@ Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
 
 Key v3 model artifacts (all in `project-management/`):
 - `state-machine.md` — the constitution: artifact states, role authority matrix, decision schema, lock mechanism, tiered documentation, ratification windows
-- `decisions.md` — global cross-product decision log, D-001 to D-033
+- `decisions.md` — global cross-product decision log, D-001 to D-034
 - `roles/principal.md`, `roles/team-leader.md`, `roles/developer.md` — role references
 - `reviewer-prompt.md` — template for adversarial multi-AI reviewer rounds
 - `ratification-queue.md` — append-only queue for decisions awaiting Principal ratification
@@ -28,7 +28,7 @@ PM docs are now in the repo (not Claude.ai project knowledge). Any Claude sessio
 
 ## Brand & domain
 
-**v2 framing locked May 12, 2026 (D-033, PR #46).** Two ecosystems at different scales:
+**v2 framing locked May 12, 2026 (D-034, PR #46).** Two ecosystems at different scales:
 
 - **AttaLabs ecosystem** = the dev/lab. Permanent home at `attalabs.dev` (purchased April 26, 2026). Multiple products live here; some are part of Atta, others are independent.
 - **Atta ecosystem** = the internal composition of Vāda + Vitakka + Sati that makes up Atta-the-product. A smaller scale.
@@ -170,7 +170,7 @@ V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 S
 
 **Next:** F6 (`cetana watch`) — ready to dispatch.
 
-**What it is:** Local Mac orchestration coordinator for the Atta team's own development workflow. NOT part of Atta-the-product. Sibling product in AttaLabs (D-033). Lets Claude Desktop (Team Leader, Strategist mode) dispatch Claude Code agents (Developers) into the Atta repo via MCP, watch them work, and unblock them when they hit decision points. The `cetana` CLI binary (D-020 — locked) is the canonical operator interface as of V0.5.
+**What it is:** Local Mac orchestration coordinator for the Atta team's own development workflow. NOT part of Atta-the-product. Sibling product in AttaLabs (D-034). Lets Claude Desktop (Team Leader, Strategist mode) dispatch Claude Code agents (Developers) into the Atta repo via MCP, watch them work, and unblock them when they hit decision points. The `cetana` CLI binary (D-020 — locked) is the canonical operator interface as of V0.5.
 
 **Architecture (locked May 9, 2026):**
 - Claude Desktop = Team Leader (Strategist mode) — local stdio MCP only; web Claude.ai cannot reach localhost
@@ -184,7 +184,7 @@ V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 S
 
 ### Herald — *standalone AttaLabs product; not part of Atta*
 
-**Status:** Standalone forensic CV-to-job-description match tool. Sibling product in AttaLabs, NOT part of Atta-the-product (D-033 reframed from prior "pluggable MCP tool" framing). Built by Dani.
+**Status:** Standalone forensic CV-to-job-description match tool. Sibling product in AttaLabs, NOT part of Atta-the-product (D-034 reframed from prior "pluggable MCP tool" framing). Built by Dani.
 
 Forensic CV/JD match tool that also exposes itself via MCP for integration. Herald can be invoked by Atta (or any MCP-compatible host) as one of many external tools — that makes Herald integratable, not a layer of Atta. English name (no longer carries the v1 "non-Pāli = plugs in" structural meaning — Pāli rule was demoted in v2).
 
@@ -300,7 +300,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 
 ### Recently shipped (April 28 – May 12, 2026)
 
-**May 12 — v2 naming and framing audit (PR #46).** Locked v2 brand architecture: AttaLabs is the dev/lab ecosystem; Atta is the product (deep-thinking AI composed of Vāda + Vitakka + Sati). No `-AI` suffix on any product brand. Pāli rule demoted from structural to elective aesthetic. Cetana reframed as internal dev tooling (sibling AttaLabs product, not part of Atta). Herald reframed as standalone AttaLabs product (no longer "plugs in"). Updates to `atta-naming-decision.md`, `atta-ecosystem-vision.md`, root `README.md`, root `CLAUDE.md`, `project-management/coordination.md`, `project-management/state.md`, and a new entry D-033 in `project-management/decisions.md`. Derived from three rounds of multi-reviewer pressure-testing (Strategic/UX, Gemini, Grok).
+**May 12 — v2 naming and framing audit (PR #46).** Locked v2 brand architecture: AttaLabs is the dev/lab ecosystem; Atta is the product (deep-thinking AI composed of Vāda + Vitakka + Sati). No `-AI` suffix on any product brand. Pāli rule demoted from structural to elective aesthetic. Cetana reframed as internal dev tooling (sibling AttaLabs product, not part of Atta). Herald reframed as standalone AttaLabs product (no longer "plugs in"). Updates to `atta-naming-decision.md`, `atta-ecosystem-vision.md`, root `README.md`, root `CLAUDE.md`, `project-management/coordination.md`, `project-management/state.md`, and a new entry D-034 in `project-management/decisions.md`. Derived from three rounds of multi-reviewer pressure-testing (Strategic/UX, Gemini, Grok).
 
 **May 12 — Cetana V0.5 Step 1 (F5) shipped — PRs #39, #42, #43.**
 - PR #39: `@atta/cetana-cli` package at `apps/cetana-ai/cli/`. Five commands: `init`, `dispatch`, `list`, `reply`, `logs`. Hierarchical config. Heartbeat-based CRASHED detection. 25 tests pass.
