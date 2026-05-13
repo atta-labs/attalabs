@@ -19,7 +19,10 @@ export const AgentInRoundSchema = z.object({
 })
 
 export const RoundSchema = z.object({
-  id: z.string().min(1).regex(/^[a-z0-9-]+$/, 'round id must be kebab-case'),
+  id: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9-]+$/, 'round id must be kebab-case'),
   name: z.string().min(1),
   agents: z.array(AgentInRoundSchema).min(1),
   layout: z.enum(['parallel', 'serial']),
@@ -50,7 +53,10 @@ export const FlowAgentSchema = z.object({
 
 export const FlowSchema = z.object({
   schema_version: z.literal('2.0'),
-  id: z.string().min(1).regex(/^[a-z0-9-]+$/, 'id must be kebab-case'),
+  id: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9-]+$/, 'id must be kebab-case'),
   display_name: z.string().min(1),
   description: z.string().min(1),
   experimental: z.boolean().default(false),

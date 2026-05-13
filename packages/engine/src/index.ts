@@ -23,5 +23,12 @@ export type {
   SignalType,
   FlowClassifierMode
 } from './flow-types'
-export { FlowSchema, RoundSchema, AgentInRoundSchema, OnFailureSpecSchema, FailureSignalSchema, FlowAgentSchema } from './flow-schema'
+export {
+  FlowSchema,
+  RoundSchema,
+  AgentInRoundSchema,
+  OnFailureSpecSchema,
+  FailureSignalSchema,
+  FlowAgentSchema
+} from './flow-schema'
 export { validateFlow, resolveAgentFailure, InvalidFlowConfigError } from './validate-flow'
