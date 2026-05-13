@@ -1,13 +1,14 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { DeliberationSpec, SpecAgent } from '@atta/engine'
+import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
 import { getReviewerConfig } from '@/lib/reviewer-models'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Button, Card, CardContent } from '@atta/ui'
 import { ArrowRight, Settings2 } from 'lucide-react'
 import { useState } from 'react'
+import { getDisplayAgentNames, getFlowAgentCount, getFlowShapeLabel } from '@/lib/flow-helpers'
 
 interface DisplayAgent {
   name: string
@@ -15,49 +16,17 @@ interface DisplayAgent {
   model: string | undefined
 }
 
-function getDisplayAgents(spec: DeliberationSpec): DisplayAgent[] {
-  const agentMap = new Map<string, SpecAgent>(spec.agents.map((a) => [a.name, a]))
-
+function getDisplayAgents(flow: Flow): DisplayAgent[] {
+  const agentMap = new Map<string, FlowAgent>(flow.agents.map((a) => [a.name, a]))
   const lookup = (name: string): DisplayAgent => {
     const a = agentMap.get(name)
     return { name, role: a?.role as AgentRole | undefined, model: a?.model }
   }
-
-  if (spec.flow?.rounds) {
-    return spec.flow.rounds.agents.map(lookup)
-  }
-  if (spec.reviewers && spec.reviewers.length > 0) {
-    const reviewers = spec.reviewers.map((r) => lookup(r.agent))
-    const synthName = spec.flow?.synthesis?.agent
-    if (synthName) reviewers.push(lookup(synthName))
-    return reviewers
-  }
-  return spec.agents.slice(0, 1).map((a) => lookup(a.name))
-}
-
-function getAgentCount(spec: DeliberationSpec): number {
-  if (spec.flow?.rounds) return spec.flow.rounds.agents.length
-  if (spec.reviewers) {
-    const hasSynth = spec.flow?.synthesis != null
-    return spec.reviewers.length + (hasSynth ? 1 : 0)
-  }
-  return 1
-}
-
-function getShapeLabel(spec: DeliberationSpec): string {
-  if (spec.flow?.rounds) {
-    const { count } = spec.flow.rounds
-    return `${count} rounds`
-  }
-  if (spec.reviewers) {
-    const hasSynth = spec.flow?.synthesis != null
-    return hasSynth ? 'reviewers + synthesis' : 'parallel reviewers'
-  }
-  return 'single shot'
+  return getDisplayAgentNames(flow).map(lookup)
 }
 
 interface TeamSummaryProps {
-  spec: DeliberationSpec
+  spec: Flow
   pickers?: ReactNode
   actions?: ReactNode
   onConfigure?: () => void
@@ -65,8 +34,8 @@ interface TeamSummaryProps {
 
 export function TeamSummary({ spec, pickers, actions, onConfigure }: TeamSummaryProps) {
   const agents = getDisplayAgents(spec)
-  const count = getAgentCount(spec)
-  const shapeLabel = getShapeLabel(spec)
+  const count = getFlowAgentCount(spec)
+  const shapeLabel = getFlowShapeLabel(spec)
   const defaultModel = spec.defaults.model
   const [userConfig] = useState(() => getReviewerConfig(spec.id))
 

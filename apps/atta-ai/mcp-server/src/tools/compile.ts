@@ -1,4 +1,4 @@
-import { loadSpec, compileSpec } from '@atta/engine'
+import { loadFlow, compileFlow } from '@atta/engine'
 import { CompileInputSchema, type CompileInput } from '../schema'
 
 export interface CompileOutput {
@@ -19,8 +19,8 @@ export async function runCompile(input: unknown): Promise<CompileOutput> {
 
 async function compileYaml(input: CompileInput): Promise<CompileOutput> {
   try {
-    const spec = loadSpec(input.yaml)
-    const plan = compileSpec(spec, 'placeholder question')
+    const flow = loadFlow(input.yaml)
+    const plan = compileFlow(flow, 'placeholder question')
     return { ok: true, plan }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

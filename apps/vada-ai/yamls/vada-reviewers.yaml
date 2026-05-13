@@ -1,4 +1,4 @@
-schema_version: "1.0"
+schema_version: "2.0"
 id: vada-reviewers
 display_name: "Reviewers"
 description: "Three different LLMs review your problem in parallel — Gemini, GPT, and Grok give independent perspectives. Vendor diversity over role specialization."
@@ -162,14 +162,14 @@ agents:
       claims. If you find no issues, say so clearly — do not invent problems to
       seem useful.
 
-reviewers:
-  - agent: Gemini
-    message_template: "{{question}}"
-  - agent: GPT
-    message_template: "{{question}}"
-  - agent: Grok
-    message_template: "{{question}}"
-
-response:
-  mode: concatenate
-  format: "## {agent_name}\n\n{content}\n\n---\n\n"
+rounds:
+  - id: review
+    name: Independent Review
+    layout: parallel
+    agents:
+      - name: Gemini
+        message_template: "{{question}}"
+      - name: GPT
+        message_template: "{{question}}"
+      - name: Grok
+        message_template: "{{question}}"

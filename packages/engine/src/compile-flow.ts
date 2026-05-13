@@ -1,0 +1,386 @@
+import type { Agent } from '@atta/agents'
+import type { Flow, Round } from './flow-types'
+import type { Plan, PlanNode, PlanEdge, PlanConditionalEdge, RevisionCondition } from './types'
+import { validateFlow } from './validate-flow'
+
+type Shape = 'solo' | 'brokered-no-synth' | 'brokered-synth' | 'rounds-audit'
+
+function detectShape(flow: Flow): Shape {
+  const hasRevision = flow.rounds.some((r) => r.onFailure?.action === 'revise')
+  if (hasRevision) return 'rounds-audit'
+  if (flow.rounds.length === 1 && flow.rounds[0]!.agents.length === 1) return 'solo'
+  const hasSynthesizer = flow.rounds.length > 1 && flow.rounds[flow.rounds.length - 1]!.agents.length === 1
+  if (hasSynthesizer) return 'brokered-synth'
+  return 'brokered-no-synth'
+}
+
+function renderVars(text: string, vars: Record<string, string>): string {
+  return Object.entries(vars).reduce((t, [k, v]) => t.replaceAll(`{{${k}}}`, v), text)
+}
+
+function buildAgents(flow: Flow, model: string, customVars: Record<string, string>): Record<string, Agent> {
+  const agents: Record<string, Agent> = {}
+  for (const fa of flow.agents) {
+    agents[fa.name] = {
+      name: fa.name,
+      description: fa.description ?? '',
+      systemPrompt: renderVars(fa.systemPrompt, customVars),
+      tools: fa.tools,
+      model: fa.model ?? model,
+      outputSchema: fa.outputSchema
+    }
+  }
+  return agents
+}
+
+function buildClassifierModes(flow: Flow): Record<string, 'auto' | 'skip' | 'always_tools'> | undefined {
+  const modes: Record<string, 'auto' | 'skip' | 'always_tools'> = {}
+  let hasAny = false
+  for (const fa of flow.agents) {
+    if (fa.classifier) {
+      modes[fa.name] = fa.classifier.mode
+      hasAny = true
+    }
+  }
+  return hasAny ? modes : undefined
+}
+
+function resolveTemplate(round: Round, agentName: string): string {
+  const agent = round.agents.find((a) => a.name === agentName)
+  return agent?.messageTemplate ?? round.messageTemplate ?? '{{question}}'
+}
+
+// ─── Solo ──────────────────────────────────────────────────────────────────────
+
+function compileSolo(flow: Flow, base: Omit<Plan, 'graph' | 'maxRevisions' | 'responseMode' | 'responseNode'>): Plan {
+  const round = flow.rounds[0]!
+  const agent = round.agents[0]!
+  const template = resolveTemplate(round, agent.name)
+
+  const node: PlanNode = {
+    id: 'solo',
+    agentName: agent.name,
+    inputTemplate: template,
+    role: 'solo',
+    kind: 'solo-agent',
+    metadata: {}
+  }
+
+  return {
+    ...base,
+    maxRevisions: 0,
+    responseMode: 'synthesize',
+    responseNode: 'solo',
+    graph: {
+      nodes: { solo: node },
+      edges: [],
+      conditionalEdges: [],
+      entryNode: 'solo'
+    }
+  }
+}
+
+// ─── Brokered-no-synth ─────────────────────────────────────────────────────────
+
+function compileBrokeredNoSynth(
+  flow: Flow,
+  base: Omit<Plan, 'graph' | 'maxRevisions' | 'responseMode' | 'responseNode'>
+): Plan {
+  const reviewRound = flow.rounds[0]!
+  const nodes: Record<string, PlanNode> = {}
+  const edges: PlanEdge[] = []
+
+  for (const agentInRound of reviewRound.agents) {
+    const id = `reviewer-${agentInRound.name}`
+    nodes[id] = {
+      id,
+      agentName: agentInRound.name,
+      inputTemplate: resolveTemplate(reviewRound, agentInRound.name),
+      role: 'solo',
+      kind: 'parallel-peer',
+      metadata: {}
+    }
+  }
+
+  for (let i = 0; i < reviewRound.agents.length - 1; i++) {
+    edges.push({
+      from: `reviewer-${reviewRound.agents[i]!.name}`,
+      to: `reviewer-${reviewRound.agents[i + 1]!.name}`,
+      kind: 'ordering'
+    })
+  }
+
+  const entryNode = `reviewer-${reviewRound.agents[0]!.name}`
+
+  return {
+    ...base,
+    maxRevisions: 0,
+    responseMode: 'concatenate',
+    graph: {
+      nodes,
+      edges,
+      conditionalEdges: [],
+      entryNode
+    }
+  }
+}
+
+// ─── Brokered-synth ────────────────────────────────────────────────────────────
+
+function compileBrokeredSynth(
+  flow: Flow,
+  base: Omit<Plan, 'graph' | 'maxRevisions' | 'responseMode' | 'responseNode'>
+): Plan {
+  const reviewRound = flow.rounds[0]!
+  const synthRound = flow.rounds[flow.rounds.length - 1]!
+  const synthAgent = synthRound.agents[0]!
+
+  const nodes: Record<string, PlanNode> = {}
+  const edges: PlanEdge[] = []
+
+  for (const agentInRound of reviewRound.agents) {
+    const id = `reviewer-${agentInRound.name}`
+    nodes[id] = {
+      id,
+      agentName: agentInRound.name,
+      inputTemplate: resolveTemplate(reviewRound, agentInRound.name),
+      role: 'solo',
+      kind: 'parallel-peer',
+      metadata: {}
+    }
+  }
+
+  // Ordering edges between reviewers
+  for (let i = 0; i < reviewRound.agents.length - 1; i++) {
+    edges.push({
+      from: `reviewer-${reviewRound.agents[i]!.name}`,
+      to: `reviewer-${reviewRound.agents[i + 1]!.name}`,
+      kind: 'ordering'
+    })
+  }
+
+  // Flow edge from last reviewer to synthesis
+  edges.push({
+    from: `reviewer-${reviewRound.agents[reviewRound.agents.length - 1]!.name}`,
+    to: 'brokered-synthesis',
+    kind: 'flow'
+  })
+
+  nodes['brokered-synthesis'] = {
+    id: 'brokered-synthesis',
+    agentName: synthAgent.name,
+    inputTemplate: resolveTemplate(synthRound, synthAgent.name),
+    role: 'terminal',
+    kind: 'synthesizer',
+    metadata: {}
+  }
+
+  const entryNode = `reviewer-${reviewRound.agents[0]!.name}`
+
+  return {
+    ...base,
+    maxRevisions: 0,
+    responseMode: 'synthesize',
+    responseNode: 'brokered-synthesis',
+    graph: {
+      nodes,
+      edges,
+      conditionalEdges: [],
+      entryNode
+    }
+  }
+}
+
+// ─── Rounds-audit ──────────────────────────────────────────────────────────────
+
+function compileRoundsAudit(
+  flow: Flow,
+  base: Omit<Plan, 'graph' | 'maxRevisions' | 'responseMode' | 'responseNode'>
+): Plan {
+  // Identify rounds by role
+  const auditRound = flow.rounds.find((r) => r.onFailure?.action === 'revise')!
+  const synthRoundId = auditRound.onFailure!.target!
+  const synthesisRound = flow.rounds.find((r) => r.id === synthRoundId)!
+  const debateRound = flow.rounds.find((r) => r !== auditRound && r !== synthesisRound)!
+
+  const repeats = debateRound.repeats ?? 1
+  const maxRevisions = auditRound.onFailure!.maxRevisions ?? 1
+  const auditAgents = auditRound.agents.map((a) => a.name)
+  const synthAgent = synthesisRound.agents[0]!
+  const revisionCondition = buildRevisionCondition(auditRound.onFailure!.signal)
+
+  const totalRounds = repeats
+
+  const nodes: Record<string, PlanNode> = {}
+  const edges: PlanEdge[] = []
+  const conditionalEdges: PlanConditionalEdge[] = []
+
+  // ── Debate nodes ──────────────────────────────────────────────────────────
+  for (let r = 0; r < repeats; r++) {
+    for (const agentInRound of debateRound.agents) {
+      const id = `round-${r}-${agentInRound.name}`
+      nodes[id] = {
+        id,
+        agentName: agentInRound.name,
+        inputTemplate: resolveTemplate(debateRound, agentInRound.name),
+        role: 'round',
+        kind: 'parallel-peer',
+        metadata: { roundIndex: r, totalRounds }
+      }
+    }
+  }
+
+  // Ordering edges within each repeat, and between repeats
+  for (let r = 0; r < repeats; r++) {
+    for (let i = 0; i < debateRound.agents.length - 1; i++) {
+      edges.push({
+        from: `round-${r}-${debateRound.agents[i]!.name}`,
+        to: `round-${r}-${debateRound.agents[i + 1]!.name}`,
+        kind: 'ordering'
+      })
+    }
+    // Bridge from last agent of repeat r to first agent of repeat r+1
+    if (r < repeats - 1) {
+      edges.push({
+        from: `round-${r}-${debateRound.agents[debateRound.agents.length - 1]!.name}`,
+        to: `round-${r + 1}-${debateRound.agents[0]!.name}`,
+        kind: 'ordering'
+      })
+    }
+  }
+
+  // ── Terminal (synthesis) nodes: one per slot (0..maxRevisions) ────────────
+  for (let k = 0; k <= maxRevisions; k++) {
+    const id = `terminal-${k}`
+    nodes[id] = {
+      id,
+      agentName: synthAgent.name,
+      inputTemplate: resolveTemplate(synthesisRound, synthAgent.name),
+      role: 'terminal',
+      kind: k === 0 ? 'synthesizer' : 'revision-terminal',
+      metadata: { totalRounds, revisionIndex: k }
+    }
+  }
+
+  // Flow edge: last debate agent → terminal-0
+  edges.push({
+    from: `round-${repeats - 1}-${debateRound.agents[debateRound.agents.length - 1]!.name}`,
+    to: 'terminal-0',
+    kind: 'flow'
+  })
+
+  // ── Sentinel ──────────────────────────────────────────────────────────────
+  nodes.__END__ = {
+    id: '__END__',
+    agentName: '__END__',
+    inputTemplate: '',
+    role: 'solo',
+    kind: 'system-sentinel',
+    metadata: {}
+  }
+
+  // ── Audit nodes and revision wiring ───────────────────────────────────────
+  for (let k = 0; k <= maxRevisions; k++) {
+    // Emit one audit slot per revision slot
+    for (let i = 0; i < auditAgents.length; i++) {
+      const id = `audit-${auditAgents[i]!}-${k}`
+      nodes[id] = {
+        id,
+        agentName: auditAgents[i]!,
+        inputTemplate: resolveTemplate(auditRound, auditAgents[i]!),
+        role: 'audit',
+        kind: 'auditor',
+        metadata: { revisionIndex: k }
+      }
+    }
+
+    // Ordering edges within audit slot k
+    for (let i = 0; i < auditAgents.length - 1; i++) {
+      edges.push({
+        from: `audit-${auditAgents[i]!}-${k}`,
+        to: `audit-${auditAgents[i + 1]!}-${k}`,
+        kind: 'ordering'
+      })
+    }
+
+    // Flow edge: terminal-k → first audit agent in slot k
+    edges.push({
+      from: `terminal-${k}`,
+      to: `audit-${auditAgents[0]!}-${k}`,
+      kind: 'flow'
+    })
+
+    // Conditional edge from last auditor in slot k (only for k < maxRevisions)
+    if (k < maxRevisions) {
+      const allAuditNodesInSlot = auditAgents.map((name) => `audit-${name}-${k}`)
+      conditionalEdges.push({
+        from: `audit-${auditAgents[auditAgents.length - 1]!}-${k}`,
+        ifTrue: `terminal-${k + 1}`,
+        ifFalse: '__END__',
+        condition: { anyOf: allAuditNodesInSlot, check: revisionCondition }
+      })
+    }
+  }
+
+  const entryNode = `round-0-${debateRound.agents[0]!.name}`
+
+  return {
+    ...base,
+    maxRevisions,
+    responseMode: 'synthesize',
+    responseNode: 'terminal-0',
+    graph: {
+      nodes,
+      edges,
+      conditionalEdges,
+      entryNode
+    }
+  }
+}
+
+function buildRevisionCondition(signal: {
+  type: 'contains' | 'equals' | 'matches'
+  value: string
+  caseSensitive?: boolean
+}): RevisionCondition {
+  if (signal.type === 'contains') {
+    return { type: 'contains', value: signal.value, caseSensitive: signal.caseSensitive ?? false }
+  }
+  // 'equals' and 'matches' → treat as contains for v2 (only 'contains' in use today)
+  return { type: 'contains', value: signal.value, caseSensitive: signal.caseSensitive ?? false }
+}
+
+// ─── Public API ────────────────────────────────────────────────────────────────
+
+/**
+ * Compile a Flow (v2) into a Plan ready for adapter execution.
+ * Shape is detected automatically from the flow structure.
+ */
+export function compileFlow(flow: Flow, question: string, model?: string, customVars?: Record<string, string>): Plan {
+  validateFlow(flow)
+
+  const effectiveModel = model ?? flow.defaults.model
+  const vars = customVars ?? {}
+
+  const base = {
+    schemaVersion: '1.0' as const,
+    question,
+    model: effectiveModel,
+    specId: flow.id,
+    teamName: flow.id,
+    agents: buildAgents(flow, effectiveModel, vars),
+    classifierModes: buildClassifierModes(flow)
+  }
+
+  const shape = detectShape(flow)
+  switch (shape) {
+    case 'solo':
+      return compileSolo(flow, base)
+    case 'brokered-no-synth':
+      return compileBrokeredNoSynth(flow, base)
+    case 'brokered-synth':
+      return compileBrokeredSynth(flow, base)
+    case 'rounds-audit':
+      return compileRoundsAudit(flow, base)
+  }
+}

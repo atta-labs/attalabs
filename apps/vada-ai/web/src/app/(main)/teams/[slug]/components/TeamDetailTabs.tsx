@@ -1,14 +1,14 @@
 'use client'
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@atta/ui/components/tabs'
-import type { DeliberationSpec } from '@atta/engine'
+import type { Flow } from '@atta/engine'
 import type { Plan } from '@atta/engine'
 import { AgentTab } from './AgentTab'
 import { CalculatorStats } from './CalculatorStats'
 import { FlowTab } from './FlowTab'
 
 interface TeamDetailTabsProps {
-  spec: DeliberationSpec
+  spec: Flow
   plan: Plan
 }
 

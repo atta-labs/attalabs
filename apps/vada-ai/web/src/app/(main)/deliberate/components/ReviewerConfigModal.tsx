@@ -1,6 +1,6 @@
 'use client'
 
-import type { DeliberationSpec, SpecAgent } from '@atta/engine'
+import type { Flow, FlowAgent } from '@atta/engine'
 import { probeProviderKey } from '@atta/identity'
 import type { VendorId } from '@atta/models'
 import { useCatalog } from '@atta/models'
@@ -12,7 +12,7 @@ import { getReviewerConfig, resolveVendor as resolveVendorFromCatalog } from '@/
 import type { ReviewerConfig } from '@/lib/reviewer-models'
 
 interface ReviewerConfigModalProps {
-  spec: DeliberationSpec
+  spec: Flow
   onSave: (config: ReviewerConfig) => void
   onClose: () => void
   configuredProviders: string[]
@@ -24,7 +24,7 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
   const router = useRouter()
 
   // Show all agents so role agents (e.g. Synthesizer) can also be configured
-  const editableAgents: SpecAgent[] = useMemo(() => spec.agents, [spec.agents])
+  const editableAgents: FlowAgent[] = useMemo(() => spec.agents, [spec.agents])
 
   // Per-agent selected model.
   // Editable slots: only seed from saved user config — never from YAML default.

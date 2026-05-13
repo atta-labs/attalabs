@@ -118,7 +118,7 @@ describe('validateFlow — Rule 3: on_failure.target must be a prior round', () 
       }
     ]
     expect(() => validateFlow(makeFlow({ rounds }))).toThrow(InvalidFlowConfigError)
-    expect(() => validateFlow(makeFlow({ rounds }))).toThrow("does not exist")
+    expect(() => validateFlow(makeFlow({ rounds }))).toThrow('does not exist')
   })
 
   it('throws when target references a future round (forward reference)', () => {
@@ -136,7 +136,13 @@ describe('validateFlow — Rule 3: on_failure.target must be a prior round', () 
           signal: { type: 'contains', value: 'FLAG' }
         }
       },
-      { id: 'synthesis', name: 'Synthesis', agents: [{ name: 'AgentA' }], layout: 'parallel', messageTemplate: '{{question}}' }
+      {
+        id: 'synthesis',
+        name: 'Synthesis',
+        agents: [{ name: 'AgentA' }],
+        layout: 'parallel',
+        messageTemplate: '{{question}}'
+      }
     ]
     expect(() => validateFlow(makeFlow({ rounds }))).toThrow(InvalidFlowConfigError)
     expect(() => validateFlow(makeFlow({ rounds }))).toThrow('not a prior round')
@@ -195,21 +201,48 @@ describe('validateFlow — Rule 5: repeats >= 1', () => {
 
   it('passes with repeats: 1', () => {
     const flow = makeFlow({
-      rounds: [{ id: 'r', name: 'R', agents: [{ name: 'AgentA' }], layout: 'parallel', messageTemplate: '{{question}}', repeats: 1 }]
+      rounds: [
+        {
+          id: 'r',
+          name: 'R',
+          agents: [{ name: 'AgentA' }],
+          layout: 'parallel',
+          messageTemplate: '{{question}}',
+          repeats: 1
+        }
+      ]
     })
     expect(() => validateFlow(flow)).not.toThrow()
   })
 
   it('passes with repeats: 3', () => {
     const flow = makeFlow({
-      rounds: [{ id: 'r', name: 'R', agents: [{ name: 'AgentA' }], layout: 'parallel', messageTemplate: '{{question}}', repeats: 3 }]
+      rounds: [
+        {
+          id: 'r',
+          name: 'R',
+          agents: [{ name: 'AgentA' }],
+          layout: 'parallel',
+          messageTemplate: '{{question}}',
+          repeats: 3
+        }
+      ]
     })
     expect(() => validateFlow(flow)).not.toThrow()
   })
 
   it('throws when repeats is 0', () => {
     const flow = makeFlow({
-      rounds: [{ id: 'r', name: 'R', agents: [{ name: 'AgentA' }], layout: 'parallel', messageTemplate: '{{question}}', repeats: 0 }]
+      rounds: [
+        {
+          id: 'r',
+          name: 'R',
+          agents: [{ name: 'AgentA' }],
+          layout: 'parallel',
+          messageTemplate: '{{question}}',
+          repeats: 0
+        }
+      ]
     })
     expect(() => validateFlow(flow)).toThrow(InvalidFlowConfigError)
     expect(() => validateFlow(flow)).toThrow('repeats must be >= 1')
@@ -249,7 +282,12 @@ describe('validateFlow — Rule 6: max_revisions >= 1 when action=revise', () =>
           layout: 'parallel',
           messageTemplate: '{{question}}',
           // Cast to bypass TypeScript — simulates a Flow constructed without Zod
-          onFailure: { action: 'revise', target: 'spar', maxRevisions: 0 as unknown as 1, signal: { type: 'contains', value: 'FLAG' } }
+          onFailure: {
+            action: 'revise',
+            target: 'spar',
+            maxRevisions: 0 as unknown as 1,
+            signal: { type: 'contains', value: 'FLAG' }
+          }
         }
       ]
     })
@@ -349,7 +387,9 @@ describe('validateFlow — Rule 7: revise requires target and max_revisions', ()
 describe('validateFlow — Rule 8: template required (round or all agents)', () => {
   it('passes with round-level template only', () => {
     const flow = makeFlow({
-      rounds: [{ id: 'r', name: 'R', agents: [{ name: 'AgentA' }], layout: 'parallel', messageTemplate: '{{question}}' }]
+      rounds: [
+        { id: 'r', name: 'R', agents: [{ name: 'AgentA' }], layout: 'parallel', messageTemplate: '{{question}}' }
+      ]
     })
     expect(() => validateFlow(flow)).not.toThrow()
   })
@@ -415,7 +455,13 @@ describe('validateFlow — Rule 9: round agents non-empty', () => {
   it('throws when round has zero agents (bypassed Zod)', () => {
     const flow = makeFlow({
       rounds: [
-        { id: 'empty', name: 'Empty', agents: [] as Round['agents'], layout: 'parallel', messageTemplate: '{{question}}' }
+        {
+          id: 'empty',
+          name: 'Empty',
+          agents: [] as Round['agents'],
+          layout: 'parallel',
+          messageTemplate: '{{question}}'
+        }
       ]
     })
     expect(() => validateFlow(flow)).toThrow(InvalidFlowConfigError)
@@ -527,7 +573,8 @@ describe('validateFlow — happy path: catalog shapes', () => {
           name: 'Synthesis',
           agents: [{ name: 'Synthesizer' }],
           layout: 'parallel',
-          messageTemplate: 'Question: {{question}}\n{{#each rounds.review.outputs}}[{{this.agent}}] {{this.content}}{{/each}}\nSynthesize.',
+          messageTemplate:
+            'Question: {{question}}\n{{#each rounds.review.outputs}}[{{this.agent}}] {{this.content}}{{/each}}\nSynthesize.',
           agentFailure: 'abort'
         }
       ]
@@ -566,7 +613,8 @@ describe('validateFlow — happy path: catalog shapes', () => {
           name: 'Synthesis',
           agents: [{ name: 'ConclusionSynthesizer' }],
           layout: 'parallel',
-          messageTemplate: 'Question: {{question}}\n{{#each rounds.spar.repeats}}{{#each this.outputs}}{{this.agent}}: {{this.content}}{{/each}}{{/each}}\nGENERATE JSON.',
+          messageTemplate:
+            'Question: {{question}}\n{{#each rounds.spar.repeats}}{{#each this.outputs}}{{this.agent}}: {{this.content}}{{/each}}{{/each}}\nGENERATE JSON.',
           agentFailure: 'abort'
         },
         {

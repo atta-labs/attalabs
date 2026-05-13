@@ -1,7 +1,8 @@
 'use client'
 
-import type { DeliberationSpec, SpecAgent } from '@atta/engine'
+import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
+import { getDisplayAgentNames } from '@/lib/flow-helpers'
 
 interface DisplayAgent {
   name: string
@@ -9,24 +10,13 @@ interface DisplayAgent {
   model: string | undefined
 }
 
-function getDisplayAgents(spec: DeliberationSpec): DisplayAgent[] {
-  const agentMap = new Map<string, SpecAgent>(spec.agents.map((a) => [a.name, a]))
-
+function getDisplayAgents(flow: Flow): DisplayAgent[] {
+  const agentMap = new Map<string, FlowAgent>(flow.agents.map((a) => [a.name, a]))
   const lookup = (name: string): DisplayAgent => {
     const a = agentMap.get(name)
     return { name, role: a?.role as AgentRole | undefined, model: a?.model }
   }
-
-  if (spec.flow?.rounds) {
-    return spec.flow.rounds.agents.map(lookup)
-  }
-  if (spec.reviewers && spec.reviewers.length > 0) {
-    const reviewers = spec.reviewers.map((r) => lookup(r.agent))
-    const synthName = spec.flow?.synthesis?.agent
-    if (synthName) reviewers.push(lookup(synthName))
-    return reviewers
-  }
-  return spec.agents.slice(0, 1).map((a) => lookup(a.name))
+  return getDisplayAgentNames(flow).map(lookup)
 }
 
 function getGridClass(count: number): string {
@@ -35,7 +25,7 @@ function getGridClass(count: number): string {
   return 'grid grid-cols-3 gap-6 justify-items-center sm:grid-cols-6'
 }
 
-export function AgentGrid({ spec }: { spec: DeliberationSpec }) {
+export function AgentGrid({ spec }: { spec: Flow }) {
   const agents = getDisplayAgents(spec)
   const defaultModel = spec.defaults.model
 

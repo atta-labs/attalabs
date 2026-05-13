@@ -1,4 +1,4 @@
-import { compileSpec, loadYamlFromCatalog } from '@atta/engine'
+import { compileFlow, loadYamlFromCatalog } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
@@ -18,7 +18,7 @@ for (const question of questions) {
   console.info(`Question: ${question}`)
   console.info('='.repeat(80))
 
-  const plan = compileSpec(spec, question, model)
+  const plan = compileFlow(spec, question, model)
 
   console.info(
     `\nPlan: ${plan.specId} | ${Object.keys(plan.graph.nodes).length} nodes | ${plan.graph.edges.length} edges`

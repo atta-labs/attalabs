@@ -1,6 +1,6 @@
 'use client'
 
-import type { DeliberationSpec } from '@atta/engine'
+import type { Flow } from '@atta/engine'
 import { Button } from '@atta/ui/components/button'
 import {
   DropdownMenu,
@@ -9,29 +9,10 @@ import {
   DropdownMenuTrigger
 } from '@atta/ui/components/dropdown-menu'
 import { Users2, ChevronsUpDown } from 'lucide-react'
-
-function getAgentCount(spec: DeliberationSpec): number {
-  if (spec.flow?.rounds) return spec.flow.rounds.agents.length
-  if (spec.reviewers) {
-    const hasSynth = spec.flow?.synthesis != null
-    return spec.reviewers.length + (hasSynth ? 1 : 0)
-  }
-  return 1
-}
-
-function getShapeLabel(spec: DeliberationSpec): string {
-  if (spec.flow?.rounds) {
-    return `${spec.flow.rounds.count} rounds`
-  }
-  if (spec.reviewers) {
-    const hasSynth = spec.flow?.synthesis != null
-    return hasSynth ? 'reviewers + synthesis' : 'parallel reviewers'
-  }
-  return 'single shot'
-}
+import { getFlowAgentCount, getFlowShapeLabel } from '@/lib/flow-helpers'
 
 interface TeamPickerProps {
-  specs: DeliberationSpec[]
+  specs: Flow[]
   value: string
   onChange: (specId: string) => void
 }
@@ -58,8 +39,8 @@ export function TeamPicker({ specs, value, onChange }: TeamPickerProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align='start' className='w-[280px]'>
         {specs.map((spec) => {
-          const count = getAgentCount(spec)
-          const shape = getShapeLabel(spec)
+          const count = getFlowAgentCount(spec)
+          const shape = getFlowShapeLabel(spec)
           return (
             <DropdownMenuItem
               key={spec.id}

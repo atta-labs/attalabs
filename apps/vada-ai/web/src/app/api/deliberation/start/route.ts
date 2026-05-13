@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   }
 
   const spec = loadYamlFromCatalog(parsed.data.specId)
-  const roundAgentNames: string[] = spec.flow?.rounds?.agents ?? []
+  const roundAgentNames: string[] = spec.rounds[0]?.agents.map((a) => a.name) ?? []
   const agents = roundAgentNames.map((name) => AGENTS[name as AgentName]?.role ?? name)
 
   // Model connectivity validation happens in the BROWSER with the user's key.

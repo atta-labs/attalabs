@@ -1,4 +1,4 @@
-schema_version: "1.0"
+schema_version: "2.0"
 id: brokered-quartet
 display_name: Brokered Quartet
 description: Three advisory reviewers plus Domain Expert. Flag-gated.
@@ -161,16 +161,16 @@ agents:
       **Domain mismatch**
       (One sentence — this isn't actually a {{domain}} question. Suggest what domain would be more appropriate, if any.)
 
-reviewers:
-  - agent: Strategist
-    message_template: "{{question}}"
-  - agent: Critic
-    message_template: "{{question}}"
-  - agent: "Devil's Advocate"
-    message_template: "{{question}}"
-  - agent: DomainExpert
-    message_template: "{{question}}"
-
-response:
-  mode: concatenate
-  format: "## {agent_name}\n\n{content}\n\n---\n\n"
+rounds:
+  - id: review
+    name: Independent Review
+    layout: parallel
+    agents:
+      - name: Strategist
+        message_template: "{{question}}"
+      - name: Critic
+        message_template: "{{question}}"
+      - name: "Devil's Advocate"
+        message_template: "{{question}}"
+      - name: DomainExpert
+        message_template: "{{question}}"

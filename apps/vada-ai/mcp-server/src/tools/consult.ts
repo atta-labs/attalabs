@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { compileSpec } from '@atta/engine'
+import { compileFlow } from '@atta/engine'
 import { LangGraphAdapter, createMultiVendorLlmCall } from '@atta/adapter-langgraph'
 import type { ProviderKeys } from '@atta/adapter-langgraph'
 import { getCatalog, findModelEntryByModelId, isLocalOnly, resolveVendorByPrefix, type VendorId } from '@atta/models'
@@ -209,37 +209,40 @@ export async function runConsult(
   providerKeys: ProviderKeys,
   origin?: string
 ): Promise<ConsultOutput> {
-  // Load spec by spec_id (default to brokered-trio for backward compatibility)
-  const baseSpec = lookupSpec(input.specId ?? 'brokered-trio')
+  // Load flow by spec_id (default to brokered-trio for backward compatibility)
+  const baseFlow = lookupSpec(input.specId ?? 'brokered-trio')
 
-  // Try role-based reviewer selection (for specs like brokered-trio/quartet)
-  // Fall back to spec's default reviewers if role selection isn't applicable
-  let specWithReviewers = baseSpec
+  // Try role-based reviewer selection from the flow's first round agents.
+  // Fall back to the flow's default round agents if role selection fails or is inapplicable.
+  let flowToRun = baseFlow
   let customVars: Record<string, string> | undefined
 
-  // Attempt role-based selection if the spec has reviewers and input specifies roles
-  if (baseSpec.reviewers && input.reviewerSpecs.length > 0) {
+  const reviewRound = baseFlow.rounds[0]
+  if (reviewRound && reviewRound.agents.length > 1 && input.reviewerSpecs.length > 0) {
     try {
-      const reviewers = input.reviewerSpecs.map((spec) => {
+      const selectedAgents = input.reviewerSpecs.map((spec) => {
         const agentName = ROLE_TO_AGENT_NAME[spec.profileName]!
-        const yamlReviewer = baseSpec.reviewers!.find((r) => r.agent === agentName)
-        if (!yamlReviewer) throw new Error(`Reviewer '${agentName}' not found in spec '${baseSpec.id}'`)
+        const roundAgent = reviewRound.agents.find((a) => a.name === agentName)
+        if (!roundAgent) throw new Error(`Reviewer '${agentName}' not found in spec '${baseFlow.id}'`)
         const messageTemplate = spec.notes
-          ? `${yamlReviewer.messageTemplate}\n\n## Specific Request For You\n${spec.notes}`
-          : yamlReviewer.messageTemplate
-        return { ...yamlReviewer, messageTemplate }
+          ? `${roundAgent.messageTemplate ?? '{{question}}'}\n\n## Specific Request For You\n${spec.notes}`
+          : roundAgent.messageTemplate
+        return { ...roundAgent, messageTemplate }
       })
 
-      specWithReviewers = { ...baseSpec, reviewers }
+      flowToRun = {
+        ...baseFlow,
+        rounds: baseFlow.rounds.map((r, i) => (i === 0 ? { ...r, agents: selectedAgents } : r))
+      }
       const domainInput = input.reviewerSpecs.find((s) => s.profileName === 'domain_expert')
       customVars = domainInput?.domain ? { domain: domainInput.domain } : undefined
     } catch {
-      // Role selection failed; use spec's default reviewers as-is
-      specWithReviewers = baseSpec
+      // Role selection failed; use flow's default round agents as-is
+      flowToRun = baseFlow
     }
   }
 
-  const plan = compileSpec(specWithReviewers, input.question, DEFAULT_MODEL, customVars)
+  const plan = compileFlow(flowToRun, input.question, DEFAULT_MODEL, customVars)
 
   // Build agentVendorOverrides from reviewerConfig. Catalog lookup is authoritative
   // (handles cross-vendor models like deepseek-r1-distill-llama-70b served by Groq).

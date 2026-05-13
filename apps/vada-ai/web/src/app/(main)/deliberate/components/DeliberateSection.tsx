@@ -1,6 +1,6 @@
 'use client'
 
-import type { DeliberationSpec } from '@atta/engine'
+import type { Flow } from '@atta/engine'
 import { QuestionInputArea } from './QuestionInputArea'
 import { DeliberatePanel } from './DeliberatePanel'
 import { useDeliberateForm } from './useDeliberateForm'
@@ -11,7 +11,7 @@ interface DeliberateSectionProps {
   dailyLimit: number
   initialError?: string
   configuredProviders: string[]
-  specs: DeliberationSpec[]
+  specs: Flow[]
   initialTeamId?: string
 }
 
