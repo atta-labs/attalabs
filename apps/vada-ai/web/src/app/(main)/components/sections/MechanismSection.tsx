@@ -132,8 +132,8 @@ export function MechanismSection() {
 
         <P>
           A team is defined in YAML. A team is a sequence of rounds. A round has agents. Agents have models, prompts,
-          and a place in the flow. To launch a new team, write a YAML file. To change a team, change the YAML. There
-          is no team-specific code.
+          and a place in the flow. To launch a new team, write a YAML file. To change a team, change the YAML. There is
+          no team-specific code.
         </P>
 
         <P>
@@ -143,8 +143,8 @@ export function MechanismSection() {
 
         <Blockquote>
           <P>
-            <span className='font-bold not-italic'>The engine is the foundation.</span> The teams are how you put it
-            to work.
+            <span className='font-bold not-italic'>The engine is the foundation.</span> The teams are how you put it to
+            work.
           </P>
         </Blockquote>
       </div>

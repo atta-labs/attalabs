@@ -36,6 +36,18 @@ export {
 } from '../installed/dropdown-menu'
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../installed/popover'
 export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectScrollDownButton,
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue
+} from '../installed/select'
+export {
   Command,
   CommandEmpty,
   CommandGroup,

@@ -165,8 +165,8 @@ export function EcosystemSection({ brandings }: EcosystemSectionProps) {
               <span className='block text-muted-foreground'>More are on the way.</span>
             </Heading>
             <Text as='p' className='text-foreground/80 leading-relaxed text-sm sm:text-base max-w-2xl'>
-              AttaLabs is the lab. Vāda is the first system to ship from it — built on the Atta Engine, the
-              deliberation runtime the lab maintains. Two further systems are in design.
+              AttaLabs is the lab. Vāda is the first system to ship from it — built on the Atta Engine, the deliberation
+              runtime the lab maintains. Two further systems are in design.
             </Text>
           </div>
 
