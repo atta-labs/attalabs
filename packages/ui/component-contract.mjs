@@ -87,6 +87,18 @@ export const REQUIRED_COMPONENTS = [
   'Slider',
   'Checkbox',
 
+  // Select
+  'Select',
+  'SelectContent',
+  'SelectGroup',
+  'SelectItem',
+  'SelectLabel',
+  'SelectScrollDownButton',
+  'SelectScrollUpButton',
+  'SelectSeparator',
+  'SelectTrigger',
+  'SelectValue',
+
   // Layout
   'Separator',
 
