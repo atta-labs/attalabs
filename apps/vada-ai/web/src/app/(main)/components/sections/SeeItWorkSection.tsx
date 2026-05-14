@@ -26,7 +26,15 @@ function DownArrow() {
  * Generic "round" block — N parallel agent slots, no names.
  * Stays generic so the home page doesn't pin to any specific team's shape.
  */
-function GenericRound({ label, agentCount = 3, parallel = true }: { label: string; agentCount?: number; parallel?: boolean }) {
+function GenericRound({
+  label,
+  agentCount = 3,
+  parallel = true
+}: {
+  label: string
+  agentCount?: number
+  parallel?: boolean
+}) {
   const slots = Array.from({ length: agentCount }, (_, i) => i)
 
   return (
@@ -39,12 +47,13 @@ function GenericRound({ label, agentCount = 3, parallel = true }: { label: strin
           <div
             key={i}
             className='flex items-center gap-2 p-2 border border-border bg-muted/20'
+            role='img'
             aria-label={`agent slot ${i + 1}`}
           >
             <div className='w-2 h-2 rounded-full bg-foreground/70' />
             <div className='flex-1'>
-              <div className='h-1.5 bg-foreground/20 rounded-sm mb-1' style={{ width: `${60 + (i * 13) % 30}%` }} />
-              <div className='h-1.5 bg-foreground/10 rounded-sm' style={{ width: `${40 + (i * 17) % 35}%` }} />
+              <div className='h-1.5 bg-foreground/20 rounded-sm mb-1' style={{ width: `${60 + ((i * 13) % 30)}%` }} />
+              <div className='h-1.5 bg-foreground/10 rounded-sm' style={{ width: `${40 + ((i * 17) % 35)}%` }} />
             </div>
           </div>
         ))}
@@ -93,8 +102,8 @@ export function SeeItWorkSection() {
 
       <P>
         Whatever the team's shape, the deliverable is the same: a structured conclusion with the full transcript
-        attached. Every reviewer's reasoning, preserved. Auditable. Defensible to anyone who later asks how the
-        decision was reached.
+        attached. Every reviewer's reasoning, preserved. Auditable. Defensible to anyone who later asks how the decision
+        was reached.
       </P>
 
       <Blockquote>
@@ -187,7 +196,11 @@ export function SeeItWorkSection() {
 
   return (
     <SectionWrapper id='see-it-work'>
-      <TwoColumnSection className='md:grid-cols-[1.2fr_1fr] md:items-start gap-y-12' left={diagramColumn} right={textColumn} />
+      <TwoColumnSection
+        className='md:grid-cols-[1.2fr_1fr] md:items-start gap-y-12'
+        left={diagramColumn}
+        right={textColumn}
+      />
     </SectionWrapper>
   )
 }

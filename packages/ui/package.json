@@ -33,7 +33,8 @@
     "./components/badge": "./libraries/basic/components/display/badge.tsx",
     "./components/*": "./libraries/basic/installed/*.tsx",
     "./account": "./account/index.ts",
-    "./scripts/generate-ui": "./scripts/generate-ui.ts"
+    "./scripts/generate-ui": "./scripts/generate-ui.ts",
+    "./footer": "./footer/index.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

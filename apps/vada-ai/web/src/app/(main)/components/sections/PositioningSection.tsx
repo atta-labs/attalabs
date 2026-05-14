@@ -31,18 +31,20 @@ function DeliberationCluster() {
       <title>Anonymous deliberation cluster</title>
       {/* Connecting lines between every pair — the room is fully wired */}
       {nodes.map((a, i) =>
-        nodes.slice(i + 1).map((b, j) => (
-          <line
-            key={`${i}-${j}`}
-            x1={a.cx}
-            y1={a.cy}
-            x2={b.cx}
-            y2={b.cy}
-            stroke='hsl(var(--border))'
-            strokeWidth='1'
-            opacity='0.5'
-          />
-        ))
+        nodes
+          .slice(i + 1)
+          .map((b, j) => (
+            <line
+              key={`${i}-${j}`}
+              x1={a.cx}
+              y1={a.cy}
+              x2={b.cx}
+              y2={b.cy}
+              stroke='hsl(var(--border))'
+              strokeWidth='1'
+              opacity='0.5'
+            />
+          ))
       )}
       {/* Outer subtle ring */}
       {nodes.map((n, i) => (
