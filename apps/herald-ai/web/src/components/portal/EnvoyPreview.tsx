@@ -14,7 +14,7 @@ export function EnvoyPreview({ username }: { username: string }) {
       {/* Status bar */}
       <div className='flex items-center justify-between border-b border-border px-4 py-2'>
         <div className='flex items-center gap-2'>
-          <div className={`h-2 w-2 rounded-full ${isReady ? 'bg-green-500' : 'bg-yellow-500'}`} />
+          <div className={`h-2 w-2 rounded-full ${isReady ? 'bg-success' : 'bg-warning'}`} />
           <span className='font-mono text-[10px] text-muted-foreground'>
             {isReady ? 'Preview connected' : 'Loading preview...'}
           </span>

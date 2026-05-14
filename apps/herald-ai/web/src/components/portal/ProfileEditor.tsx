@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '@atta/ui'
 
 const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const
 
@@ -271,9 +272,9 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
     }
   }
 
-  const inputClass =
-    'w-full border border-border bg-card px-3 py-2 font-sans text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/30 focus:outline-none'
   const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
+  const inputClass =
+    'bg-card border-border focus-visible:border-foreground/30 focus-visible:ring-0 focus-visible:ring-offset-0'
 
   return (
     <div className='space-y-8'>
@@ -297,14 +298,15 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
                 if (file) handleCvUpload(file)
               }}
             />
-            <button
+            <Button
               type='button'
+              variant='outline'
               onClick={() => cvInputRef.current?.click()}
               disabled={uploading}
-              className='border border-foreground/20 bg-foreground/5 px-4 py-2 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-30'
+              className='font-mono text-xs uppercase tracking-[0.2em]'
             >
               {uploading ? 'Parsing...' : 'Upload CV'}
-            </button>
+            </Button>
           </div>
         </div>
       </section>
@@ -312,19 +314,33 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
       <section>
         <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Identity</h2>
         <div className='grid grid-cols-2 gap-4'>
-          <label>
-            <span className={labelClass}>Name</span>
-            <input className={inputClass} value={form.name} onChange={(e) => update('name', e.target.value)} />
-          </label>
-          <label>
-            <span className={labelClass}>Title</span>
-            <input className={inputClass} value={form.title} onChange={(e) => update('title', e.target.value)} />
-          </label>
+          <div>
+            <label htmlFor='field-name' className={labelClass}>
+              Name
+            </label>
+            <Input
+              id='field-name'
+              className={inputClass}
+              value={form.name}
+              onChange={(e) => update('name', e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor='field-title' className={labelClass}>
+              Title
+            </label>
+            <Input
+              id='field-title'
+              className={inputClass}
+              value={form.title}
+              onChange={(e) => update('title', e.target.value)}
+            />
+          </div>
 
           {/* Location — country search dropdown */}
           <div className='relative'>
             <span className={labelClass}>Location</span>
-            <input
+            <Input
               className={inputClass}
               value={locationSearch}
               onChange={(e) => {
@@ -337,20 +353,21 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
             {locationOpen && filteredCountries.length > 0 && (
               <div className='absolute z-20 mt-1 max-h-48 w-full overflow-y-auto border border-border bg-card shadow-lg'>
                 {filteredCountries.map((country) => (
-                  <button
+                  <Button
                     key={country}
                     type='button'
+                    variant='ghost'
                     onClick={() => {
                       setLocationSearch(country)
                       update('location', country)
                       setLocationOpen(false)
                     }}
-                    className={`w-full px-3 py-1.5 text-left font-sans text-sm transition-colors hover:bg-foreground/10 ${
+                    className={`h-auto w-full justify-start rounded-none px-3 py-1.5 font-sans text-sm ${
                       form.location === country ? 'text-foreground' : 'text-muted-foreground'
                     }`}
                   >
                     {country}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -359,30 +376,37 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           {/* Availability — work mode select */}
           <div>
             <span className={labelClass}>Work Mode</span>
-            <select
-              className={`${inputClass} appearance-none`}
-              value={form.availability}
-              onChange={(e) => update('availability', e.target.value)}
-            >
-              <option value=''>Select...</option>
-              {WORK_MODES.map((mode) => (
-                <option key={mode} value={mode}>
-                  {mode}
-                </option>
-              ))}
-            </select>
+            <Select value={form.availability} onValueChange={(value) => update('availability', value)}>
+              <SelectTrigger className={inputClass}>
+                <SelectValue placeholder='Select...' />
+              </SelectTrigger>
+              <SelectContent>
+                {WORK_MODES.map((mode) => (
+                  <SelectItem key={mode} value={mode}>
+                    {mode}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <label>
-            <span className={labelClass}>GitHub Handle</span>
-            <input className={inputClass} value={form.github} onChange={(e) => update('github', e.target.value)} />
-          </label>
+          <div>
+            <label htmlFor='field-github' className={labelClass}>
+              GitHub Handle
+            </label>
+            <Input
+              id='field-github'
+              className={inputClass}
+              value={form.github}
+              onChange={(e) => update('github', e.target.value)}
+            />
+          </div>
         </div>
       </section>
 
       <section>
         <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
-        <textarea
+        <Textarea
           className={`${inputClass} min-h-[100px] resize-y`}
           value={form.summary}
           onChange={(e) => update('summary', e.target.value)}
@@ -393,7 +417,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
         <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
           Stack (comma-separated)
         </h2>
-        <textarea
+        <Textarea
           className={`${inputClass} min-h-[80px] resize-y`}
           value={form.stack}
           onChange={(e) => update('stack', e.target.value)}
@@ -401,14 +425,15 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
       </section>
 
       <div className='flex items-center gap-3 border-t border-border pt-6'>
-        <button
+        <Button
           type='button'
+          variant='outline'
           onClick={handleSave}
           disabled={saving}
-          className='border border-foreground/20 bg-foreground/5 px-6 py-2 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-30'
+          className='font-mono text-xs uppercase tracking-[0.2em]'
         >
           {saving ? 'Saving...' : 'Save Profile'}
-        </button>
+        </Button>
         {saved && <span className='font-mono text-xs text-muted-foreground'>Saved</span>}
       </div>
     </div>

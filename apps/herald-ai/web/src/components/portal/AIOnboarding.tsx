@@ -1,5 +1,6 @@
 'use client'
 
+import { Button, Input } from '@atta/ui'
 import { type UIMessage, useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
 import { useRouter } from 'next/navigation'
@@ -26,8 +27,9 @@ interface ToolPart {
 }
 
 function getToolParts(msg: UIMessage): ToolPart[] {
+  if (!msg?.parts) return []
   return msg.parts
-    .filter((p) => p.type === 'dynamic-tool' || p.type.startsWith('tool'))
+    .filter((p): p is NonNullable<typeof p> => p != null && (p.type === 'dynamic-tool' || p.type.startsWith('tool-')))
     .map((p) => p as unknown as ToolPart)
 }
 
@@ -58,39 +60,6 @@ export function AIOnboarding() {
       sendMessage({ text: 'Start onboarding' })
     }
   }, [started, messages.length, sendMessage])
-
-  useEffect(() => {
-    for (const msg of messages) {
-      for (const tp of getToolParts(msg)) {
-        const name = getToolName(tp)
-
-        if (tp.output && !handledToolCalls.current.has(`result-${tp.toolCallId}`)) {
-          handledToolCalls.current.add(`result-${tp.toolCallId}`)
-
-          if (name === 'check_username') {
-            const r = tp.output as { available: boolean; username: string }
-            setState((s) => ({ ...s, username: r.username, usernameValid: r.available }))
-          }
-          if (name === 'verify_github') {
-            const r = tp.output as { valid: boolean; handle: string; avatarUrl?: string }
-            setState((s) => ({ ...s, githubHandle: r.handle, githubValid: r.valid, githubAvatar: r.avatarUrl }))
-          }
-        }
-
-        if ((tp.state === 'call' || tp.state === 'input-available') && !handledToolCalls.current.has(tp.toolCallId)) {
-          handledToolCalls.current.add(tp.toolCallId)
-
-          if (name === 'request_cv_upload') {
-            setState((s) => ({ ...s, waitingForCv: true }) as OnboardingState)
-          }
-          if (name === 'complete_onboarding') {
-            const args = (tp.input ?? {}) as { username: string; githubHandle?: string }
-            handleComplete(args.username, args.githubHandle, tp.toolCallId)
-          }
-        }
-      }
-    }
-  }, [messages])
 
   const handleComplete = useCallback(
     async (username: string, githubHandle: string | undefined, toolCallId: string) => {
@@ -128,6 +97,43 @@ export function AIOnboarding() {
     },
     [state.cvProfile, state.githubHandle, router, addToolOutput]
   )
+
+  const handleCompleteRef = useRef(handleComplete)
+  handleCompleteRef.current = handleComplete
+
+  useEffect(() => {
+    for (const msg of messages) {
+      for (const tp of getToolParts(msg)) {
+        if (!tp) continue
+        const name = getToolName(tp)
+
+        if (tp.output && !handledToolCalls.current.has(`result-${tp.toolCallId}`)) {
+          handledToolCalls.current.add(`result-${tp.toolCallId}`)
+
+          if (name === 'check_username') {
+            const r = tp.output as { available: boolean; username: string }
+            setState((s) => ({ ...s, username: r.username, usernameValid: r.available }))
+          }
+          if (name === 'verify_github') {
+            const r = tp.output as { valid: boolean; handle: string; avatarUrl?: string }
+            setState((s) => ({ ...s, githubHandle: r.handle, githubValid: r.valid, githubAvatar: r.avatarUrl }))
+          }
+        }
+
+        if (tp.state === 'input-available' && !handledToolCalls.current.has(tp.toolCallId)) {
+          handledToolCalls.current.add(tp.toolCallId)
+
+          if (name === 'request_cv_upload') {
+            setState((s) => ({ ...s, waitingForCv: true }) as OnboardingState)
+          }
+          if (name === 'complete_onboarding') {
+            const args = (tp.input ?? {}) as { username: string; githubHandle?: string }
+            handleCompleteRef.current(args.username, args.githubHandle, tp.toolCallId)
+          }
+        }
+      }
+    }
+  }, [messages])
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -231,8 +237,8 @@ export function AIOnboarding() {
           <input ref={fileRef} type='file' accept='.pdf,.txt,.md' onChange={handleFileUpload} className='hidden' />
 
           <div className='flex gap-2'>
-            <input
-              className='w-full border border-border bg-card px-4 py-3 font-sans text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/30 focus:outline-none'
+            <Input
+              className='h-12 rounded-none border-border bg-card px-4 font-sans text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-foreground/30 focus-visible:ring-0 focus-visible:ring-offset-0'
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -243,17 +249,17 @@ export function AIOnboarding() {
               }}
               placeholder='Your answer...'
               disabled={isThinking || !firstAgentText}
-              // biome-ignore lint/a11y/noAutofocus: onboarding needs focus
               autoFocus
             />
-            <button
+            <Button
               type='button'
+              variant='outline'
               onClick={handleSend}
               disabled={isThinking || !input.trim()}
-              className='shrink-0 border border-border px-4 py-3 font-mono text-[10px] uppercase text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30'
+              className='h-12 shrink-0 rounded-none border-border px-5 font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:bg-transparent hover:text-foreground'
             >
               Send
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -319,17 +325,18 @@ export function AIOnboarding() {
       <div className='fixed bottom-0 left-0 right-0 border-t border-border bg-background'>
         <div className='mx-auto max-w-[560px] px-6 py-4'>
           {state.waitingForCv && !state.cvParsed && !uploading ? (
-            <button
+            <Button
               type='button'
+              variant='outline'
               onClick={() => fileRef.current?.click()}
-              className='w-full border border-border bg-card px-4 py-3 text-left font-mono text-sm text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground'
+              className='h-12 w-full justify-start rounded-none border-border bg-card px-4 font-mono text-sm text-muted-foreground hover:bg-card hover:border-foreground/30 hover:text-foreground'
             >
               📎 Click to upload your CV (PDF, TXT, or Markdown)
-            </button>
+            </Button>
           ) : (
             <div className='flex gap-2'>
-              <input
-                className='w-full border border-border bg-card px-4 py-3 font-sans text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/30 focus:outline-none'
+              <Input
+                className='h-12 rounded-none border-border bg-card px-4 font-sans text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-foreground/30 focus-visible:ring-0 focus-visible:ring-offset-0'
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -341,14 +348,15 @@ export function AIOnboarding() {
                 placeholder='Your answer...'
                 disabled={isThinking || state.complete}
               />
-              <button
+              <Button
                 type='button'
+                variant='outline'
                 onClick={handleSend}
                 disabled={isThinking || !input.trim() || state.complete}
-                className='shrink-0 border border-border px-4 py-3 font-mono text-[10px] uppercase text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30'
+                className='h-12 shrink-0 rounded-none border-border px-5 font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:bg-transparent hover:text-foreground'
               >
                 Send
-              </button>
+              </Button>
             </div>
           )}
         </div>
