@@ -1,5 +1,6 @@
 'use client'
 
+import { Fragment } from 'react'
 import { Heading } from '@atta/ui'
 import { mdxComponents } from '@/components/mdx/MDXComponents'
 import { SectionLabel } from '../primitives/SectionLabel'
@@ -79,8 +80,8 @@ function CompiledFlowBlock() {
       </div>
       <div className='p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-3'>
         {rounds.map((round, idx) => (
-          <>
-            <div key={round.id} className='flex flex-col gap-2'>
+          <Fragment key={round.id}>
+            <div className='flex flex-col gap-2'>
               <div className='flex items-center justify-between'>
                 <span className='font-mono text-[9px] tracking-[0.18em] uppercase text-muted-foreground'>
                   round · {round.id}
@@ -105,7 +106,7 @@ function CompiledFlowBlock() {
                 <div className='flex sm:hidden items-center justify-center py-1 text-foreground/50 font-mono'>↓</div>
               </>
             )}
-          </>
+          </Fragment>
         ))}
       </div>
     </div>
