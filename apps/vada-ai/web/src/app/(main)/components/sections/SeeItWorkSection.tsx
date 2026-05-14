@@ -24,8 +24,7 @@ function DownArrow() {
 
 /**
  * Generic "round" block — N parallel agent slots, no names.
- * Used to illustrate the shape of a deliberation without committing to a
- * specific team's agent count, roles, or round count.
+ * Stays generic so the home page doesn't pin to any specific team's shape.
  */
 function GenericRound({ label, agentCount = 3, parallel = true }: { label: string; agentCount?: number; parallel?: boolean }) {
   const slots = Array.from({ length: agentCount }, (_, i) => i)
@@ -73,33 +72,35 @@ function OptionalGate({ label, sublabel }: { label: string; sublabel: string }) 
 
 export function SeeItWorkSection() {
   const textColumn = (
-    <div className='flex flex-col gap-6 md:gap-8 lg:sticky lg:top-24'>
+    <div className='flex flex-col gap-6 md:gap-8'>
       <SectionLabel>02 / How It Works</SectionLabel>
 
       <Heading level={2} className='font-serif text-3xl md:text-4xl lg:text-5xl text-foreground leading-tight'>
-        A question goes in. A deliberation happens. A conclusion comes out.
+        Deep thinking, on demand.
       </Heading>
 
       <P>
-        You bring a question. Vāda doesn't try to answer it directly — it interrogates it. Multiple agents read the
-        question, write independent positions, and respond to each other under a structured protocol.
+        You bring a question. Vāda launches a <strong>team of agents</strong> on it — reviewers running across multiple
+        models, working through the question under a structured protocol. No single model's blind spots. No one
+        viewpoint deciding for you.
       </P>
 
       <P>
-        The shape of the protocol — how many rounds, how many agents, whether the result is audited and revised — is
-        defined by the <strong>team</strong> you pick. Some teams run a single round of independent reviewers. Others
-        run multiple adversarial rounds with audit gates and revision loops.
+        The shape of the work is defined by the <strong>team</strong> you launch. A team can be a panel of independent
+        reviewers — each on a different model — returning their analysis. Or a deeper engagement with multiple rounds,
+        cross-critique, an audit gate, and a revision loop. You pick the team that fits the decision.
       </P>
 
       <P>
-        Whatever the shape, the output is the same kind of artifact: a structured conclusion with the full transcript
-        attached. Every word from every agent is preserved.
+        Whatever the team's shape, the deliverable is the same: a structured conclusion with the full transcript
+        attached. Every reviewer's reasoning, preserved. Auditable. Defensible to anyone who later asks how the
+        decision was reached.
       </P>
 
       <Blockquote>
         <P>
-          The question you walked in with is not the question you walk out with.{' '}
-          <span className='font-bold'>That reframe is the product.</span>
+          The question you walked in with is not always the question you walk out with.{' '}
+          <span className='font-bold'>That clarity is what you came for.</span>
         </P>
       </Blockquote>
     </div>
@@ -125,7 +126,7 @@ export function SeeItWorkSection() {
       <div className='relative z-10'>
         <div className='flex items-baseline justify-between mb-6 hidden sm:flex'>
           <div className='font-mono text-[9px] uppercase tracking-[0.24em] text-muted-foreground'>
-            Schema — Deliberation Flow
+            Schema — Engagement Flow
           </div>
           <div className='font-serif text-sm font-medium text-foreground italic'>Vāda</div>
         </div>
@@ -142,10 +143,10 @@ export function SeeItWorkSection() {
 
         <DownArrow />
 
-        {/* Generic deliberation — abstract rounds */}
-        <GenericRound label='Round · independent positions' agentCount={3} parallel={true} />
+        {/* Generic team work — abstract rounds */}
+        <GenericRound label='Reviewers · independent analysis' agentCount={3} parallel={true} />
         <DownArrow />
-        <GenericRound label='Round · response & critique' agentCount={3} parallel={true} />
+        <GenericRound label='Cross-critique · response' agentCount={3} parallel={true} />
         <DownArrow />
 
         {/* Optional audit/revision */}
@@ -186,7 +187,7 @@ export function SeeItWorkSection() {
 
   return (
     <SectionWrapper id='see-it-work'>
-      <TwoColumnSection className='md:grid-cols-[1.2fr_1fr] md:items-start' left={diagramColumn} right={textColumn} />
+      <TwoColumnSection className='md:grid-cols-[1.2fr_1fr] md:items-start gap-y-12' left={diagramColumn} right={textColumn} />
     </SectionWrapper>
   )
 }
