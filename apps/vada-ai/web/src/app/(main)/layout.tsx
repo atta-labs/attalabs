@@ -3,6 +3,7 @@ import { ToastProvider } from '@atta/ui'
 import { auth } from '@atta/auth/hooks'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Logo } from '@atta/ui/shared'
+import { Footer } from '@atta/ui/footer'
 import { UserTopBar } from '@/components/UserTopBar'
 import { StickyHeaderTopBar } from '@/components/StickyHeaderTopBar'
 import { UserPreferencesProvider } from '@/lib/user-preferences-context'
@@ -43,7 +44,19 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
           <StickyHeaderTopBar isBlurred={true} className='z-40 border-border/40'>
             <UserTopBar logo={logo} />
           </StickyHeaderTopBar>
-          <div className='flex-1'>{children}</div>
+          <div className='flex-1 overflow-y-auto flex flex-col'>
+            <div className='flex-1'>{children}</div>
+            <Footer
+              product='vada'
+              tagline='Multi-agent deliberation'
+              links={[
+                { label: 'Trust', href: '/trust' },
+                { label: 'MCP', href: '/mcp' },
+                { label: 'Teams', href: '/teams' }
+              ]}
+              showProductNav={true}
+            />
+          </div>
         </div>
       </ToastProvider>
     </UserPreferencesProvider>

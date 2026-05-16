@@ -4,7 +4,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@atta/ui": ["../../../packages/ui/generated/atta/components"],
-      "@atta/ui/canvas": ["../../../packages/ui/generated/atta/canvas"]
+      "@atta/ui/canvas": ["../../../packages/ui/generated/atta/canvas"],
+      "@atta/ui/footer": ["../../../packages/ui/footer/index"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],

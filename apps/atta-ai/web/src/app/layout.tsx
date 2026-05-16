@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { buildFaviconIcons, cmsClient, getAttaBranding, getAttaConfig } from '@atta/cms'
 import { IdentityProvider } from '@atta/identity/react'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
+import { Footer } from '@atta/ui/footer'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
@@ -28,6 +29,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <NextWebShell config={config} branding={branding} styleId='atta-theme' cookieName='atta-color-scheme'>
       <PreviewThemeListener />
       <IdentityProvider>{children}</IdentityProvider>
+      <Footer product='atta' tagline='Deep-thinking AI' links={[]} showProductNav={true} />
     </NextWebShell>
   )
 }

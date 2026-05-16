@@ -15,7 +15,7 @@ export function LandingPage() {
         </Heading>
         <Text as='p' className='mx-auto mt-6 max-w-2xl text-balance text-xl text-muted-foreground'>
           Paste a job description against a candidate&apos;s Herald link. Get an evidence-based match audit — claims
-          verified, gaps named, GitHub signal cross-checked, interview hooks pre-extracted. Not a score. An audit.
+          verified, GitHub signal cross-checked, interview hooks pre-extracted. Not a score. An audit.
         </Text>
         <div className='mt-8 flex flex-wrap items-center justify-center gap-4'>
           <NextLink variant='button' href='/sign-in'>
@@ -101,16 +101,11 @@ export function LandingPage() {
           CVs lie. Code doesn&apos;t.
         </Heading>
         <Text as='p' className='mb-6 max-w-2xl text-base leading-relaxed text-muted-foreground'>
-          A candidate claims five years of Rust. Herald checks their GitHub. Most recent Rust commit was two years ago,
-          on a forked tutorial repo. One claims &quot;led a team of 12&quot; — their public commit graph shows solo work
-          on small repos. One claims junior-level — turns out they&apos;ve maintained a library with 4k stars for three
-          years.
-        </Text>
-        <Text as='p' className='mb-6 max-w-2xl text-base leading-relaxed text-muted-foreground'>
-          Herald reads public GitHub activity as part of every audit: language distribution, commit frequency, repo
-          ownership, contribution patterns, recent vs. lifetime work. The signal goes into the audit explicitly: where
-          it confirms the CV, where it contradicts it, where the candidate is quietly stronger than they&apos;re
-          advertising.
+          A candidate lists seven years of TypeScript and &quot;led a migration to React 18 concurrent features.&quot;
+          Herald scans their GitHub. The last TypeScript commit is fourteen months old, on a private repo they no longer
+          contribute to. Their public React work is three 2021 class-component tutorials and one forked create-react-app
+          from 2022 that never shipped. The claimed seniority doesn&apos;t survive the diff between what they say and
+          what&apos;s actually merged.
         </Text>
         <Text as='p' className='mb-8 max-w-2xl text-base leading-relaxed text-muted-foreground'>
           No GitHub doesn&apos;t mean an automatic downgrade. Herald notes the absence and weights the rest of the audit
@@ -214,6 +209,11 @@ export function LandingPage() {
             </div>
           </div>
         </div>
+        <Text as='p' className='mt-12 max-w-2xl text-base leading-relaxed text-muted-foreground'>
+          When a candidate shares their Herald link, both sides of the audit are already in place. The recruiter sees
+          the forensic match against a specific JD. The candidate knows exactly what evidence was checked — and can
+          update their profile before the next audit runs.
+        </Text>
       </section>
 
       {/* Section 4 — What Herald isn't */}
@@ -238,16 +238,6 @@ export function LandingPage() {
           generated without reading the same evidence Herald just read.
         </Text>
       </section>
-
-      {/* Footer */}
-      <footer className='mt-12 border-t border-border pt-6 text-center'>
-        <Text as='p' className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>
-          Herald · Forensic hiring audits · heyherald.com
-        </Text>
-        <Text as='p' className='mt-2 font-mono text-xs text-muted-foreground/60'>
-          An AttaLabs product
-        </Text>
-      </footer>
     </div>
   )
 }
