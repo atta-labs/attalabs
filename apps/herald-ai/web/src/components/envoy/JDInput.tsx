@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useComponents } from '@atta/ui/lib/library-provider'
+import { Button, Textarea } from '@atta/ui'
 
 export function JDInput({
   onSubmit,
@@ -12,7 +12,6 @@ export function JDInput({
   candidateName?: string
   candidateTitle?: string
 }) {
-  const { Button, Textarea } = useComponents()
   const [value, setValue] = useState('')
   const [pending, setPending] = useState(false)
 
@@ -33,50 +32,25 @@ export function JDInput({
       </header>
 
       <div>
-        {Textarea ? (
-          <Textarea
-            value={value}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setValue(e.target.value)}
-            placeholder='Paste the job description here. I&#39;ll show you exactly how I fit — and why.'
-            rows={10}
-            disabled={pending}
-            className='w-full resize-none bg-card font-sans text-sm leading-relaxed'
-            onKeyDown={(e: React.KeyboardEvent) => {
-              if (e.key === 'Enter' && e.metaKey) handleSubmit()
-            }}
-          />
-        ) : (
-          <textarea
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder='Paste the job description here. I&#39;ll show you exactly how I fit — and why.'
-            rows={10}
-            disabled={pending}
-            className='w-full resize-none border border-border bg-card px-4 py-3 font-sans text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-foreground/30 focus:outline-none disabled:opacity-50'
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.metaKey) handleSubmit()
-            }}
-          />
-        )}
+        <Textarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
+          rows={10}
+          disabled={pending}
+          className='w-full resize-none bg-card font-sans text-sm leading-relaxed'
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && e.metaKey) handleSubmit()
+          }}
+        />
 
-        {Button ? (
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className='mt-3 w-full py-3 font-mono text-xs uppercase tracking-[0.2em]'
-          >
-            {pending ? 'Generating...' : 'Generate Audit'}
-          </Button>
-        ) : (
-          <button
-            type='button'
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className='mt-3 w-full border border-foreground/20 bg-foreground/5 py-3 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10 disabled:cursor-not-allowed disabled:opacity-30'
-          >
-            {pending ? 'Generating...' : 'Generate Audit'}
-          </button>
-        )}
+        <Button
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          className='mt-3 w-full py-3 font-mono text-xs uppercase tracking-[0.2em]'
+        >
+          {pending ? 'Generating...' : 'Generate Audit'}
+        </Button>
 
         <p className='mt-2 font-mono text-[10px] text-muted-foreground'>Cmd+Enter to submit</p>
       </div>
