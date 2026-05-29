@@ -43,7 +43,7 @@ const SEED_PRODUCT = (process.env.SANITY_SEED_PRODUCT ?? 'herald').toLowerCase()
   | 'vitakka'
   | 'attalabs'
 
-const LOGOS_DIR = path.join(os.homedir(), 'Downloads', 'tmp 2', 'logos-bundle')
+const LOGOS_DIR = path.join(os.homedir(), 'Downloads', 'tmp 3', 'logos-bundle')
 
 // ── Brand identity data ─────────────────────────────────────────────────────
 
