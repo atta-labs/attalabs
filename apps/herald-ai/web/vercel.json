@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "cd ../../.. && bun turbo run build --filter=@atta/herald-ai-web",
-  "installCommand": "cd ../../.. && bun install --frozen-lockfile",
+  "installCommand": "cd ../../.. && bun install",
   "outputDirectory": ".next",
   "ignoreCommand": "npx turbo-ignore @atta/herald-ai-web"
 }
