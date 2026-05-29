@@ -4,6 +4,12 @@ import { ATTA_REPO_PATH, worktreePath } from './paths.js'
 
 const execFileAsync = promisify(execFile)
 
+// Bun bundles may inherit a stripped PATH that lacks /usr/bin — augment it.
+const systemEnv = {
+  ...process.env,
+  PATH: [process.env.PATH, '/usr/bin', '/usr/local/bin', '/bin'].filter(Boolean).join(':')
+}
+
 export interface WorktreeInfo {
   path: string
   branch: string
@@ -13,7 +19,8 @@ export async function createWorktree(issueNumber: number, baseBranch = 'main'): 
   const wt = worktreePath(issueNumber)
   const branch = `feat/issue-${issueNumber}`
   await execFileAsync('git', ['worktree', 'add', wt, '-b', branch, `origin/${baseBranch}`], {
-    cwd: ATTA_REPO_PATH
+    cwd: ATTA_REPO_PATH,
+    env: systemEnv
   })
   return wt
 }
@@ -21,13 +28,15 @@ export async function createWorktree(issueNumber: number, baseBranch = 'main'): 
 export async function removeWorktree(issueNumber: number): Promise<void> {
   const wt = worktreePath(issueNumber)
   await execFileAsync('git', ['worktree', 'remove', wt, '--force'], {
-    cwd: ATTA_REPO_PATH
+    cwd: ATTA_REPO_PATH,
+    env: systemEnv
   })
 }
 
 export async function listWorktrees(): Promise<WorktreeInfo[]> {
   const { stdout } = await execFileAsync('git', ['worktree', 'list', '--porcelain'], {
-    cwd: ATTA_REPO_PATH
+    cwd: ATTA_REPO_PATH,
+    env: systemEnv
   })
 
   const results: WorktreeInfo[] = []

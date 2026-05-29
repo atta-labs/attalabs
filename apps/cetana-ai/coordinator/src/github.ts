@@ -5,13 +5,18 @@ import { loadConfig } from './config.js'
 
 const execFileAsync = promisify(execFile)
 
+const systemEnv = {
+  ...process.env,
+  PATH: [process.env.PATH, '/usr/bin', '/usr/local/bin', '/bin'].filter(Boolean).join(':')
+}
+
 async function getOctokit(): Promise<{ octokit: Octokit; owner: string; repo: string }> {
   const config = loadConfig()
   const { owner, repo } = config.github
 
   let token = config.github.token
   if (!token) {
-    const { stdout } = await execFileAsync('gh', ['auth', 'token'])
+    const { stdout } = await execFileAsync('gh', ['auth', 'token'], { env: systemEnv })
     token = stdout.trim()
   }
 

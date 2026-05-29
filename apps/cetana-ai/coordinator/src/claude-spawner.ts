@@ -57,9 +57,15 @@ export async function spawnClaudeCode(args: SpawnArgs): Promise<SpawnResult> {
     args.model
   ]
 
+  const systemEnv = {
+    ...process.env,
+    PATH: [process.env.PATH, '/usr/bin', '/usr/local/bin', '/bin'].filter(Boolean).join(':')
+  }
+
   const proc = spawn('claude', claudeArgs, {
     cwd: args.worktreePath,
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: systemEnv
   })
 
   let buffer = ''
