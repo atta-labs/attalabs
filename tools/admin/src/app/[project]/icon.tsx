@@ -73,11 +73,11 @@ export default async function Icon({ params }: { params: Promise<{ project: stri
   const bg = themeBackground(theme, scheme)
   const border = themePrimary(theme, scheme)
 
-  // Pick favicon variant that contrasts with the background
+  // Pick logo variant that contrasts with the background
   const faviconUrl =
     scheme === 'dark'
-      ? (branding?.faviconDark?.png32?.url ?? branding?.faviconLight?.png32?.url)
-      : (branding?.faviconLight?.png32?.url ?? branding?.faviconDark?.png32?.url)
+      ? (branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url)
+      : (branding?.logoSolidLight?.url ?? branding?.logoSolidDark?.url)
 
   return new ImageResponse(
     <div

@@ -31,10 +31,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   ])
 
   const projectLogos: Record<ProjectKey, string | null> = {
-    vada: vadaBranding?.faviconDark?.png32?.url ?? null,
-    atta: attaBranding?.faviconDark?.png32?.url ?? null,
-    herald: heraldBranding?.faviconDark?.png32?.url ?? null,
-    vitakka: vitakkaBranding?.faviconDark?.png32?.url ?? null
+    vada: vadaBranding?.logoSolidDark?.url ?? null,
+    atta: attaBranding?.logoSolidDark?.url ?? null,
+    herald: heraldBranding?.logoSolidDark?.url ?? null,
+    vitakka: vitakkaBranding?.logoSolidDark?.url ?? null
   }
 
   const theme = config?.userInterface?.theme ?? null

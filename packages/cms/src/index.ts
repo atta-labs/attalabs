@@ -33,7 +33,6 @@ export type {
   AttaConfig,
   AttalabsConfig,
   CMSBranding,
-  CMSBrandingFaviconSet,
   CMSBrandingFile,
   CMSBrandingImage,
   CMSLibrary,
