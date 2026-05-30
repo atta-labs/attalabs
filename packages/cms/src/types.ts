@@ -79,20 +79,9 @@ export interface CMSBrandingImage {
   url?: string
 }
 
-export interface CMSBrandingFaviconSet {
-  ico?: CMSBrandingFile
-  png16?: CMSBrandingImage
-  png32?: CMSBrandingImage
-  png48?: CMSBrandingImage
-  png64?: CMSBrandingImage
-  png128?: CMSBrandingImage
-  png256?: CMSBrandingImage
-  png512?: CMSBrandingImage
-}
-
 export interface CMSBranding {
   _id: string
-  productId: 'herald' | 'atta' | 'vada' | 'vitakka'
+  productId: 'herald' | 'atta' | 'vada' | 'vitakka' | 'attalabs'
   productName: string
   paliRoot?: string
   paliMeaning?: string
@@ -113,13 +102,9 @@ export interface CMSBranding {
   logoOutlineDark?: CMSBrandingFile
   logoSolidLight?: CMSBrandingFile
   logoSolidDark?: CMSBrandingFile
-  logoLockupOutlineLight?: CMSBrandingFile
-  logoLockupOutlineDark?: CMSBrandingFile
-  logoLockupSolidLight?: CMSBrandingFile
-  logoLockupSolidDark?: CMSBrandingFile
+  logoFavicon?: CMSBrandingFile
   appleTouchIcon?: CMSBrandingImage
-  faviconLight?: CMSBrandingFaviconSet
-  faviconDark?: CMSBrandingFaviconSet
+  faviconIco?: CMSBrandingFile
 }
 
 /** Shared shape for Herald, Atta, Vitakka, and Vada CMS singletons */

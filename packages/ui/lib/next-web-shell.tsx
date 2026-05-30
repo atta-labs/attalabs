@@ -32,8 +32,6 @@ export async function NextWebShell({
   const cookieScheme = cookieStore.get(cookieName)?.value
   const colorScheme: ColorScheme = resolveColorScheme(cookieScheme, cmsScheme)
 
-  const faviconSet = colorScheme === 'dark' ? branding?.faviconDark : branding?.faviconLight
-
   const libraryId = (config?.userInterface?.library?.id ?? 'basic') as UILibrary
 
   // Emit BOTH light and dark blocks; <html data-theme> picks which is active.
@@ -72,23 +70,7 @@ export async function NextWebShell({
             <link rel='stylesheet' href={fontsUrl} />
           </>
         )}
-        {faviconSet && (
-          <>
-            {faviconSet.ico?.url && <link rel='icon' type='image/x-icon' href={faviconSet.ico.url} />}
-            {faviconSet.png16?.url && <link rel='icon' type='image/png' sizes='16x16' href={faviconSet.png16.url} />}
-            {faviconSet.png32?.url && <link rel='icon' type='image/png' sizes='32x32' href={faviconSet.png32.url} />}
-            {faviconSet.png48?.url && <link rel='icon' type='image/png' sizes='48x48' href={faviconSet.png48.url} />}
-            {faviconSet.png128?.url && (
-              <link rel='icon' type='image/png' sizes='128x128' href={faviconSet.png128.url} />
-            )}
-            {faviconSet.png256?.url && (
-              <link rel='icon' type='image/png' sizes='256x256' href={faviconSet.png256.url} />
-            )}
-            {faviconSet.png512?.url && (
-              <link rel='icon' type='image/png' sizes='512x512' href={faviconSet.png512.url} />
-            )}
-          </>
-        )}
+        {branding?.faviconIco?.url && <link rel='icon' type='image/x-icon' href={branding.faviconIco.url} />}
         {branding?.appleTouchIcon?.url && <link rel='apple-touch-icon' href={branding.appleTouchIcon.url} />}
       </head>
       <body className='min-h-screen bg-background text-foreground'>

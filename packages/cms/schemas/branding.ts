@@ -1,23 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { SvgFileInput } from '../components/SvgFileInput'
 
-const faviconSetFields = [
-  defineField({
-    name: 'ico',
-    title: 'favicon.ico',
-    type: 'file',
-    options: { accept: '.ico' },
-    description: 'Multi-resolution ICO (16, 32, 48, 64, 128, 256 px)'
-  }),
-  defineField({ name: 'png16', title: 'favicon-16.png', type: 'image', description: 'Browser tab — small' }),
-  defineField({ name: 'png32', title: 'favicon-32.png', type: 'image', description: 'Browser tab — standard' }),
-  defineField({ name: 'png48', title: 'favicon-48.png', type: 'image', description: 'Browser tab — medium' }),
-  defineField({ name: 'png64', title: 'favicon-64.png', type: 'image', description: 'Browser tab — high-DPI' }),
-  defineField({ name: 'png128', title: 'favicon-128.png', type: 'image', description: 'Chrome Web Store' }),
-  defineField({ name: 'png256', title: 'favicon-256.png', type: 'image', description: 'Retina / PWA manifest' }),
-  defineField({ name: 'png512', title: 'favicon-512.png', type: 'image', description: 'PWA splash / 512 px general' })
-]
-
 export const branding = defineType({
   name: 'branding',
   title: 'Branding',
@@ -40,7 +23,7 @@ export const branding = defineType({
       readOnly: true,
       validation: (Rule) => Rule.required(),
       options: {
-        list: ['herald', 'atta', 'vada', 'vitakka'].map((id) => ({ title: id, value: id }))
+        list: ['herald', 'atta', 'vada', 'vitakka', 'attalabs'].map((id) => ({ title: id, value: id }))
       },
       description: 'Read-only. Set once on document creation.'
     }),
@@ -206,62 +189,31 @@ export const branding = defineType({
       options: { accept: '.svg,image/svg+xml' },
       components: { input: SvgFileInput }
     }),
-
-    // ── Lockup (Logo Full) — mark + wordmark + tagline ────────────
     defineField({
-      name: 'logoLockupOutlineLight',
-      title: 'Logo Full — Outline, Light',
+      name: 'logoFavicon',
+      title: 'Logo — Favicon (SVG source)',
       type: 'file',
       group: 'logos',
       options: { accept: '.svg,image/svg+xml' },
-      components: { input: SvgFileInput }
-    }),
-    defineField({
-      name: 'logoLockupOutlineDark',
-      title: 'Logo Full — Outline, Dark',
-      type: 'file',
-      group: 'logos',
-      options: { accept: '.svg,image/svg+xml' },
-      components: { input: SvgFileInput }
-    }),
-    defineField({
-      name: 'logoLockupSolidLight',
-      title: 'Logo Full — Solid, Light',
-      type: 'file',
-      group: 'logos',
-      options: { accept: '.svg,image/svg+xml' },
-      components: { input: SvgFileInput }
-    }),
-    defineField({
-      name: 'logoLockupSolidDark',
-      title: 'Logo Full — Solid, Dark',
-      type: 'file',
-      group: 'logos',
-      options: { accept: '.svg,image/svg+xml' },
-      components: { input: SvgFileInput }
+      components: { input: SvgFileInput },
+      description: 'Square crop optimised for small sizes — source SVG for favicon generation'
     }),
 
-    // ── Favicon Sets ──────────────────────────────────────────────
+    // ── Favicon ───────────────────────────────────────────────────
     defineField({
       name: 'appleTouchIcon',
       title: 'apple-touch-icon.png',
       type: 'image',
       group: 'favicons',
-      description: 'iOS home screen (180×180) — single asset shared across schemes'
+      description: 'iOS home screen (180×180)'
     }),
     defineField({
-      name: 'faviconLight',
-      title: 'Favicon Set — Light',
-      type: 'object',
+      name: 'faviconIco',
+      title: 'favicon.ico',
+      type: 'file',
       group: 'favicons',
-      fields: faviconSetFields
-    }),
-    defineField({
-      name: 'faviconDark',
-      title: 'Favicon Set — Dark',
-      type: 'object',
-      group: 'favicons',
-      fields: faviconSetFields
+      options: { accept: '.ico' },
+      description: 'Multi-resolution ICO (16, 32, 48 px)'
     })
   ],
 

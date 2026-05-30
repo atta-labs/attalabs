@@ -5,19 +5,20 @@
  *   SANITY_PROJECT_ID=<id> SANITY_API_TOKEN=<token> SANITY_SEED_PRODUCT=atta bun run scripts/seed-branding.ts
  *
  * Products and their project IDs:
- *   herald   — e9gbd2d1   (no assets yet, document shell only)
+ *   herald   — e9gbd2d1
  *   atta     — 892o2m9f
  *   vada     — ofnj2ojb
  *   vitakka  — o56nzgrr
+ *   attalabs — l5n0n8nn
  *
- * Expects assets at: ~/Downloads/logos/{product}/
- *   outline/{product}-outline-{light|dark}.svg
- *   solid/{product}-solid-{light|dark}.svg
- *   lockup/{product}-lockup-{outline|solid}-{light|dark}.svg
- *   favicon/
- *     {product}-light.ico, {product}-dark.ico, {product}-apple-touch-180.png
- *     light/{product}-{16|32|48|64|128|256|512}.png
- *     dark/{product}-{16|32|48|64|128|256|512}.png
+ * Expects assets at: ~/Downloads/tmp 2/logos-bundle/{product}/
+ *   {product}-outline-light.svg
+ *   {product}-outline-dark.svg
+ *   {product}-solid-light.svg
+ *   {product}-solid-dark.svg
+ *   {product}-favicon.svg
+ *   {product}-favicon.ico   (attalabs: favicon.ico — no prefix)
+ *   {product}-apple-touch-icon.png   (attalabs: apple-touch-icon.png — no prefix)
  */
 
 import fs from 'node:fs'
@@ -40,8 +41,9 @@ const SEED_PRODUCT = (process.env.SANITY_SEED_PRODUCT ?? 'herald').toLowerCase()
   | 'atta'
   | 'vada'
   | 'vitakka'
+  | 'attalabs'
 
-const LOGOS_DIR = path.join(os.homedir(), 'Downloads', 'logos')
+const LOGOS_DIR = path.join(os.homedir(), 'Downloads', 'tmp 2', 'logos-bundle')
 
 // ── Brand identity data ─────────────────────────────────────────────────────
 
@@ -124,8 +126,34 @@ const PRODUCT_DATA = {
     shapeNotes:
       'Two curved blades forming a V (apex down). Inside sits a target made of concentric rings with crosshairs. The blade curves are organic and intentional — they must not be straightened.',
     ...SHARED_VARIANT_TEXT
+  },
+  attalabs: {
+    _id: 'branding-attalabs',
+    _type: 'branding',
+    productId: 'attalabs',
+    productName: 'AttaLabs',
+    paliRoot: 'AttaLabs',
+    paliMeaning: 'self lab',
+    tagline: 'A lab building thinking tools',
+    shapeNotes: 'Blade curves are organic and intentional — they must not be straightened.',
+    ...SHARED_VARIANT_TEXT
   }
 } as const
+
+// ── Per-product asset filename config ───────────────────────────────────────
+
+type ProductAssetConfig = {
+  faviconIcoFilename: string
+  appleTouchFilename: string
+}
+
+const ASSET_CONFIG: Record<string, ProductAssetConfig> = {
+  herald: { faviconIcoFilename: 'herald-favicon.ico', appleTouchFilename: 'herald-apple-touch-icon.png' },
+  atta: { faviconIcoFilename: 'atta-favicon.ico', appleTouchFilename: 'atta-apple-touch-icon.png' },
+  vada: { faviconIcoFilename: 'vada-favicon.ico', appleTouchFilename: 'vada-apple-touch-icon.png' },
+  vitakka: { faviconIcoFilename: 'vitakka-favicon.ico', appleTouchFilename: 'vitakka-apple-touch-icon.png' },
+  attalabs: { faviconIcoFilename: 'favicon.ico', appleTouchFilename: 'apple-touch-icon.png' }
+}
 
 // ── Asset helpers ───────────────────────────────────────────────────────────
 
@@ -167,43 +195,6 @@ function imageRef(assetId: string) {
   return { _type: 'image', asset: { _type: 'reference', _ref: assetId } }
 }
 
-// ── Favicon set upload ──────────────────────────────────────────────────────
-
-const FAVICON_PNG_SIZES: Array<{ field: string; size: number }> = [
-  { field: 'png16', size: 16 },
-  { field: 'png32', size: 32 },
-  { field: 'png48', size: 48 },
-  { field: 'png64', size: 64 },
-  { field: 'png128', size: 128 },
-  { field: 'png256', size: 256 },
-  { field: 'png512', size: 512 }
-]
-
-async function uploadFaviconSet(product: string, scheme: 'light' | 'dark'): Promise<Record<string, unknown>> {
-  const faviconRoot = path.join(LOGOS_DIR, product, 'favicon')
-  const pngDir = path.join(faviconRoot, scheme)
-  const set: Record<string, unknown> = {}
-
-  // .ico lives at favicon root: {product}-{scheme}.ico
-  const icoFilename = `${product}-${scheme}.ico`
-  const icoBuf = readAsset(path.join(faviconRoot, icoFilename))
-  if (icoBuf) {
-    const assetId = await uploadFile(icoBuf, icoFilename, 'image/x-icon')
-    if (assetId) set.ico = fileRef(assetId)
-  }
-
-  // PNGs live at favicon/{scheme}/{product}-{size}.png
-  for (const { field, size } of FAVICON_PNG_SIZES) {
-    const filename = `${product}-${size}.png`
-    const buf = readAsset(path.join(pngDir, filename))
-    if (!buf) continue
-    const assetId = await uploadImage(buf, `${product}-${scheme}-${size}.png`)
-    if (assetId) set[field] = imageRef(assetId)
-  }
-
-  return set
-}
-
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -211,51 +202,47 @@ async function main() {
   console.log(`Project: ${process.env.SANITY_PROJECT_ID}\n`)
 
   const doc: Record<string, unknown> = { ...PRODUCT_DATA[SEED_PRODUCT] }
+  const productDir = path.join(LOGOS_DIR, SEED_PRODUCT)
+  const assetConfig = ASSET_CONFIG[SEED_PRODUCT]
 
-  if (fs.existsSync(path.join(LOGOS_DIR, SEED_PRODUCT))) {
-    const productDir = path.join(LOGOS_DIR, SEED_PRODUCT)
-    if (!fs.existsSync(productDir)) {
-      console.error(`Assets directory not found: ${productDir}`)
-      process.exit(1)
-    }
+  if (!fs.existsSync(productDir)) {
+    console.error(`Assets directory not found: ${productDir}`)
+    process.exit(1)
+  }
 
-    // Upload SVG logos — mark variants + lockup (Logo Full) variants
-    console.log('Uploading SVG logos...')
-    const p = SEED_PRODUCT
-    const svgFiles = [
-      { field: 'logoOutlineLight', src: `outline/${p}-outline-light.svg` },
-      { field: 'logoOutlineDark', src: `outline/${p}-outline-dark.svg` },
-      { field: 'logoSolidLight', src: `solid/${p}-solid-light.svg` },
-      { field: 'logoSolidDark', src: `solid/${p}-solid-dark.svg` },
-      { field: 'logoLockupOutlineLight', src: `lockup/${p}-lockup-outline-light.svg` },
-      { field: 'logoLockupOutlineDark', src: `lockup/${p}-lockup-outline-dark.svg` },
-      { field: 'logoLockupSolidLight', src: `lockup/${p}-lockup-solid-light.svg` },
-      { field: 'logoLockupSolidDark', src: `lockup/${p}-lockup-solid-dark.svg` }
-    ]
+  const p = SEED_PRODUCT
 
-    for (const { field, src } of svgFiles) {
-      const buf = readAsset(path.join(productDir, src))
-      if (!buf) continue
-      const filename = path.basename(src)
-      const assetId = await uploadFile(buf, filename, 'image/svg+xml')
-      if (assetId) doc[field] = fileRef(assetId)
-    }
+  // Upload SVG logos
+  console.log('Uploading SVG logos...')
+  const svgFiles = [
+    { field: 'logoOutlineLight', filename: `${p}-outline-light.svg` },
+    { field: 'logoOutlineDark', filename: `${p}-outline-dark.svg` },
+    { field: 'logoSolidLight', filename: `${p}-solid-light.svg` },
+    { field: 'logoSolidDark', filename: `${p}-solid-dark.svg` },
+    { field: 'logoFavicon', filename: `${p}-favicon.svg` }
+  ]
 
-    // Upload shared apple-touch-icon (single asset, not per-scheme)
-    console.log('\nUploading apple-touch-icon...')
-    const appleTouchFilename = `${p}-apple-touch-180.png`
-    const appleTouchBuf = readAsset(path.join(productDir, 'favicon', appleTouchFilename))
-    if (appleTouchBuf) {
-      const assetId = await uploadImage(appleTouchBuf, appleTouchFilename)
-      if (assetId) doc.appleTouchIcon = imageRef(assetId)
-    }
+  for (const { field, filename } of svgFiles) {
+    const buf = readAsset(path.join(productDir, filename))
+    if (!buf) continue
+    const assetId = await uploadFile(buf, filename, 'image/svg+xml')
+    if (assetId) doc[field] = fileRef(assetId)
+  }
 
-    // Upload favicon sets
-    console.log('\nUploading favicon set — light...')
-    doc.faviconLight = await uploadFaviconSet(SEED_PRODUCT, 'light')
+  // Upload apple-touch-icon (PNG image)
+  console.log('\nUploading apple-touch-icon...')
+  const appleTouchBuf = readAsset(path.join(productDir, assetConfig.appleTouchFilename))
+  if (appleTouchBuf) {
+    const assetId = await uploadImage(appleTouchBuf, `${p}-apple-touch-icon.png`)
+    if (assetId) doc.appleTouchIcon = imageRef(assetId)
+  }
 
-    console.log('\nUploading favicon set — dark...')
-    doc.faviconDark = await uploadFaviconSet(SEED_PRODUCT, 'dark')
+  // Upload favicon.ico (file asset, not image)
+  console.log('\nUploading favicon.ico...')
+  const icoBuf = readAsset(path.join(productDir, assetConfig.faviconIcoFilename))
+  if (icoBuf) {
+    const assetId = await uploadFile(icoBuf, `${p}-favicon.ico`, 'image/x-icon')
+    if (assetId) doc.faviconIco = fileRef(assetId)
   }
 
   // Create or replace the branding document
