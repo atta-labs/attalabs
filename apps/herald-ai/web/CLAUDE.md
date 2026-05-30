@@ -127,11 +127,16 @@ Theme tokens as CSS variables in `globals.css`. No hardcoded hex values in compo
 
 ## Database
 
-Neon Postgres via Drizzle ORM. Single `users` table:
+Neon Postgres via Drizzle ORM. Herald uses two tables:
+
+- **`users`** — shared base table from `@atta/db` (clerk_id, email, name, etc.)
+- **`heraldProfiles`** — Herald-specific table, FK → `users.clerkId`
+
+`@atta/db` is declared as a workspace dependency in `package.json`.
 
 | Column | Type | Purpose |
 |--------|------|---------|
-| `clerk_id` | varchar PK | Clerk user ID |
+| `clerk_id` | varchar PK (FK → users) | Clerk user ID |
 | `username` | varchar unique | URL slug (heyherald.com/username) |
 | `github_handle` | varchar | GitHub handle for signal detection |
 | `name`, `title`, `location`, `availability` | varchar | Profile identity |
@@ -139,6 +144,8 @@ Neon Postgres via Drizzle ORM. Single `users` table:
 | `stack` | text (JSON) | Skills array |
 | `projects` | text (JSON) | Projects array |
 | `experience` | text (JSON) | Experience array |
+| `theme_id`, `color_scheme`, `library` | varchar | Per-user UI customisation |
+| `font_sans` | varchar | Per-user font override |
 | `onboarding_complete` | boolean | Whether onboarding is done |
 
 ---
