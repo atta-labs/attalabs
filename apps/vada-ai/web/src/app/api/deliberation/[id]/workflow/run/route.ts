@@ -10,7 +10,7 @@ import { compileFlow, loadYamlFromCatalog } from '@atta/engine'
 import type { ExecutionHooks, Plan } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
 import type { ProviderKeys } from '@atta/adapter-langgraph'
-import { getCatalog, resolveVendorByPrefix, findModelEntryByModelId, type VendorId } from '@atta/models'
+import { getCatalog, resolveVendorByPrefix, findModelEntryByModelId, getVendor, type VendorId } from '@atta/models'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
 import { auth } from '@atta/auth/hooks'
 import { getOrCreateUser, getSessionForUser, getSessionWithTranscript, setSessionTerminalState } from '@/db/queries'
@@ -215,29 +215,44 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const sync = url.searchParams.get('sync') === 'true'
   const stream = url.searchParams.get('stream') === 'true'
 
-  // Build catalog-resolved vendor map for cross-vendor models (e.g. deepseek-r1 served by Groq).
+  // Build catalog-resolved vendor map: plan defaults first, reviewerConfig overrides on top.
+  // Anthropic agents are excluded from the plan-defaults pass — the adapter falls back to
+  // the env var (ANTHROPIC_API_KEY) for those, so BYOK key validation must not block them.
   // Catalog lookup is authoritative; prefix-based fallback handles models not in the catalog.
   let agentVendorOverrides: Record<string, VendorId> | undefined
-  if (reviewerConfig && Object.keys(reviewerConfig).length > 0) {
+
+  if (session.specId) {
     const catalog = await getCatalog()
+    const flow = loadYamlFromCatalog(session.specId)
+    const plan = compileFlow(flow, '', session.modelId ?? 'claude-sonnet-4-6')
+
     agentVendorOverrides = {}
-    for (const [agentName, modelId] of Object.entries(reviewerConfig)) {
-      const entry = findModelEntryByModelId(catalog, modelId)
-      const vendorId = entry?.vendorId ?? resolveVendorByPrefix(modelId)
-      if (vendorId) agentVendorOverrides[agentName] = vendorId
+    for (const [agentName, agent] of Object.entries(plan.agents)) {
+      if (!agent.model) continue
+      const entry = findModelEntryByModelId(catalog, agent.model)
+      const vendorId = entry?.vendorId ?? resolveVendorByPrefix(agent.model)
+      if (vendorId && vendorId !== 'anthropic') agentVendorOverrides[agentName] = vendorId
+    }
+    if (reviewerConfig && Object.keys(reviewerConfig).length > 0) {
+      for (const [agentName, modelId] of Object.entries(reviewerConfig)) {
+        const entry = findModelEntryByModelId(catalog, modelId)
+        const vendorId = entry?.vendorId ?? resolveVendorByPrefix(modelId)
+        if (vendorId) agentVendorOverrides[agentName] = vendorId
+      }
     }
     if (Object.keys(agentVendorOverrides).length === 0) agentVendorOverrides = undefined
-  }
 
-  // Pre-dispatch validation: verify all configured models resolved and have provider keys.
-  if (reviewerConfig) {
-    for (const [agentName, model] of Object.entries(reviewerConfig)) {
+    // Pre-dispatch validation: verify all agents have provider keys before any LLM calls.
+    for (const [agentName, agent] of Object.entries(plan.agents)) {
+      const effectiveModel = reviewerConfig?.[agentName] ?? agent.model
       const vendor = agentVendorOverrides?.[agentName]
-      if (!vendor) {
-        return Response.json({ error: `Unrecognized model '${model}' for reviewer '${agentName}'` }, { status: 400 })
-      }
+      if (!vendor) continue // anthropic-default or unresolvable
+      if (getVendor(vendor).localOnly) continue // Ollama etc
       if (!providerKeys?.[vendor]) {
-        return Response.json({ error: 'missing_provider_key', agent: agentName, model, vendor }, { status: 400 })
+        return Response.json(
+          { error: 'missing_provider_key', agent: agentName, model: effectiveModel, vendor },
+          { status: 400 }
+        )
       }
     }
   }
