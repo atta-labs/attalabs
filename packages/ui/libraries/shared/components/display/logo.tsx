@@ -12,17 +12,14 @@ export interface LogoProps {
 }
 
 export function Logo({ light, dark, alt = '', size = 'h-6', className, text }: LogoProps) {
-  if (!light && !dark) return null
+  const url = light ?? dark
+  if (!url) return null
 
   const hasText = text && text.length > 0
 
   const logoPart = (
-    <>
-      {/* biome-ignore lint/performance/noImgElement: shared agnostic library can't use next/image */}
-      {light && <img src={light} alt={alt} className={cn(size, 'w-auto', dark ? 'dark:hidden' : '', className)} />}
-      {/* biome-ignore lint/performance/noImgElement: shared agnostic library can't use next/image */}
-      {dark && <img src={dark} alt={alt} className={cn(size, 'w-auto', 'hidden dark:block', className)} />}
-    </>
+    // biome-ignore lint/performance/noImgElement: shared agnostic library can't use next/image
+    <img src={url} alt={alt} className={cn(size, 'w-auto dark:invert', className)} />
   )
 
   if (!hasText) return logoPart
