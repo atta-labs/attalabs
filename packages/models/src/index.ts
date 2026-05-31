@@ -14,6 +14,8 @@ export { OVERLAY } from './overlay'
 
 export { DECOMMISSIONED_MODEL_IDS, isDecommissioned } from './deprecations'
 
+export { resolveDispatchModel } from './dispatch'
+
 export { CatalogProvider, useCatalog, type CatalogProviderProps } from './provider'
 
 // ModelConfig — shape used by GlobalModelSelector and form validation.
