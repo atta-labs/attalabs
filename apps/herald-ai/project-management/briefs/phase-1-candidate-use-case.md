@@ -135,13 +135,33 @@ If `DANI_PROFILE` is being used as primary source anywhere in the live path (not
 
 **4.1** Confirm `bun run build` passes from `apps/herald-ai/web/` with all fixes applied.
 
-**4.2** Check Vercel project exists for Herald. If it does, confirm env vars are set in Vercel dashboard (same list as pre-flight step 3). If any are missing, list them — do NOT attempt to set them programmatically, report what's needed.
+**4.2** The Vercel project for Herald exists. Confirm env vars are set in Vercel dashboard (same list as pre-flight step 3). If any are missing, list them and STOP — do NOT attempt to set them programmatically.
 
-**4.3** Confirm the Vercel deploy target is `herald.attalabs.dev`. If the project isn't set up in Vercel yet, document what's needed (do not create it — report what Dani needs to do manually).
+**4.3** Confirm the Vercel deploy target is `herald.attalabs.dev`.
 
-**4.4** If deploy is possible (project exists, env vars confirmed), push to trigger deploy and confirm `https://herald.attalabs.dev/dani` returns a 200 with the Envoy page.
+**4.4** Push to trigger deploy and confirm `https://herald.attalabs.dev/dani` returns a 200 with the Envoy page.
 
-[NEEDS CLARIFICATION: Is there already a Vercel project for Herald? If yes, what's its name? If no, Dani will need to create it manually — flag this and stop at 4.2.]
+---
+
+## Part 5 — Cleanup (Tier 0, bundle with this PR)
+
+Two stray files were created in `project-management/` by error on May 31. Delete them:
+- `project-management/_herald-state-patch.md`
+- `project-management/_herald-state-pointer.md`
+
+Also patch the Herald section in `project-management/state.md`. Find the line:
+```
+### Herald — *standalone AttaLabs product; not part of Atta*
+```
+And replace the entire Herald section header line with:
+```
+### Herald — *standalone AttaLabs product; Phase 1 in progress — see `apps/herald-ai/project-management/state.md`*
+```
+Then add these two lines immediately after the new header, before the existing body text:
+```
+**Full state:** `apps/herald-ai/project-management/state.md` — read that file for Herald detail.
+**Current phase:** Phase 1 — candidate use case (Envoy end-to-end, match engine, deploy to `herald.attalabs.dev`).
+```
 
 ---
 
@@ -156,8 +176,10 @@ Before marking done:
 - [ ] `POST /api/match` uses DB profile, not `DANI_PROFILE`
 - [ ] Rate limiting triggers after 5 requests from same IP
 - [ ] Skeptical Auditor prompt in `prompts.ts` is unchanged from BUILD-SPEC.md Section 08
-- [ ] `git diff main --stat` shows only files touched as part of this brief — no scope creep
-- [ ] Update `apps/herald-ai/project-management/now.md`: mark Phase 1 tasks complete, set "In flight: nothing", update "Next 3 things" to Phase 2 tasks
+- [ ] `https://herald.attalabs.dev/dani` returns 200 after deploy
+- [ ] Stray files deleted, root `state.md` Herald section patched
+- [ ] `git diff main --stat` shows only files touched as part of this brief
+- [ ] `apps/herald-ai/project-management/now.md` updated: Phase 1 tasks marked complete, next 3 things set to Phase 2 tasks
 
 ---
 
@@ -165,11 +187,11 @@ Before marking done:
 
 - Any pre-flight check fails → STOP and report
 - Audit (Part 1) reveals a problem not covered by Parts 2–4 → STOP and report before fixing
-- `POST /api/match` requires a DB migration that isn't a simple `db:push` → STOP
-- Vercel project doesn't exist for Herald → STOP at Part 4 and report what Dani needs to do
-- About to touch files outside `apps/herald-ai/` → STOP
-- About to modify `src/lib/prompts.ts` for any reason → STOP
-- Build fails after fixes and the cause isn't obvious from a single read → STOP and report
+- `POST /api/match` requires a DB migration beyond `db:push` → STOP
+- Vercel env vars missing → STOP and list what's needed
+- About to touch files outside `apps/herald-ai/` or `project-management/` → STOP
+- About to modify `src/lib/prompts.ts` → STOP
+- Build fails after fixes and cause isn't obvious → STOP and report
 
 ---
 
@@ -177,7 +199,7 @@ Before marking done:
 
 - Do NOT modify `src/lib/prompts.ts`
 - Do NOT add new DB tables or schema changes beyond what's already in `heraldProfiles`
-- Do NOT add Phase 2 or Phase 3 features (recruiter area, batch audit, public landing redesign)
+- Do NOT add Phase 2 or Phase 3 features
 - Do NOT modify any `@atta/*` packages
 - Do NOT touch `apps/vada-ai/`, `apps/cetana-ai/`, or any other app
 - Do NOT use `--no-verify` or force push
@@ -188,18 +210,11 @@ Before marking done:
 
 **PR title:** `feat(herald): Phase 1 — candidate use case complete`
 
-**Files expected in `git diff main --stat`:**
-- `apps/herald-ai/web/src/app/api/match/route.ts` (likely)
-- `apps/herald-ai/web/src/proxy.ts` or `middleware.ts` (if rate limiting was missing)
-- `apps/herald-ai/web/src/components/envoy/*.tsx` (if UI fixes needed)
-- `apps/herald-ai/project-management/now.md` (Phase 1 tasks marked complete)
-- Other files in `apps/herald-ai/web/src/` as needed based on audit findings
-
 **PR description must include:**
 1. Audit summary (what was broken, what was already working)
 2. What was fixed and why
 3. Verification steps run and results
-4. Any remaining manual steps Dani needs to do (e.g., Vercel setup, env vars)
+4. Any remaining manual steps for Dani (env vars, etc.)
 5. Anything deferred to Phase 2
 
-**After PR is opened:** report back with the PR URL and a one-paragraph summary of what needed fixing.
+**After PR is opened:** report the PR URL and a one-paragraph summary of what needed fixing.
