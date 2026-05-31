@@ -115,3 +115,14 @@ export {
   SidebarTrigger,
   useSidebar
 } from '../../basic/installed/sidebar'
+// Sheet — falls back to basic
+export {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from '../../basic/installed/sheet'

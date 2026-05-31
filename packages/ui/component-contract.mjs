@@ -142,6 +142,16 @@ export const REQUIRED_COMPONENTS = [
   'SidebarSeparator',
   'SidebarTrigger',
   'useSidebar',
+
+  // Sheet
+  'Sheet',
+  'SheetClose',
+  'SheetContent',
+  'SheetDescription',
+  'SheetFooter',
+  'SheetHeader',
+  'SheetTitle',
+  'SheetTrigger',
 ]
 
 export const REQUIRED_TYPES = [
