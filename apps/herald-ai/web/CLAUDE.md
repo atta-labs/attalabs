@@ -1,5 +1,15 @@
 # Herald App — Claude Code Instructions
 
+## Session start (REQUIRED)
+
+Before any task in this product, read:
+1. `apps/herald-ai/project-management/state.md` — current phase, what's built, what's unknown
+2. `apps/herald-ai/project-management/now.md` — what's in flight and what's next
+
+These files are the source of truth for Herald's current state. Do not rely on memory or project knowledge.
+
+---
+
 The main Next.js 16 application. Serves both the **Herald Portal** (marketing + onboarding + admin dashboard) and the **Herald Envoy** (deployed candidate pages) from a single codebase via proxy-based subdomain routing.
 
 Pattern: Portal + Onboarding + Admin merged into one codebase.
