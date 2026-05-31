@@ -34,7 +34,8 @@
     "./components/*": "./libraries/basic/installed/*.tsx",
     "./account": "./account/index.ts",
     "./scripts/generate-ui": "./scripts/generate-ui.ts",
-    "./footer": "./footer/index.tsx"
+    "./footer": "./footer/index.tsx",
+    "./topbar": "./topbar/index.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

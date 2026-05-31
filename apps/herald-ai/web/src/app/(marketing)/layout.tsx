@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
-import { TopBar } from '@/components/shared/TopBar'
+import { TopBar } from '@atta/ui/topbar'
 import { Footer } from '@atta/ui/footer'
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <header>
-        <TopBar />
+        <TopBar logoText='Herald' signedInLinks={[{ label: 'Dashboard', href: '/admin' }]} />
       </header>
       <main className='flex-1 min-h-0'>{children}</main>
       <Footer
