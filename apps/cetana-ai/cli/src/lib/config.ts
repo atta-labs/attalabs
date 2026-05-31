@@ -13,10 +13,11 @@ export const CliConfigSchema = z.object({
   }),
   defaults: z
     .object({
-      claudeModel: z.string().default('claude-sonnet-4-7'),
+      claudeModel: z.string().default('claude-sonnet-4-6'),
       permissionMode: z.enum(['default', 'acceptEdits']).default('acceptEdits')
     })
     .default({}),
+  repoPath: z.string().optional(),
   paths: z
     .object({
       worktreeBase: z.string().optional(),

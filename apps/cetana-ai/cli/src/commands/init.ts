@@ -145,13 +145,15 @@ export async function initCommand(_args: string[]): Promise<void> {
   const repo = await promptWithDefault('  repo', gitInfo.repo || 'your-repo-name')
 
   console.info('\nDefaults:')
-  const claudeModel = await promptWithDefault('  claudeModel', 'claude-sonnet-4-7')
+  const claudeModel = await promptWithDefault('  claudeModel', 'claude-sonnet-4-6')
   const permissionModeRaw = await promptWithDefault('  permissionMode (default/acceptEdits)', 'acceptEdits')
   const permissionMode = permissionModeRaw === 'default' ? 'default' : 'acceptEdits'
+  const repoPath = await promptWithDefault('  repoPath (absolute path to this repo)', gitInfo.repoRoot)
 
   const config: CliConfig = {
     github: { owner, repo },
-    defaults: { claudeModel, permissionMode }
+    defaults: { claudeModel, permissionMode },
+    repoPath
   }
 
   // 5. Write config

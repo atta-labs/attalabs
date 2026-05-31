@@ -10,17 +10,18 @@ const ConfigSchema = z.object({
   }),
   defaults: z
     .object({
-      claudeModel: z.string().default('claude-sonnet-4-7'),
+      claudeModel: z.string().default('claude-sonnet-4-6'),
       permissionMode: z.enum(['default', 'acceptEdits']).default('acceptEdits')
     })
-    .default({})
+    .default({}),
+  repoPath: z.string().optional()
 })
 
 export type CetanaConfig = z.infer<typeof ConfigSchema>
 
 const DEFAULT_CONFIG: CetanaConfig = {
   github: { owner: 'daniboomerang', repo: 'atta.ai' },
-  defaults: { claudeModel: 'claude-sonnet-4-7', permissionMode: 'acceptEdits' }
+  defaults: { claudeModel: 'claude-sonnet-4-6', permissionMode: 'acceptEdits' }
 }
 
 export function loadConfig(): CetanaConfig {

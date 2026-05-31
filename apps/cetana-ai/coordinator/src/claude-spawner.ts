@@ -1,6 +1,8 @@
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
+import { existsSync, readdirSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { homedir } from 'node:os'
+import { dirname, join } from 'node:path'
 import { ATTA_REPO_PATH, taskDir } from './paths.js'
 
 export interface SpawnArgs {
@@ -19,6 +21,35 @@ export interface SpawnResult {
 }
 
 const EXECUTOR_SERVER_PATH = join(ATTA_REPO_PATH, 'apps/cetana-ai/coordinator/src/mcp-server-executor.ts')
+
+function resolveClaudeBinary(): string {
+  try {
+    const result = execFileSync('which', ['claude'], { encoding: 'utf-8' }).trim()
+    if (result) return result
+  } catch {}
+
+  const candidates: string[] = [
+    join(homedir(), '.npm-global', 'bin', 'claude'),
+    '/usr/local/bin/claude',
+    '/opt/homebrew/bin/claude'
+  ]
+
+  const nvmVersionsDir = join(homedir(), '.nvm', 'versions', 'node')
+  if (existsSync(nvmVersionsDir)) {
+    try {
+      const versions = readdirSync(nvmVersionsDir).sort().reverse()
+      for (const version of versions) {
+        candidates.push(join(nvmVersionsDir, version, 'bin', 'claude'))
+      }
+    } catch {}
+  }
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate
+  }
+
+  throw new Error('claude CLI not found. Install: npm install -g @anthropic-ai/claude-code')
+}
 
 async function generateMcpConfig(taskId: string): Promise<string> {
   const dir = taskDir(taskId)
@@ -57,12 +88,15 @@ export async function spawnClaudeCode(args: SpawnArgs): Promise<SpawnResult> {
     args.model
   ]
 
+  const claudeBinPath = resolveClaudeBinary()
+  const claudeBinDir = dirname(claudeBinPath)
+
   const systemEnv = {
     ...process.env,
-    PATH: [process.env.PATH, '/usr/bin', '/usr/local/bin', '/bin'].filter(Boolean).join(':')
+    PATH: [process.env.PATH, claudeBinDir, '/usr/bin', '/usr/local/bin', '/bin'].filter(Boolean).join(':')
   }
 
-  const proc = spawn('claude', claudeArgs, {
+  const proc = spawn(claudeBinPath, claudeArgs, {
     cwd: args.worktreePath,
     stdio: ['ignore', 'pipe', 'pipe'],
     env: systemEnv
