@@ -8,12 +8,15 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  Sheet,
+  SheetContent,
+  SheetTrigger
 } from '@atta/ui'
 import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { SignInButton, useClerk, useUser } from '@atta/auth'
-import { LogOut, Settings } from 'lucide-react'
+import { LogOut, Menu, Settings } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { PUBLIC_ROUTES, AUTH_ROUTES } from '@/lib/route-config'
 
@@ -40,27 +43,33 @@ export function UserTopBar({ logo }: UserTopBarProps) {
   const initial = (displayName || email || '?').charAt(0).toUpperCase()
 
   return (
-    <nav className='grid h-full w-full grid-cols-3 items-center px-4 py-3 text-muted-foreground'>
+    <nav className='flex h-full w-full items-center justify-between px-4 py-3 text-muted-foreground md:grid md:grid-cols-3'>
       {/* Left: logo */}
-      <div className='flex items-center justify-self-start'>{leftLogo}</div>
-      {/* Center: nav links */}
-      <div className='flex items-center gap-8 justify-self-center'>
+      <div className='flex items-center'>{leftLogo}</div>
+
+      {/* Center: nav links — desktop only */}
+      <div className='hidden items-center gap-8 justify-self-center md:flex'>
         {allLinks.map(({ href, label, exact }) => (
           <NextLink key={href} variant='nav' active={isActive(href, exact)} href={href} className='text-xs'>
             {label}
           </NextLink>
         ))}
       </div>
-      {/* Right: scheme toggle + settings + avatar dropdown (auth) or sign-in (anonymous) */}
-      <div className='flex items-center gap-3 justify-self-end'>
+
+      {/* Right: actions */}
+      <div className='flex items-center gap-2 justify-self-end md:gap-3'>
         <ColorSchemeToggle />
+
+        {/* Settings icon — desktop only */}
         {user && (
-          <Button variant='ghost' size='icon' asChild aria-label='Settings' title='Settings'>
+          <Button variant='ghost' size='icon' asChild aria-label='Settings' title='Settings' className='hidden md:flex'>
             <NextLink variant='unstyled' href='/settings'>
               <Settings className='h-4 w-4' />
             </NextLink>
           </Button>
         )}
+
+        {/* Avatar dropdown / sign-in — always visible */}
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger className='rounded-full outline-none ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'>
@@ -98,6 +107,44 @@ export function UserTopBar({ logo }: UserTopBarProps) {
             </Button>
           </SignInButton>
         )}
+
+        {/* Hamburger — mobile only */}
+        <Sheet>
+          <SheetTrigger
+            render={<Button variant='ghost' size='icon' aria-label='Open menu' className='flex md:hidden' />}
+          >
+            <Menu className='h-4 w-4' />
+            <span className='sr-only'>Open menu</span>
+          </SheetTrigger>
+          <SheetContent side='right' className='w-64'>
+            <nav className='flex flex-col gap-1 pt-8'>
+              {allLinks.map(({ href, label, exact }) => (
+                <NextLink
+                  key={href}
+                  variant='nav'
+                  active={isActive(href, exact)}
+                  href={href}
+                  className='px-2 py-3 text-sm'
+                >
+                  {label}
+                </NextLink>
+              ))}
+              {user && (
+                <>
+                  <div className='my-2 border-t border-border' />
+                  <NextLink
+                    variant='nav'
+                    href='/settings'
+                    active={isActive('/settings', true)}
+                    className='px-2 py-3 text-sm'
+                  >
+                    Settings
+                  </NextLink>
+                </>
+              )}
+            </nav>
+          </SheetContent>
+        </Sheet>
       </div>
     </nav>
   )

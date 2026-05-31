@@ -104,3 +104,14 @@ export {
   SidebarTrigger,
   useSidebar
 } from '../installed/sidebar'
+// Sheet
+export {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from '../installed/sheet'
