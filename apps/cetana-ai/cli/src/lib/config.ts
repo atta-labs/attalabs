@@ -13,7 +13,7 @@ export const CliConfigSchema = z.object({
   }),
   defaults: z
     .object({
-      claudeModel: z.string().default('claude-sonnet-4-7'),
+      claudeModel: z.string().default('anthropic/balanced'),
       permissionMode: z.enum(['default', 'acceptEdits']).default('acceptEdits')
     })
     .default({}),
@@ -22,7 +22,8 @@ export const CliConfigSchema = z.object({
       worktreeBase: z.string().optional(),
       cetanaHome: z.string().optional()
     })
-    .optional()
+    .optional(),
+  repoPath: z.string().optional()
 })
 
 export type CliConfig = z.infer<typeof CliConfigSchema>
