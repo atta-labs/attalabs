@@ -27,7 +27,6 @@ Nothing actively dispatched.
 - **Upstash Redis credentials for Herald** — current `.env.local` creds are expired/truncated. Rate limiting degrades gracefully (Option A merged in #70) but real rate limiting needs fresh creds. Provision at upstash.com, update `.env.local` + Vercel env vars for `herald.attalabs.dev`.
 - **Herald deploy verification** — confirm `https://herald.attalabs.dev/dani` returns 200. PR #70 merged but deploy not confirmed.
 - **Worktree graveyard cleanup** — many stale worktrees. `git worktree prune && git fetch --prune && git branch --merged main | grep -v "^\* \|main" | xargs git branch -D`.
-- **Delete stray PM files** — `project-management/_herald-state-patch.md` and `project-management/_herald-state-pointer.md` created by error May 31.
 - **Vitakka Clerk app deletion** — unused, no users. 2 minutes.
 - **Add OpenAI + xAI keys server-side** — needed to test full vendor-diverse Reviewers default trio.
 - **Generate Vāda API key + configure Claude Desktop / Claude Code connector** — final step in hosted MCP dogfooding.

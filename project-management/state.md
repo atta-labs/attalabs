@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** May 12, 2026 (Cetana V0.5 Step 1 shipped — PRs #39/#42/#43; operational model: v3 + Cetana V0.5 Step 1 live; v2 naming framing locked — D-025, PR #46)
+**Last updated:** June 1, 2026 (Herald Phase 1 complete — PR #70; Cetana spawner fixed — PR #68; test failures resolved — PR #71; Vāda key validation — PR #65)
 **Purpose:** Single snapshot of where everything stands across the AttaLabs ecosystem.
 
 This doc lives in the repo at `project-management/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
