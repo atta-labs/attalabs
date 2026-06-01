@@ -15,18 +15,19 @@ Nothing actively dispatched.
 
 ## Next 3 things
 
-1. **Phase 1a — Audit** Run the app locally. Walk the full flow: sign-up → onboarding → Envoy renders with real DB profile → paste JD → match report comes back. Document what's broken.
-2. **Phase 1b — Fix match engine** Based on audit findings: confirm `POST /api/match` uses the real DB profile (not `DANI_PROFILE` fallback), Skeptical Auditor prompt fires, caching works, timeout fallback degrades gracefully.
-3. **Phase 1c/1d — Envoy polish + deploy** `ReportView` renders correctly, rate limiting wired, share link works, deploy to `herald.attalabs.dev`.
+1. **Verify deploy** — confirm `https://herald.attalabs.dev/dani` returns 200 and the full flow works end-to-end in production.
+2. **Fresh Upstash Redis credentials** — rate limiting degrades gracefully but isn't active. Provision new creds at upstash.com, update `.env.local` and Vercel env vars.
+3. **Herald Phase 2 — self-service onboarding** — `AIOnboarding` hardened end-to-end, admin dashboard complete, public landing at `heyherald.com`. Author brief before dispatching.
 
 ---
 
 ## Manual work pending
 
-- Nothing currently.
+- Provision fresh Upstash Redis creds (expired in `.env.local`)
+- Confirm `https://herald.attalabs.dev/dani` returns 200
 
 ---
 
 ## Blocked
 
-- Nothing currently.
+Nothing currently blocked.
