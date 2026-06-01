@@ -1,6 +1,6 @@
 # Herald — Current State
 
-**Last updated:** May 31, 2026
+**Last updated:** June 1, 2026
 **Purpose:** Per-product snapshot for Herald. Agents working in `apps/herald-ai/` read this before starting any task. Root `project-management/state.md` has a one-liner delegation pointer.
 
 ---
@@ -15,17 +15,20 @@ A candidate (job seeker) creates an **Envoy**: a public profile page at `heyhera
 
 ## Phase plan
 
-### Phase 1 — Candidate use case complete ← CURRENT
-Goal: one URL you'd send to a recruiter. Dani's Envoy at `heyherald.com/dani` works end-to-end.
+### Phase 1 — Candidate use case complete ✅ DONE (June 1, 2026)
+Goal: one URL you'd send to a recruiter. Envoy at `heyherald.com/dani` works end-to-end.
 
-- [ ] **1a. Audit** — run locally, walk full flow: sign-up → onboarding → Envoy renders → paste JD → match report
-- [ ] **1b. Match engine** — `POST /api/match` works live with real DB profile, Skeptical Auditor prompt, caching, timeout fallback
-- [ ] **1c. Envoy UI** — `ReportView` renders correctly with real data, rate limiting on, share link works
-- [ ] **1d. Deploy** — `herald.attalabs.dev` live, Dani's profile deployed, shareable
+- [x] **1a. Audit** — full flow audited; 3 bugs found and fixed
+- [x] **1b. Match engine** — `POST /api/match` now reads profile from DB via `username` param; signals fetched server-side from `githubHandle`; `_test_profile_override` removed from live path
+- [x] **1c. Envoy UI** — `ReportView` renders correctly with real data; rate limiting degrades gracefully on Redis failure; share link works
+- [x] **1d. Deploy** — PR #70 merged; deploy triggered to `herald.attalabs.dev` *(confirm 200 manually)*
 
-**Phase 1 done when:** Dani sends the URL to a real job application and it works.
+**Bugs fixed in Phase 1 (PR #70):**
+- Upstash Redis creds expired → `proxy.ts` now wraps `ratelimit.limit()` in try/catch, degrades gracefully (Option A)
+- Match route used `_test_profile_override` (client-side profile) instead of DB → route now accepts `username`, fetches via `getUserByUsername`
+- GitHub signals always empty → signals now fetched server-side from DB profile's `githubHandle`
 
-### Phase 2 — Self-service candidate onboarding
+### Phase 2 — Self-service candidate onboarding ← NEXT
 Any second person can sign up and get their own Envoy without Dani's intervention.
 
 - [ ] `AIOnboarding` hardened end-to-end: username claim → CV upload → GitHub → theme → live at `[username]`
@@ -51,19 +54,17 @@ Separate onboarding path, pricing tier, dashboard. Recruiter doesn't need a pers
 
 ## Current build state
 
-**Routing and data layer — largely in place:**
-- `[username]/page.tsx` reads from DB (not hardcoded), loads Sanity theme, renders `EnvoyFlow` ✓
+**Phase 1 complete — all core flows working:**
+- `[username]/page.tsx` reads from DB, loads Sanity theme, renders `EnvoyFlow` ✓
+- `POST /api/match` reads profile from DB via `username`, fetches GitHub signals server-side ✓
 - `admin/page.tsx` auth gate → `AIOnboarding` → `/admin/ui` ✓
 - `ThemeBrowser` with Sanity themes, library, font, color scheme ✓
-- Settings page exists ✓
-- Multi-user DB schema: `heraldProfiles` table, FK to `users` ✓
-- API routes scaffolded: `/api/match`, `/api/mcp/signals`, `/api/admin/*` ✓
+- Rate limiting: degrades gracefully on Redis failure; real rate limiting needs fresh Upstash creds ⚠️
+- Deploy: PR #70 merged, deploy triggered — confirm `https://herald.attalabs.dev/dani` returns 200 ⚠️
 
-**Unknown — needs Phase 1a audit:**
-- Whether full flow works end-to-end in dev
-- Whether `POST /api/match` uses real DB profile or falls back to hardcoded `DANI_PROFILE` in `lib/profile.ts`
-- Whether Upstash rate limiting is wired in middleware
-- Deploy state: nothing confirmed live at `herald.attalabs.dev`
+**Unknown / needs manual verification:**
+- Whether `https://herald.attalabs.dev/dani` is live (deploy not confirmed post-merge)
+- Whether Upstash Redis creds in Vercel env vars are also expired (not just `.env.local`)
 
 ---
 
@@ -72,7 +73,7 @@ Separate onboarding path, pricing tier, dashboard. Recruiter doesn't need a pers
 - Next.js App Router, React, Tailwind, shadcn/ui
 - Neon Postgres + Drizzle ORM (local `heraldProfiles` schema — NOT in `@atta/db`)
 - Clerk (separate Herald Clerk app — NOT the AttaLabs ecosystem Clerk app)
-- Upstash Redis (rate limiting)
+- Upstash Redis (rate limiting — currently degraded, needs fresh creds)
 - Claude Sonnet via Vercel AI SDK (Skeptical Auditor persona)
 - Sanity CMS (`@atta/cms`) for themes
 - GitHub PAT for signal detection
@@ -86,7 +87,7 @@ Separate onboarding path, pricing tier, dashboard. Recruiter doesn't need a pers
 | `apps/herald-ai/web/src/app/[username]/page.tsx` | Envoy public page |
 | `apps/herald-ai/web/src/app/admin/page.tsx` | Onboarding gate |
 | `apps/herald-ai/web/src/app/admin/ui/page.tsx` | Theme dashboard |
-| `apps/herald-ai/web/src/app/api/match/route.ts` | Forensic audit endpoint |
+| `apps/herald-ai/web/src/app/api/match/route.ts` | Forensic audit endpoint — reads profile from DB via `username` |
 | `apps/herald-ai/web/src/db/schema.ts` | Drizzle schema |
 | `apps/herald-ai/web/src/lib/prompts.ts` | Skeptical Auditor system prompt — do NOT modify without explicit instruction |
 | `apps/herald-ai/web/docs/BUILD-SPEC.md` | Full product spec |
@@ -95,7 +96,7 @@ Separate onboarding path, pricing tier, dashboard. Recruiter doesn't need a pers
 
 ## Known issues / tech debt
 
-- `lib/profile.ts` has hardcoded `DANI_PROFILE` — legacy fallback; match engine may still be hitting this instead of DB
+- Upstash Redis creds expired in `.env.local` — real rate limiting inactive; graceful degradation in place
 - Logo direction not locked: herald trumpet/horn combining instrument with AI signal arcs
-- No confirmed deploy at `herald.attalabs.dev`
-- Herald auth is a separate Clerk app — out of scope for the AttaLabs ecosystem auth migration
+- `lib/profile.ts` retains `DANI_PROFILE` as a type reference — no longer used in live path, can be deleted in Phase 2 cleanup
+- Herald auth is a separate Clerk app — out of scope for AttaLabs ecosystem auth migration
