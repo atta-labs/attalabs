@@ -9,15 +9,15 @@
 
 ## In flight
 
-Nothing actively dispatched.
+- **Herald Phase 2 — self-service onboarding** — `feat/herald-phase-2` branch. Onboarding crash fixed (ToolPart state guards), flow hardened, profile editing verified, landing page confirmed real. PR open.
 
 ---
 
 ## Next 3 things
 
-1. **Verify deploy** — confirm `https://herald.attalabs.dev/dani` returns 200 and the full flow works end-to-end in production.
+1. **Merge Phase 2 PR** — review and merge `feat/herald-phase-2`.
 2. **Fresh Upstash Redis credentials** — rate limiting degrades gracefully but isn't active. Provision new creds at upstash.com, update `.env.local` and Vercel env vars.
-3. **Herald Phase 2 — self-service onboarding** — `AIOnboarding` hardened end-to-end, admin dashboard complete, public landing at `heyherald.com`. Author brief before dispatching.
+3. **Herald Phase 3 brief** — recruiter self-serve: paste JD + upload N CVs → batch forensic audit → ranked report list.
 
 ---
 
