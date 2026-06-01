@@ -43,7 +43,7 @@ function resolveAuditChain(plan: Plan, slotIndex: number): string[] {
     const edge = plan.graph.edges.find((e) => e.from === current)
     if (!edge) break
     const node = plan.graph.nodes[edge.to]
-    if (!node || node.role !== 'audit' || (node.metadata.revisionIndex ?? 0) !== slotIndex) break
+    if (node?.role !== 'audit' || (node.metadata.revisionIndex ?? 0) !== slotIndex) break
     result.push(node.agentName)
     current = edge.to
   }

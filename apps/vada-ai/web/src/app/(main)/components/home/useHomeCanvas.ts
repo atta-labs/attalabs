@@ -82,7 +82,7 @@ export function useHomeCanvas(onOriginCompleteRef: React.MutableRefObject<(() =>
   // On scroll-back the simulation never re-runs (simulationStarted stays true),
   // so revealedCount/activeStep remain at 6 and the ring fades back in fully formed.
   useEffect(() => {
-    if (!ctx || ctx.phase !== 'settled' || simulationStarted.current) return
+    if (ctx?.phase !== 'settled' || simulationStarted.current) return
     simulationStarted.current = true
 
     // Skip the ~8s intro for returning visitors. `?intro=1` forces a replay
