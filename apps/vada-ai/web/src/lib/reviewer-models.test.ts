@@ -88,9 +88,9 @@ describe('validateKeysForConfig', () => {
 describe('clearReviewerConfig', () => {
   test('removes the entry from localStorage', () => {
     setReviewerConfig(SPEC_ID, { Reviewer1: 'claude-3-5-sonnet-20241022' })
-    expect(store.has(`vada:reviewer-models:${SPEC_ID}`)).toBe(true)
+    expect(store.has(`vada:team:${SPEC_ID}`)).toBe(true)
     clearReviewerConfig(SPEC_ID)
-    expect(store.has(`vada:reviewer-models:${SPEC_ID}`)).toBe(false)
+    expect(store.has(`vada:team:${SPEC_ID}`)).toBe(false)
   })
 
   test('is a no-op when no entry exists', () => {

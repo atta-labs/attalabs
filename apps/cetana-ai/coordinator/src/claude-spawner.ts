@@ -1,6 +1,9 @@
+import { execFileSync } from 'node:child_process'
 import { spawn } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { resolveDispatchModel } from '@atta/models'
 import { ATTA_REPO_PATH, taskDir } from './paths.js'
 
 export interface SpawnArgs {
@@ -19,6 +22,26 @@ export interface SpawnResult {
 }
 
 const EXECUTOR_SERVER_PATH = join(ATTA_REPO_PATH, 'apps/cetana-ai/coordinator/src/mcp-server-executor.ts')
+
+function resolveClaudeBinary(): string {
+  try {
+    const result = execFileSync('which', ['claude'], { encoding: 'utf-8' }).trim()
+    if (result) return result
+  } catch {}
+  const candidates = [
+    join(homedir(), '.npm-global', 'bin', 'claude'),
+    join(homedir(), '.local', 'bin', 'claude'),
+    '/usr/local/bin/claude',
+    '/opt/homebrew/bin/claude'
+  ]
+  for (const candidate of candidates) {
+    try {
+      execFileSync(candidate, ['--version'], { encoding: 'utf-8' })
+      return candidate
+    } catch {}
+  }
+  throw new Error('claude CLI not found. Install: npm install -g @anthropic-ai/claude-code')
+}
 
 async function generateMcpConfig(taskId: string): Promise<string> {
   const dir = taskDir(taskId)
@@ -39,6 +62,8 @@ async function generateMcpConfig(taskId: string): Promise<string> {
 
 export async function spawnClaudeCode(args: SpawnArgs): Promise<SpawnResult> {
   const mcpConfigPath = await generateMcpConfig(args.taskId)
+  const claudeBinPath = resolveClaudeBinary()
+  const resolvedModel = resolveDispatchModel(args.model)
 
   const claudeArgs = [
     '-p',
@@ -54,15 +79,15 @@ export async function spawnClaudeCode(args: SpawnArgs): Promise<SpawnResult> {
     '--permission-mode',
     args.permissionMode,
     '--model',
-    args.model
+    resolvedModel
   ]
 
   const systemEnv = {
     ...process.env,
-    PATH: [process.env.PATH, '/usr/bin', '/usr/local/bin', '/bin'].filter(Boolean).join(':')
+    PATH: [process.env.PATH, '/usr/bin', '/usr/local/bin', '/bin', '/opt/homebrew/bin'].filter(Boolean).join(':')
   }
 
-  const proc = spawn('claude', claudeArgs, {
+  const proc = spawn(claudeBinPath, claudeArgs, {
     cwd: args.worktreePath,
     stdio: ['ignore', 'pipe', 'pipe'],
     env: systemEnv

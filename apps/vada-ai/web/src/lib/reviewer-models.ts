@@ -43,7 +43,9 @@ export function validateKeysForConfig(
     // Ollama is local — no API key concept. If a config references an ollama
     // model, the picker only allowed it when the local server was reachable.
     if (vendor === 'ollama') continue
-    if (!configuredProviders.includes(vendor)) return false
+    // xai is not a RouteProvider; grok models are accessed via openrouter
+    const routeProvider = vendor === 'xai' ? 'openrouter' : vendor
+    if (!configuredProviders.includes(routeProvider)) return false
   }
   return true
 }
