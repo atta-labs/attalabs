@@ -21,7 +21,7 @@ interface OnboardingState {
 interface ToolPart {
   type: string
   toolCallId: string
-  state: string
+  state?: string // undefined during SDK streaming transitions
   input?: unknown
   output?: unknown
 }
@@ -120,15 +120,17 @@ export function AIOnboarding() {
           }
         }
 
-        if (tp.state === 'input-available' && !handledToolCalls.current.has(tp.toolCallId)) {
+        if (tp.state != null && tp.state === 'input-available' && !handledToolCalls.current.has(tp.toolCallId)) {
           handledToolCalls.current.add(tp.toolCallId)
 
           if (name === 'request_cv_upload') {
             setState((s) => ({ ...s, waitingForCv: true }) as OnboardingState)
           }
-          if (name === 'complete_onboarding') {
-            const args = (tp.input ?? {}) as { username: string; githubHandle?: string }
-            handleCompleteRef.current(args.username, args.githubHandle, tp.toolCallId)
+          if (name === 'complete_onboarding' && tp.input != null) {
+            const args = tp.input as { username: string; githubHandle?: string }
+            if (args.username) {
+              handleCompleteRef.current(args.username, args.githubHandle, tp.toolCallId)
+            }
           }
         }
       }
@@ -146,6 +148,7 @@ export function AIOnboarding() {
     let toolCallId = ''
     for (const msg of messages) {
       for (const tp of getToolParts(msg)) {
+        if (!tp) continue
         if (getToolName(tp) === 'request_cv_upload') toolCallId = tp.toolCallId
       }
     }
