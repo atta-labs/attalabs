@@ -4,5 +4,10 @@
   "buildCommand": "cd ../../.. && bun turbo run build --filter=@atta/herald-ai-web",
   "installCommand": "cd ../../.. && bun install",
   "outputDirectory": ".next",
-  "ignoreCommand": "npx turbo-ignore @atta/herald-ai-web"
+  "ignoreCommand": "npx turbo-ignore @atta/herald-ai-web",
+  "functions": {
+    "src/app/api/match/route.ts": {
+      "maxDuration": 30
+    }
+  }
 }

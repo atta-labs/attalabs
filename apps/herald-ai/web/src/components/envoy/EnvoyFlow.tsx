@@ -82,7 +82,7 @@ function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
 }
 
 const ANIMATION_DURATION = 5000
-const API_TIMEOUT = 25000
+const API_TIMEOUT = 35000
 
 export function EnvoyFlow({ profile, username }: { profile: CandidateProfile; username: string }) {
   const { Button } = useComponents()
