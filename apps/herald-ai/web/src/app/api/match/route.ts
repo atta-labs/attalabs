@@ -3,6 +3,7 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText } from 'ai'
 import { NextResponse } from 'next/server'
 
+import { getUserByUsername } from '@/db/queries'
 import { DANI_PROFILE } from '@/lib/profile'
 import { MATCH_REPORT_SCHEMA, SKEPTICAL_AUDITOR_PROMPT } from '@/lib/prompts'
 import { extractSignals } from '@/lib/signals'
@@ -107,24 +108,57 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
     }
 
-    // Test profile override (only in development/test)
+    // Resolve profile: DB lookup by username (live path), test override (test path), or DANI_PROFILE fallback
+    const username = body.username as string | undefined
     const testOverride = body._test_profile_override
-    const profile = testOverride
-      ? {
-          name: testOverride.name as string,
-          title: testOverride.title as string,
-          summary: testOverride.summary as string,
-          stack: testOverride.stack as string[],
-          projects: testOverride.projects as Array<{ title: string; description: string }>,
-          experience: testOverride.experience as Array<{
-            company: string
-            role: string
-            period: string
-            highlights: string[]
-          }>,
-          github: (testOverride.github as string) ?? 'unknown'
-        }
-      : DANI_PROFILE
+
+    let profile: {
+      name: string
+      title: string
+      github: string
+      summary: string
+      stack: string[]
+      projects: Array<{ title: string; description: string }>
+      experience: Array<{ company: string; role: string; period: string; highlights: string[] }>
+    }
+
+    if (username) {
+      const dbUser = await getUserByUsername(username)
+      if (!dbUser) {
+        return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+      }
+      profile = {
+        name: dbUser.name,
+        title: dbUser.title,
+        github: dbUser.githubHandle ?? '',
+        summary: dbUser.summary,
+        stack: JSON.parse(dbUser.stack) as string[],
+        projects: JSON.parse(dbUser.projects) as Array<{ title: string; description: string }>,
+        experience: JSON.parse(dbUser.experience) as Array<{
+          company: string
+          role: string
+          period: string
+          highlights: string[]
+        }>
+      }
+    } else if (testOverride) {
+      profile = {
+        name: testOverride.name as string,
+        title: testOverride.title as string,
+        summary: testOverride.summary as string,
+        stack: testOverride.stack as string[],
+        projects: testOverride.projects as Array<{ title: string; description: string }>,
+        experience: testOverride.experience as Array<{
+          company: string
+          role: string
+          period: string
+          highlights: string[]
+        }>,
+        github: (testOverride.github as string) ?? ''
+      }
+    } else {
+      profile = DANI_PROFILE
+    }
 
     // Check cache
     const cacheKey = getCacheKey(jd + JSON.stringify(profile))
@@ -134,10 +168,8 @@ export async function POST(request: Request) {
       return NextResponse.json(cached)
     }
 
-    // Start signal fetch in parallel — skip for test profiles (they provide their own signals)
-    const signalPromise = testOverride
-      ? Promise.resolve((testOverride.github_signal?.patterns as string[]) ?? [])
-      : fetchSignalsWithTimeout(profile.github, 3000)
+    // Fetch GitHub signals server-side — always use the profile's github handle
+    const signalPromise = fetchSignalsWithTimeout(profile.github, 3000)
 
     // Build base prompt with profile + JD (signals added when available)
     const baseProfile = `CANDIDATE PROFILE:
