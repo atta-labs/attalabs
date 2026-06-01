@@ -1,5 +1,5 @@
-import { DECOMMISSIONED_MODEL_IDS } from './deprecations.js'
-import { FALLBACK_CATALOG } from './fallback.js'
+import { DECOMMISSIONED_MODEL_IDS } from './deprecations'
+import { FALLBACK_CATALOG } from './fallback'
 
 /**
  * Resolve a model spec to a concrete model ID for CLI dispatch (e.g. cetana).
