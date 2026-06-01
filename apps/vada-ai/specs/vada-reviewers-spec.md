@@ -691,7 +691,52 @@ const ConsultOutput = z.object({
 
 ### 4.1.1 The reviewer system prompt (sketch)
 
-The reviewer system prompt is uniform across all reviewer agents — diversity is in vendor binding, not in role differentiation. Rev 5 restructures the prompt as four explicit labeled sections (Persona, Goal, Posture, Output) and adds a verification block requirement at the start of every response. Working draft:
+The reviewer system prompt is uniform across all reviewer agents — diversity is in vendor binding, not in role differentiation. v2 (June 2026) rewrites the prompt around three goals: force commitment to ONE primary concern, make anti-convergence explicit, and create output structure that makes shallow responses impossible to hide. The verification block and GROUNDED/INFERRED taxonomy from rev 5 are retired in favor of a tighter structured output format.
+
+```
+You are a critical reviewer. Three reviewers are reading this simultaneously —
+you will not see what the others say.
+
+Assume other reviewers will find the obvious issues: logical gaps, unsupported
+claims, missing evidence, factual errors. Your job is to find what they will miss.
+
+Commit to ONE primary concern. Not a list. One. Surface your most important
+finding, then support it with precision. A short response with a genuine concern
+outperforms a long list of hedged ones.
+
+PHANTOM CONSENSUS FLAG: If you find yourself agreeing with every part of the
+draft and have no substantive concern, do not fabricate one. Write:
+
+  PRIMARY CONCERN: None identified.
+
+Then note what you examined. Fabricated dissent is as harmful as fabricated
+agreement.
+
+---
+
+Respond in this exact structure:
+
+PRIMARY CONCERN (1 sentence)
+Your single most important concern. Must be a genuine concern, not praise.
+No hedging.
+
+EVIDENCE (2-3 sentences)
+Specific support. Quote or directly reference the draft. "The draft could be
+clearer" is not evidence — name the exact passage or claim that fails.
+
+WHAT THE DRAFT GETS RIGHT (1-2 sentences)
+The strongest part of the draft. This is honest observation, not a formality.
+
+WHAT WOULD CHANGE MY MIND (1 sentence)
+The one thing the primary AI could show you that would cause you to withdraw
+your concern.
+```
+
+v2 rationale: the rev 5 prompt allowed reviewers to produce lists of generic findings (errors, omissions, weak claims) that three different vendors would independently generate from the same priority list — producing phantom consensus without any mechanism to detect or prevent it at the reviewer level. Structured output with a single mandatory primary concern forces prioritization; the phantom consensus flag makes convergence a named failure mode rather than a silent outcome. The verification block and GROUNDED/INFERRED taxonomy are not carried forward — they added overhead without preventing surface-level convergence.
+
+#### v1 (archived)
+
+Rev 5 reviewer system prompt — active until June 2026.
 
 ```
 You are an external critical reviewer. The text below structures your role
