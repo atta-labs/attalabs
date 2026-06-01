@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Input } from '@atta/ui'
+import { Button, Input, Textarea } from '@atta/ui'
 import { type UIMessage, useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
 import { useRouter } from 'next/navigation'
@@ -44,6 +44,8 @@ export function AIOnboarding() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [state, setState] = useState<OnboardingState>({})
   const [uploading, setUploading] = useState(false)
+  const [cvPasteMode, setCvPasteMode] = useState(false)
+  const [cvPasteText, setCvPasteText] = useState('')
   const [started, setStarted] = useState(false)
   const [hasUserSent, setHasUserSent] = useState(false)
   const [input, setInput] = useState('')
@@ -196,6 +198,68 @@ export function AIOnboarding() {
     }
   }
 
+  async function handleCvPasteSubmit() {
+    if (!cvPasteText.trim()) return
+
+    setUploading(true)
+
+    let toolCallId = ''
+    for (const msg of messages) {
+      for (const tp of getToolParts(msg)) {
+        if (!tp) continue
+        if (getToolName(tp) === 'request_cv_upload') toolCallId = tp.toolCallId
+      }
+    }
+
+    try {
+      const res = await fetch('/api/admin/parse-cv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: cvPasteText })
+      })
+      if (!res.ok) throw new Error('Parse failed')
+      const profile = await res.json()
+
+      ;(window as any).__heraldCvData = profile
+
+      setState((s) => ({
+        ...s,
+        cvParsed: true,
+        cvProfile: {
+          name: profile.name,
+          title: profile.title,
+          stack: profile.stack ?? [],
+          projects: profile.projects?.length ?? 0,
+          experience: profile.experience?.length ?? 0
+        }
+      }))
+
+      addToolOutput({
+        tool: 'request_cv_upload',
+        toolCallId,
+        output: {
+          success: true,
+          name: profile.name,
+          title: profile.title,
+          skills: profile.stack?.length ?? 0,
+          projects: profile.projects?.length ?? 0,
+          experience: profile.experience?.length ?? 0
+        }
+      })
+      setCvPasteMode(false)
+      setCvPasteText('')
+    } catch {
+      addToolOutput({
+        tool: 'request_cv_upload',
+        toolCallId,
+        state: 'output-error',
+        errorText: 'Failed to parse CV text'
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
+
   function handleSend() {
     if (!input.trim() || isThinking || state.complete) return
     if (!hasUserSent) setHasUserSent(true)
@@ -328,14 +392,58 @@ export function AIOnboarding() {
       <div className='fixed bottom-0 left-0 right-0 border-t border-border bg-background'>
         <div className='mx-auto max-w-[560px] px-6 py-4'>
           {state.waitingForCv && !state.cvParsed && !uploading ? (
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => fileRef.current?.click()}
-              className='h-12 w-full justify-start rounded-none border-border bg-card px-4 font-mono text-sm text-muted-foreground hover:bg-card hover:border-foreground/30 hover:text-foreground'
-            >
-              📎 Click to upload your CV (PDF, TXT, or Markdown)
-            </Button>
+            cvPasteMode ? (
+              <div className='flex flex-col gap-2'>
+                <Textarea
+                  className='h-32 resize-none border-border bg-card font-sans text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-foreground/30 focus-visible:ring-0 focus-visible:ring-offset-0'
+                  placeholder='Paste your CV text here...'
+                  value={cvPasteText}
+                  onChange={(e) => setCvPasteText(e.target.value)}
+                  autoFocus
+                />
+                <div className='flex gap-2'>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    onClick={handleCvPasteSubmit}
+                    disabled={!cvPasteText.trim()}
+                    className='h-10 flex-1 rounded-none border-border font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground'
+                  >
+                    Extract Profile
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    onClick={() => {
+                      setCvPasteMode(false)
+                      setCvPasteText('')
+                    }}
+                    className='h-10 rounded-none font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground'
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className='flex gap-2'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => fileRef.current?.click()}
+                  className='h-12 flex-1 justify-start rounded-none border-border bg-card px-4 font-mono text-sm text-muted-foreground hover:bg-card hover:border-foreground/30 hover:text-foreground'
+                >
+                  📎 Upload PDF
+                </Button>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => setCvPasteMode(true)}
+                  className='h-12 rounded-none border-border bg-card px-4 font-mono text-sm text-muted-foreground hover:bg-card hover:border-foreground/30 hover:text-foreground'
+                >
+                  Paste as text
+                </Button>
+              </div>
+            )
           ) : (
             <div className='flex gap-2'>
               <Input

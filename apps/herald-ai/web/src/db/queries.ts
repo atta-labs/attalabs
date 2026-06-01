@@ -95,6 +95,9 @@ export async function updateUser(
     summary?: string
     stack?: string[]
     githubHandle?: string
+    bio?: string
+    avatarUrl?: string | null
+    cvUrl?: string | null
   }
 ) {
   const updates: Record<string, unknown> = { updatedAt: new Date() }
@@ -105,6 +108,9 @@ export async function updateUser(
   if (data.summary !== undefined) updates.summary = data.summary
   if (data.stack !== undefined) updates.stack = JSON.stringify(data.stack)
   if (data.githubHandle !== undefined) updates.githubHandle = data.githubHandle
+  if (data.bio !== undefined) updates.bio = data.bio
+  if (data.avatarUrl !== undefined) updates.avatarUrl = data.avatarUrl
+  if (data.cvUrl !== undefined) updates.cvUrl = data.cvUrl
 
   await db.update(schema.heraldProfiles).set(updates).where(eq(schema.heraldProfiles.clerkId, clerkId))
 }

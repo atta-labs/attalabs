@@ -17,6 +17,9 @@ interface CandidateProfile {
   experience?: Array<{ company: string; role: string; period: string; highlights: string[] }>
   location?: string
   availability?: string
+  avatarUrl?: string
+  cvUrl?: string
+  bio?: string
 }
 
 type FlowState = 'input' | 'loading' | 'result' | 'error'
@@ -84,13 +87,32 @@ function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
 const ANIMATION_DURATION = 5000
 const API_TIMEOUT = 35000
 
-export function EnvoyFlow({ profile, username }: { profile: CandidateProfile; username: string }) {
+export function EnvoyFlow({
+  profile,
+  username,
+  previewMode = false
+}: {
+  profile: CandidateProfile
+  username: string
+  previewMode?: boolean
+}) {
   const { Button } = useComponents()
   const [state, setState] = useState<FlowState>('input')
   const [report, setReport] = useState<MatchReport | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [localProfile, setLocalProfile] = useState<CandidateProfile>(profile)
   const resultBuffer = useRef<MatchReport | null>(null)
   const animationDone = useRef(false)
+
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.data?.type === 'PREVIEW_PROFILE' && event.data.profile) {
+        setLocalProfile((prev) => ({ ...prev, ...(event.data.profile as Partial<CandidateProfile>) }))
+      }
+    }
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
 
   const tryReveal = useCallback(() => {
     if (resultBuffer.current && animationDone.current) {
@@ -151,11 +173,59 @@ export function EnvoyFlow({ profile, username }: { profile: CandidateProfile; us
   }
 
   if (state === 'input') {
-    return <JDInput onSubmit={handleSubmit} candidateName={profile.name} candidateTitle={profile.title} />
+    if (previewMode) {
+      return (
+        <div className='mx-auto max-w-[680px] px-6 py-12'>
+          <header className='mb-8 border-b border-border pb-6'>
+            <div className='flex items-center gap-4'>
+              {localProfile.avatarUrl && (
+                // biome-ignore lint/performance/noImgElement: Blob URL, not optimisable via next/image
+                <img src={localProfile.avatarUrl} alt='' className='h-16 w-16 rounded-full object-cover' />
+              )}
+              <div>
+                <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+                  Forensic Match Audit
+                </p>
+                <h1 className='mt-1 font-display text-2xl tracking-tight'>{localProfile.name}</h1>
+                <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{localProfile.title}</p>
+              </div>
+            </div>
+          </header>
+          {localProfile.bio && (
+            <p className='mb-8 font-sans text-sm leading-relaxed text-foreground/80'>{localProfile.bio}</p>
+          )}
+          <div className='rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
+            <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
+          </div>
+          {localProfile.cvUrl && (
+            <div className='mt-8 border-t border-border pt-6'>
+              <a
+                href={localProfile.cvUrl}
+                target='_blank'
+                rel='noreferrer'
+                className='font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
+              >
+                ↓ Download CV
+              </a>
+            </div>
+          )}
+        </div>
+      )
+    }
+    return (
+      <JDInput
+        onSubmit={handleSubmit}
+        candidateName={localProfile.name}
+        candidateTitle={localProfile.title}
+        candidateAvatarUrl={localProfile.avatarUrl}
+        candidateBio={localProfile.bio}
+        candidateCvUrl={localProfile.cvUrl}
+      />
+    )
   }
 
   if (state === 'loading') {
-    return <LoadingState candidateName={profile.name} candidateTitle={profile.title} />
+    return <LoadingState candidateName={localProfile.name} candidateTitle={localProfile.title} />
   }
 
   if (state === 'error') {
@@ -163,8 +233,8 @@ export function EnvoyFlow({ profile, username }: { profile: CandidateProfile; us
       <div className='mx-auto max-w-[680px] px-6 py-12'>
         <header className='mb-8 border-b border-border pb-6'>
           <p className='text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
-          <h1 className='mt-2 font-display text-2xl tracking-tight'>{profile.name}</h1>
-          <p className='mt-0.5 text-xs text-muted-foreground'>{profile.title}</p>
+          <h1 className='mt-2 font-display text-2xl tracking-tight'>{localProfile.name}</h1>
+          <p className='mt-0.5 text-xs text-muted-foreground'>{localProfile.title}</p>
         </header>
 
         <p className='text-sm text-muted-foreground'>{error}</p>

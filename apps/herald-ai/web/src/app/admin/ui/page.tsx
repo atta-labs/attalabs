@@ -1,7 +1,7 @@
 import { cmsClient, getThemes } from '@atta/cms'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { ThemeBrowser } from '@/components/portal/ThemeBrowser'
+import { AdminEditorPage } from '@/components/portal/AdminEditorPage'
 import { getUserByClerkId } from '@/db/queries'
 
 export default async function AdminUIPage() {
@@ -15,13 +15,33 @@ export default async function AdminUIPage() {
 
   return (
     <div className='h-full'>
-      <ThemeBrowser
-        themes={themes}
-        currentThemeId={user.themeId}
-        currentColorScheme={(user.colorScheme as 'dark' | 'light') ?? 'dark'}
-        currentLibrary={user.library ?? 'basic'}
-        currentFontSans={user.fontSans ?? null}
+      <AdminEditorPage
         username={user.username}
+        initialProfile={{
+          name: user.name,
+          title: user.title,
+          location: user.location ?? '',
+          availability: user.availability ?? '',
+          summary: user.summary,
+          stack: (() => {
+            try {
+              return (JSON.parse(user.stack) as string[]).join(', ')
+            } catch {
+              return ''
+            }
+          })(),
+          github: user.githubHandle ?? '',
+          bio: user.bio ?? '',
+          avatarUrl: user.avatarUrl ?? null,
+          cvUrl: user.cvUrl ?? null
+        }}
+        initialTheme={{
+          themeId: user.themeId ?? null,
+          colorScheme: (user.colorScheme as 'dark' | 'light') ?? 'dark',
+          library: user.library ?? 'basic',
+          fontSans: user.fontSans ?? null
+        }}
+        themes={themes}
       />
     </div>
   )

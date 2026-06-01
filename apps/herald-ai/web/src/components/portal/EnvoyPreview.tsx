@@ -2,11 +2,14 @@
 
 import { usePortalPreview } from '@/hooks/usePortalPreview'
 
-export function EnvoyPreview({ username }: { username: string }) {
+type SendFn = (message: Record<string, unknown>) => void
+
+export function EnvoyPreview({ username, onReady }: { username: string; onReady?: (send: SendFn) => void }) {
   const portalUrl = `/${username}`
 
   const { iframeRef, iframeSrc, iframeKey, isReady } = usePortalPreview({
-    portalUrl
+    portalUrl,
+    onReady
   })
 
   return (

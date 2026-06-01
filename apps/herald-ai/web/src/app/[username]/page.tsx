@@ -8,8 +8,16 @@ import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 import { getUserByUsername } from '@/db/queries'
 import { getGoogleFontsUrl } from '@atta/cms'
 
-export default async function EnvoyPage({ params }: { params: Promise<{ username: string }> }) {
+export default async function EnvoyPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ username: string }>
+  searchParams: Promise<{ preview?: string }>
+}) {
   const { username } = await params
+  const { preview } = await searchParams
+  const previewMode = preview === 'true'
 
   const user = await getUserByUsername(username)
   if (!user) notFound()
@@ -28,7 +36,10 @@ export default async function EnvoyPage({ params }: { params: Promise<{ username
       highlights: string[]
     }>,
     location: user.location ?? undefined,
-    availability: user.availability ?? undefined
+    availability: user.availability ?? undefined,
+    avatarUrl: user.avatarUrl ?? undefined,
+    cvUrl: user.cvUrl ?? undefined,
+    bio: user.bio ?? undefined
   }
 
   // Fetch theme from Sanity if user has one selected
@@ -64,7 +75,7 @@ export default async function EnvoyPage({ params }: { params: Promise<{ username
       {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
       <PreviewThemeListener />
       <LibraryProvider library={userLibrary}>
-        <EnvoyFlow profile={profile} username={username} />
+        <EnvoyFlow profile={profile} username={username} previewMode={previewMode} />
       </LibraryProvider>
     </>
   )
