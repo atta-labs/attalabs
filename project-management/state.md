@@ -164,7 +164,7 @@ Earlier framing (April 26, 2026) presented Sati as having been "renamed from the
 
 V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 Step 1 (F5) shipped May 12 across three PRs (#39 initial, #42 install command fix, #43 abort hang fix). Install gate D-021 verified end-to-end by Principal.
 
-**Current capability:** `cetana init`, `cetana dispatch <issue>`, `cetana list`, `cetana reply <id> "msg"`, `cetana logs <id>`. Hierarchical config. Heartbeat-based CRASHED detection. 26 passing tests.
+**Current capability:** `cetana init`, `cetana dispatch <issue>`, `cetana list`, `cetana reply <id> "msg"`, `cetana logs <id>`. Hierarchical config. Heartbeat-based CRASHED detection. 26 passing tests. Claude binary resolved via `which claude` + known fallback paths (NVM/homebrew/global) — no hardcoded path. Model tier resolution via `resolveDispatchModel` in `@atta/models` — config stores `anthropic/balanced`, resolved at dispatch time, no hardcoded model strings. `repoPath` read from config (set during `cetana init`, defaults to `git rev-parse --show-toplevel`).
 
 **Locked decisions (cetana-decisions.md):** D-020 (CLI canonical), D-021 (install gate non-negotiable), D-022 (thin client over Coordinator), D-023 (4-week dogfood gate), D-025 (install gate path coverage).
 
@@ -182,10 +182,10 @@ V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 S
 
 **Domain:** `cetana.attalabs.dev` reserved for if/when Cetana ships as a public product surface. V0/V0.5 is internal tooling today; future public surface is conditional on V0 dogfood proving daily-driver value.
 
-### Herald — *standalone AttaLabs product; Phase 1 in progress — see `apps/herald-ai/project-management/state.md`*
+### Herald — *standalone AttaLabs product; Phase 1 complete — see `apps/herald-ai/project-management/state.md`*
 
 **Full state:** `apps/herald-ai/project-management/state.md` — read that file for Herald detail.
-**Current phase:** Phase 1 — candidate use case (Envoy end-to-end, match engine, deploy to `herald.attalabs.dev`).
+**Current phase:** Phase 2 — self-service onboarding. Phase 1 complete June 1, 2026 (PR #70).
 
 **Status:** Standalone forensic CV-to-job-description match tool. Sibling product in AttaLabs, NOT part of Atta-the-product (D-025 reframed from prior "pluggable MCP tool" framing). Built by Dani.
 
@@ -303,6 +303,13 @@ This ecosystem uses the repo as the source of truth for project management. See 
 
 ### Recently shipped (April 28 – May 12, 2026)
 
+**June 1, 2026 — Cetana spawner fixes + Herald Phase 1 + test failures + Vāda key validation**
+
+- **PR #68 — Cetana spawner fixes:** Resolved three root causes that prevented `cetana dispatch` from working: (1) hardcoded `claude-sonnet-4-6` model string replaced with tier-based `anthropic/balanced` resolved at dispatch time via `resolveDispatchModel` in `@atta/models`; (2) claude binary resolution now uses `which claude` + known NVM/homebrew/global fallback paths instead of bare string spawn; (3) `repoPath` hardcoded to `~/code/atta` replaced with config field set during `cetana init`. No config or code changes needed when Anthropic retires a model.
+- **PR #70 — Herald Phase 1 complete:** Three bugs fixed: (1) `POST /api/match` now reads profile from DB via `username` param — `_test_profile_override` removed from live path; (2) GitHub signals now fetched server-side from DB profile's `githubHandle` instead of trusting empty client-side array; (3) Upstash Redis failure now degrades gracefully in `proxy.ts` (try/catch around `ratelimit.limit()`) — real rate limiting needs fresh Upstash creds but all match requests unblocked. Envoy live at `herald.attalabs.dev`.
+- **PR #71 — Remaining test failures from #29:** Two fixes: localStorage mock now resets in `beforeEach` so `has()` returns false after `clearReviewerConfig`; `planToVisualNodes` cross-round edge off-by-one corrected.
+- **PR #65 — Vāda provider key validation:** Route `apps/vada-ai/web/src/app/api/deliberation/[id]/workflow/run/route.ts` now validates all non-local-vendor agents have provider keys before calling `runLangGraph`. Loads and compiles plan from `session.specId`, builds `agentVendorOverrides` from plan defaults (skipping anthropic), applies `reviewerConfig` overrides on top, returns `{ error: 'missing_provider_key', agent, model, vendor }` with status 400 on failure.
+
 **May 12 — v2 naming and framing audit (PR #46).** Locked v2 brand architecture: AttaLabs is the dev/lab ecosystem; Atta is the product (deep-thinking AI composed of Vāda + Vitakka + Sati). No `-AI` suffix on any product brand. Pāli rule demoted from structural to elective aesthetic. Cetana reframed as internal dev tooling (sibling AttaLabs product, not part of Atta). Herald reframed as standalone AttaLabs product (no longer "plugs in"). Updates to `atta-naming-decision.md`, `atta-ecosystem-vision.md`, root `README.md`, root `CLAUDE.md`, `project-management/coordination.md`, `project-management/state.md`, and a new entry D-025 in `project-management/decisions.md`. Derived from three rounds of multi-reviewer pressure-testing (Strategic/UX, Gemini, Grok).
 
 **May 12 — Cetana V0.5 Step 1 (F5) shipped — PRs #39, #42, #43.**
@@ -388,7 +395,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - `apps/atta-ai/web` — AttaLabs hub, production-deployed at `attalabs.dev`
 - `apps/cetana-ai/coordinator/` — Cetana V0 coordinator, shipped May 10 (PR #25)
 - `apps/cetana-ai/cli/` — Cetana V0.5 CLI, shipped May 12 (PRs #39/#42/#43)
-- `apps/herald-ai/*` — Herald surfaces (separate auth)
+- `apps/herald-ai/*` — Herald surfaces (separate auth). Phase 1 complete June 1, 2026. Match engine reads from DB, signals server-side, rate limiter degrades gracefully. Live at `herald.attalabs.dev` (deploy triggered PR #70 — confirm 200 manually).
 - `apps/vitakka-ai/` — scaffold; build not yet started
 - All `@atta/*` packages including `@atta/crypto`, `@atta/ui/account`, `@atta/db` ecosystem-shared key schemas
 - `packages/models/src/vendors.ts` — vendor registry (12 vendors); single source of truth for SDK shapes, baseURLs, key conventions, prefix fallbacks (PR #31)
