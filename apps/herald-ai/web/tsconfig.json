@@ -3,7 +3,8 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"],
-      "@atta/ui/footer": ["../../../packages/ui/footer/index"]
+      "@atta/ui/footer": ["../../../packages/ui/footer/index"],
+      "@atta/ui/topbar": ["../../../packages/ui/topbar/index"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

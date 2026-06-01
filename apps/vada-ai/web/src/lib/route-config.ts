@@ -11,7 +11,7 @@ export interface NavLink {
 
 /** Routes visible to all users */
 export const PUBLIC_ROUTES: NavLink[] = [
-  { href: '/trust', label: 'Trust · Vāda', exact: false },
+  { href: '/trust', label: 'Trust', exact: false },
   { href: '/teams', label: 'Teams', exact: false }
 ]
 

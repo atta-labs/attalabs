@@ -40,11 +40,11 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
   return (
     <UserPreferencesProvider faceStyle={faceStyle}>
       <ToastProvider defaultPosition='bottom-right'>
-        <div className='h-screen flex flex-col'>
+        <div className='flex flex-col min-h-dvh'>
           <StickyHeaderTopBar isBlurred={true} className='z-40 border-border/40'>
             <UserTopBar logo={logo} />
           </StickyHeaderTopBar>
-          <div className='flex-1 overflow-y-auto flex flex-col'>
+          <div className='flex-1 flex flex-col'>
             <div className='flex-1'>{children}</div>
             <Footer
               product='vada'

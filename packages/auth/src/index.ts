@@ -1,4 +1,4 @@
-export { SignIn, SignUp, SignInButton, SignUpButton, UserProfile, UserButton, Show } from '@clerk/nextjs'
+export { SignIn, SignUp, SignInButton, SignUpButton, UserProfile, UserButton } from '@clerk/nextjs'
 export { dark as clerkDarkTheme } from '@clerk/themes'
 export { buildClerkAppearance } from './clerk-appearance'
 export { computeClerkAppearance } from './client-appearance'
