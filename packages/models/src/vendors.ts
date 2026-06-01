@@ -54,7 +54,8 @@ export const VENDORS = {
     baseURL: 'https://api.x.ai/v1',
     keyConvention: 'bearer',
     keyPrefix: 'xai-',
-    envVar: 'XAI_API_KEY'
+    envVar: 'XAI_API_KEY',
+    modelPrefixes: ['grok-']
   },
   groq: {
     id: 'groq',
@@ -72,8 +73,7 @@ export const VENDORS = {
     baseURL: 'https://openrouter.ai/api/v1',
     keyConvention: 'bearer',
     keyPrefix: 'sk-or-',
-    envVar: 'OPENROUTER_API_KEY',
-    modelPrefixes: ['grok-']
+    envVar: 'OPENROUTER_API_KEY'
   },
   deepseek: {
     id: 'deepseek',
