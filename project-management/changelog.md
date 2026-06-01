@@ -8,6 +8,38 @@
 
 ---
 
+## June 1, 2026
+
+### PR #68 — fix(cetana): resolve claude binary, model tier resolution, repoPath from config
+**Branch:** `fix/cetana-spawner-path` → `main`
+**Fixes:** Three root causes preventing `cetana dispatch` from working after install.
+- Claude binary: `spawn('claude', ...)` used bare string; Bun subprocess doesn't inherit full shell PATH. Fix: `resolveClaudeBinary()` runs `which claude` then falls back to known NVM/homebrew/global paths. Full PATH including `/opt/homebrew/bin` injected into subprocess env.
+- Model: config defaulted to `claude-sonnet-4-6` hardcoded string. Fix: config stores `anthropic/balanced` tier spec; `resolveDispatchModel()` in `@atta/models` resolves to current non-decommissioned balanced model at dispatch time via `FALLBACK_CATALOG`. Model deprecations now require one line in `deprecations.ts` + one entry in `fallback.ts` — nothing else.
+- repoPath: hardcoded to `~/code/atta`. Fix: `repoPath` added to `CetanaConfig` and `CliConfigSchema`; `cetana init` prompts for it defaulting to `git rev-parse --show-toplevel`.
+**Files:** `packages/models/src/dispatch.ts`, `coordinator/src/claude-spawner.ts`, `coordinator/src/config.ts`, `coordinator/src/paths.ts`, `cli/src/lib/config.ts`, `cli/src/commands/init.ts`
+
+### PR #70 — feat(herald): Phase 1 — candidate use case complete
+**Branch:** `feat/herald-phase-1` → `main`
+**Goal:** Herald Envoy works end-to-end; Dani can send `herald.attalabs.dev/dani` to a job application.
+**Bugs fixed:**
+1. Match route used `_test_profile_override` (client sent full profile) instead of reading from DB. Fix: route now accepts `username`, fetches via `getUserByUsername(username)`. `_test_profile_override` removed from live path.
+2. GitHub signals always empty — `EnvoyFlow` was sending `github_signal: { patterns: [] }` and route trusted it. Fix: signals now fetched server-side from DB profile's `githubHandle` via `fetchSignalsWithTimeout`.
+3. Upstash Redis creds expired — `ratelimit.limit(ip)` threw, crashing all match requests with 500. Fix: `proxy.ts` wraps call in try/catch, logs warning, falls through on failure. Real rate limiting needs fresh Upstash creds provisioned manually.
+**Note:** `DANI_PROFILE` in `lib/profile.ts` retained as type reference only — no longer in live path. Can be deleted in Phase 2 cleanup.
+
+### PR #71 — fix: resolve 2 remaining test failures from #29 audit
+**Branch:** `fix/remaining-test-failures-29` → `main`
+**Fixes:**
+1. `clearReviewerConfig > removes the entry from localStorage` — localStorage mock not reset between tests; `has()` returned stale true. Fix: `beforeEach` now resets the mock.
+2. `planToVisualNodes` cross-round edges test — off-by-one in grouping logic for last-agent-of-Rn → all-agents-of-Rn+1 edges. Fix: corrected grouping in `planToVisualNodes`.
+
+### PR #65 — fix(vada): validate provider keys for default agent models before dispatch
+**Branch:** `fix/reviewers-missing-key-validation` → `main`
+**Fix:** Route `apps/vada-ai/web/src/app/api/deliberation/[id]/workflow/run/route.ts` now validates all non-local-vendor agents have configured provider keys before calling `runLangGraph`. Loads plan from `session.specId`, builds `agentVendorOverrides` from plan defaults (skipping anthropic as always-available), applies `reviewerConfig` overrides on top, checks each vendor against `configuredProviders`. Returns `{ error: 'missing_provider_key', agent, model, vendor }` with HTTP 400 on failure. Only file touched: `route.ts`.
+**Closes:** #59
+
+---
+
 ## 2026-05-13 — Chore: D-033 cleanup — signal-type rejection + RevisionCondition tighten (D-034)
 
 Follow-up to PR #47. Two hardening changes identified during PR #47's diff review.
