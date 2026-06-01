@@ -84,7 +84,7 @@ function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
 const ANIMATION_DURATION = 5000
 const API_TIMEOUT = 25000
 
-export function EnvoyFlow({ profile }: { profile: CandidateProfile }) {
+export function EnvoyFlow({ profile, username }: { profile: CandidateProfile; username: string }) {
   const { Button } = useComponents()
   const [state, setState] = useState<FlowState>('input')
   const [report, setReport] = useState<MatchReport | null>(null)
@@ -117,19 +117,7 @@ export function EnvoyFlow({ profile }: { profile: CandidateProfile }) {
       const res = await fetch('/api/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          job_description: jd,
-          _test_profile_override: {
-            name: profile.name,
-            title: profile.title,
-            github: profile.github,
-            summary: profile.summary,
-            stack: profile.stack,
-            projects: profile.projects ?? [],
-            experience: profile.experience ?? [],
-            github_signal: { patterns: [] }
-          }
-        }),
+        body: JSON.stringify({ job_description: jd, username }),
         signal: timeoutController.signal
       })
 

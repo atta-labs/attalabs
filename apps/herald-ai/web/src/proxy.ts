@@ -24,12 +24,16 @@ export default clerkMiddleware(async (auth, req) => {
   if (req.method === 'POST' && req.nextUrl.pathname === '/api/match') {
     if (ratelimit) {
       const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-      const { success } = await ratelimit.limit(ip)
-      if (!success) {
-        return NextResponse.json(
-          { error: "You've run several audits recently. Try again in an hour." },
-          { status: 429 }
-        )
+      try {
+        const { success } = await ratelimit.limit(ip)
+        if (!success) {
+          return NextResponse.json(
+            { error: "You've run several audits recently. Try again in an hour." },
+            { status: 429 }
+          )
+        }
+      } catch {
+        console.warn('[Herald] Rate limit check failed — allowing request')
       }
     } else {
       console.warn('[Herald] Upstash not configured — rate limiting disabled')

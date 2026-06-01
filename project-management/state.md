@@ -182,7 +182,10 @@ V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 S
 
 **Domain:** `cetana.attalabs.dev` reserved for if/when Cetana ships as a public product surface. V0/V0.5 is internal tooling today; future public surface is conditional on V0 dogfood proving daily-driver value.
 
-### Herald — *standalone AttaLabs product; not part of Atta*
+### Herald — *standalone AttaLabs product; Phase 1 in progress — see `apps/herald-ai/project-management/state.md`*
+
+**Full state:** `apps/herald-ai/project-management/state.md` — read that file for Herald detail.
+**Current phase:** Phase 1 — candidate use case (Envoy end-to-end, match engine, deploy to `herald.attalabs.dev`).
 
 **Status:** Standalone forensic CV-to-job-description match tool. Sibling product in AttaLabs, NOT part of Atta-the-product (D-025 reframed from prior "pluggable MCP tool" framing). Built by Dani.
 

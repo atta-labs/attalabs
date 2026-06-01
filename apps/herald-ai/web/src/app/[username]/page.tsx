@@ -64,7 +64,7 @@ export default async function EnvoyPage({ params }: { params: Promise<{ username
       {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
       <PreviewThemeListener />
       <LibraryProvider library={userLibrary}>
-        <EnvoyFlow profile={profile} />
+        <EnvoyFlow profile={profile} username={username} />
       </LibraryProvider>
     </>
   )
