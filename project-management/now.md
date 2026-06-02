@@ -10,25 +10,26 @@
 
 ## In flight now
 
-- **Herald admin redesign** — PR #75 open — avatar upload (Vercel Blob), CV storage, bio field, two-column admin UI, onboarding TopBar + CV paste mode.
+Nothing actively dispatched.
 
 ---
 
 ## Next 3 things
 
-1. **Cetana F6 — `cetana watch`** — live streaming output. Ready to dispatch. Highest pain point in current workflow.
-2. **Vāda Track B Item 3b — Reviewer prompt iteration** — unblocked since PR #31 (May 11) and PR #65 (June 1). Ready to dispatch.
-3. **Herald Phase 3 — recruiter self-serve** — after #75 merges. Brief to be authored.
+1. **Cetana F6 — `cetana watch`** — live streaming output. Agent prompt ready. Open a Claude Code session and paste the F6 prompt from Team Leader. Highest current pain point.
+2. **Test Vāda Reviewers end-to-end** — add OpenAI + xAI keys to Vercel first (manual, 5 min), then run a real Reviewers deliberation at `vada.attalabs.dev`. First time this has ever been tested.
+3. **Herald Phase 3 brief** — recruiter self-serve: paste JD + upload N CVs → batch forensic audit → ranked reports. Brief to be authored.
 
 ---
 
 ## Manual work pending
 
-- **Upstash Redis credentials for Herald** — `.env.local` creds expired. Rate limiting degrades gracefully but isn't active. Provision at upstash.com, update `.env.local` + Vercel env vars.
+- **Add OpenAI + xAI keys to Vercel** — go to Vercel → vada-ai project → Settings → Environment Variables. Add `OPENAI_API_KEY` and `XAI_API_KEY`. Unblocks Reviewers end-to-end testing.
+- **Upstash Redis credentials for Herald** — `.env.local` creds expired. Rate limiting degrades gracefully but isn't active. Provision at upstash.com, update `.env.local` + Vercel env vars for `herald.attalabs.dev`.
 - **Worktree graveyard cleanup** — `git worktree prune && git fetch --prune && git branch --merged main | grep -v "^\* \|main" | xargs git branch -D`
 - **Vitakka Clerk app deletion** — unused, no users. 2 minutes.
-- **Add OpenAI + xAI keys server-side** — needed to test full vendor-diverse Reviewers default trio.
-- **Generate Vāda API key + configure Claude Desktop / Claude Code connector** — final step in hosted MCP dogfooding.
+- **Generate Vāda API key + configure Claude Code MCP connector** — point at `https://vada.attalabs.dev/api/mcp` with bearer auth. Final step in hosted MCP dogfooding.
+- **Herald deploy verification** — confirm `https://herald.attalabs.dev/admin` admin redesign works post-PR-#75. Test avatar upload, CV upload, bio save.
 
 ---
 
