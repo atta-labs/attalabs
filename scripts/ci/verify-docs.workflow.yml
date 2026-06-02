@@ -1,0 +1,41 @@
+# ============================================================================
+# MANUAL STEP REQUIRED — COPY THIS FILE TO .github/workflows/verify-docs.yml
+#
+# The GitHub App integration that opened this PR lacks the `workflows` scope, so
+# it cannot create files under .github/workflows/ directly. Move this file into
+# place locally and commit it on this branch:
+#
+#   git mv scripts/ci/verify-docs.workflow.yml .github/workflows/verify-docs.yml
+#   git commit -am "Chore: install verify-docs workflow"
+#   git push
+#
+# Until this is in .github/workflows/, the verify-docs gate is NOT enforced by CI.
+# scripts/verify-docs.ts still runs locally (bun scripts/verify-docs.ts --pr).
+# ============================================================================
+
+name: Verify Docs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  verify-docs:
+    name: Tier-appropriate documentation gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Run verify-docs (--pr)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: bun scripts/verify-docs.ts --pr
