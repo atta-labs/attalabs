@@ -21,6 +21,9 @@ export const heraldProfiles = pgTable('herald_profiles', {
   colorScheme: varchar('color_scheme', { length: 10 }).default('dark'),
   library: varchar('library', { length: 50 }).default('basic'),
   fontSans: varchar('font_sans', { length: 255 }),
+  avatarUrl: varchar('avatar_url', { length: 500 }),
+  cvUrl: varchar('cv_url', { length: 500 }),
+  bio: text('bio'),
   onboardingComplete: boolean('onboarding_complete').notNull().default(false),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()

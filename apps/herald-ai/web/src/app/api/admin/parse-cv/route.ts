@@ -14,31 +14,42 @@ export async function POST(request: Request) {
   }
 
   try {
-    const formData = await request.formData()
-    const file = formData.get('cv')
-
-    if (!file || !(file instanceof File)) {
-      return NextResponse.json({ error: 'No CV file provided' }, { status: 400 })
-    }
-
     let cvText: string
+    const contentType = request.headers.get('content-type') ?? ''
 
-    if (file.type === 'application/pdf') {
-      const arrayBuffer = await file.arrayBuffer()
-      const { extractText } = await import('unpdf')
-      const result = await extractText(new Uint8Array(arrayBuffer))
-      cvText = Array.isArray(result.text) ? result.text.join('\n') : result.text
+    if (contentType.includes('application/json')) {
+      // Paste-as-text mode
+      const body = await request.json()
+      if (!body.text || typeof body.text !== 'string') {
+        return NextResponse.json({ error: 'No CV text provided' }, { status: 400 })
+      }
+      cvText = body.text.trim()
+      console.info(`[Herald] Parsing CV text: ${cvText.length} chars`)
     } else {
-      cvText = await file.text()
-    }
+      // File upload mode
+      const formData = await request.formData()
+      const file = formData.get('cv')
 
-    cvText = cvText.trim()
+      if (!file || !(file instanceof File)) {
+        return NextResponse.json({ error: 'No CV file provided' }, { status: 400 })
+      }
+
+      if (file.type === 'application/pdf') {
+        const arrayBuffer = await file.arrayBuffer()
+        const { extractText } = await import('unpdf')
+        const result = await extractText(new Uint8Array(arrayBuffer))
+        cvText = Array.isArray(result.text) ? result.text.join('\n') : result.text
+      } else {
+        cvText = await file.text()
+      }
+
+      cvText = cvText.trim()
+      console.info(`[Herald] Parsing CV: ${cvText.length} chars from ${file.name}`)
+    }
 
     if (cvText.length < 50) {
       return NextResponse.json({ error: 'CV content is too short or could not be extracted' }, { status: 400 })
     }
-
-    console.info(`[Herald] Parsing CV: ${cvText.length} chars extracted from ${file.name}`)
 
     const profile = await parseCv(cvText, apiKey)
 

@@ -6,11 +6,17 @@ import { Button, Textarea } from '@atta/ui'
 export function JDInput({
   onSubmit,
   candidateName = 'Dani Estevez Martin',
-  candidateTitle = 'Senior Frontend Architect · AI Systems · Web3'
+  candidateTitle = 'Senior Frontend Architect · AI Systems · Web3',
+  candidateAvatarUrl,
+  candidateBio,
+  candidateCvUrl
 }: {
   onSubmit: (jd: string) => void
   candidateName?: string
   candidateTitle?: string
+  candidateAvatarUrl?: string
+  candidateBio?: string
+  candidateCvUrl?: string
 }) {
   const [value, setValue] = useState('')
   const [pending, setPending] = useState(false)
@@ -27,8 +33,17 @@ export function JDInput({
     <div className='mx-auto max-w-[680px] px-6 py-12'>
       <header className='mb-8 border-b border-border pb-6'>
         <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
-        <h1 className='mt-2 font-display text-2xl tracking-tight'>{candidateName}</h1>
-        <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{candidateTitle}</p>
+        <div className='mt-2 flex items-center gap-4'>
+          {candidateAvatarUrl && (
+            // biome-ignore lint/performance/noImgElement: Blob URL, not optimisable via next/image
+            <img src={candidateAvatarUrl} alt='' className='h-16 w-16 rounded-full object-cover shrink-0' />
+          )}
+          <div>
+            <h1 className='font-display text-2xl tracking-tight'>{candidateName}</h1>
+            <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{candidateTitle}</p>
+          </div>
+        </div>
+        {candidateBio && <p className='mt-4 font-sans text-sm leading-relaxed text-foreground/80'>{candidateBio}</p>}
       </header>
 
       <div>
@@ -53,6 +68,16 @@ export function JDInput({
         </Button>
 
         <p className='mt-2 font-mono text-[10px] text-muted-foreground'>Cmd+Enter to submit</p>
+        {candidateCvUrl && (
+          <a
+            href={candidateCvUrl}
+            target='_blank'
+            rel='noreferrer'
+            className='mt-4 inline-block font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
+          >
+            ↓ Download CV
+          </a>
+        )}
       </div>
     </div>
   )

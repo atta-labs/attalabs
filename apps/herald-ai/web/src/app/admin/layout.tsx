@@ -9,9 +9,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const user = await getUserByClerkId(userId)
 
-  // If no user yet (pre-onboarding), render children without topbar
+  // Pre-onboarding: show a minimal brand topbar so the user can exit
   if (!user?.onboardingComplete) {
-    return <main className='h-screen'>{children}</main>
+    return (
+      <div className='flex h-screen flex-col'>
+        <nav className='flex h-12 shrink-0 items-center border-b border-border bg-background px-4'>
+          <a href='/' className='flex items-center gap-2'>
+            <span className='text-base'>🎺</span>
+            <span className='font-display text-sm font-bold tracking-tight'>Herald</span>
+          </a>
+        </nav>
+        <main className='flex-1 overflow-hidden'>{children}</main>
+      </div>
+    )
   }
 
   return (

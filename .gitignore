@@ -42,8 +42,7 @@ yarn-error.log*
 # Generated UI index (auto-created at build time from CMS config)
 packages/ui/generated/
 
-# Lockfile
-bun.lock
+
 next-env.d.ts
 .aider*
 .superpowers/
