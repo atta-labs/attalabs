@@ -25,7 +25,7 @@ Track A: 5 of 5 complete.
 - ✅ **Item 1: Engine readiness check**
 - ✅ **Item 2: Engine + adapter prerequisites**
 - ✅ **Item 3a: Vāda Reviewers v1 YAML authoring**
-- ⏭ **Item 3b: Reviewer system prompt iteration.** Interactive phase. Now planned to dispatch through Cetana V0 once it ships. Invoke `vada__consult` with `spec_id: "vada-reviewers"`, read 3 reviewer responses, judge whether the prompt is producing the right behavior, tweak, re-run. §4.1.1 of rev 5 spec is the starting prompt. **Unblocked May 11 by PR #31** — both web (existing) and MCP (new via `reviewer_config`) now route catalog-resolved vendors correctly, including cross-vendor models like DeepSeek-via-Groq.
+- ⏭ **Item 3b: Reviewer system prompt iteration.** Interactive phase. Now planned to dispatch through Cetana V0 once it ships. Invoke `vada__consult` with `spec_id: "vada-reviewers"`, read 3 reviewer responses, judge whether the prompt is producing the right behavior, tweak, re-run. §4.1.1 of rev 5 spec is the starting prompt. **Unblocked May 11 by PR #31** — both web (existing) and MCP (new via `reviewer_config`) now route catalog-resolved vendors correctly, including cross-vendor models like DeepSeek-via-Groq. Also unblocked on provider key validation side by PR #65 (June 1, 2026) — Reviewers ERROR fixed.
 - ⏭ **Item 3c: Synthesizer system prompt iteration.** Same shape as 3b. §4.1.2 of rev 5 spec is the starting prompt.
 - ⏭ **Item 4: First benchmark run.** Six conditions per test case (A0, A1, VR-NS, VR-S-same, VR-S-cross, MW-where-available). Manual judging by Claude in fresh context, Dani as final arbiter. Per-question-type breakdown required.
 - ⏭ **Item 5: Iterate or ship.** Decide recommended synthesis mode based on data, not philosophy.
@@ -72,7 +72,7 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 - ✅ **F3: Worktree manager** — `worktree.ts` with create/remove/list. Part of F2.
 - ✅ **F4: GitHub Octokit integration** — `github.ts` with getIssue, postComment, openPR. Part of F2.
 - ✅ **F5: V0.5 Step 1 — CLI scaffold + init** — May 12, PRs #39/#42/#43. Install gate D-021 verified by Principal. D-025 (path coverage) added.
-- ⏭ **F6: V0.5 Step 2 — `cetana watch`** — READY TO DISPATCH. Human-readable JSONL renderer.
+- ⏭ **F6: V0.5 Step 2 — `cetana watch`** — READY TO DISPATCH. Highest current pain point — no live agent output visible during dispatch.
 - ⏭ **F7: V0.5 Step 3 — `cetana status`.** Point-in-time summary of running, blocked, and recently completed tasks. Same data as `cetana.list_active_tasks`.
 - ⏭ **F8: V0.5 Step 4 — `cetana abort` + `cetana resume`.** Abort kills subprocess + appends `task.failed`. Resume re-dispatches in the same worktree with a new task ID.
 - ⏭ **F9: V0.5 Step 5 — `cetana reply`.** Unblocks a blocked task from the terminal without opening Claude Desktop. Completes the full orchestration loop from CLI.
@@ -90,13 +90,11 @@ Track C is closed. New BYOK-related work surfaces under Track E (hosted MCP hard
 
 ## Up next — sequencing recommendation
 
-**Currently:** PR #31 merged (vendor registry consolidation). Empirical Reviewers test on the web UI now unblocked — Groq-served DeepSeek can be configured into any reviewer slot and dispatches correctly.
+**Currently (June 1, 2026):** Herald Phase 1 complete. Herald admin redesign PR #75 open (avatar, CV, bio, two-column UI). Vāda provider key validation shipped (PR #65). Cetana spawner fixed (PR #68).
 
-**Immediate next step:** Run the empirical Reviewers UI test (configure third slot to a Groq-served model, paste a real brief, hit Deliberate, read three reviewer outputs). Validates that PR #31 actually closes the loop end-to-end.
+**Immediate next:** Cetana F6 (`cetana watch`) — live output streaming. Vāda Track B Item 3b — Reviewer prompt iteration.
 
-**After that:** Track B Item 3b — Reviewer prompt iteration. With Cetana V0 shipped (May 10), this can be dispatched through Cetana as the first real-world Cetana dispatch (F5). Or iterated directly on the web UI; both paths now work.
-
-**Then:** Synthesizer prompt iteration (3c), then first benchmark run (Item 4).
+**After that:** Herald Phase 3 (recruiter self-serve), synthesizer prompt iteration (3c), first benchmark run (Item 4).
 
 **In parallel (when capacity allows):**
 - Trust page rewrite

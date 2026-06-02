@@ -8,6 +8,26 @@
 
 ---
 
+## June 1, 2026 — Herald Phase 1 + admin redesign + Cetana spawner + Vāda key validation
+
+### Herald
+- **PR #70** — Match route reads profile from DB via `username`; signals fetched server-side; Upstash Redis failure degrades gracefully. Envoy live at `herald.attalabs.dev`.
+- **PR #74** — Four defensive null guards in `AIOnboarding.tsx` — fixes onboarding crash.
+- **Commit 9f30581** — `EnvoyFlow.tsx` client timeout raised 25s→35s; `vercel.json` added with `maxDuration: 30`. Fixes "audit took longer than expected" on cold LLM calls.
+- **PR #71** — localStorage mock reset fix; `planToVisualNodes` cross-round edge fix.
+- **PR #75** — Herald admin redesign: avatar upload (Vercel Blob), CV storage, bio field, two-column admin UI, onboarding TopBar, CV paste mode. DB: `avatar_url`, `cv_url`, `bio` columns added to `herald_profiles`.
+
+### Cetana
+- **PR #68** — Claude binary resolution via `which claude` + fallback paths; model tier resolution via `resolveDispatchModel`; `repoPath` from config.
+
+### Vāda
+- **PR #65** — Provider key validation before `runLangGraph` dispatch. Returns HTTP 400 with `missing_provider_key` error.
+
+### Issues closed
+- #59, #63, #67, #69 — all closed June 1.
+
+---
+
 ## June 1, 2026
 
 ### PR #68 — fix(cetana): resolve claude binary, model tier resolution, repoPath from config

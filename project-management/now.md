@@ -10,23 +10,22 @@
 
 ## In flight now
 
-Nothing actively dispatched.
+- **Herald admin redesign** — PR #75 open — avatar upload (Vercel Blob), CV storage, bio field, two-column admin UI, onboarding TopBar + CV paste mode.
 
 ---
 
 ## Next 3 things
 
-1. **Herald Phase 2 — self-service candidate onboarding.** Any second person can sign up and get their own Envoy. `AIOnboarding` hardened end-to-end, admin dashboard complete, public landing page at `heyherald.com`. Brief to be authored before dispatch.
-2. **Cetana F6 — `cetana watch`.** Live streaming output so agent sessions are visible in real time. Ready to dispatch.
-3. **Vāda Reviewers prompt iteration (Track B Item 3b).** Reviewers ERROR fixed (PR #65). Dispatch via Cetana.
+1. **Cetana F6 — `cetana watch`** — live streaming output. Ready to dispatch. Highest pain point in current workflow.
+2. **Vāda Track B Item 3b — Reviewer prompt iteration** — unblocked since PR #31 (May 11) and PR #65 (June 1). Ready to dispatch.
+3. **Herald Phase 3 — recruiter self-serve** — after #75 merges. Brief to be authored.
 
 ---
 
-## Manual work pending (no agent needed)
+## Manual work pending
 
-- **Upstash Redis credentials for Herald** — current `.env.local` creds are expired/truncated. Rate limiting degrades gracefully (Option A merged in #70) but real rate limiting needs fresh creds. Provision at upstash.com, update `.env.local` + Vercel env vars for `herald.attalabs.dev`.
-- **Herald deploy verification** — confirm `https://herald.attalabs.dev/dani` returns 200. PR #70 merged but deploy not confirmed.
-- **Worktree graveyard cleanup** — many stale worktrees. `git worktree prune && git fetch --prune && git branch --merged main | grep -v "^\* \|main" | xargs git branch -D`.
+- **Upstash Redis credentials for Herald** — `.env.local` creds expired. Rate limiting degrades gracefully but isn't active. Provision at upstash.com, update `.env.local` + Vercel env vars.
+- **Worktree graveyard cleanup** — `git worktree prune && git fetch --prune && git branch --merged main | grep -v "^\* \|main" | xargs git branch -D`
 - **Vitakka Clerk app deletion** — unused, no users. 2 minutes.
 - **Add OpenAI + xAI keys server-side** — needed to test full vendor-diverse Reviewers default trio.
 - **Generate Vāda API key + configure Claude Desktop / Claude Code connector** — final step in hosted MCP dogfooding.
