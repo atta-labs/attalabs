@@ -2,7 +2,7 @@
 
 This document describes how work flows through the Atta operational model — from the moment Dani has an idea to the moment that work merges to `main` with all specs, skills, and decision logs updated.
 
-It is the canonical "how do we actually work?" document. Every other PM doc (`coordination.md`, `state-machine.md`, role docs, `brief-authoring-rules`) describes a slice of this process. This document stitches them together into a single readable walkthrough.
+It is the canonical "how do we actually work?" document. Every other PM doc (`coordination.md`, `state-machine.md`, role docs, `brief-authoring` skill) describes a slice of this process. This document stitches them together into a single readable walkthrough.
 
 If you are starting a new Claude session and need to understand the workflow, read this first. Then `coordination.md` for session protocol, then the role doc that applies to you, then any product-specific specs.
 
@@ -24,7 +24,7 @@ Every piece of work — features, bug fixes, refactors, documentation updates �
 7. Escalation (optional; only when Developer blocks)
 8. Task Done verification
 9. Pull request opened
-10. Review
+10. Review (agent passes, then human reviews)
 11. Merge
 ```
 
@@ -72,7 +72,7 @@ If the idea is genuinely new and worth pursuing, the conversation produces a sha
 - Decisions that block multiple weeks of downstream work
 - When Principal's instinct and TL's read disagree
 
-**When this does NOT happen:** Tactical decisions inside a single task. Naming arguments. Style choices. Small features with clear scope.
+**When this does NOT happen:** Tactical decisions inside a single task. Naming arguments. Style choices. Small features with clear scope. The Principal may also explicitly waive pressure-testing for a high-stakes decision and ratify in-session — when this happens, the decision log entry notes that Phase 2 was skipped at Principal direction (for audit honesty).
 
 **Who:** TL orchestrates. External AI reviewers participate (Gemini, Grok, DeepSeek, ChatGPT-shaped — pasted as briefs via the user, since they don't have repo access).
 
@@ -85,6 +85,8 @@ Each reviewer responds. The TL synthesizes.
 If reviewers converge on a structural flaw, the idea goes back to Phase 1 with that flaw understood. If they validate the direction, work proceeds to Phase 3. If they propose major refinements, the TL incorporates them, then writes a v2 brief and runs another round if necessary.
 
 Hard rule: **maximum two reviewer rounds per piece of work.** If we can't converge after two rounds, the issue is structural and needs a different approach. Three rounds means we're in meta-drift; don't do it.
+
+**Note:** This phase (external multi-AI pressure-testing of an *idea*) is distinct from Phase 10 review (independent agent review of *shipped code*). Phase 2 is about whether to commit to a direction; Phase 10 is about whether the code that was written matches the brief safely.
 
 **Artifacts created:**
 - Pasted briefs (ephemeral — the conversation IS the artifact)
@@ -106,7 +108,10 @@ The TL writes a formal brief following `.claude/skills/brief-authoring/SKILL.md`
 - Type 1 / Type 2 declaration if architectural decisions are expected
 - `principal_delegate:` field if this work will run while Dani is offline (see `state-machine.md` for delegation rules)
 - Spike flag (`spike: true`) if the work is exploratory and won't merge to main as-is
+- The mandatory worktree-first Step 0 in pre-flight (the `git worktree add` command — no exceptions)
+- An explicit documentation-update list tied to the tier (which specs/skills/PM docs/decision logs this work touches, by name)
 - Clear scope, stop conditions, and Task Done checklist
+- A deliverable section stating that "done" means "passed Phase 10 review," not "PR opened"
 
 A brief is a self-contained, executable document. A Developer should be able to execute it without additional conversation. If the brief requires the Developer to ask clarifying questions, the brief is incomplete.
 
@@ -133,7 +138,7 @@ If validation passes: the Archivist adds `status:ready` label and removes `statu
 
 If validation fails: the Archivist adds `status:blocked` and `needs:brief-correction`. Cetana refuses to dispatch tasks with `status:blocked`. The TL must fix the brief before work can begin.
 
-**Why this exists:** Without validation, malformed briefs reach Developers who then either fail or guess. Validation is cheap (it's a script). Failure recovery is expensive.
+**Why this exists:** Without validation, malformed briefs reach Developers who then either fail or guess. Validation is cheap (it's a script). Failure recovery is expensive. (Brief Validation is a V0.7 Archivist stub today — see `state-machine.md` Section 12 for what is mechanically enforced vs. trusted.)
 
 **Exit criteria:** Brief is `status:ready` and dispatchable.
 
@@ -157,30 +162,32 @@ Cetana's strategist MCP server receives the dispatch call with `issue_number` an
 
 The spawned Claude Code process is the Developer for this task. From this moment on, the Developer owns execution.
 
+For the **copy-paste flow** (no Cetana), the Principal pastes the brief into Claude Code directly. The brief's worktree-first Step 0 means the Developer creates its own worktree as the first action, so the paste flow behaves identically to dispatch.
+
 **Artifacts created:**
 - Worktree directory
 - Task JSONL log
 - Task IPC directory at `~/.cetana/tasks/{taskId}/`
 - GitHub comment
 
-**Exit criteria:** The agent is spawned and working.
+**Exit criteria:** The agent is spawned (or pasted) and working.
 
 ---
 
 ## Phase 6: Execution
 
-**Who:** Developer (spawned Claude Code subprocess).
+**Who:** Developer (spawned Claude Code subprocess, or a manual Claude Code paste).
 
 **What happens:**
 
 The Developer works the brief. Per `roles/developer.md`, the Developer:
 
-1. Reads `coordination.md`, `state.md`, `plan.md`, and the relevant role doc
+1. Reads `coordination.md`, `state.md`, `now.md`, and the relevant role doc
 2. Reads relevant skills (auto-loaded by the skill harness when matching code is touched)
 3. Reads relevant product specs
-4. Confirms pre-flight checks from the brief
+4. Confirms pre-flight checks from the brief (starting with the worktree)
 5. Works in small, frequent commits on the feature branch
-6. Streams progress as `task.progress` events to the JSONL log
+6. Streams progress as `task.progress` events to the JSONL log (when dispatched via Cetana)
 
 Critically, the Developer cannot:
 - Author its own briefs or expand scope without escalation
@@ -232,7 +239,7 @@ Before opening the PR, the Developer runs the Task Done checklist appropriate to
 - **Tier 1:** Tier 0 items, plus specs updated to reflect new behavior, skills updated if conventions shifted, `bun run verify-docs --pr` passes.
 - **Tier 3:** Tier 1 items, plus decision log entry appended (with status, type, rationale), PM docs updated if state changed, Lock entry created if irreversible, `docs-index.md` regenerated.
 
-The Developer also runs `bun run verify-docs --pr` locally. This is the same script CI will run. If it fails locally, the PR isn't ready.
+The Developer also runs `bun run verify-docs --pr` locally. This is the same script CI runs, and it is a **real gate now** (D-027) — not the old stub. If it fails locally, the PR isn't ready.
 
 If any item fails: the Developer either fixes it or escalates. The PR does not get opened.
 
@@ -248,6 +255,7 @@ If any item fails: the Developer either fixes it or escalates. The PR does not g
 
 The Developer opens a PR with:
 - Title following the project's commitlint format (`Type: Subject`)
+- A `Tier:` declaration in the body (`Tier: 0|1|3`) so the verify-docs gate reads the correct tier
 - Body following the PR template (what shipped, validated mechanism, architecture summary, what's not in scope, next steps)
 - Labels reflecting the impact tier and any other applicable categories
 
@@ -255,10 +263,10 @@ CI runs:
 - Typecheck
 - Lint
 - Tests
-- `verify-docs` script (the load-bearing enforcement) — fails if specs/skills/decision log updates appropriate to the tier are missing
+- `verify-docs` (the load-bearing documentation enforcement — D-027 — fails the check if tier-appropriate specs/skills/decision-log updates are missing)
 - Standard pre-commit hooks
 
-The Archivist posts advisory comments on the PR:
+The Archivist posts advisory comments on the PR (V0.7 stub today; advisory by design — `state-machine.md` Section 12):
 - "This PR modifies auth flow but no auth skill updated" (synthesis hint)
 - "Decision D-042 appears semantically related to this work — confirm awareness" (related-decision surfacing)
 - "Spec X references retired architectural term Y" (hygiene)
@@ -267,33 +275,52 @@ These are advisory, not blocking. The Developer can dismiss or address them.
 
 The Cetana strategist server detects PR open (via webhook or polling — V0 currently uses GitHub Issue label change as a proxy) and updates the issue label to `status:review`. Posts a completion comment.
 
-**Exit criteria:** PR is open, CI is green, Archivist comments are addressed or dismissed.
+**Exit criteria:** PR is open, CI is green (including verify-docs), Archivist comments are addressed or dismissed.
 
 ---
 
 ## Phase 10: Review
 
-**Two parallel reviews happen:**
+Review has two stages: independent **agent passes** (fresh-context Reviewer agents), then **human reviews** (Principal + TL). The agent passes run first and feed the human reviews — they do not replace them. The whole order is:
 
-**Code review (Principal).**
-Dani reviews the diff in GitHub. Looks for:
+```
+code-reviewer pass → security pass → Principal code review → TL spec review → merge
+```
+
+### Stage A — Agent review passes
+
+Each pass is a **separate invocation** — a fresh Claude with no memory of writing the code (the independence rule, D-026). In the copy-paste flow, the Principal pastes the review prompt; in the future automated flow, Cetana dispatches the `code-reviewer` and `security-reviewer` subagents. Either way the agent reads its role doc plus the PR diff and the brief, and emits a structured verdict. **Review agents do not edit code and do not merge.**
+
+1. **Code-reviewer pass** — `roles/reviewer.md` (`.claude/agents/code-reviewer.md`). Checks: brief conformance, scope violations, test honesty, code quality, doc coupling, lock awareness. Emits `VERDICT: APPROVE | REQUEST CHANGES` with severity-ranked findings (BLOCKER / MAJOR / MINOR).
+2. **Security pass** — `roles/security.md` (`.claude/agents/security-reviewer.md`). Checks: secret/credential leakage, BYOK/crypto handling, auth/permissions, MCP/agent-tooling exposure, injection surfaces, dependency risk. Runs `npx ecc-agentshield scan .claude` when the PR touches agent/MCP/hook config (interim external gate, D-028). Emits `VERDICT: PASS | FAIL` with severity-ranked findings (CRITICAL / HIGH / MEDIUM / LOW).
+
+Any BLOCKER (code) or CRITICAL/HIGH (security) sends the PR back to the Developer, who fixes on the same branch; the relevant pass then re-runs. An `[ESCALATE]` finding routes to the TL (strategy) or Principal (product) instead of back to the Developer.
+
+### Stage B — Human reviews
+
+With the agent verdicts in hand:
+
+**Code review (Principal).** Dani reviews the diff in GitHub. Looks for:
 - Does the code match the brief?
 - Are there scope violations?
 - Are tests honest (testing real behavior, not mocking the thing being tested)?
 - Spot-check 2-3 files for code quality
 
-**Spec review (Team Leader).**
-TL reviews the spec/skill/decision log changes. Looks for:
+The agent verdict is an input, not a substitute — the Principal can overrule it in either direction.
+
+**Spec review (Team Leader).** TL reviews the spec/skill/decision log changes. Looks for:
 - Do the specs describe what was actually built?
 - Are decisions logged in the right files (per-product vs global)?
 - Is the decision log entry honest (real reasoning, not retrofitted rationalization)?
 - Does the experiment log capture meaningful learnings?
 
-If both reviews pass: proceed to merge.
+If both human reviews pass (and agent verdicts are APPROVE/PASS, or their findings resolved): proceed to merge.
 
 If issues are found: the PR goes back to the Developer with specific feedback. The Developer fixes and re-requests review. This can loop, but should not loop indefinitely — three review cycles signals a deeper issue.
 
-**Exit criteria:** Both reviews pass.
+**Enforcement note:** In this first cut the agent passes are **trusted discipline** — Phase 10 requires them, but no CI bot runs them automatically yet (D-026). The mechanical gate CI enforces is `verify-docs` (Phase 9). Automating review-agent dispatch via Cetana is future work.
+
+**Exit criteria:** Agent passes complete, both human reviews pass.
 
 ---
 
@@ -322,7 +349,7 @@ GitHub auto-closes the linked issue. Cetana's strategist server detects merge (v
 
 ## What happens after merge
 
-The Principal eventually cleans up the worktree manually (per D-010 — auto-cleanup is V1). This is friction, but it's deliberate: the worktree is sometimes useful for post-merge inspection.
+The Principal eventually cleans up the worktree manually (auto-cleanup is V1). This is friction, but it's deliberate: the worktree is sometimes useful for post-merge inspection.
 
 The decision logs, specs, and skills are now part of the canonical repo state. Future Claude sessions read them at session start.
 
@@ -340,7 +367,7 @@ If the brief was tagged `spike: true`, the Task Done checklist is reduced to: co
 
 ### Tier 0 work (trivial)
 
-Tier 0 skips Phase 2 (no pressure-testing). Phase 3 brief is short. Phase 8 checklist is minimal. Phase 10 review is fast (Principal-only, no spec review needed). The Archivist's brief validation is still applied.
+Tier 0 skips Phase 2 (no pressure-testing). Phase 3 brief is short. Phase 8 checklist is minimal. Phase 10 review is light — a code-reviewer pass is still cheap insurance, but the security pass and TL spec review can be skipped when there is no config/auth surface and no spec change. The Archivist's brief validation is still applied. Declare `Tier: 0` in the PR body so the verify-docs gate does not require doc updates.
 
 ### Multi-agent parallel dispatch
 
@@ -366,9 +393,11 @@ These break the process:
 
 - **Skipping Phase 1 and going straight to brief authoring** ("Dani, write the brief" without first pressure-testing the idea). Often produces briefs that solve the wrong problem.
 - **Skipping Phase 4 and dispatching unvalidated briefs.** Cetana V0 won't allow it (Brief Validation gate), but bypassing the gate manually defeats the model.
+- **Letting the Developer review its own work.** The Phase 10 agent passes exist precisely because self-review under the author's context misses what fresh eyes catch. Code-reviewer and security passes are separate invocations.
 - **Developer scope creep.** "While I'm here, I should also..." — STOP. That's a new task, written as a separate brief.
 - **TL self-ratifying Type 1 decisions in solo sessions.** If Principal isn't in the chat, Type 1 decisions queue for ratification windows. They are PENDING, not ratified.
 - **Skipping the Task Done checklist to ship faster under deadline pressure.** The checklist is the load-bearing discipline mechanism. Skipping it is exactly how the BYOK gap happened.
+- **Treating "PR opened" as "done."** Done is "passed Phase 10 review."
 - **Multiple TL sessions making conflicting decisions.** Last-write-wins on PM docs is acceptable. Last-write-wins on decision logs is not — they're append-only with sequence validation.
 
 ---
@@ -381,7 +410,7 @@ For the visual representation of this process, see `diagrams/process-flow.md`.
 
 For the technical architecture of the system implementing this process (Cetana V0, GitHub, CI), see `diagrams/system-architecture.md`.
 
-For the role descriptions referenced throughout, see `roles/principal.md`, `roles/team-leader.md`, `roles/developer.md`.
+For the role descriptions referenced throughout, see `roles/principal.md`, `roles/team-leader.md`, `roles/developer.md`, `roles/reviewer.md`, `roles/security.md`.
 
 For brief authoring rules, see `.claude/skills/brief-authoring/SKILL.md`.
 
