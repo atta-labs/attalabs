@@ -1,30 +1,31 @@
 # Herald — Now
 
-**What's in flight, what's next, what's blocked.** Changes per session.
+**What's in flight, what's next, what's blocked.**
 
 → [state.md](state.md) — full product state and phase plan
-→ Root [project-management/now.md](../../../project-management/now.md) — ecosystem-wide in-flight
+→ Root [project-management/now.md](../../../project-management/now.md) — ecosystem-wide
 
 ---
 
 ## In flight
 
-- **Herald admin redesign** — `feat/herald-admin-redesign` branch. Avatar + CV storage via Vercel Blob, bio field, two-column profile editor + live Envoy preview, onboarding TopBar, CV paste-text mode. PR ready to open.
+Nothing actively dispatched.
 
 ---
 
 ## Next 3 things
 
-1. **Merge Phase 2 PR #74** — review and merge `feat/herald-phase-2` (depends on when main is unblocked).
-2. **Merge admin redesign PR** — review and merge `feat/herald-admin-redesign`.
-3. **Fresh Upstash Redis credentials** — rate limiting degrades gracefully but isn't active. Provision new creds at upstash.com, update `.env.local` and Vercel env vars.
+1. **Verify admin redesign in production** — go to `https://herald.attalabs.dev/admin`, test avatar upload, CV upload, bio save, theme picker. Confirm all 3 new DB columns work end-to-end.
+2. **Fresh Upstash Redis credentials** — rate limiting degrades gracefully but isn't active. Provision at upstash.com, update `.env.local` + Vercel env vars.
+3. **Herald Phase 3 brief** — recruiter self-serve: paste JD + upload N CVs → batch forensic audit → ranked report list. Author brief before dispatching.
 
 ---
 
 ## Manual work pending
 
-- Provision fresh Upstash Redis creds (expired in `.env.local`)
-- Confirm `https://herald.attalabs.dev/dani` returns 200
+- Verify `https://herald.attalabs.dev/admin` admin redesign works (avatar + CV upload, bio save)
+- Provision fresh Upstash Redis creds
+- Drizzle constraint naming mismatch — `herald_profiles_username_key` vs `herald_profiles_username_unique` — will prompt on every future `drizzle-kit push`. Resolve in a separate PR.
 
 ---
 
