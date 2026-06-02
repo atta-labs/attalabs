@@ -21,7 +21,9 @@ Artifact class
   → escalation path (what happens when a decision exceeds role authority)
 ```
 
-Roles exist because different decisions require different accountability levels. The Principal (Dani) is accountable for irreversible decisions (Type 1). The Team Leader is accountable for reversible decisions (Type 2) within a ratification window. The Developer executes. The Archivist automates.
+Roles exist because different decisions require different accountability levels. The Principal (Dani) is accountable for irreversible decisions (Type 1). The Team Leader is accountable for reversible decisions (Type 2) within a ratification window. The Developer executes. The Reviewer (code and security specializations) judges shipped code with fresh context but cannot mutate it. The Archivist automates.
+
+The conversational role set is: **Principal, Team Leader, Developer, Reviewer** (plus the non-conversational Archivist). This four-role model was established by D-026, which superseded the original three-role model (D-001) to add the Reviewer category. See Section 3 for what the Reviewer can and cannot do.
 
 "What can I do?" is answered by the mutation permission matrix. "Whose decision is this?" is answered by the authority hierarchy. "What if I'm stuck?" is answered by the escalation paths. "Is what I'm doing consistent with what was decided?" is answered by the decision logs.
 
@@ -35,12 +37,12 @@ Every artifact in the system falls into one of four persistence classes. Persist
 
 ### Class 1: Repo files (canonical, git-tracked)
 
-**What:** Specs (`apps/*/specs/*.md`), skills (`.claude/skills/*/SKILL.md`), PM docs (`project-management/*.md`, `project-management/roles/*.md`, `project-management/diagrams/*.md`), source code (`apps/*/`, `packages/*/`), decision logs (per-product `*-decisions.md` + global `decisions.md`), scripts (`scripts/`), CI workflows (`.github/workflows/`).
+**What:** Specs (`apps/*/specs/*.md`), skills (`.claude/skills/*/SKILL.md`), agent definitions (`.claude/agents/*.md`), PM docs (`project-management/*.md`, `project-management/roles/*.md`, `project-management/diagrams/*.md`), source code (`apps/*/`, `packages/*/`), decision logs (per-product `*-decisions.md` + global `decisions.md`), scripts (`scripts/`), CI workflows (`.github/workflows/`).
 
 **Persistence:** Survives anything short of repo deletion. Git history preserves every mutation with authorship and timestamp.
 
 **Create:** PR merged to main by Principal (or delegated merge for Tier 0/1 work).
-**Mutate:** PR opened by Developer, reviewed by TL (specs/skills) and Principal (code), merged by Principal.
+**Mutate:** PR opened by Developer, reviewed by Reviewer (code + security passes) and TL (specs) and Principal (code), merged by Principal.
 **Ratify:** See Section 5 (ratification mechanism applies to specs).
 **Read-only:** All roles always.
 
@@ -50,7 +52,7 @@ Every artifact in the system falls into one of four persistence classes. Persist
 
 **Persistence:** Survives unless deliberately deleted. GitHub's own retention. Treated as permanent for operational purposes.
 
-**Create:** TL or Developer (Issues); Developer (PRs); Archivist (advisory PR comments); any role (Issue comments with appropriate authority).
+**Create:** TL or Developer (Issues); Developer (PRs); Reviewer (PR review verdicts/comments); Archivist (advisory PR comments); any role (Issue comments with appropriate authority).
 **Mutate:** Labels: TL and Developer via Cetana tools; Archivist via automation. Body: TL (briefs are frozen after dispatch — see Section 7). Status: Cetana automation on dispatch/completion.
 **Read-only:** All roles always.
 
@@ -70,7 +72,7 @@ Every artifact in the system falls into one of four persistence classes. Persist
 
 **Persistence:** Survives as long as the directory exists. Manual cleanup by Principal. Archivist flags merged worktrees as cleanup candidates.
 
-**Create:** Cetana `dispatch_task` (via `worktree.ts`).
+**Create:** Cetana `dispatch_task` (via `worktree.ts`), or the Developer's worktree-first pre-flight Step 0 in the copy-paste flow.
 **Mutate:** Developer works in the worktree — commits, file changes, test runs.
 **Retire:** Principal runs `git worktree remove` after PR is merged.
 **Read-only:** All roles can inspect at any time.
@@ -91,6 +93,8 @@ Every artifact in the system falls into one of four persistence classes. Persist
 
 Rows = artifact types. Columns = roles. Each cell describes what the role can do. "—" means the role has no authority over this artifact.
 
+The Reviewer (code + security) is deliberately **absent from this matrix as a mutation authority** — it has no column because it does not mutate canonical artifacts. Its authority is read + PR-review-comment only, described in the subsection immediately after the table.
+
 | Artifact | Principal | Team Leader | Developer | Archivist |
 |----------|-----------|-------------|-----------|-----------|
 | **Conversation logs** | Promotes decisions to decision log, flags for retention | Writes during chat, proposes promotions to D-### | Reads only (no chat sessions during Cetana dispatch) | Cannot mutate |
@@ -99,6 +103,7 @@ Rows = artifact types. Columns = roles. Each cell describes what the role can do
 | **Specs** (`apps/*/specs/*.md`) | Approves PR; ratifies via D-### if spec-only | Coherence review on PR; can open spec-only PRs | Writes in PR per brief scope | Validates cross-references; flags stale specs in drift cron |
 | **Decision logs** (per-product + global) | Approves Type 1 entries; ratifies PENDING Type 2 at windows | Appends Type 2 entries; announces Type 1 to ratification queue | Appends in PR per brief scope | Validates D-### sequence and supersession integrity |
 | **Skills** (`.claude/skills/*/SKILL.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale skill references in drift cron |
+| **Agent defs** (`.claude/agents/*.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale agent references in drift cron |
 | **`state.md`**, **`now.md`** | Approves PR | Writes in PR (append-style for `now.md` "in flight" entries) | Flags state changes needed in PR description | — |
 | **`roadmap.md`** | Approves PR | Writes in PR (sprint-level updates) | — | Flags stale track status in drift cron |
 | **`changelog.md`** | Approves PR | Appends entries per PR (never edits existing) | — | — |
@@ -111,6 +116,18 @@ Rows = artifact types. Columns = roles. Each cell describes what the role can do
 | **Worktrees** | Removes after PR merge | — | Works in (Cetana creates per dispatch) | Flags merged worktrees as cleanup candidates |
 | **JSONL logs** | Reads (audit) | Reads | Appends via `cetana_request_input` tool | — |
 | **CI/GitHub Actions** | Approves workflow changes via PR | Proposes workflow changes via PR | — | Runs as GitHub Actions automation |
+
+### Reviewer & Security review authority (D-026)
+
+The Reviewer role has two specializations — code review (`roles/reviewer.md`) and security review (`roles/security.md`) — and a single, narrow authority profile:
+
+- **Read:** all Class 1 (repo) and Class 2 (GitHub) artifacts, plus the brief and the PR diff. Always read-only on canonical artifacts.
+- **Write:** PR review verdicts and review comments only (a Class 2 GitHub object). The verdict is the structured block defined in the role doc (`APPROVE | REQUEST CHANGES` for code; `PASS | FAIL` for security).
+- **Cannot:** edit code, edit specs/skills/decision logs/PM docs, mutate labels, or merge. The Reviewer reports; the Developer remediates; the Principal merges.
+- **Independence:** the Reviewer runs with fresh context (a separate invocation), never reviewing work it authored. This is the whole point of the role.
+- **Escalation:** a finding that exceeds review authority (the brief itself is wrong, or a Type 1 decision is implicated) is marked `[ESCALATE] severity:strategy|product` in the verdict and routed to the TL or Principal — the Reviewer does not resolve it.
+
+Because the Reviewer never mutates a canonical artifact, it has no column in the matrix above. Its position in the flow is Phase 10 (see `process.md`): code-reviewer pass → security pass → Principal code review → TL spec review → merge.
 
 ---
 
@@ -219,7 +236,9 @@ Every entry in any decision log (per-product or global) uses this format:
 - **EXPIRED** — context-bound; the assumptions that made this decision valid no longer apply (e.g., V0-only decisions after V1 ships)
 - **PENDING** — Type 2 decision made in a solo TL session; decision is in effect but awaits Principal ratification at the next ratification window. A PENDING decision cannot be acted on as ACTIVE for Type 1 matters.
 
-**Append-only invariant:** Decision logs are never edited in place. Status changes are new entries that reference the old D-### via `Supersedes:`. The original entry gets `Superseded by:` filled in, but its body is not changed. This preserves the audit trail.
+**Append-only invariant:** Decision logs are never edited in place. Status changes are new entries that reference the old D-### via `Supersedes:`. The original entry gets `Superseded by:` filled in, and its Status line is updated to SUPERSEDED, but its body is otherwise not changed. This preserves the audit trail.
+
+**Numbering is a single global sequence across all decision logs.** Per-product logs (`apps/*/specs/*-decisions.md`) and the global log (`decisions.md`) share one D-### sequence with no gaps or duplicates — the Archivist validates this on merge. (Example: D-017–D-023 are Cetana-scoped and live in the Cetana log; D-024–D-028 are cross-cutting and live in the global log.)
 
 ---
 
@@ -246,6 +265,8 @@ Routing: adds GitHub label `needs:strategy-input`. Same technical path as execut
 Examples: "This affects user-visible behavior in a way the brief didn't address"; "I need to make an irreversible architectural decision."
 
 Routing: adds GitHub label `needs:principal-input`. If Principal is immediately available: TL surfaces the question, Principal decides, reply is sent. If Principal is not available: item goes to `ratification-queue.md`; Developer terminates the task and resumes via a follow-up dispatch after the next ratification window.
+
+The Reviewer uses the same severity vocabulary for `[ESCALATE]` findings (Section 3): a strategy-level finding routes to the TL, a product-level finding to the Principal.
 
 ### Type 1 decisions during execution
 
@@ -300,7 +321,7 @@ Every piece of work is assigned an impact tier. The tier determines what documen
 
 Qualifies when: the change is isolated, self-contained, no API or contract changes, no patterns shifted.
 
-Required documentation: code comments where non-obvious. PR description following template.
+Required documentation: code comments where non-obvious. PR description following template. Declare `Tier: 0` in the PR body so the verify-docs gate does not require doc updates.
 
 **Tier 1 — Implementation.**
 
@@ -330,7 +351,7 @@ A brief tagged `spike: true` reduces documentation to: code passes typecheck and
 
 ### Tier detection rule
 
-When in doubt between Tier 1 and Tier 3: choose Tier 3. The cost of excess documentation is low. The cost of under-documented architectural changes is high — that is precisely how the BYOK gap happened (spec lagged implementation for weeks with no formal documentation of the divergence).
+When in doubt between Tier 1 and Tier 3: choose Tier 3. The cost of excess documentation is low. The cost of under-documented architectural changes is high — that is precisely how the BYOK gap happened (spec lagged implementation for weeks with no formal documentation of the divergence). The verify-docs gate mirrors this: when a PR body declares no tier, the gate assumes Tier 3.
 
 ---
 
@@ -400,13 +421,14 @@ Not everything in this system is enforced. Some discipline is trusted — expect
 
 ### Enforced (CI blocks merge)
 
-- **Tier-appropriate documentation** — `scripts/verify-docs.ts` checks that the PR's impact tier has the corresponding artifact changes. Fails CI if missing. (V0.7 stub currently exits 0; full implementation V0.7.)
+- **Tier-appropriate documentation** — `scripts/verify-docs.ts` checks that the PR's impact tier has the corresponding artifact changes. Fails CI if missing. **Implemented for real (D-027)** — replaces the old V0.7 stub. The blocking CI workflow must be installed at `.github/workflows/verify-docs.yml` (staged at `scripts/ci/verify-docs.workflow.yml`; the GitHub App integration cannot write workflow files, so the Principal moves it into place). Until installed, the gate runs locally via `bun run verify-docs --pr`.
 - **Typecheck, lint, tests** — standard CI gates; always blocking.
 - **Brief validation** — Archivist GitHub Action checks brief structure on Issue open; sets `status:blocked` if malformed. (V0.7 stub currently no-ops; full implementation V0.7.)
 - **D-### sequencing** — post-merge Archivist validates that decision log numbers are sequential without gaps or duplicates across all decision logs. (V0.7 stub; full implementation V0.7.)
 
 ### Trusted (agent discipline — no CI enforcement in V0)
 
+- **Code-review and security review passes** — Phase 10 requires the code-reviewer and security-reviewer agent passes (D-026), but in this first cut no CI bot runs them automatically. They are agent + Principal discipline: the Principal invokes the review agents (copy-paste today; Cetana dispatch later). Automating this is future work.
 - **Decision logging during chat** — TL is expected to announce and log significant decisions during the conversation itself, not after. CI cannot verify this.
 - **`thinking.md` updates** — best-effort optional working memory. Not depended on by any other process.
 - **Ratification window attendance** — Principal must show up at windows. No mechanism enforces this; it's a commitment.
@@ -418,10 +440,10 @@ Not everything in this system is enforced. Some discipline is trusted — expect
 When a human needs to bypass a gate:
 
 - `[skip-archivist]` in the commit message: suppresses Archivist advisory comments for this commit
-- `[override:docs]` PR label: suppresses the `verify-docs` gate for this PR
-- Author must be the Principal (verified by GitHub commit author field)
+- `override:docs` PR label (or `[override:docs]` in the PR body, or env `OVERRIDE_DOCS=1`): suppresses the `verify-docs` gate for this PR
+- Author should be the Principal (verified by GitHub commit author field)
 
-Every override is logged as `task.failed` with reason "Archivist override invoked" in the Cetana JSONL. This is not a security mechanism — it's an audit mechanism. The Principal can always override; the log ensures the override is visible.
+Every override is logged (the verify-docs check prints that the override was active; the Archivist records `task.failed` with reason "Archivist override invoked" in the Cetana JSONL). This is not a security mechanism — it's an audit mechanism. The Principal can always override; the log ensures the override is visible.
 
 ---
 
@@ -443,4 +465,4 @@ The following artifacts are append-only and must never be edited in place except
 
 The point of append-only is that the log is an audit trail, not a living document. If you find yourself wanting to edit an existing entry, you are almost certainly writing a new entry that supersedes it.
 
-**Exception:** Filling in `Superseded by:` or `Ratified by:` fields on an existing entry is permitted — these are forward references that cannot be known at time of writing. They are narrow, targeted edits that preserve the append-only intent.
+**Exception:** Filling in `Superseded by:` or `Ratified by:` fields on an existing entry (and flipping its `Status:` to SUPERSEDED to match) is permitted — these are forward references that cannot be known at time of writing. They are narrow, targeted edits that preserve the append-only intent.
