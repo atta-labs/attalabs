@@ -9,9 +9,10 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 ## D-001 — Three-role + Archivist operational model
 
 **Date:** 2026-05-10
-**Status:** ACTIVE
+**Status:** SUPERSEDED
 **Type:** 1
 **Lock:** YES
+**Superseded by:** D-026
 **Authored by:** Principal (v2.1 synthesis session, May 2026)
 **Ratified by:** Principal
 
@@ -23,7 +24,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Four-role model (Principal / Strategist-TL / Brief-Author-TL / Developer): rejected. A split TL would require handoffs between the same agent in different invocations, creating coordination overhead that the mode-within-TL approach avoids.
 - Two-role model (Principal / AI agent): rejected. Too coarse; doesn't capture the authority gradient between TL and Developer.
 
-**Consequences:** All governance docs, role files, and Cetana tooling are designed around three conversational roles + Archivist. Future PRs that introduce a new role category require superseding this decision.
+**Consequences:** All governance docs, role files, and Cetana tooling are designed around three conversational roles + Archivist. Future PRs that introduce a new role category require superseding this decision. (Superseded by D-026, which adds the Reviewer role category — the rest of this decision, including the unsplit TL and the non-conversational Archivist, is carried forward unchanged.)
 
 ---
 
@@ -204,7 +205,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Everything in Cetana: rejected. Cetana's job is dispatch + escalation; governance is a separate concern with different deployment needs (CI runs on GitHub, not on the Mac running Cetana).
 - Everything advisory: rejected. Documentation requirements that can be mechanically verified (did the PR touch the decision log? is the spec file present?) should be enforced, not just suggested.
 
-**Consequences:** `scripts/verify-docs.ts` is V0 stub (exits 0); full implementation is V0.7. Archivist GitHub Action is V0 stub (no-ops); full implementation is V0.7.
+**Consequences:** `scripts/verify-docs.ts` is V0 stub (exits 0); full implementation is V0.7. Archivist GitHub Action is V0 stub (no-ops); full implementation is V0.7. (The verify-docs half of this decision is implemented by D-027.)
 
 ---
 
@@ -284,7 +285,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Overwrite pattern: rejected. Loses context when two sessions both contribute state updates.
 - Separate per-session update files: rejected. Too much file management overhead.
 
-**Consequences:** `plan.md` grows between pruning passes. This is acceptable. The alternative (lost state) is worse.
+**Consequences:** `plan.md` grows between pruning passes. This is acceptable. The alternative (lost state) is worse. (Note: `plan.md` was later split into `now.md`/`roadmap.md`/`changelog.md`/`lessons.md` by D-024; this append-oriented rule now applies to `now.md`.)
 
 ---
 
@@ -393,3 +394,78 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Open question OQ-cross-13 added to `state.md`: Sati standalone surface decision.
 
 **Ratifies:** `apps/atta-ai/specs/atta-naming-decision.md` (v2 rewrite at SHA of commit `6af1a47` on `docs/naming-and-framing-audit-may-12`).
+
+---
+
+## D-026 — Reviewer role category (code + security review passes)
+
+**Date:** 2026-06-02
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Supersedes:** D-001
+**Authored by:** Principal (review-roles session, June 2, 2026)
+**Ratified by:** Principal (in-session)
+
+**Context:** The v3 model (D-001) defined three conversational roles plus the Archivist. Review (Phase 10) was performed only by the Principal (code) and the TL (specs). There was no independent agent-driven review and no dedicated security audit — a gap relative to common agentic-harness setups (e.g. Affaan Mustafa's ECC, which ships `code-reviewer` and `security-reviewer` subagents plus an AgentShield config scanner). The Principal wants independent, fresh-context review and a security pass as first-class steps. D-001 states that introducing a new role category requires superseding it.
+
+**Decision:** Add a fourth conversational role category, **Reviewer**, with two specializations: **code review** (`roles/reviewer.md`) and **security review** (`roles/security.md`). The operational model is now: Principal → Team Leader → Developer → **Reviewer** → (merge), plus the non-conversational Archivist. Reviewer agents run with fresh context (independent eyes), are invoked after a PR is opened, produce a structured verdict, and have read + PR-review-comment authority only — they do not edit code and do not merge. Review passes run before the human reviews in Phase 10: code-reviewer → security → Principal code review → TL spec review → merge. Claude Code subagent definitions ship at `.claude/agents/code-reviewer.md` and `.claude/agents/security-reviewer.md`. Everything else in D-001 (unsplit TL with modes; non-conversational Archivist) is carried forward unchanged.
+
+**Alternatives rejected:**
+- Reviewer/Security as *modes* of the Developer role (like Strategist/Brief-Author are modes of the TL): rejected. The independence rule requires fresh context and a different agent instance; a "mode" implies the same agent reviewing its own work, which defeats the purpose.
+- Two separate top-level roles (Reviewer and Security): rejected as over-factored. Security is a specialization of review with the same authority profile and process position; one role category with two specializations is tighter.
+- Make the passes CI bots now: deferred. The first cut is human-in-the-loop (Principal pastes the agent prompt). Automation (Cetana dispatch of review agents) is future work once the manual flow is proven.
+
+**Consequences:**
+- New role docs `roles/reviewer.md`, `roles/security.md`; new agent defs under `.claude/agents/`.
+- `process.md` Phase 10 updated to include the two agent passes.
+- `coordination.md` session-start protocol gains a Reviewer/Security orientation block.
+- `state-machine.md` Section 1 and Section 3 updated to recognize the Reviewer role and its read + review-comment authority; the role does not get a mutation column because it does not mutate canonical artifacts.
+- Review passes are **trusted discipline** in this first cut (not CI-enforced) — Phase 10 requires them but no bot runs them yet.
+- Type 1, ratified in-session by the Principal without a multi-reviewer pressure-testing round (Phase 2 skipped at Principal's direction). Noted for audit honesty.
+
+---
+
+## D-027 — verify-docs implemented as a real blocking gate
+
+**Date:** 2026-06-02
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Principal (review-roles session, June 2, 2026)
+**Ratified by:** Principal (in-session)
+
+**Context:** D-010 split governance enforcement into a hard gate (`scripts/verify-docs.ts`) and advisory comments (Archivist), but shipped both as V0.7 stubs that exit 0. The consequence: "specs always updated" was instruction-enforced (briefs + `roles/developer.md` tell the agent to update docs) but not machine-enforced — nothing failed a PR if the agent forgot. The Principal wants the doc-update loop to be automatic.
+
+**Decision:** Implement `scripts/verify-docs.ts` for real (fulfilling the verify-docs half of D-010; D-010 remains ACTIVE — the split it defines is unchanged). The `--pr` mode runs in audit mode and enforces, against the PR diff: (C1) changed specs carry a `Status:` block; (C2) changed decision logs have well-formed entries (Status + Type per `## D-NNN`); (C3) for Tier 1+ work, code changes must be accompanied by at least one documentation change; (C4) Tier 3 work must carry a decision log entry. Tier is read from the PR body (`Tier: 0|1|3`), defaulting to Tier 3 when absent. A `full` mode runs lighter repo-wide structural checks. The escape hatch is the `override:docs` label (Principal only), per `state-machine.md` Section 12.
+
+**Alternatives rejected:**
+- Semantic verification (does the doc actually describe the code?): rejected for v1. That is the Reviewer's judgment (D-026), not a mechanical gate. verify-docs only checks presence and well-formedness.
+- Derive tier from labels instead of PR body: rejected for v1 — body parsing is simplest and matches the brief format. Label-based tier can be added later.
+- Block in CI immediately on merge: the script is shipped and the workflow YAML is staged at `scripts/ci/verify-docs.workflow.yml`, but the GitHub App integration lacks the `workflows` scope, so the workflow must be moved to `.github/workflows/verify-docs.yml` by the Principal. Until then the gate is local-only.
+
+**Consequences:**
+- `scripts/verify-docs.ts` replaced (stub → real). `developer.md` and `state-machine.md` Section 12 "stub exits 0" notes corrected.
+- Workflow staged at `scripts/ci/verify-docs.workflow.yml` with copy instructions; manual move required (integration cannot write `.github/workflows/`).
+- The checks are deliberately blunt and mechanical; they will occasionally require a `Tier: 0` declaration on genuinely trivial code PRs. This is the intended trade-off: enforced-but-blunt over trusted-but-subtle.
+
+---
+
+## D-028 — AgentShield adopted as interim external security-scan gate
+
+**Date:** 2026-06-02
+**Status:** ACTIVE
+**Type:** 2
+**Lock:** NO
+**Authored by:** Principal (review-roles session, June 2, 2026)
+**Ratified by:** Principal (in-session)
+
+**Context:** The ecosystem runs a real agent/config surface (hosted Vāda MCP, Cetana MCP servers, `.claude/` agents/skills/hooks, server-side BYOK via `@atta/crypto`) with no automated configuration-security audit. ECC's AgentShield scans exactly this class of artifact.
+
+**Decision:** Adopt ECC's `npx ecc-agentshield scan` as an interim external first-pass for the security review, invoked by the security-reviewer when a PR touches `.claude/` configs, MCP configs, or the Cetana coordinator. Its output is an input to the security-reviewer's judgment, not the verdict. A first-party equivalent is future work; this decision is Type 2 (reversible) precisely because it is a temporary external dependency.
+
+**Alternatives rejected:**
+- Build a first-party scanner now: rejected as premature; validate the value of config-security scanning with the off-the-shelf tool first.
+- No config-security scan: rejected; the surface is real and currently unaudited.
+
+**Consequences:** Referenced in `roles/security.md` and `.claude/agents/security-reviewer.md`. Revisit once dogfooded; if valuable, scope a first-party replacement and supersede this decision.
