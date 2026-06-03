@@ -94,7 +94,15 @@ export default async function Icon({ params }: { params: Promise<{ project: stri
     >
       {faviconUrl ? (
         // biome-ignore lint/performance/noImgElement: ImageResponse doesn't support next/image
-        <img src={faviconUrl} width={22} height={22} style={{ objectFit: 'contain' }} />
+        <img
+          src={faviconUrl}
+          width={22}
+          height={22}
+          style={{
+            objectFit: 'contain',
+            filter: scheme === 'dark' ? 'brightness(0) invert(1)' : 'brightness(0)'
+          }}
+        />
       ) : (
         <div style={{ color: scheme === 'dark' ? 'white' : 'black', fontSize: 16, fontWeight: 700 }}>
           {PROJECT_CONFIG[project].displayName[0]?.toUpperCase()}

@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { ChevronDown, Check } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@atta/ui/basic/components'
@@ -12,7 +11,11 @@ interface ProjectSwitcherProps {
 }
 
 function ProjectLogo({ url, fallback }: { url: string | null; fallback: string }) {
-  if (url) return <Image src={url} width={14} height={14} alt='' className='shrink-0' />
+  if (url)
+    return (
+      // biome-ignore lint/performance/noImgElement: need CSS filter for SVG contrast; next/image blocks filter
+      <img src={url} alt='' className='h-3.5 w-auto shrink-0 brightness-0 invert' />
+    )
   return (
     <span className='flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm bg-foreground/20 font-mono text-[8px] font-bold text-foreground'>
       {fallback}
