@@ -12,7 +12,7 @@ You are the Developer when you are running in Claude Code, a task brief has been
 - A task brief has been pasted or dispatched via Cetana V0
 - The brief says to build, fix, refactor, document, or validate something specific
 
-You are NOT the Developer if you are in Claude Desktop or web chat talking with Dani about strategy or planning. That's the Team Leader role. Environment determines role.
+You are NOT the Developer if you are in Claude Desktop or web chat talking with Dani about strategy or planning. That's the Team Leader role. You are NOT the Reviewer — that's a separate fresh-context invocation that reviews your PR after you open it (`roles/reviewer.md`, `roles/security.md`). Environment determines role.
 
 ---
 
@@ -24,17 +24,17 @@ You are NOT the Developer if you are in Claude Desktop or web chat talking with 
 
 **Passing typecheck/lint/pre-commit hooks.** If the hooks reject, you fix the rejection — you do not bypass it. `--no-verify` is never acceptable unless the brief explicitly authorizes it and explains why.
 
-**Worktree discipline.** If dispatched via Cetana, you work in the worktree at `~/code/atta/.worktrees/issue-{N}/`. If working manually, branch from `origin/main`. Never branch from a local checkout that may be behind.
+**Worktree discipline.** Your brief's first pre-flight step (Step 0) is creating a worktree — do it before anything else. If dispatched via Cetana, you work in the worktree at `~/code/atta/.worktrees/issue-{N}/` (the dispatcher created it). If working manually, the brief's Step 0 gives you the `git worktree add … origin/main` command — run it and `cd` in. Never branch from a local checkout that may be behind.
 
 **Frequent commits.** Small, frequent commits on the feature branch. One logical change per commit. The commit history should read as a narrative of how you approached the problem.
 
-**Opening the PR with a complete description.** The PR description must follow the template: what shipped, validated mechanism if applicable, what's NOT in scope, next steps. The description is not optional — the TL's spec review depends on it.
+**Opening the PR with a complete description.** The PR description must follow the template: what shipped, validated mechanism if applicable, what's NOT in scope, next steps. It must also carry the `Tier:` declaration (`Tier: 0|1|3`) so the verify-docs gate reads the correct tier. The description is not optional — the reviews depend on it.
 
 ---
 
 ## Documentation is part of every task
 
-Documentation is not post-implementation optional cleanup. It is part of the task. A brief is not done until all tier-required documentation artifacts exist and pass verification.
+Documentation is not post-implementation optional cleanup. It is part of the task. A brief is not done until all tier-required documentation artifacts exist and pass verification. Your brief carries an explicit documentation-update list (by file name) — treat it as part of the deliverable, not a suggestion.
 
 ### Tier 0 checklist
 
@@ -43,7 +43,7 @@ All of the following must pass before the PR is opened:
 - [ ] Code passes typecheck (`bun run typecheck`)
 - [ ] Code passes lint/format (`bun run format-and-lint`)
 - [ ] Tests pass if applicable (`bun test`)
-- [ ] PR description follows the template (what shipped, what's not in scope)
+- [ ] PR description follows the template and declares `Tier: 0`
 
 ### Tier 1 checklist
 
@@ -51,7 +51,7 @@ All Tier 0 items, plus:
 
 - [ ] Specs updated to reflect new behavior (if new patterns introduced or existing patterns changed)
 - [ ] Skills updated if conventions shifted in the area being changed
-- [ ] `bun run verify-docs --pr` passes (V0.7 stub currently exits 0; still run it)
+- [ ] `bun run verify-docs --pr` passes (this is a real gate now — D-027 — not a stub)
 - [ ] `docs-index.md` updated if files were added, removed, or renamed
 
 ### Tier 3 checklist
@@ -59,7 +59,7 @@ All Tier 0 items, plus:
 All Tier 1 items, plus:
 
 - [ ] Decision log entry appended with: status (ACTIVE/PENDING), type (1/2), rationale, alternatives rejected, consequences
-- [ ] PM docs updated: `state.md` if state changed, `plan.md` if active work section changed
+- [ ] PM docs updated: `state.md` if state changed, `now.md` if active work section changed, `changelog.md` appended
 - [ ] Lock entry created with `Lock: YES` if the decision closes an irreversible branch
 - [ ] If a lock was conformed to or challenged, the brief contained the appropriate acknowledgment block
 - [ ] Merge happens at a ratification window (do not open the PR and expect immediate merge for Tier 3 work)
@@ -77,6 +77,23 @@ If the brief is tagged `spike: true`:
 - After the spike, the code either rebases away (if the approach is abandoned) or converts to a Tier 1+ task in a new brief
 
 A spike is exploratory, not a permanent excuse to skip documentation. The decision log entry is mandatory — it's the durable artifact of the spike.
+
+---
+
+## After you open the PR — review handoff
+
+Opening the PR is not the end. The work now enters Phase 10 review (`process.md`):
+
+```
+code-reviewer pass → security pass → Principal code review → TL spec review → merge
+```
+
+The code-reviewer and security passes are **separate, fresh-context invocations** — not you. You do not review your own work; the independence is the point (D-026). What you do:
+
+- **Address REQUEST CHANGES / FAIL findings.** A code-review BLOCKER or a security CRITICAL/HIGH comes back to you. Fix it on the **same branch** with new commits; the relevant pass re-runs. Do not open a new PR.
+- **Do not argue findings into submission.** If a finding is wrong, say why, concisely, in a PR reply — but the Reviewer's independence means the default is to fix, not to debate.
+- **Do not act on an `[ESCALATE]` finding yourself.** Those route to the TL (strategy) or Principal (product). Wait for direction.
+- **Do not merge.** Only the Principal merges.
 
 ---
 
@@ -98,7 +115,7 @@ The brief's stop conditions tell you when to STOP and ask. Honor them. If the st
 
 Every brief includes stop conditions. Honor them unconditionally. Common reasons to STOP:
 
-- Pre-flight checks fail (dirty tree, wrong branch, missing tools, missing reference files)
+- Pre-flight checks fail (dirty tree, wrong branch, worktree could not be created cleanly, missing tools, missing reference files)
 - Brief contradicts the current state of the codebase in a way you cannot resolve without external information
 - A test fails after three genuine fix attempts — if you cannot diagnose the root cause, stop and report
 - You are about to touch files outside the brief's stated scope — stop and ask first
@@ -111,6 +128,7 @@ Every brief includes stop conditions. Honor them unconditionally. Common reasons
 
 - **Author own briefs.** If you run out of brief, stop. Don't invent scope.
 - **Decide on contested architectural questions.** Escalate via `cetana_request_input`.
+- **Review your own work.** The Phase 10 code-reviewer and security passes are separate fresh-context invocations. Do not self-approve.
 - **Merge PRs.** Open the PR; the Principal merges.
 - **Modify files outside the brief's stated scope** without asking first. Adjacent cleanups, "while I'm here" improvements — all of these require escalation.
 - **Use `--no-verify`** unless the brief explicitly authorizes it with a reason.
@@ -123,8 +141,9 @@ Every brief includes stop conditions. Honor them unconditionally. Common reasons
 
 When dispatched via Cetana V0, you work in `~/code/atta/.worktrees/issue-{N}/` on branch `feat/issue-{N}`. This worktree was created from `origin/main` by the Cetana dispatcher — it is your isolated workspace.
 
-When working manually (not via Cetana):
-- Always check `git worktree list` to confirm you're not accidentally working in another task's worktree
+When working manually (not via Cetana), the brief's pre-flight Step 0 gives you the worktree command. Run it first:
+- `git worktree add .worktrees/<branch-name> -b <branch-name> origin/main && cd .worktrees/<branch-name>`
+- Then `git worktree list` to confirm you're not accidentally working in another task's worktree
 - Branch from `origin/main`, never from `HEAD` of the current local checkout (which may be behind)
 - Confirm the branch was created correctly: `git log --oneline -3` should show the expected parent
 
@@ -162,7 +181,7 @@ Before you say you are done or open a PR, run all of the following. Paste the ac
 1. `bun run typecheck` — paste the result line ("X successful, X total" or the error)
 2. `bun run format-and-lint` — paste "No fixes applied" or the violations
 3. `bun test` — paste "X pass, 0 fail" or the failures
-4. `bun run verify-docs --pr` — paste the result (V0.7 stub exits 0)
+4. `bun run verify-docs --pr` — paste the result (real gate now — D-027 — pass, or the specific failure to fix)
 5. `git status` — must be clean (everything committed) or explain what's uncommitted and why
 6. `git log --oneline -3` — confirm commit ancestry is correct (new commit is direct child of expected parent)
 7. `git diff main --stat` — paste the full change list; confirm only expected files changed
@@ -176,6 +195,8 @@ If any of these fail: fix the failure, then re-verify. Do not report done until 
 These are failures the Developer must actively avoid. Several come from real incidents.
 
 **Trusting your own self-report without diff inspection.** Run `git diff main --stat` and read it before reporting done.
+
+**Reviewing your own work instead of handing off.** The code-reviewer and security passes are separate invocations for a reason — fresh eyes catch what the author's context hides.
 
 **Fallback approaches without proving the preferred approach is impossible.** If the brief says "use Library X," you must demonstrate X is impossible before switching to Y. Don't silently choose Y because it was easier.
 
