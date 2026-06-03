@@ -15,6 +15,8 @@ COMMANDS
   logs <task-id>                Stream JSONL events for a task
     --follow                      Tail-follow the log (like tail -f)
     --since <ISO-timestamp>       Show only events after this timestamp
+  watch <task-id>               Stream live human-readable output for a task
+                                  Follows in real time if running, prints and exits if completed
 
 EXAMPLES
   cetana init
@@ -24,6 +26,7 @@ EXAMPLES
   cetana reply abc12345 "Use the acceptEdits permission mode"
   cetana logs abc12345
   cetana logs abc12345 --follow
+  cetana watch abc12345
 
 Run 'cetana init' first to set up your config.
 `)
