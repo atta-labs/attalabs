@@ -15,11 +15,11 @@ The product roadmap — what to build, why, in what priority — belongs to the 
 What AEG holds is the **iteration**: the bounded set of tasks currently being turned into merged code. The link from roadmap → iteration is a **human** — the Team Leader translating tickets into agent-shaped tasks. There is no file for that link, because the link is a person's judgment.
 
 ```
-Company roadmap / Jira      ← NOT in AEG. The company's tool. The human reads it.
+Company roadmap / Jira / product backlog   ← NOT in AEG. Reference only. The human reads it.
         │  (human translation — Team Leader / Planner)
         ▼
-Iteration                   ← TOP of AEG. A bounded set of tasks. Committed.
-   ├─ Task = brief (just-in-time) + Ticket link(s) + edges (depends-on / conflicts-with)
+Iteration                                   ← TOP of AEG. A bounded set of tasks. Committed.
+   ├─ Task = brief (just-in-time) + Product + Ticket link(s) + edges (depends-on / conflicts-with)
    ├─ Task
    └─ …
         │
@@ -27,15 +27,20 @@ Iteration                   ← TOP of AEG. A bounded set of tasks. Committed.
 Per task: Developer → Reviewer → Security → merge → Archivist
 ```
 
-**Note on `roadmap.md`:** the existing `project-management/roadmap.md` is, in a solo context, really *the current iteration* — it only looks like a product roadmap because one person holds product and execution at once. In a company context those separate: the roadmap is the company's (outside AEG), and AEG keeps only the iteration. A product-roadmap document *may* exist as a reference the human reads — but like the `Ticket:` link, it is pointed-to, never operated on by the flow. (`roadmap.md` is being retired: its executable slice becomes the first real iteration; its long-horizon product vision moves to an out-of-AEG reference doc.)
+**The product backlog lives OUT of the flow, per product.** Held / future / vision items are not AEG's. They live where each product's documentation already lives — `apps/<product>/specs/<product>-backlog.md` — plus `docs/ecosystem-backlog.md` for cross-cutting / ecosystem / AEG-itself work. These are reference docs the Planner reads when choosing the next slice; the flow never operates on them. (A company using AEG would have real Jira here instead.) This is distinct from the **iteration backlog** (Section 5), which is *inside* a specific iteration.
+
+**`roadmap.md` is retired.** Its executable slice became the first iteration; its held/vision content moved to the per-product backlogs above. The old file is deleted — git history preserves it.
 
 ---
 
-## 2. Ticket linking is N↔M and reference-only
+## 2. A task's reference fields: `Product` and `Ticket`
 
-One Jira ticket may become many tasks; many tickets may collapse into one task. The mapping is the human's judgment — no tool can do it, because turning a ticket into agent-shaped work is the translation that *is* the Team Leader's job.
+Two optional, reference-only fields qualify a task. Neither is read as instruction; both are provenance and routing.
 
-So a task's `Ticket:` field is a many-to-many, reference-only provenance link. No agent reads the ticket, needs access to it, or is blocked by it. It exists so a merged change traces back to the company's world.
+- **`Product`** — which product the task belongs to (`cetana`, `vada`, `herald`, …). In a multi-product monorepo it is effectively required; in a single-product repo every task shares one product, so it is omitted. It does three jobs: (1) the Developer self-locates the right product specs (`apps/<product>/specs/`); (2) the conflict gate gets a cheap first-pass filter — tasks in different products rarely collide; (3) the Archivist knows which per-product `state.md` / `now.md` to update at close-out.
+- **`Ticket`** — N↔M, reference-only link to an external ticket (Jira/Linear). One ticket may become many tasks; many tickets may collapse into one. The human owns the translation. No agent reads the ticket, needs access to it, or is blocked by it.
+
+Per-product PM (`apps/<product>/project-management/state.md` + `now.md`) still exists as per-product *status*. The iteration is the cross-product *coordination* layer above it; `Product` is the link between a task and its product's specs + PM.
 
 ---
 
@@ -51,7 +56,7 @@ The Planner's job, and the reason the iteration exists, is the thing a brief-in-
 
 Conflict and dependency edges are **declared, not inferred**, in v1. The Planner (with the human) reasons from the tasks' stated scope and records the call — "these two both touch auth, serialize them." Automatic file-overlap detection is a later luxury; the pilot does not depend on it.
 
-The Planner's output is exactly one artifact: the iteration file below. It writes no briefs — those are authored just-in-time when each task is picked up.
+The Planner also owns the **iteration backlog**: it places tasks that belong to the cycle but aren't dispatch-ready yet, and promotes them (`backlog → todo`) when they are. The Planner's output is exactly one artifact: the iteration file below. It writes no briefs — those are authored just-in-time when each task is picked up.
 
 ---
 
@@ -62,7 +67,7 @@ A task's brief has two homes across its life:
 - **Before dispatch — nowhere persistent.** The brief doesn't exist yet. It is written (by the human + Brief Author) at the moment the task is picked up, iteration-aware (it can see its siblings and edges). Pasted, not committed.
 - **At dispatch onward — the PR body.** When the Developer opens the task's PR, the brief text lands in the PR description and stays there. The PR body is the brief's permanent home.
 
-The iteration's `PR` column is the link: empty = brief not written yet (`todo`); `#89` = brief now lives in PR #89's body. Map → row → PR → brief.
+The iteration's `PR` column is the link: empty = brief not written yet; `#89` = brief now lives in PR #89's body. Map → row → PR → brief.
 
 This is why the iteration file stays thin (Section 5): it is the coordination map, not the brief store.
 
@@ -70,7 +75,7 @@ This is why the iteration file stays thin (Section 5): it is the coordination ma
 
 ## 5. The iteration file
 
-One file per iteration at `project-management/iterations/<name>.md`. It is a scannable coordination map — the week's standup board and conflict graph in one. Template:
+One file per iteration at `project-management/iterations/<name>.md`. It is a scannable coordination map — the cycle's standup board and conflict graph in one. It has two task lanes: the dispatchable **Tasks** table and the **Backlog** (this cycle, not yet ready). Template:
 
 ```
 # Iteration: <short name> — <timeframe>
@@ -78,27 +83,30 @@ One file per iteration at `project-management/iterations/<name>.md`. It is a sca
 Goal (execution, not product-why): <what ships, end to end>
 Repo: <repo>   ·   Team Leader: <name>
 
-## Tasks
-| # | Task                         | Ticket(s) | Depends-on | Conflicts-with | Owner  | Status     | PR  |
-|---|------------------------------|-----------|------------|----------------|--------|------------|-----|
-| 1 | Ground-station auth endpoint | SAT-412   | —          | 3              | Dani   | merged     | #88 |
-| 2 | Profile schema migration     | SAT-419   | —          | —              | junior | in-review  | #89 |
-| 3 | Auth UI                      | SAT-412   | 1          | 1              | junior | todo       | —   |
-| 4 | Rate-limit middleware        | SAT-431   | —          | —              | Dani   | in-flight  | #90 |
+## Tasks (scoped, dispatchable)
+| # | Task                         | Product | Ticket | Depends-on | Conflicts-with | Owner  | Status     | PR  |
+|---|------------------------------|---------|--------|------------|----------------|--------|------------|-----|
+| 1 | Ground-station auth endpoint | api     | SAT-412| —          | 3              | Dani   | merged     | #88 |
+| 2 | Profile schema migration     | api     | SAT-419| —          | —              | junior | in-review  | #89 |
+| 3 | Auth UI                      | web     | SAT-412| 1          | 1              | junior | todo       | —   |
+
+## Backlog (this iteration, not yet ready to dispatch)
+- Rate-limit middleware (api, SAT-431) — waiting to see how auth (task 1) lands first.
+- CV viewer split (web) — needs a design call from Dani before scoping.
 
 ## Status legend
-todo → in-flight → in-review → merged.   blocked = off to the side.
+backlog → todo → in-flight → in-review → merged.   blocked = off to the side.
 
-## Dispatch rules (enforced)
+## Dispatch rules (the multi-developer lock)
 - Do not start a task whose depends-on is not yet merged.
-- Do not start a task while a conflicts-with sibling has an open PR — wait, or rebase after it merges.
+- Do not start a task while a conflicts-with sibling is in-flight or in-review.
 - One owner per task at a time.
 
 ## Done
-The iteration closes when every task is merged or explicitly moved to the next iteration.
+The iteration closes when every Task is merged or explicitly moved to the next iteration.
 ```
 
-**What is deliberately absent** is the point: no priority, no estimates, no story points, no "why." Those are the company's, in Jira. The iteration carries only what is needed to schedule execution safely — dependencies, conflicts, owner, status. That absence is what keeps AEG out of "Jira again."
+**What is deliberately absent** is the point: no priority, no estimates, no story points, no "why." Those are the company's, in Jira / the product backlog. The iteration carries only what is needed to schedule execution safely — product, dependencies, conflicts, owner, status. That absence is what keeps AEG out of "Jira again."
 
 ---
 
@@ -106,17 +114,18 @@ The iteration closes when every task is merged or explicitly moved to the next i
 
 The `Status` column is load-bearing: the dispatch gates (Section 7) **read** it to decide what is safe to start. If status is stale or wrong, the gates lie and developers collide anyway. So state is specified precisely: a fixed set of values, and one rule for who writes them.
 
-### The five states
+### The six states
 
 | State | Meaning | What it gates |
 |-------|---------|---------------|
-| `todo` | Planned, not started. No brief written yet. | A `depends-on` is satisfied only when the dependency is `merged`. |
+| `backlog` | Committed to this iteration but not dispatch-ready — not scoped, or waiting on how earlier tasks land. No brief, no owner yet. | Cannot be dispatched until the Planner promotes it to `todo`. |
+| `todo` | Scoped and dispatch-ready. No brief written yet. | A `depends-on` is satisfied only when the dependency is `merged`. |
 | `in-flight` | An agent is working it. Brief written, work underway, no PR yet. | A `conflicts-with` sibling being `in-flight` or `in-review` blocks a colliding task. |
 | `in-review` | PR is open. Brief lives in the PR body. Awaiting review passes + merge. | Same conflict gate as `in-flight`. |
 | `merged` | PR merged. Task done. | Unblocks tasks that `depends-on` it; clears the conflict for colliding siblings. |
 | `blocked` | Off to the side — waiting on a dependency, a conflict to clear, or an escalation answer. | Cannot be dispatched until the blocker resolves. |
 
-Five values, no more. Extra states mean extra bookkeeping, and bookkeeping rots.
+Six values, no more. Extra states mean extra bookkeeping, and bookkeeping rots.
 
 ### Who writes the state — the ownership rule
 
@@ -124,6 +133,7 @@ Five values, no more. Extra states mean extra bookkeeping, and bookkeeping rots.
 
 | Transition | Written by | When |
 |-----------|-----------|------|
+| `backlog → todo` | the **Planner** | when the task is scoped and its dependencies allow it |
 | `todo → in-flight` | whoever dispatches (the human, or Cetana at `dispatch`) | at start |
 | `in-flight → in-review` | the **Developer** | when it opens the PR — same write that fills the `PR` column |
 | `in-review → merged` | the **Archivist** | at close-out — same step that confirms the merge |
@@ -141,9 +151,10 @@ Same file, both directions. That is the coordination spine of the whole model: s
 
 ### Per-role done-checklist additions
 
+- **Planner** owns `backlog → todo` (scoping/promotion).
 - **Developer** done-checklist gains: *set my task's row to `in-review` and fill the `PR` column* (alongside "brief in PR body").
 - **Archivist** close-out gains: *flip the task's row to `merged`* (alongside confirming merge, branch deletion, docs/changelog).
-- **Dispatcher** (human or Cetana) sets `todo → in-flight` at start; sets `→ blocked` is the Developer's job on escalation.
+- **Dispatcher** (human or Cetana) sets `todo → in-flight` at start.
 
 ---
 
@@ -152,7 +163,7 @@ Same file, both directions. That is the coordination spine of the whole model: s
 The `Dispatch rules` block is what makes two or more developers safe. With a single principal, the rules live in one head. With a team, they must be a **lock**, not a whiteboard:
 
 - **depends-on gate** — a task cannot start until its dependency is `merged`.
-- **conflicts-with gate** — a task cannot start while a colliding sibling is `in-flight` or `in-review` (i.e. has an open PR or active agent).
+- **conflicts-with gate** — a task cannot start while a colliding sibling is `in-flight` or `in-review` (i.e. has an open PR or active agent). `Product` is the first-pass filter: tasks in different products rarely collide.
 
 In manual mode these are preconditions the Developer checks before beginning (read the iteration file's status column + open-PR status). In Cetana they become automatic at `dispatch`. Either way: the conflict is declared at planning time and enforced at dispatch time — never discovered at merge time, which is too late.
 
@@ -164,4 +175,4 @@ In manual mode these are preconditions the Developer checks before beginning (re
 
 > AEG does not plan your product. It governs how your product gets executed by agents — safely, coherently, and coordinated across a team.
 
-For the manual run mechanics and per-role entry gates, see `aeg-manual-flow.md`. For the authority model and tiers, see `state-machine.md`.
+For the manual run mechanics and per-role entry gates, see `aeg-manual-flow.md`. For the authority model and tiers, see `state-machine.md`. For the first live iteration, see `iterations/cetana-cli-ladder.md`.
