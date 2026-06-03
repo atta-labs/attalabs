@@ -1,6 +1,6 @@
-# State Machine — Atta Operational Model
+# State Machine — the Atta Agentic Execution Governance (AEG) Model
 
-The constitution. This document is the authoritative reference for artifacts, mutation permissions, authority hierarchy, escalation paths, and governance mechanics in the Atta operational model. Roles derive from this document; this document does not derive from roles.
+The constitution. This document defines the **Atta Agentic Execution Governance (AEG)** model — the authoritative reference for artifacts, mutation permissions, authority hierarchy, escalation paths, and governance mechanics. AEG is governance plus orchestration of delegated AI execution; it is not project management (there is no project plan, timeline, or resource tracking). Roles derive from this document; this document does not derive from roles.
 
 If you are unsure whether an action is permitted, the answer is here. If you find a contradiction between a role doc and this document, this document wins.
 
@@ -238,7 +238,7 @@ Every entry in any decision log (per-product or global) uses this format:
 
 **Append-only invariant:** Decision logs are never edited in place. Status changes are new entries that reference the old D-### via `Supersedes:`. The original entry gets `Superseded by:` filled in, and its Status line is updated to SUPERSEDED, but its body is otherwise not changed. This preserves the audit trail.
 
-**Numbering is a single global sequence across all decision logs.** Per-product logs (`apps/*/specs/*-decisions.md`) and the global log (`decisions.md`) share one D-### sequence with no gaps or duplicates — the Archivist validates this on merge. (Example: D-017–D-023 are Cetana-scoped and live in the Cetana log; D-024–D-028 are cross-cutting and live in the global log.)
+**Numbering is per-log, not globally unique.** Each decision log carries its own `D-###` sequence. Numbers are NOT unique across logs: the legacy Vāda log (`apps/vada-ai/specs/vada-decisions.md`) predates the v3 model and runs its own sequence (currently to D-034) whose numbers deliberately collide with this global log's — there is a Vāda D-025 and a global D-025, and they are different decisions. The per-product Cetana log (`apps/cetana-ai/specs/cetana-decisions.md`) likewise runs its own sequence, so a Cetana D-### and a global D-### of the same number are different decisions. **Always disambiguate a `D-###` reference by naming its log** (e.g. "global D-026", "vada-decisions D-033", "cetana-decisions D-026"). The global governance log (`decisions.md`) has apparent gaps because some early v3 decisions (roughly D-017–D-023) were filed in product logs rather than the global one. Within any single log, numbers are sequential and append-only; the Archivist validates within-log sequencing (see Section 12).
 
 ---
 
@@ -424,7 +424,7 @@ Not everything in this system is enforced. Some discipline is trusted — expect
 - **Tier-appropriate documentation** — `scripts/verify-docs.ts` checks that the PR's impact tier has the corresponding artifact changes. Fails CI if missing. **Implemented for real (D-027)** — replaces the old V0.7 stub. The blocking CI workflow must be installed at `.github/workflows/verify-docs.yml` (staged at `scripts/ci/verify-docs.workflow.yml`; the GitHub App integration cannot write workflow files, so the Principal moves it into place). Until installed, the gate runs locally via `bun run verify-docs --pr`.
 - **Typecheck, lint, tests** — standard CI gates; always blocking.
 - **Brief validation** — Archivist GitHub Action checks brief structure on Issue open; sets `status:blocked` if malformed. (V0.7 stub currently no-ops; full implementation V0.7.)
-- **D-### sequencing** — post-merge Archivist validates that decision log numbers are sequential without gaps or duplicates across all decision logs. (V0.7 stub; full implementation V0.7.)
+- **D-### sequencing** — post-merge Archivist validates that decision log numbers are sequential within each log (no gaps or duplicates inside a given log; cross-log number collisions are expected — see Section 6). (V0.7 stub; full implementation V0.7.)
 
 ### Trusted (agent discipline — no CI enforcement in V0)
 
