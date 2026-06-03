@@ -8,14 +8,10 @@
 
 ---
 
-## June 3, 2026 — Cetana F6 (`cetana watch`) + Herald logo + admin refactor
+## June 3, 2026 — Cetana F6 (`cetana watch`)
 
 ### Cetana
 - **PR #79** — F6: `cetana watch <task-id>`. Streams human-readable JSONL output for a single task. Print-and-exit if task is already complete; live-follow mode (500ms polling, trailing-buffer JSONL line reassembly) if still running. Renders 🚀 dispatched, 🤖 text, 🔧 tool calls, ✅ tool results, ⏸ blocks, 💥 crashes. Tool name resolution via cross-message id→name map. 21 watch tests (8 renderProgressMessage, 8 renderEvent, 5 CLI integration). D-026 added: single-task-by-id shape ratified; watch-all-active deferred to F7 fleet view.
-
-### Herald
-- Logo: Refactored TopBar and AdminTopBar to use `Logo` component with CSS-based dark/light switching (`dark:invert`). Removed MutationObserver theme detection. AdminTopBar eliminated; admin layout now uses shared TopBar.
-- Admin: Project switcher simplified (direct navigation, no modal). CV viewer split into separate download and open-in-tab actions.
 
 ---
 
