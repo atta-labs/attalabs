@@ -130,7 +130,7 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
       </button>
 
       {open && (
-        <div className='absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover shadow-md'>
+        <div className='absolute left-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover shadow-md'>
           <div className='border-b p-2'>
             <div className='flex items-center gap-2 rounded-md border px-2'>
               <Search className='h-3.5 w-3.5 shrink-0 text-muted-foreground' />
