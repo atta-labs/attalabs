@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, it } from 'bun:test'
-import { existsSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync } from 'node:fs'
 import { unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { taskLogPath, TASKS_DIR } from '@atta/cetana-coordinator'
 import type { CetanaEvent } from '@atta/cetana-coordinator'
 import { renderEvent, renderProgressMessage } from '../src/commands/watch.js'
-import { mkdirSync } from 'node:fs'
 
 const CLI_PATH = join(import.meta.dir, '../src/index.ts')
 const TEST_TASK_ID = `watch-test-${Date.now()}`
@@ -319,5 +318,100 @@ describe('cetana watch — partial task ID resolution', () => {
     expect(exitCode).toBe(0)
     expect(stdout).toContain('issue #9')
     expect(stdout).toContain('Task completed')
+  })
+})
+
+// ─── Integration test: live-follow loop ──────────────────────────────────────
+
+describe('cetana watch — live follow mode', () => {
+  it('picks up events appended after watch starts and exits on task.completed', async () => {
+    const FOLLOW_TASK_ID = `watch-follow-${Date.now()}`
+    const logPath = taskLogPath(FOLLOW_TASK_ID)
+
+    // Write only a dispatched event — no terminal event yet, so watch enters follow mode
+    await writeMockLog(FOLLOW_TASK_ID, [
+      {
+        ts: '2026-01-01T00:00:00.000Z',
+        type: 'task.dispatched',
+        data: { taskId: FOLLOW_TASK_ID, issueNumber: 11, brief: 'live test', worktree: '/tmp/wt' }
+      }
+    ])
+
+    // Spawn watch — it will block in the follow loop
+    const proc = Bun.spawn(['bun', 'run', CLI_PATH, 'watch', FOLLOW_TASK_ID], {
+      stdout: 'pipe',
+      stderr: 'pipe'
+    })
+
+    // Give the process time to reach the follow loop before appending
+    await new Promise((r) => setTimeout(r, 700))
+
+    // Append a progress event then a completed event
+    const progressEvent: CetanaEvent = {
+      ts: '2026-01-01T00:00:01.000Z',
+      type: 'task.progress',
+      data: {
+        taskId: FOLLOW_TASK_ID,
+        message: JSON.stringify({
+          type: 'assistant',
+          message: { content: [{ type: 'text', text: 'Live line appeared.' }] }
+        })
+      }
+    }
+    const completedEvent: CetanaEvent = {
+      ts: '2026-01-01T00:00:02.000Z',
+      type: 'task.completed',
+      data: { taskId: FOLLOW_TASK_ID, exitCode: 0 }
+    }
+    appendFileSync(logPath, `${JSON.stringify(progressEvent)}\n${JSON.stringify(completedEvent)}\n`, 'utf-8')
+
+    // Wait for the process to exit naturally (terminal event detected)
+    const result = await Promise.race([
+      Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]).then(
+        ([exitCode, stdout, stderr]) => ({ exitCode, stdout, stderr, timedOut: false as const })
+      ),
+      new Promise<{ timedOut: true; exitCode: null; stdout: string; stderr: string }>((resolve) =>
+        setTimeout(() => resolve({ timedOut: true, exitCode: null, stdout: '', stderr: '' }), 10000)
+      )
+    ])
+
+    if (result.timedOut) {
+      proc.kill()
+    }
+
+    // Clean up follow task log
+    if (existsSync(logPath)) await unlink(logPath)
+
+    expect(result.timedOut).toBe(false)
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain('issue #11')
+    expect(result.stdout).toContain('Live line appeared.')
+    expect(result.stdout).toContain('Task completed')
+  })
+})
+
+// ─── Unit test: split-line resilience ────────────────────────────────────────
+
+describe('renderProgressMessage — split-line resilience', () => {
+  it('correctly parses a message reconstructed from two partial chunks', () => {
+    // Simulates what happens when the trailingBuffer accumulates a partial line
+    // across two poll ticks before the newline arrives
+    const toolNameMap = new Map<string, string>()
+    const fullMessage = JSON.stringify({
+      type: 'assistant',
+      message: { content: [{ type: 'text', text: 'Split line content.' }] }
+    })
+
+    // First "tick": partial JSON with no newline — should yield nothing when parsed alone
+    const part1 = fullMessage.slice(0, Math.floor(fullMessage.length / 2))
+    const resultPart1 = renderProgressMessage(part1, toolNameMap)
+    expect(resultPart1).toHaveLength(0)
+
+    // Second "tick": rest of the message completes the JSON
+    const part2 = fullMessage.slice(Math.floor(fullMessage.length / 2))
+    const combined = part1 + part2
+    const resultCombined = renderProgressMessage(combined, toolNameMap)
+    expect(resultCombined).toHaveLength(1)
+    expect(resultCombined[0]).toContain('Split line content.')
   })
 })

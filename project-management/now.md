@@ -16,7 +16,7 @@
 
 ## Next 3 things
 
-1. **Cetana F6 — `cetana watch`** — live streaming output. Ready to dispatch. Highest pain point in current workflow.
+1. **Cetana F7 — `cetana status`** — fleet overview: running tasks, blocked tasks (question + severity), recently completed. Ready to dispatch.
 2. **Vāda Track B Item 3b — Reviewer prompt iteration** — unblocked since PR #31 (May 11) and PR #65 (June 1). Ready to dispatch.
 3. **Herald Phase 3 — recruiter self-serve** — after #75 merges. Brief to be authored.
 

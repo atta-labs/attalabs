@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** June 1, 2026 (Herald Phase 1 complete — PR #70; Cetana spawner fixed — PR #68; test failures resolved — PR #71; Vāda key validation — PR #65)
+**Last updated:** June 3, 2026 (Cetana F6 `cetana watch` shipped — PR #79; Herald logo refactor; admin TopBar unification)
 **Purpose:** Single snapshot of where everything stands across the AttaLabs ecosystem.
 
 This doc lives in the repo at `project-management/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -160,15 +160,15 @@ Earlier framing (April 26, 2026) presented Sati as having been "renamed from the
 
 **Next:** Buildout downstream of Vitakka shipping.
 
-### Cetana — *V0.5 Step 1 shipped, Principal-verified (May 12, 2026); internal dev tooling, not part of Atta*
+### Cetana — *V0.5 Step 1 shipped, Principal-verified (May 12, 2026); F6 shipped June 3, 2026; internal dev tooling, not part of Atta*
 
-V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 Step 1 (F5) shipped May 12 across three PRs (#39 initial, #42 install command fix, #43 abort hang fix). Install gate D-021 verified end-to-end by Principal.
+V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 Step 1 (F5) shipped May 12 across three PRs (#39 initial, #42 install command fix, #43 abort hang fix). Install gate D-021 verified end-to-end by Principal. F6 (`cetana watch`) shipped June 3, 2026 (PR #79).
 
-**Current capability:** `cetana init`, `cetana dispatch <issue>`, `cetana list`, `cetana reply <id> "msg"`, `cetana logs <id>`. Hierarchical config. Heartbeat-based CRASHED detection. 26 passing tests. Claude binary resolved via `which claude` + known fallback paths (NVM/homebrew/global) — no hardcoded path. Model tier resolution via `resolveDispatchModel` in `@atta/models` — config stores `anthropic/balanced`, resolved at dispatch time, no hardcoded model strings. `repoPath` read from config (set during `cetana init`, defaults to `git rev-parse --show-toplevel`).
+**Current capability:** `cetana init`, `cetana dispatch <issue>`, `cetana list`, `cetana reply <id> "msg"`, `cetana logs <id>`, `cetana watch <id>`. Hierarchical config. Heartbeat-based CRASHED detection. 46 passing tests. Claude binary resolved via `which claude` + known fallback paths (NVM/homebrew/global) — no hardcoded path. Model tier resolution via `resolveDispatchModel` in `@atta/models` — config stores `anthropic/balanced`, resolved at dispatch time, no hardcoded model strings. `repoPath` read from config (set during `cetana init`, defaults to `git rev-parse --show-toplevel`).
 
-**Locked decisions (cetana-decisions.md):** D-020 (CLI canonical), D-021 (install gate non-negotiable), D-022 (thin client over Coordinator), D-023 (4-week dogfood gate), D-025 (install gate path coverage).
+**Locked decisions (cetana-decisions.md):** D-020 (CLI canonical), D-021 (install gate non-negotiable), D-022 (thin client over Coordinator), D-023 (4-week dogfood gate), D-025 (install gate path coverage), D-026 (watch shape: single-task-by-id).
 
-**Next:** F6 (`cetana watch`) — ready to dispatch.
+**Next:** F7 (`cetana status`) — ready to dispatch.
 
 **What it is:** Local Mac orchestration coordinator for the Atta team's own development workflow. NOT part of Atta-the-product. Sibling product in AttaLabs (D-025 global). Lets Claude Desktop (Team Leader, Strategist mode) dispatch Claude Code agents (Developers) into the Atta repo via MCP, watch them work, and unblock them when they hit decision points. The `cetana` CLI binary (D-020 — locked) is the canonical operator interface as of V0.5.
 

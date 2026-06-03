@@ -82,6 +82,7 @@ export function renderEvent(event: CetanaEvent, toolNameMap: Map<string, string>
       lines.push(`${time} 🚀 Task started — issue #${event.data.issueNumber}`)
       break
     case 'task.blocked':
+      // severity and time-blocked deferred until D-016 (cetana_request_input severity field) lands
       lines.push(`${time} ⏸  BLOCKED — "${truncate(event.data.question, 120)}"`)
       break
     case 'task.completed':
@@ -171,6 +172,8 @@ export async function watchCommand(args: string[]): Promise<void> {
 
   // Live follow mode: poll every 500ms for new lines, exit on terminal event
   let lastSize = statSync(logPath).size
+  // Retains incomplete JSONL line split across two poll ticks
+  let trailingBuffer = ''
 
   await new Promise<void>((_resolve, reject) => {
     const interval = setInterval(() => {
@@ -179,16 +182,25 @@ export async function watchCommand(args: string[]): Promise<void> {
         if (currentSize <= lastSize) return
 
         const stream = createReadStream(logPath, { start: lastSize, end: currentSize - 1, encoding: 'utf-8' })
-        let buffer = ''
-        stream.on('data', (chunk: Buffer | string) => {
-          buffer += typeof chunk === 'string' ? chunk : chunk.toString('utf-8')
+        let chunk = ''
+        stream.on('data', (data: Buffer | string) => {
+          chunk += typeof data === 'string' ? data : data.toString('utf-8')
         })
         stream.on('end', () => {
-          for (const event of parseEvents(buffer)) {
-            for (const line of renderEvent(event, toolNameMap)) {
-              process.stdout.write(`${line}\n`)
+          const combined = trailingBuffer + chunk
+          const parts = combined.split('\n')
+          trailingBuffer = parts.pop() ?? ''
+          for (const line of parts) {
+            if (!line.trim()) continue
+            try {
+              const event = JSON.parse(line) as CetanaEvent
+              for (const rendered of renderEvent(event, toolNameMap)) {
+                process.stdout.write(`${rendered}\n`)
+              }
+              if (isTerminalEvent(event)) sawTerminal = true
+            } catch {
+              // skip unparseable complete lines
             }
-            if (isTerminalEvent(event)) sawTerminal = true
           }
           lastSize = currentSize
           if (sawTerminal) {
