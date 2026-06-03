@@ -17,6 +17,8 @@
 @source "../libraries/brutal/components/**/*.{ts,tsx}";
 @source "../libraries/brutal/installed/**/*.{ts,tsx}";
 @source "../libraries/shared/**/*.{ts,tsx}";
+@source "../topbar/**/*.{ts,tsx}";
+@source "../lib/**/*.{ts,tsx}";
 
 @theme inline {
   --color-background: var(--background);

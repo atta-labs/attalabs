@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { JDInput } from './JDInput'
@@ -191,8 +193,10 @@ export function EnvoyFlow({
               </div>
             </div>
           </header>
-          {localProfile.bio && (
-            <p className='mb-8 font-sans text-sm leading-relaxed text-foreground/80'>{localProfile.bio}</p>
+          {localProfile.summary && (
+            <div className='mb-8 prose prose-sm max-w-none font-sans text-sm leading-relaxed text-foreground/80 [&_h1]:font-serif [&_h2]:font-serif [&_h3]:font-serif [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_p]:text-foreground/80 [&_strong]:text-foreground [&_ul]:pl-4 [&_ol]:pl-4 [&_li]:text-foreground/80 [&_code]:font-mono [&_code]:text-xs [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded'>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{localProfile.summary}</ReactMarkdown>
+            </div>
           )}
           <div className='rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
             <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
@@ -218,7 +222,9 @@ export function EnvoyFlow({
         candidateName={localProfile.name}
         candidateTitle={localProfile.title}
         candidateAvatarUrl={localProfile.avatarUrl}
-        candidateBio={localProfile.bio}
+        candidateSummary={localProfile.summary}
+        candidateLocation={localProfile.location}
+        candidateAvailability={localProfile.availability}
         candidateCvUrl={localProfile.cvUrl}
       />
     )

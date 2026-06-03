@@ -1,7 +1,8 @@
 import { auth } from '@clerk/nextjs/server'
+import { revalidatePath } from 'next/cache'
 import { NextResponse } from 'next/server'
 
-import { updateUser, updateUserUI } from '@/db/queries'
+import { getUserByClerkId, updateUser, updateUserUI } from '@/db/queries'
 
 export async function POST(request: Request) {
   const { userId } = await auth()
@@ -12,8 +13,11 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
 
-    if (!body.name || !body.title || !body.summary) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    // Validate profile text fields only when they're being submitted (Settings path)
+    if ('name' in body || 'title' in body || 'summary' in body) {
+      if (!body.name || !body.title || !body.summary) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      }
     }
 
     await updateUser(userId, {
@@ -38,6 +42,14 @@ export async function POST(request: Request) {
         fontSans: body.fontSans ?? null
       })
     }
+
+    // Bust Next.js cache so changes appear immediately on all pages
+    const user = await getUserByClerkId(userId)
+    if (user?.username) {
+      revalidatePath(`/${user.username}`)
+    }
+    revalidatePath('/admin/ui')
+    revalidatePath('/admin/settings')
 
     return NextResponse.json({ success: true })
   } catch (err) {

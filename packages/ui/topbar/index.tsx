@@ -56,17 +56,19 @@ export function TopBar({
 
   return (
     <nav className='w-full border-b border-border'>
-      <div className='mx-auto flex h-14 max-w-[900px] items-center justify-between px-6'>
-        {/* Logo */}
-        {logo ? (
-          logo
-        ) : (
-          <NextLink variant='unstyled' href={logoHref} className='flex items-center gap-2'>
-            {defaultLogo}
-          </NextLink>
-        )}
+      <div className='flex h-14 w-full items-center px-6'>
+        {/* Logo — pinned left */}
+        <div className='flex flex-1 items-center'>
+          {logo ? (
+            logo
+          ) : (
+            <NextLink variant='unstyled' href={logoHref} className='flex items-center gap-2'>
+              {defaultLogo}
+            </NextLink>
+          )}
+        </div>
 
-        {/* Desktop nav links */}
+        {/* Desktop nav links — truly centered */}
         <div className='hidden items-center gap-8 md:flex'>
           {visibleLinks.map(({ href, label, exact, external }) => (
             <NextLink
@@ -74,7 +76,7 @@ export function TopBar({
               variant='nav'
               active={isActive(href, exact)}
               href={href}
-              className='text-xs whitespace-nowrap'
+              className='whitespace-nowrap text-xs'
               {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
             >
               {label}
@@ -82,8 +84,8 @@ export function TopBar({
           ))}
         </div>
 
-        {/* Desktop actions */}
-        <div className='hidden items-center gap-3 md:flex'>
+        {/* Desktop actions — pinned right */}
+        <div className='hidden flex-1 items-center justify-end gap-3 md:flex'>
           <ColorSchemeToggle />
           {user ? (
             <>
@@ -100,7 +102,7 @@ export function TopBar({
         </div>
 
         {/* Mobile actions */}
-        <div className='flex items-center gap-2 md:hidden'>
+        <div className='ml-auto flex items-center gap-2 md:hidden'>
           <ColorSchemeToggle />
           {user && <UserButton />}
           <Sheet>
