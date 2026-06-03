@@ -16,7 +16,7 @@ Nothing actively dispatched.
 
 ## Next 3 things
 
-1. **Cetana F6 — `cetana watch`** — live streaming output. Agent prompt ready. Open a Claude Code session and paste the F6 prompt from Team Leader. Highest current pain point.
+1. **Cetana F7 — `cetana status`** — fleet overview: running tasks, blocked tasks (question + severity), recently completed. Ready to dispatch.
 2. **Test Vāda Reviewers end-to-end** — add OpenAI + xAI keys to Vercel first (manual, 5 min), then run a real Reviewers deliberation at `vada.attalabs.dev`. First time this has ever been tested.
 3. **Herald Phase 3 brief** — recruiter self-serve: paste JD + upload N CVs → batch forensic audit → ranked reports. Brief to be authored.
 

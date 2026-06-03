@@ -8,6 +8,13 @@
 
 ---
 
+## June 3, 2026 — Cetana F6 (`cetana watch`)
+
+### Cetana
+- **PR #79** — F6: `cetana watch <task-id>`. Streams human-readable JSONL output for a single task. Print-and-exit if task is already complete; live-follow mode (500ms polling, trailing-buffer JSONL line reassembly) if still running. Renders 🚀 dispatched, 🤖 text, 🔧 tool calls, ✅ tool results, ⏸ blocks, 💥 crashes. Tool name resolution via cross-message id→name map. 21 watch tests (8 renderProgressMessage, 8 renderEvent, 5 CLI integration). D-026 added: single-task-by-id shape ratified; watch-all-active deferred to F7 fleet view.
+
+---
+
 ## June 2, 2026 — Per-product PM, Vāda Reviewers prompt v2, Herald admin verified
 
 ### Project management

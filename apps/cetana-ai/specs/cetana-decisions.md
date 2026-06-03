@@ -435,3 +435,29 @@ Both failures were Principal-runnable, proving the install gate as written in D-
 - Spec reviews must check for per-path terminal output as a hard gate.
 - Briefs without enumerated path coverage in their verification section are malformed.
 - Calibration lessons in `lessons.md` reinforce this for all future agents.
+
+---
+
+## D-026 — `cetana watch` shape: single-task-by-id, watch-all-active deferred
+
+**Date:** 2026-06-03
+**Status:** ACTIVE
+**Type:** 2 (feature scope refinement)
+**Supersedes:** —
+**Lock:** NO
+**Ratifies:** —
+**Authored by:** Team Leader (dispatch session, June 3, 2026)
+**Ratified by:** Principal (PR #79 review)
+**Context:** The original F6 spec described `cetana watch` as streaming "all active JSONL logs simultaneously" — equivalent to `tail -f` on every running task. During implementation it became clear that single-task-by-id is the useful primitive: operators know which task they dispatched and want to follow it. Watching all active tasks simultaneously produces interleaved output that's unreadable in a single terminal session. A multi-task fleet view is better served by `cetana status` (F7).
+**Decision:** `cetana watch <task-id>` takes exactly one task ID argument. It:
+1. Accepts a prefix (≥1 char) and resolves to the unique matching task via `StateManager`.
+2. Prints all historical events, then exits if the task is already terminal.
+3. Enters live-follow mode (500ms polling, createReadStream delta, trailing-buffer JSONL line reassembly) if the task is still running.
+4. Exits naturally on `task.completed` or `task.failed`. Exits on SIGINT without error.
+Watch-all-active (watching multiple tasks simultaneously) is deferred indefinitely. If a use case for it emerges, it should be a separate flag or subcommand (`cetana watch --all`), not the default behavior.
+**Alternatives rejected:**
+- "Watch all active by default, filter with --task flag" (rejected: interleaved output is unreadable; single-task is the 95% case).
+- "Watch all active in separate panes via tmux integration" (rejected: out of scope for CLI, adds dependency).
+**Consequences:**
+- F7 (`cetana status`) is the fleet overview surface. `cetana watch` is the single-task drill-down.
+- Brief authors for F7 should not expect `cetana watch` to serve fleet monitoring use cases.

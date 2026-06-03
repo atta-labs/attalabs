@@ -374,15 +374,15 @@ echo n | cetana init    # confirms abort path exits cleanly
 
 Both discoveries surfaced D-025 (install gate path coverage requirement).
 
-**Step 2 (F6) — `cetana watch`** — **Status: ready to dispatch**
+**Step 2 (F6) — `cetana watch`** — **✅ SHIPPED (2026-06-03, PR #79)**
 
-Streams `task.progress` events from all active JSONL logs to stdout in real time. Equivalent to running `tail -f` on all active task files simultaneously. Blocked tasks are displayed with their pending question, severity, and time-blocked.
+`cetana watch <task-id>` streams human-readable output for a single task. Prints all existing events and exits immediately if the task is already complete; enters live-follow mode (500ms polling) if the task is still running. Renders: 🚀 dispatched, 🤖 assistant text, 🔧 tool calls, ✅ tool results and task completed, 💥 crashes, ⏸ blocks. Tool name resolution via cross-message id→name map. JSONL lines split across poll ticks are handled via trailing buffer.
 
-**Step 3 (F7) — `cetana status`** — **Status: blocked on F6**
+**Step 3 (F7) — `cetana status`** — **Status: ready to dispatch**
 
 Point-in-time summary: running tasks (pid, issue, elapsed), blocked tasks (question text, severity, time-blocked), recently completed tasks (within last 24 hours). Same underlying data as `cetana.list_active_tasks` output. Blocked tasks display severity so routing is immediate.
 
-**Step 4 (F8) — `cetana abort` + `cetana resume`** — **Status: blocked on F7**
+**Step 4 (F8) — `cetana abort` + `cetana resume`** — **Status: blocked on F7 (ready once F7 ships)**
 
 `cetana abort <taskId>` kills the claude subprocess (if running), writes a `task.failed` event to JSONL, removes IPC files. `cetana resume <taskId> "<amended-brief>"` re-dispatches a previously failed or aborted task. The same worktree is reused; a new task ID is generated. The original task's JSONL log is retained as the audit trail.
 

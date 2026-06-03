@@ -5,6 +5,7 @@ import { dispatchCommand } from './commands/dispatch.js'
 import { listCommand } from './commands/list.js'
 import { replyCommand } from './commands/reply.js'
 import { logsCommand } from './commands/logs.js'
+import { watchCommand } from './commands/watch.js'
 import { printHelp } from './lib/output.js'
 
 const [, , command, ...args] = process.argv
@@ -30,6 +31,9 @@ try {
       break
     case 'logs':
       await logsCommand(args)
+      break
+    case 'watch':
+      await watchCommand(args)
       break
     default:
       console.error(`Unknown command: ${command}`)
