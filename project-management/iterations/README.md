@@ -6,6 +6,8 @@ The **iteration** is the highest-level artifact in Atta Agentic Execution Govern
 
 This is a deliberate boundary. AEG is the **execution** layer — it governs how work becomes merged, reviewed, coherent code, run by humans wielding agents. It is **not** a product-planning tool.
 
+> **AEG knows no tool.** This model describes the flow in tool-neutral terms — "the dispatcher," "an automation layer," "at dispatch time." A tool may *automate* parts of AEG, but AEG never depends on, or names, any tool. Knowledge flows one way: a tool may know AEG; AEG does not know the tool. (Same rule as the company roadmap: AEG is pointed at, it never points out.)
+
 ---
 
 ## 1. AEG owns iterations, not roadmaps
@@ -27,7 +29,7 @@ Iteration                                   ← TOP of AEG. A bounded set of tas
 Per task: Developer → Reviewer → Security → merge → Archivist
 ```
 
-**The product backlog lives OUT of the flow, per product.** Held / future / vision items are not AEG's. They live where each product's documentation already lives — `apps/<product>/specs/<product>-backlog.md` — plus `docs/ecosystem-backlog.md` for cross-cutting / ecosystem / AEG-itself work. These are reference docs the Planner reads when choosing the next slice; the flow never operates on them. (A company using AEG would have real Jira here instead.) This is distinct from the **iteration backlog** (Section 5), which is *inside* a specific iteration.
+**The product backlog lives OUT of the flow, per product.** Held / future / vision items are not AEG's. They live where each product's documentation already lives — `apps/<product>/specs/<product>-backlog.md` — plus `docs/ecosystem-backlog.md` for cross-cutting / ecosystem / AEG-itself work. These are reference docs the Planner reads when choosing the next slice; the flow never operates on them. This is distinct from the **iteration backlog** (Section 5), which is *inside* a specific iteration.
 
 **`roadmap.md` is retired.** Its executable slice became the first iteration; its held/vision content moved to the per-product backlogs above. The old file is deleted — git history preserves it.
 
@@ -37,7 +39,7 @@ Per task: Developer → Reviewer → Security → merge → Archivist
 
 Two optional, reference-only fields qualify a task. Neither is read as instruction; both are provenance and routing.
 
-- **`Product`** — which product the task belongs to (`cetana`, `vada`, `herald`, …). In a multi-product monorepo it is effectively required; in a single-product repo every task shares one product, so it is omitted. It does three jobs: (1) the Developer self-locates the right product specs (`apps/<product>/specs/`); (2) the conflict gate gets a cheap first-pass filter — tasks in different products rarely collide; (3) the Archivist knows which per-product `state.md` / `now.md` to update at close-out.
+- **`Product`** — which product the task belongs to (`cetana`, `vada`, `herald`, …). It resolves against the **product registry**, `project-management/products.md`, which maps each product to its specs and per-product PM paths. The registry's *presence* signals a multi-product repo, where `Product` is required; a single-product repo has **no** `products.md` and omits the field entirely (every task shares one product). When present, `Product` does three jobs: (1) the Developer self-locates the right product specs (`apps/<product>/specs/`); (2) the conflict gate gets a cheap first-pass filter — tasks in different products rarely collide; (3) the Archivist knows which per-product `state.md` / `now.md` to update at close-out.
 - **`Ticket`** — N↔M, reference-only link to an external ticket (Jira/Linear). One ticket may become many tasks; many tickets may collapse into one. The human owns the translation. No agent reads the ticket, needs access to it, or is blocked by it.
 
 Per-product PM (`apps/<product>/project-management/state.md` + `now.md`) still exists as per-product *status*. The iteration is the cross-product *coordination* layer above it; `Product` is the link between a task and its product's specs + PM.
@@ -134,10 +136,10 @@ Six values, no more. Extra states mean extra bookkeeping, and bookkeeping rots.
 | Transition | Written by | When |
 |-----------|-----------|------|
 | `backlog → todo` | the **Planner** | when the task is scoped and its dependencies allow it |
-| `todo → in-flight` | whoever dispatches (the human, or Cetana at `dispatch`) | at start |
+| `todo → in-flight` | whoever dispatches (the human, or the dispatch tool) | at start |
 | `in-flight → in-review` | the **Developer** | when it opens the PR — same write that fills the `PR` column |
 | `in-review → merged` | the **Archivist** | at close-out — same step that confirms the merge |
-| `→ blocked` | the **Developer** | when it escalates (manual escalation / `cetana_request_input`) |
+| `→ blocked` | the **Developer** | when it escalates |
 | `blocked → in-flight` | whoever supplies the unblocking answer | when the escalation is resolved |
 
 ### Read to self-locate, write to hand off
@@ -154,7 +156,7 @@ Same file, both directions. That is the coordination spine of the whole model: s
 - **Planner** owns `backlog → todo` (scoping/promotion).
 - **Developer** done-checklist gains: *set my task's row to `in-review` and fill the `PR` column* (alongside "brief in PR body").
 - **Archivist** close-out gains: *flip the task's row to `merged`* (alongside confirming merge, branch deletion, docs/changelog).
-- **Dispatcher** (human or Cetana) sets `todo → in-flight` at start.
+- **Dispatcher** (human or tool) sets `todo → in-flight` at start.
 
 ---
 
@@ -165,9 +167,9 @@ The `Dispatch rules` block is what makes two or more developers safe. With a sin
 - **depends-on gate** — a task cannot start until its dependency is `merged`.
 - **conflicts-with gate** — a task cannot start while a colliding sibling is `in-flight` or `in-review` (i.e. has an open PR or active agent). `Product` is the first-pass filter: tasks in different products rarely collide.
 
-In manual mode these are preconditions the Developer checks before beginning (read the iteration file's status column + open-PR status). In Cetana they become automatic at `dispatch`. Either way: the conflict is declared at planning time and enforced at dispatch time — never discovered at merge time, which is too late.
+In manual mode these are preconditions the Developer checks before beginning (read the iteration file's status column + open-PR status). An automation layer can enforce them automatically at dispatch. Either way: the conflict is declared at planning time and enforced at dispatch time — never discovered at merge time, which is too late.
 
-**v1 honesty:** in manual mode the gates are *trusted, not enforced* — an agent reads them and is expected to comply, but nothing mechanically stops a human from ignoring them. That is acceptable for a small, watched team (the Sateliot pilot). Mechanical enforcement arrives when Cetana enforces the gates in code at `dispatch`. Until then: trusted discipline.
+**v1 honesty:** in manual mode the gates are *trusted, not enforced* — an agent reads them and is expected to comply, but nothing mechanically stops a human from ignoring them. That is acceptable for a small, watched team. Mechanical enforcement arrives when a dispatch tool enforces the gates in code. Until then: trusted discipline.
 
 ---
 
@@ -175,4 +177,4 @@ In manual mode these are preconditions the Developer checks before beginning (re
 
 > AEG does not plan your product. It governs how your product gets executed by agents — safely, coherently, and coordinated across a team.
 
-For the manual run mechanics and per-role entry gates, see `aeg-manual-flow.md`. For the authority model and tiers, see `state-machine.md`. For the first live iteration, see `iterations/cetana-cli-ladder.md`.
+For the manual run mechanics and per-role entry gates, see `aeg-manual-flow.md`. For the authority model and tiers, see `state-machine.md`. For the product registry, see `products.md`.
