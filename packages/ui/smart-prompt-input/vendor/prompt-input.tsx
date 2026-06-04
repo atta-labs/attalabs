@@ -444,6 +444,9 @@ export const PromptInput = ({
         .map((s) => s.trim())
         .filter(Boolean)
       return patterns.some((pattern) => {
+        if (pattern.startsWith('.')) {
+          return f.name.toLowerCase().endsWith(pattern.toLowerCase())
+        }
         if (pattern.endsWith('/*')) {
           const prefix = pattern.slice(0, -1)
           return f.type.startsWith(prefix)
@@ -762,13 +765,18 @@ export const PromptInputBody = ({ className, ...props }: PromptInputBodyProps) =
   <div className={cn('contents', className)} {...props} />
 )
 
-export type PromptInputTextareaProps = ComponentProps<typeof InputGroupTextarea>
+export type PromptInputTextareaProps = ComponentProps<typeof InputGroupTextarea> & {
+  submitOnCmdEnter?: boolean
+  pasteToFileChars?: number
+}
 
 export const PromptInputTextarea = ({
   onChange,
   onKeyDown,
   className,
   placeholder = 'What would you like to know?',
+  submitOnCmdEnter = false,
+  pasteToFileChars,
   ...props
 }: PromptInputTextareaProps) => {
   const controller = useOptionalPromptInputController()
@@ -790,6 +798,9 @@ export const PromptInputTextarea = ({
         if (e.shiftKey) {
           return
         }
+        if (submitOnCmdEnter && !e.metaKey && !e.ctrlKey) {
+          return
+        }
         e.preventDefault()
 
         const { form } = e.currentTarget
@@ -809,7 +820,7 @@ export const PromptInputTextarea = ({
         }
       }
     },
-    [onKeyDown, isComposing, attachments]
+    [onKeyDown, isComposing, attachments, submitOnCmdEnter]
   )
 
   const handlePaste: ClipboardEventHandler<HTMLTextAreaElement> = useCallback(
@@ -834,9 +845,19 @@ export const PromptInputTextarea = ({
       if (pastedFiles.length > 0) {
         event.preventDefault()
         attachments.add(pastedFiles)
+        return
+      }
+
+      if (pasteToFileChars !== undefined) {
+        const text = event.clipboardData?.getData('text/plain') ?? ''
+        if (text.length >= pasteToFileChars) {
+          event.preventDefault()
+          const file = new File([text], 'pasted-text.txt', { type: 'text/plain', lastModified: Date.now() })
+          attachments.add([file])
+        }
       }
     },
-    [attachments]
+    [attachments, pasteToFileChars]
   )
 
   const handleCompositionEnd = useCallback(() => setIsComposing(false), [])

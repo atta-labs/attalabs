@@ -1,8 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { AvatarFrame } from '@/components/avatar-frame'
@@ -22,7 +20,6 @@ interface CandidateProfile {
   availability?: string
   avatarUrl?: string
   cvUrl?: string
-  bio?: string
 }
 
 type FlowState = 'input' | 'loading' | 'result' | 'error'
@@ -177,9 +174,22 @@ export function EnvoyFlow({
 
   if (state === 'input') {
     if (previewMode) {
+      const previewLeadLine = localProfile.summary
+        ? localProfile.summary
+            .split(/\n\n+/)[0]
+            ?.replace(/\*\*(.+?)\*\*/g, '$1')
+            ?.replace(/\*(.+?)\*/g, '$1')
+            ?.replace(/`(.+?)`/g, '$1')
+            ?.replace(/\[(.+?)\]\(.+?\)/g, '$1')
+            ?.replace(/^#+\s+/gm, '')
+            ?.trim()
+        : undefined
+      const previewTopStack = localProfile.stack?.slice(0, 5) ?? []
+      const previewLocation = [localProfile.location, localProfile.availability].filter(Boolean).join(' · ')
+
       return (
         <div className='mx-auto max-w-[680px] px-6 py-12'>
-          <header className='mb-8 border-b border-border pb-10'>
+          <header className='mb-8 border-b border-border pb-8'>
             <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
               Forensic Match Audit
             </p>
@@ -197,11 +207,6 @@ export function EnvoyFlow({
                 <div className='min-w-0'>
                   <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>{localProfile.name}</h1>
                   <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{localProfile.title}</p>
-                  {(localProfile.location || localProfile.availability) && (
-                    <p className='mt-1 font-mono text-[10px] text-muted-foreground/70'>
-                      {[localProfile.location, localProfile.availability].filter(Boolean).join(' · ')}
-                    </p>
-                  )}
                 </div>
               </div>
               {localProfile.cvUrl && (
@@ -224,11 +229,39 @@ export function EnvoyFlow({
                 </div>
               )}
             </div>
-            {localProfile.summary && (
-              <div className='prose prose-sm mt-6 max-w-none rounded-lg border border-border bg-card px-5 py-4 font-sans text-sm leading-relaxed text-foreground/80 [&_a]:text-foreground [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:font-mono [&_code]:text-xs [&_h1]:font-serif [&_h1]:text-base [&_h2]:font-serif [&_h2]:text-sm [&_h3]:font-serif [&_h3]:text-sm [&_li]:text-foreground/80 [&_ol]:pl-4 [&_p]:text-foreground/80 [&_strong]:text-foreground [&_ul]:pl-4'>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{localProfile.summary}</ReactMarkdown>
-              </div>
-            )}
+            <div className='mt-6'>
+              {previewLeadLine && (
+                <p className='font-sans text-[21px] font-medium leading-snug text-foreground'>{previewLeadLine}</p>
+              )}
+              {(localProfile.title || previewTopStack.length > 0 || previewLocation) && (
+                <dl className='mt-3 grid grid-cols-[96px_1fr] gap-y-1.5'>
+                  {localProfile.title && (
+                    <>
+                      <dt className='self-baseline font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+                        ROLE
+                      </dt>
+                      <dd className='font-mono text-[10px] text-foreground'>{localProfile.title}</dd>
+                    </>
+                  )}
+                  {previewTopStack.length > 0 && (
+                    <>
+                      <dt className='self-baseline font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+                        STACK
+                      </dt>
+                      <dd className='font-mono text-[10px] text-foreground'>{previewTopStack.join(' · ')}</dd>
+                    </>
+                  )}
+                  {previewLocation && (
+                    <>
+                      <dt className='self-baseline font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+                        LOCATION
+                      </dt>
+                      <dd className='font-mono text-[10px] text-foreground'>{previewLocation}</dd>
+                    </>
+                  )}
+                </dl>
+              )}
+            </div>
           </header>
           <div className='rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
             <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
@@ -243,6 +276,7 @@ export function EnvoyFlow({
         candidateTitle={localProfile.title}
         candidateAvatarUrl={localProfile.avatarUrl}
         candidateSummary={localProfile.summary}
+        candidateStack={localProfile.stack}
         candidateLocation={localProfile.location}
         candidateAvailability={localProfile.availability}
         candidateCvUrl={localProfile.cvUrl}

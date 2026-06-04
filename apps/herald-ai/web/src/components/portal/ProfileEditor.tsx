@@ -9,6 +9,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   Textarea,
   useToastContext
 } from '@atta/ui'
@@ -205,6 +209,9 @@ interface ProfileData {
   cvUrl: string | null
 }
 
+const triggerClass =
+  'pl-0 pr-6 text-muted-foreground data-[active]:border-primary data-[active]:text-foreground hover:text-foreground/70'
+
 export function ProfileEditor({ profile }: { profile: ProfileData }) {
   const [form, setForm] = useState({
     name: profile.name,
@@ -314,43 +321,160 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
   const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
   const inputClass =
     'bg-card border-border focus-visible:border-foreground/30 focus-visible:ring-0 focus-visible:ring-offset-0'
+  const sectionHeadClass = 'mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'
 
   return (
-    <div className='space-y-8'>
-      <section className='rounded border border-dashed border-border p-4'>
-        <div className='flex items-center justify-between'>
-          <div>
-            <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Replace from CV</h2>
-            <p className='mt-1 font-mono text-[10px] text-muted-foreground'>
-              Upload a new CV to overwrite all profile fields at once.
-            </p>
-          </div>
-          <div>
-            <input
-              ref={cvInputRef}
-              type='file'
-              accept='.pdf,.txt,.md'
-              className='hidden'
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) handleCvUpload(file)
-              }}
+    <Tabs defaultValue='profile'>
+      <TabsList className='border-border'>
+        <TabsTrigger value='profile' className={triggerClass}>
+          Profile
+        </TabsTrigger>
+        <TabsTrigger value='cv' className={triggerClass}>
+          CV
+        </TabsTrigger>
+        <TabsTrigger value='api-keys' className={triggerClass}>
+          API Keys
+        </TabsTrigger>
+        <TabsTrigger value='connections' className={triggerClass}>
+          Connections
+        </TabsTrigger>
+      </TabsList>
+
+      {/* ── Profile ──────────────────────────────────────────── */}
+      <TabsContent value='profile'>
+        <div className='space-y-8'>
+          <section>
+            <h2 className={sectionHeadClass}>Identity</h2>
+            <div className='grid grid-cols-2 gap-4'>
+              <div>
+                <label htmlFor='field-name' className={labelClass}>
+                  Name
+                </label>
+                <Input
+                  id='field-name'
+                  className={inputClass}
+                  value={form.name}
+                  onChange={(e) => update('name', e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor='field-title' className={labelClass}>
+                  Title
+                </label>
+                <Input
+                  id='field-title'
+                  className={inputClass}
+                  value={form.title}
+                  onChange={(e) => update('title', e.target.value)}
+                />
+              </div>
+
+              <div className='relative'>
+                <span className={labelClass}>Location</span>
+                <Input
+                  className={inputClass}
+                  value={locationSearch}
+                  onChange={(e) => {
+                    setLocationSearch(e.target.value)
+                    setLocationOpen(true)
+                  }}
+                  onFocus={() => setLocationOpen(true)}
+                  placeholder='Search country...'
+                />
+                {locationOpen && filteredCountries.length > 0 && (
+                  <div className='absolute z-20 mt-1 max-h-48 w-full overflow-y-auto border border-border bg-card shadow-lg'>
+                    {filteredCountries.map((country) => (
+                      <Button
+                        key={country}
+                        type='button'
+                        variant='ghost'
+                        onClick={() => {
+                          setLocationSearch(country)
+                          update('location', country)
+                          setLocationOpen(false)
+                        }}
+                        className={`h-auto w-full justify-start rounded-none px-3 py-1.5 font-sans text-sm ${
+                          form.location === country ? 'text-foreground' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {country}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <span className={labelClass}>Work Mode</span>
+                <Select value={form.availability} onValueChange={(value) => update('availability', value)}>
+                  <SelectTrigger className={inputClass}>
+                    <SelectValue placeholder='Select...' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {WORK_MODES.map((mode) => (
+                      <SelectItem key={mode} value={mode}>
+                        {mode}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div className='mb-2 flex items-baseline justify-between'>
+              <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
+              <span className='font-mono text-[9px] text-muted-foreground/60'>
+                markdown supported · headers, lists, bold, code
+              </span>
+            </div>
+            <Textarea
+              className={`${inputClass} h-40 max-h-[160px] resize-none overflow-y-auto font-mono text-xs`}
+              value={form.summary}
+              onChange={(e) => update('summary', e.target.value)}
+              placeholder={'# Senior Engineer\n\n15+ years across backend, frontend, and AI systems...'}
             />
+          </section>
+
+          <section>
+            <div className='mb-2 flex items-baseline justify-between'>
+              <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Stack</h2>
+              <span className='font-mono text-[9px] text-muted-foreground/60'>comma-separated</span>
+            </div>
+            <Textarea
+              className={`${inputClass} h-24 max-h-[96px] resize-none overflow-y-auto`}
+              value={form.stack}
+              onChange={(e) => update('stack', e.target.value)}
+            />
+          </section>
+
+          <div className='flex items-center gap-3 border-t border-border pt-6'>
             <Button
               type='button'
               variant='outline'
-              onClick={() => cvInputRef.current?.click()}
-              disabled={uploading}
+              onClick={handleSave}
+              disabled={saving}
               className='font-mono text-xs uppercase tracking-[0.2em]'
             >
-              {uploading ? 'Parsing...' : 'Upload CV'}
+              {saving ? 'Saving...' : 'Save Profile'}
             </Button>
           </div>
         </div>
-      </section>
+      </TabsContent>
 
-      <section>
-        <h2 className='mb-3 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>CV</h2>
+      {/* ── CV ───────────────────────────────────────────────── */}
+      <TabsContent value='cv'>
+        <input
+          ref={cvInputRef}
+          type='file'
+          accept='.pdf,.txt,.md'
+          className='hidden'
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) handleCvUpload(file)
+          }}
+        />
         <input
           ref={cvDirectRef}
           type='file'
@@ -361,121 +485,82 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
             if (file) handleCvDirectUpload(file)
           }}
         />
-        {cvUrl ? (
-          <div className='flex items-center gap-3'>
-            <a
-              href={cvUrl}
-              target='_blank'
-              rel='noreferrer'
-              className='inline-flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
-            >
-              <Download className='h-3 w-3' />
-              Download CV
-            </a>
-            <Button
-              type='button'
-              variant='ghost'
-              size='sm'
-              onClick={() => cvDirectRef.current?.click()}
-              disabled={cvUploading}
-              className='font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground'
-            >
-              {cvUploading ? 'Uploading...' : 'Replace'}
-            </Button>
-          </div>
-        ) : (
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={() => cvDirectRef.current?.click()}
-            disabled={cvUploading}
-            className='gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em]'
-          >
-            <Upload className='h-3 w-3' />
-            {cvUploading ? 'Uploading...' : 'Upload CV (PDF)'}
-          </Button>
-        )}
-      </section>
-
-      <section>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Identity</h2>
-        <div className='grid grid-cols-2 gap-4'>
-          <div>
-            <label htmlFor='field-name' className={labelClass}>
-              Name
-            </label>
-            <Input
-              id='field-name'
-              className={inputClass}
-              value={form.name}
-              onChange={(e) => update('name', e.target.value)}
-            />
-          </div>
-          <div>
-            <label htmlFor='field-title' className={labelClass}>
-              Title
-            </label>
-            <Input
-              id='field-title'
-              className={inputClass}
-              value={form.title}
-              onChange={(e) => update('title', e.target.value)}
-            />
-          </div>
-
-          <div className='relative'>
-            <span className={labelClass}>Location</span>
-            <Input
-              className={inputClass}
-              value={locationSearch}
-              onChange={(e) => {
-                setLocationSearch(e.target.value)
-                setLocationOpen(true)
-              }}
-              onFocus={() => setLocationOpen(true)}
-              placeholder='Search country...'
-            />
-            {locationOpen && filteredCountries.length > 0 && (
-              <div className='absolute z-20 mt-1 max-h-48 w-full overflow-y-auto border border-border bg-card shadow-lg'>
-                {filteredCountries.map((country) => (
-                  <Button
-                    key={country}
-                    type='button'
-                    variant='ghost'
-                    onClick={() => {
-                      setLocationSearch(country)
-                      update('location', country)
-                      setLocationOpen(false)
-                    }}
-                    className={`h-auto w-full justify-start rounded-none px-3 py-1.5 font-sans text-sm ${
-                      form.location === country ? 'text-foreground' : 'text-muted-foreground'
-                    }`}
-                  >
-                    {country}
-                  </Button>
-                ))}
+        <div className='space-y-8'>
+          <section className='rounded border border-dashed border-border p-4'>
+            <div className='flex items-center justify-between'>
+              <div>
+                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+                  Replace from CV
+                </h2>
+                <p className='mt-1 font-mono text-[10px] text-muted-foreground'>
+                  Upload a new CV to overwrite all profile fields at once.
+                </p>
               </div>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => cvInputRef.current?.click()}
+                disabled={uploading}
+                className='font-mono text-xs uppercase tracking-[0.2em]'
+              >
+                {uploading ? 'Parsing...' : 'Upload CV'}
+              </Button>
+            </div>
+          </section>
+
+          <section>
+            <h2 className={sectionHeadClass}>CV File</h2>
+            {cvUrl ? (
+              <div className='flex items-center gap-3'>
+                <a
+                  href={cvUrl}
+                  target='_blank'
+                  rel='noreferrer'
+                  className='inline-flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
+                >
+                  <Download className='h-3 w-3' />
+                  Download CV
+                </a>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => cvDirectRef.current?.click()}
+                  disabled={cvUploading}
+                  className='font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground'
+                >
+                  {cvUploading ? 'Uploading...' : 'Replace'}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => cvDirectRef.current?.click()}
+                disabled={cvUploading}
+                className='gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em]'
+              >
+                <Upload className='h-3 w-3' />
+                {cvUploading ? 'Uploading...' : 'Upload CV (PDF)'}
+              </Button>
             )}
-          </div>
+          </section>
+        </div>
+      </TabsContent>
 
-          <div>
-            <span className={labelClass}>Work Mode</span>
-            <Select value={form.availability} onValueChange={(value) => update('availability', value)}>
-              <SelectTrigger className={inputClass}>
-                <SelectValue placeholder='Select...' />
-              </SelectTrigger>
-              <SelectContent>
-                {WORK_MODES.map((mode) => (
-                  <SelectItem key={mode} value={mode}>
-                    {mode}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      {/* ── API Keys ─────────────────────────────────────────── */}
+      <TabsContent value='api-keys'>
+        <div className='rounded border border-dashed border-border px-6 py-12 text-center'>
+          <p className='font-mono text-xs text-muted-foreground'>API key management coming soon.</p>
+        </div>
+      </TabsContent>
 
-          <div>
+      {/* ── Connections ──────────────────────────────────────── */}
+      <TabsContent value='connections'>
+        <div className='space-y-8'>
+          <section>
+            <h2 className={sectionHeadClass}>GitHub</h2>
             <label htmlFor='field-github' className={labelClass}>
               GitHub Handle
             </label>
@@ -485,47 +570,21 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
               value={form.github}
               onChange={(e) => update('github', e.target.value)}
             />
+          </section>
+
+          <div className='flex items-center gap-3 border-t border-border pt-6'>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={handleSave}
+              disabled={saving}
+              className='font-mono text-xs uppercase tracking-[0.2em]'
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
           </div>
         </div>
-      </section>
-
-      <section>
-        <div className='mb-2 flex items-baseline justify-between'>
-          <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
-          <span className='font-mono text-[9px] text-muted-foreground/60'>
-            Markdown supported — headers, lists, bold, code
-          </span>
-        </div>
-        <Textarea
-          className={`${inputClass} min-h-[120px] resize-y font-mono text-xs`}
-          value={form.summary}
-          onChange={(e) => update('summary', e.target.value)}
-          placeholder='# Senior Engineer&#10;&#10;15+ years across backend, frontend, and AI systems...'
-        />
-      </section>
-
-      <section>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-          Stack (comma-separated)
-        </h2>
-        <Textarea
-          className={`${inputClass} min-h-[80px] resize-y`}
-          value={form.stack}
-          onChange={(e) => update('stack', e.target.value)}
-        />
-      </section>
-
-      <div className='flex items-center gap-3 border-t border-border pt-6'>
-        <Button
-          type='button'
-          variant='outline'
-          onClick={handleSave}
-          disabled={saving}
-          className='font-mono text-xs uppercase tracking-[0.2em]'
-        >
-          {saving ? 'Saving...' : 'Save Profile'}
-        </Button>
-      </div>
-    </div>
+      </TabsContent>
+    </Tabs>
   )
 }

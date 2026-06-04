@@ -39,8 +39,7 @@ export default async function EnvoyPage({
     location: user.location ?? undefined,
     availability: user.availability ?? undefined,
     avatarUrl: user.avatarUrl ?? undefined,
-    cvUrl: user.cvUrl ?? undefined,
-    bio: user.bio ?? undefined
+    cvUrl: user.cvUrl ?? undefined
   }
 
   // Fetch theme from Sanity if user has one selected
