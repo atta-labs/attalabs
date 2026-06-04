@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { Download, ExternalLink } from 'lucide-react'
 import { SignInButton, UserButton, useUser } from '@atta/auth'
 import { Button } from '@atta/ui/components/button'
 import { Logo } from '@atta/ui/shared'
@@ -15,6 +16,7 @@ export interface ProfileIdentity {
   name: string | null
   title: string | null
   avatarUrl: string | null
+  cvUrl: string | null
 }
 
 function EnvoyNavContent({ logoUrl, profileIdentity }: { logoUrl: string | null; profileIdentity: ProfileIdentity }) {
@@ -35,23 +37,24 @@ function EnvoyNavContent({ logoUrl, profileIdentity }: { logoUrl: string | null;
 
   return (
     <nav className='absolute inset-x-0 top-0 z-50 bg-background/40 backdrop-blur-md'>
-      <div className='flex h-14 w-full items-center px-6'>
-        {/* Logo — pinned left */}
-        <div className='flex flex-1 items-center'>
-          <NextLink variant='unstyled' href='/' className='flex items-center gap-2'>
-            {logoUrl ? (
-              <Logo dark={logoUrl} alt='Herald' size='h-10' text={['Forensic hiring', 'audits']} />
-            ) : (
-              <span className='font-mono text-sm font-bold tracking-tight'>Herald</span>
-            )}
-          </NextLink>
-        </div>
+      {/* Logo — pinned at viewport left corner */}
+      <div className='absolute inset-y-0 left-0 flex items-center pl-6'>
+        <NextLink variant='unstyled' href='/' className='flex items-center gap-2'>
+          {logoUrl ? (
+            <Logo dark={logoUrl} alt='Herald' size='h-10' text={['Forensic hiring', 'audits']} />
+          ) : (
+            <span className='font-mono text-sm font-bold tracking-tight'>Herald</span>
+          )}
+        </NextLink>
+      </div>
 
-        {/* Docked identity — fades in when hero avatar+name scroll past the header */}
+      {/* Content column — aligned to the page body column (same max-w + px) */}
+      <div className='mx-auto flex h-14 max-w-[680px] items-center justify-between px-6'>
+        {/* Docked identity — left edge of the content column */}
         <div
           className={cn(
             'flex items-center gap-2.5 transition-all duration-300 ease-out motion-reduce:transition-none',
-            isCollapsed ? 'opacity-100 translate-y-0' : 'pointer-events-none select-none opacity-0 translate-y-1.5'
+            isCollapsed ? 'translate-y-0 opacity-100' : 'pointer-events-none select-none translate-y-1.5 opacity-0'
           )}
           aria-hidden={!isCollapsed}
         >
@@ -75,19 +78,50 @@ function EnvoyNavContent({ logoUrl, profileIdentity }: { logoUrl: string | null;
           )}
         </div>
 
-        {/* Actions — pinned right */}
-        <div className='flex flex-1 items-center justify-end gap-3'>
-          <ColorSchemeToggle />
-          {user ? (
-            <UserButton />
-          ) : (
-            <SignInButton mode='modal'>
-              <Button variant='outline' size='sm' className='text-xs'>
-                Sign in
-              </Button>
-            </SignInButton>
-          )}
-        </div>
+        {/* CV buttons — right edge of the content column */}
+        {profileIdentity.cvUrl && (
+          <div
+            className={cn(
+              'flex shrink-0 items-center gap-1 transition-all duration-300 ease-out motion-reduce:transition-none',
+              isCollapsed ? 'translate-y-0 opacity-100' : 'pointer-events-none select-none translate-y-1.5 opacity-0'
+            )}
+            aria-hidden={!isCollapsed}
+          >
+            <a
+              href={profileIdentity.cvUrl}
+              download
+              aria-label='Download CV'
+              title='Download CV'
+              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+            >
+              <Download className='h-3.5 w-3.5' />
+            </a>
+            <a
+              href={profileIdentity.cvUrl}
+              target='_blank'
+              rel='noreferrer'
+              aria-label='Open CV'
+              title='Open CV'
+              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+            >
+              <ExternalLink className='h-3.5 w-3.5' />
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* Theme toggle + Clerk — pinned at viewport right corner */}
+      <div className='absolute inset-y-0 right-0 flex items-center gap-3 pr-6'>
+        <ColorSchemeToggle />
+        {user ? (
+          <UserButton />
+        ) : (
+          <SignInButton mode='modal'>
+            <Button variant='outline' size='sm' className='text-xs'>
+              Sign in
+            </Button>
+          </SignInButton>
+        )}
       </div>
     </nav>
   )

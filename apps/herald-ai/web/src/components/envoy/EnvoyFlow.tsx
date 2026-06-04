@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Download, ExternalLink, FileText } from 'lucide-react'
+import { Download, ExternalLink } from 'lucide-react'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { AvatarFrame } from '@/components/avatar-frame'
@@ -176,72 +176,35 @@ export function EnvoyFlow({
 
   if (state === 'input') {
     if (previewMode) {
-      const previewTopStack = localProfile.stack?.slice(0, 5) ?? []
+      const previewTopStack = localProfile.stack ?? []
       const previewLocation = [localProfile.location, localProfile.availability].filter(Boolean).join(' · ')
+      const previewCvRawFile = localProfile.cvUrl ? (localProfile.cvUrl.split('/').pop() ?? '') : null
+      const previewCvExt = previewCvRawFile ? (previewCvRawFile.split('.').pop() ?? 'pdf') : 'pdf'
       const previewCvFilename = localProfile.cvUrl
-        ? decodeURIComponent(localProfile.cvUrl.split('/').pop() ?? '') || `${localProfile.name ?? 'CV'}.pdf`
+        ? `${(localProfile.name ?? 'CV').replace(/\s+/g, '_')}_CV.${previewCvExt}`
         : null
-      const previewCvExt = previewCvFilename ? (previewCvFilename.split('.').pop() ?? 'PDF').toUpperCase() : 'PDF'
 
       return (
         <div className='h-full overflow-y-auto'>
           <div className='mx-auto max-w-[680px] px-6 pt-12 pb-4'>
             <header>
-              <div className='flex items-stretch justify-between gap-4'>
-                <div className='flex items-start gap-5'>
-                  {localProfile.avatarUrl && (
-                    <AvatarFrame
-                      src={localProfile.avatarUrl}
-                      alt={localProfile.name ?? ''}
-                      variant='dossier'
-                      pennant
-                      pennantAnimated
-                    />
-                  )}
-                  <div className='min-w-0'>
-                    <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>{localProfile.name}</h1>
-                    <p className='mt-2 font-mono text-xl text-muted-foreground'>{localProfile.title}</p>
-                  </div>
-                </div>
-                {localProfile.cvUrl && (
-                  <div className='flex shrink-0 flex-col gap-2'>
-                    <div className='flex w-28 flex-col overflow-hidden rounded border border-border bg-card'>
-                      <div className='flex flex-1 items-center justify-center p-3'>
-                        <span className='rounded bg-primary px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-primary-foreground'>
-                          {previewCvExt}
-                        </span>
-                      </div>
-                      <div className='flex items-center gap-1.5 border-t border-border bg-muted px-2 py-1.5'>
-                        <FileText className='h-3 w-3 shrink-0 text-muted-foreground' />
-                        <p className='truncate font-mono text-[10px] text-foreground'>{previewCvFilename}</p>
-                      </div>
-                    </div>
-                    <div className='flex shrink-0 items-center justify-center gap-1.5'>
-                      <a
-                        href={localProfile.cvUrl}
-                        download
-                        aria-label='Download CV'
-                        title='Download CV'
-                        className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                      >
-                        <Download className='h-3.5 w-3.5' />
-                      </a>
-                      <a
-                        href={localProfile.cvUrl}
-                        target='_blank'
-                        rel='noreferrer'
-                        aria-label='Open CV'
-                        title='Open CV'
-                        className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                      >
-                        <ExternalLink className='h-3.5 w-3.5' />
-                      </a>
-                    </div>
-                  </div>
+              <div className='flex items-start gap-5'>
+                {localProfile.avatarUrl && (
+                  <AvatarFrame
+                    src={localProfile.avatarUrl}
+                    alt={localProfile.name ?? ''}
+                    variant='dossier'
+                    pennant
+                    pennantAnimated
+                  />
                 )}
+                <div className='min-w-0'>
+                  <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>{localProfile.name}</h1>
+                  <p className='mt-2 font-mono text-xl text-muted-foreground'>{localProfile.title}</p>
+                </div>
               </div>
               <div className='mt-6'>
-                {(previewTopStack.length > 0 || previewLocation) && (
+                {(previewTopStack.length > 0 || previewLocation || (localProfile.cvUrl && previewCvFilename)) && (
                   <dl className='grid grid-cols-[80px_1fr] items-baseline gap-y-2'>
                     {previewTopStack.length > 0 && (
                       <>
@@ -264,6 +227,37 @@ export function EnvoyFlow({
                       <>
                         <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LOCATION</dt>
                         <dd className='text-sm text-foreground'>{previewLocation}</dd>
+                      </>
+                    )}
+                    {localProfile.cvUrl && previewCvFilename && (
+                      <>
+                        <dt className='font-mono text-xs tracking-wide text-muted-foreground'>CV</dt>
+                        <dd className='flex items-center justify-between gap-2'>
+                          <span className='min-w-0 truncate font-mono text-sm text-foreground'>
+                            {previewCvFilename}
+                          </span>
+                          <div className='flex shrink-0 items-center gap-1'>
+                            <a
+                              href={localProfile.cvUrl}
+                              download
+                              aria-label='Download CV'
+                              title='Download CV'
+                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                            >
+                              <Download className='h-3.5 w-3.5' />
+                            </a>
+                            <a
+                              href={localProfile.cvUrl}
+                              target='_blank'
+                              rel='noreferrer'
+                              aria-label='Open CV'
+                              title='Open CV'
+                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                            >
+                              <ExternalLink className='h-3.5 w-3.5' />
+                            </a>
+                          </div>
+                        </dd>
                       </>
                     )}
                   </dl>

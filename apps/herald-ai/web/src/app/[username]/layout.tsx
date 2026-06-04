@@ -20,7 +20,8 @@ export default async function EnvoyLayout({
   const profileIdentity = {
     name: user?.name ?? null,
     title: user?.title ?? null,
-    avatarUrl: user?.avatarUrl ?? null
+    avatarUrl: user?.avatarUrl ?? null,
+    cvUrl: user?.cvUrl ?? null
   }
 
   return (

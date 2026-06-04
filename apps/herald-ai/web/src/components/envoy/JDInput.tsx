@@ -2,7 +2,7 @@
 
 import type { FileUIPart } from 'ai'
 import { useEffect, useRef } from 'react'
-import { Download, ExternalLink, FileText } from 'lucide-react'
+import { Download, ExternalLink } from 'lucide-react'
 import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { SummaryMarkdown } from '@/components/summary-markdown'
@@ -51,12 +51,11 @@ export function JDInput({
     return () => observer.disconnect()
   }, [setIsCollapsed])
 
-  const topStack = candidateStack?.slice(0, 5) ?? []
+  const topStack = candidateStack ?? []
   const locationLine = [candidateLocation, candidateAvailability].filter(Boolean).join(' · ')
-  const cvFilename = candidateCvUrl
-    ? decodeURIComponent(candidateCvUrl.split('/').pop() ?? '') || `${candidateName ?? 'CV'}.pdf`
-    : null
-  const cvExt = cvFilename ? (cvFilename.split('.').pop() ?? 'PDF').toUpperCase() : 'PDF'
+  const cvRawFile = candidateCvUrl ? (candidateCvUrl.split('/').pop() ?? '') : null
+  const cvExt = cvRawFile ? (cvRawFile.split('.').pop() ?? 'pdf') : 'pdf'
+  const cvFilename = candidateCvUrl ? `${(candidateName ?? 'CV').replace(/\s+/g, '_')}_CV.${cvExt}` : null
 
   function handleSubmit(text: string, files: FileUIPart[]) {
     let jd = text.trim()
@@ -82,68 +81,29 @@ export function JDInput({
     <div className='flex h-full flex-col'>
       {/* Scrollable candidate info */}
       <div className='min-h-0 flex-1 overflow-y-auto' ref={scrollRef}>
-        <div className='mx-auto max-w-[680px] px-6 pt-12 pb-4'>
+        <div className='mx-auto max-w-[680px] px-6 pt-20 pb-4'>
           <header>
-            <div className='flex items-stretch justify-between gap-4'>
-              <div className='flex items-start gap-5'>
-                {candidateAvatarUrl && (
-                  <AvatarFrame
-                    src={candidateAvatarUrl}
-                    alt={candidateName ?? ''}
-                    variant='dossier'
-                    pennant
-                    pennantAnimated
-                  />
-                )}
-                <div className='min-w-0'>
-                  <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>{candidateName}</h1>
-                  <p className='mt-2 font-mono text-xl text-muted-foreground'>{candidateTitle}</p>
-                </div>
-              </div>
-
-              {candidateCvUrl && (
-                <div className='flex shrink-0 flex-col gap-2'>
-                  <div className='flex w-28 flex-col overflow-hidden rounded border border-border bg-card'>
-                    <div className='flex flex-1 items-center justify-center p-3'>
-                      <span className='rounded bg-primary px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-primary-foreground'>
-                        {cvExt}
-                      </span>
-                    </div>
-                    <div className='flex items-center gap-1.5 border-t border-border bg-muted px-2 py-1.5'>
-                      <FileText className='h-3 w-3 shrink-0 text-muted-foreground' />
-                      <p className='truncate font-mono text-[10px] text-foreground'>{cvFilename}</p>
-                    </div>
-                  </div>
-                  <div className='flex shrink-0 items-center justify-center gap-1.5'>
-                    <a
-                      href={candidateCvUrl}
-                      download
-                      aria-label='Download CV'
-                      title='Download CV'
-                      className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                    >
-                      <Download className='h-3.5 w-3.5' />
-                    </a>
-                    <a
-                      href={candidateCvUrl}
-                      target='_blank'
-                      rel='noreferrer'
-                      aria-label='Open CV'
-                      title='Open CV'
-                      className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                    >
-                      <ExternalLink className='h-3.5 w-3.5' />
-                    </a>
-                  </div>
-                </div>
+            <div className='flex items-start gap-5'>
+              {candidateAvatarUrl && (
+                <AvatarFrame
+                  src={candidateAvatarUrl}
+                  alt={candidateName ?? ''}
+                  variant='dossier'
+                  pennant
+                  pennantAnimated
+                />
               )}
+              <div className='min-w-0'>
+                <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>{candidateName}</h1>
+                <p className='mt-2 font-mono text-xl text-muted-foreground'>{candidateTitle}</p>
+              </div>
             </div>
 
             {/* Sentinel: collapse triggers when this exits the scroll container's top (= past the header) */}
             <div ref={sentinelRef} aria-hidden='true' />
 
             <div className='mt-6'>
-              {(topStack.length > 0 || locationLine) && (
+              {(topStack.length > 0 || locationLine || (candidateCvUrl && cvFilename)) && (
                 <dl className='grid grid-cols-[80px_1fr] items-baseline gap-y-2'>
                   {topStack.length > 0 && (
                     <>
@@ -166,6 +126,35 @@ export function JDInput({
                     <>
                       <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LOCATION</dt>
                       <dd className='text-sm text-foreground'>{locationLine}</dd>
+                    </>
+                  )}
+                  {candidateCvUrl && cvFilename && (
+                    <>
+                      <dt className='font-mono text-xs tracking-wide text-muted-foreground'>CV</dt>
+                      <dd className='flex items-center justify-between gap-2'>
+                        <span className='min-w-0 truncate font-mono text-sm text-foreground'>{cvFilename}</span>
+                        <div className='flex shrink-0 items-center gap-1'>
+                          <a
+                            href={candidateCvUrl}
+                            download
+                            aria-label='Download CV'
+                            title='Download CV'
+                            className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                          >
+                            <Download className='h-3.5 w-3.5' />
+                          </a>
+                          <a
+                            href={candidateCvUrl}
+                            target='_blank'
+                            rel='noreferrer'
+                            aria-label='Open CV'
+                            title='Open CV'
+                            className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                          >
+                            <ExternalLink className='h-3.5 w-3.5' />
+                          </a>
+                        </div>
+                      </dd>
                     </>
                   )}
                 </dl>
