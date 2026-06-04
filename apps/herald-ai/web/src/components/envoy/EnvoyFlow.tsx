@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
+import { AvatarFrame } from '@/components/avatar-frame'
 import { JDInput } from './JDInput'
 import { LoadingState } from './LoadingState'
 import { ReportView } from './ReportView'
@@ -176,39 +177,64 @@ export function EnvoyFlow({
     if (previewMode) {
       return (
         <div className='mx-auto max-w-[680px] px-6 py-12'>
-          <header className='mb-8 border-b border-border pb-6'>
-            <div className='flex items-center gap-4'>
-              {localProfile.avatarUrl && (
-                // biome-ignore lint/performance/noImgElement: Blob URL, not optimisable via next/image
-                <img src={localProfile.avatarUrl} alt='' className='h-16 w-16 rounded-full object-cover' />
-              )}
-              <div>
-                <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-                  Forensic Match Audit
-                </p>
-                <h1 className='mt-1 font-display text-2xl tracking-tight'>{localProfile.name}</h1>
-                <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{localProfile.title}</p>
+          <header className='mb-8 border-b border-border pb-10'>
+            <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+              Forensic Match Audit
+            </p>
+            <div className='mt-4 flex items-start justify-between gap-4'>
+              <div className='flex items-start gap-5'>
+                {localProfile.avatarUrl && (
+                  <AvatarFrame
+                    src={localProfile.avatarUrl}
+                    alt={localProfile.name ?? ''}
+                    variant='dossier'
+                    pennant
+                    pennantAnimated
+                  />
+                )}
+                <div className='min-w-0'>
+                  <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>
+                    {localProfile.name}
+                  </h1>
+                  <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{localProfile.title}</p>
+                  {(localProfile.location || localProfile.availability) && (
+                    <p className='mt-1 font-mono text-[10px] text-muted-foreground/70'>
+                      {[localProfile.location, localProfile.availability].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+                </div>
               </div>
+              {localProfile.cvUrl && (
+                <div className='flex shrink-0 flex-col items-end gap-1.5 pt-1'>
+                  <a
+                    href={localProfile.cvUrl}
+                    download
+                    className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
+                  >
+                    ↓ Download CV
+                  </a>
+                  <a
+                    href={localProfile.cvUrl}
+                    target='_blank'
+                    rel='noreferrer'
+                    className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
+                  >
+                    ↗ Open CV
+                  </a>
+                </div>
+              )}
             </div>
+            {localProfile.summary && (
+              <div className='mt-6 rounded-lg border border-border bg-card px-5 py-4'>
+                <p className='line-clamp-3 font-sans text-sm leading-relaxed text-foreground/80'>
+                  {localProfile.summary}
+                </p>
+              </div>
+            )}
           </header>
-          {localProfile.bio && (
-            <p className='mb-8 font-sans text-sm leading-relaxed text-foreground/80'>{localProfile.bio}</p>
-          )}
           <div className='rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
             <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
           </div>
-          {localProfile.cvUrl && (
-            <div className='mt-8 border-t border-border pt-6'>
-              <a
-                href={localProfile.cvUrl}
-                target='_blank'
-                rel='noreferrer'
-                className='font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
-              >
-                ↓ Download CV
-              </a>
-            </div>
-          )}
         </div>
       )
     }
@@ -218,7 +244,9 @@ export function EnvoyFlow({
         candidateName={localProfile.name}
         candidateTitle={localProfile.title}
         candidateAvatarUrl={localProfile.avatarUrl}
-        candidateBio={localProfile.bio}
+        candidateSummary={localProfile.summary}
+        candidateLocation={localProfile.location}
+        candidateAvailability={localProfile.availability}
         candidateCvUrl={localProfile.cvUrl}
       />
     )

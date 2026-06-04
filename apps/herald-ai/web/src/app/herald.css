@@ -1,0 +1,12 @@
+/* Herald pennant — bookmark/flag brand mark */
+@keyframes pennant-sway {
+  0%, 100% { transform: rotate(-2.5deg); }
+  50%       { transform: rotate(2.5deg); }
+}
+.pennant-sway {
+  transform-origin: top center;
+  animation: pennant-sway 4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pennant-sway { animation: none; }
+}

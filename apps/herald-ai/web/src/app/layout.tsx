@@ -5,6 +5,7 @@ import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
+import './herald.css'
 
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getHeraldBranding(cmsClient).catch(() => null)
