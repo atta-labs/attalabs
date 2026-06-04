@@ -32,6 +32,7 @@ function getCached(key: string): MatchReport | null {
 function buildPartialReport(name: string, title: string, github: string): MatchReport {
   return {
     candidate: { name, title, github },
+    hard_requirements: [],
     grade: 'B+',
     recommendation: 'Good Fit',
     confidence: 'Low',
@@ -39,7 +40,7 @@ function buildPartialReport(name: string, title: string, github: string): MatchR
       'Audit timed out before full analysis could complete. Partial assessment based on available data.'
     ],
     signal: [],
-    gaps: [{ gap: 'Incomplete analysis', mitigation: 'Re-run the audit for a complete assessment' }],
+    gaps: [{ gap: 'Incomplete analysis', severity: 'minor', mitigation: 'Re-run the audit for a complete assessment' }],
     interview_hooks: []
   }
 }
@@ -76,14 +77,24 @@ function parseMatchReport(
     const cleaned = text.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '')
     const parsed = JSON.parse(cleaned)
 
-    // Validate required fields
+    // Validate required fields — hard_requirements must be present (can be empty for no-gate JDs)
     if (!parsed.grade || !parsed.recommendation || !parsed.signal) return null
+    if (!Array.isArray(parsed.hard_requirements)) return null
+
+    // Code-enforced NO FIT gate — model cannot override this
+    const failedHardGate = parsed.hard_requirements.some(
+      (r: { kind: string; met: boolean }) => r.kind === 'hard' && !r.met
+    )
+    const grade = failedHardGate ? 'NO FIT' : parsed.grade
+    const recommendation = failedHardGate ? 'No Fit' : parsed.recommendation
+    const confidence = grade === 'NO FIT' ? 'High' : grade === 'A' || grade === 'A-' ? 'High' : 'Moderate'
 
     return {
       candidate: candidateInfo,
-      grade: parsed.grade,
-      recommendation: parsed.recommendation,
-      confidence: parsed.grade === 'A' || parsed.grade === 'A-' ? 'High' : 'Moderate',
+      hard_requirements: parsed.hard_requirements,
+      grade,
+      recommendation,
+      confidence,
       confidence_reasoning: parsed.confidence_reasoning ?? [],
       signal: parsed.signal ?? [],
       gaps: parsed.gaps ?? [],

@@ -15,15 +15,31 @@ function SummaryMarkdown({ text }: { text: string }) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkBreaks]}
       components={{
-        h1: ({ children }) => <h1 className='font-sans text-lg font-semibold text-foreground'>{children}</h1>,
-        h2: ({ children }) => <h2 className='font-sans text-base font-semibold text-foreground'>{children}</h2>,
-        h3: ({ children }) => <h3 className='font-sans text-sm font-semibold text-foreground'>{children}</h3>,
-        p: ({ children }) => <p className='font-sans text-sm leading-relaxed text-foreground'>{children}</p>,
+        h1: ({ children }) => (
+          <h1 className='mt-6 mb-1 font-mono text-xs uppercase tracking-widest text-muted-foreground first:mt-0'>
+            {children}
+          </h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className='mt-6 mb-1 font-mono text-xs uppercase tracking-widest text-muted-foreground first:mt-0'>
+            {children}
+          </h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className='mt-4 mb-1 font-mono text-xs uppercase tracking-widest text-muted-foreground first:mt-0'>
+            {children}
+          </h3>
+        ),
+        p: ({ children }) => (
+          <p className='mt-4 font-sans text-[15px] leading-relaxed text-foreground first:mt-0'>{children}</p>
+        ),
         ul: ({ children }) => (
-          <ul className='list-disc pl-4 font-sans text-sm text-foreground marker:text-muted-foreground'>{children}</ul>
+          <ul className='mt-3 list-disc pl-4 font-sans text-[15px] text-foreground marker:text-muted-foreground'>
+            {children}
+          </ul>
         ),
         ol: ({ children }) => (
-          <ol className='list-decimal pl-4 font-sans text-sm text-foreground marker:text-muted-foreground'>
+          <ol className='mt-3 list-decimal pl-4 font-sans text-[15px] text-foreground marker:text-muted-foreground'>
             {children}
           </ol>
         ),
@@ -31,7 +47,7 @@ function SummaryMarkdown({ text }: { text: string }) {
         code: ({ children }) => (
           <code className='rounded bg-muted px-1 font-mono text-xs text-foreground'>{children}</code>
         ),
-        strong: ({ children }) => <strong className='font-semibold'>{children}</strong>
+        strong: ({ children }) => <strong className='text-base font-medium text-foreground'>{children}</strong>
       }}
     >
       {text}
@@ -152,10 +168,21 @@ export function JDInput({
               )}
               {topStack.length > 0 && (
                 <>
-                  <dt className='self-baseline font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+                  <dt className='self-start pt-0.5 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
                     STACK
                   </dt>
-                  <dd className='font-mono text-[10px] text-foreground'>{topStack.join(' · ')}</dd>
+                  <dd>
+                    <div className='flex flex-wrap gap-1.5'>
+                      {topStack.map((s) => (
+                        <span
+                          key={s}
+                          className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </dd>
                 </>
               )}
               {locationLine && (

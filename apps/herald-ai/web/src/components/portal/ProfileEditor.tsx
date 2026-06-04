@@ -425,16 +425,19 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           <section>
             <div className='mb-2 flex items-baseline justify-between'>
               <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
-              <span className='font-mono text-[9px] text-muted-foreground/60'>
-                markdown supported · headers, lists, bold, code
-              </span>
+              <span className='font-mono text-[9px] text-muted-foreground/60'>markdown supported</span>
             </div>
             <Textarea
               className={`${inputClass} h-40 max-h-[160px] resize-none overflow-y-auto font-mono text-xs`}
               value={form.summary}
               onChange={(e) => update('summary', e.target.value)}
-              placeholder={'# Senior Engineer\n\n15+ years across backend, frontend, and AI systems...'}
+              placeholder={
+                '**One-line lead — your seniority and focus in a single bold sentence.**\n\n## Background\nWhere you started and how you got here.\n\n## How I Work\nYour approach, values, what makes you effective.\n\n## Your Lab / Projects\nWhat you build independently.'
+              }
             />
+            <p className='mt-1 font-mono text-[9px] text-muted-foreground/60'>
+              Use <strong className='font-medium'>**bold**</strong> for the lead and ## for section titles.
+            </p>
           </section>
 
           <section>

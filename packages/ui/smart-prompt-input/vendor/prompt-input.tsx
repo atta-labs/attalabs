@@ -854,6 +854,7 @@ export const PromptInputTextarea = ({
           event.preventDefault()
           const file = new File([text], 'pasted-text.txt', { type: 'text/plain', lastModified: Date.now() })
           attachments.add([file])
+          return
         }
       }
     },
@@ -875,7 +876,7 @@ export const PromptInputTextarea = ({
 
   return (
     <InputGroupTextarea
-      className={cn('field-sizing-content max-h-48 min-h-16', className)}
+      className={cn('field-sizing-content max-h-40 min-h-16 overflow-y-auto', className)}
       name='message'
       onCompositionEnd={handleCompositionEnd}
       onCompositionStart={handleCompositionStart}

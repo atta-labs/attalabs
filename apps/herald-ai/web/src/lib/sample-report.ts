@@ -7,6 +7,21 @@ export const daniReport: MatchReport = {
     github: 'daniboomerang'
   },
 
+  hard_requirements: [
+    {
+      requirement: 'Frontend architecture experience',
+      kind: 'hard',
+      met: true,
+      evidence: 'Multiple production Next.js apps with Turborepo monorepo structure'
+    },
+    {
+      requirement: 'AI/LLM integration experience',
+      kind: 'hard',
+      met: true,
+      evidence: 'MCP servers and LLM orchestration pipelines detected across repos'
+    }
+  ],
+
   grade: 'A-',
   recommendation: 'STRONG FIT',
   confidence: 'High',
@@ -47,10 +62,12 @@ export const daniReport: MatchReport = {
   gaps: [
     {
       gap: 'Limited recent Rust / Anchor exposure',
+      severity: 'minor',
       mitigation: 'Seniority in C-style languages and Solidity suggests rapid ramp-up (estimated 1–2 weeks)'
     },
     {
       gap: 'Public OSS footprint smaller than enterprise experience',
+      severity: 'minor',
       mitigation: 'Architecture patterns and system design signals compensate for lack of public scale indicators'
     }
   ],
