@@ -1,6 +1,11 @@
 # Iterations — the top of AEG
 
-**Status:** draft (pending Principal ratification — Type 1). This design was reviewed in three rounds by an external panel (Gemini, DeepSeek, ChatGPT) and unanimously endorsed after the corrections below.
+**Status:** ratified
+**Ratified on:** 2026-06-04
+**Ratified by:** Principal
+**Ratifies via:** D-029 (global decisions.md)
+
+This design was reviewed in three rounds by an external panel (Gemini, DeepSeek, ChatGPT) and unanimously endorsed after the corrections below.
 
 The **iteration** is the highest-level artifact in Atta Agentic Execution Governance. AEG starts here and goes down. There is nothing above it inside AEG.
 

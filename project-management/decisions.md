@@ -475,11 +475,11 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 ## D-029 — AEG model: manual-flow + iteration layer, forge-native execution
 
 **Date:** 2026-06-04
-**Status:** PENDING
+**Status:** ACTIVE
 **Type:** 1
 **Lock:** NO
 **Authored by:** TL (AEG design + hardening sessions, June 3–4, 2026; three external-reviewer rounds — Gemini/DeepSeek/ChatGPT, fresh contexts — to a unanimous endorse)
-**Ratified by:** PENDING — Principal ratifies at a ratification window
+**Ratified by:** Principal (ratified 2026-06-04)
 
 **Context:** PR #80 formalizes how Atta Agentic Execution Governance (AEG) runs by hand and coordinates multiple developers, and reconciles every governance/role doc to a single model. The design was pressure-tested across three reviewer rounds to unanimous endorsement (the genuinely novel part, per the panel, is self-locating roles; the rest is "real but not novel"). This is a Type 1 governance decision — it introduces a new top-level artifact (the iteration), demotes the product roadmap out of AEG, and fixes the execution-state model — so the Principal ratifies; the TL records it PENDING.
 
@@ -505,5 +505,5 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Reconciled in PR #80: `iterations/README.md` and the example iteration (+ `roles/planner.md`, `roles/archivist.md` — new), `aeg-manual-flow.md`, `products.md`, every role doc (`principal`, `team-leader`, `developer`, `reviewer`, `security`), `coordination.md`, `process.md`, `state-machine.md`, the `brief-authoring` skill, and both files under `diagrams/`.
 - Retires `roadmap.md` (a D-024 artifact); `now.md` / `changelog.md` / `lessons.md` from D-024 are carried forward unchanged.
 - D-008 and D-015's Cetana-coupled language (`cetana_request_input`, Issue-body brief) is reframed at the model level to "the escalation mechanism" and "the PR body"; those decisions stand, the tool is now named only as an example.
-- On ratification: flip this entry PENDING → ACTIVE, flip `iterations/README.md` `Status:` draft → ratified, and consider a `Lock: YES` follow-up to close the model against casual revision.
+- Ratified 2026-06-04. `iterations/README.md` flipped draft → ratified. Lock: left NO deliberately — revisit after a cycle of real use.
 - Build follow-ups (not part of this decision): neutral AEG scaffold + `aeg.sh`; the interactive AEG docs site (supersedes the static `diagrams/`); the dispatch gates as tooling.
