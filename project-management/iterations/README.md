@@ -1,18 +1,33 @@
 # Iterations — the top of AEG
 
-**Status:** draft (pending Principal ratification — Type 1)
+**Status:** draft (pending Principal ratification — Type 1). This design was reviewed in three rounds by an external panel (Gemini, DeepSeek, ChatGPT) and unanimously endorsed after the corrections below.
 
 The **iteration** is the highest-level artifact in Atta Agentic Execution Governance. AEG starts here and goes down. There is nothing above it inside AEG.
 
-This is a deliberate boundary. AEG is the **execution** layer — it governs how work becomes merged, reviewed, coherent code, run by humans wielding agents. It is **not** a product-planning tool.
+AEG is the **execution** layer — it governs how a human's intent becomes reviewed, merged, coherent code, run by humans wielding agents. It is **not** a product-planning tool.
 
-> **AEG knows no tool.** This model describes the flow in tool-neutral terms — "the dispatcher," "an automation layer," "at dispatch time." A tool may *automate* parts of AEG, but AEG never depends on, or names, any tool. Knowledge flows one way: a tool may know AEG; AEG does not know the tool. (Same rule as the company roadmap: AEG is pointed at, it never points out.)
+> **AEG is forge-native, orchestrator-independent.** It depends on a Git forge (GitHub/GitLab) the way it depends on git — the forge is infrastructure every team already has, and it is AEG's source of truth for execution state. AEG does **not** depend on any orchestration tool (e.g. Cetana): a human, or a thin dispatch script, invokes roles; there is no AEG server, scheduler, or database. Knowledge flows one way — a tool may know AEG; AEG does not know the tool. (Earlier drafts claimed "tool-neutral." That was abandoned as a false goal: real teams have a forge; pretending otherwise produced a fragile mutable-file state model. Forge-native is the honest boundary.)
 
 ---
 
-## 1. AEG owns iterations, not roadmaps
+## 1. The four truth domains (this is the whole architecture)
 
-The product roadmap — what to build, why, in what priority — belongs to the company and lives in the company's tool (Jira, Linear, a doc they own). **AEG never holds it.** The moment AEG stores a roadmap it competes with Jira, loses, and creates a second rotting source of truth for "what should we build."
+Every fact in AEG lives in exactly **one** place. Nothing is duplicated; no artifact tries to be two things. This separation is what the review panel identified as the difference between a coherent design and the original broken one.
+
+| Domain | Holds | Mutable by |
+|--------|-------|-----------|
+| **GitHub Issue** | Task identity + metadata (product label, ticket link, dependency/conflict references) | Planner (at plan time) |
+| **The thin iteration file** | Planning *topology* only — task→issue mapping, dependency graph, conflict graph, iteration grouping | Planner (at plan time) |
+| **The Git forge** (branch / PR / review / merge state) | All live execution *status* — derived, never stored | the act of working (opening a branch, a PR, a review, a merge) |
+| **The PR body** | The just-in-time brief — the task's full execution context | Brief Author, once, when work starts |
+
+The cardinal rule, stated once and enforced everywhere below: **the forge holds what is happening; the file and the issue hold the plan. Never copy "what is happening" into the file or the issue.**
+
+---
+
+## 2. AEG owns iterations, not roadmaps
+
+The product roadmap — what to build, why, in what priority — belongs to the company and lives in the company's tool (Jira, Linear, a doc they own). **AEG never holds it.** The moment AEG stores a roadmap it competes with Jira, loses, and creates a second rotting source of truth.
 
 What AEG holds is the **iteration**: the bounded set of tasks currently being turned into merged code. The link from roadmap → iteration is a **human** — the Team Leader translating tickets into agent-shaped tasks. There is no file for that link, because the link is a person's judgment.
 
@@ -20,73 +35,44 @@ What AEG holds is the **iteration**: the bounded set of tasks currently being tu
 Company roadmap / Jira / product backlog   ← NOT in AEG. Reference only. The human reads it.
         │  (human translation — Team Leader / Planner)
         ▼
-Iteration                                   ← TOP of AEG. A bounded set of tasks. Committed.
-   ├─ Task = brief (just-in-time) + Product(s) + Ticket link(s) + edges (depends-on / conflicts-with)
-   ├─ Task
-   └─ …
+Iteration  =  a set of GitHub Issues  +  a thin topology file        ← TOP of AEG.
+   ├─ Task (Issue) ── brief written just-in-time → lands in its PR body
+   ├─ Task (Issue)
+   └─ …          edges (depends-on / conflicts-with) declared in the thin file
         │
         ▼
-Per task: Developer → Reviewer → Security → merge → Archivist
+Per task: branch → PR → Reviewer + Security → merge → close-out
 ```
 
-**The product backlog lives OUT of the flow, per product.** Held / future / vision items are not AEG's. They live where each product's documentation already lives — `apps/<product>/specs/<product>-backlog.md` — plus `docs/ecosystem-backlog.md` for cross-cutting / ecosystem / AEG-itself work. These are reference docs the Planner reads when choosing the next slice; the flow never operates on them. This is distinct from the **iteration backlog** (Section 5), which is *inside* a specific iteration.
-
-**`roadmap.md` is retired.** Its executable slice became the first iteration; its held/vision content moved to the per-product backlogs above. The old file is deleted — git history preserves it.
+**`roadmap.md` is retired.** Its executable slice became the first iteration; its held/vision content moved to per-product backlogs (`apps/<product>/specs/<product>-backlog.md`) and `docs/ecosystem-backlog.md`, all out of the flow.
 
 ---
 
-## 2. A task's reference fields: `Product` and `Ticket`
+## 3. A task is a GitHub Issue; status is derived, never stored
 
-Two reference-only fields qualify a task. Neither is read as instruction; both are provenance and routing.
+A task **is** a GitHub Issue. Its status is not a field anyone writes — it is **computed by asking the forge** what is true right now. This is the change that removed the original fatal flaw (a hand-edited status column that raced, drifted, and lied under parallelism).
 
-- **`Product`** — which product(s) the task belongs to. **Multi-valued and normal:** a task carries as many products as it genuinely touches — usually one (`Product: vada`), sometimes several (`Product: engine, herald`). It resolves against the **product registry**, `project-management/products.md`. The registry's *presence* signals a multi-product repo, where `Product` is required; a single-product repo has **no** `products.md` and omits the field. When present, `Product` does three jobs, fanning out across *every* listed product: (1) the Developer self-locates each product's specs; (2) the conflict gate filters by package (a product may span packages, a package may be shared across products — see §7); (3) the Archivist updates each product's `state.md`/`now.md` at close-out. Review also fans out — a multi-product PR is reviewed through each product's lens. See `products.md` for the full treatment.
-- **`Ticket`** — N↔M, reference-only link to an external ticket (Jira/Linear). One ticket may become many tasks; many tickets may collapse into one. The human owns the translation. No agent reads the ticket, needs access to it, or is blocked by it.
+| Status | Derived from (the forge fact) |
+|--------|-------------------------------|
+| `backlog` | Issue open, **unassigned** |
+| `todo` | Issue open, **assigned**, no branch yet |
+| `in-flight` | A branch `task/<iteration>/<n>` exists, **no PR** open |
+| `in-review` | PR open |
+| `changes-requested` | PR open, `reviewDecision: CHANGES_REQUESTED` |
+| `merged` | PR merged (Issue auto-closes) |
+| `blocked` | An `aeg:blocked` label is present |
 
-Per-product PM (`apps/<product>/project-management/state.md` + `now.md`) still exists as per-product *status*. The iteration is the cross-product *coordination* layer above it; `Product` is the link between a task and its product(s)' specs + PM.
+So: there is **no status column anywhere.** The Developer does not "flip to in-review" — *opening the PR is the in-review signal*. The close-out does not "flip to merged" — *the merge is that signal*. The branch-name convention `task/<iteration>/<n>` is what links a task number to its branch and PR, so any role finds a task's live status with one forge query and writes nothing. `blocked` is the one state with no native forge fact, so it is a label (cheap, native, doesn't race).
 
----
+**Retry is free:** a Reviewer's REQUEST CHANGES makes the PR's `reviewDecision` = `CHANGES_REQUESTED` → derived status `changes-requested`. The Developer pushes fixes → the PR returns to open review → `in-review`. No status reset, because nothing was stored.
 
-## 3. The Planner
-
-The **Planner** is a mode of the Team Leader — the same intelligence as Brief Author, one altitude up. Brief Author goes intent → one brief. Planner goes intent + a slice of tickets → a whole iteration of sibling-aware tasks.
-
-The Planner's job, and the reason the iteration exists, is the thing a brief-in-isolation cannot see: **the relationships between tasks.** It does three things:
-
-1. **Decompose** the ticket slice into discrete, agent-sized tasks.
-2. **Order** them — declare `depends-on` edges (task B assumes task A is merged).
-3. **Flag collisions** — declare `conflicts-with` edges (two tasks touch the same package/module and must not run concurrently).
-
-### Split vs. combine — the verification-coupling test
-
-A single intent often crosses products (e.g. "refactor the shared engine to support more products, then migrate Herald onto it"). The Planner's signature judgment is whether that becomes *one* task or *several* — and the test is **verification coupling**, not product boundaries:
-
-- **Independently verifiable → split.** If each piece can be proven correct on its own, make separate single-product tasks with a `depends-on` edge. (Auth endpoint, then the UI that calls it — the endpoint is testable alone.)
-- **Verification-coupled → combine.** If the change can only be *tested* as a unit, it is **one task, one branch, one PR, multiple products.** The canonical case: generalizing `@atta/engine` *and* migrating Herald onto it belong together, because the only proof the engine refactor is correct is Herald working against it. Splitting would merge an unproven abstraction. A cross-product PR touching two, three, four products is a normal, expected shape — not an exception.
-
-Same `Ticket:` rides on all the resulting tasks, so the work stays atomic in Jira (one ticket) however it's shaped in AEG (one task or several). That translation — one intent → the right number of verifiable tasks, carrying the right products — is the Planner's core value; a per-task agent could never make this call.
-
-Conflict and dependency edges are **declared, not inferred**, in v1. The Planner (with the human) reasons from the tasks' stated scope and records the call. Automatic file-overlap detection is a later luxury; the pilot does not depend on it.
-
-The Planner also owns the **iteration backlog**: it places tasks that belong to the cycle but aren't dispatch-ready yet, and promotes them (`backlog → todo`) when they are. The Planner's output is exactly one artifact: the iteration file below. It writes no briefs — those are authored just-in-time when each task is picked up. It validates every `Product:` against the registry and refuses to invent an unregistered product.
+**Orphaned task** (branch exists, no PR, gone stale) has an explicit owner: a close-out/sweep step flags it and a human deletes the branch (returning the task to `todo`). Named, not silent.
 
 ---
 
-## 4. Where briefs live
+## 4. The thin iteration file — topology only
 
-A task's brief has two homes across its life:
-
-- **Before dispatch — nowhere persistent.** The brief doesn't exist yet. It is written (by the human + Brief Author) at the moment the task is picked up, iteration-aware (it can see its siblings and edges). Pasted, not committed.
-- **At dispatch onward — the PR body.** When the Developer opens the task's PR, the brief text lands in the PR description and stays there. The PR body is the brief's permanent home.
-
-The iteration's `PR` column is the link: empty = brief not written yet; `#89` = brief now lives in PR #89's body. Map → row → PR → brief.
-
-This is why the iteration file stays thin (Section 5): it is the coordination map, not the brief store.
-
----
-
-## 5. The iteration file
-
-One file per iteration at `project-management/iterations/<name>.md`. It is a scannable coordination map — the cycle's standup board and conflict graph in one. It has two task lanes: the dispatchable **Tasks** table and the **Backlog** (this cycle, not yet ready). Template:
+One file per iteration at `project-management/iterations/<name>.md`. It holds **only** what the forge models poorly: the task→issue mapping and the dependency/conflict graph. It contains **no status, no PR numbers, no merge dates, no timestamps — nothing the forge already knows.** It is edited only by the Planner, at plan time, so it cannot race and cannot drift on status (it stores none). Template:
 
 ```
 # Iteration: <short name> — <timeframe>
@@ -94,99 +80,98 @@ One file per iteration at `project-management/iterations/<name>.md`. It is a sca
 Goal (execution, not product-why): <what ships, end to end>
 Repo: <repo>   ·   Team Leader: <name>
 
-## Tasks (scoped, dispatchable)
-| # | Task                         | Product      | Ticket | Depends-on | Conflicts-with | Owner  | Status     | PR  |
-|---|------------------------------|--------------|--------|------------|----------------|--------|------------|-----|
-| 1 | Generalize engine + migrate  | engine,herald| SAT-412| —          | 3              | Dani   | in-review  | #88 |
-| 2 | Profile schema migration     | herald       | SAT-419| —          | —              | junior | todo       | —   |
-| 3 | Vāda flow tweak (touches engine) | vada     | SAT-420| —          | 1              | junior | blocked    | —   |
+## Tasks (topology)
+| # | Task                          | Issue | Product(s)    | Depends-on | Conflicts-with |
+|---|-------------------------------|-------|---------------|------------|----------------|
+| 1 | Generalize engine + migrate   | #88   | engine,herald | —          | 3              |
+| 2 | Profile schema migration      | #89   | herald        | —          | —              |
+| 3 | Vāda flow tweak (touches engine)| #90 | vada          | —          | 1              |
 
 ## Backlog (this iteration, not yet ready to dispatch)
-- Rate-limit middleware (herald, SAT-431) — waiting to see how task 1 lands first.
-
-## Status legend
-backlog → todo → in-flight → in-review → merged.   blocked = off to the side.
-
-## Dispatch rules (the multi-developer lock)
-- Do not start a task whose depends-on is not yet merged.
-- Do not start a task while a conflicts-with sibling is in-flight or in-review.
-- One owner per task at a time.
-
-## Done
-The iteration closes when every Task is merged or explicitly moved to the next iteration.
+- Rate-limit middleware (issue #91, herald) — promote once task 1 lands.
 ```
 
-(Note task 3: a Vāda task conflicts with task 1 even though they're different products — because both touch the `@atta/engine` package. Conflicts are package-level, §7.)
+To see **live status**, you do not read this file — you ask the forge: `gh pr list`, the GitHub Issues view, or a Project board. The file is the *plan*; the forge is the *board*. (Note task 3: a Vāda task conflicts with task 1 even though they're different products — both touch the `@atta/engine` package. Conflicts are package-level, §5.)
 
-**What is deliberately absent** is the point: no priority, no estimates, no story points, no "why." Those are the company's, in Jira / the product backlog. The iteration carries only what is needed to schedule execution safely — product, dependencies, conflicts, owner, status. That absence is what keeps AEG out of "Jira again."
-
----
-
-## 6. Task state — the coordination spine
-
-The `Status` column is load-bearing: the dispatch gates (Section 7) **read** it to decide what is safe to start. If status is stale or wrong, the gates lie and developers collide anyway. So state is specified precisely: a fixed set of values, and one rule for who writes them.
-
-### The six states
-
-| State | Meaning | What it gates |
-|-------|---------|---------------|
-| `backlog` | Committed to this iteration but not dispatch-ready — not scoped, or waiting on how earlier tasks land. No brief, no owner yet. | Cannot be dispatched until the Planner promotes it to `todo`. |
-| `todo` | Scoped and dispatch-ready. No brief written yet. | A `depends-on` is satisfied only when the dependency is `merged`. |
-| `in-flight` | An agent is working it. Brief written, work underway, no PR yet. | A `conflicts-with` sibling being `in-flight` or `in-review` blocks a colliding task. |
-| `in-review` | PR is open. Brief lives in the PR body. Awaiting review passes + merge. | Same conflict gate as `in-flight`. |
-| `merged` | PR merged. Task done. | Unblocks tasks that `depends-on` it; clears the conflict for colliding siblings. |
-| `blocked` | Off to the side — waiting on a dependency, a conflict to clear, or an escalation answer. | Cannot be dispatched until the blocker resolves. |
-
-Six values, no more. Extra states mean extra bookkeeping, and bookkeeping rots.
-
-### Who writes the state — the ownership rule
-
-**The agent that ends an action writes the task's row before it stops — as part of its done-checklist, never as a separate manual chore.** State is a side-effect of doing the work. (Manual, after-the-fact status updates are exactly what go stale and make the gates lie.)
-
-| Transition | Written by | When |
-|-----------|-----------|------|
-| `backlog → todo` | the **Planner** | when the task is scoped and its dependencies allow it |
-| `todo → in-flight` | whoever dispatches (the human, or the dispatch tool) | at start |
-| `in-flight → in-review` | the **Developer** | when it opens the PR — same write that fills the `PR` column |
-| `in-review → merged` | the **Archivist** | at close-out — same step that confirms the merge |
-| `→ blocked` | the **Developer** | when it escalates |
-| `blocked → in-flight` | whoever supplies the unblocking answer | when the escalation is resolved |
-
-### Read to self-locate, write to hand off
-
-This closes the self-locating loop from `aeg-manual-flow.md`. Every role uses the status column in both directions:
-
-- **Read it to know if it is your turn.** The Reviewer checks: is this task `in-review`? If it is still `todo`, there is nothing to review — refuse. The Archivist checks: is the PR `merged`? If `in-review`, it is not done — refuse.
-- **Write it when you finish, to hand off.** The Developer flips `in-flight → in-review` so the Reviewer knows it may act. The Archivist flips `→ merged` so dependents unblock.
-
-Same file, both directions. That is the coordination spine of the whole model: status is how roles hand work to each other without a human relaying it.
-
-### Per-role done-checklist additions
-
-- **Planner** owns `backlog → todo` (scoping/promotion).
-- **Developer** done-checklist gains: *set my task's row to `in-review` and fill the `PR` column* (alongside "brief in PR body").
-- **Archivist** close-out gains: *flip the task's row to `merged`* (alongside confirming merge, branch deletion, docs/changelog) — for every product the task lists.
-- **Dispatcher** (human or tool) sets `todo → in-flight` at start.
+**What is deliberately absent:** no priority, estimates, story points, or "why" — those are the company's, in Jira. The iteration carries only what schedules execution safely. That absence is what keeps AEG out of "Jira again."
 
 ---
 
-## 7. The multi-developer safety mechanism
+## 5. Conflicts — declared, package-level, static
 
-The `Dispatch rules` block is what makes two or more developers safe. With a single principal, the rules live in one head. With a team, they must be a **lock**, not a whiteboard:
+Two tasks conflict if they touch the same **collision domain** and therefore must not run in parallel. The rules, after the panel's correction:
 
-- **depends-on gate** — a task cannot start until its dependency is `merged`.
-- **conflicts-with gate** — a task cannot start while a colliding sibling is `in-flight` or `in-review` (i.e. has an open PR or active agent).
+- **Conflicts are declared by the Planner** as `conflicts-with` edges in the thin file. Declared, not inferred.
+- **Collision domains are packages**, listed in a rarely-changed static file (`.aeg/packages`). Known cross-cutting collision paths — **lockfiles, `migrations/`, codegen outputs (protobuf/GraphQL/OpenAPI), monorepo config (tsconfig/eslint/turbo)** — are declared as their own collision domains, because they couple tasks across package boundaries.
+- **The conflict gate is forge-answerable with zero stored state:** "is a `conflicts-with` sibling's PR currently open?" If yes, don't start. That's it.
+- **There is no dynamic path-overlap check.** (The panel's decisive correction.) Computing "which files is each in-flight task touching right now" would require a live task→changed-files map — exactly the mutable execution state the design eliminates. So it is forbidden (§10).
 
-**Conflicts are package-level, not product-level.** Two tasks collide if they touch the same package/path, even across different products. A task generalizing `@atta/engine` conflicts with an in-flight Vāda task that also touches the engine — different products, same package, real collision. So `Product` is only a coarse first-pass filter (tasks in wholly-separate products usually don't collide); the actual conflict surface is shared packages. A multi-product task conflicts with in-flight work touching *any* of the packages it spans.
-
-In manual mode these are preconditions the Developer checks before beginning (read the iteration file's status column + open-PR status). An automation layer can enforce them automatically at dispatch. Either way: the conflict is declared at planning time and enforced at dispatch time — never discovered at merge time, which is too late.
-
-**v1 honesty:** in manual mode the gates are *trusted, not enforced* — an agent reads them and is expected to comply, but nothing mechanically stops a human from ignoring them. That is acceptable for a small, watched team. Mechanical enforcement arrives when a dispatch tool enforces the gates in code. Until then: trusted discipline.
+**Acknowledged limitation, stated openly:** AEG catches *declared* and *package-level* collisions. It does **not** automatically catch novel, undeclared, file-level coupling between tasks in *different* packages (e.g. one task changes a shared type/config another package embeds). No tool catches that reliably without becoming unreliable, expensive, or stateful. AEG places its trust boundary at **planning**: when unsure whether two tasks collide, the Planner **declares the conflict and serializes them** — erring toward serialization is cheap; erring toward "run parallel and hope" is the failure mode. Safe parallelism assumes real package ownership boundaries (explicit APIs, no shared types leaking across packages); most monorepos earn this only with discipline.
 
 ---
 
-## 8. One-line pitch this enables
+## 6. The Planner
+
+The **Planner** is a mode of the Team Leader — same intelligence as Brief Author, one altitude up. Brief Author: intent → one brief. Planner: intent + a slice of tickets → a whole iteration (a set of Issues + the thin topology file).
+
+The Planner's job — the reason the iteration exists — is the relationships a brief-in-isolation can't see: decompose the ticket slice into agent-sized tasks (Issues), declare `depends-on` and `conflicts-with` edges, and decide **split vs. combine** by the **verification-coupling** test:
+
+- **Independently verifiable → split** into single-product tasks with a `depends-on` edge.
+- **Verification-coupled → combine** into one task, one branch, one PR, multiple products (e.g. generalize `@atta/engine` *and* migrate the first consumer onto it — the only proof the refactor is correct is the consumer working). Cross-product PRs touching two, three, four products are normal, not exceptions.
+
+The Planner writes no briefs (those are just-in-time, §7) and writes no status (that's the forge). It owns the thin file and the `backlog`/`todo` distinction (assigning an Issue is the `todo` promotion). It also enforces the **plan-integrity gates** in `roles/planner.md` — the recognized failure modes turned into live refusals and calibrated warnings (see §10). The full role spec, including refusal language, is in `roles/planner.md`.
+
+---
+
+## 7. Where briefs live
+
+The brief is the task's full execution context. It has two homes:
+
+- **Before work starts — nowhere persistent.** It does not exist yet. It is written (human + Brief Author) when the task is picked up, iteration-aware. Pasted, not committed. **Never in the Issue** — the Issue is task identity + metadata only; a brief in the Issue would age, attract edits, and become stale planning documentation.
+- **From PR-open onward — the PR body.** The Developer pastes the brief into the PR description when opening the PR. That is its permanent, durable home, attached to exactly the work it governed, and what the Reviewer and Archivist read.
+
+Retry reuses the same PR body; no rewrite.
+
+---
+
+## 8. The multi-developer safety mechanism
+
+Two gates make parallel developers safe — both **forge-answerable, zero stored state**:
+
+- **depends-on gate** — don't start a task until its dependency's **PR is merged**. (Query the dependency Issue's linked PR.)
+- **conflicts-with gate** — don't start a task while a `conflicts-with` sibling's **PR is open** (`in-review`/`changes-requested`) or it's `in-flight`. (§5.)
+
+With a single principal these rules live in one head; with a team they must be a **lock**, not a whiteboard. In manual mode they are preconditions each Developer checks against the forge before beginning. A dispatch tool can enforce them in code. Either way the conflict is declared at planning time and enforced at dispatch time — never discovered at merge time, which is too late.
+
+**v1 honesty:** in manual mode the gates are *trusted, not enforced* — read and complied with, but nothing mechanically stops a human ignoring them. Acceptable for a small, watched team. Mechanical enforcement arrives when a dispatch tool runs the gates. Until then: trusted discipline.
+
+---
+
+## 9. Anti-regression rules (do not undo the design)
+
+The review panel predicted, unanimously, the two ways teams will accidentally rebuild the original flaw. Both are **forbidden** and the Planner agent flags them (§ `roles/planner.md`):
+
+1. **No execution metadata in the thin file or the Issue.** Never add `status`, `PR #`, `merged date`, `current state`, `assignee history`, or generated collision data to the iteration file. The reason is always reasonable ("just to glance without querying") and it is always wrong — the forge already holds these, and copying them in recreates the racing, drifting, lying status store. **Thin file = topology. Forge = state.** The line is bright; keep it bright.
+2. **No dynamic conflict scanner.** Do not build a script that checks out in-flight branches and diffs them to "catch conflicts the Planner missed." It cannot work without a live task→changed-files map — the mutable state we removed. When unsure two tasks collide, **declare the conflict and serialize** (§5). Conservative declaration is the sanctioned answer; a scanner is not.
+3. **No planning metadata on Issues.** No priority, estimates, points, or roadmap fields. Enforced mechanically: a required Issue template (deps, conflicts, product label, ticket link — and nothing else) + a CI check that rejects forbidden fields/labels. Discipline alone will not hold this; the *place to put planning info is removed*, not just discouraged.
+
+---
+
+## 10. What AEG adds over raw GitHub
+
+A fair challenge from the panel: a 2-dev GitHub team already has Issues, Projects, PRs, reviews. What does AEG add? Exactly four things GitHub does not give you, and they are the product:
+
+1. **Dependency gates** — GitHub won't stop you starting a task whose dependency isn't merged. AEG does.
+2. **Conflict edges + collision domains** — GitHub won't stop two colliding tasks running in parallel. AEG does.
+3. **Role self-location** — Developer/Reviewer/Security/Archivist each validate their own preconditions from forge state and refuse when it isn't their turn. GitHub just sends a notification.
+4. **Just-in-time brief discipline** — full context authored at execution and living in the PR, not rotting in a ticket.
+
+Raw GitHub is a dashboard. AEG is a thin, forge-native discipline layer on top of it. That layer — not any one mechanism — is the value.
+
+---
+
+## 11. One-line pitch
 
 > AEG does not plan your product. It governs how your product gets executed by agents — safely, coherently, and coordinated across a team.
 
-For the manual run mechanics and per-role entry gates, see `aeg-manual-flow.md`. For the authority model and tiers, see `state-machine.md`. For the product registry, see `products.md`.
+For the manual run mechanics and per-role entry gates, see `aeg-manual-flow.md`. For the Planner's plan-integrity gates, see `roles/planner.md`. For the authority model and tiers, see `state-machine.md`. For the product registry, see `products.md`.
