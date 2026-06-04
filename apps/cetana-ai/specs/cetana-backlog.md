@@ -1,8 +1,10 @@
 # Cetana — product backlog
 
+**Status:** draft · living reference (out of the AEG flow; not a ratified spec)
+
 **Out of the AEG flow.** Held / future / research items for Cetana (the orchestration tool, not the flow). Reference the Planner reads when choosing the next iteration slice; the flow never operates on it.
 
-Migrated from the retired global `roadmap.md` (June 3, 2026). The active V0.5 CLI ladder (F7/F8/F9) lives in the current iteration at `project-management/iterations/cetana-cli-ladder.md`, not here.
+Migrated from the retired global `roadmap.md` (June 3, 2026; roadmap retired by D-029). The active V0.5 CLI ladder (F7/F8/F9) lives in the current iteration at `project-management/iterations/cetana-cli-ladder.md`, not here.
 
 ---
 
@@ -11,7 +13,7 @@ Migrated from the retired global `roadmap.md` (June 3, 2026). The active V0.5 CL
 - **F10 — first real-world dispatch.** Validate the orchestration loop on a real task (candidate: a Vāda Reviewer-prompt iteration). Milestone, not a code task.
 - **F11 — V0.5 dogfood window.** ≥20 tasks dispatched through Cetana (V0 + V0.5 combined); document "wish this were visual" moments as they occur. Required evidence for the D-023 gate.
 - **F12 — V1 UI gate evaluation.** Check D-023 conditions: ≥20 tasks, ≥3 concurrent, documented friction. TL presents evidence to the ratification queue; Principal decides.
-- **F13 — V1 build (only if F12 passes).** Tauri shell + dashboard + native notifications + menu-bar status. Hard guardrails (per `roadmap.md` history): don't build if V0/V0.5 reduces friction enough; don't build mid-workstream; time-box hard at ~7 days.
+- **F13 — V1 build (only if F12 passes).** Tauri shell + dashboard + native notifications + menu-bar status. Hard guardrails (per the retired roadmap's history — see git history of `roadmap.md`): don't build if V0/V0.5 reduces friction enough; don't build mid-workstream; time-box hard at ~7 days.
 
 ## Cetana beyond orchestration (V0.7+, after the dogfood window)
 
