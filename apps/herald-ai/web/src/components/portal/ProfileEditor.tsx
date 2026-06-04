@@ -17,6 +17,7 @@ import {
   useToastContext
 } from '@atta/ui'
 import { Download, Upload } from 'lucide-react'
+import { SummaryMarkdown } from '@/components/summary-markdown'
 
 const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const
 
@@ -438,6 +439,12 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
             <p className='mt-1 font-mono text-[9px] text-muted-foreground/60'>
               Use <strong className='font-medium'>**bold**</strong> for the lead and ## for section titles.
             </p>
+            {form.summary && (
+              <div className='mt-3 rounded-md border border-border bg-muted/40 px-4 py-3'>
+                <p className='mb-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground/60'>Preview</p>
+                <SummaryMarkdown text={form.summary} />
+              </div>
+            )}
           </section>
 
           <section>

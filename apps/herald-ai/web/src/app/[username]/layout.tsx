@@ -8,11 +8,11 @@ export default async function EnvoyLayout({ children }: { children: ReactNode })
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
 
   return (
-    <div className='flex min-h-screen flex-col'>
+    <div className='flex h-dvh flex-col overflow-hidden'>
       <Suspense>
         <ConditionalEnvoyNav logoUrl={logoUrl} />
       </Suspense>
-      <main className='flex-1'>{children}</main>
+      <main className='min-h-0 flex-1 overflow-hidden'>{children}</main>
     </div>
   )
 }
