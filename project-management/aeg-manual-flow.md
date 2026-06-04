@@ -8,15 +8,39 @@ This file is the companion to `process.md` (the eleven-phase walkthrough) and `s
 
 ---
 
-## 0. Starting AEG in a repo (init)
+## 0. Starting and maintaining an AEG repo (`aeg.sh`)
 
 AEG "init" is not software — it is a **state the repo is in**. A repo is running AEG when three things are true:
 
-1. **The governance scaffold exists** — a `project-management/` folder with the constitution and model: `state-machine.md`, `coordination.md`, `process.md`, `aeg-manual-flow.md`, `roles/`, `iterations/README.md`. (Plus `products.md` *only* if the repo holds more than one product.)
-2. **At least one iteration exists** — a `project-management/iterations/<name>.md` file, even with zero tasks. This is the "AEG has been started here" marker.
+1. **The governance scaffold exists** — a `project-management/` folder with the model: `state-machine.md`, `coordination.md`, `process.md`, `aeg-manual-flow.md`, `roles/`, `iterations/README.md`. (Plus `products.md` *only* once the repo holds more than one product.)
+2. **At least one iteration exists** — a `project-management/iterations/<name>.md` file, even with zero tasks. The "AEG has been started here" marker.
 3. **The role docs are reachable** — Claude Code can read `roles/`, and a human knows the run order (Section 4).
 
-To init by hand: copy the AEG scaffold into the repo, create your first (possibly empty) iteration file, done. A downloadable `init.sh` can do exactly this — take a target folder (and, for a multi-product repo, a product name), drop in the scaffold, create the first iteration, and print "you're running AEG." The script is convenience; the three conditions above are the actual definition. Manual and scripted init produce the identical state.
+You can create that state by hand (copy the scaffold, write a first iteration file). Or use **`aeg.sh`** — a single, downloadable shell script (from the AEG site) that scaffolds these files for you. It is a **dumb scaffolder**: it writes files and nothing else. It does not dispatch agents, watch them, enforce gates, or reason — those are orchestration (a separate tool's job) or judgment (yours + the Planner's). It is **self-contained** (the scaffold is embedded; no network fetch) so you can read every byte before running it. One file, three subcommands:
+
+```
+aeg init [folder]                       # once per repo
+aeg add-product <name> --path <folder>  # when a second product appears
+aeg new-iteration <name>                # each cycle
+```
+
+### `aeg init [folder]`
+Lays down the `project-management/` scaffold into the target folder (default: current dir). Run once, ever, per repo. After this the repo "has AEG." Refuses if `project-management/` already exists (won't overwrite). Takes essentially no params — init barely does anything; it just writes the skeleton.
+
+### `aeg add-product <name> --path <folder>`
+Registers a product. **A product is a `(name, folder)` pair the developer declares** — not derived from the tree, not required to match a `package.json`, not required to be a single package (see `products.md`). The command:
+1. Reads `products.md`. If `<name>` is already a row → **refuse** ("already registered").
+2. Checks `<folder>`. If it already exists on disk → **refuse** ("`<folder>` already exists; won't overwrite — register manually or pick another path"). It does not adopt unknown folders (no guessing).
+3. If both pass: creates `<folder>/specs/` (spec + decisions + backlog stubs) and `<folder>/project-management/` (`state.md` + `now.md` stubs), and appends the registry row. Atomic — both the folders and the row, or neither.
+
+The `--path` is **required and stored verbatim** — the tool never computes or searches for it. The folder is simply the product's home for specs + status; what the product "is" (one package, an app, several packages) is the developer's business.
+
+**Single → multi promotion.** A single-product repo has no `products.md`. The first time you run `add-product`, the repo becomes multi-product — so `products.md` is created and you register **both** the pre-existing product *and* the new one (the existing one needs a row too, or its tasks can't resolve a `Product:`). After that, each further `add-product` appends one row.
+
+### `aeg new-iteration <name>`
+Creates `project-management/iterations/<name>.md` from the template (empty Tasks + Backlog). Run each cycle.
+
+**`aeg.sh` and any orchestration tool overlap on `init`** — both can make a repo AEG-aware — and that is fine: it's the manual-vs-automated duality. `aeg.sh` is the route for someone who hasn't adopted a tool; the tool is the route for someone who has. `aeg.sh` stays dumb on purpose — the moment it tries to *do* anything intelligent, it has stopped being a scaffolder.
 
 ---
 
@@ -45,8 +69,6 @@ The brief is the single most important artifact in the flow. Three rules:
    This is **provenance, not instruction**. No agent reads the ticket, needs access to it, or is blocked by it. It is carried into the PR body alongside the brief so the change traces back to the org's world, and the Archivist can note it at close-out. A principal with no ticket system simply omits the line. Agents must never treat the ticket link as a substitute for context in the brief — if scope lives in the ticket instead of the brief, the brief is malformed.
 
 In a multi-product repo the brief also carries a `Product:` line (resolved against `project-management/products.md`) so the agent reads the right product's specs. A single-product repo omits it.
-
-**On external systems:** a tool may read a brief from somewhere convenient (an issue body, a queue) — but that is the tool's implementation detail, **not** an AEG requirement. The flow depends on "a well-formed brief exists," not on any particular system. Manual AEG needs only the pasted brief.
 
 ---
 
@@ -87,7 +109,7 @@ These are the gates each role checks first. The wording is what the agent should
 **Planner** (Team Leader, Planner mode)
 - Requires: an intent + a slice of tickets/items to turn into an iteration.
 - Refuses: a request to write a single brief → *"That's a Brief Author job. I plan whole iterations — give me the slice of work."*
-- Produces: an iteration file (`iterations/<name>.md`) with tasks, edges, and a backlog lane.
+- Produces: an iteration file (`iterations/<name>.md`) with tasks, edges, and a backlog lane. Validates every `Product:` against the registry; refuses to invent an unregistered product.
 
 **Brief Author** (Team Leader, Brief Author mode)
 - Requires: an intent from the Principal (ideally an existing iteration task row).
@@ -96,7 +118,7 @@ These are the gates each role checks first. The wording is what the agent should
 
 **Developer**
 - Requires: a well-formed brief (has tier, scope, stop conditions, deliverable).
-- First action: inspect what it was handed. If it's a loose prompt, not a brief → *"This isn't a brief — it's missing tier / scope / stop-conditions. Get one from the Brief Author first; I don't infer scope from a prompt."*
+- First action: inspect what it was handed. If it's a loose prompt, not a brief → *"This isn't a brief — it's missing tier / scope / stop-conditions. Get one from the Brief Author first; I don't infer scope from a prompt."* If `Product:` doesn't resolve against the registry → *"Product 'x' isn't registered; fix the brief or run `aeg add-product`."*
 - Then: worktree Step 0 (`git worktree add .worktrees/<branch> -b <branch> origin/main && cd .worktrees/<branch>`), do the work, open the PR.
 - Done-checklist gains: **the brief text (and `Ticket:`/`Product:` lines, if present) is pasted into the PR body, and the task's iteration row is set to `in-review` with the `PR` column filled.**
 
@@ -135,4 +157,4 @@ The brief is the only thing you must prepare carefully. Everything else the agen
 
 A tool can automate the steps 2→6 hand-offs: spawn the Developer in a fresh worktree from a brief, stream its work, unblock it when it escalates, and enforce the dispatch gates in code. It does **not** change the gates, the roles, the brief rules, the iteration model, or the order. If the tool is unavailable, you run the same flow by hand. The flow is primary; the tool is convenience — and AEG never names it.
 
-For the authority model, escalation severities, and tier rules underneath all of this, see `state-machine.md`. For the iteration / Planner / dispatch-gate model, see `iterations/README.md`.
+For the authority model, escalation severities, and tier rules underneath all of this, see `state-machine.md`. For the iteration / Planner / dispatch-gate model, see `iterations/README.md`. For the product registry, see `products.md`.
