@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Button, Textarea } from '@atta/ui'
+import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
 import { AvatarFrame } from '@/components/avatar-frame'
 
 export function JDInput({
@@ -25,17 +24,6 @@ export function JDInput({
   candidateAvailability?: string
   candidateCvUrl?: string
 }) {
-  const [value, setValue] = useState('')
-  const [pending, setPending] = useState(false)
-
-  const canSubmit = value.trim().length >= 20 && !pending
-
-  function handleSubmit() {
-    if (!canSubmit) return
-    setPending(true)
-    onSubmit(value.trim())
-  }
-
   return (
     <div className='mx-auto max-w-[680px] px-6 py-12'>
       <header className='mb-8 border-b border-border pb-10'>
@@ -88,29 +76,13 @@ export function JDInput({
         )}
       </header>
 
-      <div>
-        <Textarea
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
-          rows={10}
-          disabled={pending}
-          className='w-full resize-none bg-card font-sans text-sm leading-relaxed'
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && e.metaKey) handleSubmit()
-          }}
-        />
-
-        <Button
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-          className='mt-3 w-full py-3 font-mono text-xs uppercase tracking-[0.2em]'
-        >
-          {pending ? 'Generating...' : 'Generate Audit'}
-        </Button>
-
-        <p className='mt-2 font-mono text-[10px] text-muted-foreground'>Cmd+Enter to submit</p>
-      </div>
+      <SmartPromptInput
+        onSubmit={(text) => onSubmit(text)}
+        placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
+        submitOn='button'
+        ctaLabel='Generate Audit'
+        hint='Shift+Enter for a new line'
+      />
     </div>
   )
 }

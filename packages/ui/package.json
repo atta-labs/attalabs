@@ -35,7 +35,8 @@
     "./account": "./account/index.ts",
     "./scripts/generate-ui": "./scripts/generate-ui.ts",
     "./footer": "./footer/index.tsx",
-    "./topbar": "./topbar/index.tsx"
+    "./topbar": "./topbar/index.tsx",
+    "./smart-prompt-input": "./smart-prompt-input/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -69,6 +70,8 @@
     "lucide-react": "^1.7.0",
     "motion": "^12.38.0",
     "radix-ui": "^1.4.3",
+    "ai": "^6.0.0",
+    "nanoid": "^3.0.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.0.0"
   },
