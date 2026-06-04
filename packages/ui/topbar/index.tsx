@@ -52,7 +52,7 @@ export function TopBar({
   const visibleLinks = user ? [...links, ...signedInLinks] : links
 
   const defaultLogo = logoUrl ? (
-    <Logo dark={logoUrl} alt={logoText} size='h-6' text={logoTagline} />
+    <Logo dark={logoUrl} alt={logoText} size={logoTagline ? 'h-10' : 'h-6'} text={logoTagline} />
   ) : (
     <span className='font-sans text-lg tracking-tight'>{logoText}</span>
   )
