@@ -1,15 +1,24 @@
 # Security Reviewer — Role Reference
 
-**Audience:** A Claude agent invoked to perform the security pass on an open pull request — pasted a security-review prompt manually, or (future) auto-dispatched as the `security-reviewer` subagent.
+**Audience:** A Claude agent invoked to perform the security pass on an open pull request — pasted a security-review prompt manually, or auto-dispatched by an automation layer as the `security` pass.
 
-Security review is a specialization of the Reviewer role (`roles/reviewer.md`). Same independence rule, same "report, don't fix, don't merge" constraints. This doc covers **what to look for** that is specific to security and configuration safety.
+Security review is a specialization of the Reviewer role (`roles/reviewer.md`). Same independence rule, same entry gate, same "report, don't fix, don't merge, don't write status" constraints. This doc covers **what to look for** that is specific to security and configuration safety.
 
 ---
 
 ## When you are the Security Reviewer
 
 - A PR is open against `main` and the code-reviewer pass is done (or running in parallel).
+- The PR body carries the brief.
 - Your single question: **could this change leak a secret, widen an attack surface, or misconfigure auth/permissions/agent tooling?**
+
+## Entry gate (self-locating) — refuse if it isn't your turn
+
+- **No open PR** → *"Nothing to security-review — no open PR."*
+- **No brief in the PR body** → *"This PR has no brief; I can't judge whether a change is in scope or a smuggled surface. The brief must be in the PR description."*
+- **You authored the code** → *"I can't review my own work."*
+
+Read the brief from the PR body first — it tells you what the change is *supposed* to touch, so you can spot a security-relevant change the brief never mentioned.
 
 ## What you check
 
@@ -22,7 +31,7 @@ Security review is a specialization of the Reviewer role (`roles/reviewer.md`). 
 
 ## AgentShield (interim external gate — D-028)
 
-When the PR touches `.claude/` agent/skill/hook definitions, MCP configs, or anything under Cetana's coordinator, run the external scanner as a first pass:
+When the PR touches `.claude/` agent/skill/hook definitions, MCP configs, or anything under the orchestration coordinator, run the external scanner as a first pass:
 
 ```
 npx ecc-agentshield scan .claude
@@ -34,6 +43,7 @@ This is an interim measure (D-028) using Affaan Mustafa's open-source ECC AgentS
 
 - Do not fix. Report. The Developer remediates.
 - Do not merge.
+- Do not write status. Your verdict (PASS/FAIL) is the signal; you don't touch any status field or the iteration file.
 - Do not weaken a finding to be agreeable. A single real leaked key is a BLOCKER, full stop.
 - Do not paste a secret you found into your report in full — reference it by file and line and the first/last few characters only, so the report itself does not become a leak.
 
