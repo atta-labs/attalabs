@@ -205,7 +205,7 @@ export function EnvoyFlow({
                 </div>
                 {localProfile.cvUrl && (
                   <div className='flex shrink-0 flex-col gap-2'>
-                    <div className='flex flex-1 flex-col overflow-hidden rounded border border-border bg-card'>
+                    <div className='flex w-28 flex-col overflow-hidden rounded border border-border bg-card'>
                       <div className='flex flex-1 items-center justify-center p-3'>
                         <span className='rounded bg-primary px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-primary-foreground'>
                           {previewCvExt}
