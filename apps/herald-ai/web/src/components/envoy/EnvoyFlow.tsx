@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Download, ExternalLink } from 'lucide-react'
+import { Download, ExternalLink, FileText } from 'lucide-react'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { AvatarFrame } from '@/components/avatar-frame'
@@ -178,6 +178,10 @@ export function EnvoyFlow({
     if (previewMode) {
       const previewTopStack = localProfile.stack?.slice(0, 5) ?? []
       const previewLocation = [localProfile.location, localProfile.availability].filter(Boolean).join(' · ')
+      const previewCvFilename = localProfile.cvUrl
+        ? decodeURIComponent(localProfile.cvUrl.split('/').pop() ?? '') || `${localProfile.name ?? 'CV'}.pdf`
+        : null
+      const previewCvExt = previewCvFilename ? (previewCvFilename.split('.').pop() ?? 'PDF').toUpperCase() : 'PDF'
 
       return (
         <div className='h-full overflow-y-auto'>
@@ -201,8 +205,16 @@ export function EnvoyFlow({
                 </div>
                 {localProfile.cvUrl && (
                   <div className='flex shrink-0 flex-col gap-2'>
-                    <div className='flex flex-1 items-center justify-center rounded border border-border bg-card px-4'>
-                      <span className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>CV</span>
+                    <div className='flex flex-1 flex-col overflow-hidden rounded border border-border bg-card'>
+                      <div className='flex flex-1 items-center justify-center p-3'>
+                        <span className='rounded bg-primary px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-primary-foreground'>
+                          {previewCvExt}
+                        </span>
+                      </div>
+                      <div className='flex items-center gap-1.5 border-t border-border bg-muted px-2 py-1.5'>
+                        <FileText className='h-3 w-3 shrink-0 text-muted-foreground' />
+                        <p className='truncate font-mono text-[10px] text-foreground'>{previewCvFilename}</p>
+                      </div>
                     </div>
                     <div className='flex shrink-0 items-center justify-center gap-1.5'>
                       <a

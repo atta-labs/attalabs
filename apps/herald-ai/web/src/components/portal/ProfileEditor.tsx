@@ -16,7 +16,7 @@ import {
   Textarea,
   useToastContext
 } from '@atta/ui'
-import { Download, Upload } from 'lucide-react'
+import { Download, Upload, X } from 'lucide-react'
 import { SummaryMarkdown } from '@/components/summary-markdown'
 
 const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const
@@ -224,6 +224,8 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
     stack: profile.stack.join(', ')
   })
   const [cvUrl, setCvUrl] = useState<string | null>(profile.cvUrl)
+  const [stackInput, setStackInput] = useState('')
+  const [summaryMode, setSummaryMode] = useState<'edit' | 'preview'>('edit')
   const { successToast, errorToast } = useToastContext()
   const [saving, setSaving] = useState(false)
   const [locationSearch, setLocationSearch] = useState(profile.location)
@@ -317,6 +319,21 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
       setCvUploading(false)
       if (cvDirectRef.current) cvDirectRef.current.value = ''
     }
+  }
+
+  const stackTags = form.stack
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+
+  function addTag(value: string) {
+    const tag = value.trim()
+    if (!tag || stackTags.includes(tag)) return
+    update('stack', [...stackTags, tag].join(', '))
+  }
+
+  function removeTag(tag: string) {
+    update('stack', stackTags.filter((t) => t !== tag).join(', '))
   }
 
   const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
@@ -426,23 +443,46 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           <section>
             <div className='mb-2 flex items-baseline justify-between'>
               <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
-              <span className='font-mono text-[9px] text-muted-foreground/60'>markdown supported</span>
+              <div className='flex overflow-hidden rounded border border-border'>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  onClick={() => setSummaryMode('edit')}
+                  className={`h-auto rounded-none px-2.5 py-0.5 font-mono text-[9px] ${summaryMode === 'edit' ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : 'text-muted-foreground'}`}
+                >
+                  Edit
+                </Button>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  onClick={() => setSummaryMode('preview')}
+                  className={`h-auto rounded-none border-l border-border px-2.5 py-0.5 font-mono text-[9px] ${summaryMode === 'preview' ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : 'text-muted-foreground'}`}
+                >
+                  Preview
+                </Button>
+              </div>
             </div>
-            <Textarea
-              className={`${inputClass} h-40 max-h-[160px] resize-none overflow-y-auto font-mono text-xs`}
-              value={form.summary}
-              onChange={(e) => update('summary', e.target.value)}
-              placeholder={
-                '**One-line lead — your seniority and focus in a single bold sentence.**\n\n## Background\nWhere you started and how you got here.\n\n## How I Work\nYour approach, values, what makes you effective.\n\n## Your Lab / Projects\nWhat you build independently.'
-              }
-            />
-            <p className='mt-1 font-mono text-[9px] text-muted-foreground/60'>
-              Use <strong className='font-medium'>**bold**</strong> for the lead and ## for section titles.
-            </p>
-            {form.summary && (
-              <div className='mt-3 rounded-md border border-border bg-muted/40 px-4 py-3'>
-                <p className='mb-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground/60'>Preview</p>
-                <SummaryMarkdown text={form.summary} />
+            {summaryMode === 'edit' ? (
+              <>
+                <Textarea
+                  className={`${inputClass} h-40 max-h-[160px] resize-none overflow-y-auto font-mono text-xs`}
+                  value={form.summary}
+                  onChange={(e) => update('summary', e.target.value)}
+                  placeholder={
+                    '**One-line lead — your seniority and focus in a single bold sentence.**\n\n## Background\nWhere you started and how you got here.\n\n## How I Work\nYour approach, values, what makes you effective.\n\n## Your Lab / Projects\nWhat you build independently.'
+                  }
+                />
+                <p className='mt-1 font-mono text-[9px] text-muted-foreground/60'>
+                  Use <strong className='font-medium'>**bold**</strong> for the lead and ## for section titles.
+                </p>
+              </>
+            ) : (
+              <div className='min-h-40 rounded-md border border-border px-4 py-3'>
+                {form.summary ? (
+                  <SummaryMarkdown text={form.summary} />
+                ) : (
+                  <p className='font-mono text-[9px] text-muted-foreground/60'>Nothing to preview.</p>
+                )}
               </div>
             )}
           </section>
@@ -450,13 +490,57 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           <section>
             <div className='mb-2 flex items-baseline justify-between'>
               <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Stack</h2>
-              <span className='font-mono text-[9px] text-muted-foreground/60'>comma-separated</span>
+              <span className='font-mono text-[9px] text-muted-foreground/60'>Enter or comma to add</span>
             </div>
-            <Textarea
-              className={`${inputClass} h-24 max-h-[96px] resize-none overflow-y-auto`}
-              value={form.stack}
-              onChange={(e) => update('stack', e.target.value)}
-            />
+            <div
+              className='flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 focus-within:border-foreground/30'
+              onClick={(e) => {
+                const input = (e.currentTarget as HTMLElement).querySelector('input')
+                input?.focus()
+              }}
+            >
+              {stackTags.map((tag) => (
+                <span
+                  key={tag}
+                  className='flex items-center gap-1 rounded border border-border px-2 py-0.5 font-mono text-xs text-foreground'
+                >
+                  {tag}
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    onClick={() => removeTag(tag)}
+                    aria-label={`Remove ${tag}`}
+                    className='h-auto w-auto p-0 text-muted-foreground hover:text-foreground'
+                  >
+                    <X className='h-3 w-3' />
+                  </Button>
+                </span>
+              ))}
+              <Input
+                value={stackInput}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val.endsWith(',')) {
+                    addTag(val.slice(0, -1))
+                    setStackInput('')
+                  } else {
+                    setStackInput(val)
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addTag(stackInput)
+                    setStackInput('')
+                  } else if (e.key === 'Backspace' && !stackInput && stackTags.length > 0) {
+                    const last = stackTags[stackTags.length - 1]
+                    if (last) removeTag(last)
+                  }
+                }}
+                placeholder={stackTags.length === 0 ? 'React, TypeScript, Node...' : ''}
+                className='h-auto min-w-24 flex-1 border-0 bg-transparent px-0 py-0 text-xs shadow-none focus-visible:ring-0 focus-visible:ring-offset-0'
+              />
+            </div>
           </section>
 
           <div className='flex items-center gap-3 border-t border-border pt-6'>

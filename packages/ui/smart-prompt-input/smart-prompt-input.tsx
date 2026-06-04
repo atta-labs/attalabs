@@ -80,7 +80,7 @@ function AttachmentTileItem({
         : '—'
 
   return (
-    <div className='relative flex h-44 w-36 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card'>
+    <div className='relative flex h-36 w-28 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card'>
       <button
         type='button'
         aria-label={`Remove ${name}`}
