@@ -36,7 +36,7 @@ function ThemeSwatch({ theme, scheme }: { theme: CMSTheme; scheme: ColorScheme }
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <h2 className='mb-3 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>{children}</h2>
+  return <h2 className='mb-3 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>{children}</h2>
 }
 
 interface AdminEditorPageProps {
@@ -174,12 +174,12 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
                   size='sm'
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={avatarUploading}
-                  className='gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em]'
+                  className='gap-1.5 font-mono text-xs uppercase tracking-[0.15em]'
                 >
                   <Upload className='h-3 w-3' />
-                  {avatarUploading ? 'Uploading...' : 'Upload photo'}
+                  {avatarUploading ? 'Uploading...' : 'Upload'}
                 </Button>
-                <p className='font-mono text-[9px] text-muted-foreground'>JPG, PNG, WebP · max 5 MB</p>
+                <p className='font-mono text-[10px] text-muted-foreground'>JPG, PNG, WebP · max 5 MB</p>
               </div>
             </div>
           </section>
@@ -211,10 +211,10 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
                     >
                       <ThemeSwatch theme={theme} scheme={isSelected ? colorScheme : 'dark'} />
                       <div className='min-w-0 flex-1'>
-                        <p className='truncate font-mono text-[9px] text-foreground/80'>{theme.name}</p>
+                        <p className='truncate font-mono text-xs text-foreground/80'>{theme.name}</p>
                       </div>
                       {hasBoth && (
-                        <div className='flex shrink-0 gap-1'>
+                        <div className='flex shrink-0 flex-col gap-1'>
                           {(['dark', 'light'] as const).map((s) => (
                             <Button
                               key={s}
@@ -226,7 +226,7 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
                                 setThemeId(theme._id)
                                 handleSchemeToggle(theme._id, s)
                               }}
-                              className={`h-auto rounded px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider transition-colors ${
+                              className={`h-auto rounded px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider transition-colors ${
                                 isSelected && colorScheme === s
                                   ? 'bg-foreground text-background'
                                   : 'text-muted-foreground hover:text-foreground'
@@ -250,13 +250,11 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
                 type='button'
                 onClick={handleSave}
                 disabled={saving || !canSave}
-                className='font-mono text-[10px] uppercase tracking-[0.2em]'
+                className='font-mono text-xs uppercase tracking-[0.2em]'
               >
                 {saving ? 'Saving...' : 'Save changes'}
               </Button>
-              {!canSave && !saving && (
-                <span className='font-mono text-[10px] text-muted-foreground'>Required: avatar</span>
-              )}
+              {!canSave && !saving && <span className='font-mono text-xs text-muted-foreground'>Required: avatar</span>}
             </div>
           </div>
         </div>

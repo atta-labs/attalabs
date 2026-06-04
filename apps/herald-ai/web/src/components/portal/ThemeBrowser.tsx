@@ -1,6 +1,7 @@
 'use client'
 
 import type { CMSTheme } from '@atta/cms'
+import { Button } from '@atta/ui'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import type { ThemeData } from '@atta/ui/lib/preview-theme-utils'
 import { usePortalPreview } from '@/hooks/usePortalPreview'
@@ -185,11 +186,18 @@ export function ThemeBrowser({
             const hasBoth = schemes?.hasDark && schemes?.hasLight
 
             return (
-              <button
+              <div
                 key={theme._id}
-                type='button'
+                role='button'
+                tabIndex={0}
                 onClick={() => handleSelect(theme._id)}
-                className={`flex w-full items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors ${
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleSelect(theme._id)
+                  }
+                }}
+                className={`flex w-full cursor-pointer items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors ${
                   isSelected ? 'bg-primary/10' : 'hover:bg-foreground/5'
                 }`}
               >
@@ -204,42 +212,26 @@ export function ThemeBrowser({
                 </div>
                 {hasBoth && (
                   <div
-                    role='radiogroup'
-                    className='flex flex-shrink-0 flex-col gap-1'
+                    className='flex flex-shrink-0 flex-col gap-0.5'
                     onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
                   >
-                    <label
-                      className={`flex cursor-pointer items-center gap-1 text-xs ${
-                        thisScheme === 'dark' ? 'text-foreground' : 'text-muted-foreground'
-                      }`}
-                    >
-                      <input
-                        type='radio'
-                        name={`scheme-${theme._id}`}
-                        checked={thisScheme === 'dark'}
-                        onChange={() => handleSchemeChange(theme._id, 'dark')}
-                        className='h-3 w-3 accent-primary'
-                      />
-                      Dark
-                    </label>
-                    <label
-                      className={`flex cursor-pointer items-center gap-1 text-xs ${
-                        thisScheme === 'light' ? 'text-foreground' : 'text-muted-foreground'
-                      }`}
-                    >
-                      <input
-                        type='radio'
-                        name={`scheme-${theme._id}`}
-                        checked={thisScheme === 'light'}
-                        onChange={() => handleSchemeChange(theme._id, 'light')}
-                        className='h-3 w-3 accent-primary'
-                      />
-                      Light
-                    </label>
+                    {(['dark', 'light'] as const).map((s) => (
+                      <Button
+                        key={s}
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => handleSchemeChange(theme._id, s)}
+                        className={`h-5 px-1.5 font-mono text-[9px] uppercase tracking-widest ${
+                          thisScheme === s ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </Button>
+                    ))}
                   </div>
                 )}
-              </button>
+              </div>
             )
           })}
         </div>
