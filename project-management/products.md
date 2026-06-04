@@ -24,11 +24,27 @@ The folder is simply **the home for that product's specs and status** (`<path>/s
 
 ## How `Product` is validated
 
-This registry is the **authority for valid product names.** A `Product:` value is valid if and only if it is a row above. The Developer's entry gate resolves `Product:` against this file to find the specs path; if there is no matching row (a typo like `vda`, or an unregistered name), the brief is malformed and the agent refuses rather than guessing — *"Product 'vda' isn't in the registry; did you mean 'vada', or run `aeg add-product` first?"* The same check can run mechanically in `verify-docs` later.
+This registry is the **authority for valid product names.** A `Product:` value is valid if and only if every name in it is a row above. The Developer's entry gate resolves `Product:` against this file to find the specs path(s); if a name has no matching row (a typo like `vda`, or an unregistered name), the brief is malformed and the agent refuses rather than guessing — *"Product 'vda' isn't in the registry; did you mean 'vada', or run `aeg add-product` first?"* The same check can run mechanically in `verify-docs` later.
+
+## A task can span multiple products — and that is normal
+
+`Product` is **multi-valued.** A task carries as many products as it genuinely touches: `Product: vada` for most work, `Product: engine, herald` (or four, or more) when the change spans them. This is not an exception or an escape hatch — cross-product PRs are a normal, expected shape.
+
+The Planner decides split-vs-combine by one test — **verification coupling** (see `iterations/README.md` §3):
+- If the pieces are each provable on their own → separate single-product tasks with a `depends-on` edge.
+- If the change can only be *tested* as a unit (e.g. refactor the shared engine *and* migrate the first consumer onto it, because the only proof the refactor is correct is the consumer working) → **one task, one branch, one PR, multiple products.**
+
+When a task lists multiple products, every mechanism fans out across all of them:
+- **Routing** — the Developer reads every listed product's specs.
+- **Review** — the PR is reviewed through each product's lens (the engine reviewer checks the engine's *other* consumers still work; the Herald reviewer checks Herald uses the new engine correctly). More products = more review lenses = proportionally more rigor. That is the point, not a tax.
+- **Conflicts** — see below; conflict is package-level, so a multi-product task conflicts with in-flight work touching *any* of the packages it spans.
+- **Close-out** — the Archivist updates every listed product's `state.md` / `now.md`.
+
+The honest tradeoff: a multi-product PR is bigger and has a wider blast radius, so it is *more* dangerous to merge — which is exactly why it earns multi-lens review. Rigor scales with risk; the model does not discourage these, it reviews them harder.
 
 ## Routing vs. conflicts — two different granularities
 
-`Product` is the **coarse routing/ownership label** — "this task is Vāda work; read Vāda's specs; update Vāda's PM." It is deliberately *not* the conflict unit. Conflicts happen at the **package/path level**: two tasks collide if they touch the same code, even across different products (e.g. both touch a shared `@atta/engine`). So a product may span packages, and the `conflicts-with` edges on the iteration are declared at the finer grain. Don't conflate them: `Product` = whose specs/PM; `conflicts-with` = whose files.
+`Product` is the **coarse routing/ownership label** — "whose specs, whose PM." It is deliberately *not* the conflict unit. Conflicts happen at the **package/path level**: two tasks collide if they touch the same code, even across different products. The canonical case: a task generalizing `@atta/engine` (a package Vāda shares) conflicts with any in-flight Vāda task touching the engine — regardless of product labels — because they hit the same package. So conflict detection keys on packages, not products; a product spanning packages, and a package shared across products, are both handled by working at the package grain. Don't conflate them: `Product` = whose specs/PM; `conflicts-with` = whose files.
 
 ---
 
