@@ -1,8 +1,10 @@
 # Herald — product backlog
 
+**Status:** draft · living reference (out of the AEG flow; not a ratified spec)
+
 **Out of the AEG flow.** Held / future items for Herald (standalone forensic CV/JD match tool, sibling AttaLabs product). Reference the Planner reads when choosing the next iteration slice; the flow never operates on it.
 
-Migrated from the retired global `roadmap.md` and `now.md` (June 3, 2026).
+Migrated from the retired global `roadmap.md` and `now.md` (June 3, 2026; roadmap retired by D-029).
 
 ---
 
