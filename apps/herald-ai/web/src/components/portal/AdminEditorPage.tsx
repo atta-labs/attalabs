@@ -226,7 +226,7 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
                                 setThemeId(theme._id)
                                 handleSchemeToggle(theme._id, s)
                               }}
-                              className={`h-auto rounded px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider transition-colors ${
+                              className={`h-auto rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
                                 isSelected && colorScheme === s
                                   ? 'bg-foreground text-background'
                                   : 'text-muted-foreground hover:text-foreground'
@@ -245,17 +245,17 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
           </section>
 
           <div className='border-t border-border pt-6'>
-            <div className='flex items-center gap-3'>
-              <Button
-                type='button'
-                onClick={handleSave}
-                disabled={saving || !canSave}
-                className='font-mono text-xs uppercase tracking-[0.2em]'
-              >
-                {saving ? 'Saving...' : 'Save changes'}
-              </Button>
-              {!canSave && !saving && <span className='font-mono text-xs text-muted-foreground'>Required: avatar</span>}
-            </div>
+            <Button
+              type='button'
+              onClick={handleSave}
+              disabled={saving || !canSave}
+              className='w-full font-mono text-xs uppercase tracking-[0.2em]'
+            >
+              {saving ? 'Saving...' : 'Save changes'}
+            </Button>
+            {!canSave && !saving && (
+              <p className='mt-2 text-center font-mono text-[10px] text-muted-foreground'>Required: avatar</p>
+            )}
           </div>
         </div>
       </div>

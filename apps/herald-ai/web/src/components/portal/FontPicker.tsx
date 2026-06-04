@@ -120,7 +120,7 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
           setOpen(!open)
           if (!open) fetchFontsIfNeeded()
         }}
-        className='flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-[10px] transition-colors hover:bg-foreground/5'
+        className='flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-foreground/5'
       >
         <span className='font-mono text-muted-foreground'>Aa</span>
         <span className='text-foreground' style={{ fontFamily: fontName ? `"${fontName}", sans-serif` : 'inherit' }}>
