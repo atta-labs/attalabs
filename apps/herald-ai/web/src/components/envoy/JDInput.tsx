@@ -1,6 +1,7 @@
 'use client'
 
 import type { FileUIPart } from 'ai'
+import { Download, ExternalLink } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
@@ -105,22 +106,29 @@ export function JDInput({
           </div>
 
           {candidateCvUrl && (
-            <div className='flex shrink-0 flex-col items-end gap-1.5 pt-1'>
-              <a
-                href={candidateCvUrl}
-                download
-                className='inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-              >
-                ↓ Download CV
-              </a>
-              <a
-                href={candidateCvUrl}
-                target='_blank'
-                rel='noreferrer'
-                className='inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-              >
-                ↗ Open CV
-              </a>
+            <div className='flex shrink-0 flex-col items-center gap-2 rounded-lg border border-border px-4 py-3'>
+              <span className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>CV</span>
+              <div className='flex items-center gap-2'>
+                <a
+                  href={candidateCvUrl}
+                  download
+                  aria-label='Download CV'
+                  title='Download CV'
+                  className='flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                >
+                  <Download className='h-4 w-4' />
+                </a>
+                <a
+                  href={candidateCvUrl}
+                  target='_blank'
+                  rel='noreferrer'
+                  aria-label='Open CV'
+                  title='Open CV'
+                  className='flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                >
+                  <ExternalLink className='h-4 w-4' />
+                </a>
+              </div>
             </div>
           )}
         </div>

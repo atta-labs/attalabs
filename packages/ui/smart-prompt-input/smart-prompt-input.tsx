@@ -71,40 +71,16 @@ function AttachmentTileItem({
   const name = f.filename ?? 'file'
   const ext = getExt(name)
   const isText = f.mediaType.startsWith('text/')
-  const isImage = f.mediaType.startsWith('image/')
-  const sizeStr = extra ? formatBytes(extra.size) : '—'
-  const footerLabel =
+  const textPreview = extra?.textPreview
+  const meta =
     isText && extra?.charCount !== undefined
-      ? `${extra.charCount.toLocaleString()} chars · ${ext || 'TXT'}`
-      : `${sizeStr} · ${ext || 'FILE'}`
+      ? `${extra.charCount.toLocaleString()} chars`
+      : extra
+        ? formatBytes(extra.size)
+        : '—'
 
   return (
-    <div className='relative flex h-36 w-28 shrink-0 flex-col overflow-hidden rounded border border-border bg-card'>
-      {/* Preview area — fixed height fills remaining space, clips all content types uniformly */}
-      <div className='flex flex-1 overflow-hidden'>
-        {isImage && f.url ? (
-          // biome-ignore lint/performance/noImgElement: blob URL from file attachment
-          <img src={f.url} alt={name} className='h-full w-full object-cover' />
-        ) : isText && extra?.textPreview ? (
-          <p className='w-full overflow-hidden p-2 font-mono text-[7px] leading-snug text-muted-foreground'>
-            {extra.textPreview}
-          </p>
-        ) : (
-          <div className='flex h-full w-full items-center justify-center bg-muted/30'>
-            <span className='rounded bg-primary px-1.5 py-0.5 font-mono text-[9px] uppercase text-primary-foreground'>
-              {ext || 'FILE'}
-            </span>
-          </div>
-        )}
-      </div>
-      {/* Footer — pinned to bottom, fixed height */}
-      <div className='shrink-0 border-t border-border bg-muted px-2 py-1'>
-        <div className='flex items-center gap-1'>
-          <FileText className='h-2.5 w-2.5 shrink-0 text-muted-foreground' />
-          <span className='min-w-0 flex-1 truncate font-mono text-[9px] text-muted-foreground'>{name}</span>
-        </div>
-        <p className='mt-0.5 font-mono text-[9px] text-muted-foreground'>{footerLabel}</p>
-      </div>
+    <div className='relative flex h-32 w-44 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card'>
       <button
         type='button'
         aria-label={`Remove ${name}`}
@@ -113,6 +89,28 @@ function AttachmentTileItem({
       >
         <X className='h-3 w-3' />
       </button>
+
+      <div className='flex-1 overflow-hidden p-2'>
+        {isText && textPreview ? (
+          <p className='line-clamp-5 break-words font-mono text-[8px] leading-snug text-muted-foreground'>
+            {textPreview}
+          </p>
+        ) : (
+          <div className='flex h-full items-center justify-center'>
+            <span className='rounded bg-primary px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-primary-foreground'>
+              {ext}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className='flex items-center gap-1.5 border-t border-border bg-muted px-2 py-1.5'>
+        <FileText className='h-3 w-3 shrink-0 text-muted-foreground' />
+        <div className='min-w-0'>
+          <p className='truncate font-mono text-[10px] text-foreground'>{name}</p>
+          <p className='font-mono text-[8px] text-muted-foreground'>{meta}</p>
+        </div>
+      </div>
     </div>
   )
 }
