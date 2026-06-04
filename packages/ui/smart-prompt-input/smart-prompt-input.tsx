@@ -71,6 +71,7 @@ function AttachmentTileItem({
   const name = f.filename ?? 'file'
   const ext = getExt(name)
   const isText = f.mediaType.startsWith('text/')
+  const isImage = f.mediaType.startsWith('image/')
   const sizeStr = extra ? formatBytes(extra.size) : '—'
   const footerLabel =
     isText && extra?.charCount !== undefined
@@ -78,23 +79,28 @@ function AttachmentTileItem({
       : `${sizeStr} · ${ext || 'FILE'}`
 
   return (
-    <div className='relative w-36 shrink-0 overflow-hidden rounded border border-border bg-card'>
-      <div className='flex min-h-[72px] items-start p-2'>
-        {isText && extra?.textPreview ? (
-          <p className='line-clamp-3 w-full break-words font-mono text-[9px] leading-snug text-muted-foreground'>
+    <div className='relative flex h-36 w-28 shrink-0 flex-col overflow-hidden rounded border border-border bg-card'>
+      {/* Preview area — fixed height fills remaining space, clips all content types uniformly */}
+      <div className='flex flex-1 overflow-hidden'>
+        {isImage && f.url ? (
+          // biome-ignore lint/performance/noImgElement: blob URL from file attachment
+          <img src={f.url} alt={name} className='h-full w-full object-cover' />
+        ) : isText && extra?.textPreview ? (
+          <p className='w-full overflow-hidden p-2 font-mono text-[7px] leading-snug text-muted-foreground'>
             {extra.textPreview}
           </p>
         ) : (
-          <div className='flex h-[72px] w-full items-center justify-center'>
+          <div className='flex h-full w-full items-center justify-center bg-muted/30'>
             <span className='rounded bg-primary px-1.5 py-0.5 font-mono text-[9px] uppercase text-primary-foreground'>
               {ext || 'FILE'}
             </span>
           </div>
         )}
       </div>
-      <div className='border-t border-border bg-muted px-2 py-1'>
+      {/* Footer — pinned to bottom, fixed height */}
+      <div className='shrink-0 border-t border-border bg-muted px-2 py-1'>
         <div className='flex items-center gap-1'>
-          <FileText className='h-3 w-3 shrink-0 text-muted-foreground' />
+          <FileText className='h-2.5 w-2.5 shrink-0 text-muted-foreground' />
           <span className='min-w-0 flex-1 truncate font-mono text-[9px] text-muted-foreground'>{name}</span>
         </div>
         <p className='mt-0.5 font-mono text-[9px] text-muted-foreground'>{footerLabel}</p>
