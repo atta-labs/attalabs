@@ -21,22 +21,14 @@ export function AvatarFrame({
   variant = 'dossier',
   pennant: showPennant = true,
   pennantAnimated = true,
-  className,
+  className
 }: AvatarFrameProps) {
   return (
-    <div
-      className={cn('relative shrink-0', className)}
-      style={{ width: size, height: size }}
-    >
+    <div className={cn('relative shrink-0', className)} style={{ width: size, height: size }}>
       {/* Clipping frame — image stays within the rounded border */}
       <div className='absolute inset-0 overflow-hidden rounded-[10px] border-[1.5px] border-border bg-card'>
         {/* biome-ignore lint/performance/noImgElement: dynamic blob/R2 URL — not optimisable via next/image */}
-        <img
-          src={src}
-          alt={alt}
-          className='h-full w-full object-cover'
-          style={{ imageRendering: 'pixelated' }}
-        />
+        <img src={src} alt={alt} className='h-full w-full object-cover' style={{ imageRendering: 'pixelated' }} />
         {variant === 'dossier' && (
           <>
             {/* Registration ticks — top-right and bottom-left */}

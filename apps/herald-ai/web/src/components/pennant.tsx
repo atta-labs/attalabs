@@ -13,13 +13,13 @@ interface PennantProps {
 const dimensions = {
   sm: { width: 16, height: 22 },
   md: { width: 20, height: 28 },
-  lg: { width: 24, height: 34 },
+  lg: { width: 24, height: 34 }
 } as const
 
 const toneClass = {
   primary: 'text-primary',
   muted: 'text-muted-foreground',
-  destructive: 'text-destructive',
+  destructive: 'text-destructive'
 } as const
 
 export function Pennant({ size = 'md', tone = 'primary', animated = false, className }: PennantProps) {

@@ -37,9 +37,7 @@ export function JDInput({
   return (
     <div className='mx-auto max-w-[680px] px-6 py-12'>
       <header className='mb-8 border-b border-border pb-10'>
-        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-          Forensic Match Audit
-        </p>
+        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
         <div className='mt-4 flex items-start justify-between gap-4'>
           <div className='flex items-start gap-5'>
             {candidateAvatarUrl && (
@@ -52,9 +50,7 @@ export function JDInput({
               />
             )}
             <div className='min-w-0'>
-              <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>
-                {candidateName}
-              </h1>
+              <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>{candidateName}</h1>
               <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{candidateTitle}</p>
               {(candidateLocation || candidateAvailability) && (
                 <p className='mt-1 font-mono text-[10px] text-muted-foreground/70'>
@@ -85,9 +81,7 @@ export function JDInput({
         </div>
         {candidateSummary && (
           <div className='mt-6 rounded-lg border border-border bg-card px-5 py-4'>
-            <p className='line-clamp-3 font-sans text-sm leading-relaxed text-foreground/80'>
-              {candidateSummary}
-            </p>
+            <p className='line-clamp-3 font-sans text-sm leading-relaxed text-foreground/80'>{candidateSummary}</p>
           </div>
         )}
       </header>

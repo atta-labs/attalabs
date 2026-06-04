@@ -193,9 +193,7 @@ export function EnvoyFlow({
                   />
                 )}
                 <div className='min-w-0'>
-                  <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>
-                    {localProfile.name}
-                  </h1>
+                  <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>{localProfile.name}</h1>
                   <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{localProfile.title}</p>
                   {(localProfile.location || localProfile.availability) && (
                     <p className='mt-1 font-mono text-[10px] text-muted-foreground/70'>
