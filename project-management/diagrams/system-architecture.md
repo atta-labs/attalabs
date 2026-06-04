@@ -1,58 +1,54 @@
-# System architecture diagram
+# System architecture diagram — the orchestration tool (Cetana)
 
-Module-level view of the software pieces that implement the Atta operational model. **No agents in this diagram.** No roles. Just code modules, files, services, and the connections between them.
+Module-level view of the software that **automates** the AEG flow in this repo. **No agents in this diagram** — no roles, just code modules, files, services, and their connections.
 
-For the agent/process view, see `process-flow.md`.
-For the prose explanation of the workflow, see `process.md`.
+> **Scope: this documents Cetana, the *optional* orchestration tool used in this repo — it is NOT the AEG model.** AEG is forge-native and orchestrator-independent: it runs on the **Repo + the Git forge (GitHub)** alone, with local git **worktrees** that need no tool. Everything below labelled "Cetana" — the Coordinator, the MCP servers, the `~/.cetana` runtime, the IPC files — exists **only when Cetana is in use**. Run AEG by hand and none of it is present; the flow is identical (`aeg-manual-flow.md`). Cetana knows AEG; AEG does not know Cetana.
+
+For the agent/process view, see `process-flow.md`. For the prose workflow, see `process.md`. For why Cetana exists, see `apps/cetana-ai/specs/cetana-spec.md`.
 
 ---
 
 ## Why this diagram exists
 
-The operational model is implemented across multiple software components: the Cetana Coordinator (Bun service), the executor's MCP server (spawned per task), the verification CI script, the Archivist GitHub Actions, the GitHub Issues system, the JSONL filesystem layer, and the repo files themselves.
-
-When agents talk, they're using these modules as substrate. When a Developer "calls `cetana_request_input`," what's actually happening is a stdio MCP message from a subprocess to its parent's MCP server which writes a file to a shared directory which is polled by another process which writes a label to GitHub.
-
-This diagram shows the substrate. It's the answer to: *if I forgot all the role docs and just looked at the code, what would I see?*
+When Cetana is running, an agent action like "the Developer escalates" is implemented as a chain of software: a stdio MCP message from a subprocess to its parent's MCP server, which writes a file to a shared directory, which is polled by another process, which writes a label to GitHub. This diagram shows that substrate — the answer to *"if I forgot the role docs and just looked at Cetana's code, what would I see?"* None of it is required by AEG; it is one tool's way of automating the dispatch + escalation slice.
 
 ---
 
-## Top-level: the four substrates
-
-The operational model runs across four substrates. Each owns a different kind of state.
+## Substrates: what AEG needs vs. what Cetana adds
 
 ```mermaid
 flowchart TB
-    subgraph Repo["Repo (canonical, git-tracked)"]
-        Specs[Specs<br/>apps/*/specs/*.md]
-        Skills[Skills<br/>.claude/skills/*/SKILL.md]
-        PMDocs[PM docs<br/>project-management/*.md]
-        Code[Source code<br/>apps/*, packages/*]
-        DecLogs[Decision logs<br/>per-product + global]
-        Scripts[CI scripts<br/>scripts/verify-docs.ts]
-        Workflows[GitHub Actions<br/>.github/workflows/*.yml]
+    subgraph AEG["AEG substrates (always — forge-native)"]
+        subgraph Repo["Repo (canonical, git-tracked)"]
+            Specs[Specs<br/>apps/*/specs/*.md]
+            Skills[Skills<br/>.claude/skills/*/SKILL.md]
+            PMDocs[PM docs + iteration files<br/>project-management/*]
+            Code[Source code<br/>apps/*, packages/*]
+            DecLogs[Decision logs<br/>per-product + global]
+            Scripts[CI scripts<br/>scripts/verify-docs.ts]
+            Workflows[GitHub Actions<br/>.github/workflows/*.yml]
+        end
+        subgraph GitHub["Git forge — GitHub (execution state + audit)"]
+            Issues[Issues = tasks<br/>+ tier / aeg:blocked / needs:* labels]
+            PRs[Pull requests<br/>brief in body; review decision]
+            CIRuns[CI run results]
+            Comments[Issue/PR comments]
+        end
+        subgraph Worktrees["Worktrees (per-task isolation — plain git)"]
+            WT[.worktrees/task/iteration/n<br/>checkout on task/iteration/n branch]
+        end
     end
 
-    subgraph GitHub["GitHub (governance + audit)"]
-        Issues[Issues<br/>+ labels + milestones]
-        PRs[Pull requests]
-        CIRuns[CI run results]
-        Comments[Issue/PR comments]
-    end
-
-    subgraph Local["Local filesystem (~/.cetana)"]
+    subgraph Cetana["Cetana substrate (only if the tool is used)"]
         Config[~/.cetana/config.json]
-        TaskLogs[~/.cetana/tasks/N.jsonl<br/>JSONL append-only]
+        TaskLogs[~/.cetana/tasks/N.jsonl<br/>append-only event log]
         TaskDirs[~/.cetana/tasks/N/<br/>question.json, reply.json,<br/>mcp-config.json]
-    end
-
-    subgraph Worktrees["Worktrees (per-task isolation)"]
-        WT[~/code/atta/.worktrees/issue-N/<br/>full repo checkout on<br/>feat/issue-N branch]
     end
 
     Repo -.is checked out into.-> Worktrees
     Repo -.referenced by.-> GitHub
-    Local -.IPC + state for.-> Worktrees
+    Cetana -.IPC + state for.-> Worktrees
+    Cetana -.derives status by reading.-> GitHub
 
     classDef repoNode fill:#bbdefb,stroke:#1565c0,color:#000
     classDef githubNode fill:#ffe0b2,stroke:#e65100,color:#000
@@ -65,18 +61,18 @@ flowchart TB
     class WT worktreeNode
 ```
 
-**The substrates and what they're for:**
+**What each is for:**
 
-- **Repo** — canonical state. The constitution, the specs, the skills, the code, the decision logs. Anything that survives across machines and across time.
-- **GitHub** — governance + audit. Issues track tasks. PRs gate merges. Labels carry status. Comments form the audit trail. CI enforces gates.
-- **Local filesystem** — runtime state. Configuration, task event logs, IPC files between MCP servers. Survives process restarts but not machine reinstalls.
-- **Worktrees** — per-task isolated workspaces. Each running task has its own checkout. Multiple parallel tasks don't collide.
+- **Repo** — canonical state: the constitution, specs, skills, code, decision logs, iteration topology files. Survives across machines and time.
+- **GitHub (the forge)** — execution state + audit. Issues *are* tasks. PRs gate merges and carry the brief in their body. **Task status is *derived* from Issue/branch/PR/merge state — labels do not carry status** (labels are `tier:*`, `aeg:blocked`, `needs:*-input`). Comments form the audit trail; CI enforces gates.
+- **Worktrees** — per-task isolated checkouts on `task/<iteration>/<n>` branches. Plain git; no tool required.
+- **Cetana (optional)** — runtime state for the tool that automates dispatch + escalation: config, task event logs, IPC files. Present only when Cetana runs. Nothing canonical depends on it.
 
 ---
 
 ## The Cetana Coordinator (the orchestration layer)
 
-The Coordinator is one Bun package with two MCP server entry points. They share core modules.
+One Bun package with two MCP server entry points sharing core modules. *(Cetana internals — accurate to this repo's tool.)*
 
 ```mermaid
 flowchart TB
@@ -116,11 +112,9 @@ flowchart TB
     DispTool -.uses.-> Spawner
 
     ListTool -.uses.-> State
-
     ReplyTool -.uses.-> State
     ReplyTool -.uses.-> Events
     ReplyTool -.uses.-> Paths
-
     ReqTool -.uses.-> Events
     ReqTool -.uses.-> Paths
 
@@ -136,13 +130,13 @@ flowchart TB
     class State,Events,Worktree,Github,Spawner,Paths,Config coreNode
 ```
 
-**Why two entry points and not two packages:** the strategist and executor servers expose different tool surfaces but share the same state semantics, event types, and path conventions. Two entry points in one package keeps the shared code DRY without forcing workspace gymnastics. See `apps/cetana-ai/specs/cetana-decisions.md` D-002.
+**Why two entry points and not two packages:** the strategist and executor servers expose different tool surfaces but share state semantics, event types, and path conventions. Two entry points in one package keeps the shared code DRY. See `apps/cetana-ai/specs/cetana-decisions.md` D-002.
 
 ---
 
-## The complete signal flow on dispatch
+## The complete signal flow on dispatch (Cetana)
 
-What actually happens when Principal calls `cetana.dispatch_task` from Claude Desktop.
+What Cetana does when the Principal dispatches from Claude Desktop. *(In the manual flow, the Developer's worktree-first Step 0 does the equivalent and none of this runs.)*
 
 ```mermaid
 sequenceDiagram
@@ -156,29 +150,29 @@ sequenceDiagram
     participant ExecSrv as mcp-server-executor<br/>(spawned per task)
     participant Claude as claude -p subprocess
 
-    Desktop->>StratSrv: cetana.dispatch_task(issue_number, brief)
-    StratSrv->>Github: getIssue(issue_number)
-    Github-->>StratSrv: issue title, body, labels
-    StratSrv->>WT: createWorktree(issue_number)
+    Desktop->>StratSrv: dispatch_task(issue_number, brief)
+    StratSrv->>Github: getIssue(issue_number) + check dispatch gates
+    Github-->>StratSrv: issue, deps merged?, conflict PR open?
+    StratSrv->>WT: createWorktree(task/iteration/n)
     WT-->>StratSrv: worktree path
-    StratSrv->>FS: write mcp-config.json<br/>(points at executor server)
+    StratSrv->>FS: write mcp-config.json (points at executor server)
     StratSrv->>Events: append task.dispatched
     StratSrv->>Spawner: spawnClaudeCode(brief, worktree, mcp-config)
-    Spawner->>Claude: spawn process
+    Spawner->>Claude: spawn process (brief pasted as prompt)
     Spawner->>ExecSrv: spawn alongside (via mcp-config)
     Spawner-->>StratSrv: pid
     StratSrv->>Events: append task.spawned
     StratSrv->>Github: postIssueComment("dispatched")
     StratSrv-->>Desktop: {taskId, worktree, pid}
 
-    Note over Claude,ExecSrv: Claude Code is now running<br/>connected to executor MCP server<br/>via stdio
+    Note over Claude,ExecSrv: Claude Code now running, connected to<br/>executor MCP server via stdio. Opening the<br/>branch = in-flight (derived). The brief will<br/>land in the PR body, never the Issue.
 ```
 
 ---
 
-## The escalation flow (when Developer blocks)
+## The escalation flow (Cetana implementation)
 
-What happens when a Developer calls `cetana_request_input`.
+How Cetana implements AEG's escalation when a Developer blocks. *(Manually, this is a chat message to the TL/Principal; the routing is identical.)*
 
 ```mermaid
 sequenceDiagram
@@ -191,72 +185,71 @@ sequenceDiagram
     participant Desktop as Claude Desktop
     participant Responder as TL or Principal
 
-    Claude->>ExecSrv: cetana_request_input(question, severity)
+    Claude->>ExecSrv: request_input(question, severity)
     ExecSrv->>FS: write question.json
     ExecSrv->>Events: append task.blocked
-    ExecSrv->>Github: postIssueComment + add label<br/>(needs:execution-input etc.)
-    Note over ExecSrv: Tool call now BLOCKS<br/>polling reply.json every 1s
+    ExecSrv->>Github: postIssueComment + add aeg:blocked + needs:*-input
+    Note over ExecSrv: Tool call BLOCKS, polling reply.json every 1s
 
-    Desktop->>StratSrv: cetana.list_active_tasks
-    StratSrv-->>Desktop: list of tasks including blocked one
+    Desktop->>StratSrv: list_active_tasks
+    StratSrv-->>Desktop: list including blocked one
     Desktop->>Responder: surfaces question to human
     Responder->>Desktop: provides reply
-    Desktop->>StratSrv: cetana.reply_to_blocked_task(taskId, reply)
+    Desktop->>StratSrv: reply_to_blocked_task(taskId, reply)
     StratSrv->>FS: write reply.json
-    StratSrv->>Events: append task.unblocked
-    StratSrv->>Github: remove needs:* label
+    StratSrv->>Github: remove needs:* + aeg:blocked labels
     StratSrv-->>Desktop: "reply sent"
 
     Note over ExecSrv: Polling detects reply.json
-    ExecSrv->>FS: read reply.json
-    ExecSrv->>FS: delete question.json + reply.json
+    ExecSrv->>FS: read + delete question.json + reply.json
     ExecSrv->>Events: append task.unblocked
     ExecSrv-->>Claude: tool result = reply text
 
-    Note over Claude: Developer resumes execution<br/>with no context loss
+    Note over Claude: Developer resumes with no context loss
 ```
 
 ---
 
-## CI and Archivist (the enforcement layer)
+## CI and Archivist (the enforcement layer — AEG-level)
 
-What runs automatically when a PR is opened or merged.
+What runs automatically on PR open/merge. This layer is AEG's, not Cetana's — it's GitHub Actions + scripts in the repo.
 
 ```mermaid
 flowchart TB
     PROpen[PR opened or updated] --> CI[CI: GitHub Actions]
 
-    CI --> Typecheck[Typecheck<br/>tsc --noEmit]
-    CI --> Lint[Lint<br/>biome check]
-    CI --> Tests[Tests<br/>bun test]
-    CI --> VerifyDocs[verify-docs.ts<br/>tier-aware doc check]
+    CI --> Typecheck[Typecheck — tsc --noEmit]
+    CI --> Lint[Lint — biome check]
+    CI --> Tests[Tests — bun test]
+    CI --> VerifyDocs[verify-docs.ts — tier-aware doc check]
 
     Typecheck --> CIPass{All green?}
     Lint --> CIPass
     Tests --> CIPass
     VerifyDocs --> CIPass
 
-    CIPass -->|Yes| ArchivistAdvisory[Archivist GitHub Action<br/>posts advisory comments]
+    CIPass -->|Yes| ArchivistAdvisory[Archivist Action — advisory comments]
     CIPass -->|No| Block[PR blocked from merge]
 
-    ArchivistAdvisory --> AdvisoryChecks[Archivist checks:<br/>- related decisions surfacing<br/>- skill staleness flags<br/>- decision log term references<br/>- thinking.md mentions]
+    ArchivistAdvisory --> AdvisoryChecks[related-decision surfacing,<br/>skill staleness, execution-metadata creep,<br/>lock-acknowledgment hints]
+    AdvisoryChecks --> Comments[Posts as PR comments — NOT blocking]
 
-    AdvisoryChecks --> Comments[Posts as PR comments<br/>NOT blocking]
+    PROpen -.also.-> BriefValid[Brief Validation on the brief]
+    BriefValid --> ValidCheck{Brief well-formed?<br/>tier present? structure ok?<br/>Product resolves? no planning fields?}
+    ValidCheck -->|Yes| Ready[Dispatchable]
+    ValidCheck -->|No| Blocked2[needs:brief-correction]
 
-    PROpen -.also triggers.-> BriefValid[Brief Validation<br/>on linked issue]
-    BriefValid --> ValidCheck{Brief well-formed?<br/>tier present?<br/>structure correct?}
-    ValidCheck -->|Yes| Ready[status:ready]
-    ValidCheck -->|No| Blocked2[status:blocked<br/>needs:brief-correction]
-
-    Merge[PR merged] --> PostMerge[Archivist post-merge]
-    PostMerge --> IndexRegen[Regenerate docs-index.md]
-    PostMerge --> SeqValid[Validate D-### sequence<br/>across all decision logs]
-    PostMerge --> WTPrune[Flag merged worktrees<br/>as cleanup candidates]
+    Merge[PR merged — auto-closes Issue] --> CloseOut[Archivist close-out]
+    CloseOut --> ChangeLog[Append changelog]
+    CloseOut --> PerProduct[Update per-product state.md / now.md<br/>for every product the task listed]
+    CloseOut --> IndexRegen[Regenerate docs-index.md]
+    CloseOut --> SeqValid[Validate D-### sequence within each log]
+    CloseOut --> Orphans[Flag orphaned branches + worktrees]
 
     Daily[Daily cron] --> DriftCheck[Archivist drift check]
-    DriftCheck --> StaleSpec[Flag specs older than<br/>referenced code]
-    DriftCheck --> StaleThink[Flag thinking.md if untouched >7d]
-    DriftCheck --> DriftIssue[Open GitHub Issue<br/>type:drift-detected if found]
+    DriftCheck --> StaleSpec[Flag specs older than referenced code]
+    DriftCheck --> MetaCreep[Flag execution metadata in iteration files]
+    DriftCheck --> DriftIssue[Open Issue type:drift-detected if found]
 
     classDef ciNode fill:#ffe0b2,stroke:#e65100,color:#000
     classDef archivistNode fill:#e1bee7,stroke:#6a1b9a,color:#000
@@ -265,43 +258,36 @@ flowchart TB
     classDef neutralNode fill:#f5f5f5,stroke:#424242,color:#000
 
     class CI,Typecheck,Lint,Tests,VerifyDocs ciNode
-    class ArchivistAdvisory,AdvisoryChecks,Comments,BriefValid,PostMerge,IndexRegen,SeqValid,WTPrune,DriftCheck,StaleSpec,StaleThink,DriftIssue archivistNode
+    class ArchivistAdvisory,AdvisoryChecks,Comments,BriefValid,CloseOut,ChangeLog,PerProduct,IndexRegen,SeqValid,Orphans,DriftCheck,StaleSpec,MetaCreep,DriftIssue archivistNode
     class Block,Blocked2 blockNode
     class Ready,Merge passNode
     class PROpen,CIPass,ValidCheck,Daily neutralNode
 ```
 
-**The two enforcement layers:**
-
-- **CI (blocking):** typecheck, lint, tests, verify-docs. If any fail, the PR cannot merge.
-- **Archivist (advisory):** synthesis hints, related-decision surfacing, drift detection. Posts comments on PRs and opens issues for drift, but never blocks merge.
-
-This split is deliberate. Hard gates for things that are mechanically verifiable (does the code compile? did the right files get updated?). Advisory for things that require judgment (is this decision related to D-042? is this spec describing the current behavior?).
+**Two enforcement layers:** CI (blocking) — typecheck, lint, tests, verify-docs; if any fail the PR can't merge. Archivist (advisory) — synthesis hints, related-decision surfacing, drift detection, the anti-regression flags (execution metadata in iteration files); posts comments and opens drift issues but never blocks. Hard gates for the mechanically verifiable; advisory for what needs judgment.
 
 ---
 
-## State storage and where it lives
-
-Where each kind of state actually lives on disk.
+## State storage and where it lives (Cetana runtime)
 
 ```mermaid
 flowchart LR
-    subgraph Persistent["Persistent (git)"]
-        RepoState[Specs, skills, code,<br/>decision logs, PM docs<br/>in repo]
-        IssuesState[Issues + labels<br/>in GitHub]
-        PRState[PRs + CI runs<br/>in GitHub]
+    subgraph Persistent["Persistent (git + forge)"]
+        RepoState[Specs, skills, code,<br/>decision logs, PM docs, iteration files]
+        IssuesState[Issues + labels — in GitHub]
+        PRState[PRs + review decisions + CI — in GitHub]
     end
 
-    subgraph Runtime["Runtime (local filesystem)"]
-        ConfigFile[~/.cetana/config.json<br/>static config]
+    subgraph Runtime["Cetana runtime (local filesystem)"]
+        ConfigFile[~/.cetana/config.json]
         JSONLLogs[~/.cetana/tasks/N.jsonl<br/>append-only event log]
-        IPCFiles[~/.cetana/tasks/N/<br/>question.json, reply.json<br/>ephemeral IPC]
-        MCPConfigs[~/.cetana/tasks/N/<br/>mcp-config.json<br/>per-task spawn config]
+        IPCFiles[~/.cetana/tasks/N/<br/>question.json, reply.json]
+        MCPConfigs[~/.cetana/tasks/N/mcp-config.json]
     end
 
     subgraph InMemory["In-memory (per-process)"]
-        StateManager[StateManager<br/>active tasks, blocked status,<br/>pending questions]
-        TaskState[Per-Task state<br/>brief, model, worktree path]
+        StateManager[StateManager<br/>active tasks, blocked status]
+        TaskState[Per-task state<br/>brief, model, worktree path]
     end
 
     JSONLLogs -.hydrates on startup.-> StateManager
@@ -316,45 +302,41 @@ flowchart LR
     class StateManager,TaskState memoryNode
 ```
 
-**Persistence guarantees:**
-
-- **Persistent:** survives anything short of repo deletion. Git history preserves it.
-- **Runtime:** survives process restarts (StateManager rehydrates from JSONL on startup). Lost on machine reinstall — recoverable from `~/.cetana` backup if needed.
-- **In-memory:** lost on process termination. Always rebuildable from the JSONL log.
-
-This means a crashed Coordinator can be restarted and will resume tracking active tasks correctly. The JSONL log is the source of truth.
+**Persistence guarantees:** Persistent survives anything short of repo deletion (git + GitHub). Cetana runtime survives process restarts (StateManager rehydrates from JSONL); lost on machine reinstall, recoverable from `~/.cetana` backup. In-memory is lost on termination, always rebuildable from JSONL. A crashed Coordinator restarts and resumes correctly — the JSONL log is the tool's source of truth, while the *task's* status remains derived from the forge regardless of tool state.
 
 ---
 
-## Where the operational model files live
+## Where the operational model files live (AEG file map)
 
-Mapping the operational model docs to the substrate.
+Mapping the AEG docs to the substrate. *(This is AEG's own layout — no tool involved.)*
 
 ```mermaid
 flowchart TB
     subgraph PM["project-management/ (operational model)"]
         Coord[coordination.md<br/>session start protocol]
         Process[process.md<br/>workflow walkthrough]
+        Manual[aeg-manual-flow.md<br/>running the flow by hand]
         StateMach[state-machine.md<br/>artifacts, mutations, hierarchy]
-        Decisions[decisions.md<br/>global decision log]
-        State[state.md<br/>current snapshot]
-        Plan[plan.md<br/>active work, append-style]
-        Reviewer[reviewer-prompt.md<br/>for stateless AIs]
-        RatQueue[ratification-queue.md<br/>append-only queue]
-        Think[thinking.md<br/>working memory]
-        Diagrams[diagrams/<br/>process-flow.md<br/>system-architecture.md]
-        Roles[roles/<br/>principal.md, team-leader.md, developer.md]
+        Decisions[decisions.md — global decision log]
+        StateNow[state.md + now.md — current snapshot]
+        Iterations[iterations/ — README + per-iteration<br/>topology files the plan]
+        Products[products.md — product registry]
+        Reviewer[reviewer-prompt.md — for stateless AIs]
+        RatQueue[ratification-queue.md — append-only]
+        Think[thinking.md — working memory]
+        Diagrams[diagrams/ — process-flow + system-architecture]
+        Roles[roles/ — principal, team-leader, planner,<br/>developer, reviewer, security, archivist]
     end
 
     subgraph Skills[".claude/skills/ (technical + meta)"]
         BriefSkill[brief-authoring/SKILL.md]
-        OtherSkills[other tech skills:<br/>auth, database, ui-components,<br/>cetana-coordinator, etc.]
+        OtherSkills[tech skills: auth, database,<br/>ui, engine/adapter/teams, etc.]
     end
 
     subgraph Specs["apps/*/specs/ (product-specific)"]
         ProductSpec[product-spec.md]
         ProductDec[product-decisions.md]
-        ExperLog[experiment-log.md]
+        Backlog[product-backlog.md — held/future, out of flow]
     end
 
     subgraph Tooling["scripts/ + .github/workflows/"]
@@ -374,9 +356,9 @@ flowchart TB
     classDef specsNode fill:#ffe0b2,stroke:#e65100,color:#000
     classDef toolingNode fill:#e1bee7,stroke:#6a1b9a,color:#000
 
-    class Coord,Process,StateMach,Decisions,State,Plan,Reviewer,RatQueue,Think,Diagrams,Roles pmNode
+    class Coord,Process,Manual,StateMach,Decisions,StateNow,Iterations,Products,Reviewer,RatQueue,Think,Diagrams,Roles pmNode
     class BriefSkill,OtherSkills skillsNode
-    class ProductSpec,ProductDec,ExperLog specsNode
+    class ProductSpec,ProductDec,Backlog specsNode
     class VerifyScript,ArchivistFlow toolingNode
 ```
 
@@ -384,55 +366,48 @@ flowchart TB
 
 ## How a single piece of work touches every layer
 
-A concrete example: implementing a new Vāda team YAML.
+A concrete example: implementing a new Vāda team YAML (a Tier 1, single-product task).
 
 ```mermaid
 flowchart LR
-    A[Developer reads:<br/>brief, vada-yaml-authoring skill,<br/>vada-product-spec.md]
-    A --> B[Developer writes:<br/>new YAML in apps/vada-ai/yamls/]
-    B --> C[Developer updates:<br/>vada-product-spec.md<br/>YAMLs catalog table]
-    C --> D[Developer adds tests<br/>verifying YAML loads]
-    D --> E[Developer runs:<br/>verify-docs.ts locally]
-    E --> F[Developer opens PR]
+    A[Developer checks dispatch gates,<br/>reads brief + skills + spec]
+    A --> B[Writes new YAML in apps/vada-ai/yamls/]
+    B --> C[Updates vada-spec.md catalog table]
+    C --> D[Adds tests verifying YAML loads]
+    D --> E[Runs verify-docs.ts locally]
+    E --> F[Opens PR — brief in body, Closes-N]
     F --> G[CI: typecheck/lint/tests/verify-docs]
-    G --> H[Archivist: advisory comments]
-    H --> I[Principal: code review]
-    I --> J[TL: spec review]
-    J --> K[Principal: merge]
-    K --> L[Archivist: regenerate<br/>docs-index.md]
+    G --> H[code-reviewer pass → security pass]
+    H --> I[Principal code review]
+    I --> J[TL spec review]
+    J --> K[Principal merge — Issue auto-closes]
+    K --> L[Archivist close-out:<br/>changelog, per-product now.md, docs-index]
 
     classDef devNode fill:#c8e6c9,stroke:#2e7d32,color:#000
     classDef ciNode fill:#ffe0b2,stroke:#e65100,color:#000
+    classDef revNode fill:#d1c4e9,stroke:#4527a0,color:#000
     classDef archivistNode fill:#e1bee7,stroke:#6a1b9a,color:#000
     classDef principalNode fill:#f8bbd0,stroke:#ad1457,color:#000
     classDef tlNode fill:#bbdefb,stroke:#1565c0,color:#000
 
     class A,B,C,D,E,F devNode
     class G ciNode
-    class H,L archivistNode
+    class H revNode
     class I,K principalNode
     class J tlNode
+    class L archivistNode
 ```
 
-This is a Tier 1 task. No Type 1 decisions, no escalation. Six artifacts touched (YAML, spec, tests, verify-docs run, PR, docs-index). Two reviewers (Principal for code, TL for spec). One automated post-merge step.
-
-For a Tier 3 task, additional artifacts get touched: `decisions.md` entry, `state.md` update, possibly `plan.md` update, possibly a Lock entry. And the merge happens during a ratification window rather than anytime.
+This is Tier 1: no Type 1 decisions, no escalation. The status is never written — it moves `todo → in-flight` when the branch opens, `→ in-review` when the PR opens, `→ merged` on merge, all derived. For a Tier 3 task, additional artifacts get touched (`decisions.md` entry, `state.md`, the iteration file is *not* touched for status, a Lock entry if irreversible) and the merge happens during a ratification window.
 
 ---
 
 ## What this diagram is not
 
-This is the static structure. It does **not** show:
-
-- The lifecycle of a piece of work (see `process-flow.md`)
-- Who does what when (see `roles/*.md`)
-- Why each module exists (see `apps/cetana-ai/specs/cetana-spec.md` and `cetana-decisions.md`)
-- The reasoning behind the architecture (see `apps/cetana-ai/specs/cetana-experiment-log.md`)
-
-If you're trying to understand how something flows, this is the wrong diagram. If you're trying to understand what software exists and how the pieces connect, this is the right one.
+This is the static structure of the optional tool plus the AEG file/enforcement layout. It does **not** show: the lifecycle of work (`process-flow.md`), who does what when (`roles/*.md`), why Cetana exists (`apps/cetana-ai/specs/cetana-spec.md`), or the reasoning behind the architecture (`cetana-decisions.md`). And it is **not the AEG model** — AEG is forge-native; remove Cetana and the flow is unchanged.
 
 ---
 
 ## Diagrams are documentation
 
-This diagram is part of the canonical operational model. Updates to the architecture require updates to this diagram in the same PR. Out-of-sync architecture diagrams are spec drift and will be flagged by the Archivist.
+This diagram is part of the canonical operational model. Changes to Cetana's architecture or the AEG file/enforcement layout require updating this diagram in the same PR. Out-of-sync diagrams are spec drift and will be flagged by the Archivist. Where a diagram and the prose disagree, the prose is canonical.
