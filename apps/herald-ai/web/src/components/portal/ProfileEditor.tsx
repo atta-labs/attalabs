@@ -1,7 +1,18 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from '@atta/ui'
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+  useToastContext
+} from '@atta/ui'
+import { Download, Upload } from 'lucide-react'
 
 const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const
 
@@ -191,6 +202,7 @@ interface ProfileData {
   github: string
   summary: string
   stack: string[]
+  cvUrl: string | null
 }
 
 export function ProfileEditor({ profile }: { profile: ProfileData }) {
@@ -203,12 +215,15 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
     summary: profile.summary,
     stack: profile.stack.join(', ')
   })
+  const [cvUrl, setCvUrl] = useState<string | null>(profile.cvUrl)
+  const { successToast, errorToast } = useToastContext()
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
   const [locationSearch, setLocationSearch] = useState(profile.location)
   const [locationOpen, setLocationOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [cvUploading, setCvUploading] = useState(false)
   const cvInputRef = useRef<HTMLInputElement>(null)
+  const cvDirectRef = useRef<HTMLInputElement>(null)
 
   const filteredCountries = useMemo(() => {
     if (!locationSearch) return COUNTRIES
@@ -218,7 +233,6 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
   function update(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
-    setSaved(false)
   }
 
   async function handleSave() {
@@ -237,10 +251,17 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           stack: form.stack
             .split(',')
             .map((s) => s.trim())
-            .filter(Boolean)
+            .filter(Boolean),
+          cvUrl
         })
       })
-      if (res.ok) setSaved(true)
+      if (res.ok) {
+        successToast('Saved', 'Your profile settings have been updated.')
+      } else {
+        errorToast('Save failed', 'Could not save changes. Please try again.')
+      }
+    } catch {
+      errorToast('Save failed', 'Could not save changes. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -248,7 +269,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
   async function handleCvUpload(file: File) {
     setUploading(true)
-    setSaved(false)
+
     try {
       const formData = new FormData()
       formData.append('cv', file)
@@ -266,9 +287,27 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
         stack: Array.isArray(parsed.stack) ? parsed.stack.join(', ') : form.stack
       })
       if (parsed.location) setLocationSearch(parsed.location)
+      if (parsed.cvUrl) setCvUrl(parsed.cvUrl)
     } finally {
       setUploading(false)
       if (cvInputRef.current) cvInputRef.current.value = ''
+    }
+  }
+
+  async function handleCvDirectUpload(file: File) {
+    setCvUploading(true)
+
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('type', 'cv')
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
+      if (!res.ok) return
+      const { url } = await res.json()
+      setCvUrl(url)
+    } finally {
+      setCvUploading(false)
+      if (cvDirectRef.current) cvDirectRef.current.value = ''
     }
   }
 
@@ -278,7 +317,6 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
   return (
     <div className='space-y-8'>
-      {/* CV Upload */}
       <section className='rounded border border-dashed border-border p-4'>
         <div className='flex items-center justify-between'>
           <div>
@@ -312,6 +350,55 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
       </section>
 
       <section>
+        <h2 className='mb-3 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>CV</h2>
+        <input
+          ref={cvDirectRef}
+          type='file'
+          accept='application/pdf'
+          className='hidden'
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) handleCvDirectUpload(file)
+          }}
+        />
+        {cvUrl ? (
+          <div className='flex items-center gap-3'>
+            <a
+              href={cvUrl}
+              target='_blank'
+              rel='noreferrer'
+              className='inline-flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
+            >
+              <Download className='h-3 w-3' />
+              Download CV
+            </a>
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              onClick={() => cvDirectRef.current?.click()}
+              disabled={cvUploading}
+              className='font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground'
+            >
+              {cvUploading ? 'Uploading...' : 'Replace'}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => cvDirectRef.current?.click()}
+            disabled={cvUploading}
+            className='gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em]'
+          >
+            <Upload className='h-3 w-3' />
+            {cvUploading ? 'Uploading...' : 'Upload CV (PDF)'}
+          </Button>
+        )}
+      </section>
+
+      <section>
         <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Identity</h2>
         <div className='grid grid-cols-2 gap-4'>
           <div>
@@ -337,7 +424,6 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
             />
           </div>
 
-          {/* Location — country search dropdown */}
           <div className='relative'>
             <span className={labelClass}>Location</span>
             <Input
@@ -373,7 +459,6 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
             )}
           </div>
 
-          {/* Availability — work mode select */}
           <div>
             <span className={labelClass}>Work Mode</span>
             <Select value={form.availability} onValueChange={(value) => update('availability', value)}>
@@ -405,11 +490,17 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
       </section>
 
       <section>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
+        <div className='mb-2 flex items-baseline justify-between'>
+          <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
+          <span className='font-mono text-[9px] text-muted-foreground/60'>
+            Markdown supported — headers, lists, bold, code
+          </span>
+        </div>
         <Textarea
-          className={`${inputClass} min-h-[100px] resize-y`}
+          className={`${inputClass} min-h-[120px] resize-y font-mono text-xs`}
           value={form.summary}
           onChange={(e) => update('summary', e.target.value)}
+          placeholder='# Senior Engineer&#10;&#10;15+ years across backend, frontend, and AI systems...'
         />
       </section>
 
@@ -434,7 +525,6 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
         >
           {saving ? 'Saving...' : 'Save Profile'}
         </Button>
-        {saved && <span className='font-mono text-xs text-muted-foreground'>Saved</span>}
       </div>
     </div>
   )

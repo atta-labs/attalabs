@@ -18,22 +18,7 @@ export default async function AdminUIPage() {
       <AdminEditorPage
         username={user.username}
         initialProfile={{
-          name: user.name,
-          title: user.title,
-          location: user.location ?? '',
-          availability: user.availability ?? '',
-          summary: user.summary,
-          stack: (() => {
-            try {
-              return (JSON.parse(user.stack) as string[]).join(', ')
-            } catch {
-              return ''
-            }
-          })(),
-          github: user.githubHandle ?? '',
-          bio: user.bio ?? '',
-          avatarUrl: user.avatarUrl ?? null,
-          cvUrl: user.cvUrl ?? null
+          avatarUrl: user.avatarUrl ?? null
         }}
         initialTheme={{
           themeId: user.themeId ?? null,

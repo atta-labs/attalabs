@@ -41,6 +41,7 @@ export async function createUser(data: {
   stack: string[]
   projects?: Array<{ title: string; description: string }>
   experience?: Array<{ company: string; role: string; period: string; highlights: string[] }>
+  cvUrl?: string | null
 }) {
   // Ensure shared users row exists before inserting profile (FK requirement)
   await db.insert(schema.users).values({ clerkId: data.clerkId, email: data.email }).onConflictDoNothing()
@@ -58,6 +59,7 @@ export async function createUser(data: {
     stack: JSON.stringify(data.stack),
     projects: JSON.stringify(data.projects ?? []),
     experience: JSON.stringify(data.experience ?? []),
+    cvUrl: data.cvUrl ?? null,
     onboardingComplete: true,
     updatedAt: new Date()
   }

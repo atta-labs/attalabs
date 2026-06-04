@@ -1,7 +1,9 @@
 'use client'
 
 import { Button } from '@atta/ui/components/button'
+import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
 import { NextLink } from '@atta/ui/lib/next-link'
+import { Logo } from '@atta/ui/shared'
 import { useClerk, useUser } from '@clerk/nextjs'
 import { ExternalLink, LogOut } from 'lucide-react'
 import { usePathname } from 'next/navigation'
@@ -11,7 +13,7 @@ const NAV_ITEMS = [
   { href: '/admin/settings', label: 'Settings', icon: '⚙' }
 ]
 
-export function AdminTopBar({ username }: { username: string }) {
+export function AdminTopBar({ username, logoUrl }: { username: string; logoUrl?: string | null }) {
   const pathname = usePathname()
   const { signOut } = useClerk()
   const { user } = useUser()
@@ -21,8 +23,11 @@ export function AdminTopBar({ username }: { username: string }) {
       {/* Left: Logo + Nav */}
       <div className='flex items-center gap-1'>
         <NextLink variant='unstyled' href='/admin' className='flex items-center gap-2 px-2'>
-          <span className='text-base'>🎺</span>
-          <span className='font-display text-sm font-bold tracking-tight'>Herald</span>
+          {logoUrl ? (
+            <Logo dark={logoUrl} alt='Herald' size='h-5' />
+          ) : (
+            <span className='font-sans text-sm font-bold tracking-tight'>Herald</span>
+          )}
         </NextLink>
         <span className='mx-2 text-border'>|</span>
         {NAV_ITEMS.map((item) => {
@@ -42,8 +47,9 @@ export function AdminTopBar({ username }: { username: string }) {
         })}
       </div>
 
-      {/* Right: Envoy link + Avatar + Sign out */}
+      {/* Right: Color scheme toggle + Envoy link + Avatar + Sign out */}
       <div className='flex items-center gap-3'>
+        <ColorSchemeToggle />
         <NextLink
           variant='subtle'
           href={`/${username}`}

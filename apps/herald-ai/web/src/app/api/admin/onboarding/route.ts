@@ -11,7 +11,8 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { username, githubHandle, name, title, location, availability, summary, stack, projects, experience } = body
+    const { username, githubHandle, name, title, location, availability, summary, stack, projects, experience, cvUrl } =
+      body
 
     if (!username || !name || !title || !summary) {
       return NextResponse.json({ error: 'Username, name, title, and summary are required' }, { status: 400 })
@@ -41,7 +42,8 @@ export async function POST(request: Request) {
       summary,
       stack: stack ?? [],
       projects: projects ?? [],
-      experience: experience ?? []
+      experience: experience ?? [],
+      cvUrl: cvUrl || null
     })
 
     return NextResponse.json({ success: true, username })

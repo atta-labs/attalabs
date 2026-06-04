@@ -1,5 +1,6 @@
-import type { ColorScheme } from '@atta/cms'
-import { cmsClient, generateThemeCSSForScheme, getThemeById } from '@atta/cms'
+export const dynamic = 'force-dynamic'
+
+import { cmsClient, generateThemeCSS, getThemeById } from '@atta/cms'
 import { notFound } from 'next/navigation'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
 import type { UILibrary } from '@atta/ui/lib/library-loader'
@@ -48,13 +49,13 @@ export default async function EnvoyPage({
   if (user.themeId) {
     const theme = await getThemeById(cmsClient, user.themeId)
     if (theme) {
-      // Apply per-user font override if set
       const themeWithOverrides = {
         ...theme,
         typography: user.fontSans ? { ...theme.typography, fontSans: user.fontSans } : theme.typography
       }
-      const colorScheme = (user.colorScheme as ColorScheme) ?? 'dark'
-      themeCSS = generateThemeCSSForScheme(themeWithOverrides, colorScheme)
+      // Use generateThemeCSS (both light+dark with attribute selectors) so the per-user
+      // theme wins the specificity battle against the global NextWebShell :root[data-theme="dark"] block.
+      themeCSS = generateThemeCSS(themeWithOverrides)
       if (themeWithOverrides.typography) {
         fontsUrl = getGoogleFontsUrl(themeWithOverrides.typography)
       }

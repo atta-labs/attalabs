@@ -1,16 +1,24 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { usePortalPreview } from '@/hooks/usePortalPreview'
 
 type SendFn = (message: Record<string, unknown>) => void
 
 export function EnvoyPreview({ username, onReady }: { username: string; onReady?: (send: SendFn) => void }) {
   const portalUrl = `/${username}`
+  const [host, setHost] = useState<string | null>(null)
+
+  useEffect(() => {
+    setHost(window.location.host)
+  }, [])
 
   const { iframeRef, iframeSrc, iframeKey, isReady } = usePortalPreview({
     portalUrl,
     onReady
   })
+
+  const displayUrl = host ? `${host}/${username}` : `/${username}`
 
   return (
     <div className='flex h-full flex-col'>
@@ -28,7 +36,7 @@ export function EnvoyPreview({ username, onReady }: { username: string; onReady?
           rel='noreferrer'
           className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
         >
-          {username}.heyherald.com ↗
+          {displayUrl} ↗
         </a>
       </div>
 

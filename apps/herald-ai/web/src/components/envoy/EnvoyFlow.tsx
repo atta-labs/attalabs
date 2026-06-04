@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { AvatarFrame } from '@/components/avatar-frame'
@@ -223,10 +225,8 @@ export function EnvoyFlow({
               )}
             </div>
             {localProfile.summary && (
-              <div className='mt-6 rounded-lg border border-border bg-card px-5 py-4'>
-                <p className='line-clamp-3 font-sans text-sm leading-relaxed text-foreground/80'>
-                  {localProfile.summary}
-                </p>
+              <div className='prose prose-sm mt-6 max-w-none rounded-lg border border-border bg-card px-5 py-4 font-sans text-sm leading-relaxed text-foreground/80 [&_a]:text-foreground [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:font-mono [&_code]:text-xs [&_h1]:font-serif [&_h1]:text-base [&_h2]:font-serif [&_h2]:text-sm [&_h3]:font-serif [&_h3]:text-sm [&_li]:text-foreground/80 [&_ol]:pl-4 [&_p]:text-foreground/80 [&_strong]:text-foreground [&_ul]:pl-4'>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{localProfile.summary}</ReactMarkdown>
               </div>
             )}
           </header>
