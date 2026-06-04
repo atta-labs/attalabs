@@ -109,7 +109,7 @@ export function JDInput({
               <a
                 href={candidateCvUrl}
                 download
-                className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-primary'
+                className='inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground transition-colors hover:border-primary hover:text-primary'
               >
                 ↓ Download CV
               </a>
@@ -117,7 +117,7 @@ export function JDInput({
                 href={candidateCvUrl}
                 target='_blank'
                 rel='noreferrer'
-                className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-primary'
+                className='inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground transition-colors hover:border-primary hover:text-primary'
               >
                 ↗ Open CV
               </a>

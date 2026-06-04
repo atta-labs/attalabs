@@ -109,9 +109,9 @@ function AttachmentTileItem({
         type='button'
         aria-label={`Remove ${name}`}
         onClick={onRemove}
-        className='absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-background/80 text-muted-foreground opacity-70 transition-opacity hover:opacity-100'
+        className='absolute right-1.5 top-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/85 text-background shadow-sm transition hover:bg-foreground'
       >
-        <X className='h-2.5 w-2.5' />
+        <X className='h-3 w-3' />
       </button>
     </div>
   )
