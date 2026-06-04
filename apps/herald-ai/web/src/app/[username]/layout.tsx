@@ -1,18 +1,31 @@
 import type { ReactNode } from 'react'
-import { Suspense } from 'react'
 import { cmsClient, getHeraldBranding } from '@atta/cms'
-import { ConditionalEnvoyNav } from './ConditionalEnvoyFooter'
+import { getUserByUsername } from '@/db/queries'
+import { EnvoyShell } from './envoy-shell'
 
-export default async function EnvoyLayout({ children }: { children: ReactNode }) {
-  const branding = await getHeraldBranding(cmsClient).catch(() => null)
+export default async function EnvoyLayout({
+  children,
+  params
+}: {
+  children: ReactNode
+  params: Promise<{ username: string }>
+}) {
+  const { username } = await params
+  const [branding, user] = await Promise.all([
+    getHeraldBranding(cmsClient).catch(() => null),
+    getUserByUsername(username)
+  ])
+
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
+  const profileIdentity = {
+    name: user?.name ?? null,
+    title: user?.title ?? null,
+    avatarUrl: user?.avatarUrl ?? null
+  }
 
   return (
-    <div className='flex h-dvh flex-col overflow-hidden'>
-      <Suspense>
-        <ConditionalEnvoyNav logoUrl={logoUrl} />
-      </Suspense>
-      <main className='min-h-0 flex-1 overflow-hidden'>{children}</main>
-    </div>
+    <EnvoyShell logoUrl={logoUrl} profileIdentity={profileIdentity}>
+      {children}
+    </EnvoyShell>
   )
 }
