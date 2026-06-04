@@ -24,6 +24,8 @@ export interface TopBarProps {
   logoText?: string
   logoHref?: string
   logoUrl?: string | null
+  /** Two-line tagline rendered next to the logo. First element is the top line, second is the bottom. */
+  logoTagline?: [string, string]
   /** Links shown to all users. */
   links?: TopBarLink[]
   /** Links shown only to signed-in users. */
@@ -37,6 +39,7 @@ export function TopBar({
   logoText = '',
   logoHref = '/',
   logoUrl,
+  logoTagline,
   links = [],
   signedInLinks = [],
   extraActions
@@ -48,10 +51,22 @@ export function TopBar({
 
   const visibleLinks = user ? [...links, ...signedInLinks] : links
 
-  const defaultLogo = logoUrl ? (
+  const logoMark = logoUrl ? (
     <Logo dark={logoUrl} alt={logoText} size='h-6' />
   ) : (
     <span className='font-sans text-lg tracking-tight'>{logoText}</span>
+  )
+
+  const defaultLogo = logoTagline ? (
+    <div className='flex items-center gap-2.5'>
+      {logoMark}
+      <div className='flex flex-col leading-none'>
+        <span className='font-sans text-[10px] font-medium text-muted-foreground'>{logoTagline[0]}</span>
+        <span className='font-sans text-[10px] font-medium text-muted-foreground'>{logoTagline[1]}</span>
+      </div>
+    </div>
+  ) : (
+    logoMark
   )
 
   return (

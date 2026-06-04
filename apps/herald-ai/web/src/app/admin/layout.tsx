@@ -22,7 +22,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className='flex h-screen flex-col'>
-      <TopBar logoText='Herald' logoUrl={logoUrl} signedInLinks={signedInLinks} />
+      <TopBar
+        logoText='Herald'
+        logoUrl={logoUrl}
+        logoTagline={['Forensic hiring', 'audits']}
+        signedInLinks={signedInLinks}
+      />
       <main className='flex-1 overflow-hidden'>{children}</main>
     </div>
   )
