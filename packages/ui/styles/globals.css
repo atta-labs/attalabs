@@ -8,17 +8,7 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @source "../../../apps/**/*.{ts,tsx}";
-@source "../libraries/basic/components/**/*.{ts,tsx}";
-@source "../libraries/basic/installed/**/*.{ts,tsx}";
-@source "../libraries/retro/components/**/*.{ts,tsx}";
-@source "../libraries/retro/installed/**/*.{ts,tsx}";
-@source "../libraries/animate/components/**/*.{ts,tsx}";
-@source "../libraries/animate/installed/**/*.{ts,tsx}";
-@source "../libraries/brutal/components/**/*.{ts,tsx}";
-@source "../libraries/brutal/installed/**/*.{ts,tsx}";
-@source "../libraries/shared/**/*.{ts,tsx}";
-@source "../topbar/**/*.{ts,tsx}";
-@source "../lib/**/*.{ts,tsx}";
+@source "../**/*.{ts,tsx}";
 
 @theme inline {
   --color-background: var(--background);
