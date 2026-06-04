@@ -34,7 +34,7 @@ function EnvoyNavContent({ logoUrl, profileIdentity }: { logoUrl: string | null;
   if (searchParams.get('preview') === 'true' || inIframe) return null
 
   return (
-    <nav className='w-full border-b border-border'>
+    <nav className='absolute inset-x-0 top-0 z-50 bg-background/40 backdrop-blur-md'>
       <div className='flex h-14 w-full items-center px-6'>
         {/* Logo — pinned left */}
         <div className='flex flex-1 items-center'>
@@ -102,11 +102,11 @@ interface EnvoyShellProps {
 export function EnvoyShell({ children, logoUrl, profileIdentity }: EnvoyShellProps) {
   return (
     <HeroCollapseProvider>
-      <div className='flex h-dvh flex-col overflow-hidden'>
+      <div className='relative h-dvh overflow-hidden'>
         <Suspense>
           <EnvoyNavContent logoUrl={logoUrl} profileIdentity={profileIdentity} />
         </Suspense>
-        <main className='min-h-0 flex-1 overflow-hidden'>{children}</main>
+        <main className='absolute inset-0 overflow-hidden'>{children}</main>
       </div>
     </HeroCollapseProvider>
   )
