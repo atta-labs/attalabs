@@ -1,10 +1,18 @@
+export type HardRequirement = {
+  requirement: string
+  kind: 'hard' | 'soft'
+  met: boolean
+  evidence: string
+}
+
 export type MatchReport = {
   candidate: {
     name: string
     title: string
     github?: string
   }
-  grade: 'A' | 'A-' | 'B+' | 'B'
+  hard_requirements: HardRequirement[]
+  grade: 'A' | 'A-' | 'B+' | 'B' | 'STRETCH' | 'NO FIT'
   recommendation: string
   confidence: string
   confidence_reasoning: string[]
@@ -16,7 +24,8 @@ export type MatchReport = {
   }[]
   gaps: {
     gap: string
-    mitigation: string
+    severity: 'disqualifying' | 'minor'
+    mitigation: string | null
   }[]
   interview_hooks: string[]
 }
