@@ -1,9 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Download, ExternalLink } from 'lucide-react'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { AvatarFrame } from '@/components/avatar-frame'
+import { SummaryMarkdown } from '@/components/summary-markdown'
 import { JDInput } from './JDInput'
 import { LoadingState } from './LoadingState'
 import { ReportView } from './ReportView'
@@ -174,97 +176,96 @@ export function EnvoyFlow({
 
   if (state === 'input') {
     if (previewMode) {
-      const previewLeadLine = localProfile.summary
-        ? localProfile.summary
-            .split(/\n\n+/)[0]
-            ?.replace(/\*\*(.+?)\*\*/g, '$1')
-            ?.replace(/\*(.+?)\*/g, '$1')
-            ?.replace(/`(.+?)`/g, '$1')
-            ?.replace(/\[(.+?)\]\(.+?\)/g, '$1')
-            ?.replace(/^#+\s+/gm, '')
-            ?.trim()
-        : undefined
       const previewTopStack = localProfile.stack?.slice(0, 5) ?? []
       const previewLocation = [localProfile.location, localProfile.availability].filter(Boolean).join(' · ')
 
       return (
-        <div className='mx-auto max-w-[680px] px-6 py-12'>
-          <header className='mb-8 border-b border-border pb-8'>
-            <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-              Forensic Match Audit
-            </p>
-            <div className='mt-4 flex items-start justify-between gap-4'>
-              <div className='flex items-start gap-5'>
-                {localProfile.avatarUrl && (
-                  <AvatarFrame
-                    src={localProfile.avatarUrl}
-                    alt={localProfile.name ?? ''}
-                    variant='dossier'
-                    pennant
-                    pennantAnimated
-                  />
+        <div className='h-full overflow-y-auto'>
+          <div className='mx-auto max-w-[680px] px-6 pt-12 pb-4'>
+            <header>
+              <div className='flex items-stretch justify-between gap-4'>
+                <div className='flex items-start gap-5'>
+                  {localProfile.avatarUrl && (
+                    <AvatarFrame
+                      src={localProfile.avatarUrl}
+                      alt={localProfile.name ?? ''}
+                      variant='dossier'
+                      pennant
+                      pennantAnimated
+                    />
+                  )}
+                  <div className='min-w-0'>
+                    <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>{localProfile.name}</h1>
+                    <p className='mt-2 font-mono text-xl text-muted-foreground'>{localProfile.title}</p>
+                  </div>
+                </div>
+                {localProfile.cvUrl && (
+                  <div className='flex shrink-0 flex-col gap-2'>
+                    <div className='flex flex-1 items-center justify-center rounded border border-border bg-card px-4'>
+                      <span className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>CV</span>
+                    </div>
+                    <div className='flex shrink-0 items-center justify-center gap-1.5'>
+                      <a
+                        href={localProfile.cvUrl}
+                        download
+                        aria-label='Download CV'
+                        title='Download CV'
+                        className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                      >
+                        <Download className='h-3.5 w-3.5' />
+                      </a>
+                      <a
+                        href={localProfile.cvUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        aria-label='Open CV'
+                        title='Open CV'
+                        className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                      >
+                        <ExternalLink className='h-3.5 w-3.5' />
+                      </a>
+                    </div>
+                  </div>
                 )}
-                <div className='min-w-0'>
-                  <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>{localProfile.name}</h1>
-                  <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{localProfile.title}</p>
-                </div>
               </div>
-              {localProfile.cvUrl && (
-                <div className='flex shrink-0 flex-col items-end gap-1.5 pt-1'>
-                  <a
-                    href={localProfile.cvUrl}
-                    download
-                    className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
-                  >
-                    ↓ Download CV
-                  </a>
-                  <a
-                    href={localProfile.cvUrl}
-                    target='_blank'
-                    rel='noreferrer'
-                    className='font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
-                  >
-                    ↗ Open CV
-                  </a>
-                </div>
-              )}
+              <div className='mt-6'>
+                {(previewTopStack.length > 0 || previewLocation) && (
+                  <dl className='grid grid-cols-[80px_1fr] items-baseline gap-y-2'>
+                    {previewTopStack.length > 0 && (
+                      <>
+                        <dt className='pt-0.5 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
+                        <dd>
+                          <div className='flex flex-wrap gap-1.5'>
+                            {previewTopStack.map((s) => (
+                              <span
+                                key={s}
+                                className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
+                              >
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        </dd>
+                      </>
+                    )}
+                    {previewLocation && (
+                      <>
+                        <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LOCATION</dt>
+                        <dd className='text-sm text-foreground'>{previewLocation}</dd>
+                      </>
+                    )}
+                  </dl>
+                )}
+                {localProfile.summary && (
+                  <div className='mt-6 max-w-[65ch]'>
+                    <SummaryMarkdown text={localProfile.summary} />
+                  </div>
+                )}
+              </div>
+            </header>
+            <div className='mt-8 rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
+              <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
             </div>
-            <div className='mt-6'>
-              {previewLeadLine && (
-                <p className='font-sans text-[21px] font-medium leading-snug text-foreground'>{previewLeadLine}</p>
-              )}
-              {(localProfile.title || previewTopStack.length > 0 || previewLocation) && (
-                <dl className='mt-3 grid grid-cols-[96px_1fr] gap-y-1.5'>
-                  {localProfile.title && (
-                    <>
-                      <dt className='self-baseline font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
-                        ROLE
-                      </dt>
-                      <dd className='font-mono text-[10px] text-foreground'>{localProfile.title}</dd>
-                    </>
-                  )}
-                  {previewTopStack.length > 0 && (
-                    <>
-                      <dt className='self-baseline font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
-                        STACK
-                      </dt>
-                      <dd className='font-mono text-[10px] text-foreground'>{previewTopStack.join(' · ')}</dd>
-                    </>
-                  )}
-                  {previewLocation && (
-                    <>
-                      <dt className='self-baseline font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
-                        LOCATION
-                      </dt>
-                      <dd className='font-mono text-[10px] text-foreground'>{previewLocation}</dd>
-                    </>
-                  )}
-                </dl>
-              )}
-            </div>
-          </header>
-          <div className='rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
-            <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
           </div>
         </div>
       )

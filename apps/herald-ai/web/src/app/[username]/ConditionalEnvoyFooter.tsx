@@ -17,5 +17,12 @@ export function ConditionalEnvoyNav({ logoUrl }: { logoUrl: string | null }) {
   }, [])
 
   if (searchParams.get('preview') === 'true' || inIframe) return null
-  return <TopBar logoText='Herald' logoUrl={logoUrl} signedInLinks={[{ label: 'Dashboard', href: '/admin' }]} />
+  return (
+    <TopBar
+      logoText='Herald'
+      logoUrl={logoUrl}
+      logoTagline={['Forensic hiring', 'audits']}
+      signedInLinks={[{ label: 'Dashboard', href: '/admin' }]}
+    />
+  )
 }

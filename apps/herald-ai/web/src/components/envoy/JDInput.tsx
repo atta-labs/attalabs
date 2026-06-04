@@ -56,8 +56,8 @@ export function JDInput({
     <div className='flex h-full flex-col'>
       {/* Scrollable candidate info */}
       <div className='min-h-0 flex-1 overflow-y-auto'>
-        <div className='mx-auto max-w-[680px] px-6 py-12'>
-          <header className='mb-8 border-b border-border pb-8'>
+        <div className='mx-auto max-w-[680px] px-6 pt-12 pb-4'>
+          <header>
             <div className='flex items-stretch justify-between gap-4'>
               <div className='flex items-start gap-5'>
                 {candidateAvatarUrl && (
@@ -71,7 +71,7 @@ export function JDInput({
                 )}
                 <div className='min-w-0'>
                   <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>{candidateName}</h1>
-                  <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{candidateTitle}</p>
+                  <p className='mt-2 font-mono text-xl text-muted-foreground'>{candidateTitle}</p>
                 </div>
               </div>
 
@@ -106,17 +106,11 @@ export function JDInput({
             </div>
 
             <div className='mt-6'>
-              {(candidateTitle || topStack.length > 0 || locationLine) && (
-                <dl className='grid grid-cols-[80px_1fr] gap-y-2'>
-                  {candidateTitle && (
-                    <>
-                      <dt className='self-baseline font-mono text-xs tracking-wide text-muted-foreground'>ROLE</dt>
-                      <dd className='text-sm text-foreground'>{candidateTitle}</dd>
-                    </>
-                  )}
+              {(topStack.length > 0 || locationLine) && (
+                <dl className='grid grid-cols-[80px_1fr] items-baseline gap-y-2'>
                   {topStack.length > 0 && (
                     <>
-                      <dt className='self-start pt-0.5 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
+                      <dt className='pt-0.5 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
                       <dd>
                         <div className='flex flex-wrap gap-1.5'>
                           {topStack.map((s) => (
@@ -133,7 +127,7 @@ export function JDInput({
                   )}
                   {locationLine && (
                     <>
-                      <dt className='self-baseline font-mono text-xs tracking-wide text-muted-foreground'>LOCATION</dt>
+                      <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LOCATION</dt>
                       <dd className='text-sm text-foreground'>{locationLine}</dd>
                     </>
                   )}
