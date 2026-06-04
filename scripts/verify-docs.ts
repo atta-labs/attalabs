@@ -134,7 +134,9 @@ function runPrMode(): void {
   const tier = readTierFromPrBody()
   const effectiveTier: 0 | 1 | 3 = tier ?? 3 // when in doubt, Tier 3 (D-003)
   if (tier === null) {
-    notes.push('No `Tier:` field found in PR body — defaulting to Tier 3 (strictest). Add `Tier: 0|1|3` to the PR body to set it explicitly.')
+    notes.push(
+      'No `Tier:` field found in PR body — defaulting to Tier 3 (strictest). Add `Tier: 0|1|3` to the PR body to set it explicitly.'
+    )
   }
 
   const codeFiles = changed.filter(isCodeFile)
@@ -146,7 +148,9 @@ function runPrMode(): void {
   for (const p of specFiles) {
     if (!existsSync(p)) continue // deleted
     if (!hasStatusBlock(readFileSync(p, 'utf8'))) {
-      errors.push(`C1 spec-status: ${p} is missing a \`Status:\` block (draft|target|ratified|retired). See state-machine.md Section 5.`)
+      errors.push(
+        `C1 spec-status: ${p} is missing a \`Status:\` block (draft|target|ratified|retired). See state-machine.md Section 5.`
+      )
     }
   }
 
@@ -155,18 +159,24 @@ function runPrMode(): void {
     if (!existsSync(p)) continue
     const bad = malformedDecisionEntries(readFileSync(p, 'utf8'))
     if (bad.length) {
-      errors.push(`C2 decision-shape: ${p} has entries missing Status/Type: ${bad.join(', ')}. See state-machine.md Section 6.`)
+      errors.push(
+        `C2 decision-shape: ${p} has entries missing Status/Type: ${bad.join(', ')}. See state-machine.md Section 6.`
+      )
     }
   }
 
   // C3 — code changes (tier 1+) must be accompanied by at least one doc change.
   if (effectiveTier !== 0 && codeFiles.length > 0 && docFiles.length === 0) {
-    errors.push(`C3 code-requires-docs: ${codeFiles.length} code file(s) changed but no documentation file changed. Tier ${effectiveTier} work updates specs/skills/PM docs. If this is genuinely trivial, set \`Tier: 0\` in the PR body. (state-machine.md Section 9)`)
+    errors.push(
+      `C3 code-requires-docs: ${codeFiles.length} code file(s) changed but no documentation file changed. Tier ${effectiveTier} work updates specs/skills/PM docs. If this is genuinely trivial, set \`Tier: 0\` in the PR body. (state-machine.md Section 9)`
+    )
   }
 
   // C4 — Tier 3 must carry a decision log entry.
   if (effectiveTier === 3 && decisionLogs.length === 0) {
-    errors.push('C4 tier3-decision-log: Tier 3 work requires a decision log entry (global decisions.md or a per-product *-decisions.md). None changed in this PR. (state-machine.md Section 9)')
+    errors.push(
+      'C4 tier3-decision-log: Tier 3 work requires a decision log entry (global decisions.md or a per-product *-decisions.md). None changed in this PR. (state-machine.md Section 9)'
+    )
   }
 }
 
@@ -174,7 +184,10 @@ function runPrMode(): void {
 
 function runFullMode(): void {
   // F1 — every spec carries a Status block.
-  const specs = sh("git ls-files 'apps/**/specs/*.md'").split('\n').map((s) => s.trim()).filter(Boolean)
+  const specs = sh("git ls-files 'apps/**/specs/*.md'")
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
   for (const p of specs) {
     if (!existsSync(p)) continue
     if (!hasStatusBlock(readFileSync(p, 'utf8'))) {
