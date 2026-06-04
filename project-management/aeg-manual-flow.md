@@ -1,160 +1,115 @@
 # AEG — Running the Flow by Hand
 
-**Atta Agentic Execution Governance (AEG)**, manual mode. This is the playbook for running the flow with nothing but Claude Code and this repo — no automation tool required.
+**Atta Agentic Execution Governance (AEG)**, manual mode. The playbook for running the flow with nothing but Claude Code, a Git forge, and this repo — no orchestration tool required.
 
-This file is the companion to `process.md` (the eleven-phase walkthrough) and `state-machine.md` (the constitution). Where those describe the model in full, this one is the operator's guide: what a human does, in what order, calling which agent, with what in hand.
+Companion to `process.md` (the eleven-phase walkthrough), `state-machine.md` (the constitution), `iterations/README.md` (the iteration + task model), and the `roles/` docs. This file is the operator's guide: what a human does, in what order, calling which agent, with what in hand.
 
-> **AEG knows no tool.** This playbook is tool-neutral. A tool may *automate* the hand-offs below, but AEG never depends on, or names, one. Knowledge flows one way: a tool may know AEG; AEG does not know the tool.
+> **AEG is forge-native, orchestrator-independent.** It depends on a Git forge (GitHub) the way it depends on git — the forge is its source of truth for execution state. It does **not** depend on any orchestration tool (e.g. Cetana); a human or a thin dispatch script invokes roles. Knowledge flows one way: a tool may know AEG; AEG does not know the tool.
 
 ---
 
 ## 0. Starting and maintaining an AEG repo (`aeg.sh`)
 
-AEG "init" is not software — it is a **state the repo is in**. A repo is running AEG when three things are true:
+AEG "init" is not software — it is a **state the repo is in**. A repo is running AEG when: (1) the `project-management/` scaffold exists (`state-machine.md`, `coordination.md`, `process.md`, `aeg-manual-flow.md`, `roles/`, `iterations/README.md`; plus `products.md` only once multi-product); (2) at least one iteration file exists; (3) the role docs are reachable.
 
-1. **The governance scaffold exists** — a `project-management/` folder with the model: `state-machine.md`, `coordination.md`, `process.md`, `aeg-manual-flow.md`, `roles/`, `iterations/README.md`. (Plus `products.md` *only* once the repo holds more than one product.)
-2. **At least one iteration exists** — a `project-management/iterations/<name>.md` file, even with zero tasks. The "AEG has been started here" marker.
-3. **The role docs are reachable** — Claude Code can read `roles/`, and a human knows the run order (Section 4).
-
-You can create that state by hand (copy the scaffold, write a first iteration file). Or use **`aeg.sh`** — a single, downloadable shell script (from the AEG site) that scaffolds these files for you. It is a **dumb scaffolder**: it writes files and nothing else. It does not dispatch agents, watch them, enforce gates, or reason — those are orchestration (a separate tool's job) or judgment (yours + the Planner's). It is **self-contained** (the scaffold is embedded; no network fetch) so you can read every byte before running it. One file, three subcommands:
+You can create that by hand, or use **`aeg.sh`** — one self-contained, downloadable shell script (from the AEG site). It is a **dumb scaffolder**: it writes files, nothing else. It does not dispatch agents, query the forge, or reason — that's a tool's or a human's job. Self-contained (scaffold embedded, no network) so you can read every byte first. Three subcommands:
 
 ```
-aeg init [folder]                       # once per repo
-aeg add-product <name> --path <folder>  # when a second product appears
-aeg new-iteration <name>                # each cycle
+aeg init [folder]                       # scaffold the repo (once)
+aeg add-product <name> --path <folder>  # register a product (creates/appends products.md + stubs)
+aeg new-iteration <name>                # create a thin iteration topology file
 ```
 
-### `aeg init [folder]`
-Lays down the `project-management/` scaffold into the target folder (default: current dir). Run once, ever, per repo. After this the repo "has AEG." Refuses if `project-management/` already exists (won't overwrite). Takes essentially no params — init barely does anything; it just writes the skeleton.
-
-### `aeg add-product <name> --path <folder>`
-Registers a product. **A product is a `(name, folder)` pair the developer declares** — not derived from the tree, not required to match a `package.json`, not required to be a single package (see `products.md`). The command:
-1. Reads `products.md`. If `<name>` is already a row → **refuse** ("already registered").
-2. Checks `<folder>`. If it already exists on disk → **refuse** ("`<folder>` already exists; won't overwrite — register manually or pick another path"). It does not adopt unknown folders (no guessing).
-3. If both pass: creates `<folder>/specs/` (spec + decisions + backlog stubs) and `<folder>/project-management/` (`state.md` + `now.md` stubs), and appends the registry row. Atomic — both the folders and the row, or neither.
-
-The `--path` is **required and stored verbatim** — the tool never computes or searches for it. The folder is simply the product's home for specs + status; what the product "is" (one package, an app, several packages) is the developer's business.
-
-**Single → multi promotion.** A single-product repo has no `products.md`. The first time you run `add-product`, the repo becomes multi-product — so `products.md` is created and you register **both** the pre-existing product *and* the new one (the existing one needs a row too, or its tasks can't resolve a `Product:`). After that, each further `add-product` appends one row.
-
-### `aeg new-iteration <name>`
-Creates `project-management/iterations/<name>.md` from the template (empty Tasks + Backlog). Run each cycle.
-
-**`aeg.sh` and any orchestration tool overlap on `init`** — both can make a repo AEG-aware — and that is fine: it's the manual-vs-automated duality. `aeg.sh` is the route for someone who hasn't adopted a tool; the tool is the route for someone who has. `aeg.sh` stays dumb on purpose — the moment it tries to *do* anything intelligent, it has stopped being a scaffolder.
+`add-product` stores the `--path` verbatim (never derives it), refuses to overwrite an existing folder or re-register a name, and on first use promotes a single-product repo to multi-product (registering both the existing and the new product). See `products.md`. Tasks themselves are **GitHub Issues**, created by the Planner on the forge — not by `aeg.sh`.
 
 ---
 
 ## 1. The flow is the product; a tool is optional
 
-AEG is the flow. A tool may *automate the orchestration slice of the flow* — collapsing the copy-paste hand-offs between roles into commands. But the tool is not the flow, and the flow does not depend on it.
+AEG is the flow. A tool may *automate the orchestration slice* — collapsing the hand-offs between roles into commands — but it is not the flow, and the flow does not depend on it. Everything below runs by hand: you open Claude Code, name the role, the agent reads its role doc, checks whether it should act now (against forge state), and does the work.
 
-Everything below can be run by hand: you open Claude Code, you tell it which role to be, it reads its role doc, it checks whether it should be acting right now, and it does the work. An automation layer can later collapse the hand-offs — but the semantics are identical. Anything true of the manual flow is true of the automated flow.
-
-**Manual mode is the teaching mode.** Companies are wary of AI because work happens invisibly — an agent does ten things under the hood and you find out later. AEG's manual steps make the invisible visible: each hand-off is a checkpoint where a human sees a risk that automation normally hides. Why review is separate from authorship. Why a brief is frozen. Why nothing merges without a human. Why decisions are logged. Running it by hand once teaches the *why* of every gate. That is a feature, not overhead.
+**Manual mode is the teaching mode.** Companies fear AI because work happens invisibly. AEG's hand-offs make the invisible visible: each is a checkpoint where a human sees a risk automation hides — why review is separate from authorship, why the brief is frozen into the PR, why nothing merges without a human, why decisions are logged. Running it by hand once teaches the *why* of every gate.
 
 ---
 
-## 2. The brief is the unit of context
+## 2. The task model — Issues + forge-derived status
 
-The brief is the single most important artifact in the flow. Three rules:
+A **task is a GitHub Issue.** Its status is never written anywhere — it is **derived by querying the forge**:
 
-1. **Context lives in the brief.** The brief is the whole context for the task. An agent should never need to go read something else to understand what it's doing. If context isn't in the brief, it doesn't exist.
+| Status | Forge fact |
+|--------|-----------|
+| `backlog` | Issue open, unassigned |
+| `todo` | Issue open, assigned, no branch |
+| `in-flight` | branch `task/<iteration>/<n>` exists, no PR |
+| `in-review` | PR open |
+| `changes-requested` | PR open, `reviewDecision: CHANGES_REQUESTED` |
+| `merged` | PR merged (Issue auto-closes) |
+| `blocked` | `aeg:blocked` label present |
 
-2. **The brief is pasted, not committed — but it must land in the PR body.** You hand the brief to the Developer directly (a markdown block, all sections per `.claude/skills/brief-authoring/SKILL.md`). You do **not** need to commit a `briefs/*.md` file. Durability comes from a different place: when the Developer opens the PR, the brief text goes into the PR body. That makes it permanent, attached to exactly the work it governed, and readable by the Reviewer and Archivist. The PR body is the brief's permanent home.
-
-3. **`Ticket:` is optional and reference-only.** A brief may carry a link to an external ticket (Jira, Linear, etc.):
-   ```
-   Ticket: PROJ-1234 — https://acme.atlassian.net/browse/PROJ-1234   (optional)
-   ```
-   This is **provenance, not instruction**. No agent reads the ticket, needs access to it, or is blocked by it. It is carried into the PR body alongside the brief so the change traces back to the org's world, and the Archivist can note it at close-out. A principal with no ticket system simply omits the line. Agents must never treat the ticket link as a substitute for context in the brief — if scope lives in the ticket instead of the brief, the brief is malformed.
-
-In a multi-product repo the brief also carries a `Product:` line (resolved against `project-management/products.md`) so the agent reads the right product's specs. A single-product repo omits it.
-
----
-
-## 3. Every agent is self-locating
-
-This is what makes the flow safe to run by hand. When you call an agent, it does not trust that you called it correctly. Before doing any work, each agent checks two things against shared state:
-
-1. **Is this my phase?** — given the current state of the work, is this role the right one to act now?
-2. **Is my input well-formed?** — was I handed the artifact I require, in the shape I require?
-
-If either check fails, the agent **refuses or redirects** instead of proceeding. This is the same skeptical posture the Reviewer already has (it won't review its own work), generalized to every role: every agent has an **entry gate**.
-
-**Shared state in manual mode = the repo + GitHub (PR / issue status) + the iteration file's status column.** Crucially, the gates read state that exists whether or not any tool is running. In manual mode, **the PR is the state machine**: a PR that doesn't exist yet means "not ready to review"; an open PR means "ready to review"; a merged PR means "ready to close out." That is what lets the gates work identically with or without a tool.
+So **no role ever writes status.** Opening the PR *is* the in-review signal; merging *is* the done signal. To see the board you query the forge (`gh pr list`, the Issues view, a Project) — you never read status from a file. The thin iteration file holds only topology (task→issue, dependency/conflict edges); see `iterations/README.md`.
 
 ---
 
-## 4. The manual run order
+## 3. The brief is the unit of context
+
+1. **Context lives in the brief.** If it isn't in the brief, it doesn't exist. An agent never needs to read elsewhere to understand its task.
+2. **The brief is pasted, not committed — and lands in the PR body.** You hand it to the Developer directly (all sections per `.claude/skills/brief-authoring/SKILL.md`). When the Developer opens the PR, the brief goes into the PR description — its permanent home, attached to the work it governed, read by Reviewer and Archivist. **Never in the Issue** (it would age and attract edits). Retry reuses the same PR body.
+3. **`Ticket:` and `Product:` are reference-only.** `Ticket:` is N↔M provenance (Jira/Linear) — no agent reads it, it's never a substitute for brief context. `Product:` (multi-valued) resolves against `products.md` to route the agent to the right specs; omit it in a single-product repo.
+
+---
+
+## 4. Every agent is self-locating
+
+When invoked, an agent does not trust that you called it correctly. It checks two things first: **is this my phase?** (given forge state) and **is my input well-formed?** If either fails, it **refuses or redirects.** Every role has an entry gate.
+
+**Shared state = the forge** (Issue / branch / PR / review / merge) **+ the thin iteration file** (topology). The gates read state that exists whether or not any tool runs. **The PR is the state machine:** no PR yet = not ready to review; open PR = ready to review; merged PR = ready to close out. That's what makes the gates work identically with or without a tool — and why no agent needs to write status.
+
+---
+
+## 5. The manual run order
 
 | Step | Role | You hand it | It produces | Entry gate (refuses if…) |
 |------|------|-------------|-------------|--------------------------|
-| 0 | **Planner** (Team Leader mode) | intent + a slice of tickets | an iteration (tasks + edges) | asked to write one brief, not plan a set |
+| 0 | **Planner** (TL mode) | intent + a ticket slice | an iteration: Issues + thin topology file | asked to write one brief / to implement |
 | 1 | **Principal** (you) | an intent / goal | a decision to proceed, a tier | — |
-| 2 | **Brief Author** (Team Leader mode) | the intent + the task's iteration row | a brief, all sections | asked to write code instead of a brief |
-| 3 | **Developer** | the brief | a worktree, the work, an open PR (brief in body) | input isn't a well-formed brief |
-| 4 | **Reviewer (code)** | "review PR #N" | a VERDICT (APPROVE / REQUEST CHANGES) | no open PR, or no brief in the PR body, or it authored the code |
-| 5 | **Security** | "security-review PR #N" | a VERDICT (PASS / FAIL) | no open PR, or no brief in the PR body |
+| 2 | **Brief Author** (TL mode) | the intent + the task's Issue | a brief, all sections | asked to write code instead of a brief |
+| 3 | **Developer** | the brief | a worktree, the work, an open PR (brief in body) | input isn't a well-formed brief; a `depends-on` isn't merged; a `conflicts-with` sibling's PR is open |
+| 4 | **Reviewer (code)** | "review the PR for task N" | VERDICT (APPROVE / REQUEST CHANGES) | no open PR, no brief in the PR body, or it authored the code |
+| 5 | **Security** | "security-review the PR for task N" | VERDICT (PASS / FAIL) | no open PR, or no brief in the PR body |
 | 6 | **Principal + TL** (you) | the verdicts | merge decision | review passes not done |
-| 7 | **Archivist** | "close out PR #N" | a close-out report | **PR is not merged** |
+| 7 | **Archivist** | "close out the PR for task N" | a close-out report | **PR is not merged** |
 
-You walk down the column. Each agent, when invoked, confirms it's its turn before acting.
+Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` and self-locates from forge state. Nobody writes status — the forge already reflects every transition.
 
 ---
 
-## 5. Per-role entry gates (the refusal language)
+## 6. Per-role entry gates (refusal language)
 
-These are the gates each role checks first. The wording is what the agent should say when it refuses.
+**Planner** — see `roles/planner.md` (split-vs-combine by verification coupling; plan-integrity gates). Refuses single-brief / implement requests; refuses execution metadata in the file or Issue; refuses planning metadata on Issues; refuses to build a conflict scanner; validates every `Product:` against the registry.
 
-**Planner** (Team Leader, Planner mode)
-- Requires: an intent + a slice of tickets/items to turn into an iteration.
-- Refuses: a request to write a single brief → *"That's a Brief Author job. I plan whole iterations — give me the slice of work."*
-- Produces: an iteration file (`iterations/<name>.md`) with tasks, edges, and a backlog lane. Validates every `Product:` against the registry; refuses to invent an unregistered product.
-
-**Brief Author** (Team Leader, Brief Author mode)
-- Requires: an intent from the Principal (ideally an existing iteration task row).
-- Refuses: a request to implement directly → *"I author the brief, I don't implement. Tell me the goal and I'll write the brief."*
-- Produces: a brief per `brief-authoring/SKILL.md` (tier, type, scope, stop conditions, deliverable, optional `Ticket:`/`Product:`).
+**Brief Author** — requires an intent (ideally an Issue). Refuses to implement: *"I author the brief, I don't implement."* Produces a brief per the skill (tier, type, scope, stop conditions, deliverable, optional `Ticket:`/`Product:`).
 
 **Developer**
-- Requires: a well-formed brief (has tier, scope, stop conditions, deliverable).
-- First action: inspect what it was handed. If it's a loose prompt, not a brief → *"This isn't a brief — it's missing tier / scope / stop-conditions. Get one from the Brief Author first; I don't infer scope from a prompt."* If `Product:` doesn't resolve against the registry → *"Product 'x' isn't registered; fix the brief or run `aeg add-product`."*
-- Then: worktree Step 0 (`git worktree add .worktrees/<branch> -b <branch> origin/main && cd .worktrees/<branch>`), do the work, open the PR.
-- Done-checklist gains: **the brief text (and `Ticket:`/`Product:` lines, if present) is pasted into the PR body, and the task's iteration row is set to `in-review` with the `PR` column filled.**
+- Requires a well-formed brief. If handed a loose prompt → *"This isn't a brief — missing tier / scope / stop-conditions. Get one from the Brief Author."*
+- Checks the gates against the forge before starting: dependency's PR merged? conflicting sibling's PR closed? If not → *"Task N serializes behind <dep/sibling>; not starting."*
+- If `Product:` doesn't resolve against the registry → *"Product 'x' isn't registered."*
+- Worktree Step 0: `git worktree add .worktrees/task/<it>/<n> -b task/<it>/<n> origin/main && cd .worktrees/task/<it>/<n>`, do the work, open the PR.
+- Done-checklist: **the brief (and `Ticket:`/`Product:` lines) is pasted into the PR body.** That's it for state — opening the PR *is* the status transition. The Developer writes no status anywhere.
 
-**Reviewer (code)**
-- Requires: an open PR, with the brief in its body.
-- Refuses: no PR → *"Nothing to review — open a PR first."* No brief in the body → *"This PR has no brief; I can't judge scope against intent. Add the brief to the PR body."* Authored the code itself → *"I can't review my own work; this needs a fresh reviewer."*
-- Produces: VERDICT — APPROVE | REQUEST CHANGES (per `roles/reviewer.md`).
+**Reviewer (code)** — requires an open PR with the brief in its body. Refuses: no PR → *"Nothing to review."* No brief → *"This PR has no brief; I can't judge scope against intent."* Authored it → *"I can't review my own work."* Produces APPROVE | REQUEST CHANGES (per `roles/reviewer.md`).
 
-**Security**
-- Requires: an open PR with the brief in its body (same gate as Reviewer).
-- Refuses: same as Reviewer.
-- Produces: VERDICT — PASS | FAIL (per `roles/security.md`).
+**Security** — same gate as Reviewer; produces PASS | FAIL (per `roles/security.md`).
 
 **Archivist** (close-out)
-- Requires: a **merged** PR.
-- Refuses: PR not merged → *"This PR isn't merged; there's nothing to close out. Merge it first."*
-- Confirms at close-out: issue closed (if one was referenced), branch deleted, decision logged if Tier 3, changelog appended, docs updated, and the task's iteration row flipped to `merged`.
-- Flags — does not perform — local worktree removal: the worktree lives on the operator's machine, so the Archivist lists it as a cleanup candidate; the human (or a tool) removes it. The Archivist runs in the cloud and cannot reach the local filesystem.
-- Produces: a close-out report listing anything still dangling.
-
----
-
-## 6. How to invoke a role manually from Claude Code
-
-You don't need any tool to dispatch. In a Claude Code session:
-
-1. Tell the agent its role: *"Act as the Developer. Here is the brief: …"* (or *"Act as the code Reviewer for PR #N."*)
-2. The agent reads its role doc (`roles/<role>.md`) and this file, checks its entry gate, and either proceeds or refuses with the language above.
-3. When it's done, you move to the next role yourself — you are the orchestrator. (This is exactly the hand-off a tool automates later.)
-
-The brief is the only thing you must prepare carefully. Everything else the agents enforce.
+- Requires a **merged** PR. Refuses: not merged → *"Nothing to close out; merge first."*
+- Confirms: Issue closed (the merge auto-closes it if linked), decision logged if Tier 3, changelog appended, docs updated, per-product `state.md`/`now.md` updated for every product the task listed.
+- Flags — does not perform — orphaned branches (branch with no/stale PR) and local worktree removal as cleanup candidates for the human. Writes no status (the merge already is the status).
+- Produces a close-out report listing anything dangling.
 
 ---
 
 ## 7. What an automation layer adds (and doesn't change)
 
-A tool can automate the steps 2→6 hand-offs: spawn the Developer in a fresh worktree from a brief, stream its work, unblock it when it escalates, and enforce the dispatch gates in code. It does **not** change the gates, the roles, the brief rules, the iteration model, or the order. If the tool is unavailable, you run the same flow by hand. The flow is primary; the tool is convenience — and AEG never names it.
+A tool can automate the steps 2→6 hand-offs: spawn the Developer in a fresh worktree from a brief, stream its work, unblock escalations, and enforce the dependency/conflict gates in code at dispatch. It does **not** change the gates, roles, brief rules, iteration model, task-as-Issue model, or order. If the tool is unavailable, you run the same flow by hand against the forge. The flow is primary; the tool is convenience — and AEG never names it.
 
-For the authority model, escalation severities, and tier rules underneath all of this, see `state-machine.md`. For the iteration / Planner / dispatch-gate model, see `iterations/README.md`. For the product registry, see `products.md`.
+For the iteration / task / conflict model, see `iterations/README.md`. For the Planner's gates, see `roles/planner.md`. For authority and tiers, see `state-machine.md`. For the registry, see `products.md`.
