@@ -1,8 +1,10 @@
 # Vāda — product backlog
 
-**Out of the AEG flow.** Held / future / research items for Vāda. This is a reference the Planner reads when choosing the next iteration slice — the flow never operates on it. Items graduate from here into an iteration (and get edges, owner, status) only when the Planner pulls them.
+**Status:** draft · living reference (out of the AEG flow; not a ratified spec)
 
-Migrated from the retired global `roadmap.md` (June 3, 2026). See git history of `roadmap.md` for the full prior detail.
+**Out of the AEG flow.** Held / future / research items for Vāda. This is a reference the Planner reads when choosing the next iteration slice — the flow never operates on it. Items graduate from here into an iteration (and get edges, owner, and a derived status) only when the Planner pulls them.
+
+Migrated from the retired global `roadmap.md` (June 3, 2026; roadmap retired by D-029). See git history of `roadmap.md` for the full prior detail.
 
 ---
 
