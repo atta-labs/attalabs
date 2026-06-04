@@ -9,13 +9,14 @@ import { existsSync } from 'node:fs'
 // the shared node_modules outside the default 3-level-up root).
 function findMonorepoRoot(start: string): string {
   let dir = start
+  let best = start
   while (dir !== path.dirname(dir)) {
     if (existsSync(path.join(dir, 'turbo.json')) && existsSync(path.join(dir, 'node_modules'))) {
-      return dir
+      best = dir // keep walking — outermost match wins
     }
     dir = path.dirname(dir)
   }
-  return start
+  return best
 }
 
 const nextConfig: NextConfig = {
