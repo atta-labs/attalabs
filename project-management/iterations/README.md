@@ -21,7 +21,7 @@ Company roadmap / Jira / product backlog   ← NOT in AEG. Reference only. The h
         │  (human translation — Team Leader / Planner)
         ▼
 Iteration                                   ← TOP of AEG. A bounded set of tasks. Committed.
-   ├─ Task = brief (just-in-time) + Product + Ticket link(s) + edges (depends-on / conflicts-with)
+   ├─ Task = brief (just-in-time) + Product(s) + Ticket link(s) + edges (depends-on / conflicts-with)
    ├─ Task
    └─ …
         │
@@ -37,12 +37,12 @@ Per task: Developer → Reviewer → Security → merge → Archivist
 
 ## 2. A task's reference fields: `Product` and `Ticket`
 
-Two optional, reference-only fields qualify a task. Neither is read as instruction; both are provenance and routing.
+Two reference-only fields qualify a task. Neither is read as instruction; both are provenance and routing.
 
-- **`Product`** — which product the task belongs to (`cetana`, `vada`, `herald`, …). It resolves against the **product registry**, `project-management/products.md`, which maps each product to its specs and per-product PM paths. The registry's *presence* signals a multi-product repo, where `Product` is required; a single-product repo has **no** `products.md` and omits the field entirely (every task shares one product). When present, `Product` does three jobs: (1) the Developer self-locates the right product specs (`apps/<product>/specs/`); (2) the conflict gate gets a cheap first-pass filter — tasks in different products rarely collide; (3) the Archivist knows which per-product `state.md` / `now.md` to update at close-out.
+- **`Product`** — which product(s) the task belongs to. **Multi-valued and normal:** a task carries as many products as it genuinely touches — usually one (`Product: vada`), sometimes several (`Product: engine, herald`). It resolves against the **product registry**, `project-management/products.md`. The registry's *presence* signals a multi-product repo, where `Product` is required; a single-product repo has **no** `products.md` and omits the field. When present, `Product` does three jobs, fanning out across *every* listed product: (1) the Developer self-locates each product's specs; (2) the conflict gate filters by package (a product may span packages, a package may be shared across products — see §7); (3) the Archivist updates each product's `state.md`/`now.md` at close-out. Review also fans out — a multi-product PR is reviewed through each product's lens. See `products.md` for the full treatment.
 - **`Ticket`** — N↔M, reference-only link to an external ticket (Jira/Linear). One ticket may become many tasks; many tickets may collapse into one. The human owns the translation. No agent reads the ticket, needs access to it, or is blocked by it.
 
-Per-product PM (`apps/<product>/project-management/state.md` + `now.md`) still exists as per-product *status*. The iteration is the cross-product *coordination* layer above it; `Product` is the link between a task and its product's specs + PM.
+Per-product PM (`apps/<product>/project-management/state.md` + `now.md`) still exists as per-product *status*. The iteration is the cross-product *coordination* layer above it; `Product` is the link between a task and its product(s)' specs + PM.
 
 ---
 
@@ -54,11 +54,20 @@ The Planner's job, and the reason the iteration exists, is the thing a brief-in-
 
 1. **Decompose** the ticket slice into discrete, agent-sized tasks.
 2. **Order** them — declare `depends-on` edges (task B assumes task A is merged).
-3. **Flag collisions** — declare `conflicts-with` edges (two tasks touch the same module/contract and must not run concurrently).
+3. **Flag collisions** — declare `conflicts-with` edges (two tasks touch the same package/module and must not run concurrently).
 
-Conflict and dependency edges are **declared, not inferred**, in v1. The Planner (with the human) reasons from the tasks' stated scope and records the call — "these two both touch auth, serialize them." Automatic file-overlap detection is a later luxury; the pilot does not depend on it.
+### Split vs. combine — the verification-coupling test
 
-The Planner also owns the **iteration backlog**: it places tasks that belong to the cycle but aren't dispatch-ready yet, and promotes them (`backlog → todo`) when they are. The Planner's output is exactly one artifact: the iteration file below. It writes no briefs — those are authored just-in-time when each task is picked up.
+A single intent often crosses products (e.g. "refactor the shared engine to support more products, then migrate Herald onto it"). The Planner's signature judgment is whether that becomes *one* task or *several* — and the test is **verification coupling**, not product boundaries:
+
+- **Independently verifiable → split.** If each piece can be proven correct on its own, make separate single-product tasks with a `depends-on` edge. (Auth endpoint, then the UI that calls it — the endpoint is testable alone.)
+- **Verification-coupled → combine.** If the change can only be *tested* as a unit, it is **one task, one branch, one PR, multiple products.** The canonical case: generalizing `@atta/engine` *and* migrating Herald onto it belong together, because the only proof the engine refactor is correct is Herald working against it. Splitting would merge an unproven abstraction. A cross-product PR touching two, three, four products is a normal, expected shape — not an exception.
+
+Same `Ticket:` rides on all the resulting tasks, so the work stays atomic in Jira (one ticket) however it's shaped in AEG (one task or several). That translation — one intent → the right number of verifiable tasks, carrying the right products — is the Planner's core value; a per-task agent could never make this call.
+
+Conflict and dependency edges are **declared, not inferred**, in v1. The Planner (with the human) reasons from the tasks' stated scope and records the call. Automatic file-overlap detection is a later luxury; the pilot does not depend on it.
+
+The Planner also owns the **iteration backlog**: it places tasks that belong to the cycle but aren't dispatch-ready yet, and promotes them (`backlog → todo`) when they are. The Planner's output is exactly one artifact: the iteration file below. It writes no briefs — those are authored just-in-time when each task is picked up. It validates every `Product:` against the registry and refuses to invent an unregistered product.
 
 ---
 
@@ -86,15 +95,14 @@ Goal (execution, not product-why): <what ships, end to end>
 Repo: <repo>   ·   Team Leader: <name>
 
 ## Tasks (scoped, dispatchable)
-| # | Task                         | Product | Ticket | Depends-on | Conflicts-with | Owner  | Status     | PR  |
-|---|------------------------------|---------|--------|------------|----------------|--------|------------|-----|
-| 1 | Ground-station auth endpoint | api     | SAT-412| —          | 3              | Dani   | merged     | #88 |
-| 2 | Profile schema migration     | api     | SAT-419| —          | —              | junior | in-review  | #89 |
-| 3 | Auth UI                      | web     | SAT-412| 1          | 1              | junior | todo       | —   |
+| # | Task                         | Product      | Ticket | Depends-on | Conflicts-with | Owner  | Status     | PR  |
+|---|------------------------------|--------------|--------|------------|----------------|--------|------------|-----|
+| 1 | Generalize engine + migrate  | engine,herald| SAT-412| —          | 3              | Dani   | in-review  | #88 |
+| 2 | Profile schema migration     | herald       | SAT-419| —          | —              | junior | todo       | —   |
+| 3 | Vāda flow tweak (touches engine) | vada     | SAT-420| —          | 1              | junior | blocked    | —   |
 
 ## Backlog (this iteration, not yet ready to dispatch)
-- Rate-limit middleware (api, SAT-431) — waiting to see how auth (task 1) lands first.
-- CV viewer split (web) — needs a design call from Dani before scoping.
+- Rate-limit middleware (herald, SAT-431) — waiting to see how task 1 lands first.
 
 ## Status legend
 backlog → todo → in-flight → in-review → merged.   blocked = off to the side.
@@ -107,6 +115,8 @@ backlog → todo → in-flight → in-review → merged.   blocked = off to the 
 ## Done
 The iteration closes when every Task is merged or explicitly moved to the next iteration.
 ```
+
+(Note task 3: a Vāda task conflicts with task 1 even though they're different products — because both touch the `@atta/engine` package. Conflicts are package-level, §7.)
 
 **What is deliberately absent** is the point: no priority, no estimates, no story points, no "why." Those are the company's, in Jira / the product backlog. The iteration carries only what is needed to schedule execution safely — product, dependencies, conflicts, owner, status. That absence is what keeps AEG out of "Jira again."
 
@@ -155,7 +165,7 @@ Same file, both directions. That is the coordination spine of the whole model: s
 
 - **Planner** owns `backlog → todo` (scoping/promotion).
 - **Developer** done-checklist gains: *set my task's row to `in-review` and fill the `PR` column* (alongside "brief in PR body").
-- **Archivist** close-out gains: *flip the task's row to `merged`* (alongside confirming merge, branch deletion, docs/changelog).
+- **Archivist** close-out gains: *flip the task's row to `merged`* (alongside confirming merge, branch deletion, docs/changelog) — for every product the task lists.
 - **Dispatcher** (human or tool) sets `todo → in-flight` at start.
 
 ---
@@ -165,7 +175,9 @@ Same file, both directions. That is the coordination spine of the whole model: s
 The `Dispatch rules` block is what makes two or more developers safe. With a single principal, the rules live in one head. With a team, they must be a **lock**, not a whiteboard:
 
 - **depends-on gate** — a task cannot start until its dependency is `merged`.
-- **conflicts-with gate** — a task cannot start while a colliding sibling is `in-flight` or `in-review` (i.e. has an open PR or active agent). `Product` is the first-pass filter: tasks in different products rarely collide.
+- **conflicts-with gate** — a task cannot start while a colliding sibling is `in-flight` or `in-review` (i.e. has an open PR or active agent).
+
+**Conflicts are package-level, not product-level.** Two tasks collide if they touch the same package/path, even across different products. A task generalizing `@atta/engine` conflicts with an in-flight Vāda task that also touches the engine — different products, same package, real collision. So `Product` is only a coarse first-pass filter (tasks in wholly-separate products usually don't collide); the actual conflict surface is shared packages. A multi-product task conflicts with in-flight work touching *any* of the packages it spans.
 
 In manual mode these are preconditions the Developer checks before beginning (read the iteration file's status column + open-PR status). An automation layer can enforce them automatically at dispatch. Either way: the conflict is declared at planning time and enforced at dispatch time — never discovered at merge time, which is too late.
 
