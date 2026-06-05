@@ -507,3 +507,38 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - D-008 and D-015's Cetana-coupled language (`cetana_request_input`, Issue-body brief) is reframed at the model level to "the escalation mechanism" and "the PR body"; those decisions stand, the tool is now named only as an example.
 - Ratified 2026-06-04. `iterations/README.md` flipped draft → ratified. Lock: left NO deliberately — revisit after a cycle of real use.
 - Build follow-ups (not part of this decision): neutral AEG scaffold + `aeg.sh`; the interactive AEG docs site (supersedes the static `diagrams/`); the dispatch gates as tooling.
+
+---
+
+## D-030 — AEG enhancements: provenance export, spec-conformance review, observe mode
+
+**Date:** 2026-06-05
+**Status:** PENDING
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (competitive feature-mining pass, June 5, 2026 — ideas borrowed from Bitloops, Augment Intent, and Microsoft adoption guidance, mapped against AEG's invariants)
+**Ratified by:** PENDING — Principal ratifies at a ratification window
+
+**Context:** A market/competitive research pass over five adjacent clusters (parallel-agent runners, spec-driven development, AI-code audit/compliance, enterprise agent governance, plus the closest twin "Trail") found nothing occupying AEG's position — the combination of forge-derived status, orchestrator-independent protocol, and declared package-level conflicts with a principled refusal of dynamic scanning was not found elsewhere (an absence-of-evidence finding from secondary sources, not proof of originality). The pass surfaced three borrowable ideas that *strengthen* AEG's invariants rather than erode them. The test applied to every candidate: does it reinforce derived-status / declared-conflicts, or undermine them? These three pass; the rejected ideas fail it. This is a Type 1 change because it extends a model ratified one day prior (D-029), so the Principal ratifies; the TL records it PENDING.
+
+**Decision:** Adopt three additions to the AEG model. None introduces stored status or a new persistent mutable artifact:
+
+1. **Provenance block** (from Bitloops "Committed Checkpoints"). At close-out the Archivist assembles a provenance record — task → intent (the brief in the PR body) → code-review + security verdicts → model/agent (from the brief's `For:` line) → decision (Tier 3) → merge metadata — and posts it as a comment on the **merged** PR. Every field is copied from a fact the merge already froze; it is written once, append-only. It is a **projection of frozen forge facts**, exactly as derived status is a projection of live forge facts — therefore explicitly NOT the "stored status" forbidden by `iterations/README.md` §9: it lives on the merged PR (never the iteration file or Issue), records history (not current state), and is never updated. This makes AEG's audit-by-construction output legible and exportable (the regulated wedge — EU AI Act high-risk effective 2 Aug 2026; SLSA L3; NIST/SOC 2) at near-zero cost, because AEG already produces the facts. (`roles/archivist.md`; `state-machine.md` §2, §13.)
+
+2. **Spec-conformance review** (from Augment Intent's Verifier). The code Reviewer additionally checks the diff against the `Product:`-named spec in `apps/*/specs/`, not only against the brief — a diff can satisfy its brief and still contradict or drift from the product's specced behavior. A spec **contradiction** is a BLOCKER; **drift** is a MAJOR finding; a correct diff against a stale spec is a `severity:strategy` escalation, not a failure. This adds **no new persistent artifact** — it reads the product spec that already exists, checked as-written at whatever ratification state it holds. (`roles/reviewer.md`; `state-machine.md` §3, §5.)
+
+3. **Observe mode** (from Microsoft's "start with monitoring, not restriction"). A named read-only adoption tier: AEG runs advisory over a team's existing process — roles produce verdicts / topology / provenance but nothing blocks a merge, status is still derived (read-only), and verify-docs + the dispatch gates run report-only. It is the floor of the advisory → enforced gradient (`state-machine.md` §12); a team tightens one gate at a time. The on-ramp into teams already living in Jira/Linear, and the lowest-commitment way to obtain audit-by-construction provenance. (`aeg-manual-flow.md` §8; `state-machine.md` §12.)
+
+**Alternatives rejected:**
+- A new persistent per-iteration or per-task spec for the verifier to check against: rejected — a new mutable artifact would drift, reintroducing exactly the failure mode D-029 removed. Check against the product spec that already exists.
+- Storing provenance as a status field, in the iteration file, or as a maintained/updated record: rejected — that is the forbidden stored status. Provenance is assembled once at close-out from frozen facts and posted to the merged PR, append-only.
+- The broader market features — runner/orchestrator features (CI auto-fix loop, kanban boards, port allocation), the dynamic file-overlap conflict scanner the orchestrator crowd is chasing, spec-driven-dev tooling, and bolt-on compliance capture layers: rejected for the model. They are either tool-layer (Cetana / the AEG UI), already covered by existing mechanisms, or direct violations of the no-stored-status / no-dynamic-scanner invariants.
+
+**Consequences:**
+- `roles/reviewer.md` — spec-conformance check added (check #2); `SPEC CONFORMANCE` line in the verdict; contradiction = BLOCKER, drift = MAJOR, stale spec → strategy escalation.
+- `roles/archivist.md` — provenance block assembled at close-out from frozen facts and posted to the merged PR (append-only); a missing required source is an INCOMPLETE finding, never fabricated.
+- `aeg-manual-flow.md` — new §8 Observe mode; spec-conformance + provenance threaded into the run order and the per-role entry gates.
+- `state-machine.md` — §2 (provenance as a Class 2 close-out projection + matrix row), §3 (Reviewer spec-conformance authority), §5 (Reviewer reads the spec as-written), §12 (observe mode as the advisory floor; provenance assembly as trusted discipline), §13 (provenance block append-only).
+- All in PR on `feat/aeg-provenance-verifier-observe`, Tier 3, docs-only.
+- On ratification: flip this entry PENDING → ACTIVE. All three additions are **trusted discipline** today (no new CI gate); automation is future work. The deeper "verify against a living spec" form of the verifier remains a future tool-layer item, not part of this decision.
+- Noted as a backlog candidate, not decided here: a regulation → AEG-mechanism mapping doc (EU AI Act / SLSA / NIST / SOC 2) turning the provenance output into compliance evidence — the go-to-market lever the research flagged. Requires primary-source verification before action.
