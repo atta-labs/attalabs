@@ -204,13 +204,13 @@ export function ThemeBrowser({
                 }`}
               >
                 <FourSquareSwatch colors={swatchColors} />
-                <div className='flex min-w-0 flex-1 items-center gap-2'>
-                  <span
-                    className={`line-clamp-2 text-sm font-medium ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}
+                <div className='min-w-0 flex-1'>
+                  <p
+                    className={`line-clamp-2 text-sm font-medium leading-snug ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}
                   >
                     {theme.name}
-                  </span>
-                  {isApplied && <div className='h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent' />}
+                  </p>
+                  {isApplied && <div className='mt-1 h-1.5 w-1.5 rounded-full bg-accent' />}
                 </div>
                 {hasBoth && (
                   <div
