@@ -22,7 +22,9 @@ export function JDInput({
   candidateCvUrl,
   candidateGithub,
   candidateLinkedin,
-  candidateDiscord
+  candidateDiscord,
+  auditAvailable = true,
+  isOwner = false
 }: {
   onSubmit: (jd: string) => void
   candidateName?: string
@@ -36,6 +38,8 @@ export function JDInput({
   candidateGithub?: string
   candidateLinkedin?: string
   candidateDiscord?: string
+  auditAvailable?: boolean
+  isOwner?: boolean
 }) {
   const { setIsCollapsed } = useHeroCollapse()
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -218,19 +222,36 @@ export function JDInput({
         </div>
       </div>
 
-      {/* Pinned input */}
-      <div className='shrink-0 bg-background'>
-        <div className='mx-auto max-w-[680px] px-6 py-4'>
-          <SmartPromptInput
-            onSubmit={handleSubmit}
-            placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
-            submitOn='cmdenter'
-            hint='Cmd+Enter to submit'
-            accept={ACCEPTED_DOC_TYPES}
-            pasteToFileChars={1000}
-          />
+      {/* Pinned input / audit gate */}
+      {auditAvailable ? (
+        <div className='shrink-0 bg-background'>
+          <div className='mx-auto max-w-[680px] px-6 py-4'>
+            <SmartPromptInput
+              onSubmit={handleSubmit}
+              placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
+              submitOn='cmdenter'
+              hint='Cmd+Enter to submit'
+              accept={ACCEPTED_DOC_TYPES}
+              pasteToFileChars={1000}
+            />
+          </div>
         </div>
-      </div>
+      ) : isOwner ? (
+        <div className='shrink-0 border-t border-border bg-background'>
+          <div className='mx-auto max-w-[680px] px-6 py-5'>
+            <p className='font-mono text-xs text-muted-foreground'>
+              Recruiters can't run the audit yet — you haven't added an Anthropic API key.{' '}
+              <a
+                href='/admin/settings'
+                className='text-foreground underline underline-offset-2 hover:text-foreground/70'
+              >
+                Add one in Settings → API Keys
+              </a>
+              .
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

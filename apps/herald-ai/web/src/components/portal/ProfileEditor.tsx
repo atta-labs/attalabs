@@ -16,9 +16,9 @@ import {
   Textarea,
   useToastContext
 } from '@atta/ui'
-import { Download, ExternalLink, Upload, X } from 'lucide-react'
+import { Code2, Download, ExternalLink, Link2, MessageCircle, Upload, X } from 'lucide-react'
 import { ProviderKeysSection } from '@atta/ui/account'
-import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
+import { AvatarFrame } from '@/components/avatar-frame'
 import { SummaryMarkdown } from '@/components/summary-markdown'
 
 const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const
@@ -214,6 +214,7 @@ interface ProfileData {
   cvUrl: string | null
   avatarUrl: string | null
   isPublished: boolean
+  hasAnthropicKey: boolean
 }
 
 const triggerClass =
@@ -241,6 +242,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
   const [saving, setSaving] = useState(false)
   const [published, setPublished] = useState(profile.isPublished)
   const [publishing, setPublishing] = useState(false)
+  const [showKeylessConfirm, setShowKeylessConfirm] = useState(false)
   const [locationSearch, setLocationSearch] = useState(profile.location)
   const [locationOpen, setLocationOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -354,7 +356,8 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
     }
   }
 
-  async function handleTogglePublish() {
+  async function doPublish() {
+    setShowKeylessConfirm(false)
     setPublishing(true)
     try {
       const next = !published
@@ -377,6 +380,14 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
     } finally {
       setPublishing(false)
     }
+  }
+
+  function handleTogglePublish() {
+    if (!published && !profile.hasAnthropicKey) {
+      setShowKeylessConfirm(true)
+      return
+    }
+    void doPublish()
   }
 
   const STACK_MAX = 20
@@ -415,15 +426,44 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           <h1 className='font-serif text-xl tracking-tight'>Settings</h1>
           <p className='mt-1 font-mono text-xs text-muted-foreground'>Profile, API keys, and social connections.</p>
         </div>
-        <Button
-          type='button'
-          variant={published ? 'outline' : 'default'}
-          onClick={handleTogglePublish}
-          disabled={publishing}
-          className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'
-        >
-          {publishing ? '...' : published ? 'Unpublish' : 'Publish Profile'}
-        </Button>
+        {showKeylessConfirm ? (
+          <div className='flex shrink-0 flex-col items-end gap-2'>
+            <p className='max-w-[260px] text-right font-mono text-[10px] text-muted-foreground'>
+              Recruiters won't be able to run the audit until you add an Anthropic API key. Publish anyway?
+            </p>
+            <div className='flex gap-2'>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => setShowKeylessConfirm(false)}
+                className='font-mono text-[10px] uppercase tracking-[0.2em]'
+              >
+                Cancel
+              </Button>
+              <Button
+                type='button'
+                variant='default'
+                size='sm'
+                onClick={() => void doPublish()}
+                disabled={publishing}
+                className='font-mono text-[10px] uppercase tracking-[0.2em]'
+              >
+                {publishing ? '...' : 'Publish Anyway'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            type='button'
+            variant={published ? 'outline' : 'default'}
+            onClick={handleTogglePublish}
+            disabled={publishing}
+            className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'
+          >
+            {publishing ? '...' : published ? 'Unpublish' : 'Publish Profile'}
+          </Button>
+        )}
       </div>
       <Tabs defaultValue='profile'>
         <TabsList className='border-border'>
@@ -448,16 +488,18 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
         <TabsContent value='profile'>
           <div className='space-y-8'>
             <section>
-              <h2 className={sectionHeadClass}>Avatar</h2>
-              <div className='flex items-center gap-4'>
-                <div className='flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card'>
-                  {avatarUrl ? (
-                    // biome-ignore lint/performance/noImgElement: uploaded blob URL, not optimisable
-                    <img src={avatarUrl} alt='' className='h-full w-full object-cover' />
-                  ) : (
-                    <span className='font-mono text-lg text-muted-foreground'>?</span>
-                  )}
-                </div>
+              <div className='flex items-center gap-6 pb-5'>
+                {avatarUrl ? (
+                  <AvatarFrame src={avatarUrl} alt={form.name} size={80} />
+                ) : (
+                  <div className='relative shrink-0' style={{ width: 80, height: 80 }}>
+                    <div className='absolute inset-0 flex items-center justify-center overflow-hidden rounded-[10px] border-[1.5px] border-border bg-card'>
+                      <span className='font-mono text-lg text-muted-foreground'>?</span>
+                      <div className='absolute right-1.5 top-1.5 h-[6px] w-[6px] border-r border-t border-muted-foreground' />
+                      <div className='absolute bottom-1.5 left-1.5 h-[6px] w-[6px] border-b border-l border-muted-foreground' />
+                    </div>
+                  </div>
+                )}
                 <div className='flex flex-col gap-2'>
                   <input
                     ref={avatarInputRef}
@@ -486,7 +528,6 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
             </section>
 
             <section>
-              <h2 className={sectionHeadClass}>Identity</h2>
               <div className='grid grid-cols-2 gap-4'>
                 <div>
                   <label htmlFor='field-name' className={labelClass}>
@@ -828,7 +869,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           <div className='space-y-8'>
             <section>
               <div className='mb-4 flex items-center gap-2'>
-                <GitHubIcon className='h-3.5 w-3.5 text-foreground' />
+                <Code2 className='h-3.5 w-3.5 text-foreground' />
                 <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>GitHub</h2>
               </div>
               <label htmlFor='field-github' className={labelClass}>
@@ -845,8 +886,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
             <section>
               <div className='mb-4 flex items-center gap-2'>
-                {/* LinkedIn brand blue — no semantic token equivalent */}
-                <LinkedInIcon className='h-3.5 w-3.5' style={{ color: '#0077B5' }} />
+                <Link2 className='h-3.5 w-3.5 text-foreground' />
                 <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>LinkedIn</h2>
               </div>
               <label htmlFor='field-linkedin' className={labelClass}>
@@ -863,8 +903,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
             <section>
               <div className='mb-4 flex items-center gap-2'>
-                {/* Discord brand purple — no semantic token equivalent */}
-                <DiscordIcon className='h-3.5 w-3.5' style={{ color: '#5865F2' }} />
+                <MessageCircle className='h-3.5 w-3.5 text-foreground' />
                 <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Discord</h2>
               </div>
               <label htmlFor='field-discord' className={labelClass}>

@@ -54,9 +54,7 @@ export function LibraryDropdown({ value, libraries, onChange }: LibraryDropdownP
                   }`}
                 >
                   <span>{lib.name}</span>
-                  {lib.description && (
-                    <span className='mt-0.5 line-clamp-1 text-xs text-muted-foreground'>{lib.description}</span>
-                  )}
+                  {lib.description && <span className='mt-0.5 text-xs text-muted-foreground'>{lib.description}</span>}
                 </button>
               )
             })}

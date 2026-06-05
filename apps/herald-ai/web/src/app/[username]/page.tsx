@@ -3,9 +3,12 @@ export const dynamic = 'force-dynamic'
 import { auth } from '@clerk/nextjs/server'
 import { cmsClient, generateThemeCSS, getThemeById } from '@atta/cms'
 import { notFound } from 'next/navigation'
+import { decryptVendorKeys } from '@atta/crypto'
+import { getProviderKeys } from '@atta/db/queries'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
 import { EnvoyLibraryShell } from '@/components/envoy/EnvoyLibraryShell'
 import type { UILibrary } from '@atta/ui/lib/library-loader'
+import { db } from '@/db'
 import { getUserByUsername } from '@/db/queries'
 import { getGoogleFontsUrl } from '@atta/cms'
 
@@ -23,10 +26,30 @@ export default async function EnvoyPage({
   const user = await getUserByUsername(username)
   if (!user) notFound()
 
+  // Resolve viewer identity once — used for both publish gate and audit gate
+  const { userId } = await auth()
+  const isOwner = userId !== null && userId === user.clerkId
+
   // Gate unpublished profiles — owner can preview, everyone else gets 404
-  if (!user.isPublished) {
-    const { userId } = await auth()
-    if (userId !== user.clerkId) notFound()
+  if (!user.isPublished && !isOwner) notFound()
+
+  // Check if owner has a stored Anthropic key — gates the audit input
+  let hasAnthropicKey = false
+  const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
+  if (masterKeyB64) {
+    try {
+      const stored = await getProviderKeys(db, user.clerkId)
+      if (stored) {
+        const keys = decryptVendorKeys(
+          stored.encryptedPayload as Parameters<typeof decryptVendorKeys>[0],
+          user.clerkId,
+          Buffer.from(masterKeyB64, 'base64')
+        )
+        hasAnthropicKey = !!keys.anthropic
+      }
+    } catch {
+      hasAnthropicKey = false
+    }
   }
 
   const profile = {
@@ -82,7 +105,13 @@ export default async function EnvoyPage({
       )}
       {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
       <EnvoyLibraryShell initialLibrary={userLibrary}>
-        <EnvoyFlow profile={profile} username={username} previewMode={previewMode} />
+        <EnvoyFlow
+          profile={profile}
+          username={username}
+          previewMode={previewMode}
+          hasAnthropicKey={hasAnthropicKey}
+          isOwner={isOwner}
+        />
       </EnvoyLibraryShell>
     </>
   )

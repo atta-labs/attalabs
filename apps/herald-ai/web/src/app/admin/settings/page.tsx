@@ -1,6 +1,9 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import { decryptVendorKeys } from '@atta/crypto'
+import { getProviderKeys } from '@atta/db/queries'
 import { ProfileEditor } from '@/components/portal/ProfileEditor'
+import { db } from '@/db'
 import { getUserByClerkId } from '@/db/queries'
 
 export default async function SettingsPage() {
@@ -9,6 +12,25 @@ export default async function SettingsPage() {
 
   const user = await getUserByClerkId(userId)
   if (!user?.onboardingComplete) redirect('/admin')
+
+  // Check if owner has a stored Anthropic key — passed to ProfileEditor for keyless-publish confirm
+  let hasAnthropicKey = false
+  const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
+  if (masterKeyB64) {
+    try {
+      const stored = await getProviderKeys(db, userId)
+      if (stored) {
+        const keys = decryptVendorKeys(
+          stored.encryptedPayload as Parameters<typeof decryptVendorKeys>[0],
+          userId,
+          Buffer.from(masterKeyB64, 'base64')
+        )
+        hasAnthropicKey = !!keys.anthropic
+      }
+    } catch {
+      hasAnthropicKey = false
+    }
+  }
 
   const profile = {
     name: user.name,
@@ -22,7 +44,8 @@ export default async function SettingsPage() {
     stack: JSON.parse(user.stack) as string[],
     cvUrl: user.cvUrl ?? null,
     avatarUrl: user.avatarUrl ?? null,
-    isPublished: user.isPublished
+    isPublished: user.isPublished,
+    hasAnthropicKey
   }
 
   return (

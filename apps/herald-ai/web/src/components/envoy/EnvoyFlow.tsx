@@ -1,12 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Download, ExternalLink } from 'lucide-react'
+import { Code2, Download, ExternalLink, Link2, MessageCircle } from 'lucide-react'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { SummaryMarkdown } from '@/components/summary-markdown'
-import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { JDInput } from './JDInput'
 import { LoadingState } from './LoadingState'
 import { ReportView } from './ReportView'
@@ -95,11 +94,15 @@ const API_TIMEOUT = 35000
 export function EnvoyFlow({
   profile,
   username,
-  previewMode = false
+  previewMode = false,
+  hasAnthropicKey = false,
+  isOwner = false
 }: {
   profile: CandidateProfile
   username: string
   previewMode?: boolean
+  hasAnthropicKey?: boolean
+  isOwner?: boolean
 }) {
   const { Button } = useComponents()
   const [state, setState] = useState<FlowState>('input')
@@ -281,7 +284,7 @@ export function EnvoyFlow({
                               title='GitHub'
                               className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
                             >
-                              <GitHubIcon className='h-3.5 w-3.5' />
+                              <Code2 className='h-3.5 w-3.5' />
                             </a>
                           )}
                           {localProfile.linkedin && (
@@ -293,7 +296,7 @@ export function EnvoyFlow({
                               title='LinkedIn'
                               className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
                             >
-                              <LinkedInIcon className='h-3.5 w-3.5' />
+                              <Link2 className='h-3.5 w-3.5' />
                             </a>
                           )}
                           {localProfile.discord && (
@@ -303,7 +306,7 @@ export function EnvoyFlow({
                               title={`Discord: ${localProfile.discord}`}
                               className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground'
                             >
-                              <DiscordIcon className='h-3.5 w-3.5' />
+                              <MessageCircle className='h-3.5 w-3.5' />
                             </span>
                           )}
                         </dd>
@@ -320,6 +323,11 @@ export function EnvoyFlow({
             </header>
             <div className='mt-8 rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
               <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
+              {Button && (
+                <Button disabled variant='outline' className='mt-4 text-xs uppercase tracking-[0.2em]'>
+                  Run Forensic Match
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -339,6 +347,8 @@ export function EnvoyFlow({
         candidateGithub={localProfile.github}
         candidateLinkedin={localProfile.linkedin}
         candidateDiscord={localProfile.discord}
+        auditAvailable={hasAnthropicKey}
+        isOwner={isOwner}
       />
     )
   }
