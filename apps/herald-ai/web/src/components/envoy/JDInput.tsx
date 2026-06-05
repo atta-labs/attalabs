@@ -1,9 +1,8 @@
 'use client'
 
 import type { FileUIPart } from 'ai'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Download, ExternalLink } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui'
 import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
@@ -11,9 +10,6 @@ import { SummaryMarkdown } from '@/components/summary-markdown'
 import { useHeroCollapse } from './hero-collapse-context'
 
 const ACCEPTED_DOC_TYPES = '.pdf,.md,.txt,application/pdf,text/markdown,text/plain'
-
-const TAB_TRIGGER_CLASS =
-  'h-9 rounded-none border-b-2 border-transparent px-3 pb-2.5 pt-2 font-mono text-xs tracking-wide text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none'
 
 export function JDInput({
   onSubmit,
@@ -45,7 +41,6 @@ export function JDInput({
   const { setIsCollapsed } = useHeroCollapse()
   const sentinelRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [tab, setTab] = useState<'profile' | 'experience'>('profile')
 
   useEffect(() => {
     setIsCollapsed(false)
@@ -114,21 +109,27 @@ export function JDInput({
 
             {/* Sentinel: collapse triggers when this exits the scroll container's top */}
             <div ref={sentinelRef} aria-hidden='true' />
-          </header>
 
-          <Tabs value={tab} onValueChange={(v) => setTab(v as 'profile' | 'experience')} className='mt-6'>
-            <TabsList className='h-auto w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0'>
-              <TabsTrigger value='profile' className={TAB_TRIGGER_CLASS}>
-                PROFILE
-              </TabsTrigger>
-              <TabsTrigger value='experience' className={TAB_TRIGGER_CLASS}>
-                EXPERIENCE
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value='profile' className='mt-4'>
-              {(locationLine || (candidateCvUrl && cvFilename) || hasSocialLinks) && (
+            <div className='mt-6'>
+              {(topStack.length > 0 || locationLine || (candidateCvUrl && cvFilename) || hasSocialLinks) && (
                 <dl className='grid grid-cols-[80px_1fr] items-baseline gap-y-2'>
+                  {topStack.length > 0 && (
+                    <>
+                      <dt className='pt-0.5 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
+                      <dd>
+                        <div className='flex flex-wrap gap-1.5'>
+                          {topStack.map((s) => (
+                            <span
+                              key={s}
+                              className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
+                            >
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </dd>
+                    </>
+                  )}
                   {locationLine && (
                     <>
                       <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LOCATION</dt>
@@ -207,46 +208,30 @@ export function JDInput({
                   )}
                 </dl>
               )}
-            </TabsContent>
 
-            <TabsContent value='experience' className='mt-4'>
-              {topStack.length > 0 && (
-                <div className='flex flex-wrap gap-1.5'>
-                  {topStack.map((s) => (
-                    <span
-                      key={s}
-                      className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              )}
               {candidateSummary && (
-                <div className={topStack.length > 0 ? 'mt-6 max-w-[65ch]' : 'max-w-[65ch]'}>
+                <div className='mt-6 max-w-[65ch]'>
                   <SummaryMarkdown text={candidateSummary} />
                 </div>
               )}
-            </TabsContent>
-          </Tabs>
+            </div>
+          </header>
         </div>
       </div>
 
-      {/* Pinned input — Profile tab only */}
-      {tab === 'profile' && (
-        <div className='shrink-0 bg-background'>
-          <div className='mx-auto max-w-[680px] px-6 py-4'>
-            <SmartPromptInput
-              onSubmit={handleSubmit}
-              placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
-              submitOn='cmdenter'
-              hint='Cmd+Enter to submit'
-              accept={ACCEPTED_DOC_TYPES}
-              pasteToFileChars={1000}
-            />
-          </div>
+      {/* Pinned input */}
+      <div className='shrink-0 bg-background'>
+        <div className='mx-auto max-w-[680px] px-6 py-4'>
+          <SmartPromptInput
+            onSubmit={handleSubmit}
+            placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
+            submitOn='cmdenter'
+            hint='Cmd+Enter to submit'
+            accept={ACCEPTED_DOC_TYPES}
+            pasteToFileChars={1000}
+          />
         </div>
-      )}
+      </div>
     </div>
   )
 }

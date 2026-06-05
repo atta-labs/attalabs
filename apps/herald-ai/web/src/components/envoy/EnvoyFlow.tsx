@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Download, ExternalLink } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { AvatarFrame } from '@/components/avatar-frame'
@@ -107,7 +106,6 @@ export function EnvoyFlow({
   const [report, setReport] = useState<MatchReport | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [localProfile, setLocalProfile] = useState<CandidateProfile>(profile)
-  const [profileTab, setProfileTab] = useState<'profile' | 'experience'>('profile')
   const resultBuffer = useRef<MatchReport | null>(null)
   const animationDone = useRef(false)
 
@@ -188,9 +186,6 @@ export function EnvoyFlow({
       const previewCvFilename = localProfile.cvUrl
         ? `${(localProfile.name ?? 'CV').replace(/\s+/g, '_')}_CV.${previewCvExt}`
         : null
-      const previewHasSocialLinks = !!(localProfile.github || localProfile.linkedin || localProfile.discord)
-      const tabTriggerClass =
-        'h-9 rounded-none border-b-2 border-transparent px-3 pb-2.5 pt-2 font-mono text-xs tracking-wide text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none'
 
       return (
         <div className='h-full overflow-y-auto'>
@@ -211,25 +206,31 @@ export function EnvoyFlow({
                   <p className='mt-2 font-mono text-xl text-muted-foreground'>{localProfile.title}</p>
                 </div>
               </div>
-            </header>
-
-            <Tabs
-              value={profileTab}
-              onValueChange={(v) => setProfileTab(v as 'profile' | 'experience')}
-              className='mt-6'
-            >
-              <TabsList className='h-auto w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0'>
-                <TabsTrigger value='profile' className={tabTriggerClass}>
-                  PROFILE
-                </TabsTrigger>
-                <TabsTrigger value='experience' className={tabTriggerClass}>
-                  EXPERIENCE
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value='profile' className='mt-4'>
-                {(previewLocation || (localProfile.cvUrl && previewCvFilename) || previewHasSocialLinks) && (
+              <div className='mt-6'>
+                {(previewTopStack.length > 0 ||
+                  previewLocation ||
+                  (localProfile.cvUrl && previewCvFilename) ||
+                  localProfile.github ||
+                  localProfile.linkedin ||
+                  localProfile.discord) && (
                   <dl className='grid grid-cols-[80px_1fr] items-baseline gap-y-2'>
+                    {previewTopStack.length > 0 && (
+                      <>
+                        <dt className='pt-0.5 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
+                        <dd>
+                          <div className='flex flex-wrap gap-1.5'>
+                            {previewTopStack.map((s) => (
+                              <span
+                                key={s}
+                                className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
+                              >
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        </dd>
+                      </>
+                    )}
                     {previewLocation && (
                       <>
                         <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LOCATION</dt>
@@ -267,7 +268,7 @@ export function EnvoyFlow({
                         </dd>
                       </>
                     )}
-                    {previewHasSocialLinks && (
+                    {(localProfile.github || localProfile.linkedin || localProfile.discord) && (
                       <>
                         <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LINKS</dt>
                         <dd className='flex items-center gap-1.5'>
@@ -310,33 +311,16 @@ export function EnvoyFlow({
                     )}
                   </dl>
                 )}
-                <div className='mt-8 rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
-                  <p className='font-mono text-xs text-muted-foreground'>
-                    Recruiters will paste a job description here
-                  </p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value='experience' className='mt-4'>
-                {previewTopStack.length > 0 && (
-                  <div className='flex flex-wrap gap-1.5'>
-                    {previewTopStack.map((s) => (
-                      <span
-                        key={s}
-                        className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
-                      >
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                )}
                 {localProfile.summary && (
-                  <div className={previewTopStack.length > 0 ? 'mt-6 max-w-[65ch]' : 'max-w-[65ch]'}>
+                  <div className='mt-6 max-w-[65ch]'>
                     <SummaryMarkdown text={localProfile.summary} />
                   </div>
                 )}
-              </TabsContent>
-            </Tabs>
+              </div>
+            </header>
+            <div className='mt-8 rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
+              <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
+            </div>
           </div>
         </div>
       )

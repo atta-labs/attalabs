@@ -404,6 +404,9 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           <TabsTrigger value='profile' className={triggerClass}>
             Profile
           </TabsTrigger>
+          <TabsTrigger value='experience' className={triggerClass}>
+            Experience
+          </TabsTrigger>
           <TabsTrigger value='cv' className={triggerClass}>
             CV
           </TabsTrigger>
@@ -497,6 +500,23 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
               </div>
             </section>
 
+            <div className='flex items-center gap-3 border-t border-border pt-6'>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={handleSave}
+                disabled={saving}
+                className='font-mono text-xs uppercase tracking-[0.2em]'
+              >
+                {saving ? 'Saving...' : 'Save Profile'}
+              </Button>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Experience ───────────────────────────────────────── */}
+        <TabsContent value='experience'>
+          <div className='space-y-8'>
             <section>
               <div className='mb-2 flex items-baseline justify-between'>
                 <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
