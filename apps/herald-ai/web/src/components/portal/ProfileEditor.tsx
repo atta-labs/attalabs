@@ -208,6 +208,7 @@ interface ProfileData {
   summary: string
   stack: string[]
   cvUrl: string | null
+  isPublished: boolean
 }
 
 const triggerClass =
@@ -228,6 +229,8 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
   const [summaryMode, setSummaryMode] = useState<'edit' | 'preview'>('edit')
   const { successToast, errorToast } = useToastContext()
   const [saving, setSaving] = useState(false)
+  const [published, setPublished] = useState(profile.isPublished)
+  const [publishing, setPublishing] = useState(false)
   const [locationSearch, setLocationSearch] = useState(profile.location)
   const [locationOpen, setLocationOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -321,14 +324,44 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
     }
   }
 
+  async function handleTogglePublish() {
+    setPublishing(true)
+    try {
+      const next = !published
+      const res = await fetch('/api/admin/profile-publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublished: next })
+      })
+      if (res.ok) {
+        setPublished(next)
+        successToast(
+          next ? 'Profile published' : 'Profile unpublished',
+          next ? 'Your profile is now publicly accessible.' : 'Your profile is now hidden from public view.'
+        )
+      } else {
+        errorToast('Failed', 'Could not update visibility. Please try again.')
+      }
+    } catch {
+      errorToast('Failed', 'Could not update visibility. Please try again.')
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  const STACK_MAX = 10
+
   const stackTags = form.stack
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
 
+  const stackAtLimit = stackTags.length >= STACK_MAX
+  const stackOverLimit = stackTags.length > STACK_MAX
+
   function addTag(value: string) {
     const tag = value.trim()
-    if (!tag || stackTags.includes(tag)) return
+    if (!tag || stackTags.includes(tag) || stackAtLimit) return
     update('stack', [...stackTags, tag].join(', '))
   }
 
@@ -490,7 +523,15 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           <section>
             <div className='mb-2 flex items-baseline justify-between'>
               <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Stack</h2>
-              <span className='font-mono text-[9px] text-muted-foreground/60'>Enter or comma to add</span>
+              <span
+                className={`font-mono text-[9px] ${stackOverLimit ? 'text-destructive' : stackAtLimit ? 'text-warning' : 'text-muted-foreground/60'}`}
+              >
+                {stackOverLimit
+                  ? `${stackTags.length}/${STACK_MAX} — remove tags to reach limit`
+                  : stackAtLimit
+                    ? `${stackTags.length}/${STACK_MAX} · limit reached`
+                    : `${stackTags.length}/${STACK_MAX} · Enter or comma to add`}
+              </span>
             </div>
             <div
               className='flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 focus-within:border-foreground/30'
@@ -516,30 +557,52 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
                   </Button>
                 </span>
               ))}
-              <Input
-                value={stackInput}
-                onChange={(e) => {
-                  const val = e.target.value
-                  if (val.endsWith(',')) {
-                    addTag(val.slice(0, -1))
-                    setStackInput('')
-                  } else {
-                    setStackInput(val)
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addTag(stackInput)
-                    setStackInput('')
-                  } else if (e.key === 'Backspace' && !stackInput && stackTags.length > 0) {
-                    const last = stackTags[stackTags.length - 1]
-                    if (last) removeTag(last)
-                  }
-                }}
-                placeholder={stackTags.length === 0 ? 'React, TypeScript, Node...' : ''}
-                className='h-auto min-w-24 flex-1 border-0 bg-transparent px-0 py-0 text-xs shadow-none focus-visible:ring-0 focus-visible:ring-offset-0'
-              />
+              {!stackAtLimit && (
+                <Input
+                  value={stackInput}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val.endsWith(',')) {
+                      addTag(val.slice(0, -1))
+                      setStackInput('')
+                    } else {
+                      setStackInput(val)
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addTag(stackInput)
+                      setStackInput('')
+                    } else if (e.key === 'Backspace' && !stackInput && stackTags.length > 0) {
+                      const last = stackTags[stackTags.length - 1]
+                      if (last) removeTag(last)
+                    }
+                  }}
+                  placeholder={stackTags.length === 0 ? 'React, TypeScript, Node...' : ''}
+                  className='h-auto min-w-24 flex-1 border-0 bg-transparent px-0 py-0 text-xs shadow-none focus-visible:ring-0 focus-visible:ring-offset-0'
+                />
+              )}
+            </div>
+          </section>
+
+          <section className='rounded border border-border p-4'>
+            <div className='flex items-center justify-between gap-4'>
+              <div>
+                <h2 className={sectionHeadClass}>Visibility</h2>
+                <p className='font-mono text-[10px] text-muted-foreground'>
+                  {published ? 'Your profile is publicly accessible.' : 'Your profile is hidden from public view.'}
+                </p>
+              </div>
+              <Button
+                type='button'
+                variant={published ? 'ghost' : 'outline'}
+                onClick={handleTogglePublish}
+                disabled={publishing}
+                className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'
+              >
+                {publishing ? '...' : published ? 'Unpublish' : 'Publish Profile'}
+              </Button>
             </div>
           </section>
 
