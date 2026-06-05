@@ -1,10 +1,12 @@
 'use client'
 
+import type { CMSLibrary } from '@atta/cms'
 import { FontPicker } from './FontPicker'
 import { LibraryDropdown } from './LibraryDropdown'
 
 interface PreviewToolbarProps {
   selectedLibrary: string
+  libraries: CMSLibrary[]
   onLibraryChange: (libraryId: string) => void
   fontSans?: string
   onFontChange: (font: string) => void
@@ -16,6 +18,7 @@ interface PreviewToolbarProps {
 
 export function PreviewToolbar({
   selectedLibrary,
+  libraries,
   onLibraryChange,
   fontSans,
   onFontChange,
@@ -26,7 +29,7 @@ export function PreviewToolbar({
 }: PreviewToolbarProps) {
   return (
     <div className='flex shrink-0 items-center justify-end gap-2 border-b border-border px-3 py-1.5'>
-      <LibraryDropdown value={selectedLibrary} onChange={onLibraryChange} />
+      <LibraryDropdown value={selectedLibrary} libraries={libraries} onChange={onLibraryChange} />
       <FontPicker value={fontSans} onChange={onFontChange} />
       <span className='mx-1 text-border'>|</span>
       <button

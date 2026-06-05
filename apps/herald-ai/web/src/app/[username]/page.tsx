@@ -4,9 +4,8 @@ import { auth } from '@clerk/nextjs/server'
 import { cmsClient, generateThemeCSS, getThemeById } from '@atta/cms'
 import { notFound } from 'next/navigation'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
+import { EnvoyLibraryShell } from '@/components/envoy/EnvoyLibraryShell'
 import type { UILibrary } from '@atta/ui/lib/library-loader'
-import { LibraryProvider } from '@atta/ui/lib/library-provider'
-import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 import { getUserByUsername } from '@/db/queries'
 import { getGoogleFontsUrl } from '@atta/cms'
 
@@ -82,10 +81,9 @@ export default async function EnvoyPage({
         </>
       )}
       {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
-      <PreviewThemeListener />
-      <LibraryProvider library={userLibrary}>
+      <EnvoyLibraryShell initialLibrary={userLibrary}>
         <EnvoyFlow profile={profile} username={username} previewMode={previewMode} />
-      </LibraryProvider>
+      </EnvoyLibraryShell>
     </>
   )
 }

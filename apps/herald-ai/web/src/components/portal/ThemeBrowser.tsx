@@ -1,6 +1,6 @@
 'use client'
 
-import type { CMSTheme } from '@atta/cms'
+import type { CMSLibrary, CMSTheme } from '@atta/cms'
 import { Button } from '@atta/ui'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import type { ThemeData } from '@atta/ui/lib/preview-theme-utils'
@@ -50,6 +50,7 @@ function buildThemeMessage(theme: CMSTheme, colorScheme: ColorScheme, fontOverri
 
 export function ThemeBrowser({
   themes,
+  libraries,
   currentThemeId,
   currentColorScheme,
   currentLibrary,
@@ -57,6 +58,7 @@ export function ThemeBrowser({
   username
 }: {
   themes: CMSTheme[]
+  libraries: CMSLibrary[]
   currentThemeId: string | null
   currentColorScheme: ColorScheme
   currentLibrary: string
@@ -246,6 +248,7 @@ export function ThemeBrowser({
         toolbar={
           <PreviewToolbar
             selectedLibrary={selectedLibrary}
+            libraries={libraries}
             onLibraryChange={handleLibrarySelect}
             fontSans={selectedFontSans}
             onFontChange={handleFontChange}

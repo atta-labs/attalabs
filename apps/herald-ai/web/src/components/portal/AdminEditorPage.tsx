@@ -1,10 +1,11 @@
 'use client'
 
-import type { CMSTheme } from '@atta/cms'
+import type { CMSLibrary, CMSTheme } from '@atta/cms'
 import { Button, useToastContext } from '@atta/ui'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { EnvoyPreview } from './EnvoyPreview'
 import { FontPicker } from './FontPicker'
+import { LibraryDropdown } from './LibraryDropdown'
 
 type ColorScheme = 'dark' | 'light'
 type SendFn = (message: Record<string, unknown>) => void
@@ -50,12 +51,20 @@ interface AdminEditorPageProps {
     fontSans: string | null
   }
   themes: CMSTheme[]
+  libraries: CMSLibrary[]
 }
 
-export function AdminEditorPage({ username, initialProfile, initialTheme, themes }: AdminEditorPageProps) {
+export function AdminEditorPage({
+  username,
+  initialProfile: _initialProfile,
+  initialTheme,
+  themes,
+  libraries
+}: AdminEditorPageProps) {
   const [themeId, setThemeId] = useState(initialTheme.themeId)
   const [colorScheme, setColorScheme] = useState<ColorScheme>(initialTheme.colorScheme)
   const [fontSans, setFontSans] = useState<string | undefined>(initialTheme.fontSans ?? undefined)
+  const [library, setLibrary] = useState(initialTheme.library)
 
   const { successToast, errorToast } = useToastContext()
   const [saving, setSaving] = useState(false)
@@ -93,6 +102,11 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
     if (selectedTheme) sendThemePreview(selectedTheme, colorScheme, font)
   }
 
+  function handleLibraryChange(libraryId: string) {
+    setLibrary(libraryId)
+    sendToPreviewRef.current?.({ type: 'PREVIEW_LIBRARY', library: libraryId })
+  }
+
   async function handleSave() {
     setSaving(true)
     try {
@@ -102,7 +116,7 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
         body: JSON.stringify({
           themeId,
           colorScheme,
-          library: initialTheme.library,
+          library,
           fontSans: fontSans ?? null
         })
       })
@@ -126,6 +140,13 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
             <SectionLabel>Font</SectionLabel>
             <FontPicker value={fontSans} onChange={handleFontChange} />
           </section>
+
+          {libraries.length > 0 && (
+            <section>
+              <SectionLabel>Style</SectionLabel>
+              <LibraryDropdown value={library} libraries={libraries} onChange={handleLibraryChange} />
+            </section>
+          )}
 
           <section>
             <SectionLabel>Theme</SectionLabel>

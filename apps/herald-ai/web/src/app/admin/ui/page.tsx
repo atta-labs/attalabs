@@ -1,4 +1,4 @@
-import { cmsClient, getThemes } from '@atta/cms'
+import { cmsClient, getLibraries, getThemes } from '@atta/cms'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { AdminEditorPage } from '@/components/portal/AdminEditorPage'
@@ -11,7 +11,7 @@ export default async function AdminUIPage() {
   const user = await getUserByClerkId(userId)
   if (!user?.onboardingComplete) redirect('/admin')
 
-  const themes = await getThemes(cmsClient)
+  const [themes, libraries] = await Promise.all([getThemes(cmsClient), getLibraries(cmsClient).catch(() => [])])
 
   return (
     <div className='h-full'>
@@ -27,6 +27,7 @@ export default async function AdminUIPage() {
           fontSans: user.fontSans ?? null
         }}
         themes={themes}
+        libraries={libraries}
       />
     </div>
   )
