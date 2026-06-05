@@ -134,95 +134,98 @@ export function AdminEditorPage({
 
   return (
     <div className='flex h-full overflow-hidden'>
-      <div className='w-72 shrink-0 overflow-y-auto border-r border-border'>
-        <div className='space-y-8 p-6'>
-          <section>
-            <SectionLabel>Font</SectionLabel>
-            <FontPicker value={fontSans} onChange={handleFontChange} />
-          </section>
-
-          {libraries.length > 0 && (
-            <section>
-              <SectionLabel>Style</SectionLabel>
-              <LibraryDropdown value={library} libraries={libraries} onChange={handleLibraryChange} />
-            </section>
-          )}
-
+      {/* Sidebar — theme picker only */}
+      <div className='w-64 shrink-0 overflow-y-auto border-r border-border'>
+        <div className='p-6'>
           <section>
             <SectionLabel>Theme</SectionLabel>
-            <div className='space-y-3'>
-              <div className='flex flex-col gap-2'>
-                {themes.map((theme) => {
-                  const isSelected = themeId === theme._id
-                  const hasBoth = !!(theme.dark?.primary && theme.light?.primary)
-                  return (
-                    <div
-                      key={theme._id}
-                      role='button'
-                      tabIndex={0}
-                      onClick={() => handleThemeSelect(theme._id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') handleThemeSelect(theme._id)
-                      }}
-                      className={`flex cursor-pointer items-center gap-2 rounded border p-2 text-left transition-colors ${
-                        isSelected ? 'border-foreground/40 bg-foreground/5' : 'border-border hover:bg-foreground/5'
-                      }`}
-                    >
-                      <ThemeSwatch theme={theme} scheme={isSelected ? colorScheme : 'dark'} />
-                      <div className='min-w-0 flex-1'>
-                        <p className='truncate font-mono text-xs text-foreground/80'>{theme.name}</p>
-                      </div>
-                      {hasBoth && (
-                        <div className='flex shrink-0 flex-col gap-1'>
-                          {(['dark', 'light'] as const).map((s) => (
-                            <Button
-                              key={s}
-                              type='button'
-                              variant='ghost'
-                              size='sm'
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setThemeId(theme._id)
-                                handleSchemeToggle(theme._id, s)
-                              }}
-                              className={`h-auto rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
-                                isSelected && colorScheme === s
-                                  ? 'bg-foreground text-background'
-                                  : 'text-muted-foreground hover:text-foreground'
-                              }`}
-                            >
-                              {s}
-                            </Button>
-                          ))}
-                        </div>
-                      )}
+            <div className='flex flex-col gap-2'>
+              {themes.map((theme) => {
+                const isSelected = themeId === theme._id
+                const hasBoth = !!(theme.dark?.primary && theme.light?.primary)
+                return (
+                  <div
+                    key={theme._id}
+                    role='button'
+                    tabIndex={0}
+                    onClick={() => handleThemeSelect(theme._id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') handleThemeSelect(theme._id)
+                    }}
+                    className={`flex cursor-pointer items-center gap-2 rounded border p-2 text-left transition-colors ${
+                      isSelected ? 'border-foreground/40 bg-foreground/5' : 'border-border hover:bg-foreground/5'
+                    }`}
+                  >
+                    <ThemeSwatch theme={theme} scheme={isSelected ? colorScheme : 'dark'} />
+                    <div className='min-w-0 flex-1'>
+                      <p className='truncate font-mono text-xs text-foreground/80'>{theme.name}</p>
                     </div>
-                  )
-                })}
-              </div>
+                    {hasBoth && (
+                      <div className='flex shrink-0 flex-col gap-1'>
+                        {(['dark', 'light'] as const).map((s) => (
+                          <Button
+                            key={s}
+                            type='button'
+                            variant='ghost'
+                            size='sm'
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setThemeId(theme._id)
+                              handleSchemeToggle(theme._id, s)
+                            }}
+                            className={`h-auto rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
+                              isSelected && colorScheme === s
+                                ? 'bg-foreground text-background'
+                                : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                          >
+                            {s}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </section>
-
-          <div className='border-t border-border pt-6'>
-            <Button
-              type='button'
-              onClick={handleSave}
-              disabled={saving}
-              className='w-full font-mono text-xs uppercase tracking-[0.2em]'
-            >
-              {saving ? 'Saving...' : 'Save changes'}
-            </Button>
-          </div>
         </div>
       </div>
 
-      <div className='flex-1 overflow-hidden'>
-        <EnvoyPreview
-          username={username}
-          onReady={(send) => {
-            sendToPreviewRef.current = send
-          }}
-        />
+      {/* Preview column — toolbar + iframe */}
+      <div className='flex flex-1 flex-col overflow-hidden'>
+        {/* Toolbar: Font + Style + Save */}
+        <div className='flex shrink-0 items-center gap-4 border-b border-border px-4 py-2'>
+          <div className='flex items-center gap-2'>
+            <span className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>Font</span>
+            <FontPicker value={fontSans} onChange={handleFontChange} />
+          </div>
+          {libraries.length > 0 && (
+            <div className='flex items-center gap-2'>
+              <span className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>Style</span>
+              <LibraryDropdown value={library} libraries={libraries} onChange={handleLibraryChange} />
+            </div>
+          )}
+          <div className='flex-1' />
+          <Button
+            type='button'
+            onClick={handleSave}
+            disabled={saving}
+            className='font-mono text-xs uppercase tracking-[0.2em]'
+          >
+            {saving ? 'Saving...' : 'Save changes'}
+          </Button>
+        </div>
+
+        {/* iframe */}
+        <div className='flex-1 overflow-hidden'>
+          <EnvoyPreview
+            username={username}
+            onReady={(send) => {
+              sendToPreviewRef.current = send
+            }}
+          />
+        </div>
       </div>
     </div>
   )
