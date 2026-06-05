@@ -23,8 +23,11 @@ export const heraldProfiles = pgTable('herald_profiles', {
   fontSans: varchar('font_sans', { length: 255 }),
   avatarUrl: varchar('avatar_url', { length: 500 }),
   cvUrl: varchar('cv_url', { length: 500 }),
+  linkedinUrl: varchar('linkedin_url', { length: 500 }),
+  discordHandle: varchar('discord_handle', { length: 100 }),
   bio: text('bio'),
   onboardingComplete: boolean('onboarding_complete').notNull().default(false),
+  isPublished: boolean('is_published').notNull().default(false),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })

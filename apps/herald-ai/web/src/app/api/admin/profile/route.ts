@@ -26,6 +26,8 @@ export async function POST(request: Request) {
       location: body.location,
       availability: body.availability,
       githubHandle: body.githubHandle,
+      linkedinUrl: body.linkedinUrl,
+      discordHandle: body.discordHandle,
       summary: body.summary,
       stack: body.stack,
       bio: body.bio,

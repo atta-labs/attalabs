@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import { auth } from '@clerk/nextjs/server'
 import { cmsClient, generateThemeCSS, getThemeById } from '@atta/cms'
 import { notFound } from 'next/navigation'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
@@ -23,10 +24,18 @@ export default async function EnvoyPage({
   const user = await getUserByUsername(username)
   if (!user) notFound()
 
+  // Gate unpublished profiles — owner can preview, everyone else gets 404
+  if (!user.isPublished) {
+    const { userId } = await auth()
+    if (userId !== user.clerkId) notFound()
+  }
+
   const profile = {
     name: user.name,
     title: user.title,
     github: user.githubHandle ?? undefined,
+    linkedin: user.linkedinUrl ?? undefined,
+    discord: user.discordHandle ?? undefined,
     summary: user.summary,
     stack: JSON.parse(user.stack) as string[],
     projects: JSON.parse(user.projects) as Array<{ title: string; description: string }>,

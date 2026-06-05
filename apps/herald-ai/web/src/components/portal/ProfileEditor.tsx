@@ -205,6 +205,8 @@ interface ProfileData {
   location: string
   availability: string
   github: string
+  linkedin: string
+  discord: string
   summary: string
   stack: string[]
   cvUrl: string | null
@@ -221,6 +223,8 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
     location: profile.location,
     availability: profile.availability,
     github: profile.github,
+    linkedin: profile.linkedin,
+    discord: profile.discord,
     summary: profile.summary,
     stack: profile.stack.join(', ')
   })
@@ -260,6 +264,8 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           location: form.location,
           availability: form.availability,
           githubHandle: form.github,
+          linkedinUrl: form.linkedin,
+          discordHandle: form.discord,
           summary: form.summary,
           stack: form.stack
             .split(',')
@@ -296,6 +302,8 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
         location: parsed.location ?? form.location,
         availability: parsed.availability ?? form.availability,
         github: parsed.github_handle ?? parsed.github ?? form.github,
+        linkedin: form.linkedin,
+        discord: form.discord,
         summary: parsed.summary ?? form.summary,
         stack: Array.isArray(parsed.stack) ? parsed.stack.join(', ') : form.stack
       })
@@ -349,7 +357,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
     }
   }
 
-  const STACK_MAX = 10
+  const STACK_MAX = 20
 
   const stackTags = form.stack
     .split(',')
@@ -375,373 +383,399 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
   const sectionHeadClass = 'mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'
 
   return (
-    <Tabs defaultValue='profile'>
-      <TabsList className='border-border'>
-        <TabsTrigger value='profile' className={triggerClass}>
-          Profile
-        </TabsTrigger>
-        <TabsTrigger value='cv' className={triggerClass}>
-          CV
-        </TabsTrigger>
-        <TabsTrigger value='api-keys' className={triggerClass}>
-          API Keys
-        </TabsTrigger>
-        <TabsTrigger value='connections' className={triggerClass}>
-          Connections
-        </TabsTrigger>
-      </TabsList>
+    <div>
+      <div className='mb-8 flex items-start justify-between gap-4'>
+        <div>
+          <h1 className='font-serif text-xl tracking-tight'>Settings</h1>
+          <p className='mt-1 font-mono text-xs text-muted-foreground'>Profile, API keys, and social connections.</p>
+        </div>
+        <Button
+          type='button'
+          variant={published ? 'outline' : 'default'}
+          onClick={handleTogglePublish}
+          disabled={publishing}
+          className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'
+        >
+          {publishing ? '...' : published ? 'Unpublish' : 'Publish Profile'}
+        </Button>
+      </div>
+      <Tabs defaultValue='profile'>
+        <TabsList className='border-border'>
+          <TabsTrigger value='profile' className={triggerClass}>
+            Profile
+          </TabsTrigger>
+          <TabsTrigger value='cv' className={triggerClass}>
+            CV
+          </TabsTrigger>
+          <TabsTrigger value='api-keys' className={triggerClass}>
+            API Keys
+          </TabsTrigger>
+          <TabsTrigger value='connections' className={triggerClass}>
+            Connections
+          </TabsTrigger>
+        </TabsList>
 
-      {/* ── Profile ──────────────────────────────────────────── */}
-      <TabsContent value='profile'>
-        <div className='space-y-8'>
-          <section>
-            <h2 className={sectionHeadClass}>Identity</h2>
-            <div className='grid grid-cols-2 gap-4'>
-              <div>
-                <label htmlFor='field-name' className={labelClass}>
-                  Name
-                </label>
-                <Input
-                  id='field-name'
-                  className={inputClass}
-                  value={form.name}
-                  onChange={(e) => update('name', e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor='field-title' className={labelClass}>
-                  Title
-                </label>
-                <Input
-                  id='field-title'
-                  className={inputClass}
-                  value={form.title}
-                  onChange={(e) => update('title', e.target.value)}
-                />
-              </div>
+        {/* ── Profile ──────────────────────────────────────────── */}
+        <TabsContent value='profile'>
+          <div className='space-y-8'>
+            <section>
+              <h2 className={sectionHeadClass}>Identity</h2>
+              <div className='grid grid-cols-2 gap-4'>
+                <div>
+                  <label htmlFor='field-name' className={labelClass}>
+                    Name
+                  </label>
+                  <Input
+                    id='field-name'
+                    className={inputClass}
+                    value={form.name}
+                    onChange={(e) => update('name', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor='field-title' className={labelClass}>
+                    Title
+                  </label>
+                  <Input
+                    id='field-title'
+                    className={inputClass}
+                    value={form.title}
+                    onChange={(e) => update('title', e.target.value)}
+                  />
+                </div>
 
-              <div className='relative'>
-                <span className={labelClass}>Location</span>
-                <Input
-                  className={inputClass}
-                  value={locationSearch}
-                  onChange={(e) => {
-                    setLocationSearch(e.target.value)
-                    setLocationOpen(true)
-                  }}
-                  onFocus={() => setLocationOpen(true)}
-                  placeholder='Search country...'
-                />
-                {locationOpen && filteredCountries.length > 0 && (
-                  <div className='absolute z-20 mt-1 max-h-48 w-full overflow-y-auto border border-border bg-card shadow-lg'>
-                    {filteredCountries.map((country) => (
-                      <Button
-                        key={country}
-                        type='button'
-                        variant='ghost'
-                        onClick={() => {
-                          setLocationSearch(country)
-                          update('location', country)
-                          setLocationOpen(false)
-                        }}
-                        className={`h-auto w-full justify-start rounded-none px-3 py-1.5 font-sans text-sm ${
-                          form.location === country ? 'text-foreground' : 'text-muted-foreground'
-                        }`}
-                      >
-                        {country}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                <div className='relative'>
+                  <span className={labelClass}>Location</span>
+                  <Input
+                    className={inputClass}
+                    value={locationSearch}
+                    onChange={(e) => {
+                      setLocationSearch(e.target.value)
+                      setLocationOpen(true)
+                    }}
+                    onFocus={() => setLocationOpen(true)}
+                    placeholder='Search country...'
+                  />
+                  {locationOpen && filteredCountries.length > 0 && (
+                    <div className='absolute z-20 mt-1 max-h-48 w-full overflow-y-auto border border-border bg-card shadow-lg'>
+                      {filteredCountries.map((country) => (
+                        <Button
+                          key={country}
+                          type='button'
+                          variant='ghost'
+                          onClick={() => {
+                            setLocationSearch(country)
+                            update('location', country)
+                            setLocationOpen(false)
+                          }}
+                          className={`h-auto w-full justify-start rounded-none px-3 py-1.5 font-sans text-sm ${
+                            form.location === country ? 'text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
+                          {country}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-              <div>
-                <span className={labelClass}>Work Mode</span>
-                <Select value={form.availability} onValueChange={(value) => update('availability', value)}>
-                  <SelectTrigger className={inputClass}>
-                    <SelectValue placeholder='Select...' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {WORK_MODES.map((mode) => (
-                      <SelectItem key={mode} value={mode}>
-                        {mode}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div>
+                  <span className={labelClass}>Work Mode</span>
+                  <Select value={form.availability} onValueChange={(value) => update('availability', value)}>
+                    <SelectTrigger className={inputClass}>
+                      <SelectValue placeholder='Select...' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WORK_MODES.map((mode) => (
+                        <SelectItem key={mode} value={mode}>
+                          {mode}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <section>
-            <div className='mb-2 flex items-baseline justify-between'>
-              <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
-              <div className='flex overflow-hidden rounded border border-border'>
-                <Button
-                  type='button'
-                  variant='ghost'
-                  onClick={() => setSummaryMode('edit')}
-                  className={`h-auto rounded-none px-2.5 py-0.5 font-mono text-[9px] ${summaryMode === 'edit' ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : 'text-muted-foreground'}`}
-                >
-                  Edit
-                </Button>
-                <Button
-                  type='button'
-                  variant='ghost'
-                  onClick={() => setSummaryMode('preview')}
-                  className={`h-auto rounded-none border-l border-border px-2.5 py-0.5 font-mono text-[9px] ${summaryMode === 'preview' ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : 'text-muted-foreground'}`}
-                >
-                  Preview
-                </Button>
-              </div>
-            </div>
-            {summaryMode === 'edit' ? (
-              <>
-                <Textarea
-                  className={`${inputClass} h-40 max-h-[160px] resize-none overflow-y-auto font-mono text-xs`}
-                  value={form.summary}
-                  onChange={(e) => update('summary', e.target.value)}
-                  placeholder={
-                    '**One-line lead — your seniority and focus in a single bold sentence.**\n\n## Background\nWhere you started and how you got here.\n\n## How I Work\nYour approach, values, what makes you effective.\n\n## Your Lab / Projects\nWhat you build independently.'
-                  }
-                />
-                <p className='mt-1 font-mono text-[9px] text-muted-foreground/60'>
-                  Use <strong className='font-medium'>**bold**</strong> for the lead and ## for section titles.
-                </p>
-              </>
-            ) : (
-              <div className='min-h-40 rounded-md border border-border px-4 py-3'>
-                {form.summary ? (
-                  <SummaryMarkdown text={form.summary} />
-                ) : (
-                  <p className='font-mono text-[9px] text-muted-foreground/60'>Nothing to preview.</p>
-                )}
-              </div>
-            )}
-          </section>
-
-          <section>
-            <div className='mb-2 flex items-baseline justify-between'>
-              <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Stack</h2>
-              <span
-                className={`font-mono text-[9px] ${stackOverLimit ? 'text-destructive' : stackAtLimit ? 'text-warning' : 'text-muted-foreground/60'}`}
-              >
-                {stackOverLimit
-                  ? `${stackTags.length}/${STACK_MAX} — remove tags to reach limit`
-                  : stackAtLimit
-                    ? `${stackTags.length}/${STACK_MAX} · limit reached`
-                    : `${stackTags.length}/${STACK_MAX} · Enter or comma to add`}
-              </span>
-            </div>
-            <div
-              className='flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 focus-within:border-foreground/30'
-              onClick={(e) => {
-                const input = (e.currentTarget as HTMLElement).querySelector('input')
-                input?.focus()
-              }}
-            >
-              {stackTags.map((tag) => (
-                <span
-                  key={tag}
-                  className='flex items-center gap-1 rounded border border-border px-2 py-0.5 font-mono text-xs text-foreground'
-                >
-                  {tag}
+            <section>
+              <div className='mb-2 flex items-baseline justify-between'>
+                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
+                <div className='flex overflow-hidden rounded border border-border'>
                   <Button
                     type='button'
                     variant='ghost'
-                    onClick={() => removeTag(tag)}
-                    aria-label={`Remove ${tag}`}
-                    className='h-auto w-auto p-0 text-muted-foreground hover:text-foreground'
+                    onClick={() => setSummaryMode('edit')}
+                    className={`h-auto rounded-none px-2.5 py-0.5 font-mono text-[9px] ${summaryMode === 'edit' ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : 'text-muted-foreground'}`}
                   >
-                    <X className='h-3 w-3' />
+                    Edit
                   </Button>
-                </span>
-              ))}
-              {!stackAtLimit && (
-                <Input
-                  value={stackInput}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    if (val.endsWith(',')) {
-                      addTag(val.slice(0, -1))
-                      setStackInput('')
-                    } else {
-                      setStackInput(val)
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    onClick={() => setSummaryMode('preview')}
+                    className={`h-auto rounded-none border-l border-border px-2.5 py-0.5 font-mono text-[9px] ${summaryMode === 'preview' ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : 'text-muted-foreground'}`}
+                  >
+                    Preview
+                  </Button>
+                </div>
+              </div>
+              {summaryMode === 'edit' ? (
+                <>
+                  <Textarea
+                    className={`${inputClass} h-40 max-h-[160px] resize-none overflow-y-auto font-mono text-xs`}
+                    value={form.summary}
+                    onChange={(e) => update('summary', e.target.value)}
+                    placeholder={
+                      '**One-line lead — your seniority and focus in a single bold sentence.**\n\n## Background\nWhere you started and how you got here.\n\n## How I Work\nYour approach, values, what makes you effective.\n\n## Your Lab / Projects\nWhat you build independently.'
                     }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      addTag(stackInput)
-                      setStackInput('')
-                    } else if (e.key === 'Backspace' && !stackInput && stackTags.length > 0) {
-                      const last = stackTags[stackTags.length - 1]
-                      if (last) removeTag(last)
-                    }
-                  }}
-                  placeholder={stackTags.length === 0 ? 'React, TypeScript, Node...' : ''}
-                  className='h-auto min-w-24 flex-1 border-0 bg-transparent px-0 py-0 text-xs shadow-none focus-visible:ring-0 focus-visible:ring-offset-0'
-                />
+                  />
+                  <p className='mt-1 font-mono text-[9px] text-muted-foreground/60'>
+                    Use <strong className='font-medium'>**bold**</strong> for the lead and ## for section titles.
+                  </p>
+                </>
+              ) : (
+                <div className='min-h-40 rounded-md border border-border px-4 py-3'>
+                  {form.summary ? (
+                    <SummaryMarkdown text={form.summary} />
+                  ) : (
+                    <p className='font-mono text-[9px] text-muted-foreground/60'>Nothing to preview.</p>
+                  )}
+                </div>
               )}
-            </div>
-          </section>
+            </section>
 
-          <section className='rounded border border-border p-4'>
-            <div className='flex items-center justify-between gap-4'>
-              <div>
-                <h2 className={sectionHeadClass}>Visibility</h2>
-                <p className='font-mono text-[10px] text-muted-foreground'>
-                  {published ? 'Your profile is publicly accessible.' : 'Your profile is hidden from public view.'}
-                </p>
+            <section>
+              <div className='mb-2 flex items-baseline justify-between'>
+                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Stack</h2>
+                <span
+                  className={`font-mono text-[9px] ${stackOverLimit ? 'text-destructive' : stackAtLimit ? 'text-warning' : 'text-muted-foreground/60'}`}
+                >
+                  {stackOverLimit
+                    ? `${stackTags.length}/${STACK_MAX} — remove tags to reach limit`
+                    : stackAtLimit
+                      ? `${stackTags.length}/${STACK_MAX} · limit reached`
+                      : `${stackTags.length}/${STACK_MAX} · Enter or comma to add`}
+                </span>
               </div>
-              <Button
-                type='button'
-                variant={published ? 'ghost' : 'outline'}
-                onClick={handleTogglePublish}
-                disabled={publishing}
-                className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'
+              <div
+                className='flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 focus-within:border-foreground/30'
+                onClick={(e) => {
+                  const input = (e.currentTarget as HTMLElement).querySelector('input')
+                  input?.focus()
+                }}
               >
-                {publishing ? '...' : published ? 'Unpublish' : 'Publish Profile'}
-              </Button>
-            </div>
-          </section>
-
-          <div className='flex items-center gap-3 border-t border-border pt-6'>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={handleSave}
-              disabled={saving}
-              className='font-mono text-xs uppercase tracking-[0.2em]'
-            >
-              {saving ? 'Saving...' : 'Save Profile'}
-            </Button>
-          </div>
-        </div>
-      </TabsContent>
-
-      {/* ── CV ───────────────────────────────────────────────── */}
-      <TabsContent value='cv'>
-        <input
-          ref={cvInputRef}
-          type='file'
-          accept='.pdf,.txt,.md'
-          className='hidden'
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) handleCvUpload(file)
-          }}
-        />
-        <input
-          ref={cvDirectRef}
-          type='file'
-          accept='application/pdf'
-          className='hidden'
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) handleCvDirectUpload(file)
-          }}
-        />
-        <div className='space-y-8'>
-          <section className='rounded border border-dashed border-border p-4'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-                  Replace from CV
-                </h2>
-                <p className='mt-1 font-mono text-[10px] text-muted-foreground'>
-                  Upload a new CV to overwrite all profile fields at once.
-                </p>
+                {stackTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className='flex items-center gap-1 rounded border border-border px-2 py-0.5 font-mono text-xs text-foreground'
+                  >
+                    {tag}
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      onClick={() => removeTag(tag)}
+                      aria-label={`Remove ${tag}`}
+                      className='h-auto w-auto p-0 text-muted-foreground hover:text-foreground'
+                    >
+                      <X className='h-3 w-3' />
+                    </Button>
+                  </span>
+                ))}
+                {!stackAtLimit && (
+                  <Input
+                    value={stackInput}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val.endsWith(',')) {
+                        addTag(val.slice(0, -1))
+                        setStackInput('')
+                      } else {
+                        setStackInput(val)
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addTag(stackInput)
+                        setStackInput('')
+                      } else if (e.key === 'Backspace' && !stackInput && stackTags.length > 0) {
+                        const last = stackTags[stackTags.length - 1]
+                        if (last) removeTag(last)
+                      }
+                    }}
+                    placeholder={stackTags.length === 0 ? 'React, TypeScript, Node...' : ''}
+                    className='h-auto min-w-24 flex-1 border-0 bg-transparent px-0 py-0 text-xs shadow-none focus-visible:ring-0 focus-visible:ring-offset-0'
+                  />
+                )}
               </div>
+            </section>
+
+            <div className='flex items-center gap-3 border-t border-border pt-6'>
               <Button
                 type='button'
                 variant='outline'
-                onClick={() => cvInputRef.current?.click()}
-                disabled={uploading}
+                onClick={handleSave}
+                disabled={saving}
                 className='font-mono text-xs uppercase tracking-[0.2em]'
               >
-                {uploading ? 'Parsing...' : 'Upload CV'}
+                {saving ? 'Saving...' : 'Save Profile'}
               </Button>
             </div>
-          </section>
+          </div>
+        </TabsContent>
 
-          <section>
-            <h2 className={sectionHeadClass}>CV File</h2>
-            {cvUrl ? (
-              <div className='flex items-center gap-3'>
-                <a
-                  href={cvUrl}
-                  target='_blank'
-                  rel='noreferrer'
-                  className='inline-flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
-                >
-                  <Download className='h-3 w-3' />
-                  Download CV
-                </a>
+        {/* ── CV ───────────────────────────────────────────────── */}
+        <TabsContent value='cv'>
+          <input
+            ref={cvInputRef}
+            type='file'
+            accept='.pdf,.txt,.md'
+            className='hidden'
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleCvUpload(file)
+            }}
+          />
+          <input
+            ref={cvDirectRef}
+            type='file'
+            accept='application/pdf'
+            className='hidden'
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleCvDirectUpload(file)
+            }}
+          />
+          <div className='space-y-8'>
+            <section className='rounded border border-dashed border-border p-4'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+                    Replace from CV
+                  </h2>
+                  <p className='mt-1 font-mono text-[10px] text-muted-foreground'>
+                    Upload a new CV to overwrite all profile fields at once.
+                  </p>
+                </div>
                 <Button
                   type='button'
-                  variant='ghost'
+                  variant='outline'
+                  onClick={() => cvInputRef.current?.click()}
+                  disabled={uploading}
+                  className='font-mono text-xs uppercase tracking-[0.2em]'
+                >
+                  {uploading ? 'Parsing...' : 'Upload CV'}
+                </Button>
+              </div>
+            </section>
+
+            <section>
+              <h2 className={sectionHeadClass}>CV File</h2>
+              {cvUrl ? (
+                <div className='flex items-center gap-3'>
+                  <a
+                    href={cvUrl}
+                    target='_blank'
+                    rel='noreferrer'
+                    className='inline-flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
+                  >
+                    <Download className='h-3 w-3' />
+                    Download CV
+                  </a>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => cvDirectRef.current?.click()}
+                    disabled={cvUploading}
+                    className='font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground'
+                  >
+                    {cvUploading ? 'Uploading...' : 'Replace'}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type='button'
+                  variant='outline'
                   size='sm'
                   onClick={() => cvDirectRef.current?.click()}
                   disabled={cvUploading}
-                  className='font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground'
+                  className='gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em]'
                 >
-                  {cvUploading ? 'Uploading...' : 'Replace'}
+                  <Upload className='h-3 w-3' />
+                  {cvUploading ? 'Uploading...' : 'Upload CV (PDF)'}
                 </Button>
-              </div>
-            ) : (
+              )}
+            </section>
+          </div>
+        </TabsContent>
+
+        {/* ── API Keys ─────────────────────────────────────────── */}
+        <TabsContent value='api-keys'>
+          <div className='rounded border border-dashed border-border px-6 py-12 text-center'>
+            <p className='font-mono text-xs text-muted-foreground'>API key management coming soon.</p>
+          </div>
+        </TabsContent>
+
+        {/* ── Connections ──────────────────────────────────────── */}
+        <TabsContent value='connections'>
+          <div className='space-y-8'>
+            <section>
+              <h2 className={sectionHeadClass}>GitHub</h2>
+              <label htmlFor='field-github' className={labelClass}>
+                Handle
+              </label>
+              <Input
+                id='field-github'
+                className={inputClass}
+                value={form.github}
+                onChange={(e) => update('github', e.target.value)}
+                placeholder='yourhandle'
+              />
+            </section>
+
+            <section>
+              <h2 className={sectionHeadClass}>LinkedIn</h2>
+              <label htmlFor='field-linkedin' className={labelClass}>
+                Profile URL
+              </label>
+              <Input
+                id='field-linkedin'
+                className={inputClass}
+                value={form.linkedin}
+                onChange={(e) => update('linkedin', e.target.value)}
+                placeholder='https://linkedin.com/in/yourname'
+              />
+            </section>
+
+            <section>
+              <h2 className={sectionHeadClass}>Discord</h2>
+              <label htmlFor='field-discord' className={labelClass}>
+                Handle
+              </label>
+              <Input
+                id='field-discord'
+                className={inputClass}
+                value={form.discord}
+                onChange={(e) => update('discord', e.target.value)}
+                placeholder='@username'
+              />
+            </section>
+
+            <div className='flex items-center gap-3 border-t border-border pt-6'>
               <Button
                 type='button'
                 variant='outline'
-                size='sm'
-                onClick={() => cvDirectRef.current?.click()}
-                disabled={cvUploading}
-                className='gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em]'
+                onClick={handleSave}
+                disabled={saving}
+                className='font-mono text-xs uppercase tracking-[0.2em]'
               >
-                <Upload className='h-3 w-3' />
-                {cvUploading ? 'Uploading...' : 'Upload CV (PDF)'}
+                {saving ? 'Saving...' : 'Save'}
               </Button>
-            )}
-          </section>
-        </div>
-      </TabsContent>
-
-      {/* ── API Keys ─────────────────────────────────────────── */}
-      <TabsContent value='api-keys'>
-        <div className='rounded border border-dashed border-border px-6 py-12 text-center'>
-          <p className='font-mono text-xs text-muted-foreground'>API key management coming soon.</p>
-        </div>
-      </TabsContent>
-
-      {/* ── Connections ──────────────────────────────────────── */}
-      <TabsContent value='connections'>
-        <div className='space-y-8'>
-          <section>
-            <h2 className={sectionHeadClass}>GitHub</h2>
-            <label htmlFor='field-github' className={labelClass}>
-              GitHub Handle
-            </label>
-            <Input
-              id='field-github'
-              className={inputClass}
-              value={form.github}
-              onChange={(e) => update('github', e.target.value)}
-            />
-          </section>
-
-          <div className='flex items-center gap-3 border-t border-border pt-6'>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={handleSave}
-              disabled={saving}
-              className='font-mono text-xs uppercase tracking-[0.2em]'
-            >
-              {saving ? 'Saving...' : 'Save'}
-            </Button>
+            </div>
           </div>
-        </div>
-      </TabsContent>
-    </Tabs>
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }
