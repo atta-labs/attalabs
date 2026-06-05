@@ -465,6 +465,14 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           </Button>
         )}
       </div>
+      {!profile.hasAnthropicKey && (
+        <div className='mb-6 rounded border border-destructive/25 bg-destructive/8 px-4 py-3'>
+          <p className='font-mono text-xs text-destructive'>
+            Audit disabled — add your Anthropic API key in the API Keys tab to enable forensic match reports for
+            recruiters.
+          </p>
+        </div>
+      )}
       <Tabs defaultValue='profile'>
         <TabsList className='border-border'>
           <TabsTrigger value='profile' className={triggerClass}>
