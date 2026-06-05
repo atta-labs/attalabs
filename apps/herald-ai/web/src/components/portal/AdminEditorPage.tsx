@@ -158,7 +158,7 @@ export function AdminEditorPage({
                   >
                     <ThemeSwatch theme={theme} scheme={isSelected ? colorScheme : 'dark'} />
                     <div className='min-w-0 flex-1'>
-                      <p className='truncate font-mono text-xs text-foreground/80'>{theme.name}</p>
+                      <p className='line-clamp-2 font-mono text-xs leading-snug text-foreground/80'>{theme.name}</p>
                     </div>
                     {hasBoth && (
                       <div className='flex shrink-0 flex-col gap-1'>
