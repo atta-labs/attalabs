@@ -17,6 +17,8 @@ import {
   useToastContext
 } from '@atta/ui'
 import { Download, Upload, X } from 'lucide-react'
+import { ProviderKeysSection } from '@atta/ui/account'
+import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { SummaryMarkdown } from '@/components/summary-markdown'
 
 const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const
@@ -210,6 +212,7 @@ interface ProfileData {
   summary: string
   stack: string[]
   cvUrl: string | null
+  avatarUrl: string | null
   isPublished: boolean
 }
 
@@ -229,6 +232,9 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
     stack: profile.stack.join(', ')
   })
   const [cvUrl, setCvUrl] = useState<string | null>(profile.cvUrl)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatarUrl)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
   const [stackInput, setStackInput] = useState('')
   const [summaryMode, setSummaryMode] = useState<'edit' | 'preview'>('edit')
   const { successToast, errorToast } = useToastContext()
@@ -252,6 +258,21 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  async function handleAvatarUpload(file: File) {
+    setAvatarUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('type', 'avatar')
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
+      if (!res.ok) return
+      const { url } = (await res.json()) as { url: string }
+      setAvatarUrl(url)
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
   async function handleSave() {
     setSaving(true)
     try {
@@ -271,7 +292,8 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
             .split(',')
             .map((s) => s.trim())
             .filter(Boolean),
-          cvUrl
+          cvUrl,
+          avatarUrl
         })
       })
       if (res.ok) {
@@ -421,6 +443,44 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
         {/* ── Profile ──────────────────────────────────────────── */}
         <TabsContent value='profile'>
           <div className='space-y-8'>
+            <section>
+              <h2 className={sectionHeadClass}>Avatar</h2>
+              <div className='flex items-center gap-4'>
+                <div className='flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card'>
+                  {avatarUrl ? (
+                    // biome-ignore lint/performance/noImgElement: uploaded blob URL, not optimisable
+                    <img src={avatarUrl} alt='' className='h-full w-full object-cover' />
+                  ) : (
+                    <span className='font-mono text-lg text-muted-foreground'>?</span>
+                  )}
+                </div>
+                <div className='flex flex-col gap-2'>
+                  <input
+                    ref={avatarInputRef}
+                    type='file'
+                    accept='image/jpeg,image/png,image/webp'
+                    className='hidden'
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleAvatarUpload(file)
+                    }}
+                  />
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarUploading}
+                    className='gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em]'
+                  >
+                    <Upload className='h-3 w-3' />
+                    {avatarUploading ? 'Uploading...' : 'Upload'}
+                  </Button>
+                  <p className='font-mono text-[10px] text-muted-foreground'>JPG, PNG, WebP · max 5 MB</p>
+                </div>
+              </div>
+            </section>
+
             <section>
               <h2 className={sectionHeadClass}>Identity</h2>
               <div className='grid grid-cols-2 gap-4'>
@@ -732,16 +792,17 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
         {/* ── API Keys ─────────────────────────────────────────── */}
         <TabsContent value='api-keys'>
-          <div className='rounded border border-dashed border-border px-6 py-12 text-center'>
-            <p className='font-mono text-xs text-muted-foreground'>API key management coming soon.</p>
-          </div>
+          <ProviderKeysSection />
         </TabsContent>
 
         {/* ── Connections ──────────────────────────────────────── */}
         <TabsContent value='connections'>
           <div className='space-y-8'>
             <section>
-              <h2 className={sectionHeadClass}>GitHub</h2>
+              <div className='mb-4 flex items-center gap-2'>
+                <GitHubIcon className='h-3.5 w-3.5 text-foreground' />
+                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>GitHub</h2>
+              </div>
               <label htmlFor='field-github' className={labelClass}>
                 Handle
               </label>
@@ -755,7 +816,11 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
             </section>
 
             <section>
-              <h2 className={sectionHeadClass}>LinkedIn</h2>
+              <div className='mb-4 flex items-center gap-2'>
+                {/* LinkedIn brand blue — no semantic token equivalent */}
+                <LinkedInIcon className='h-3.5 w-3.5' style={{ color: '#0077B5' }} />
+                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>LinkedIn</h2>
+              </div>
               <label htmlFor='field-linkedin' className={labelClass}>
                 Profile URL
               </label>
@@ -769,7 +834,11 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
             </section>
 
             <section>
-              <h2 className={sectionHeadClass}>Discord</h2>
+              <div className='mb-4 flex items-center gap-2'>
+                {/* Discord brand purple — no semantic token equivalent */}
+                <DiscordIcon className='h-3.5 w-3.5' style={{ color: '#5865F2' }} />
+                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Discord</h2>
+              </div>
               <label htmlFor='field-discord' className={labelClass}>
                 Handle
               </label>

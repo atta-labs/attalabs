@@ -21,6 +21,7 @@ export default async function SettingsPage() {
     summary: user.summary,
     stack: JSON.parse(user.stack) as string[],
     cvUrl: user.cvUrl ?? null,
+    avatarUrl: user.avatarUrl ?? null,
     isPublished: user.isPublished
   }
 

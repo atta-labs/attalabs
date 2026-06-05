@@ -2,7 +2,6 @@
 
 import type { CMSTheme } from '@atta/cms'
 import { Button, useToastContext } from '@atta/ui'
-import { Upload } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { EnvoyPreview } from './EnvoyPreview'
 import { FontPicker } from './FontPicker'
@@ -54,21 +53,16 @@ interface AdminEditorPageProps {
 }
 
 export function AdminEditorPage({ username, initialProfile, initialTheme, themes }: AdminEditorPageProps) {
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(initialProfile.avatarUrl)
   const [themeId, setThemeId] = useState(initialTheme.themeId)
   const [colorScheme, setColorScheme] = useState<ColorScheme>(initialTheme.colorScheme)
   const [fontSans, setFontSans] = useState<string | undefined>(initialTheme.fontSans ?? undefined)
 
   const { successToast, errorToast } = useToastContext()
   const [saving, setSaving] = useState(false)
-  const [avatarUploading, setAvatarUploading] = useState(false)
 
-  const avatarInputRef = useRef<HTMLInputElement>(null)
   const sendToPreviewRef = useRef<SendFn | null>(null)
 
   const selectedTheme = useMemo(() => themes.find((t) => t._id === themeId) ?? null, [themes, themeId])
-
-  const canSave = !!avatarUrl
 
   const sendThemePreview = useCallback((t: CMSTheme, scheme: ColorScheme, font: string | undefined) => {
     const typography = font ? { ...t.typography, fontSans: font } : t.typography
@@ -99,23 +93,6 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
     if (selectedTheme) sendThemePreview(selectedTheme, colorScheme, font)
   }
 
-  async function handleAvatarUpload(file: File) {
-    setAvatarUploading(true)
-
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('type', 'avatar')
-      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
-      if (!res.ok) return
-      const { url } = await res.json()
-      setAvatarUrl(url)
-      sendToPreviewRef.current?.({ type: 'PREVIEW_PROFILE', profile: { avatarUrl: url } })
-    } finally {
-      setAvatarUploading(false)
-    }
-  }
-
   async function handleSave() {
     setSaving(true)
     try {
@@ -123,7 +100,6 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          avatarUrl,
           themeId,
           colorScheme,
           library: initialTheme.library,
@@ -146,44 +122,6 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
     <div className='flex h-full overflow-hidden'>
       <div className='w-72 shrink-0 overflow-y-auto border-r border-border'>
         <div className='space-y-8 p-6'>
-          <section>
-            <SectionLabel>Avatar</SectionLabel>
-            <div className='flex items-center gap-4'>
-              <div className='flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card'>
-                {avatarUrl ? (
-                  // biome-ignore lint/performance/noImgElement: Blob URL, not optimisable via next/image
-                  <img src={avatarUrl} alt='' className='h-full w-full object-cover' />
-                ) : (
-                  <span className='font-mono text-lg text-muted-foreground'>?</span>
-                )}
-              </div>
-              <div className='flex flex-col gap-2'>
-                <input
-                  ref={avatarInputRef}
-                  type='file'
-                  accept='image/jpeg,image/png,image/webp'
-                  className='hidden'
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) handleAvatarUpload(file)
-                  }}
-                />
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={() => avatarInputRef.current?.click()}
-                  disabled={avatarUploading}
-                  className='gap-1.5 font-mono text-xs uppercase tracking-[0.15em]'
-                >
-                  <Upload className='h-3 w-3' />
-                  {avatarUploading ? 'Uploading...' : 'Upload'}
-                </Button>
-                <p className='font-mono text-[10px] text-muted-foreground'>JPG, PNG, WebP · max 5 MB</p>
-              </div>
-            </div>
-          </section>
-
           <section>
             <SectionLabel>Font</SectionLabel>
             <FontPicker value={fontSans} onChange={handleFontChange} />
@@ -248,14 +186,11 @@ export function AdminEditorPage({ username, initialProfile, initialTheme, themes
             <Button
               type='button'
               onClick={handleSave}
-              disabled={saving || !canSave}
+              disabled={saving}
               className='w-full font-mono text-xs uppercase tracking-[0.2em]'
             >
               {saving ? 'Saving...' : 'Save changes'}
             </Button>
-            {!canSave && !saving && (
-              <p className='mt-2 text-center font-mono text-[10px] text-muted-foreground'>Required: avatar</p>
-            )}
           </div>
         </div>
       </div>
