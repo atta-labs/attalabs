@@ -1,7 +1,33 @@
-import { boolean, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
+import { boolean, index, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { users } from '@atta/db'
 
 export { users }
+
+// Mirrors @atta/db schema — these tables live in Herald's own Neon DB (see D-0XX).
+// Keeping them here ensures drizzle-kit push doesn't drop them.
+
+export const apiKeys = pgTable(
+  'api_keys',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    clerkId: text('clerk_id').notNull(),
+    name: text('name').notNull(),
+    product: text('product').notNull().default('herald'),
+    keyHash: text('key_hash').notNull().unique(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    lastUsedAt: timestamp('last_used_at'),
+    revokedAt: timestamp('revoked_at')
+  },
+  (t) => [index('api_keys_clerk_id_idx').on(t.clerkId), index('api_keys_key_hash_idx').on(t.keyHash)]
+)
+
+export const userProviderKeys = pgTable('user_provider_keys', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  clerkId: text('clerk_id').notNull().unique(),
+  encryptedPayload: jsonb('encrypted_payload').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+})
 
 export const heraldProfiles = pgTable('herald_profiles', {
   clerkId: varchar('clerk_id', { length: 255 })
