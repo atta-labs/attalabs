@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** June 3, 2026 (Cetana F6 `cetana watch` shipped — PR #79; Herald logo refactor; admin TopBar unification)
+**Last updated:** June 5, 2026 (AEG model ratified — global D-029, PR #80 merged `ab7c4d4`; verify-docs CI gate live; PM hygiene pass — `roadmap.md` retired, `now.md` repointed to backlogs, example iteration removed)
 **Purpose:** Single snapshot of where everything stands across the AttaLabs ecosystem.
 
 This doc lives in the repo at `project-management/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -11,18 +11,36 @@ Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
 
 ## Operational model
 
-**v3 operational model adopted May 10, 2026.** The coordination model has migrated from an informal Claude.ai project-knowledge-based workflow to a formalized state-machine-governed model with three conversational roles (Principal, Team Leader, Developer) plus Archivist automation.
+**Atta Agentic Execution Governance (AEG) — ratified June 4, 2026 (global D-029, PR #80).** The coordination model migrated from an informal Claude.ai project-knowledge workflow (pre-May) to a formalized state-machine model (v3, May 10), and is now the AEG model: **forge-native, orchestrator-independent governance of delegated AI execution.** It is not project management — there is no plan, timeline, or resource tracking inside AEG; that lives outside it (see "Where the plan lives" below).
 
-Key v3 model artifacts (all in `project-management/`):
-- `state-machine.md` — the constitution: artifact states, role authority matrix, decision schema, lock mechanism, tiered documentation, ratification windows
-- `decisions.md` — global cross-product decision log, D-001 to D-025
-- `roles/principal.md`, `roles/team-leader.md`, `roles/developer.md` — role references
+**Roles:** four conversational roles — **Principal, Team Leader, Developer, Reviewer** (code + security specializations) — plus the non-conversational **Archivist**. The Team Leader has three modes: **Strategist** (architecture/decisions), **Planner** (turns intent + a backlog slice into an iteration), **Brief Author** (writes the just-in-time brief). Established by global D-001 (three roles + Archivist) → D-026 (added Reviewer) → D-029 (added Planner mode + Archivist role doc).
+
+**Execution model (D-029):**
+- **A task IS a GitHub Issue.** Status is **derived** from the forge (branch `task/<iteration>/<n>` exists → in-flight; PR open → in-review; merged → merged; `aeg:blocked` label → blocked), **never stored**. No `status:*` labels.
+- **The iteration** (`project-management/iterations/<name>.md`) is AEG's top-level artifact — a thin topology file (task→Issue map, `depends-on` / `conflicts-with` edges, grouping). No status, no PR numbers, no dates. The active slice of work, pulled from a backlog by the Planner.
+- **The brief** is just-in-time, pasted (not committed), and lives in the **PR body** — never in the Issue.
+- **Conflicts** are declared, package-level, static (no dynamic scanner). **Dispatch gates:** never start a task whose `depends-on` isn't merged, or while a `conflicts-with` sibling's PR is open.
+- **verify-docs** is a real, blocking CI gate (global D-027) — `.github/workflows/verify-docs.yml`, live as of June 4.
+
+**Where the plan lives (NOT in AEG):** the product roadmap is the backlogs — `apps/<product>/specs/<product>-backlog.md` (per product) and `docs/ecosystem-backlog.md` (cross-cutting / AEG-itself). The global `roadmap.md` is **retired** (D-029). The backlog is the seam where AEG meets a planning tool (Jira/Linear/etc.); AEG is indifferent to which one — it only needs "a well-formed brief exists." The Planner *may* read the backlogs to compose an iteration, but does not depend on them.
+
+**Key AEG model artifacts (all in `project-management/`):**
+- `coordination.md` — session-start protocol, names, rules
+- `state-machine.md` — the constitution: artifact classes, mutation matrix, authority hierarchy, decision schema, lock mechanism, tiered docs, ratification windows
+- `aeg-manual-flow.md` — running the flow by hand (the operator's guide)
+- `process.md` — the eleven-phase walkthrough
+- `iterations/README.md` — the iteration model (the only file in `iterations/` until the first real iteration starts)
+- `products.md` — product registry (name → folder), for multi-product repos
+- `decisions.md` — global cross-product decision log, **D-001 to D-029**
+- `roles/` — `principal.md`, `team-leader.md` (Strategist/Planner/Brief Author), `developer.md`, `reviewer.md`, `security.md`, `archivist.md`
+- `diagrams/` — `process-flow.md` (the AEG process), `system-architecture.md` (the optional Cetana tool + the AEG file/enforcement layout)
 - `reviewer-prompt.md` — template for adversarial multi-AI reviewer rounds
 - `ratification-queue.md` — append-only queue for decisions awaiting Principal ratification
+- `now.md` / `changelog.md` / `lessons.md` — active work / shipped log / calibration
 
-The `.claude/skills/brief-authoring/SKILL.md` is the canonical brief authoring guide (moved from `project-management/brief-authoring-rules.md` and updated for v3 fields: tier, principal_delegate, spike, Type 1/2 declaration, lock acknowledgment).
+The `.claude/skills/brief-authoring/SKILL.md` is the canonical brief authoring guide (tier, principal_delegate, spike, Type 1/2 declaration, lock acknowledgment, optional `Ticket:`/`Product:`, brief-lands-in-PR-body).
 
-PM docs are now in the repo (not Claude.ai project knowledge). Any Claude session reads them via GitHub MCP or direct worktree access.
+PM docs are in the repo (not Claude.ai project knowledge). Any Claude session reads them via GitHub MCP or worktree access.
 
 ---
 
@@ -44,6 +62,7 @@ PM docs are now in the repo (not Claude.ai project knowledge). Any Claude sessio
 
 **Naming convention:**
 - No `-AI` suffix on any product brand (Atta, Vāda, Vitakka, Sati, Herald, Cetana are all bare).
+- App **folders** carry `-ai` (`vada-ai`, `herald-ai`, `cetana-ai`, `atta-ai`, `vitakka-ai`) except meta/infra apps (`attalabs`, and the planned `aeg`). Folder suffix ≠ brand.
 - Pāli names mandatory inside Atta (Atta, Vāda, Vitakka, Sati); elective elsewhere in AttaLabs. The earlier "Pāli = built by Atta" rule was demoted from structural to aesthetic in v2.
 
 Canonical decision docs: `apps/atta-ai/specs/atta-naming-decision.md` (full reasoning), `apps/atta-ai/specs/atta-ecosystem-vision.md` (strategic positioning).
@@ -57,6 +76,8 @@ Canonical decision docs: `apps/atta-ai/specs/atta-naming-decision.md` (full reas
 **Status:** Live at `https://vada.attalabs.dev`. Standalone deliberation engine and the deliberation layer inside Atta. Vāda Teams is the catalog of YAML team specifications compiled by the Atta engine. Vāda Reviewers v1 (vendor-diverse team) registered. **Hosted MCP server live at `https://vada.attalabs.dev/api/mcp` (May 4).** **Single-source-keys reversal locked (May 4) — server-side `user_provider_keys` is canonical, IndexedDB demoted.** **`feat/shared-keys-ui` merged (May 5) — `ProviderKeysSection` / `ApiKeysSection` extracted to `@atta/ui/account`, ecosystem-shared key schemas moved to `@atta/db`.** **Vendor registry consolidation shipped (May 11, PR #31) — single source of truth for vendor metadata, SDK shapes, baseURLs, and routing across all 12 supported vendors.** Reviewer prompt iteration phase is next (Track B Item 3b).
 
 **Web app structure:** Routes are flat. Home is at `/`. The `/autonomous/*` and `/brokered/*` route trees no longer exist.
+
+**Full plan / backlog:** `apps/vada-ai/specs/vada-backlog.md`.
 
 #### Vāda Teams catalog (current state — 9 YAMLs, 2 published)
 
@@ -75,6 +96,8 @@ All YAMLs at `apps/vada-ai/yamls/`. Use Sonnet (`claude-sonnet-4-6`) by default;
 | `vada-reviewers-synthesis` | Reviewers + Synthesis | Same 3 reviewers + Anthropic Synthesizer producing structured JSON | Published — pending prompt iteration |
 
 The 7 experimental YAMLs are filtered out of the public `/teams` catalog by the `experimental: true` flag (`listPublicSpecs()` returns the 2 published only). Crucible, Sparring, and War Room were marked experimental in PR #31 — flow design, system prompts, and inter-agent interactions all need iteration before they should be re-exposed publicly. Vāda Reviewers and Reviewers + Synthesis are the focused public surface area. Fate of the experimental YAMLs depends on data from the Vāda Reviewers benchmark.
+
+**Two known bugs (undiagnosed):** Reviewers team ERROR (provider keys / SDK routing); Sparring duplicates the Critic message. Both pending diagnosis.
 
 #### What's built
 
@@ -124,9 +147,19 @@ Flat routes at `apps/vada-ai/web/src/app/(main)/`:
 
 **Domain:** `vada.attalabs.dev` (production live). Auto-deploys from `main` via Vercel.
 
-**Next:** Reviewer prompt iteration (Track B Item 3b) dispatched through Cetana V0 once it ships. Hosted MCP empirically dogfooded May 9 via curl — server healthy, Claude.ai web blocked by Track E12 broker bug (`ofid_*`), Claude Code CLI is the working integration. Then synthesizer prompt iteration (3c), then first benchmark run (Item 4). With the vendor registry consolidation now shipped, the empirical Reviewers deliberate test (Groq-served DeepSeek in a configurable slot) is unblocked on both web and MCP.
+**Next:** Reviewer prompt iteration (Track B Item 3b). Test Reviewers end-to-end first (needs OpenAI + xAI keys added to Vercel — manual). Then synthesizer prompt iteration (3c), then first benchmark run (Item 4). Hosted MCP works via Claude Code CLI; Claude.ai web blocked by the broker bug (`ofid_*`).
 
-See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: file may be slightly stale post-May-4-5; flagged for next cleanup pass).
+See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: file may be slightly stale post-May-4-5; flagged for cleanup).
+
+### AEG — *model ratified (D-029); product (the UI) not yet built*
+
+**Status:** The **model** is ratified and live (global D-029, PR #80 merged June 4). The **product** — a deployed UI that visualizes iterations and the plan — is **not yet built**; it is the intended first real iteration.
+
+**What it is:** Atta Agentic Execution Governance — the forge-native, orchestrator-independent model above (see "Operational model"). The planned product is a Next.js app that reads an AEG repo's `iterations/*.md` (topology) + the Git forge (derived status) and renders: an attention queue (default), repos grouped by tag, each repo's iterations, and the iteration DAG. AEG-only (a repo must practice AEG to render). Connects repos via a GitHub App (OAuth, read-only, per-repo, tokens encrypted server-side); a webhook-fed cache of *forge facts* (not authored status) keeps reads fast within rate limits.
+
+**Planned folder:** `apps/aeg/web` (meta/infra app → no `-ai` suffix, matching `apps/attalabs`). Deploy target `aeg.attalabs.dev`.
+
+**Next:** decompose the AEG UI into the first iteration (pure `deriveIteration` module → GitHub App auth + encrypted token store → webhook fact-cache → attention queue → repo-rollup → DAG view). Build follow-ups: neutral AEG scaffold + downloadable `aeg.sh`; the interactive site supersedes the static `diagrams/`.
 
 ### Atta — *deep-thinking AI consumer product; composition not yet deployed*
 
@@ -160,50 +193,51 @@ Earlier framing (April 26, 2026) presented Sati as having been "renamed from the
 
 **Next:** Buildout downstream of Vitakka shipping.
 
-### Cetana — *V0.5 Step 1 shipped, Principal-verified (May 12, 2026); F6 shipped June 3, 2026; internal dev tooling, not part of Atta*
+### Cetana — *V0.5 + F6 shipped; internal dev tooling, not part of Atta; the optional AEG orchestrator*
 
-V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 Step 1 (F5) shipped May 12 across three PRs (#39 initial, #42 install command fix, #43 abort hang fix). Install gate D-021 verified end-to-end by Principal. F6 (`cetana watch`) shipped June 3, 2026 (PR #79).
+V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 Step 1 (F5) shipped May 12 (PRs #39/#42/#43). Install gate D-021 verified end-to-end by Principal. F6 (`cetana watch`) shipped June 3, 2026 (PR #79).
 
-**Current capability:** `cetana init`, `cetana dispatch <issue>`, `cetana list`, `cetana reply <id> "msg"`, `cetana logs <id>`, `cetana watch <id>`. Hierarchical config. Heartbeat-based CRASHED detection. 46 passing tests. Claude binary resolved via `which claude` + known fallback paths (NVM/homebrew/global) — no hardcoded path. Model tier resolution via `resolveDispatchModel` in `@atta/models` — config stores `anthropic/balanced`, resolved at dispatch time, no hardcoded model strings. `repoPath` read from config (set during `cetana init`, defaults to `git rev-parse --show-toplevel`).
+**Current capability:** `cetana init`, `cetana dispatch <issue>`, `cetana list`, `cetana reply <id> "msg"`, `cetana logs <id>`, `cetana watch <id>`. Hierarchical config. Heartbeat-based CRASHED detection. 46 passing tests. Claude binary resolved via `which claude` + known fallback paths — no hardcoded path. Model tier resolution via `resolveDispatchModel` in `@atta/models` (config stores `anthropic/balanced`, resolved at dispatch). `repoPath` read from config.
+
+**Relationship to AEG:** Cetana is the **optional orchestration tool** that automates AEG's dispatch/escalation slice in *this* repo. AEG does not depend on it (forge-native). Cetana knows AEG; AEG does not know Cetana. Its software architecture is documented in `project-management/diagrams/system-architecture.md` (scoped explicitly as the tool, not the model).
 
 **Locked decisions (cetana-decisions.md):** D-020 (CLI canonical), D-021 (install gate non-negotiable), D-022 (thin client over Coordinator), D-023 (4-week dogfood gate), D-025 (install gate path coverage), D-026 (watch shape: single-task-by-id).
 
-**Next:** F7 (`cetana status`) — ready to dispatch.
+**Full plan / backlog:** `apps/cetana-ai/specs/cetana-backlog.md`.
 
-**What it is:** Local Mac orchestration coordinator for the Atta team's own development workflow. NOT part of Atta-the-product. Sibling product in AttaLabs (D-025 global). Lets Claude Desktop (Team Leader, Strategist mode) dispatch Claude Code agents (Developers) into the Atta repo via MCP, watch them work, and unblock them when they hit decision points. The `cetana` CLI binary (D-020 — locked) is the canonical operator interface as of V0.5.
+**Next:** F7 (`cetana status`) — ready to dispatch (its own iteration, separate from the AEG UI). Then the 4-week dogfood gate (D-023) before any V1 UI.
 
-**Architecture (locked May 9, 2026):**
-- Claude Desktop = Team Leader (Strategist mode) — local stdio MCP only; web Claude.ai cannot reach localhost
-- GitHub Issues + Labels + Milestones = roadmap, tasks, briefs, PRs (no Projects V2)
+**What it is:** Local Mac orchestration coordinator for the Atta team's own development workflow. NOT part of Atta-the-product. Sibling product in AttaLabs (D-025 global). Lets Claude Desktop (Team Leader) dispatch Claude Code agents (Developers) into the repo via MCP, watch them work, and unblock them. The `cetana` CLI binary (D-020 — locked) is the canonical operator interface.
+
+**Architecture (locked May 9, 2026; updated to AEG terms June 4):**
+- Claude Desktop = Team Leader — local stdio MCP only; web Claude.ai cannot reach localhost
+- The Git forge (GitHub) = tasks (Issues), PRs, derived status; the brief lives in the PR body, not the Issue; the plan lives in backlogs, not GitHub
 - Cetana Coordinator = single Bun service inside `apps/cetana-ai/`, exposes MCP tools (`cetana.dispatch_task`, `cetana.list_active_tasks`, `cetana.reply_to_blocked_task`, `cetana_request_input`)
-- Claude Code = Developer/Executor, spawned per task, runs in git worktree at `~/code/atta/.worktrees/issue-{N}/`
-- JSONL append-only logs at `~/.cetana/tasks/*.jsonl` for runtime state (SQLite later if/when schema stabilizes)
-- CLI binary = canonical operator interface (D-020 locked). Tauri shell + dashboard deferred to V1 if and only if V0 proves daily-driver value (D-023 gate: ≥20 tasks, ≥3 concurrent, documented friction moments).
+- Claude Code = Developer, spawned per task, runs in a git worktree (AEG branch convention `task/<iteration>/<n>`; Cetana V0 runtime paths under `~/.cetana/`)
+- JSONL append-only logs at `~/.cetana/tasks/*.jsonl` for the tool's runtime state
+- CLI binary = canonical operator interface (D-020 locked). Tauri shell + dashboard deferred to V1 iff V0 proves daily-driver value (D-023 gate: ≥20 tasks, ≥3 concurrent, documented friction).
 
-**Domain:** `cetana.attalabs.dev` reserved for if/when Cetana ships as a public product surface. V0/V0.5 is internal tooling today; future public surface is conditional on V0 dogfood proving daily-driver value.
+**Domain:** `cetana.attalabs.dev` reserved for if/when Cetana ships as a public product surface. Internal tooling today.
 
-### Herald — *standalone AttaLabs product; Phase 1 complete — see `apps/herald-ai/project-management/state.md`*
+### Herald — *standalone AttaLabs product; Phase 2 done, Phase 3 (recruiter self-serve) next*
 
-**Full state:** `apps/herald-ai/project-management/state.md` — read that file for Herald detail.
-**Current phase:** Phase 2 — self-service onboarding. Phase 1 complete June 1, 2026 (PR #70).
+**Full state:** `apps/herald-ai/project-management/state.md` — read that file for Herald detail. Backlog: `apps/herald-ai/specs/herald-backlog.md`.
+**Phases:** Phase 1 (candidate Envoy) complete June 1 (PR #70). Phase 2 (self-service onboarding + admin redesign) complete June 1–2 (PRs #74/#75) — **needs production verification** (avatar/CV upload not tested in prod). **Phase 3 — recruiter self-serve (paste JD + N CVs → batch forensic audit → ranked reports) is NEXT** (the active heavy refactor; being built copy-paste, outside the AEG flow, by Principal's choice). Phase 4 (recruiter as distinct B2B surface) is future.
 
-**Status:** Standalone forensic CV-to-job-description match tool. Sibling product in AttaLabs, NOT part of Atta-the-product (D-025 reframed from prior "pluggable MCP tool" framing). Built by Dani.
+**Status:** Standalone forensic CV-to-JD match tool. Sibling product in AttaLabs, NOT part of Atta-the-product (D-025). Built by Dani. Exposes itself via MCP for integration — Atta or any MCP host can invoke it as one of many external tools. Separate Clerk app.
 
-Forensic CV/JD match tool that also exposes itself via MCP for integration. Herald can be invoked by Atta (or any MCP-compatible host) as one of many external tools — that makes Herald integratable, not a layer of Atta. English name (no longer carries the v1 "non-Pāli = plugs in" structural meaning — Pāli rule was demoted in v2).
-
-Has its own auth (separate Clerk app — out of scope for the AttaLabs ecosystem auth migration).
-
-**Domain:** `herald.attalabs.dev` (when deployed).
+**Domain:** `herald.attalabs.dev` (live).
 
 ---
 
 ## Apps in the monorepo
 
 - `apps/vada-ai/` — Vāda product (web + mcp-server). Production-deployed at `vada.attalabs.dev`. Web hosts the hosted MCP route at `apps/vada-ai/web/src/app/api/mcp/route.ts`.
-- `apps/atta-ai/` — AttaLabs hub. Production-deployed at `attalabs.dev` (April 28). Hosts engine tools and engine-as-MCP. Note: the directory name `atta-ai` is historical; the app currently serves the AttaLabs hub, not Atta-the-product (Atta-the-product is not yet deployed and will live at its own consumer domain).
-- `apps/cetana-ai/` — Cetana V0/V0.5 in active build (architecture validated May 9, 2026 via Slice -1 escalation prototype). Coordinator + CLI + MCP servers. No UI in V0/V0.5. Internal dev tooling today.
+- `apps/atta-ai/` — AttaLabs hub. Production-deployed at `attalabs.dev` (April 28). Hosts engine tools and engine-as-MCP. The directory name `atta-ai` is historical; the app serves the AttaLabs hub, not Atta-the-product.
+- `apps/cetana-ai/` — Cetana V0/V0.5 (coordinator + CLI + MCP servers). No UI. Internal dev tooling / the optional AEG orchestrator.
 - `apps/herald-ai/` — Herald product (web + mobile + mcp). Separate auth.
 - `apps/vitakka-ai/` — scaffold; build not yet started.
+- `apps/aeg/` — **planned, not yet created.** The AEG product UI (`apps/aeg/web` → `aeg.attalabs.dev`). The first real iteration.
 
 `apps/atta-labs-ai/` was deleted April 28 (Operations cleanup).
 
@@ -213,20 +247,20 @@ Has its own auth (separate Clerk app — out of scope for the AttaLabs ecosystem
 
 - `@atta/engine` — Plan compiler. Includes optional `BrokeredWorkflow.synthesis` field; per-node error capture; PlanNodeKind/PlanEdgeKind emission across all compilers.
 - `@atta/agents` — agent primitives. `AgentRole` deleted (May 3) — role is presentation, not engine.
-- `@atta/adapter-langgraph` — LangGraph execution + cognitive router. Dispatches by SDK shape (3 branches: `anthropic`, `google-genai`, `openai-compat`) reading `vendorId` from the catalog-resolved override map or vendor registry prefix fallback. Supports all 12 vendors in the registry. See vada-decisions.md D-032.
+- `@atta/adapter-langgraph` — LangGraph execution + cognitive router. Dispatches by SDK shape (3 branches: `anthropic`, `google-genai`, `openai-compat`) reading `vendorId` from the catalog-resolved override map or vendor registry prefix fallback. Supports all 12 vendors. See vada-decisions.md D-032.
 - `@atta/auth` — Clerk wrapper + bearer-token validation. Includes `verifyApiKeyBearer` for hosted MCP. Single Clerk app SSO model.
-- `@atta/crypto` — envelope encryption for sensitive columns (AES-256-GCM, AAD-bound). API key generation + SHA-256 hashing. Master key from `MASTER_ENCRYPTION_KEY` env var; `kms_key_id` field reserved for future KMS migration.
-- `@atta/db` — Drizzle ORM + Neon client. Single shared `users` table keyed by `clerk_id`. Ecosystem-shared key tables live here too: `apiKeys`, `userProviderKeys`, `mcpSessions` in `packages/db/src/schema/keys.ts`.
-- `@atta/ui` — shadcn/ui + Tailwind + lucide-react + canvas particle system (AIACanvas). Includes `@atta/ui/account` (themed Clerk wrappers + `ProviderKeysSection` + `ApiKeysSection` shared across products). `@atta/ui/engine-flow` subpath shipped (May 3).
+- `@atta/crypto` — envelope encryption for sensitive columns (AES-256-GCM, AAD-bound). API key generation + SHA-256 hashing. Master key from `MASTER_ENCRYPTION_KEY`; `kms_key_id` reserved for future KMS. (The AEG UI's GitHub-token vault will reuse this.)
+- `@atta/db` — Drizzle ORM + Neon client. Single shared `users` table keyed by `clerk_id`. Ecosystem-shared key tables: `apiKeys`, `userProviderKeys`, `mcpSessions` in `packages/db/src/schema/keys.ts`.
+- `@atta/ui` — shadcn/ui + Tailwind + lucide-react + canvas particle system (AIACanvas). Includes `@atta/ui/account` (themed Clerk wrappers + `ProviderKeysSection` + `ApiKeysSection`). `@atta/ui/engine-flow` subpath (React Flow / `@xyflow/react`) — the renderer the AEG iteration DAG will reuse.
 - `@atta/cms` — Sanity schemas + typed queries.
 - `@atta/storage` — Cloudflare R2 client.
-- `@atta/identity` — preserved post-May-4 reversal but no longer canonical key store. Surviving roles: `probeProviderKey` (validate before save), `fetchInstalledOllamaModels` (local Ollama discovery), `MigrationPrompt` (one-time UX for users with pre-reversal IndexedDB keys), `useIdentity` hook used by judge benchmark + model picker. Mounted via `IdentityProvider` in vada-ai and atta-ai layouts.
+- `@atta/identity` — preserved post-May-4 reversal but no longer canonical key store. Surviving roles: `probeProviderKey`, `fetchInstalledOllamaModels`, `MigrationPrompt`, `useIdentity` hook. Mounted via `IdentityProvider` in vada-ai and atta-ai layouts.
 - `@atta/typescript-config` — base + nextjs tsconfig.
-- `@atta/models` — model catalog AND vendor registry. Catalog (models.dev-derived) plus `vendors.ts` (12 vendors, SDK shapes, baseURLs, key conventions). Single source of truth for vendor metadata across the entire monorepo. See vada-decisions.md D-032.
+- `@atta/models` — model catalog AND vendor registry (`vendors.ts`, 12 vendors). Single source of truth for vendor metadata. See vada-decisions.md D-032.
 
 `@xyflow/react` is a direct dependency of `apps/vada-ai/web`.
 
-The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLabs product (Vāda, Atta hub, Herald, Cetana, etc.) lives under it without implying ownership by Atta-the-product.
+The `@atta/*` namespace is the monorepo's name, not a brand.
 
 ---
 
@@ -246,8 +280,9 @@ The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLa
 - `attalabs.dev` registered at GoDaddy. Production DNS configured.
 - `vada.attalabs.dev` — Vāda production. Live.
 - `attalabs.dev` (root) — AttaLabs hub. Live.
+- `herald.attalabs.dev` — Herald. Live.
 - `clerk.attalabs.dev` — Clerk frontend API CNAME. Live.
-- `*.attalabs.dev` — wildcard CNAME to Vercel.
+- `*.attalabs.dev` — wildcard CNAME to Vercel (covers the planned `aeg.attalabs.dev`).
 - Local dev: `attalabs.test`, `vada.attalabs.test` resolve to `127.0.0.1`. (`account.attalabs.test` no longer used per vada-decisions.md D-030.)
 - `atta.com` (€500K) — not pursued.
 - `atta.ai` — Japanese individual owner; signal of possible release 2027. Target Atta-the-product domain.
@@ -258,15 +293,15 @@ The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLa
 
 **Server-side at rest, decrypted per-request, since May 4, 2026 (vada-decisions.md D-028 + D-029).**
 
-`user_provider_keys` table holds envelope-encrypted provider keys (AES-256-GCM, AAD-bound to `clerkId`, master key from `MASTER_ENCRYPTION_KEY` env var). Decryption happens only inside request handlers (`/api/deliberation/[id]/workflow/run`, `/api/mcp`). Plaintext never logged or persisted. `kms_key_id` column reserved for V2 KMS migration.
+`user_provider_keys` table holds envelope-encrypted provider keys (AES-256-GCM, AAD-bound to `clerkId`, master key from `MASTER_ENCRYPTION_KEY`). Decryption happens only inside request handlers (`/api/deliberation/[id]/workflow/run`, `/api/mcp`). Plaintext never logged or persisted. `kms_key_id` column reserved for V2 KMS migration.
 
-Distinct from the prior browser-only BYOK story (pre-May 4), which used IndexedDB + passkey for at-rest storage and transited keys through Vāda's server in cleartext request bodies. That model was strictly stronger for at-rest privacy but incompatible with hosted MCP. The reversal was the explicit cost of shipping hosted MCP.
+Distinct from the prior browser-only BYOK story (pre-May 4), which used IndexedDB + passkey for at-rest storage and transited keys through Vāda's server in cleartext. That model was stronger for at-rest privacy but incompatible with hosted MCP. The reversal was the explicit cost of shipping hosted MCP.
 
 `@atta/identity` package retained: `IdentityProvider` mounted in vada-ai and atta-ai layouts. The package no longer holds canonical keys.
 
 Two specs:
 - `apps/vada-ai/specs/vada-byok-principles.md` — current state, rewritten May 6.
-- `apps/vada-ai/specs/vada-byok-gap-report.md` — historical (April 30 framework). All four gaps closed or superseded; document preserved for record.
+- `apps/vada-ai/specs/vada-byok-gap-report.md` — historical (April 30 framework). All four gaps closed or superseded; preserved for record.
 
 ---
 
@@ -274,22 +309,20 @@ Two specs:
 
 **Live at:** `https://vada.attalabs.dev/api/mcp`
 **Transport:** Streamable HTTP (POST + SSE)
-**Auth:** Vāda API key (bearer token in `Authorization` header). SHA-256 hashed in `api_keys` table.
-**BYOK:** server-side envelope-encrypted in `user_provider_keys`; same store backs the web app's deliberate page (single canonical store per vada-decisions.md D-028).
+**Auth:** Vāda API key (bearer token). SHA-256 hashed in `api_keys` table.
+**BYOK:** server-side envelope-encrypted in `user_provider_keys`; same store backs the web app's deliberate page (vada-decisions.md D-028).
 **Two MCP tools:** `vada__consult`, `vada__deliberate`. Identical input/output shapes to the local stdio server.
-**Per-slot model configurability:** `vada__consult` accepts optional `reviewer_config: Record<agentName, modelId>` (May 11, PR #31), validated against the vendor registry; same shape as the web UI's per-slot model override.
+**Per-slot model configurability:** `vada__consult` accepts optional `reviewer_config: Record<agentName, modelId>` (May 11, PR #31), validated against the vendor registry.
 
-**Status:** Shipped May 4 via PRs #9 + #10. Phases 1-4 of the implementation plan complete. Phase 5 (stdio session URL fix — `vada.ai` hardcode bug) and Phase 6 (rate limiting, audit log, hardening) remain as future work. Tool contract surfaces aligned with deployed runtime May 9 via PR #21 (structured input schema, expanded team enum, stale references removed). Vendor registry consolidation shipped May 11 via PR #31 (`reviewer_config` for MCP, sdkShape-based dispatch, 12 supported vendors). Empirically dogfooded May 9 via curl (server healthy) and Claude.ai web (Track E12 broker bug reconfirmed — Claude Code CLI is the working integration today).
+**Status:** Shipped May 4 (PRs #9 + #10). Phases 1-4 complete. Phase 5 (stdio session URL `vada.ai` hardcode bug) and Phase 6 (rate limiting, audit log, hardening) remain future work. Contract surfaces aligned May 9 (PR #21). Vendor registry consolidation May 11 (PR #31). Dogfooded May 9 via curl (healthy) and Claude.ai web (broker bug `ofid_*` reconfirmed — Claude Code CLI is the working integration).
 
-See `apps/vada-ai/specs/mcp-architecture.md` for full spec, `vada-decisions.md` D-029 for the hosted MCP architectural decision, D-032 for the vendor registry consolidation.
+See `apps/vada-ai/specs/mcp-architecture.md`, `vada-decisions.md` D-029 (hosted MCP) and D-032 (vendor registry).
 
 ---
 
 ## DB schema management
 
-Vāda's web app maintains its DB schema via `bun run db:push` from `apps/vada-ai/web/`. Ecosystem-shared key tables live in `@atta/db` (`packages/db/src/schema/keys.ts`) and have their own migration handling. No Drizzle migration tracking table exists yet.
-
-When `@atta/db` consolidates further, decide whether to keep `db:push` or move to tracked migrations. No urgency.
+Vāda's web app maintains its DB schema via `bun run db:push` from `apps/vada-ai/web/`. Ecosystem-shared key tables live in `@atta/db` and have their own migration handling. No Drizzle migration tracking table yet. When `@atta/db` consolidates further, decide `db:push` vs tracked migrations. No urgency.
 
 ---
 
@@ -297,148 +330,120 @@ When `@atta/db` consolidates further, decide whether to keep `db:push` or move t
 
 This ecosystem uses the repo as the source of truth for project management. See `coordination.md` for full rules.
 
-**Project-management files (in repo at `project-management/`):** `coordination.md`, `state.md`, `now.md`, `roadmap.md`, `changelog.md`, `lessons.md`, `decisions.md`, `state-machine.md`, `ratification-queue.md`, `reviewer-prompt.md`, plus `roles/` and `diagrams/`. Plus `docs-index.md` at repo root.
+**Project-management files (in repo at `project-management/`):** `coordination.md`, `state-machine.md`, `aeg-manual-flow.md`, `process.md`, `state.md`, `now.md`, `changelog.md`, `lessons.md`, `decisions.md`, `ratification-queue.md`, `reviewer-prompt.md`, `products.md`, plus `iterations/` (README + active iterations), `roles/` (principal, team-leader, developer, reviewer, security, archivist), and `diagrams/`. Plus `docs-index.md` at repo root. **`roadmap.md` is retired (D-029)** — the plan lives in the backlogs (`apps/*/specs/*-backlog.md`, `docs/ecosystem-backlog.md`).
 
 **Everything else is repo specs/skills/code, indexed by `docs-index.md`.**
 
-### Recently shipped (April 28 – May 12, 2026)
+### Recently shipped (most recent first)
 
-**June 1, 2026 — Cetana spawner fixes + Herald Phase 1 + test failures + Vāda key validation**
+**June 4–5, 2026 — AEG model ratified + PM hygiene (PR #80, then direct-to-main cleanup).**
+- **PR #80 (merged `ab7c4d4`) — AEG manual-flow + iteration layer + full doc reconciliation.** Ratified as global **D-029** (Type 1). Forge-native/orchestrator-independent model: task = Issue, status derived, thin iteration topology file, static package-level conflicts, brief in PR body, two dispatch gates, Planner as a third TL mode, Archivist role doc, three anti-regression rules. New: `aeg-manual-flow.md`, `iterations/README.md`, `products.md`, `roles/planner.md`, `roles/archivist.md`, the three `*-backlog.md`, `docs/ecosystem-backlog.md`. Reconciled: `coordination.md`, `process.md`, `state-machine.md`, every other role doc, `brief-authoring/SKILL.md`, both `diagrams/`. `roadmap.md` retired. Pressure-tested across three external-reviewer rounds (Gemini/DeepSeek/ChatGPT) to unanimous endorsement.
+- **verify-docs CI gate installed** (`.github/workflows/verify-docs.yml`) — fulfilling D-027; now blocking on PRs.
+- **PM hygiene (direct to main):** `now.md` repointed from the retired `roadmap.md` to the backlogs; the example iteration `cetana-cli-ladder.md` removed (`iterations/` now holds only `README.md`); this `state.md` refreshed to the AEG model.
 
-- **PR #68 — Cetana spawner fixes:** Resolved three root causes that prevented `cetana dispatch` from working: (1) hardcoded `claude-sonnet-4-6` model string replaced with tier-based `anthropic/balanced` resolved at dispatch time via `resolveDispatchModel` in `@atta/models`; (2) claude binary resolution now uses `which claude` + known NVM/homebrew/global fallback paths instead of bare string spawn; (3) `repoPath` hardcoded to `~/code/atta` replaced with config field set during `cetana init`. No config or code changes needed when Anthropic retires a model.
-- **PR #70 — Herald Phase 1 complete:** Three bugs fixed: (1) `POST /api/match` now reads profile from DB via `username` param — `_test_profile_override` removed from live path; (2) GitHub signals now fetched server-side from DB profile's `githubHandle` instead of trusting empty client-side array; (3) Upstash Redis failure now degrades gracefully in `proxy.ts` (try/catch around `ratelimit.limit()`) — real rate limiting needs fresh Upstash creds but all match requests unblocked. Envoy live at `herald.attalabs.dev`.
-- **PR #71 — Remaining test failures from #29:** Two fixes: localStorage mock now resets in `beforeEach` so `has()` returns false after `clearReviewerConfig`; `planToVisualNodes` cross-round edge off-by-one corrected.
-- **PR #65 — Vāda provider key validation:** Route `apps/vada-ai/web/src/app/api/deliberation/[id]/workflow/run/route.ts` now validates all non-local-vendor agents have provider keys before calling `runLangGraph`. Loads and compiles plan from `session.specId`, builds `agentVendorOverrides` from plan defaults (skipping anthropic), applies `reviewerConfig` overrides on top, returns `{ error: 'missing_provider_key', agent, model, vendor }` with status 400 on failure.
+**June 3, 2026 — Cetana F6 (`cetana watch`) shipped (PR #79).** Single-task-by-id watch (cetana-decisions.md D-026). Plus Herald logo refactor + admin TopBar unification.
 
-**May 12 — v2 naming and framing audit (PR #46).** Locked v2 brand architecture: AttaLabs is the dev/lab ecosystem; Atta is the product (deep-thinking AI composed of Vāda + Vitakka + Sati). No `-AI` suffix on any product brand. Pāli rule demoted from structural to elective aesthetic. Cetana reframed as internal dev tooling (sibling AttaLabs product, not part of Atta). Herald reframed as standalone AttaLabs product (no longer "plugs in"). Updates to `atta-naming-decision.md`, `atta-ecosystem-vision.md`, root `README.md`, root `CLAUDE.md`, `project-management/coordination.md`, `project-management/state.md`, and a new entry D-025 in `project-management/decisions.md`. Derived from three rounds of multi-reviewer pressure-testing (Strategic/UX, Gemini, Grok).
+**June 2, 2026 — Governance roles + verify-docs gate (PR #78).** Reviewer + Security role docs and agent defs (D-026); AgentShield interim security scan (D-028); verify-docs implemented as a real gate (D-027, workflow staged).
 
-**May 12 — Cetana V0.5 Step 1 (F5) shipped — PRs #39, #42, #43.**
-- PR #39: `@atta/cetana-cli` package at `apps/cetana-ai/cli/`. Five commands: `init`, `dispatch`, `list`, `reply`, `logs`. Hierarchical config. Heartbeat-based CRASHED detection. 25 tests pass.
-- PR #42: Install command corrected (`bun --cwd apps/cetana-ai/cli link` → `cd apps/cetana-ai/cli && bun link`). First install-gate violation discovered post-merge.
-- PR #43: `cetana init` abort path hang fixed (`process.stdin.destroy()` on abort branch). Regression test added. D-021 verified end-to-end by Principal.
-- Cetana-decisions.md D-025 added: install gate path-coverage requirement for all future install-gate-touching PRs.
+**June 1, 2026 — Cetana spawner fixes + Herald Phase 1 + test failures + Vāda key validation.**
+- **PR #68 — Cetana spawner fixes:** tier-based model resolution; `which claude` binary resolution; `repoPath` from config.
+- **PR #70 — Herald Phase 1 complete:** match reads profile from DB; GitHub signals server-side; graceful Redis degradation. Envoy live.
+- **PR #71 — test failures from #29:** localStorage mock reset; `planToVisualNodes` cross-round edge off-by-one.
+- **PR #65 — Vāda provider key validation:** validates non-local-vendor agents have keys before `runLangGraph`.
 
-**May 11 — Vendor registry consolidation (PR #31).**
-- Single source of truth at `packages/models/src/vendors.ts` — 12 vendors registered (anthropic, openai, google, xai, groq, openrouter, deepseek, cerebras, mistral, together, fireworks, ollama). Each entry: `sdkShape`, `baseURL`, `keyConvention`, `modelPrefixes`, `envVar`, `localOnly`.
-- 4 prior divergent prefix-resolution implementations (in transform, adapter, route, reviewer-models) collapsed to 1.
-- `@atta/adapter-langgraph` dispatch is now SDK-shape-based (3 branches: `anthropic`, `google-genai`, `openai-compat`) instead of per-vendor switch.
-- `ProviderKeys = Partial<Record<VendorId, string>>` accepts all 12 vendors. `createMultiVendorLlmCall` gains `agentVendorOverrides` for catalog-resolved cross-vendor routing — fixes `deepseek-r1-distill-llama-70b` (Groq-served) misrouting to the DeepSeek endpoint via prefix alone.
-- `vada__consult` MCP tool gains optional `reviewer_config: Record<agentName, modelId>` parameter, validated against the registry, refuses `local_only_vendor` and `missing_provider_key` with structured errors. Mirrors the web UI's existing per-slot model override.
-- `vada__deliberate` team enum pruned to the 2 currently published specs (`vada-reviewers`, `vada-reviewers-synthesis`).
-- Crucible, Sparring, War Room marked `experimental: true` — unpublished from public `/teams` catalog while keeping YAMLs in repo for bench harness and future iteration.
-- Tech debt PR #31 included: `providers.ts` backward-compat shim removed; 6 consumer files (`model-picker`, `provider-keys-section`, `identity/keymap`, `identity/storage`, `identity/react`, `identity/errors`) plus 12 `apps/vada-ai/web/src/` files migrated from `RouteProvider`/`PROVIDERS`/`ROUTE_PROVIDER_ORDER` to `VendorId`/`VENDORS`/`VENDOR_ORDER`. Architecture fully consolidated, no half-migrated state.
-- See vada-decisions.md D-032 for full decision detail.
+**May 12 — v2 naming and framing audit (PR #46, D-025).** AttaLabs = dev/lab; Atta = product; no `-AI` suffix; Pāli rule demoted; Cetana = internal tooling; Herald = standalone.
 
-**May 10 — Cetana V0 shipped (PR #25) + v3 operational model adopted.** State-machine-governed coordination model with three conversational roles (Principal, Team Leader, Developer) + Archivist automation. Cetana coordinator built at `apps/cetana-ai/`. Slice -1 escalation prototype validated; throwaway prototype deleted.
+**May 12 — Cetana V0.5 Step 1 (F5) shipped (PRs #39/#42/#43).** `@atta/cetana-cli`: `init`, `dispatch`, `list`, `reply`, `logs`. D-021 verified end-to-end. D-025 (install-gate path coverage) added.
 
-**May 9 — MCP contract fixes + skill registration unblock (PRs #20 + #21).**
-- **PR #20** (`fix/skill-paths-decouple`, commit `865c6c9`) — moved per-skill path globs from custom `paths:` SKILL.md frontmatter into sibling `paths.txt` files. Skill tool was silently dropping any skill with non-standard frontmatter fields, causing the skill-check enforcement hook to demand skills the Skill tool refused to load (Catch-22). 17 skills affected. Hook updated to read `paths.txt` instead of parsing frontmatter.
-- **PR #21** (`fix/mcp-schema-drift`, commit `26c20ba`) — aligned Vāda's `vada__consult` and `vada__deliberate` MCP tool surfaces with deployed runtime. `vada__consult` inputSchema now declares structured shape (`context`, `question`, `reviewers[{role, notes?, domain?}]`, plus optional `spec_id`, `current_leaning`, `stakes`, `session_title`) — matching `ConsultInputStructuredSchema`. `vada__deliberate` `team` enum expanded to all 5 published specs (later pruned to 2 in PR #31). Stale `vada__deliberate_brokered` reference and `domain_expert` description removed. README retired Brokered/Autonomous mode framing, fixed broken specs link, added hosted MCP installation section. Validator (`validateAndNormalize`) untouched; both legacy and structured shapes still accepted.
-- **Hosted MCP empirically dogfooded.** Server verified end-to-end via curl (`initialize` + `tools/list` clean with bearer auth). Claude.ai web connector returns `ofid_5a58c66b85d09d04` — Track E12 broker bug reconfirmed. Claude Code CLI is the working integration today.
+**May 11 — Vendor registry consolidation (PR #31, D-032).** `packages/models/src/vendors.ts` — 12 vendors, single source of truth. SDK-shape dispatch. `reviewer_config` for MCP. Crucible/Sparring/War Room unpublished. Full `RouteProvider`→`VendorId` migration.
 
-**May 6 — doc audit PR (`docs/may-5-reality-sync`).** 7 repo files synced to May 4-5 reality:
-- D-028, D-029, D-030 appended to `vada-decisions.md`
-- `mcp-architecture.md` flipped target → shipped
-- `vada-byok-principles.md` rewritten in place (single-source server-side)
-- `vada-byok-gap-report.md` resolution status block prepended; original preserved
-- `vada-mcp-server/SKILL.md` hosted surface marked live
-- `auth/SKILL.md` RULE #5 rewritten (no `account.attalabs.dev` hub)
-- `database/SKILL.md` ecosystem-shared schemas + envelope encryption sections added
+**May 10 — Cetana V0 shipped (PR #25) + v3 operational model adopted.** State-machine-governed coordination (precursor to AEG).
 
-**May 5 — `feat/shared-keys-ui` merged.**
-- `ProviderKeysSection` and `ApiKeysSection` extracted to `packages/ui/account/`
-- Ecosystem-shared key schemas (`apiKeys`, `userProviderKeys`, `mcpSessions`) moved to `packages/db/src/schema/keys.ts`
-- Settings tabs restructured: Account / API Keys / Agent Style. Teams tab removed.
-- Unified team agent model storage: single `vada:team:<specId>` localStorage key for all team types (vada-decisions.md D-027).
+**May 9 — MCP contract fixes + skill registration unblock (PRs #20 + #21).** `paths.txt` decoupling (17 skills); `vada__consult`/`vada__deliberate` surfaces aligned with runtime; hosted MCP dogfooded.
 
-**May 4 — hosted MCP + single-source-keys.**
-- Hosted MCP server shipped end-to-end (PRs #9 + #10): bearer auth via `vada_*` API keys, envelope-encrypted provider keys, both MCP tools wired through. See vada-decisions.md D-029.
-- Single-source-keys reversal (PR #13): server-side `user_provider_keys` is canonical; IndexedDB demoted. See vada-decisions.md D-028.
+**May 6 — doc audit (`docs/may-5-reality-sync`).** 7 files synced to May 4-5 reality.
 
-**May 3 — engine-flow-ui PR.**
-- `/teams` cards page (5 published cards)
-- `/teams/[slug]` detail pages with agent grid + calculator + flow visualization
-- `@atta/ui/engine-flow` module
-- Engine vocabulary refactor: `PlanNodeKind` + `PlanEdgeKind` emitted by all 4 compilers
-- Role/engine separation: `AgentRole` deleted from engine
-- Calculator + vendor registry
+**May 5 — `feat/shared-keys-ui` merged.** `@atta/ui/account` extraction; ecosystem key schemas to `@atta/db`; Settings restructured.
+
+**May 4 — hosted MCP + single-source-keys (PRs #9/#10/#13).**
+
+**May 3 — engine-flow-ui PR.** `/teams` + `/teams/[slug]`; `@atta/ui/engine-flow`; engine vocabulary refactor; role/engine separation.
 
 **April 28 — production launch.** Vāda + AttaLabs hub deployed.
 
-**April 30 – May 1 — Track B Item 2 closeout.** Multi-vendor adapter, engine extensions, docs cleanup, web restructure, Vāda Reviewers v1 YAMLs all merged.
+**April 30 – May 1 — Track B Item 2 closeout.** Multi-vendor adapter, engine extensions, Vāda Reviewers v1 YAMLs.
 
 ### Stale, references old framing or pre-merge state
 
 - `apps/vada-ai/specs/vada-state.md` (Vāda-internal — needs phase update post-May-4-5)
-- `apps/vada-ai/specs/vada-product-spec.md`
-- `apps/vada-ai/specs/vada-product-recognitions.md`
-- `apps/vada-ai/specs/vada-reviewers-spec.md` — references MCP/BYOK in passing; verify still accurate post-May-4
-- `apps/vada-ai/specs/vada-teams-catalog/02-mcp-tool-interface.md` — references old `apiKey` body parameter on workflow/run route (no longer accepted post-vada-decisions.md D-028; route reads from DB by `clerkId`)
-- `apps/vada-ai/specs/vada-teams-catalog/04-caller-claude-protocol.md` — references "Caller Claude owns synthesis" which was reversed by D-016
+- `apps/vada-ai/specs/vada-product-spec.md`, `vada-product-recognitions.md`
+- `apps/vada-ai/specs/vada-reviewers-spec.md` — MCP/BYOK references; §8 phantom-consensus not in locked decisions
+- `apps/vada-ai/specs/vada-teams-catalog/02-mcp-tool-interface.md` — old `apiKey` body param (route now reads from DB by `clerkId`)
+- `apps/vada-ai/specs/vada-teams-catalog/04-caller-claude-protocol.md` — "Caller Claude owns synthesis" reversed by D-016
 - `apps/vada-ai/CLAUDE.md` — Settings tab table still shows Teams tab
-- Trust page content in `apps/vada-ai/web/.../trust/...` — references browser-only BYOK; needs full rewrite for current trust model
-- `apps/atta-ai/specs/cetana-reality-check.md` — V0/V0.7/V1 sequencing now superseded by May 9 unblock; V0 build is in flight directly. File still useful as historical reference but no longer the active plan.
-- `apps/atta-ai/specs/atta-build-strategy.md` — Cetana "Layer 4" section references retired V0=YAML / V0.7=MCP+CLI / V1=full sequencing; should be updated to reflect current V0/V0.5 internal-tooling reality (separate PR).
-- `.claude/skills/vada-mcp-server/SKILL.md` — references `domain_expert` reviewer role in the "Adding a New Reviewer Profile" how-to; harmless (it's a how-to, not current-state description) but worth aligning when `VADA_DOMAIN_EXPERT` env flag flips.
-- `.claude/skills/atta-adapter-langgraph/SKILL.md` — may describe per-vendor switch dispatch rather than SDK-shape dispatch (post-PR-31); needs read + update on next touch.
-- `.claude/skills/model-picker/SKILL.md` — may reference the prior `RouteProvider` / `PROVIDERS` symbols rather than `VendorId` / `VENDORS` (post-PR-31); needs read + update on next touch.
+- Trust page content — references browser-only BYOK; needs rewrite
+- `apps/atta-ai/specs/cetana-reality-check.md` — V0/V0.7/V1 sequencing superseded
+- `apps/atta-ai/specs/atta-build-strategy.md` — Cetana "Layer 4" section references retired sequencing
+- `.claude/skills/vada-mcp-server/SKILL.md` — `domain_expert` how-to reference
+- `.claude/skills/atta-adapter-langgraph/SKILL.md` — may describe per-vendor switch (pre-PR-31)
+- `.claude/skills/model-picker/SKILL.md` — may reference `RouteProvider`/`PROVIDERS` (pre-PR-31)
 
 ---
 
 ## What exists physically vs. what's planned
 
-**Exists in code (May 12, 2026):**
-- `apps/vada-ai/web` — Vāda web app with full teams catalog surface, production-deployed
-- `apps/vada-ai/web/src/app/api/mcp/route.ts` — hosted MCP route, live; uses vendor registry for `reviewerConfig` validation
-- `apps/vada-ai/mcp-server` — Vāda's local stdio MCP server with generic `spec_id` routing; tool contract surfaces aligned with runtime May 9 (PR #21); `reviewer_config` parameter added May 11 (PR #31)
+**Exists in code (June 5, 2026):**
+- `apps/vada-ai/web` + hosted MCP route — production-deployed
+- `apps/vada-ai/mcp-server` — local stdio MCP server
 - `apps/atta-ai/mcp-server` — engine-as-MCP server
-- `apps/atta-ai/web` — AttaLabs hub, production-deployed at `attalabs.dev`
-- `apps/cetana-ai/coordinator/` — Cetana V0 coordinator, shipped May 10 (PR #25)
-- `apps/cetana-ai/cli/` — Cetana V0.5 CLI, shipped May 12 (PRs #39/#42/#43)
-- `apps/herald-ai/*` — Herald surfaces (separate auth). Phase 1 complete June 1, 2026. Match engine reads from DB, signals server-side, rate limiter degrades gracefully. Live at `herald.attalabs.dev` (deploy triggered PR #70 — confirm 200 manually).
-- `apps/vitakka-ai/` — scaffold; build not yet started
-- All `@atta/*` packages including `@atta/crypto`, `@atta/ui/account`, `@atta/db` ecosystem-shared key schemas
-- `packages/models/src/vendors.ts` — vendor registry (12 vendors); single source of truth for SDK shapes, baseURLs, key conventions, prefix fallbacks (PR #31)
-- `@atta/ui/engine-flow` module
-- 9 YAML teams in `apps/vada-ai/yamls/` (2 published, 7 experimental as of May 11)
-- Calculator + vendor registry
-- `apps/vada-ai/specs/vada-reviewers-spec.md` (rev 5)
-- `project-management/` directory with `coordination.md`, `state.md`, `now.md`, `roadmap.md`, `changelog.md`, `lessons.md`, `state-machine.md`, `decisions.md`, role refs, ratification queue (v3 operational model — May 10)
-- `.claude/skills/*/paths.txt` — per-skill path globs decoupled from SKILL.md frontmatter (PR #20 May 9, 17 skills)
+- `apps/atta-ai/web` — AttaLabs hub, production-deployed
+- `apps/cetana-ai/coordinator/` + `apps/cetana-ai/cli/` — Cetana V0/V0.5 (+ F6 watch)
+- `apps/herald-ai/*` — Herald (separate auth). Phases 1–2 complete; Phase 3 in active build.
+- `apps/vitakka-ai/` — scaffold; build not started
+- All `@atta/*` packages (incl. `@atta/crypto`, `@atta/ui/account`, `@atta/ui/engine-flow`, `@atta/db` shared key schemas)
+- `packages/models/src/vendors.ts` — vendor registry (12 vendors)
+- 9 YAML teams (2 published, 7 experimental)
+- `project-management/` — full AEG model doc set (constitution, manual-flow, process, iterations/README, products, roles ×6, diagrams ×2, decisions to D-029); `.github/workflows/verify-docs.yml` live
+- `.claude/skills/*/paths.txt` (17 skills)
 
-**Specced but not yet built / iterated:**
-- Reviewer system prompt iteration (Track B Item 3b) — to be dispatched through Cetana once V0 is configured
-- Synthesizer system prompt iteration (3c)
-- Vāda Reviewers benchmark (Item 4)
-- Vitakka V1 build (concept locked May 3)
+**Specced / planned but not yet built:**
+- **AEG UI** (`apps/aeg/web`) — the first real iteration
+- Reviewer system prompt iteration (3b); synthesizer iteration (3c); Vāda Reviewers benchmark (4)
+- Vitakka V1 build
+- Herald Phase 3 (recruiter self-serve) — in active build, outside the flow
+- Cetana F7 (`cetana status`) — ready to dispatch
+- Neutral AEG scaffold + `aeg.sh`
 
-**Drafted briefs awaiting dispatch:**
-(none currently)
+**Active iterations:** none. `iterations/` holds only `README.md` until the AEG-UI iteration is planned.
+
+**Drafted briefs awaiting dispatch:** none.
 
 **Does not exist yet:**
-- Atta-the-product (composed Vāda + Vitakka + Sati) — not yet deployed; will live at its own consumer domain when ready (target `atta.ai`)
-- `apps/account/web` — DEFERRED indefinitely. vada-decisions.md D-030 decision: no `account.attalabs.dev` hub.
-- Sati standalone surface — scope deferred; may or may not exist as a standalone product
-- Hosted MCP hardening: rate limiting, audit log retention, KMS migration, per-key tool scoping (V2 work)
+- Atta-the-product (composed Vāda + Vitakka + Sati)
+- `apps/aeg/` (the AEG product UI — first iteration)
+- `apps/account/web` — DEFERRED indefinitely (D-030)
+- Sati standalone surface — scope deferred
+- Hosted MCP hardening (rate limiting, audit log, KMS, per-key tool scoping)
 - Trust + MCP page content rewrites
-- Cetana V1 surfaces (Tauri shell, dashboard, native notifications) — deferred until V0 proves daily-driver value over 2 weeks
+- Cetana V1 surfaces (Tauri shell, dashboard) — deferred until D-023 gate
 
 ---
 
 ## Open questions across the ecosystem
 
 - **OQ-cross-1:** Does Sati get built before or after Vāda hits revenue?
-- **~~OQ-cross-2~~ (RESOLVED May 5):** No billing hub at `account.attalabs.dev`. Sharing at component level via `@atta/ui/account` (vada-decisions.md D-030).
-- **OQ-cross-3:** `atta.ai` migration — eager vs. wait for natural rebuild moment? (Domain still owned by Japanese individual; may free 2027.)
+- **~~OQ-cross-2~~ (RESOLVED May 5):** No billing hub at `account.attalabs.dev`. Component-level sharing via `@atta/ui/account` (D-030).
+- **OQ-cross-3:** `atta.ai` migration — eager vs. wait for natural rebuild moment? (May free 2027.)
 - **OQ-cross-4:** When `@atta/db` consolidates further, keep `db:push` or move to tracked migrations?
-- **~~OQ-cross-5~~ (RESOLVED May 9):** V0.7 path collapsed. Cetana V0 directly implements the validated escalation primitive inside the monorepo at `apps/cetana-ai/`. No separate MCP+CLI step.
-- **~~OQ-cross-6~~ (RESOLVED May 4):** Neither Path A nor Path B from the gap report. Server-side at rest, envelope-encrypted, decrypted only in request handlers (vada-decisions.md D-028).
-- **~~OQ-cross-7~~ (RESOLVED May 5):** API key management lives in product-local Settings, composed from shared `@atta/ui/account` components (vada-decisions.md D-030).
-- **OQ-cross-8:** Fate of the (now 7) experimental YAMLs after Vāda Reviewers v1 benchmark.
-- **~~OQ-cross-9~~ (RESOLVED May 3):** Engine vocabulary architecture — Choice A. `PlanNodeKind` + `PlanEdgeKind` shipped.
-- **~~OQ-cross-10~~ (RESOLVED May 9):** Cetana V0 is not superseded by CCPM/APM. The interactive pause/resume layer (Slice -1 validated) is the differentiator. Sandboxed evaluation no longer needed.
-- **OQ-cross-11 (NEW May 9):** Does Cetana V1 (Tauri shell + dashboard) ship after 2 weeks of V0 daily use, or does V0 prove sufficient indefinitely?
-- **OQ-cross-12 (NEW May 11):** When a vendor's SDK shape diverges from existing branches (e.g., a vendor that uses streaming-only with a non-OpenAI-compatible response shape, or that requires AWS Sigv4 auth), should the adapter gain a 4th `sdkShape` branch or should we proxy through OpenRouter? Likely the former when latency matters, the latter when it doesn't. Decide per case when it next comes up.
-- **OQ-cross-13 (NEW May 12):** Should Sati have a standalone surface at all, or live entirely as Atta's internal memory layer? Deferred until Atta build sequence progresses.
+- **~~OQ-cross-5~~ (RESOLVED May 9):** V0.7 path collapsed; Cetana V0 implements the escalation primitive directly.
+- **~~OQ-cross-6~~ (RESOLVED May 4):** Server-side at rest, envelope-encrypted (D-028).
+- **~~OQ-cross-7~~ (RESOLVED May 5):** API key management in product-local Settings via shared components (D-030).
+- **OQ-cross-8:** Fate of the 7 experimental YAMLs after the Vāda Reviewers benchmark.
+- **~~OQ-cross-9~~ (RESOLVED May 3):** Engine vocabulary — Choice A. `PlanNodeKind` + `PlanEdgeKind` shipped.
+- **~~OQ-cross-10~~ (RESOLVED May 9):** Cetana V0 not superseded by CCPM/APM; interactive pause/resume is the differentiator.
+- **OQ-cross-11 (May 9):** Does Cetana V1 (Tauri + dashboard) ship after 2 weeks of V0 use, or is V0 sufficient indefinitely?
+- **OQ-cross-12 (May 11):** When a vendor's SDK shape diverges, add a 4th `sdkShape` branch (latency) or proxy via OpenRouter (convenience)? Decide per case.
+- **OQ-cross-13 (May 12):** Should Sati have a standalone surface, or live entirely as Atta's internal memory layer? Deferred.
+- **OQ-cross-14 (NEW June 5):** AEG UI scope — it must render the **plan** (backlogs) as well as **execution** (iterations), since retiring `roadmap.md` removed the single whole-plan view. Single-tenant *usage* (you, one repo, next job) on a multi-repo, tagged *architecture* (repos group by company and by product). GitHub App OAuth, read-only, per-repo, encrypted tokens; webhook-fed forge-fact cache (never authored status). AEG-only (a repo must practice AEG to render).
 
 Vāda-internal open questions live in `apps/vada-ai/specs/vada-state.md`.
