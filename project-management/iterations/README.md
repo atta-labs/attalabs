@@ -51,6 +51,8 @@ Per task: branch → PR → Reviewer + Security → merge → close-out
 
 **`roadmap.md` is retired.** Its executable slice became the first iteration; its held/vision content moved to per-product backlogs (`apps/<product>/specs/<product>-backlog.md`) and `docs/ecosystem-backlog.md`, all out of the flow.
 
+**The backlog is the seam with your planning tool — and AEG is indifferent to it.** The backlog can be these markdown files, or it can be Jira, Linear, a spreadsheet, or a conversation in someone's head. AEG does not care which, because **AEG never reads the backlog as part of the flow** — it only requires that *a well-formed brief exists* when a task is dispatched. The Planner *may* read the backlog to compose an iteration (a useful input), but it does **not depend** on one: hand the Planner intent directly ("build the AEG UI") and it produces an iteration with no backlog at all. So the backlog is an *optional upstream input*, never a flow dependency. This is exactly what lets AEG drop into a team that already lives in Jira without fighting it — Jira stays the plan; AEG picks up at the iteration. The seam is the only point the two ever touch, and only a human (the Planner) stands on it.
+
 ---
 
 ## 3. A task is a GitHub Issue; status is derived, never stored
@@ -124,7 +126,7 @@ The Planner's job — the reason the iteration exists — is the relationships a
 - **Independently verifiable → split** into single-product tasks with a `depends-on` edge.
 - **Verification-coupled → combine** into one task, one branch, one PR, multiple products (e.g. generalize `@atta/engine` *and* migrate the first consumer onto it — the only proof the refactor is correct is the consumer working). Cross-product PRs touching two, three, four products are normal, not exceptions.
 
-The Planner writes no briefs (those are just-in-time, §7) and writes no status (that's the forge). It owns the thin file and the `backlog`/`todo` distinction (assigning an Issue is the `todo` promotion). It also enforces the **plan-integrity gates** in `roles/planner.md` — the recognized failure modes turned into live refusals and calibrated warnings (see §10). The full role spec, including refusal language, is in `roles/planner.md`.
+The Planner writes no briefs (those are just-in-time, §7) and writes no status (that's the forge). It owns the thin file and the `backlog`/`todo` distinction (assigning an Issue is the `todo` promotion). Its upstream input — a ticket slice, a backlog, or just the Principal's stated intent — is optional and lives outside AEG (§2); the Planner is where the company's plan and AEG's execution meet. It also enforces the **plan-integrity gates** in `roles/planner.md` — the recognized failure modes turned into live refusals and calibrated warnings (see §10). The full role spec, including refusal language, is in `roles/planner.md`.
 
 ---
 
