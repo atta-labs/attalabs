@@ -16,7 +16,7 @@ import {
   Textarea,
   useToastContext
 } from '@atta/ui'
-import { Download, Upload, X } from 'lucide-react'
+import { Download, ExternalLink, Upload, X } from 'lucide-react'
 import { ProviderKeysSection } from '@atta/ui/account'
 import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { SummaryMarkdown } from '@/components/summary-markdown'
@@ -389,6 +389,10 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
   const stackAtLimit = stackTags.length >= STACK_MAX
   const stackOverLimit = stackTags.length > STACK_MAX
 
+  const cvFilename = cvUrl
+    ? `${form.name.replace(/\s+/g, '_')}_CV.${cvUrl.split('.').pop()?.split('?')[0] ?? 'pdf'}`
+    : null
+
   function addTag(value: string) {
     const tag = value.trim()
     if (!tag || stackTags.includes(tag) || stackAtLimit) return
@@ -727,65 +731,89 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
             }}
           />
           <div className='space-y-8'>
-            <section className='rounded border border-dashed border-border p-4'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-                    Replace from CV
-                  </h2>
-                  <p className='mt-1 font-mono text-[10px] text-muted-foreground'>
-                    Upload a new CV to overwrite all profile fields at once.
-                  </p>
-                </div>
-                <Button
-                  type='button'
-                  variant='outline'
-                  onClick={() => cvInputRef.current?.click()}
-                  disabled={uploading}
-                  className='font-mono text-xs uppercase tracking-[0.2em]'
-                >
-                  {uploading ? 'Parsing...' : 'Upload CV'}
-                </Button>
-              </div>
-            </section>
-
+            {/* ── File state ── */}
             <section>
               <h2 className={sectionHeadClass}>CV File</h2>
               {cvUrl ? (
-                <div className='flex items-center gap-3'>
-                  <a
-                    href={cvUrl}
-                    target='_blank'
-                    rel='noreferrer'
-                    className='inline-flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
-                  >
-                    <Download className='h-3 w-3' />
-                    Download CV
-                  </a>
+                <div className='rounded border border-border bg-card p-4'>
+                  <div className='mb-4 flex items-center gap-2.5'>
+                    <span className='font-mono text-sm text-foreground'>{cvFilename}</span>
+                    <span className='rounded-sm bg-success/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.15em] text-success'>
+                      Uploaded
+                    </span>
+                  </div>
+                  <div className='flex items-center gap-4'>
+                    <a
+                      href={cvUrl}
+                      download={cvFilename ?? undefined}
+                      className='inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
+                    >
+                      <Download className='h-3.5 w-3.5' />
+                      Download
+                    </a>
+                    <a
+                      href={cvUrl}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
+                    >
+                      <ExternalLink className='h-3.5 w-3.5' />
+                      Open
+                    </a>
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => cvDirectRef.current?.click()}
+                      disabled={cvUploading}
+                      className='h-auto px-0 font-mono text-xs text-muted-foreground hover:bg-transparent hover:text-foreground'
+                    >
+                      {cvUploading ? 'Uploading...' : 'Replace'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className='flex flex-col items-start gap-3 rounded border border-dashed border-border p-6'>
+                  <p className='font-mono text-xs text-muted-foreground'>No CV uploaded yet.</p>
                   <Button
                     type='button'
-                    variant='ghost'
+                    variant='outline'
                     size='sm'
                     onClick={() => cvDirectRef.current?.click()}
                     disabled={cvUploading}
-                    className='font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground'
+                    className='gap-1.5 font-mono text-xs uppercase tracking-[0.15em]'
                   >
-                    {cvUploading ? 'Uploading...' : 'Replace'}
+                    <Upload className='h-3.5 w-3.5' />
+                    {cvUploading ? 'Uploading...' : 'Upload CV'}
                   </Button>
                 </div>
-              ) : (
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={() => cvDirectRef.current?.click()}
-                  disabled={cvUploading}
-                  className='gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em]'
-                >
-                  <Upload className='h-3 w-3' />
-                  {cvUploading ? 'Uploading...' : 'Upload CV (PDF)'}
-                </Button>
               )}
+            </section>
+
+            {/* ── Parse & overwrite (destructive) ── */}
+            <section>
+              <div className='rounded border border-dashed border-destructive/30 p-4'>
+                <div className='flex items-start justify-between gap-4'>
+                  <div>
+                    <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-destructive'>
+                      Overwrite from CV
+                    </h2>
+                    <p className='mt-1 font-mono text-[10px] text-muted-foreground'>
+                      Parse a CV and overwrite name, title, summary, and stack. Cannot be undone.
+                    </p>
+                  </div>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    onClick={() => cvInputRef.current?.click()}
+                    disabled={uploading}
+                    className='shrink-0 border-destructive/40 font-mono text-[10px] uppercase tracking-[0.15em] text-destructive hover:bg-destructive/10 hover:text-destructive'
+                  >
+                    {uploading ? 'Parsing...' : 'Parse & Overwrite'}
+                  </Button>
+                </div>
+              </div>
             </section>
           </div>
         </TabsContent>
