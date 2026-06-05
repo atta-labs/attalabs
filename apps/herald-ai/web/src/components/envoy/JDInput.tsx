@@ -2,10 +2,9 @@
 
 import type { FileUIPart } from 'ai'
 import { useEffect, useRef } from 'react'
-import { Download, ExternalLink } from 'lucide-react'
+import { Code2, Download, ExternalLink, Link2, MessageCircle } from 'lucide-react'
 import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
 import { AvatarFrame } from '@/components/avatar-frame'
-import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { SummaryMarkdown } from '@/components/summary-markdown'
 import { useHeroCollapse } from './hero-collapse-context'
 
@@ -108,28 +107,11 @@ export function JDInput({
             </div>
 
             {/* Sentinel: collapse triggers when this exits the scroll container's top */}
-            <div ref={sentinelRef} aria-hidden='true' />
+            <div ref={sentinelRef} aria-hidden='true' className='h-px' />
 
             <div className='mt-6'>
               {(topStack.length > 0 || locationLine || (candidateCvUrl && cvFilename) || hasSocialLinks) && (
                 <dl className='grid grid-cols-[80px_1fr] items-baseline gap-y-2'>
-                  {topStack.length > 0 && (
-                    <>
-                      <dt className='pt-0.5 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
-                      <dd>
-                        <div className='flex flex-wrap gap-1.5'>
-                          {topStack.map((s) => (
-                            <span
-                              key={s}
-                              className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
-                            >
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      </dd>
-                    </>
-                  )}
                   {locationLine && (
                     <>
                       <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LOCATION</dt>
@@ -178,7 +160,7 @@ export function JDInput({
                             title='GitHub'
                             className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
                           >
-                            <GitHubIcon className='h-3.5 w-3.5' />
+                            <Code2 className='h-3.5 w-3.5' />
                           </a>
                         )}
                         {candidateLinkedin && (
@@ -190,7 +172,7 @@ export function JDInput({
                             title='LinkedIn'
                             className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
                           >
-                            <LinkedInIcon className='h-3.5 w-3.5' />
+                            <Link2 className='h-3.5 w-3.5' />
                           </a>
                         )}
                         {candidateDiscord && (
@@ -200,9 +182,26 @@ export function JDInput({
                             title={`Discord: ${candidateDiscord}`}
                             className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground'
                           >
-                            <DiscordIcon className='h-3.5 w-3.5' />
+                            <MessageCircle className='h-3.5 w-3.5' />
                           </span>
                         )}
+                      </dd>
+                    </>
+                  )}
+                  {topStack.length > 0 && (
+                    <>
+                      <dt className='pt-0.5 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
+                      <dd>
+                        <div className='flex flex-wrap gap-1.5'>
+                          {topStack.map((s) => (
+                            <span
+                              key={s}
+                              className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
+                            >
+                              {s}
+                            </span>
+                          ))}
+                        </div>
                       </dd>
                     </>
                   )}
