@@ -323,11 +323,6 @@ export function EnvoyFlow({
             </header>
             <div className='mt-8 rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
               <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
-              {Button && (
-                <Button disabled variant='outline' className='mt-4 text-xs uppercase tracking-[0.2em]'>
-                  Run Forensic Match
-                </Button>
-              )}
             </div>
           </div>
         </div>
