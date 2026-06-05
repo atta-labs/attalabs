@@ -238,17 +238,14 @@ export function JDInput({
         </div>
       ) : isOwner ? (
         <div className='shrink-0 border-t border-border bg-background'>
-          <div className='mx-auto max-w-[680px] px-6 py-5'>
-            <p className='font-mono text-xs text-muted-foreground'>
-              Recruiters can't run the audit yet — you haven't added an Anthropic API key.{' '}
-              <a
-                href='/admin/settings'
-                className='text-foreground underline underline-offset-2 hover:text-foreground/70'
-              >
-                Add one in Settings → API Keys
-              </a>
-              .
-            </p>
+          <div className='mx-auto flex max-w-[680px] items-center justify-between px-6 py-3'>
+            <p className='font-mono text-xs text-warning'>No API key — recruiters can't run audits yet.</p>
+            <a
+              href='/admin/settings'
+              className='shrink-0 font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
+            >
+              Settings → API Keys
+            </a>
           </div>
         </div>
       ) : null}
