@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Code2, Download, ExternalLink, Link2, MessageCircle } from 'lucide-react'
+import { Download, ExternalLink } from 'lucide-react'
+import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { AvatarFrame } from '@/components/avatar-frame'
@@ -104,7 +105,7 @@ export function EnvoyFlow({
   hasAnthropicKey?: boolean
   isOwner?: boolean
 }) {
-  const { Button } = useComponents()
+  const { Button, Badge } = useComponents()
   const [state, setState] = useState<FlowState>('input')
   const [report, setReport] = useState<MatchReport | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -216,20 +217,26 @@ export function EnvoyFlow({
                   localProfile.github ||
                   localProfile.linkedin ||
                   localProfile.discord) && (
-                  <dl className='grid grid-cols-[80px_1fr] items-baseline gap-y-2'>
+                  <dl className='grid grid-cols-[80px_1fr] items-center gap-y-2'>
                     {previewTopStack.length > 0 && (
                       <>
-                        <dt className='pt-0.5 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
+                        <dt className='self-start pt-1 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
                         <dd>
                           <div className='flex flex-wrap gap-1.5'>
-                            {previewTopStack.map((s) => (
-                              <span
-                                key={s}
-                                className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
-                              >
-                                {s}
-                              </span>
-                            ))}
+                            {previewTopStack.map((s) =>
+                              Badge ? (
+                                <Badge key={s} variant='outline' className='font-mono text-[11px]'>
+                                  {s}
+                                </Badge>
+                              ) : (
+                                <span
+                                  key={s}
+                                  className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
+                                >
+                                  {s}
+                                </span>
+                              )
+                            )}
                           </div>
                         </dd>
                       </>
@@ -248,25 +255,57 @@ export function EnvoyFlow({
                             {previewCvFilename}
                           </span>
                           <div className='flex shrink-0 items-center gap-1'>
-                            <a
-                              href={localProfile.cvUrl}
-                              download
-                              aria-label='Download CV'
-                              title='Download CV'
-                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                            >
-                              <Download className='h-3.5 w-3.5' />
-                            </a>
-                            <a
-                              href={localProfile.cvUrl}
-                              target='_blank'
-                              rel='noreferrer'
-                              aria-label='Open CV'
-                              title='Open CV'
-                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                            >
-                              <ExternalLink className='h-3.5 w-3.5' />
-                            </a>
+                            {Button ? (
+                              <>
+                                <Button
+                                  variant='outline'
+                                  size='icon'
+                                  className='h-7 w-7'
+                                  aria-label='Download CV'
+                                  title='Download CV'
+                                  onClick={() => {
+                                    const a = document.createElement('a')
+                                    a.href = localProfile.cvUrl!
+                                    a.download = ''
+                                    a.click()
+                                  }}
+                                >
+                                  <Download className='h-3.5 w-3.5' />
+                                </Button>
+                                <Button
+                                  variant='outline'
+                                  size='icon'
+                                  className='h-7 w-7'
+                                  aria-label='Open CV'
+                                  title='Open CV'
+                                  onClick={() => window.open(localProfile.cvUrl!, '_blank')}
+                                >
+                                  <ExternalLink className='h-3.5 w-3.5' />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <a
+                                  href={localProfile.cvUrl}
+                                  download
+                                  aria-label='Download CV'
+                                  title='Download CV'
+                                  className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                                >
+                                  <Download className='h-3.5 w-3.5' />
+                                </a>
+                                <a
+                                  href={localProfile.cvUrl}
+                                  target='_blank'
+                                  rel='noreferrer'
+                                  aria-label='Open CV'
+                                  title='Open CV'
+                                  className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                                >
+                                  <ExternalLink className='h-3.5 w-3.5' />
+                                </a>
+                              </>
+                            )}
                           </div>
                         </dd>
                       </>
@@ -275,40 +314,75 @@ export function EnvoyFlow({
                       <>
                         <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LINKS</dt>
                         <dd className='flex items-center gap-1.5'>
-                          {localProfile.github && (
-                            <a
-                              href={`https://github.com/${localProfile.github}`}
-                              target='_blank'
-                              rel='noreferrer'
-                              aria-label='GitHub'
-                              title='GitHub'
-                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                            >
-                              <Code2 className='h-3.5 w-3.5' />
-                            </a>
-                          )}
-                          {localProfile.linkedin && (
-                            <a
-                              href={localProfile.linkedin}
-                              target='_blank'
-                              rel='noreferrer'
-                              aria-label='LinkedIn'
-                              title='LinkedIn'
-                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                            >
-                              <Link2 className='h-3.5 w-3.5' />
-                            </a>
-                          )}
-                          {localProfile.discord && (
-                            <span
-                              role='img'
-                              aria-label={`Discord: ${localProfile.discord}`}
-                              title={`Discord: ${localProfile.discord}`}
-                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground'
-                            >
-                              <MessageCircle className='h-3.5 w-3.5' />
-                            </span>
-                          )}
+                          {localProfile.github &&
+                            (Button ? (
+                              <Button
+                                variant='outline'
+                                size='icon'
+                                className='h-7 w-7'
+                                aria-label='GitHub'
+                                title='GitHub'
+                                onClick={() => window.open(`https://github.com/${localProfile.github}`, '_blank')}
+                              >
+                                <GitHubIcon className='h-3.5 w-3.5' />
+                              </Button>
+                            ) : (
+                              <a
+                                href={`https://github.com/${localProfile.github}`}
+                                target='_blank'
+                                rel='noreferrer'
+                                aria-label='GitHub'
+                                title='GitHub'
+                                className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                              >
+                                <GitHubIcon className='h-3.5 w-3.5' />
+                              </a>
+                            ))}
+                          {localProfile.linkedin &&
+                            (Button ? (
+                              <Button
+                                variant='outline'
+                                size='icon'
+                                className='h-7 w-7'
+                                aria-label='LinkedIn'
+                                title='LinkedIn'
+                                onClick={() => window.open(localProfile.linkedin!, '_blank')}
+                              >
+                                <LinkedInIcon className='h-3.5 w-3.5' />
+                              </Button>
+                            ) : (
+                              <a
+                                href={localProfile.linkedin}
+                                target='_blank'
+                                rel='noreferrer'
+                                aria-label='LinkedIn'
+                                title='LinkedIn'
+                                className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                              >
+                                <LinkedInIcon className='h-3.5 w-3.5' />
+                              </a>
+                            ))}
+                          {localProfile.discord &&
+                            (Button ? (
+                              <Button
+                                variant='outline'
+                                size='icon'
+                                className='h-7 w-7'
+                                aria-label={`Discord: ${localProfile.discord}`}
+                                title={`Discord: ${localProfile.discord}`}
+                              >
+                                <DiscordIcon className='h-3.5 w-3.5' />
+                              </Button>
+                            ) : (
+                              <span
+                                role='img'
+                                aria-label={`Discord: ${localProfile.discord}`}
+                                title={`Discord: ${localProfile.discord}`}
+                                className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground'
+                              >
+                                <DiscordIcon className='h-3.5 w-3.5' />
+                              </span>
+                            ))}
                         </dd>
                       </>
                     )}

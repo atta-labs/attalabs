@@ -469,3 +469,65 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - No config-security scan: rejected; the surface is real and currently unaudited.
 
 **Consequences:** Referenced in `roles/security.md` and `.claude/agents/security-reviewer.md`. Revisit once dogfooded; if valuable, scope a first-party replacement and supersede this decision.
+
+---
+
+## D-029 — Herald standalone: own Clerk, own DB, own keys
+
+**Date:** 2026-06-05
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** YES
+**Authored by:** Principal
+**Ratified by:** Principal
+
+**Context:** Herald is a sibling product in AttaLabs (D-025). As BYOK and key storage (using `@atta/crypto` + `@atta/ui/account`) were added to the ecosystem, a question arose: should Herald share the Atta/Vāda Clerk app (`summary-ladybird-76`) and Neon DB, or maintain its own identity perimeter?
+
+**Decision:** Herald remains a standalone product with its own Clerk app (`closing-blowfish-4`), own Neon DB, and own `user_provider_keys` table keyed by Herald Clerk IDs. Shared at the code level only — `@atta/ui/account`, `@atta/crypto`, `@atta/db/queries` are shared implementations; identity and data are not. No SSO across the Herald boundary; a key entered in Vāda does not carry to Herald. Uses the same `MASTER_ENCRYPTION_KEY` value as Vāda; separate DBs mean no shared ciphertext regardless.
+
+**Alternatives rejected:**
+- Fold Herald into the shared Clerk app (`summary-ladybird-76`): rejected. Herald's user base does not overlap Atta's, so shared login has no payoff; blast radius is cleaner with independent identity; avoids a Clerk migration while user counts are low.
+
+**Consequences:** Herald keys, sessions, and profiles are isolated from Atta/Vāda at runtime. Reversal (folding into shared Clerk) requires migrating existing Herald identities and re-keying stored data; cost is lowest while Herald users are few.
+
+---
+
+## D-030 — Herald dual-mode: Candidate and Recruiter (Airbnb-style switch)
+
+**Date:** 2026-06-05
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Principal
+**Ratified by:** Principal
+
+**Context:** Herald's first build covers the candidate side only (profile, settings, forensic match audit). As recruiter value was explored, two structural options emerged: a separate recruiter product, or a single user who can switch modes — as Airbnb does with host/travel.
+
+**Decision:** A single Herald user operates in two modes via a nav switch. Candidate mode: own profile, settings, UI, CV; routes under `/candidate/...`; public profile remains bare `/username`. Recruiter mode: stateless batch-audit tool — N CVs × M JDs → one report per pair; no saved history; no recruiter data model; no candidate search in the first cut. Mode is a view preference, not a permission — the same person can use both; last mode is remembered. Routing: `/candidate/...` and `/recruiter/...` trees with a nav toggle. Build not started; planned as a separate piece after `herald-profile-refactor` merges.
+
+**Alternatives rejected:**
+- Two separate user types (Candidate vs. Recruiter account): rejected. The same engineer may want to publish their own profile and also run batch audits; forcing a second account adds friction with no benefit.
+- Two separate apps: rejected. Doubles hosting, auth, and UI surface area for what is one product with two views.
+
+**Consequences:** A nav-level mode toggle is required. `/candidate/...` namespace is reserved; current `/admin/...` routes to be migrated when the recruiter mode is built. Recruiter mode has no data model on day one — stateless by design. Any persistent recruiter state (saved runs, shortlists) is a future decision.
+
+---
+
+## D-031 — Herald billing: one key per user, pays for their own surfaces
+
+**Date:** 2026-06-05
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Principal
+**Ratified by:** Principal
+
+**Context:** With BYOK established across the ecosystem, Herald needs a billing model: who supplies the LLM key, and who pays for which operations — profile audits triggered by recruiters, and batch runs triggered by the recruiter themselves.
+
+**Decision:** One provider key per Herald user (stored in `user_provider_keys`), used two ways. Profile audits (a recruiter auditing a published candidate profile) run on the profile owner's key — the owner pays for activity on their own published surface. Recruiter batch runs run on the logged-in recruiter's own key. Mechanism: same `getProviderKeys(db, clerkId)` → `decryptVendorKeys` path; only `clerkId` differs (owner for profile audits, recruiter for batch runs). Gating (Model B): publishing does not require a key; the audit tool renders only when a key exists; `/api/match` 503s without one. Owner sees a nudge to add a key; visitors see no audit tool.
+
+**Alternatives rejected:**
+- Platform-provided key (Herald pays per audit): rejected. Operational cost is unbounded without payment infrastructure; BYOK defers this entirely.
+- Recruiter always pays regardless of which profile is audited: rejected. Creates an asymmetry where the recruiter subsidises the candidate's published-profile experience; "you pay for activity on your own stuff" is simpler and more defensible.
+
+**Consequences:** Strangers running audits on a published profile spend the owner's key budget — a known abuse surface; may need a per-key rate limit or cap on profile audits later (parked). `getProviderKeys` is already implemented; only `clerkId` routing changes between the two modes. Gating logic (`/api/match` 503 without key) is already in place.
