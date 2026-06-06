@@ -21,6 +21,9 @@ The folder is simply **the home for that product's specs and status** (`<path>/s
 | cetana  | `apps/cetana-ai` | `apps/cetana-ai/specs/`     | `apps/cetana-ai/project-management/` |
 | herald  | `apps/herald-ai` | `apps/herald-ai/specs/`     | `apps/herald-ai/project-management/` |
 | atta    | `apps/atta-ai`   | `apps/atta-ai/specs/`       | (status tracked globally for now)    |
+| desktop | `apps/desktop`   | `apps/desktop/specs/`       | (status tracked globally for now)    |
+
+> **desktop** — AttaLabs Desktop: a Tauri shell embedding the existing web products unchanged (Next `standalone` in a Node sidecar) plus a local CLI transport so products ride the user's `claude`/`codex` subscription. Spec set is DRAFT / NOT RATIFIED (see `apps/desktop/specs/`). No `apps/desktop` code exists yet — the folder currently holds specs only.
 
 ## How `Product` is validated
 
