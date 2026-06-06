@@ -13,8 +13,13 @@ export default async function RecruiterLayout({ children }: { children: React.Re
 
   return (
     <div className='flex h-screen flex-col'>
-      <TopBar logoText='Herald' logoUrl={logoUrl} logoTagline={['Forensic hiring', 'audits']} signedInLinks={[]} />
-      <ModeSwitch />
+      <TopBar
+        logoText='Herald'
+        logoUrl={logoUrl}
+        logoTagline={['Forensic hiring', 'audits']}
+        signedInLinks={[]}
+        extraActions={<ModeSwitch />}
+      />
       <main className='flex-1 overflow-hidden'>{children}</main>
     </div>
   )

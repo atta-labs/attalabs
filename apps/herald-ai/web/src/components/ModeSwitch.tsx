@@ -1,33 +1,33 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
-import { NextLink } from '@atta/ui/lib/next-link'
+import { usePathname, useRouter } from 'next/navigation'
+import { Button } from '@atta/ui'
+import { cn } from '@atta/ui/lib/utils'
 
 export function ModeSwitch() {
   const pathname = usePathname()
   const isRecruiter = pathname.startsWith('/recruiter')
+  const router = useRouter()
+
+  const segmentClass = (active: boolean) =>
+    cn(
+      'h-6 rounded-sm px-2.5 font-mono text-[10px] uppercase tracking-[0.15em]',
+      active && 'bg-foreground text-background hover:bg-foreground/90 hover:text-background'
+    )
 
   return (
-    <div className='border-b border-border/30 px-6 py-2'>
-      <div className='mx-auto flex max-w-[680px] items-center gap-4'>
-        <NextLink
-          variant='nav'
-          href='/candidate'
-          active={!isRecruiter}
-          className='font-mono text-[10px] uppercase tracking-[0.2em]'
-        >
-          Candidate
-        </NextLink>
-        <span className='font-mono text-[10px] text-border'>·</span>
-        <NextLink
-          variant='nav'
-          href='/recruiter'
-          active={isRecruiter}
-          className='font-mono text-[10px] uppercase tracking-[0.2em]'
-        >
-          Recruiter
-        </NextLink>
-      </div>
+    <div className='flex items-center gap-px rounded border border-border/50 p-0.5'>
+      <Button
+        variant='ghost'
+        size='sm'
+        onClick={() => router.push('/candidate')}
+        className={segmentClass(!isRecruiter)}
+      >
+        Candidate
+      </Button>
+      <Button variant='ghost' size='sm' onClick={() => router.push('/recruiter')} className={segmentClass(isRecruiter)}>
+        Recruiter
+      </Button>
     </div>
   )
 }

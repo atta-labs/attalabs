@@ -28,8 +28,8 @@ export default async function CandidateLayout({ children }: { children: React.Re
         logoUrl={logoUrl}
         logoTagline={['Forensic hiring', 'audits']}
         signedInLinks={signedInLinks}
+        extraActions={<ModeSwitch />}
       />
-      <ModeSwitch />
       <main className='flex-1 overflow-hidden'>{children}</main>
     </div>
   )
