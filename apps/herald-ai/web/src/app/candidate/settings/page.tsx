@@ -6,12 +6,12 @@ import { ProfileEditor } from '@/components/portal/ProfileEditor'
 import { db } from '@/db'
 import { getUserByClerkId } from '@/db/queries'
 
-export default async function SettingsPage() {
+export default async function CandidateSettingsPage() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
   const user = await getUserByClerkId(userId)
-  if (!user?.onboardingComplete) redirect('/admin')
+  if (!user?.onboardingComplete) redirect('/candidate')
 
   // Check if owner has a stored Anthropic key — passed to ProfileEditor for keyless-publish confirm
   let hasAnthropicKey = false

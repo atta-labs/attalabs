@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { AIOnboarding } from '@/components/portal/AIOnboarding'
 import { getUserByClerkId } from '@/db/queries'
 
-export default async function AdminPage() {
+export default async function CandidatePage() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
@@ -15,5 +15,5 @@ export default async function AdminPage() {
   }
 
   // Onboarding complete → go to UI dashboard
-  redirect('/admin/ui')
+  redirect('/candidate/ui')
 }

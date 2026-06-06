@@ -10,7 +10,7 @@ export function EnvoyFooter() {
         </NextLink>
         <Show when='signed-in'>
           <div className='flex items-center gap-3'>
-            <NextLink variant='subtle' href='/admin' className='text-[10px]'>
+            <NextLink variant='subtle' href='/candidate' className='text-[10px]'>
               Dashboard →
             </NextLink>
             <UserButton

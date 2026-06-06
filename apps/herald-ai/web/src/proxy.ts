@@ -3,7 +3,7 @@ import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { NextResponse } from 'next/server'
 
-const isProtectedRoute = createRouteMatcher(['/admin(.*)'])
+const isProtectedRoute = createRouteMatcher(['/candidate(.*)', '/recruiter(.*)'])
 
 // Upstash rate limiter: 5 match audits per IP per hour
 // Falls back to allowing all requests if env vars are missing (local dev)

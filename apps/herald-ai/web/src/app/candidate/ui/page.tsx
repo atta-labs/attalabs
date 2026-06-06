@@ -4,12 +4,12 @@ import { redirect } from 'next/navigation'
 import { AdminEditorPage } from '@/components/portal/AdminEditorPage'
 import { getUserByClerkId } from '@/db/queries'
 
-export default async function AdminUIPage() {
+export default async function CandidateUIPage() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
   const user = await getUserByClerkId(userId)
-  if (!user?.onboardingComplete) redirect('/admin')
+  if (!user?.onboardingComplete) redirect('/candidate')
 
   const [themes, libraries] = await Promise.all([getThemes(cmsClient), getLibraries(cmsClient).catch(() => [])])
 

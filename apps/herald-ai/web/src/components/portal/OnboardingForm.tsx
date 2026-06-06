@@ -136,7 +136,7 @@ export function OnboardingForm() {
         return
       }
 
-      router.push('/admin')
+      router.push('/candidate')
       router.refresh()
     } finally {
       setSaving(false)

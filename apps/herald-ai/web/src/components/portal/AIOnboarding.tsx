@@ -90,7 +90,7 @@ export function AIOnboarding() {
 
         if (res.ok) {
           setTimeout(() => {
-            router.push('/admin')
+            router.push('/candidate')
             router.refresh()
           }, 1500)
         }
