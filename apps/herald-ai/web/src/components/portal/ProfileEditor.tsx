@@ -16,9 +16,10 @@ import {
   Textarea,
   useToastContext
 } from '@atta/ui'
-import { Code2, Download, ExternalLink, Link2, MessageCircle, Upload, X } from 'lucide-react'
+import { Download, ExternalLink, Upload, X } from 'lucide-react'
 import { ProviderKeysSection } from '@atta/ui/account'
 import { AvatarFrame } from '@/components/avatar-frame'
+import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { SummaryMarkdown } from '@/components/summary-markdown'
 
 const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const
@@ -481,14 +482,14 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           <TabsTrigger value='experience' className={triggerClass}>
             Experience
           </TabsTrigger>
+          <TabsTrigger value='connections' className={triggerClass}>
+            Connections
+          </TabsTrigger>
           <TabsTrigger value='cv' className={triggerClass}>
             CV
           </TabsTrigger>
           <TabsTrigger value='api-keys' className={triggerClass}>
             API Keys
-          </TabsTrigger>
-          <TabsTrigger value='connections' className={triggerClass}>
-            Connections
           </TabsTrigger>
         </TabsList>
 
@@ -621,7 +622,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
                 disabled={saving}
                 className='font-mono text-xs uppercase tracking-[0.2em]'
               >
-                {saving ? 'Saving...' : 'Save Profile'}
+                {saving ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </div>
@@ -751,7 +752,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
                 disabled={saving}
                 className='font-mono text-xs uppercase tracking-[0.2em]'
               >
-                {saving ? 'Saving...' : 'Save Profile'}
+                {saving ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </div>
@@ -877,7 +878,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           <div className='space-y-8'>
             <section>
               <div className='mb-4 flex items-center gap-2'>
-                <Code2 className='h-3.5 w-3.5 text-foreground' />
+                <GitHubIcon className='h-3.5 w-3.5 text-foreground' />
                 <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>GitHub</h2>
               </div>
               <label htmlFor='field-github' className={labelClass}>
@@ -894,7 +895,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
             <section>
               <div className='mb-4 flex items-center gap-2'>
-                <Link2 className='h-3.5 w-3.5 text-foreground' />
+                <LinkedInIcon className='h-3.5 w-3.5 text-foreground' />
                 <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>LinkedIn</h2>
               </div>
               <label htmlFor='field-linkedin' className={labelClass}>
@@ -911,7 +912,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
             <section>
               <div className='mb-4 flex items-center gap-2'>
-                <MessageCircle className='h-3.5 w-3.5 text-foreground' />
+                <DiscordIcon className='h-3.5 w-3.5 text-foreground' />
                 <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Discord</h2>
               </div>
               <label htmlFor='field-discord' className={labelClass}>

@@ -2,8 +2,10 @@
 
 import type { FileUIPart } from 'ai'
 import { useEffect, useRef } from 'react'
-import { Code2, Download, ExternalLink, Link2, MessageCircle } from 'lucide-react'
+import { Download, ExternalLink } from 'lucide-react'
+import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
+import { useComponents } from '@atta/ui/lib/library-provider'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { SummaryMarkdown } from '@/components/summary-markdown'
 import { useHeroCollapse } from './hero-collapse-context'
@@ -44,6 +46,7 @@ export function JDInput({
   const { setIsCollapsed } = useHeroCollapse()
   const sentinelRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const { Button, Badge } = useComponents()
 
   useEffect(() => {
     setIsCollapsed(false)
@@ -115,7 +118,7 @@ export function JDInput({
 
             <div className='mt-6'>
               {(topStack.length > 0 || locationLine || (candidateCvUrl && cvFilename) || hasSocialLinks) && (
-                <dl className='grid grid-cols-[80px_1fr] items-baseline gap-y-2'>
+                <dl className='grid grid-cols-[80px_1fr] items-center gap-y-2'>
                   {locationLine && (
                     <>
                       <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LOCATION</dt>
@@ -128,25 +131,57 @@ export function JDInput({
                       <dd className='flex items-center justify-between gap-2'>
                         <span className='min-w-0 truncate font-mono text-sm text-foreground'>{cvFilename}</span>
                         <div className='flex shrink-0 items-center gap-1'>
-                          <a
-                            href={candidateCvUrl}
-                            download
-                            aria-label='Download CV'
-                            title='Download CV'
-                            className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                          >
-                            <Download className='h-3.5 w-3.5' />
-                          </a>
-                          <a
-                            href={candidateCvUrl}
-                            target='_blank'
-                            rel='noreferrer'
-                            aria-label='Open CV'
-                            title='Open CV'
-                            className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                          >
-                            <ExternalLink className='h-3.5 w-3.5' />
-                          </a>
+                          {Button ? (
+                            <>
+                              <Button
+                                variant='outline'
+                                size='icon'
+                                className='h-7 w-7'
+                                aria-label='Download CV'
+                                title='Download CV'
+                                onClick={() => {
+                                  const a = document.createElement('a')
+                                  a.href = candidateCvUrl!
+                                  a.download = ''
+                                  a.click()
+                                }}
+                              >
+                                <Download className='h-3.5 w-3.5' />
+                              </Button>
+                              <Button
+                                variant='outline'
+                                size='icon'
+                                className='h-7 w-7'
+                                aria-label='Open CV'
+                                title='Open CV'
+                                onClick={() => window.open(candidateCvUrl!, '_blank')}
+                              >
+                                <ExternalLink className='h-3.5 w-3.5' />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <a
+                                href={candidateCvUrl}
+                                download
+                                aria-label='Download CV'
+                                title='Download CV'
+                                className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                              >
+                                <Download className='h-3.5 w-3.5' />
+                              </a>
+                              <a
+                                href={candidateCvUrl}
+                                target='_blank'
+                                rel='noreferrer'
+                                aria-label='Open CV'
+                                title='Open CV'
+                                className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                              >
+                                <ExternalLink className='h-3.5 w-3.5' />
+                              </a>
+                            </>
+                          )}
                         </div>
                       </dd>
                     </>
@@ -155,56 +190,97 @@ export function JDInput({
                     <>
                       <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LINKS</dt>
                       <dd className='flex items-center gap-1.5'>
-                        {candidateGithub && (
-                          <a
-                            href={`https://github.com/${candidateGithub}`}
-                            target='_blank'
-                            rel='noreferrer'
-                            aria-label='GitHub'
-                            title='GitHub'
-                            className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                          >
-                            <Code2 className='h-3.5 w-3.5' />
-                          </a>
-                        )}
-                        {candidateLinkedin && (
-                          <a
-                            href={candidateLinkedin}
-                            target='_blank'
-                            rel='noreferrer'
-                            aria-label='LinkedIn'
-                            title='LinkedIn'
-                            className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-                          >
-                            <Link2 className='h-3.5 w-3.5' />
-                          </a>
-                        )}
-                        {candidateDiscord && (
-                          <span
-                            role='img'
-                            aria-label={`Discord: ${candidateDiscord}`}
-                            title={`Discord: ${candidateDiscord}`}
-                            className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground'
-                          >
-                            <MessageCircle className='h-3.5 w-3.5' />
-                          </span>
-                        )}
+                        {candidateGithub &&
+                          (Button ? (
+                            <Button
+                              variant='outline'
+                              size='icon'
+                              className='h-7 w-7'
+                              aria-label='GitHub'
+                              title='GitHub'
+                              onClick={() => window.open(`https://github.com/${candidateGithub}`, '_blank')}
+                            >
+                              <GitHubIcon className='h-3.5 w-3.5' />
+                            </Button>
+                          ) : (
+                            <a
+                              href={`https://github.com/${candidateGithub}`}
+                              target='_blank'
+                              rel='noreferrer'
+                              aria-label='GitHub'
+                              title='GitHub'
+                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                            >
+                              <GitHubIcon className='h-3.5 w-3.5' />
+                            </a>
+                          ))}
+                        {candidateLinkedin &&
+                          (Button ? (
+                            <Button
+                              variant='outline'
+                              size='icon'
+                              className='h-7 w-7'
+                              aria-label='LinkedIn'
+                              title='LinkedIn'
+                              onClick={() => window.open(candidateLinkedin!, '_blank')}
+                            >
+                              <LinkedInIcon className='h-3.5 w-3.5' />
+                            </Button>
+                          ) : (
+                            <a
+                              href={candidateLinkedin}
+                              target='_blank'
+                              rel='noreferrer'
+                              aria-label='LinkedIn'
+                              title='LinkedIn'
+                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                            >
+                              <LinkedInIcon className='h-3.5 w-3.5' />
+                            </a>
+                          ))}
+                        {candidateDiscord &&
+                          (Button ? (
+                            <Button
+                              variant='outline'
+                              size='icon'
+                              className='h-7 w-7'
+                              aria-label={`Discord: ${candidateDiscord}`}
+                              title={`Discord: ${candidateDiscord}`}
+                            >
+                              <DiscordIcon className='h-3.5 w-3.5' />
+                            </Button>
+                          ) : (
+                            <span
+                              role='img'
+                              aria-label={`Discord: ${candidateDiscord}`}
+                              title={`Discord: ${candidateDiscord}`}
+                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground'
+                            >
+                              <DiscordIcon className='h-3.5 w-3.5' />
+                            </span>
+                          ))}
                       </dd>
                     </>
                   )}
                   {topStack.length > 0 && (
                     <>
-                      <dt className='pt-0.5 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
+                      <dt className='self-start pt-1 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
                       <dd>
                         <div className='flex flex-wrap gap-1.5'>
-                          {topStack.map((s) => (
-                            <span
-                              key={s}
-                              className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
-                            >
-                              {s}
-                            </span>
-                          ))}
+                          {topStack.map((s) =>
+                            Badge ? (
+                              <Badge key={s} variant='outline' className='font-mono text-[11px]'>
+                                {s}
+                              </Badge>
+                            ) : (
+                              <span
+                                key={s}
+                                className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
+                              >
+                                {s}
+                              </span>
+                            )
+                          )}
                         </div>
                       </dd>
                     </>
