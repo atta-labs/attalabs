@@ -1,4 +1,4 @@
-import { Button } from '@atta/ui/components/button'
+import { Button } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowRight } from 'lucide-react'
 

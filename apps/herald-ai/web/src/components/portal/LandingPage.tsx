@@ -1,4 +1,4 @@
-import { Button } from '@atta/ui/components/button'
+import { Button } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 

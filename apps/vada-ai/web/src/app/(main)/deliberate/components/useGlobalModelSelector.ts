@@ -5,7 +5,7 @@
 
 import { fetchInstalledOllamaModels, probeProviderKey } from '@atta/identity'
 import { type ModelEntry, type VendorId, useCatalog } from '@atta/models'
-import { useToastContext } from '@atta/ui'
+import { useToastContext } from '@atta/ui/components'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getReviewerConfig, setReviewerConfig } from '@/lib/reviewer-models'

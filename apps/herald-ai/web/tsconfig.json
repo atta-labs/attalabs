@@ -3,6 +3,8 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"],
+      "@atta/ui/components": ["../../../packages/ui/generated/herald/components"],
+      "@atta/ui/canvas": ["../../../packages/ui/generated/herald/canvas"],
       "@atta/ui/footer": ["../../../packages/ui/footer/index"],
       "@atta/ui/topbar": ["../../../packages/ui/topbar/index"],
       "@atta/ui/smart-prompt-input": ["../../../packages/ui/smart-prompt-input/index"]

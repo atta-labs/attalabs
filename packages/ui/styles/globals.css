@@ -89,3 +89,11 @@
   .shadow-2xl { box-shadow: var(--shadow-2xl); }
 }
 
+/* Neobrutalist libraries require high-contrast borders.
+   Override --border to the foreground color when retro or brutal is active
+   so all installed component shadows and outlines are visible without touching installed files. */
+html[data-library="retro"],
+html[data-library="brutal"] {
+  --border: var(--foreground);
+}
+

@@ -1,6 +1,5 @@
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components/card'
-import { Badge } from '@atta/ui/components/badge'
+import { Badge, Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { listBenchmarkRuns, getBenchmarkStats } from '@/db/bench-queries'
 
 function VerdictBadge({ verdict }: { verdict: string }) {

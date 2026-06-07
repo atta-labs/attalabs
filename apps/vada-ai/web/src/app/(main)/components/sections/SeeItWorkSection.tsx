@@ -1,6 +1,6 @@
 'use client'
 
-import { Heading } from '@atta/ui'
+import { Heading } from '@atta/ui/components'
 import { mdxComponents } from '@/components/mdx/MDXComponents'
 import { SectionLabel } from '../primitives/SectionLabel'
 import { SectionWrapper } from '../primitives/SectionWrapper'

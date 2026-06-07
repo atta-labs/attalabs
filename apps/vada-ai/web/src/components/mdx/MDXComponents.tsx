@@ -1,5 +1,15 @@
 import type { MDXComponents } from 'mdx/types'
-import { Card, Separator, Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui'
+import {
+  Card,
+  Separator,
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 

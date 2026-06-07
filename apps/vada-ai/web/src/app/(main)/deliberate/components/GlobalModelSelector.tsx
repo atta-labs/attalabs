@@ -5,7 +5,7 @@
 // preset seeding, action-triggered passkey unlock, and key-probe flow.
 
 import type { ModelConfig, VendorId } from '@atta/models'
-import { ModelPicker } from '@atta/ui'
+import { ModelPicker } from '@atta/ui/components'
 import type { ReactNode } from 'react'
 import { useGlobalModelSelector } from './useGlobalModelSelector'
 

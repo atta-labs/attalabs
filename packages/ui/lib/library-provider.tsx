@@ -12,6 +12,13 @@ export function LibraryProvider({ library, children }: { library: UILibrary; chi
     loadLibrary(library)
   }, [library, loadLibrary])
 
+  useEffect(() => {
+    document.documentElement.dataset.library = library
+    return () => {
+      delete document.documentElement.dataset.library
+    }
+  }, [library])
+
   return <LibraryContext.Provider value={components}>{children}</LibraryContext.Provider>
 }
 

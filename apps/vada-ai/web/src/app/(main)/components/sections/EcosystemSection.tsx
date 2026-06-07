@@ -1,7 +1,7 @@
 'use client'
 
 import type { CMSBranding } from '@atta/cms'
-import { Button, Heading, Text } from '@atta/ui'
+import { Button, Heading, Text } from '@atta/ui/components'
 import { cn } from '@atta/ui/lib/utils'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'

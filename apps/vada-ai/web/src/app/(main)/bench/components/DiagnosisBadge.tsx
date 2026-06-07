@@ -1,4 +1,4 @@
-import { Badge } from '@atta/ui/components/badge'
+import { Badge } from '@atta/ui/components'
 
 const DIAGNOSIS_CLASSES: Record<string, string> = {
   VADA_WON: 'text-success border-success/40',

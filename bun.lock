@@ -493,6 +493,7 @@
         "motion": "^12.38.0",
         "nanoid": "^3.0.0",
         "radix-ui": "^1.4.3",
+        "simple-icons": "^14.0.0",
         "tailwind-merge": "^3.5.0",
         "tailwindcss": "^4.0.0",
       },

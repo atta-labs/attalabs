@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Input, Textarea } from '@atta/ui'
+import { Button, Input, Textarea } from '@atta/ui/components'
 import { type UIMessage, useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
 import { useRouter } from 'next/navigation'

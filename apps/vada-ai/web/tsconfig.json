@@ -3,7 +3,7 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"],
-      "@atta/ui": ["../../../packages/ui/generated/vada/components"],
+      "@atta/ui/components": ["../../../packages/ui/generated/vada/components"],
       "@atta/ui/canvas": ["../../../packages/ui/generated/vada/canvas"],
       "@atta/ui/engine-flow": ["../../../packages/ui/engine-flow/index.ts"],
       "@atta/ui/footer": ["../../../packages/ui/footer/index"]

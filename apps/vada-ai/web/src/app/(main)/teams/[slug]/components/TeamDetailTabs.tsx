@@ -1,6 +1,6 @@
 'use client'
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@atta/ui/components/tabs'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@atta/ui/components'
 import type { Flow } from '@atta/engine'
 import type { Plan } from '@atta/engine'
 import { AgentTab } from './AgentTab'

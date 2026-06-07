@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Button } from '@atta/ui/components/button'
-import { Input } from '@atta/ui/components/input'
+import { Button, Input } from '@atta/ui/components'
 import { downloadCsv } from '../lib/csv-export'
 
 export type ColumnDef<T> = {

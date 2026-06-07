@@ -1,6 +1,6 @@
 'use client'
 
-import { ModelIcon } from '@atta/ui'
+import { ModelIcon } from '@atta/ui/components'
 import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
 import { AGENT_BY_ROLE } from '@/components/agents/visuals'
 import type { DeliberationMessage, StreamingMessage } from './useDeliberation'

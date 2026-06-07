@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 
 export function AggregationCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (

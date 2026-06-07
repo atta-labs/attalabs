@@ -1,4 +1,4 @@
-import { Text } from '@atta/ui'
+import { Text } from '@atta/ui/components'
 
 export type ConclusionState = 'Clean' | 'Revised' | 'Unconverged'
 

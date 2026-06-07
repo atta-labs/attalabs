@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useToastContext } from '@atta/ui'
+import { useToastContext } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 import { CheckCircle2 } from 'lucide-react'
 import { AGENT_FACES as AGENT_FACES_MINIMAL } from '@/components/agents/faces/agent-faces-minimal'

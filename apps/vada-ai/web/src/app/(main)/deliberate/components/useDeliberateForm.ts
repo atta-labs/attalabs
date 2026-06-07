@@ -2,7 +2,7 @@
 
 import type { Flow } from '@atta/engine'
 import { useCatalog } from '@atta/models'
-import { useToastContext } from '@atta/ui'
+import { useToastContext } from '@atta/ui/components'
 import type { FaceStyle } from '@/components/agents'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
 import { getReviewerConfig, resolveVendor, setReviewerConfig, validateKeysForConfig } from '@/lib/reviewer-models'

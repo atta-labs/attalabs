@@ -4,7 +4,7 @@
 // all live in useDeliberationScene. TranscriptActions uses its own hook.
 
 import type { VendorId } from '@atta/models'
-import { Button } from '@atta/ui'
+import { Button } from '@atta/ui/components'
 import { AIACanvas } from '@atta/ui/canvas'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { useMemo } from 'react'

@@ -1,4 +1,4 @@
-import { Text } from '@atta/ui'
+import { Text } from '@atta/ui/components'
 
 interface StatusFooterProps {
   label: string

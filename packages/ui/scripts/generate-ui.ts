@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { cmsClient, getAttaConfig, getVadaConfig, getVitakkaConfig } from '@atta/cms'
+import { cmsClient, getAttaConfig, getHeraldConfig, getVadaConfig, getVitakkaConfig } from '@atta/cms'
 
 // When called from next.config.ts, process.cwd() is the app directory (apps/{app}/web/).
 // packages/ui/generated/ is always three levels up from the app's web dir.
@@ -9,7 +9,7 @@ function getGeneratedDir(): string {
 }
 
 type UILibrary = 'basic' | 'animate' | 'retro' | 'brutal'
-type App = 'vada' | 'atta' | 'vitakka'
+type App = 'vada' | 'atta' | 'vitakka' | 'herald'
 
 const CONFIG_FETCHERS: Record<
   App,
@@ -17,10 +17,11 @@ const CONFIG_FETCHERS: Record<
 > = {
   vada: () => getVadaConfig(cmsClient).catch(() => null),
   atta: () => getAttaConfig(cmsClient).catch(() => null),
-  vitakka: () => getVitakkaConfig(cmsClient).catch(() => null)
+  vitakka: () => getVitakkaConfig(cmsClient).catch(() => null),
+  herald: () => getHeraldConfig(cmsClient).catch(() => null)
 }
 
-export async function generateUIIndex(app: App): Promise<void> {
+export async function generateUIIndex(app: App): Promise<UILibrary> {
   const config = await CONFIG_FETCHERS[app]()
   const library = (config?.userInterface?.library?.id ?? 'basic') as UILibrary
 
@@ -46,4 +47,6 @@ export async function generateUIIndex(app: App): Promise<void> {
       ''
     ].join('\n')
   )
+
+  return library
 }

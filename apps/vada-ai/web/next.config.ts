@@ -1,5 +1,6 @@
 import { generateUIIndex } from '@atta/ui/scripts/generate-ui'
 import type { NextConfig } from 'next'
+import { resolve } from 'node:path'
 
 // BYOK architecture: browser calls providers directly (see /trust).
 // If a Content-Security-Policy is ever added to this app, `connect-src` MUST
@@ -13,13 +14,23 @@ import type { NextConfig } from 'next'
 
 export default async function config(): Promise<NextConfig> {
   await generateUIIndex('vada')
+  const componentsRelPath = '../../../packages/ui/generated/vada/components.ts'
   return {
     images: {
       remotePatterns: [{ protocol: 'https', hostname: 'cdn.sanity.io' }]
     },
-    transpilePackages: ['@atta/adapter-langgraph', '@atta/engine'],
+    transpilePackages: ['@atta/ui', '@atta/adapter-langgraph', '@atta/engine'],
     outputFileTracingIncludes: {
       '/**': ['../yamls/**']
+    },
+    webpack: (config) => {
+      config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
+      return config
+    },
+    turbopack: {
+      resolveAlias: {
+        '@atta/ui/components': componentsRelPath
+      }
     }
   }
 }

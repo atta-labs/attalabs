@@ -2,7 +2,7 @@
 
 import { motion } from 'motion/react'
 import { useState } from 'react'
-import { Card, CardContent, Text } from '@atta/ui'
+import { Card, CardContent, Text } from '@atta/ui/components'
 import { AgentBadge } from '@/components/AgentBadge'
 import { getAgentConfigByName } from '@/schemas'
 

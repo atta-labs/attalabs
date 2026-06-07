@@ -1,6 +1,6 @@
 import { Heading, Text } from '@atta/ui/shared'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui'
-import { Separator } from '@atta/ui'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui/components'
+import { Separator } from '@atta/ui/components'
 import { CopyButton } from './components/CopyButton'
 
 // ─── Hosted configs ───────────────────────────────────────────────────────────

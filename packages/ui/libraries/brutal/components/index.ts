@@ -1,12 +1,16 @@
-// Interactive
-
 // Types
 export type * from '../../../types'
-// Display — falls back to basic wrapper
-export { Badge } from '../../basic/components/display/badge'
-export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../basic/installed/collapsible'
-// Interactive — Tabs — falls back to basic
-export { Tabs, TabsContent, TabsList, TabsTrigger } from '../../basic/installed/tabs'
+
+// Display
+export { Badge, badgeVariants } from '../installed/badge'
+
+// Interactive — Collapsible
+export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
+
+// Interactive — Tabs
+export { Tabs, TabsContent, TabsList, TabsTrigger } from '../installed/tabs'
+
+// Interactive — DropdownMenu
 export {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -23,8 +27,12 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
-} from '../../basic/installed/dropdown-menu'
-export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../../basic/installed/popover'
+} from '../installed/dropdown-menu'
+
+// Interactive — Popover
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../installed/popover'
+
+// Interactive — Select
 export {
   Select,
   SelectContent,
@@ -36,7 +44,9 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue
-} from '../../basic/installed/select'
+} from '../installed/select'
+
+// Command — falls back to basic
 export {
   Command,
   CommandEmpty,
@@ -47,20 +57,25 @@ export {
   CommandSeparator,
   CommandShortcut
 } from '../../basic/installed/command'
+
+// Form
 export { Input, InputBlock } from './form/input'
 export { Checkbox } from './form/checkbox'
-// Model
+export { Textarea } from './form/textarea'
+export { Slider } from '../../basic/installed/slider'
+
+// Model — falls back to basic
 export { ModelIcon, type ModelIconProps } from '../../basic/components/model/model-icon'
 export {
   ModelPicker,
   type ModelPickerProps,
   type ModelPickerValue
 } from '../../basic/components/model/model-picker'
-// Layout — falls back to basic wrapper
-export { Separator } from '../../basic/components/layout/separator'
-// Form — falls back to basic
-export { Slider } from '../../basic/installed/slider'
-// Table — falls back to basic
+
+// Layout
+export { Separator } from '../installed/separator'
+
+// Content — Table
 export {
   Table,
   TableBody,
@@ -70,16 +85,20 @@ export {
   TableHead,
   TableHeader,
   TableRow
-} from '../../basic/installed/table'
+} from '../installed/table'
+
 // Shared
 export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
+
+// Interactive — Button
 export { Button, buttonVariants } from './interactive/button'
-// Content
+
+// Content — Card
 export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './content/card'
-// Form
-export { Textarea } from './form/textarea'
-// Display — falls back to basic for Toast
+
+// Display — Toast (falls back to basic)
 export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
+
 // Sidebar — falls back to basic
 export {
   Sidebar,
@@ -107,6 +126,7 @@ export {
   SidebarTrigger,
   useSidebar
 } from '../../basic/installed/sidebar'
+
 // Sheet — falls back to basic
 export {
   Sheet,

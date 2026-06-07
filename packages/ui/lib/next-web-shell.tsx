@@ -10,6 +10,11 @@ import { LibraryProvider } from './library-provider'
 import type { UILibrary } from './library-loader'
 import { ToastProvider } from '../libraries/basic/components/display/toast'
 
+// Injected as the first <script> in <head> during dev only.
+// Runs synchronously before Turbopack's HMR bootstrap — guarantees extension
+// errors never reach handleGlobalErrors() or the terminal [browser] log.
+const EXTENSION_FILTER_SCRIPT = `(function(){var p=['chrome-extension://','moz-extension://','safari-web-extension://'];function x(s){if(!s)return false;for(var i=0;i<p.length;i++){if(s.indexOf(p[i])!==-1)return true;}return false;}function xRej(ev){var r=ev&&ev.reason;if(!r)return false;try{return x(r.stack)||x(r.message)||x(String(r));}catch(e){return false;}}var prev=window.onerror;window.onerror=function(m,s,l,c,e){if(x(s)||x(e&&e.stack))return true;return prev?prev(m,s,l,c,e):false;};window.addEventListener('error',function(e){if(x(e.filename)||x(e.error&&e.error.stack)){e.stopImmediatePropagation();e.preventDefault();}},true);var _ael=EventTarget.prototype.addEventListener;EventTarget.prototype.addEventListener=function(type,cb,opts){if(this===window&&type==='unhandledrejection'&&typeof cb==='function'){var orig=cb;cb=function(ev){if(!xRej(ev))return orig.apply(this,arguments);};}return _ael.call(this,type,cb,opts);};})();`
+
 interface NextWebShellProps {
   children: ReactNode
   config: PortalUiConfig | null
@@ -63,6 +68,10 @@ export async function NextWebShell({
     <html lang='en' data-theme={colorScheme}>
       {/* biome-ignore lint/style/noHeadElement: root layout renders the document head */}
       <head>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: intentional dev-only inline script, no user data */}
+        {process.env.NODE_ENV === 'development' && (
+          <script dangerouslySetInnerHTML={{ __html: EXTENSION_FILTER_SCRIPT }} />
+        )}
         {fontsUrl && (
           <>
             <link rel='preconnect' href='https://fonts.googleapis.com' />

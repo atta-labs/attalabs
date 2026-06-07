@@ -1,4 +1,4 @@
-import { Text } from '@atta/ui'
+import { Text } from '@atta/ui/components'
 import { cn } from '@atta/ui/lib/utils'
 
 interface SectionLabelProps {

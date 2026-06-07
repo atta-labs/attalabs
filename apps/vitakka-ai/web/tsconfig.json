@@ -3,7 +3,7 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"],
-      "@atta/ui": ["../../../packages/ui/generated/vitakka/components"],
+      "@atta/ui/components": ["../../../packages/ui/generated/vitakka/components"],
       "@atta/ui/canvas": ["../../../packages/ui/generated/vitakka/canvas"],
       "@atta/ui/footer": ["../../../packages/ui/footer/index"]
     }

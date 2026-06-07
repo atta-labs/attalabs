@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'History'
 }
 
-import { Separator } from '@atta/ui'
+import { Separator } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { HistoryClientView } from './components/HistoryClientView'
 import { getOrCreateUser, listSessions } from '@/db/queries'

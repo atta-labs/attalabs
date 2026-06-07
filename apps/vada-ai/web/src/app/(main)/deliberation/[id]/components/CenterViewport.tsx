@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'motion/react'
-import { Text } from '@atta/ui'
+import { Text } from '@atta/ui/components'
 import { AgentBadge } from '@/components/AgentBadge'
 
 interface CenterViewportProps {

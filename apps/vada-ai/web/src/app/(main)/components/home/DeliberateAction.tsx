@@ -1,7 +1,7 @@
 'use client'
 
 import { SignInButton, useAuth } from '@atta/auth'
-import { Button } from '@atta/ui'
+import { Button } from '@atta/ui/components'
 import { usePathname, useRouter } from 'next/navigation'
 
 export function DeliberateAction() {

@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider
-} from '@atta/ui'
+} from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { getScienceIcon } from '../lib/icons'
 

@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Badge } from '@atta/ui/components/badge'
-import { Separator } from '@atta/ui'
+import { Badge, Separator } from '@atta/ui/components'
 import ReactMarkdown from 'react-markdown'
 import { getBenchmarkRun } from '@/db/bench-queries'
 

@@ -9,7 +9,7 @@
 //
 // All data is server-fetched by the parent page. This is pure presentation.
 
-import { ModelIcon } from '@atta/ui'
+import { ModelIcon } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'

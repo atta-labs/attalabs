@@ -1,6 +1,6 @@
 'use client'
 
-import { ModelIcon } from '@atta/ui'
+import { ModelIcon } from '@atta/ui/components'
 import { AGENTS } from '@/components/agents/visuals'
 import { motion } from 'motion/react'
 import type { CSSProperties } from 'react'

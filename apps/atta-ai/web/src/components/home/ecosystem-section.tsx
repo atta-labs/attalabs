@@ -1,4 +1,4 @@
-import { Badge, Card, CardContent, CardHeader, CardTitle } from '@atta/ui'
+import { Badge, Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowRight } from 'lucide-react'
 
