@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { Button } from '@atta/ui'
+import { Button } from '@atta/ui/components'
 import { cn } from '@atta/ui/lib/utils'
 
 export function ModeSwitch() {

@@ -1,7 +1,7 @@
 'use client'
 
 import type { CMSLibrary, CMSTheme } from '@atta/cms'
-import { Button, useToastContext } from '@atta/ui'
+import { Button, useToastContext } from '@atta/ui/components'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { EnvoyPreview } from './EnvoyPreview'
 import { FontPicker } from './FontPicker'

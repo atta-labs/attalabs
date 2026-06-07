@@ -1,7 +1,7 @@
 'use client'
 
 import type { CMSLibrary, CMSTheme } from '@atta/cms'
-import { Button } from '@atta/ui'
+import { Button } from '@atta/ui/components'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import type { ThemeData } from '@atta/ui/lib/preview-theme-utils'
 import { usePortalPreview } from '@/hooks/usePortalPreview'

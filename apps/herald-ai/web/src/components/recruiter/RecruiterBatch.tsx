@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Textarea } from '@atta/ui'
+import { Button, Textarea } from '@atta/ui/components'
 import { ReportView } from '@/components/envoy/ReportView'
 import type { MatchReport } from '@/lib/types'
 

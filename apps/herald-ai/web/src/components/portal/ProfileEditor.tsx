@@ -15,7 +15,7 @@ import {
   TabsTrigger,
   Textarea,
   useToastContext
-} from '@atta/ui'
+} from '@atta/ui/components'
 import { Download, ExternalLink, Upload, X } from 'lucide-react'
 import { ProviderKeysSection } from '@atta/ui/account'
 import { AvatarFrame } from '@/components/avatar-frame'
