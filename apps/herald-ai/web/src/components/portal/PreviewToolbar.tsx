@@ -1,6 +1,7 @@
 'use client'
 
 import type { CMSLibrary } from '@atta/cms'
+import { Button } from '@atta/ui/components'
 import { FontPicker } from './FontPicker'
 import { LibraryDropdown } from './LibraryDropdown'
 
@@ -32,14 +33,16 @@ export function PreviewToolbar({
       <LibraryDropdown value={selectedLibrary} libraries={libraries} onChange={onLibraryChange} />
       <FontPicker value={fontSans} onChange={onFontChange} />
       <span className='mx-1 text-border'>|</span>
-      <button
+      <Button
         type='button'
+        variant='outline'
+        size='sm'
         onClick={onPublish}
         disabled={!hasChanges || isPending}
-        className='rounded bg-accent px-3 py-1 font-mono text-[10px] font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-30'
+        className='font-mono text-[10px] uppercase tracking-[0.15em] disabled:opacity-30'
       >
         {isPending ? 'Saving...' : saved ? 'Saved!' : 'Publish'}
-      </button>
+      </Button>
     </div>
   )
 }

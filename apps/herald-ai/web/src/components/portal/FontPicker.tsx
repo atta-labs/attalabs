@@ -2,6 +2,7 @@
 
 import { ChevronDown, Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Button, Popover, PopoverContent, PopoverTrigger } from '@atta/ui/components'
 
 const POPULAR_FONTS = [
   'Inter',
@@ -66,7 +67,7 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
   const [allFonts, setAllFonts] = useState<string[]>(POPULAR_FONTS)
   const [isLoading, setIsLoading] = useState(false)
   const [hasFetched, setHasFetched] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
   const fontName = extractFontName(value)
 
   const fetchFontsIfNeeded = useCallback(async () => {
@@ -104,73 +105,61 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
   }, [fontName])
 
   useEffect(() => {
-    if (!open) return
-    const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false)
+    if (open) {
+      void fetchFontsIfNeeded()
+      setTimeout(() => searchRef.current?.focus(), 50)
+    } else {
+      setSearch('')
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [open])
+  }, [open, fetchFontsIfNeeded])
 
   return (
-    <div ref={containerRef} className='relative'>
-      <button
-        type='button'
-        onClick={() => {
-          setOpen(!open)
-          if (!open) fetchFontsIfNeeded()
-        }}
-        className='flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-foreground/5'
-      >
-        <span className='font-mono text-muted-foreground'>Aa</span>
-        <span className='text-foreground' style={{ fontFamily: fontName ? `"${fontName}", sans-serif` : 'inherit' }}>
-          {fontName || 'Font'}
-        </span>
-        <ChevronDown className='h-3 w-3 text-muted-foreground' />
-      </button>
-
-      {open && (
-        <div className='absolute left-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover shadow-md'>
-          <div className='border-b p-2'>
-            <div className='flex items-center gap-2 rounded-md border px-2'>
-              <Search className='h-3.5 w-3.5 shrink-0 text-muted-foreground' />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder='Search fonts...'
-                className='h-7 w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground'
-                // biome-ignore lint/a11y/noAutofocus: intentional for dropdown search
-                autoFocus
-              />
-            </div>
-          </div>
-          <div className='max-h-64 overflow-y-auto'>
-            {isLoading ? (
-              <div className='flex items-center justify-center py-8'>
-                <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
-              </div>
-            ) : filteredFonts.length === 0 ? (
-              <div className='py-6 text-center text-xs text-muted-foreground'>No fonts found</div>
-            ) : (
-              filteredFonts.map((font) => (
-                <button
-                  key={font}
-                  type='button'
-                  onClick={() => {
-                    onChange(font)
-                    setSearch('')
-                    setOpen(false)
-                  }}
-                  className={`flex w-full px-3 py-2 text-left text-sm transition-colors hover:bg-accent/10 ${font === fontName ? 'bg-accent/10 text-foreground' : 'text-foreground/80'}`}
-                  style={{ fontFamily: `"${font}", sans-serif` }}
-                >
-                  {font}
-                </button>
-              ))
-            )}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant='outline' size='sm' className='h-10 gap-1.5'>
+          <span className='font-mono text-muted-foreground'>Aa</span>
+          <span style={{ fontFamily: fontName ? `"${fontName}", sans-serif` : 'inherit' }}>{fontName || 'Font'}</span>
+          <ChevronDown className='h-3 w-3 text-muted-foreground' />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className='w-64 p-0' align='start'>
+        <div className='border-b p-2'>
+          <div className='flex items-center gap-2 rounded-md border border-border px-2'>
+            <Search className='h-3.5 w-3.5 shrink-0 text-muted-foreground' />
+            <input
+              ref={searchRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder='Search fonts...'
+              className='h-7 w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground'
+            />
           </div>
         </div>
-      )}
-    </div>
+        <div className='max-h-64 overflow-y-auto'>
+          {isLoading ? (
+            <div className='flex items-center justify-center py-8'>
+              <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
+            </div>
+          ) : filteredFonts.length === 0 ? (
+            <div className='py-6 text-center text-xs text-muted-foreground'>No fonts found</div>
+          ) : (
+            filteredFonts.map((font) => (
+              <button
+                key={font}
+                type='button'
+                onClick={() => {
+                  onChange(font)
+                  setOpen(false)
+                }}
+                className={`flex w-full px-3 py-2 text-left text-sm transition-colors hover:bg-accent/10 ${font === fontName ? 'bg-accent/10 text-foreground' : 'text-foreground/80'}`}
+                style={{ fontFamily: `"${font}", sans-serif` }}
+              >
+                {font}
+              </button>
+            ))
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }

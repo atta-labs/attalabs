@@ -4,7 +4,8 @@ import type { ReactNode } from 'react'
 import { SignInButton, UserButton, useUser } from '@atta/auth'
 import { Menu, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { Button } from '../libraries/basic/components/interactive/button'
+import { Button as BasicButton } from '../libraries/basic/components/interactive/button'
+import { useComponents } from '../lib/library-provider'
 import { Logo } from '../libraries/shared/components/display/logo'
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from '../libraries/basic/installed/sheet'
 import { ColorSchemeToggle } from '../lib/color-scheme-toggle'
@@ -46,6 +47,8 @@ export function TopBar({
 }: TopBarProps) {
   const { user } = useUser()
   const pathname = usePathname()
+  const comps = useComponents()
+  const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
 
   const isActive = (href: string, exact = false) => (exact ? pathname === href : pathname.startsWith(href))
 
@@ -109,7 +112,7 @@ export function TopBar({
           <ColorSchemeToggle />
           {user && <UserButton />}
           <Sheet>
-            <SheetTrigger render={<Button variant='ghost' size='icon' aria-label='Open menu' />}>
+            <SheetTrigger render={<Button variant='outline' size='icon' aria-label='Open menu' />}>
               <Menu className='h-4 w-4' />
               <span className='sr-only'>Open menu</span>
             </SheetTrigger>
@@ -125,7 +128,7 @@ export function TopBar({
                     {defaultLogo}
                   </SheetClose>
                 )}
-                <SheetClose render={<Button variant='ghost' size='icon' aria-label='Close menu' />}>
+                <SheetClose render={<Button variant='outline' size='icon' aria-label='Close menu' />}>
                   <X className='h-4 w-4' />
                   <span className='sr-only'>Close menu</span>
                 </SheetClose>
@@ -151,7 +154,7 @@ export function TopBar({
                 {!user && (
                   <div className='flex h-14 items-center border-b border-border/30'>
                     <SignInButton mode='modal'>
-                      <Button variant='ghost' className='px-0 text-sm'>
+                      <Button variant='outline' className='text-sm'>
                         Sign in
                       </Button>
                     </SignInButton>

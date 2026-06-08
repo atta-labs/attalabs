@@ -1,6 +1,7 @@
 'use client'
 
-import { Button } from '@atta/ui'
+import { Button as BasicButton } from '../libraries/basic/components/interactive/button'
+import { useComponents } from './library-provider'
 import { Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { COLOR_SCHEME_ATTRIBUTE, COLOR_SCHEME_COOKIE_MAX_AGE, DEFAULT_SCHEME, type ColorScheme } from './color-scheme'
@@ -16,6 +17,8 @@ import { useCookieName } from './cookie-name-context'
 export function ColorSchemeToggle() {
   const cookieName = useCookieName()
   const [scheme, setScheme] = useState<ColorScheme>(DEFAULT_SCHEME)
+  const comps = useComponents()
+  const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
 
   // Read the SSR-applied attribute after hydration. Doing this in an effect
   // (vs. useState lazy initializer) keeps SSR markup deterministic and avoids
@@ -37,7 +40,7 @@ export function ColorSchemeToggle() {
   const label = scheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
 
   return (
-    <Button variant='ghost' size='icon' onClick={flip} aria-label={label} title={label}>
+    <Button variant='outline' size='icon' onClick={flip} aria-label={label} title={label}>
       <Icon className='h-4 w-4' />
     </Button>
   )

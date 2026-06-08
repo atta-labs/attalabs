@@ -5,11 +5,12 @@ import type { ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Download, ExternalLink } from 'lucide-react'
 import { SignInButton, UserButton, useUser } from '@atta/auth'
-import { Button } from '@atta/ui/components/button'
+import { Button } from '@atta/ui/components'
 import { Logo } from '@atta/ui/shared'
 import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { cn } from '@atta/ui/lib/utils'
+import { AvatarFrame } from '@/components/avatar-frame'
 import { HeroCollapseProvider, useHeroCollapse } from '@/components/envoy/hero-collapse-context'
 
 export interface ProfileIdentity {
@@ -63,11 +64,12 @@ function EnvoyNavContent({
 
           <div className={cn('flex min-w-0 items-center gap-2.5', dockedTransition)} aria-hidden={!isCollapsed}>
             {profileIdentity.avatarUrl && (
-              // biome-ignore lint/performance/noImgElement: dynamic R2/blob URL — not optimisable via next/image
-              <img
+              <AvatarFrame
                 src={profileIdentity.avatarUrl}
                 alt={profileIdentity.name ?? ''}
-                className='h-8 w-8 shrink-0 rounded-[7px] border border-border object-cover sm:h-9 sm:w-9'
+                size={36}
+                variant='plain'
+                pennant={false}
               />
             )}
             {(profileIdentity.name || profileIdentity.title) && (
@@ -92,25 +94,16 @@ function EnvoyNavContent({
               className={cn('hidden shrink-0 items-center gap-1 sm:flex', dockedTransition)}
               aria-hidden={!isCollapsed}
             >
-              <a
-                href={profileIdentity.cvUrl}
-                download
-                aria-label='Download CV'
-                title='Download CV'
-                className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-              >
-                <Download className='h-3.5 w-3.5' />
-              </a>
-              <a
-                href={profileIdentity.cvUrl}
-                target='_blank'
-                rel='noreferrer'
-                aria-label='Open CV'
-                title='Open CV'
-                className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-              >
-                <ExternalLink className='h-3.5 w-3.5' />
-              </a>
+              <Button variant='outline' size='icon' className='h-7 w-7' asChild>
+                <a href={profileIdentity.cvUrl} download aria-label='Download CV' title='Download CV'>
+                  <Download className='h-3.5 w-3.5' />
+                </a>
+              </Button>
+              <Button variant='outline' size='icon' className='h-7 w-7' asChild>
+                <a href={profileIdentity.cvUrl} target='_blank' rel='noreferrer' aria-label='Open CV' title='Open CV'>
+                  <ExternalLink className='h-3.5 w-3.5' />
+                </a>
+              </Button>
             </div>
           )}
 

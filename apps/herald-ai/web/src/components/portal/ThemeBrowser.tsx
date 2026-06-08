@@ -1,7 +1,7 @@
 'use client'
 
 import type { CMSLibrary, CMSTheme } from '@atta/cms'
-import { Button } from '@atta/ui/components'
+import { Button, Card } from '@atta/ui/components'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import type { ThemeData } from '@atta/ui/lib/preview-theme-utils'
 import { usePortalPreview } from '@/hooks/usePortalPreview'
@@ -188,7 +188,7 @@ export function ThemeBrowser({
             const hasBoth = schemes?.hasDark && schemes?.hasLight
 
             return (
-              <div
+              <Card
                 key={theme._id}
                 role='button'
                 tabIndex={0}
@@ -199,7 +199,7 @@ export function ThemeBrowser({
                     handleSelect(theme._id)
                   }
                 }}
-                className={`flex w-full cursor-pointer items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors ${
+                className={`mx-2 my-1.5 flex cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors ${
                   isSelected ? 'bg-primary/10' : 'hover:bg-foreground/5'
                 }`}
               >
@@ -233,7 +233,7 @@ export function ThemeBrowser({
                     ))}
                   </div>
                 )}
-              </div>
+              </Card>
             )
           })}
         </div>

@@ -8,7 +8,7 @@ export { Badge, badgeVariants } from '../installed/badge'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
 
 // Interactive — Tabs
-export { Tabs, TabsContent, TabsList, TabsTrigger } from '../installed/tabs'
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './interactive/tabs'
 
 // Interactive — DropdownMenu
 export {

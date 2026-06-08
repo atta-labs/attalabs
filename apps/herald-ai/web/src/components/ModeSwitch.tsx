@@ -11,21 +11,26 @@ export function ModeSwitch() {
 
   const segmentClass = (active: boolean) =>
     cn(
-      'h-6 rounded-sm px-2.5 font-mono text-[10px] uppercase tracking-[0.15em]',
+      'font-mono text-[10px] uppercase tracking-[0.15em]',
       active && 'bg-foreground text-background hover:bg-foreground/90 hover:text-background'
     )
 
   return (
-    <div className='flex items-center gap-px rounded border border-border/50 p-0.5'>
+    <div className='flex items-center gap-2'>
       <Button
-        variant='ghost'
+        variant='outline'
         size='sm'
         onClick={() => router.push('/candidate')}
         className={segmentClass(!isRecruiter)}
       >
         Candidate
       </Button>
-      <Button variant='ghost' size='sm' onClick={() => router.push('/recruiter')} className={segmentClass(isRecruiter)}>
+      <Button
+        variant='outline'
+        size='sm'
+        onClick={() => router.push('/recruiter')}
+        className={segmentClass(isRecruiter)}
+      >
         Recruiter
       </Button>
     </div>

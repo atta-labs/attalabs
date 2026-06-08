@@ -18,10 +18,12 @@ export function LandingPage() {
           verified, GitHub signal cross-checked, interview hooks pre-extracted. Not a score. An audit.
         </Text>
         <div className='mt-8 flex flex-wrap items-center justify-center gap-4'>
-          <NextLink variant='button' href='/sign-in'>
-            Sign in to audit a candidate
-          </NextLink>
-          <Button asChild variant='ghost'>
+          <Button asChild>
+            <NextLink variant='unstyled' href='/sign-in'>
+              Sign in to audit a candidate
+            </NextLink>
+          </Button>
+          <Button asChild variant='outline'>
             <a href='#how-it-works'>How it works ↓</a>
           </Button>
         </div>
