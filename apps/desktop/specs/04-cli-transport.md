@@ -1,5 +1,6 @@
 # 04 — The CLI Transport (`createCliLlmCall`)
 
+**Status:** draft
 This is the feature that makes the desktop economically different from the hosted web: the LLM runs on the **user's own `claude`/`codex` subscription** via their installed CLI, with no API key and no per-token cost to AttaLabs. It is exactly Pupila's mechanism, generalized into a transport for the whole ecosystem.
 
 ## The core fact that makes it cheap

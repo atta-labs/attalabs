@@ -1,5 +1,6 @@
 # 07 — Distribution, Signing & Auto-Update
 
+**Status:** draft
 This is the "new product surface" a hosted web app never needed. All of it is trodden in 2026 and CI-automatable, but it is a real subsystem — accounts, certificates, entitlements, a signing matrix, and an update channel.
 
 ## The reassurance first (re: Dani's Electron-era trauma)

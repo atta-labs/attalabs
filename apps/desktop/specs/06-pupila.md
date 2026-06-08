@@ -1,5 +1,6 @@
 # 06 — Pupila
 
+**Status:** draft
 > Repo: `github.com/FranRom/pupila` (MIT). **Fran is Dani's friend.** Direction (core vs adjacent, co-build vs integrate) is a conversation with Fran, not a unilateral technical decision — recorded as such. Dani's standing note: prefers **one project**, will talk to Fran.
 
 ## What Pupila is

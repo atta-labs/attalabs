@@ -1,5 +1,6 @@
 # Desktop — Backlog (held / future, out of the active flow)
 
+**Status:** draft
 - **Phase-2 composition:** extract product feature surfaces from `apps/*/web/src` into packages so one `apps/desktop` Next app mounts all products as routes (`/vada`, `/herald`, `/aeg`, `/pupila`). Size first by counting direct `@atta/auth` + DB usages in products.
 - **Vāda-over-CLI at scale (spike S6):** validate heavy multi-reviewer deliberation + token accounting before making Vāda a flagship desktop surface.
 - **Single-Bun-binary sidecar:** revisit if Bun fixes RSC/CommonJS `--compile` and the standalone+middleware crash. Would simplify packaging and align with the Bun stack.

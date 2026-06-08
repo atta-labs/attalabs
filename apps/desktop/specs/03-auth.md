@@ -1,5 +1,6 @@
 # 03 — Authentication (Clerk on the desktop)
 
+**Status:** draft
 Auth is the single largest *new* piece of the desktop product. The good news: it is a **paved path** — Clerk explicitly supports native/desktop contexts and lists a Tauri integration. The work is bounded and well-documented.
 
 ## The mental correction that frames everything

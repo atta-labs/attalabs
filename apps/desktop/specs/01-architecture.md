@@ -1,5 +1,6 @@
 # 01 — Architecture
 
+**Status:** draft
 ## The governing principle
 
 > **The web products must not know their execution context.** A product should run identically whether wrapped by a Next web server or a desktop shell. Context-specific concerns (how the LLM is reached, how auth is obtained, where data lives) are **injected at the boundary**, never imported inside product code.

@@ -1,5 +1,6 @@
 # 05 — Products in the Desktop
 
+**Status:** draft
 The desktop is a container for *existing* products. This doc records which products belong, **why each gains from being local**, and which are awkward fits. Final set depends on ratification + the Fran conversation (Pupila).
 
 ## AEG — the strongest fit (the reason that most needs the desktop)

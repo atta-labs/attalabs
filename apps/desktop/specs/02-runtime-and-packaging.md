@@ -1,5 +1,6 @@
 # 02 — Runtime & Packaging
 
+**Status:** draft
 This is the heart of Model B feasibility. Everything here is evidenced in `10-research-log.md`.
 
 ## The proof point

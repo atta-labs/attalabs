@@ -1,5 +1,6 @@
 # 08 — Risk Register & Open Questions
 
+**Status:** draft
 Ranked. "Resolved" means we found the answer in research; "resolved-with-fix" means there's a known, bounded fix that must be specced/implemented; "open" means genuinely unresolved.
 
 ## A. The core thesis — HOLDS

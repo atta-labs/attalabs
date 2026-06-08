@@ -1,6 +1,7 @@
 # AttaLabs Desktop — Spec Index
 
-> **Status:** DRAFT / NOT RATIFIED. This is a Type 2 (vision + architecture) spec set authored by the Team Leader (Brief Author mode) during an extended research session. It exists to **preserve every finding** so a future coding agent (or future Dani) inherits the full reasoning instead of rediscovering it. Nothing here is committed to build until the Principal ratifies (see `decisions.md` in this folder + the global ratification queue).
+**Status:** draft
+> **Status:** DRAFT / NOT RATIFIED. This is a Type 2 (vision + architecture) spec set authored by the Team Leader (Brief Author mode) during an extended research session. It exists to **preserve every finding** so a future coding agent (or future Dani) inherits the full reasoning instead of rediscovering it. Nothing here is committed to build until the Principal ratifies (see `desktop-decisions.md` in this folder + the global ratification queue).
 
 ## What this product is, in one sentence
 
@@ -23,7 +24,7 @@ It is the third answer to the API-key problem Dani has chased since AttaLabs beg
 | 08 | [`08-risks-and-open-questions.md`](./08-risks-and-open-questions.md) | The full risk register: resolved, resolved-with-fix, still-open. Ranked. |
 | 09 | [`09-spike-plan.md`](./09-spike-plan.md) | The de-risking spike sequence — what proves what, in what order, before any product code |
 | 10 | [`10-research-log.md`](./10-research-log.md) | The raw research trail with sources, so every external finding is re-verifiable |
-| — | [`decisions.md`](./decisions.md) | Product-local decision log (desktop-scoped). Global ratification flagged in PR body. |
+| — | [`desktop-decisions.md`](./desktop-decisions.md) | Product-local decision log (desktop-scoped). Global ratification flagged in PR body. |
 | — | [`desktop-backlog.md`](./desktop-backlog.md) | Held / future items out of the active flow |
 
 ## The honest one-paragraph meta-finding

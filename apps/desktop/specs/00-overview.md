@@ -1,5 +1,6 @@
 # 00 — Overview & Vision
 
+**Status:** draft
 ## The problem this product solves (the throughline)
 
 Since AttaLabs began, Dani has fought the **API-key model**: it is annoying for users to paste API keys, annoying to manage, and a real adoption barrier. Many iterations across Vāda, Vitakka, and Atta circled this. **MCP** was the first structural answer: ship products as MCP servers so people use them *from their own Claude.ai / ChatGPT subscription* — the caller's frontier model does the reasoning, AttaLabs supplies tools and data. Vāda already ships a hosted MCP on this thesis.

@@ -1,5 +1,6 @@
 # 09 — Spike Plan (de-risking sequence)
 
+**Status:** draft
 Goal: prove the foundation on the **smallest possible surface** before any product is built around it. Each step gates the next. Do **not** write product code or `createCliLlmCall` for real until the relevant step passes. Use a **development** Clerk instance throughout (avoids prod-key hardening until the end).
 
 ## Spike order (each step de-risks the highest remaining unknown)

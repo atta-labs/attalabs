@@ -1,5 +1,6 @@
 # 10 — Research Log (sources & findings)
 
+**Status:** draft
 The raw trail so every external finding is re-verifiable and nothing is lost. Grouped by topic. Dates reflect source recency at time of research (June 2026).
 
 ## Repo facts (daniboomerang/attalabs @ main)
