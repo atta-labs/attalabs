@@ -5,7 +5,8 @@ import type { ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Download, ExternalLink } from 'lucide-react'
 import { SignInButton, UserButton, useUser } from '@atta/auth'
-import { Button } from '@atta/ui/components'
+import { Button as BasicButton } from '@atta/ui/components/button'
+import { useComponents } from '@atta/ui/lib/library-provider'
 import { Logo } from '@atta/ui/shared'
 import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
 import { NextLink } from '@atta/ui/lib/next-link'
@@ -33,6 +34,8 @@ function EnvoyNavContent({
   const { user } = useUser()
   const searchParams = useSearchParams()
   const [inIframe, setInIframe] = useState(false)
+  const comps = useComponents()
+  const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
 
   useEffect(() => {
     try {

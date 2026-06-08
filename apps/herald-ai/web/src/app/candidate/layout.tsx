@@ -4,6 +4,8 @@ import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { getUserByClerkId } from '@/db/queries'
 import { ModeSwitch } from '@/components/ModeSwitch'
+import { CandidateShell } from '@/components/portal/CandidateShell'
+import type { UILibrary } from '@atta/ui/lib/library-loader'
 
 export default async function CandidateLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth()
@@ -12,6 +14,7 @@ export default async function CandidateLayout({ children }: { children: React.Re
   const [user, branding] = await Promise.all([getUserByClerkId(userId), getHeraldBranding(cmsClient).catch(() => null)])
 
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
+  const userLibrary = (user?.library ?? 'basic') as UILibrary
 
   const signedInLinks = user?.onboardingComplete
     ? [
@@ -22,15 +25,17 @@ export default async function CandidateLayout({ children }: { children: React.Re
     : []
 
   return (
-    <div className='flex h-screen flex-col'>
-      <TopBar
-        logoText='Herald'
-        logoUrl={logoUrl}
-        logoTagline={['Forensic hiring', 'audits']}
-        signedInLinks={signedInLinks}
-        extraActions={<ModeSwitch />}
-      />
-      <main className='flex-1 overflow-hidden'>{children}</main>
-    </div>
+    <CandidateShell initialLibrary={userLibrary}>
+      <div className='flex h-screen flex-col'>
+        <TopBar
+          logoText='Herald'
+          logoUrl={logoUrl}
+          logoTagline={['Forensic hiring', 'audits']}
+          signedInLinks={signedInLinks}
+          extraActions={<ModeSwitch />}
+        />
+        <main className='flex-1 overflow-hidden'>{children}</main>
+      </div>
+    </CandidateShell>
   )
 }

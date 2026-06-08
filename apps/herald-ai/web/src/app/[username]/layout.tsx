@@ -3,6 +3,8 @@ import { auth } from '@clerk/nextjs/server'
 import { cmsClient, getHeraldBranding } from '@atta/cms'
 import { getUserByUsername } from '@/db/queries'
 import { EnvoyShell } from './envoy-shell'
+import { EnvoyLibraryShell } from '@/components/envoy/EnvoyLibraryShell'
+import type { UILibrary } from '@atta/ui/lib/library-loader'
 
 export default async function EnvoyLayout({
   children,
@@ -27,10 +29,13 @@ export default async function EnvoyLayout({
     avatarUrl: user?.avatarUrl ?? null,
     cvUrl: user?.cvUrl ?? null
   }
+  const userLibrary = (user?.library ?? 'basic') as UILibrary
 
   return (
-    <EnvoyShell logoUrl={logoUrl} profileIdentity={profileIdentity} isOwner={isOwner}>
-      {children}
-    </EnvoyShell>
+    <EnvoyLibraryShell initialLibrary={userLibrary}>
+      <EnvoyShell logoUrl={logoUrl} profileIdentity={profileIdentity} isOwner={isOwner}>
+        {children}
+      </EnvoyShell>
+    </EnvoyLibraryShell>
   )
 }

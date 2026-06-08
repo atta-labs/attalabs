@@ -151,7 +151,7 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
                   onChange(font)
                   setOpen(false)
                 }}
-                className={`flex w-full px-3 py-2 text-left text-sm transition-colors hover:bg-accent/10 ${font === fontName ? 'bg-accent/10 text-foreground' : 'text-foreground/80'}`}
+                className={`flex w-full px-3 py-2 text-left text-sm transition-colors hover:bg-accent/10 ${font === fontName ? 'bg-accent/10 text-foreground' : 'text-foreground'}`}
                 style={{ fontFamily: `"${font}", sans-serif` }}
               >
                 {font}

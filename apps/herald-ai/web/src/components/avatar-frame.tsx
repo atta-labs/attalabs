@@ -1,3 +1,6 @@
+'use client'
+
+import { useLibraryName } from '@atta/ui/lib/library-provider'
 import { cn } from '@atta/ui/lib/utils'
 import { Pennant } from './pennant'
 
@@ -23,28 +26,49 @@ export function AvatarFrame({
   pennantAnimated = true,
   className
 }: AvatarFrameProps) {
+  const library = useLibraryName()
+  const isAngular = library === 'retro' || library === 'brutal'
+
+  const initials = alt
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('')
+
   return (
     <div className={cn('relative shrink-0', className)} style={{ width: size, height: size }}>
-      {/* Clipping frame — image stays within the rounded border */}
-      <div className='absolute inset-0 overflow-hidden rounded-[10px] border-[1.5px] border-border bg-card'>
-        {/* biome-ignore lint/performance/noImgElement: dynamic blob/R2 URL — not optimisable via next/image */}
+      <div
+        className={cn(
+          'absolute inset-0 overflow-hidden border-[1.5px] border-border bg-card',
+          isAngular ? 'rounded-none' : 'rounded-[10px]'
+        )}
+      >
+        {/* biome-ignore lint/performance/noImgElement: dynamic R2/blob URL — not optimisable via next/image */}
         <img src={src} alt={alt} className='h-full w-full object-cover' style={{ imageRendering: 'pixelated' }} />
+        {!src && (
+          <div
+            className={cn(
+              'flex h-full w-full items-center justify-center bg-muted text-sm font-medium text-muted-foreground',
+              isAngular ? 'rounded-none font-mono' : 'rounded-[10px]'
+            )}
+          >
+            {initials}
+          </div>
+        )}
         {variant === 'dossier' && (
           <>
-            {/* Registration ticks — top-right and bottom-left */}
-            <div className='absolute right-1.5 top-1.5 z-10 h-[6px] w-[6px] border-r border-t border-muted-foreground' />
-            <div className='absolute bottom-1.5 left-1.5 z-10 h-[6px] w-[6px] border-b border-l border-muted-foreground' />
+            <div className='pointer-events-none absolute right-1.5 top-1.5 z-10 h-[6px] w-[6px] border-r border-t border-muted-foreground' />
+            <div className='pointer-events-none absolute bottom-1.5 left-1.5 z-10 h-[6px] w-[6px] border-b border-l border-muted-foreground' />
           </>
         )}
       </div>
 
-      {/* Pennant hangs below the frame — outside the overflow-hidden wrapper */}
       {showPennant && (
         <Pennant
-          size='lg'
+          size={size < 60 ? 'sm' : size < 90 ? 'md' : 'lg'}
           tone='primary'
           animated={pennantAnimated}
-          className='absolute bottom-[-16px] left-1/2 -translate-x-1/2'
+          className='absolute bottom-[-14px] left-1/2 -translate-x-1/2'
         />
       )}
     </div>

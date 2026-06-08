@@ -6,8 +6,6 @@ import { notFound } from 'next/navigation'
 import { decryptVendorKeys } from '@atta/crypto'
 import { getProviderKeys } from '@atta/db/queries'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
-import { EnvoyLibraryShell } from '@/components/envoy/EnvoyLibraryShell'
-import type { UILibrary } from '@atta/ui/lib/library-loader'
 import { db } from '@/db'
 import { getUserByUsername } from '@/db/queries'
 import { getGoogleFontsUrl } from '@atta/cms'
@@ -92,8 +90,6 @@ export default async function EnvoyPage({
     }
   }
 
-  const userLibrary = (user.library ?? 'basic') as UILibrary
-
   return (
     <>
       {fontsUrl && (
@@ -104,15 +100,13 @@ export default async function EnvoyPage({
         </>
       )}
       {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
-      <EnvoyLibraryShell initialLibrary={userLibrary}>
-        <EnvoyFlow
-          profile={profile}
-          username={username}
-          previewMode={previewMode}
-          hasAnthropicKey={hasAnthropicKey}
-          isOwner={isOwner}
-        />
-      </EnvoyLibraryShell>
+      <EnvoyFlow
+        profile={profile}
+        username={username}
+        previewMode={previewMode}
+        hasAnthropicKey={hasAnthropicKey}
+        isOwner={isOwner}
+      />
     </>
   )
 }
