@@ -1,8 +1,18 @@
-import { Github } from '@lobehub/icons'
-import { siDiscord } from 'simple-icons'
+import { siDiscord, siGithub } from 'simple-icons'
 
 export function GitHubIcon({ className }: { className?: string }) {
-  return <Github className={className} />
+  return (
+    <svg
+      role='img'
+      viewBox='0 0 24 24'
+      fill='currentColor'
+      aria-hidden='true'
+      className={className}
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <path d={siGithub.path} />
+    </svg>
+  )
 }
 
 // LinkedIn removed from simple-icons v14 (trademark); inlined path from canonical v13

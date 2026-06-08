@@ -155,7 +155,8 @@ export function EnvoyFlow({
       clearTimeout(apiTimer)
       if (!res.ok) {
         const body = await res.json().catch(() => null)
-        throw new Error(body?.error ?? `API error: ${res.status}`)
+        const errMsg = typeof body?.error === 'string' ? body.error : `API error: ${res.status}`
+        throw new Error(errMsg)
       }
 
       const data: MatchReport = await res.json()
