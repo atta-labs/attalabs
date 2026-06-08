@@ -3,7 +3,10 @@
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs'
 import { motion, type HTMLMotionProps } from 'framer-motion'
 import { cn } from '../../../lib/utils'
-import { Tabs } from '../../basic/installed/tabs'
+
+function Tabs(props: TabsPrimitive.Root.Props) {
+  return <TabsPrimitive.Root data-slot='tabs' {...props} />
+}
 
 function TabsList({ className, children, ...props }: TabsPrimitive.List.Props) {
   return (
@@ -44,7 +47,12 @@ function TabsContent({
   ...props
 }: TabsPrimitive.Panel.Props & { motionProps?: HTMLMotionProps<'div'> }) {
   return (
-    <TabsPrimitive.Panel data-slot='tabs-content' value={value} className={cn('outline-none', className)} {...props}>
+    <TabsPrimitive.Panel
+      data-slot='tabs-content'
+      value={value}
+      className={cn('mt-6 outline-none', className)}
+      {...props}
+    >
       <motion.div
         key={String(value)}
         initial={{ opacity: 0, y: 8 }}
