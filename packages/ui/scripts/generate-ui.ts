@@ -2,6 +2,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { cmsClient, cmsConfig, getAttaConfig, getHeraldConfig, getVadaConfig, getVitakkaConfig } from '@atta/cms'
 
+const _cache = new Map<string, UILibrary>()
+
 // When called from next.config.ts, process.cwd() is the app directory (apps/{app}/web/).
 // packages/ui/generated/ is always three levels up from the app's web dir.
 function getGeneratedDir(): string {
@@ -22,6 +24,9 @@ const CONFIG_FETCHERS: Record<
 }
 
 export async function generateUIIndex(app: App): Promise<UILibrary> {
+  const cached = _cache.get(app)
+  if (cached) return cached
+
   const appLabel = app.padEnd(24)
   console.log('\n┌──────────────────────────────────────────────┐')
   console.log(`│  UI GENERATION — ${appLabel}│`)
@@ -64,5 +69,6 @@ export async function generateUIIndex(app: App): Promise<UILibrary> {
   console.log(`   ✓ packages/ui/generated/${app}/components.ts`)
   console.log(`   ✓ packages/ui/generated/${app}/canvas.ts\n`)
 
+  _cache.set(app, library)
   return library
 }
