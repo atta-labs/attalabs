@@ -55,7 +55,9 @@ Every artifact falls into one of five persistence classes. Persistence class det
 
 **This is where execution status lives — derived, not written.** A task's status is computed from forge facts: Issue open/unassigned = `backlog`; assigned, no branch = `todo`; branch `task/<iteration>/<n>` exists, no PR = `in-flight`; PR open = `in-review`; PR `reviewDecision: CHANGES_REQUESTED` = `changes-requested`; merged = `merged`; an `aeg:blocked` label = `blocked`. No role sets a status field — opening the branch/PR and merging are the transitions.
 
-**Create:** TL (Issues, in Planner mode); Developer (PRs); Reviewer (review verdicts/comments); Archivist (advisory PR comments); any role (Issue comments with appropriate authority).
+**The provenance block (D-030) is a Class 2 object too — a close-out projection, not stored status.** At close-out the Archivist assembles a provenance record (task → intent → reviews → model → merge metadata) and posts it as a comment on the **merged** PR. It is *assembled from facts the merge already froze*, written once, append-only — a projection of frozen forge facts in exactly the way derived status is a projection of live forge facts. It is therefore explicitly **not** the forbidden "stored status" of `iterations/README.md` §9: it lives on the merged PR (never in the iteration file or the Issue), it records history (not current state), and nothing ever updates it. See `roles/archivist.md` and §13.
+
+**Create:** TL (Issues, in Planner mode); Developer (PRs); Reviewer (review verdicts/comments); Archivist (advisory PR comments + the provenance block); any role (Issue comments with appropriate authority).
 **Mutate:** Labels — tier (`tier:0|1|3`), `aeg:blocked`, and escalation labels (`needs:*-input`) by the TL/Developer (by hand or via an automation layer) and the Archivist (automation). **No `status:*` labels** — status is derived. Issue/PR body — the brief lives in the **PR body** (frozen after open — Section 7); the Issue body holds metadata only, never the brief, never planning fields (priority/estimates), which a required template + CI reject.
 **Read-only:** All roles always.
 
@@ -118,16 +120,17 @@ Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer i
 | **Source code** | Merges PR | — | Writes in PR per brief scope; opens PR | — |
 | **GitHub labels** (tier, `aeg:blocked`, `needs:*-input`) | — | Writes (by hand or via an automation layer) | Writes (by hand or via an automation layer) | Writes via automation |
 | **Task status** | — | — | — | — *(nobody writes it — derived from the forge)* |
+| **Provenance block** (on the merged PR) | Reads (audit) | Reads (audit) | — | Assembles + posts at close-out (append-only; from frozen facts) |
 | **Worktrees** | Removes after merge | — | Works in (created at dispatch) | Flags merged worktrees as cleanup candidates |
 | **Orchestration-tool runtime** (if used) | Edits config; reads (audit) | Reads | Appends events via the tool | — |
 | **CI/GitHub Actions** | Approves workflow changes via PR | Proposes workflow changes via PR | — | Runs as GitHub Actions automation |
 
-### Reviewer & Security review authority (D-026)
+### Reviewer & Security review authority (D-026, extended by D-030)
 
 The Reviewer role has two specializations — code review (`roles/reviewer.md`) and security review (`roles/security.md`) — and one narrow authority profile:
 
-- **Read:** all Class 1 (repo) and Class 2 (GitHub) artifacts, plus the brief (in the PR body) and the PR diff. Always read-only on canonical artifacts.
-- **Write:** PR review verdicts and review comments only (a Class 2 object). The verdict is the structured block in the role doc (`APPROVE | REQUEST CHANGES` for code; `PASS | FAIL` for security). A REQUEST CHANGES sets the PR's review decision, which is the derived `changes-requested` status — the Reviewer writes no status field.
+- **Read:** all Class 1 (repo) and Class 2 (GitHub) artifacts, plus the brief (in the PR body) and the PR diff. **Including the `Product:` spec(s) in `apps/*/specs/`** — the code Reviewer checks the diff for **spec-conformance**, not only brief-conformance (D-030): a diff can satisfy its brief and still contradict or drift from the product's specced behavior, and catching that gap is the Reviewer's job. A spec **contradiction** is a BLOCKER; **drift** is a MAJOR finding; if the diff is right but the spec is stale, that is a `severity:strategy` escalation, not a failure. This adds **no new persistent artifact** — it reads the product spec that already exists. Always read-only on canonical artifacts.
+- **Write:** PR review verdicts and review comments only (a Class 2 object). The verdict is the structured block in the role doc (`APPROVE | REQUEST CHANGES` for code, with a `SPEC CONFORMANCE` line; `PASS | FAIL` for security). A REQUEST CHANGES sets the PR's review decision, which is the derived `changes-requested` status — the Reviewer writes no status field.
 - **Cannot:** edit code, specs, skills, decision logs, PM docs; mutate labels; or merge. The Reviewer reports; the Developer remediates; the Principal merges.
 - **Independence:** fresh context (a separate invocation), never reviewing work it authored. This is the whole point.
 - **Escalation:** a finding that exceeds review authority is marked `[ESCALATE] severity:strategy|product` and routed to the TL or Principal.
@@ -187,6 +190,8 @@ A spec file exists in one of four states:
 
 Most specs are `draft` — no deliberate ratification pass has been done. Future PRs ratify as appropriate.
 
+> Note (D-030): the Reviewer's spec-conformance check (§3) reads the product spec **as written** — at whatever ratification state it currently holds. A `draft` spec is still the product's stated intent and is checked against; a contradiction with a `ratified` spec is the most serious. The Reviewer never edits the spec; if it's wrong, that's an escalation.
+
 ---
 
 ## Section 6: Decision Log Schema
@@ -225,7 +230,7 @@ When a Developer reaches a decision not covered by the brief, it escalates throu
 
 **`severity: execution`** — routine, answerable by the TL in Brief Author mode. ("Library X is deprecated"; "null or throw?"; "I need an unanticipated flag.") Adds label `needs:execution-input`; the TL replies; the Developer resumes.
 
-**`severity: strategy`** — which design path to take; TL Strategist mode. ("The brief's approach A has a structural issue — switch to B?"; "this touches an undiscussed area.") Adds `needs:strategy-input`; same path, different cognitive mode.
+**`severity: strategy`** — which design path to take; TL Strategist mode. ("The brief's approach A has a structural issue — switch to B?"; "this touches an undiscussed area"; "the diff is right but the spec is stale.") Adds `needs:strategy-input`; same path, different cognitive mode.
 
 **`severity: product`** — requires a Principal decision. Rare; reserved for Type 1 decisions discovered during execution. Adds `needs:principal-input`. If the Principal is present, they decide and reply; if not, the item goes to `ratification-queue.md` and the Developer terminates, resuming via a follow-up dispatch after the window.
 
@@ -293,9 +298,15 @@ The Archivist monitors for contradictions — shipped code, a ratified spec, and
 
 ## Section 12: Enforced vs. Trusted Discipline
 
+AEG runs along an **advisory → enforced gradient**. A mechanism can be *advisory* (it produces a finding; nothing blocks) or *enforced* (CI/gates block merge). A repo tightens mechanisms from advisory to enforced one at a time — it does not flip everything at once. **Observe mode (D-030) is the floor of this gradient:** every mechanism advisory, nothing enforced (see below). Full AEG is the ceiling: the gates below enforced.
+
+### Observe mode — the advisory floor (D-030)
+
+The lowest-commitment way to run AEG: read-only over a team's existing process. The roles produce their outputs — Reviewer/Security verdicts, the Planner's topology, the Archivist's provenance — but **none of it blocks a merge**; a finding is a comment, not a gate. Status is still **derived** from the forge (read-only); AEG writes nothing it wouldn't write in full mode except that the gates run **report-only** (they print what *would* fail). This is the "monitoring, not restriction" on-ramp (`aeg-manual-flow.md` §8); a team climbs from here by promoting one gate at a time to enforced.
+
 ### Enforced (CI blocks merge)
 
-- **Tier-appropriate documentation** — `scripts/verify-docs.ts` checks the PR's tier has the corresponding artifact changes; fails CI if missing. **Real (D-027)**, not a stub. The blocking workflow must be installed at `.github/workflows/verify-docs.yml` (staged at `scripts/ci/verify-docs.workflow.yml`; the GitHub App cannot write workflow files, so the Principal moves it into place). Until installed, the gate runs locally via `bun run verify-docs --pr`.
+- **Tier-appropriate documentation** — `scripts/verify-docs.ts` checks the PR's tier has the corresponding artifact changes; fails CI if missing. **Real (D-027)**, not a stub. The blocking workflow is installed at `.github/workflows/verify-docs.yml`. The gate also runs locally via `bun run verify-docs --pr`. (In observe mode this runs report-only.)
 - **Typecheck, lint, tests** — standard CI gates; always blocking.
 - **Issue template / no forbidden fields** — a required Issue template + a CI check reject planning metadata (priority/estimates/points) on task Issues, keeping them execution-only.
 - **Brief validation** — Archivist Action checks brief structure; flags malformed briefs (`needs:brief-correction`). (Stub today; full implementation V0.7.)
@@ -303,8 +314,9 @@ The Archivist monitors for contradictions — shipped code, a ratified spec, and
 
 ### Trusted (agent discipline — no CI enforcement in V0)
 
-- **Code-review and security passes** — Phase 10 requires them (D-026), but no CI bot dispatches them automatically yet; Principal + agent discipline. Automating dispatch is future work.
+- **Code-review and security passes** — Phase 10 requires them (D-026), including the spec-conformance check (D-030), but no CI bot dispatches them automatically yet; Principal + agent discipline. Automating dispatch is future work.
 - **Dispatch gates** (depends-on merged / no conflicting PR open) — read from the forge and complied with; mechanical enforcement arrives when an automation tool runs dispatch (`iterations/README.md` §8).
+- **Provenance assembly at close-out** (D-030) — the Archivist assembles it; trusted discipline today, automatable later. It records, it never gates.
 - **Decision logging during chat** — TL announces and logs during the conversation; CI cannot verify.
 - **No execution metadata in the iteration file; no dynamic conflict scanner** — the two anti-regression rules (`iterations/README.md` §9); trusted discipline, flagged by the Archivist drift cron and the Planner's gates.
 - **`thinking.md` updates; ratification-window attendance; lock acknowledgment (advisory in V0); spec ratification passes** — all trusted.
@@ -326,6 +338,7 @@ Append-only; never edited in place except to add `SUPERSEDED`/`RETIRED`/`EXPIRED
 - All decision logs (per-product `*-decisions.md` + global `decisions.md`)
 - `project-management/ratification-queue.md`
 - `project-management/retrospectives/*.md` (when created)
+- **The provenance block on a merged PR** (D-030) — assembled once at close-out from frozen facts, posted as a PR comment, never updated. Append-only by construction: a record of what shipped, not a status to maintain.
 - An orchestration tool's runtime event logs, if one is used
 
 **"Append-only" means:** new entries go at the end; existing entries are not rewritten to match new understanding; status transitions are new entries referencing old ones; the log grows, never shrinks. If you want to edit an existing entry, you are almost certainly writing a new entry that supersedes it.

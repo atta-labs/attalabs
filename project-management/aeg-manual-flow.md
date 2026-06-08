@@ -54,7 +54,7 @@ So **no role ever writes status.** Opening the PR *is* the in-review signal; mer
 
 1. **Context lives in the brief.** If it isn't in the brief, it doesn't exist. An agent never needs to read elsewhere to understand its task.
 2. **The brief is pasted, not committed — and lands in the PR body.** You hand it to the Developer directly (all sections per `.claude/skills/brief-authoring/SKILL.md`). When the Developer opens the PR, the brief goes into the PR description — its permanent home, attached to the work it governed, read by Reviewer and Archivist. **Never in the Issue** (it would age and attract edits). Retry reuses the same PR body.
-3. **`Ticket:` and `Product:` are reference-only.** `Ticket:` is N↔M provenance (Jira/Linear) — no agent reads it, it's never a substitute for brief context. `Product:` (multi-valued) resolves against `products.md` to route the agent to the right specs; omit it in a single-product repo.
+3. **`Ticket:` and `Product:` are reference-only.** `Ticket:` is N↔M provenance (Jira/Linear) — no agent reads it, it's never a substitute for brief context. `Product:` (multi-valued) resolves against `products.md` to route the agent to the right specs (and is what the Reviewer spec-checks against, and what the Archivist records in the provenance block); omit it in a single-product repo.
 
 ---
 
@@ -77,7 +77,7 @@ When invoked, an agent does not trust that you called it correctly. It checks tw
 | 4 | **Reviewer (code)** | "review the PR for task N" | VERDICT (APPROVE / REQUEST CHANGES) | no open PR, no brief in the PR body, or it authored the code |
 | 5 | **Security** | "security-review the PR for task N" | VERDICT (PASS / FAIL) | no open PR, or no brief in the PR body |
 | 6 | **Principal + TL** (you) | the verdicts | merge decision | review passes not done |
-| 7 | **Archivist** | "close out the PR for task N" | a close-out report | **PR is not merged** |
+| 7 | **Archivist** | "close out the PR for task N" | a close-out report + provenance block | **PR is not merged** |
 
 Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` and self-locates from forge state. Nobody writes status — the forge already reflects every transition.
 
@@ -96,13 +96,14 @@ Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` 
 - Worktree Step 0: `git worktree add .worktrees/task/<it>/<n> -b task/<it>/<n> origin/main && cd .worktrees/task/<it>/<n>`, do the work, open the PR.
 - Done-checklist: **the brief (and `Ticket:`/`Product:` lines) is pasted into the PR body.** That's it for state — opening the PR *is* the status transition. The Developer writes no status anywhere.
 
-**Reviewer (code)** — requires an open PR with the brief in its body. Refuses: no PR → *"Nothing to review."* No brief → *"This PR has no brief; I can't judge scope against intent."* Authored it → *"I can't review my own work."* Produces APPROVE | REQUEST CHANGES (per `roles/reviewer.md`).
+**Reviewer (code)** — requires an open PR with the brief in its body. Refuses: no PR → *"Nothing to review."* No brief → *"This PR has no brief; I can't judge scope against intent."* Authored it → *"I can't review my own work."* Checks brief-conformance **and** spec-conformance (the `Product:` spec in `apps/*/specs/`). Produces APPROVE | REQUEST CHANGES (per `roles/reviewer.md`).
 
 **Security** — same gate as Reviewer; produces PASS | FAIL (per `roles/security.md`).
 
 **Archivist** (close-out)
 - Requires a **merged** PR. Refuses: not merged → *"Nothing to close out; merge first."*
 - Confirms: Issue closed (the merge auto-closes it if linked), decision logged if Tier 3, changelog appended, docs updated, per-product `state.md`/`now.md` updated for every product the task listed.
+- Assembles the **provenance block** from frozen facts (brief, PR reviews, decision log, merge metadata) and posts it to the merged PR (append-only, never a status field) — see `roles/archivist.md`.
 - Flags — does not perform — orphaned branches (branch with no/stale PR) and local worktree removal as cleanup candidates for the human. Writes no status (the merge already is the status).
 - Produces a close-out report listing anything dangling.
 
@@ -112,4 +113,24 @@ Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` 
 
 A tool can automate the steps 2→6 hand-offs: spawn the Developer in a fresh worktree from a brief, stream its work, unblock escalations, and enforce the dependency/conflict gates in code at dispatch. It does **not** change the gates, roles, brief rules, iteration model, task-as-Issue model, or order. If the tool is unavailable, you run the same flow by hand against the forge. The flow is primary; the tool is convenience — and AEG never names it.
 
-For the iteration / task / conflict model, see `iterations/README.md`. For the Planner's gates, see `roles/planner.md`. For authority and tiers, see `state-machine.md`. For the registry, see `products.md`.
+---
+
+## 8. Observe mode — the read-only adoption tier
+
+A team will not bet a production repo on a new governance model on day one. So AEG has a lowest-commitment entry: **observe mode** — run the whole flow read-only over a team's *existing* process, enforcing nothing, changing nothing.
+
+In observe mode:
+- The team keeps its existing workflow untouched — its Jira/Linear, its branching, its PR habits. AEG sits *beside* it, not in front of it.
+- The roles run in **advisory** posture: the Reviewer and Security passes produce their verdicts, the Planner can map existing work into an iteration's topology, the Archivist can assemble provenance — but **none of it blocks a merge.** A finding is a comment, not a gate.
+- **Status is still derived** from the forge (read-only) — the board (`gh pr list`, the future AEG UI) renders what's already happening. AEG writes nothing.
+- `verify-docs` and the dispatch gates run in **report-only** mode (surfacing what *would* fail), not blocking.
+
+The value in observe mode is exactly the thing companies are afraid of losing: **visibility without disruption.** The team sees what AEG *would* say — which PRs lack a brief, which changes drift from the spec, which tasks would collide — while nothing is taken away from them. This is the "start with monitoring, not restriction" on-ramp.
+
+From there, adoption **tightens one gate at a time**, along the advisory → enforced gradient already in `state-machine.md` §12: turn on `verify-docs` as blocking, then require the brief-in-PR, then enforce the dispatch gates. Each step is a deliberate decision, not a big-bang switch. Observe mode is the floor; full AEG is the ceiling; a team climbs at its own pace.
+
+A team can sit in observe mode indefinitely and still get the audit-by-construction provenance — which, for a regulated team, may itself be the whole reason to adopt.
+
+---
+
+For the iteration / task / conflict model, see `iterations/README.md`. For the Planner's gates, see `roles/planner.md`. For authority, tiers, and the advisory→enforced gradient, see `state-machine.md`. For the registry, see `products.md`. For provenance, see `roles/archivist.md`.
