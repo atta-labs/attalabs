@@ -1,6 +1,6 @@
 'use client'
 
-import * as React from 'react'
+import type * as React from 'react'
 import { Tabs, TabsContent, TabsList as InstalledTabsList, TabsTrigger } from '../../installed/tabs'
 import { cn } from '../../../../lib/utils'
 

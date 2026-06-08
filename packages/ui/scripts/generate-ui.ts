@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { cmsClient, getAttaConfig, getHeraldConfig, getVadaConfig, getVitakkaConfig } from '@atta/cms'
+import { cmsClient, cmsConfig, getAttaConfig, getHeraldConfig, getVadaConfig, getVitakkaConfig } from '@atta/cms'
 
 // When called from next.config.ts, process.cwd() is the app directory (apps/{app}/web/).
 // packages/ui/generated/ is always three levels up from the app's web dir.
@@ -22,8 +22,21 @@ const CONFIG_FETCHERS: Record<
 }
 
 export async function generateUIIndex(app: App): Promise<UILibrary> {
+  const appLabel = app.padEnd(24)
+  console.log('\n┌──────────────────────────────────────────────┐')
+  console.log(`│  UI GENERATION — ${appLabel}│`)
+  console.log('└──────────────────────────────────────────────┘')
+
+  console.log('\n📡 CMS:')
+  console.log(`   Project: ${cmsConfig.projectId}`)
+  console.log(`   Dataset: ${cmsConfig.dataset}`)
+  console.log(`   Token:   ${process.env.SANITY_API_TOKEN ? 'yes' : 'no'}`)
+
   const config = await CONFIG_FETCHERS[app]()
+  const fromCms = config?.userInterface?.library?.id != null
   const library = (config?.userInterface?.library?.id ?? 'basic') as UILibrary
+
+  console.log(`\n📦 Library: ${library}${fromCms ? '' : ' (fallback — CMS returned no config)'}`)
 
   const dir = path.join(getGeneratedDir(), app)
   fs.mkdirSync(dir, { recursive: true })
@@ -47,6 +60,9 @@ export async function generateUIIndex(app: App): Promise<UILibrary> {
       ''
     ].join('\n')
   )
+
+  console.log(`   ✓ packages/ui/generated/${app}/components.ts`)
+  console.log(`   ✓ packages/ui/generated/${app}/canvas.ts\n`)
 
   return library
 }
