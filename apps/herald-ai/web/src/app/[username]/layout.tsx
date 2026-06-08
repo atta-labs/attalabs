@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { auth } from '@clerk/nextjs/server'
 import { cmsClient, getHeraldBranding } from '@atta/cms'
 import { getUserByUsername } from '@/db/queries'
 import { EnvoyShell } from './envoy-shell'
@@ -11,10 +12,13 @@ export default async function EnvoyLayout({
   params: Promise<{ username: string }>
 }) {
   const { username } = await params
-  const [branding, user] = await Promise.all([
+  const [branding, user, { userId }] = await Promise.all([
     getHeraldBranding(cmsClient).catch(() => null),
-    getUserByUsername(username)
+    getUserByUsername(username),
+    auth()
   ])
+
+  const isOwner = userId !== null && user != null && userId === user.clerkId
 
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
   const profileIdentity = {
@@ -25,7 +29,7 @@ export default async function EnvoyLayout({
   }
 
   return (
-    <EnvoyShell logoUrl={logoUrl} profileIdentity={profileIdentity}>
+    <EnvoyShell logoUrl={logoUrl} profileIdentity={profileIdentity} isOwner={isOwner}>
       {children}
     </EnvoyShell>
   )

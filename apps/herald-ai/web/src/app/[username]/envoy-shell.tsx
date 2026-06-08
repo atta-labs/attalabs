@@ -19,7 +19,15 @@ export interface ProfileIdentity {
   cvUrl: string | null
 }
 
-function EnvoyNavContent({ logoUrl, profileIdentity }: { logoUrl: string | null; profileIdentity: ProfileIdentity }) {
+function EnvoyNavContent({
+  logoUrl,
+  profileIdentity,
+  isOwner
+}: {
+  logoUrl: string | null
+  profileIdentity: ProfileIdentity
+  isOwner: boolean
+}) {
   const { isCollapsed } = useHeroCollapse()
   const { user } = useUser()
   const searchParams = useSearchParams()
@@ -35,93 +43,98 @@ function EnvoyNavContent({ logoUrl, profileIdentity }: { logoUrl: string | null;
 
   if (searchParams.get('preview') === 'true' || inIframe) return null
 
+  const dockedTransition = cn(
+    'transition-all duration-300 ease-out motion-reduce:transition-none',
+    isCollapsed ? 'translate-y-0 opacity-100' : 'pointer-events-none select-none translate-y-1.5 opacity-0'
+  )
+
   return (
     <nav className='absolute inset-x-0 top-0 z-50 bg-background/40 backdrop-blur-md'>
-      {/* Logo — pinned at viewport left corner */}
-      <div className='absolute inset-y-0 left-0 flex items-center pl-6'>
-        <NextLink variant='unstyled' href='/' className='flex items-center gap-2'>
-          {logoUrl ? (
-            <Logo dark={logoUrl} alt='Herald' size='h-10' text={['Forensic hiring', 'audits']} />
-          ) : (
-            <span className='font-mono text-sm font-bold tracking-tight'>Herald</span>
-          )}
-        </NextLink>
-      </div>
+      <div className='flex h-14 items-center justify-between gap-3 px-4 sm:px-6'>
+        {/* Left: logo + docked identity (identity fades in on collapse) */}
+        <div className='flex min-w-0 items-center gap-3'>
+          <NextLink variant='unstyled' href='/' className='flex shrink-0 items-center gap-2'>
+            {logoUrl ? (
+              <Logo dark={logoUrl} alt='Herald' size='h-10' text={['Forensic hiring', 'audits']} />
+            ) : (
+              <span className='font-mono text-sm font-bold tracking-tight'>Herald</span>
+            )}
+          </NextLink>
 
-      {/* Content column — aligned to the page body column (same max-w + px) */}
-      <div className='mx-auto flex h-14 max-w-[680px] items-center justify-between px-6'>
-        {/* Docked identity — left edge of the content column */}
-        <div
-          className={cn(
-            'flex items-center gap-2.5 transition-all duration-300 ease-out motion-reduce:transition-none',
-            isCollapsed ? 'translate-y-0 opacity-100' : 'pointer-events-none select-none translate-y-1.5 opacity-0'
-          )}
-          aria-hidden={!isCollapsed}
-        >
-          {profileIdentity.avatarUrl && (
-            // biome-ignore lint/performance/noImgElement: dynamic R2/blob URL — not optimisable via next/image
-            <img
-              src={profileIdentity.avatarUrl}
-              alt={profileIdentity.name ?? ''}
-              className='h-9 w-9 shrink-0 rounded-[7px] border border-border object-cover'
-            />
-          )}
-          {(profileIdentity.name || profileIdentity.title) && (
-            <div className='flex min-w-0 flex-col leading-tight'>
-              {profileIdentity.name && (
-                <span className='text-sm font-semibold text-foreground'>{profileIdentity.name}</span>
-              )}
-              {profileIdentity.title && (
-                <span className='max-w-[220px] truncate text-xs text-muted-foreground'>{profileIdentity.title}</span>
-              )}
-            </div>
-          )}
+          <div className={cn('flex min-w-0 items-center gap-2.5', dockedTransition)} aria-hidden={!isCollapsed}>
+            {profileIdentity.avatarUrl && (
+              // biome-ignore lint/performance/noImgElement: dynamic R2/blob URL — not optimisable via next/image
+              <img
+                src={profileIdentity.avatarUrl}
+                alt={profileIdentity.name ?? ''}
+                className='h-8 w-8 shrink-0 rounded-[7px] border border-border object-cover sm:h-9 sm:w-9'
+              />
+            )}
+            {(profileIdentity.name || profileIdentity.title) && (
+              <div className='flex min-w-0 flex-col leading-tight'>
+                {profileIdentity.name && (
+                  <span className='truncate text-xs font-semibold text-foreground sm:text-sm'>
+                    {profileIdentity.name}
+                  </span>
+                )}
+                {profileIdentity.title && (
+                  <span className='truncate text-[11px] text-muted-foreground sm:text-xs'>{profileIdentity.title}</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* CV buttons — right edge of the content column */}
-        {profileIdentity.cvUrl && (
-          <div
-            className={cn(
-              'flex shrink-0 items-center gap-1 transition-all duration-300 ease-out motion-reduce:transition-none',
-              isCollapsed ? 'translate-y-0 opacity-100' : 'pointer-events-none select-none translate-y-1.5 opacity-0'
-            )}
-            aria-hidden={!isCollapsed}
-          >
-            <a
-              href={profileIdentity.cvUrl}
-              download
-              aria-label='Download CV'
-              title='Download CV'
-              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+        {/* Right: CV (desktop only) + theme + auth/dashboard */}
+        <div className='flex shrink-0 items-center gap-2 sm:gap-3'>
+          {profileIdentity.cvUrl && (
+            <div
+              className={cn('hidden shrink-0 items-center gap-1 sm:flex', dockedTransition)}
+              aria-hidden={!isCollapsed}
             >
-              <Download className='h-3.5 w-3.5' />
-            </a>
-            <a
-              href={profileIdentity.cvUrl}
-              target='_blank'
-              rel='noreferrer'
-              aria-label='Open CV'
-              title='Open CV'
-              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
-            >
-              <ExternalLink className='h-3.5 w-3.5' />
-            </a>
-          </div>
-        )}
-      </div>
+              <a
+                href={profileIdentity.cvUrl}
+                download
+                aria-label='Download CV'
+                title='Download CV'
+                className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+              >
+                <Download className='h-3.5 w-3.5' />
+              </a>
+              <a
+                href={profileIdentity.cvUrl}
+                target='_blank'
+                rel='noreferrer'
+                aria-label='Open CV'
+                title='Open CV'
+                className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+              >
+                <ExternalLink className='h-3.5 w-3.5' />
+              </a>
+            </div>
+          )}
 
-      {/* Theme toggle + Clerk — pinned at viewport right corner */}
-      <div className='absolute inset-y-0 right-0 flex items-center gap-3 pr-6'>
-        <ColorSchemeToggle />
-        {user ? (
-          <UserButton />
-        ) : (
-          <SignInButton mode='modal'>
-            <Button variant='outline' size='sm' className='text-xs'>
-              Sign in
-            </Button>
-          </SignInButton>
-        )}
+          <ColorSchemeToggle />
+
+          {isOwner ? (
+            <div className='flex items-center gap-2 sm:gap-3'>
+              <NextLink variant='unstyled' href='/dashboard'>
+                <Button variant='outline' size='sm' className='text-xs'>
+                  Dashboard
+                </Button>
+              </NextLink>
+              <UserButton />
+            </div>
+          ) : user ? (
+            <UserButton />
+          ) : (
+            <SignInButton mode='modal'>
+              <Button variant='outline' size='sm' className='text-xs'>
+                Sign in
+              </Button>
+            </SignInButton>
+          )}
+        </div>
       </div>
     </nav>
   )
@@ -131,14 +144,15 @@ interface EnvoyShellProps {
   children: ReactNode
   logoUrl: string | null
   profileIdentity: ProfileIdentity
+  isOwner?: boolean
 }
 
-export function EnvoyShell({ children, logoUrl, profileIdentity }: EnvoyShellProps) {
+export function EnvoyShell({ children, logoUrl, profileIdentity, isOwner = false }: EnvoyShellProps) {
   return (
     <HeroCollapseProvider>
       <div className='relative h-dvh overflow-hidden'>
         <Suspense>
-          <EnvoyNavContent logoUrl={logoUrl} profileIdentity={profileIdentity} />
+          <EnvoyNavContent logoUrl={logoUrl} profileIdentity={profileIdentity} isOwner={isOwner} />
         </Suspense>
         <main className='absolute inset-0 overflow-hidden'>{children}</main>
       </div>
