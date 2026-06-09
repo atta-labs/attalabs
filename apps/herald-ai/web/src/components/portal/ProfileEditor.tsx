@@ -473,12 +473,22 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
         </Card>
       )}
       <Tabs defaultValue='profile'>
-        <TabsList>
-          <TabsTrigger value='profile'>Profile</TabsTrigger>
-          <TabsTrigger value='experience'>Experience</TabsTrigger>
-          <TabsTrigger value='connections'>Connections</TabsTrigger>
-          <TabsTrigger value='api-keys'>API Keys</TabsTrigger>
-          <TabsTrigger value='account'>Account</TabsTrigger>
+        <TabsList className='flex w-full flex-nowrap justify-start overflow-x-auto'>
+          <TabsTrigger value='profile' className='shrink-0'>
+            Profile
+          </TabsTrigger>
+          <TabsTrigger value='experience' className='shrink-0'>
+            Experience
+          </TabsTrigger>
+          <TabsTrigger value='connections' className='shrink-0'>
+            Connections
+          </TabsTrigger>
+          <TabsTrigger value='api-keys' className='shrink-0'>
+            API Keys
+          </TabsTrigger>
+          <TabsTrigger value='account' className='shrink-0'>
+            Account
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Profile ──────────────────────────────────────────── */}
