@@ -396,7 +396,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
         </Card>
       )}
       <Tabs defaultValue='profile'>
-        <TabsList className='flex w-full flex-nowrap justify-start overflow-x-auto'>
+        <TabsList className='mb-6 flex w-full flex-nowrap justify-start overflow-x-auto'>
           <TabsTrigger value='profile' className='shrink-0'>
             Profile
           </TabsTrigger>
