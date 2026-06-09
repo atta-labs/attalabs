@@ -106,7 +106,7 @@ function EnvoyNavContent({
               <HeraldAccountMenu />
             ) : (
               <SignInButton mode='modal'>
-                <Button variant='outline' size='sm' className='text-xs'>
+                <Button variant='outline' className='text-xs'>
                   Sign in
                 </Button>
               </SignInButton>
@@ -187,7 +187,7 @@ function EnvoyNavContent({
               <HeraldAccountMenu />
             ) : (
               <SignInButton mode='modal'>
-                <Button variant='outline' size='sm' className='text-xs'>
+                <Button variant='outline' className='text-xs'>
                   Sign in
                 </Button>
               </SignInButton>
