@@ -3,7 +3,7 @@ import type { NextConfig } from 'next'
 import { resolve } from 'node:path'
 
 export default async function config(): Promise<NextConfig> {
-  const library = await generateUIIndex('vitakka')
+  await generateUIIndex('vitakka')
   const componentsRelPath = '../../../packages/ui/generated/vitakka/components.ts'
   return {
     webpack: (config) => {

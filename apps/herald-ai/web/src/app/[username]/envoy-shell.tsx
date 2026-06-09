@@ -67,13 +67,7 @@ function EnvoyNavContent({
 
           <div className={cn('flex min-w-0 items-center gap-2.5', dockedTransition)} aria-hidden={!isCollapsed}>
             {profileIdentity.avatarUrl && (
-              <AvatarFrame
-                src={profileIdentity.avatarUrl}
-                alt={profileIdentity.name ?? ''}
-                size={36}
-                variant='plain'
-                pennant={false}
-              />
+              <AvatarFrame src={profileIdentity.avatarUrl} alt={profileIdentity.name ?? ''} size={36} />
             )}
             {(profileIdentity.name || profileIdentity.title) && (
               <div className='flex min-w-0 flex-col leading-tight'>

@@ -3,7 +3,7 @@ import type { NextConfig } from 'next'
 import { resolve } from 'node:path'
 
 export default async function config(): Promise<NextConfig> {
-  const library = await generateUIIndex('atta')
+  await generateUIIndex('atta')
   const componentsRelPath = '../../../packages/ui/generated/atta/components.ts'
   return {
     images: {

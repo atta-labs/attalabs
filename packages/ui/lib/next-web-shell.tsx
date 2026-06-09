@@ -70,7 +70,6 @@ export async function NextWebShell({
     <html lang='en' data-theme={colorScheme}>
       {/* biome-ignore lint/style/noHeadElement: root layout renders the document head */}
       <head>
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: intentional dev-only inline script, no user data */}
         {process.env.NODE_ENV === 'development' && (
           <script dangerouslySetInnerHTML={{ __html: EXTENSION_FILTER_SCRIPT }} />
         )}
