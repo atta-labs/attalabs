@@ -122,7 +122,7 @@ export function TopBar({
             </>
           ) : (
             <SignInButton mode='modal'>
-              <Button variant='outline' className='text-xs'>
+              <Button variant='outline' className='h-8 px-3 text-xs'>
                 Sign in
               </Button>
             </SignInButton>

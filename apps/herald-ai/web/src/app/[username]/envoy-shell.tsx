@@ -119,7 +119,7 @@ function EnvoyNavContent({
               <HeraldAccountMenu />
             ) : (
               <SignInButton mode='modal'>
-                <Button variant='outline' className='text-xs'>
+                <Button variant='outline' className='h-8 px-3 text-xs'>
                   Sign in
                 </Button>
               </SignInButton>
@@ -163,6 +163,7 @@ function EnvoyNavContent({
                   size='icon'
                   aria-label='Download CV'
                   title='Download CV'
+                  className='h-8 w-8'
                   onClick={() => downloadCv(profileIdentity.cvUrl!, cvFilename!)}
                 >
                   <Download className='h-4 w-4' />
@@ -172,6 +173,7 @@ function EnvoyNavContent({
                   size='icon'
                   aria-label='Open CV'
                   title='Open CV'
+                  className='h-8 w-8'
                   onClick={() => window.open(profileIdentity.cvUrl!, '_blank')}
                 >
                   <ExternalLink className='h-4 w-4' />
@@ -200,7 +202,7 @@ function EnvoyNavContent({
               <HeraldAccountMenu />
             ) : (
               <SignInButton mode='modal'>
-                <Button variant='outline' className='text-xs'>
+                <Button variant='outline' className='h-8 px-3 text-xs'>
                   Sign in
                 </Button>
               </SignInButton>
@@ -235,6 +237,7 @@ function EnvoyNavContent({
                 size='icon'
                 aria-label='Download CV'
                 title='Download CV'
+                className='h-8 w-8'
                 onClick={() => downloadCv(profileIdentity.cvUrl!, cvFilename!)}
               >
                 <Download className='h-4 w-4' />
@@ -244,6 +247,7 @@ function EnvoyNavContent({
                 size='icon'
                 aria-label='Open CV'
                 title='Open CV'
+                className='h-8 w-8'
                 onClick={() => window.open(profileIdentity.cvUrl!, '_blank')}
               >
                 <ExternalLink className='h-4 w-4' />
