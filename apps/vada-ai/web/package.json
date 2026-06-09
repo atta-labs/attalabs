@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack --port 3003",
     "build": "next build",
     "start": "next start",
+    "generate": "bun scripts/generate-ui.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

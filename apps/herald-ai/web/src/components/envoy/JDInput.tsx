@@ -12,6 +12,23 @@ import { useHeroCollapse } from './hero-collapse-context'
 
 const ACCEPTED_DOC_TYPES = '.pdf,.md,.txt,application/pdf,text/markdown,text/plain'
 
+async function downloadCv(url: string, filename: string) {
+  try {
+    const res = await fetch(url)
+    const blob = await res.blob()
+    const objectUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = objectUrl
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(objectUrl)
+  } catch {
+    window.open(url, '_blank')
+  }
+}
+
 export function JDInput({
   onSubmit,
   candidateName = 'Dani Estevez Martin',
@@ -136,39 +153,35 @@ export function JDInput({
                               <Button
                                 variant='outline'
                                 size='icon'
-                                className='h-7 w-7'
                                 aria-label='Download CV'
                                 title='Download CV'
-                                onClick={() => {
-                                  const a = document.createElement('a')
-                                  a.href = candidateCvUrl!
-                                  a.download = ''
-                                  a.click()
-                                }}
+                                onClick={() => downloadCv(candidateCvUrl!, cvFilename!)}
                               >
-                                <Download className='h-3.5 w-3.5' />
+                                <Download className='h-4 w-4' />
                               </Button>
                               <Button
                                 variant='outline'
                                 size='icon'
-                                className='h-7 w-7'
                                 aria-label='Open CV'
                                 title='Open CV'
                                 onClick={() => window.open(candidateCvUrl!, '_blank')}
                               >
-                                <ExternalLink className='h-3.5 w-3.5' />
+                                <ExternalLink className='h-4 w-4' />
                               </Button>
                             </>
                           ) : (
                             <>
                               <a
                                 href={candidateCvUrl}
-                                download
                                 aria-label='Download CV'
                                 title='Download CV'
-                                className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                                className='flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  downloadCv(candidateCvUrl!, cvFilename!)
+                                }}
                               >
-                                <Download className='h-3.5 w-3.5' />
+                                <Download className='h-4 w-4' />
                               </a>
                               <a
                                 href={candidateCvUrl}
@@ -176,9 +189,9 @@ export function JDInput({
                                 rel='noreferrer'
                                 aria-label='Open CV'
                                 title='Open CV'
-                                className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                                className='flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
                               >
-                                <ExternalLink className='h-3.5 w-3.5' />
+                                <ExternalLink className='h-4 w-4' />
                               </a>
                             </>
                           )}
@@ -195,12 +208,11 @@ export function JDInput({
                             <Button
                               variant='outline'
                               size='icon'
-                              className='h-7 w-7'
                               aria-label='GitHub'
                               title='GitHub'
                               onClick={() => window.open(`https://github.com/${candidateGithub}`, '_blank')}
                             >
-                              <GitHubIcon className='h-3.5 w-3.5' />
+                              <GitHubIcon className='h-4 w-4' />
                             </Button>
                           ) : (
                             <a
@@ -209,9 +221,9 @@ export function JDInput({
                               rel='noreferrer'
                               aria-label='GitHub'
                               title='GitHub'
-                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                              className='flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
                             >
-                              <GitHubIcon className='h-3.5 w-3.5' />
+                              <GitHubIcon className='h-4 w-4' />
                             </a>
                           ))}
                         {candidateLinkedin &&
@@ -219,12 +231,11 @@ export function JDInput({
                             <Button
                               variant='outline'
                               size='icon'
-                              className='h-7 w-7'
                               aria-label='LinkedIn'
                               title='LinkedIn'
                               onClick={() => window.open(candidateLinkedin!, '_blank')}
                             >
-                              <LinkedInIcon className='h-3.5 w-3.5' />
+                              <LinkedInIcon className='h-4 w-4' />
                             </Button>
                           ) : (
                             <a
@@ -233,9 +244,9 @@ export function JDInput({
                               rel='noreferrer'
                               aria-label='LinkedIn'
                               title='LinkedIn'
-                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                              className='flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
                             >
-                              <LinkedInIcon className='h-3.5 w-3.5' />
+                              <LinkedInIcon className='h-4 w-4' />
                             </a>
                           ))}
                         {candidateDiscord &&
@@ -243,20 +254,19 @@ export function JDInput({
                             <Button
                               variant='outline'
                               size='icon'
-                              className='h-7 w-7'
                               aria-label={`Discord: ${candidateDiscord}`}
                               title={`Discord: ${candidateDiscord}`}
                             >
-                              <DiscordIcon className='h-3.5 w-3.5' />
+                              <DiscordIcon className='h-4 w-4' />
                             </Button>
                           ) : (
                             <span
                               role='img'
                               aria-label={`Discord: ${candidateDiscord}`}
                               title={`Discord: ${candidateDiscord}`}
-                              className='flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground'
+                              className='flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground'
                             >
-                              <DiscordIcon className='h-3.5 w-3.5' />
+                              <DiscordIcon className='h-4 w-4' />
                             </span>
                           ))}
                       </dd>
