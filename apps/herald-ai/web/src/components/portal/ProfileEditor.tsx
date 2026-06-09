@@ -386,8 +386,8 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
   return (
     <div>
       {!profile.hasAnthropicKey && (
-        <Card className='mb-6 w-full border-destructive/25 bg-destructive/8'>
-          <CardContent className='py-3'>
+        <Card className='mb-6 w-full gap-0 border-destructive/25 bg-destructive/8 py-0 shadow-none'>
+          <CardContent className='px-4 py-2.5'>
             <p className='font-mono text-xs text-destructive'>
               Audit disabled — add your Anthropic API key in the API Keys tab to enable forensic match reports for
               recruiters.
