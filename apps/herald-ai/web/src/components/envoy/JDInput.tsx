@@ -43,7 +43,8 @@ export function JDInput({
   candidateLinkedin,
   candidateDiscord,
   auditAvailable = true,
-  isOwner = false
+  isOwner = false,
+  preview = false
 }: {
   onSubmit: (jd: string) => void
   candidateName?: string
@@ -59,6 +60,7 @@ export function JDInput({
   candidateDiscord?: string
   auditAvailable?: boolean
   isOwner?: boolean
+  preview?: boolean
 }) {
   const { setIsCollapsed } = useHeroCollapse()
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -309,7 +311,15 @@ export function JDInput({
       </div>
 
       {/* Pinned input / audit gate */}
-      {auditAvailable ? (
+      {preview ? (
+        <div className='shrink-0 bg-background'>
+          <div className='mx-auto max-w-[680px] px-6 py-4'>
+            <div className='rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
+              <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
+            </div>
+          </div>
+        </div>
+      ) : auditAvailable ? (
         <div className='shrink-0 bg-background'>
           <div className='mx-auto max-w-[680px] px-6 py-4'>
             <SmartPromptInput
