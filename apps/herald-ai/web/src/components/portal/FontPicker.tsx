@@ -116,7 +116,7 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant='outline' size='sm' className='h-10 gap-1.5'>
+        <Button variant='outline' className='h-8 gap-1.5 px-3 text-xs'>
           <span className='font-mono text-muted-foreground'>Aa</span>
           <span style={{ fontFamily: fontName ? `"${fontName}", sans-serif` : 'inherit' }}>{fontName || 'Font'}</span>
           <ChevronDown className='h-3 w-3 text-muted-foreground' />

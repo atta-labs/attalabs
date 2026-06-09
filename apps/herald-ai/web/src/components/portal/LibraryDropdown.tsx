@@ -13,7 +13,7 @@ interface LibraryDropdownProps {
 export function LibraryDropdown({ value, libraries, onChange }: LibraryDropdownProps) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className='w-36 gap-1.5'>
+      <SelectTrigger className='h-8 w-36 gap-1.5 px-3 text-xs'>
         <Package className='h-3.5 w-3.5 text-muted-foreground shrink-0' />
         <SelectValue />
       </SelectTrigger>

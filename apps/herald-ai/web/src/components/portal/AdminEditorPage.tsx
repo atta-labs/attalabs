@@ -211,7 +211,7 @@ export function AdminEditorPage({
             type='button'
             onClick={handleSave}
             disabled={saving}
-            className='font-mono text-xs uppercase tracking-[0.2em]'
+            className='h-8 px-3 font-mono text-xs uppercase tracking-[0.2em]'
           >
             {saving ? 'Saving...' : 'Save changes'}
           </Button>
