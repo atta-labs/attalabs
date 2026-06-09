@@ -241,9 +241,6 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
   const [summaryMode, setSummaryMode] = useState<'edit' | 'preview'>('edit')
   const { successToast, errorToast } = useToastContext()
   const [saving, setSaving] = useState(false)
-  const [published, setPublished] = useState(profile.isPublished)
-  const [publishing, setPublishing] = useState(false)
-  const [showKeylessConfirm, setShowKeylessConfirm] = useState(false)
   const [locationSearch, setLocationSearch] = useState(profile.location)
   const [locationOpen, setLocationOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -357,40 +354,6 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
     }
   }
 
-  async function doPublish() {
-    setShowKeylessConfirm(false)
-    setPublishing(true)
-    try {
-      const next = !published
-      const res = await fetch('/api/admin/profile-publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isPublished: next })
-      })
-      if (res.ok) {
-        setPublished(next)
-        successToast(
-          next ? 'Profile published' : 'Profile unpublished',
-          next ? 'Your profile is now publicly accessible.' : 'Your profile is now hidden from public view.'
-        )
-      } else {
-        errorToast('Failed', 'Could not update visibility. Please try again.')
-      }
-    } catch {
-      errorToast('Failed', 'Could not update visibility. Please try again.')
-    } finally {
-      setPublishing(false)
-    }
-  }
-
-  function handleTogglePublish() {
-    if (!published && !profile.hasAnthropicKey) {
-      setShowKeylessConfirm(true)
-      return
-    }
-    void doPublish()
-  }
-
   const STACK_MAX = 20
 
   const stackTags = form.stack
@@ -422,46 +385,6 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
   return (
     <div>
-      <div className='mb-8 flex justify-end'>
-        {showKeylessConfirm ? (
-          <div className='flex shrink-0 flex-col items-end gap-2'>
-            <p className='max-w-[260px] text-right font-mono text-[10px] text-muted-foreground'>
-              Recruiters won't be able to run the audit until you add an Anthropic API key. Publish anyway?
-            </p>
-            <div className='flex gap-2'>
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                onClick={() => setShowKeylessConfirm(false)}
-                className='font-mono text-[10px] uppercase tracking-[0.2em]'
-              >
-                Cancel
-              </Button>
-              <Button
-                type='button'
-                variant='default'
-                size='sm'
-                onClick={() => void doPublish()}
-                disabled={publishing}
-                className='font-mono text-[10px] uppercase tracking-[0.2em]'
-              >
-                {publishing ? '...' : 'Publish Anyway'}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <Button
-            type='button'
-            variant={published ? 'outline' : 'default'}
-            onClick={handleTogglePublish}
-            disabled={publishing}
-            className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'
-          >
-            {publishing ? '...' : published ? 'Unpublish' : 'Publish Profile'}
-          </Button>
-        )}
-      </div>
       {!profile.hasAnthropicKey && (
         <Card className='mb-6 w-full border-destructive/25 bg-destructive/8'>
           <CardContent className='py-3'>
