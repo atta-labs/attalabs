@@ -37,8 +37,9 @@ Sanity CMS
 
 @atta/ui package
 ├── lib/next-web-shell.tsx         # Root provider: reads cookie + config → injects CSS + fonts
+├── lib/theme-context.tsx          # ThemeContext — exposes { theme, styleId } to client components
 ├── lib/color-scheme.ts            # Shared cookie/attribute/default contract
-└── lib/color-scheme-toggle.tsx    # Client toggle — flips <html data-theme> + writes cookie
+└── lib/color-scheme-toggle.tsx    # Client toggle — swaps style tag content + flips <html data-theme>
 ```
 
 ---
@@ -74,24 +75,28 @@ interface PortalUiConfig {
 
 ## Theme CSS Generation
 
-Colors from Sanity are stored as plain hex or oklch strings. `NextWebShell` emits **both** schemes via `generateThemeCSS` — `<html data-theme>` selects which one is active, and the runtime toggle can flip between them with no FOUC:
+Colors from Sanity are stored as plain hex or oklch strings. `NextWebShell` emits **only the active scheme** as plain `:root {}` via `generateThemeCSSForScheme`. The `ColorSchemeToggle` swaps the style tag content on flip — no CSS attribute selectors needed, no specificity battles.
+
+```ts
+import { generateThemeCSSForScheme } from '@atta/cms'
+
+// Emit only the active scheme (the default use case)
+const css = generateThemeCSSForScheme(theme, 'dark')
+// :root { --background: oklch(12% 0.02 60); --foreground: oklch(88% 0.05 70); ... }
+```
+
+Use `generateThemeCSS` (dual scheme) only when both schemes must coexist in the same CSS string — specifically, Herald's per-user envoy theme overlay where the candidate's custom theme is injected as an attribute-scoped override so the recruiter's scheme toggle still works:
 
 ```ts
 import { generateThemeCSS } from '@atta/cms'
 
+// Both schemes in one string — needed ONLY for attribute-scoped overrides
 const css = generateThemeCSS(theme)
 // :root { /* light tokens */ }
 // :root[data-theme="dark"], .dark { /* dark tokens */ }
 ```
 
-Use `generateThemeCSSForScheme` only when you need a single scheme (e.g. an admin live-preview iframe that always renders one):
-
-```ts
-import { generateThemeCSSForScheme } from '@atta/cms'
-
-const css = generateThemeCSSForScheme(theme, 'dark')
-// :root { --background: oklch(12% 0.02 60); --foreground: oklch(88% 0.05 70); ... }
-```
+**Default rule: always use `generateThemeCSSForScheme`.** Only reach for `generateThemeCSS` when you have a documented reason to keep both schemes in the same CSS block.
 
 ---
 
@@ -144,18 +149,18 @@ Theme application is **fully server-side rendered**. There is no flash of unstyl
 5. NextWebShell runs server-side:
    a. await cookies() → reads atta-color-scheme cookie (if present)
    b. resolveColorScheme(cookie, cmsScheme) → cookie wins, then CMS, then 'dark'
-   c. generateThemeCSS(theme)
-      → produces dual CSS string:
-        ":root { /* light */ } :root[data-theme=\"dark\"], .dark { /* dark */ }"
+   c. generateThemeCSSForScheme(theme, colorScheme)
+      → produces single-scheme CSS string:
+        ":root { --background: …; --foreground: …; … }"
    d. getGoogleFontsUrl(theme.typography)
       → produces Google Fonts URL string
 6. NextWebShell returns the full <html data-theme="..."> tree including:
    - <link> tags for fonts (in <head>, so browser fetches fonts immediately)
-   - <style id="vada-theme"> with both light + dark variable blocks (inline in initial HTML)
-   - Children wrapped in AuthProvider + LibraryProvider + ToastProvider
-7. Browser receives complete HTML — both schemes' variables are present before any JS runs;
-   <html data-theme> selects which one is active.
-   → No FOUC. Correct scheme is applied on first paint.
+   - <style id="vada-theme"> with active scheme only (inline in initial HTML)
+   - Children wrapped in ThemeProvider + AuthProvider + LibraryProvider + ToastProvider
+7. Browser receives complete HTML — correct scheme is applied on first paint.
+   → No FOUC. On scheme toggle, ColorSchemeToggle replaces the style tag content
+     with the other scheme's CSS, then flips <html data-theme>.
 ```
 
 **Key:** `cmsClient` uses `useCdn: true` in production, so Sanity serves from edge CDN — fast, no cold starts at the theme fetch level.
@@ -188,11 +193,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 `NextWebShell` handles in order:
 1. Reads `cmsScheme` and `libraryId` from config
 2. Reads `atta-color-scheme` cookie via `next/headers`; resolves final scheme as `cookie → CMS → 'dark'`
-3. Calls `generateThemeCSS` → injects `<style id={styleId}>` with **both** light + dark variable blocks
-4. Stamps `<html data-theme={resolvedScheme}>` so the browser knows which block is active
+3. Calls `generateThemeCSSForScheme(theme, colorScheme)` → injects `<style id={styleId}>` with the **active scheme only** as plain `:root {}`
+4. Stamps `<html data-theme={resolvedScheme}>` (used by Tailwind `dark:` variant and neobrutalist border override)
 5. Calls `getGoogleFontsUrl` → injects `<link rel="preconnect">` + `<link rel="stylesheet">` for fonts
 6. Builds Clerk appearance object from the *resolved* scheme's color tokens
-7. Wraps children: `AuthProvider` → `LibraryProvider` → `ToastProvider`
+7. Wraps children: `ThemeProvider` → `AuthProvider` → `LibraryProvider` → `ToastProvider`
 
 **When `config` is `null`** (CMS unreachable or not yet configured): no theme CSS is injected, no fonts are loaded, the base `globals.css` defaults apply. The app still renders.
 
@@ -207,14 +212,15 @@ Visitors can flip between the theme's light and dark color schemes at runtime. T
 ```
 packages/ui/lib/
 ├── color-scheme.ts            # Shared contract: cookie name, type, default, resolveColorScheme()
-├── color-scheme-toggle.tsx    # 'use client' — sun/moon Button; flips <html data-theme> + writes cookie
-└── next-web-shell.tsx         # Server — reads cookie, resolves scheme, sets <html data-theme>
+├── theme-context.tsx          # ThemeContext — { theme, styleId } for client consumption
+├── color-scheme-toggle.tsx    # 'use client' — swaps style tag content + flips <html data-theme>
+└── next-web-shell.tsx         # Server — reads cookie, resolves scheme, injects single-scheme CSS
 ```
 
 ### How it works
 
-- **SSR (`NextWebShell`):** reads `atta-color-scheme` cookie via `next/headers`, resolves `cookie → CMS default → 'dark'`, emits both light + dark CSS blocks via `generateThemeCSS`, stamps `<html data-theme="...">`.
-- **Client (`ColorSchemeToggle`):** on click, sets `document.documentElement.dataset.theme` and writes the cookie. Pure client side — no router refresh, instant repaint.
+- **SSR (`NextWebShell`):** reads `atta-color-scheme` cookie via `next/headers`, resolves `cookie → CMS default → 'dark'`, emits the **active scheme only** as plain `:root {}` via `generateThemeCSSForScheme`, stamps `<html data-theme="...">`. Wraps children with `ThemeProvider` so the toggle can find the theme client-side.
+- **Client (`ColorSchemeToggle`):** reads `theme` and `styleId` from `ThemeContext`. On click: (1) finds `<style id={styleId}>` and replaces `textContent` with `generateThemeCSSForScheme(theme, next)`, (2) flips `<html data-theme>`, (3) writes the cookie. Pure client side — no router refresh, instant repaint with zero FOUC.
 - **Tailwind `dark:` variant:** `globals.css` declares `@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *))` so `dark:` utilities follow the attribute (not `prefers-color-scheme`).
 
 ### Adding the toggle to a topbar
