@@ -23,7 +23,8 @@ const darkSurface = 'var(--card)'
 const lightSurface = 'var(--card)'
 
 const PROFILE_ELEMENTS_SHARED = {
-  cardBox: { overflow: 'visible' },
+  rootBox: { width: '100%', maxWidth: '100%' },
+  cardBox: { width: '100%', maxWidth: '100%', overflow: 'visible' },
   navbarButton: { color: 'var(--foreground)' },
   navbarButtonIcon: { color: 'var(--muted-foreground)' },
   headerTitle: { color: 'var(--foreground)', fontFamily: 'var(--font-serif)' },
@@ -69,7 +70,7 @@ export function AttaUserProfile({ logoLight, logoDark }: AttaUserProfileProps) {
         },
         elements: {
           ...PROFILE_ELEMENTS_SHARED,
-          card: { backgroundColor: surface, border: '1px solid var(--border)' },
+          card: { backgroundColor: surface, border: '1px solid var(--border)', width: '100%', maxWidth: '100%' },
           navbar: {
             backgroundColor: surface,
             borderRight: '1px solid var(--border)',
