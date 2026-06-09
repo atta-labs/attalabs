@@ -520,7 +520,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
                 <div>
                   <span className={labelClass}>Work Mode</span>
                   <Select value={form.availability} onValueChange={(value) => update('availability', value)}>
-                    <SelectTrigger className={inputClass}>
+                    <SelectTrigger className={`${inputClass} text-foreground data-[placeholder]:text-muted-foreground`}>
                       <SelectValue placeholder='Select...' />
                     </SelectTrigger>
                     <SelectContent>
