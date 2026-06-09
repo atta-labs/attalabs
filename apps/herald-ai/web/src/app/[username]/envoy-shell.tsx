@@ -114,7 +114,7 @@ function EnvoyNavContent({
 
           {isOwner ? (
             <div className='flex items-center gap-2 sm:gap-3'>
-              <NextLink variant='unstyled' href='/dashboard'>
+              <NextLink variant='unstyled' href='/candidate'>
                 <Button variant='outline' size='sm' className='text-xs'>
                   Dashboard
                 </Button>

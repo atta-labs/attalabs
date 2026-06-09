@@ -56,7 +56,6 @@ export default async function CandidateSettingsPage() {
           <p className='mt-1 font-mono text-xs text-muted-foreground'>Profile, API keys, and social connections.</p>
         </div>
 
-
         <ProfileEditor profile={profile} />
       </div>
     </div>
