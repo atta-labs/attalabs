@@ -3,6 +3,8 @@
 import { useMemo, useRef, useState } from 'react'
 import {
   Button,
+  Card,
+  CardContent,
   Input,
   Select,
   SelectContent,
@@ -217,9 +219,6 @@ interface ProfileData {
   isPublished: boolean
   hasAnthropicKey: boolean
 }
-
-const triggerClass =
-  'pl-0 pr-6 text-muted-foreground data-[active]:border-primary data-[active]:text-foreground hover:text-foreground/70'
 
 export function ProfileEditor({ profile }: { profile: ProfileData }) {
   const [form, setForm] = useState({
@@ -463,33 +462,23 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
         )}
       </div>
       {!profile.hasAnthropicKey && (
-        <div className='mb-6 rounded border border-destructive/25 bg-destructive/8 px-4 py-3'>
-          <p className='font-mono text-xs text-destructive'>
-            Audit disabled — add your Anthropic API key in the API Keys tab to enable forensic match reports for
-            recruiters.
-          </p>
-        </div>
+        <Card className='mb-6 w-full border-destructive/25 bg-destructive/8'>
+          <CardContent className='py-3'>
+            <p className='font-mono text-xs text-destructive'>
+              Audit disabled — add your Anthropic API key in the API Keys tab to enable forensic match reports for
+              recruiters.
+            </p>
+          </CardContent>
+        </Card>
       )}
       <Tabs defaultValue='profile'>
-        <TabsList className='border-border'>
-          <TabsTrigger value='profile' className={triggerClass}>
-            Profile
-          </TabsTrigger>
-          <TabsTrigger value='experience' className={triggerClass}>
-            Experience
-          </TabsTrigger>
-          <TabsTrigger value='connections' className={triggerClass}>
-            Connections
-          </TabsTrigger>
-          <TabsTrigger value='cv' className={triggerClass}>
-            CV
-          </TabsTrigger>
-          <TabsTrigger value='api-keys' className={triggerClass}>
-            API Keys
-          </TabsTrigger>
-          <TabsTrigger value='account' className={triggerClass}>
-            Account
-          </TabsTrigger>
+        <TabsList>
+          <TabsTrigger value='profile'>Profile</TabsTrigger>
+          <TabsTrigger value='experience'>Experience</TabsTrigger>
+          <TabsTrigger value='connections'>Connections</TabsTrigger>
+          <TabsTrigger value='cv'>CV</TabsTrigger>
+          <TabsTrigger value='api-keys'>API Keys</TabsTrigger>
+          <TabsTrigger value='account'>Account</TabsTrigger>
         </TabsList>
 
         {/* ── Profile ──────────────────────────────────────────── */}
@@ -636,17 +625,17 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
                 <div className='flex overflow-hidden rounded border border-border'>
                   <Button
                     type='button'
-                    variant='ghost'
+                    variant={summaryMode === 'edit' ? 'default' : 'ghost'}
                     onClick={() => setSummaryMode('edit')}
-                    className={`h-auto rounded-none px-2.5 py-0.5 font-mono text-[9px] ${summaryMode === 'edit' ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : 'text-muted-foreground'}`}
+                    className='h-auto rounded-none px-2.5 py-0.5 font-mono text-[9px]'
                   >
                     Edit
                   </Button>
                   <Button
                     type='button'
-                    variant='ghost'
+                    variant={summaryMode === 'preview' ? 'default' : 'ghost'}
                     onClick={() => setSummaryMode('preview')}
-                    className={`h-auto rounded-none border-l border-border px-2.5 py-0.5 font-mono text-[9px] ${summaryMode === 'preview' ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : 'text-muted-foreground'}`}
+                    className='h-auto rounded-none border-l border-border px-2.5 py-0.5 font-mono text-[9px]'
                   >
                     Preview
                   </Button>
@@ -784,43 +773,45 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
             <section>
               <h2 className={sectionHeadClass}>CV File</h2>
               {cvUrl ? (
-                <div className='rounded border border-border bg-card p-4'>
-                  <div className='mb-4 flex items-center gap-2.5'>
-                    <span className='font-mono text-sm text-foreground'>{cvFilename}</span>
-                    <span className='rounded-sm bg-success/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.15em] text-success'>
-                      Uploaded
-                    </span>
-                  </div>
-                  <div className='flex items-center gap-4'>
-                    <a
-                      href={cvUrl}
-                      download={cvFilename ?? undefined}
-                      className='inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
-                    >
-                      <Download className='h-3.5 w-3.5' />
-                      Download
-                    </a>
-                    <a
-                      href={cvUrl}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
-                    >
-                      <ExternalLink className='h-3.5 w-3.5' />
-                      Open
-                    </a>
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      size='sm'
-                      onClick={() => cvDirectRef.current?.click()}
-                      disabled={cvUploading}
-                      className='h-auto px-0 font-mono text-xs text-muted-foreground hover:bg-transparent hover:text-foreground'
-                    >
-                      {cvUploading ? 'Uploading...' : 'Replace'}
-                    </Button>
-                  </div>
-                </div>
+                <Card className='w-full'>
+                  <CardContent className='p-4'>
+                    <div className='mb-4 flex items-center gap-2.5'>
+                      <span className='font-mono text-sm text-foreground'>{cvFilename}</span>
+                      <span className='rounded-sm bg-success/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.15em] text-success'>
+                        Uploaded
+                      </span>
+                    </div>
+                    <div className='flex items-center gap-4'>
+                      <a
+                        href={cvUrl}
+                        download={cvFilename ?? undefined}
+                        className='inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
+                      >
+                        <Download className='h-3.5 w-3.5' />
+                        Download
+                      </a>
+                      <a
+                        href={cvUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
+                      >
+                        <ExternalLink className='h-3.5 w-3.5' />
+                        Open
+                      </a>
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => cvDirectRef.current?.click()}
+                        disabled={cvUploading}
+                        className='h-auto px-0 font-mono text-xs text-muted-foreground hover:bg-transparent hover:text-foreground'
+                      >
+                        {cvUploading ? 'Uploading...' : 'Replace'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               ) : (
                 <div className='flex flex-col items-start gap-3 rounded border border-dashed border-border p-6'>
                   <p className='font-mono text-xs text-muted-foreground'>No CV uploaded yet.</p>
