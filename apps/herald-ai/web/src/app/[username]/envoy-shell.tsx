@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Download, ExternalLink } from 'lucide-react'
-import { SignInButton, useUser } from '@atta/auth'
+import { SignInButton, UserButton, useUser } from '@atta/auth'
 import { Button as BasicButton } from '@atta/ui/components/button'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import { Logo } from '@atta/ui/shared'
@@ -13,7 +13,6 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { cn } from '@atta/ui/lib/utils'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { HeroCollapseProvider, useHeroCollapse } from '@/components/envoy/hero-collapse-context'
-import { HeraldUserButton } from '@/components/herald-user-button'
 
 async function downloadCv(url: string, filename: string) {
   try {
@@ -39,7 +38,15 @@ export interface ProfileIdentity {
   cvUrl: string | null
 }
 
-function EnvoyNavContent({ logoUrl, profileIdentity }: { logoUrl: string | null; profileIdentity: ProfileIdentity }) {
+function EnvoyNavContent({
+  logoUrl,
+  profileIdentity,
+  isOwner
+}: {
+  logoUrl: string | null
+  profileIdentity: ProfileIdentity
+  isOwner: boolean
+}) {
   const { isCollapsed } = useHeroCollapse()
   const { user } = useUser()
   const searchParams = useSearchParams()
@@ -95,7 +102,7 @@ function EnvoyNavContent({ logoUrl, profileIdentity }: { logoUrl: string | null;
           <div className='flex items-center gap-2'>
             <ColorSchemeToggle />
             {user ? (
-              <HeraldUserButton />
+              <UserButton />
             ) : (
               <SignInButton mode='modal'>
                 <Button variant='outline' size='sm' className='text-xs'>
@@ -161,9 +168,14 @@ function EnvoyNavContent({ logoUrl, profileIdentity }: { logoUrl: string | null;
 
           {/* Theme + Auth — pinned to viewport right */}
           <div className='absolute inset-y-0 right-0 flex items-center gap-2 pr-6'>
+            {isOwner && (
+              <NextLink variant='nav' href='/candidate' className='text-xs'>
+                Dashboard
+              </NextLink>
+            )}
             <ColorSchemeToggle />
             {user ? (
-              <HeraldUserButton />
+              <UserButton />
             ) : (
               <SignInButton mode='modal'>
                 <Button variant='outline' size='sm' className='text-xs'>
@@ -204,16 +216,15 @@ export interface EnvoyShellProps {
   children: ReactNode
   logoUrl: string | null
   profileIdentity: ProfileIdentity
-  /** Kept for API compatibility — no longer affects nav rendering. */
   isOwner?: boolean
 }
 
-export function EnvoyShell({ children, logoUrl, profileIdentity }: EnvoyShellProps) {
+export function EnvoyShell({ children, logoUrl, profileIdentity, isOwner = false }: EnvoyShellProps) {
   return (
     <HeroCollapseProvider>
       <div className='relative h-dvh overflow-hidden'>
         <Suspense>
-          <EnvoyNavContent logoUrl={logoUrl} profileIdentity={profileIdentity} />
+          <EnvoyNavContent logoUrl={logoUrl} profileIdentity={profileIdentity} isOwner={isOwner} />
         </Suspense>
         <main className='absolute inset-0 overflow-hidden'>{children}</main>
       </div>

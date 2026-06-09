@@ -1,11 +1,13 @@
 import { cmsClient, getHeraldBranding } from '@atta/cms'
 import { TopBar } from '@atta/ui/topbar'
+import { Button } from '@atta/ui'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import { Settings } from 'lucide-react'
 import { getUserByClerkId } from '@/db/queries'
 import { ModeSwitch } from '@/components/ModeSwitch'
 import { CandidateShell } from '@/components/portal/CandidateShell'
-import { HeraldUserButton } from '@/components/herald-user-button'
 import type { UILibrary } from '@atta/ui/lib/library-loader'
 
 export default async function CandidateLayout({ children }: { children: React.ReactNode }) {
@@ -17,13 +19,23 @@ export default async function CandidateLayout({ children }: { children: React.Re
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
   const userLibrary = (user?.library ?? 'basic') as UILibrary
 
-  // Keep contextual in-portal nav. Dashboard/Settings are in the avatar menu — don't duplicate.
   const signedInLinks = user?.onboardingComplete
     ? [
         { label: 'UI', href: '/candidate/ui' },
         ...(user.username ? [{ label: `/${user.username}`, href: `/${user.username}`, external: true as const }] : [])
       ]
     : []
+
+  const extraActions = (
+    <>
+      <Button variant='ghost' size='icon' asChild aria-label='Settings' title='Settings'>
+        <NextLink variant='unstyled' href='/candidate/settings'>
+          <Settings className='h-4 w-4' />
+        </NextLink>
+      </Button>
+      <ModeSwitch />
+    </>
+  )
 
   return (
     <CandidateShell initialLibrary={userLibrary}>
@@ -33,8 +45,7 @@ export default async function CandidateLayout({ children }: { children: React.Re
           logoUrl={logoUrl}
           logoTagline={['Forensic hiring', 'audits']}
           signedInLinks={signedInLinks}
-          extraActions={<ModeSwitch />}
-          accountMenu={<HeraldUserButton />}
+          extraActions={extraActions}
         />
         <main className='flex-1 overflow-hidden'>{children}</main>
       </div>
