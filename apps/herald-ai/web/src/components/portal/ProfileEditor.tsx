@@ -416,9 +416,9 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
         {/* ── Profile ──────────────────────────────────────────── */}
         <TabsContent value='profile'>
-          <div className='space-y-8'>
+          <div className='space-y-6'>
             <section>
-              <div className='flex items-center gap-6 pb-5'>
+              <div className='flex items-center gap-6'>
                 {avatarUrl ? (
                   <AvatarFrame src={avatarUrl} alt={form.name} size={80} />
                 ) : (
