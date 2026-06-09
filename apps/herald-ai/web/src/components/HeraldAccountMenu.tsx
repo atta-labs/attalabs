@@ -28,9 +28,15 @@ export function HeraldAccountMenu() {
   if (!user) return null
 
   return (
-    <Button variant='outline' className='text-xs' onClick={() => signOut({ redirectUrl: '/' })}>
+    <Button
+      variant='outline'
+      aria-label='Sign out'
+      title='Sign out'
+      className='gap-2 px-2.5 text-xs md:px-4'
+      onClick={() => signOut({ redirectUrl: '/' })}
+    >
       <LogOut className='h-4 w-4' />
-      Sign out
+      <span className='hidden md:inline'>Sign out</span>
     </Button>
   )
 }

@@ -97,10 +97,23 @@ function EnvoyNavContent({
   return (
     <>
       <nav className='absolute inset-x-0 top-0 z-50 bg-background/40 backdrop-blur-md'>
-        {/* ── Mobile (< md): Logo LEFT | Theme+Auth RIGHT ── */}
-        <div className='flex h-14 items-center justify-between px-4 md:hidden'>
+        {/* ── Mobile (< md): Logo LEFT | Owner links + Theme + Auth RIGHT ── */}
+        <div className='flex h-14 items-center justify-between gap-2 px-4 md:hidden'>
           <div className='flex items-center'>{logoNodeMobile}</div>
           <div className='flex items-center gap-2'>
+            {isOwner && (
+              <div className='flex items-center gap-3 pr-1'>
+                <NextLink variant='nav' href='/bulk-audit' className='text-[10px] uppercase tracking-wider'>
+                  Audit
+                </NextLink>
+                <NextLink variant='nav' href='/ui' className='text-[10px] uppercase tracking-wider'>
+                  UI
+                </NextLink>
+                <NextLink variant='nav' href='/settings' className='text-[10px] uppercase tracking-wider'>
+                  Settings
+                </NextLink>
+              </div>
+            )}
             <ColorSchemeToggle />
             {user ? (
               <HeraldAccountMenu />
@@ -203,16 +216,38 @@ function EnvoyNavContent({
       >
         <div className='flex h-12 items-center gap-2.5 px-4'>
           {profileIdentity.avatarUrl && (
-            <AvatarFrame src={profileIdentity.avatarUrl} alt={profileIdentity.name ?? ''} size={32} pennant={false} />
+            <AvatarFrame src={profileIdentity.avatarUrl} alt={profileIdentity.name ?? ''} size={32} />
           )}
           {(profileIdentity.name || profileIdentity.title) && (
-            <div className='flex min-w-0 flex-col leading-tight'>
+            <div className='flex min-w-0 flex-1 flex-col leading-tight'>
               {profileIdentity.name && (
                 <span className='truncate text-xs font-semibold text-foreground'>{profileIdentity.name}</span>
               )}
               {profileIdentity.title && (
                 <span className='truncate text-[11px] text-muted-foreground'>{profileIdentity.title}</span>
               )}
+            </div>
+          )}
+          {profileIdentity.cvUrl && cvFilename && (
+            <div className='ml-auto flex shrink-0 items-center gap-1'>
+              <Button
+                variant='outline'
+                size='icon'
+                aria-label='Download CV'
+                title='Download CV'
+                onClick={() => downloadCv(profileIdentity.cvUrl!, cvFilename!)}
+              >
+                <Download className='h-4 w-4' />
+              </Button>
+              <Button
+                variant='outline'
+                size='icon'
+                aria-label='Open CV'
+                title='Open CV'
+                onClick={() => window.open(profileIdentity.cvUrl!, '_blank')}
+              >
+                <ExternalLink className='h-4 w-4' />
+              </Button>
             </div>
           )}
         </div>
