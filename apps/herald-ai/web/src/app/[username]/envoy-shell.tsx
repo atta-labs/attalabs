@@ -4,7 +4,8 @@ import { Suspense, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Download, ExternalLink } from 'lucide-react'
-import { SignInButton, UserButton, useUser } from '@atta/auth'
+import { SignInButton, useUser } from '@atta/auth'
+import { HeraldAccountMenu } from '@/components/HeraldAccountMenu'
 import { Button as BasicButton } from '@atta/ui/components/button'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import { Logo } from '@atta/ui/shared'
@@ -102,7 +103,7 @@ function EnvoyNavContent({
           <div className='flex items-center gap-2'>
             <ColorSchemeToggle />
             {user ? (
-              <UserButton />
+              <HeraldAccountMenu />
             ) : (
               <SignInButton mode='modal'>
                 <Button variant='outline' size='sm' className='text-xs'>
@@ -169,13 +170,13 @@ function EnvoyNavContent({
           {/* Theme + Auth — pinned to viewport right */}
           <div className='absolute inset-y-0 right-0 flex items-center gap-2 pr-6'>
             {isOwner && (
-              <NextLink variant='nav' href='/candidate' className='text-xs'>
-                Dashboard
+              <NextLink variant='nav' href='/bulk-audit' className='text-xs'>
+                Bulk Audit
               </NextLink>
             )}
             <ColorSchemeToggle />
             {user ? (
-              <UserButton />
+              <HeraldAccountMenu />
             ) : (
               <SignInButton mode='modal'>
                 <Button variant='outline' size='sm' className='text-xs'>

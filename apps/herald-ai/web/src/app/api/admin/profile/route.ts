@@ -50,8 +50,8 @@ export async function POST(request: Request) {
     if (user?.username) {
       revalidatePath(`/${user.username}`)
     }
-    revalidatePath('/candidate/ui')
-    revalidatePath('/candidate/settings')
+    revalidatePath('/ui')
+    revalidatePath('/settings')
 
     return NextResponse.json({ success: true })
   } catch (err) {

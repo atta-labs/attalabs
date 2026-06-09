@@ -11,9 +11,8 @@ export default async function CandidateSettingsPage() {
   if (!userId) redirect('/sign-in')
 
   const user = await getUserByClerkId(userId)
-  if (!user?.onboardingComplete) redirect('/candidate')
+  if (!user?.onboardingComplete) redirect('/onboarding')
 
-  // Check if owner has a stored Anthropic key — passed to ProfileEditor for keyless-publish confirm
   let hasAnthropicKey = false
   const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
   if (masterKeyB64) {
@@ -55,7 +54,6 @@ export default async function CandidateSettingsPage() {
           <h1 className='font-serif text-xl tracking-tight'>Settings</h1>
           <p className='mt-1 font-mono text-xs text-muted-foreground'>Profile, API keys, and social connections.</p>
         </div>
-
         <ProfileEditor profile={profile} />
       </div>
     </div>

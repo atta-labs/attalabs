@@ -3,11 +3,15 @@ import { redirect } from 'next/navigation'
 import { decryptVendorKeys } from '@atta/crypto'
 import { getProviderKeys } from '@atta/db/queries'
 import { db } from '@/db'
+import { getUserByClerkId } from '@/db/queries'
 import { BulkAudit } from '@/components/audit/BulkAudit'
 
-export default async function AuditPage() {
+export default async function BulkAuditPage() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
+
+  const user = await getUserByClerkId(userId)
+  if (!user?.onboardingComplete) redirect('/onboarding')
 
   let hasKey = false
   const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY

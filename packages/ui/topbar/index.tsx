@@ -39,6 +39,12 @@ export interface TopBarProps {
    * If omitted, falls back to the plain UserButton — Vāda behaviour is unchanged.
    */
   accountMenu?: ReactNode
+  /**
+   * Server-provided signed-in state. When passed, avoids the client-side flash
+   * that occurs when useUser() resolves after initial render.
+   * Falls back to !!user from useUser() when omitted — Vāda behaviour is unchanged.
+   */
+  isSignedIn?: boolean
 }
 
 export function TopBar({
@@ -50,7 +56,8 @@ export function TopBar({
   links = [],
   signedInLinks = [],
   extraActions,
-  accountMenu
+  accountMenu,
+  isSignedIn: isSignedInProp
 }: TopBarProps) {
   const { user } = useUser()
   const pathname = usePathname()
@@ -59,7 +66,8 @@ export function TopBar({
 
   const isActive = (href: string, exact = false) => (exact ? pathname === href : pathname.startsWith(href))
 
-  const visibleLinks = user ? [...links, ...signedInLinks] : links
+  const isSignedIn = isSignedInProp ?? !!user
+  const visibleLinks = isSignedIn ? [...links, ...signedInLinks] : links
 
   const defaultLogo = logoUrl ? (
     logoTagline ? (
@@ -107,7 +115,7 @@ export function TopBar({
         {/* Desktop actions — pinned right */}
         <div className='hidden flex-1 items-center justify-end gap-3 md:flex'>
           <ColorSchemeToggle />
-          {user ? (
+          {isSignedIn ? (
             <>
               {extraActions}
               {accountMenu ?? <UserButton />}
@@ -124,7 +132,7 @@ export function TopBar({
         {/* Mobile actions */}
         <div className='ml-auto flex items-center gap-2 md:hidden'>
           <ColorSchemeToggle />
-          {user && (accountMenu ?? <UserButton />)}
+          {isSignedIn && (accountMenu ?? <UserButton />)}
           <Sheet>
             <SheetTrigger render={<Button variant='outline' size='icon' aria-label='Open menu' />}>
               <Menu className='h-4 w-4' />
@@ -165,7 +173,7 @@ export function TopBar({
                     {label}
                   </SheetClose>
                 ))}
-                {!user && (
+                {!isSignedIn && (
                   <div className='flex h-14 items-center border-b border-border/30'>
                     <SignInButton mode='modal'>
                       <Button variant='outline' className='text-sm'>

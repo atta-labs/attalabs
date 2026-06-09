@@ -9,7 +9,7 @@ export default async function CandidateUIPage() {
   if (!userId) redirect('/sign-in')
 
   const user = await getUserByClerkId(userId)
-  if (!user?.onboardingComplete) redirect('/candidate')
+  if (!user?.onboardingComplete) redirect('/onboarding')
 
   const [themes, libraries] = await Promise.all([getThemes(cmsClient), getLibraries(cmsClient).catch(() => [])])
 

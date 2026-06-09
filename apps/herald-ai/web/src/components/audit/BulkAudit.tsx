@@ -72,7 +72,7 @@ export function BulkAudit({ hasKey }: { hasKey: boolean }) {
             Bulk audits run on your Anthropic API key. Add your key in Settings to get started.
           </p>
           <a
-            href='/candidate/settings'
+            href='/settings'
             className='mt-4 inline-block font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
           >
             Settings → API Keys

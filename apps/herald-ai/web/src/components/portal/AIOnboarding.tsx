@@ -90,7 +90,7 @@ export function AIOnboarding() {
 
         if (res.ok) {
           setTimeout(() => {
-            router.push('/candidate')
+            router.push('/bulk-audit')
             router.refresh()
           }, 1500)
         }
