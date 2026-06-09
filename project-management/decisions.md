@@ -150,7 +150,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 
 ---
 
-## D-008 — Severity routing on cetana_request_input: three values
+## D-008 — Severity routing on escalation: three values
 
 **Date:** 2026-05-10
 **Status:** ACTIVE
@@ -158,9 +158,9 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 **Authored by:** Principal (v3 model session, May 2026)
 **Ratified by:** Principal
 
-**Context:** When a Developer escalates via `cetana_request_input`, the question may need different responders — the TL (for execution and strategy questions) or the Principal (for product/Type 1 decisions). Without routing, all escalations land in the same bucket, forcing the Principal to monitor every blocked task.
+**Context:** When a Developer escalates, the question may need different responders — the TL (for execution and strategy questions) or the Principal (for product/Type 1 decisions). Without routing, all escalations land in the same bucket, forcing the Principal to monitor every blocked task.
 
-**Decision:** Three severity values: `execution` (routed to TL Brief Author mode, label `needs:execution-input`), `strategy` (routed to TL Strategist mode, label `needs:strategy-input`), `product` (routed to Principal, label `needs:principal-input`). Detailed routing rules in `state-machine.md` Section 7. Implementation in `cetana-spec.md` (specced) and `request-input.ts` (code follow-up PR).
+**Decision:** Three severity values: `execution` (routed to TL Brief Author mode, label `needs:execution-input`), `strategy` (routed to TL Strategist mode, label `needs:strategy-input`), `product` (routed to Principal, label `needs:principal-input`). Detailed routing rules in `state-machine.md` Section 7. (The escalation mechanism is manual in the by-hand flow, or an automation layer's request-input when a tool is used — e.g. Cetana's `cetana_request_input`; the routing is identical either way.)
 
 **Alternatives rejected:**
 - Binary routing (TL / Principal): rejected. Doesn't distinguish between execution-level blocking (a missing flag) and strategy-level blocking (a design fork). The TL needs to context-switch between modes; the severity field signals which mode is needed.
@@ -285,7 +285,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Overwrite pattern: rejected. Loses context when two sessions both contribute state updates.
 - Separate per-session update files: rejected. Too much file management overhead.
 
-**Consequences:** `plan.md` grows between pruning passes. This is acceptable. The alternative (lost state) is worse. (Note: `plan.md` was later split into `now.md`/`roadmap.md`/`changelog.md`/`lessons.md` by D-024; this append-oriented rule now applies to `now.md`.)
+**Consequences:** `plan.md` grows between pruning passes. This is acceptable. The alternative (lost state) is worse. (Note: `plan.md` was later split into `now.md`/`roadmap.md`/`changelog.md`/`lessons.md` by D-024; this append-oriented rule now applies to `now.md`. `roadmap.md` was subsequently retired by D-029.)
 
 ---
 
@@ -300,12 +300,12 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 
 **Context:** If a brief can be edited after dispatch, the audit trail breaks: the Developer may have acted on an earlier version that no longer exists. Additionally, mid-task brief edits can invalidate work already done.
 
-**Decision:** Briefs are frozen at the moment of dispatch (GitHub Issue body becomes immutable). Amendments happen only via Developer escalation (`cetana_request_input`). The amendment is logged as a JSONL event — what the TL or Principal said — not as an edit to the brief. The original brief remains the audit record.
+**Decision:** Briefs are frozen at the moment of dispatch. Amendments happen only via Developer escalation. The amendment is logged as an event — what the TL or Principal said — not as an edit to the brief. The original brief remains the audit record. (Note: D-029 places the brief in the PR body rather than the Issue body; the frozen-after-dispatch invariant is unchanged — the brief is frozen at dispatch regardless of where it is pasted.)
 
 **Alternatives rejected:**
-- Mutable briefs with version history: rejected. GitHub Issues have edit history but it's not surfaced automatically in audit flows. The JSONL approach keeps the amendment adjacent to the relevant task log.
+- Mutable briefs with version history: rejected. Edit history is not surfaced automatically in audit flows. The event-log approach keeps the amendment adjacent to the relevant task log.
 
-**Consequences:** If a brief is wrong after dispatch, the correction path is always escalation. The Developer cannot self-amend. The TL cannot silently fix a brief by editing the Issue — the fix must go through the escalation channel and be recorded.
+**Consequences:** If a brief is wrong after dispatch, the correction path is always escalation. The Developer cannot self-amend. The TL cannot silently fix a brief by editing it — the fix must go through the escalation channel and be recorded.
 
 ---
 
@@ -352,7 +352,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Sectioning within plan.md using collapsible headings: rejected. The file is Git-tracked markdown; collapsing sections does not prevent merge conflicts — different sessions still edit the same byte range.
 - Keeping a single file and enforcing append-only: rejected. Append-only works for changelog and lessons, but now.md and roadmap.md require in-place updates (e.g., marking a track item complete).
 
-**Consequences:** `coordination.md` session-start protocol updated to reference four files. `state-machine.md` mutation matrix updated. `docs-index.md` regenerated. Any automation (Archivist, Cetana) that reads or writes `plan.md` must be updated to route to the appropriate new file.
+**Consequences:** `coordination.md` session-start protocol updated to reference four files. `state-machine.md` mutation matrix updated. `docs-index.md` regenerated. Any automation (Archivist, Cetana) that reads or writes `plan.md` must be updated to route to the appropriate new file. (Note: `roadmap.md` was subsequently retired by D-029 — the product roadmap moved out of AEG to per-product backlogs / the company's tool; `now.md`, `changelog.md`, and `lessons.md` are carried forward unchanged.)
 
 ---
 
@@ -446,7 +446,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 
 **Consequences:**
 - `scripts/verify-docs.ts` replaced (stub → real). `developer.md` and `state-machine.md` Section 12 "stub exits 0" notes corrected.
-- Workflow staged at `scripts/ci/verify-docs.workflow.yml` with copy instructions; manual move required (integration cannot write `.github/workflows/`).
+- Workflow staged at `scripts/ci/verify-docs.workflow.yml` with copy instructions; manual move required (integration cannot write `.github/workflows/`). (Done: workflow installed at `.github/workflows/verify-docs.yml` on the `feat/aeg-manual-flow` branch, June 4, 2026 — the gate is now live on PRs.)
 - The checks are deliberately blunt and mechanical; they will occasionally require a `Tier: 0` declaration on genuinely trivial code PRs. This is the intended trade-off: enforced-but-blunt over trusted-but-subtle.
 
 ---
@@ -472,7 +472,80 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 
 ---
 
-## D-029 — Herald standalone: own Clerk, own DB, own keys
+## D-029 — AEG model: manual-flow + iteration layer, forge-native execution
+
+**Date:** 2026-06-04
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (AEG design + hardening sessions, June 3–4, 2026; three external-reviewer rounds — Gemini/DeepSeek/ChatGPT, fresh contexts — to a unanimous endorse)
+**Ratified by:** Principal (ratified 2026-06-04)
+
+**Context:** PR #80 formalizes how Atta Agentic Execution Governance (AEG) runs by hand and coordinates multiple developers, and reconciles every governance/role doc to a single model. The design was pressure-tested across three reviewer rounds to unanimous endorsement (the genuinely novel part, per the panel, is self-locating roles; the rest is "real but not novel"). This is a Type 1 governance decision — it introduces a new top-level artifact (the iteration), demotes the product roadmap out of AEG, and fixes the execution-state model — so the Principal ratifies; the TL records it PENDING.
+
+**Decision:** Adopt the AEG model as designed and endorsed:
+- **Forge-native, orchestrator-independent.** AEG runs on the Repo + the Git forge (GitHub) plus plain git worktrees, and depends on no orchestration tool. Cetana automates only the dispatch/escalation slice and is optional; Cetana knows AEG, AEG does not know Cetana.
+- **A task IS a GitHub Issue; status is DERIVED, never stored.** Issue open/assigned, branch `task/<iteration>/<n>` existence, PR open, review decision, and merge ARE the transitions. No role writes a status field; there are no `status:*` labels (labels are `tier:*`, `aeg:blocked`, `needs:*-input`).
+- **The iteration is AEG's top-level artifact** (`iterations/<name>.md`): a thin topology map — task→Issue mapping, `depends-on` / `conflicts-with` edges, grouping, backlog lane. No status, PR numbers, dates, priority, or estimates.
+- **The product roadmap lives outside AEG** (the company's tool, or per-product backlogs). The global `roadmap.md` is retired; the link roadmap → iteration is a human (the Planner), not a file.
+- **Conflicts are declared, package-level, and static** (collision domains in `.aeg/packages`). No dynamic path-overlap scanner — when unsure, declare the conflict and serialize.
+- **The brief is just-in-time, pasted not committed, and lives in the PR body** — never in the Issue. Context lives entirely in the brief. `Ticket:` (provenance) and `Product:` (registry-resolved) are optional reference fields.
+- **Two enforced dispatch gates** (the multi-developer lock): never start a task whose `depends-on` isn't merged; never start a task while a `conflicts-with` sibling's PR is open.
+- **The Planner** is a third Team Leader mode (alongside Strategist and Brief Author): intent + ticket slice → an iteration of sibling-aware tasks, split vs. combined by verification coupling.
+- **The Archivist** gains a close-out role doc (`roles/archivist.md`): merged-PR entry gate, per-product PM updates, orphan/worktree flagging; writes no task status.
+- **Three anti-regression rules:** never add execution metadata to the iteration file or Issue; never build a dynamic conflict scanner; never put planning metadata on Issues.
+
+**Alternatives rejected:**
+- Storing task status (labels, or a status column in the iteration file): rejected — it races and drifts; the forge already holds the ground truth, so derive it.
+- A dynamic path-overlap conflict scanner to catch undeclared collisions: rejected — it requires a live task→files map, reintroducing the mutable state the model eliminates. Declare conservatively and serialize instead (the accepted limitation: AEG can miss novel undeclared cross-package coupling; the trust boundary is planning).
+- Keeping the roadmap inside AEG / as the coordination artifact: rejected — it pulls planning metadata (priority, estimates) back in and turns AEG into "Jira again." The iteration carries topology only.
+- Brief committed to the repo, or stored in the Issue body: rejected — it ages before work starts and splits context; the PR body is its durable, just-in-time home.
+
+**Consequences:**
+- Reconciled in PR #80: `iterations/README.md` and the example iteration (+ `roles/planner.md`, `roles/archivist.md` — new), `aeg-manual-flow.md`, `products.md`, every role doc (`principal`, `team-leader`, `developer`, `reviewer`, `security`), `coordination.md`, `process.md`, `state-machine.md`, the `brief-authoring` skill, and both files under `diagrams/`.
+- Retires `roadmap.md` (a D-024 artifact); `now.md` / `changelog.md` / `lessons.md` from D-024 are carried forward unchanged.
+- D-008 and D-015's Cetana-coupled language (`cetana_request_input`, Issue-body brief) is reframed at the model level to "the escalation mechanism" and "the PR body"; those decisions stand, the tool is now named only as an example.
+- Ratified 2026-06-04. `iterations/README.md` flipped draft → ratified. Lock: left NO deliberately — revisit after a cycle of real use.
+- Build follow-ups (not part of this decision): neutral AEG scaffold + `aeg.sh`; the interactive AEG docs site (supersedes the static `diagrams/`); the dispatch gates as tooling.
+
+---
+
+## D-030 — AEG enhancements: provenance export, spec-conformance review, observe mode
+
+**Date:** 2026-06-05
+**Status:** PENDING
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (competitive feature-mining pass, June 5, 2026 — ideas borrowed from Bitloops, Augment Intent, and Microsoft adoption guidance, mapped against AEG's invariants)
+**Ratified by:** PENDING — Principal ratifies at a ratification window
+
+**Context:** A market/competitive research pass over five adjacent clusters (parallel-agent runners, spec-driven development, AI-code audit/compliance, enterprise agent governance, plus the closest twin "Trail") found nothing occupying AEG's position — the combination of forge-derived status, orchestrator-independent protocol, and declared package-level conflicts with a principled refusal of dynamic scanning was not found elsewhere (an absence-of-evidence finding from secondary sources, not proof of originality). The pass surfaced three borrowable ideas that *strengthen* AEG's invariants rather than erode them. The test applied to every candidate: does it reinforce derived-status / declared-conflicts, or undermine them? These three pass; the rejected ideas fail it. This is a Type 1 change because it extends a model ratified one day prior (D-029), so the Principal ratifies; the TL records it PENDING.
+
+**Decision:** Adopt three additions to the AEG model. None introduces stored status or a new persistent mutable artifact:
+
+1. **Provenance block** (from Bitloops "Committed Checkpoints"). At close-out the Archivist assembles a provenance record — task → intent (the brief in the PR body) → code-review + security verdicts → model/agent (from the brief's `For:` line) → decision (Tier 3) → merge metadata — and posts it as a comment on the **merged** PR. Every field is copied from a fact the merge already froze; it is written once, append-only. It is a **projection of frozen forge facts**, exactly as derived status is a projection of live forge facts — therefore explicitly NOT the "stored status" forbidden by `iterations/README.md` §9: it lives on the merged PR (never the iteration file or Issue), records history (not current state), and is never updated. This makes AEG's audit-by-construction output legible and exportable (the regulated wedge — EU AI Act high-risk effective 2 Aug 2026; SLSA L3; NIST/SOC 2) at near-zero cost, because AEG already produces the facts. (`roles/archivist.md`; `state-machine.md` §2, §13.)
+
+2. **Spec-conformance review** (from Augment Intent's Verifier). The code Reviewer additionally checks the diff against the `Product:`-named spec in `apps/*/specs/`, not only against the brief — a diff can satisfy its brief and still contradict or drift from the product's specced behavior. A spec **contradiction** is a BLOCKER; **drift** is a MAJOR finding; a correct diff against a stale spec is a `severity:strategy` escalation, not a failure. This adds **no new persistent artifact** — it reads the product spec that already exists, checked as-written at whatever ratification state it holds. (`roles/reviewer.md`; `state-machine.md` §3, §5.)
+
+3. **Observe mode** (from Microsoft's "start with monitoring, not restriction"). A named read-only adoption tier: AEG runs advisory over a team's existing process — roles produce verdicts / topology / provenance but nothing blocks a merge, status is still derived (read-only), and verify-docs + the dispatch gates run report-only. It is the floor of the advisory → enforced gradient (`state-machine.md` §12); a team tightens one gate at a time. The on-ramp into teams already living in Jira/Linear, and the lowest-commitment way to obtain audit-by-construction provenance. (`aeg-manual-flow.md` §8; `state-machine.md` §12.)
+
+**Alternatives rejected:**
+- A new persistent per-iteration or per-task spec for the verifier to check against: rejected — a new mutable artifact would drift, reintroducing exactly the failure mode D-029 removed. Check against the product spec that already exists.
+- Storing provenance as a status field, in the iteration file, or as a maintained/updated record: rejected — that is the forbidden stored status. Provenance is assembled once at close-out from frozen facts and posted to the merged PR, append-only.
+- The broader market features — runner/orchestrator features (CI auto-fix loop, kanban boards, port allocation), the dynamic file-overlap conflict scanner the orchestrator crowd is chasing, spec-driven-dev tooling, and bolt-on compliance capture layers: rejected for the model. They are either tool-layer (Cetana / the AEG UI), already covered by existing mechanisms, or direct violations of the no-stored-status / no-dynamic-scanner invariants.
+
+**Consequences:**
+- `roles/reviewer.md` — spec-conformance check added (check #2); `SPEC CONFORMANCE` line in the verdict; contradiction = BLOCKER, drift = MAJOR, stale spec → strategy escalation.
+- `roles/archivist.md` — provenance block assembled at close-out from frozen facts and posted to the merged PR (append-only); a missing required source is an INCOMPLETE finding, never fabricated.
+- `aeg-manual-flow.md` — new §8 Observe mode; spec-conformance + provenance threaded into the run order and the per-role entry gates.
+- `state-machine.md` — §2 (provenance as a Class 2 close-out projection + matrix row), §3 (Reviewer spec-conformance authority), §5 (Reviewer reads the spec as-written), §12 (observe mode as the advisory floor; provenance assembly as trusted discipline), §13 (provenance block append-only).
+- All in PR on `feat/aeg-provenance-verifier-observe`, Tier 3, docs-only.
+- On ratification: flip this entry PENDING → ACTIVE. All three additions are **trusted discipline** today (no new CI gate); automation is future work. The deeper "verify against a living spec" form of the verifier remains a future tool-layer item, not part of this decision.
+- Noted as a backlog candidate, not decided here: a regulation → AEG-mechanism mapping doc (EU AI Act / SLSA / NIST / SOC 2) turning the provenance output into compliance evidence — the go-to-market lever the research flagged. Requires primary-source verification before action.
+
+---
+
+## D-031 — Herald standalone: own Clerk, own DB, own keys
 
 **Date:** 2026-06-05
 **Status:** ACTIVE
@@ -492,7 +565,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 
 ---
 
-## D-030 — Herald dual-mode: Candidate and Recruiter (Airbnb-style switch)
+## D-032 — Herald dual-mode: Candidate and Recruiter (Airbnb-style switch)
 
 **Date:** 2026-06-05
 **Status:** ACTIVE
@@ -513,7 +586,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 
 ---
 
-## D-031 — Herald billing: one key per user, pays for their own surfaces
+## D-033 — Herald billing: one key per user, pays for their own surfaces
 
 **Date:** 2026-06-05
 **Status:** ACTIVE

@@ -1,10 +1,12 @@
 # State Machine — the Atta Agentic Execution Governance (AEG) Model
 
-The constitution. This document defines the **Atta Agentic Execution Governance (AEG)** model — the authoritative reference for artifacts, mutation permissions, authority hierarchy, escalation paths, and governance mechanics. AEG is governance plus orchestration of delegated AI execution; it is not project management (there is no project plan, timeline, or resource tracking). Roles derive from this document; this document does not derive from roles.
+The constitution. This document defines the **Atta Agentic Execution Governance (AEG)** model — the authoritative reference for artifacts, mutation permissions, authority hierarchy, escalation paths, and governance mechanics. AEG is governance plus orchestration of delegated AI execution; it is not project management (there is no product plan, timeline, or resource tracking here).
 
-If you are unsure whether an action is permitted, the answer is here. If you find a contradiction between a role doc and this document, this document wins.
+**AEG is forge-native, orchestrator-independent.** It depends on a Git forge (GitHub) as its source of truth for execution state — task status is *derived* from Issue/branch/PR/merge state, never stored. It does not depend on any orchestration tool. Where this document names Cetana, it is naming *this repo's* orchestration tool by way of example; AEG itself names no tool, and a tool may know AEG while AEG does not know the tool.
 
-For the prose walkthrough of the process (eleven phases), see `process.md`. For the visual schema, see `diagrams/process-flow.md` and `diagrams/system-architecture.md`. For role-specific instructions, see `roles/`.
+If you are unsure whether an action is permitted, the answer is here. If a role doc and this document conflict, this document wins.
+
+For the prose walkthrough (eleven phases), see `process.md`. For the iteration/task model, see `iterations/README.md`. For role-specific instructions, see `roles/`.
 
 ---
 
@@ -12,7 +14,7 @@ For the prose walkthrough of the process (eleven phases), see `process.md`. For 
 
 The Atta operational model is not role-based. It is a **state transition system**.
 
-Artifacts have states. Roles are interfaces that are authorized to trigger certain transitions. The architecture looks like this:
+Artifacts have states. Roles are interfaces authorized to trigger certain transitions:
 
 ```
 Artifact class
@@ -21,194 +23,178 @@ Artifact class
   → escalation path (what happens when a decision exceeds role authority)
 ```
 
-Roles exist because different decisions require different accountability levels. The Principal (Dani) is accountable for irreversible decisions (Type 1). The Team Leader is accountable for reversible decisions (Type 2) within a ratification window. The Developer executes. The Reviewer (code and security specializations) judges shipped code with fresh context but cannot mutate it. The Archivist automates.
+Roles exist because different decisions require different accountability levels. The Principal (Dani) is accountable for irreversible (Type 1) decisions. The Team Leader is accountable for reversible (Type 2) decisions within a ratification window. The Developer executes. The Reviewer (code and security specializations) judges shipped code with fresh context but cannot mutate it. The Archivist closes out.
 
-The conversational role set is: **Principal, Team Leader, Developer, Reviewer** (plus the non-conversational Archivist). This four-role model was established by D-026, which superseded the original three-role model (D-001) to add the Reviewer category. See Section 3 for what the Reviewer can and cannot do.
+The conversational role set is: **Principal, Team Leader, Developer, Reviewer** (plus the non-conversational Archivist). This four-role model was established by D-026 (superseding the original three-role D-001 to add the Reviewer). The **Team Leader has three modes** — Strategist, Planner, Brief Author (`roles/team-leader.md`, `roles/planner.md`) — but they are modes of one role, not new roles; the role count is unchanged. Security is a specialization of Reviewer, not a separate role.
 
-"What can I do?" is answered by the mutation permission matrix. "Whose decision is this?" is answered by the authority hierarchy. "What if I'm stuck?" is answered by the escalation paths. "Is what I'm doing consistent with what was decided?" is answered by the decision logs.
+**A task is a GitHub Issue, and its status is derived, never stored** (see Section 2, Class 2, and `iterations/README.md` §3). No role writes a status field; transitions are facts about the forge (branch exists, PR open, review decision, merged).
 
-The state machine framing exists because it's precise. "The TL manages PM docs" is imprecise — it says who, not when, with what constraints, and at what authority level. The matrix below is precise.
+"What can I do?" → the mutation permission matrix. "Whose decision is this?" → the authority hierarchy. "What if I'm stuck?" → the escalation paths. "Is what I'm doing consistent with what was decided?" → the decision logs.
 
 ---
 
 ## Section 2: Artifact Classes
 
-Every artifact in the system falls into one of four persistence classes. Persistence class determines how long the artifact survives, how it can be recovered, and what authority is required to mutate it.
+Every artifact falls into one of five persistence classes. Persistence class determines how long it survives, how it's recovered, and what authority mutates it.
 
 ### Class 1: Repo files (canonical, git-tracked)
 
-**What:** Specs (`apps/*/specs/*.md`), skills (`.claude/skills/*/SKILL.md`), agent definitions (`.claude/agents/*.md`), PM docs (`project-management/*.md`, `project-management/roles/*.md`, `project-management/diagrams/*.md`), source code (`apps/*/`, `packages/*/`), decision logs (per-product `*-decisions.md` + global `decisions.md`), scripts (`scripts/`), CI workflows (`.github/workflows/`).
+**What:** Specs (`apps/*/specs/*.md`), skills (`.claude/skills/*/SKILL.md`), agent definitions (`.claude/agents/*.md`), PM docs (`project-management/*.md`, `roles/*.md`, `iterations/*.md`, `diagrams/*.md`), source code, decision logs (per-product `*-decisions.md` + global `decisions.md`), scripts, CI workflows.
 
 **Persistence:** Survives anything short of repo deletion. Git history preserves every mutation with authorship and timestamp.
 
-**Create:** PR merged to main by Principal (or delegated merge for Tier 0/1 work).
-**Mutate:** PR opened by Developer, reviewed by Reviewer (code + security passes) and TL (specs) and Principal (code), merged by Principal.
-**Ratify:** See Section 5 (ratification mechanism applies to specs).
+**Create:** PR merged to main by Principal (or delegated merge for Tier 0/1).
+**Mutate:** PR opened by Developer, reviewed by Reviewer (code + security) and TL (specs) and Principal (code), merged by Principal.
 **Read-only:** All roles always.
 
-### Class 2: GitHub objects (governance + audit)
+### Class 2: GitHub objects (the forge — execution state + audit)
 
-**What:** Issues (with labels, milestones, body), Pull Requests, CI run results, Issue/PR comments.
+**What:** Issues (a task **is** an Issue — identity + metadata: tier label, product label, ticket link, dependency/conflict references), Pull Requests, review decisions, CI run results, Issue/PR comments.
 
-**Persistence:** Survives unless deliberately deleted. GitHub's own retention. Treated as permanent for operational purposes.
+**Persistence:** Survives unless deliberately deleted. Treated as permanent for operational purposes.
 
-**Create:** TL or Developer (Issues); Developer (PRs); Reviewer (PR review verdicts/comments); Archivist (advisory PR comments); any role (Issue comments with appropriate authority).
-**Mutate:** Labels: TL and Developer via Cetana tools; Archivist via automation. Body: TL (briefs are frozen after dispatch — see Section 7). Status: Cetana automation on dispatch/completion.
+**This is where execution status lives — derived, not written.** A task's status is computed from forge facts: Issue open/unassigned = `backlog`; assigned, no branch = `todo`; branch `task/<iteration>/<n>` exists, no PR = `in-flight`; PR open = `in-review`; PR `reviewDecision: CHANGES_REQUESTED` = `changes-requested`; merged = `merged`; an `aeg:blocked` label = `blocked`. No role sets a status field — opening the branch/PR and merging are the transitions.
+
+**The provenance block (D-030) is a Class 2 object too — a close-out projection, not stored status.** At close-out the Archivist assembles a provenance record (task → intent → reviews → model → merge metadata) and posts it as a comment on the **merged** PR. It is *assembled from facts the merge already froze*, written once, append-only — a projection of frozen forge facts in exactly the way derived status is a projection of live forge facts. It is therefore explicitly **not** the forbidden "stored status" of `iterations/README.md` §9: it lives on the merged PR (never in the iteration file or the Issue), it records history (not current state), and nothing ever updates it. See `roles/archivist.md` and §13.
+
+**Create:** TL (Issues, in Planner mode); Developer (PRs); Reviewer (review verdicts/comments); Archivist (advisory PR comments + the provenance block); any role (Issue comments with appropriate authority).
+**Mutate:** Labels — tier (`tier:0|1|3`), `aeg:blocked`, and escalation labels (`needs:*-input`) by the TL/Developer (by hand or via an automation layer) and the Archivist (automation). **No `status:*` labels** — status is derived. Issue/PR body — the brief lives in the **PR body** (frozen after open — Section 7); the Issue body holds metadata only, never the brief, never planning fields (priority/estimates), which a required template + CI reject.
 **Read-only:** All roles always.
 
-### Class 3: Local filesystem (runtime)
+### Class 3: Orchestration-tool runtime (ephemeral, optional)
 
-**What:** `~/.cetana/config.json` (static config), `~/.cetana/tasks/N.jsonl` (JSONL append-only event log), `~/.cetana/tasks/N/` (IPC files: `question.json`, `reply.json`, `mcp-config.json`).
+**What:** If an orchestration tool is used, its runtime state — static config, append-only event logs, IPC files. In this repo that is Cetana (`~/.cetana/config.json`, `~/.cetana/tasks/N.jsonl`, `~/.cetana/tasks/N/`). **This class only exists when a tool is in use; AEG does not require it.**
 
-**Persistence:** Survives process restarts. Lost on machine reinstall. Recoverable from `~/.cetana` backup if needed. StateManager rehydrates from JSONL on startup.
+**Persistence:** Survives process restarts; lost on machine reinstall; recoverable from the tool's backup.
 
-**Create:** Cetana Coordinator (config on first run; JSONL files on dispatch; IPC files on block/reply).
-**Mutate:** JSONL: append-only by Cetana servers (strategist + executor). IPC files: written and deleted by Cetana servers per IPC protocol. Config: Principal edits `~/.cetana/config.json` directly.
-**Read-only:** All roles can inspect. JSONL is human-readable for `tail -f` monitoring.
+**Create / mutate:** the orchestration tool, per its own protocol. The Principal edits the tool's config directly.
+**Read-only:** All roles can inspect; the event log is human-readable for monitoring.
+
+This is a tool detail, not part of the AEG model. Nothing canonical depends on it.
 
 ### Class 4: Worktrees (per-task isolation)
 
-**What:** `~/code/atta/.worktrees/issue-N/` — full repo checkout on `feat/issue-N` branch.
+**What:** `.worktrees/task/<iteration>/<n>/` — a full repo checkout on branch `task/<iteration>/<n>`.
 
-**Persistence:** Survives as long as the directory exists. Manual cleanup by Principal. Archivist flags merged worktrees as cleanup candidates.
+**Persistence:** Survives as long as the directory exists. Manual cleanup by the Principal; the Archivist flags merged worktrees as candidates.
 
-**Create:** Cetana `dispatch_task` (via `worktree.ts`), or the Developer's worktree-first pre-flight Step 0 in the copy-paste flow.
+**Create:** The Developer's worktree-first pre-flight Step 0 (manual flow), or an automation layer at dispatch (it creates the same worktree). Branch convention `task/<iteration>/<n>` is what lets any role derive a task's status from the forge.
 **Mutate:** Developer works in the worktree — commits, file changes, test runs.
-**Retire:** Principal runs `git worktree remove` after PR is merged.
-**Read-only:** All roles can inspect at any time.
+**Retire:** Principal runs `git worktree remove` after merge.
+**Read-only:** All roles can inspect.
 
 ### Class 5: Conversation logs (ephemeral)
 
-**What:** Chat sessions (Claude Desktop, web, Claude Code), Cetana JSONL progress events.
+**What:** Chat sessions (Claude Desktop, web, Claude Code); an orchestration tool's progress events.
 
-**Persistence:** Ephemeral. Chat sessions are not reliably retrievable across Claude versions or session boundaries. Cetana progress events are runtime-local.
+**Persistence:** Ephemeral; not reliably retrievable across sessions.
 
 **Create:** Any conversational agent.
-**Promote:** TL selects decisions made during conversation and promotes them to decision log entries (see decision log schema, Section 6). Principal must ratify Type 1 promotions.
-**Cannot mutate:** No role can retroactively edit conversation logs.
+**Promote:** TL promotes decisions made during conversation to decision log entries (Section 6); Principal ratifies Type 1 promotions.
+**Cannot mutate:** No role retroactively edits conversation logs.
 
 ---
 
 ## Section 3: Mutation Permission Matrix
 
-Rows = artifact types. Columns = roles. Each cell describes what the role can do. "—" means the role has no authority over this artifact.
-
-The Reviewer (code + security) is deliberately **absent from this matrix as a mutation authority** — it has no column because it does not mutate canonical artifacts. Its authority is read + PR-review-comment only, described in the subsection immediately after the table.
+Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer is absent as a mutation authority (it has read + PR-review-comment authority only — see the subsection after the table).
 
 | Artifact | Principal | Team Leader | Developer | Archivist |
 |----------|-----------|-------------|-----------|-----------|
-| **Conversation logs** | Promotes decisions to decision log, flags for retention | Writes during chat, proposes promotions to D-### | Reads only (no chat sessions during Cetana dispatch) | Cannot mutate |
-| **Briefs (dispatched)** | Can amend via reply to escalation | Can amend via `cetana.reply_to_blocked_task` — logged as JSONL event, NOT brief edit | Reads only — brief is frozen after dispatch; escalate via `cetana_request_input` if wrong | Cannot mutate |
-| **Briefs (pre-dispatch)** | Approves issue brief, sets `status:ready` | Writes brief per `.claude/skills/brief-authoring/SKILL.md`, opens Issue | — | Validates structure, sets `status:blocked` if malformed |
+| **Conversation logs** | Promotes decisions to log, flags for retention | Writes during chat, proposes promotions to D-### | Reads only | Cannot mutate |
+| **Iteration topology files** (`iterations/*.md`) | Approves PR | Writes (Planner mode) at plan time — task→issue map + edges + grouping; **no status, no PR numbers, no dates** | — | Flags execution-metadata creep in drift cron |
+| **Task Issues** (identity + metadata) | Approves merge | Creates (Planner mode); metadata only — no brief, no status, no planning fields | Reads; references via `Closes #N` | Validates template (no forbidden fields) |
+| **Briefs (dispatched)** | Can amend via reply to escalation | Can amend via reply to escalation — logged as an event, NOT a brief edit | Reads only — brief is frozen after dispatch; escalate if wrong | Cannot mutate |
+| **Briefs (pre-dispatch)** | Approves the brief | Writes the brief just-in-time per `.claude/skills/brief-authoring/SKILL.md`; pastes to Developer (lands in PR body) | — | Validates structure; flags malformed (`needs:brief-correction`) |
 | **Specs** (`apps/*/specs/*.md`) | Approves PR; ratifies via D-### if spec-only | Coherence review on PR; can open spec-only PRs | Writes in PR per brief scope | Validates cross-references; flags stale specs in drift cron |
 | **Decision logs** (per-product + global) | Approves Type 1 entries; ratifies PENDING Type 2 at windows | Appends Type 2 entries; announces Type 1 to ratification queue | Appends in PR per brief scope | Validates D-### sequence and supersession integrity |
 | **Skills** (`.claude/skills/*/SKILL.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale skill references in drift cron |
 | **Agent defs** (`.claude/agents/*.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale agent references in drift cron |
-| **`state.md`**, **`now.md`** | Approves PR | Writes in PR (append-style for `now.md` "in flight" entries) | Flags state changes needed in PR description | — |
-| **`roadmap.md`** | Approves PR | Writes in PR (sprint-level updates) | — | Flags stale track status in drift cron |
-| **`changelog.md`** | Approves PR | Appends entries per PR (never edits existing) | — | — |
+| **`state.md`**, **`now.md`** | Approves PR | Writes in PR (append-style for `now.md`) | Flags state changes needed in PR description | Updates per-product PM at close-out, for every product the task listed |
+| **Per-product backlogs** (`apps/*/specs/*-backlog.md`), `docs/ecosystem-backlog.md` | Approves PR | Writes (held/future items — out of the flow) | — | — |
+| **`changelog.md`** | Approves PR | Appends per PR (never edits existing) | — | Appends at close-out |
 | **`lessons.md`** | Approves PR | Appends lessons; monthly review | — | — |
 | **`coordination.md`**, **`state-machine.md`** | Approves PR; final authority on system-level rule changes | Proposes changes via PR | — | Flags inconsistencies in drift cron |
-| **`thinking.md`** | Reads | Writes freely in any TL session (best-effort, optional) | Reads | Flags if untouched >7 days in drift cron |
-| **`ratification-queue.md`** | Approves/rejects/defers items at ratification windows | Appends items; marks resolved after Principal action | Appends items via escalation (`severity: product`) | — |
+| **`thinking.md`** | Reads | Writes freely in any TL session (best-effort, optional) | Reads | Flags if untouched >7 days |
+| **`ratification-queue.md`** | Approves/rejects/defers items at windows | Appends items; marks resolved after Principal action | Appends via escalation (`severity: product`) | — |
 | **Source code** | Merges PR | — | Writes in PR per brief scope; opens PR | — |
-| **GitHub Issue labels** | — | Writes via Cetana tools or direct GitHub | Writes via Cetana tools | Writes via automation (archivist.yml) |
-| **Worktrees** | Removes after PR merge | — | Works in (Cetana creates per dispatch) | Flags merged worktrees as cleanup candidates |
-| **JSONL logs** | Reads (audit) | Reads | Appends via `cetana_request_input` tool | — |
+| **GitHub labels** (tier, `aeg:blocked`, `needs:*-input`) | — | Writes (by hand or via an automation layer) | Writes (by hand or via an automation layer) | Writes via automation |
+| **Task status** | — | — | — | — *(nobody writes it — derived from the forge)* |
+| **Provenance block** (on the merged PR) | Reads (audit) | Reads (audit) | — | Assembles + posts at close-out (append-only; from frozen facts) |
+| **Worktrees** | Removes after merge | — | Works in (created at dispatch) | Flags merged worktrees as cleanup candidates |
+| **Orchestration-tool runtime** (if used) | Edits config; reads (audit) | Reads | Appends events via the tool | — |
 | **CI/GitHub Actions** | Approves workflow changes via PR | Proposes workflow changes via PR | — | Runs as GitHub Actions automation |
 
-### Reviewer & Security review authority (D-026)
+### Reviewer & Security review authority (D-026, extended by D-030)
 
-The Reviewer role has two specializations — code review (`roles/reviewer.md`) and security review (`roles/security.md`) — and a single, narrow authority profile:
+The Reviewer role has two specializations — code review (`roles/reviewer.md`) and security review (`roles/security.md`) — and one narrow authority profile:
 
-- **Read:** all Class 1 (repo) and Class 2 (GitHub) artifacts, plus the brief and the PR diff. Always read-only on canonical artifacts.
-- **Write:** PR review verdicts and review comments only (a Class 2 GitHub object). The verdict is the structured block defined in the role doc (`APPROVE | REQUEST CHANGES` for code; `PASS | FAIL` for security).
-- **Cannot:** edit code, edit specs/skills/decision logs/PM docs, mutate labels, or merge. The Reviewer reports; the Developer remediates; the Principal merges.
-- **Independence:** the Reviewer runs with fresh context (a separate invocation), never reviewing work it authored. This is the whole point of the role.
-- **Escalation:** a finding that exceeds review authority (the brief itself is wrong, or a Type 1 decision is implicated) is marked `[ESCALATE] severity:strategy|product` in the verdict and routed to the TL or Principal — the Reviewer does not resolve it.
+- **Read:** all Class 1 (repo) and Class 2 (GitHub) artifacts, plus the brief (in the PR body) and the PR diff. **Including the `Product:` spec(s) in `apps/*/specs/`** — the code Reviewer checks the diff for **spec-conformance**, not only brief-conformance (D-030): a diff can satisfy its brief and still contradict or drift from the product's specced behavior, and catching that gap is the Reviewer's job. A spec **contradiction** is a BLOCKER; **drift** is a MAJOR finding; if the diff is right but the spec is stale, that is a `severity:strategy` escalation, not a failure. This adds **no new persistent artifact** — it reads the product spec that already exists. Always read-only on canonical artifacts.
+- **Write:** PR review verdicts and review comments only (a Class 2 object). The verdict is the structured block in the role doc (`APPROVE | REQUEST CHANGES` for code, with a `SPEC CONFORMANCE` line; `PASS | FAIL` for security). A REQUEST CHANGES sets the PR's review decision, which is the derived `changes-requested` status — the Reviewer writes no status field.
+- **Cannot:** edit code, specs, skills, decision logs, PM docs; mutate labels; or merge. The Reviewer reports; the Developer remediates; the Principal merges.
+- **Independence:** fresh context (a separate invocation), never reviewing work it authored. This is the whole point.
+- **Escalation:** a finding that exceeds review authority is marked `[ESCALATE] severity:strategy|product` and routed to the TL or Principal.
 
-Because the Reviewer never mutates a canonical artifact, it has no column in the matrix above. Its position in the flow is Phase 10 (see `process.md`): code-reviewer pass → security pass → Principal code review → TL spec review → merge.
+Because the Reviewer never mutates a canonical artifact, it has no column. Its position is Phase 10 (`process.md`): code-reviewer pass → security pass → Principal code review → TL spec review → merge.
 
 ---
 
 ## Section 4: Authority Hierarchy of Truth
 
-When two artifacts make conflicting claims, which one wins? The answer depends on whether you are in **audit mode** or **planning mode**.
+When two artifacts conflict, which wins? Depends on **audit mode** vs **planning mode**. Note that *live task status* is never in this hierarchy — it is derived from the forge, which is definitional, not a claim to be ranked.
 
-### Audit mode
+### Audit mode — "What is currently true?"
 
-**Used when:** verifying current state, resolving contradictions, running the verify-docs script, post-mortem analysis.
+Used when verifying state, resolving contradictions, running verify-docs, post-mortems. Ordering (highest first):
 
-**Question this answers:** "What is currently true?"
-
-**Ordering (highest to lowest authority):**
-
-1. Active decision logs (D-### Status: ACTIVE) — the most recent explicit decision governs
-2. Ratified specs (specs with `Status: ratified` header + supporting D-### — see Section 5)
-3. Shipped code (main branch — what actually runs)
-4. Aspirational specs (`Status: target` — describes future state, does not outrank running code)
-5. PM docs (`state.md`, `now.md`, `roadmap.md`, `changelog.md`, `lessons.md`) — status snapshots
-6. Skills + `thinking.md` — operational guidance, not constitutional claims
+1. Active decision logs (D-### Status: ACTIVE)
+2. Ratified specs (`Status: ratified` + supporting D-###)
+3. Shipped code (main — what actually runs)
+4. Aspirational specs (`Status: target`)
+5. PM docs (`state.md`, `now.md`, iteration files, `changelog.md`, `lessons.md`) — status snapshots / plan topology
+6. Skills + `thinking.md`
 7. Briefs / Issues / PR descriptions — intent at time of writing
-8. Conversation logs / Cetana JSONL logs — lowest; ephemeral, not curated
+8. Conversation logs / tool runtime logs — lowest
 
-When audit mode returns a contradiction (e.g., an ACTIVE decision says X but shipped code does Y), the Archivist opens a CONTRADICTION entry (see Section 11). The contradiction must be resolved before new Tier 3 work touches the affected subsystem.
+A contradiction (an ACTIVE decision says X, shipped code does Y) → the Archivist opens a CONTRADICTION entry (Section 11), which blocks new Tier 3 work on the affected subsystem until resolved.
 
-### Planning mode
+### Planning mode — "What should we change it to?"
 
-**Used when:** designing future state, writing briefs, setting targets, architectural design.
-
-**Question this answers:** "What should we change it to?"
-
-**Ordering (highest to lowest authority):**
+Used when designing future state, writing briefs, planning iterations. Ordering:
 
 1. Active decision logs (intent governs the next mutation)
-2. Target specs (`Status: target` — describes where we're going)
-3. Ratified specs (current accepted state — starting point for change)
-4. Shipped code (current runtime substrate — what we're changing from)
-5. PM docs — current priorities
-6. Skills + `thinking.md` — operational context
+2. Target specs (`Status: target`)
+3. Ratified specs (current accepted state)
+4. Shipped code (what we're changing from)
+5. PM docs — current priorities + the iteration's plan
+6. Skills + `thinking.md`
 7. Briefs / Issues / PR descriptions — prior intent
 8. Conversation logs — lowest
 
-**Mode selection rule:** "What is currently true?" → audit mode. "What should we change it to?" → planning mode. The verify-docs script runs in audit mode. Brief authoring runs in planning mode. When in doubt, name the mode you're using.
+**Mode selection:** "currently true?" → audit. "change it to?" → planning. verify-docs runs in audit mode; brief authoring and iteration planning run in planning mode.
 
 ---
 
 ## Section 5: Spec Ratification Mechanism
 
-A spec file (`apps/*/specs/*.md`) exists in one of four states:
+A spec file exists in one of four states:
 
-| State | Header value | Meaning | Authority rank (audit mode) |
-|-------|-------------|---------|----------------------------|
-| Draft | `Status: draft` | Not yet ratified; represents intent, not commitment | Below shipped code |
-| Target | `Status: target` | Describes future state; aspirational | Below shipped code (planning mode rank: above code) |
-| Ratified | `Status: ratified` | Explicitly ratified; represents committed decision | Above shipped code |
-| Retired | `Status: retired` | No longer authoritative; kept for historical record | Below all active artifacts |
+| State | Header | Meaning | Authority rank (audit) |
+|-------|--------|---------|------------------------|
+| Draft | `Status: draft` | Intent, not commitment | Below shipped code |
+| Target | `Status: target` | Aspirational future state | Below shipped code (planning rank: above code) |
+| Ratified | `Status: ratified` | Committed decision | Above shipped code |
+| Retired | `Status: retired` | Historical record | Below all active artifacts |
 
-**A spec is ratified if and only if both are true:**
+**Ratified iff both:** (1) the file carries the metadata block (`Status: ratified` / `Ratified on:` / `Ratified by:` / `Ratifies via: D-###`); and (2) the PR that introduced/last-modified it was either a spec-only PR approved by the Principal, or referenced by an ACTIVE decision entry with `Ratifies: <path>`. Otherwise it is `draft`.
 
-1. The spec file contains the following metadata block at the top:
-   ```markdown
-   Status: ratified
-   Ratified on: YYYY-MM-DD
-   Ratified by: Principal (or TL with explicit Principal delegation)
-   Ratifies via: D-### (the decision log entry that authorized this ratification)
-   ```
+Most specs are `draft` — no deliberate ratification pass has been done. Future PRs ratify as appropriate.
 
-2. The PR that introduced or last modified the spec was either:
-   - A spec-only PR (no code changes) approved by Principal, OR
-   - Referenced by an ACTIVE decision log entry with field `Ratifies: <path-to-spec>`
-
-A spec without these markers is `draft`. A spec marked `Status: target` is aspirational.
-
-**All specs in this repo as of the v3 model ship are draft** — no deliberate ratification pass has been done. Future PRs ratify specs as appropriate. The new `cetana-spec.md` is `draft` as of this PR; a future spec-only PR can ratify it once the V0 operational pattern is confirmed by real use.
+> Note (D-030): the Reviewer's spec-conformance check (§3) reads the product spec **as written** — at whatever ratification state it currently holds. A `draft` spec is still the product's stated intent and is checked against; a contradiction with a `ratified` spec is the most serious. The Reviewer never edits the spec; if it's wrong, that's an escalation.
 
 ---
 
 ## Section 6: Decision Log Schema
-
-Every entry in any decision log (per-product or global) uses this format:
 
 ```markdown
 ## D-NNN — One-line title
@@ -218,251 +204,143 @@ Every entry in any decision log (per-product or global) uses this format:
 **Type:** 1 (irreversible — Principal must ratify) | 2 (reversible — TL can ratify)
 **Supersedes:** D-NNN (if applicable)
 **Superseded by:** D-NNN (if applicable)
-**Lock:** YES | NO (if YES, future briefs must reference or challenge)
+**Lock:** YES | NO
 **Ratifies:** <path to spec> (if this decision ratified a spec)
-**Authored by:** Principal | TL (session timestamp or chat reference)
+**Authored by:** Principal | TL
 **Ratified by:** Principal | TL (delegated, if Type 2)
-**Context:** Brief setup of the problem — 1-3 sentences.
-**Decision:** What was decided — 1-3 sentences.
-**Alternatives rejected:** What was considered and why rejected — bullet list.
-**Consequences:** What this implies for the codebase and future decisions.
+**Context:** 1-3 sentences.
+**Decision:** 1-3 sentences.
+**Alternatives rejected:** bullet list.
+**Consequences:** what this implies.
 ```
 
-**Status semantics:**
+**Status semantics:** ACTIVE (current canonical), SUPERSEDED (replaced — fill `Superseded by:`), RETIRED (retired without replacement), EXPIRED (context-bound assumptions no longer apply), PENDING (Type 2 made in a solo TL session, in effect but awaiting Principal ratification — cannot be acted on as ACTIVE for Type 1 matters).
 
-- **ACTIVE** — current canonical decision; governs the area it covers
-- **SUPERSEDED** — replaced by a newer decision (fill `Superseded by:` with the new D-###)
-- **RETIRED** — explicitly retired without replacement (context changed, decision no longer relevant)
-- **EXPIRED** — context-bound; the assumptions that made this decision valid no longer apply (e.g., V0-only decisions after V1 ships)
-- **PENDING** — Type 2 decision made in a solo TL session; decision is in effect but awaits Principal ratification at the next ratification window. A PENDING decision cannot be acted on as ACTIVE for Type 1 matters.
+**Append-only invariant:** logs are never edited in place. Status changes are new entries referencing the old via `Supersedes:`; the original gets `Superseded by:` filled and its `Status:` flipped to SUPERSEDED, body otherwise unchanged.
 
-**Append-only invariant:** Decision logs are never edited in place. Status changes are new entries that reference the old D-### via `Supersedes:`. The original entry gets `Superseded by:` filled in, and its Status line is updated to SUPERSEDED, but its body is otherwise not changed. This preserves the audit trail.
-
-**Numbering is per-log, not globally unique.** Each decision log carries its own `D-###` sequence. Numbers are NOT unique across logs: the legacy Vāda log (`apps/vada-ai/specs/vada-decisions.md`) predates the v3 model and runs its own sequence (currently to D-034) whose numbers deliberately collide with this global log's — there is a Vāda D-025 and a global D-025, and they are different decisions. The per-product Cetana log (`apps/cetana-ai/specs/cetana-decisions.md`) likewise runs its own sequence, so a Cetana D-### and a global D-### of the same number are different decisions. **Always disambiguate a `D-###` reference by naming its log** (e.g. "global D-026", "vada-decisions D-033", "cetana-decisions D-026"). The global governance log (`decisions.md`) has apparent gaps because some early v3 decisions (roughly D-017–D-023) were filed in product logs rather than the global one. Within any single log, numbers are sequential and append-only; the Archivist validates within-log sequencing (see Section 12).
+**Numbering is per-log, not globally unique.** Each log carries its own `D-###` sequence; numbers collide across logs deliberately. The legacy Vāda log (`apps/vada-ai/specs/vada-decisions.md`) runs its own sequence (to D-034); the Cetana log (`apps/cetana-ai/specs/cetana-decisions.md`) runs its own. There is a Vāda D-025 and a global D-025 and they are different decisions. **Always disambiguate by naming the log** (e.g. "global D-026", "vada-decisions D-033"). The global log has apparent gaps because some early v3 decisions were filed in product logs. Within any single log, numbers are sequential and append-only; the Archivist validates within-log sequencing (Section 12).
 
 ---
 
 ## Section 7: Escalation Paths
 
-When a Developer reaches a decision point not covered by the brief, they call `cetana_request_input` with a `severity` field.
+When a Developer reaches a decision not covered by the brief, it escalates through the escalation mechanism — a manual escalation note, or, if dispatched by an automation layer, that layer's request-input mechanism — tagged with a `severity` that routes it.
 
 ### Three severity levels
 
-**`severity: execution`** — routine question answerable by the TL in Brief Author mode.
+**`severity: execution`** — routine, answerable by the TL in Brief Author mode. ("Library X is deprecated"; "null or throw?"; "I need an unanticipated flag.") Adds label `needs:execution-input`; the TL replies; the Developer resumes.
 
-Examples: "The brief says to use Library X but it's been deprecated"; "should this return null or throw?"; "I need a flag I didn't anticipate."
+**`severity: strategy`** — which design path to take; TL Strategist mode. ("The brief's approach A has a structural issue — switch to B?"; "this touches an undiscussed area"; "the diff is right but the spec is stale.") Adds `needs:strategy-input`; same path, different cognitive mode.
 
-Routing: adds GitHub label `needs:execution-input`. TL sees the blocked task via `cetana.list_active_tasks`, formulates a reply, calls `cetana.reply_to_blocked_task`. Developer resumes.
+**`severity: product`** — requires a Principal decision. Rare; reserved for Type 1 decisions discovered during execution. Adds `needs:principal-input`. If the Principal is present, they decide and reply; if not, the item goes to `ratification-queue.md` and the Developer terminates, resuming via a follow-up dispatch after the window.
 
-**`severity: strategy`** — question about which design path to take; requires TL Strategist mode.
-
-Examples: "The brief assumed approach A but I see a structural issue — should I switch to B?"; "this work touches an area we haven't discussed."
-
-Routing: adds GitHub label `needs:strategy-input`. Same technical path as execution; different cognitive mode for the TL.
-
-**`severity: product`** — question requiring Principal decision. Rare. Reserved for Type 1 decisions discovered during execution.
-
-Examples: "This affects user-visible behavior in a way the brief didn't address"; "I need to make an irreversible architectural decision."
-
-Routing: adds GitHub label `needs:principal-input`. If Principal is immediately available: TL surfaces the question, Principal decides, reply is sent. If Principal is not available: item goes to `ratification-queue.md`; Developer terminates the task and resumes via a follow-up dispatch after the next ratification window.
-
-The Reviewer uses the same severity vocabulary for `[ESCALATE]` findings (Section 3): a strategy-level finding routes to the TL, a product-level finding to the Principal.
+While blocked, the task carries an `aeg:blocked` label (the one status with no native forge fact). The Reviewer uses the same severity vocabulary for `[ESCALATE]` findings.
 
 ### Type 1 decisions during execution
 
-Type 1 (irreversible) decisions discovered during a Developer dispatch cannot be self-ratified by the TL in solo session. They ALWAYS go to the ratification queue unless Principal is actively present in the Claude Desktop chat. "Actively present" means the Principal has replied to an escalation in this session — not just that a Claude Desktop chat is open.
-
-V0 timeout limit: `cetana_request_input` has a 30-minute timeout. For decisions queued for ratification windows (which may be hours away), the Developer should terminate after receiving the queue acknowledgment. V0.7 will add longer-lived blocking.
+Type 1 (irreversible) decisions cannot be self-ratified by the TL in a solo session. They ALWAYS go to the ratification queue unless the Principal is actively present (has replied to an escalation in this session). For queued items, the Developer terminates after acknowledgment and resumes after the window.
 
 ### Emergency override
 
-If the Developer determines the brief itself is wrong in a way that blocks all forward paths, they call `cetana_request_input` with `severity: execution` and include a flag `brief_amendment_needed: true` in the question text. The TL either issues an amendment (logged as a JSONL event, not a brief edit — briefs are frozen) or kills the task. The original brief is preserved as the audit record regardless of what the amendment says.
+If the brief itself is wrong in a way that blocks all paths, the Developer escalates with `severity: execution` and a `brief_amendment_needed` flag. The TL issues an amendment (logged as an event, not a brief edit — briefs are frozen) or kills the task. The original brief is preserved as the audit record.
 
 ---
 
 ## Section 8: Lock Mechanism
 
-A decision log entry with `Lock: YES` signals that a design branch is closed. The decision was made deliberately and is not open for reconsideration without an explicit challenge.
+A decision entry with `Lock: YES` signals a closed design branch.
 
-### What a lock means
+**A lock means:** future briefs touching the locked area MUST include `Conforms to lock: D-NNN` or `Challenges lock: D-NNN` + reason. A brief touching a locked area without either is malformed (advisory Archivist comment in V0; Brief Validation gate rejects it in V1).
 
-Future briefs that touch the locked area MUST include one of:
+**A lock does NOT mean permanence:** if new information changes the calculus, the TL proposes a D-### that SUPERSEDES the locked decision; the Principal ratifies if the original was Type 1.
 
-```markdown
-Conforms to lock: D-NNN
-```
-
-or:
-
-```markdown
-Challenges lock: D-NNN
-Reason: <why this lock should be reconsidered>
-```
-
-A brief that touches a locked area without either acknowledgment is malformed. In V0, the Archivist surfaces this as an advisory PR comment. In V1, the Brief Validation gate will reject the brief outright.
-
-### What a lock does NOT mean
-
-A lock is not permanent. It means "we closed this branch deliberately." If new information changes the calculus, the TL can propose a D-### entry that SUPERSEDES the locked decision. The Principal must ratify if the original was Type 1. Once superseded, the new decision's `Lock: YES/NO` governs.
-
-### Current V0 enforcement
-
-Advisory only. The Archivist posts a comment on the PR if a missing lock acknowledgment is detected. This is V0 discipline — agents are expected to follow it, not just wait to be caught.
+**Current enforcement:** advisory only — the Archivist comments if a lock acknowledgment is missing. V0 discipline.
 
 ---
 
 ## Section 9: Tiered Documentation
 
-Every piece of work is assigned an impact tier. The tier determines what documentation is required before the PR is ready to open.
+Every piece of work is assigned an impact tier; the tier determines required documentation before the PR is ready.
 
-### The tiers
+**Tier 0 — Trivial.** Isolated, no API/contract changes, no patterns shifted. Required: code comments where non-obvious, PR description following template, declare `Tier: 0` in the PR body.
 
-**Tier 0 — Trivial.**
+**Tier 1 — Implementation.** A meaningful feature/fix within existing architectural contracts. Required: Tier 0 + specs updated, skills updated if conventions shifted, `bun run verify-docs --pr` passes.
 
-Qualifies when: the change is isolated, self-contained, no API or contract changes, no patterns shifted.
+**Tier 3 — Product/roadmap.** No Tier 2 (deliberately eliminated; disputes go to Tier 3). Qualifies when ANY of: introduces/breaks public contracts; changes roadmap sequencing or product direction; creates/modifies ACTIVE locks; requires Type 1 decisions; affects more than one product boundary; changes persistence/storage semantics; changes escalation/governance rules; requires Principal ratification to continue. Required: Tier 1 + decision entry (status, type, rationale, alternatives), PM docs updated if state changed, Lock entry if irreversible, `docs-index.md` regenerated. Merge during a ratification window.
 
-Required documentation: code comments where non-obvious. PR description following template. Declare `Tier: 0` in the PR body so the verify-docs gate does not require doc updates.
+**Spike exception:** `spike: true` reduces docs to typecheck + lint + a decision entry capturing what was tried/learned. Spike code does not merge.
 
-**Tier 1 — Implementation.**
-
-Qualifies when: a meaningful feature or fix that changes behavior but stays within existing architectural contracts.
-
-Required documentation: Tier 0 items, plus specs updated to reflect new behavior, skills updated if conventions shifted, `bun run verify-docs --pr` passes.
-
-**Tier 3 — Product/roadmap.**
-
-No Tier 2 — deliberately eliminated. Classification disputes go to Tier 3 if in doubt.
-
-Qualifies when ANY of the following are true:
-- Introduces or breaks public contracts (API, MCP tool surface, schema)
-- Changes roadmap sequencing or product direction
-- Creates or modifies ACTIVE locks (`Lock: YES` in a decision log)
-- Requires Type 1 decisions
-- Affects more than one product boundary
-- Changes persistence or storage semantics
-- Changes escalation or governance rules
-- Requires Principal ratification to safely continue
-
-Required documentation: all Tier 1 items, plus decision log entry appended (with status, type, rationale, alternatives), PM docs updated if state changed, Lock entry created if irreversible, `docs-index.md` regenerated. Merge happens during ratification window.
-
-### Spike exception
-
-A brief tagged `spike: true` reduces documentation to: code passes typecheck and lint, decision log entry capturing what was tried and what was learned. Spike code does NOT merge to main — it rebases away or converts to a Tier 1+ task in a separate brief.
-
-### Tier detection rule
-
-When in doubt between Tier 1 and Tier 3: choose Tier 3. The cost of excess documentation is low. The cost of under-documented architectural changes is high — that is precisely how the BYOK gap happened (spec lagged implementation for weeks with no formal documentation of the divergence). The verify-docs gate mirrors this: when a PR body declares no tier, the gate assumes Tier 3.
+**Tier detection:** when in doubt between 1 and 3, choose 3 — the cost of excess docs is low; under-documented architectural change is how the BYOK gap happened. verify-docs assumes Tier 3 when a PR declares no tier.
 
 ---
 
 ## Section 10: Ratification Windows
 
-The Principal's availability is bounded. Continuous interruption for approvals is operationally unsustainable for a solo-founder + AI swarm workflow. Ratification windows solve this by batching governance decisions.
+1-2 daily windows batch governance decisions so the Principal isn't continuously interrupted.
 
-### What batches at a ratification window
+**Batches at a window:** Type 1 decisions; Tier 3 PR merges; lock approvals; `severity: product` escalations; PENDING Type 2 decisions.
 
-- Type 1 decisions requiring Principal ratification
-- Tier 3 PR merges (require Principal presence to merge)
-- Lock approvals
-- `severity: product` escalations (queued because Principal was unavailable)
-- PENDING Type 2 decisions (made in solo TL sessions, not yet ratified)
+**Does NOT wait:** Tier 0/1 merges (anytime); `severity: execution`/`strategy` escalations (TL resolves); Type 2 decisions made with the Principal present.
 
-### Cadence
-
-1-2 daily windows. Typical times: 9am and 5pm (local time), adjusted as needed. Dani sets the actual times; the queue doesn't assume a specific schedule.
-
-Items append to `project-management/ratification-queue.md`. The format is defined in that file. At each window, the Principal reads the queue, resolves items (ratify, reject, or defer), and updates the `Resolution:` field.
-
-### What does NOT wait for a ratification window
-
-- Tier 0 and Tier 1 PR merges — anytime
-- `severity: execution` and `severity: strategy` escalations — TL resolves immediately
-- Type 2 decisions made in a session where Principal is actively present
-
-### TL responsibility at windows
-
-Before the window, the TL ensures all pending items have been appended to `ratification-queue.md` with enough context for the Principal to decide without asking follow-up questions. After the window, the TL reads the resolutions and updates the relevant artifacts (decision logs, spec headers, PM docs) to reflect what was ratified.
+**Cadence:** Dani sets the times; the queue assumes no specific schedule. Items append to `ratification-queue.md`. **TL responsibility:** before the window, ensure pending items are appended with enough context to decide without follow-up; after, update artifacts to reflect what was ratified.
 
 ---
 
 ## Section 11: Contradiction Mechanism
 
-The Archivist monitors for contradictions — cases where shipped code, a ratified spec, and an active decision log disagree. These are high-signal problems: they indicate that documentation lagged a code change, or that a decision was made without updating its referenced artifact.
+The Archivist monitors for contradictions — shipped code, a ratified spec, and an active decision log disagreeing.
 
-### What triggers contradiction detection
+**Triggers:** the drift cron (spec dates vs referenced code dates); post-merge semantic-relatedness checks; or a direct report by any role.
 
-- Archivist drift cron (daily): compares spec modification dates to referenced code modification dates; flags specs significantly older than the code they describe
-- Post-merge validation: when a PR changes code, Archivist checks referenced decision logs for semantic relatedness
-- Direct report: any role can open a CONTRADICTION entry manually
-
-### Contradiction entry format
-
-When a contradiction is detected, the Archivist creates a `## CONTRADICTION — <topic>` entry in the relevant decision log:
-
-```markdown
-## CONTRADICTION — <brief topic description>
-Detected: YYYY-MM-DD
-Artifacts in conflict:
-- D-NNN (decision log entry)
-- apps/product/specs/spec-name.md
-- apps/product/src/affected-module.ts
-Escalation: Severity:Strategy
-Status: unresolved
-Owner: TL
-```
-
-This entry auto-escalates as `severity: strategy` and blocks new Tier 3 work touching the affected subsystem until resolved. Resolution replaces the `Status: unresolved` with `Status: resolved — see D-NNN` (the new decision that resolved it).
+**Entry format:** a `## CONTRADICTION — <topic>` entry in the relevant log listing the conflicting artifacts, `Escalation: Severity:Strategy`, `Status: unresolved`, `Owner: TL`. It auto-escalates as `severity: strategy` and blocks new Tier 3 work on the affected subsystem until resolved (`Status: resolved — see D-NNN`).
 
 ---
 
 ## Section 12: Enforced vs. Trusted Discipline
 
-Not everything in this system is enforced. Some discipline is trusted — expected of agents, but not mechanically verified. Being explicit about this is important so agents know where the hard edges are.
+AEG runs along an **advisory → enforced gradient**. A mechanism can be *advisory* (it produces a finding; nothing blocks) or *enforced* (CI/gates block merge). A repo tightens mechanisms from advisory to enforced one at a time — it does not flip everything at once. **Observe mode (D-030) is the floor of this gradient:** every mechanism advisory, nothing enforced (see below). Full AEG is the ceiling: the gates below enforced.
+
+### Observe mode — the advisory floor (D-030)
+
+The lowest-commitment way to run AEG: read-only over a team's existing process. The roles produce their outputs — Reviewer/Security verdicts, the Planner's topology, the Archivist's provenance — but **none of it blocks a merge**; a finding is a comment, not a gate. Status is still **derived** from the forge (read-only); AEG writes nothing it wouldn't write in full mode except that the gates run **report-only** (they print what *would* fail). This is the "monitoring, not restriction" on-ramp (`aeg-manual-flow.md` §8); a team climbs from here by promoting one gate at a time to enforced.
 
 ### Enforced (CI blocks merge)
 
-- **Tier-appropriate documentation** — `scripts/verify-docs.ts` checks that the PR's impact tier has the corresponding artifact changes. Fails CI if missing. **Implemented for real (D-027)** — replaces the old V0.7 stub. The blocking CI workflow must be installed at `.github/workflows/verify-docs.yml` (staged at `scripts/ci/verify-docs.workflow.yml`; the GitHub App integration cannot write workflow files, so the Principal moves it into place). Until installed, the gate runs locally via `bun run verify-docs --pr`.
+- **Tier-appropriate documentation** — `scripts/verify-docs.ts` checks the PR's tier has the corresponding artifact changes; fails CI if missing. **Real (D-027)**, not a stub. The blocking workflow is installed at `.github/workflows/verify-docs.yml`. The gate also runs locally via `bun run verify-docs --pr`. (In observe mode this runs report-only.)
 - **Typecheck, lint, tests** — standard CI gates; always blocking.
-- **Brief validation** — Archivist GitHub Action checks brief structure on Issue open; sets `status:blocked` if malformed. (V0.7 stub currently no-ops; full implementation V0.7.)
-- **D-### sequencing** — post-merge Archivist validates that decision log numbers are sequential within each log (no gaps or duplicates inside a given log; cross-log number collisions are expected — see Section 6). (V0.7 stub; full implementation V0.7.)
+- **Issue template / no forbidden fields** — a required Issue template + a CI check reject planning metadata (priority/estimates/points) on task Issues, keeping them execution-only.
+- **Brief validation** — Archivist Action checks brief structure; flags malformed briefs (`needs:brief-correction`). (Stub today; full implementation V0.7.)
+- **D-### sequencing** — post-merge Archivist validates within-log sequencing (cross-log collisions expected — Section 6). (Stub today; full V0.7.)
 
 ### Trusted (agent discipline — no CI enforcement in V0)
 
-- **Code-review and security review passes** — Phase 10 requires the code-reviewer and security-reviewer agent passes (D-026), but in this first cut no CI bot runs them automatically. They are agent + Principal discipline: the Principal invokes the review agents (copy-paste today; Cetana dispatch later). Automating this is future work.
-- **Decision logging during chat** — TL is expected to announce and log significant decisions during the conversation itself, not after. CI cannot verify this.
-- **`thinking.md` updates** — best-effort optional working memory. Not depended on by any other process.
-- **Ratification window attendance** — Principal must show up at windows. No mechanism enforces this; it's a commitment.
-- **Lock acknowledgment in briefs** — advisory Archivist comment in V0; blocking in V1.
-- **Spec ratification passes** — no automated trigger. Requires deliberate decision to ratify.
+- **Code-review and security passes** — Phase 10 requires them (D-026), including the spec-conformance check (D-030), but no CI bot dispatches them automatically yet; Principal + agent discipline. Automating dispatch is future work.
+- **Dispatch gates** (depends-on merged / no conflicting PR open) — read from the forge and complied with; mechanical enforcement arrives when an automation tool runs dispatch (`iterations/README.md` §8).
+- **Provenance assembly at close-out** (D-030) — the Archivist assembles it; trusted discipline today, automatable later. It records, it never gates.
+- **Decision logging during chat** — TL announces and logs during the conversation; CI cannot verify.
+- **No execution metadata in the iteration file; no dynamic conflict scanner** — the two anti-regression rules (`iterations/README.md` §9); trusted discipline, flagged by the Archivist drift cron and the Planner's gates.
+- **`thinking.md` updates; ratification-window attendance; lock acknowledgment (advisory in V0); spec ratification passes** — all trusted.
 
 ### Emergency override
 
-When a human needs to bypass a gate:
+- `[skip-archivist]` in a commit message: suppresses Archivist advisory comments.
+- `override:docs` PR label (or `[override:docs]` in the body, or `OVERRIDE_DOCS=1`): suppresses the verify-docs gate for this PR.
+- Author should be the Principal (verified by the GitHub commit author field).
 
-- `[skip-archivist]` in the commit message: suppresses Archivist advisory comments for this commit
-- `override:docs` PR label (or `[override:docs]` in the PR body, or env `OVERRIDE_DOCS=1`): suppresses the `verify-docs` gate for this PR
-- Author should be the Principal (verified by GitHub commit author field)
-
-Every override is logged (the verify-docs check prints that the override was active; the Archivist records `task.failed` with reason "Archivist override invoked" in the Cetana JSONL). This is not a security mechanism — it's an audit mechanism. The Principal can always override; the log ensures the override is visible.
+Every override is logged (verify-docs prints that the override was active; the Archivist records it). This is an audit mechanism, not a security one — the Principal can always override; the log keeps it visible.
 
 ---
 
 ## Section 13: Append-Only Artifacts
 
-The following artifacts are append-only and must never be edited in place except to add `SUPERSEDED`, `RETIRED`, or `EXPIRED` status fields to existing entries:
+Append-only; never edited in place except to add `SUPERSEDED`/`RETIRED`/`EXPIRED` status or fill forward-reference fields:
 
 - All decision logs (per-product `*-decisions.md` + global `decisions.md`)
 - `project-management/ratification-queue.md`
 - `project-management/retrospectives/*.md` (when created)
-- Cetana JSONL logs at `~/.cetana/tasks/`
+- **The provenance block on a merged PR** (D-030) — assembled once at close-out from frozen facts, posted as a PR comment, never updated. Append-only by construction: a record of what shipped, not a status to maintain.
+- An orchestration tool's runtime event logs, if one is used
 
-**"Append-only" means:**
+**"Append-only" means:** new entries go at the end; existing entries are not rewritten to match new understanding; status transitions are new entries referencing old ones; the log grows, never shrinks. If you want to edit an existing entry, you are almost certainly writing a new entry that supersedes it.
 
-- New entries go at the end (or a clearly marked new section)
-- Existing entries are not rewritten to match new understanding
-- Status transitions are new entries that reference old ones, not in-place edits to the old entry
-- The log grows; it never shrinks
-
-The point of append-only is that the log is an audit trail, not a living document. If you find yourself wanting to edit an existing entry, you are almost certainly writing a new entry that supersedes it.
-
-**Exception:** Filling in `Superseded by:` or `Ratified by:` fields on an existing entry (and flipping its `Status:` to SUPERSEDED to match) is permitted — these are forward references that cannot be known at time of writing. They are narrow, targeted edits that preserve the append-only intent.
+**Exception:** filling `Superseded by:` / `Ratified by:` on an existing entry (and flipping its `Status:` to match) is permitted — narrow forward-reference edits that preserve the append-only intent.
