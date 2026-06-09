@@ -422,11 +422,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
   return (
     <div>
-      <div className='mb-8 flex items-start justify-between gap-4'>
-        <div>
-          <h1 className='font-serif text-xl tracking-tight'>Settings</h1>
-          <p className='mt-1 font-mono text-xs text-muted-foreground'>Profile, API keys, and social connections.</p>
-        </div>
+      <div className='mb-8 flex justify-end'>
         {showKeylessConfirm ? (
           <div className='flex shrink-0 flex-col items-end gap-2'>
             <p className='max-w-[260px] text-right font-mono text-[10px] text-muted-foreground'>
