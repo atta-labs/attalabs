@@ -168,11 +168,19 @@ function EnvoyNavContent({
           </div>
 
           {/* Theme + Auth — pinned to viewport right */}
-          <div className='absolute inset-y-0 right-0 flex items-center gap-2 pr-6'>
+          <div className='absolute inset-y-0 right-0 flex items-center gap-3 pr-6'>
             {isOwner && (
-              <NextLink variant='nav' href='/bulk-audit' className='text-xs'>
-                Bulk Audit
-              </NextLink>
+              <>
+                <NextLink variant='nav' href='/bulk-audit' className='text-xs'>
+                  Bulk Audit
+                </NextLink>
+                <NextLink variant='nav' href='/ui' className='text-xs'>
+                  UI
+                </NextLink>
+                <NextLink variant='nav' href='/settings' className='text-xs'>
+                  Settings
+                </NextLink>
+              </>
             )}
             <ColorSchemeToggle />
             {user ? (
