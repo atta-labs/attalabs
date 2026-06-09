@@ -476,7 +476,6 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           <TabsTrigger value='profile'>Profile</TabsTrigger>
           <TabsTrigger value='experience'>Experience</TabsTrigger>
           <TabsTrigger value='connections'>Connections</TabsTrigger>
-          <TabsTrigger value='cv'>CV</TabsTrigger>
           <TabsTrigger value='api-keys'>API Keys</TabsTrigger>
           <TabsTrigger value='account'>Account</TabsTrigger>
         </TabsList>
@@ -732,44 +731,27 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
               </div>
             </section>
 
-            <div className='flex items-center gap-3 border-t border-border pt-6'>
-              <Button
-                type='button'
-                variant='outline'
-                onClick={handleSave}
-                disabled={saving}
-                className='font-mono text-xs uppercase tracking-[0.2em]'
-              >
-                {saving ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* ── CV ───────────────────────────────────────────────── */}
-        <TabsContent value='cv'>
-          <input
-            ref={cvInputRef}
-            type='file'
-            accept='.pdf,.txt,.md'
-            className='hidden'
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) handleCvUpload(file)
-            }}
-          />
-          <input
-            ref={cvDirectRef}
-            type='file'
-            accept='application/pdf'
-            className='hidden'
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) handleCvDirectUpload(file)
-            }}
-          />
-          <div className='space-y-8'>
-            {/* ── File state ── */}
+            {/* ── CV (file state) ─────────────────────────────────── */}
+            <input
+              ref={cvInputRef}
+              type='file'
+              accept='.pdf,.txt,.md'
+              className='hidden'
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleCvUpload(file)
+              }}
+            />
+            <input
+              ref={cvDirectRef}
+              type='file'
+              accept='application/pdf'
+              className='hidden'
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleCvDirectUpload(file)
+              }}
+            />
             <section>
               <h2 className={sectionHeadClass}>CV File</h2>
               {cvUrl ? (
@@ -830,7 +812,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
               )}
             </section>
 
-            {/* ── Parse & overwrite (destructive) ── */}
+            {/* ── Parse & overwrite (destructive) ────────────────── */}
             <section>
               <div className='rounded border border-dashed border-destructive/30 p-4'>
                 <div className='flex items-start justify-between gap-4'>
@@ -855,6 +837,18 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
                 </div>
               </div>
             </section>
+
+            <div className='flex items-center gap-3 border-t border-border pt-6'>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={handleSave}
+                disabled={saving}
+                className='font-mono text-xs uppercase tracking-[0.2em]'
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
           </div>
         </TabsContent>
 
