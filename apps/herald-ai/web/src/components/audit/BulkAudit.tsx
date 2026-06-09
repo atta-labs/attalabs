@@ -11,7 +11,7 @@ interface BatchResult {
   error?: string
 }
 
-export function RecruiterBatch({ hasKey }: { hasKey: boolean }) {
+export function BulkAudit({ hasKey }: { hasKey: boolean }) {
   const [jd, setJd] = useState('')
   const [candidatesRaw, setCandidatesRaw] = useState('')
   const [state, setState] = useState<'idle' | 'loading' | 'result' | 'error'>('idle')
@@ -64,12 +64,12 @@ export function RecruiterBatch({ hasKey }: { hasKey: boolean }) {
     return (
       <div className='mx-auto max-w-[680px] px-6 py-12'>
         <header className='mb-8'>
-          <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Recruiter Workspace</p>
-          <h1 className='mt-2 font-display text-3xl tracking-tight text-foreground'>Batch Audit</h1>
+          <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Audit</p>
+          <h1 className='mt-2 font-serif text-3xl tracking-tight text-foreground'>Bulk Audit</h1>
         </header>
         <div className='rounded border border-border bg-card/50 px-6 py-8'>
           <p className='text-sm text-muted-foreground'>
-            Batch audits run on your Anthropic API key. Add your key in Settings to get started.
+            Bulk audits run on your Anthropic API key. Add your key in Settings to get started.
           </p>
           <a
             href='/candidate/settings'
@@ -131,8 +131,8 @@ export function RecruiterBatch({ hasKey }: { hasKey: boolean }) {
   return (
     <div className='mx-auto max-w-[680px] px-6 py-12'>
       <header className='mb-8'>
-        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Recruiter Workspace</p>
-        <h1 className='mt-2 font-display text-3xl tracking-tight text-foreground'>Batch Audit</h1>
+        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Audit</p>
+        <h1 className='mt-2 font-serif text-3xl tracking-tight text-foreground'>Bulk Audit</h1>
         <p className='mt-2 text-sm text-muted-foreground'>
           Match multiple Herald candidates against a single job description.
         </p>
@@ -171,7 +171,7 @@ export function RecruiterBatch({ hasKey }: { hasKey: boolean }) {
           disabled={!jd.trim() || !candidatesRaw.trim()}
           className='font-mono text-xs uppercase tracking-[0.2em]'
         >
-          Run Batch Audit
+          Run Bulk Audit
         </Button>
       </div>
     </div>

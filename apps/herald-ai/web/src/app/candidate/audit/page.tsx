@@ -3,9 +3,9 @@ import { redirect } from 'next/navigation'
 import { decryptVendorKeys } from '@atta/crypto'
 import { getProviderKeys } from '@atta/db/queries'
 import { db } from '@/db'
-import { RecruiterBatch } from '@/components/recruiter/RecruiterBatch'
+import { BulkAudit } from '@/components/audit/BulkAudit'
 
-export default async function RecruiterPage() {
+export default async function AuditPage() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
@@ -29,7 +29,7 @@ export default async function RecruiterPage() {
 
   return (
     <div className='h-full overflow-y-auto'>
-      <RecruiterBatch hasKey={hasKey} />
+      <BulkAudit hasKey={hasKey} />
     </div>
   )
 }

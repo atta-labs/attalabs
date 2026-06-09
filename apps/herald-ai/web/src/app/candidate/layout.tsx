@@ -6,7 +6,6 @@ import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { Settings } from 'lucide-react'
 import { getUserByClerkId } from '@/db/queries'
-import { ModeSwitch } from '@/components/ModeSwitch'
 import { CandidateShell } from '@/components/portal/CandidateShell'
 import type { UILibrary } from '@atta/ui/lib/library-loader'
 
@@ -21,20 +20,18 @@ export default async function CandidateLayout({ children }: { children: React.Re
 
   const signedInLinks = user?.onboardingComplete
     ? [
+        { label: 'Audit', href: '/candidate/audit' },
         { label: 'UI', href: '/candidate/ui' },
         ...(user.username ? [{ label: `/${user.username}`, href: `/${user.username}`, external: true as const }] : [])
       ]
     : []
 
   const extraActions = (
-    <>
-      <Button variant='ghost' size='icon' asChild aria-label='Settings' title='Settings'>
-        <NextLink variant='unstyled' href='/candidate/settings'>
-          <Settings className='h-4 w-4' />
-        </NextLink>
-      </Button>
-      <ModeSwitch />
-    </>
+    <Button variant='ghost' size='icon' asChild aria-label='Settings' title='Settings'>
+      <NextLink variant='unstyled' href='/candidate/settings'>
+        <Settings className='h-4 w-4' />
+      </NextLink>
+    </Button>
   )
 
   return (
