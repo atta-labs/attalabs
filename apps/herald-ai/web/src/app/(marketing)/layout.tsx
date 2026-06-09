@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { cmsClient, getHeraldBranding } from '@atta/cms'
 import { TopBar } from '@atta/ui/topbar'
 import { Footer } from '@atta/ui/footer'
+import { HeraldUserButton } from '@/components/herald-user-button'
 
 export default async function MarketingLayout({ children }: { children: ReactNode }) {
   const branding = await getHeraldBranding(cmsClient).catch(() => null)
@@ -14,7 +15,8 @@ export default async function MarketingLayout({ children }: { children: ReactNod
           logoText='Herald'
           logoUrl={logoUrl}
           logoTagline={['Forensic hiring', 'audits']}
-          signedInLinks={[{ label: 'Dashboard', href: '/candidate' }]}
+          signedInLinks={[]}
+          accountMenu={<HeraldUserButton />}
         />
       </header>
       <main className='flex-1 min-h-0'>{children}</main>

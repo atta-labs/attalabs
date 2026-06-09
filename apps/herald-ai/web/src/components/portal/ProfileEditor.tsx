@@ -17,7 +17,7 @@ import {
   useToastContext
 } from '@atta/ui/components'
 import { Download, ExternalLink, Upload, X } from 'lucide-react'
-import { ProviderKeysSection } from '@atta/ui/account'
+import { AttaUserProfile, ProviderKeysSection } from '@atta/ui/account'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { SummaryMarkdown } from '@/components/summary-markdown'
@@ -491,6 +491,9 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           <TabsTrigger value='api-keys' className={triggerClass}>
             API Keys
           </TabsTrigger>
+          <TabsTrigger value='account' className={triggerClass}>
+            Account
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Profile ──────────────────────────────────────────── */}
@@ -871,6 +874,11 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
         {/* ── API Keys ─────────────────────────────────────────── */}
         <TabsContent value='api-keys'>
           <ProviderKeysSection />
+        </TabsContent>
+
+        {/* ── Account ──────────────────────────────────────────── */}
+        <TabsContent value='account'>
+          <AttaUserProfile />
         </TabsContent>
 
         {/* ── Connections ──────────────────────────────────────── */}

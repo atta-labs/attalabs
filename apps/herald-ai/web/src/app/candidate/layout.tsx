@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { getUserByClerkId } from '@/db/queries'
 import { ModeSwitch } from '@/components/ModeSwitch'
 import { CandidateShell } from '@/components/portal/CandidateShell'
+import { HeraldUserButton } from '@/components/herald-user-button'
 import type { UILibrary } from '@atta/ui/lib/library-loader'
 
 export default async function CandidateLayout({ children }: { children: React.ReactNode }) {
@@ -16,10 +17,10 @@ export default async function CandidateLayout({ children }: { children: React.Re
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
   const userLibrary = (user?.library ?? 'basic') as UILibrary
 
+  // Keep contextual in-portal nav. Dashboard/Settings are in the avatar menu — don't duplicate.
   const signedInLinks = user?.onboardingComplete
     ? [
-        { label: 'User Interface', href: '/candidate/ui' },
-        { label: 'Settings', href: '/candidate/settings' },
+        { label: 'UI', href: '/candidate/ui' },
         ...(user.username ? [{ label: `/${user.username}`, href: `/${user.username}`, external: true as const }] : [])
       ]
     : []
@@ -33,6 +34,7 @@ export default async function CandidateLayout({ children }: { children: React.Re
           logoTagline={['Forensic hiring', 'audits']}
           signedInLinks={signedInLinks}
           extraActions={<ModeSwitch />}
+          accountMenu={<HeraldUserButton />}
         />
         <main className='flex-1 overflow-hidden'>{children}</main>
       </div>

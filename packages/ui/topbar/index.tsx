@@ -33,6 +33,12 @@ export interface TopBarProps {
   signedInLinks?: TopBarLink[]
   /** Extra actions rendered in the right section when signed in (e.g. settings icon). */
   extraActions?: ReactNode
+  /**
+   * Replaces the default bare <UserButton /> when signed in.
+   * Pass a product-specific UserButton wrapper (e.g. with custom menu items).
+   * If omitted, falls back to the plain UserButton — Vāda behaviour is unchanged.
+   */
+  accountMenu?: ReactNode
 }
 
 export function TopBar({
@@ -43,7 +49,8 @@ export function TopBar({
   logoTagline,
   links = [],
   signedInLinks = [],
-  extraActions
+  extraActions,
+  accountMenu
 }: TopBarProps) {
   const { user } = useUser()
   const pathname = usePathname()
@@ -103,7 +110,7 @@ export function TopBar({
           {user ? (
             <>
               {extraActions}
-              <UserButton />
+              {accountMenu ?? <UserButton />}
             </>
           ) : (
             <SignInButton mode='modal'>
@@ -117,7 +124,7 @@ export function TopBar({
         {/* Mobile actions */}
         <div className='ml-auto flex items-center gap-2 md:hidden'>
           <ColorSchemeToggle />
-          {user && <UserButton />}
+          {user && (accountMenu ?? <UserButton />)}
           <Sheet>
             <SheetTrigger render={<Button variant='outline' size='icon' aria-label='Open menu' />}>
               <Menu className='h-4 w-4' />

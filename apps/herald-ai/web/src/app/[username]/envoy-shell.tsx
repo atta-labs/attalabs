@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Download, ExternalLink } from 'lucide-react'
-import { SignInButton, UserButton, useUser } from '@atta/auth'
+import { SignInButton, useUser } from '@atta/auth'
 import { Button as BasicButton } from '@atta/ui/components/button'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import { Logo } from '@atta/ui/shared'
@@ -13,6 +13,7 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { cn } from '@atta/ui/lib/utils'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { HeroCollapseProvider, useHeroCollapse } from '@/components/envoy/hero-collapse-context'
+import { HeraldUserButton } from '@/components/herald-user-button'
 
 async function downloadCv(url: string, filename: string) {
   try {
@@ -38,15 +39,7 @@ export interface ProfileIdentity {
   cvUrl: string | null
 }
 
-function EnvoyNavContent({
-  logoUrl,
-  profileIdentity,
-  isOwner
-}: {
-  logoUrl: string | null
-  profileIdentity: ProfileIdentity
-  isOwner: boolean
-}) {
+function EnvoyNavContent({ logoUrl, profileIdentity }: { logoUrl: string | null; profileIdentity: ProfileIdentity }) {
   const { isCollapsed } = useHeroCollapse()
   const { user } = useUser()
   const searchParams = useSearchParams()
@@ -73,7 +66,17 @@ function EnvoyNavContent({
   const cvExt = cvRawFile ? (cvRawFile.split('.').pop() ?? 'pdf') : 'pdf'
   const cvFilename = profileIdentity.cvUrl ? `${(profileIdentity.name ?? 'CV').replace(/\s+/g, '_')}_CV.${cvExt}` : null
 
-  const logoNode = (
+  const logoNodeMobile = (
+    <NextLink variant='unstyled' href='/' className='flex shrink-0 items-center gap-2'>
+      {logoUrl ? (
+        <Logo dark={logoUrl} alt='Herald' size='h-10' />
+      ) : (
+        <span className='font-mono text-sm font-bold tracking-tight'>Herald</span>
+      )}
+    </NextLink>
+  )
+
+  const logoNodeDesktop = (
     <NextLink variant='unstyled' href='/' className='flex shrink-0 items-center gap-2'>
       {logoUrl ? (
         <Logo dark={logoUrl} alt='Herald' size='h-10' text={['Forensic hiring', 'audits']} />
@@ -83,27 +86,16 @@ function EnvoyNavContent({
     </NextLink>
   )
 
-  const dashboardLink = isOwner ? (
-    <NextLink
-      variant='unstyled'
-      href='/candidate'
-      className='font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
-    >
-      Dashboard
-    </NextLink>
-  ) : null
-
   return (
     <>
       <nav className='absolute inset-x-0 top-0 z-50 bg-background/40 backdrop-blur-md'>
-        {/* ── Mobile (< md): Logo LEFT | Dashboard CENTER | Theme+Auth RIGHT ── */}
-        <div className='grid h-14 grid-cols-3 items-center px-4 md:hidden'>
-          <div className='flex items-center'>{logoNode}</div>
-          <div className='flex items-center justify-center'>{dashboardLink}</div>
-          <div className='flex items-center justify-end gap-2'>
+        {/* ── Mobile (< md): Logo LEFT | Theme+Auth RIGHT ── */}
+        <div className='flex h-14 items-center justify-between px-4 md:hidden'>
+          <div className='flex items-center'>{logoNodeMobile}</div>
+          <div className='flex items-center gap-2'>
             <ColorSchemeToggle />
             {user ? (
-              <UserButton />
+              <HeraldUserButton />
             ) : (
               <SignInButton mode='modal'>
                 <Button variant='outline' size='sm' className='text-xs'>
@@ -117,7 +109,7 @@ function EnvoyNavContent({
         {/* ── Desktop (≥ md): Logo absolute-left | centered body column | Theme+Auth absolute-right ── */}
         <div className='relative hidden h-14 md:block'>
           {/* Logo — pinned to viewport left */}
-          <div className='absolute inset-y-0 left-0 flex items-center pl-6'>{logoNode}</div>
+          <div className='absolute inset-y-0 left-0 flex items-center pl-6'>{logoNodeDesktop}</div>
 
           {/* Body column — aligns docked identity with hero avatar */}
           <div className='mx-auto flex h-full max-w-[680px] items-center justify-between px-6'>
@@ -170,13 +162,8 @@ function EnvoyNavContent({
           {/* Theme + Auth — pinned to viewport right */}
           <div className='absolute inset-y-0 right-0 flex items-center gap-2 pr-6'>
             <ColorSchemeToggle />
-            {isOwner ? (
-              <div className='flex items-center gap-3'>
-                {dashboardLink}
-                <UserButton />
-              </div>
-            ) : user ? (
-              <UserButton />
+            {user ? (
+              <HeraldUserButton />
             ) : (
               <SignInButton mode='modal'>
                 <Button variant='outline' size='sm' className='text-xs'>
@@ -190,10 +177,7 @@ function EnvoyNavContent({
 
       {/* Mobile sticky identity bar — below topbar, slides in when hero scrolls away */}
       <div
-        className={cn(
-          'absolute inset-x-0 top-14 z-40 border-b border-border bg-background/40 backdrop-blur-md md:hidden',
-          dockedTransition
-        )}
+        className={cn('absolute inset-x-0 top-14 z-40 bg-background/40 backdrop-blur-md md:hidden', dockedTransition)}
         aria-hidden={!isCollapsed}
       >
         <div className='flex h-12 items-center gap-2.5 px-4'>
@@ -216,19 +200,20 @@ function EnvoyNavContent({
   )
 }
 
-interface EnvoyShellProps {
+export interface EnvoyShellProps {
   children: ReactNode
   logoUrl: string | null
   profileIdentity: ProfileIdentity
+  /** Kept for API compatibility — no longer affects nav rendering. */
   isOwner?: boolean
 }
 
-export function EnvoyShell({ children, logoUrl, profileIdentity, isOwner = false }: EnvoyShellProps) {
+export function EnvoyShell({ children, logoUrl, profileIdentity }: EnvoyShellProps) {
   return (
     <HeroCollapseProvider>
       <div className='relative h-dvh overflow-hidden'>
         <Suspense>
-          <EnvoyNavContent logoUrl={logoUrl} profileIdentity={profileIdentity} isOwner={isOwner} />
+          <EnvoyNavContent logoUrl={logoUrl} profileIdentity={profileIdentity} />
         </Suspense>
         <main className='absolute inset-0 overflow-hidden'>{children}</main>
       </div>
