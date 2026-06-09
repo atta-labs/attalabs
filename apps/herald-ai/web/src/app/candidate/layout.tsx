@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { Settings } from 'lucide-react'
 import { getUserByClerkId } from '@/db/queries'
 import { CandidateShell } from '@/components/portal/CandidateShell'
+import { HeraldAccountMenu } from '@/components/HeraldAccountMenu'
 import type { UILibrary } from '@atta/ui/lib/library-loader'
 
 export default async function CandidateLayout({ children }: { children: React.ReactNode }) {
@@ -43,6 +44,7 @@ export default async function CandidateLayout({ children }: { children: React.Re
           logoTagline={['Forensic hiring', 'audits']}
           signedInLinks={signedInLinks}
           extraActions={extraActions}
+          accountMenu={<HeraldAccountMenu />}
         />
         <main className='flex-1 overflow-hidden'>{children}</main>
       </div>
