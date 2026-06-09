@@ -19,8 +19,9 @@ import {
   useToastContext
 } from '@atta/ui/components'
 import { Download, ExternalLink, Upload, X } from 'lucide-react'
-import { AttaUserProfile, ProviderKeysSection } from '@atta/ui/account'
+import { ProviderKeysSection } from '@atta/ui/account'
 import { AvatarFrame } from '@/components/avatar-frame'
+import { HeraldAccountTab } from '@/components/HeraldAccountTab'
 import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { SummaryMarkdown } from '@/components/summary-markdown'
 
@@ -859,7 +860,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
 
         {/* ── Account ──────────────────────────────────────────── */}
         <TabsContent value='account'>
-          <AttaUserProfile />
+          <HeraldAccountTab />
         </TabsContent>
 
         {/* ── Connections ──────────────────────────────────────── */}
