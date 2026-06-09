@@ -1,3 +1,6 @@
 .vercel
 .env.local.backup
 .env.local.production-snapshot
+
+# clerk configuration (can include secrets)
+/.clerk/
