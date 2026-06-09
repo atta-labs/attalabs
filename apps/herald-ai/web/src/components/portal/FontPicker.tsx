@@ -2,13 +2,7 @@
 
 import { ChevronDown, Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button as BasicButton } from '@atta/ui/components/button'
-import {
-  Popover as BasicPopover,
-  PopoverContent as BasicPopoverContent,
-  PopoverTrigger as BasicPopoverTrigger
-} from '@atta/ui/components/popover'
-import { useComponents } from '@atta/ui/lib/library-provider'
+import { Button, Popover, PopoverContent, PopoverTrigger } from '@atta/ui/components'
 
 const POPULAR_FONTS = [
   'Inter',
@@ -75,11 +69,6 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
   const [hasFetched, setHasFetched] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const fontName = extractFontName(value)
-  const comps = useComponents()
-  const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
-  const Popover = (comps.Popover as typeof BasicPopover | undefined) ?? BasicPopover
-  const PopoverContent = (comps.PopoverContent as typeof BasicPopoverContent | undefined) ?? BasicPopoverContent
-  const PopoverTrigger = (comps.PopoverTrigger as typeof BasicPopoverTrigger | undefined) ?? BasicPopoverTrigger
 
   const fetchFontsIfNeeded = useCallback(async () => {
     if (hasFetched) return

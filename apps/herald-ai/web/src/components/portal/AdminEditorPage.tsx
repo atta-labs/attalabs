@@ -1,9 +1,7 @@
 'use client'
 
 import type { CMSLibrary, CMSTheme } from '@atta/cms'
-import { useToastContext } from '@atta/ui/components'
-import { Button as BasicButton } from '@atta/ui/components/button'
-import { useComponents } from '@atta/ui/lib/library-provider'
+import { Button, useToastContext } from '@atta/ui/components'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { EnvoyPreview } from './EnvoyPreview'
 import { FontPicker } from './FontPicker'
@@ -70,8 +68,6 @@ export function AdminEditorPage({
 
   const { successToast, errorToast } = useToastContext()
   const [saving, setSaving] = useState(false)
-  const comps = useComponents()
-  const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
 
   const sendToPreviewRef = useRef<SendFn | null>(null)
 

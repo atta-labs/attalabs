@@ -2,14 +2,7 @@
 
 import type { CMSLibrary } from '@atta/cms'
 import { Package } from 'lucide-react'
-import {
-  Select as BasicSelect,
-  SelectContent as BasicSelectContent,
-  SelectItem as BasicSelectItem,
-  SelectTrigger as BasicSelectTrigger,
-  SelectValue as BasicSelectValue
-} from '@atta/ui/components/select'
-import { useComponents } from '@atta/ui/lib/library-provider'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@atta/ui/components'
 
 interface LibraryDropdownProps {
   value: string
@@ -18,13 +11,6 @@ interface LibraryDropdownProps {
 }
 
 export function LibraryDropdown({ value, libraries, onChange }: LibraryDropdownProps) {
-  const comps = useComponents()
-  const Select = (comps.Select as typeof BasicSelect | undefined) ?? BasicSelect
-  const SelectContent = (comps.SelectContent as typeof BasicSelectContent | undefined) ?? BasicSelectContent
-  const SelectItem = (comps.SelectItem as typeof BasicSelectItem | undefined) ?? BasicSelectItem
-  const SelectTrigger = (comps.SelectTrigger as typeof BasicSelectTrigger | undefined) ?? BasicSelectTrigger
-  const SelectValue = (comps.SelectValue as typeof BasicSelectValue | undefined) ?? BasicSelectValue
-
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className='h-8 w-36 gap-1.5 px-3 text-xs'>
