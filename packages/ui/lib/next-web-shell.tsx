@@ -1,12 +1,13 @@
 import { buildClerkAppearance } from '@atta/auth'
 import { AuthProvider } from '@atta/auth/provider'
-import { generateThemeCSS, getGoogleFontsUrl, transformColorGroup } from '@atta/cms'
-import type { CMSBranding, PortalUiConfig } from '@atta/cms'
+import { generateThemeCSSForScheme, getGoogleFontsUrl, transformColorGroup } from '@atta/cms'
+import type { CMSBranding, CMSTheme, PortalUiConfig } from '@atta/cms'
 import { cookies } from 'next/headers'
 import type { ReactNode } from 'react'
 import { COLOR_SCHEME_COOKIE, resolveColorScheme, type ColorScheme } from './color-scheme'
 import { CookieNameProvider } from './cookie-name-context'
 import { LibraryProvider } from './library-provider'
+import { ThemeProvider } from './theme-context'
 import type { UILibrary } from './library-loader'
 import { ToastProvider } from '../libraries/basic/components/display/toast'
 
@@ -39,8 +40,9 @@ export async function NextWebShell({
 
   const libraryId = (config?.userInterface?.library?.id ?? 'basic') as UILibrary
 
-  // Emit BOTH light and dark blocks; <html data-theme> picks which is active.
-  const themeCSS = theme ? generateThemeCSS(theme) : null
+  // Emit only the active scheme as plain :root {} — the ColorSchemeToggle swaps the
+  // style tag content on flip rather than relying on attribute-scoped selectors.
+  const themeCSS = theme ? generateThemeCSSForScheme(theme as CMSTheme, colorScheme) : null
   const fontsUrl = theme?.typography ? getGoogleFontsUrl(theme.typography) : null
 
   let appearance: ReturnType<typeof buildClerkAppearance> | undefined
@@ -85,11 +87,13 @@ export async function NextWebShell({
       <body className='min-h-screen bg-background text-foreground'>
         {themeCSS && <style id={styleId} dangerouslySetInnerHTML={{ __html: themeCSS }} />}
         <AuthProvider appearance={appearance}>
-          <LibraryProvider library={libraryId}>
-            <CookieNameProvider cookieName={cookieName}>
-              <ToastProvider defaultPosition='bottom-right'>{children}</ToastProvider>
-            </CookieNameProvider>
-          </LibraryProvider>
+          <ThemeProvider theme={theme as CMSTheme | null} styleId={styleId}>
+            <LibraryProvider library={libraryId}>
+              <CookieNameProvider cookieName={cookieName}>
+                <ToastProvider defaultPosition='bottom-right'>{children}</ToastProvider>
+              </CookieNameProvider>
+            </LibraryProvider>
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>
