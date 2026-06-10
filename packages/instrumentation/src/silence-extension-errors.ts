@@ -47,12 +47,38 @@ if (typeof window !== 'undefined') {
   window.addEventListener(
     'unhandledrejection',
     (event) => {
-      if (isFromExtension((event.reason as Error | undefined)?.stack)) {
+      const reason = event.reason as { stack?: string } | undefined
+      if (isFromExtension(reason?.stack)) {
+        event.stopImmediatePropagation()
         event.preventDefault()
       }
     },
     { capture: true }
   )
+
+  // Patch console.error / console.warn. Turbopack's dev runtime forwards
+  // console output to the terminal as "[browser] ..." even when no error
+  // event fires (some extensions report failures via console.error directly).
+  // Inspect each argument: if any string or Error stack points at an
+  // extension URL, swallow the call.
+  const containsExtensionRef = (arg: unknown): boolean => {
+    if (typeof arg === 'string') return isFromExtension(arg)
+    if (arg instanceof Error) return isFromExtension(arg.stack) || isFromExtension(arg.message)
+    if (arg && typeof arg === 'object') {
+      const obj = arg as { stack?: unknown; message?: unknown }
+      if (typeof obj.stack === 'string' && isFromExtension(obj.stack)) return true
+      if (typeof obj.message === 'string' && isFromExtension(obj.message)) return true
+    }
+    return false
+  }
+
+  for (const method of ['error', 'warn'] as const) {
+    const original = console[method].bind(console)
+    console[method] = (...args: unknown[]) => {
+      if (args.some(containsExtensionRef)) return
+      original(...args)
+    }
+  }
 }
 
 export {}
