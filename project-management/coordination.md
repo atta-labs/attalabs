@@ -58,7 +58,7 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 | `project-management/decisions.md` | Global cross-product decision log. | When decisions are made |
 | `docs-index.md` | Discovery map of repo content. Auto-generated. | When repo files added/removed/renamed |
 
-The product roadmap is **not** an AEG file — it lives in the company's tool (or, for solo AttaLabs work, in the per-product backlogs `apps/<product>/specs/<product>-backlog.md` and `docs/ecosystem-backlog.md`, which are reference docs out of the flow). The old global `roadmap.md` is retired.
+The product roadmap is **not** an AEG file — it lives in the company's tool (or, for solo AttaLabs work, in the backlogs `apps/<product>/specs/<product>-backlog.md` per product and `specs/ecosystem-backlog.md` for the monorepo, which are reference docs out of the flow). The old global `roadmap.md` is retired. **Backlog convention (D-037):** a unit's *plan* lives in its `specs/` (`specs/ecosystem-backlog.md` for the monorepo; `apps/<product>/specs/<product>-backlog.md` per product); a unit's *flow + governance + living state* lives in its `project-management/`.
 
 ### What lives in the repo
 
@@ -141,7 +141,7 @@ You were invoked specifically to review a PR. You run with fresh context on purp
 
 1. **Confirm the PR is merged** — your only hard precondition (forge-derived). If not merged, refuse.
 2. **Read `roles/archivist.md`** — the close-out checklist.
-3. **Work the checklist** — Issue closed, decision logged if Tier 3, changelog appended, docs coherent, per-product `state.md`/`now.md` updated for every product the task listed. Flag (don't perform) orphaned branches and worktree removal. Write no task status — the merge is the status.
+3. **Work the checklist** — Issue closed, decision logged if Tier 3, changelog appended, docs coherent, per-product `state.md`/`now.md` updated for every product the task listed, provenance block posted to the merged PR. Flag (don't perform) orphaned branches and worktree removal. Write no task status — the merge is the status.
 
 ### Hard rule — the spec-check gate
 
@@ -177,7 +177,7 @@ State changes: a product phase advances, an app ships/scaffolds, auth/DNS config
 
 - **Active work changes** (new dispatch, priority shift, blocker resolved, phase completes) → `now.md`
 - **The execution plan changes** (a task's edges, a new task, iteration scope) → the current `iterations/<name>.md` (Planner, at plan time). Live task *status* is never written — it's derived from the forge.
-- **Held/future product items change** → the relevant per-product backlog (`apps/<product>/specs/<product>-backlog.md`) or `docs/ecosystem-backlog.md` — out of the flow.
+- **Held/future product items change** → the relevant per-product backlog (`apps/<product>/specs/<product>-backlog.md`) or the ecosystem backlog (`specs/ecosystem-backlog.md`) — out of the flow.
 - **Work completes and ships** (PR merged) → append to `changelog.md` (most recent first; never edit existing entries)
 - **Lesson learned / anti-pattern** → append to `lessons.md`
 
@@ -202,7 +202,7 @@ Log to `decisions.md` (global) or the per-product log during the conversation. A
 | Current state (product phase, what shipped) | `project-management/state.md` |
 | Active work, next 3 things, manual tasks | `project-management/now.md` |
 | The execution plan (task topology, edges) | `project-management/iterations/<name>.md` |
-| Held / future product items | `apps/{product}/specs/{product}-backlog.md` or `docs/ecosystem-backlog.md` |
+| Held / future product items | `apps/{product}/specs/{product}-backlog.md` (per product) or `specs/ecosystem-backlog.md` (monorepo) |
 | Completed work log (append only) | `project-management/changelog.md` |
 | Calibration lessons + anti-patterns | `project-management/lessons.md` |
 | Items awaiting Principal ratification | `project-management/ratification-queue.md` |
@@ -214,7 +214,8 @@ Log to `decisions.md` (global) or the per-product log during the conversation. A
 
 ## Anti-patterns
 
-- ❌ Reading or writing `roadmap.md` — it's retired; the execution plan is the iteration file, the product roadmap is the company's tool / per-product backlogs
+- ❌ Reading or writing `roadmap.md` — it's retired; the execution plan is the iteration file, the product roadmap is the company's tool / backlogs (`specs/ecosystem-backlog.md`, `apps/*/specs/*-backlog.md`)
+- ❌ Putting a backlog anywhere but a `specs/` folder — the plan lives in `specs/` (D-037); `project-management/` is flow + governance + state only
 - ❌ Writing task status anywhere (a file, the iteration topology, an Issue field) — status is derived from the forge; storing it recreates the racing status model the design eliminated
 - ❌ Adding execution metadata (status, PR #, dates) to the iteration topology file — it is plan topology only (`iterations/README.md` §9)
 - ❌ Putting the brief in the Issue — the brief is just-in-time and lives in the PR body; the Issue is task identity + metadata only
