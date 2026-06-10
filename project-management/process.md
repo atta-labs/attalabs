@@ -1,10 +1,10 @@
 # Process: From idea to merged code
 
-This document describes how work flows through the AEG operational model — from the moment Dani has an idea to the moment that work merges to `main` with all specs, skills, and decision logs updated.
+This document describes how work flows through the AEG operational model — from the moment the Principal has an idea to the moment that work merges to `main` with all specs, skills, and decision logs updated.
 
 It is the canonical "how do we actually work?" document. Every other PM doc (`coordination.md`, `state-machine.md`, `iterations/README.md`, role docs, `brief-authoring` skill) describes a slice of this process. This document stitches them together into a single readable walkthrough.
 
-If you are starting a new Claude session and need to understand the workflow, read this first. Then `coordination.md` for session protocol, then the role doc that applies to you, then any product-specific specs.
+If you are starting a new session and need to understand the workflow, read this first. Then `coordination.md` for session protocol, then the role doc that applies to you, then any product-specific specs.
 
 For the visual schema, see `diagrams/process-flow.md` (being brought in line with the forge-derived-status model; where a diagram and this prose disagree, this prose is canonical).
 
@@ -12,7 +12,7 @@ For the visual schema, see `diagrams/process-flow.md` (being brought in line wit
 
 ## Where tasks come from: the iteration
 
-The eleven phases below are the **per-task** flow. Tasks do not appear from nowhere — they are produced by the **Planner** (a Team Leader mode) when an iteration is planned: the Planner turns an intent plus a slice of tickets into a set of **GitHub Issues** (one per task) plus a thin topology file declaring their `depends-on` / `conflicts-with` edges (`iterations/README.md`, `roles/planner.md`). Each Issue that enters the flow below is a task the Planner already shaped.
+The eleven phases below are the **per-task** flow. Tasks do not appear from nowhere — they are produced by the **Planner** (a Team Leader mode) when an iteration is planned: the Planner turns an intent plus a slice of tickets into a set of **forge Issues** (one per task) plus a thin topology file declaring their `depends-on` / `conflicts-with` edges (`iterations/README.md`, `roles/planner.md`). Each Issue that enters the flow below is a task the Planner already shaped.
 
 **Status is never stored.** Throughout every phase, a task's status is *derived* from the forge — Issue open/assigned, branch existence, PR open, review decision, merge — never written to a label or a file. When a phase below says a task "becomes in-review," it means *a PR was opened*, not that anyone set a status field.
 
@@ -42,9 +42,9 @@ After merge, the **Archivist** runs close-out (`roles/archivist.md`). That's the
 
 ## Phase 1: Idea origination
 
-**Who:** Principal (Dani) and Team Leader (Strategist mode).
+**Who:** Principal and Team Leader (Strategist mode).
 
-Dani brings an idea. The TL pressure-tests, pushes back, surfaces related decisions, checks whether it's already specced. The TL's job is **not** to immediately agree and plan — it's to:
+The Principal brings an idea. The TL pressure-tests, pushes back, surfaces related decisions, checks whether it's already specced. The TL's job is **not** to immediately agree and plan — it's to:
 - Read relevant specs and decision logs to confirm the idea isn't already settled
 - Push back if it's wrong, premature, or duplicative
 - Identify the impact tier (0 / 1 / 3) — this drives everything downstream
@@ -60,9 +60,9 @@ If already locked or specced, the conversation ends here. If genuinely new, it p
 
 ## Phase 2: Pressure-testing (optional)
 
-**When:** high-stakes only — architectural locks, product-direction shifts, decisions blocking weeks of downstream work, or when Principal's instinct and the TL's read disagree. **Not** for tactical decisions, naming, or style. The Principal may waive it and ratify in-session (the decision log notes the skip, for audit honesty).
+**When:** high-stakes only — architectural locks, product-direction shifts, decisions blocking weeks of downstream work, or when the Principal's instinct and the TL's read disagree. **Not** for tactical decisions, naming, or style. The Principal may waive it and ratify in-session (the decision log notes the skip, for audit honesty).
 
-**Who:** TL orchestrates; external AI reviewers (Gemini, Grok, DeepSeek, ChatGPT) participate via pasted briefs.
+**Who:** TL orchestrates; external AI reviewers (vendor-diverse — e.g. Gemini, Grok, DeepSeek, ChatGPT) participate via pasted briefs.
 
 The TL writes a brainstorming brief (idea, sketch, alternatives, what to pushback on), pairs it with `reviewer-prompt.md`, and pastes to each reviewer. The TL synthesizes. Converge on a flaw → back to Phase 1. Validate → proceed. **Max two rounds** — if two don't converge, the issue is framing, not a third round.
 
@@ -76,10 +76,10 @@ This phase pressure-tests an *idea*; Phase 10 reviews *shipped code*. Different 
 
 **Who:** Team Leader in Brief Author mode.
 
-When a task is picked up for execution, the TL writes its brief — **just-in-time, not at plan time** — following `.claude/skills/brief-authoring/SKILL.md`. The brief MUST include:
+When a task is picked up for execution, the TL writes its brief — **just-in-time, not at plan time** — following the `brief-authoring` skill. The brief MUST include:
 - Impact tier (0 / 1 / 3)
 - Type 1 / Type 2 declaration if architectural decisions are expected
-- `principal_delegate:` if the work runs while Dani is offline
+- `principal_delegate:` if the work runs while the Principal is offline
 - Spike flag (`spike: true`) if exploratory
 - The mandatory worktree-first Step 0 (`git worktree add .worktrees/task/<iteration>/<n> -b task/<iteration>/<n> origin/main` — no exceptions)
 - An explicit documentation-update list tied to the tier
@@ -121,7 +121,7 @@ If it fails, it's not dispatchable until fixed. The Developer also re-checks wel
 
 Dispatch starts the task. There are two equivalent routes:
 
-- **Manual:** the Principal pastes the brief into Claude Code. The brief's worktree-first Step 0 makes the Developer create its own worktree (`.worktrees/task/<iteration>/<n>/`, branch `task/<iteration>/<n>`, from `origin/main`) as its first action.
+- **Manual:** the Principal pastes the brief into the coding agent. The brief's worktree-first Step 0 makes the Developer create its own worktree (`.worktrees/task/<iteration>/<n>/`, branch `task/<iteration>/<n>`, from `origin/main`) as its first action.
 - **Automated:** an automation layer (in this repo, Cetana) creates the worktree, generates the agent's config, spawns the Developer in it, and streams progress. This is a convenience; the semantics are identical to manual.
 
 Either way: **before starting, the Developer checks the dispatch gates against the forge** — every `depends-on` task's PR merged, no `conflicts-with` sibling's PR open. If a gate isn't satisfied, it does not start (the task serializes). Opening the branch *is* the `todo → in-flight` transition; nobody writes a status label.
@@ -134,11 +134,11 @@ The branch name `task/<iteration>/<n>` is the convention that links the task to 
 
 ## Phase 6: Execution
 
-**Who:** Developer (Claude Code — spawned or pasted).
+**Who:** Developer (the coding agent — spawned or pasted).
 
 Per `roles/developer.md`, the Developer reads `coordination.md` / `state.md` / `now.md` / its role doc, the relevant skills (auto-loaded when matching code is touched) and product specs, confirms pre-flight (starting with the worktree), and works in small, frequent commits on the `task/<iteration>/<n>` branch. When dispatched by an automation layer, it streams progress events to that layer.
 
-The Developer cannot author its own briefs, expand scope without escalation, modify files outside scope, use `--no-verify`, skip the Task Done checklist, or **write status anywhere** (status is derived). If the brief is wrong or contradicts reality, it escalates (Phase 7) — it does not paper over confusion or improvise outside scope.
+The Developer cannot author its own briefs, expand scope without escalation, modify files outside scope, skip verification hooks, skip the Task Done checklist, or **write status anywhere** (status is derived). If the brief is wrong or contradicts reality, it escalates (Phase 7) — it does not paper over confusion or improvise outside scope.
 
 **Exit:** the work is done (Phase 8), or the Developer is blocked (Phase 7).
 
@@ -170,12 +170,12 @@ The task is marked `blocked` (an `aeg:blocked` label — the one status with no 
 
 **Who:** Developer.
 
-Before opening the PR, the Developer runs the tier-appropriate Task Done checklist (`roles/developer.md`):
+Before opening the PR, the Developer runs the tier-appropriate Task Done checklist (`roles/developer.md`). The commands below are this repo's instances (Bun/JS) — substitute your repo's declared equivalents:
 - **Tier 0:** typecheck + lint, tests if applicable, PR description follows template (and will carry the brief)
-- **Tier 1:** Tier 0 + specs updated, skills updated if conventions shifted, `bun run verify-docs --pr` passes
+- **Tier 1:** Tier 0 + specs updated, skills updated if conventions shifted, `verify-docs --pr` passes
 - **Tier 3:** Tier 1 + decision log entry (status, type, rationale), per-product PM updated if state changed, Lock entry if irreversible, `docs-index.md` regenerated
 
-`bun run verify-docs --pr` is a **real gate** (D-027), the same script CI runs. If any item fails, the Developer fixes or escalates — the PR does not open.
+`verify-docs --pr` is a **real gate** (D-027), the same script CI runs. If any item fails, the Developer fixes or escalates — the PR does not open.
 
 **Exit:** all Task Done items pass.
 
@@ -213,13 +213,13 @@ code-reviewer pass → security pass → Principal code review → TL spec revie
 Each pass is a **separate fresh-context invocation** with no memory of writing the code (the independence rule, D-026). Manual: the Principal pastes the review prompt. Automated: the automation layer dispatches the `code-reviewer` and `security-reviewer` passes. The agent reads its role doc + the PR diff + **the brief in the PR body**, and emits a structured verdict. Review agents do not edit code, do not merge, and do not write status.
 
 1. **Code-reviewer pass** — `roles/reviewer.md`. Brief conformance, scope violations, test honesty, code quality, doc coupling, lock awareness, multi-product reach. Emits `VERDICT: APPROVE | REQUEST CHANGES` (BLOCKER / MAJOR / MINOR).
-2. **Security pass** — `roles/security.md`. Secret leakage, BYOK/crypto, auth/permissions, MCP/agent-tooling exposure, injection surfaces, dependency risk. Runs `npx ecc-agentshield scan .claude` when agent/MCP/hook config is touched (D-028). Emits `VERDICT: PASS | FAIL` (CRITICAL / HIGH / MEDIUM / LOW).
+2. **Security pass** — `roles/security.md`. Secret leakage, BYOK/crypto, auth/permissions, MCP/agent-tooling exposure, injection surfaces, dependency risk. Runs a config-security scan over the agent/MCP/hook config when that config is touched (D-028). Emits `VERDICT: PASS | FAIL` (CRITICAL / HIGH / MEDIUM / LOW).
 
 A BLOCKER (code) or CRITICAL/HIGH (security) returns the PR to the Developer, who fixes on the **same branch**; the pass re-runs. (Pushing fixes returns the PR's review decision to open — the `changes-requested → in-review` transition, derived.) An `[ESCALATE]` finding routes to TL (strategy) or Principal (product).
 
 ### Stage B — Human reviews
 
-**Code review (Principal).** Dani reviews the diff — does it match the brief, scope violations, honest tests, spot-check quality. The agent verdict is an input, not a substitute; the Principal can overrule either way.
+**Code review (Principal).** The Principal reviews the diff — does it match the brief, scope violations, honest tests, spot-check quality. The agent verdict is an input, not a substitute; the Principal can overrule either way.
 
 **Spec review (TL).** Do the specs describe what was built? Are decisions logged in the right files? Is the decision log honest? Coherence, not technical correctness (that's the Principal's code review).
 
@@ -285,7 +285,7 @@ A rollback is its own task with its own brief. The decision to roll back is a Ty
 
 ## How this process maps to file artifacts
 
-For which files get mutated in which phase by which actor, see `state-machine.md` (the artifact + mutation matrix). For the visual schema, see `diagrams/process-flow.md`. For the roles, see `roles/principal.md`, `team-leader.md` (incl. Planner mode), `developer.md`, `reviewer.md`, `security.md`, `archivist.md`. For the iteration/task model, see `iterations/README.md` and `roles/planner.md`. For brief authoring, see `.claude/skills/brief-authoring/SKILL.md`.
+For which files get mutated in which phase by which actor, see `state-machine.md` (the artifact + mutation matrix). For the visual schema, see `diagrams/process-flow.md`. For the roles, see `roles/principal.md`, `team-leader.md` (incl. Planner mode), `developer.md`, `reviewer.md`, `security.md`, `archivist.md`. For the iteration/task model, see `iterations/README.md` and `roles/planner.md`. For brief authoring, see the `brief-authoring` skill.
 
 ---
 
@@ -312,4 +312,4 @@ New product specs and major feature specs (Tier 1 / Tier 3); the "Goal" section 
 Existing specs are not migrated wholesale; a spec adopts this format when it's next rewritten for other reasons.
 
 ### Why
-Spec Kit's evaluation found the template produces measurably better-structured artifacts — explicit priority, visible ambiguities, success tied to user-observable outcomes. Atta adopts the format without adopting Spec Kit the tool — see `apps/cetana-ai/specs/cetana-backlog.md` for the V0.7+ question of whether Cetana eventually wraps Spec Kit templates as MCP tools.
+Spec Kit's evaluation found the template produces measurably better-structured artifacts — explicit priority, visible ambiguities, success tied to user-observable outcomes. The repo adopts the format without adopting Spec Kit the tool — see `apps/cetana-ai/specs/cetana-backlog.md` for the V0.7+ question of whether Cetana eventually wraps Spec Kit templates as MCP tools.
