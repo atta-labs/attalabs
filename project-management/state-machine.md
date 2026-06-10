@@ -1,8 +1,8 @@
-# State Machine — the Atta Agentic Execution Governance (AEG) Model
+# State Machine — the Agentic Execution Governance (AEG) Model
 
-The constitution. This document defines the **Atta Agentic Execution Governance (AEG)** model — the authoritative reference for artifacts, mutation permissions, authority hierarchy, escalation paths, and governance mechanics. AEG is governance plus orchestration of delegated AI execution; it is not project management (there is no product plan, timeline, or resource tracking here).
+The constitution. This document defines the **Agentic Execution Governance (AEG)** model — the authoritative reference for artifacts, mutation permissions, authority hierarchy, escalation paths, and governance mechanics. AEG is governance plus orchestration of delegated AI execution; it is not project management (there is no product plan, timeline, or resource tracking here).
 
-**AEG is forge-native, orchestrator-independent.** It depends on a Git forge (GitHub) as its source of truth for execution state — task status is *derived* from Issue/branch/PR/merge state, never stored. It does not depend on any orchestration tool. Where this document names Cetana, it is naming *this repo's* orchestration tool by way of example; AEG itself names no tool, and a tool may know AEG while AEG does not know the tool.
+**AEG is forge-native, orchestrator-independent.** It depends on a Git forge (GitHub/GitLab) as its source of truth for execution state — task status is *derived* from Issue/branch/PR/merge state, never stored. It does not depend on any orchestration tool. Where this document names a specific tool (in this repo, Cetana), it is naming *this repo's* orchestration tool by way of example; AEG itself names no tool, and a tool may know AEG while AEG does not know the tool.
 
 If you are unsure whether an action is permitted, the answer is here. If a role doc and this document conflict, this document wins.
 
@@ -12,7 +12,7 @@ For the prose walkthrough (eleven phases), see `process.md`. For the iteration/t
 
 ## Section 1: Purpose
 
-The Atta operational model is not role-based. It is a **state transition system**.
+The operational model is not role-based. It is a **state transition system**.
 
 Artifacts have states. Roles are interfaces authorized to trigger certain transitions:
 
@@ -23,11 +23,11 @@ Artifact class
   → escalation path (what happens when a decision exceeds role authority)
 ```
 
-Roles exist because different decisions require different accountability levels. The Principal (Dani) is accountable for irreversible (Type 1) decisions. The Team Leader is accountable for reversible (Type 2) decisions within a ratification window. The Developer executes. The Reviewer (code and security specializations) judges shipped code with fresh context but cannot mutate it. The Archivist closes out.
+Roles exist because different decisions require different accountability levels. The Principal is accountable for irreversible (Type 1) decisions. The Team Leader is accountable for reversible (Type 2) decisions within a ratification window. The Developer executes. The Reviewer (code and security specializations) judges shipped code with fresh context but cannot mutate it. The Archivist closes out.
 
 The conversational role set is: **Principal, Team Leader, Developer, Reviewer** (plus the non-conversational Archivist). This four-role model was established by D-026 (superseding the original three-role D-001 to add the Reviewer). The **Team Leader has three modes** — Strategist, Planner, Brief Author (`roles/team-leader.md`, `roles/planner.md`) — but they are modes of one role, not new roles; the role count is unchanged. Security is a specialization of Reviewer, not a separate role.
 
-**A task is a GitHub Issue, and its status is derived, never stored** (see Section 2, Class 2, and `iterations/README.md` §3). No role writes a status field; transitions are facts about the forge (branch exists, PR open, review decision, merged).
+**A task is a forge Issue, and its status is derived, never stored** (see Section 2, Class 2, and `iterations/README.md` §3). No role writes a status field; transitions are facts about the forge (branch exists, PR open, review decision, merged).
 
 "What can I do?" → the mutation permission matrix. "Whose decision is this?" → the authority hierarchy. "What if I'm stuck?" → the escalation paths. "Is what I'm doing consistent with what was decided?" → the decision logs.
 
@@ -39,7 +39,7 @@ Every artifact falls into one of five persistence classes. Persistence class det
 
 ### Class 1: Repo files (canonical, git-tracked)
 
-**What:** Specs (`apps/*/specs/*.md`), skills (`.claude/skills/*/SKILL.md`), agent definitions (`.claude/agents/*.md`), PM docs (`project-management/*.md`, `roles/*.md`, `iterations/*.md`, `diagrams/*.md`), source code, decision logs (per-product `*-decisions.md` + global `decisions.md`), scripts, CI workflows.
+**What:** Specs (`apps/*/specs/*.md`), skills (canonical `project-management/skills/*/SKILL.md`, with a generated agent-surface view e.g. `.claude/skills/*` — D-039), agent definitions, PM docs (`project-management/*.md`, `roles/*.md`, `iterations/*.md`, `diagrams/*.md`), source code, decision logs (per-product `*-decisions.md` + global `decisions.md`), scripts, CI workflows.
 
 **Persistence:** Survives anything short of repo deletion. Git history preserves every mutation with authorship and timestamp.
 
@@ -47,7 +47,7 @@ Every artifact falls into one of five persistence classes. Persistence class det
 **Mutate:** PR opened by Developer, reviewed by Reviewer (code + security) and TL (specs) and Principal (code), merged by Principal.
 **Read-only:** All roles always.
 
-### Class 2: GitHub objects (the forge — execution state + audit)
+### Class 2: Forge objects (execution state + audit)
 
 **What:** Issues (a task **is** an Issue — identity + metadata: tier label, product label, ticket link, dependency/conflict references), Pull Requests, review decisions, CI run results, Issue/PR comments.
 
@@ -85,7 +85,7 @@ This is a tool detail, not part of the AEG model. Nothing canonical depends on i
 
 ### Class 5: Conversation logs (ephemeral)
 
-**What:** Chat sessions (Claude Desktop, web, Claude Code); an orchestration tool's progress events.
+**What:** Chat sessions (any chat or coding-agent surface); an orchestration tool's progress events.
 
 **Persistence:** Ephemeral; not reliably retrievable across sessions.
 
@@ -105,31 +105,31 @@ Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer i
 | **Iteration topology files** (`iterations/*.md`) | Approves PR | Writes (Planner mode) at plan time — task→issue map + edges + grouping; **no status, no PR numbers, no dates** | — | Flags execution-metadata creep in drift cron |
 | **Task Issues** (identity + metadata) | Approves merge | Creates (Planner mode); metadata only — no brief, no status, no planning fields | Reads; references via `Closes #N` | Validates template (no forbidden fields) |
 | **Briefs (dispatched)** | Can amend via reply to escalation | Can amend via reply to escalation — logged as an event, NOT a brief edit | Reads only — brief is frozen after dispatch; escalate if wrong | Cannot mutate |
-| **Briefs (pre-dispatch)** | Approves the brief | Writes the brief just-in-time per `.claude/skills/brief-authoring/SKILL.md`; pastes to Developer (lands in PR body) | — | Validates structure; flags malformed (`needs:brief-correction`) |
+| **Briefs (pre-dispatch)** | Approves the brief | Writes the brief just-in-time per the `brief-authoring` skill; pastes to Developer (lands in PR body) | — | Validates structure; flags malformed (`needs:brief-correction`) |
 | **Specs** (`apps/*/specs/*.md`) | Approves PR; ratifies via D-### if spec-only | Coherence review on PR; can open spec-only PRs | Writes in PR per brief scope | Validates cross-references; flags stale specs in drift cron |
 | **Decision logs** (per-product + global) | Approves Type 1 entries; ratifies PENDING Type 2 at windows | Appends Type 2 entries; announces Type 1 to ratification queue | Appends in PR per brief scope | Validates D-### sequence and supersession integrity |
-| **Skills** (`.claude/skills/*/SKILL.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale skill references in drift cron |
-| **Agent defs** (`.claude/agents/*.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale agent references in drift cron |
+| **Skills** (canonical `project-management/skills/*/SKILL.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale skill references in drift cron |
+| **Agent defs** | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale agent references in drift cron |
 | **`state.md`**, **`now.md`** | Approves PR | Writes in PR (append-style for `now.md`) | Flags state changes needed in PR description | Updates per-product PM at close-out, for every product the task listed |
-| **Per-product backlogs** (`apps/*/specs/*-backlog.md`), `docs/ecosystem-backlog.md` | Approves PR | Writes (held/future items — out of the flow) | — | — |
+| **Per-product backlogs** (`apps/*/specs/*-backlog.md`), `specs/ecosystem-backlog.md` | Approves PR | Writes (held/future items — out of the flow) | — | — |
 | **`changelog.md`** | Approves PR | Appends per PR (never edits existing) | — | Appends at close-out |
 | **`lessons.md`** | Approves PR | Appends lessons; monthly review | — | — |
 | **`coordination.md`**, **`state-machine.md`** | Approves PR; final authority on system-level rule changes | Proposes changes via PR | — | Flags inconsistencies in drift cron |
 | **`thinking.md`** | Reads | Writes freely in any TL session (best-effort, optional) | Reads | Flags if untouched >7 days |
 | **`ratification-queue.md`** | Approves/rejects/defers items at windows | Appends items; marks resolved after Principal action | Appends via escalation (`severity: product`) | — |
 | **Source code** | Merges PR | — | Writes in PR per brief scope; opens PR | — |
-| **GitHub labels** (tier, `aeg:blocked`, `needs:*-input`) | — | Writes (by hand or via an automation layer) | Writes (by hand or via an automation layer) | Writes via automation |
+| **Forge labels** (tier, `aeg:blocked`, `needs:*-input`) | — | Writes (by hand or via an automation layer) | Writes (by hand or via an automation layer) | Writes via automation |
 | **Task status** | — | — | — | — *(nobody writes it — derived from the forge)* |
 | **Provenance block** (on the merged PR) | Reads (audit) | Reads (audit) | — | Assembles + posts at close-out (append-only; from frozen facts) |
 | **Worktrees** | Removes after merge | — | Works in (created at dispatch) | Flags merged worktrees as cleanup candidates |
 | **Orchestration-tool runtime** (if used) | Edits config; reads (audit) | Reads | Appends events via the tool | — |
-| **CI/GitHub Actions** | Approves workflow changes via PR | Proposes workflow changes via PR | — | Runs as GitHub Actions automation |
+| **CI/forge Actions** | Approves workflow changes via PR | Proposes workflow changes via PR | — | Runs as forge-CI automation |
 
 ### Reviewer & Security review authority (D-026, extended by D-030)
 
 The Reviewer role has two specializations — code review (`roles/reviewer.md`) and security review (`roles/security.md`) — and one narrow authority profile:
 
-- **Read:** all Class 1 (repo) and Class 2 (GitHub) artifacts, plus the brief (in the PR body) and the PR diff. **Including the `Product:` spec(s) in `apps/*/specs/`** — the code Reviewer checks the diff for **spec-conformance**, not only brief-conformance (D-030): a diff can satisfy its brief and still contradict or drift from the product's specced behavior, and catching that gap is the Reviewer's job. A spec **contradiction** is a BLOCKER; **drift** is a MAJOR finding; if the diff is right but the spec is stale, that is a `severity:strategy` escalation, not a failure. This adds **no new persistent artifact** — it reads the product spec that already exists. Always read-only on canonical artifacts.
+- **Read:** all Class 1 (repo) and Class 2 (forge) artifacts, plus the brief (in the PR body) and the PR diff. **Including the `Product:` spec(s) in `apps/*/specs/`** — the code Reviewer checks the diff for **spec-conformance**, not only brief-conformance (D-030): a diff can satisfy its brief and still contradict or drift from the product's specced behavior, and catching that gap is the Reviewer's job. A spec **contradiction** is a BLOCKER; **drift** is a MAJOR finding; if the diff is right but the spec is stale, that is a `severity:strategy` escalation, not a failure. This adds **no new persistent artifact** — it reads the product spec that already exists. Always read-only on canonical artifacts.
 - **Write:** PR review verdicts and review comments only (a Class 2 object). The verdict is the structured block in the role doc (`APPROVE | REQUEST CHANGES` for code, with a `SPEC CONFORMANCE` line; `PASS | FAIL` for security). A REQUEST CHANGES sets the PR's review decision, which is the derived `changes-requested` status — the Reviewer writes no status field.
 - **Cannot:** edit code, specs, skills, decision logs, PM docs; mutate labels; or merge. The Reviewer reports; the Developer remediates; the Principal merges.
 - **Independence:** fresh context (a separate invocation), never reviewing work it authored. This is the whole point.
@@ -218,7 +218,7 @@ Most specs are `draft` — no deliberate ratification pass has been done. Future
 
 **Append-only invariant:** logs are never edited in place. Status changes are new entries referencing the old via `Supersedes:`; the original gets `Superseded by:` filled and its `Status:` flipped to SUPERSEDED, body otherwise unchanged.
 
-**Numbering is per-log, not globally unique.** Each log carries its own `D-###` sequence; numbers collide across logs deliberately. The legacy Vāda log (`apps/vada-ai/specs/vada-decisions.md`) runs its own sequence (to D-034); the Cetana log (`apps/cetana-ai/specs/cetana-decisions.md`) runs its own. There is a Vāda D-025 and a global D-025 and they are different decisions. **Always disambiguate by naming the log** (e.g. "global D-026", "vada-decisions D-033"). The global log has apparent gaps because some early v3 decisions were filed in product logs. Within any single log, numbers are sequential and append-only; the Archivist validates within-log sequencing (Section 12).
+**Numbering is per-log, not globally unique.** Each log carries its own `D-###` sequence; numbers collide across logs deliberately. The legacy Vāda log (`apps/vada-ai/specs/vada-decisions.md`) runs its own sequence; the Cetana log (`apps/cetana-ai/specs/cetana-decisions.md`) runs its own. There is a Vāda D-025 and a global D-025 and they are different decisions. **Always disambiguate by naming the log** (e.g. "global D-026", "vada-decisions D-033"). The global log has apparent gaps because some early v3 decisions were filed in product logs. Within any single log, numbers are sequential and append-only; the Archivist validates within-log sequencing (Section 12).
 
 ---
 
@@ -264,7 +264,7 @@ Every piece of work is assigned an impact tier; the tier determines required doc
 
 **Tier 0 — Trivial.** Isolated, no API/contract changes, no patterns shifted. Required: code comments where non-obvious, PR description following template, declare `Tier: 0` in the PR body.
 
-**Tier 1 — Implementation.** A meaningful feature/fix within existing architectural contracts. Required: Tier 0 + specs updated, skills updated if conventions shifted, `bun run verify-docs --pr` passes.
+**Tier 1 — Implementation.** A meaningful feature/fix within existing architectural contracts. Required: Tier 0 + specs updated, skills updated if conventions shifted, `verify-docs --pr` passes.
 
 **Tier 3 — Product/roadmap.** No Tier 2 (deliberately eliminated; disputes go to Tier 3). Qualifies when ANY of: introduces/breaks public contracts; changes roadmap sequencing or product direction; creates/modifies ACTIVE locks; requires Type 1 decisions; affects more than one product boundary; changes persistence/storage semantics; changes escalation/governance rules; requires Principal ratification to continue. Required: Tier 1 + decision entry (status, type, rationale, alternatives), PM docs updated if state changed, Lock entry if irreversible, `docs-index.md` regenerated. Merge during a ratification window.
 
@@ -282,7 +282,7 @@ Every piece of work is assigned an impact tier; the tier determines required doc
 
 **Does NOT wait:** Tier 0/1 merges (anytime); `severity: execution`/`strategy` escalations (TL resolves); Type 2 decisions made with the Principal present.
 
-**Cadence:** Dani sets the times; the queue assumes no specific schedule. Items append to `ratification-queue.md`. **TL responsibility:** before the window, ensure pending items are appended with enough context to decide without follow-up; after, update artifacts to reflect what was ratified.
+**Cadence:** the Principal sets the times; the queue assumes no specific schedule. Items append to `ratification-queue.md`. **TL responsibility:** before the window, ensure pending items are appended with enough context to decide without follow-up; after, update artifacts to reflect what was ratified.
 
 ---
 
@@ -306,7 +306,7 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 
 ### Enforced (CI blocks merge)
 
-- **Tier-appropriate documentation** — `scripts/verify-docs.ts` checks the PR's tier has the corresponding artifact changes; fails CI if missing. **Real (D-027)**, not a stub. The blocking workflow is installed at `.github/workflows/verify-docs.yml`. The gate also runs locally via `bun run verify-docs --pr`. (In observe mode this runs report-only.)
+- **Tier-appropriate documentation** — the `verify-docs` script checks the PR's tier has the corresponding artifact changes; fails CI if missing. **Real (D-027)**, not a stub. The blocking workflow is installed at `.github/workflows/verify-docs.yml`. The gate also runs locally (this repo: `bun run verify-docs --pr`). (In observe mode this runs report-only.)
 - **Typecheck, lint, tests** — standard CI gates; always blocking.
 - **Issue template / no forbidden fields** — a required Issue template + a CI check reject planning metadata (priority/estimates/points) on task Issues, keeping them execution-only.
 - **Brief validation** — Archivist Action checks brief structure; flags malformed briefs (`needs:brief-correction`). (Stub today; full implementation V0.7.)
@@ -325,7 +325,7 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 
 - `[skip-archivist]` in a commit message: suppresses Archivist advisory comments.
 - `override:docs` PR label (or `[override:docs]` in the body, or `OVERRIDE_DOCS=1`): suppresses the verify-docs gate for this PR.
-- Author should be the Principal (verified by the GitHub commit author field).
+- Author should be the Principal (verified by the forge commit author field).
 
 Every override is logged (verify-docs prints that the override was active; the Archivist records it). This is an audit mechanism, not a security one — the Principal can always override; the log keeps it visible.
 
