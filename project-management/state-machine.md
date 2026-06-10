@@ -129,11 +129,13 @@ Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer i
 
 The Reviewer role has two specializations — code review (`roles/reviewer.md`) and security review (`roles/security.md`) — and one narrow authority profile:
 
-- **Read:** all Class 1 (repo) and Class 2 (GitHub) artifacts, plus the brief (in the PR body) and the PR diff. **Including the `Product:` spec(s) in `apps/*/specs/`** — the code Reviewer checks the diff for **spec-conformance**, not only brief-conformance (D-030): a diff can satisfy its brief and still contradict or drift from the product's specced behavior, and catching that gap is the Reviewer's job. A spec **contradiction** is a BLOCKER; **drift** is a MAJOR finding; if the diff is right but the spec is stale, that is a `severity:strategy` escalation, not a failure. This adds **no new persistent artifact** — it reads the product spec that already exists. Always read-only on canonical artifacts.
-- **Write:** PR review verdicts and review comments only (a Class 2 object). The verdict is the structured block in the role doc (`APPROVE | REQUEST CHANGES` for code, with a `SPEC CONFORMANCE` line; `PASS | FAIL` for security). A REQUEST CHANGES sets the PR's review decision, which is the derived `changes-requested` status — the Reviewer writes no status field.
-- **Cannot:** edit code, specs, skills, decision logs, PM docs; mutate labels; or merge. The Reviewer reports; the Developer remediates; the Principal merges.
+- **Read:** all Class 1 (repo) and Class 2 (GitHub) artifacts, plus the brief (in the PR body) and the PR diff. **Including the `Product:` spec(s) in `apps/*/specs/`** — the code Reviewer cross-checks the diff for **spec-conformance** in addition to brief-conformance (D-030): a diff can satisfy its brief and still diverge from the product's specced behavior, and noticing that is useful. **But spec-conformance is advisory, never blocking** — because specs are mostly unratified and out-of-flow (D-005), a stale or draft spec must not be able to veto correct code. So the Reviewer surfaces spec divergence as an advisory finding and, where it matters, a `severity:strategy` escalation ("is the spec stale, or the code wrong?"); it never sets a BLOCKER on spec grounds. Only brief-conformance, correctness, safety, scope, and honest-tests can block. This adds **no new persistent artifact** — it reads the product spec that already exists. Always read-only on canonical artifacts.
+- **Write:** PR review verdicts and review comments only (a Class 2 object). The verdict is the structured block in the role doc (`APPROVE | REQUEST CHANGES` for code, with an advisory `SPEC CONFORMANCE` line; `PASS | FAIL` for security). A REQUEST CHANGES sets the PR's review decision, which is the derived `changes-requested` status — the Reviewer writes no status field.
+- **Cannot:** edit code, specs, skills, decision logs, PM docs; mutate labels; merge; or block a PR on spec-conformance grounds (that's advisory). The Reviewer reports; the Developer remediates; the Principal merges.
 - **Independence:** fresh context (a separate invocation), never reviewing work it authored. This is the whole point.
 - **Escalation:** a finding that exceeds review authority is marked `[ESCALATE] severity:strategy|product` and routed to the TL or Principal.
+
+(Deep whole-product coherence at iteration close — the *Integrity Reviewer* — is a separate, future concern, not this per-PR Reviewer; see `docs/ecosystem-backlog.md`.)
 
 Because the Reviewer never mutates a canonical artifact, it has no column. Its position is Phase 10 (`process.md`): code-reviewer pass → security pass → Principal code review → TL spec review → merge.
 
@@ -190,7 +192,7 @@ A spec file exists in one of four states:
 
 Most specs are `draft` — no deliberate ratification pass has been done. Future PRs ratify as appropriate.
 
-> Note (D-030): the Reviewer's spec-conformance check (§3) reads the product spec **as written** — at whatever ratification state it currently holds. A `draft` spec is still the product's stated intent and is checked against; a contradiction with a `ratified` spec is the most serious. The Reviewer never edits the spec; if it's wrong, that's an escalation.
+> Note (D-030): the Reviewer's spec-conformance check (§3) reads the product spec **as written** — at whatever ratification state it currently holds — and is **advisory only**. A `draft` spec is still the product's stated intent and is worth cross-checking against, but precisely because most specs are unratified, divergence is a flag for a human, never an automatic block. The Reviewer never edits the spec; if it's wrong, that's a `severity:strategy` escalation. (A future spec refresh-and-ratify pass — see `docs/ecosystem-backlog.md` — is what would let conformance against a `ratified` spec carry more weight.)
 
 ---
 
@@ -234,7 +236,7 @@ When a Developer reaches a decision not covered by the brief, it escalates throu
 
 **`severity: product`** — requires a Principal decision. Rare; reserved for Type 1 decisions discovered during execution. Adds `needs:principal-input`. If the Principal is present, they decide and reply; if not, the item goes to `ratification-queue.md` and the Developer terminates, resuming via a follow-up dispatch after the window.
 
-While blocked, the task carries an `aeg:blocked` label (the one status with no native forge fact). The Reviewer uses the same severity vocabulary for `[ESCALATE]` findings.
+While blocked, the task carries an `aeg:blocked` label (the one status with no native forge fact). The Reviewer uses the same severity vocabulary for `[ESCALATE]` findings — including advisory spec divergence (`severity:strategy`).
 
 ### Type 1 decisions during execution
 
@@ -314,7 +316,7 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 
 ### Trusted (agent discipline — no CI enforcement in V0)
 
-- **Code-review and security passes** — Phase 10 requires them (D-026), including the spec-conformance check (D-030), but no CI bot dispatches them automatically yet; Principal + agent discipline. Automating dispatch is future work.
+- **Code-review and security passes** — Phase 10 requires them (D-026), including the advisory spec-conformance check (D-030), but no CI bot dispatches them automatically yet; Principal + agent discipline. Automating dispatch is future work.
 - **Dispatch gates** (depends-on merged / no conflicting PR open) — read from the forge and complied with; mechanical enforcement arrives when an automation tool runs dispatch (`iterations/README.md` §8).
 - **Provenance assembly at close-out** (D-030) — the Archivist assembles it; trusted discipline today, automatable later. It records, it never gates.
 - **Decision logging during chat** — TL announces and logs during the conversation; CI cannot verify.
