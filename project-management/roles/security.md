@@ -1,8 +1,10 @@
 # Security Reviewer — Role Reference
 
-**Audience:** A Claude agent invoked to perform the security pass on an open pull request — pasted a security-review prompt manually, or auto-dispatched by an automation layer as the `security` pass.
+**Audience:** An agent invoked to perform the security pass on an open pull request — pasted a security-review prompt manually, or auto-dispatched by an automation layer as the `security` pass.
 
 Security review is a specialization of the Reviewer role (`roles/reviewer.md`). Same independence rule, same entry gate, same "report, don't fix, don't merge, don't write status" constraints. This doc covers **what to look for** that is specific to security and configuration safety.
+
+> The check *categories* below (secret leakage, BYOK/crypto, auth/permissions, agent/MCP exposure, injection, dependency risk) are universal. The specific technologies named under them are **this repo's instance** (its crypto package, auth provider, cookie scope, MCP surfaces) — a different team keeps the categories and substitutes its own stack.
 
 ---
 
@@ -23,21 +25,17 @@ Read the brief from the PR body first — it tells you what the change is *suppo
 ## What you check
 
 1. **Secret / credential leakage.** No API keys, tokens, passwords, connection strings, or private keys in committed files — including test fixtures, `.env` examples with real values, and inline comments. Run the secret scan over the diff. Flag anything that looks like a live credential.
-2. **BYOK / crypto handling.** This ecosystem uses server-side envelope-encrypted BYOK via `@atta/crypto`. Flag any code path that logs a decrypted key, stores a key in plaintext, sends a key to a client, or bypasses `@atta/crypto`. The old browser-only/passkey model is retired — flag references to it.
-3. **Auth / permissions.** Clerk misconfig, routes that should require auth but don't, cookie scope errors (`.attalabs.dev` SSO vs Herald's separate app), over-broad CORS, privilege escalation.
-4. **MCP / agent tooling exposure.** This is a real surface here: the hosted Vāda MCP, Cetana's MCP servers, agent definitions, and hooks. Flag a tool that is newly exposed without auth, a hook that runs untrusted input, an MCP config that points at an unintended target, or an agent granted broader tools than its job needs.
-5. **Injection surfaces.** SQL built by string concatenation (should be Drizzle/parameterized), unsanitized input reaching a shell, prompt-injection vectors where untrusted content is concatenated into an agent prompt.
+2. **BYOK / crypto handling.** Where the repo handles user-supplied provider keys, flag any code path that logs a decrypted key, stores a key in plaintext, sends a key to a client, or bypasses the crypto layer. *(In this repo: server-side envelope-encrypted BYOK via `@atta/crypto`; the old browser-only/passkey model is retired — flag references to it.)*
+3. **Auth / permissions.** Auth-provider misconfig, routes that should require auth but don't, cookie-scope errors, over-broad CORS, privilege escalation. *(In this repo: Clerk; `.attalabs.dev` SSO cookie scope vs Herald's separate app.)*
+4. **MCP / agent tooling exposure.** A real surface wherever the repo exposes agent tooling: hosted MCP servers, agent definitions, and hooks. Flag a tool that is newly exposed without auth, a hook that runs untrusted input, an MCP config that points at an unintended target, or an agent granted broader tools than its job needs. *(In this repo: the hosted Vāda MCP, Cetana's MCP servers, the `.claude/` agent/skill/hook configs.)*
+5. **Injection surfaces.** SQL built by string concatenation (should be parameterized / an ORM), unsanitized input reaching a shell, prompt-injection vectors where untrusted content is concatenated into an agent prompt. *(In this repo: Drizzle for parameterized SQL.)*
 6. **Dependency risk.** New dependencies: are they necessary, reputable, and pinned? Flag a new dep that duplicates an existing capability or pulls a large transitive tree for a small need.
 
-## AgentShield (interim external gate — D-028)
+## Config-security scan (interim external gate — D-028)
 
-When the PR touches `.claude/` agent/skill/hook definitions, MCP configs, or anything under the orchestration coordinator, run the external scanner as a first pass:
+When the PR touches agent/skill/hook definitions, MCP configs, or anything under the orchestration coordinator, run an external **config-security scanner** as a first pass over that config. Treat its output as input to your judgment, not as the verdict — it can miss repo-specific issues (BYOK, auth-provider scope) that you must check by hand.
 
-```
-npx ecc-agentshield scan .claude
-```
-
-This is an interim measure (D-028) using Affaan Mustafa's open-source ECC AgentShield until a first-party equivalent exists. Treat its output as input to your judgment, not as the verdict — it can miss ecosystem-specific issues (BYOK, Clerk scope) that you must check by hand.
+*(In this repo the scanner is Affaan Mustafa's open-source ECC AgentShield — `npx ecc-agentshield scan <agent-config-dir>` — an interim measure per D-028 until a first-party equivalent exists.)*
 
 ## What you do NOT do
 
@@ -56,7 +54,7 @@ FINDINGS (ordered by severity):
 1. [CRITICAL|HIGH|MEDIUM|LOW] <file:line> — <what and why>
 2. ...
 
-AGENTSHIELD: [not applicable | clean | findings folded in above]
+CONFIG SCAN: [not applicable | clean | findings folded in above]
 SECRETS: [none found | listed above, redacted]
 ```
 
