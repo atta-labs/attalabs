@@ -2,6 +2,7 @@
 
 import { Loader2, Maximize2, Minimize2, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { Button } from '@atta/ui/components'
 
 interface PortalPreviewFrameProps {
   isReady: boolean
@@ -72,29 +73,27 @@ export function PortalPreviewFrame({
           <div className='flex items-center gap-4'>
             <h3 className='font-display text-sm font-semibold'>{title}</h3>
             <div className='flex items-center gap-2'>
-              <div className={`h-2 w-2 rounded-full ${isReady ? 'bg-green-500' : 'bg-yellow-500'}`} />
+              <div className={`h-2 w-2 rounded-full ${isReady ? 'bg-success' : 'bg-warning'}`} />
               <span className='font-mono text-[10px] text-muted-foreground'>
                 {isReady ? 'Connected' : 'Connecting...'}
               </span>
             </div>
           </div>
           <div className='flex gap-2'>
-            <button
-              type='button'
-              onClick={onRefresh}
-              className='flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/5'
-            >
+            <Button type='button' variant='ghost' size='sm' onClick={onRefresh} className='h-8 gap-1.5 px-2 text-xs'>
               <RefreshCw className='h-3.5 w-3.5' />
               Refresh
-            </button>
-            <button
+            </Button>
+            <Button
               type='button'
+              variant='outline'
+              size='sm'
               onClick={toggleFullscreen}
-              className='flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/5'
+              className='h-8 gap-1.5 px-2 text-xs'
             >
               <Minimize2 className='h-3.5 w-3.5' />
               Exit
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -119,7 +118,7 @@ export function PortalPreviewFrame({
         {!isFullscreen && (
           <div className='absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-full border bg-background/90 px-3 py-1.5 shadow-sm backdrop-blur-sm'>
             <div className='flex items-center gap-1.5'>
-              <div className={`h-1.5 w-1.5 rounded-full ${isReady ? 'bg-green-500' : 'bg-yellow-500'}`} />
+              <div className={`h-1.5 w-1.5 rounded-full ${isReady ? 'bg-success' : 'bg-warning'}`} />
               <span className='font-mono text-[9px] text-muted-foreground'>
                 {isReady ? 'Connected' : 'Connecting...'}
               </span>
@@ -135,21 +134,13 @@ export function PortalPreviewFrame({
               </a>
             )}
             <div className='flex gap-0.5'>
-              <button
-                type='button'
-                onClick={onRefresh}
-                className='rounded p-1 text-muted-foreground hover:bg-foreground/5'
-              >
+              <Button type='button' variant='ghost' size='icon' onClick={onRefresh} className='h-6 w-6'>
                 <RefreshCw className='h-3 w-3' />
-              </button>
+              </Button>
               {enableFullscreen && (
-                <button
-                  type='button'
-                  onClick={toggleFullscreen}
-                  className='rounded p-1 text-muted-foreground hover:bg-foreground/5'
-                >
+                <Button type='button' variant='ghost' size='icon' onClick={toggleFullscreen} className='h-6 w-6'>
                   <Maximize2 className='h-3 w-3' />
-                </button>
+                </Button>
               )}
             </div>
           </div>

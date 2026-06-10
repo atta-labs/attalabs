@@ -1,8 +1,8 @@
 'use client'
 
 import { ChevronDown, Loader2, Search } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Popover, PopoverContent, PopoverTrigger } from '@atta/ui/components'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Button, Input, Popover, PopoverContent, PopoverTrigger } from '@atta/ui/components'
 
 const POPULAR_FONTS = [
   'Inter',
@@ -67,7 +67,6 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
   const [allFonts, setAllFonts] = useState<string[]>(POPULAR_FONTS)
   const [isLoading, setIsLoading] = useState(false)
   const [hasFetched, setHasFetched] = useState(false)
-  const searchRef = useRef<HTMLInputElement>(null)
   const fontName = extractFontName(value)
 
   const fetchFontsIfNeeded = useCallback(async () => {
@@ -107,7 +106,10 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
   useEffect(() => {
     if (open) {
       void fetchFontsIfNeeded()
-      setTimeout(() => searchRef.current?.focus(), 50)
+      setTimeout(() => {
+        const el = document.querySelector<HTMLInputElement>('[data-font-search]')
+        el?.focus()
+      }, 50)
     } else {
       setSearch('')
     }
@@ -126,12 +128,12 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
         <div className='border-b p-2'>
           <div className='flex items-center gap-2 rounded-md border border-border px-2'>
             <Search className='h-3.5 w-3.5 shrink-0 text-muted-foreground' />
-            <input
-              ref={searchRef}
+            <Input
+              data-font-search
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder='Search fonts...'
-              className='h-7 w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground'
+              className='h-7 border-0 bg-transparent px-0 text-xs shadow-none focus-visible:ring-0 focus-visible:ring-offset-0'
             />
           </div>
         </div>
@@ -144,18 +146,19 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
             <div className='py-6 text-center text-xs text-muted-foreground'>No fonts found</div>
           ) : (
             filteredFonts.map((font) => (
-              <button
+              <Button
                 key={font}
                 type='button'
+                variant='ghost'
                 onClick={() => {
                   onChange(font)
                   setOpen(false)
                 }}
-                className={`flex w-full px-3 py-2 text-left text-sm transition-colors hover:bg-accent/10 ${font === fontName ? 'bg-accent/10 text-foreground' : 'text-foreground'}`}
+                className={`h-auto w-full justify-start rounded-none px-3 py-2 text-left text-sm hover:bg-accent/10 ${font === fontName ? 'bg-accent/10 text-foreground' : 'text-foreground'}`}
                 style={{ fontFamily: `"${font}", sans-serif` }}
               >
                 {font}
-              </button>
+              </Button>
             ))
           )}
         </div>

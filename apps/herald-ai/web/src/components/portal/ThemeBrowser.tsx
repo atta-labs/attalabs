@@ -23,13 +23,18 @@ function hasColors(scheme: Record<string, unknown> | undefined): boolean {
   return !!(scheme.primary || scheme.background)
 }
 
+function SwatchTile({ color }: { color: string | undefined }) {
+  if (color) return <div className='rounded-sm' style={{ backgroundColor: color }} />
+  return <div className='rounded-sm bg-muted' />
+}
+
 function FourSquareSwatch({ colors }: { colors: Record<string, string | undefined> }) {
   return (
     <div className='grid h-8 w-8 grid-cols-2 gap-0.5 overflow-hidden rounded'>
-      <div className='rounded-sm' style={{ backgroundColor: colors.primary ?? '#888' }} />
-      <div className='rounded-sm' style={{ backgroundColor: colors.secondary ?? '#666' }} />
-      <div className='rounded-sm' style={{ backgroundColor: colors.accent ?? '#aaa' }} />
-      <div className='rounded-sm' style={{ backgroundColor: colors.background ?? '#333' }} />
+      <SwatchTile color={colors.primary} />
+      <SwatchTile color={colors.secondary} />
+      <SwatchTile color={colors.accent} />
+      <SwatchTile color={colors.background} />
     </div>
   )
 }

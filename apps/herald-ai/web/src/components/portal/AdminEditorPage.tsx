@@ -17,20 +17,19 @@ function extractColor(value: unknown): string | undefined {
   return undefined
 }
 
+function SwatchTile({ color }: { color: string | undefined }) {
+  if (color) return <div className='rounded-sm' style={{ backgroundColor: color }} />
+  return <div className='rounded-sm bg-muted' />
+}
+
 function ThemeSwatch({ theme, scheme }: { theme: CMSTheme; scheme: ColorScheme }) {
   const schemeData = scheme === 'dark' ? theme.dark : theme.light
-  const colors = {
-    primary: extractColor(schemeData?.primary) ?? '#888',
-    secondary: extractColor(schemeData?.secondary) ?? '#666',
-    accent: extractColor(schemeData?.accent) ?? '#aaa',
-    background: extractColor(schemeData?.background) ?? '#333'
-  }
   return (
     <div className='grid h-6 w-6 grid-cols-2 gap-px overflow-hidden rounded'>
-      <div className='rounded-sm' style={{ backgroundColor: colors.primary }} />
-      <div className='rounded-sm' style={{ backgroundColor: colors.accent }} />
-      <div className='rounded-sm' style={{ backgroundColor: colors.secondary }} />
-      <div className='rounded-sm' style={{ backgroundColor: colors.background }} />
+      <SwatchTile color={extractColor(schemeData?.primary)} />
+      <SwatchTile color={extractColor(schemeData?.accent)} />
+      <SwatchTile color={extractColor(schemeData?.secondary)} />
+      <SwatchTile color={extractColor(schemeData?.background)} />
     </div>
   )
 }

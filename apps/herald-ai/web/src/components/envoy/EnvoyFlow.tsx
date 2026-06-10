@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Button as FallbackButton } from '@atta/ui/components'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { JDInput } from './JDInput'
@@ -26,7 +27,8 @@ interface CandidateProfile {
 type FlowState = 'input' | 'loading' | 'result' | 'error'
 
 function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
-  const { Button } = useComponents()
+  const comps = useComponents()
+  const Button = (comps.Button as typeof FallbackButton | undefined) ?? FallbackButton
   const [copied, setCopied] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -51,36 +53,17 @@ function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
     timerRef.current = setTimeout(() => setCopied(false), 1500)
   }
 
-  const fallbackClass =
-    'border border-foreground/20 bg-foreground/5 px-6 py-2 text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
-
   return (
     <div className='sticky bottom-0 mx-auto flex max-w-[680px] gap-3 border-t border-border/50 bg-background/80 px-6 py-4 backdrop-blur-sm no-print'>
-      {Button ? (
-        <>
-          <Button onClick={handleCopy} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
-            {copied ? 'Copied!' : 'Copy Link'}
-          </Button>
-          <Button onClick={() => window.print()} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
-            Export PDF
-          </Button>
-          <Button onClick={onNewAudit} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
-            New Audit
-          </Button>
-        </>
-      ) : (
-        <>
-          <button type='button' onClick={handleCopy} className={fallbackClass}>
-            {copied ? 'Copied!' : 'Copy Link'}
-          </button>
-          <button type='button' onClick={() => window.print()} className={fallbackClass}>
-            Export PDF
-          </button>
-          <button type='button' onClick={onNewAudit} className={fallbackClass}>
-            New Audit
-          </button>
-        </>
-      )}
+      <Button onClick={handleCopy} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
+        {copied ? 'Copied!' : 'Copy Link'}
+      </Button>
+      <Button onClick={() => window.print()} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
+        Export PDF
+      </Button>
+      <Button onClick={onNewAudit} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
+        New Audit
+      </Button>
     </div>
   )
 }
@@ -101,7 +84,8 @@ export function EnvoyFlow({
   hasAnthropicKey?: boolean
   isOwner?: boolean
 }) {
-  const { Button } = useComponents()
+  const comps = useComponents()
+  const Button = (comps.Button as typeof FallbackButton | undefined) ?? FallbackButton
   const [state, setState] = useState<FlowState>('input')
   const [report, setReport] = useState<MatchReport | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -215,19 +199,9 @@ export function EnvoyFlow({
 
         <p className='text-sm text-muted-foreground'>{error}</p>
 
-        {Button ? (
-          <Button onClick={handleRetry} variant='outline' className='mt-4 text-xs uppercase tracking-[0.2em]'>
-            Try Again
-          </Button>
-        ) : (
-          <button
-            type='button'
-            onClick={handleRetry}
-            className='mt-4 border border-foreground/20 bg-foreground/5 px-6 py-2 text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
-          >
-            Try Again
-          </button>
-        )}
+        <Button onClick={handleRetry} variant='outline' className='mt-4 text-xs uppercase tracking-[0.2em]'>
+          Try Again
+        </Button>
       </div>
     )
   }

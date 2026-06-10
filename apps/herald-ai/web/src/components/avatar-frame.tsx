@@ -44,7 +44,7 @@ export function AvatarFrame({
         )}
       >
         {/* biome-ignore lint/performance/noImgElement: dynamic R2/blob URL — not optimisable via next/image */}
-        <img src={src} alt={alt} className='h-full w-full object-cover' style={{ imageRendering: 'pixelated' }} />
+        <img src={src} alt={alt} className='h-full w-full object-cover [image-rendering:pixelated]' />
         {!src && (
           <div
             className={cn(

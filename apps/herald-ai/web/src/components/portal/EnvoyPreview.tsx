@@ -41,7 +41,7 @@ export function EnvoyPreview({ username, onReady }: { username: string; onReady?
       </div>
 
       {/* iframe */}
-      <div className='flex-1 bg-black/30'>
+      <div className='flex-1 bg-foreground/5'>
         <iframe
           ref={iframeRef}
           key={iframeKey}

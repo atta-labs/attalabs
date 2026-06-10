@@ -422,7 +422,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
                 {avatarUrl ? (
                   <AvatarFrame src={avatarUrl} alt={form.name} size={80} />
                 ) : (
-                  <div className='relative shrink-0' style={{ width: 80, height: 80 }}>
+                  <div className='relative h-20 w-20 shrink-0'>
                     <div className='absolute inset-0 flex items-center justify-center overflow-hidden rounded-[10px] border-[1.5px] border-border bg-card'>
                       <span className='font-mono text-lg text-muted-foreground'>?</span>
                       <div className='absolute right-1.5 top-1.5 h-[6px] w-[6px] border-r border-t border-muted-foreground' />
