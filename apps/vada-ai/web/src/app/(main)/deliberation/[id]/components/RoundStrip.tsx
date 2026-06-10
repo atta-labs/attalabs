@@ -12,7 +12,7 @@
 //           MARKDOWN_COMPONENTS map so round slots and the conclusion card
 //           style identically.
 
-import { Button, ModelIcon } from '@atta/ui'
+import { Button, ModelIcon } from '@atta/ui/components'
 import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
 import { Copy, Download } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'

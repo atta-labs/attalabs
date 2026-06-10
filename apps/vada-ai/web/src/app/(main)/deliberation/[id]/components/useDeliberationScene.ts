@@ -3,7 +3,7 @@
 // All effects + derived state for the DeliberationFeed scene.
 // Returns a flat object the component reads — no hooks inside the JSX.
 
-import { useToastContext } from '@atta/ui'
+import { useToastContext } from '@atta/ui/components'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useDeliberation } from './useDeliberation'
 

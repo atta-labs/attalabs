@@ -2,13 +2,7 @@
 
 import { useState } from 'react'
 import type { Flow } from '@atta/engine'
-import { Button } from '@atta/ui/components/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@atta/ui/components/dropdown-menu'
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@atta/ui/components'
 import { ChevronDown } from 'lucide-react'
 import { calculateCost, CALCULATOR_MODELS, MODEL_PRICES } from '@/lib/calculator'
 

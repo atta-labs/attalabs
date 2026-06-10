@@ -1,4 +1,4 @@
-import { Text } from '@atta/ui'
+import { Text } from '@atta/ui/components'
 import { getBenchmarkMetrics, getSessionWithTranscript } from '@/db/queries'
 import { extractRenderableConclusion } from '@/engine/conclusion-rescue'
 import { BenchmarkReport } from './components/BenchmarkReport'

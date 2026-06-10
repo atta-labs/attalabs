@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent } from '@atta/ui'
+import { Card, CardContent } from '@atta/ui/components'
 import { Heading } from '@atta/ui/shared'
 import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'

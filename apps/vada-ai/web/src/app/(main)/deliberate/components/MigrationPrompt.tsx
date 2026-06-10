@@ -1,7 +1,7 @@
 'use client'
 
 import { useIdentity } from '@atta/identity/react'
-import { Button, useToastContext } from '@atta/ui'
+import { Button, useToastContext } from '@atta/ui/components'
 import { CloudUpload } from 'lucide-react'
 import { useEffect, useState } from 'react'
 

@@ -1,6 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { cmsClient, getAttaConfig, getVadaConfig, getVitakkaConfig } from '@atta/cms'
+import { cmsClient, cmsConfig, getAttaConfig, getHeraldConfig, getVadaConfig, getVitakkaConfig } from '@atta/cms'
+
+const _cache = new Map<string, UILibrary>()
 
 // When called from next.config.ts, process.cwd() is the app directory (apps/{app}/web/).
 // packages/ui/generated/ is always three levels up from the app's web dir.
@@ -9,7 +11,7 @@ function getGeneratedDir(): string {
 }
 
 type UILibrary = 'basic' | 'animate' | 'retro' | 'brutal'
-type App = 'vada' | 'atta' | 'vitakka'
+type App = 'vada' | 'atta' | 'vitakka' | 'herald'
 
 const CONFIG_FETCHERS: Record<
   App,
@@ -17,12 +19,29 @@ const CONFIG_FETCHERS: Record<
 > = {
   vada: () => getVadaConfig(cmsClient).catch(() => null),
   atta: () => getAttaConfig(cmsClient).catch(() => null),
-  vitakka: () => getVitakkaConfig(cmsClient).catch(() => null)
+  vitakka: () => getVitakkaConfig(cmsClient).catch(() => null),
+  herald: () => getHeraldConfig(cmsClient).catch(() => null)
 }
 
-export async function generateUIIndex(app: App): Promise<void> {
+export async function generateUIIndex(app: App): Promise<UILibrary> {
+  const cached = _cache.get(app)
+  if (cached) return cached
+
+  const appLabel = app.padEnd(24)
+  console.log('\n┌──────────────────────────────────────────────┐')
+  console.log(`│  UI GENERATION — ${appLabel}│`)
+  console.log('└──────────────────────────────────────────────┘')
+
+  console.log('\n📡 CMS:')
+  console.log(`   Project: ${cmsConfig.projectId}`)
+  console.log(`   Dataset: ${cmsConfig.dataset}`)
+  console.log(`   Token:   ${process.env.SANITY_API_TOKEN ? 'yes' : 'no'}`)
+
   const config = await CONFIG_FETCHERS[app]()
+  const fromCms = config?.userInterface?.library?.id != null
   const library = (config?.userInterface?.library?.id ?? 'basic') as UILibrary
+
+  console.log(`\n📦 Library: ${library}${fromCms ? '' : ' (fallback — CMS returned no config)'}`)
 
   const dir = path.join(getGeneratedDir(), app)
   fs.mkdirSync(dir, { recursive: true })
@@ -46,4 +65,10 @@ export async function generateUIIndex(app: App): Promise<void> {
       ''
     ].join('\n')
   )
+
+  console.log(`   ✓ packages/ui/generated/${app}/components.ts`)
+  console.log(`   ✓ packages/ui/generated/${app}/canvas.ts\n`)
+
+  _cache.set(app, library)
+  return library
 }

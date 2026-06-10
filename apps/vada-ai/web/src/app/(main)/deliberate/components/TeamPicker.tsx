@@ -1,13 +1,7 @@
 'use client'
 
 import type { Flow } from '@atta/engine'
-import { Button } from '@atta/ui/components/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@atta/ui/components/dropdown-menu'
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@atta/ui/components'
 import { Users2, ChevronsUpDown } from 'lucide-react'
 import { getFlowAgentCount, getFlowShapeLabel } from '@/lib/flow-helpers'
 

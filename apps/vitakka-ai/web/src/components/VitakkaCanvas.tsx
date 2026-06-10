@@ -1,6 +1,6 @@
 'use client'
 
-import { Heading, Text } from '@atta/ui'
+import { Heading, Text } from '@atta/ui/components'
 import { AIACanvas, AIASphere, type AIACanvasRef, type CanvasPhase } from '@atta/ui/canvas'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SignUpAction } from '@/components/SignUpAction'

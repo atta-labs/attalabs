@@ -19,7 +19,7 @@
 // particles don't migrate between strips (see canvas/CLAUDE.md "Unique
 // Sphere IDs").
 
-import { useToastContext } from '@atta/ui'
+import { useToastContext } from '@atta/ui/components'
 import { useAIAContext } from '@atta/ui/canvas'
 import { useCatalog } from '@atta/models'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

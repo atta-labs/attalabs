@@ -41,6 +41,7 @@ export async function createUser(data: {
   stack: string[]
   projects?: Array<{ title: string; description: string }>
   experience?: Array<{ company: string; role: string; period: string; highlights: string[] }>
+  cvUrl?: string | null
 }) {
   // Ensure shared users row exists before inserting profile (FK requirement)
   await db.insert(schema.users).values({ clerkId: data.clerkId, email: data.email }).onConflictDoNothing()
@@ -58,6 +59,7 @@ export async function createUser(data: {
     stack: JSON.stringify(data.stack),
     projects: JSON.stringify(data.projects ?? []),
     experience: JSON.stringify(data.experience ?? []),
+    cvUrl: data.cvUrl ?? null,
     onboardingComplete: true,
     updatedAt: new Date()
   }
@@ -85,6 +87,13 @@ export async function updateUserUI(
     .where(eq(schema.heraldProfiles.clerkId, clerkId))
 }
 
+export async function updateUserPublished(clerkId: string, isPublished: boolean) {
+  await db
+    .update(schema.heraldProfiles)
+    .set({ isPublished, updatedAt: new Date() })
+    .where(eq(schema.heraldProfiles.clerkId, clerkId))
+}
+
 export async function updateUser(
   clerkId: string,
   data: {
@@ -95,6 +104,8 @@ export async function updateUser(
     summary?: string
     stack?: string[]
     githubHandle?: string
+    linkedinUrl?: string
+    discordHandle?: string
     bio?: string
     avatarUrl?: string | null
     cvUrl?: string | null
@@ -108,6 +119,8 @@ export async function updateUser(
   if (data.summary !== undefined) updates.summary = data.summary
   if (data.stack !== undefined) updates.stack = JSON.stringify(data.stack)
   if (data.githubHandle !== undefined) updates.githubHandle = data.githubHandle
+  if (data.linkedinUrl !== undefined) updates.linkedinUrl = data.linkedinUrl
+  if (data.discordHandle !== undefined) updates.discordHandle = data.discordHandle
   if (data.bio !== undefined) updates.bio = data.bio
   if (data.avatarUrl !== undefined) updates.avatarUrl = data.avatarUrl
   if (data.cvUrl !== undefined) updates.cvUrl = data.cvUrl

@@ -1,4 +1,4 @@
-import { Text } from '@atta/ui'
+import { Text } from '@atta/ui/components'
 import { ArrowDown } from 'lucide-react'
 
 const EXECUTION_TOOLS = 'SKILLS · SWARMS · PLUGINS · MCP · BROWSERS · RUNNERS'

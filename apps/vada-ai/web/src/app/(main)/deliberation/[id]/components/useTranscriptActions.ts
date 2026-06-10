@@ -2,7 +2,7 @@
 
 // State + async handlers for the TranscriptActions row. Component stays dumb.
 
-import { useToastContext } from '@atta/ui'
+import { useToastContext } from '@atta/ui/components'
 import { useCallback, useState } from 'react'
 import { copyTranscriptToClipboard, downloadTranscript, type TranscriptInput } from './transcript-export'
 

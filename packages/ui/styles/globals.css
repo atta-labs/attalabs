@@ -8,15 +8,7 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @source "../../../apps/**/*.{ts,tsx}";
-@source "../libraries/basic/components/**/*.{ts,tsx}";
-@source "../libraries/basic/installed/**/*.{ts,tsx}";
-@source "../libraries/retro/components/**/*.{ts,tsx}";
-@source "../libraries/retro/installed/**/*.{ts,tsx}";
-@source "../libraries/animate/components/**/*.{ts,tsx}";
-@source "../libraries/animate/installed/**/*.{ts,tsx}";
-@source "../libraries/brutal/components/**/*.{ts,tsx}";
-@source "../libraries/brutal/installed/**/*.{ts,tsx}";
-@source "../libraries/shared/**/*.{ts,tsx}";
+@source "../**/*.{ts,tsx}";
 
 @theme inline {
   --color-background: var(--background);
@@ -95,5 +87,14 @@
   .shadow-lg { box-shadow: var(--shadow-lg); }
   .shadow-xl { box-shadow: var(--shadow-xl); }
   .shadow-2xl { box-shadow: var(--shadow-2xl); }
+}
+
+/* Neobrutalist libraries require high-contrast borders so offset shadows and
+   thick outlines are visible. The compound [data-theme] attribute raises
+   specificity to 0-2-1, beating any per-page theme overlay that scopes
+   its dark block with :root[data-theme="dark"] at 0-2-0. */
+html[data-library="retro"][data-theme],
+html[data-library="brutal"][data-theme] {
+  --border: var(--foreground);
 }
 

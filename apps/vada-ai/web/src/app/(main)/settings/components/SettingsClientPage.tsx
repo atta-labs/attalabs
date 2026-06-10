@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent } from '@atta/ui'
+import { Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent } from '@atta/ui/components'
 import { AttaUserProfile, ProviderKeysSection, ApiKeysSection } from '@atta/ui/account'
 import type { FaceStyle } from '@/components/agents'
 import { AgentStyleSection } from './agent-style/AgentStyleSection'

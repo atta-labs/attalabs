@@ -1,4 +1,4 @@
-import { Badge, Card, CardContent, ModelIcon } from '@atta/ui'
+import { Badge, Card, CardContent, ModelIcon } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 import { cn } from '@atta/ui/lib/utils'
 import { NextLink } from '@atta/ui/lib/next-link'

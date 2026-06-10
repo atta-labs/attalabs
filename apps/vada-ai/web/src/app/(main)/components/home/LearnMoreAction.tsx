@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@atta/ui'
+import { Button } from '@atta/ui/components'
 
 export function LearnMoreAction() {
   const onClick = () => {

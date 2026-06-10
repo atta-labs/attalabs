@@ -1,4 +1,4 @@
-import { Show, UserButton } from '@clerk/nextjs'
+import { Show } from '@clerk/nextjs'
 import { NextLink } from '@atta/ui/lib/next-link'
 
 export function EnvoyFooter() {
@@ -9,16 +9,9 @@ export function EnvoyFooter() {
           Herald
         </NextLink>
         <Show when='signed-in'>
-          <div className='flex items-center gap-3'>
-            <NextLink variant='subtle' href='/admin' className='text-[10px]'>
-              Dashboard →
-            </NextLink>
-            <UserButton
-              appearance={{
-                elements: { avatarBox: 'h-5 w-5' }
-              }}
-            />
-          </div>
+          <NextLink variant='subtle' href='/bulk-audit' className='text-[10px]'>
+            Dashboard →
+          </NextLink>
         </Show>
         <Show when='signed-out'>
           <NextLink variant='subtle' href='/sign-in' className='text-[10px]'>

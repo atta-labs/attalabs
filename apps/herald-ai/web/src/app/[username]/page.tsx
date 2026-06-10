@@ -1,10 +1,12 @@
-import type { ColorScheme } from '@atta/cms'
-import { cmsClient, generateThemeCSSForScheme, getThemeById } from '@atta/cms'
+export const dynamic = 'force-dynamic'
+
+import { auth } from '@clerk/nextjs/server'
+import { cmsClient, generateThemeCSS, getThemeById } from '@atta/cms'
 import { notFound } from 'next/navigation'
+import { decryptVendorKeys } from '@atta/crypto'
+import { getProviderKeys } from '@atta/db/queries'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
-import type { UILibrary } from '@atta/ui/lib/library-loader'
-import { LibraryProvider } from '@atta/ui/lib/library-provider'
-import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
+import { db } from '@/db'
 import { getUserByUsername } from '@/db/queries'
 import { getGoogleFontsUrl } from '@atta/cms'
 
@@ -22,10 +24,38 @@ export default async function EnvoyPage({
   const user = await getUserByUsername(username)
   if (!user) notFound()
 
+  // Resolve viewer identity once — used for both publish gate and audit gate
+  const { userId } = await auth()
+  const isOwner = userId !== null && userId === user.clerkId
+
+  // Gate unpublished profiles — owner can preview, everyone else gets 404
+  if (!user.isPublished && !isOwner) notFound()
+
+  // Check if owner has a stored Anthropic key — gates the audit input
+  let hasAnthropicKey = false
+  const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
+  if (masterKeyB64) {
+    try {
+      const stored = await getProviderKeys(db, user.clerkId)
+      if (stored) {
+        const keys = decryptVendorKeys(
+          stored.encryptedPayload as Parameters<typeof decryptVendorKeys>[0],
+          user.clerkId,
+          Buffer.from(masterKeyB64, 'base64')
+        )
+        hasAnthropicKey = !!keys.anthropic
+      }
+    } catch {
+      hasAnthropicKey = false
+    }
+  }
+
   const profile = {
     name: user.name,
     title: user.title,
     github: user.githubHandle ?? undefined,
+    linkedin: user.linkedinUrl ?? undefined,
+    discord: user.discordHandle ?? undefined,
     summary: user.summary,
     stack: JSON.parse(user.stack) as string[],
     projects: JSON.parse(user.projects) as Array<{ title: string; description: string }>,
@@ -38,8 +68,7 @@ export default async function EnvoyPage({
     location: user.location ?? undefined,
     availability: user.availability ?? undefined,
     avatarUrl: user.avatarUrl ?? undefined,
-    cvUrl: user.cvUrl ?? undefined,
-    bio: user.bio ?? undefined
+    cvUrl: user.cvUrl ?? undefined
   }
 
   // Fetch theme from Sanity if user has one selected
@@ -48,20 +77,18 @@ export default async function EnvoyPage({
   if (user.themeId) {
     const theme = await getThemeById(cmsClient, user.themeId)
     if (theme) {
-      // Apply per-user font override if set
       const themeWithOverrides = {
         ...theme,
         typography: user.fontSans ? { ...theme.typography, fontSans: user.fontSans } : theme.typography
       }
-      const colorScheme = (user.colorScheme as ColorScheme) ?? 'dark'
-      themeCSS = generateThemeCSSForScheme(themeWithOverrides, colorScheme)
+      // Use generateThemeCSS (both light+dark with attribute selectors) so the per-user
+      // theme wins the specificity battle against the global NextWebShell :root[data-theme="dark"] block.
+      themeCSS = generateThemeCSS(themeWithOverrides)
       if (themeWithOverrides.typography) {
         fontsUrl = getGoogleFontsUrl(themeWithOverrides.typography)
       }
     }
   }
-
-  const userLibrary = (user.library ?? 'basic') as UILibrary
 
   return (
     <>
@@ -73,10 +100,13 @@ export default async function EnvoyPage({
         </>
       )}
       {themeCSS && <style dangerouslySetInnerHTML={{ __html: themeCSS }} />}
-      <PreviewThemeListener />
-      <LibraryProvider library={userLibrary}>
-        <EnvoyFlow profile={profile} username={username} previewMode={previewMode} />
-      </LibraryProvider>
+      <EnvoyFlow
+        profile={profile}
+        username={username}
+        previewMode={previewMode}
+        hasAnthropicKey={hasAnthropicKey}
+        isOwner={isOwner}
+      />
     </>
   )
 }

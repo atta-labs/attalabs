@@ -1,6 +1,20 @@
+'use client'
+
+import { Check, X } from 'lucide-react'
+import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 
+function gradeColorClass(grade: MatchReport['grade']): string {
+  if (grade === 'NO FIT') return 'text-destructive'
+  if (grade === 'STRETCH') return 'text-warning'
+  return ''
+}
+
 export function ReportView({ report }: { report: MatchReport }) {
+  const { Card, CardContent, Badge } = useComponents()
+  const hardReqs = report.hard_requirements ?? []
+  const hardOnly = hardReqs.filter((r) => r.kind === 'hard')
+
   return (
     <article className='mx-auto max-w-[680px] px-6 py-12 print:max-w-none print:px-0 print:py-0'>
       {/* ── Header ── */}
@@ -12,12 +26,20 @@ export function ReportView({ report }: { report: MatchReport }) {
 
       {/* ── Decision Anchor ── */}
       <section className='mb-8 border-b border-border pb-8'>
-        <div className='font-display text-[80px] leading-none tracking-tight'>{report.grade}</div>
+        <div className={`font-display text-[80px] leading-none tracking-tight ${gradeColorClass(report.grade)}`}>
+          {report.grade}
+        </div>
         <div className='mt-2'>
           <p className='font-mono text-sm font-medium uppercase tracking-wider'>{report.recommendation}</p>
-          <p className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
-            Confidence: {report.confidence}
-          </p>
+          {Badge ? (
+            <Badge variant='outline' className='mt-1 font-mono text-[9px] uppercase tracking-[0.2em]'>
+              Confidence: {report.confidence}
+            </Badge>
+          ) : (
+            <p className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+              Confidence: {report.confidence}
+            </p>
+          )}
         </div>
 
         <ul className='mt-6 space-y-1'>
@@ -30,6 +52,53 @@ export function ReportView({ report }: { report: MatchReport }) {
         </ul>
       </section>
 
+      {/* ── Hard Requirements ── */}
+      {hardOnly.length > 0 && (
+        <section className='mb-8 border-b border-border pb-8'>
+          <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+            Hard Requirements
+          </h2>
+
+          <div className='space-y-2'>
+            {hardOnly.map((req) =>
+              Card && CardContent ? (
+                <Card key={req.requirement}>
+                  <CardContent className='flex items-start gap-3 p-3'>
+                    <span className='mt-0.5 shrink-0'>
+                      {req.met ? (
+                        <Check className='h-3.5 w-3.5 text-success' />
+                      ) : (
+                        <X className='h-3.5 w-3.5 text-destructive' />
+                      )}
+                    </span>
+                    <div>
+                      <p className={`text-[13px] font-medium ${req.met ? '' : 'text-destructive'}`}>
+                        {req.requirement}
+                      </p>
+                      <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>{req.evidence}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div key={req.requirement} className='flex items-start gap-3'>
+                  <span className='mt-0.5 shrink-0'>
+                    {req.met ? (
+                      <Check className='h-3.5 w-3.5 text-success' />
+                    ) : (
+                      <X className='h-3.5 w-3.5 text-destructive' />
+                    )}
+                  </span>
+                  <div>
+                    <p className={`text-[13px] font-medium ${req.met ? '' : 'text-destructive'}`}>{req.requirement}</p>
+                    <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>{req.evidence}</p>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        </section>
+      )}
+
       {/* ── Detected Signals ── */}
       <section className='mb-8 border-b border-border pb-8'>
         <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
@@ -37,18 +106,39 @@ export function ReportView({ report }: { report: MatchReport }) {
         </h2>
 
         <div className='space-y-4'>
-          {report.signal.map((signal) => (
-            <div key={signal.title} className='border-l border-foreground/10 pl-3'>
-              <div className='flex items-baseline justify-between gap-3'>
-                <h3 className='font-mono text-[13px] font-medium'>{signal.title}</h3>
-                <span className='shrink-0 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground'>
-                  {signal.confidence}
-                </span>
+          {report.signal.map((signal) =>
+            Card && CardContent ? (
+              <Card key={signal.title}>
+                <CardContent className='p-3'>
+                  <div className='flex items-baseline justify-between gap-3'>
+                    <h3 className='font-mono text-[13px] font-medium'>{signal.title}</h3>
+                    {Badge ? (
+                      <Badge variant='outline' className='shrink-0 font-mono text-[9px] uppercase tracking-[0.2em]'>
+                        {signal.confidence}
+                      </Badge>
+                    ) : (
+                      <span className='shrink-0 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground'>
+                        {signal.confidence}
+                      </span>
+                    )}
+                  </div>
+                  <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>{signal.observation}</p>
+                  <p className='mt-0.5 text-[13px] leading-relaxed'>{signal.interpretation}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div key={signal.title} className='border-l border-foreground/10 pl-3'>
+                <div className='flex items-baseline justify-between gap-3'>
+                  <h3 className='font-mono text-[13px] font-medium'>{signal.title}</h3>
+                  <span className='shrink-0 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground'>
+                    {signal.confidence}
+                  </span>
+                </div>
+                <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>{signal.observation}</p>
+                <p className='mt-0.5 text-[13px] leading-relaxed'>{signal.interpretation}</p>
               </div>
-              <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>{signal.observation}</p>
-              <p className='mt-0.5 text-[13px] leading-relaxed'>{signal.interpretation}</p>
-            </div>
-          ))}
+            )
+          )}
         </div>
       </section>
 
@@ -59,32 +149,57 @@ export function ReportView({ report }: { report: MatchReport }) {
         </h2>
 
         <div className='space-y-3'>
-          {report.gaps.map((item) => (
-            <div key={item.gap} className='border-l border-foreground/10 pl-3'>
-              <p className='text-[13px] font-medium'>{item.gap}</p>
-              <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>Mitigation: {item.mitigation}</p>
-            </div>
-          ))}
+          {report.gaps.map((item) =>
+            Card && CardContent ? (
+              <Card key={item.gap}>
+                <CardContent className='p-3'>
+                  <p
+                    className={`text-[13px] font-medium ${item.severity === 'disqualifying' ? 'text-destructive' : ''}`}
+                  >
+                    {item.gap}
+                  </p>
+                  {item.severity === 'minor' && item.mitigation && (
+                    <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>
+                      Mitigation: {item.mitigation}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <div key={item.gap} className='border-l border-foreground/10 pl-3'>
+                <p className={`text-[13px] font-medium ${item.severity === 'disqualifying' ? 'text-destructive' : ''}`}>
+                  {item.gap}
+                </p>
+                {item.severity === 'minor' && item.mitigation && (
+                  <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>
+                    Mitigation: {item.mitigation}
+                  </p>
+                )}
+              </div>
+            )
+          )}
         </div>
       </section>
 
       {/* ── Interview Hooks ── */}
-      <section className='mb-8'>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-          Recommended Interview Questions
-        </h2>
+      {report.interview_hooks.length > 0 && (
+        <section className='mb-8'>
+          <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+            Recommended Interview Questions
+          </h2>
 
-        <ol className='space-y-2'>
-          {report.interview_hooks.map((hook, i) => (
-            <li key={hook} className='flex gap-3 text-[13px] leading-relaxed'>
-              <span className='shrink-0 font-mono text-[10px] text-muted-foreground'>
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              {hook}
-            </li>
-          ))}
-        </ol>
-      </section>
+          <ol className='space-y-2'>
+            {report.interview_hooks.map((hook, i) => (
+              <li key={hook} className='flex gap-3 text-[13px] leading-relaxed'>
+                <span className='shrink-0 font-mono text-[10px] text-muted-foreground'>
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                {hook}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {/* ── Footer ── */}
       <footer className='border-t border-border pt-4 print:mt-6'>

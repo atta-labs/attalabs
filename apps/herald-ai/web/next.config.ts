@@ -1,12 +1,24 @@
 import type { NextConfig } from 'next'
-import path from 'node:path'
+import { resolve } from 'node:path'
+import { generateUIIndex } from '@atta/ui/scripts/generate-ui'
 
-const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [{ hostname: 'avatars.githubusercontent.com' }]
-  },
-  turbopack: {
-    root: path.resolve(__dirname, '../../..')
+const nextConfig = async (): Promise<NextConfig> => {
+  await generateUIIndex('herald')
+  const componentsRelPath = '../../../packages/ui/generated/herald/components.ts'
+  return {
+    images: {
+      remotePatterns: [{ hostname: 'avatars.githubusercontent.com' }]
+    },
+    transpilePackages: ['@atta/ui', '@atta/cms', '@atta/db', '@atta/herald-ai-mcp'],
+    webpack: (config) => {
+      config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
+      return config
+    },
+    turbopack: {
+      resolveAlias: {
+        '@atta/ui/components': componentsRelPath
+      }
+    }
   }
 }
 

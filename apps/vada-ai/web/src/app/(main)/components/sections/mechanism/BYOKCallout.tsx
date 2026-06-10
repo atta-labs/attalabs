@@ -1,4 +1,4 @@
-import { Heading, Text } from '@atta/ui'
+import { Heading, Text } from '@atta/ui/components'
 import { ProviderIcon } from '@lobehub/icons'
 
 const PROVIDERS = ['anthropic', 'google', 'openai', 'meta', 'mistral', 'deepseek', 'qwen', 'xai'] as const

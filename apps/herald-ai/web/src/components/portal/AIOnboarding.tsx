@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Input, Textarea } from '@atta/ui'
+import { Button, Input, Textarea } from '@atta/ui/components'
 import { type UIMessage, useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
 import { useRouter } from 'next/navigation'
@@ -51,9 +51,10 @@ export function AIOnboarding() {
   const [input, setInput] = useState('')
   const handledToolCalls = useRef(new Set<string>())
 
-  const { messages, sendMessage, addToolOutput, status } = useChat({
+  const { messages, sendMessage, addToolOutput, status, regenerate } = useChat({
     transport: new DefaultChatTransport({ api: '/api/admin/onboarding-chat' }),
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    onError: (e) => console.error('[AIOnboarding SDK error — root cause]', e)
   })
 
   useEffect(() => {
@@ -80,7 +81,8 @@ export function AIOnboarding() {
             summary: cvData?.summary ?? '',
             stack: cvData?.stack ?? state.cvProfile?.stack ?? [],
             projects: cvData?.projects ?? [],
-            experience: cvData?.experience ?? []
+            experience: cvData?.experience ?? [],
+            cvUrl: cvData?.cvUrl ?? null
           })
         })
 
@@ -88,7 +90,7 @@ export function AIOnboarding() {
 
         if (res.ok) {
           setTimeout(() => {
-            router.push('/admin')
+            router.push('/bulk-audit')
             router.refresh()
           }, 1500)
         }
@@ -160,7 +162,7 @@ export function AIOnboarding() {
       if (!res.ok) throw new Error('Parse failed')
       const profile = await res.json()
 
-      ;(window as any).__heraldCvData = profile
+      ;(window as any).__heraldCvData = { ...profile, cvUrl: profile.cvUrl ?? null }
 
       setState((s) => ({
         ...s,
@@ -380,6 +382,21 @@ export function AIOnboarding() {
 
             {uploading && <div className='animate-pulse text-sm text-muted-foreground'>Extracting your profile...</div>}
             {isThinking && !uploading && <div className='animate-pulse text-sm text-muted-foreground'>...</div>}
+
+            {status === 'error' && !state.complete && (
+              <div className='flex items-center gap-3'>
+                <span className='text-sm text-destructive'>Something went wrong. Try again?</span>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => regenerate()}
+                  className='h-7 rounded-none font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground'
+                >
+                  Retry
+                </Button>
+              </div>
+            )}
 
             <div ref={messagesEndRef} />
           </div>

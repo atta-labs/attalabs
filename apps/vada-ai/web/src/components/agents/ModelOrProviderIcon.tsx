@@ -1,7 +1,7 @@
 'use client'
 
 import { findModelEntryByModelId, useCatalog } from '@atta/models'
-import { ModelIcon } from '@atta/ui'
+import { ModelIcon } from '@atta/ui/components'
 import { ProviderIcon } from '@lobehub/icons'
 import { inferVendor } from './vendors'
 

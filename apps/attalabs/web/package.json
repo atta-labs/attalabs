@@ -6,12 +6,14 @@
     "dev": "next dev --turbopack --port 3004",
     "build": "next build",
     "start": "next start",
+    "generate": "bun scripts/generate-ui.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@atta/auth": "workspace:*",
     "@atta/cms": "workspace:*",
     "@atta/identity": "workspace:*",
+    "@atta/instrumentation": "workspace:*",
     "@atta/ui": "workspace:*",
     "@tailwindcss/postcss": "^4.0.0",
     "lucide-react": "^1.7.0",

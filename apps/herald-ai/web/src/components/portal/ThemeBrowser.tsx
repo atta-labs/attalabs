@@ -1,6 +1,8 @@
 'use client'
 
-import type { CMSTheme } from '@atta/cms'
+import type { CMSLibrary, CMSTheme } from '@atta/cms'
+import { Button as BasicButton, Card as BasicCard } from '@atta/ui/components'
+import { useComponents } from '@atta/ui/lib/library-provider'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import type { ThemeData } from '@atta/ui/lib/preview-theme-utils'
 import { usePortalPreview } from '@/hooks/usePortalPreview'
@@ -21,13 +23,18 @@ function hasColors(scheme: Record<string, unknown> | undefined): boolean {
   return !!(scheme.primary || scheme.background)
 }
 
+function SwatchTile({ color }: { color: string | undefined }) {
+  if (color) return <div className='rounded-sm' style={{ backgroundColor: color }} />
+  return <div className='rounded-sm bg-muted' />
+}
+
 function FourSquareSwatch({ colors }: { colors: Record<string, string | undefined> }) {
   return (
     <div className='grid h-8 w-8 grid-cols-2 gap-0.5 overflow-hidden rounded'>
-      <div className='rounded-sm' style={{ backgroundColor: colors.primary ?? '#888' }} />
-      <div className='rounded-sm' style={{ backgroundColor: colors.secondary ?? '#666' }} />
-      <div className='rounded-sm' style={{ backgroundColor: colors.accent ?? '#aaa' }} />
-      <div className='rounded-sm' style={{ backgroundColor: colors.background ?? '#333' }} />
+      <SwatchTile color={colors.primary} />
+      <SwatchTile color={colors.secondary} />
+      <SwatchTile color={colors.accent} />
+      <SwatchTile color={colors.background} />
     </div>
   )
 }
@@ -49,6 +56,7 @@ function buildThemeMessage(theme: CMSTheme, colorScheme: ColorScheme, fontOverri
 
 export function ThemeBrowser({
   themes,
+  libraries,
   currentThemeId,
   currentColorScheme,
   currentLibrary,
@@ -56,12 +64,17 @@ export function ThemeBrowser({
   username
 }: {
   themes: CMSTheme[]
+  libraries: CMSLibrary[]
   currentThemeId: string | null
   currentColorScheme: ColorScheme
   currentLibrary: string
   currentFontSans: string | null
   username: string
 }) {
+  const comps = useComponents()
+  const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
+  const Card = (comps.Card as typeof BasicCard | undefined) ?? BasicCard
+
   const [selectedId, setSelectedId] = useState<string | null>(currentThemeId)
   const [schemeByTheme, setSchemeByTheme] = useState<Record<string, ColorScheme>>(() => {
     const initial: Record<string, ColorScheme> = {}
@@ -185,61 +198,52 @@ export function ThemeBrowser({
             const hasBoth = schemes?.hasDark && schemes?.hasLight
 
             return (
-              <button
+              <Card
                 key={theme._id}
-                type='button'
+                role='button'
+                tabIndex={0}
                 onClick={() => handleSelect(theme._id)}
-                className={`flex w-full items-center gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors ${
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleSelect(theme._id)
+                  }
+                }}
+                className={`mx-2 my-1.5 flex cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors ${
                   isSelected ? 'bg-primary/10' : 'hover:bg-foreground/5'
                 }`}
               >
                 <FourSquareSwatch colors={swatchColors} />
-                <div className='flex min-w-0 flex-1 items-center gap-2'>
-                  <span
-                    className={`line-clamp-2 text-sm font-medium ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}
+                <div className='min-w-0 flex-1'>
+                  <p
+                    className={`line-clamp-2 text-sm font-medium leading-snug ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}
                   >
                     {theme.name}
-                  </span>
-                  {isApplied && <div className='h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent' />}
+                  </p>
+                  {isApplied && <div className='mt-1 h-1.5 w-1.5 rounded-full bg-accent' />}
                 </div>
                 {hasBoth && (
                   <div
-                    role='radiogroup'
-                    className='flex flex-shrink-0 flex-col gap-1'
+                    className='flex flex-shrink-0 flex-col gap-0.5'
                     onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
                   >
-                    <label
-                      className={`flex cursor-pointer items-center gap-1 text-xs ${
-                        thisScheme === 'dark' ? 'text-foreground' : 'text-muted-foreground'
-                      }`}
-                    >
-                      <input
-                        type='radio'
-                        name={`scheme-${theme._id}`}
-                        checked={thisScheme === 'dark'}
-                        onChange={() => handleSchemeChange(theme._id, 'dark')}
-                        className='h-3 w-3 accent-primary'
-                      />
-                      Dark
-                    </label>
-                    <label
-                      className={`flex cursor-pointer items-center gap-1 text-xs ${
-                        thisScheme === 'light' ? 'text-foreground' : 'text-muted-foreground'
-                      }`}
-                    >
-                      <input
-                        type='radio'
-                        name={`scheme-${theme._id}`}
-                        checked={thisScheme === 'light'}
-                        onChange={() => handleSchemeChange(theme._id, 'light')}
-                        className='h-3 w-3 accent-primary'
-                      />
-                      Light
-                    </label>
+                    {(['dark', 'light'] as const).map((s) => (
+                      <Button
+                        key={s}
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => handleSchemeChange(theme._id, s)}
+                        className={`h-5 px-1.5 font-mono text-[9px] uppercase tracking-widest ${
+                          thisScheme === s ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </Button>
+                    ))}
                   </div>
                 )}
-              </button>
+              </Card>
             )
           })}
         </div>
@@ -254,6 +258,7 @@ export function ThemeBrowser({
         toolbar={
           <PreviewToolbar
             selectedLibrary={selectedLibrary}
+            libraries={libraries}
             onLibraryChange={handleLibrarySelect}
             fontSans={selectedFontSans}
             onFontChange={handleFontChange}

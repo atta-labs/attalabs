@@ -24,8 +24,12 @@
       "cache": false,
       "persistent": true
     },
+    "generate": {
+      "cache": false,
+      "dependsOn": []
+    },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["generate", "^typecheck"]
     },
     "clean": {
       "cache": false

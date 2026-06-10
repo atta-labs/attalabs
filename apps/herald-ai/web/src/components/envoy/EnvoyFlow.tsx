@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Button as FallbackButton } from '@atta/ui/components'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { JDInput } from './JDInput'
@@ -11,6 +12,8 @@ interface CandidateProfile {
   name: string
   title: string
   github?: string
+  linkedin?: string
+  discord?: string
   summary: string
   stack: string[]
   projects?: Array<{ title: string; description: string }>
@@ -19,13 +22,13 @@ interface CandidateProfile {
   availability?: string
   avatarUrl?: string
   cvUrl?: string
-  bio?: string
 }
 
 type FlowState = 'input' | 'loading' | 'result' | 'error'
 
 function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
-  const { Button } = useComponents()
+  const comps = useComponents()
+  const Button = (comps.Button as typeof FallbackButton | undefined) ?? FallbackButton
   const [copied, setCopied] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -50,36 +53,17 @@ function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
     timerRef.current = setTimeout(() => setCopied(false), 1500)
   }
 
-  const fallbackClass =
-    'border border-foreground/20 bg-foreground/5 px-6 py-2 text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
-
   return (
     <div className='sticky bottom-0 mx-auto flex max-w-[680px] gap-3 border-t border-border/50 bg-background/80 px-6 py-4 backdrop-blur-sm no-print'>
-      {Button ? (
-        <>
-          <Button onClick={handleCopy} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
-            {copied ? 'Copied!' : 'Copy Link'}
-          </Button>
-          <Button onClick={() => window.print()} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
-            Export PDF
-          </Button>
-          <Button onClick={onNewAudit} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
-            New Audit
-          </Button>
-        </>
-      ) : (
-        <>
-          <button type='button' onClick={handleCopy} className={fallbackClass}>
-            {copied ? 'Copied!' : 'Copy Link'}
-          </button>
-          <button type='button' onClick={() => window.print()} className={fallbackClass}>
-            Export PDF
-          </button>
-          <button type='button' onClick={onNewAudit} className={fallbackClass}>
-            New Audit
-          </button>
-        </>
-      )}
+      <Button onClick={handleCopy} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
+        {copied ? 'Copied!' : 'Copy Link'}
+      </Button>
+      <Button onClick={() => window.print()} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
+        Export PDF
+      </Button>
+      <Button onClick={onNewAudit} variant='outline' className='text-xs uppercase tracking-[0.2em]'>
+        New Audit
+      </Button>
     </div>
   )
 }
@@ -90,13 +74,18 @@ const API_TIMEOUT = 35000
 export function EnvoyFlow({
   profile,
   username,
-  previewMode = false
+  previewMode = false,
+  hasAnthropicKey = false,
+  isOwner = false
 }: {
   profile: CandidateProfile
   username: string
   previewMode?: boolean
+  hasAnthropicKey?: boolean
+  isOwner?: boolean
 }) {
-  const { Button } = useComponents()
+  const comps = useComponents()
+  const Button = (comps.Button as typeof FallbackButton | undefined) ?? FallbackButton
   const [state, setState] = useState<FlowState>('input')
   const [report, setReport] = useState<MatchReport | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -146,7 +135,8 @@ export function EnvoyFlow({
       clearTimeout(apiTimer)
       if (!res.ok) {
         const body = await res.json().catch(() => null)
-        throw new Error(body?.error ?? `API error: ${res.status}`)
+        const errMsg = typeof body?.error === 'string' ? body.error : `API error: ${res.status}`
+        throw new Error(errMsg)
       }
 
       const data: MatchReport = await res.json()
@@ -173,53 +163,23 @@ export function EnvoyFlow({
   }
 
   if (state === 'input') {
-    if (previewMode) {
-      return (
-        <div className='mx-auto max-w-[680px] px-6 py-12'>
-          <header className='mb-8 border-b border-border pb-6'>
-            <div className='flex items-center gap-4'>
-              {localProfile.avatarUrl && (
-                // biome-ignore lint/performance/noImgElement: Blob URL, not optimisable via next/image
-                <img src={localProfile.avatarUrl} alt='' className='h-16 w-16 rounded-full object-cover' />
-              )}
-              <div>
-                <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-                  Forensic Match Audit
-                </p>
-                <h1 className='mt-1 font-display text-2xl tracking-tight'>{localProfile.name}</h1>
-                <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{localProfile.title}</p>
-              </div>
-            </div>
-          </header>
-          {localProfile.bio && (
-            <p className='mb-8 font-sans text-sm leading-relaxed text-foreground/80'>{localProfile.bio}</p>
-          )}
-          <div className='rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
-            <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
-          </div>
-          {localProfile.cvUrl && (
-            <div className='mt-8 border-t border-border pt-6'>
-              <a
-                href={localProfile.cvUrl}
-                target='_blank'
-                rel='noreferrer'
-                className='font-mono text-xs text-muted-foreground transition-colors hover:text-foreground'
-              >
-                ↓ Download CV
-              </a>
-            </div>
-          )}
-        </div>
-      )
-    }
     return (
       <JDInput
         onSubmit={handleSubmit}
         candidateName={localProfile.name}
         candidateTitle={localProfile.title}
         candidateAvatarUrl={localProfile.avatarUrl}
-        candidateBio={localProfile.bio}
+        candidateSummary={localProfile.summary}
+        candidateStack={localProfile.stack}
+        candidateLocation={localProfile.location}
+        candidateAvailability={localProfile.availability}
         candidateCvUrl={localProfile.cvUrl}
+        candidateGithub={localProfile.github}
+        candidateLinkedin={localProfile.linkedin}
+        candidateDiscord={localProfile.discord}
+        auditAvailable={hasAnthropicKey}
+        isOwner={isOwner}
+        preview={previewMode}
       />
     )
   }
@@ -239,19 +199,9 @@ export function EnvoyFlow({
 
         <p className='text-sm text-muted-foreground'>{error}</p>
 
-        {Button ? (
-          <Button onClick={handleRetry} variant='outline' className='mt-4 text-xs uppercase tracking-[0.2em]'>
-            Try Again
-          </Button>
-        ) : (
-          <button
-            type='button'
-            onClick={handleRetry}
-            className='mt-4 border border-foreground/20 bg-foreground/5 px-6 py-2 text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10'
-          >
-            Try Again
-          </button>
-        )}
+        <Button onClick={handleRetry} variant='outline' className='mt-4 text-xs uppercase tracking-[0.2em]'>
+          Try Again
+        </Button>
       </div>
     )
   }

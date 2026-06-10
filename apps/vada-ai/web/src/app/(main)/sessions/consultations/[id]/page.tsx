@@ -1,7 +1,7 @@
 import { auth } from '@atta/auth/hooks'
 import { notFound } from 'next/navigation'
 import { Heading, Text } from '@atta/ui/shared'
-import { Separator } from '@atta/ui'
+import { Separator } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { getBrokeredConsultation } from '@/db/mcp-queries'
 import { ResponseBody } from './components/ResponseBody'

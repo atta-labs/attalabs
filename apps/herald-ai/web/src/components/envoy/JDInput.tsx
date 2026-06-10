@@ -1,84 +1,348 @@
 'use client'
 
-import { useState } from 'react'
-import { Button, Textarea } from '@atta/ui'
+import type { FileUIPart } from 'ai'
+import { useEffect, useRef } from 'react'
+import { Download, ExternalLink } from 'lucide-react'
+import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
+import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
+import { useComponents } from '@atta/ui/lib/library-provider'
+import { AvatarFrame } from '@/components/avatar-frame'
+import { SummaryMarkdown } from '@/components/summary-markdown'
+import { useHeroCollapse } from './hero-collapse-context'
+
+const ACCEPTED_DOC_TYPES = '.pdf,.md,.txt,application/pdf,text/markdown,text/plain'
+
+async function downloadCv(url: string, filename: string) {
+  try {
+    const res = await fetch(url)
+    const blob = await res.blob()
+    const objectUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = objectUrl
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(objectUrl)
+  } catch {
+    window.open(url, '_blank')
+  }
+}
 
 export function JDInput({
   onSubmit,
   candidateName = 'Dani Estevez Martin',
   candidateTitle = 'Senior Frontend Architect · AI Systems · Web3',
   candidateAvatarUrl,
-  candidateBio,
-  candidateCvUrl
+  candidateSummary,
+  candidateStack,
+  candidateLocation,
+  candidateAvailability,
+  candidateCvUrl,
+  candidateGithub,
+  candidateLinkedin,
+  candidateDiscord,
+  auditAvailable = true,
+  isOwner = false,
+  preview = false
 }: {
   onSubmit: (jd: string) => void
   candidateName?: string
   candidateTitle?: string
   candidateAvatarUrl?: string
-  candidateBio?: string
+  candidateSummary?: string
+  candidateStack?: string[]
+  candidateLocation?: string
+  candidateAvailability?: string
   candidateCvUrl?: string
+  candidateGithub?: string
+  candidateLinkedin?: string
+  candidateDiscord?: string
+  auditAvailable?: boolean
+  isOwner?: boolean
+  preview?: boolean
 }) {
-  const [value, setValue] = useState('')
-  const [pending, setPending] = useState(false)
+  const { setIsCollapsed } = useHeroCollapse()
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const { Button, Badge } = useComponents()
 
-  const canSubmit = value.trim().length >= 20 && !pending
+  useEffect(() => {
+    setIsCollapsed(false)
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
 
-  function handleSubmit() {
-    if (!canSubmit) return
-    setPending(true)
-    onSubmit(value.trim())
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry) setIsCollapsed(!entry.isIntersecting)
+      },
+      { root: null, rootMargin: '0px', threshold: 0 }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [setIsCollapsed])
+
+  const topStack = candidateStack ?? []
+  const locationLine = [candidateLocation, candidateAvailability].filter(Boolean).join(' · ')
+  const cvRawFile = candidateCvUrl ? (candidateCvUrl.split('/').pop() ?? '') : null
+  const cvExt = cvRawFile ? (cvRawFile.split('.').pop() ?? 'pdf') : 'pdf'
+  const cvFilename = candidateCvUrl ? `${(candidateName ?? 'CV').replace(/\s+/g, '_')}_CV.${cvExt}` : null
+  const hasSocialLinks = !!(candidateGithub || candidateLinkedin || candidateDiscord)
+
+  function handleSubmit(text: string, files: FileUIPart[]) {
+    let jd = text.trim()
+    if (!jd && files.length > 0) {
+      const textFile = files.find((f) => f.mediaType?.startsWith('text/'))
+      if (textFile?.url.startsWith('data:')) {
+        const comma = textFile.url.indexOf(',')
+        if (comma !== -1) {
+          const header = textFile.url.slice(0, comma)
+          const data = textFile.url.slice(comma + 1)
+          try {
+            jd = header.includes(';base64') ? atob(data) : decodeURIComponent(data)
+          } catch {
+            // ignore decode failure
+          }
+        }
+      }
+    }
+    if (jd) onSubmit(jd)
   }
 
   return (
-    <div className='mx-auto max-w-[680px] px-6 py-12'>
-      <header className='mb-8 border-b border-border pb-6'>
-        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
-        <div className='mt-2 flex items-center gap-4'>
-          {candidateAvatarUrl && (
-            // biome-ignore lint/performance/noImgElement: Blob URL, not optimisable via next/image
-            <img src={candidateAvatarUrl} alt='' className='h-16 w-16 rounded-full object-cover shrink-0' />
-          )}
-          <div>
-            <h1 className='font-display text-2xl tracking-tight'>{candidateName}</h1>
-            <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{candidateTitle}</p>
+    <div>
+      {/* Hero — flows on the page; scrolls with the page (no internal scroller) */}
+      <div>
+        <div className='mx-auto max-w-[680px] px-6 pt-20 pb-4'>
+          <header>
+            <div className='flex items-start gap-5'>
+              {candidateAvatarUrl && (
+                <AvatarFrame
+                  src={candidateAvatarUrl}
+                  alt={candidateName ?? ''}
+                  variant='dossier'
+                  pennant
+                  pennantAnimated
+                />
+              )}
+              <div className='min-w-0'>
+                <h1 className='mt-1 font-display text-4xl tracking-tight text-foreground'>{candidateName}</h1>
+                <p className='mt-2 font-mono text-xl text-muted-foreground'>{candidateTitle}</p>
+              </div>
+            </div>
+
+            {/* Sentinel: collapse triggers when this exits the scroll container's top */}
+            <div ref={sentinelRef} aria-hidden='true' className='h-px' />
+
+            <div className='mt-6'>
+              {(topStack.length > 0 || locationLine || (candidateCvUrl && cvFilename) || hasSocialLinks) && (
+                <dl className='grid grid-cols-[80px_1fr] items-center gap-y-2'>
+                  {locationLine && (
+                    <>
+                      <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LOCATION</dt>
+                      <dd className='text-sm text-foreground'>{locationLine}</dd>
+                    </>
+                  )}
+                  {candidateCvUrl && cvFilename && (
+                    <>
+                      <dt className='font-mono text-xs tracking-wide text-muted-foreground'>CV</dt>
+                      <dd className='flex items-center justify-between gap-2'>
+                        <span className='min-w-0 truncate font-mono text-sm text-foreground'>{cvFilename}</span>
+                        <div className='flex shrink-0 items-center gap-1'>
+                          {Button ? (
+                            <>
+                              <Button
+                                variant='outline'
+                                size='icon'
+                                aria-label='Download CV'
+                                title='Download CV'
+                                onClick={() => downloadCv(candidateCvUrl!, cvFilename!)}
+                              >
+                                <Download className='h-4 w-4' />
+                              </Button>
+                              <Button
+                                variant='outline'
+                                size='icon'
+                                aria-label='Open CV'
+                                title='Open CV'
+                                onClick={() => window.open(candidateCvUrl!, '_blank')}
+                              >
+                                <ExternalLink className='h-4 w-4' />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <a
+                                href={candidateCvUrl}
+                                aria-label='Download CV'
+                                title='Download CV'
+                                className='flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  downloadCv(candidateCvUrl!, cvFilename!)
+                                }}
+                              >
+                                <Download className='h-4 w-4' />
+                              </a>
+                              <a
+                                href={candidateCvUrl}
+                                target='_blank'
+                                rel='noreferrer'
+                                aria-label='Open CV'
+                                title='Open CV'
+                                className='flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                              >
+                                <ExternalLink className='h-4 w-4' />
+                              </a>
+                            </>
+                          )}
+                        </div>
+                      </dd>
+                    </>
+                  )}
+                  {hasSocialLinks && (
+                    <>
+                      <dt className='font-mono text-xs tracking-wide text-muted-foreground'>LINKS</dt>
+                      <dd className='flex items-center gap-1.5'>
+                        {candidateGithub &&
+                          (Button ? (
+                            <Button
+                              variant='outline'
+                              size='icon'
+                              aria-label='GitHub'
+                              title='GitHub'
+                              onClick={() => window.open(`https://github.com/${candidateGithub}`, '_blank')}
+                            >
+                              <GitHubIcon className='h-4 w-4' />
+                            </Button>
+                          ) : (
+                            <a
+                              href={`https://github.com/${candidateGithub}`}
+                              target='_blank'
+                              rel='noreferrer'
+                              aria-label='GitHub'
+                              title='GitHub'
+                              className='flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                            >
+                              <GitHubIcon className='h-4 w-4' />
+                            </a>
+                          ))}
+                        {candidateLinkedin &&
+                          (Button ? (
+                            <Button
+                              variant='outline'
+                              size='icon'
+                              aria-label='LinkedIn'
+                              title='LinkedIn'
+                              onClick={() => window.open(candidateLinkedin!, '_blank')}
+                            >
+                              <LinkedInIcon className='h-4 w-4' />
+                            </Button>
+                          ) : (
+                            <a
+                              href={candidateLinkedin}
+                              target='_blank'
+                              rel='noreferrer'
+                              aria-label='LinkedIn'
+                              title='LinkedIn'
+                              className='flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary'
+                            >
+                              <LinkedInIcon className='h-4 w-4' />
+                            </a>
+                          ))}
+                        {candidateDiscord &&
+                          (Button ? (
+                            <Button
+                              variant='outline'
+                              size='icon'
+                              aria-label={`Discord: ${candidateDiscord}`}
+                              title={`Discord: ${candidateDiscord}`}
+                            >
+                              <DiscordIcon className='h-4 w-4' />
+                            </Button>
+                          ) : (
+                            <span
+                              role='img'
+                              aria-label={`Discord: ${candidateDiscord}`}
+                              title={`Discord: ${candidateDiscord}`}
+                              className='flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground'
+                            >
+                              <DiscordIcon className='h-4 w-4' />
+                            </span>
+                          ))}
+                      </dd>
+                    </>
+                  )}
+                  {topStack.length > 0 && (
+                    <>
+                      <dt className='self-start pt-1 font-mono text-xs tracking-wide text-muted-foreground'>STACK</dt>
+                      <dd>
+                        <div className='flex flex-wrap gap-1.5'>
+                          {topStack.map((s) =>
+                            Badge ? (
+                              <Badge key={s} variant='outline' className='font-mono text-[11px]'>
+                                {s}
+                              </Badge>
+                            ) : (
+                              <span
+                                key={s}
+                                className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
+                              >
+                                {s}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </dd>
+                    </>
+                  )}
+                </dl>
+              )}
+
+              {candidateSummary && (
+                <div className='mt-6 max-w-[65ch]'>
+                  <SummaryMarkdown text={candidateSummary} />
+                </div>
+              )}
+            </div>
+          </header>
+        </div>
+      </div>
+
+      {/* Pinned input / audit gate — sticky to viewport bottom while user scrolls the hero */}
+      {preview ? (
+        <div className='sticky bottom-0 z-30 bg-background/95 backdrop-blur-md'>
+          <div className='mx-auto max-w-[680px] px-6 py-4'>
+            <div className='rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
+              <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
+            </div>
           </div>
         </div>
-        {candidateBio && <p className='mt-4 font-sans text-sm leading-relaxed text-foreground/80'>{candidateBio}</p>}
-      </header>
-
-      <div>
-        <Textarea
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
-          rows={10}
-          disabled={pending}
-          className='w-full resize-none bg-card font-sans text-sm leading-relaxed'
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && e.metaKey) handleSubmit()
-          }}
-        />
-
-        <Button
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-          className='mt-3 w-full py-3 font-mono text-xs uppercase tracking-[0.2em]'
-        >
-          {pending ? 'Generating...' : 'Generate Audit'}
-        </Button>
-
-        <p className='mt-2 font-mono text-[10px] text-muted-foreground'>Cmd+Enter to submit</p>
-        {candidateCvUrl && (
-          <a
-            href={candidateCvUrl}
-            target='_blank'
-            rel='noreferrer'
-            className='mt-4 inline-block font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground'
-          >
-            ↓ Download CV
-          </a>
-        )}
-      </div>
+      ) : auditAvailable ? (
+        <div className='sticky bottom-0 z-30 bg-background/95 backdrop-blur-md'>
+          <div className='mx-auto max-w-[680px] px-6 py-4'>
+            <SmartPromptInput
+              onSubmit={handleSubmit}
+              placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
+              submitOn='cmdenter'
+              hint='Cmd+Enter to submit'
+              accept={ACCEPTED_DOC_TYPES}
+              pasteToFileChars={1000}
+            />
+          </div>
+        </div>
+      ) : isOwner ? (
+        <div className='sticky bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md'>
+          <div className='mx-auto flex max-w-[680px] items-center justify-between px-6 py-3'>
+            <p className='font-mono text-xs text-warning'>No API key — recruiters can't run audits yet.</p>
+            <a
+              href='/settings'
+              className='shrink-0 font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
+            >
+              Settings → API Keys
+            </a>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Input } from '@atta/ui'
+import { Button, Input } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Search, Plus } from 'lucide-react'
 import { useState } from 'react'

@@ -1,39 +1,24 @@
-import { cmsClient, getThemes } from '@atta/cms'
+import { cmsClient, getLibraries, getThemes } from '@atta/cms'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { AdminEditorPage } from '@/components/portal/AdminEditorPage'
 import { getUserByClerkId } from '@/db/queries'
 
-export default async function AdminUIPage() {
+export default async function CandidateUIPage() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
   const user = await getUserByClerkId(userId)
-  if (!user?.onboardingComplete) redirect('/admin')
+  if (!user?.onboardingComplete) redirect('/onboarding')
 
-  const themes = await getThemes(cmsClient)
+  const [themes, libraries] = await Promise.all([getThemes(cmsClient), getLibraries(cmsClient).catch(() => [])])
 
   return (
     <div className='h-full'>
       <AdminEditorPage
         username={user.username}
         initialProfile={{
-          name: user.name,
-          title: user.title,
-          location: user.location ?? '',
-          availability: user.availability ?? '',
-          summary: user.summary,
-          stack: (() => {
-            try {
-              return (JSON.parse(user.stack) as string[]).join(', ')
-            } catch {
-              return ''
-            }
-          })(),
-          github: user.githubHandle ?? '',
-          bio: user.bio ?? '',
-          avatarUrl: user.avatarUrl ?? null,
-          cvUrl: user.cvUrl ?? null
+          avatarUrl: user.avatarUrl ?? null
         }}
         initialTheme={{
           themeId: user.themeId ?? null,
@@ -42,6 +27,7 @@ export default async function AdminUIPage() {
           fontSans: user.fontSans ?? null
         }}
         themes={themes}
+        libraries={libraries}
       />
     </div>
   )

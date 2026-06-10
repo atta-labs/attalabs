@@ -1,4 +1,4 @@
-import { Badge } from '@atta/ui/components/badge'
+import { Badge } from '@atta/ui/components'
 
 const STATE_CLASSES: Record<string, string> = {
   CLEAN: 'text-success border-success/40',

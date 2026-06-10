@@ -2,7 +2,7 @@
 
 import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
-import { Button, Checkbox, Card, CardContent } from '@atta/ui'
+import { Button, Checkbox, Card, CardContent } from '@atta/ui/components'
 import { ArrowRight, GitCompare, Loader2, Lock, Settings2 } from 'lucide-react'
 import { cn } from '@atta/ui/lib/utils'
 import { NextLink } from '@atta/ui/lib/next-link'

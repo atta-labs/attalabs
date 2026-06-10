@@ -1,4 +1,4 @@
-import { Heading, Text } from '@atta/ui'
+import { Heading, Text } from '@atta/ui/components'
 import { SectionLabel } from '../primitives/SectionLabel'
 import { SectionWrapper } from '../primitives/SectionWrapper'
 

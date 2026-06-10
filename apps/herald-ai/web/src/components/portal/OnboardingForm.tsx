@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
+import { Button, Input } from '@atta/ui/components'
 
 type ParseStatus = 'idle' | 'uploading' | 'parsed' | 'error'
 type FieldStatus = 'idle' | 'checking' | 'valid' | 'invalid'
@@ -136,15 +137,13 @@ export function OnboardingForm() {
         return
       }
 
-      router.push('/admin')
+      router.push('/bulk-audit')
       router.refresh()
     } finally {
       setSaving(false)
     }
   }
 
-  const inputClass =
-    'w-full border border-border bg-card px-3 py-2 font-sans text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/30 focus:outline-none'
   const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
 
   function statusIndicator(status: FieldStatus, invalidMsg?: string) {
@@ -168,10 +167,10 @@ export function OnboardingForm() {
       <div className='flex flex-col gap-6'>
         {/* ── Username + GitHub (same row) ── */}
         <div className='grid grid-cols-2 gap-4'>
-          <label>
+          <label htmlFor='onboarding-username'>
             <span className={labelClass}>Username</span>
-            <input
-              className={inputClass}
+            <Input
+              id='onboarding-username'
               value={username}
               onChange={(e) => {
                 setUsername(e.target.value.replace(/[^a-z0-9-]/g, ''))
@@ -183,10 +182,10 @@ export function OnboardingForm() {
             />
             {statusIndicator(usernameStatus, usernameError ?? 'Taken')}
           </label>
-          <label>
+          <label htmlFor='onboarding-github'>
             <span className={labelClass}>GitHub Handle (optional)</span>
-            <input
-              className={inputClass}
+            <Input
+              id='onboarding-github'
               value={githubHandle}
               onChange={(e) => {
                 setGithubHandle(e.target.value)
@@ -203,14 +202,15 @@ export function OnboardingForm() {
         <div>
           <span className={labelClass}>CV / Resume (PDF, TXT, or Markdown)</span>
           <input ref={fileRef} type='file' accept='.pdf,.txt,.md' onChange={handleFileUpload} className='hidden' />
-          <button
+          <Button
             type='button'
+            variant='outline'
             onClick={() => fileRef.current?.click()}
             disabled={parseStatus === 'uploading'}
-            className={`${inputClass} cursor-pointer text-left`}
+            className='w-full justify-start font-sans text-sm'
           >
             {parseStatus === 'uploading' ? 'Parsing your CV...' : fileName ? `✓ ${fileName}` : 'Click to upload'}
-          </button>
+          </Button>
           {parseStatus === 'parsed' && parsedProfile && (
             <div className='mt-3 border-l border-foreground/10 pl-3'>
               <p className='font-mono text-[11px] text-foreground'>
@@ -229,14 +229,15 @@ export function OnboardingForm() {
         {error && <p className='font-mono text-xs text-destructive'>{error}</p>}
 
         {/* ── Submit ── */}
-        <button
+        <Button
           type='button'
+          variant='outline'
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className='w-full border border-foreground/20 bg-foreground/5 py-3 font-mono text-xs uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-30'
+          className='w-full py-3 font-mono text-xs uppercase tracking-[0.2em] disabled:opacity-30'
         >
           {saving ? 'Launching...' : 'Launch My Herald'}
-        </button>
+        </Button>
       </div>
     </div>
   )

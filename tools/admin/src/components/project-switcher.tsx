@@ -35,8 +35,7 @@ export function ProjectSwitcher({ logos }: ProjectSwitcherProps) {
     if (!isValidProject(next)) return
     // biome-ignore lint/suspicious/noDocumentCookie: dev tool — no CookieStore polyfill needed
     document.cookie = `atta-admin-project=${next};path=/;max-age=31536000`
-    const subPath = segments.slice(1).join('/')
-    router.push(subPath ? `/${next}/${subPath}` : `/${next}/themes`)
+    router.push(`/${next}/themes`)
   }
 
   return (

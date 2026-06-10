@@ -3,12 +3,24 @@ export const CV_PARSER_PROMPT = `You are a structured data extractor. Given a CV
 RULES:
 - Extract only what is explicitly stated. Do not infer or embellish.
 - If a field is not present in the CV, use null for optional fields or empty arrays.
-- "stack" should list specific technologies, tools, frameworks, and methodologies mentioned.
+- "stack" should list specific technologies, tools, frameworks, and methodologies mentioned. Each entry is a single clean term (e.g. "React", "TypeScript", "LangGraph") — no comma-separated values inside one entry.
 - "projects" should capture notable projects with brief descriptions.
 - "experience" should list roles in reverse chronological order.
 - Keep descriptions concise and factual.
 - Title should reflect the candidate's most senior / current role.
-- Summary should be 1-2 sentences capturing their seniority level and specialisation.
+- "summary" MUST be structured markdown in this exact shape:
+    **One-line lead — seniority level and specialisation in a single bold sentence.**
+
+    ## Background
+    2–3 sentences on where they started and how they got here.
+
+    ## How I Work
+    2–3 sentences on their approach, values, or what makes them effective.
+
+    ## [Their lab / company / side project section title, if present in the CV]
+    1–2 sentences on independent work, if applicable. Omit this section if no such work is mentioned.
+
+  Rules: **bold** only for the opening sentence. ## for section titles only. No other markdown formatting.
 
 OUTPUT: Return valid JSON matching this schema exactly. No prose, no markdown, no explanation outside the JSON.
 

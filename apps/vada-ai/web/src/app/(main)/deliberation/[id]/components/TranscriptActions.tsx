@@ -2,7 +2,7 @@
 
 // Presentational only. Copy + download handlers live in useTranscriptActions.
 
-import { Button } from '@atta/ui'
+import { Button } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Copy, Download } from 'lucide-react'
 import type { TranscriptInput } from './transcript-export'

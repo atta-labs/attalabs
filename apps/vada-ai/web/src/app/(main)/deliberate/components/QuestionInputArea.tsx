@@ -1,6 +1,6 @@
 'use client'
 
-import { Textarea } from '@atta/ui'
+import { Textarea } from '@atta/ui/components'
 
 interface QuestionInputAreaProps {
   question: string

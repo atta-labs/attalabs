@@ -1,4 +1,4 @@
-import { Text } from '@atta/ui'
+import { Text } from '@atta/ui/components'
 import { EyeOff } from 'lucide-react'
 import { ConclusionCard } from '../../primitives/ConclusionCard'
 import { FlowArrow } from '../../primitives/FlowArrow'

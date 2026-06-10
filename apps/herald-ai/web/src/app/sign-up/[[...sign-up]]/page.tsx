@@ -3,7 +3,7 @@ import { SignUp } from '@clerk/nextjs'
 export default function SignUpPage() {
   return (
     <div className='flex min-h-screen items-center justify-center'>
-      <SignUp fallbackRedirectUrl='/admin' />
+      <SignUp fallbackRedirectUrl='/bulk-audit' />
     </div>
   )
 }

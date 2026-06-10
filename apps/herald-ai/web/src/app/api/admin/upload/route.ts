@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   try {
     const ext = file.name.split('.').pop() ?? (type === 'avatar' ? 'jpg' : 'pdf')
     const filename = `${type}s/${userId}-${Date.now()}.${ext}`
-    const blob = await put(filename, file, { access: 'public' })
+    const blob = await put(filename, file, { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN })
     return NextResponse.json({ url: blob.url })
   } catch (err) {
     console.error('[Herald] Upload error:', err)

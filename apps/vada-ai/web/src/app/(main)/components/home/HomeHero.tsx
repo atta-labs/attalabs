@@ -1,6 +1,6 @@
 'use client'
 
-import { Heading, Text } from '@atta/ui'
+import { Heading, Text } from '@atta/ui/components'
 import { useEffect, useState } from 'react'
 import { DeliberateAction } from './DeliberateAction'
 import { HomeCanvas } from './HomeCanvas'

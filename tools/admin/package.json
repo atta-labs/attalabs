@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@atta/cms": "workspace:*",
+    "@atta/instrumentation": "workspace:*",
     "@atta/ui": "workspace:*",
     "@sanity/client": "^7.20.0",
     "lucide-react": "^1.7.0",

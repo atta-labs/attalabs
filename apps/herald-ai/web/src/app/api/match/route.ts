@@ -2,7 +2,10 @@ import { createHash } from 'node:crypto'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText } from 'ai'
 import { NextResponse } from 'next/server'
+import { decryptVendorKeys } from '@atta/crypto'
+import { getProviderKeys } from '@atta/db/queries'
 
+import { db } from '@/db'
 import { getUserByUsername } from '@/db/queries'
 import { DANI_PROFILE } from '@/lib/profile'
 import { MATCH_REPORT_SCHEMA, SKEPTICAL_AUDITOR_PROMPT } from '@/lib/prompts'
@@ -32,6 +35,7 @@ function getCached(key: string): MatchReport | null {
 function buildPartialReport(name: string, title: string, github: string): MatchReport {
   return {
     candidate: { name, title, github },
+    hard_requirements: [],
     grade: 'B+',
     recommendation: 'Good Fit',
     confidence: 'Low',
@@ -39,7 +43,7 @@ function buildPartialReport(name: string, title: string, github: string): MatchR
       'Audit timed out before full analysis could complete. Partial assessment based on available data.'
     ],
     signal: [],
-    gaps: [{ gap: 'Incomplete analysis', mitigation: 'Re-run the audit for a complete assessment' }],
+    gaps: [{ gap: 'Incomplete analysis', severity: 'minor', mitigation: 'Re-run the audit for a complete assessment' }],
     interview_hooks: []
   }
 }
@@ -76,14 +80,24 @@ function parseMatchReport(
     const cleaned = text.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '')
     const parsed = JSON.parse(cleaned)
 
-    // Validate required fields
+    // Validate required fields — hard_requirements must be present (can be empty for no-gate JDs)
     if (!parsed.grade || !parsed.recommendation || !parsed.signal) return null
+    if (!Array.isArray(parsed.hard_requirements)) return null
+
+    // Code-enforced NO FIT gate — model cannot override this
+    const failedHardGate = parsed.hard_requirements.some(
+      (r: { kind: string; met: boolean }) => r.kind === 'hard' && !r.met
+    )
+    const grade = failedHardGate ? 'NO FIT' : parsed.grade
+    const recommendation = failedHardGate ? 'No Fit' : parsed.recommendation
+    const confidence = grade === 'NO FIT' ? 'High' : grade === 'A' || grade === 'A-' ? 'High' : 'Moderate'
 
     return {
       candidate: candidateInfo,
-      grade: parsed.grade,
-      recommendation: parsed.recommendation,
-      confidence: parsed.grade === 'A' || parsed.grade === 'A-' ? 'High' : 'Moderate',
+      hard_requirements: parsed.hard_requirements,
+      grade,
+      recommendation,
+      confidence,
       confidence_reasoning: parsed.confidence_reasoning ?? [],
       signal: parsed.signal ?? [],
       gaps: parsed.gaps ?? [],
@@ -103,11 +117,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Job description must be at least 20 characters' }, { status: 400 })
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
-    }
-
     // Resolve profile: DB lookup by username (live path), test override (test path), or DANI_PROFILE fallback
     const username = body.username as string | undefined
     const testOverride = body._test_profile_override
@@ -121,6 +130,7 @@ export async function POST(request: Request) {
       projects: Array<{ title: string; description: string }>
       experience: Array<{ company: string; role: string; period: string; highlights: string[] }>
     }
+    let apiKey: string | undefined
 
     if (username) {
       const dbUser = await getUserByUsername(username)
@@ -141,6 +151,27 @@ export async function POST(request: Request) {
           highlights: string[]
         }>
       }
+
+      // Resolve owner's stored Anthropic key — audit runs on the owner's BYOK key
+      const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
+      if (masterKeyB64) {
+        const stored = await getProviderKeys(db, dbUser.clerkId)
+        if (stored) {
+          const keys = decryptVendorKeys(
+            stored.encryptedPayload as Parameters<typeof decryptVendorKeys>[0],
+            dbUser.clerkId,
+            Buffer.from(masterKeyB64, 'base64')
+          )
+          apiKey = keys.anthropic
+        }
+      }
+
+      if (!apiKey) {
+        return NextResponse.json(
+          { error: 'Audit not available — profile owner has not configured their Anthropic key' },
+          { status: 503 }
+        )
+      }
     } else if (testOverride) {
       profile = {
         name: testOverride.name as string,
@@ -156,8 +187,17 @@ export async function POST(request: Request) {
         }>,
         github: (testOverride.github as string) ?? ''
       }
+      // Test and fallback paths use the server env key
+      apiKey = process.env.ANTHROPIC_API_KEY
+      if (!apiKey) {
+        return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
+      }
     } else {
       profile = DANI_PROFILE
+      apiKey = process.env.ANTHROPIC_API_KEY
+      if (!apiKey) {
+        return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
+      }
     }
 
     // Check cache
@@ -198,7 +238,7 @@ ${jd.trim()}
 Respond with valid JSON matching this schema exactly:
 ${MATCH_REPORT_SCHEMA}`
 
-    const anthropic = createAnthropic({ apiKey })
+    const anthropic = createAnthropic({ apiKey: apiKey! })
 
     // Attempt generation with 15s hard timeout (signals + LLM combined)
     let report: MatchReport | null = null
