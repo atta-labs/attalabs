@@ -224,7 +224,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 **Alternatives rejected:**
 - Keep in `project-management/`: not wrong, but inconsistent with how other contextual guidance is stored. Skills have a defined loading mechanism; PM docs do not.
 
-**Consequences:** Brief authoring rules are now skill-gated. An agent writing a brief loads the skill. The `project-management/` directory is cleaner. The skill gets the v3 model integration section that `project-management/` placement would have diluted. (Note: the *placement* rationale here is revisited by D-039 — skills' canonical home moves to `project-management/skills/` for self-containment, with `.claude/skills/` a generated view. The "skills are contextually loaded, not always-on PM prose" principle is unchanged; only the source-of-truth location moves.)
+**Consequences:** Brief authoring rules are now skill-gated. An agent writing a brief loads the skill. The `project-management/` directory is cleaner. The skill gets the v3 model integration section that `project-management/` placement would have diluted. (Note: the *placement* rationale here is revisited by D-039 — skills' canonical home moves to `project-management/skills/` for self-containment, with `.claude/skills/` a generated view. The "skills are contextually loaded, not always-on PM prose" principle is unchanged; only the source-of-truth location moves. D-039 was **executed** by D-040 — the AEG flow skills now physically live at `project-management/skills/`.)
 
 ---
 
@@ -772,17 +772,50 @@ This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choi
 
 **Decision:** Skills are **part of the flow**, and their **canonical source of truth is `project-management/skills/`** (self-contained, travels with the unit, scaffolded by `aeg.sh`, can't be orphaned by `.claude/` cleanup). The harness location **`.claude/skills/` becomes a generated/derived view** of them (copy or symlink), rebuilt by a generate step (and by `aeg.sh` on scaffold). Source → derived, single direction, exactly like `@atta/ui`'s canonical components vs. its generated per-product index (`packages/ui/generated/`). Delete `.claude/skills/` and the generate step (or `aeg.sh`) rebuilds it from the canonical skills — strictly more resilient than today. This supersedes **D-011's placement** ("`.claude/skills/` is canonical"); D-011's *principle* (skills are contextually loaded, not always-on PM prose) is unchanged — only the source-of-truth location moves. Corollaries: (a) each role doc **names the skills it loads** as part of its entry gate (the role doc holds the *pointer*; the skill holds the *content* — no duplication); (b) `aeg.sh` scaffolds the neutral AEG skills (`aeg`, `aeg-roles`) into a new unit alongside the folder structure.
 
+**Scope clarification (which skills are "part of the flow"):** only the **AEG/flow skills** are model skills whose canonical home is `project-management/skills/` — concretely `aeg`, `aeg-roles`, `brief-authoring` (and, when written, any future flow skill). The repo's **domain skills** (`vada-*`, `ui-*`, `atta-engine`, `herald-engine`, `database`, `auth`, `cetana-coordinator`, `monorepo-structure`, etc.) are this-repo instance knowledge, NOT part of the neutral model, and stay at `.claude/skills/` — they must not travel via `aeg.sh` (moving them would re-contaminate the model with Atta-specific content). The move is the flow skills only.
+
 **Alternatives rejected:**
 - Keep `.claude/skills/` canonical (status quo, D-011): rejected — it leaves the flow not self-contained; skills live outside the unit and can be orphaned, and `aeg.sh` couldn't lay down a complete working unit.
 - Move skills *only* into `project-management/skills/`, no `.claude/` presence: rejected — breaks the harness's load mechanism; a `SKILL.md` the runtime can't find isn't a skill, it's a doc. Loses the "every agent always has this" property.
 - Copy skill *content* into each role doc so roles are self-contained: rejected — duplicates the skill, recreating the drift hazard the whole model fights. Role docs name skills; they don't inline them.
+- Move *all* skills (including domain skills) into the unit: rejected — domain skills are repo-instance knowledge, not the neutral model; moving them re-contaminates AEG. Only flow skills move (see scope clarification).
 
 **Consequences:**
-- Canonical skills move `.claude/skills/*` → `project-management/skills/*`; `.claude/skills/` is regenerated from them by a generate step (mechanism TBD in the implementing iteration — copy vs. symlink, and where the generate step runs, are implementation details for that iteration).
+- Canonical skills move `.claude/skills/*` → `project-management/skills/*` (flow skills only); `.claude/skills/` is regenerated from them by a generate step (mechanism TBD in the implementing iteration — copy vs. symlink, and where the generate step runs, are implementation details for that iteration).
 - Each `roles/*.md` entry gate gains a "skills to load" line (this is part of the existing ecosystem-backlog item "wire entry gates into the role docs").
-- `aeg.sh` (specced in `apps/aeg/specs/aeg-backlog.md`) gains: scaffold the AEG skills into a new unit. `apps/aeg/specs/aeg-app-architecture.md` §4 / backlog updated to note skills are scaffolded too.
+- `aeg.sh` (specced in `apps/aeg/specs/aeg-backlog.md`) gains: scaffold the AEG skills into a new unit, and a `generate-skills` subcommand to rebuild the harness view.
 - `docs-index.md` and any path references to `.claude/skills/` are updated when the move lands.
-- **Not yet executed** — this decision is logged now; the move + generate-step + role-doc edits are sequenced as a near-term iteration (a clean, well-bounded candidate). **Until that iteration lands, skills remain at `.claude/skills/` as the working location** (the `aeg` + `aeg-roles` skills created today live there for now). No agent behavior changes until the move executes.
+- **Execution status:** the AEG flow skills (`aeg`, `aeg-roles`, `brief-authoring`) were physically moved to `project-management/skills/` and removed from `.claude/skills/` on 2026-06-10 — see **D-040**, which records the executed move. The generate-step mechanism (copy vs. symlink) and the role-doc "skills to load" lines remain follow-ups.
 - Reversible (Type 1 for the cross-cutting layout blast radius, not for irreversibility).
+
+---
+
+## D-040 — D-039 executed: AEG flow skills physically relocated to `project-management/skills/`
+
+**Date:** 2026-06-10
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (AEG neutralization + self-containment pass, June 10, 2026)
+**Ratified by:** Principal (in-session)
+
+**Context:** D-039 decided the AEG flow skills' canonical home is `project-management/skills/`, but recorded itself as "not yet executed" — the skills still physically lived at `.claude/skills/`. The Principal directed that the AEG self-containment work be made real in this pass, not left logged-for-later, since the docs had begun describing a target state (`project-management/skills/` canonical) that did not exist on disk — an incoherent half-state. This entry records the execution of D-039 (it does not change the D-039 decision; it reports that it was carried out).
+
+**Decision:** Execute D-039 for the AEG flow skills. Concretely, on branch `task/aeg-neutralize/1`:
+- Created the canonical copies at `project-management/skills/aeg/SKILL.md`, `project-management/skills/aeg-roles/SKILL.md`, and `project-management/skills/brief-authoring/SKILL.md`, each carrying a canonical-source header marking `.claude/skills/<name>` as a generated view.
+- Deleted the three originals from `.claude/skills/` (`aeg`, `aeg-roles`, `brief-authoring`).
+- `brief-authoring` was additionally neutralized in the same move (de-vendored: coding-agent not Claude Code, forge Issue not GitHub Issue, config-security scan not AgentShield, capability tiers not Opus/Sonnet/Haiku, "the Principal by default" not "always Dani").
+- Per D-039's scope clarification, **only the three flow skills moved.** All domain skills (`vada-*`, `ui-*`, `atta-engine`, `herald-engine`, `database`, `auth`, `cetana-coordinator`, `monorepo-structure`, `model-picker`, `executor-protocol`, `code-style`, `git-commits`) remain at `.claude/skills/` — they are repo-instance knowledge, not the neutral model.
+
+**Alternatives rejected:**
+- Keep deferring (leave skills at `.claude/skills/`, docs describing the target): rejected by the Principal — it leaves the docs describing a state that doesn't exist, the exact incoherence flagged.
+- Also move the domain skills now: rejected — out of scope and contrary to D-039's scope clarification; domain skills are not part of the neutral model.
+
+**Consequences:**
+- `.claude/skills/{aeg,aeg-roles,brief-authoring}` no longer exist on the branch; canonical versions live at `project-management/skills/`.
+- **Generate step not yet built** — the mechanism that regenerates `.claude/skills/` (a copy/symlink view) from `project-management/skills/` is still a follow-up (`apps/aeg/specs/aeg-backlog.md`, `aeg generate-skills`). Until it exists, the agent harness will not auto-load these three skills from `.claude/` (they are no longer there). **This is the one open consequence the Principal must be aware of:** loadability of the moved skills via the harness depends on the generate step or a manual `.claude/` regeneration. The canonical content is safe and in the unit; the harness view is what's temporarily absent.
+- `docs-index.md` regeneration (`bun docs:index`) still pending after merge.
+- Role-doc "skills to load" entry-gate lines remain a follow-up (per D-039).
+- Part of PR #86 (`task/aeg-neutralize/1`), Tier 3, docs-only.
 
 ---
