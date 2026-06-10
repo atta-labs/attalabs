@@ -272,8 +272,9 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 ## D-014 — Append-oriented plan.md "in flight" section
 
 **Date:** 2026-05-10
-**Status:** ACTIVE
+**Status:** SUPERSEDED
 **Type:** 2
+**Superseded by:** D-024
 **Authored by:** TL (May 2026 v3 model session)
 **Ratified by:** TL (Type 2)
 
@@ -285,7 +286,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Overwrite pattern: rejected. Loses context when two sessions both contribute state updates.
 - Separate per-session update files: rejected. Too much file management overhead.
 
-**Consequences:** `plan.md` grows between pruning passes. This is acceptable. The alternative (lost state) is worse. (Note: `plan.md` was later split into `now.md`/`roadmap.md`/`changelog.md`/`lessons.md` by D-024; this append-oriented rule now applies to `now.md`. `roadmap.md` was subsequently retired by D-029.)
+**Consequences:** `plan.md` grows between pruning passes. (Superseded by D-024, which split `plan.md` into `now.md`/`roadmap.md`/`changelog.md`/`lessons.md`; the append-oriented rule carried to `now.md`. `roadmap.md` was later retired by D-029, and the `plan.md` redirect stub was removed June 10, 2026 — D-037.)
 
 ---
 
@@ -335,6 +336,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 **Date:** 2026-05-11
 **Status:** ACTIVE
 **Type:** 2
+**Supersedes:** D-014
 **Authored by:** TL (plan decomposition session, May 2026)
 **Ratified by:** TL (Type 2)
 
@@ -352,7 +354,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Sectioning within plan.md using collapsible headings: rejected. The file is Git-tracked markdown; collapsing sections does not prevent merge conflicts — different sessions still edit the same byte range.
 - Keeping a single file and enforcing append-only: rejected. Append-only works for changelog and lessons, but now.md and roadmap.md require in-place updates (e.g., marking a track item complete).
 
-**Consequences:** `coordination.md` session-start protocol updated to reference four files. `state-machine.md` mutation matrix updated. `docs-index.md` regenerated. Any automation (Archivist, Cetana) that reads or writes `plan.md` must be updated to route to the appropriate new file. (Note: `roadmap.md` was subsequently retired by D-029 — the product roadmap moved out of AEG to per-product backlogs / the company's tool; `now.md`, `changelog.md`, and `lessons.md` are carried forward unchanged.)
+**Consequences:** `coordination.md` session-start protocol updated to reference four files. `state-machine.md` mutation matrix updated. `docs-index.md` regenerated. Any automation (Archivist, Cetana) that reads or writes `plan.md` must be updated to route to the appropriate new file. (Note: `roadmap.md` was subsequently retired by D-029 — the product roadmap moved out of AEG to per-product backlogs / the company's tool; `now.md`, `changelog.md`, and `lessons.md` are carried forward unchanged. The `plan.md` redirect stub was removed early, June 10, 2026, under D-037 — all references had been repointed.)
 
 ---
 
@@ -543,6 +545,8 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - On ratification: flip this entry PENDING → ACTIVE. All three additions are **trusted discipline** today (no new CI gate); automation is future work. The deeper "verify against a living spec" form of the verifier remains a future tool-layer item, not part of this decision.
 - Noted as a backlog candidate, not decided here: a regulation → AEG-mechanism mapping doc (EU AI Act / SLSA / NIST / SOC 2) turning the provenance output into compliance evidence — the go-to-market lever the research flagged. Requires primary-source verification before action.
 
+> **Status note (June 10):** the working copy of this decision was carried forward to ACTIVE with the spec-conformance check amended from BLOCKER to **advisory** (a stale/unratified spec must not veto correct code) on the `feat/aeg-provenance-verifier-observe` working branch. This main-branch entry retains the originally-merged PENDING/BLOCKER text for audit honesty; the advisory amendment + ratification are tracked on that branch and in the session record. Do not act on the BLOCKER wording — spec-conformance is advisory per the amendment.
+
 ---
 
 ## D-031 — Herald standalone: own Clerk, own DB, own keys
@@ -604,7 +608,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Platform-provided key (Herald pays per audit): rejected. Operational cost is unbounded without payment infrastructure; BYOK defers this entirely.
 - Recruiter always pays regardless of which profile is audited: rejected. Creates an asymmetry where the recruiter subsidises the candidate's published-profile experience; "you pay for activity on your own stuff" is simpler and more defensible.
 
-**Consequences:** Strangers running audits on a published profile spend the owner's key budget — a known abuse surface; may need a per-key rate limit or cap on profile audits later (parked). `getProviderKeys` is already implemented; only `clerkId` routing changes between the two modes. Gating logic (`/api/match` 503 without key) is already in place.
+**Consequences:** Strangers running audits on a published profile spend the owner's key budget — a known abuse surface; may need a per-key rate limit or cap on profile audits later (parked). `getProviderKeys` is already implemented; only `clerkId` routing changes between the two modes. Gating logic (`/api/match` 503 without key) is already in place. (Note: the per-user key store is multi-vendor-capable but Herald's UI exposes Anthropic only today; making it multi-vendor + per-audit model choice is logged in `herald-backlog.md`, coupled to the engine migration. D-033 governs *whose* key, orthogonal to *which vendor*.)
 
 ---
 
@@ -689,3 +693,36 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - `next.config.ts` gained worktree-root resolution; Vāda lazy-init DB proxy fix rode along.
 - Shared `@atta/ui/topbar` `TopBar` gained optional `isSignedIn` / `accountMenu` props — backwards-compatible; Vāda unchanged.
 - Canonical structure doc: `apps/herald-ai/specs/herald-app-architecture.md`.
+
+---
+
+## D-037 — Backlogs live in `specs/`; `project-management/` is flow + governance + living state
+
+**Date:** 2026-06-10
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (PM-structure consistency pass, June 10, 2026)
+**Ratified by:** Principal (in-session)
+
+**Context:** The question arose whether a unit's `project-management/` folder is "the AEG of that unit" and therefore whether the unit's *plan/backlog* should live inside it. Backlogs were inconsistently located: the ecosystem backlog sat at `docs/ecosystem-backlog.md` while per-product backlogs already sat at `apps/<product>/specs/<product>-backlog.md`. "Outside `project-management/`, but in two different outside places" was the real incoherence — not "inside vs outside."
+
+**Decision:** A unit's **plan lives in its `specs/`**; a unit's **flow + governance + living state lives in its `project-management/`**. Concretely:
+- Per-product plan → `apps/<product>/specs/<product>-backlog.md` (already there).
+- Monorepo / ecosystem / AEG-itself plan → `specs/ecosystem-backlog.md` (new root-level `specs/`).
+- `project-management/` holds the AEG model docs (constitution, flow, roles, iterations) and the unit's *living state* (`state.md`, `now.md`, `changelog.md`, `decisions.md`, `lessons.md`, `ratification-queue.md`) — **never the backlog**.
+
+This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choice, D-029 / `iterations/README.md` §2) by making the out-of-flow boundary a *folder* boundary: an agent operating the flow opens `project-management/` and cannot trip over the plan, because the plan is in `specs/`.
+
+**Alternatives rejected:**
+- Move the backlog *into* `project-management/` (folder = the unit's whole operating model, plan included): rejected — `project-management/` is the flow's home, and the flow's core discipline is "planning metadata never enters execution artifacts" (anti-regression rule #3). Putting the plan in the flow's own folder weakens the strongest physical guarantee of that line, to buy a tidier mental model. The seam being a folder boundary is a feature, not a bug.
+- Leave it as-is (ecosystem backlog in `docs/`, product backlogs in `specs/`): rejected — the inconsistency itself is the problem; "the plan lives in `specs/`" must hold uniformly or it's not a rule.
+
+**Consequences:**
+- `docs/ecosystem-backlog.md` → `specs/ecosystem-backlog.md` (moved; old file deleted). New root-level `specs/` directory created.
+- `coordination.md` (frequent-files paragraph, "when the plan changes" list, "what goes where" table, + a new anti-pattern) and `state.md` ("Where the plan lives", Doc-system) repointed to `specs/ecosystem-backlog.md` and state the convention.
+- The dead `plan.md` redirect stub (a D-024 artifact, retention window ~Aug 2026) was removed early, since all references had been repointed.
+- Per-product backlogs were already compliant; no per-product moves needed.
+- Reversible (Type 1 for the doc-system-layout blast radius, not for irreversibility); a future `aeg.sh` scaffolder should encode this convention when it creates a unit.
+
+---
