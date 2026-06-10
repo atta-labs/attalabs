@@ -568,7 +568,8 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 ## D-032 — Herald dual-mode: Candidate and Recruiter (Airbnb-style switch)
 
 **Date:** 2026-06-05
-**Status:** ACTIVE
+**Status:** SUPERSEDED
+**Superseded by:** D-034
 **Type:** 1
 **Lock:** NO
 **Authored by:** Principal
@@ -604,3 +605,87 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 - Recruiter always pays regardless of which profile is audited: rejected. Creates an asymmetry where the recruiter subsidises the candidate's published-profile experience; "you pay for activity on your own stuff" is simpler and more defensible.
 
 **Consequences:** Strangers running audits on a published profile spend the owner's key budget — a known abuse surface; may need a per-key rate limit or cap on profile audits later (parked). `getProviderKeys` is already implemented; only `clerkId` routing changes between the two modes. Gating logic (`/api/match` 503 without key) is already in place.
+
+---
+
+## D-034 — Herald: one Bulk Audit operation (Candidate/Recruiter mode split retired)
+
+**Date:** 2026-06-10
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Supersedes:** D-032
+**Authored by:** Principal (herald-profile-refactor, June 2026)
+**Ratified by:** Principal
+
+**Context:** D-032 split Herald into Candidate and Recruiter modes with an Airbnb-style nav switch and separate `/candidate/*` and `/recruiter/*` route trees. During the `herald-profile-refactor` build it became clear the two modes are the same function with different inputs: recruiter = many CVs × one JD; candidate = one CV × many JDs. A mode switch adds UI and routing surface for no functional difference.
+
+**Decision:** Retire the mode split. Herald has **one audit operation — Bulk Audit**: N CVs × M job descriptions → one evidence-based match report per pair. The user chooses the inputs; there is no Candidate/Recruiter mode and no mode toggle. Inputs are polymorphic (pasted text, files, or a candidate's published Herald profile). The public profile remains a separate shareable surface at `/[username]`. The audit cross-checks claimed skills against public GitHub activity, grades the match, and extracts interview questions; no-GitHub is noted, not auto-penalized.
+
+**Alternatives rejected:**
+- Keep the two-mode switch (D-032): rejected — it is one function (CV×JD matching) wearing two costumes; the switch is pure surface area with no behavioral difference.
+- A third "both" mode: rejected — there is only one operation; cardinality of inputs is a user choice, not a mode.
+
+**Consequences:**
+- `/candidate/*` and the reserved `/recruiter/*` trees are gone; replaced by flat routes (D-036).
+- The landing page is rewritten around Bulk Audit (the old two-sided recruiter/candidate framing is dropped).
+- `herald-backlog.md` rewritten; "Phase 3 — recruiter self-serve" framing retired.
+- Endpoint unification (`/api/match` + `/api/recruiter/batch` → one `/api/audit` cell) and the N×M matrix UI are follow-ups, not part of this decision.
+- Canonical structure doc: `apps/herald-ai/specs/herald-app-architecture.md`.
+
+---
+
+## D-035 — Herald library resolution: build-time CMS library for app chrome; user preference only on the public profile
+
+**Date:** 2026-06-10
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** YES
+**Authored by:** Principal (herald-profile-refactor, June 2026)
+**Ratified by:** Principal
+
+**Context:** Herald has two UI-library resolution paths: (1) **build-time** — `@atta/ui/components`, aliased to `packages/ui/generated/herald/components.ts`, generated from `heraldConfig.userInterface.library.id`; and (2) **runtime** — `useComponents()` reading a `LibraryProvider`. During the refactor the `(app)` layout was wrapping the whole signed-in app in a `LibraryProvider` fed the *user's saved* library, so the topbar rendered the user's library while build-time-imported controls rendered the CMS library — they disagreed on screen. The product rule was being violated: the app chrome is a fixed design system, not user-configurable; only the user's own public profile is user-styled.
+
+**Decision:** Lock the resolution rule:
+- **App chrome** — topbar, Settings, /ui editor, Bulk Audit, everything under the `(app)` route group — renders the **build-time CMS library**. The `(app)` `LibraryProvider` is fed the build-time id, sourced from `getHeraldConfig(cmsClient).userInterface.library.id` (the same value the generator reads); `user.library` is ignored here.
+- **The user's saved library (`user.library`)** applies **only** to their public `/[username]` profile, resolved dynamically via `EnvoyLibraryShell` → `LibraryProvider` → `useComponents()`.
+- The two paths are independent: changing `user.library` must not change the app chrome.
+
+**Alternatives rejected:**
+- Feed the user's library to the whole app (the bug as-found): rejected — the app chrome is a fixed CMS-driven design system; only the public profile is user-styled.
+- Move all app-chrome components onto `useComponents()` against a user-library provider (a fix attempted mid-refactor, reverted): rejected — wrong direction; it made the chrome track the user's preference, the opposite of the rule.
+- Remove the `(app)` `LibraryProvider` entirely: considered; kept the provider but fed it the build-time id, because `useComponents()` consumers (the shared `TopBar`) need a provider to resolve against.
+
+**Consequences:**
+- `app/(app)/layout.tsx` sources `chromeLibrary` from `getHeraldConfig` and passes it to `CandidateShell`; documents the rule inline.
+- `app/[username]/layout.tsx` (`EnvoyLibraryShell initialLibrary={userLibrary}`) is the only place `user.library` drives rendering.
+- Lock: YES — this invariant was expensive to rediscover; crossing the two paths is a regression class. Captured in `herald-app-architecture.md` §4 with a verification recipe.
+- Shared `@atta/ui` (`TopBar`, `LibraryProvider`, `useComponents`) was not changed; Vāda is unaffected (it uses `getVadaConfig` and its own generated index).
+
+---
+
+## D-036 — Herald: flat routes under an `(app)` group + one shared topbar
+
+**Date:** 2026-06-10
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Principal (herald-profile-refactor, June 2026)
+**Ratified by:** Principal
+
+**Context:** With the mode split retired (D-034), the `/candidate/*` route tree and its mode-specific framing no longer fit. The app also carried multiple topbar implementations (and a bespoke centered-identity topbar on the public profile that overlapped on desktop).
+
+**Decision:**
+- **Flat routes** under an `(app)` route group (no URL segment added): `/bulk-audit` (logged-in home), `/ui`, `/settings`, `/onboarding`. The `/candidate/*` tree is deleted. `/[username]` (public profile) keeps its own layout. Logged-in home is `/bulk-audit`. No "Dashboard" concept; nav is Bulk Audit · UI · Settings · /username.
+- **One shared topbar** via `HeraldTopBar` (server component, SSR auth via `isSignedIn={!!userId}` — no sign-in/out flash), used by the `(app)` layout and marketing. No avatar in any topbar; identity lives in Settings → Account; sign-out is a themed `HeraldAccountMenu` button (not Clerk `UserButton`).
+- **Public profile** uses a two-bar structure on all breakpoints: row 1 is the shared `TopBar`; row 2 is a sticky identity bar (avatar with pennant, name/title, CV download/open) beneath it. The bespoke desktop centered-identity column is removed.
+
+**Alternatives rejected:**
+- Keep `/candidate/*` and add `/recruiter/*`: rejected with the mode split (D-034).
+- A bespoke per-page topbar on the public profile: rejected — it caused desktop overlap and drift; reusing the shared `TopBar` + a sticky identity bar is structurally stable.
+
+**Consequences:**
+- All `/candidate` references swept (middleware matchers, redirects, sign-in/up redirects, links). Onboarding gate relocated to `/onboarding`.
+- `next.config.ts` gained worktree-root resolution; Vāda lazy-init DB proxy fix rode along.
+- Shared `@atta/ui/topbar` `TopBar` gained optional `isSignedIn` / `accountMenu` props — backwards-compatible; Vāda unchanged.
+- Canonical structure doc: `apps/herald-ai/specs/herald-app-architecture.md`.
