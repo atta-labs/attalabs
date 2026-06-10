@@ -1,11 +1,13 @@
 # Atta Coordination — How to Work With This System
 
 **This file lives in the repo at `project-management/coordination.md`.**
-**All Claude agents read this at session start.**
+**All agents read this at session start.**
 
-This is the coordination contract for the Atta ecosystem. Dani works with multiple Claude agents across Claude Desktop, Claude Code, and web Claude. This file tells each agent who it is, how to orient, and what the rules are.
+This is the coordination contract for the Atta ecosystem — **this repo's instance** of the AEG operating model. (The model itself is neutral and lives in `state-machine.md`, `aeg-manual-flow.md`, `iterations/README.md`, the role docs, and the `aeg` skill; *this* file fills in the repo-specific parts: the names, the products, the tools in use, the house communication style. A different repo adopting AEG would keep the model and replace this file's specifics.)
 
-**The model described here is Atta Agentic Execution Governance (AEG)** — the v3 operational model. AEG is a small set of accountable roles (Principal, Team Leader, Developer, Reviewer, Archivist) coordinating AI agents through briefs, blocking escalation, independent review, and append-only decision logs. It is *not* "project management" (there is no product plan, timeline, or resource tracking here — that stays in the company's tool) — it is governance plus orchestration of delegated AI execution.
+Dani works with multiple agents across a chat/planning surface and a coding-agent surface. This file tells each agent who it is, how to orient, and what the rules are.
+
+**The model described here is Agentic Execution Governance (AEG)** — the v3 operational model. AEG is a small set of accountable roles (Principal, Team Leader, Developer, Reviewer, Archivist) coordinating AI agents through briefs, blocking escalation, independent review, and append-only decision logs. It is *not* "project management" (there is no product plan, timeline, or resource tracking here — that stays in the company's tool) — it is governance plus orchestration of delegated AI execution.
 
 **AEG is forge-native, orchestrator-independent.** It depends on a Git forge (GitHub) as its source of truth for execution state — task status is *derived* from Issue/branch/PR/merge state, never stored. It does **not** depend on any orchestration tool. In this repo, Cetana is the tool that automates AEG's orchestration slice (dispatch + escalation); Cetana knows AEG, AEG does not know Cetana. The governance half (authority, ratification, review, decision logs) lives in this repo, not in any tool.
 
@@ -25,6 +27,8 @@ If you are starting a fresh session and need to orient:
 8. `project-management/changelog.md` — what shipped (skim headers; read entries when context needed)
 9. `project-management/lessons.md` — calibration lessons + anti-patterns (read when authoring briefs or post-mortems)
 
+The AEG model front door is the **`aeg`** skill (the model in one read) → the **`aeg-roles`** skill (routes you to your role doc). Load those first; this file is the repo-specific companion.
+
 For deeper context on the operational model design:
 - `project-management/aeg-manual-flow.md` — running the flow by hand (the operator's guide)
 - `project-management/process.md` — the eleven-phase walkthrough from idea to merged code
@@ -38,7 +42,7 @@ Do not generate strategy, plan an iteration, or author briefs until you have rea
 
 Every fact lives in exactly one place (see `iterations/README.md` §1):
 
-- **The Git forge** (Issue / branch / PR / review / merge state) = **all live execution status, derived not stored.** Authoritative for task status and merge state. A task *is* a GitHub Issue.
+- **The Git forge** (Issue / branch / PR / review / merge state) = **all live execution status, derived not stored.** Authoritative for task status and merge state. A task *is* a forge Issue.
 - **Repo** = code, specs, skills, PM docs, role docs, the thin iteration topology files, design decisions. Git-tracked, long-lived, changed by commits/PRs. The source of truth for *plan and governance* (not live status).
 - **The PR body** = the just-in-time brief — a task's full execution context. The brief is pasted here at PR-open, never committed separately, never in the Issue.
 - **Local filesystem** = orchestration-tool runtime state, worktrees, dev servers. Ephemeral. Never canonical.
@@ -62,13 +66,13 @@ The product roadmap is **not** an AEG file — it lives in the company's tool (o
 
 ### What lives in the repo
 
-Everything else. All skills (`.claude/skills/*/SKILL.md`), agent definitions (`.claude/agents/*.md`), specs (`apps/*/specs/*.md`), role docs, the state machine, this file. The index (`docs-index.md`) lists where things are.
+Everything else. All skills (canonical home `project-management/skills/*/SKILL.md`, with a generated agent-surface view e.g. `.claude/skills/` per D-039), agent definitions, specs (`apps/*/specs/*.md`), role docs, the state machine, this file. The index (`docs-index.md`) lists where things are.
 
 ---
 
 ## The names — operational reference
 
-These names matter every session. Locked v2 framing (May 12, 2026 — see D-025).
+These names matter every session. Locked v2 framing (May 12, 2026 — see D-025). *(This section is repo-specific instance content — a different team adopting AEG replaces it with its own names.)*
 
 ### Two ecosystems at different scales
 
@@ -92,7 +96,8 @@ When context-sensitive, prefer the explicit qualifier ("AttaLabs ecosystem" vs "
 | **Vāda** | Deliberation engine. V1 live. Standalone product + deliberation layer inside Atta. Pāli for "debate/discourse." | `vada.attalabs.dev` |
 | **Vitakka** | Focused-thinking product. Not yet built. Standalone + focus layer inside Atta. Pāli for "directed thought." | `vitakka.attalabs.dev` (when built) |
 | **Sati** | Memory layer inside Atta. Standalone surface deferred. Pāli for "mindfulness, recollection." | TBD |
-| **Cetana** | Internal dev tooling — local Mac orchestration coordinator. The automation of AEG's orchestration slice. V0.5 in active development. NOT part of Atta. Pāli for "volition, intention." | (internal today); `cetana.attalabs.dev` conditional future |
+| **Cetana** | Internal dev tooling — local orchestration coordinator. The automation of AEG's orchestration slice. V0.5 in active development. NOT part of Atta. Pāli for "volition, intention." | (internal today); `cetana.attalabs.dev` conditional future |
+| **AEG** | Agentic Execution Governance — the product that visualizes a repo's AEG execution + the `aeg.sh` scaffolder. The model is repo-root `project-management/`; the product is `apps/aeg/`. NOT part of Atta. | `aeg.attalabs.dev` (when built) |
 | **Herald** | Standalone forensic CV/JD match tool. NOT part of Atta. Sibling product in AttaLabs. English name. | `herald.attalabs.dev` (when deployed) |
 
 ### Naming convention — no `-AI` suffix on any product brand
@@ -107,9 +112,9 @@ Locked May 12, 2026 (D-025). Inside Atta, Pāli names are mandatory (Atta, Vāda
 
 ## Session start protocol
 
-Role is determined by environment and context — not model. Read `state-machine.md` Section 1 for the role determination rules.
+Role is determined by environment and context — not by which agent you are. Read `state-machine.md` Section 1 for the role determination rules.
 
-### If you are the Team Leader (Claude Desktop or web Claude, talking strategy/planning)
+### If you are the Team Leader (a chat/planning surface, talking strategy/planning)
 
 1. **Read `state-machine.md`** — confirm the authority matrix and decision schema.
 2. **Read `roles/team-leader.md`** — confirm which mode you're in (Strategist / Planner / Brief Author). If planning an iteration, also read `roles/planner.md`.
@@ -117,14 +122,14 @@ Role is determined by environment and context — not model. Read `state-machine
 4. **Check `decisions.md` and `ratification-queue.md`** — any PENDING items for today's window?
 5. **Determine the product in scope** — apply the spec-check gate (below) before anything substantive.
 
-### If you are the Developer (Claude Code, executing a brief)
+### If you are the Developer (a coding-agent surface, executing a brief)
 
 1. **Read the brief completely** before writing any code.
 2. **Read `roles/developer.md`** — confirm the entry gate, tier, stop conditions, verification checklist.
 3. **Check the dispatch gates against the forge** — is every `depends-on` task's PR merged? Is any `conflicts-with` sibling's PR open? If a gate isn't satisfied, STOP (the task serializes).
 4. **Create the worktree** — Step 0, branch `task/<iteration>/<n>` from `origin/main`. Do this before anything else.
 5. **Run remaining pre-flight** — `git status`, `git log --oneline -3`, confirm the branch.
-6. **Identify which skills apply** — the brief's scope determines which `.claude/skills/*/SKILL.md` to invoke.
+6. **Identify which skills apply** — the brief's scope determines which skills to invoke.
 7. **Do not begin implementation** until gates are clear, worktree exists, pre-flight passes, skill-check is satisfied.
 
 ### If you are the Reviewer or Security agent (reviewing an open PR)
@@ -195,7 +200,7 @@ Log to `decisions.md` (global) or the per-product log during the conversation. A
 
 | If you're updating... | Where |
 |----------------------|-------|
-| A skill / agent definition | Repo only |
+| A skill / agent definition | Repo only (skills: canonical in `project-management/skills/`, generated view in `.claude/skills/` — D-039) |
 | A product spec, ecosystem vision, naming decision | Repo only |
 | Global decision log | `project-management/decisions.md` |
 | Per-product decision log | `apps/{product}/specs/{product}-decisions.md` |
@@ -260,4 +265,4 @@ When other AI outputs are pasted in, Claude responds as the adversarial reviewer
 
 The AEG model formalizes this: Principal → Team Leader (Strategist / Planner / Brief Author) → Developer → Reviewer + Security → merge → Archivist. The TL routes escalations by severity. Agents do not make final calls.
 
-**Tooling note (this repo, May 2026):** GitHub MCP may be available via OAuth in fresh Claude.ai conversations — prefer it over paste-back for reading repo content and creating Issues/PRs. Claude Code has direct filesystem access to the worktree. Self-hosted MCP servers with bearer-token auth (e.g. Vāda's hosted MCP) work via Claude Code CLI, not via Claude.ai's connector broker. In this repo, Cetana provides the orchestration-tool strategist binding (list active tasks, reply to a blocked task) when connected via Claude Desktop — a convenience of the tool in use, not part of AEG.
+**Tooling note (this repo, May 2026):** GitHub MCP may be available via OAuth in fresh conversations — prefer it over paste-back for reading repo content and creating Issues/PRs. The coding-agent surface has direct filesystem access to the worktree. Self-hosted MCP servers with bearer-token auth (e.g. Vāda's hosted MCP) work via a coding-agent CLI, not via the chat connector broker. In this repo, Cetana provides the orchestration-tool strategist binding (list active tasks, reply to a blocked task) when connected — a convenience of the tool in use, not part of AEG.
