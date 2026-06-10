@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** June 5, 2026 (AEG model ratified — global D-029, PR #80 merged `ab7c4d4`; verify-docs CI gate live; PM hygiene pass — `roadmap.md` retired, `now.md` repointed to backlogs, example iteration removed)
+**Last updated:** June 10, 2026 (backlogs relocated to `specs/` — global D-037; `docs/ecosystem-backlog.md` → `specs/ecosystem-backlog.md`; dead `plan.md` stub removed; D-030 AEG enhancements ratified ACTIVE June 10)
 **Purpose:** Single snapshot of where everything stands across the AttaLabs ecosystem.
 
 This doc lives in the repo at `project-management/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -21,8 +21,9 @@ Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
 - **The brief** is just-in-time, pasted (not committed), and lives in the **PR body** — never in the Issue.
 - **Conflicts** are declared, package-level, static (no dynamic scanner). **Dispatch gates:** never start a task whose `depends-on` isn't merged, or while a `conflicts-with` sibling's PR is open.
 - **verify-docs** is a real, blocking CI gate (global D-027) — `.github/workflows/verify-docs.yml`, live as of June 4.
+- **AEG enhancements (D-030, ratified ACTIVE June 10):** the Archivist assembles a **provenance block** at close-out (frozen facts → merged PR, append-only, not stored status); the Reviewer does an **advisory** spec-conformance cross-check (never a blocker — stale/unratified specs must not veto correct code); **observe mode** is the read-only advisory adoption floor of the advisory→enforced gradient.
 
-**Where the plan lives (NOT in AEG):** the product roadmap is the backlogs — `apps/<product>/specs/<product>-backlog.md` (per product) and `docs/ecosystem-backlog.md` (cross-cutting / AEG-itself). The global `roadmap.md` is **retired** (D-029). The backlog is the seam where AEG meets a planning tool (Jira/Linear/etc.); AEG is indifferent to which one — it only needs "a well-formed brief exists." The Planner *may* read the backlogs to compose an iteration, but does not depend on them.
+**Where the plan lives (NOT in AEG):** the product roadmap is the backlogs — `apps/<product>/specs/<product>-backlog.md` (per product) and `specs/ecosystem-backlog.md` (cross-cutting / AEG-itself, the monorepo's own plan). The global `roadmap.md` is **retired** (D-029). **Backlog convention (D-037):** a unit's *plan* lives in its `specs/`; a unit's *flow + governance + living state* lives in its `project-management/`. The backlog is the seam where AEG meets a planning tool (Jira/Linear/etc.); AEG is indifferent to which one — it only needs "a well-formed brief exists." The Planner *may* read the backlogs to compose an iteration, but does not depend on them.
 
 **Key AEG model artifacts (all in `project-management/`):**
 - `coordination.md` — session-start protocol, names, rules
@@ -31,12 +32,14 @@ Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
 - `process.md` — the eleven-phase walkthrough
 - `iterations/README.md` — the iteration model (the only file in `iterations/` until the first real iteration starts)
 - `products.md` — product registry (name → folder), for multi-product repos
-- `decisions.md` — global cross-product decision log, **D-001 to D-029**
+- `decisions.md` — global cross-product decision log, **D-001 to D-037**
 - `roles/` — `principal.md`, `team-leader.md` (Strategist/Planner/Brief Author), `developer.md`, `reviewer.md`, `security.md`, `archivist.md`
 - `diagrams/` — `process-flow.md` (the AEG process), `system-architecture.md` (the optional Cetana tool + the AEG file/enforcement layout)
 - `reviewer-prompt.md` — template for adversarial multi-AI reviewer rounds
 - `ratification-queue.md` — append-only queue for decisions awaiting Principal ratification
 - `now.md` / `changelog.md` / `lessons.md` — active work / shipped log / calibration
+
+The monorepo's own plan lives at `specs/ecosystem-backlog.md` (the root `specs/` folder, per D-037 — the ecosystem-level counterpart to each product's `apps/<product>/specs/<product>-backlog.md`).
 
 The `.claude/skills/brief-authoring/SKILL.md` is the canonical brief authoring guide (tier, principal_delegate, spike, Type 1/2 declaration, lock acknowledgment, optional `Ticket:`/`Product:`, brief-lands-in-PR-body).
 
@@ -113,7 +116,7 @@ The 7 experimental YAMLs are filtered out of the public `/teams` catalog by the 
 - **Role/engine separation (May 3)** — `AgentRole` deleted from `@atta/agents`. Vendor identity is first-class for unroled agents (Vāda Reviewers' Gemini/GPT/Grok = no role, vendor IS identity).
 - **MCP contract surfaces aligned with deployed runtime (May 9, PR #21):** `vada__consult` inputSchema declares structured shape (`context`, `question`, `reviewers[{role, notes?, domain?}]`, plus optional `spec_id`, `current_leaning`, `stakes`, `session_title`); `vada__deliberate` `team` enum expanded then pruned (May 11, PR #31) to the 2 currently published specs (`vada-reviewers`, `vada-reviewers-synthesis`).
 - **MCP `reviewer_config` parameter (May 11, PR #31):** `vada__consult` accepts an optional `reviewer_config: Record<agentName, modelId>` field, validated against the vendor registry, refused with structured `local_only_vendor` or `missing_provider_key` errors. Mirrors the web UI's per-slot model configurability; closes the contract gap between MCP and web for the Reviewers and Reviewers + Synthesis teams.
-- `vada__consult` accepts generic `spec_id` — routes to any YAML in the catalog
+- **`vada__consult` accepts generic `spec_id`** — routes to any YAML in the catalog
 - `vada__deliberate` MCP tool returns `structured` field alongside `content`
 - 9 YAML team specs in catalog (2 published, 7 experimental — see Vāda Teams catalog table above)
 - Domain Expert agent (uses Handlebars `customVars`)
@@ -151,15 +154,15 @@ Flat routes at `apps/vada-ai/web/src/app/(main)/`:
 
 See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: file may be slightly stale post-May-4-5; flagged for cleanup).
 
-### AEG — *model ratified (D-029); product (the UI) not yet built*
+### AEG — *model ratified (D-029, D-030); product (the UI) not yet built*
 
-**Status:** The **model** is ratified and live (global D-029, PR #80 merged June 4). The **product** — a deployed UI that visualizes iterations and the plan — is **not yet built**; it is the intended first real iteration.
+**Status:** The **model** is ratified and live (global D-029, PR #80 merged June 4; enhancements D-030 ratified ACTIVE June 10). The **product** — a deployed UI that visualizes iterations and the plan — is **not yet built**; it is the intended first real iteration.
 
 **What it is:** Atta Agentic Execution Governance — the forge-native, orchestrator-independent model above (see "Operational model"). The planned product is a Next.js app that reads an AEG repo's `iterations/*.md` (topology) + the Git forge (derived status) and renders: an attention queue (default), repos grouped by tag, each repo's iterations, and the iteration DAG. AEG-only (a repo must practice AEG to render). Connects repos via a GitHub App (OAuth, read-only, per-repo, tokens encrypted server-side); a webhook-fed cache of *forge facts* (not authored status) keeps reads fast within rate limits.
 
 **Planned folder:** `apps/aeg/web` (meta/infra app → no `-ai` suffix, matching `apps/attalabs`). Deploy target `aeg.attalabs.dev`.
 
-**Next:** decompose the AEG UI into the first iteration (pure `deriveIteration` module → GitHub App auth + encrypted token store → webhook fact-cache → attention queue → repo-rollup → DAG view). Build follow-ups: neutral AEG scaffold + downloadable `aeg.sh`; the interactive site supersedes the static `diagrams/`.
+**Next:** decompose the AEG UI into the first iteration (pure `deriveIteration` module → GitHub App auth + encrypted token store → webhook fact-cache → attention queue → repo-rollup → DAG view). Must render the plan (backlogs) as well as execution (iterations) — OQ-cross-14. Build follow-ups: neutral AEG scaffold + downloadable `aeg.sh`; the interactive site supersedes the static `diagrams/`. Full write-up in `specs/ecosystem-backlog.md`.
 
 ### Atta — *deep-thinking AI consumer product; composition not yet deployed*
 
@@ -223,6 +226,8 @@ V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 S
 
 **Full state:** `apps/herald-ai/project-management/state.md` — read that file for Herald detail. Backlog: `apps/herald-ai/specs/herald-backlog.md`.
 **Phases:** Phase 1 (candidate Envoy) complete June 1 (PR #70). Phase 2 (self-service onboarding + admin redesign) complete June 1–2 (PRs #74/#75) — **needs production verification** (avatar/CV upload not tested in prod). **Phase 3 — recruiter self-serve (paste JD + N CVs → batch forensic audit → ranked reports) is NEXT** (the active heavy refactor; being built copy-paste, outside the AEG flow, by Principal's choice). Phase 4 (recruiter as distinct B2B surface) is future.
+
+**Backlog note (June 10):** Herald's backlog now logs the **engine migration + multi-vendor BYOK** work (move Herald's one AI call onto `@atta/engine` + a Flow YAML; make the API Keys tab support all 12 vendors + per-audit model choice like Vāda — Herald is Anthropic-only today). Sequenced as likely one atomic PR with endpoint unification at the start of the bulk-audit (Phase 3) work. See `apps/herald-ai/specs/herald-backlog.md`.
 
 **Status:** Standalone forensic CV-to-JD match tool. Sibling product in AttaLabs, NOT part of Atta-the-product (D-025). Built by Dani. Exposes itself via MCP for integration — Atta or any MCP host can invoke it as one of many external tools. Separate Clerk app.
 
@@ -303,6 +308,8 @@ Two specs:
 - `apps/vada-ai/specs/vada-byok-principles.md` — current state, rewritten May 6.
 - `apps/vada-ai/specs/vada-byok-gap-report.md` — historical (April 30 framework). All four gaps closed or superseded; preserved for record.
 
+**Herald note (June 10):** Herald has its own per-user encrypted key store (same `@atta/crypto` + `getProviderKeys` backbone, D-031) but is **Anthropic-only** in its UI today (settings reads only `keys.anthropic`). Making Herald multi-vendor + model-choice like Vāda is logged in the Herald backlog, coupled to the engine migration.
+
 ---
 
 ## Hosted MCP — shipped (May 4, 2026)
@@ -330,14 +337,21 @@ Vāda's web app maintains its DB schema via `bun run db:push` from `apps/vada-ai
 
 This ecosystem uses the repo as the source of truth for project management. See `coordination.md` for full rules.
 
-**Project-management files (in repo at `project-management/`):** `coordination.md`, `state-machine.md`, `aeg-manual-flow.md`, `process.md`, `state.md`, `now.md`, `changelog.md`, `lessons.md`, `decisions.md`, `ratification-queue.md`, `reviewer-prompt.md`, `products.md`, plus `iterations/` (README + active iterations), `roles/` (principal, team-leader, developer, reviewer, security, archivist), and `diagrams/`. Plus `docs-index.md` at repo root. **`roadmap.md` is retired (D-029)** — the plan lives in the backlogs (`apps/*/specs/*-backlog.md`, `docs/ecosystem-backlog.md`).
+**Project-management files (in repo at `project-management/`):** `coordination.md`, `state-machine.md`, `aeg-manual-flow.md`, `process.md`, `state.md`, `now.md`, `changelog.md`, `lessons.md`, `decisions.md`, `ratification-queue.md`, `reviewer-prompt.md`, `products.md`, plus `iterations/` (README + active iterations), `roles/` (principal, team-leader, developer, reviewer, security, archivist), and `diagrams/`. Plus `docs-index.md` at repo root. **`roadmap.md` is retired (D-029).**
+
+**Backlogs (the plan) live in `specs/`, not `project-management/` (D-037):** `specs/ecosystem-backlog.md` (monorepo / cross-cutting / AEG-itself) and `apps/<product>/specs/<product>-backlog.md` (per product). The rule: a unit's *plan* lives in its `specs/`; a unit's *flow + governance + living state* lives in its `project-management/`. (`docs/ecosystem-backlog.md` was moved to `specs/` June 10; the dead `plan.md` redirect stub from D-024 was removed the same day.)
 
 **Everything else is repo specs/skills/code, indexed by `docs-index.md`.**
 
 ### Recently shipped (most recent first)
 
+**June 10, 2026 — backlog relocation + D-030 ratification (direct to main + PR #83).**
+- **Backlogs moved to `specs/` (global D-037):** `docs/ecosystem-backlog.md` → `specs/ecosystem-backlog.md`, establishing the uniform rule "a unit's plan lives in its `specs/`." `coordination.md`, `state.md`, and references updated. Dead `plan.md` redirect stub (D-024) removed.
+- **PR #83 merged (June 8) + D-030 ratified ACTIVE (June 10):** AEG enhancements — provenance block (Archivist close-out projection), advisory spec-conformance review (amended from BLOCKER → advisory before ratification), observe mode (read-only adoption floor).
+- **Herald backlog updated:** engine migration + multi-vendor BYOK / model-choice logged (Herald is Anthropic-only today).
+
 **June 4–5, 2026 — AEG model ratified + PM hygiene (PR #80, then direct-to-main cleanup).**
-- **PR #80 (merged `ab7c4d4`) — AEG manual-flow + iteration layer + full doc reconciliation.** Ratified as global **D-029** (Type 1). Forge-native/orchestrator-independent model: task = Issue, status derived, thin iteration topology file, static package-level conflicts, brief in PR body, two dispatch gates, Planner as a third TL mode, Archivist role doc, three anti-regression rules. New: `aeg-manual-flow.md`, `iterations/README.md`, `products.md`, `roles/planner.md`, `roles/archivist.md`, the three `*-backlog.md`, `docs/ecosystem-backlog.md`. Reconciled: `coordination.md`, `process.md`, `state-machine.md`, every other role doc, `brief-authoring/SKILL.md`, both `diagrams/`. `roadmap.md` retired. Pressure-tested across three external-reviewer rounds (Gemini/DeepSeek/ChatGPT) to unanimous endorsement.
+- **PR #80 (merged `ab7c4d4`) — AEG manual-flow + iteration layer + full doc reconciliation.** Ratified as global **D-029** (Type 1). Forge-native/orchestrator-independent model: task = Issue, status derived, thin iteration topology file, static package-level conflicts, brief in PR body, two dispatch gates, Planner as a third TL mode, Archivist role doc, three anti-regression rules. New: `aeg-manual-flow.md`, `iterations/README.md`, `products.md`, `roles/planner.md`, `roles/archivist.md`, the three `*-backlog.md`, the ecosystem backlog. Reconciled: `coordination.md`, `process.md`, `state-machine.md`, every other role doc, `brief-authoring/SKILL.md`, both `diagrams/`. `roadmap.md` retired. Pressure-tested across three external-reviewer rounds (Gemini/DeepSeek/ChatGPT) to unanimous endorsement.
 - **verify-docs CI gate installed** (`.github/workflows/verify-docs.yml`) — fulfilling D-027; now blocking on PRs.
 - **PM hygiene (direct to main):** `now.md` repointed from the retired `roadmap.md` to the backlogs; the example iteration `cetana-cli-ladder.md` removed (`iterations/` now holds only `README.md`); this `state.md` refreshed to the AEG model.
 
@@ -392,7 +406,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 
 ## What exists physically vs. what's planned
 
-**Exists in code (June 5, 2026):**
+**Exists in code (June 10, 2026):**
 - `apps/vada-ai/web` + hosted MCP route — production-deployed
 - `apps/vada-ai/mcp-server` — local stdio MCP server
 - `apps/atta-ai/mcp-server` — engine-as-MCP server
@@ -403,16 +417,18 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - All `@atta/*` packages (incl. `@atta/crypto`, `@atta/ui/account`, `@atta/ui/engine-flow`, `@atta/db` shared key schemas)
 - `packages/models/src/vendors.ts` — vendor registry (12 vendors)
 - 9 YAML teams (2 published, 7 experimental)
-- `project-management/` — full AEG model doc set (constitution, manual-flow, process, iterations/README, products, roles ×6, diagrams ×2, decisions to D-029); `.github/workflows/verify-docs.yml` live
+- `project-management/` — full AEG model doc set (constitution, manual-flow, process, iterations/README, products, roles ×6, diagrams ×2, decisions to D-037); `.github/workflows/verify-docs.yml` live
+- `specs/ecosystem-backlog.md` — the monorepo's plan (moved from `docs/`, D-037)
 - `.claude/skills/*/paths.txt` (17 skills)
 
 **Specced / planned but not yet built:**
 - **AEG UI** (`apps/aeg/web`) — the first real iteration
 - Reviewer system prompt iteration (3b); synthesizer iteration (3c); Vāda Reviewers benchmark (4)
 - Vitakka V1 build
-- Herald Phase 3 (recruiter self-serve) — in active build, outside the flow
+- Herald Phase 3 (recruiter self-serve) — in active build, outside the flow; engine migration + multi-vendor BYOK logged in the Herald backlog
 - Cetana F7 (`cetana status`) — ready to dispatch
 - Neutral AEG scaffold + `aeg.sh`
+- Spec refresh-and-ratify pass (Vāda first) → Integrity Reviewer (spec-integrity chain, `specs/ecosystem-backlog.md`)
 
 **Active iterations:** none. `iterations/` holds only `README.md` until the AEG-UI iteration is planned.
 
@@ -421,7 +437,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 **Does not exist yet:**
 - Atta-the-product (composed Vāda + Vitakka + Sati)
 - `apps/aeg/` (the AEG product UI — first iteration)
-- `apps/account/web` — DEFERRED indefinitely (D-030)
+- `apps/account/web` — DEFERRED indefinitely (D-030 — see vada-decisions, distinct from global D-030)
 - Sati standalone surface — scope deferred
 - Hosted MCP hardening (rate limiting, audit log, KMS, per-key tool scoping)
 - Trust + MCP page content rewrites
@@ -432,18 +448,18 @@ This ecosystem uses the repo as the source of truth for project management. See 
 ## Open questions across the ecosystem
 
 - **OQ-cross-1:** Does Sati get built before or after Vāda hits revenue?
-- **~~OQ-cross-2~~ (RESOLVED May 5):** No billing hub at `account.attalabs.dev`. Component-level sharing via `@atta/ui/account` (D-030).
+- **~~OQ-cross-2~~ (RESOLVED May 5):** No billing hub at `account.attalabs.dev`. Component-level sharing via `@atta/ui/account` (vada-decisions D-030).
 - **OQ-cross-3:** `atta.ai` migration — eager vs. wait for natural rebuild moment? (May free 2027.)
 - **OQ-cross-4:** When `@atta/db` consolidates further, keep `db:push` or move to tracked migrations?
 - **~~OQ-cross-5~~ (RESOLVED May 9):** V0.7 path collapsed; Cetana V0 implements the escalation primitive directly.
-- **~~OQ-cross-6~~ (RESOLVED May 4):** Server-side at rest, envelope-encrypted (D-028).
-- **~~OQ-cross-7~~ (RESOLVED May 5):** API key management in product-local Settings via shared components (D-030).
+- **~~OQ-cross-6~~ (RESOLVED May 4):** Server-side at rest, envelope-encrypted (vada-decisions D-028).
+- **~~OQ-cross-7~~ (RESOLVED May 5):** API key management in product-local Settings via shared components (vada-decisions D-030).
 - **OQ-cross-8:** Fate of the 7 experimental YAMLs after the Vāda Reviewers benchmark.
 - **~~OQ-cross-9~~ (RESOLVED May 3):** Engine vocabulary — Choice A. `PlanNodeKind` + `PlanEdgeKind` shipped.
 - **~~OQ-cross-10~~ (RESOLVED May 9):** Cetana V0 not superseded by CCPM/APM; interactive pause/resume is the differentiator.
 - **OQ-cross-11 (May 9):** Does Cetana V1 (Tauri + dashboard) ship after 2 weeks of V0 use, or is V0 sufficient indefinitely?
 - **OQ-cross-12 (May 11):** When a vendor's SDK shape diverges, add a 4th `sdkShape` branch (latency) or proxy via OpenRouter (convenience)? Decide per case.
 - **OQ-cross-13 (May 12):** Should Sati have a standalone surface, or live entirely as Atta's internal memory layer? Deferred.
-- **OQ-cross-14 (NEW June 5):** AEG UI scope — it must render the **plan** (backlogs) as well as **execution** (iterations), since retiring `roadmap.md` removed the single whole-plan view. Single-tenant *usage* (you, one repo, next job) on a multi-repo, tagged *architecture* (repos group by company and by product). GitHub App OAuth, read-only, per-repo, encrypted tokens; webhook-fed forge-fact cache (never authored status). AEG-only (a repo must practice AEG to render).
+- **OQ-cross-14 (June 5):** AEG UI scope — it must render the **plan** (backlogs) as well as **execution** (iterations), since retiring `roadmap.md` removed the single whole-plan view. Single-tenant *usage* (you, one repo, next job) on a multi-repo, tagged *architecture* (repos group by company and by product). GitHub App OAuth, read-only, per-repo, encrypted tokens; webhook-fed forge-fact cache (never authored status). AEG-only (a repo must practice AEG to render).
 
 Vāda-internal open questions live in `apps/vada-ai/specs/vada-state.md`.
