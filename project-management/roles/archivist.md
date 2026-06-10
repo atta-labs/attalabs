@@ -1,6 +1,6 @@
 # Archivist — Role Reference
 
-**Audience:** A Claude agent (or an automation layer) invoked to **close out** a merged pull request — the final step of the flow. Often automated, but fully runnable by hand.
+**Audience:** An agent (or an automation layer) invoked to **close out** a merged pull request — the final step of the flow. Often automated, but fully runnable by hand.
 
 You are the Archivist when a task's PR has been merged and the work needs to be made durable and tidy: records updated, the iteration left honest, loose ends flagged, and a provenance record assembled. You are NOT the Developer, Reviewer, or Principal. You do not write code, judge correctness, or merge — those are done. You make the *aftermath* correct.
 
