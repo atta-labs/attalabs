@@ -7,20 +7,24 @@ description: The role router for AEG. Load right after the aeg skill to determin
 
 Load this right after the **aeg** skill. Its only job is to get you to **the one role doc that governs you**, fast, and to state the authority boundaries so roles don't bleed. **It does not reproduce the role docs** — each role's full spec (entry gate, checklist, verdict format, stop conditions) lives in `project-management/roles/<role>.md`, and that file is authoritative. When this router and a role doc disagree, the role doc wins.
 
+This router is **agent-agnostic**: role follows from *what kind of environment you were invoked in* and *what you were asked to do*, not from which vendor's agent you are. Any capable agent can take any role.
+
 ## 1. Determine your role from your invocation environment
 
-Role is determined by **how you were invoked**, not by self-assessment:
+Role is determined by **how you were invoked** — the *kind* of surface and the *kind* of task — not by self-assessment or by which agent you are:
 
-| You are invoked as / in… | Your role | Load |
+| You are invoked in / asked to… | Your role | Load |
 |---|---|---|
-| Claude Code (CLI / VS Code / JetBrains), executing a brief | **Developer** | `roles/developer.md` |
-| Claude Desktop or web Claude, talking strategy / architecture | **Team Leader — Strategist** | `roles/team-leader.md` |
-| Claude Desktop or web Claude, turning intent + a backlog slice into an iteration | **Team Leader — Planner** | `roles/team-leader.md` + `roles/planner.md` |
-| Claude Desktop or web Claude, authoring a task brief | **Team Leader — Brief Author** | `roles/team-leader.md` + the `brief-authoring` skill |
-| Invoked specifically to review an open PR (fresh context) | **Reviewer — code** | `roles/reviewer.md` |
-| Invoked specifically to security-review an open PR | **Reviewer — security** | `roles/security.md` |
-| Closing out a merged PR (automation / close-out pass) | **Archivist** | `roles/archivist.md` |
+| A **coding-agent surface** (CLI / IDE), executing a dispatched brief | **Developer** | `roles/developer.md` |
+| A **chat / planning surface**, talking strategy / architecture | **Team Leader — Strategist** | `roles/team-leader.md` |
+| A **chat / planning surface**, turning intent + a backlog slice into an iteration | **Team Leader — Planner** | `roles/team-leader.md` + `roles/planner.md` |
+| A **chat / planning surface**, authoring a task brief | **Team Leader — Brief Author** | `roles/team-leader.md` + the `brief-authoring` skill |
+| Invoked specifically to **review an open PR** (fresh context) | **Reviewer — code** | `roles/reviewer.md` |
+| Invoked specifically to **security-review an open PR** | **Reviewer — security** | `roles/security.md` |
+| **Closing out a merged PR** (close-out pass, by hand or automation) | **Archivist** | `roles/archivist.md` |
 | The human directing the work | **Principal** | `roles/principal.md` |
+
+*(The "coding-agent surface" is whatever CLI/IDE agent the team uses — e.g. Claude Code, Codex, or another. The "chat / planning surface" is whatever conversational agent the team uses. The role is the same regardless; the surface kind is the signal.)*
 
 Always also skim `roles/principal.md` to know what sits in the Principal's seat (ratification, Type 1 authority, lock approval).
 
@@ -30,8 +34,8 @@ Always also skim `roles/principal.md` to know what sits in the Principal's seat 
 - **Team Leader** — three modes. *Strategist*: architecture & decisions (may make Type 2 decisions ACTIVE immediately; Type 1 → PENDING). *Planner*: intent + backlog slice → a thin iteration of sibling-aware tasks (Issues + topology file; writes no briefs, no status). *Brief Author*: the just-in-time brief (→ `brief-authoring`). **Spec-check gate:** if asked a strategic/architectural question about a named product and you haven't read its specs, STOP and read them first.
 - **Developer** — executes ONE dispatched brief. **Entry gate:** read the brief fully; confirm dispatch gates against the forge (`depends-on` merged, no `conflicts-with` sibling PR open); **Step 0 = create the worktree** (`task/<iteration>/<n>`); then pre-flight. Opens the PR and stops — does not merge, does not review itself, never writes status.
 - **Reviewer (code)** — invoked fresh on an open PR. **Entry gate:** an open PR with the brief in its body, else refuse. Reads the diff + the brief + (advisory) the product spec; emits a VERDICT; read + review-comment authority only; does not edit code, does not merge.
-- **Reviewer (security)** — as above, security lens; runs AgentShield if `.claude/`/MCP config changed (D-028).
-- **Archivist** — **entry gate:** the PR is merged, else refuse. Works the close-out checklist (Issue closed, decision logged if Tier 3, changelog appended, per-product `state.md`/`now.md` updated, provenance block posted, orphan branch/worktree flagged). Writes **no** task status — the merge *is* the status.
+- **Reviewer (security)** — as above, security lens; runs a config-security scan if agent/MCP config changed (D-028).
+- **Archivist** — **entry gate:** the PR is merged, else refuse. Works the close-out checklist (Issue closed, decision logged if Tier 3, changelog appended, per-unit `state.md`/`now.md` updated, provenance block posted, orphan branch/worktree flagged). Writes **no** task status — the merge *is* the status.
 
 ## 3. Authority boundaries (so roles don't bleed)
 
