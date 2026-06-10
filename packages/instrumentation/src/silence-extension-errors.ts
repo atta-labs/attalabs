@@ -72,13 +72,14 @@ if (typeof window !== 'undefined') {
     return false
   }
 
-  for (const method of ['error', 'warn'] as const) {
-    const original = console[method].bind(console)
-    console[method] = (...args: unknown[]) => {
+  const filterArgs = (original: (...args: unknown[]) => void) => {
+    return (...args: unknown[]) => {
       if (args.some(containsExtensionRef)) return
       original(...args)
     }
   }
+  console.error = filterArgs(console.error.bind(console))
+  console.warn = filterArgs(console.warn.bind(console))
 }
 
 export {}
