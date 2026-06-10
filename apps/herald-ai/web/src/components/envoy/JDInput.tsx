@@ -64,20 +64,18 @@ export function JDInput({
 }) {
   const { setIsCollapsed } = useHeroCollapse()
   const sentinelRef = useRef<HTMLDivElement>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
   const { Button, Badge } = useComponents()
 
   useEffect(() => {
     setIsCollapsed(false)
     const sentinel = sentinelRef.current
-    const scroller = scrollRef.current
-    if (!sentinel || !scroller) return
+    if (!sentinel) return
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry) setIsCollapsed(!entry.isIntersecting)
       },
-      { root: scroller, rootMargin: '0px', threshold: 0 }
+      { root: null, rootMargin: '0px', threshold: 0 }
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
@@ -111,9 +109,9 @@ export function JDInput({
   }
 
   return (
-    <div className='flex h-full flex-col'>
-      {/* Scrollable candidate info */}
-      <div className='min-h-0 flex-1 overflow-y-auto' ref={scrollRef}>
+    <div>
+      {/* Hero — flows on the page; scrolls with the page (no internal scroller) */}
+      <div>
         <div className='mx-auto max-w-[680px] px-6 pt-20 pb-4'>
           <header>
             <div className='flex items-start gap-5'>
@@ -310,9 +308,9 @@ export function JDInput({
         </div>
       </div>
 
-      {/* Pinned input / audit gate */}
+      {/* Pinned input / audit gate — sticky to viewport bottom while user scrolls the hero */}
       {preview ? (
-        <div className='shrink-0 bg-background'>
+        <div className='sticky bottom-0 z-30 bg-background/95 backdrop-blur-md'>
           <div className='mx-auto max-w-[680px] px-6 py-4'>
             <div className='rounded border border-dashed border-border bg-card/50 px-6 py-8 text-center'>
               <p className='font-mono text-xs text-muted-foreground'>Recruiters will paste a job description here</p>
@@ -320,7 +318,7 @@ export function JDInput({
           </div>
         </div>
       ) : auditAvailable ? (
-        <div className='shrink-0 bg-background'>
+        <div className='sticky bottom-0 z-30 bg-background/95 backdrop-blur-md'>
           <div className='mx-auto max-w-[680px] px-6 py-4'>
             <SmartPromptInput
               onSubmit={handleSubmit}
@@ -333,7 +331,7 @@ export function JDInput({
           </div>
         </div>
       ) : isOwner ? (
-        <div className='shrink-0 border-t border-border bg-background'>
+        <div className='sticky bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md'>
           <div className='mx-auto flex max-w-[680px] items-center justify-between px-6 py-3'>
             <p className='font-mono text-xs text-warning'>No API key — recruiters can't run audits yet.</p>
             <a

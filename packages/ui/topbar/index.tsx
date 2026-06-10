@@ -133,58 +133,70 @@ export function TopBar({
         <div className='ml-auto flex items-center gap-2 md:hidden'>
           <ColorSchemeToggle />
           {isSignedIn && (accountMenu ?? <UserButton />)}
-          <Sheet>
-            <SheetTrigger render={<Button variant='outline' size='icon' aria-label='Open menu' />}>
-              <Menu className='h-4 w-4' />
-              <span className='sr-only'>Open menu</span>
-            </SheetTrigger>
-            <SheetContent side='top' showCloseButton={false} className='flex flex-col p-0 data-[side=top]:h-dvh'>
-              <div className='flex h-14 shrink-0 items-center justify-between border-b border-border px-6'>
-                {logo ? (
-                  logo
-                ) : (
-                  <SheetClose
-                    nativeButton={false}
-                    render={<NextLink variant='unstyled' href={logoHref} className='flex items-center gap-2' />}
-                  >
-                    {defaultLogo}
+          {/* Hamburger only renders when there are links to show. When visibleLinks is empty
+              and the user is signed out, the Sign-in button is shown directly in this row instead. */}
+          {visibleLinks.length > 0 ? (
+            <Sheet>
+              <SheetTrigger render={<Button variant='outline' size='icon' aria-label='Open menu' />}>
+                <Menu className='h-4 w-4' />
+                <span className='sr-only'>Open menu</span>
+              </SheetTrigger>
+              <SheetContent side='top' showCloseButton={false} className='flex flex-col p-0 data-[side=top]:h-dvh'>
+                <div className='flex h-14 shrink-0 items-center justify-between border-b border-border px-6'>
+                  {logo ? (
+                    logo
+                  ) : (
+                    <SheetClose
+                      nativeButton={false}
+                      render={<NextLink variant='unstyled' href={logoHref} className='flex items-center gap-2' />}
+                    >
+                      {defaultLogo}
+                    </SheetClose>
+                  )}
+                  <SheetClose render={<Button variant='outline' size='icon' aria-label='Close menu' />}>
+                    <X className='h-4 w-4' />
+                    <span className='sr-only'>Close menu</span>
                   </SheetClose>
-                )}
-                <SheetClose render={<Button variant='outline' size='icon' aria-label='Close menu' />}>
-                  <X className='h-4 w-4' />
-                  <span className='sr-only'>Close menu</span>
-                </SheetClose>
-              </div>
-              <nav className='flex flex-col px-6'>
-                {visibleLinks.map(({ href, label, exact, external }) => (
-                  <SheetClose
-                    key={href}
-                    nativeButton={false}
-                    render={
-                      <NextLink
-                        variant='nav'
-                        active={isActive(href, exact)}
-                        href={href}
-                        {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                        className='flex h-14 items-center border-b border-border/30 text-sm'
-                      />
-                    }
-                  >
-                    {label}
-                  </SheetClose>
-                ))}
-                {!isSignedIn && (
-                  <div className='flex h-14 items-center border-b border-border/30'>
-                    <SignInButton mode='modal'>
-                      <Button variant='outline' className='text-sm'>
-                        Sign in
-                      </Button>
-                    </SignInButton>
-                  </div>
-                )}
-              </nav>
-            </SheetContent>
-          </Sheet>
+                </div>
+                <nav className='flex flex-col px-6'>
+                  {visibleLinks.map(({ href, label, exact, external }) => (
+                    <SheetClose
+                      key={href}
+                      nativeButton={false}
+                      render={
+                        <NextLink
+                          variant='nav'
+                          active={isActive(href, exact)}
+                          href={href}
+                          {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                          className='flex h-14 items-center border-b border-border/30 text-sm'
+                        />
+                      }
+                    >
+                      {label}
+                    </SheetClose>
+                  ))}
+                  {!isSignedIn && (
+                    <div className='flex h-14 items-center border-b border-border/30'>
+                      <SignInButton mode='modal'>
+                        <Button variant='outline' className='text-sm'>
+                          Sign in
+                        </Button>
+                      </SignInButton>
+                    </div>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
+          ) : (
+            !isSignedIn && (
+              <SignInButton mode='modal'>
+                <Button variant='outline' className='h-8 px-3 text-xs'>
+                  Sign in
+                </Button>
+              </SignInButton>
+            )
+          )}
         </div>
       </div>
     </nav>

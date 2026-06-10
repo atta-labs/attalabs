@@ -80,8 +80,9 @@ function EnvoyNavContent({
 
   return (
     <>
-      {/* Row 1 — standard app topbar (shared TopBar), wrapped to overlay the hero with a translucent backdrop */}
-      <div className='absolute inset-x-0 top-0 z-50 bg-background/40 backdrop-blur-md'>
+      {/* Row 1 — standard app topbar (shared TopBar). In-flow at top of the page — public profile only.
+          Scrolls away with the page; Row 2 (fixed) takes over once the hero is collapsed. */}
+      <div className='bg-background'>
         <TopBar
           logoText='Herald'
           logoUrl={logoUrl}
@@ -92,9 +93,9 @@ function EnvoyNavContent({
         />
       </div>
 
-      {/* Row 2 — sticky identity bar (all breakpoints), slides in when hero scrolls away */}
+      {/* Row 2 — docked identity bar (fixed to viewport), slides in when hero scrolls away */}
       <div
-        className={cn('absolute inset-x-0 top-14 z-40 bg-background/40 backdrop-blur-md', dockedTransition)}
+        className={cn('fixed inset-x-0 top-0 z-50 bg-background/80 backdrop-blur-md', dockedTransition)}
         aria-hidden={!isCollapsed}
       >
         <div className='mx-auto flex h-12 max-w-[680px] items-center gap-2.5 px-6'>
@@ -153,11 +154,11 @@ export interface EnvoyShellProps {
 export function EnvoyShell({ children, logoUrl, profileIdentity, isOwner = false }: EnvoyShellProps) {
   return (
     <HeroCollapseProvider>
-      <div className='relative h-dvh overflow-hidden'>
+      <div className='relative min-h-dvh'>
         <Suspense>
           <EnvoyNavContent logoUrl={logoUrl} profileIdentity={profileIdentity} isOwner={isOwner} />
         </Suspense>
-        <main className='absolute inset-0 overflow-hidden'>{children}</main>
+        <main className='relative'>{children}</main>
       </div>
     </HeroCollapseProvider>
   )
