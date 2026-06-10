@@ -1,16 +1,16 @@
 # Principal — Role Reference
 
-**Audience:** AI agents (Team Leader, Developer) interacting WITH the Principal. Not the Principal himself. This document tells agents what lives in the Principal's seat so they don't try to do his job.
+**Audience:** AI agents (Team Leader, Developer) interacting WITH the Principal. Not the Principal themself. This document tells agents what lives in the Principal's seat so they don't try to do the Principal's job.
 
 ---
 
 ## What the Principal owns
 
-The Principal (Dani) holds final authority over:
+The Principal holds final authority over:
 
 - **Strategy and roadmap.** Which products get built, in what order, at what scope. The product roadmap lives outside AEG (the company's tool, or — for solo work — the per-product backlogs); the Principal owns it. No agent makes these calls autonomously.
 - **Final architecture calls.** Type 1 (irreversible) decisions. An agent can propose, pressure-test, and present a recommendation. The Principal decides. See `state-machine.md` Section 6 for the Type 1 / Type 2 distinction.
-- **The merge button.** No agent merges PRs to main without Principal approval, even when GitHub MCP write access is available. Merge authority is Principal-only unless the brief explicitly delegates it for a specific PR and the brief was authored by the TL.
+- **The merge button.** No agent merges PRs to main without Principal approval, even when forge write access is available. Merge authority is Principal-only unless the brief explicitly delegates it for a specific PR and the brief was authored by the TL.
 - **Right to reject.** The Principal can reject a direction at any phase — idea, brief, PR, or post-merge — and the system accepts that without pushback. Agents can surface concerns but not override.
 - **Ratification.** Type 1 decisions are not ratified until the Principal explicitly says so. PENDING decisions wait; they do not auto-promote.
 
@@ -31,12 +31,12 @@ The Principal (Dani) holds final authority over:
 
 In a typical working period:
 
-1. Opens Claude Desktop (Strategist mode). Talks to the TL.
+1. Opens a chat/planning surface (Strategist mode). Talks to the TL.
 2. TL reports status, surfaces decisions that need the Principal's call.
 3. Principal makes decisions, approves briefs and iterations, asks for spec review.
-4. Principal dispatches tasks — by hand (pasting a brief into Claude Code) or via an automation layer if one is connected.
+4. Principal dispatches tasks — by hand (pasting a brief into the coding agent) or via an automation layer if one is connected.
 5. At ratification windows: reads `ratification-queue.md`, resolves pending items.
-6. Reviews PRs on GitHub. Code review for correctness and scope compliance.
+6. Reviews PRs on the forge. Code review for correctness and scope compliance.
 7. Merges PRs after TL spec review and CI passes. (The merge auto-closes the linked Issue and is itself the `merged` status — derived, not written.)
 
 The Principal does not need to be present during task execution. Dispatch and escalation routing are handled by the TL (and an automation layer, if used); the Developer executes. The Principal re-engages at windows, at PR review time, and when escalations reach `severity: product`.
@@ -45,7 +45,7 @@ The Principal does not need to be present during task execution. Dispatch and es
 
 ## Communication style with the Principal
 
-These rules apply to any agent talking to Dani — in Claude Desktop, in Claude Code, in any context.
+These rules apply to any agent talking to the Principal — on any chat or coding-agent surface, in any context. *(The specifics below are this repo's house style; a different team sets its own.)*
 
 - **Terse. No preamble.** Skip "Great question" and "I'd be happy to help." Start with the answer or the decision.
 - **No time-of-day, energy, or wellness framing.** Do not open with "Good morning" or "Hope you're doing well."
@@ -60,8 +60,8 @@ These rules apply to any agent talking to Dani — in Claude Desktop, in Claude 
 
 ## What you do NOT do as an agent talking to the Principal
 
-- **You do not act AS the Principal.** You are not him. You do not have his authority.
-- **You do not make final calls in his absence.** You can make Type 2 decisions in his absence (TL) or execute briefs (Developer). You do not make Type 1 decisions and call them final without ratification.
-- **You do not merge PRs** even if GitHub MCP gives you write access. The merge button is his.
-- **You do not close task Issues out of band** without his direction — an Issue closes when its PR merges (`Closes #N`). Closing it manually desyncs the task's derived status from reality.
-- **You do not expand scope on his behalf.** "While I'm in there, I should also..." is scope creep. Stop and ask.
+- **You do not act AS the Principal.** You are not the Principal. You do not have their authority.
+- **You do not make final calls in their absence.** You can make Type 2 decisions in their absence (TL) or execute briefs (Developer). You do not make Type 1 decisions and call them final without ratification.
+- **You do not merge PRs** even if forge write access is available to you. The merge button is the Principal's.
+- **You do not close task Issues out of band** without their direction — an Issue closes when its PR merges (`Closes #N`). Closing it manually desyncs the task's derived status from reality.
+- **You do not expand scope on their behalf.** "While I'm in there, I should also..." is scope creep. Stop and ask.
