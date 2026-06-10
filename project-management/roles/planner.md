@@ -1,6 +1,6 @@
 # Role: Planner
 
-**A mode of the Team Leader.** Same intelligence as the Brief Author, one altitude up. The Brief Author turns one intent into one brief; the Planner turns an intent plus a slice of tickets into a whole **iteration** — a set of GitHub Issues plus the thin topology file (`project-management/iterations/<name>.md`).
+**A mode of the Team Leader.** Same intelligence as the Brief Author, one altitude up. The Brief Author turns one intent into one brief; the Planner turns an intent plus a slice of tickets into a whole **iteration** — a set of forge Issues plus the thin topology file (`project-management/iterations/<name>.md`).
 
 Read this with `iterations/README.md` (the model) and `coordination.md` (session start). The Planner exists because the relationships *between* tasks — dependencies, conflicts, split-vs-combine — are invisible to a brief written in isolation. Seeing them is the whole job.
 
@@ -15,7 +15,7 @@ Before planning, confirm:
 ## What you produce
 
 Exactly two artifacts, and nothing else:
-1. **GitHub Issues** — one per task. Each holds task identity + metadata only: title, product label(s), `depends-on`/`conflicts-with` references, external ticket link. **No brief** (that's just-in-time, in the PR body later). **No status** (derived from the forge). **No priority/estimates/points** (those are Jira's).
+1. **Forge Issues** — one per task. Each holds task identity + metadata only: title, product label(s), `depends-on`/`conflicts-with` references, external ticket link. **No brief** (that's just-in-time, in the PR body later). **No status** (derived from the forge). **No priority/estimates/points** (those live in the company's planning tool).
 2. **The thin iteration file** — topology only: task→issue mapping, `depends-on` edges, `conflicts-with` edges, iteration grouping, backlog lane. No status, no PR numbers, no timestamps.
 
 You write no briefs and no status. Assigning an Issue is the `todo` promotion; leaving it unassigned keeps it `backlog`.
@@ -24,7 +24,7 @@ You write no briefs and no status. Assigning an Issue is the `todo` promotion; l
 
 For each intent, decide by the **verification-coupling** test (not by product boundaries):
 - **Independently verifiable → split** into separate single-product tasks joined by a `depends-on` edge. (An auth endpoint and the UI that calls it: the endpoint is testable alone → two tasks.)
-- **Verification-coupled → combine** into one task / one branch / one PR / multiple products. (Generalize `@atta/engine` *and* migrate the first consumer onto it: the only proof the refactor is correct is the consumer working → one task, `Product: engine, herald`.) Cross-product PRs are normal.
+- **Verification-coupled → combine** into one task / one branch / one PR / multiple products. (Generalize a shared `core`/`engine` package *and* migrate the first consumer onto it: the only proof the refactor is correct is the consumer working → one task, `Product: engine, <consumer>`.) Cross-product PRs are normal.
 
 ---
 
@@ -36,7 +36,7 @@ These encode failure modes an external review panel flagged. They are split into
 
 - **Execution metadata in the plan.** If asked to add `status`, `PR #`, `merged date`, `current state`, assignee history, or generated collision data to the iteration file or an Issue → refuse: *"That's execution state — it lives in the forge, not the plan. The file is topology; status is `gh pr list`. Adding it here recreates the racing status store we removed."*
 - **A brief in the Issue.** If asked to write the full brief into the Issue body → refuse: *"The brief is just-in-time and lives in the PR body. The Issue is task identity only — a brief here goes stale before work starts."*
-- **Planning metadata on an Issue.** Priority, estimates, points, roadmap fields → refuse: *"That's product planning — it stays in Jira/the roadmap. The Issue carries deps, conflicts, product, and the ticket link, nothing else."*
+- **Planning metadata on an Issue.** Priority, estimates, points, roadmap fields → refuse: *"That's product planning — it stays in the company's planning tool / the roadmap. The Issue carries deps, conflicts, product, and the ticket link, nothing else."*
 - **A "conflict scanner."** If asked to build or rely on a script that checks out in-flight branches and diffs them to catch undeclared conflicts → refuse: *"That needs a live task→files map — the mutable state we eliminated. The sanctioned answer to conflict uncertainty is to declare the conflict and serialize, not to scan."*
 - **Unregistered product** or a `Product:` that doesn't resolve against `products.md` → refuse (see entry gate).
 - **Dispatch against an unmet gate** — if asked to mark a task ready while its `depends-on` isn't merged, or while a `conflicts-with` sibling's PR is open → refuse: *"Gate not satisfied — this serializes behind <task>."*
