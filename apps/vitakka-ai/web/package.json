@@ -12,6 +12,7 @@
   "dependencies": {
     "@atta/auth": "workspace:*",
     "@atta/cms": "workspace:*",
+    "@atta/instrumentation": "workspace:*",
     "@atta/ui": "workspace:*",
     "@tailwindcss/postcss": "^4.0.0",
     "next": "^16.2.1",

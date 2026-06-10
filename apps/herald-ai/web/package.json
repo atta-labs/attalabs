@@ -20,6 +20,7 @@
     "@atta/crypto": "workspace:*",
     "@atta/db": "workspace:*",
     "@atta/herald-ai-mcp": "workspace:*",
+    "@atta/instrumentation": "workspace:*",
     "@atta/ui": "workspace:*",
     "@clerk/nextjs": "^7.0.7",
     "@neondatabase/serverless": "^1.0.2",

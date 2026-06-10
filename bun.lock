@@ -41,6 +41,7 @@
         "@atta/auth": "workspace:*",
         "@atta/cms": "workspace:*",
         "@atta/identity": "workspace:*",
+        "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
         "@tailwindcss/postcss": "^4.0.0",
         "lucide-react": "^1.7.0",
@@ -84,6 +85,7 @@
         "@atta/auth": "workspace:*",
         "@atta/cms": "workspace:*",
         "@atta/identity": "workspace:*",
+        "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
         "@tailwindcss/postcss": "^4.0.0",
         "lucide-react": "^1.7.0",
@@ -159,6 +161,7 @@
         "@atta/crypto": "workspace:*",
         "@atta/db": "workspace:*",
         "@atta/herald-ai-mcp": "workspace:*",
+        "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
         "@clerk/nextjs": "^7.0.7",
         "@lobehub/icons": "^5.4.0",
@@ -229,6 +232,7 @@
         "@atta/db": "workspace:*",
         "@atta/engine": "workspace:*",
         "@atta/identity": "workspace:*",
+        "@atta/instrumentation": "workspace:*",
         "@atta/models": "workspace:*",
         "@atta/ui": "workspace:*",
         "@clerk/nextjs": "^7.0.7",
@@ -279,6 +283,7 @@
       "dependencies": {
         "@atta/auth": "workspace:*",
         "@atta/cms": "workspace:*",
+        "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
         "@tailwindcss/postcss": "^4.0.0",
         "next": "^16.2.1",
@@ -423,6 +428,14 @@
         "react": "^19.0.0",
       },
     },
+    "packages/instrumentation": {
+      "name": "@atta/instrumentation",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "typescript": "^5.7.0",
+      },
+    },
     "packages/models": {
       "name": "@atta/models",
       "version": "0.1.0",
@@ -515,6 +528,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@atta/cms": "workspace:*",
+        "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
         "@sanity/client": "^7.20.0",
         "lucide-react": "^1.7.0",
@@ -640,6 +654,8 @@
     "@atta/herald-ai-web": ["@atta/herald-ai-web@workspace:apps/herald-ai/web"],
 
     "@atta/identity": ["@atta/identity@workspace:packages/identity"],
+
+    "@atta/instrumentation": ["@atta/instrumentation@workspace:packages/instrumentation"],
 
     "@atta/models": ["@atta/models@workspace:packages/models"],
 
