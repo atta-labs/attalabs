@@ -726,3 +726,35 @@ This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choi
 - Reversible (Type 1 for the doc-system-layout blast radius, not for irreversibility); a future `aeg.sh` scaffolder should encode this convention when it creates a unit.
 
 ---
+
+## D-038 — AEG the product gets its own folder (`apps/aeg`); orchestrator-independence made structural
+
+**Date:** 2026-06-10
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (product-structure pass, June 10, 2026)
+**Ratified by:** Principal (in-session)
+
+**Context:** AEG is two things sharing one name: **the model** (the governance/flow constitution, correctly living at repo-root `project-management/` because it governs the whole monorepo) and **the product** (a deployed UI that visualizes a repo's AEG execution, plus the `aeg.sh` adoption scaffolder). The product had no folder — its UI write-up lived in `specs/ecosystem-backlog.md` and it was absent from the product registry — so when scanning `apps/`, the headline product was invisible while supporting tools (Cetana) had folders. Separately, the Principal asked whether Cetana should live *inside* the AEG folder, since the two are related. That would invert the model's core invariant.
+
+**Decision:** Two parts.
+
+1. **Scaffold `apps/aeg/` as a first-class product**, mirroring the Vāda/Herald shape: `apps/aeg/specs/` (`aeg-app-architecture.md`, `aeg-backlog.md`, `aeg-decisions.md`) + `apps/aeg/project-management/` (`state.md`, `now.md`) per D-037. The product is the UI (`apps/aeg/web` → `aeg.attalabs.dev`, flat routes under `(app)`, DAG via `@atta/ui/engine-flow`) **plus** the `aeg.sh` neutral scaffolder (a former D-029 build follow-up, which lays down the AEG structure in any repo and creates a specified unit's folders per D-037). Registered in `products.md` as `aeg`. The AEG-UI write-up moved out of the ecosystem backlog (which now scopes to AEG-the-*model* build-out). `apps/aeg` carries no `-ai` suffix (meta/infra-app convention, like `apps/attalabs`, `apps/desktop`). The product is the designated first real iteration; it dogfoods the flow by visualizing it.
+
+2. **Cetana stays a sibling at `apps/cetana-ai/`; it is NOT moved inside `apps/aeg/`.** AEG is forge-native and orchestrator-independent (D-029): it must run by hand, on any repo, with zero orchestration tooling. **Cetana knows AEG; AEG does not know Cetana.** Folder containment would assert "AEG contains its orchestrator," re-coupling exactly what D-029 decoupled. The relationship is "Cetana is one tool that speaks AEG," expressed by: (a) sibling folders, and (b) the AEG UI *rendering* an orchestrator's activity read-only as forge facts (the UI reads the forge; Cetana writes to the forge) — never by containment. If the two are ever shipped together (e.g. both inside AttaLabs Desktop, whose specs already name AEG as the strongest fit), that is a *distribution* decision, not a source-tree nesting decision: bundle at the distribution layer, never the folder layer.
+
+**Alternatives rejected:**
+- Rename Cetana to AEG / treat Cetana as the AEG product: rejected — they are different things; Cetana automates one slice (dispatch/escalation), the product visualizes the whole model. Collapsing them destroys the model's central distinction.
+- Put Cetana inside `apps/aeg/` as a sub-product: rejected — it makes AEG depend on (or appear to contain) its orchestrator, a direct reversal of D-029's orchestrator-independence. The strongest expression of "AEG does not know Cetana" is that Cetana is not in AEG's tree.
+- Leave AEG-the-product folderless until build starts: rejected — a headline, specced product being invisible in `apps/` and absent from the registry is the exact incoherence that prompted this. A spec-only scaffold (like `apps/desktop`) gives it a home without requiring code.
+
+**Consequences:**
+- New: `apps/aeg/specs/{aeg-app-architecture,aeg-backlog,aeg-decisions}.md`, `apps/aeg/project-management/{state,now}.md`.
+- `products.md` — `aeg` registry row added + a note recording the product/model distinction and the Cetana-independence boundary.
+- `specs/ecosystem-backlog.md` — AEG-UI write-up replaced with a pointer to `apps/aeg/specs/aeg-backlog.md`; the file now scopes to AEG-the-model build-out + the spec-integrity chain + infra.
+- The orchestrator-independence boundary is now structural (a folder boundary), not just prose in D-029 — recorded in `aeg-app-architecture.md`, `apps/aeg/project-management/state.md`, and `products.md` so it is not re-litigated.
+- Reversible in principle, but the Cetana-independence half is a restatement/hardening of D-029's core and should be treated as load-bearing.
+- `apps/aeg/web` does not exist yet; building it is the designated first iteration (`apps/aeg/specs/aeg-backlog.md`).
+
+---
