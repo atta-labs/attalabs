@@ -20,8 +20,11 @@ The folder is simply **the home for that product's specs and status** (`<path>/s
 | vada    | `apps/vada-ai`   | `apps/vada-ai/specs/`       | `apps/vada-ai/project-management/`   |
 | cetana  | `apps/cetana-ai` | `apps/cetana-ai/specs/`     | `apps/cetana-ai/project-management/` |
 | herald  | `apps/herald-ai` | `apps/herald-ai/specs/`     | `apps/herald-ai/project-management/` |
+| aeg     | `apps/aeg`       | `apps/aeg/specs/`           | `apps/aeg/project-management/`       |
 | atta    | `apps/atta-ai`   | `apps/atta-ai/specs/`       | (status tracked globally for now)    |
 | desktop | `apps/desktop`   | `apps/desktop/specs/`       | (status tracked globally for now)    |
+
+> **aeg** — AEG **the product**: a read-only web UI (`apps/aeg/web` → `aeg.attalabs.dev`) that visualizes a repo's AEG execution (iteration DAGs + forge-derived status + backlogs, attention-queue default view), plus `aeg.sh`, a neutral scaffolder that lets any repo adopt the AEG structure. Distinct from AEG **the model** (the governance constitution at repo-root `project-management/`). Spec-only scaffold today, no `apps/aeg/web` code yet; it is the designated first real iteration. **Orchestrator-independent: AEG does not know Cetana** — Cetana (the optional orchestrator, `apps/cetana-ai`) knows AEG, not the reverse; it is a sibling, never contained here (D-029, D-038). `apps/aeg` carries no `-ai` suffix (meta/infra-app convention, like `apps/attalabs`, `apps/desktop`).
 
 > **desktop** — AttaLabs Desktop: a Tauri shell embedding the existing web products unchanged (Next `standalone` in a Node sidecar) plus a local CLI transport so products ride the user's `claude`/`codex` subscription. Spec set is DRAFT / NOT RATIFIED (see `apps/desktop/specs/`). No `apps/desktop` code exists yet — the folder currently holds specs only.
 
@@ -47,4 +50,4 @@ Don't conflate them: `Product` = whose specs/PM; `conflicts-with` (via collision
 
 ---
 
-Product backlogs (held / future items, out of the AEG flow) live alongside each product's specs as `<path>/specs/<product>-backlog.md`. Cross-cutting / ecosystem items live in `docs/ecosystem-backlog.md`.
+Product backlogs (held / future items, out of the AEG flow) live alongside each product's specs as `<path>/specs/<product>-backlog.md`. Cross-cutting / ecosystem items live in `specs/ecosystem-backlog.md` (D-037).
