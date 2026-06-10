@@ -1,30 +1,32 @@
 ---
 name: aeg
-description: The front door to Atta Agentic Execution Governance (AEG) — the operating model every agent works inside. Load at the start of ANY session in this repo, before doing anything substantive, regardless of role. Covers what AEG is, the four truth domains, forge-derived status, the iteration topology file, where the plan vs the flow vs governance live, the dispatch gates, the brief, the anti-regression rules, and the model-vs-product distinction. Ends by routing to the aeg-roles skill and the reading order. Does NOT cover role specifics (see aeg-roles + roles/*.md) or brief authoring (see brief-authoring).
+description: The front door to Agentic Execution Governance (AEG) — the operating model every agent works inside. Load at the start of ANY session in this repo, before doing anything substantive, regardless of role. Covers what AEG is, the four truth domains, forge-derived status, the iteration topology file, where the plan vs the flow vs governance live, the dispatch gates, the brief, the anti-regression rules, and the model-vs-product distinction. Ends by routing to the aeg-roles skill and the reading order. Does NOT cover role specifics (see aeg-roles + roles/*.md) or brief authoring (see brief-authoring).
 ---
 
 # AEG — the operating model (front door)
 
 **Load this first, every session, before anything substantive — whatever your role.** It is the one-read picture of how work happens in this repo. When you finish it you will know what AEG is, what is true and where it is stored, and which role doc to open next. It does not reproduce the role docs or the brief rules — it points to them.
 
-AEG = **Atta Agentic Execution Governance.** It is a small set of accountable roles coordinating AI agents through briefs, independent review, blocking escalation, and append-only decision logs. It is **governance + orchestration of delegated AI execution** — it is *not* project management: there is no plan, timeline, or resource tracking inside AEG (that lives in the backlogs / a company tool, outside the flow).
+AEG = **Agentic Execution Governance.** It is a small set of accountable roles coordinating AI agents through briefs, independent review, blocking escalation, and append-only decision logs. It is **governance + orchestration of delegated AI execution** — it is *not* project management: there is no plan, timeline, or resource tracking inside AEG (that lives in the backlogs / a company tool, outside the flow).
+
+AEG is **agent-agnostic and tool-agnostic.** The roles below describe *what an agent must do*, not which agent does it — any capable coding agent (Claude Code, Codex, or another) can take a role by reading its doc. The model names no vendor as a dependency.
 
 ---
 
 ## 1. AEG is two things sharing one name (don't confuse them)
 
-- **AEG the model** — this operating model: the governance/flow constitution. It lives at repo-root `project-management/` and governs the whole monorepo. *This skill is the model.*
-- **AEG the product** — a deployed UI that *visualizes* a repo's AEG execution, plus `aeg.sh`, a scaffolder that lays the AEG structure into any repo. It lives at `apps/aeg/`. (See `apps/aeg/specs/aeg-app-architecture.md`.)
+- **AEG the model** — this operating model: the governance/flow constitution. It lives at repo-root `project-management/` and governs the whole repo. *This skill is the model.*
+- **AEG the product** — a deployed UI that *visualizes* a repo's AEG execution, plus `aeg.sh`, a scaffolder that lays the AEG structure into any repo. In this repo it lives at `apps/aeg/`.
 
-When someone says "AEG," default to the model unless the context is clearly the product (`apps/aeg/`, the UI, the website).
+When someone says "AEG," default to the model unless the context is clearly the product (the UI, the website, the scaffolder).
 
 ## 2. Forge-native, orchestrator-independent
 
-AEG runs on **the Repo + the Git forge (GitHub) + plain git worktrees**, and depends on **no orchestration tool**. It can be run entirely by hand. In *this* repo, Cetana (`apps/cetana-ai/`) is an optional tool that automates the dispatch/escalation slice — **Cetana knows AEG; AEG does not know Cetana.** Never assume an orchestrator exists; never make the model depend on one.
+AEG runs on **the Repo + the Git forge (GitHub/GitLab) + plain git worktrees**, and depends on **no orchestration tool**. It can be run entirely by hand. An orchestrator may *automate* the dispatch/escalation slice, but knowledge flows one way: **a tool may know AEG; AEG does not know the tool.** Never assume an orchestrator exists; never make the model depend on one. *(In this repo, the optional orchestrator is Cetana — but the model never names it as a requirement.)*
 
 ## 3. The four truth domains — every fact lives in exactly one place
 
-1. **The Git forge** (Issue / branch / PR / review / merge state) = **all live execution status, DERIVED not stored.** A task *is* a GitHub Issue. There is no status field and no `status:*` label anywhere — status is *read* from the forge:
+1. **The Git forge** (Issue / branch / PR / review / merge state) = **all live execution status, DERIVED not stored.** A task *is* a forge Issue. There is no status field and no `status:*` label anywhere — status is *read* from the forge:
    - branch `task/<iteration>/<n>` exists → in-flight
    - PR open → in-review · review = CHANGES_REQUESTED → changes-requested
    - PR merged → merged · `aeg:blocked` label → blocked
@@ -37,11 +39,11 @@ Conversation logs / thinking are **not** artifacts — never cite them as author
 
 ## 4. Where the plan / the flow / governance live (D-037)
 
-- **The plan (backlogs)** → a unit's `specs/`: `specs/ecosystem-backlog.md` (monorepo) and `apps/<product>/specs/<product>-backlog.md` (per product). **Out of the flow.** The Planner *may* read it to compose an iteration but the flow never operates on it.
-- **The flow + governance + living state** → a unit's `project-management/`: the constitution, the role docs, the iteration files, and the living state (`state.md`, `now.md`, `changelog.md`, `decisions.md`, `lessons.md`, `ratification-queue.md`).
+- **The plan (backlogs)** → a unit's `specs/`: `specs/<unit>-backlog.md` (per unit / per product) and a repo-level backlog in the root `specs/`. **Out of the flow.** The Planner *may* read it to compose an iteration but the flow never operates on it.
+- **The flow + governance + living state** → a unit's `project-management/`: the constitution, the role docs, the skills, the iteration files, and the living state (`state.md`, `now.md`, `changelog.md`, `decisions.md`, `lessons.md`, `ratification-queue.md`).
 - **`roadmap.md` is retired** (D-029). Never read or write it.
 
-The model layer (constitution, flow, roles, process) exists **once**, at repo-root `project-management/`. A product's `project-management/` carries only that product's *living state* — never a copy of the model.
+The model layer (constitution, flow, roles, skills, process) exists **once**, at repo-root `project-management/`. A unit's `project-management/` carries only that unit's *living state* — never a copy of the model.
 
 ## 5. The iteration — AEG's top-level artifact
 
@@ -64,7 +66,7 @@ Principal → Team Leader → Developer → Reviewer (code + security) → merge
 ## 9. Tiers, decisions, ratification (the governance layer)
 
 - **Tiers** (D-003): Tier 0 trivial · Tier 1 implementation · Tier 3 product/roadmap. No Tier 2. When in doubt, Tier 3.
-- **Decisions** are append-only `D-###` entries in `decisions.md` (global) or `apps/*/specs/*-decisions.md` (per product). **Type 1** = irreversible (Principal ratifies; PENDING until a window). **Type 2** = reversible (TL may ratify). `Lock: YES` = a closed branch a brief must acknowledge or formally challenge. Never edit an entry in place — supersede with a new one.
+- **Decisions** are append-only `D-###` entries in `decisions.md` (repo-level) or `<unit>/specs/<unit>-decisions.md` (per unit). **Type 1** = irreversible (Principal ratifies; PENDING until a window). **Type 2** = reversible (TL may ratify). `Lock: YES` = a closed branch a brief must acknowledge or formally challenge. Never edit an entry in place — supersede with a new one.
 - **Ratification windows**: 1–2 daily; the Principal resolves Type 1s, Tier 3 merges, lock approvals, `severity:product` escalations.
 - **verify-docs** (`.github/workflows/verify-docs.yml`) is a real blocking CI gate (D-027): changed specs need a `Status:` block, Tier 1+ code needs a doc change, Tier 3 needs a decision entry.
 
