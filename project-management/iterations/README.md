@@ -7,11 +7,11 @@
 
 This design was reviewed in three rounds by an external panel (Gemini, DeepSeek, ChatGPT) and unanimously endorsed after the corrections below.
 
-The **iteration** is the highest-level artifact in Atta Agentic Execution Governance. AEG starts here and goes down. There is nothing above it inside AEG.
+The **iteration** is the highest-level artifact in Agentic Execution Governance. AEG starts here and goes down. There is nothing above it inside AEG.
 
 AEG is the **execution** layer — it governs how a human's intent becomes reviewed, merged, coherent code, run by humans wielding agents. It is **not** a product-planning tool.
 
-> **AEG is forge-native, orchestrator-independent.** It depends on a Git forge (GitHub/GitLab) the way it depends on git — the forge is infrastructure every team already has, and it is AEG's source of truth for execution state. AEG does **not** depend on any orchestration tool (e.g. Cetana): a human, or a thin dispatch script, invokes roles; there is no AEG server, scheduler, or database. Knowledge flows one way — a tool may know AEG; AEG does not know the tool. (Earlier drafts claimed "tool-neutral." That was abandoned as a false goal: real teams have a forge; pretending otherwise produced a fragile mutable-file state model. Forge-native is the honest boundary.)
+> **AEG is forge-native, orchestrator-independent.** It depends on a Git forge (GitHub/GitLab) the way it depends on git — the forge is infrastructure every team already has, and it is AEG's source of truth for execution state. AEG does **not** depend on any orchestration tool: a human, or a thin dispatch script, invokes roles; there is no AEG server, scheduler, or database. Knowledge flows one way — a tool may know AEG; AEG does not know the tool. (Earlier drafts claimed "tool-neutral." That was abandoned as a false goal: real teams have a forge; pretending otherwise produced a fragile mutable-file state model. Forge-native is the honest boundary.)
 
 ---
 
@@ -21,7 +21,7 @@ Every fact in AEG lives in exactly **one** place. Nothing is duplicated; no arti
 
 | Domain | Holds | Mutable by |
 |--------|-------|-----------|
-| **GitHub Issue** | Task identity + metadata (product label, ticket link, dependency/conflict references) | Planner (at plan time) |
+| **The forge Issue** | Task identity + metadata (product label, ticket link, dependency/conflict references) | Planner (at plan time) |
 | **The thin iteration file** | Planning *topology* only — task→issue mapping, dependency graph, conflict graph, iteration grouping | Planner (at plan time) |
 | **The Git forge** (branch / PR / review / merge state) | All live execution *status* — derived, never stored | the act of working (opening a branch, a PR, a review, a merge) |
 | **The PR body** | The just-in-time brief — the task's full execution context | Brief Author, once, when work starts |
@@ -40,7 +40,7 @@ What AEG holds is the **iteration**: the bounded set of tasks currently being tu
 Company roadmap / Jira / product backlog   ← NOT in AEG. Reference only. The human reads it.
         │  (human translation — Team Leader / Planner)
         ▼
-Iteration  =  a set of GitHub Issues  +  a thin topology file        ← TOP of AEG.
+Iteration  =  a set of forge Issues  +  a thin topology file        ← TOP of AEG.
    ├─ Task (Issue) ── brief written just-in-time → lands in its PR body
    ├─ Task (Issue)
    └─ …          edges (depends-on / conflicts-with) declared in the thin file
@@ -49,15 +49,15 @@ Iteration  =  a set of GitHub Issues  +  a thin topology file        ← TOP of 
 Per task: branch → PR → Reviewer + Security → merge → close-out
 ```
 
-**`roadmap.md` is retired.** Its executable slice became the first iteration; its held/vision content moved to per-product backlogs (`apps/<product>/specs/<product>-backlog.md`) and `docs/ecosystem-backlog.md`, all out of the flow.
+**`roadmap.md` is retired.** Its executable slice became the first iteration; its held/vision content moved to per-unit backlogs (`<unit>/specs/<unit>-backlog.md`) and the repo-level `specs/<repo>-backlog.md`, all out of the flow (D-037).
 
-**The backlog is the seam with your planning tool — and AEG is indifferent to it.** The backlog can be these markdown files, or it can be Jira, Linear, a spreadsheet, or a conversation in someone's head. AEG does not care which, because **AEG never reads the backlog as part of the flow** — it only requires that *a well-formed brief exists* when a task is dispatched. The Planner *may* read the backlog to compose an iteration (a useful input), but it does **not depend** on one: hand the Planner intent directly ("build the AEG UI") and it produces an iteration with no backlog at all. So the backlog is an *optional upstream input*, never a flow dependency. This is exactly what lets AEG drop into a team that already lives in Jira without fighting it — Jira stays the plan; AEG picks up at the iteration. The seam is the only point the two ever touch, and only a human (the Planner) stands on it.
+**The backlog is the seam with your planning tool — and AEG is indifferent to it.** The backlog can be these markdown files, or it can be Jira, Linear, a spreadsheet, or a conversation in someone's head. AEG does not care which, because **AEG never reads the backlog as part of the flow** — it only requires that *a well-formed brief exists* when a task is dispatched. The Planner *may* read the backlog to compose an iteration (a useful input), but it does **not depend** on one: hand the Planner intent directly ("build the dashboard") and it produces an iteration with no backlog at all. So the backlog is an *optional upstream input*, never a flow dependency. This is exactly what lets AEG drop into a team that already lives in Jira without fighting it — Jira stays the plan; AEG picks up at the iteration. The seam is the only point the two ever touch, and only a human (the Planner) stands on it.
 
 ---
 
-## 3. A task is a GitHub Issue; status is derived, never stored
+## 3. A task is a forge Issue; status is derived, never stored
 
-A task **is** a GitHub Issue. Its status is not a field anyone writes — it is **computed by asking the forge** what is true right now. This is the change that removed the original fatal flaw (a hand-edited status column that raced, drifted, and lied under parallelism).
+A task **is** a forge Issue. Its status is not a field anyone writes — it is **computed by asking the forge** what is true right now. This is the change that removed the original fatal flaw (a hand-edited status column that raced, drifted, and lied under parallelism).
 
 | Status | Derived from (the forge fact) |
 |--------|-------------------------------|
@@ -88,19 +88,17 @@ Goal (execution, not product-why): <what ships, end to end>
 Repo: <repo>   ·   Team Leader: <name>
 
 ## Tasks (topology)
-| # | Task                          | Issue | Product(s)    | Depends-on | Conflicts-with |
-|---|-------------------------------|-------|---------------|------------|----------------|
-| 1 | Generalize engine + migrate   | #88   | engine,herald | —          | 3              |
-| 2 | Profile schema migration      | #89   | herald        | —          | —              |
-| 3 | Vāda flow tweak (touches engine)| #90 | vada          | —          | 1              |
+| # | Task                          | Issue | Product(s)      | Depends-on | Conflicts-with |
+|---|-------------------------------|-------|-----------------|------------|----------------|
+| 1 | Generalize core + migrate     | #88   | core,service-a  | —          | 3              |
+| 2 | Schema migration              | #89   | service-a       | —          | —              |
+| 3 | service-b tweak (touches core)| #90   | service-b       | —          | 1              |
 
 ## Backlog (this iteration, not yet ready to dispatch)
-- Rate-limit middleware (issue #91, herald) — promote once task 1 lands.
+- Rate-limit middleware (issue #91, service-a) — promote once task 1 lands.
 ```
 
-To see **live status**, you do not read this file — you ask the forge: `gh pr list`, the GitHub Issues view, or a Project board. The file is the *plan*; the forge is the *board*. (Note task 3: a Vāda task conflicts with task 1 even though they're different products — both touch the `@atta/engine` package. Conflicts are package-level, §5.)
-
-**What is deliberately absent:** no priority, estimates, story points, or "why" — those are the company's, in Jira. The iteration carries only what schedules execution safely. That absence is what keeps AEG out of "Jira again."
+To see **live status**, you do not read this file — you ask the forge: `gh pr list`, the forge's Issues view, or a project board. The file is the *plan*; the forge is the *board*. (Note task 3: a `service-b` task conflicts with task 1 even though they're different products — both touch the shared `core` package. Conflicts are package-level, §5.)
 
 ---
 
@@ -124,7 +122,7 @@ The **Planner** is a mode of the Team Leader — same intelligence as Brief Auth
 The Planner's job — the reason the iteration exists — is the relationships a brief-in-isolation can't see: decompose the ticket slice into agent-sized tasks (Issues), declare `depends-on` and `conflicts-with` edges, and decide **split vs. combine** by the **verification-coupling** test:
 
 - **Independently verifiable → split** into single-product tasks with a `depends-on` edge.
-- **Verification-coupled → combine** into one task, one branch, one PR, multiple products (e.g. generalize `@atta/engine` *and* migrate the first consumer onto it — the only proof the refactor is correct is the consumer working). Cross-product PRs touching two, three, four products are normal, not exceptions.
+- **Verification-coupled → combine** into one task, one branch, one PR, multiple products (e.g. generalize a shared `core` package *and* migrate the first consumer onto it — the only proof the refactor is correct is the consumer working). Cross-product PRs touching two, three, four products are normal, not exceptions.
 
 The Planner writes no briefs (those are just-in-time, §7) and writes no status (that's the forge). It owns the thin file and the `backlog`/`todo` distinction (assigning an Issue is the `todo` promotion). Its upstream input — a ticket slice, a backlog, or just the Principal's stated intent — is optional and lives outside AEG (§2); the Planner is where the company's plan and AEG's execution meet. It also enforces the **plan-integrity gates** in `roles/planner.md` — the recognized failure modes turned into live refusals and calibrated warnings (see §10). The full role spec, including refusal language, is in `roles/planner.md`.
 
@@ -166,14 +164,14 @@ The review panel predicted, unanimously, the two ways teams will accidentally re
 
 ## 10. What AEG adds over raw GitHub
 
-A fair challenge from the panel: a 2-dev GitHub team already has Issues, Projects, PRs, reviews. What does AEG add? Exactly four things GitHub does not give you, and they are the product:
+A fair challenge from the panel: a 2-dev forge team already has Issues, Projects, PRs, reviews. What does AEG add? Exactly four things the forge does not give you, and they are the product:
 
-1. **Dependency gates** — GitHub won't stop you starting a task whose dependency isn't merged. AEG does.
-2. **Conflict edges + collision domains** — GitHub won't stop two colliding tasks running in parallel. AEG does.
-3. **Role self-location** — Developer/Reviewer/Security/Archivist each validate their own preconditions from forge state and refuse when it isn't their turn. GitHub just sends a notification.
+1. **Dependency gates** — the forge won't stop you starting a task whose dependency isn't merged. AEG does.
+2. **Conflict edges + collision domains** — the forge won't stop two colliding tasks running in parallel. AEG does.
+3. **Role self-location** — Developer/Reviewer/Security/Archivist each validate their own preconditions from forge state and refuse when it isn't their turn. The forge just sends a notification.
 4. **Just-in-time brief discipline** — full context authored at execution and living in the PR, not rotting in a ticket.
 
-Raw GitHub is a dashboard. AEG is a thin, forge-native discipline layer on top of it. That layer — not any one mechanism — is the value.
+Raw forge tooling is a dashboard. AEG is a thin, forge-native discipline layer on top of it. That layer — not any one mechanism — is the value.
 
 ---
 
