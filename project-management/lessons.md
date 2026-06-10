@@ -76,3 +76,45 @@ Lessons accumulated through April-May:
 - ❌ Treating "process printed success message" as evidence of clean exit — a process can print and then hang on pending I/O handles
 - ❌ Using `process.exit()` to paper over event-loop liveness bugs — find and close the dangling handle instead
 - ❌ **Letting orchestration speed outpace review rigor.** Every time Cetana ships a feature, friction per task drops. That's the goal. But there's a real risk: as dispatch becomes cheaper, the Principal may dispatch tasks faster than they can meaningfully review the output. The two install-gate failures on May 12, 2026 (PR #39 → PR #42 fix → PR #43 fix) are a small instance: the agent claimed verified, the Principal trusted, two bugs slipped through. Higher orchestration speed without higher review rigor is how trust degrades. Mitigations: (a) review gates must scale with throughput — when shipping >5 PRs/day becomes routine, review checklists need to get more explicit, not less; (b) D-025-style path-coverage requirements should be added for other failure-prone areas as they emerge; (c) the Principal should periodically run "is this still being reviewed properly?" audits — pick a recent PR at random, re-review it fully, compare findings to what was caught at merge time; (d) sustained dogfooding (D-023's 4-week gate) before V1 surface adoption helps surface review degradation before tooling makes it worse. The general principle: tooling that automates orchestration should ship with explicit guardrails against degrading the human-judgment loops it depends on.
+
+---
+
+## L‑001 — One agent per branch; the other stashes and idles
+
+**Context:** During `herald-profile-refactor`, multiple Claude Code agents were run against the same branch (and the same files — `ProfileEditor.tsx`, `envoy-shell.tsx`, a shared `@atta/ui/account` file). This produced a long, avoidable deconfliction episode: overlapping uncommitted edits across a worktree *and* the main checkout, a stale `feat/herald-admin-portal` branch that turned out to be an ancestor (no unique work), and an `AttaUserProfile` fix that was nearly stranded on `main`.
+
+**Lesson:** Only **one agent** edits a given branch at a time. If a second agent has work in progress, it runs `git stash push -u` and idles until the first has committed and pushed; then it pulls, pops, keeps only its unique change, and commits. Never choreograph two agents committing to the same files — serialize them. Write agent prompts that start with `git pull --rebase` and a stop-condition: "if `git status` shows another agent's uncommitted work, STOP and report."
+
+**Anti-pattern:** Two agents on one branch "to go faster." It is slower — the deconfliction cost dwarfs the parallelism gain at this scale.
+
+---
+
+## L‑002 — The pushed code is the source of truth, not the agent's "done" report
+
+**Context:** Several agent reports stated a fix had landed when the pushed file showed otherwise — most notably the EnvoyShell structural rewrite (the desktop-overlap fix), which a report described as done while the committed file still contained the bespoke centered-identity column. A button-size fix was reported as "matched" but had been matched to the *wrong* (chunky) size. The library-resolution fix was first applied in the *opposite* direction to the product rule and reported as correct.
+
+**Lesson:** After any agent reports "done," verify against the **pushed code on the remote** (read the actual file / diff) before treating it as complete — especially for structural changes and anything cross-cutting. Reports describe intent; the diff is the fact. This is the audit-mode ordering (D-004): shipped code outranks the claim about it.
+
+---
+
+## L‑003 — Recover loose work immediately; don't let it sit uncommitted across checkouts
+
+**Context:** An `AttaUserProfile` width fix lived only as an unstaged change in the **main** checkout (wrong branch) while the work belonged on `herald-profile-refactor`. A phantom "second stash" was reported that never existed. The fix was eventually recovered by pasting its diff and pushing it directly to the branch.
+
+**Lesson:** When a needed change exists only as uncommitted work — especially in a different worktree/branch than where it belongs — move it to its home branch and commit it promptly (cherry-pick, or grab the diff and push directly). Uncommitted work spread across a worktree + the main checkout is how changes get lost or duplicated. The Team Leader pushing a small verified diff directly via the forge is a fine recovery path when the agent's tree is tangled.
+
+---
+
+## L‑004 — Slow down at architectural decision points; confirm the product model before prescribing a fix
+
+**Context:** The `/ui`-page library mismatch was twice mis-diagnosed by the Team Leader ("it's the preview iframe"; "it's just a variant color difference") before the Principal restated the actual product rule: app chrome = build-time CMS library; user preference applies only to the public profile (D-035). The first agent fix then went in the wrong direction because the brief encoded the wrong model.
+
+**Lesson:** Before writing a fix brief for a strategic/architectural symptom, confirm the **product invariant** with the Principal (or the spec) rather than reasoning ahead of evidence. A confidently-wrong brief sends an agent in the wrong direction and costs a full round-trip. When the Principal restates a rule, encode it verbatim and note that the prior commit was the mistake to undo. (Reinforces the existing spec-check gate: read the product's specs before answering architectural questions about it.)
+
+---
+
+## L‑005 — Stale skills/specs actively mislead: the auth skill said "never per-product Clerk" while Herald had its own
+
+**Context:** `.claude/skills/auth/SKILL.md` asserted "one Clerk app for the entire ecosystem / never create a per-product Clerk app" as a hard rule, while D-031 had already established Herald as a standalone with its own Clerk app. An agent reading the skill would have applied the wrong identity model to Herald.
+
+**Lesson:** When a decision creates an exception to a documented rule, update the skill/spec in the **same** pass, not "later." A stale skill is worse than a missing one — it asserts a falsehood with authority. Capture exceptions explicitly (the auth skill now has a "Herald exception" section). Doc updates ride as a separate PR from the code, but they are not optional follow-ups — do them while the change is fresh.

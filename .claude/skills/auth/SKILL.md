@@ -1,19 +1,17 @@
 ---
 name: auth
-description: Clerk authentication patterns across the Atta ecosystem — single Clerk app, subdomain SSO via cookie scope, shared users table
+description: Clerk authentication patterns across the Atta ecosystem — shared single Clerk app with subdomain SSO for Atta/Vāda; Herald is a standalone exception with its own Clerk app and DB
 ---
 
 # Authentication — Atta Ecosystem
 
 ## Context
 
-The entire Atta ecosystem uses a **single Clerk application** via the `@atta/auth` wrapper package. Authentication state propagates across all product subdomains via a cookie scoped to the parent domain (`.attalabs.dev`).
+The **Atta family** (Atta, Vāda, and other Atta-composed surfaces) uses a **single Clerk application** via the `@atta/auth` wrapper, with auth state propagating across product subdomains via a cookie scoped to the parent domain (`.attalabs.dev`). Sign in once on any Atta-family subdomain → signed in everywhere (the Google model).
 
-Sign in once on any subdomain → signed in everywhere. This is the Google model (`mail.google.com`, `docs.google.com` share one identity).
+**Herald is a deliberate exception** (D-031): it is a standalone AttaLabs product with its **own** Clerk application (`closing-blowfish-4`), its **own** Neon DB, and its **own** `user_provider_keys` table. It does **not** share identity or SSO with the Atta family. See "Herald exception" below before applying any rule here to Herald.
 
-There is **one shared `users` table** in `@atta/db`, keyed by `clerk_id`. Per-product profile rows reference `clerk_id` as a foreign key. Product-specific data lives in product-specific tables; identity does not.
-
-This replaces an earlier "each product has its own Clerk application" model. Per-product Clerk apps are no longer used.
+For the Atta family there is one shared `users` table in `@atta/db`, keyed by `clerk_id`; per-product profile rows reference `clerk_id` as a foreign key. Identity does not live in product tables.
 
 ---
 
@@ -42,14 +40,16 @@ import { buildClerkAppearance } from '@atta/auth'
 
 ---
 
-## Rules
+## Rules (Atta family)
 
-### RULE #1: One Clerk app for the entire ecosystem
+> These rules govern the **Atta family** (Atta, Vāda, future Atta-composed surfaces). Herald follows the "Herald exception" section, not these.
 
-There is exactly one Clerk application. Its publishable key and secret key are shared across all products in the monorepo. Never create a new Clerk application per product.
+### RULE #1: One Clerk app for the Atta family
+
+The Atta family shares exactly one Clerk application; its keys are shared across those apps in the monorepo. Do not create a new Clerk app for a new *Atta-family* surface. (Standalone sibling products like Herald are separate — see the exception.)
 
 ```env
-# Same values across all apps in the monorepo
+# Same values across Atta-family apps
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxx
 CLERK_SECRET_KEY=sk_live_xxx
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
@@ -58,10 +58,7 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 
 ### RULE #2: Cookie scope must be the parent domain
 
-Production: `.attalabs.dev`
-Local development: `.attalabs.test`
-
-This is configured in the Clerk dashboard under "Domains" — set the satellite/primary domains so that the session cookie is set with `Domain=.attalabs.dev`. All product subdomains (`vada.attalabs.dev`, `vitakka.attalabs.dev`, `sati.attalabs.dev`, `account.attalabs.dev`) inherit the session.
+Production: `.attalabs.dev` · Local: `.attalabs.test`. Set in the Clerk dashboard so the session cookie is `Domain=.attalabs.dev`; Atta-family subdomains inherit the session.
 
 ### RULE #3: AuthProvider is provided by NextWebShell — don't add it again
 
@@ -75,57 +72,61 @@ This is configured in the Clerk dashboard under "Domains" — set the satellite/
 <AuthProvider><NextWebShell>...</NextWebShell></AuthProvider>
 ```
 
-### RULE #4: One shared users table
+### RULE #4: One shared users table (Atta family)
 
-Users are synced from Clerk into a single `users` table in `@atta/db`, keyed by `clerk_id`. Per-product data lives in product-specific tables that reference `clerk_id` as a foreign key.
+Users sync from Clerk into a single `users` table in `@atta/db`, keyed by `clerk_id`; per-product data lives in product-specific tables referencing `clerk_id`.
 
 ```ts
-// packages/db/src/schema/users.ts (single shared table)
 export const users = pgTable('users', {
   clerkId: varchar('clerk_id', { length: 255 }).primaryKey(),
   email: varchar('email', { length: 320 }).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  // shared fields only — no product-specific fields here
 })
 
-// Per-product profile in product-specific schema
 export const vadaProfile = pgTable('vada_profile', {
   clerkId: varchar('clerk_id', { length: 255 })
     .primaryKey()
     .references(() => users.clerkId, { onDelete: 'cascade' }),
-  // ...vada-specific fields
-})
-
-export const sataiProfile = pgTable('sati_profile', {
-  clerkId: varchar('clerk_id', { length: 255 })
-    .primaryKey()
-    .references(() => users.clerkId, { onDelete: 'cascade' }),
-  // ...sati-specific fields
 })
 ```
 
 ### RULE #5: Settings UI is product-local; share at the component level via `@atta/ui/account`
 
-There is no `account.attalabs.dev` hub. Each product hosts its own `/settings` URL (e.g., `vada.attalabs.dev/settings`, `vitakka.attalabs.dev/settings`). Cross-product sharing of the Settings UI happens via shared components in `@atta/ui/account` — currently `<AttaUserProfile />` (themed Clerk profile wrapper), `ProviderKeysSection`, and `ApiKeysSection`. A future product's Settings page composes these alongside any product-specific sections.
+There is no `account.attalabs.dev` hub. Each product hosts its own `/settings` URL. Cross-product sharing happens via shared components in `@atta/ui/account` — `<AttaUserProfile />`, `ProviderKeysSection`, `ApiKeysSection`. (Previously written as "`account.attalabs.dev` is canonical"; no longer accurate as of May 5, 2026.)
 
-Why: standing up a redirect hub at `account.attalabs.dev` would add a deployment surface and a redirect step for what is fundamentally a presentation-layer share. Components are the right level to share at. SSO via the parent-domain cookie scope (RULE #2) handles cross-product navigation.
+---
 
-This rule was previously written as "`account.attalabs.dev` is the canonical settings/billing surface." That is no longer accurate as of May 5, 2026 (D-030).
+## Herald exception (D-031)
+
+Herald does **not** follow Rules #1, #2, #4 above. It is a standalone identity perimeter:
+
+- **Own Clerk app** (`closing-blowfish-4`) — separate publishable/secret keys from the Atta family. This is the one sanctioned per-product Clerk app.
+- **Own Neon DB** and **own `user_provider_keys`** table, keyed by Herald Clerk IDs. No shared `users` table with the Atta family.
+- **No SSO across the Herald boundary** — a session or key in Vāda does not carry to Herald, and vice versa.
+- **Shared at the code level only** — `@atta/ui/account`, `@atta/crypto`, `@atta/db/queries` are shared implementations; identity and data are not.
+- Uses the same `MASTER_ENCRYPTION_KEY` value as Vāda, but separate DBs mean no shared ciphertext regardless. `MASTER_ENCRYPTION_KEY` must be present in Herald's env for BYOK decrypt (audits).
+
+What Herald **does** share in spirit: Rule #3 (don't double-wrap `AuthProvider`), Rule #5 (Settings UI is product-local, composed from `@atta/ui/account` — Herald's Account tab wraps `<AttaUserProfile/>` in a full-screen modal via the Herald-local `HeraldAccountTab`), and the server/client auth-reading patterns below.
+
+Reversal (folding Herald into the shared Clerk app) requires migrating Herald identities and re-keying stored data; cheapest while Herald users are few.
+
+### Herald library/chrome note (cross-ref, not auth)
+
+Unrelated to auth but adjacent in Herald's layout: Herald's **app chrome** uses the build-time CMS library; the **user's saved library preference applies only to their public `/[username]` profile** (D-035). Don't wire app-chrome components to a user-library provider. See `apps/herald-ai/specs/herald-app-architecture.md` §4.
 
 ---
 
 ## Middleware (protecting routes)
-
-Every product that has protected routes needs a `middleware.ts` at the app root:
 
 ```ts
 // middleware.ts
 import { clerkMiddleware, createRouteMatcher } from '@atta/auth/middleware'
 
 const isProtected = createRouteMatcher([
-  '/admin(.*)',
-  '/app(.*)',
-  '/dashboard(.*)',
+  '/bulk-audit(.*)',
+  '/ui(.*)',
+  '/settings(.*)',
+  '/onboarding(.*)',
 ])
 
 export default clerkMiddleware(async (auth, req) => {
@@ -136,6 +137,8 @@ export const config = {
   matcher: ['/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)']
 }
 ```
+
+> The matcher above shows Herald's flat routes (D-036). Atta-family apps use their own protected prefixes (e.g. `/app`, `/dashboard`).
 
 ---
 
@@ -148,9 +151,7 @@ import { auth, currentUser } from '@atta/auth/hooks'
 
 const { userId } = await auth()
 if (!userId) redirect('/sign-in')
-
-// Heavier — only when needed
-const user = await currentUser()
+const user = await currentUser() // heavier — only when needed
 ```
 
 ### Client Components
@@ -162,17 +163,18 @@ import { useAuth, useUser } from '@atta/auth'
 function MyComponent() {
   const { userId, isSignedIn, isLoaded } = useAuth()
   const { user } = useUser()
-
   if (!isLoaded) return null
   if (!isSignedIn) return <SignInButton />
 }
 ```
 
+> SSR tip (Herald topbar): a server component that knows `userId` can pass `isSignedIn={!!userId}` into a client topbar to render the correct signed-in/out state on the server and avoid the sign-in→sign-out flash. See `HeraldTopBar`.
+
 ---
 
 ## Sign In / Sign Up Pages
 
-Each product hosts its own sign-in/sign-up routes that delegate to Clerk. Because the cookie is scoped to `.attalabs.dev`, signing in on any product's `/sign-in` produces a session valid across all products.
+Each product hosts its own sign-in/sign-up routes that delegate to Clerk. For the Atta family, the `.attalabs.dev` cookie scope means a session from any product's `/sign-in` works across the family. Herald signs in against its own Clerk app; its session is Herald-only.
 
 ```tsx
 // apps/{product}/web/src/app/sign-in/[[...sign-in]]/page.tsx
@@ -182,61 +184,41 @@ export default function SignInPage() {
 }
 ```
 
-For ecosystem-level marketing flows, route users to whichever product's `/sign-in` is most contextually relevant; the SSO cookie scope means the resulting session works across the ecosystem.
-
 ---
 
 ## Local Development
 
-Production uses `.attalabs.dev`. Locally, use **`.attalabs.test`** (IETF-reserved TLD, no HTTPS enforcement).
+Atta family: use **`.attalabs.test`** locally (IETF-reserved TLD, no HTTPS enforcement).
 
-`/etc/hosts`:
 ```
 127.0.0.1   attalabs.test
 127.0.0.1   vada.attalabs.test
-127.0.0.1   vitakka.attalabs.test
-127.0.0.1   sati.attalabs.test
 ```
 
-In the Clerk dashboard, configure a development instance with cookie domain `.attalabs.test`. Use the development Clerk keys in local `.env` files.
-
-Do **not** use `.attalabs.dev` locally — Chrome forces HTTPS on the `.dev` TLD, which makes self-signed certs painful.
+Configure a Clerk development instance with cookie domain `.attalabs.test`. Do **not** use `.attalabs.dev` locally (Chrome forces HTTPS on `.dev`). Herald uses its own Clerk development instance.
 
 ---
 
 ## Clerk Appearance (Theme Integration)
 
-Clerk's UI is automatically themed to match the active product's CMS theme via `buildClerkAppearance` inside `NextWebShell`. No manual configuration needed.
-
-If Clerk appearance is needed outside `NextWebShell`:
+Clerk's UI is themed to the active product's CMS theme via `buildClerkAppearance` inside `NextWebShell`. If needed outside `NextWebShell`:
 
 ```ts
 import { buildClerkAppearance } from '@atta/auth'
-
-const appearance = buildClerkAppearance({
-  background: 'oklch(...)',
-  foreground: 'oklch(...)',
-  card: 'oklch(...)',
-  border: 'oklch(...)',
-  primary: 'oklch(...)',
-  primaryForeground: 'oklch(...)',
-  muted: 'oklch(...)',
-  mutedForeground: 'oklch(...)',
-  destructive: 'oklch(...)',
-})
+const appearance = buildClerkAppearance({ background: 'oklch(...)', foreground: 'oklch(...)', card: 'oklch(...)', border: 'oklch(...)', primary: 'oklch(...)', primaryForeground: 'oklch(...)', muted: 'oklch(...)', mutedForeground: 'oklch(...)', destructive: 'oklch(...)' })
 ```
 
 ---
 
 ## Anti-patterns
 
-- ❌ Creating a separate Clerk application per product
+- ❌ Creating a separate Clerk application for a new **Atta-family** surface (Herald's own app is the one sanctioned exception, D-031 — not a precedent for Atta-family products)
+- ❌ Sharing a Clerk app or `users` table **between Herald and the Atta family** — Herald's identity perimeter is separate
 - ❌ Adding `AuthProvider` inside `NextWebShell` children
-- ❌ Setting cookie scope to a product subdomain (`vada.attalabs.dev`) instead of the parent (`.attalabs.dev`) — breaks SSO
-- ❌ Creating a per-product `users` table — there is one shared table; per-product data lives in per-product profile tables referencing `clerk_id`
+- ❌ Setting Atta-family cookie scope to a product subdomain instead of the parent `.attalabs.dev` — breaks SSO
 - ❌ Storing Clerk's full user object in the database — store only `clerk_id` as FK
 - ❌ Using `useAuth` in a Server Component — use `auth()` from `@atta/auth/hooks`
 - ❌ Checking `isSignedIn` before `isLoaded` — always gate on `isLoaded` first
-- ❌ Building Settings UI fully from scratch in a new product — compose `@atta/ui/account` shared components first (`<AttaUserProfile />`, `ProviderKeysSection`, `ApiKeysSection`), add product-specific sections only where the shared components don't fit
-- ❌ Standing up a redirect hub at `account.attalabs.dev` — sharing happens at the component level, not via redirects
+- ❌ Building Settings UI fully from scratch in a new product — compose `@atta/ui/account` first
+- ❌ Standing up a redirect hub at `account.attalabs.dev`
 - ❌ Using `.attalabs.dev` for local development — use `.attalabs.test`
