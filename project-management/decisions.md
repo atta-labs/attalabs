@@ -799,7 +799,7 @@ This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choi
 **Authored by:** TL (AEG neutralization + self-containment pass, June 10, 2026)
 **Ratified by:** Principal (in-session)
 
-**Context:** D-039 decided the AEG flow skills' canonical home is `project-management/skills/`, but recorded itself as "not yet executed" — the skills still physically lived at `.claude/skills/`. The Principal directed that the AEG self-containment work be made real in this pass, not left logged-for-later, since the docs had begun describing a target state (`project-management/skills/` canonical) that did not exist on disk — an incoherent half-state. This entry records the execution of D-039 (it does not change the D-039 decision; it reports that it was carried out).
+**Context:** D-039 decided the AEG flow skills' canonical home is `project-management/skills/`, but recorded itself as "not yet executed" — the skills still physically lived at `.claude/skills/`. The Principal directed that the AEG self-containment work be made real in this pass, not left logged-for-later, since the docs had begun describing a target state (`project-management/skills/` canonical) that did not exist on disk. This entry records the execution of D-039 (it does not change the D-039 decision; it reports that it was carried out).
 
 **Decision:** Execute D-039 for the AEG flow skills. Concretely, on branch `task/aeg-neutralize/1`:
 - Created the canonical copies at `project-management/skills/aeg/SKILL.md`, `project-management/skills/aeg-roles/SKILL.md`, and `project-management/skills/brief-authoring/SKILL.md`, each carrying a canonical-source header marking `.claude/skills/<name>` as a generated view.
@@ -808,13 +808,13 @@ This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choi
 - Per D-039's scope clarification, **only the three flow skills moved.** All domain skills (`vada-*`, `ui-*`, `atta-engine`, `herald-engine`, `database`, `auth`, `cetana-coordinator`, `monorepo-structure`, `model-picker`, `executor-protocol`, `code-style`, `git-commits`) remain at `.claude/skills/` — they are repo-instance knowledge, not the neutral model.
 
 **Alternatives rejected:**
-- Keep deferring (leave skills at `.claude/skills/`, docs describing the target): rejected by the Principal — it leaves the docs describing a state that doesn't exist, the exact incoherence flagged.
+- Keep deferring (leave skills at `.claude/skills/`, docs describing the target): rejected by the Principal — it leaves the docs describing a state that doesn't exist.
 - Also move the domain skills now: rejected — out of scope and contrary to D-039's scope clarification; domain skills are not part of the neutral model.
 
 **Consequences:**
-- `.claude/skills/{aeg,aeg-roles,brief-authoring}` no longer exist on the branch; canonical versions live at `project-management/skills/`.
-- **Generate step not yet built** — the mechanism that regenerates `.claude/skills/` (a copy/symlink view) from `project-management/skills/` is still a follow-up (`apps/aeg/specs/aeg-backlog.md`, `aeg generate-skills`). Until it exists, the agent harness will not auto-load these three skills from `.claude/` (they are no longer there). **This is the one open consequence the Principal must be aware of:** loadability of the moved skills via the harness depends on the generate step or a manual `.claude/` regeneration. The canonical content is safe and in the unit; the harness view is what's temporarily absent.
-- `docs-index.md` regeneration (`bun docs:index`) still pending after merge.
+- `.claude/skills/{aeg,aeg-roles,brief-authoring}` no longer exist on the branch; canonical versions live at `project-management/skills/`. The AEG flow skills are now searched inside the unit, as intended.
+- Follow-up (not blocking): the `generate-skills` step that rebuilds the `.claude/` harness view from `project-management/skills/` is specced but not yet built (`apps/aeg/specs/aeg-backlog.md`, `aeg generate-skills`). When wanted, it regenerates the `.claude/` view from the canonical source.
+- `docs-index.md` regeneration (`bun docs:index`) pending after merge.
 - Role-doc "skills to load" entry-gate lines remain a follow-up (per D-039).
 - Part of PR #86 (`task/aeg-neutralize/1`), Tier 3, docs-only.
 
