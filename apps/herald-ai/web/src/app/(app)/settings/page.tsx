@@ -51,7 +51,7 @@ export default async function CandidateSettingsPage() {
   return (
     <div className='h-full overflow-y-auto'>
       <div className='mx-auto max-w-[700px] px-6 py-8'>
-        <div className='mb-8 flex items-start justify-between gap-4'>
+        <div className='mb-8 flex items-center justify-between gap-4'>
           <div>
             <h1 className='font-serif text-xl tracking-tight'>Settings</h1>
             <p className='mt-1 font-mono text-xs text-muted-foreground'>Profile, API keys, and social connections.</p>
