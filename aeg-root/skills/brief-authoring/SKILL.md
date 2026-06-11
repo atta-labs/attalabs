@@ -1,6 +1,6 @@
 ---
 name: brief-authoring
-description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers required sections, inheriting the Planner's rationale, the mandatory technical-dependency / tech-surface-map / agent-selection-with-reasoning sections, the optional Ticket/Project fields, model selection, the model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), the mandatory worktree-first step, the brief-lands-in-the-PR-body rule, the explicit documentation-update list, the post-PR review passes, and anti-patterns.
+description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers required sections, inheriting the Planner's rationale via the planner-brief contract, the mandatory technical-dependency / tech-surface-map / agent-selection-with-reasoning sections, the optional Ticket/Project fields, model selection, the model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), the mandatory worktree-first step, the brief-lands-in-the-PR-body rule, the explicit documentation-update list, the post-PR review passes, and anti-patterns.
 ---
 
 <!-- CANONICAL SOURCE (D-039). This file is the canonical home of the `brief-authoring` skill, inside the AEG unit (aeg-root/skills/). The copy at .claude/skills/brief-authoring/SKILL.md is a GENERATED VIEW produced by `aeg generate-skills` for the agent harness that loads from .claude/ — edit THIS file, then regenerate; never edit the generated view by hand. -->
@@ -17,15 +17,27 @@ Every task brief the Team Leader writes or dispatches must follow these rules. T
 
 ---
 
-## Start from the Planner's rationale — do not re-derive it cold
+## Start from the Planner's rationale — governed by the Planner→Brief contract
 
-Every task you author a brief for arrives with a **Planner's rationale** (in the Issue body and the iteration file — see `roles/planner.md`). It is the planner's durable conclusions from a deep dig: the task boundary, the sizing, the **blast radius** (every project/consumer the change touches), the **traps to avoid**, the **suggested agent-class**, and the **stop-and-escalate** conditions.
+Every task you author a brief for arrives with a **Planner's rationale** (in the Issue body and the iteration file — see `roles/planner.md`). You are the **consumer side** of the **`aeg-root/contracts/planner-brief.md`** contract — the single source of truth for what crosses the Planner→Brief Author seam. That contract maps every field the Planner emits to the exact brief section that consumes it. **Read the contract; consume every right-column mapping — drop no field.**
+
+The contract's field-by-field mapping (authoritative version lives in the contract; reproduced here for convenience — if they ever differ, the contract wins):
+
+| Planner emits (rationale) | You consume it in |
+|---|---|
+| Boundary | Context (§2) + Technical Surface Map (§4) |
+| Sizing | re-confirm only; if your dig finds it no longer fits → stop-and-escalate |
+| Project(s) + blast radius | `Project:` field + blast-radius re-verification (§8) |
+| Dependency rationale | Technical Dependencies (§3) |
+| Traps to avoid | Context (§2) + Constraints (§10) |
+| Suggested agent-class | `For:` + `Reason:` header (confirm/deviate; you make the final pick) |
+| Stop-and-escalate | Stop conditions (§9) |
 
 **Read it first and build on it. Do not start from a blank page.** The division of labor is deliberate:
-- The **Planner** did a deep technical pass to find the seams and persisted the *durable* conclusions (which don't decay).
+- The **Planner** did a deep technical pass to find the seams and persisted the *durable* conclusions (which don't decay) — that's the contract's producer side.
 - You do your own deep pass now, at dispatch, to add the *perishable* detail that has to be current (exact signatures, the precise file list, the final model pick) — because the codebase has moved since planning.
 
-So the brief = the planner's rationale (inherited) + the current execution detail (you add). You are not re-deciding the boundary or the blast radius; you are turning the planner's conclusions into an executable prompt against today's code. If your dig contradicts the planner's rationale (the code moved enough to change the boundary), that is a stop-and-escalate, not a silent override.
+So the brief = the planner's rationale (inherited via the contract) + the current execution detail (you add). You are not re-deciding the boundary or the blast radius; you are turning the planner's conclusions into an executable prompt against today's code. If your dig contradicts the planner's rationale (the code moved enough to change the boundary or break the sizing), that is a `severity:strategy` stop-and-escalate back toward the Planner, **not** a silent override.
 
 ---
 
@@ -48,13 +60,13 @@ Full background the executor needs:
 - Why this work is happening now (not "later")
 - What's locked and should not be relitigated
 - Relevant decisions already made (reference decision-log entries by log + number)
-- **The Planner's rationale for this task** (inherited — boundary, blast radius, traps, stop conditions). Carry it forward; the executor must see the planner's reasoning, not just the goal.
+- **The Planner's rationale for this task** (inherited via the contract — boundary, blast radius, traps, stop conditions). Carry it forward; the executor must see the planner's reasoning, not just the goal.
 
 Length: as long as needed. This section prevents the executor re-deriving architecture that's already decided.
 
 ### 3. Technical dependencies (mandatory — the "what must already exist" map)
 
-**List every technical precondition this task depends on, by name.** This is distinct from the forge `depends-on` edge (which is task→task); this is the *code/system* dependencies. The executor must know what it is building on. Identify and state:
+**List every technical precondition this task depends on, by name.** This is distinct from the forge `depends-on` edge (which is task→task); this is the *code/system* dependencies. It is where the Planner's **Dependency rationale** (the *why* of each edge) becomes the concrete *what-must-exist*. The executor must know what it is building on. Identify and state:
 - **New shared exports/APIs it needs** — does this task require a function, type, or export that another task is adding to a shared package? (If yes, that's a `depends-on` and the export must exist at dispatch.)
 - **Schema/migration preconditions** — does it need a DB column, a migration, a vendor-registry entry, a config key that must be present first?
 - **Capability preconditions** — does it rely on a capability that may not exist yet (e.g. "structured output on this vendor")? If the capability is being added by a dependency task, say so and confirm it merged.
@@ -64,13 +76,13 @@ A task whose technical dependencies aren't all satisfiable at dispatch is **not 
 
 ### 4. Technical surface map (mandatory — the "what this touches" map)
 
-**Name the bounded set of files, packages, APIs, and schemas this task will create or modify.** This is the perishable detail the planner deliberately left to brief-time — derive it now, against the current codebase. It must be a *nameable, bounded* surface (if you cannot bound it, the task is too big — kick back to the Planner). Include:
+**Name the bounded set of files, packages, APIs, and schemas this task will create or modify.** This is the perishable detail the planner deliberately left to brief-time — derive it now, against the current codebase, starting from the planner's **Boundary**. It must be a *nameable, bounded* surface (if you cannot bound it, the task is too big — kick back to the Planner). Include:
 - The exact files/dirs to create or modify (paths).
 - The shared packages touched and — echoing the planner's blast radius — the consumers that must be re-verified.
 - The APIs/schemas/contracts read or changed.
 - What is explicitly **out of surface** (adjacent files the executor must NOT touch).
 
-This map is what makes "only the expected files changed" checkable at review (Section 7) and what stops scope creep.
+This map is what makes "only the expected files changed" checkable at review (Section 8) and what stops scope creep.
 
 ### 5. Pre-flight checks
 
@@ -112,11 +124,11 @@ Typecheck passes; lint passes; tests pass; production build passes (catches stri
 
 ### 9. Stop conditions
 
-Explicit list that causes STOP-and-report rather than improvising: pre-flight failures (incl. worktree couldn't be created); a technical dependency from Section 3 not actually present; a dispatch gate not satisfied (a `depends-on` PR not merged, or a `conflicts-with` sibling's PR open); the executor's own dig contradicts the inherited Planner's rationale (boundary moved); design gap discovered; test fails after multiple attempts; about to touch files outside the Section 4 surface; the task's stop-and-escalate condition from the Planner's rationale is hit; any destructive action not explicitly authorized.
+Explicit list that causes STOP-and-report rather than improvising: pre-flight failures (incl. worktree couldn't be created); a technical dependency from Section 3 not actually present; a dispatch gate not satisfied (a `depends-on` PR not merged, or a `conflicts-with` sibling's PR open); the executor's own dig contradicts the inherited Planner's rationale (boundary moved / sizing broke — escalate `severity:strategy`); the task's stop-and-escalate condition from the Planner's rationale is hit; design gap discovered; test fails after multiple attempts; about to touch files outside the Section 4 surface; any destructive action not explicitly authorized.
 
 ### 10. Constraints
 
-What the executor must NOT do: off-limits branches/paths (the out-of-surface set from Section 4); explicitly deferred features (do not add); forbidden patterns (skipping verification hooks, an unapproved datastore, auto-remove); and — always — **never write status anywhere** (status is derived from the forge) and **never add execution metadata to the iteration file**.
+What the executor must NOT do: off-limits branches/paths (the out-of-surface set from Section 4); explicitly deferred features (do not add); the planner's **traps to avoid** turned into explicit "do NOT do X; do Y instead"; forbidden patterns (skipping verification hooks, an unapproved datastore, auto-remove); and — always — **never write status anywhere** (status is derived from the forge) and **never add execution metadata to the iteration file**.
 
 ### 11. Deliverable
 
@@ -133,7 +145,7 @@ What the executor opens/commits/creates at the end:
 
 ## Agent/model selection (with reasoning — the `For:` + `Reason:` lines are mandatory)
 
-The brief MUST declare which agent/model runs the task **and why**. The planner already suggested an **agent-class** (high/mid/fast) in the rationale, as part of sizing; you **confirm the final pick** at dispatch, against current reality (the actual models available, the task's true difficulty now).
+The brief MUST declare which agent/model runs the task **and why**. The planner already suggested an **agent-class** (high/mid/fast) in the rationale, as part of sizing; you **confirm the final pick** at dispatch, against current reality (the actual models available, the task's true difficulty now). This is the contract's "Suggested agent-class → `For:`/`Reason:`" mapping.
 
 - Inherit the planner's class; only deviate with a stated reason.
 - The `Reason:` line is not optional and not "because it's good" — it names *why this capability level fits this task* (e.g. "high — multi-file refactor crossing the engine boundary with three structured-output unknowns"; "mid — reuse of an existing component plus registry wiring, no architecture").
@@ -158,7 +170,7 @@ These two qualify a task and ride into the PR body. Both are reference-only — 
 ```
 **Project:** [project(s) this task touches — e.g. "vada" or "engine, herald"]
 ```
-Multi-valued. Resolves against `aeg-root/projects.md`. **Required in a multi-project repo; omitted entirely in a single-project repo** (no registry → one project → no field). Routes the Developer to the right specs and the Archivist to the right per-project state; a value that doesn't resolve to a registry row makes the brief malformed (refuse, don't guess). It must match the Planner's `Project(s)` for the task, including every shared-package consumer in the blast radius — see `roles/planner.md`.
+Multi-valued. Resolves against `aeg-root/projects.md`. **Required in a multi-project repo; omitted entirely in a single-project repo** (no registry → one project → no field). Routes the Developer to the right specs and the Archivist to the right per-project state; a value that doesn't resolve to a registry row makes the brief malformed (refuse, don't guess). It must match the Planner's `Project(s)` for the task, including every shared-package consumer in the blast radius — see `roles/planner.md` and the planner-brief contract.
 
 ```
 **Ticket:** [external ticket link(s) — e.g. "SAT-412 — https://…"]
@@ -249,6 +261,7 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 ## Anti-patterns
 
 - ❌ Starting from a blank page instead of the Planner's rationale — re-deriving (often differently) what the planner already concluded, and losing the traps the planner flagged
+- ❌ Dropping any field of the planner-brief contract — every rationale field has a named home in the brief; a dropped field is a lost conclusion
 - ❌ Omitting the Technical Dependencies section — the executor discovers mid-task that something it needs doesn't exist yet
 - ❌ Omitting the Technical Surface Map — "only expected files changed" becomes uncheckable and scope creeps
 - ❌ A `For:`/`Reason:` line with no real reasoning ("Sonnet because it's good") — the capability choice must be justified against the task
