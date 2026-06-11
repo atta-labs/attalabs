@@ -6,7 +6,7 @@ The constitution. This document defines the **Agentic Execution Governance (AEG)
 
 If you are unsure whether an action is permitted, the answer is here. If a role doc and this document conflict, this document wins.
 
-For the prose walkthrough (eleven phases), see `process.md`. For the iteration/task model, see `iterations/README.md`. For role-specific instructions, see `roles/`.
+For the prose walkthrough (eleven phases), see `process.md`. For the iteration/task model, see `iterations/README.md`. For role-specific instructions, see `roles/`. For the role-seam contracts, see `contracts/`.
 
 ---
 
@@ -27,13 +27,15 @@ Roles exist because different decisions require different accountability levels.
 
 The conversational role set is: **Principal, Team Leader, Developer, Reviewer** (plus the non-conversational Archivist). This four-role model was established by D-026 (superseding the original three-role D-001 to add the Reviewer). The **Team Leader has three modes** — Strategist, Planner, Brief Author (`roles/team-leader.md`, `roles/planner.md`) — but they are modes of one role, not new roles; the role count is unchanged. Security is a specialization of Reviewer, not a separate role.
 
+**Role seams are governed by contracts.** Where one role hands work to the next (Planner → Brief Author, Brief Author → Developer, Developer → Reviewer, …), what crosses the boundary is defined **once**, in a contract file under `aeg-root/contracts/`, not described twice in two role docs (which drift). A contract is the single source of truth for its seam: the producing role fills it, the consuming role drains it, and the two role docs *point at* the contract rather than redefining it. The first is `contracts/planner-brief.md`; others are added as each seam is modeled. See Section 2 (Class 1) and Section 3.
+
 **A task is a forge Issue, and its status is derived, never stored** (see Section 2, Class 2, and `iterations/README.md` §3). No role writes a status field; transitions are facts about the forge (branch exists, PR open, review decision, merged).
 
-"What can I do?" → the mutation permission matrix. "Whose decision is this?" → the authority hierarchy. "What if I'm stuck?" → the escalation paths. "Is what I'm doing consistent with what was decided?" → the decision logs.
+"What can I do?" → the mutation permission matrix. "Whose decision is this?" → the authority hierarchy. "What if I'm stuck?" → the escalation paths. "Is what I'm doing consistent with what was decided?" → the decision logs. "What must I hand the next role?" → the seam contract.
 
 ### One AEG model, at the root. Always orient from there.
 
-There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, the active iteration, and the decision log there. It never expects a per-project copy of the model.
+There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, contracts, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, the active iteration, and the decision log there. It never expects a per-project copy of the model.
 
 Living **state** is held in `aeg-project/` folders: one at the repo root (for monorepo-level tasks) and one per project (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). A task updates the root `aeg-project/decisions.md` + `changelog.md` (governance is global) **plus** the `aeg-project/` slice of each project it touches (one for a single-project task, several for a cross-project task — resolve which via `aeg-root/projects.md`). An `aeg-project/` folder holds state only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (D-041.)
 
@@ -45,13 +47,15 @@ Every artifact falls into one of five persistence classes. Persistence class det
 
 ### Class 1: Repo files (canonical, git-tracked)
 
-**What:** Specs (`apps/*/specs/*.md`), skills (canonical `aeg-root/skills/*/SKILL.md`, with a generated agent-surface view e.g. `.claude/skills/*` — D-039), agent definitions, AEG model + state docs (`aeg-root/*.md` + `aeg-root/{roles,iterations,diagrams}/*.md` for the model; `aeg-project/*.md` for the state — D-041), source code, decision logs (per-project `*-decisions.md` + global `decisions.md`), scripts, CI workflows.
+**What:** Specs (`apps/*/specs/*.md`), skills (canonical `aeg-root/skills/*/SKILL.md`, with a generated agent-surface view e.g. `.claude/skills/*` — D-039), **role-seam contracts (`aeg-root/contracts/*.md`)**, agent definitions, AEG model + state docs (`aeg-root/*.md` + `aeg-root/{roles,iterations,contracts,diagrams}/*.md` for the model; `aeg-project/*.md` for the state — D-041), source code, decision logs (per-project `*-decisions.md` + global `decisions.md`), scripts, CI workflows.
 
 **Persistence:** Survives anything short of repo deletion. Git history preserves every mutation with authorship and timestamp.
 
 **Create:** PR merged to main by Principal (or delegated merge for Tier 0/1).
 **Mutate:** PR opened by Developer, reviewed by Reviewer (code + security) and TL (specs) and Principal (code), merged by Principal.
 **Read-only:** All roles always.
+
+**Contracts change as a unit.** A role-seam contract (`contracts/*.md`) is the single source of truth for what crosses a role boundary. Editing it is a **Tier 3** change requiring a `D-###`, because it alters a cross-role interface; and the producer and consumer sides change **together** — you cannot change what one role emits without, in the same PR, updating what the next role consumes. The two role docs on either side reference the contract; they never redefine the seam, so they need no field-level edit when the contract's *prose* changes, but the same PR must confirm both still point at it and match. (The first contract is `contracts/planner-brief.md`: Planner produces, Brief Author consumes.)
 
 ### Class 2: Forge objects (execution state + audit)
 
@@ -109,9 +113,10 @@ Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer i
 |----------|-----------|-------------|-----------|-----------|
 | **Conversation logs** | Promotes decisions to log, flags for retention | Writes during chat, proposes promotions to D-### | Reads only | Cannot mutate |
 | **Iteration topology files** (`iterations/*.md`) | Approves PR | Writes (Planner mode) at plan time — task→issue map + edges + grouping; **no status, no PR numbers, no dates** | — | Flags execution-metadata creep in drift cron |
-| **Task Issues** (identity + metadata) | Approves merge | Creates (Planner mode); metadata only — no brief, no status, no planning fields | Reads; references via `Closes #N` | Validates template (no forbidden fields) |
+| **Role-seam contracts** (`contracts/*.md`) | Approves PR; Type 1 ratification (a contract is a cross-role interface) | Proposes via PR; changes producer + consumer sides together (Tier 3) | — | Flags a role doc that contradicts its contract in drift cron |
+| **Task Issues** (identity + metadata) | Approves merge | Creates (Planner mode); metadata + Planner's rationale — no brief, no status, no planning fields | Reads; references via `Closes #N` | Validates template (no forbidden fields) |
 | **Briefs (dispatched)** | Can amend via reply to escalation | Can amend via reply to escalation — logged as an event, NOT a brief edit | Reads only — brief is frozen after dispatch; escalate if wrong | Cannot mutate |
-| **Briefs (pre-dispatch)** | Approves the brief | Writes the brief just-in-time per the `brief-authoring` skill; pastes to Developer (lands in PR body) | — | Validates structure; flags malformed (`needs:brief-correction`) |
+| **Briefs (pre-dispatch)** | Approves the brief | Writes the brief just-in-time per the `brief-authoring` skill, consuming the planner-brief contract; pastes to Developer (lands in PR body) | — | Validates structure; flags malformed (`needs:brief-correction`) |
 | **Specs** (`apps/*/specs/*.md`) | Approves PR; ratifies via D-### if spec-only | Coherence review on PR; can open spec-only PRs | Writes in PR per brief scope | Validates cross-references; flags stale specs in drift cron |
 | **Decision logs** (per-project + global) | Approves Type 1 entries; ratifies PENDING Type 2 at windows | Appends Type 2 entries; announces Type 1 to ratification queue | Appends in PR per brief scope | Validates D-### sequence and supersession integrity |
 | **Skills** (canonical `aeg-root/skills/*/SKILL.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale skill references in drift cron |
@@ -272,7 +277,7 @@ Every piece of work is assigned an impact tier; the tier determines required doc
 
 **Tier 1 — Implementation.** A meaningful feature/fix within existing architectural contracts. Required: Tier 0 + specs updated, skills updated if conventions shifted, `verify-docs --pr` passes.
 
-**Tier 3 — Project/roadmap.** No Tier 2 (deliberately eliminated; disputes go to Tier 3). Qualifies when ANY of: introduces/breaks public contracts; changes roadmap sequencing or project direction; creates/modifies ACTIVE locks; requires Type 1 decisions; affects more than one project boundary; changes persistence/storage semantics; changes escalation/governance rules; requires Principal ratification to continue. Required: Tier 1 + decision entry (status, type, rationale, alternatives), state docs updated if state changed, Lock entry if irreversible, `docs-index.md` regenerated. Merge during a ratification window.
+**Tier 3 — Project/roadmap.** No Tier 2 (deliberately eliminated; disputes go to Tier 3). Qualifies when ANY of: introduces/breaks public contracts (including a role-seam contract in `contracts/`); changes roadmap sequencing or project direction; creates/modifies ACTIVE locks; requires Type 1 decisions; affects more than one project boundary; changes persistence/storage semantics; changes escalation/governance rules; requires Principal ratification to continue. Required: Tier 1 + decision entry (status, type, rationale, alternatives), state docs updated if state changed, Lock entry if irreversible, `docs-index.md` regenerated. Merge during a ratification window.
 
 **Spike exception:** `spike: true` reduces docs to typecheck + lint + a decision entry capturing what was tried/learned. Spike code does not merge.
 
@@ -322,6 +327,7 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 
 - **Code-review and security passes** — Phase 10 requires them (D-026), including the spec-conformance check (D-030), but no CI bot dispatches them automatically yet; Principal + agent discipline. Automating dispatch is future work.
 - **Dispatch gates** (depends-on merged / no conflicting PR open) — read from the forge and complied with; mechanical enforcement arrives when an automation tool runs dispatch (`iterations/README.md` §8).
+- **Contract conformance** (a role doc matches its `contracts/*.md` seam) — trusted discipline; the Archivist drift cron flags a role doc that contradicts its contract. The contract is the source of truth; a divergent role doc is the bug.
 - **Provenance assembly at close-out** (D-030) — the Archivist assembles it; trusted discipline today, automatable later. It records, it never gates.
 - **Decision logging during chat** — TL announces and logs during the conversation; CI cannot verify.
 - **No execution metadata in the iteration file; no dynamic conflict scanner** — the two anti-regression rules (`iterations/README.md` §9); trusted discipline, flagged by the Archivist drift cron and the Planner's gates.
