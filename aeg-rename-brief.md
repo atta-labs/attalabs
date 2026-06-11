@@ -1,3 +1,29 @@
+> ## ▶ START HERE — how to run this (read this box first)
+>
+> **What this is:** a self-contained task brief. A coding agent on your machine (Claude Code) executes it end-to-end and makes ONE commit. You do not need to do any of the steps yourself.
+>
+> **Before you start:** make sure your VPN/internet is working and you have a local clone of this repo (`atta.ai`). That's the only thing that was blocking us — these steps need a real checkout with `git` + `bun`, which only your machine has.
+>
+> **To run it — open Claude Code in the repo folder and paste exactly this:**
+>
+> ```
+> Read the file `aeg-rename-brief.md` at the repo root and execute it completely.
+> It is a self-contained brief. Work on the existing branch task/aeg-neutralize/1
+> (do NOT create a worktree or a new branch). Make exactly ONE commit with all
+> changes, run `bun docs:index` as the final step before committing, then push to
+> origin/task/aeg-neutralize/1. Follow the brief's Stop Conditions — if anything
+> is ambiguous or would require touching app source/specs, STOP and ask me instead
+> of guessing. When done, give me the report the brief's section 8 asks for.
+> ```
+>
+> **What you'll get back:** one commit SHA, the verification output (proving no `project-management/` folder remains anywhere), and a short note of anything the agent deliberately left alone. 
+>
+> **After it finishes:** tell Claude (web, this conversation/PR #86) the commit SHA. Claude reviews the diff, deletes this brief file, and only then is PR #86 ready to merge to main. **Do not merge #86 until this rename is in and reviewed** — they belong together.
+>
+> **If the agent reports a problem or stops:** paste its message back to Claude (web) — don't push past a stop condition.
+
+---
+
 # BRIEF — AEG folder restructure + "product"→"project" vocabulary erasure
 
 **For:** a coding agent (Claude Code / Codex) with shell + filesystem access, running in the local checkout of this monorepo.
@@ -12,7 +38,7 @@
 
 1. `git checkout task/aeg-neutralize/1 && git pull` — confirm you are on the branch and up to date with `origin/task/aeg-neutralize/1`.
 2. `git status` — working tree must be clean before you start.
-3. `git log --oneline -3` — confirm the latest commit is the rename-brief strengthening / D-040 area (current branch head is around `137339f4`).
+3. `git log --oneline -3` — confirm the latest commit is in the rename-brief / D-040 area (recent branch head).
 4. Confirm you are at the **monorepo root** (the dir containing `apps/`, `packages/`, `project-management/`, `turbo.json` or equivalent).
 
 If any check fails, STOP and report — do not improvise.
