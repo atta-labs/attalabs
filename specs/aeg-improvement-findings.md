@@ -4,9 +4,9 @@
 
 This file captures **candidate improvements to AEG the model** discovered in real time while *using* AEG — most often while planning or running an iteration and hitting a place where the model is thin, silent, or wrong. It exists because the repo is the source of truth: a finding that lives only in a conversation does not exist by AEG's own rules, and is lost when context compacts.
 
-Each entry is a **candidate**, not a ratified change. When one is worked, it becomes a Type-1-sized decision (new/changed role behavior or artifact) against `aeg-root/roles/*.md`, `aeg-root/iterations/README.md`, the `brief-authoring` skill, or `aeg-root/state-machine.md`, with its own `D-###` entry. Until then it lives here so it is not lost.
+Each entry is a **candidate** until written into the model. When one is worked, it is written into the target doc (`aeg-root/roles/*.md`, `aeg-root/iterations/README.md`, the `brief-authoring` skill, or `aeg-root/state-machine.md`) and marked **WRITTEN INTO MODEL** here, with a pointer to where. A formal `D-###` decision entry can follow when the change warrants ratification ceremony; for governance-detail additions the Principal directed they go straight into the model in real time (this session).
 
-Source discussion: the Herald Bulk Audit planning session (June 2026), the first iteration deliberately run as a "special" planning prototype to surface exactly these gaps.
+Source discussion: the Herald → engine planning session (June 2026), the first iteration deliberately run as a "special" planning prototype to surface exactly these gaps.
 
 ---
 
@@ -14,94 +14,72 @@ Source discussion: the Herald Bulk Audit planning session (June 2026), the first
 
 - **Add a finding the moment it surfaces** — don't wait for the end of a session. One paragraph is enough.
 - Each finding: what's thin/wrong in the model today · the proposed addition · where it lands (which doc) · status.
-- When a finding is implemented, mark it `IMPLEMENTED (D-###)` and leave it here as history (append-only spirit).
+- When a finding is written into the model, mark it **WRITTEN INTO MODEL** with the target doc, and leave it here as history.
 
 ---
 
 ## Findings
 
-### F1 — The task should carry a `Planner's rationale` (persist the planner's durable conclusions)
+### F1 — The task carries a `Planner's rationale` (persist the planner's durable conclusions)
 
-**Status:** OPEN · candidate · highest priority of this batch
-**Lands in:** `aeg-root/iterations/README.md` (the task/Issue shape) + `aeg-root/roles/planner.md` (the planner must write it) + `aeg-root/skills/brief-authoring/SKILL.md` (the brief inherits it)
+**Status:** ✅ WRITTEN INTO MODEL (2026-06-11) → `aeg-root/roles/planner.md` §"The Planner's rationale (mandatory, one block per task)". Mandatory block with required fields (boundary, sizing, blast radius, dependency rationale, traps-to-avoid, agent-class, stop-and-escalate); a task without it is refused. Still TODO: mirror the task/Issue shape note into `iterations/README.md` §4, and the "brief inherits the rationale" line into `brief-authoring` (see F3).
 
-**The gap.** Today the planner's output is topology only — title, project(s), depends-on, conflicts-with. But to *decide* those boundaries the planner must reason deeply about architecture, complexity, and entanglement (e.g. "engine migration + endpoint unification are one task because `runSingleMatch` is the shared seam"). That reasoning is **thrown away** purely because "it's not the planner's job to persist it." The Brief Author then re-derives the same architectural conclusions cold. That is a real loss.
+**The gap (kept for history).** The planner's output was topology only — title, project(s), depends-on, conflicts-with. But to *decide* those boundaries the planner reasons deeply about architecture, complexity, and entanglement. That reasoning was **thrown away** because "it's not the planner's job to persist it," forcing the Brief Author to re-derive it cold and letting the executing agent walk into traps the planner already saw.
 
-**The distinction that resolves it.** The planner produces two kinds of knowledge: **durable conclusions** (why this is one task not three; the dependency *rationale*; rough complexity/sizing; suggested agent-class) which do NOT decay, and **perishable detail** (exact signatures, file lists, line-level specifics) which DO decay because earlier tasks change them before this one runs. The earlier "decay" argument for keeping the plan lean applies ONLY to the perishable detail. The durable conclusions must be kept.
+**The distinction (now in the model).** Two kinds of knowledge: **durable conclusions** (why one task not three; dependency rationale; sizing; blast radius; traps; agent-class) which do NOT decay, and **perishable detail** (exact signatures, file lists, line-level specifics) which DO decay. Persist the durable; the brief re-derives the perishable just-in-time.
 
-**The proposed addition.** Add a `Planner's rationale` section to the task (the thin Issue + optionally a note in the topology file): a short, durable record of the architectural conclusions that justify the task's boundary, size, dependencies, and **suggested agent-class** — NOT the perishable execution detail. The Brief Author then *starts from* this rationale and adds only the just-in-time specifics. The planner stays lean on perishable detail; it persists its reasoning.
+### F2 — Sizing requires deep technical analysis (the "too big?" tests)
 
-Example (Herald task 1):
-```
-Planner's rationale:
-- One task, not two: runSingleMatch is the shared seam — migrating the cell
-  and unifying the endpoint touch the same code; splitting means refactoring
-  the cell twice.
-- Two projects (herald + engine): verification-coupled — the only proof the
-  engine migration is correct is Herald's audit running on it.
-- Size: bounded — one cell, one endpoint, one YAML flow. Right for one PR.
-- Suggested agent-class: high-capability (multi-file refactor across a
-  package boundary).
-```
+**Status:** ✅ WRITTEN INTO MODEL (2026-06-11) → `aeg-root/roles/planner.md` §"You MUST dig deep to size" + the four "too big?" tests + a hard gate refusing to size without reading the code.
 
-### F2 — `planner.md` must state that sizing requires deep technical analysis (the "too big?" tests)
+**The gap (kept for history).** `planner.md` presented split-vs-combine as a quick relational judgment. But you cannot know a task is the right size without digging into its internals — "is this too big?" is not answerable from topology. The doc was silent on this, risking oversized tasks.
 
-**Status:** OPEN · candidate
-**Lands in:** `aeg-root/roles/planner.md`
-
-**The gap.** `planner.md` presents split-vs-combine as a quick relational judgment. But you cannot know a task is the right size without digging into its internals — "is this too big?" is not answerable from topology. The role doc is silent on this, which understates what the planner must actually do and risks oversized tasks slipping through.
-
-**The proposed addition.** State explicitly that the planner performs deep per-task technical analysis to validate sizing/boundaries (even though it persists only the conclusions — see F1). Add the **"too big?" tests** a task must pass before it's allowed onto the list:
-1. **One verification story** — a reviewer can confirm correctness in one coherent check. (Needs three unrelated proofs → three tasks.)
-2. **One agent can hold it** — fits a single agent's working context without juggling unrelated concerns.
-3. **Bounded file surface** — touches a nameable, bounded set of files, not "and wherever else."
-4. **Single failure mode** — if it fails, one diagnosable failure, not many.
-A task failing any test is too big and must be split.
+**Now in the model.** The planner must read the actual code before emitting any task list; a plan made without it is malformed and refused. The four tests: (1) one verification story, (2) one agent can hold it, (3) bounded file surface, (4) single failure mode. Fail any → split.
 
 ### F3 — `brief-authoring` should mandate tech-dependency + tech-surface + agent-selection-with-reasoning as required sections
 
-**Status:** OPEN · candidate
+**Status:** OPEN · candidate · the one still-open finding
 **Lands in:** `aeg-root/skills/brief-authoring/SKILL.md`
 
-**The gap.** The Principal's theory of governance: **prompt-writing is the key act of controlling AI.** The brief is the prompt. Today `brief-authoring` requires context, scope, stop conditions, a doc-update list, and a `For:` (agent) line — but it does NOT make first-class the things that most determine whether the agent does the right, controlled thing: an explicit **technical-dependency identification** (does this need a new engine export? a migration? a vendor-registry entry?), a **tech-surface map** (the files/APIs/schemas it will touch), and a **declared agent/model with reasoning** (not just a name — *why* this model).
+**The gap.** The Principal's theory of governance: **prompt-writing is the key act of controlling AI.** The brief is the prompt. Today `brief-authoring` requires context, scope, stop conditions, a doc-update list, and a `For:` (agent) line — but it does NOT make first-class an explicit **technical-dependency identification**, a **tech-surface map** (files/APIs/schemas it will touch), and a **declared agent/model with reasoning**.
 
-**The proposed addition.** Make those three first-class required brief sections. Crucially, they **build on F1's `Planner's rationale`** rather than starting cold — the brief inherits the planner's durable conclusions (boundary, suggested agent-class) and adds the just-in-time perishable detail (current signatures, exact files, final model pick). This is where prompt-writing-as-governance is operationalized.
+**The proposed addition.** Make those three first-class required brief sections. They **build on F1's `Planner's rationale`** (now in the model) rather than starting cold — the brief inherits the planner's durable conclusions (boundary, blast radius, traps, agent-class) and adds the just-in-time perishable detail (current signatures, exact files, final model pick). This operationalizes prompt-writing-as-governance. **Next action:** write this into the `brief-authoring` skill.
 
 ### F4 — Agent/model selection: plan-time class vs brief-time pick
 
-**Status:** OPEN · candidate (partly resolved by F1 + F3)
-**Lands in:** `aeg-root/roles/planner.md` + `aeg-root/skills/brief-authoring/SKILL.md`
+**Status:** ✅ WRITTEN INTO MODEL (2026-06-11) → `aeg-root/roles/planner.md` §"Agent/model selection: class at plan time, final pick at brief time". The planner suggests the agent-**class** at plan time (recorded in the rationale, part of sizing); the Brief Author confirms the final **model pick** at brief time. The brief-time half also belongs in `brief-authoring` (folds into F3).
 
-**The gap / resolution.** Is "which agent/model runs this" a planner decision or a brief decision? The F1/F3 split answers it: the planner suggests the **agent-class** at plan time (part of sizing — "is this too big for a fast model?"), recorded in `Planner's rationale`; the Brief Author confirms the **final pick** at brief time against current reality. Carry as a finding so the two role docs state this consistently when F1/F3 are implemented.
+### F5 — The planner's deep dig overturns a backlog sizing claim; shared-package change pulls all consumers into scope
 
-### F5 — The planner's deep dig can overturn a backlog sizing claim (and resize a task's project set)
+**Status:** ✅ WRITTEN INTO MODEL (2026-06-11) → `aeg-root/roles/planner.md` §"The shared-package blast-radius rule" (mandatory, with the Vāda worked example + a hard gate) and §"A backlog's sizing/scope hints are inputs, not facts".
 
-**Status:** OPEN · candidate · the strongest worked illustration of F1+F2
-**Lands in:** `aeg-root/roles/planner.md` (as the canonical worked example) + reinforces F1/F2
+**What happened (the Herald case, kept for history).** The Herald backlog asserted multi-vendor BYOK is *"mostly a UI + plumbing job."* The dig into `packages/adapter-langgraph/src/llm.ts` overturned it: structured output exists **only on the Anthropic sdkShape** (`google-genai` and `openai-compat` return `structured: undefined`); Herald needs structured output and multi-vendor was confirmed required; therefore the feature forces a change to the **shared** `llm.ts`, and Vāda (which runs on it) enters the blast radius.
 
-**What happened (the Herald case).** The Herald backlog asserted that multi-vendor BYOK + model choice is *"mostly a UI + plumbing job, not new infra."* The planner's deep dig into the actual engine code (`packages/adapter-langgraph/src/llm.ts`) overturned that claim:
-- Structured output (`agent.outputSchema` → forced JSON) exists **only on the Anthropic sdkShape**. The `google-genai` and `openai-compat` paths return `structured: undefined`.
-- Herald's audit needs **structured** output, and the Principal confirmed multi-vendor is required **"for sure."**
-- Therefore the feature is **not** "just UI": it forces a change to the **shared** engine file `llm.ts` to add structured output for non-Anthropic vendors.
-- `llm.ts` is the file **Vāda also runs on** → Vāda enters the blast radius (must be re-verified; may need edits if the structured-output contract changes vs. purely additive vendor branches).
+**The two rules now in the model:**
+1. **A backlog's sizing/scope hints are inputs, not facts** — the planner verifies against code; the dig overrides the backlog.
+2. **A shared-package change pulls every consumer into the task's `Project(s)` and review scope** — even when the consumer's app code isn't edited, because the Reviewer must verify it. Omitting a consumer is a sizing error the planner refuses and corrects.
 
-**The model lesson.** Two things AEG should state explicitly:
-1. **A backlog's sizing/scope hints are inputs, not facts.** The planner must verify them against the code; a deep dig can (and here did) prove a "mostly UI" item is actually a shared-package change with a cross-product blast radius. The planner's sizing **overrides** the backlog's guess.
-2. **"Touching a shared package" pulls every consumer of that package into the task's project set and review scope.** When a task changes `@atta/engine` / `@atta/adapter-langgraph`, every product that runs on it (here, Vāda) must be listed as a `Project:` for verification — even though that product's *app code* isn't directly edited. "Shared-package change" ⇒ "all consumers in the blast radius." This is a sizing rule, not a nicety: it determines who the Reviewer must check.
+This is also why "task 3 = multi-vendor BYOK (mostly UI)" split into **3a** (engine structured output — `engine, vada, herald`) and **3b** (Herald BYOK UI — `herald`, depends on 3a). See the iteration file `aeg-root/iterations/herald-onto-engine.md`.
 
-This is also why the original "task 3 = multi-vendor BYOK (mostly UI)" had to split into **3a** (engine structured output for non-Anthropic vendors — `engine, vada, herald`) and **3b** (Herald BYOK UI + model selector — `herald`, depends on 3a). See the iteration file `aeg-root/iterations/herald-bulk-audit.md`.
+### F6 — Iteration naming convention
+
+**Status:** ✅ WRITTEN INTO MODEL (2026-06-11) → `aeg-root/iterations/README.md` §4 "Naming an iteration" + `aeg-root/roles/planner.md` §"Naming the iteration". Name the center-of-gravity / shared-infra work, not the narrowest downstream feature; a name must not imply narrower scope than `Project(s)`. Worked example: `herald-onto-engine`, not `herald-bulk-audit`.
 
 ---
 
 ## The planner↔brief seam (the synthesizing principle behind F1–F4)
 
-The model is fuzzy on who-does-what between Planner and Brief Author. The principle these findings converge on, to be written into both role docs:
+Now reflected in `planner.md` (the rationale is the hand-off) and to be completed in `brief-authoring` (F3):
 
 - **Both roles do a full deep technical pass** — there is no "shallow planner, deep brief." The difference is *purpose* and *what persists*.
-- **Planner's pass → purpose: find the seams.** Persists: topology + durable conclusions (`Planner's rationale`). Discards: perishable line-level detail (it'll be stale by execution).
+- **Planner's pass → purpose: find the seams.** Persists: topology + durable conclusions (`Planner's rationale`). Discards: perishable line-level detail.
 - **Brief's pass → purpose: execute one piece, now.** Inherits the planner's rationale; adds current perishable detail (files, signatures, final model). Lands in the PR body.
-- **The unit of planner output is the task** — a row in the topology file + a thin forge Issue. The brief is NOT the planner's output; it is written just-in-time by the Brief Author at dispatch.
+- **The unit of planner output is the task** — a row in the topology file + a thin forge Issue (now carrying the rationale). The brief is NOT the planner's output; it is written just-in-time by the Brief Author at dispatch.
 
 ---
 
-*When any finding here is implemented, log the corresponding `D-###` in `aeg-project/decisions.md`, update the target doc, and mark the finding `IMPLEMENTED (D-###)` above.*
+## Remaining open work
+
+- **F3** — write the tech-dependency + tech-surface + agent-selection-with-reasoning required sections into `aeg-root/skills/brief-authoring/SKILL.md`, inheriting from the Planner's rationale. (The brief-time half of F4 folds in here.)
+- **F1 mirrors** — add the rationale to the task/Issue shape in `iterations/README.md` §4, and the "brief inherits the rationale" line in `brief-authoring`.
+- Optional: a consolidated `D-###` in `aeg-project/decisions.md` recording the planner-discipline upgrade (F1/F2/F4/F5/F6) for ratification-trail completeness.
