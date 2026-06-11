@@ -100,6 +100,16 @@ Repo: <repo>   ·   Team Leader: <name>
 
 To see **live status**, you do not read this file — you ask the forge: `gh pr list`, the forge's Issues view, or a project board. The file is the *plan*; the forge is the *board*. (Note task 3: a `service-b` task conflicts with task 1 even though they're different projects — both touch the shared `core` package. Conflicts are package-level, §5.)
 
+### Naming an iteration
+
+The filename slug (`<name>` in `aeg-root/iterations/<name>.md`) should name the iteration's **center of gravity — the durable, highest-leverage work — not its narrowest downstream feature.** The test: *what is the lasting, reusable thing this iteration produces?* Name that.
+
+- When an iteration **onboards a project onto shared infrastructure** (or grows that infra), name the **onboarding / infra**, not the feature that happens to ride on it. The infra work outlives and outscopes the feature, and other projects inherit it. Example: an iteration that migrates Herald onto `@atta/engine` and adds multi-vendor structured output to that shared engine — with "Bulk Audit" as the proximate Herald feature — is named **`herald-onto-engine`**, *not* `herald-bulk-audit`. The engine maturing is the center of gravity; Bulk Audit is one feature on top.
+- When an iteration is genuinely **one project's self-contained feature** (no shared-infra change, no cross-project blast radius), `<project>-<feature>` is fine (e.g. `vada-reviewers-benchmark`).
+- A name should not imply a narrower scope than the `Project(s)` column reveals. If tasks span `engine, vada, herald`, a filename saying only `herald-…` misleads a reader scanning `iterations/`. When in doubt, name the broadest/most-shared layer the iteration touches.
+
+The `Project(s)` column remains the authoritative blast-radius record per task; the filename is a human-readable handle, chosen to not mislead about scope.
+
 ---
 
 ## 5. Conflicts — declared, package-level, static
