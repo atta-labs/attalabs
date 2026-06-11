@@ -1,6 +1,6 @@
 ---
 name: brief-authoring
-description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers required sections, the optional Ticket/Project fields, model selection, the model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), the mandatory worktree-first step, the brief-lands-in-the-PR-body rule, the explicit documentation-update list, the post-PR review passes, and anti-patterns.
+description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers required sections, inheriting the Planner's rationale, the mandatory technical-dependency / tech-surface-map / agent-selection-with-reasoning sections, the optional Ticket/Project fields, model selection, the model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), the mandatory worktree-first step, the brief-lands-in-the-PR-body rule, the explicit documentation-update list, the post-PR review passes, and anti-patterns.
 ---
 
 <!-- CANONICAL SOURCE (D-039). This file is the canonical home of the `brief-authoring` skill, inside the AEG unit (aeg-root/skills/). The copy at .claude/skills/brief-authoring/SKILL.md is a GENERATED VIEW produced by `aeg generate-skills` for the agent harness that loads from .claude/ — edit THIS file, then regenerate; never edit the generated view by hand. -->
@@ -11,7 +11,21 @@ Every task brief the Team Leader writes or dispatches must follow these rules. T
 
 **This skill is Brief Author mode.** Load it when the Team Leader is authoring or reviewing a brief. Do not load for strategy/architecture (Strategist mode) or for planning a whole iteration (Planner mode — see `aeg-root/roles/planner.md`).
 
-**Where the brief lives.** The brief is the task's full execution context. It is **pasted to the Developer, not committed**, and it **lands in the PR body** when the Developer opens the PR — that is its permanent, durable home, read by the Reviewer and Archivist. A brief is **never** put in the task's forge Issue (the Issue holds identity + metadata only; a brief there would go stale before work starts). Context lives entirely in the brief: if it isn't in the brief, it doesn't exist.
+**Where the brief lives.** The brief is the task's full execution context. It is **pasted to the Developer, not committed**, and it **lands in the PR body** when the Developer opens the PR — that is its permanent, durable home, read by the Reviewer and Archivist. A brief is **never** put in the task's forge Issue (the Issue holds identity + metadata + the Planner's rationale, not the brief; a brief there would go stale before work starts). Context lives entirely in the brief: if it isn't in the brief, it doesn't exist.
+
+**The brief is the prompt, and the prompt is where control over the agent lives.** Brief authoring is the single highest-leverage governance act in AEG: a precise brief makes a capable agent do exactly the right thing; a vague one makes the same agent improvise. Treat every required section below as a control surface, not paperwork.
+
+---
+
+## Start from the Planner's rationale — do not re-derive it cold
+
+Every task you author a brief for arrives with a **Planner's rationale** (in the Issue body and the iteration file — see `roles/planner.md`). It is the planner's durable conclusions from a deep dig: the task boundary, the sizing, the **blast radius** (every project/consumer the change touches), the **traps to avoid**, the **suggested agent-class**, and the **stop-and-escalate** conditions.
+
+**Read it first and build on it. Do not start from a blank page.** The division of labor is deliberate:
+- The **Planner** did a deep technical pass to find the seams and persisted the *durable* conclusions (which don't decay).
+- You do your own deep pass now, at dispatch, to add the *perishable* detail that has to be current (exact signatures, the precise file list, the final model pick) — because the codebase has moved since planning.
+
+So the brief = the planner's rationale (inherited) + the current execution detail (you add). You are not re-deciding the boundary or the blast radius; you are turning the planner's conclusions into an executable prompt against today's code. If your dig contradicts the planner's rationale (the code moved enough to change the boundary), that is a stop-and-escalate, not a silent override.
 
 ---
 
@@ -21,7 +35,7 @@ Every task brief the Team Leader writes or dispatches must follow these rules. T
 
 ```
 **For:** [model + environment, e.g., "Sonnet (a coding-agent CLI on a dev machine, interactive session)"]
-**Reason:** [why this model/environment was chosen]
+**Reason:** [why this model/environment was chosen — see "Agent/model selection" below]
 **Owner:** [who owns the task — the Principal, by default]
 **Goal:** [one sentence: what ships]
 ```
@@ -34,10 +48,31 @@ Full background the executor needs:
 - Why this work is happening now (not "later")
 - What's locked and should not be relitigated
 - Relevant decisions already made (reference decision-log entries by log + number)
+- **The Planner's rationale for this task** (inherited — boundary, blast radius, traps, stop conditions). Carry it forward; the executor must see the planner's reasoning, not just the goal.
 
 Length: as long as needed. This section prevents the executor re-deriving architecture that's already decided.
 
-### 3. Pre-flight checks
+### 3. Technical dependencies (mandatory — the "what must already exist" map)
+
+**List every technical precondition this task depends on, by name.** This is distinct from the forge `depends-on` edge (which is task→task); this is the *code/system* dependencies. The executor must know what it is building on. Identify and state:
+- **New shared exports/APIs it needs** — does this task require a function, type, or export that another task is adding to a shared package? (If yes, that's a `depends-on` and the export must exist at dispatch.)
+- **Schema/migration preconditions** — does it need a DB column, a migration, a vendor-registry entry, a config key that must be present first?
+- **Capability preconditions** — does it rely on a capability that may not exist yet (e.g. "structured output on this vendor")? If the capability is being added by a dependency task, say so and confirm it merged.
+- **External services / credentials** — what must be provisioned and authenticated (keys, tokens, endpoints) for the task to run *and* to be verified?
+
+A task whose technical dependencies aren't all satisfiable at dispatch is **not dispatchable** — STOP and surface it.
+
+### 4. Technical surface map (mandatory — the "what this touches" map)
+
+**Name the bounded set of files, packages, APIs, and schemas this task will create or modify.** This is the perishable detail the planner deliberately left to brief-time — derive it now, against the current codebase. It must be a *nameable, bounded* surface (if you cannot bound it, the task is too big — kick back to the Planner). Include:
+- The exact files/dirs to create or modify (paths).
+- The shared packages touched and — echoing the planner's blast radius — the consumers that must be re-verified.
+- The APIs/schemas/contracts read or changed.
+- What is explicitly **out of surface** (adjacent files the executor must NOT touch).
+
+This map is what makes "only the expected files changed" checkable at review (Section 7) and what stops scope creep.
+
+### 5. Pre-flight checks
 
 Numbered checklist. **The first pre-flight step is always creating a worktree — no exceptions.**
 
@@ -55,15 +90,15 @@ This is non-negotiable because work done on the wrong branch or in a dirty main 
 
 #### Remaining pre-flight checks
 
-After the worktree exists, verify: working dir clean (`git status`); branch correct (`git log --oneline -3` shows `origin/main` as parent); target dir does/doesn't exist as required; required tools present at the right version; external services authenticated; reference material accessible. **Also verify the dispatch gates against the forge:** every `depends-on` task's PR is merged, and no `conflicts-with` sibling's PR is open. Each check has a clear pass/fail; on failure the executor STOPs and reports.
+After the worktree exists, verify: working dir clean (`git status`); branch correct (`git log --oneline -3` shows `origin/main` as parent); target dir does/doesn't exist as required; required tools present at the right version; external services authenticated; reference material accessible; **every technical dependency from Section 3 is actually present** (the new export exists, the migration ran, the capability is live). **Also verify the dispatch gates against the forge:** every `depends-on` task's PR is merged, and no `conflicts-with` sibling's PR is open. Each check has a clear pass/fail; on failure the executor STOPs and reports.
 
-### 4. Numbered parts with numbered tasks
+### 6. Numbered parts with numbered tasks
 
-Break work into Parts (major areas) and numbered tasks within each. Each task specifies: exact files to create/modify; exact function/type signatures (not prose); constraints (no auto-remove, no extra tools, no UI in V0); verification steps. Do NOT leave implementation details to the executor's judgment unless you explicitly trust it and say so.
+Break work into Parts (major areas) and numbered tasks within each. Each task specifies: exact files to create/modify (from the Section 4 surface map); exact function/type signatures (not prose); constraints (no auto-remove, no extra tools, no UI in V0); verification steps. Do NOT leave implementation details to the executor's judgment unless you explicitly trust it and say so.
 
-### 5. Documentation-update list (explicit, tier-tied)
+### 7. Documentation-update list (explicit, tier-tied)
 
-Do not leave documentation as an implication of the tier checklist. **List the exact doc artifacts this brief must touch, by name.** This is what `verify-docs` (a real gate — Section 8) and the code-reviewer check against.
+Do not leave documentation as an implication of the tier checklist. **List the exact doc artifacts this brief must touch, by name.** This is what `verify-docs` (a real gate — Section 10) and the code-reviewer check against.
 
 - **Tier 0** — usually none. State "No doc updates required (Tier 0)."
 - **Tier 1** — name each: which spec(s) reflect the new behavior, which skill(s) if a convention shifted, `docs-index.md` if files were added/removed/renamed.
@@ -71,19 +106,19 @@ Do not leave documentation as an implication of the tier checklist. **List the e
 
 A Tier 1+ brief with an empty doc-update list is malformed.
 
-### 6. Verification before claiming done
+### 8. Verification before claiming done
 
-Typecheck passes; lint passes; tests pass; production build passes (catches stricter resolution typecheck misses); manual smoke tests; the repo's `verify-docs --pr` gate passes (real gate — D-027); `git diff main --stat` confirms only expected files were touched. *(The exact commands are this repo's toolchain — substitute the repo's declared equivalents; the obligations are universal.)*
+Typecheck passes; lint passes; tests pass; production build passes (catches stricter resolution typecheck misses); manual smoke tests; **every consumer named in the blast radius (Section 4) re-verified** (a shared-package change must prove it didn't regress the other consumers — that's what putting them in `Project(s)` was for); the repo's `verify-docs --pr` gate passes (real gate — D-027); `git diff main --stat` confirms only expected files (the Section 4 surface) were touched. *(The exact commands are this repo's toolchain — substitute the repo's declared equivalents; the obligations are universal.)*
 
-### 7. Stop conditions
+### 9. Stop conditions
 
-Explicit list that causes STOP-and-report rather than improvising: pre-flight failures (incl. worktree couldn't be created); a dispatch gate not satisfied (a `depends-on` PR not merged, or a `conflicts-with` sibling's PR open); design gap discovered; test fails after multiple attempts; about to touch files outside scope; any destructive action not explicitly authorized.
+Explicit list that causes STOP-and-report rather than improvising: pre-flight failures (incl. worktree couldn't be created); a technical dependency from Section 3 not actually present; a dispatch gate not satisfied (a `depends-on` PR not merged, or a `conflicts-with` sibling's PR open); the executor's own dig contradicts the inherited Planner's rationale (boundary moved); design gap discovered; test fails after multiple attempts; about to touch files outside the Section 4 surface; the task's stop-and-escalate condition from the Planner's rationale is hit; any destructive action not explicitly authorized.
 
-### 8. Constraints
+### 10. Constraints
 
-What the executor must NOT do: off-limits branches/paths; explicitly deferred features (do not add); forbidden patterns (skipping verification hooks, an unapproved datastore, auto-remove); and — always — **never write status anywhere** (status is derived from the forge) and **never add execution metadata to the iteration file**.
+What the executor must NOT do: off-limits branches/paths (the out-of-surface set from Section 4); explicitly deferred features (do not add); forbidden patterns (skipping verification hooks, an unapproved datastore, auto-remove); and — always — **never write status anywhere** (status is derived from the forge) and **never add execution metadata to the iteration file**.
 
-### 9. Deliverable
+### 11. Deliverable
 
 What the executor opens/commits/creates at the end:
 - PR title (exact format)
@@ -96,23 +131,13 @@ What the executor opens/commits/creates at the end:
 
 ---
 
-## Optional metadata fields (the reference fields)
+## Agent/model selection (with reasoning — the `For:` + `Reason:` lines are mandatory)
 
-These two qualify a task and ride into the PR body. Both are reference-only — never read as instruction.
+The brief MUST declare which agent/model runs the task **and why**. The planner already suggested an **agent-class** (high/mid/fast) in the rationale, as part of sizing; you **confirm the final pick** at dispatch, against current reality (the actual models available, the task's true difficulty now).
 
-```
-**Project:** [project(s) this task touches — e.g. "vada" or "engine, herald"]
-```
-Multi-valued. Resolves against `aeg-root/projects.md`. **Required in a multi-project repo; omitted entirely in a single-project repo** (no registry → one project → no field). Routes the Developer to the right specs and the Archivist to the right per-project state; a value that doesn't resolve to a registry row makes the brief malformed (refuse, don't guess). A task may legitimately span projects when verification couples them — see `roles/planner.md`.
-
-```
-**Ticket:** [external ticket link(s) — e.g. "SAT-412 — https://…"]
-```
-N↔M, reference-only provenance (the company's ticket system, e.g. Jira/Linear). No agent reads it, needs access to it, or is blocked by it; it is never a substitute for brief context. Omit if there's no ticket system.
-
----
-
-## Model selection rules
+- Inherit the planner's class; only deviate with a stated reason.
+- The `Reason:` line is not optional and not "because it's good" — it names *why this capability level fits this task* (e.g. "high — multi-file refactor crossing the engine boundary with three structured-output unknowns"; "mid — reuse of an existing component plus registry wiring, no architecture").
+- The pick is the Brief Author's; the class was the Planner's. Class at plan time, pick at brief time.
 
 | Situation | Model choice |
 |-----------|-------------|
@@ -122,7 +147,23 @@ N↔M, reference-only provenance (the company's ticket system, e.g. Jira/Linear)
 | Cross-cutting review (reads many files, judges correctness) | a high-capability model |
 | Code review / security review pass | judgment over speed — a high/mid model |
 
-Specify the model explicitly in the brief header. When an automation layer dispatches, it passes the model through; the brief can override per its own mechanism if needed. *(In this repo the model tiers are Opus / Sonnet / Haiku — substitute your provider's equivalents.)*
+When an automation layer dispatches, it passes the model through; the brief can override per its own mechanism if needed. *(In this repo the model tiers are Opus / Sonnet / Haiku — substitute your provider's equivalents.)*
+
+---
+
+## Optional metadata fields (the reference fields)
+
+These two qualify a task and ride into the PR body. Both are reference-only — never read as instruction.
+
+```
+**Project:** [project(s) this task touches — e.g. "vada" or "engine, herald"]
+```
+Multi-valued. Resolves against `aeg-root/projects.md`. **Required in a multi-project repo; omitted entirely in a single-project repo** (no registry → one project → no field). Routes the Developer to the right specs and the Archivist to the right per-project state; a value that doesn't resolve to a registry row makes the brief malformed (refuse, don't guess). It must match the Planner's `Project(s)` for the task, including every shared-package consumer in the blast radius — see `roles/planner.md`.
+
+```
+**Ticket:** [external ticket link(s) — e.g. "SAT-412 — https://…"]
+```
+N↔M, reference-only provenance (the company's ticket system, e.g. Jira/Linear). No agent reads it, needs access to it, or is blocked by it; it is never a substitute for brief context. Omit if there's no ticket system.
 
 ---
 
@@ -207,11 +248,16 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 
 ## Anti-patterns
 
+- ❌ Starting from a blank page instead of the Planner's rationale — re-deriving (often differently) what the planner already concluded, and losing the traps the planner flagged
+- ❌ Omitting the Technical Dependencies section — the executor discovers mid-task that something it needs doesn't exist yet
+- ❌ Omitting the Technical Surface Map — "only expected files changed" becomes uncheckable and scope creeps
+- ❌ A `For:`/`Reason:` line with no real reasoning ("Sonnet because it's good") — the capability choice must be justified against the task
+- ❌ Dropping a blast-radius consumer from verification — a shared-package change ships a regression in a consumer nobody re-checked
 - ❌ Omitting the worktree-first Step 0 — the executor starts on the wrong branch or a dirty main checkout
 - ❌ Telling the executor to "create a branch" without first creating a worktree
 - ❌ Putting the brief in the Issue instead of handing it over to land in the PR body
 - ❌ "Implement X as you see fit" — the executor has no taste, only instructions
-- ❌ Omitting pre-flight checks (incl. the forge dispatch gates) — the executor starts on a dirty tree or against an unmet dependency
+- ❌ Omitting pre-flight checks (incl. the forge dispatch gates + technical-dependency presence) — the executor starts on a dirty tree or against an unmet dependency
 - ❌ An empty documentation-update list on a Tier 1+ brief
 - ❌ Listing `roadmap.md` in a doc-update list — it's retired
 - ❌ Instructing the executor to write status anywhere — status is derived from the forge
@@ -221,7 +267,7 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 - ❌ Skipping the deliverable section
 - ❌ Treating "PR opened" as "done" — done is "passed code-review + security review"
 - ❌ Assuming the executor has read prior session context — it hasn't
-- ❌ A `Project:` value that doesn't resolve against the registry — malformed; fix or `aeg add-project` first
+- ❌ A `Project:` value that doesn't resolve against the registry, or that omits a blast-radius consumer the Planner listed — malformed; fix or `aeg add-project` first
 
 ---
 
