@@ -74,6 +74,23 @@ A task failing any test is too big and must be split.
 
 **The gap / resolution.** Is "which agent/model runs this" a planner decision or a brief decision? The F1/F3 split answers it: the planner suggests the **agent-class** at plan time (part of sizing — "is this too big for a fast model?"), recorded in `Planner's rationale`; the Brief Author confirms the **final pick** at brief time against current reality. Carry as a finding so the two role docs state this consistently when F1/F3 are implemented.
 
+### F5 — The planner's deep dig can overturn a backlog sizing claim (and resize a task's project set)
+
+**Status:** OPEN · candidate · the strongest worked illustration of F1+F2
+**Lands in:** `aeg-root/roles/planner.md` (as the canonical worked example) + reinforces F1/F2
+
+**What happened (the Herald case).** The Herald backlog asserted that multi-vendor BYOK + model choice is *"mostly a UI + plumbing job, not new infra."* The planner's deep dig into the actual engine code (`packages/adapter-langgraph/src/llm.ts`) overturned that claim:
+- Structured output (`agent.outputSchema` → forced JSON) exists **only on the Anthropic sdkShape**. The `google-genai` and `openai-compat` paths return `structured: undefined`.
+- Herald's audit needs **structured** output, and the Principal confirmed multi-vendor is required **"for sure."**
+- Therefore the feature is **not** "just UI": it forces a change to the **shared** engine file `llm.ts` to add structured output for non-Anthropic vendors.
+- `llm.ts` is the file **Vāda also runs on** → Vāda enters the blast radius (must be re-verified; may need edits if the structured-output contract changes vs. purely additive vendor branches).
+
+**The model lesson.** Two things AEG should state explicitly:
+1. **A backlog's sizing/scope hints are inputs, not facts.** The planner must verify them against the code; a deep dig can (and here did) prove a "mostly UI" item is actually a shared-package change with a cross-product blast radius. The planner's sizing **overrides** the backlog's guess.
+2. **"Touching a shared package" pulls every consumer of that package into the task's project set and review scope.** When a task changes `@atta/engine` / `@atta/adapter-langgraph`, every product that runs on it (here, Vāda) must be listed as a `Project:` for verification — even though that product's *app code* isn't directly edited. "Shared-package change" ⇒ "all consumers in the blast radius." This is a sizing rule, not a nicety: it determines who the Reviewer must check.
+
+This is also why the original "task 3 = multi-vendor BYOK (mostly UI)" had to split into **3a** (engine structured output for non-Anthropic vendors — `engine, vada, herald`) and **3b** (Herald BYOK UI + model selector — `herald`, depends on 3a). See the iteration file `aeg-root/iterations/herald-bulk-audit.md`.
+
 ---
 
 ## The planner↔brief seam (the synthesizing principle behind F1–F4)
