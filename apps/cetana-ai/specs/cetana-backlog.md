@@ -28,4 +28,4 @@ These two are related — one is about authoring artifacts, the other about deli
 
 ---
 
-*Note on naming: Cetana automates only the orchestration slice of AEG; it is not AEG itself. See `project-management/coordination.md`.*
+*Note on naming: Cetana automates only the orchestration slice of AEG; it is not AEG itself. See `aeg-root/coordination.md`.*

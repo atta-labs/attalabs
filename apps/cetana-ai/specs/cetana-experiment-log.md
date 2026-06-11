@@ -218,14 +218,14 @@ This phase integrated Cetana into the v3 model documentation without changing th
 
 The following files were added to the repo as part of v3 operational model adoption:
 
-- `project-management/state-machine.md` — the constitution; artifact states, roles, authority matrix, decision schema, lock mechanism, tiered documentation, ratification windows
-- `project-management/decisions.md` — global cross-product decision log, D-001 to D-016
-- `project-management/roles/principal.md` — what the Principal owns and does not own; communication style
-- `project-management/roles/team-leader.md` — TL modes (Strategist / Brief Author), tools, anti-patterns
-- `project-management/roles/developer.md` — Developer execution rules, stop conditions, verification checklist, anti-patterns
-- `project-management/reviewer-prompt.md` — template for stateless AI adversarial reviewer rounds
-- `project-management/ratification-queue.md` — append-only queue of decisions and Tier 3 merges awaiting Principal ratification
-- `project-management/coordination.md` — rewritten from v2 (Claude.ai project knowledge model) to v3 (git-based, role-aware session start protocol)
+- `aeg-root/state-machine.md` — the constitution; artifact states, roles, authority matrix, decision schema, lock mechanism, tiered documentation, ratification windows
+- `aeg-project/decisions.md` — global cross-product decision log, D-001 to D-016
+- `aeg-root/roles/principal.md` — what the Principal owns and does not own; communication style
+- `aeg-root/roles/team-leader.md` — TL modes (Strategist / Brief Author), tools, anti-patterns
+- `aeg-root/roles/developer.md` — Developer execution rules, stop conditions, verification checklist, anti-patterns
+- `aeg-root/reviewer-prompt.md` — template for stateless AI adversarial reviewer rounds
+- `aeg-project/ratification-queue.md` — append-only queue of decisions and Tier 3 merges awaiting Principal ratification
+- `aeg-root/coordination.md` — rewritten from v2 (Claude.ai project knowledge model) to v3 (git-based, role-aware session start protocol)
 - `.claude/skills/brief-authoring/SKILL.md` — migrated from `project-management/brief-authoring-rules.md`; v3 model integration section added
 - `scripts/verify-docs.ts` — V0.7 stub, exits 0; real implementation is follow-up
 - `.github/workflows/archivist.yml` — V0.7 stub with three no-op jobs

@@ -4,7 +4,7 @@
 **Scope:** the AEG product — the web app (`apps/aeg/web`) that visualizes Atta Agentic Execution Governance, plus the `aeg.sh` scaffolder that lets any repo adopt the AEG structure.
 **Last updated:** 2026-06-10 (product folder scaffolded).
 
-This spec is the canonical reference for AEG **the product**. It is distinct from AEG **the model** (the governance/flow constitution), which lives at the repo root in `project-management/` (`state-machine.md`, `aeg-manual-flow.md`, `iterations/README.md`, the role docs) and governs the whole monorepo. The model is the thing; this product makes the thing visible and adoptable.
+This spec is the canonical reference for AEG **the product**. It is distinct from AEG **the model** (the governance/flow constitution), which lives at the repo root in `aeg-root/` (`state-machine.md`, `aeg-manual-flow.md`, `iterations/README.md`, the role docs) and governs the whole monorepo. The model is the thing; this product makes the thing visible and adoptable.
 
 > **AEG does not know its orchestrator.** AEG is forge-native and orchestrator-independent (D-029): it runs by hand, on any repo, with zero orchestration tooling. Cetana is one optional tool that automates AEG's dispatch/escalation slice — **Cetana knows AEG; AEG does not know Cetana.** This product reflects that asymmetry: the AEG UI reads the forge and renders execution state; it treats an orchestrator like Cetana as *one thing that writes to the forge*, surfaced read-only, never as a dependency or a contained component. Cetana is a sibling product at `apps/cetana-ai/`, not part of this folder.
 
@@ -14,7 +14,7 @@ This spec is the canonical reference for AEG **the product**. It is distinct fro
 
 The AEG product is a deployed **UI that makes a repo's agentic execution legible**. It reads two inputs and renders the live picture:
 
-1. **The repo's AEG artifacts** — the thin iteration topology files (`project-management/iterations/*.md`: task↔Issue map, `depends-on` / `conflicts-with` edges, grouping) and the backlogs (`specs/*-backlog.md`: the plan).
+1. **The repo's AEG artifacts** — the thin iteration topology files (`aeg-root/iterations/*.md`: task↔Issue map, `depends-on` / `conflicts-with` edges, grouping) and the backlogs (`specs/*-backlog.md`: the plan).
 2. **The Git forge** (GitHub) — the source of *derived* execution status (Issue open/assigned, branch `task/<iteration>/<n>` existence, PR open, review decision, merge). AEG never stores status; it projects it from the forge, exactly as the model prescribes.
 
 From those it renders: an **attention queue** (what needs a human now — default view), **repos grouped by tag** (by company, by product), each repo's **iterations**, and each iteration's **task DAG**. Plus the **plan** (backlogs) alongside execution — because retiring `roadmap.md` (D-029) removed the single whole-plan view, and this UI is where it returns (OQ-cross-14).
@@ -65,9 +65,9 @@ Raw GitHub reads do not scale within rate limits for a live board. A webhook-fed
 
 ## 4. `aeg.sh` — the adoption scaffolder
 
-The product is not only the UI. Adopting AEG in a fresh repo means laying down a specific folder structure (the `project-management/` model docs, `iterations/`, the `specs/*-backlog.md` convention per D-037, the branch/label conventions). Doing that by hand is error-prone and is the friction that keeps AEG from spreading beyond this monorepo.
+The product is not only the UI. Adopting AEG in a fresh repo means laying down a specific folder structure (the `aeg-root/` model docs, `iterations/`, the `specs/*-backlog.md` convention per D-037, the branch/label conventions). Doing that by hand is error-prone and is the friction that keeps AEG from spreading beyond this monorepo.
 
-`aeg.sh` is a **neutral scaffolder script** (a D-029 build follow-up, moved here as part of the product): run it in a repo, answer a couple of prompts (or pass flags), and it creates the AEG structure — including, when you **specify a product/unit**, that unit's folders (`apps/<unit>/specs/<unit>-backlog.md`, `apps/<unit>/project-management/{state,now}.md`) following the D-037 convention (plan in `specs/`, flow+governance+state in `project-management/`). It is *neutral* — it encodes the AEG model, not Atta-specific content — so any team can adopt the architecture.
+`aeg.sh` is a **neutral scaffolder script** (a D-029 build follow-up, moved here as part of the product): run it in a repo, answer a couple of prompts (or pass flags), and it creates the AEG structure — including, when you **specify a project/unit**, that unit's folders (`apps/<unit>/specs/<unit>-backlog.md`, `apps/<unit>/aeg-project/{state,now}.md`) following the D-037/D-041 convention (plan in `specs/`, model in root `aeg-root/`, state in `aeg-project/`). It is *neutral* — it encodes the AEG model, not Atta-specific content — so any team can adopt the architecture.
 
 Relationship to the UI: the scaffolder lays down what the UI reads. They are two halves of "make AEG adoptable": `aeg.sh` writes the structure, the UI renders it. The interactive product supersedes the static `diagrams/` as the explanation of the model.
 
@@ -94,4 +94,4 @@ Folder naming: `apps/aeg` carries **no `-ai` suffix**, matching the meta/infra-a
 
 ## 7. Dogfooding
 
-The AEG product is built *through* AEG: it is the designated first real iteration (`aeg-backlog.md`). Building the thing that visualizes the flow, using the flow, is the intended proof. Its own `project-management/` (state + now) and this `specs/` set follow the same conventions the product reads — the product can render its own repo.
+The AEG product is built *through* AEG: it is the designated first real iteration (`aeg-backlog.md`). Building the thing that visualizes the flow, using the flow, is the intended proof. Its own `aeg-project/` (state + now) and this `specs/` set follow the same conventions the product reads — the product can render its own repo.

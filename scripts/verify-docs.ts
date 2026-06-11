@@ -45,7 +45,9 @@ function sh(cmd: string): string {
 
 function isDocFile(p: string): boolean {
   return (
-    (p.startsWith('project-management/') && p.endsWith('.md')) ||
+    (p.startsWith('aeg-root/') && p.endsWith('.md')) ||
+    (p.startsWith('aeg-project/') && p.endsWith('.md')) ||
+    (p.includes('/aeg-project/') && p.endsWith('.md')) ||
     (p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md')) ||
     (p.startsWith('.claude/skills/') && p.endsWith('.md')) ||
     p === 'docs-index.md' ||
@@ -64,7 +66,7 @@ function isSpecFile(p: string): boolean {
 }
 
 function isDecisionLog(p: string): boolean {
-  return p === 'project-management/decisions.md' || /-decisions\.md$/.test(p)
+  return p === 'aeg-project/decisions.md' || /-decisions\.md$/.test(p)
 }
 
 function hasStatusBlock(content: string): boolean {
@@ -175,7 +177,7 @@ function runPrMode(): void {
   // C4 — Tier 3 must carry a decision log entry.
   if (effectiveTier === 3 && decisionLogs.length === 0) {
     errors.push(
-      'C4 tier3-decision-log: Tier 3 work requires a decision log entry (global decisions.md or a per-product *-decisions.md). None changed in this PR. (state-machine.md Section 9)'
+      'C4 tier3-decision-log: Tier 3 work requires a decision log entry (global decisions.md or a per-project *-decisions.md). None changed in this PR. (state-machine.md Section 9)'
     )
   }
 }
@@ -196,7 +198,7 @@ function runFullMode(): void {
   }
 
   // F2 — decision-log entries well-formed.
-  const logs = sh("git ls-files 'project-management/decisions.md' 'apps/**/*-decisions.md'")
+  const logs = sh("git ls-files 'aeg-project/decisions.md' 'apps/**/*-decisions.md'")
     .split('\n')
     .map((s) => s.trim())
     .filter(Boolean)

@@ -11,7 +11,7 @@ The raw trail so every external finding is re-verifiable and nothing is lost. Gr
 - `packages/ui/lib/next-link.tsx` (Link abstraction). `next` is a **peer** dep of `@atta/ui`.
 - UI libraries: `@atta/ui/libraries/{basic,retro,animate,brutal}/components`; `library-loader.ts` (static map of **string-literal** dynamic imports — bundler-safe); `library-provider.tsx` (client; `library` prop from `config.userInterface.library.id`).
 - Auth: `@atta/auth` = `provider.tsx` (thin `ClerkProvider` wrapper), `middleware.ts` (`clerkMiddleware`), `hooks.ts` (server `auth()`), `api-key-auth.ts` (a 2nd auth mode already present), appearance files. Atta-family Clerk app `summary-ladybird-76`; Herald separate app `closing-blowfish-4`.
-- PM conventions: `project-management/` with `products.md` registry, `iterations/`, `decisions.md`, `coordination.md`, `state-machine.md`, AEG flow.
+- AEG conventions (D-041): model in `aeg-root/` with `projects.md` registry, `iterations/`, `coordination.md`, `state-machine.md`; living state in `aeg-project/` with `decisions.md` etc.; AEG flow.
 
 ## Tauri + Next.js (runtime model)
 - **Beadbox** (vercel/next.js discussion #90982, Mar 2026): Next 16 + App Router + RSC + server actions + WS, shipped as a **Tauri v2 Node sidecar** running `node server.js` (standalone); WebView→localhost; "web app doesn't know it's inside a native wrapper." Lessons: NEXT_PUBLIC baked at build (fix the port); **macOS GUI empty PATH** (spawn login shell); zombie children on force-quit; ~160MB (~84MB Node) < Electron ~200MB.

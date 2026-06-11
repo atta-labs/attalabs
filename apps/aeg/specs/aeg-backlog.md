@@ -2,9 +2,9 @@
 
 **Status:** draft · living reference (out of the AEG flow; not a ratified spec)
 
-**Out of the AEG flow.** Held / future items for AEG **the product** (the UI + the `aeg.sh` scaffolder). Reference the Planner reads when choosing the next iteration slice; the flow never operates on it. Per D-037, this plan lives in `specs/`; the product's flow + governance + living state live in `apps/aeg/project-management/`.
+**Out of the AEG flow.** Held / future items for AEG **the product** (the UI + the `aeg.sh` scaffolder). Reference the Planner reads when choosing the next iteration slice; the flow never operates on it. Per D-037, this plan lives in `specs/`; the product's flow + governance + living state live in `apps/aeg/aeg-project/`.
 
-Moved here 2026-06-10 from `specs/ecosystem-backlog.md`, where the AEG-UI write-up lived while the product had no folder. The model-level AEG build-out items (entry gates in role docs, Archivist checklist, Planner mode, dispatch-gate enforcement) stay in the ecosystem backlog — those improve the *model* and touch root `project-management/`, not this product.
+Moved here 2026-06-10 from `specs/ecosystem-backlog.md`, where the AEG-UI write-up lived while the product had no folder. The model-level AEG build-out items (entry gates in role docs, Archivist checklist, Planner mode, dispatch-gate enforcement) stay in the ecosystem backlog — those improve the *model* and touch root `aeg-root/`, not this product.
 
 ---
 
@@ -44,7 +44,7 @@ These were surfaced in the June 10 product-shape discussion and are deliberately
 
 ## `aeg.sh` — the adoption scaffolder
 
-- **Neutral AEG scaffold + downloadable `aeg.sh`** (a D-029 build follow-up). A script that lays down the AEG folder structure in any repo, and — given a specified project/unit — creates that unit's folders following D-037 (`apps/<unit>/specs/<unit>-backlog.md` + `apps/<unit>/project-management/{state,now}.md`). Neutral: encodes the model, not Atta content. The interactive product supersedes the static `diagrams/` as the model's explanation. Sequence after (or alongside) the UI's derive module — they share the iteration-file/structure schema. (Note: per the in-flight D-041 rename, `project-management/` becomes `aeg-root/` (model) + `aeg-project/` (state), and `add-product` becomes `add-project`; update this item's paths/flags when D-041 lands.)
+- **Neutral AEG scaffold + downloadable `aeg.sh`** (a D-029 build follow-up). A script that lays down the AEG folder structure in any repo, and — given a specified project/unit — creates that unit's folders following D-037 / D-041 (`apps/<unit>/specs/<unit>-backlog.md` + `apps/<unit>/aeg-project/{state,now}.md`). Neutral: encodes the model, not Atta content. The interactive product supersedes the static `diagrams/` as the model's explanation. Sequence after (or alongside) the UI's derive module — they share the iteration-file/structure schema. (Per D-041: subcommand is `aeg add-project`; the model is scaffolded into `aeg-root/`, state into `aeg-project/`.)
 
 ## Later / open
 
@@ -54,4 +54,4 @@ These were surfaced in the June 10 product-shape discussion and are deliberately
 
 ---
 
-*AEG the product visualizes AEG the model. The model lives at repo-root `project-management/` (becoming `aeg-root/` per the in-flight D-041 rename). Cetana (the optional orchestrator) is a sibling at `apps/cetana-ai/` — AEG does not know Cetana.*
+*AEG the product visualizes AEG the model. The model lives at repo-root `aeg-root/` (D-041). Cetana (the optional orchestrator) is a sibling at `apps/cetana-ai/` — AEG does not know Cetana.*

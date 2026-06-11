@@ -291,7 +291,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 **Type:** 1
 **Lock:** YES
 
-**Context:** The spec was originally named `cetana-v0-spec.md`. This creates a naming pattern conflict with `project-management/decisions.md` D-013 (global), which locks all spec filenames to `{product}-spec.md` with no version suffixes.
+**Context:** The spec was originally named `cetana-v0-spec.md`. This creates a naming pattern conflict with `aeg-project/decisions.md` D-013 (global), which locks all spec filenames to `{product}-spec.md` with no version suffixes.
 
 **Decision:** Rename `apps/cetana-ai/specs/cetana-v0-spec.md` → `apps/cetana-ai/specs/cetana-spec.md` via `git mv`. Version and lock state are tracked inside the file via the `Status:` header. The filename is stable across V0 → V1 → V2 iterations.
 
@@ -317,7 +317,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 - Cetana as Archivist host: single runtime, fewer moving parts. Rejected because Cetana requires Claude Desktop to be running — GitHub Actions run independently of any local process.
 - Archivist as a separate long-running service: over-engineered for V0.7, which is a stub anyway.
 
-**Consequences:** The Archivist and Cetana codebases stay separate. `.github/workflows/archivist.yml` is the Archivist entry point. Future Archivist logic does not go into `apps/cetana-ai/coordinator/`. Conforms to the v3 role separation in `project-management/state-machine.md`.
+**Consequences:** The Archivist and Cetana codebases stay separate. `.github/workflows/archivist.yml` is the Archivist entry point. Future Archivist logic does not go into `apps/cetana-ai/coordinator/`. Conforms to the v3 role separation in `aeg-root/state-machine.md`.
 
 ---
 
