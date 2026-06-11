@@ -214,5 +214,5 @@ Vāda-internal:
 Ecosystem-level (for the wider AttaLabs framing):
 - `apps/atta-ai/specs/atta-naming-decision.md` — v2 brand architecture
 - `apps/atta-ai/specs/atta-ecosystem-vision.md` — strategic positioning
-- `project-management/state.md` — cross-product current state
-- `project-management/decisions.md` — global decision log
+- `aeg-project/state.md` — cross-project current state
+- `aeg-project/decisions.md` — global decision log

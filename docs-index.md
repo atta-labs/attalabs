@@ -3,10 +3,9 @@
 ## Skills
 
 - [LangGraph execution + cognitive router internals. Load when working in packages/adapter-langgraph — modifying graph execution, agent dispatch, tool filtering, classifier logic, cost tracking, state reducers, or debugging MAX_REVISIONS / latency issues. Do NOT load for pure Plan compilation (engine-layer) or team config (teams-layer).](./.claude/skills/atta-adapter-langgraph/SKILL.md)
-- [Vāda engine internals — Plan compilation, Agent/Workflow/Team types, validation rules, terminal states, and immutability invariants. Load when working inside packages/engine or debugging unexpected Plan graph structure. Do NOT load for adapter/router/provider runtime work.](./.claude/skills/atta-engine/SKILL.md)
+- [Atta engine internals — Flow → Plan compilation via compileFlow, the v2 universal round-based schema, validation rules, terminal states, and immutability invariants. Load when working inside packages/engine or debugging unexpected Plan graph structure. Do NOT load for adapter/router/provider runtime work.](./.claude/skills/atta-engine/SKILL.md)
 - [Vāda agent and team configurations. Load when adding/modifying agents, teams, reviewer profiles, or building a verticalized team for a specific domain. Covers the tools-on/tools-off invariant. Do NOT load for engine primitives or adapter runtime.](./.claude/skills/atta-teams/SKILL.md)
-- [Clerk authentication patterns across the Atta ecosystem — single Clerk app, subdomain SSO via cookie scope, shared users table](./.claude/skills/auth/SKILL.md)
-- [Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers required sections, model selection, v3 model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), and anti-patterns.](./.claude/skills/brief-authoring/SKILL.md)
+- [Clerk authentication patterns across the Atta ecosystem — shared single Clerk app with subdomain SSO for Atta/Vāda; Herald is a standalone exception with its own Clerk app and DB](./.claude/skills/auth/SKILL.md)
 - [Cetana Coordinator internals — MCP servers, worktree manager, JSONL events, GitHub Octokit integration. Load when working in apps/cetana-ai/coordinator/. Do NOT load for high-level Cetana questions; read apps/cetana-ai/specs/cetana-spec.md instead.](./.claude/skills/cetana-coordinator/SKILL.md)
 - [Enforces TypeScript, export, import, and Biome code style rules across the Atta AI monorepo](./.claude/skills/code-style/SKILL.md)
 - [Drizzle ORM patterns for Neon Postgres — schema, queries, JSON fields, migrations across Atta AI apps](./.claude/skills/database/SKILL.md)
@@ -25,9 +24,15 @@
 - [Vāda's product structure (Vāda Teams catalog), wedges/capabilities/moats framework, current phase status, and locked architectural decisions. Load before any architectural decision, cross-cutting change, or when drafting executor tasks that span multiple layers.](./.claude/skills/vada-architecture/SKILL.md)
 - [Primitives and patterns for building Vāda home-page sections below the canvas hero — SectionWrapper, SectionLabel, StatusFooter, TwoColumnSection, and the section composition convention.](./.claude/skills/vada-home-sections/SKILL.md)
 - [Vāda MCP server — two surfaces: local stdio (current) and hosted HTTP (target). Both expose vada__consult and vada__deliberate tools routed to YAML catalog specs. Load when implementing MCP tools, adding catalog specs, or building/debugging either surface.](./.claude/skills/vada-mcp-server/SKILL.md)
-- [How to create and register YAML deliberation specs. Load when adding a new team or new YAML spec. Covers all four workflow types (Solo, Rounds, Custom, Brokered), spec-registry registration, and verify scripts.](./.claude/skills/vada-yaml-authoring/SKILL.md)
+- [How to create and register v2 YAML deliberation specs. Load when adding a new team or new YAML spec. Covers all four flow shapes (solo, brokered ± synthesis, rounds + audit) under the universal round-based schema, auto-discovery, and verify scripts.](./.claude/skills/vada-yaml-authoring/SKILL.md)
 
 ## Specification Documents
+
+### aeg
+
+- [AEG — app architecture](./apps/aeg/specs/aeg-app-architecture.md)
+- [AEG — product backlog](./apps/aeg/specs/aeg-backlog.md)
+- [AEG (product) — Decision Log](./apps/aeg/specs/aeg-decisions.md)
 
 ### atta-ai
 
@@ -38,13 +43,43 @@
 - [Atta Naming Decision](./apps/atta-ai/specs/atta-naming-decision.md)
 - [Cetanā (Architect Layer) — Capability Reality Check](./apps/atta-ai/specs/cetana-reality-check.md)
 
+### attalabs
+
+- [Atta — Build Strategy](./apps/attalabs/specs/atta-build-strategy.md)
+- [Atta Ecosystem — Vision](./apps/attalabs/specs/atta-ecosystem-vision.md)
+- [Attā Fine-Tuning Research — Forward Planning](./apps/attalabs/specs/atta-finetuning-research.md)
+- [Atta — Market Research](./apps/attalabs/specs/atta-market-research.md)
+- [Atta Naming Decision](./apps/attalabs/specs/atta-naming-decision.md)
+- [Cetanā (Architect Layer) — Capability Reality Check](./apps/attalabs/specs/cetana-reality-check.md)
+
 ### cetana-ai
 
+- [Cetana — product backlog](./apps/cetana-ai/specs/cetana-backlog.md)
 - [Cetana — Decision Log](./apps/cetana-ai/specs/cetana-decisions.md)
 - [Cetana — Experiment Log](./apps/cetana-ai/specs/cetana-experiment-log.md)
 - [Cetana — Locked Architecture Specification](./apps/cetana-ai/specs/cetana-spec.md)
-- [Cetana V0 / V0.5 — README](./apps/cetana-ai/README.md)
-- [@atta/cetana-cli — CLI README](./apps/cetana-ai/cli/README.md)
+
+### desktop
+
+- [00 — Overview & Vision](./apps/desktop/specs/00-overview.md)
+- [01 — Architecture](./apps/desktop/specs/01-architecture.md)
+- [02 — Runtime & Packaging](./apps/desktop/specs/02-runtime-and-packaging.md)
+- [03 — Authentication (Clerk on the desktop)](./apps/desktop/specs/03-auth.md)
+- [04 — The CLI Transport (`createCliLlmCall`)](./apps/desktop/specs/04-cli-transport.md)
+- [05 — Products in the Desktop](./apps/desktop/specs/05-products-in-desktop.md)
+- [06 — Pupila](./apps/desktop/specs/06-pupila.md)
+- [07 — Distribution, Signing & Auto-Update](./apps/desktop/specs/07-distribution-signing-updates.md)
+- [08 — Risk Register & Open Questions](./apps/desktop/specs/08-risks-and-open-questions.md)
+- [09 — Spike Plan (de-risking sequence)](./apps/desktop/specs/09-spike-plan.md)
+- [10 — Research Log (sources & findings)](./apps/desktop/specs/10-research-log.md)
+- [Desktop — Backlog (held / future, out of the active flow)](./apps/desktop/specs/desktop-backlog.md)
+- [AttaLabs Desktop — Decision Log (product-local)](./apps/desktop/specs/desktop-decisions.md)
+- [AttaLabs Desktop — Spec Index](./apps/desktop/specs/README.md)
+
+### herald-ai
+
+- [Herald — app architecture](./apps/herald-ai/specs/herald-app-architecture.md)
+- [Herald — product backlog](./apps/herald-ai/specs/herald-backlog.md)
 
 ### vada-ai
 
@@ -56,7 +91,9 @@
 - [V2 Step 3.5 Part 2 Analysis — A0S vs B0S Orchestration-Alone on Sonnet 4.6](./apps/vada-ai/specs/engine/v2-results/step-2-analysis-sonnet.md)
 - [V2 Step 2 Analysis — A0 vs B0 Orchestration-Alone on Haiku 4.5](./apps/vada-ai/specs/engine/v2-results/step-2-analysis.md)
 - [V2 Task 3.5 Analysis — Sonnet 4.6 Replication](./apps/vada-ai/specs/engine/v2-results/step-3-5-sonnet-replication.md)
+- [Generic Flow Refactor — Design](./apps/vada-ai/specs/generic-flow-refactor.md)
 - [Vāda MCP Architecture — Hosted Target](./apps/vada-ai/specs/mcp-architecture.md)
+- [Vāda — product backlog](./apps/vada-ai/specs/vada-backlog.md)
 - [Vāda · BYOK Gap Report](./apps/vada-ai/specs/vada-byok-gap-report.md)
 - [Vāda · BYOK Architecture (Current State)](./apps/vada-ai/specs/vada-byok-principles.md)
 - [Vāda YAML Cost Calculator — Concept Document](./apps/vada-ai/specs/vada-calculator-concept.md)
@@ -99,15 +136,8 @@
 - [Vitakka](./apps/vitakka-ai/specs/vitakka-human.md)
 - [Vitakka — Technical Specification](./apps/vitakka-ai/specs/vitakka-spec.md)
 
-## Project Management
-
-- [Atta — Now](./project-management/now.md) — active work, next steps, manual tasks (changes daily)
-- [Atta — Roadmap](./project-management/roadmap.md) — tracks + sequencing + open questions
-- [Atta — Changelog](./project-management/changelog.md) — append-only completed work log
-- [Atta — Lessons](./project-management/lessons.md) — calibration lessons + anti-patterns
-
 ## Root-Level Documentation
 
 - [⚠️ ABSOLUTE RULE — NEVER COMMIT WITHOUT EXPLICIT INSTRUCTION](./CLAUDE.md)
-- [Atta AI](./README.md)
+- [AttaLabs Monorepo](./README.md)
 

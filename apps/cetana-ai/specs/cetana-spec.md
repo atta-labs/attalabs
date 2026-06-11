@@ -18,7 +18,7 @@ Cetana's role in the v3 model:
 - **Developer** uses Cetana's Executor tool (`cetana_request_input`) to escalate blocked decisions
 - **Archivist** (future, V0.7+) is a GitHub Action triggered by PR events — not a Cetana component
 
-For the full authority model and escalation routing, see `project-management/state-machine.md`.
+For the full authority model and escalation routing, see `aeg-root/state-machine.md`.
 
 Future public surface: `cetana.attalabs.dev`, if and only if V0 proves daily-driver value over two weeks of real use and a V1 build is justified.
 

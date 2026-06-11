@@ -17,7 +17,7 @@ Load when:
 Do NOT load for:
 - High-level architectural questions → read `apps/cetana-ai/specs/cetana-spec.md`
 - "How does Cetana work overall?" → read `apps/cetana-ai/README.md` and the spec
-- v3 operational model questions (roles, authority, tiers) → read `project-management/state-machine.md`
+- v3 operational model questions (roles, authority, tiers) → read `aeg-root/state-machine.md`
 
 **v3 model context:** Cetana is the dispatch + escalation layer of the v3 operational model. The Team Leader (Strategist mode) uses Cetana to dispatch Developer agents. The Developer uses `cetana_request_input` to escalate. The Archivist is a separate GitHub Action — it does not live in `apps/cetana-ai/coordinator/`.
 

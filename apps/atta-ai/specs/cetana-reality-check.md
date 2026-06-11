@@ -8,7 +8,7 @@
 > **Current references:**
 > - `apps/cetana-ai/specs/cetana-spec.md` — current locked architecture
 > - `apps/cetana-ai/specs/cetana-experiment-log.md` — full journey from this doc through Slice -1 to V0 ship
-> - `project-management/state-machine.md` — v3 operational model (roles, authority, dispatch)
+> - `aeg-root/state-machine.md` — v3 operational model (roles, authority, dispatch)
 >
 > The original content below is retained as historical record. Do not cite it as current design.
 

@@ -2,7 +2,7 @@
 
 **Status:** draft
 
-> Desktop-scoped decisions. **None are globally ratified yet.** Items marked `Lock:PROPOSED` await Principal ratification; on ratification, mirror into the global `project-management/decisions.md` (flagged in the PR body).
+> Desktop-scoped decisions. **None are globally ratified yet.** Items marked `Lock:PROPOSED` await Principal ratification; on ratification, mirror into the global `aeg-project/decisions.md` (flagged in the PR body).
 
 ## D-DESK-001 — AttaLabs Desktop is a new product (Tauri shell embedding existing web products)
 
