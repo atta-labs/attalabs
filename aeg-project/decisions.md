@@ -853,3 +853,50 @@ This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choi
 - Reversible (Type 1 for blast radius, not irreversibility).
 
 ---
+
+## D-042 — Planner-discipline upgrade + role-seam contracts (F1–F6)
+
+**Date:** 2026-06-11
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (the herald-onto-engine planning session, run as a deliberate "special planner" prototype, June 11, 2026)
+**Ratified by:** Principal (in-session)
+
+**Context:** The first real iteration (`herald-onto-engine`) was planned as a deliberate prototype to discover where the AEG planning/brief model is thin. Running the planner pass for real surfaced six findings (logged live in `specs/aeg-improvement-findings.md` as F1–F6) and one structural idea (role-seam contracts). The Principal's governing theory drove the session: prompt-writing is the key act of controlling AI, governance must govern, and the more detail and clarity in the model docs, the more identically every agent behaves — so findings were written **into the model in real time**, not parked as candidates. This entry consolidates that batch into one decision for the ratification trail; the detailed prose lives in the target docs.
+
+**Decision:** Adopt the following as permanent model rules (all already written into the named docs):
+
+1. **Planner digs deep to size (F2).** The Planner must perform deep per-task technical analysis (read the actual code) before emitting a task list; a plan made without it is malformed and refused. A task must pass four "too big?" tests — one verification story, one agent can hold it, bounded file surface, single failure mode — or be split. (`aeg-root/roles/planner.md`.)
+
+2. **The Planner's rationale is mandatory and persisted (F1).** Every task carries a `Planner's rationale` block (in the Issue body and the iteration file) with required fields: Boundary, Sizing, Project(s)+blast radius, Dependency rationale, Traps to avoid, Suggested agent-class, Stop-and-escalate. Durable conclusions are persisted; perishable detail (signatures, file lists) is left to the just-in-time brief. (`aeg-root/roles/planner.md`.)
+
+3. **Shared-package change pulls all consumers into scope (F5).** A task that changes a shared package lists every consumer of it in `Project(s)` (so the Reviewer verifies them), even when the consumer's app code isn't edited. A backlog's sizing/scope hints are inputs, not facts — the code dig overrides them. (`aeg-root/roles/planner.md`.)
+
+4. **Agent-class at plan time, model pick at brief time (F4).** The Planner suggests the agent-class as part of sizing; the Brief Author confirms the final model pick at dispatch with a mandatory `For:`/`Reason:` justification. (`aeg-root/roles/planner.md` + `aeg-root/skills/brief-authoring/SKILL.md`.)
+
+5. **Brief enrichment (F3).** `brief-authoring` mandates: start from the Planner's rationale (not a blank page); a Technical Dependencies section; a Technical Surface Map; agent/model-with-reasoning; blast-radius consumer re-verification. (`aeg-root/skills/brief-authoring/SKILL.md`.)
+
+6. **Iteration naming convention (F6).** Name an iteration after its center-of-gravity / shared-infra work, not its narrowest downstream feature; a name must not imply narrower scope than `Project(s)`. (`aeg-root/iterations/README.md` §4 + `aeg-root/roles/planner.md`.)
+
+7. **Planner readiness gate.** Before planning a single task, the Planner verifies all inputs are present and reachable (clear bounded intent, reachable specs, readable code, inspectable shared substrate + enumerable consumers, known locked decisions, registry resolves, ambiguities surfaced to the Principal not assumed) and states the readiness check explicitly; it refuses to start on a missing input. The planner does not start work it cannot finish well. (`aeg-root/roles/planner.md`.)
+
+8. **Role-seam contracts (new artifact type).** What crosses a role boundary is defined **once**, in a contract under `aeg-root/contracts/`, not described twice in two role docs (which drift). A contract is the single source of truth for its seam: the producer fills it, the consumer drains it, the two role docs point at it. A contract is a Class 1 artifact that changes **as a unit** (producer + consumer sides together, Tier 3). The first is `aeg-root/contracts/planner-brief.md` (Planner produces the rationale; Brief Author consumes it field-by-field). (`aeg-root/contracts/planner-brief.md` + `state-machine.md` §1, §2, §3, §9, §12.)
+
+**Alternatives rejected:**
+- Park F1–F6 as candidates and ratify later: rejected by the Principal — governance must govern; detail written into the model in real time makes every agent behave more identically, which is the point. The findings log records history; the model docs carry the rules.
+- Make the Planner output the brief (a "richer plan"): rejected — the seam is correct; the Planner persists durable conclusions, the Brief Author adds perishable detail just-in-time. Both do a full deep pass; only purpose and what-persists differ.
+- Keep describing each role seam inside the two role docs: rejected — that is the drift hazard the contract removes (the planner→brief seam had already drifted; the brief side was missing two rationale fields). One contract, one source of truth.
+
+**Consequences:**
+- `aeg-root/roles/planner.md` — readiness gate; deep-dig sizing + the four tests; shared-package blast-radius rule; backlog-hints-are-inputs rule; mandatory Planner's rationale with required fields; agent-class vs model-pick; producer side of the planner-brief contract.
+- `aeg-root/skills/brief-authoring/SKILL.md` — consumer side of the planner-brief contract (field-by-field mapping); Technical Dependencies + Technical Surface Map + agent-with-reasoning required sections; blast-radius re-verification.
+- `aeg-root/contracts/planner-brief.md` — new; the first role-seam contract.
+- `aeg-root/iterations/README.md` — §4 naming convention.
+- `aeg-root/state-machine.md` — contracts as Class 1 (§2, change-as-a-unit), matrix row (§3), Tier 3 trigger (§9), trusted-discipline contract-conformance (§12), seam concept (§1).
+- `specs/aeg-improvement-findings.md` — F1/F2/F4/F5/F6 marked WRITTEN INTO MODEL; F3 closed; the running log retained as history.
+- Prototyped by the `herald-onto-engine` iteration (`aeg-root/iterations/herald-onto-engine.md`), whose tasks already carry the rationale shape.
+- Lock: NO — these are first-use rules; revisit after the iteration executes and we see whether the rationale actually sharpened the briefs. Other role-seam contracts (`brief-developer`, `developer-reviewer`, …) are migrated to the contract pattern as each seam is modeled in future iterations.
+- Type 1 for the cross-cutting governance blast radius (it changes how every plan and brief is produced + adds an artifact class), not for irreversibility.
+
+---
