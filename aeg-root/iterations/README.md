@@ -79,10 +79,11 @@ So: there is **no status column anywhere.** The Developer does not "flip to in-r
 
 ## 4. The thin iteration file — topology only
 
-One file per iteration at `aeg-root/iterations/<name>.md`. It holds **only** what the forge models poorly: the task→issue mapping and the dependency/conflict graph. It contains **no status, no PR numbers, no merge dates, no timestamps — nothing the forge already knows.** It is edited only by the Planner, at plan time, so it cannot race and cannot drift on status (it stores none). Template:
+One file per iteration at `aeg-root/iterations/<name>.md`. It holds **only** what the forge models poorly: the task→issue mapping and the dependency/conflict graph. It contains **no status, no PR numbers, no merge dates, no timestamps — nothing the forge already knows.** Its task topology is edited only by the Planner, at plan time, so it cannot race and cannot drift on status (it stores none). The one exception is the iteration's own **lifecycle marker** (active/complete — §12), a single header line the Archivist sets at close-out; this is the iteration's lifecycle, not per-task execution status, and it is set once when the whole iteration ends. Template:
 
 ```
 # Iteration: <short name> — <timeframe>
+Lifecycle: active            ← active | complete (§12). Set to complete by the Archivist when every task is merged.
 
 Goal (execution, not roadmap-why): <what ships, end to end>
 Repo: <repo>   ·   Team Leader: <name>
@@ -121,6 +122,8 @@ Two tasks conflict if they touch the same **collision domain** and therefore mus
 - **The conflict gate is forge-answerable with zero stored state:** "is a `conflicts-with` sibling's PR currently open?" If yes, don't start. That's it.
 - **There is no dynamic path-overlap check.** (The panel's decisive correction.) Computing "which files is each in-flight task touching right now" would require a live task→changed-files map — exactly the mutable execution state the design eliminates. So it is forbidden (§10).
 
+**Conflicts hold across iterations, not just within one.** A `conflicts-with` edge is declared *within* an iteration's thin file, but the collision domain it protects is global — a package is a package no matter which iteration touches it. So when two iterations run concurrently (§12), the conflict rule still binds **across** them: if a task in iteration A and a task in iteration B touch the same collision domain, they conflict, even though neither file lists the other (the files only know their own tasks). The Planner of the *second* concurrent iteration is responsible for checking the first's `Project(s)` / collision domains and either keeping the iterations disjoint or declaring the cross-iteration serialization (§12). The gate itself is unchanged and still forge-answerable — "is a PR touching this collision domain currently open?" does not care which iteration it belongs to.
+
 **Acknowledged limitation, stated openly:** AEG catches *declared* and *package-level* collisions. It does **not** automatically catch novel, undeclared, file-level coupling between tasks in *different* packages (e.g. one task changes a shared type/config another package embeds). No tool catches that reliably without becoming unreliable, expensive, or stateful. AEG places its trust boundary at **planning**: when unsure whether two tasks collide, the Planner **declares the conflict and serializes them** — erring toward serialization is cheap; erring toward "run parallel and hope" is the failure mode. Safe parallelism assumes real package ownership boundaries (explicit APIs, no shared types leaking across packages); most monorepos earn this only with discipline.
 
 ---
@@ -134,7 +137,7 @@ The Planner's job — the reason the iteration exists — is the relationships a
 - **Independently verifiable → split** into single-project tasks with a `depends-on` edge.
 - **Verification-coupled → combine** into one task, one branch, one PR, multiple projects (e.g. generalize a shared `core` package *and* migrate the first consumer onto it — the only proof the refactor is correct is the consumer working). Cross-project PRs touching two, three, four projects are normal, not exceptions.
 
-The Planner writes no briefs (those are just-in-time, §7) and writes no status (that's the forge). It owns the thin file and the `backlog`/`todo` distinction (assigning an Issue is the `todo` promotion). Its upstream input — a ticket slice, a backlog, or just the Principal's stated intent — is optional and lives outside AEG (§2); the Planner is where the company's plan and AEG's execution meet. It also enforces the **plan-integrity gates** in `roles/planner.md` — the recognized failure modes turned into live refusals and calibrated warnings (see §10). The full role spec, including refusal language, is in `roles/planner.md`.
+The Planner writes no briefs (those are just-in-time, §7) and writes no status (that's the forge). It owns the thin file and the `backlog`/`todo` distinction (assigning an Issue is the `todo` promotion). Its upstream input — a ticket slice, a backlog, or just the Principal's stated intent — is optional and lives outside AEG (§2); the Planner is where the company's plan and AEG's execution meet. It also enforces the **plan-integrity gates** in `roles/planner.md` — the recognized failure modes turned into live refusals and calibrated warnings (see §10), and the **readiness gate** (verify all inputs are present and reachable before planning a single task). The full role spec, including refusal language, is in `roles/planner.md`.
 
 ---
 
@@ -142,7 +145,7 @@ The Planner writes no briefs (those are just-in-time, §7) and writes no status 
 
 The brief is the task's full execution context. It has two homes:
 
-- **Before work starts — nowhere persistent.** It does not exist yet. It is written (human + Brief Author) when the task is picked up, iteration-aware. Pasted, not committed. **Never in the Issue** — the Issue is task identity + metadata only; a brief in the Issue would age, attract edits, and become stale planning documentation.
+- **Before work starts — nowhere persistent.** It does not exist yet. It is written (human + Brief Author) when the task is picked up, iteration-aware. Pasted, not committed. **Never in the Issue** — the Issue is task identity + metadata only; a brief in the Issue would age, attract edits, and become stale planning documentation. (The Issue *does* carry the Planner's rationale — durable conclusions — which the Brief Author consumes via the `planner-brief` contract; the brief itself is the perishable execution detail and lives only in the PR.)
 - **From PR-open onward — the PR body.** The Developer pastes the brief into the PR description when opening the PR. That is its permanent, durable home, attached to exactly the work it governed, and what the Reviewer and Archivist read.
 
 Retry reuses the same PR body; no rewrite.
@@ -154,7 +157,7 @@ Retry reuses the same PR body; no rewrite.
 Two gates make parallel developers safe — both **forge-answerable, zero stored state**:
 
 - **depends-on gate** — don't start a task until its dependency's **PR is merged**. (Query the dependency Issue's linked PR.)
-- **conflicts-with gate** — don't start a task while a `conflicts-with` sibling's **PR is open** (`in-review`/`changes-requested`) or it's `in-flight`. (§5.)
+- **conflicts-with gate** — don't start a task while a `conflicts-with` sibling's **PR is open** (`in-review`/`changes-requested`) or it's `in-flight`. (§5.) This gate binds **across concurrent iterations**, not only within one (§5, §12).
 
 With a single principal these rules live in one head; with a team they must be a **lock**, not a whiteboard. In manual mode they are preconditions each Developer checks against the forge before beginning. A dispatch tool can enforce them in code. Either way the conflict is declared at planning time and enforced at dispatch time — never discovered at merge time, which is too late.
 
@@ -166,7 +169,7 @@ With a single principal these rules live in one head; with a team they must be a
 
 The review panel predicted, unanimously, the two ways teams will accidentally rebuild the original flaw. Both are **forbidden** and the Planner agent flags them (§ `roles/planner.md`):
 
-1. **No execution metadata in the thin file or the Issue.** Never add `status`, `PR #`, `merged date`, `current state`, `assignee history`, or generated collision data to the iteration file. The reason is always reasonable ("just to glance without querying") and it is always wrong — the forge already holds these, and copying them in recreates the racing, drifting, lying status store. **Thin file = topology. Forge = state.** The line is bright; keep it bright.
+1. **No execution metadata in the thin file or the Issue.** Never add `status`, `PR #`, `merged date`, `current state`, `assignee history`, or generated collision data to the iteration file. The reason is always reasonable ("just to glance without querying") and it is always wrong — the forge already holds these, and copying them in recreates the racing, drifting, lying status store. **Thin file = topology. Forge = state.** The line is bright; keep it bright. (The iteration's own active/complete lifecycle marker in §12 is **not** an exception to this: it is the iteration's lifecycle set once at close-out, not per-task execution status, and the forge has no native fact for "this whole iteration is done.")
 2. **No dynamic conflict scanner.** Do not build a script that checks out in-flight branches and diffs them to "catch conflicts the Planner missed." It cannot work without a live task→changed-files map — the mutable state we removed. When unsure two tasks collide, **declare the conflict and serialize** (§5). Conservative declaration is the sanctioned answer; a scanner is not.
 3. **No planning metadata on Issues.** No priority, estimates, points, or roadmap fields. Enforced mechanically: a required Issue template (deps, conflicts, project label, ticket link — and nothing else) + a CI check that rejects forbidden fields/labels. Discipline alone will not hold this; the *place to put planning info is removed*, not just discouraged.
 
@@ -185,8 +188,40 @@ Raw forge tooling is a dashboard. AEG is a thin, forge-native discipline layer o
 
 ---
 
-## 11. One-line pitch
+## 11. Iteration lifecycle and concurrency
+
+The earlier sections describe a single iteration's *internals*. This section covers an iteration's *life* — when it begins, when it ends, what happens to the file, and how many can run at once.
+
+### The lifecycle: planned → active → complete → archived
+
+- **planned** — the thin file exists and the Issues are cut, but nothing is assigned. Every task is `backlog`. The iteration is a plan on paper.
+- **active** — at least one task has been assigned (`todo`) or is further along. The iteration is in flight. `Lifecycle: active` in the header.
+- **complete** — **every task's PR is merged** (every task derives to `merged` from the forge). The work is done. At this point — and only this point — the **Archivist** sets `Lifecycle: complete` in the header (one line; the single lifecycle mutation the file ever takes after plan time) and assembles the per-task provenance blocks on the merged PRs (D-030). "Complete" is itself **derived** from the forge (all linked PRs merged); the header marker is a convenience flag the Archivist writes once, not a status anyone maintains.
+- **archived** — a complete iteration's file **moves to `aeg-root/iterations/completed/<name>.md`**. It is **not deleted.**
+
+### Iterations are never deleted — they are durable history
+
+A completed iteration file is **kept, moved, never removed.** The reason is the rule we already locked: the file carries the **Planner's rationale** for each task, and the rationale is *durable* — the architectural reasoning that decided each boundary, blast radius, and trap does not decay. Paired with the provenance blocks on the merged PRs, the archived iteration file is the **forensic record of why the work was shaped the way it was**: what was split from what, which traps were foreseen, what the blast radius was. That record is the whole reason the rationale is mandatory (D-042). Deleting it would throw away the most valuable thing the Planner produced. So: `completed/` is an archive, not a graveyard; `git` retains full history regardless, and the moved file keeps it human-browsable.
+
+(The Archivist also flags merged-but-undeleted **worktrees** and orphaned branches at this point — those *are* ephemeral and get cleaned up, §3. The iteration *file* is not ephemeral; the worktrees are. Don't confuse the two.)
+
+### How many iterations can run at once — no hard cap, governed by two real limits
+
+There is **no fixed maximum.** Multiple iterations may be `active` simultaneously. What actually bounds concurrency is two things, neither of them a number:
+
+1. **The conflict rule binds across iterations (§5).** Two concurrent iterations are safe to run fully in parallel **only if their tasks do not share a collision domain.** If iteration A and iteration B both touch `@atta/ui`, their colliding tasks must serialize across the iteration boundary exactly as if they were siblings — the gate doesn't care which file a PR's task belongs to. **The cleanest concurrency is between disjoint iterations** (different projects, no shared package), where nothing can collide by construction. Example: `herald-onto-engine` (herald + engine) and an `aeg-ui` iteration (the `apps/aeg/web` greenfield app) share no collision domain, so they run fully parallel with zero cross-checks needed.
+2. **Principal attention.** Every active iteration is a live front the Principal is reviewing, ratifying, and merging. Concurrency is bounded by how many fronts one Principal can hold well — a human limit, not a model limit. The model permits many; judgment sets the real number.
+
+**The second-iteration planning obligation:** when planning an iteration while another is already active, the Planner's readiness gate (`roles/planner.md`) must additionally **read the active iteration(s)' `Project(s)` / collision domains** and confirm disjointness — or, where they overlap, declare the cross-iteration serialization explicitly. This is the cross-iteration case of "when unsure, declare and serialize." Disjoint iterations need only the confirmation; overlapping ones need the serialization plan before either dispatches into the shared domain.
+
+### What "current" means
+
+There is no single "current iteration." `aeg-root/iterations/` holds every active iteration's file at the top level; `completed/` holds the archive. "What's active right now" is, like everything else, **answered from the forge** (which Issues are open/assigned across the iteration files), not from a pointer the model maintains.
+
+---
+
+## 12. One-line pitch
 
 > AEG does not plan your project. It governs how your project gets executed by agents — safely, coherently, and coordinated across a team.
 
-For the manual run mechanics and per-role entry gates, see `aeg-manual-flow.md`. For the Planner's plan-integrity gates, see `roles/planner.md`. For the authority model and tiers, see `state-machine.md`. For the project registry, see `projects.md`.
+For the manual run mechanics and per-role entry gates, see `aeg-manual-flow.md`. For the Planner's plan-integrity gates and readiness gate, see `roles/planner.md`. For the authority model, tiers, and label vocabulary, see `state-machine.md`. For the project registry, see `projects.md`. For role-seam contracts, see `contracts/`.
