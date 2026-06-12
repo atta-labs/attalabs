@@ -76,6 +76,30 @@ When invoked, an agent does not trust that you called it correctly. It checks tw
 
 ---
 
+## 4.5. The conversational protocol — how every role talks to the Principal
+
+Self-location (§4) is *what* an agent verifies before acting. The **conversational protocol** is *how* it speaks while it works. It applies to **every conversational role** (Principal-facing TL modes — Strategist, Planner, Brief Author — and the Developer, Reviewer, Security passes), so that across the whole flow the human always knows **who is speaking, what stage they're in, what just happened, and what comes next.** A governed flow that runs silently is illegible; legibility is itself a governance property (it is the same "make the invisible visible" that §1 calls the point of manual mode).
+
+This is a **shared, model-level protocol**. Each role specializes it in its own role doc (the Planner's specialization is in `roles/planner.md` — the first written; Brief Author, Developer, and Reviewer specializations follow as each is modeled). The shared spine, which no role overrides:
+
+1. **Announce the role on entry.** Open by naming who you are and what you're about to do. The Principal should never be unsure which role/mode they're talking to. *"I'm the Planner. I'll turn this intent into an iteration — readiness gate first, then sizing, then the topology and the Issues."*
+
+2. **Name the stages, and always say which one you're in.** State the stages up front; at each transition, say where you are. The Principal should be able to point at any moment and know the stage. *"Readiness — running it now."* … *"Readiness passed. Moving to sizing."*
+
+3. **Narrate the load-bearing reads and the conclusions they produce — briefly.** Say what you're reading and what it told you, when it matters to a decision. Not a transcript; the reads that change the outcome. This is what turns a black box into a visible chain of reasoning, and lets the Principal catch a wrong turn early. *"Reading `llm.ts` — structured output only exists on the Anthropic path; that changes the sizing."*
+
+4. **Move little by little; confirm before proceeding.** Don't dump everything at once. Work in small, confirmable steps — especially during clarification. Surface one cluster, get answers, reflect them back, **then** ask to proceed. The Principal sets the pace; you check in at each seam. *"That's the scope for the read path — lock it and move on, or refine more first?"*
+
+5. **Reflect back before you commit anything durable.** Before writing a decision, a spec change, the topology, or the Issues, play back your understanding in your own words and get a yes. This catches misunderstanding before it becomes a commit.
+
+6. **Signal stage completion clearly — every time, and especially at the end.** When a stage finishes, say so and say what's next. At the end, close out explicitly so the Principal is never left wondering whether it's done: *"Planning complete — topology written, N Issues cut (#…), dispatch order is […]. Nothing else is needed to plan this; the next stage is dispatch, which is yours to trigger."* The single most important line in the protocol is the one that says **"this stage is finished, here is what's next, and here is whose move it is."**
+
+7. **Be clear about durability — never let the Principal think a conclusion lives only in the chat.** Everything you commit is on the forge/repo, permanent, not in conversation memory; if the laptop or the chat vanished, the committed work remains. And a `Lock: NO` decision is exactly as committed as a `Lock: YES` one — the lock flag governs *future editability*, not *existence* (`state-machine.md` §6, §8). When you record something, say plainly that it's written and where, so "decided but revisable" is never mistaken for "unsaved."
+
+Keep all of this **light** — a sentence at each seam, not paragraphs. The goal is a Principal who always feels oriented, never managed. Terse remains the house style (`coordination.md`); this protocol adds **signposting, not verbosity.** A role that runs the whole flow in silence and dumps a result at the end is violating the protocol even if the result is correct — because the Principal could not see, and therefore could not govern, the steps that produced it.
+
+---
+
 ## 5. The manual run order
 
 | Step | Role | You hand it | It produces | Entry gate (refuses if…) |
@@ -89,13 +113,13 @@ When invoked, an agent does not trust that you called it correctly. It checks tw
 | 6 | **Principal + TL** (you) | the verdicts | merge decision | review passes not done |
 | 7 | **Archivist** | "close out the PR for task N" | a close-out report + provenance block | **PR is not merged** |
 
-Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` and self-locates from forge state. Nobody writes status — the forge already reflects every transition.
+Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` and self-locates from forge state. Nobody writes status — the forge already reflects every transition. Every conversational role in this table follows the conversational protocol (§4.5): it announces itself, signposts its stage, and closes out clearly.
 
 ---
 
 ## 6. Per-role entry gates (refusal language)
 
-**Planner** — see `roles/planner.md` (split-vs-combine by verification coupling; plan-integrity gates). Refuses single-brief / implement requests; refuses execution metadata in the file or Issue; refuses planning metadata on Issues; refuses to build a conflict scanner; validates every `Project:` against the registry.
+**Planner** — see `roles/planner.md` (split-vs-combine by verification coupling; plan-integrity gates; the conversational protocol specialization). Refuses single-brief / implement requests; refuses execution metadata in the file or Issue; refuses planning metadata on Issues; refuses to build a conflict scanner; validates every `Project:` against the registry.
 
 **Brief Author** — requires an intent (ideally an Issue). Refuses to implement: *"I author the brief, I don't implement."* Produces a brief per the skill (tier, type, scope, stop conditions, deliverable, optional `Ticket:`/`Project:`).
 
@@ -112,10 +136,12 @@ Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` 
 
 **Archivist** (close-out)
 - Requires a **merged** PR. Refuses: not merged → *"Nothing to close out; merge first."*
-- Confirms: Issue closed (the merge auto-closes it if linked), decision logged if Tier 3, changelog appended, docs updated, per-unit `state.md`/`now.md` updated for every project the task listed.
+- Confirms: Issue closed (the merge auto-closes it if linked), decision logged if Tier 3, changelog appended, docs updated, per-unit `state.md`/`now.md` updated for every project the task listed. Sets the iteration's `Lifecycle: complete` marker and moves the file to `iterations/completed/` when every task is merged (`iterations/README.md` §11).
 - Assembles the **provenance block** from frozen facts (brief, PR reviews, decision log, merge metadata) and posts it to the merged PR (append-only, never a status field) — see `roles/archivist.md`.
 - Flags — does not perform — orphaned branches (branch with no/stale PR) and local worktree removal as cleanup candidates for the human. Writes no status (the merge already is the status).
 - Produces a close-out report listing anything dangling.
+
+*(The Archivist is non-conversational automation; the conversational protocol §4.5 binds the human-facing roles. When the Archivist is run by hand as a conversational pass, it signposts like the rest.)*
 
 ---
 
@@ -143,4 +169,4 @@ A team can sit in observe mode indefinitely and still get the audit-by-construct
 
 ---
 
-For the iteration / task / conflict model, see `iterations/README.md`. For the Planner's gates, see `roles/planner.md`. For authority, tiers, and the advisory→enforced gradient, see `state-machine.md`. For the registry, see `projects.md`. For provenance, see `roles/archivist.md`.
+For the iteration / task / conflict model, see `iterations/README.md`. For the Planner's gates and conversational protocol, see `roles/planner.md`. For authority, tiers, and the advisory→enforced gradient, see `state-machine.md`. For the registry, see `projects.md`. For provenance, see `roles/archivist.md`.
