@@ -165,7 +165,7 @@ Cross-product architectural decisions that affect the Atta ecosystem as a whole.
 **Alternatives rejected:**
 - Binary routing (TL / Principal): rejected. Doesn't distinguish between execution-level blocking (a missing flag) and strategy-level blocking (a design fork). The TL needs to context-switch between modes; the severity field signals which mode is needed.
 
-**Consequences:** Labels on GitHub Issues become the primary monitoring surface. The Principal only needs to watch `needs:principal-input` labels. The TL monitors `needs:execution-input` and `needs:strategy-input`.
+**Consequences:** Labels on GitHub Issues become the primary monitoring surface. The Principal only needs to watch `needs:principal-input` labels. The TL monitors `needs:execution-input` and `needs:strategy-input`. (The full label vocabulary — closed set, mandatory vs conditional — is consolidated in `state-machine.md` §14 per D-043.)
 
 ---
 
@@ -898,5 +898,40 @@ This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choi
 - Prototyped by the `herald-onto-engine` iteration (`aeg-root/iterations/herald-onto-engine.md`), whose tasks already carry the rationale shape.
 - Lock: NO — these are first-use rules; revisit after the iteration executes and we see whether the rationale actually sharpened the briefs. Other role-seam contracts (`brief-developer`, `developer-reviewer`, …) are migrated to the contract pattern as each seam is modeled in future iterations.
 - Type 1 for the cross-cutting governance blast radius (it changes how every plan and brief is produced + adds an artifact class), not for irreversibility.
+
+---
+
+## D-043 — Session-2 AEG model additions: label vocabulary, iteration lifecycle + concurrency, conversational protocol
+
+**Date:** 2026-06-12
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (AEG-UI scoping + model-hardening session, June 12, 2026 — the session that planned `aeg-ui-v1` and surfaced these gaps by running the model for real)
+**Ratified by:** Principal (in-session)
+
+**Context:** The June 12 session planned the second real iteration (`aeg-ui-v1`, AEG Studio) and, in doing so, exercised the model hard enough to surface several gaps that D-042 had not covered. Per the Principal's standing theory (governance must govern; write findings into the model in real time so every agent behaves identically), each gap was written into the model as it was found, rather than parked. This entry consolidates that second batch into one decision for the ratification trail; the detailed prose lives in the named docs. (The two-product split that the same session produced — AEG Studio local + AEG Portal public over `@atta/aeg-core` — is logged separately in the AEG-product log as **AEG-product D-001**, because it is product-scoped, not model-scoped. This entry cross-references it but does not restate it.)
+
+**Decision:** Adopt the following as permanent model additions (all already written into the named docs):
+
+1. **Label vocabulary consolidated and closed (`state-machine.md` §14).** The label system now has a single source of truth: a **closed set** — `tier:{0,1,3}`, `aeg:blocked`, `needs:{execution,strategy,principal}-input`, `needs:brief-correction`, `override:docs` — and no label outside it may be applied (the Archivist drift cron flags out-of-vocabulary labels). Governing principle: **a label only exists where the forge can't say it natively** (status is derived, never labeled). Mandatory has two shapes: **always-mandatory** (`tier:*`, exactly one per task) and **conditional-mandatory** (present-when-true AND removed-when-false — a stale `needs:*` is as much a violation as a missing one; a conditional label is a live signal, not a sticker). The only optional label is `override:docs` (the escape hatch). Two easy-to-get-wrong rules are fixed: **project is a field, not a label** (the `Project:` field resolves against `projects.md`; never a label); and **tier is a field *and* a synced label, and the field wins** (the PR-body `Tier:` is the source of truth that `verify-docs` reads; the `tier:*` label is a mandatory scannable projection; the Planner sets the label at cut as a plan-time estimate, the field is binding at merge, and on disagreement the field is right and the label is corrected). D-008's three `needs:*` severities are folded into this vocabulary (cross-referenced there).
+
+2. **Iteration lifecycle + cross-iteration concurrency (`iterations/README.md` §11).** An iteration has a defined life: **planned → active → complete → archived.** "Complete" is derived from the forge (all linked PRs merged); at that point the **Archivist** sets a single `Lifecycle: complete` marker (the one lifecycle mutation the file takes after plan time — explicitly NOT the forbidden stored execution status, because it is the iteration's own lifecycle, which the forge has no native fact for) and **moves the file to `aeg-root/iterations/completed/<name>.md`**. Completed iterations are **never deleted** — the Planner's rationale is durable forensic history (the whole reason the rationale is mandatory, D-042); `completed/` is an archive, not a graveyard. **Concurrency:** there is no hard cap on simultaneously-active iterations. The real limits are two — (a) the **conflict rule binds across concurrent iterations** (a collision domain is global; two iterations touching the same package must serialize across the iteration boundary exactly as siblings do; the cleanest concurrency is between disjoint iterations that share no package), and (b) **Principal attention**. The second concurrent iteration's readiness gate must check the active iterations' collision domains and either confirm disjointness or declare the cross-iteration serialization.
+
+3. **Conversational protocol as a shared model concept (`aeg-manual-flow.md` §4.5) + Planner specialization (`roles/planner.md`).** Legibility is a governance property — a flow that runs silently is ungovernable. So every conversational role follows a shared protocol spine: announce the role on entry; name the stages and always say which one you're in; narrate the load-bearing reads and the conclusions they produce; move little-by-little and confirm before proceeding; reflect back before committing anything durable; **signal stage completion clearly every time** (especially the final "this stage is done, here's what's next, here's whose move it is"); and be clear about durability — everything committed is on the repo/forge and permanent, and a `Lock: NO` decision is as committed as a `Lock: YES` one (the lock flag governs future editability, not existence), so a recorded conclusion is never mistaken for "unsaved." The protocol is documented once as the shared spine and specialized per role; the **Planner's specialization is written** (the first), with Brief Author / Developer / Reviewer specializations as future work. Kept light — signposting, not verbosity.
+
+**Alternatives rejected:**
+- Leave the label rules scattered across §2/§3/§7/§9 and D-008/D-029: rejected — without a single closed-set source of truth, label drift (out-of-vocabulary labels, stale `needs:*`, a `project:` label competing with the field) is inevitable. One section, one vocabulary.
+- Allow iteration files to be deleted on completion (or leave lifecycle undefined): rejected — the rationale is durable forensic history; deleting it throws away the most valuable thing the Planner produced. Archive, never delete.
+- Put the conversational protocol only in `roles/planner.md`: rejected by the Principal — it is a model-wide property that every conversational role should share; burying it in one role doc means the others never inherit it. Document the spine once at the model level; specialize per role.
+- Park these as candidates and ratify later: rejected — same standing reason as D-042; governance must govern, and writing the findings into the model in real time is what makes agents behave identically.
+
+**Consequences:**
+- `aeg-root/state-machine.md` — new §14 Label Vocabulary; §2 (Class 2 + matrix label row), §7, §9, §12 threaded to point at it; D-008 gains a cross-reference note.
+- `aeg-root/iterations/README.md` — new §11 Iteration lifecycle + concurrency (pitch renumbered to §12); §4/§5/§6/§8/§9 threaded (the lifecycle marker named as the one exception to "no execution metadata," the cross-iteration conflict rule, the readiness-gate concurrency check).
+- `aeg-root/aeg-manual-flow.md` — new §4.5 Conversational protocol (shared spine); §5/§6 threaded.
+- `aeg-root/roles/planner.md` — the Planner's conversational-protocol specialization (announce role, name stages, narrate, little-by-little, reflect back, signal completion, durability clarity).
+- Cross-reference: **AEG-product D-001** (AEG is two products — Studio local + Portal public — over shared `@atta/aeg-core`; resolves OQ-aeg-3 local-first) was logged in `apps/aeg/specs/aeg-decisions.md` in the same session; the `aeg-ui-v1` iteration (`aeg-root/iterations/aeg-ui-v1.md`, Issues #94–#101) prototypes both this entry's §11 concurrency rules (it runs concurrent with `herald-onto-engine`) and the conversational protocol.
+- Lock: NO — first-use rules; revisit after the iterations execute. Type 1 for the cross-cutting governance blast radius (it changes the label system, the iteration lifecycle, and how every conversational role communicates), not for irreversibility.
 
 ---
