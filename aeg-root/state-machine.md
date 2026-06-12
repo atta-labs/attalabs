@@ -31,7 +31,7 @@ The conversational role set is: **Principal, Team Leader, Developer, Reviewer** 
 
 **A task is a forge Issue, and its status is derived, never stored** (see Section 2, Class 2, and `iterations/README.md` §3). No role writes a status field; transitions are facts about the forge (branch exists, PR open, review decision, merged).
 
-"What can I do?" → the mutation permission matrix. "Whose decision is this?" → the authority hierarchy. "What if I'm stuck?" → the escalation paths. "Is what I'm doing consistent with what was decided?" → the decision logs. "What must I hand the next role?" → the seam contract.
+"What can I do?" → the mutation permission matrix. "Whose decision is this?" → the authority hierarchy. "What if I'm stuck?" → the escalation paths. "Is what I'm doing consistent with what was decided?" → the decision logs. "What must I hand the next role?" → the seam contract. "Which label goes where?" → the label vocabulary (Section 14).
 
 ### One AEG model, at the root. Always orient from there.
 
@@ -59,7 +59,7 @@ Every artifact falls into one of five persistence classes. Persistence class det
 
 ### Class 2: Forge objects (execution state + audit)
 
-**What:** Issues (a task **is** an Issue — identity + metadata: tier label, project label, ticket link, dependency/conflict references), Pull Requests, review decisions, CI run results, Issue/PR comments.
+**What:** Issues (a task **is** an Issue — identity + metadata: the `tier:*` label, the `Project:` field, ticket link, dependency/conflict references — see Section 14 for the label vocabulary and the field-vs-label rule), Pull Requests, review decisions, CI run results, Issue/PR comments.
 
 **Persistence:** Survives unless deliberately deleted. Treated as permanent for operational purposes.
 
@@ -68,7 +68,7 @@ Every artifact falls into one of five persistence classes. Persistence class det
 **The provenance block (D-030) is a Class 2 object too — a close-out projection, not stored status.** At close-out the Archivist assembles a provenance record (task → intent → reviews → model → merge metadata) and posts it as a comment on the **merged** PR. It is *assembled from facts the merge already froze*, written once, append-only — a projection of frozen forge facts in exactly the way derived status is a projection of live forge facts. It is therefore explicitly **not** the forbidden "stored status" of `iterations/README.md` §9: it lives on the merged PR (never in the iteration file or the Issue), it records history (not current state), and nothing ever updates it. See `roles/archivist.md` and §13.
 
 **Create:** TL (Issues, in Planner mode); Developer (PRs); Reviewer (review verdicts/comments); Archivist (advisory PR comments + the provenance block); any role (Issue comments with appropriate authority).
-**Mutate:** Labels — tier (`tier:0|1|3`), `aeg:blocked`, and escalation labels (`needs:*-input`) by the TL/Developer (by hand or via an automation layer) and the Archivist (automation). **No `status:*` labels** — status is derived. Issue/PR body — the brief lives in the **PR body** (frozen after open — Section 7); the Issue body holds metadata only, never the brief, never planning fields (priority/estimates), which a required template + CI reject.
+**Mutate:** Labels — the closed vocabulary in Section 14 (`tier:*`, `aeg:blocked`, `needs:*-input`, `needs:brief-correction`, `override:docs`), applied by the role and at the transition Section 14 specifies. **No `status:*` labels** — status is derived. Issue/PR body — the brief lives in the **PR body** (frozen after open — Section 7); the Issue body holds metadata only, never the brief, never planning fields (priority/estimates), which a required template + CI reject.
 **Read-only:** All roles always.
 
 ### Class 3: Orchestration-tool runtime (ephemeral, optional)
@@ -129,7 +129,7 @@ Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer i
 | **`thinking.md`** | Reads | Writes freely in any TL session (best-effort, optional) | Reads | Flags if untouched >7 days |
 | **`ratification-queue.md`** | Approves/rejects/defers items at windows | Appends items; marks resolved after Principal action | Appends via escalation (`severity: product`) | — |
 | **Source code** | Merges PR | — | Writes in PR per brief scope; opens PR | — |
-| **Forge labels** (tier, `aeg:blocked`, `needs:*-input`) | — | Writes (by hand or via an automation layer) | Writes (by hand or via an automation layer) | Writes via automation |
+| **Forge labels** (the Section 14 vocabulary) | Applies `override:docs` (Principal-only) | Applies `tier:*` (Planner, at cut) + `needs:*-input` / `aeg:blocked` (by hand or via automation) | Applies `needs:*-input` / `aeg:blocked` (by hand or via automation) | Applies `needs:brief-correction`; asserts `tier:*` label == PR-body `Tier:` (drift cron) |
 | **Task status** | — | — | — | — *(nobody writes it — derived from the forge)* |
 | **Provenance block** (on the merged PR) | Reads (audit) | Reads (audit) | — | Assembles + posts at close-out (append-only; from frozen facts) |
 | **Worktrees** | Removes after merge | — | Works in (created at dispatch) | Flags merged worktrees as cleanup candidates |
@@ -235,7 +235,7 @@ Most specs are `draft` — no deliberate ratification pass has been done. Future
 
 ## Section 7: Escalation Paths
 
-When a Developer reaches a decision not covered by the brief, it escalates through the escalation mechanism — a manual escalation note, or, if dispatched by an automation layer, that layer's request-input mechanism — tagged with a `severity` that routes it.
+When a Developer reaches a decision not covered by the brief, it escalates through the escalation mechanism — a manual escalation note, or, if dispatched by an automation layer, that layer's request-input mechanism — tagged with a `severity` that routes it. Each severity has a matching `needs:*-input` label (Section 14).
 
 ### Three severity levels
 
@@ -271,7 +271,7 @@ A decision entry with `Lock: YES` signals a closed design branch.
 
 ## Section 9: Tiered Documentation
 
-Every piece of work is assigned an impact tier; the tier determines required documentation before the PR is ready.
+Every piece of work is assigned an impact tier; the tier determines required documentation before the PR is ready. The tier is declared two ways that must agree — the `Tier:` field in the PR body (the binding source of truth, read by verify-docs) and the `tier:*` label on the Issue (the scannable projection). Section 14 defines the field-vs-label rule and the sync obligation.
 
 **Tier 0 — Trivial.** Isolated, no API/contract changes, no patterns shifted. Required: code comments where non-obvious, PR description following template, declare `Tier: 0` in the PR body.
 
@@ -327,6 +327,7 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 
 - **Code-review and security passes** — Phase 10 requires them (D-026), including the spec-conformance check (D-030), but no CI bot dispatches them automatically yet; Principal + agent discipline. Automating dispatch is future work.
 - **Dispatch gates** (depends-on merged / no conflicting PR open) — read from the forge and complied with; mechanical enforcement arrives when an automation tool runs dispatch (`iterations/README.md` §8).
+- **Label discipline** (Section 14) — `tier:*` present on every task Issue and kept in sync with the PR-body `Tier:`; `needs:*-input` / `aeg:blocked` present-when-true *and removed when false*; no `status:*` labels; no label outside the closed set. Trusted discipline; the Archivist drift cron asserts the tier label/field match and flags stale `needs:*` labels.
 - **Contract conformance** (a role doc matches its `contracts/*.md` seam) — trusted discipline; the Archivist drift cron flags a role doc that contradicts its contract. The contract is the source of truth; a divergent role doc is the bug.
 - **Provenance assembly at close-out** (D-030) — the Archivist assembles it; trusted discipline today, automatable later. It records, it never gates.
 - **Decision logging during chat** — TL announces and logs during the conversation; CI cannot verify.
@@ -356,3 +357,44 @@ Append-only; never edited in place except to add `SUPERSEDED`/`RETIRED`/`EXPIRED
 **"Append-only" means:** new entries go at the end; existing entries are not rewritten to match new understanding; status transitions are new entries referencing old ones; the log grows, never shrinks. If you want to edit an existing entry, you are almost certainly writing a new entry that supersedes it.
 
 **Exception:** filling `Superseded by:` / `Ratified by:` on an existing entry (and flipping its `Status:` to match) is permitted — narrow forward-reference edits that preserve the append-only intent.
+
+---
+
+## Section 14: Label Vocabulary
+
+Labels are a Class 2 (forge) concern. This section is the **single source of truth** for the label system: the closed set, what each label means, who applies it and when, and whether it is mandatory.
+
+### The governing principle: a label only exists where the forge can't tell you natively
+
+The forge already tells you, for free, whether a branch exists, a PR is open, a review was requested, and a merge happened — so **status is derived, never labeled** (the `No status:* labels` rule). A label earns a place in the vocabulary *only* when it marks something the forge cannot show you natively: impact (tier), a block that has no branch/PR fact behind it, a routing of "who must answer," or a deliberate override. If the forge can answer it, it is not a label.
+
+### "Mandatory" has two shapes
+
+- **Always-mandatory** — present on every task, exactly once. (Only `tier:*`.)
+- **Conditional-mandatory** — present **if and only if** the condition it signals is true. The obligation runs both ways: it MUST be added when the condition becomes true, and it MUST be removed when the condition becomes false. A stale `needs:principal-input` on a resolved Issue is as much a violation as a missing one — a conditional label is a **live signal, not a sticker**.
+
+The only genuinely **optional** label is `override:docs`, because it is an escape hatch — forcing it would be a contradiction.
+
+### The closed set
+
+No label outside this table may be applied to a task Issue or its PR. (The Archivist drift cron flags out-of-vocabulary labels.)
+
+| Label | On | Marks (what the forge can't say) | Who applies / when | Mandatory? |
+|---|---|---|---|---|
+| `tier:0` / `tier:1` / `tier:3` | Issue (+ mirrors the PR-body `Tier:`) | Impact tier — drives required docs (§9) and whether it merges at a ratification window. The forge has no concept of "impact." | **Planner** sets it at Issue cut (plan-time estimate). The **PR-body `Tier:`** is the binding value at merge; the Developer corrects the field if execution reveals a different tier, and re-syncs the label. | **Always-mandatory** — exactly one per task |
+| `aeg:blocked` | Issue | A block that has **no forge fact** behind it ("waiting on an answer" isn't visible from branch/PR state). | Developer/TL when a task is blocked on an escalation; **removed** the moment it unblocks. | Conditional-mandatory |
+| `needs:execution-input` | Issue | Routes an open escalation to the **TL (Brief Author mode)** (§7). | Developer at escalation; removed when answered. | Conditional-mandatory |
+| `needs:strategy-input` | Issue | Routes to the **TL (Strategist mode)**. | Developer at escalation; removed when answered. | Conditional-mandatory |
+| `needs:principal-input` | Issue | Routes to the **Principal** — the surface the Principal scans to see what is waiting on them. | Developer at escalation; removed when answered. | Conditional-mandatory |
+| `needs:brief-correction` | Issue/PR | The Archivist's "this brief is malformed" flag (§3, §12). | Archivist (automation); removed when the brief is fixed. | Conditional-mandatory |
+| `override:docs` | PR | Suppresses the verify-docs gate for one PR (§12). | **Principal only**, deliberately. | **Optional** (escape hatch) |
+
+### Two rules that are easy to get wrong
+
+1. **Project is a field, not a label.** A task's project(s) live in the `Project:` field (Issue body + PR body), resolved against `aeg-root/projects.md` — **never** as a label. (Multi-valued, registry-validated; a label can't carry that cleanly, and it would collide with the "no planning metadata on Issues" rule.) If you reach for a "project label," stop — set the `Project:` field.
+
+2. **Tier is a field *and* a synced label, and the field wins.** The PR-body `Tier:` is the **source of truth** (it's what `verify-docs` reads, it lives in the reviewed PR body, it has history). The `tier:*` label is a **mandatory projection** of it onto the Issue so the board is scannable (filter `tier:3` to see what needs a ratification window). They MUST agree; the Archivist asserts `label == field` and flags a mismatch. Ordering: the **Planner sets the label at cut** as a plan-time estimate; the **field is the execution-time truth at merge**. If they disagree, the field is right and the label is corrected — never the reverse.
+
+### Why no other labels
+
+Everything teams commonly reach for is already covered without a label: *status* (derived from the forge), *priority/estimates/points* (planning metadata — lives in the company's tool, rejected on Issues by §2 + CI), *project* (the `Project:` field), *assignee* (a native forge field, and assignment is the `todo` transition). Adding a label for any of these would re-introduce a second, drifting source of truth for a fact the model already has a home for. The vocabulary stays small on purpose.
