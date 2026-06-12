@@ -1,12 +1,39 @@
 # AEG — app architecture
 
 **Status:** draft
-**Scope:** the AEG product — the web app (`apps/aeg/web`) that visualizes Atta Agentic Execution Governance, plus the `aeg.sh` scaffolder that lets any repo adopt the AEG structure.
-**Last updated:** 2026-06-10 (product folder scaffolded).
+**Scope:** the AEG product — now understood as **two products over a shared core** (AEG-product D-001): **Studio** (the local repo-reading tool) and **Portal** (the public deployed docs/marketing/download site), both consuming `@atta/aeg-core`. Plus the `aeg.sh` scaffolder.
+**Last updated:** 2026-06-12 (two-product split; V1 scope = Studio, local-first).
 
-This spec is the canonical reference for AEG **the product**. It is distinct from AEG **the model** (the governance/flow constitution), which lives at the repo root in `aeg-root/` (`state-machine.md`, `aeg-manual-flow.md`, `iterations/README.md`, the role docs) and governs the whole monorepo. The model is the thing; this product makes the thing visible and adoptable.
+This spec is the canonical reference for AEG **the product**. It is distinct from AEG **the model** (the governance/flow constitution), which lives at the repo root in `aeg-root/` (`state-machine.md`, `aeg-manual-flow.md`, `iterations/README.md`, the role docs, `contracts/`) and governs the whole monorepo. The model is the thing; this product makes the thing visible and adoptable.
 
 > **AEG does not know its orchestrator.** AEG is forge-native and orchestrator-independent (D-029): it runs by hand, on any repo, with zero orchestration tooling. Cetana is one optional tool that automates AEG's dispatch/escalation slice — **Cetana knows AEG; AEG does not know Cetana.** This product reflects that asymmetry: the AEG UI reads the forge and renders execution state; it treats an orchestrator like Cetana as *one thing that writes to the forge*, surfaced read-only, never as a dependency or a contained component. Cetana is a sibling product at `apps/cetana-ai/`, not part of this folder.
+
+---
+
+## 0. Two products over a shared core (AEG-product D-001) — read this first
+
+What was originally written as "the AEG product" (one hosted SaaS app) is actually **two products with different audiences, data sources, and deploy stories, sharing one core.** This section governs; where older sections below (§2, §3.2, §3.3, §5) describe a single hosted app with GitHub-App auth, a token vault, a webhook cache, and Clerk, read them as **the deferred hosted-Studio possibility**, not the default.
+
+```
+packages/aeg-core/            @atta/aeg-core — SHARED. Parse AEG artifacts → typed model;
+                              deriveIteration(file, forgeFacts) (pure); the docs renderer.
+                              Both products consume it.
+apps/aeg/web/
+  studio/                     AEG Studio — the LOCAL repo-reading tool.   ← V1 (aeg-ui-v1)
+  portal/                     AEG Portal — the PUBLIC deployed site.       ← FUTURE iteration
+```
+
+- **AEG Studio (local).** Launched at a repo root, **no auth**. Reads *this repo's* AEG artifacts off disk + reads **GitHub locally** (the operator's own already-authenticated token / `gh`) for live per-task status. Renders this repo's governance. The first iteration builds this.
+- **AEG Portal (public, future).** Deployed at `aeg.attalabs.dev`. Explains AEG to the world — the full documentation via the shared docs renderer — plus the `aeg.sh` download and marketing. Renders *the model itself*, not anyone's repo data. **Not built in V1.**
+- **`@atta/aeg-core` (shared).** The parser + `deriveIteration` + the docs renderer. Built in V1 (Studio needs it); the Portal inherits the docs renderer for free (the F5 lesson — build the shared thing shared the first time, global D-042).
+
+**OQ-aeg-3 is resolved local-first by D-001.** The hosted apparatus (GitHub App, encrypted token vault, webhook cache, multi-tenant Clerk, billing) is *not* how Studio works and is *not* in either V1 product. A hosted multi-tenant Studio is a later, separate deployment decision, never a blocker for the local tool.
+
+### V1 scope — `aeg-ui-v1` (AEG Studio, local-first)
+
+**In:** `@atta/aeg-core` (parse + `deriveIteration` + shared docs renderer); AEG Studio at `apps/aeg/web/studio` — top-bar + sidebar shell (modeled on Vāda's archived "science" doc layout), one root project, sidebar of projects → iterations (active/archived), iteration topology table, tasks as a **kanban** by derived status, **task detail** (brief read from the PR body), the **task-dependency-graph** view (`@atta/ui/engine-flow`), full **docs** section (the whole model — constitution, roles, flow, contracts, routes, meanings — via the shared renderer); **live per-task status read from GitHub with the operator's local token**; an **AEG icon** (find/design — placeholder "AEG" text until it exists).
+
+**Out (V1):** no auth / Clerk, no GitHub App, no encrypted token vault, no webhook cache, no hosting / SaaS, no multi-repo (this repo only), no write actions, no cost/token metrics, no `aeg.sh`, **no Portal**.
 
 ---
 
@@ -17,17 +44,23 @@ The AEG product is a deployed **UI that makes a repo's agentic execution legible
 1. **The repo's AEG artifacts** — the thin iteration topology files (`aeg-root/iterations/*.md`: task↔Issue map, `depends-on` / `conflicts-with` edges, grouping) and the backlogs (`specs/*-backlog.md`: the plan).
 2. **The Git forge** (GitHub) — the source of *derived* execution status (Issue open/assigned, branch `task/<iteration>/<n>` existence, PR open, review decision, merge). AEG never stores status; it projects it from the forge, exactly as the model prescribes.
 
-From those it renders: an **attention queue** (what needs a human now — default view), **repos grouped by tag** (by company, by product), each repo's **iterations**, and each iteration's **task DAG**. Plus the **plan** (backlogs) alongside execution — because retiring `roadmap.md` (D-029) removed the single whole-plan view, and this UI is where it returns (OQ-cross-14).
+> **§0 refinement:** in **Studio (V1)** these two reads are both *local* — the artifacts off disk, the forge via the operator's own token. The webhook-cache / GitHub-App machinery in §3.2–§3.3 belongs to the deferred *hosted* Studio, not V1.
+
+From those it renders: an **attention queue** (what needs a human now — default view), **repos grouped by tag** (by company, by product), each repo's **iterations**, and each iteration's **task DAG** (the "task dependency graph" in the UI). Plus the **plan** (backlogs) alongside execution — because retiring `roadmap.md` (D-029) removed the single whole-plan view, and this UI is where it returns (OQ-cross-14).
+
+> **§0 refinement:** Studio V1's home is the **per-repo project/iteration view with the sidebar**, not a cross-repo attention queue (V1 is single-repo). The attention-queue-as-home framing is a candidate for the hosted/multi-repo future and intersects OQ-aeg-1.
 
 **AEG-only.** A repo must practice AEG to render — the UI is not a general GitHub dashboard; it reads the AEG artifacts and the AEG branch/label conventions. A repo that does not practice AEG shows nothing meaningful.
 
-**Single-tenant *usage*, multi-repo *architecture*.** The first user is Dani, watching his own repos. But the data model is multi-repo and tag-grouped from day one (repos cluster by company and by product), so the same product serves a team without a reshape.
+**Single-tenant *usage*, multi-repo *architecture*.** The first user is Dani, watching his own repos. But the data model is multi-repo and tag-grouped from day one (repos cluster by company and by product), so the same product serves a team without a reshape. *(§0 refinement: V1 Studio is single-repo by launch context; the multi-repo data model is a `@atta/aeg-core` shape, realized in the UI later.)*
 
 ---
 
 ## 2. Surfaces (routes)
 
-Mirror Vāda/Herald: a Next.js App Router app at `apps/aeg/web`, flat routes under a signed-in `(app)` group (a route group adds no URL segment).
+Mirror Vāda/Herald: a Next.js App Router app, flat routes under a signed-in `(app)` group (a route group adds no URL segment).
+
+> **§0 refinement — this section describes the *hosted* shape and is partially deferred.** Studio V1 has **no auth/sign-in**, so there is no signed-in `(app)` guard and no `/settings` connections page. Studio's V1 surfaces are the **sidebar-doc layout**: a root view, project pages, iteration pages (table → kanban → task detail), the task-dependency-graph view, and the docs section. The route list below is retained as the eventual/hosted target.
 
 ```
 app/(app)/layout.tsx        shared signed-in layout: auth guard + shell + shared TopBar
@@ -39,27 +72,33 @@ app/(app)/settings/         /settings     connections (GitHub App), API keys, ac
 app/(marketing)/            marketing / landing + the AEG explainer
 ```
 
-- Logged-in home is `/queue` (the attention queue is the default view — the product's point is "what needs me now").
-- Nav: **Queue · Repos · Settings**. Iterations and repo detail are reached by drilling in, not top-level nav.
-- The DAG renders via `@atta/ui/engine-flow` (React Flow / `@xyflow/react`) — the same renderer Vāda uses for its engine-flow visualization. No new graph dependency.
+- The DAG renders via `@atta/ui/engine-flow` (React Flow / `@xyflow/react`) — the same renderer Vāda uses. No new graph dependency. **In the UI it is labelled "task dependency graph," not "DAG"** (DAG stays in the model docs).
 
 ---
 
 ## 3. The three layers
 
-The product decomposes into three clean layers, in dependency order. This is also the build order (see `aeg-backlog.md`).
+The product decomposes into three clean layers, in dependency order.
 
 ### 3.1 `deriveIteration(file, forge)` — pure projection (no I/O)
 
-A pure function: given a parsed iteration topology file + a snapshot of forge facts (Issues, branches, PRs, reviews, merges), return the iteration's derived state — each task's status (in-flight / in-review / changes-requested / merged / blocked), the DAG with edges, and which tasks are dispatch-eligible (depends-on merged, no conflicting sibling PR open). **No network, no storage, no GitHub client.** This is the heart of the product and the easiest thing to test exhaustively, so it is built and tested first, in isolation.
+A pure function: given a parsed iteration topology file + a snapshot of forge facts (Issues, branches, PRs, reviews, merges), return the iteration's derived state — each task's status (in-flight / in-review / changes-requested / merged / blocked), the DAG with edges, and which tasks are dispatch-eligible (depends-on merged, no conflicting sibling PR open). **No network, no storage, no GitHub client.** This is the heart of the product and the easiest thing to test exhaustively, so it is built and tested first, in isolation. **Lives in `@atta/aeg-core` (§0).**
 
 ### 3.2 GitHub App auth + encrypted token store
 
-Connect a repo via a **GitHub App** (OAuth, **read-only**, per-repo). Tokens are encrypted at rest with `@atta/crypto` (the same envelope-encryption backbone Vāda uses for provider keys — AES-256-GCM, AAD-bound, `MASTER_ENCRYPTION_KEY`). Read-only is a hard constraint: the AEG UI observes; it never writes status, never moves an Issue, never merges. (Writing is what an orchestrator like Cetana does — and the UI only *reads the result* of that writing, from the forge.)
+> **§0 refinement — DEFERRED (hosted only).** This is for the hosted multi-tenant Studio that holds *other people's* credentials. **Studio V1 does none of this** — it reads GitHub with the operator's own local token (`gh` / env), no App, no vault. Retained as the hosted-future design.
+
+Connect a repo via a **GitHub App** (OAuth, **read-only**, per-repo). Tokens encrypted at rest with `@atta/crypto`. Read-only is a hard constraint: the AEG UI observes; it never writes status, never moves an Issue, never merges.
 
 ### 3.3 Webhook-fed forge-fact cache
 
-Raw GitHub reads do not scale within rate limits for a live board. A webhook-fed cache stores **forge facts** (Issue state, branch existence, PR state, review decision, merge) — never authored status. The cache is a performance projection of the forge, not a second source of truth; on conflict the forge wins. `deriveIteration` runs against the cache.
+> **§0 refinement — DEFERRED (hosted only).** A live multi-tenant board needs this to stay within rate limits; **Studio V1 does not** — a local single-repo tool reads on demand. Retained as the hosted-future design.
+
+A webhook-fed cache stores **forge facts** (Issue state, branch existence, PR state, review decision, merge) — never authored status. The cache is a performance projection of the forge, not a second source of truth; on conflict the forge wins. `deriveIteration` runs against the cache.
+
+### 3.4 The docs renderer (shared) — V1
+
+The shared docs renderer in `@atta/aeg-core` renders the `aeg-root/` model docs (constitution, roles, flow, contracts, routes & meanings) following **Vāda's local-markdown content pattern** (local `.md` under a content dir → a reader component; see `apps/vada-ai/web/content/` + the archived "science" doc layout). **Studio V1 uses it** for its docs section; **the future Portal reuses the same renderer** as its public documentation — which is why it is shared, not buried in Studio (the F5 lesson, global D-042).
 
 ---
 
@@ -67,31 +106,32 @@ Raw GitHub reads do not scale within rate limits for a live board. A webhook-fed
 
 The product is not only the UI. Adopting AEG in a fresh repo means laying down a specific folder structure (the `aeg-root/` model docs, `iterations/`, the `specs/*-backlog.md` convention per D-037, the branch/label conventions). Doing that by hand is error-prone and is the friction that keeps AEG from spreading beyond this monorepo.
 
-`aeg.sh` is a **neutral scaffolder script** (a D-029 build follow-up, moved here as part of the product): run it in a repo, answer a couple of prompts (or pass flags), and it creates the AEG structure — including, when you **specify a project/unit**, that unit's folders (`apps/<unit>/specs/<unit>-backlog.md`, `apps/<unit>/aeg-project/{state,now}.md`) following the D-037/D-041 convention (plan in `specs/`, model in root `aeg-root/`, state in `aeg-project/`). It is *neutral* — it encodes the AEG model, not Atta-specific content — so any team can adopt the architecture.
+`aeg.sh` is a **neutral scaffolder script** (a D-029 build follow-up): run it in a repo, answer a couple of prompts (or pass flags), and it creates the AEG structure — including, when you **specify a project/unit**, that unit's folders (`apps/<unit>/specs/<unit>-backlog.md`, `apps/<unit>/aeg-project/{state,now}.md`) following the D-037/D-041 convention. It is *neutral* — it encodes the AEG model, not Atta-specific content — so any team can adopt the architecture.
 
-Relationship to the UI: the scaffolder lays down what the UI reads. They are two halves of "make AEG adoptable": `aeg.sh` writes the structure, the UI renders it. The interactive product supersedes the static `diagrams/` as the explanation of the model.
-
-**Status:** specified, not built. Sequenced in `aeg-backlog.md`.
+Relationship to the products: the scaffolder lays down what Studio reads; the **Portal hosts its download**. They are the halves of "make AEG adoptable": `aeg.sh` writes the structure, Studio renders a repo, the Portal explains the model and distributes the scaffolder. **Status:** specified, not built. Sequenced in `aeg-backlog.md`. **Not in `aeg-ui-v1`.**
 
 ---
 
 ## 5. Identity & data
 
-Under the single-Clerk-app, `.attalabs.dev`-cookie model (like Vāda, unlike Herald's standalone Clerk app). The AEG product is part of the AttaLabs ecosystem proper. Reuses `@atta/crypto` for the GitHub token vault, `@atta/db` for the cache schema, `@atta/ui` (incl. `@atta/ui/engine-flow`) for rendering. Deploy target `aeg.attalabs.dev` (covered by the `*.attalabs.dev` wildcard CNAME).
+> **§0 refinement — DEFERRED for Studio V1.** Studio V1 has **no identity layer** (local tool, operator's own machine and token). The Clerk / `.attalabs.dev`-cookie model below applies to the **future hosted Studio and/or the Portal's authenticated areas** if any ever exist (the Portal is largely public read-only and may need no auth at all).
 
-Folder naming: `apps/aeg` carries **no `-ai` suffix**, matching the meta/infra-app convention (`apps/attalabs`, `apps/desktop`) rather than the product-app convention (`apps/vada-ai`, `apps/herald-ai`). AEG is infrastructure for building, not an end-user AI product.
+Under the single-Clerk-app, `.attalabs.dev`-cookie model (like Vāda). Reuses `@atta/crypto` for the GitHub token vault (hosted only), `@atta/db` for the cache schema (hosted only), `@atta/ui` (incl. `@atta/ui/engine-flow`) for rendering. Deploy target `aeg.attalabs.dev` (covered by the `*.attalabs.dev` wildcard CNAME) — **that deploy target is the Portal**; Studio is not deployed.
+
+Folder naming: `apps/aeg` carries **no `-ai` suffix**, matching the meta/infra-app convention (`apps/attalabs`, `apps/desktop`). AEG is infrastructure for building, not an end-user AI product.
 
 ---
 
 ## 6. What this product is NOT
 
 - **Not a general GitHub dashboard.** It renders AEG repos via AEG conventions; a non-AEG repo shows nothing meaningful.
-- **Not a writer.** Read-only against the forge. It never stores or mutates execution status — that would recreate the racing status model D-029 eliminated. It projects; it does not author.
+- **Not a writer.** Read-only against the forge. It never stores or mutates execution status — that would recreate the racing status model D-029 eliminated. It projects; it does not author. (Studio reads GitHub read-only with the operator's token; it never writes.)
 - **Not Cetana, and does not contain Cetana.** Cetana is the optional orchestrator (a sibling product). The UI may *render* an orchestrator's activity as forge facts, but the orchestrator is never a dependency or a sub-package here. AEG does not know Cetana.
 - **Not a planning tool.** The backlog is the seam where AEG meets whatever planning tool a team uses; AEG renders the plan but is indifferent to how it was authored.
+- **Studio is not deployed; the Portal is not a repo-viewer.** The two products do not blur: Studio = local, your repo; Portal = public, the model.
 
 ---
 
 ## 7. Dogfooding
 
-The AEG product is built *through* AEG: it is the designated first real iteration (`aeg-backlog.md`). Building the thing that visualizes the flow, using the flow, is the intended proof. Its own `aeg-project/` (state + now) and this `specs/` set follow the same conventions the product reads — the product can render its own repo.
+The AEG product is built *through* AEG: **AEG Studio is the designated first real iteration (`aeg-ui-v1`)**. Building the thing that visualizes the flow, using the flow, is the intended proof. Studio's own `aeg-project/` (state + now) and this `specs/` set follow the same conventions the product reads — Studio can render its own repo.
