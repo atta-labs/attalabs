@@ -1,6 +1,6 @@
 ---
 name: brief-authoring
-description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers required sections, inheriting the Planner's rationale via the planner-brief contract, the mandatory technical-dependency / tech-surface-map / agent-selection-with-reasoning sections, the optional Ticket/Project fields, model selection, the model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), the mandatory worktree-first step, the brief-lands-in-the-PR-body rule, the explicit documentation-update list, the post-PR review passes, and anti-patterns.
+description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers the Brief Author's conversational protocol, required sections, inheriting the Planner's rationale via the planner-brief contract, the contract-conformance checklist, the mandatory technical-dependency / tech-surface-map / agent-selection-with-reasoning sections, the optional Ticket/Project fields, model selection, the model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), the mandatory worktree-first step, the brief-lands-in-the-PR-body rule, the explicit documentation-update list, the post-PR review passes, and anti-patterns.
 ---
 
 <!-- CANONICAL SOURCE (D-039). This file is the canonical home of the `brief-authoring` skill, inside the AEG unit (aeg-root/skills/). The copy at .claude/skills/brief-authoring/SKILL.md is a GENERATED VIEW produced by `aeg generate-skills` for the agent harness that loads from .claude/ — edit THIS file, then regenerate; never edit the generated view by hand. -->
@@ -14,6 +14,32 @@ Every task brief the Team Leader writes or dispatches must follow these rules. T
 **Where the brief lives.** The brief is the task's full execution context. It is **pasted to the Developer, not committed**, and it **lands in the PR body** when the Developer opens the PR — that is its permanent, durable home, read by the Reviewer and Archivist. A brief is **never** put in the task's forge Issue (the Issue holds identity + metadata + the Planner's rationale, not the brief; a brief there would go stale before work starts). Context lives entirely in the brief: if it isn't in the brief, it doesn't exist.
 
 **The brief is the prompt, and the prompt is where control over the agent lives.** Brief authoring is the single highest-leverage governance act in AEG: a precise brief makes a capable agent do exactly the right thing; a vague one makes the same agent improvise. Treat every required section below as a control surface, not paperwork.
+
+---
+
+## Conversational protocol — how the Brief Author talks to the Principal
+
+The Brief Author follows the shared conversational protocol (`aeg-root/aeg-manual-flow.md` §4.5) — the same legibility discipline the Planner uses, specialized for briefing. The Principal must always know **who is speaking, which stage of briefing they're in, what was just read, and what comes next.** Briefing one task is smaller than planning a whole iteration, so this is lighter than the Planner's version — but the spine is identical, and the close-out is just as important.
+
+The Brief Author's stages — name them, and say which you're in:
+
+**Announce the role + the task on entry.** *"I'm the Brief Author. I'll turn task <n>'s Planner rationale (Issue #N) into the executable brief — first I read the rationale, then I dig the current code for the perishable detail, then I run the contract checklist, then hand you the brief to dispatch."*
+
+1. **Inherit** — read the task's Planner rationale (the contract's producer side). Narrate it back briefly: *"3a's rationale: boundary is the engine's structured-output path, blast radius is engine+vada+herald, the trap is the Anthropic-only sdkShape. Starting from that — not a blank page."* This is conversational-protocol "reflect back," and it proves the contract is being consumed, not re-derived.
+
+2. **Dig** — the deep pass for the *perishable* detail (current signatures, exact file list, final model pick). Narrate the load-bearing reads: *"Reading `llm.ts` now to get the current vendor-branch shape for the surface map."* If the dig **contradicts** the rationale (boundary moved, sizing broke), STOP and say so — that's a `severity:strategy` escalation back to the Planner, announced, not a silent fix.
+
+3. **Draft** — write the brief, every required section. Move in confirmable steps for a big brief; for a small one, draft it and reflect the shape back before finalizing.
+
+4. **Contract checklist** — run the seven-field conformance check (below) out loud, so the Principal sees every Planner field landed in its brief home. This is the briefing analogue of the Planner's readiness gate: a visible gate, not a silent one.
+
+5. **Clarifications** — if any `[NEEDS CLARIFICATION]` markers remain, present them as a numbered list and **wait** — never dispatch with unresolved markers.
+
+6. **Done — close out clearly.** Signal completion and whose move it is: *"Brief complete for task <n>. Contract checklist passes, no open clarifications, Tier declared, worktree Step 0 in place. The brief is ready to dispatch — that's yours (assign the Issue / paste to the Developer). Next task in the wave is <m>."* The Principal must never wonder whether the brief is finished or what happens next.
+
+**Durability note (protocol step 7):** a brief is **not committed** — it's pasted and lands in the PR body when the Developer opens the PR. Say so plainly, so the Principal knows the brief lives in the dispatch/PR, not in a repo file, and isn't surprised that it's not on `main`. (The *rationale* it was built from is durable, on the forge; the brief is the perishable execution layer.)
+
+Keep it light — a sentence per seam. Terse remains the house style; this adds signposting, not bulk.
 
 ---
 
@@ -38,6 +64,20 @@ The contract's field-by-field mapping (authoritative version lives in the contra
 - You do your own deep pass now, at dispatch, to add the *perishable* detail that has to be current (exact signatures, the precise file list, the final model pick) — because the codebase has moved since planning.
 
 So the brief = the planner's rationale (inherited via the contract) + the current execution detail (you add). You are not re-deciding the boundary or the blast radius; you are turning the planner's conclusions into an executable prompt against today's code. If your dig contradicts the planner's rationale (the code moved enough to change the boundary or break the sizing), that is a `severity:strategy` stop-and-escalate back toward the Planner, **not** a silent override.
+
+### Contract-conformance checklist (run before dispatch — say it out loud)
+
+Before a brief is dispatchable, confirm **every one of the seven Planner fields landed in its named brief home.** This is the consumer-side gate of the planner-brief contract — the briefing analogue of the Planner's readiness gate. Tick each; a dropped field is a lost conclusion and makes the brief malformed.
+
+- [ ] **Boundary** → is the brief's **Context (§2)** scoped to it, and does the **Technical Surface Map (§4)** make its in/out-of-surface set concrete against current code?
+- [ ] **Sizing** → re-confirmed it still fits one PR? (If the dig says it no longer fits → **stop-and-escalate**, don't silently re-split.)
+- [ ] **Project(s) + blast radius** → does the `**Project:**` field carry the identical project set, and does **§8 verification** re-verify every named blast-radius consumer?
+- [ ] **Dependency rationale** → did each edge's *why* become a concrete **Technical Dependency (§3)** "what must already exist" precondition?
+- [ ] **Traps to avoid** → is every trap an explicit "do NOT do X; do Y instead" in **Context (§2) / Constraints (§10)**? (Highest-value field — never drop it.)
+- [ ] **Suggested agent-class** → did you confirm or deviate (with reason) and make the final pick in the **`For:` + `Reason:`** header?
+- [ ] **Stop-and-escalate** → are the Planner's stop conditions copied into the brief's **Stop conditions (§9)**, substance-verbatim?
+
+Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
 
 ---
 
@@ -193,7 +233,7 @@ Every brief includes the following metadata. These fields gate dispatch and rati
 - **Tier 1** — implementation. Checklist: Tier 0 + specs updated + `verify-docs` passes.
 - **Tier 3** — project/roadmap change. Checklist: Tier 1 + decision log entry + state docs updated + lock entry if applicable.
 
-When in doubt, assign Tier 3. verify-docs defaults to Tier 3 when the PR body has no `Tier:` field, so always declare it explicitly.
+When in doubt, assign Tier 3. verify-docs defaults to Tier 3 when the PR body has no `Tier:` field, so always declare it explicitly. The `Tier:` in the PR body is the **binding source of truth**; the `tier:*` label on the Issue is its synced projection (`state-machine.md` §14 — field wins on conflict).
 
 ### Optional
 
@@ -250,7 +290,7 @@ Use **`[NEEDS CLARIFICATION]`** inline markers to surface gaps rather than guess
 
 **Use it when:** two reasonable interpretations exist and the wrong one means a re-do; the brief references a decision not yet logged; a constraint (auth, timeout, error behavior) is implied but unstated; you're unsure an existing pattern applies. **Do not use it for:** stylistic preferences (pick one, note it); things resolvable by reading the codebase (read first); pure implementation details (the Developer decides).
 
-**Resolution protocol:** before dispatching, collect all markers, present them to the Principal as a numbered list, wait for resolution on each (don't dispatch with unresolved markers), replace each with the answer inline. If the Principal defers one, replace with `[DEVELOPER DECIDES: ...]` so the executor knows it's intentional.
+**Resolution protocol:** before dispatching, collect all markers, present them to the Principal as a numbered list, wait for resolution on each (don't dispatch with unresolved markers), replace each with the answer inline. If the Principal defers one, replace with `[DEVELOPER DECIDES: ...]` so the executor knows it's intentional. (This is conversational-protocol stage 5 — surfaced, numbered, waited on.)
 
 A pre-flight `[NEEDS CLARIFICATION]` should be resolved in the brief; if an ambiguity surfaces mid-execution instead, the Developer escalates via the escalation mechanism — but a well-authored brief anticipates most of these.
 
@@ -260,8 +300,10 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 
 ## Anti-patterns
 
+- ❌ Running the whole briefing silently and dumping the brief at the end — violating the conversational protocol; the Principal couldn't see the rationale-inherit, the dig, or the contract checklist, so couldn't govern them
 - ❌ Starting from a blank page instead of the Planner's rationale — re-deriving (often differently) what the planner already concluded, and losing the traps the planner flagged
-- ❌ Dropping any field of the planner-brief contract — every rationale field has a named home in the brief; a dropped field is a lost conclusion
+- ❌ Dropping any field of the planner-brief contract — every rationale field has a named home in the brief; a dropped field is a lost conclusion (run the contract-conformance checklist)
+- ❌ Skipping the contract-conformance checklist before dispatch — the gate that proves no field was dropped
 - ❌ Omitting the Technical Dependencies section — the executor discovers mid-task that something it needs doesn't exist yet
 - ❌ Omitting the Technical Surface Map — "only expected files changed" becomes uncheckable and scope creeps
 - ❌ A `For:`/`Reason:` line with no real reasoning ("Sonnet because it's good") — the capability choice must be justified against the task
@@ -281,6 +323,7 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 - ❌ Treating "PR opened" as "done" — done is "passed code-review + security review"
 - ❌ Assuming the executor has read prior session context — it hasn't
 - ❌ A `Project:` value that doesn't resolve against the registry, or that omits a blast-radius consumer the Planner listed — malformed; fix or `aeg add-project` first
+- ❌ Closing out without signaling completion + whose move is next — the Principal is left unsure whether the brief is dispatchable
 
 ---
 
