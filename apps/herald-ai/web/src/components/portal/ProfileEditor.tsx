@@ -221,7 +221,10 @@ interface ProfileData {
   hasAnthropicKey: boolean
 }
 
-export function ProfileEditor({ profile }: { profile: ProfileData }) {
+const PROFILE_TABS = ['profile', 'experience', 'connections', 'api-keys', 'account'] as const
+type ProfileTab = (typeof PROFILE_TABS)[number]
+
+export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: ProfileData; defaultTab?: ProfileTab }) {
   const [form, setForm] = useState({
     name: profile.name,
     title: profile.title,
@@ -395,7 +398,7 @@ export function ProfileEditor({ profile }: { profile: ProfileData }) {
           </CardContent>
         </Card>
       )}
-      <Tabs defaultValue='profile'>
+      <Tabs defaultValue={defaultTab}>
         <TabsList className='mb-6 flex w-full flex-nowrap justify-start overflow-x-auto'>
           <TabsTrigger value='profile' className='shrink-0'>
             Profile

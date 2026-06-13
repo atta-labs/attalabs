@@ -7,12 +7,18 @@ import { PublishToggle } from '@/components/portal/PublishToggle'
 import { db } from '@/db'
 import { getUserByClerkId } from '@/db/queries'
 
-export default async function CandidateSettingsPage() {
+const VALID_TABS = ['profile', 'experience', 'connections', 'api-keys', 'account'] as const
+type ValidTab = (typeof VALID_TABS)[number]
+
+export default async function CandidateSettingsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
   const user = await getUserByClerkId(userId)
   if (!user?.onboardingComplete) redirect('/onboarding')
+
+  const { tab } = await searchParams
+  const defaultTab: ValidTab = VALID_TABS.includes(tab as ValidTab) ? (tab as ValidTab) : 'profile'
 
   let hasAnthropicKey = false
   const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
@@ -58,7 +64,7 @@ export default async function CandidateSettingsPage() {
           </div>
           <PublishToggle initialIsPublished={profile.isPublished} hasAnthropicKey={hasAnthropicKey} />
         </div>
-        <ProfileEditor profile={profile} />
+        <ProfileEditor profile={profile} defaultTab={defaultTab} />
       </div>
     </div>
   )

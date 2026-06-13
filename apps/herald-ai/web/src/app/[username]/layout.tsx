@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { auth } from '@clerk/nextjs/server'
 import { cmsClient, getHeraldBranding } from '@atta/cms'
@@ -5,6 +6,13 @@ import { getUserByUsername } from '@/db/queries'
 import { EnvoyShell } from './envoy-shell'
 import { EnvoyLibraryShell } from '@/components/envoy/EnvoyLibraryShell'
 import type { UILibrary } from '@atta/ui/lib/library-loader'
+
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params
+  return {
+    icons: { icon: `/${username}/icon` }
+  }
+}
 
 export default async function EnvoyLayout({
   children,
