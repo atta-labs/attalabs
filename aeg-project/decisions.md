@@ -935,3 +935,41 @@ This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choi
 - Lock: NO — first-use rules; revisit after the iterations execute. Type 1 for the cross-cutting governance blast radius (it changes the label system, the iteration lifecycle, and how every conversational role communicates), not for irreversibility.
 
 ---
+
+## D-044 — Herald auditor migrated onto `@atta/engine` via a solo YAML
+
+**Date:** 2026-06-13
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Developer (`herald-onto-engine` iteration, task 1, #88)
+**Ratified by:** Principal
+
+**Context:** Herald's forensic match audit (`POST /api/match`) called `generateText()` from `@ai-sdk/anthropic` directly, with the Skeptical Auditor system prompt living as a TypeScript constant (`SKEPTICAL_AUDITOR_PROMPT` in `apps/herald-ai/web/src/lib/prompts.ts`) and the model id hardcoded at the call site. Vāda already runs every agent — across 12 vendors — through the shared `@atta/engine` + `@atta/adapter-langgraph` substrate by loading a YAML flow and compiling it to a Plan. Herald was the only product still running a bespoke per-app LLM call, which meant the engine's vendor-agnostic text path, classifier behaviour, and Plan lifecycle were not available to Herald and any future cross-cutting engine improvement bypassed Herald by construction. The `herald-onto-engine` iteration's task 1 (issue #88) is the wave-1 lead that puts Herald on the same substrate.
+
+**Decision:** The auditor LLM call goes through `@atta/engine` via a single-agent solo flow YAML. Specifics:
+
+1. **Agent lives in the YAML.** `apps/herald-ai/web/yamls/herald-auditor.yaml` is the single source of truth for the auditor's `system_prompt`, `model` (`claude-sonnet-4-20250514`), `max_tokens`, classifier behaviour (`classifier.mode: skip` — no Haiku classifier overhead for a single-shot audit), and message template (`{{question}}`). The Skeptical Auditor prompt body was lifted verbatim into the YAML.
+2. **Schema-as-parse-contract via `{{schema}}`.** `MATCH_REPORT_SCHEMA` stays in `prompts.ts` because it is also the shape the parser validates against. It is passed to `compileFlow(flow, userPrompt, undefined, { schema: MATCH_REPORT_SCHEMA })` as a customVar, and `{{schema}}` in the YAML's `system_prompt` is substituted at compile time. One schema definition; the model-instruction and the parser are guaranteed to agree.
+3. **Engine consumed, not modified.** No file under `packages/engine` or `packages/adapter-langgraph` is changed. `git diff main --stat` on either package is empty — which means no Vāda blast radius by construction. The hosted route reads the YAML once at module load (cached) and calls `LangGraphAdapter.execute({ plan })` with `providerKeys: { anthropic: apiKey }`.
+4. **Herald-owned glue stays in Herald.** Signal pre-fetch (`extractSignals`, 3s timeout), the 24h in-memory cache, the 2-attempt/25s wrapper, `parseMatchReport` and its code-enforced NO-FIT hard-requirement gate, and `buildPartialReport` fallback are unchanged. The hard gate is deliberately a code gate, not a model gate — it must never become model-controlled.
+5. **Vendor-agnostic by construction.** The engine already runs any vendor that has a registered prefix as a text completion. Herald gets JSON by prompt instruction, exactly the way Vāda does. No structured-output / `outputSchema` is involved on the engine side — the model returns text, Herald parses it. (This is what made the originally scoped engine-side JSON-mode work, task 3a / #87, unnecessary.)
+
+**Alternatives rejected:**
+- Add Herald-specific engine support (e.g. an engine-side `outputSchema` JSON mode for the auditor) — rejected as the brief was re-scoped: the engine already runs any vendor's text path, and prompt-instruction JSON is identical to how Vāda gets structured output. No engine change needed. (Brief #88 was sharpened to drop that scope; #87 was closed not-planned.)
+- Leave the auditor as a direct `generateText` call — rejected: blocks Herald from inheriting future engine improvements (cognitive router, multi-vendor failover, transcript tracing, cost tracking).
+- Keep `SKEPTICAL_AUDITOR_PROMPT` deleted from `prompts.ts` per the original brief — partially rejected on a conflict with the brief's "do not touch `/api/recruiter/batch`" boundary (batch still imports the constant). The constant is preserved with a TODO comment until task 2 migrates batch onto the engine and the constant can be deleted then.
+- Move agent tools (the GitHub signal fetcher) into the YAML in this task — explicitly deferred to task 7 (#102). Task 1 keeps `extractSignals` as a pre-fetch in Herald code; task 7 will retire it by giving the auditor agent a GitHub tool declared in the YAML.
+
+**Consequences:**
+- `apps/herald-ai/web/yamls/herald-auditor.yaml` — new; canonical source for the auditor prompt + model + message template.
+- `apps/herald-ai/web/src/app/api/match/route.ts` — replaces the `generateText` race body with `loadFlow → compileFlow → LangGraphAdapter.execute`, preserving the 2-attempt retry / 25s timeout / partial-report fallback contract verbatim. `Conclusion.terminalState === 'FAILED'` is treated as an attempt failure (continue retry loop) rather than thrown, since the engine never throws for LLM failures.
+- `apps/herald-ai/web/src/lib/prompts.ts` — schema comment refreshed; `SKEPTICAL_AUDITOR_PROMPT` retained (with TODO) until batch migrates.
+- `apps/herald-ai/web/package.json` — adds `@atta/engine` + `@atta/adapter-langgraph` workspace deps.
+- `apps/herald-ai/web/next.config.ts` — `transpilePackages` extended with both packages; `outputFileTracingIncludes` traces `./yamls/**` into the deployed function (Vāda's pattern, scoped to Herald's local `yamls/` dir).
+- `apps/herald-ai/web/tests/herald-auditor-yaml.test.ts` — verifies the YAML loads as a v2.0 flow, compiles to a solo Plan (entry/exit node = `solo`), substitutes `{{schema}}` at compileFlow time, and uses `{{question}}` as the message template.
+- `apps/herald-ai/specs/herald-app-architecture.md` — the audit-flow section now states that the auditor LLM call runs through the engine via the YAML.
+- `apps/herald-ai/specs/herald-backlog.md` — engine-migration item closed; task 7 (#102) referenced as the next step that retires `extractSignals` by moving signal-gathering into the agent's YAML-declared tools.
+- Lock: NO — first migration of Herald onto the shared engine; revisit once the auditor has been observed in production and after task 2 (batch route) and task 7 (auditor tools) lands. Type 1 because it replaces a core call path and establishes the pattern other Herald LLM call sites will follow.
+
+---

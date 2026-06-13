@@ -1,10 +1,10 @@
 # Herald — app architecture
 
 **Status:** draft
-**Scope:** Herald web app (`apps/herald-ai/web`) — routes, topbar, library resolution, settings, public profile.
-**Last updated:** 2026-06-10 (post `herald-profile-refactor`, PR #81).
+**Scope:** Herald web app (`apps/herald-ai/web`) — routes, topbar, library resolution, settings, public profile, audit pipeline.
+**Last updated:** 2026-06-13 (post `herald-onto-engine` task 1, PR for #88).
 
-This spec records the architecture established by the `herald-profile-refactor` work (June 2026). It is the canonical reference for how the Herald app is structured. Decisions behind it: D-031 (standalone Clerk/DB), D-034 (one Bulk Audit operation), D-035 (library resolution), D-036 (flat routes + unified topbar).
+This spec records the architecture established by the `herald-profile-refactor` work (June 2026) plus the `herald-onto-engine` migration (task 1, June 13). It is the canonical reference for how the Herald app is structured. Decisions behind it: D-031 (standalone Clerk/DB), D-034 (one Bulk Audit operation), D-035 (library resolution), D-036 (flat routes + unified topbar), D-044 (auditor on `@atta/engine` via solo YAML).
 
 ---
 
@@ -95,9 +95,33 @@ One provider key per Herald user. Profile audits (a recruiter auditing a publish
 
 ---
 
-## 8. Known follow-ups (not built here)
+## 8. Audit pipeline (D-044)
 
-- Endpoint unification: `BulkAudit` still calls `/api/recruiter/batch`; fold `/api/match` + `/api/recruiter/batch` into one `/api/audit` cell runner (`runSingleMatch` is the reusable cell).
+`POST /api/match` runs the Skeptical Auditor through the shared `@atta/engine` + `@atta/adapter-langgraph` substrate. There is no longer a direct `generateText()` call in `route.ts`.
+
+The auditor agent (system prompt + model + classifier behaviour + message template) lives in `apps/herald-ai/web/yamls/herald-auditor.yaml` — a v2.0 solo flow with one agent (`SkepticalAuditor`, `claude-sonnet-4-20250514`, `classifier.mode: skip`). On the first request the route loads the YAML via `loadFlow(readFileSync(...))` (cached at module load) and compiles it with `compileFlow(flow, userPrompt, undefined, { schema: MATCH_REPORT_SCHEMA })`. The `{{schema}}` customVar is substituted into the agent's system prompt at compile time, so the model-instruction and `parseMatchReport`'s validation share one schema definition. The Plan is executed by `LangGraphAdapter.execute({ plan })` with `providerKeys: { anthropic: apiKey }` (BYOK: owner's stored key for profile audits, `ANTHROPIC_API_KEY` for tests/fallback).
+
+The engine call replaces only the LLM invocation. Everything around it is preserved:
+
+- **2-attempt retry, 25s timeout** wrapping `adapter.execute(...)` via `Promise.race`. `Conclusion.terminalState === 'FAILED'` advances to the next retry attempt rather than throwing — the engine surfaces errors via the Conclusion shape, not exceptions.
+- **`extractSignals` pre-fetch** (3s timeout, best-effort) still produces the GitHub signal evidence appended to `userPrompt`. Task 7 (#102) will retire this pre-fetch by giving the auditor agent a GitHub tool declared in the YAML.
+- **24h in-memory cache** keyed on `sha256(jd + profile)`, identical.
+- **`parseMatchReport`** with its **code-enforced NO-FIT hard-requirement gate** is unchanged. The gate is deliberately Herald code, not a model gate — it must never become model-controlled.
+- **`buildPartialReport` fallback** is unchanged: both attempts failing yields a `B+ / Good Fit / Low confidence` partial report so the UI never crashes.
+
+The engine and adapter packages are consumed unchanged: `git diff main --stat` against `packages/engine` and `packages/adapter-langgraph` is empty in the migration PR, which means no Vāda blast radius by construction.
+
+`apps/herald-ai/web/next.config.ts` transpiles `@atta/engine` + `@atta/adapter-langgraph` and adds `outputFileTracingIncludes: { '/**': ['./yamls/**'] }` so the YAML is bundled into the serverless function (Vāda's pattern, scoped to Herald's local `yamls/` dir).
+
+`/api/recruiter/batch` is still on the legacy direct `generateText` path; task 2 of this iteration migrates it onto the engine and then `SKEPTICAL_AUDITOR_PROMPT` (still exported from `prompts.ts` as a TODO bridge) can be deleted. Until then, the YAML and the constant are kept in lockstep at the prompt level.
+
+---
+
+## 9. Known follow-ups (not built here)
+
+- Endpoint unification: `BulkAudit` still calls `/api/recruiter/batch`; fold `/api/match` + `/api/recruiter/batch` into one `/api/audit` cell runner (`runSingleMatch` is the reusable cell). Now also: both call sites should run through the engine.
 - N×M matrix UI and polymorphic inputs (link / pasted text / .md / .pdf / stored profile).
 - Per-key rate limit / cap on profile audits (abuse surface: strangers spend the owner's key budget — D-033).
 - `herald.attalabs.dev` deploy verification.
+- Auditor signal-gathering as a YAML-declared tool (`herald-onto-engine` task 7, #102) — retires the `extractSignals` pre-fetch.
+- Batch route onto the engine (`herald-onto-engine` task 2) — unblocks deleting `SKEPTICAL_AUDITOR_PROMPT` from `prompts.ts`.

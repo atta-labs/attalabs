@@ -9,7 +9,17 @@ const nextConfig = async (): Promise<NextConfig> => {
     images: {
       remotePatterns: [{ hostname: 'avatars.githubusercontent.com' }]
     },
-    transpilePackages: ['@atta/ui', '@atta/cms', '@atta/db', '@atta/herald-ai-mcp'],
+    transpilePackages: [
+      '@atta/ui',
+      '@atta/cms',
+      '@atta/db',
+      '@atta/herald-ai-mcp',
+      '@atta/engine',
+      '@atta/adapter-langgraph'
+    ],
+    outputFileTracingIncludes: {
+      '/**': ['./yamls/**']
+    },
     webpack: (config) => {
       config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
       return config
