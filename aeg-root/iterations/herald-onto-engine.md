@@ -1,18 +1,18 @@
 # Iteration: herald-onto-engine — June 2026
 
-**Goal (execution, not product-why):** onboard **Herald onto `@atta/engine`** — express Herald's auditor as a **flow YAML the engine runs** (exactly as Vāda's agents are YAMLs the engine runs), then build **Bulk Audit** (N CVs × M JDs → one forensic report per pair) on top, and finally make the auditor a **tool-using YAML agent** (it gathers its own GitHub evidence). The durable, multi-project win is Herald stopping being special: one engine runs every product's agents, defined declaratively in YAML — including their tools.
+**Goal (execution, not product-why):** onboard **Herald onto `@atta/engine`** — express Herald's auditor as a **flow YAML the engine runs** (exactly as Vāda's agents are YAMLs the engine runs), then build **Bulk Audit** (N CVs × M JDs → one forensic report per pair) on top, and finally make the auditor a **tool-using YAML agent** (it gathers its own GitHub evidence) — which requires first **building custom client-side tool execution into the shared engine.** The durable, multi-project win is Herald stopping being special: one engine runs every product's agents, defined declaratively in YAML — including their tools.
 
-**Center of gravity:** Herald-as-an-engine-consumer. `@atta/engine` is the shared substrate; Vāda is the first consumer, Herald becomes the second. **The engine is used as-is — not modified** (it already runs all 12 vendors as text, proven by `apps/vada-ai/yamls/brokered-quartet.yaml`, and already has the tool machinery Vāda's agents use). Bulk Audit and the tool-using auditor are downstream of the migration.
+**Center of gravity:** Herald-as-an-engine-consumer, plus one genuine **shared-engine capability** (custom tool execution, task 7a). `@atta/engine` is the shared substrate; Vāda is the first consumer, Herald becomes the second. The migration (task 1) consumes the engine unchanged; the tool work (7a) **extends** it (Vāda in blast radius, additive). Bulk Audit and the tool-using auditor are downstream of the migration.
 
-> **Re-scope note (June 12 — Brief Author dig, severity:strategy):** the original plan had a task **3a "add multi-vendor structured output to the engine."** The task-1 briefing dig **overturned its premise** and 3a was **dropped (#87 closed not-planned).** Findings: (1) the engine already runs any vendor in a YAML (text) today; (2) the only gap was the narrow `outputSchema` typed-object path on non-Anthropic vendors; (3) **Herald doesn't need it** — its auditor prompt already requests JSON-as-text and parses it, like Vāda. So Herald-onto-engine is **purely Herald-side, zero engine change, any vendor.** Structured-output-on-other-vendors is an optional *future* engine enhancement, backlogged, not here.
+> **Re-scope note (June 12 — Brief Author dig, severity:strategy):** the original plan had a task **3a "add multi-vendor structured output to the engine."** The task-1 briefing dig **overturned its premise** and 3a was **dropped (#87 closed not-planned).** Findings: (1) the engine already runs any vendor in a YAML (text) today; (2) the only gap was the narrow `outputSchema` typed-object path on non-Anthropic vendors; (3) **Herald doesn't need it** — its auditor prompt already requests JSON-as-text and parses it, like Vāda. So the *migration* (task 1) is purely Herald-side, zero engine change, any vendor. Structured-output-on-other-vendors is an optional *future* engine enhancement, backlogged, not here.
 
-> **Task 7 added (June 12 — Principal intent):** "agents own their tools in the YAML; apps stop pre-fetching context." Task 7 makes the auditor a **tool-using** YAML agent (it calls a GitHub tool to gather evidence, retiring `extractSignals` as a pre-fetch). The engine's tool machinery already exists (Vāda's agents use `classifier`); task 7 consumes it. Sequenced last (depends on the migration; highest-vision/highest-risk).
+> **Task 7 split into 7a + 7b (June 13 — Principal decision, readiness-gate catch):** the original task 7 ("auditor gets a GitHub tool") assumed the engine could already run **custom client-side tools.** The planning dig (`node-executor.ts` + `graph-state.ts`) **proved it cannot** — the adapter supports only **provider-native server tools** (the classifier *allocates* tools; the vendor executes them; there is no loop where the engine pauses, runs an app-supplied function, and feeds the result back). So "give Herald a tool" is two things: **7a — build custom client-side tool execution into `@atta/adapter-langgraph`** (shared engine, **Vāda in blast radius**, additive/opt-in), and **7b — Herald defines its GitHub tool in the YAML** (depends on 7a). Split by verification coupling: 7a is provable with a trivial throwaway tool; 7b proves it in production with the real GitHub tool. This was the planner's readiness gate working — it refused to plan 7 as a "small Herald task" once the dig showed it required shared-engine work.
 
 **Repo:** attalabs (`daniboomerang/atta.ai`)   ·   **Team Leader:** Dani
 
 > **Status is derived from the forge, not stored here.** This file is topology + the planner's durable rationale only. No PR numbers, no dates, no status. Issues are cut: task → Issue mapping below is fixed; live status is `gh pr list` / the Issue/PR state, never written here.
 
-> **This was the first iteration run as a deliberate planning prototype** (F1–F6, global D-042). It is now also the first iteration where the **Brief Author dig caught a mis-scoped task and corrected the plan** (the conversational protocol + planner-brief contract working as designed): 3a's premise was wrong, surfaced at brief time as `severity:strategy`, the plan looped back one step, 3a was removed. The full Planner's rationale lives in each task's Issue body; the per-task summaries below are retained for topology reading.
+> **This iteration is a working demonstration of the model catching its own errors.** It was the first deliberate planning prototype (F1–F6, global D-042); then the **Brief Author dig caught a mis-scoped task** (3a dropped, June 12); then the **planner readiness gate caught a hidden shared-engine dependency** (task 7 split into 7a/7b, June 13). Twice, the dig overturned a premise before a wrong brief shipped. The full Planner's rationale lives in each task's Issue body; the per-task summaries below are for topology reading.
 
 ---
 
@@ -26,19 +26,21 @@
 | 4 | N×M matrix UI (Bulk Audit accepts N CVs × M JDs, renders per-pair grid) | #91 | herald | 2 | 2, 5 |
 | 5 | Polymorphic inputs (JD link/text; CV text/.md/.pdf/published profile) | #92 | herald | 2, 4 | 2, 4 |
 | 6 | Per-key rate limit / cap on profile audits (D-033 abuse surface) | #93 | herald | 2 | — |
-| 7 | Auditor agent gets a GitHub tool (signal-gathering moves into the YAML agent) | #102 | herald, engine | 1 | — |
+| 7a | Custom client-side tool execution in `@atta/engine` (shared) | #102 | engine, vada, herald | — | — |
+| 7b | Herald auditor uses a GitHub tool defined in its YAML | #103 | herald | 1, 7a | — |
 
-*(Task 3a — "multi-vendor structured output in the engine" — removed; #87 closed not-planned. See the re-scope note above.)*
+*(Task 3a — "multi-vendor structured output in the engine" — removed; #87 closed not-planned. Task 7 split into 7a/7b — see the split note above.)*
 
 **Wave structure (max concurrency, derived from the edges):**
-- **Wave 1 (lead, solo):** **1 (#88)** — Herald auditor onto the engine. No conflict now that 3a is gone; clean single lead. Everything builds on Herald running through the engine.
-- **Wave 2 (after 1 merged — parallel):** 2 (#89, endpoint unification), 3b (#90, BYOK UI + model selector), and **7 (#102, tool-using auditor)** — three different surfaces (routing / settings / the auditor YAML's tool config), no conflict; all depend only on task 1. (7 may also be sequenced later by preference — it's the highest-risk; depends-on 1 is its only hard constraint.)
+- **Wave 1 (lead):** **1 (#88)** — Herald auditor onto the engine. Clean single lead; everything Herald-side builds on it. **7a (#102) can also start in wave 1** — it's pure engine work (no `depends-on`), independent of the migration, so it may run in parallel with task 1 from the start. (Sequencing 7a early is attractive: it's the highest-risk/highest-value shared work and unblocks 7b.)
+- **Wave 2 (after 1 merged — parallel):** 2 (#89, endpoint unification) and 3b (#90, BYOK UI + model selector) — different surfaces, no conflict; depend on task 1 only.
 - **Wave 3 (after 2 merged — parallel):** 4 (#91, matrix UI) and 6 (#93, rate limit) — different surfaces (UI vs `/api/audit` middleware).
 - **Wave 4 (after 4 merged):** 5 (#92, polymorphic inputs) — builds on the matrix.
+- **7b (#103)** runs once **both 1 and 7a** are merged — the last Herald-side step (depends-on 1 + 7a). Naturally lands late.
 
-Max concurrency: 3 (wave 2). The hard serial point is wave 1 (task 1), which is correct — everything builds on Herald being an engine consumer.
+Max concurrency: up to 3 (e.g. task 1 + 7a + an unblocked sibling). The hard serial points are wave 1 (task 1) for the Herald chain and 7a→7b for the tool chain.
 
-**Dispatch order:** 1 (#88) is the wave-1 lead. Assigning it promotes it `backlog → todo`; a Developer then writes the brief just-in-time from its Planner's rationale (per the planner-brief contract), opens `task/herald-onto-engine/1`, and opens the PR with the brief in the body.
+**Dispatch order:** 1 (#88) is the Herald wave-1 lead; **7a (#102) is independently dispatchable now** (no deps) and is the long pole for the tool feature, so starting it early is sensible. Assigning an Issue promotes it `backlog → todo`; a Developer then writes the brief just-in-time from its Planner's rationale (per the planner-brief contract), opens `task/herald-onto-engine/<n>`, and opens the PR with the brief in the body.
 
 ---
 
@@ -57,7 +59,7 @@ Fold `/api/match` + `/api/recruiter/batch` into one `/api/audit` whose unit of w
 ### Task 3b — Herald multi-vendor BYOK UI + audit model selector · Issue #90
 **Project(s):** herald · **Depends-on:** 1 · **Conflicts-with:** —
 
-Herald settings save keys for multiple vendors + a model picker for the audit. (Now depends on task 1 only — the old dependency on 3a is gone; vendor support is inherent in the engine, so the selector simply offers the vendors the user has keys for.) Reuse `@atta/ui/account` `ProviderKeysSection`; don't rebuild. Respects D-033 (whose key, orthogonal to which vendor). Mid. *Full rationale: Issue #90.*
+Herald settings save keys for multiple vendors + a model picker for the audit. (Depends on task 1 only; vendor support is inherent in the engine, so the selector simply offers the vendors the user has keys for.) Reuse `@atta/ui/account` `ProviderKeysSection`; don't rebuild. Respects D-033 (whose key, orthogonal to which vendor). Mid. *Full rationale: Issue #90.*
 
 ### Task 4 — N×M matrix UI · Issue #91
 **Project(s):** herald · **Depends-on:** 2 · **Conflicts-with:** 2, 5
@@ -74,17 +76,22 @@ JD as link|text; CV as text|.md|.pdf|published profile, normalized into the audi
 
 Close the D-033 hole (strangers spend the owner's key budget). Per-key cap at the `/api/audit` layer (Upstash Redis backbone). **Operational dependency, not a code blocker:** Upstash creds expired — ship with graceful degradation; enforcement needs the creds. Parallelizes with wave 3. Mid. Stop-and-escalate `severity:product` if it needs a D-033 policy change. *Full rationale: Issue #93.*
 
-### Task 7 — Auditor agent gets a GitHub tool · Issue #102 · **last (Phase 2)**
-**Project(s):** herald, engine · **Depends-on:** 1 · **Conflicts-with:** —
+### Task 7a — Custom client-side tool execution in `@atta/engine` · Issue #102 · **shared engine, Vāda in blast radius**
+**Project(s):** engine, vada, herald · **Depends-on:** — · **Conflicts-with:** —
 
-Give the auditor agent a **GitHub tool defined in the YAML** so it gathers its own evidence, retiring `extractSignals` as a deterministic pre-fetch — the deeper "self-contained in the YAML" end state (Principal intent: agents own their tools; apps stop pre-fetching). The auditor YAML gains a `tools` entry + a tool-using classifier mode (`auto`/`always_tools`); the engine's existing tool machinery runs it. **The tool's implementation IS today's `extractSignals` logic — reuse it, don't rewrite the GitHub-walking.** The **NO-FIT gate stays Herald code** (giving the agent a tool never moves business-rule enforcement into the model). Preserve a timeout/budget (today's 3s becomes the tool budget); the no-GitHub case must still produce a valid audit. **depends-on 1** (must be a YAML agent first). High. **Stop-and-escalate `severity:strategy`** if it needs an engine/adapter change (not just consuming the tool machinery → Vāda blast radius), or if audit quality drops materially under the agentic-tool model (may stay pre-fetch). Separate from task 1 deliberately — a behavior redesign with its own verification story; folding it into the migration would break task 1's single-verification-story sizing. *Full rationale: Issue #102.*
+Build **custom client-side function-tool execution** into the adapter (`@atta/adapter-langgraph`). Today the adapter supports **provider-native server tools only** — the classifier *allocates* tools and the vendor executes them; there is **no loop** where the model emits a `tool_use`, the engine pauses, runs an app-supplied TypeScript function, and feeds the result back (proven by `node-executor.ts` + `graph-state.ts`: `toolUseHistory` is "best-effort — server tools don't emit countable tool_use blocks"). 7a adds: a YAML-declared **custom tool**, a registration surface for app-supplied tool implementations, and the call→tool→call execution loop. **Shared-engine change → Vāda in blast radius → additive/opt-in is mandatory** (an agent with no custom tools behaves byte-identically to today; that's the Vāda-safety guarantee). One verification story: a flow with a trivial custom tool (e.g. `add`) runs the loop and the registered fn executes. **Independently verifiable** with a throwaway tool → clean split from 7b. High. **Stop-and-escalate `severity:strategy`** if the loop can't be made additive (forces a change to the shared call path that alters Vāda) — that's a Type 1 engine-architecture decision for the Principal. *Full rationale: Issue #102.*
+
+### Task 7b — Herald auditor uses a GitHub tool defined in its YAML · Issue #103 · **last (depends on 7a)**
+**Project(s):** herald · **Depends-on:** 1, 7a · **Conflicts-with:** —
+
+Define Herald's **GitHub signal tool in the auditor YAML** and register its implementation, so the agent **gathers its own evidence** instead of Herald pre-fetching it (Principal intent: agents own their tools; apps stop pre-fetching). The YAML agent gains a `tools` entry + a tool-using classifier mode; Herald registers the tool's body via the surface **7a** builds; `extractSignals` is retired as a pre-fetch. **Reuse `signals.ts` as the tool's implementation — don't rewrite the GitHub-walking.** The **NO-FIT gate stays Herald code.** Preserve a timeout/budget (today's 3s → the tool budget); the no-GitHub case must still produce a valid audit. **depends-on 1** (must be a YAML agent first) **and 7a** (the engine must support custom tools first). Herald-only surface (7a carried the engine blast radius). Mid. **Stop-and-escalate** if audit quality drops materially vs. pre-fetch (may keep pre-fetch), or if 7a's tool surface proves insufficient (`severity:strategy` back to 7a). *Full rationale: Issue #103.*
 
 ---
 
 ## Open questions / notes for dispatch
 
-- **Issues:** #88–#93 + #102 live (#87/3a closed not-planned). Assigning an Issue is the `backlog → todo` promotion.
-- **No engine change planned in this iteration.** The engine is consumed as-is (including its tool machinery for task 7). If task 1 or task 7 finds a real engine gap, that's a `severity:strategy` escalation that would re-open engine-scope work (and put Vāda in the blast radius) — not assumed.
-- **Structured-output-on-other-vendors** (the old 3a) is backlogged as an optional future engine enhancement (typed-object ergonomics), not required by Herald.
-- **Task 1 → Task 7 is the Herald-on-engine arc:** task 1 makes the auditor a YAML agent (signals pre-fetched); task 7 makes it a *tool-using* YAML agent (signals self-gathered). Maximal "logic in the YAML, not code."
-- **This iteration prototyped F1–F6** (global D-042) **and** the first Brief-Author-catches-mis-scoped-task correction (3a dropped at brief time). The model worked: the dig caught the stale premise before a wrong brief shipped.
+- **Issues:** #88–#93, #102 (7a), #103 (7b) live (#87/3a closed not-planned). Assigning an Issue is the `backlog → todo` promotion.
+- **One genuine shared-engine change this iteration: 7a** (custom tool execution), Vāda in blast radius, additive/opt-in. Everything else is Herald-side. The *migration* (task 1) consumes the engine unchanged; if task 1 finds a hidden engine gap, that's a `severity:strategy` escalation (not assumed).
+- **The tool chain is 1 → 7a → 7b:** task 1 makes the auditor a YAML agent (signals pre-fetched); 7a gives the engine the ability to run custom tools (shared); 7b moves Herald's signal-gathering into the agent as a YAML-declared tool. End state: maximal "logic in the YAML, not code," with the agent owning its own evidence-gathering.
+- **Structured-output-on-other-vendors** (the old 3a) is backlogged as an optional future engine enhancement, not required by Herald.
+- **This iteration is the model catching its own errors twice:** 3a dropped (Brief Author dig, June 12) and task 7 split into 7a/7b (planner readiness gate, June 13) — both before a wrong brief shipped.
