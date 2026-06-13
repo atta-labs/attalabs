@@ -15,12 +15,10 @@ import { MATCH_REPORT_SCHEMA } from '@/lib/prompts'
 import { extractSignals } from '@/lib/signals'
 import type { MatchReport } from '@/lib/types'
 
-// Resolve the auditor YAML once at module load. The path is relative to this file,
-// which Next.js traces into the deployment via outputFileTracingIncludes.
-const HERALD_AUDITOR_YAML_PATH = join(
-  dirname(fileURLToPath(import.meta.url)),
-  '../../../../../yamls/herald-auditor.yaml'
-)
+// Resolve the auditor YAML once at module load. Path is relative to this file
+// (apps/herald-ai/web/src/app/api/match/route.ts); four ".." reach web/, then yamls/.
+// Next.js traces this into the deployment via outputFileTracingIncludes.
+const HERALD_AUDITOR_YAML_PATH = join(dirname(fileURLToPath(import.meta.url)), '../../../../yamls/herald-auditor.yaml')
 
 let cachedFlow: Flow | null = null
 function getAuditorFlow(): Flow {

@@ -1,10 +1,18 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'bun:test'
 import { compileFlow, loadFlow } from '@atta/engine'
 import { MATCH_REPORT_SCHEMA } from '../src/lib/prompts'
 
 const YAML_PATH = join(import.meta.dirname, '../yamls/herald-auditor.yaml')
+
+// Guards the relative-path math used by src/app/api/match/route.ts at runtime.
+// route.ts resolves the YAML via `../../../../yamls/herald-auditor.yaml` from
+// dirname(import.meta.url). This test replays the same expression from the
+// route's directory; if either side drifts, this test fails before the route
+// silently falls into its partial-report fallback at runtime.
+const ROUTE_DIR = join(import.meta.dirname, '../src/app/api/match')
+const YAML_PATH_FROM_ROUTE = join(ROUTE_DIR, '../../../../yamls/herald-auditor.yaml')
 
 function load() {
   return loadFlow(readFileSync(YAML_PATH, 'utf-8'))
@@ -53,5 +61,12 @@ describe('herald-auditor.yaml', () => {
   it('passes the user message through the {{question}} template', () => {
     const flow = load()
     expect(flow.rounds[0]?.messageTemplate).toBe('{{question}}')
+  })
+
+  it('is reachable from the route handler via the same relative path math route.ts uses', () => {
+    // If this fails, route.ts:22's relative path is wrong by one level (or the
+    // YAML moved). Without this guard, the bug surfaces only at runtime as a
+    // silent partial-report fallback.
+    expect(existsSync(YAML_PATH_FROM_ROUTE)).toBe(true)
   })
 })
