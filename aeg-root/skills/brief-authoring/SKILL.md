@@ -76,6 +76,7 @@ Before a brief is dispatchable, confirm **every one of the seven Planner fields 
 - [ ] **Traps to avoid** → is every trap an explicit "do NOT do X; do Y instead" in **Context (§2) / Constraints (§10)**? (Highest-value field — never drop it.)
 - [ ] **Suggested agent-class** → did you confirm or deviate (with reason) and make the final pick in the **`For:` + `Reason:`** header?
 - [ ] **Stop-and-escalate** → are the Planner's stop conditions copied into the brief's **Stop conditions (§9)**, substance-verbatim?
+- [ ] **No instruction contradicts the surface map** → if the brief tells the executor to **delete or rename a shared symbol** (a constant, type, export, function), confirm **every importer is inside the §4 surface.** If an importer is out-of-surface, the "delete it" instruction and the "don't touch that file" boundary contradict — defer the deletion to the task that owns the importer, and say so in the brief. (See the **shared-symbol importer check** in §4.)
 
 Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
 
@@ -124,6 +125,14 @@ A task whose technical dependencies aren't all satisfiable at dispatch is **not 
 
 This map is what makes "only the expected files changed" checkable at review (Section 8) and what stops scope creep.
 
+#### Shared-symbol importer check (mandatory before writing any "delete" or "rename" instruction)
+
+Before the brief instructs the executor to **delete, rename, or change the signature of a shared symbol** — a constant, type, export, function, or file that other code imports — **find every importer first** (a repo-wide search for the symbol name), and confirm each importer is **inside the §4 surface**. Then:
+- **All importers in-surface** → the delete/rename instruction is safe; write it.
+- **Any importer out-of-surface** → the instruction contradicts the out-of-surface boundary: "delete X" breaks the typecheck of a file the brief also says "do not touch." **Do not write the contradiction.** Instead, **defer the deletion to the task that owns the out-of-surface importer**, and say so explicitly in the brief (e.g. *"keep `SYMBOL` for now — `/api/other` still imports it; task N deletes it when it migrates that importer; until then the old and new definitions are kept in lockstep"*).
+
+A brief that says "delete a shared symbol" **and** "don't touch one of its importers" is **malformed** — it forces the executor to either break out-of-surface code or violate the delete instruction. The importer check is what stops the Brief Author writing two individually-sensible instructions that are jointly impossible. (This is the brief-time analogue of the dig discipline: verify the actual importer set against the codebase before asserting a delete is safe, rather than assuming the symbol is used only where you expect.)
+
 ### 5. Pre-flight checks
 
 Numbered checklist. **The first pre-flight step is always creating a worktree — no exceptions.**
@@ -164,7 +173,7 @@ Typecheck passes; lint passes; tests pass; production build passes (catches stri
 
 ### 9. Stop conditions
 
-Explicit list that causes STOP-and-report rather than improvising: pre-flight failures (incl. worktree couldn't be created); a technical dependency from Section 3 not actually present; a dispatch gate not satisfied (a `depends-on` PR not merged, or a `conflicts-with` sibling's PR open); the executor's own dig contradicts the inherited Planner's rationale (boundary moved / sizing broke — escalate `severity:strategy`); the task's stop-and-escalate condition from the Planner's rationale is hit; design gap discovered; test fails after multiple attempts; about to touch files outside the Section 4 surface; any destructive action not explicitly authorized.
+Explicit list that causes STOP-and-report rather than improvising: pre-flight failures (incl. worktree couldn't be created); a technical dependency from Section 3 not actually present; a dispatch gate not satisfied (a `depends-on` PR not merged, or a `conflicts-with` sibling's PR open); the executor's own dig contradicts the inherited Planner's rationale (boundary moved / sizing broke — escalate `severity:strategy`); the task's stop-and-escalate condition from the Planner's rationale is hit; **a brief instruction turns out to contradict another** (e.g. "delete a shared symbol" vs. "don't touch an out-of-surface importer of it") — do the safe half (keep the symbol), flag the contradiction in the PR body, and let the Brief Author/Principal resolve it; design gap discovered; test fails after multiple attempts; about to touch files outside the Section 4 surface; any destructive action not explicitly authorized.
 
 ### 10. Constraints
 
@@ -304,6 +313,7 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 - ❌ Starting from a blank page instead of the Planner's rationale — re-deriving (often differently) what the planner already concluded, and losing the traps the planner flagged
 - ❌ Dropping any field of the planner-brief contract — every rationale field has a named home in the brief; a dropped field is a lost conclusion (run the contract-conformance checklist)
 - ❌ Skipping the contract-conformance checklist before dispatch — the gate that proves no field was dropped
+- ❌ **Telling the executor to delete or rename a shared symbol without first finding every importer** — if an importer is out-of-surface, "delete X" and "don't touch that file" contradict, and the executor is forced to break code or disobey. Run the §4 shared-symbol importer check; defer the deletion to the task that owns the out-of-surface importer.
 - ❌ Omitting the Technical Dependencies section — the executor discovers mid-task that something it needs doesn't exist yet
 - ❌ Omitting the Technical Surface Map — "only expected files changed" becomes uncheckable and scope creeps
 - ❌ A `For:`/`Reason:` line with no real reasoning ("Sonnet because it's good") — the capability choice must be justified against the task
