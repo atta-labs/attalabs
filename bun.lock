@@ -320,6 +320,15 @@
         "typescript": "^5.7.0",
       },
     },
+    "packages/aeg-core": {
+      "name": "@atta/aeg-core",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "typescript": "^5.7.0",
+        "vitest": "^2.1.0",
+      },
+    },
     "packages/atta-agents": {
       "name": "@atta/agents",
       "version": "0.1.0",
@@ -620,6 +629,8 @@
     "@atta/adapter-langgraph": ["@atta/adapter-langgraph@workspace:packages/adapter-langgraph"],
 
     "@atta/admin": ["@atta/admin@workspace:tools/admin"],
+
+    "@atta/aeg-core": ["@atta/aeg-core@workspace:packages/aeg-core"],
 
     "@atta/agents": ["@atta/agents@workspace:packages/atta-agents"],
 
