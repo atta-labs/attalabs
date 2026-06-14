@@ -11,6 +11,7 @@ import { getUserByUsername } from '@/db/queries'
 import { resolveAuditCredentials, type ResolvedAuditCredentials } from '@/lib/audit-key'
 import { DANI_PROFILE } from '@/lib/profile'
 import { MATCH_REPORT_SCHEMA } from '@/lib/prompts'
+import { perOwnerAuditLimiter } from '@/lib/rate-limit'
 import { extractSignals } from '@/lib/signals'
 import type { MatchReport } from '@/lib/types'
 
@@ -249,6 +250,27 @@ async function handleSingle(body: Record<string, unknown>): Promise<NextResponse
     if (!dbUser) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
+
+    // Per-owner audit cap (D-033 abuse hole). Profile audits spend the
+    // owner's BYOK key; without this cap, distributed callers (rotating IPs)
+    // can drain the owner's budget even with the per-IP limit in proxy.ts.
+    // Keyed on the owner's clerkId. Fail-open on limiter error, exactly like
+    // the per-IP limiter — today's Upstash creds are expired, enforcement
+    // goes live when they're refreshed.
+    if (perOwnerAuditLimiter) {
+      try {
+        const { success } = await perOwnerAuditLimiter.limit(dbUser.clerkId)
+        if (!success) {
+          return NextResponse.json(
+            { error: 'This profile has received many audits recently. Try again in an hour.' },
+            { status: 429 }
+          )
+        }
+      } catch {
+        console.warn('[Herald] Per-owner rate limit check failed — allowing request')
+      }
+    }
+
     profile = {
       name: dbUser.name,
       title: dbUser.title,

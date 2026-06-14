@@ -8,6 +8,13 @@
 
 ---
 
+## June 14, 2026 — Herald per-key rate limit on profile audits
+
+### Herald
+- **Task 6 (#93)** — Closes the D-033 abuse hole: strangers running audits on a published profile spend the owner's BYOK key, previously bounded only by a per-IP cap (5/h) — distributed callers (rotating IPs) could still drain the owner's budget. New per-owner-key limiter (30 audits/h, prefix `herald:audit:owner`, keyed on the profile owner's `clerkId`) runs inside `app/api/audit/route.ts handleSingle` right after the owner is resolved by `username`. Scoped to the single-shape profile-audit path only — the batch shape runs on the logged-in user's own key and is lower priority. Both limiters now share `src/lib/rate-limit.ts`; `proxy.ts` imports the per-IP instance unchanged (existing Upstash bucket preserved via `herald:match` prefix). Fail-open semantics mirror the per-IP limiter: missing env vars or limiter errors log a warning and allow the request — today's Upstash creds are expired (known backlog), the mechanism activates with refreshed creds. Conservative 30/h cap chosen to cover a launch-day flurry (5–10 distinct recruiters × 2–3 audits) while bounding worst-case owner spend at ~30 LLM calls/h.
+
+---
+
 ## June 14, 2026 — Herald multi-vendor BYOK + audit model selector
 
 ### Herald
