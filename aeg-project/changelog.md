@@ -8,6 +8,13 @@
 
 ---
 
+## June 14, 2026 — AEG Studio shell scaffolded
+
+### AEG
+- **PR #108** — AEG Studio shell scaffolded (`apps/aeg/web/studio`) — top bar + sidebar, stub data; no real artifact reads yet (those land in #97 / #98–#100 / #101).
+
+---
+
 ## June 14, 2026 — Conventions enforced in CI (commit format, Biome, forbidden colors)
 
 ### Process / tooling
