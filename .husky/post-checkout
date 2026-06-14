@@ -1,0 +1,5 @@
+# $3 == 1 → branch checkout (incl. `git worktree add`); $3 == 0 → file checkout.
+# Skip file checkouts to avoid pointless work.
+if [ "${3:-0}" = "1" ]; then
+  bash "$(git rev-parse --show-toplevel)/tools/sync-env-from-main.sh" || true
+fi
