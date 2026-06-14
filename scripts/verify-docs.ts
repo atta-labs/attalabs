@@ -90,11 +90,27 @@ function malformedDecisionEntries(content: string): string[] {
   return bad
 }
 
+/**
+ * Read the `Tier:` field from the PR body.
+ *
+ * Tolerates the three markdown shapes the field appears in:
+ *   - plain:        `Tier: 3`
+ *   - bold colon:   `**Tier:** 3`   (the `**` wraps `Tier:` including the colon)
+ *   - bold label:   `**Tier**: 3`   (the `**` wraps only `Tier`)
+ *
+ * The field may appear inline in a metadata line (e.g.
+ * `Iteration: x · Task: 1 · **Tier:** 3 · Project: y`), so it is NOT anchored
+ * to line-start. Returns null when no Tier field is present at all — the caller
+ * decides what a missing tier means (PR mode treats it as an explicit error,
+ * NOT a silent default — see runPrMode).
+ */
 function readTierFromPrBody(): 0 | 1 | 3 | null {
   const body = process.env.PR_BODY || ''
-  const m = body.match(/(^|\n)\s*(\*\*)?Tier(\*\*)?:?\s*(\*\*)?\s*([013])/i)
+  // Match an optional bold-open, the word Tier, an optional bold-close, a colon,
+  // an optional bold-close (covers `**Tier:**`), optional space, then the digit.
+  const m = body.match(/(\*\*)?\s*Tier\s*(\*\*)?\s*:\s*(\*\*)?\s*([013])\b/i)
   if (!m) return null
-  const t = Number(m[5])
+  const t = Number(m[4])
   return t === 0 || t === 1 || t === 3 ? (t as 0 | 1 | 3) : null
 }
 
@@ -133,13 +149,22 @@ function runPrMode(): void {
     return
   }
 
+  // A missing Tier is an EXPLICIT error, not a silent escalation. Previously the
+  // script defaulted a parse-miss to Tier 3 and then failed on a *different*
+  // rule (C4), which produced a confusing red build for what is really a
+  // "declare your tier" problem (this is exactly how PR #105 failed). Make the
+  // author declare the tier; do not guess.
   const tier = readTierFromPrBody()
-  const effectiveTier: 0 | 1 | 3 = tier ?? 3 // when in doubt, Tier 3 (D-003)
   if (tier === null) {
-    notes.push(
-      'No `Tier:` field found in PR body — defaulting to Tier 3 (strictest). Add `Tier: 0|1|3` to the PR body to set it explicitly.'
+    errors.push(
+      'C0 tier-required: No `Tier:` field found in the PR body. Add `Tier: 0`, `Tier: 1`, or `Tier: 3` (plain or bold, e.g. `**Tier:** 3`) so the correct documentation gate applies. (state-machine.md Section 9)'
     )
+    // Report and exit here — every downstream check keys off the tier, so
+    // running them against a guessed tier is what caused the confusing failure.
+    finish()
+    return
   }
+  const effectiveTier: 0 | 1 | 3 = tier
 
   const codeFiles = changed.filter(isCodeFile)
   const docFiles = changed.filter(isDocFile)
@@ -211,19 +236,25 @@ function runFullMode(): void {
   }
 }
 
+// ---- output ----------------------------------------------------------------
+
+function finish(): void {
+  for (const n of notes) console.log(`verify-docs note: ${n}`)
+
+  if (errors.length) {
+    console.error(`\nverify-docs FAILED (${mode} mode) — ${errors.length} issue(s):\n`)
+    for (const e of errors) console.error(`  ✗ ${e}`)
+    console.error('\nFix the docs, or (Principal only) apply the override:docs label. See state-machine.md Section 12.')
+    process.exit(1)
+  }
+
+  console.log(`verify-docs passed (${mode} mode).`)
+  process.exit(0)
+}
+
 // ---- run -------------------------------------------------------------------
 
 if (mode === 'pr') runPrMode()
 else runFullMode()
 
-for (const n of notes) console.log(`verify-docs note: ${n}`)
-
-if (errors.length) {
-  console.error(`\nverify-docs FAILED (${mode} mode) — ${errors.length} issue(s):\n`)
-  for (const e of errors) console.error(`  ✗ ${e}`)
-  console.error('\nFix the docs, or (Principal only) apply the override:docs label. See state-machine.md Section 12.')
-  process.exit(1)
-}
-
-console.log(`verify-docs passed (${mode} mode).`)
-process.exit(0)
+finish()

@@ -8,6 +8,13 @@
 
 ---
 
+## June 14, 2026 — verify-docs Tier-parsing fix
+
+### Process / tooling
+- **PR #106** — `fix(verify-docs)`: the docs gate could not parse a bold `**Tier:** 3` field in a PR body (the `**` wraps the colon; the old regex expected the colon outside the bold), so a correctly-tiered PR parsed as `null`, silently defaulted to Tier 3 (strictest), and then failed on the *unrelated* C4 rule (tier-3 needs a decision log). This is how PR #105 (aeg-core) merged red. Two fixes: (1) `readTierFromPrBody` now matches plain `Tier:`, bold-colon `**Tier:**`, and bold-label `**Tier**:`; (2) a missing/unparseable Tier is now an **explicit error** (new check `C0 tier-required`, "declare your tier") instead of a silent escalation to strict — the script never guesses the tier. Output consolidated into `finish()` so the early C0 exit prints consistently. Full mode unchanged; genuine Tier-3-without-decision-log still fails C4 once the tier parses. Surfaced operationally after #105; follow-up: add the docs check to `main`'s required status checks once this lands.
+
+---
+
 ## June 3, 2026 — Cetana F6 (`cetana watch`)
 
 ### Cetana
