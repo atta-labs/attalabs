@@ -1,12 +1,18 @@
 import { TopBar } from '@atta/ui/topbar'
 import type { ReactNode } from 'react'
+import { AegLogo } from './AegLogo'
 import { StudioSidebar } from './StudioSidebar'
 
 export function StudioShell({ children }: { children: ReactNode }) {
   return (
     <>
       <TopBar
-        logo={<span className='font-serif text-lg tracking-tight text-foreground'>AEG</span>}
+        logo={
+          <div className='flex items-center gap-2 text-foreground'>
+            <AegLogo className='h-6 w-6' />
+            <span className='font-serif text-lg tracking-tight'>AEG</span>
+          </div>
+        }
         isSignedIn={false}
       />
       <div className='flex h-[calc(100dvh-3.5rem)] overflow-hidden'>
