@@ -125,7 +125,7 @@ export function EnvoyFlow({
     const apiTimer = setTimeout(() => timeoutController.abort(), API_TIMEOUT)
 
     try {
-      const res = await fetch('/api/match', {
+      const res = await fetch('/api/audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ job_description: jd, username }),

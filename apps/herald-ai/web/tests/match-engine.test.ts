@@ -61,7 +61,7 @@ async function runMatch(profile: TestProfile | null, jd: TestJD): Promise<MatchR
     }
   }
 
-  const res = await fetch(`${BASE_URL}/api/match`, {
+  const res = await fetch(`${BASE_URL}/api/audit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
