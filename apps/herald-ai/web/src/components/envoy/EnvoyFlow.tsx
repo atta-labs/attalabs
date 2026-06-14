@@ -75,13 +75,16 @@ export function EnvoyFlow({
   profile,
   username,
   previewMode = false,
-  hasAnthropicKey = false,
+  hasAnyKey = false,
   isOwner = false
 }: {
   profile: CandidateProfile
   username: string
   previewMode?: boolean
-  hasAnthropicKey?: boolean
+  /** True when the profile owner has a key for ANY supported vendor.
+   *  Replaces the old hasAnthropicKey gate — the audit will resolve which
+   *  model + vendor to use at runtime. (Task 3b.) */
+  hasAnyKey?: boolean
   isOwner?: boolean
 }) {
   const comps = useComponents()
@@ -177,7 +180,7 @@ export function EnvoyFlow({
         candidateGithub={localProfile.github}
         candidateLinkedin={localProfile.linkedin}
         candidateDiscord={localProfile.discord}
-        auditAvailable={hasAnthropicKey}
+        auditAvailable={hasAnyKey}
         isOwner={isOwner}
         preview={previewMode}
       />

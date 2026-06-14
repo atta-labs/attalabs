@@ -186,6 +186,7 @@
         "@atta/engine": "workspace:*",
         "@atta/herald-ai-mcp": "workspace:*",
         "@atta/instrumentation": "workspace:*",
+        "@atta/models": "workspace:*",
         "@atta/ui": "workspace:*",
         "@clerk/nextjs": "^7.0.7",
         "@lobehub/icons": "^5.4.0",

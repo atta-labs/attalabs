@@ -3,12 +3,10 @@ export const dynamic = 'force-dynamic'
 import { auth } from '@clerk/nextjs/server'
 import { cmsClient, generateThemeCSS, getThemeById } from '@atta/cms'
 import { notFound } from 'next/navigation'
-import { decryptVendorKeys } from '@atta/crypto'
-import { getProviderKeys } from '@atta/db/queries'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
-import { db } from '@/db'
 import { getUserByUsername } from '@/db/queries'
 import { getGoogleFontsUrl } from '@atta/cms'
+import { loadDecryptedKeys } from '@/lib/audit-key'
 
 export default async function EnvoyPage({
   params,
@@ -31,24 +29,11 @@ export default async function EnvoyPage({
   // Gate unpublished profiles — owner can preview, everyone else gets 404
   if (!user.isPublished && !isOwner) notFound()
 
-  // Check if owner has a stored Anthropic key — gates the audit input
-  let hasAnthropicKey = false
-  const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
-  if (masterKeyB64) {
-    try {
-      const stored = await getProviderKeys(db, user.clerkId)
-      if (stored) {
-        const keys = decryptVendorKeys(
-          stored.encryptedPayload as Parameters<typeof decryptVendorKeys>[0],
-          user.clerkId,
-          Buffer.from(masterKeyB64, 'base64')
-        )
-        hasAnthropicKey = !!keys.anthropic
-      }
-    } catch {
-      hasAnthropicKey = false
-    }
-  }
+  // Check if owner has a stored vendor key — gates the audit input. Task 3b:
+  // ANY vendor key is now enough (was Anthropic-only). The audit dispatch
+  // path picks the right model + vendor at runtime with auto-fallback.
+  const ownerKeys = await loadDecryptedKeys(user.clerkId)
+  const hasAnyKey = (ownerKeys?.configuredVendors.length ?? 0) > 0
 
   const profile = {
     name: user.name,
@@ -104,7 +89,7 @@ export default async function EnvoyPage({
         profile={profile}
         username={username}
         previewMode={previewMode}
-        hasAnthropicKey={hasAnthropicKey}
+        hasAnyKey={hasAnyKey}
         isOwner={isOwner}
       />
     </>

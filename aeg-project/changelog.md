@@ -8,6 +8,13 @@
 
 ---
 
+## June 14, 2026 — Herald multi-vendor BYOK + audit model selector
+
+### Herald
+- **Task 3b (#90)** — Herald Settings → API Keys is now multi-vendor: Anthropic-only UI replaced with `@atta/ui/account` `ProviderKeysSection` (reused unchanged, Vāda safe); new Herald-local `AuditModelSection` lets the user pick which model the forensic audit runs against (filtered to vendors they have keys for, persisted via `POST /api/admin/audit-model` into two new `herald_profiles` columns). `/api/audit` reads the selection via the shared `resolveAuditCredentials` helper and auto-falls-back to the YAML default when the chosen vendor's key has been revoked — server-side guard mirrors the UI filter so a stale selection never silently breaks an audit. The `hasAnthropicKey` boolean retires across the publish gate, profile editor, and EnvoyFlow (any vendor key is sufficient now). D-033 whose-key logic unchanged. V1 scope: per-user default only; per-audit override deferred.
+
+---
+
 ## June 14, 2026 — AEG Studio shell scaffolded
 
 ### AEG

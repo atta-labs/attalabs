@@ -52,6 +52,11 @@ export const heraldProfiles = pgTable('herald_profiles', {
   linkedinUrl: varchar('linkedin_url', { length: 500 }),
   discordHandle: varchar('discord_handle', { length: 100 }),
   bio: text('bio'),
+  // Per-user audit-model preference (task 3b). Stores the vendor + model that
+  // /api/audit should compile the herald-auditor flow with. When null, the
+  // audit falls back to flow.defaults.model (current behavior preserved).
+  auditModelVendor: varchar('audit_model_vendor', { length: 50 }),
+  auditModelId: varchar('audit_model_id', { length: 100 }),
   onboardingComplete: boolean('onboarding_complete').notNull().default(false),
   isPublished: boolean('is_published').notNull().default(false),
   createdAt: timestamp('created_at').defaultNow().notNull(),

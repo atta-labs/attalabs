@@ -20,6 +20,8 @@ import {
 } from '@atta/ui/components'
 import { Download, ExternalLink, Upload, X } from 'lucide-react'
 import { ProviderKeysSection } from '@atta/ui/account'
+import type { VendorId } from '@atta/models'
+import { AuditModelSection } from '@/components/portal/AuditModelSection'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { HeraldAccountTab } from '@/components/HeraldAccountTab'
 import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
@@ -218,7 +220,15 @@ interface ProfileData {
   cvUrl: string | null
   avatarUrl: string | null
   isPublished: boolean
-  hasAnthropicKey: boolean
+  /** True when the user has a key for ANY vendor (task 3b — audit no longer
+   *  requires Anthropic specifically). */
+  hasAnyKey: boolean
+  /** Vendor IDs the user currently has stored keys for. Drives the model
+   *  picker's `configuredRoutes` set. */
+  configuredVendors: VendorId[]
+  /** The user's effective audit-model selection (with auto-fallback to the
+   *  YAML default applied). Null means no usable key + no default. */
+  auditSelection: { vendor: VendorId; modelId: string } | null
 }
 
 const PROFILE_TABS = ['profile', 'experience', 'connections', 'api-keys', 'account'] as const
@@ -388,12 +398,11 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
 
   return (
     <div>
-      {!profile.hasAnthropicKey && (
+      {!profile.hasAnyKey && (
         <Card className='mb-6 w-full gap-0 border-destructive/25 bg-destructive/8 py-0 shadow-none'>
           <CardContent className='px-4 py-2.5'>
             <p className='font-mono text-xs text-destructive'>
-              Audit disabled — add your Anthropic API key in the API Keys tab to enable forensic match reports for
-              recruiters.
+              Audit disabled — add an API key in the API Keys tab to enable forensic match reports for recruiters.
             </p>
           </CardContent>
         </Card>
@@ -791,7 +800,13 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
 
         {/* ── API Keys ─────────────────────────────────────────── */}
         <TabsContent value='api-keys'>
-          <ProviderKeysSection />
+          <div className='space-y-8'>
+            <ProviderKeysSection />
+            <AuditModelSection
+              configuredVendors={profile.configuredVendors}
+              initialSelection={profile.auditSelection}
+            />
+          </div>
         </TabsContent>
 
         {/* ── Account ──────────────────────────────────────────── */}

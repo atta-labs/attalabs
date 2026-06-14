@@ -78,7 +78,8 @@ Concretely:
 ## 5. Settings
 
 - Five tabs: Profile, Experience, Connections, API Keys, Account. (CV is folded into Experience; there is no separate CV tab.) Tabs are a single non-wrapping row that scrolls horizontally if a chunky library (brutal) exceeds the width.
-- Publish/Unpublish lives in the page header beside the "Settings" title (single title source in `page.tsx`); labels "Publish profile" / "Unpublish profile"; keyless-confirm flow preserved.
+- Publish/Unpublish lives in the page header beside the "Settings" title (single title source in `page.tsx`); labels "Publish profile" / "Unpublish profile"; keyless-confirm flow preserved. The publish gate now reads `hasAnyKey` (any vendor key is sufficient) instead of the retired `hasAnthropicKey` (task 3b).
+- The **API Keys** tab is multi-vendor (task 3b). It composes `@atta/ui/account`'s `ProviderKeysSection` — the same component Vāda uses — for the per-vendor key list (all 12 vendors except Ollama, backed by `/api/keys/provider`). Below it sits Herald-local `AuditModelSection`: a `ModelPicker` filtered to vendors the user has keys for, persisted via `POST /api/admin/audit-model` into `herald_profiles.audit_model_vendor` + `audit_model_id`. Per-user default only (V1) — no per-audit override. Auto-fallback: revoking the selected vendor's key never breaks an audit; the dispatch path resolves to the YAML default (`anthropic` / `claude-sonnet-4-20250514`) at audit time. See `apps/herald-ai/web/src/lib/audit-key.ts`. `@atta/ui/account` is unchanged (empty diff against `packages/ui/account` in this PR — Vāda unaffected).
 - The Account tab renders `HeraldAccountTab` (Herald-local) — an identity summary plus a "Manage account" button that opens Clerk's `<UserProfile/>` in a full-screen modal, sidestepping the column-width cramping. `@atta/ui/account`'s `AttaUserProfile` is unchanged (Vāda still uses it embedded).
 
 ---
@@ -91,7 +92,7 @@ Herald is standalone: its own Clerk app (`closing-blowfish-4`), own Neon DB, own
 
 ## 7. Billing (recap of D-033)
 
-One provider key per Herald user. Profile audits (a recruiter auditing a published profile) run on the **profile owner's** key; Bulk Audit runs on the **logged-in user's** key. Same `getProviderKeys(db, clerkId)` path; only `clerkId` differs. Publishing does not require a key; the audit tool renders only when a key exists; the audit endpoint 503s without one.
+Profile audits (a recruiter auditing a published profile) run on the **profile owner's** vendor key; Bulk Audit runs on the **logged-in user's** vendor key. Same `getProviderKeys(db, clerkId)` path; only `clerkId` differs. Which vendor + model the audit dispatches against is the user's per-user selection (task 3b) — D-033 governs **whose** key, orthogonal to **which vendor**. Publishing does not require a key; the audit tool renders only when the owner has at least one vendor key; the audit endpoint 503s/402s without one.
 
 ---
 
@@ -99,20 +100,22 @@ One provider key per Herald user. Profile audits (a recruiter auditing a publish
 
 Both audit call paths run through one endpoint — `POST /api/audit` — backed by the shared `@atta/engine` + `@atta/adapter-langgraph` substrate. There is no `generateText()` call anywhere in Herald: the legacy `/api/match` and `/api/recruiter/batch` routes are retired.
 
-The auditor agent (system prompt + model + classifier behaviour + message template) lives in `apps/herald-ai/web/yamls/herald-auditor.yaml` — a v2.0 solo flow with one agent (`SkepticalAuditor`, `claude-sonnet-4-20250514`, `classifier.mode: skip`). On the first request the route loads the YAML via `loadFlow(readFileSync(...))` (cached at module load) and compiles it with `compileFlow(flow, userPrompt, undefined, { schema: MATCH_REPORT_SCHEMA })`. The `{{schema}}` customVar is substituted into the agent's system prompt at compile time, so the model-instruction and `parseMatchReport`'s validation share one schema definition. The Plan is executed by `LangGraphAdapter.execute({ plan })` with `providerKeys: { anthropic: apiKey }`.
+The auditor agent (system prompt + classifier behaviour + message template) lives in `apps/herald-ai/web/yamls/herald-auditor.yaml` — a v2.0 solo flow with one agent (`SkepticalAuditor`, `classifier.mode: skip`). On the first request the route loads the YAML via `loadFlow(readFileSync(...))` (cached at module load) and compiles it with `compileFlow(flow, userPrompt, creds.modelId, { schema: MATCH_REPORT_SCHEMA })`. The `{{schema}}` customVar is substituted into the agent's system prompt at compile time, so the model-instruction and `parseMatchReport`'s validation share one schema definition. The Plan is executed by `LangGraphAdapter.execute({ plan })` with `providerKeys: { [creds.vendor]: creds.apiKey }`.
+
+The vendor + model + apiKey for each call are resolved by `resolveAuditCredentials(clerkId)` (`src/lib/audit-key.ts`, task 3b) which reads the user's saved selection from `herald_profiles.audit_model_vendor` / `audit_model_id`, intersects it with the vendor-key map currently stored, and auto-falls-back to the YAML default (`anthropic` / `claude-sonnet-4-20250514`) when the saved vendor's key has been revoked. The audit **never** dispatches against a vendor with no key — the UI's `configuredRoutes` filter and the server's fallback enforce the same invariant. Returns null when the user has no usable key at all; the route then surfaces a 402/503 to the recruiter, matching the pre-3b shape.
 
 ### One endpoint, two payload shapes (D-045)
 
 `POST /api/audit` dispatches on payload shape:
 
-- **Single shape** — `{ job_description, username? | _test_profile_override? }` → returns a `MatchReport`. The Envoy single-profile audit (`EnvoyFlow.tsx`). Auth is open; the audit runs on the **profile owner's** stored BYOK key (DB-resolved by `username`, D-033). Test and Dani-fallback paths use the server `ANTHROPIC_API_KEY`.
+- **Single shape** — `{ job_description, username? | _test_profile_override? }` → returns a `MatchReport`. The Envoy single-profile audit (`EnvoyFlow.tsx`). Auth is open; the audit runs on the **profile owner's** stored BYOK key (DB-resolved by `username`, D-033). Test and Dani-fallback paths use the server `ANTHROPIC_API_KEY` on the YAML default model.
 - **Batch shape** — `{ jd, candidates[] }` → returns `{ results: { username, report, error? }[] }`. The Bulk Audit (`BulkAudit.tsx`). Requires a Clerk session; runs on the **logged-in user's** stored BYOK key (D-033); 402 if missing. `Promise.all` fan-out across candidates (≤ 10).
 
-Both shapes call the same `runSingleMatch(profile, jd, apiKey)` cell — the engine-backed unit of work. Everything around it is preserved verbatim from D-044:
+Both shapes call the same `runSingleMatch(profile, jd, creds)` cell — the engine-backed unit of work. Everything around it is preserved verbatim from D-044:
 
 - **2-attempt retry, 25s timeout** wrapping `adapter.execute(...)` via `Promise.race`. `Conclusion.terminalState === 'FAILED'` advances to the next retry attempt rather than throwing — the engine surfaces errors via the Conclusion shape, not exceptions.
 - **`extractSignals` pre-fetch** (3s timeout, best-effort) still produces the GitHub signal evidence appended to `userPrompt`. Task 7 (#102) will retire this pre-fetch by giving the auditor agent a GitHub tool declared in the YAML.
-- **24h in-memory cache** keyed on `sha256(jd + profile)`. Shared by both shapes — a batch entry that re-tests an already-cached profile+JD pair hits cache.
+- **24h in-memory cache** keyed on `sha256(jd + profile + vendor + modelId)` (task 3b extended the key with vendor + modelId so switching models invalidates cleanly; pre-3b it was `sha256(jd + profile)`). Shared by both shapes — a batch entry that re-tests an already-cached profile+JD+model triple hits cache.
 - **`parseMatchReport`** with its **code-enforced NO-FIT hard-requirement gate** is unchanged. The gate is deliberately Herald code, not a model gate — it must never become model-controlled.
 - **`buildPartialReport` fallback** is unchanged: both attempts failing yields a `B+ / Good Fit / Low confidence` partial report so the UI never crashes (single shape). The batch shape returns `{ error: 'Audit failed' }` for that individual candidate inside the `results[]`, so the rest of the batch is unaffected.
 
@@ -127,7 +130,7 @@ The engine and adapter packages are consumed unchanged: `git diff main --stat` a
 ## 9. Known follow-ups (not built here)
 
 - N×M matrix UI and polymorphic inputs (link / pasted text / .md / .pdf / stored profile). Plugs straight into the existing `/api/audit` cell — `runSingleMatch` is the per-pair primitive.
-- Per-audit vendor + model picker on the Bulk Audit surface (`herald-onto-engine` task 3b, #90) — leverages the engine's vendor-agnostic Plan to let the user choose any model their stored keys support.
+- Per-audit (one-off) vendor + model override on the Bulk Audit surface. The per-user default landed in task 3b (#90); a per-audit override (e.g. "run THIS batch on GPT-5 even though my default is Claude") is the natural next step but explicitly out of scope for V1.
 - Per-key rate limit / cap on profile audits (abuse surface: strangers spend the owner's key budget — D-033).
 - `herald.attalabs.dev` deploy verification.
 - Auditor signal-gathering as a YAML-declared tool (`herald-onto-engine` task 7, #102) — retires the `extractSignals` pre-fetch.

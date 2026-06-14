@@ -1,11 +1,10 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { decryptVendorKeys } from '@atta/crypto'
-import { getProviderKeys } from '@atta/db/queries'
+import { CatalogProvider, getCatalog } from '@atta/models'
 import { ProfileEditor } from '@/components/portal/ProfileEditor'
 import { PublishToggle } from '@/components/portal/PublishToggle'
-import { db } from '@/db'
 import { getUserByClerkId } from '@/db/queries'
+import { loadDecryptedKeys, resolveAuditSelection } from '@/lib/audit-key'
 
 const VALID_TABS = ['profile', 'experience', 'connections', 'api-keys', 'account'] as const
 type ValidTab = (typeof VALID_TABS)[number]
@@ -20,23 +19,22 @@ export default async function CandidateSettingsPage({ searchParams }: { searchPa
   const { tab } = await searchParams
   const defaultTab: ValidTab = VALID_TABS.includes(tab as ValidTab) ? (tab as ValidTab) : 'profile'
 
-  let hasAnthropicKey = false
-  const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
-  if (masterKeyB64) {
-    try {
-      const stored = await getProviderKeys(db, userId)
-      if (stored) {
-        const keys = decryptVendorKeys(
-          stored.encryptedPayload as Parameters<typeof decryptVendorKeys>[0],
-          userId,
-          Buffer.from(masterKeyB64, 'base64')
-        )
-        hasAnthropicKey = !!keys.anthropic
-      }
-    } catch {
-      hasAnthropicKey = false
-    }
-  }
+  // Task 3b: surface the full vendor-key state to the UI, not just an
+  // Anthropic-only boolean. The selector in the API Keys tab needs the
+  // configured-vendors list to filter the model picker; the publish gate
+  // needs `hasAnyKey` so users with a non-Anthropic key (e.g. only OpenAI)
+  // can publish too.
+  const decrypted = await loadDecryptedKeys(userId)
+  const configuredVendors = decrypted?.configuredVendors ?? []
+  const hasAnyKey = configuredVendors.length > 0
+
+  // The user's effective audit-model selection. The dispatch path runs this
+  // same resolution at audit time (with auto-fallback), so the UI shows the
+  // model the next audit will actually use — not a stale row in the DB.
+  const auditSelection = decrypted ? await resolveAuditSelection(userId, decrypted.keys) : null
+
+  // Catalog is fetched at SSR and provided via context to the picker.
+  const catalog = await getCatalog()
 
   const profile = {
     name: user.name,
@@ -51,21 +49,25 @@ export default async function CandidateSettingsPage({ searchParams }: { searchPa
     cvUrl: user.cvUrl ?? null,
     avatarUrl: user.avatarUrl ?? null,
     isPublished: user.isPublished,
-    hasAnthropicKey
+    hasAnyKey,
+    configuredVendors,
+    auditSelection
   }
 
   return (
-    <div className='h-full overflow-y-auto'>
-      <div className='mx-auto max-w-[700px] px-6 py-8'>
-        <div className='mb-8 flex items-center justify-between gap-4'>
-          <div>
-            <h1 className='font-serif text-xl tracking-tight'>Settings</h1>
-            <p className='mt-1 font-mono text-xs text-muted-foreground'>Profile, API keys, and social connections.</p>
+    <CatalogProvider catalog={catalog}>
+      <div className='h-full overflow-y-auto'>
+        <div className='mx-auto max-w-[700px] px-6 py-8'>
+          <div className='mb-8 flex items-center justify-between gap-4'>
+            <div>
+              <h1 className='font-serif text-xl tracking-tight'>Settings</h1>
+              <p className='mt-1 font-mono text-xs text-muted-foreground'>Profile, API keys, and social connections.</p>
+            </div>
+            <PublishToggle initialIsPublished={profile.isPublished} hasAnyKey={hasAnyKey} />
           </div>
-          <PublishToggle initialIsPublished={profile.isPublished} hasAnthropicKey={hasAnthropicKey} />
+          <ProfileEditor profile={profile} defaultTab={defaultTab} />
         </div>
-        <ProfileEditor profile={profile} defaultTab={defaultTab} />
       </div>
-    </div>
+    </CatalogProvider>
   )
 }
