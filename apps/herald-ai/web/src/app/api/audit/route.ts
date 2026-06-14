@@ -6,11 +6,9 @@ import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
 import { compileFlow, type Flow, loadFlow } from '@atta/engine'
-import { decryptVendorKeys } from '@atta/crypto'
-import { getProviderKeys } from '@atta/db/queries'
 
-import { db } from '@/db'
 import { getUserByUsername } from '@/db/queries'
+import { resolveAuditCredentials, type ResolvedAuditCredentials } from '@/lib/audit-key'
 import { DANI_PROFILE } from '@/lib/profile'
 import { MATCH_REPORT_SCHEMA } from '@/lib/prompts'
 import { extractSignals } from '@/lib/signals'
@@ -134,8 +132,18 @@ interface ResolvedProfile {
 }
 
 // Engine-backed audit cell — single unit of work shared by single and batch shapes.
-async function runSingleMatch(profile: ResolvedProfile, jd: string, apiKey: string): Promise<MatchReport> {
-  const cacheKey = getCacheKey(jd + JSON.stringify(profile))
+// `creds` carries the vendor+modelId+apiKey to compile and dispatch with.
+// Task 3b: model is the user's selected default (with auto-fallback to the
+// YAML default when the selected vendor's key is missing — see resolveAuditCredentials).
+async function runSingleMatch(
+  profile: ResolvedProfile,
+  jd: string,
+  creds: ResolvedAuditCredentials
+): Promise<MatchReport> {
+  // Cache key includes the model id so audits run with different models
+  // produce different cache entries — a user switching from Claude to GPT-5
+  // should not get a Claude-cached report served back.
+  const cacheKey = getCacheKey(jd + JSON.stringify(profile) + creds.vendor + creds.modelId)
   const cached = getCached(cacheKey)
   if (cached) {
     console.info('[Herald] Cache hit for audit cell')
@@ -167,8 +175,10 @@ JOB DESCRIPTION:
 ${jd.trim()}`
 
   const flow = getAuditorFlow()
-  const plan = compileFlow(flow, userPrompt, undefined, { schema: MATCH_REPORT_SCHEMA })
-  const adapter = new LangGraphAdapter({ providerKeys: { anthropic: apiKey } })
+  // Pass the resolved model into compileFlow so the user's selection wins
+  // over flow.defaults.model (engine respects an explicit override).
+  const plan = compileFlow(flow, userPrompt, creds.modelId, { schema: MATCH_REPORT_SCHEMA })
+  const adapter = new LangGraphAdapter({ providerKeys: { [creds.vendor]: creds.apiKey } })
 
   let report: MatchReport | null = null
 
@@ -208,17 +218,18 @@ ${jd.trim()}`
   return report
 }
 
-async function resolveStoredAnthropicKey(clerkId: string): Promise<string | undefined> {
-  const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
-  if (!masterKeyB64) return undefined
-  const stored = await getProviderKeys(db, clerkId)
-  if (!stored) return undefined
-  const keys = decryptVendorKeys(
-    stored.encryptedPayload as Parameters<typeof decryptVendorKeys>[0],
-    clerkId,
-    Buffer.from(masterKeyB64, 'base64')
-  )
-  return keys.anthropic
+// Fallback credentials for the unauthenticated "demo" and test paths that
+// don't have a per-user store to read from. Uses the server-side env key on
+// the YAML default model (current behavior preserved).
+function envFallbackCreds(): ResolvedAuditCredentials | null {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) return null
+  return {
+    vendor: 'anthropic',
+    modelId: 'claude-sonnet-4-20250514',
+    apiKey,
+    fellBackFromSelection: false
+  }
 }
 
 async function handleSingle(body: Record<string, unknown>): Promise<NextResponse> {
@@ -231,7 +242,7 @@ async function handleSingle(body: Record<string, unknown>): Promise<NextResponse
   const testOverride = body._test_profile_override as Record<string, unknown> | undefined
 
   let profile: ResolvedProfile
-  let apiKey: string | undefined
+  let creds: ResolvedAuditCredentials | null
 
   if (username) {
     const dbUser = await getUserByUsername(username)
@@ -253,12 +264,20 @@ async function handleSingle(body: Record<string, unknown>): Promise<NextResponse
       }>
     }
 
-    // Profile audits run on the owner's BYOK key (D-033).
-    apiKey = await resolveStoredAnthropicKey(dbUser.clerkId)
-    if (!apiKey) {
+    // Profile audits run on the owner's BYOK key (D-033). The selected
+    // model + vendor come from the owner's per-user preference, with
+    // auto-fallback to the YAML default if their stored selection's vendor
+    // key was revoked.
+    creds = await resolveAuditCredentials(dbUser.clerkId)
+    if (!creds) {
       return NextResponse.json(
-        { error: 'Audit not available — profile owner has not configured their Anthropic key' },
+        { error: 'Audit not available — profile owner has not configured an API key' },
         { status: 503 }
+      )
+    }
+    if (creds.fellBackFromSelection) {
+      console.info(
+        `[Herald] Audit for ${username}: selected model unavailable (vendor key missing), falling back to ${creds.vendor}/${creds.modelId}`
       )
     }
   } else if (testOverride) {
@@ -276,19 +295,19 @@ async function handleSingle(body: Record<string, unknown>): Promise<NextResponse
       }>,
       github: (testOverride.github as string) ?? ''
     }
-    apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) {
+    creds = envFallbackCreds()
+    if (!creds) {
       return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
     }
   } else {
     profile = DANI_PROFILE
-    apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) {
+    creds = envFallbackCreds()
+    if (!creds) {
       return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
     }
   }
 
-  const report = await runSingleMatch(profile, jd, apiKey)
+  const report = await runSingleMatch(profile, jd, creds)
   return NextResponse.json(report)
 }
 
@@ -296,15 +315,18 @@ async function handleBatch(body: Record<string, unknown>): Promise<NextResponse>
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const masterKeyB64 = process.env.MASTER_ENCRYPTION_KEY
-  if (!masterKeyB64) return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
-
-  // Bulk Audit runs on the logged-in user's BYOK key (D-033).
-  const apiKey = await resolveStoredAnthropicKey(userId)
-  if (!apiKey) {
+  // Bulk Audit runs on the logged-in user's BYOK key (D-033). Vendor + model
+  // come from their per-user preference (auto-fallback to the YAML default).
+  const creds = await resolveAuditCredentials(userId)
+  if (!creds) {
     return NextResponse.json(
-      { error: 'No Anthropic key configured. Add your API key in Settings → API Keys.' },
+      { error: 'No API key configured. Add a vendor key in Settings → API Keys.' },
       { status: 402 }
+    )
+  }
+  if (creds.fellBackFromSelection) {
+    console.info(
+      `[Herald] Batch audit: selected model unavailable (vendor key missing), falling back to ${creds.vendor}/${creds.modelId}`
     )
   }
 
@@ -340,7 +362,7 @@ async function handleBatch(body: Record<string, unknown>): Promise<NextResponse>
             highlights: string[]
           }>
         }
-        const report = await runSingleMatch(profile, jd, apiKey)
+        const report = await runSingleMatch(profile, jd, creds)
         return { username, report }
       } catch {
         return { username, report: null, error: 'Audit failed' }

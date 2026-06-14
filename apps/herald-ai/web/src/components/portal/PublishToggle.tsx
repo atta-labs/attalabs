@@ -5,10 +5,13 @@ import { Button, useToastContext } from '@atta/ui/components'
 
 interface PublishToggleProps {
   initialIsPublished: boolean
-  hasAnthropicKey: boolean
+  /** True if the user has a key for ANY supported vendor. The audit can run
+   *  on any vendor with a key (task 3b), so we no longer gate publish on
+   *  Anthropic specifically. */
+  hasAnyKey: boolean
 }
 
-export function PublishToggle({ initialIsPublished, hasAnthropicKey }: PublishToggleProps) {
+export function PublishToggle({ initialIsPublished, hasAnyKey }: PublishToggleProps) {
   const { successToast, errorToast } = useToastContext()
   const [published, setPublished] = useState(initialIsPublished)
   const [publishing, setPublishing] = useState(false)
@@ -41,7 +44,7 @@ export function PublishToggle({ initialIsPublished, hasAnthropicKey }: PublishTo
   }
 
   function handleTogglePublish() {
-    if (!published && !hasAnthropicKey) {
+    if (!published && !hasAnyKey) {
       setShowKeylessConfirm(true)
       return
     }
@@ -52,7 +55,7 @@ export function PublishToggle({ initialIsPublished, hasAnthropicKey }: PublishTo
     return (
       <div className='flex shrink-0 flex-col items-end gap-2'>
         <p className='max-w-[240px] text-right font-mono text-[10px] text-muted-foreground'>
-          Recruiters won't be able to run the audit until you add an Anthropic API key. Publish anyway?
+          Recruiters won't be able to run the audit until you add an API key. Publish anyway?
         </p>
         <div className='flex gap-2'>
           <Button

@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { decryptVendorKeys } from '@atta/crypto'
 import { getProviderKeys } from '@atta/db/queries'
+import { VENDOR_ORDER } from '@atta/models'
 import { db } from '@/db'
 
-// Vendors supported in Herald (Anthropic is what the audit uses; others stored for completeness)
-const SUPPORTED_VENDORS = ['anthropic', 'google', 'openai', 'xai'] as const
+// Surface the full vendor registry so the ProviderKeysSection multi-vendor
+// UI (and the AuditModelSection model picker) sees every vendor the user
+// has a key for. Anthropic-only filtering retired in task 3b.
+const SUPPORTED_VENDORS = VENDOR_ORDER.filter((id) => id !== 'ollama')
 
 export async function GET() {
   try {

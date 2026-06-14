@@ -127,3 +127,21 @@ export async function updateUser(
 
   await db.update(schema.heraldProfiles).set(updates).where(eq(schema.heraldProfiles.clerkId, clerkId))
 }
+
+/**
+ * Set the per-user audit-model preference (task 3b). Both values nullable so
+ * passing `null` clears the selection and the audit falls back to the YAML
+ * default. The caller is responsible for confirming the user has a key for
+ * the chosen vendor — the audit dispatch path also auto-falls-back when a
+ * vendor key has been revoked, so a stale selection never breaks an audit.
+ */
+export async function updateAuditModel(clerkId: string, vendor: string | null, modelId: string | null) {
+  await db
+    .update(schema.heraldProfiles)
+    .set({
+      auditModelVendor: vendor,
+      auditModelId: modelId,
+      updatedAt: new Date()
+    })
+    .where(eq(schema.heraldProfiles.clerkId, clerkId))
+}
