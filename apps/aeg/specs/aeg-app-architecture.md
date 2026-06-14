@@ -2,7 +2,7 @@
 
 **Status:** draft
 **Scope:** the AEG product — now understood as **two products over a shared core** (AEG-product D-001): **Studio** (the local repo-reading tool) and **Portal** (the public deployed docs/marketing/download site), both consuming `@atta/aeg-core`. Plus the `aeg.sh` scaffolder.
-**Last updated:** 2026-06-12 (two-product split; V1 scope = Studio, local-first).
+**Last updated:** 2026-06-14 (local read adapter shipped — `aeg-ui-v1` task 3, §3.2).
 
 This spec is the canonical reference for AEG **the product**. It is distinct from AEG **the model** (the governance/flow constitution), which lives at the repo root in `aeg-root/` (`state-machine.md`, `aeg-manual-flow.md`, `iterations/README.md`, the role docs, `contracts/`) and governs the whole monorepo. The model is the thing; this product makes the thing visible and adoptable.
 
@@ -84,11 +84,30 @@ The product decomposes into three clean layers, in dependency order.
 
 A pure function: given a parsed iteration topology file + a snapshot of forge facts (Issues, branches, PRs, reviews, merges), return the iteration's derived state — each task's status (in-flight / in-review / changes-requested / merged / blocked), the DAG with edges, and which tasks are dispatch-eligible (depends-on merged, no conflicting sibling PR open). **No network, no storage, no GitHub client.** This is the heart of the product and the easiest thing to test exhaustively, so it is built and tested first, in isolation. **Lives in `@atta/aeg-core` (§0).**
 
-### 3.2 GitHub App auth + encrypted token store
+### 3.2 GitHub read path — local adapter (V1) vs. hosted GitHub App (deferred)
 
-> **§0 refinement — DEFERRED (hosted only).** This is for the hosted multi-tenant Studio that holds *other people's* credentials. **Studio V1 does none of this** — it reads GitHub with the operator's own local token (`gh` / env), no App, no vault. Retained as the hosted-future design.
+> **§0 refinement — Studio V1 ships the local read adapter; the hosted GitHub App + encrypted token store stay deferred.**
 
-Connect a repo via a **GitHub App** (OAuth, **read-only**, per-repo). Tokens encrypted at rest with `@atta/crypto`. Read-only is a hard constraint: the AEG UI observes; it never writes status, never moves an Issue, never merges.
+**Local read adapter (V1 — implemented).** Studio runs next to the operator's checkout and reads GitHub with the operator's own already-authenticated token. The adapter lives at `apps/aeg/web/studio/src/lib/forge/` and exposes:
+
+```
+fetchForgeFacts({ owner, repo, iteration, tasks, token? })
+  → Promise<{ facts: Map<TaskId, ForgeFacts>; unavailable: boolean; reason?: string }>
+```
+
+The `ForgeFacts` shape is owned by `@atta/aeg-core` (`packages/aeg-core/src/types.ts`) — the adapter imports it; it does not redefine it. The branch ref convention is `task/<iteration>/<id>` (per `aeg-root/iterations/README.md`).
+
+Implementation contract:
+
+- **Read-only, always** (D-029). No writes, no labels written, no comments posted. The GraphQL query is a `query`, never a `mutation`.
+- **Local auth, no auth system.** Token resolution: explicit override → `GITHUB_TOKEN` → `GH_TOKEN` → `gh auth token`. The adapter never builds an auth flow and never persists a token.
+- **Server-only.** The I/O modules import `node:child_process` (for the `gh` fallback) — Next.js refuses to bundle this file into a client component. The token never reaches the browser.
+- **One batched GraphQL query per snapshot.** Issue facts, ref existence, and the latest PR for each task are aliased into a single request — rate-limit-friendly, and `pullRequest.reviewDecision` is a first-class field, so we never aggregate REST `/reviews`.
+- **Pure mapper, isolated I/O.** The `(raw GitHub data) → ForgeFacts` mapping (`map-forge-facts.ts`) is pure and unit-tested with fixtures; the I/O layer (`fetch-forge-facts.ts`) is the only place that talks to GitHub. This mirrors `@atta/aeg-core`'s purity discipline.
+- **Graceful no-token degradation.** Missing token / network failure / 401 / 403 / repo not visible → returns `{ facts: empty map, unavailable: true, reason }` rather than throwing. `deriveIteration` then maps every task to `backlog` (the conservative read defined in `types.ts`), so Studio still renders the file-derived topology; only live status is absent. The `unavailable` flag is the soft signal Studio can surface ("live status unavailable") without inferring it from an empty map.
+- **No cache, no webhook, no persistent store.** That is the deferred hosted path below.
+
+**Hosted GitHub App + encrypted token store (DEFERRED — hosted only).** For a future hosted multi-tenant Studio that holds *other people's* credentials, the design remains: a **GitHub App** (OAuth, **read-only**, per-repo) with tokens encrypted at rest via `@atta/crypto`. Read-only is a hard constraint there too — the AEG UI observes; it never writes status, never moves an Issue, never merges. **Studio V1 ships none of this**; it is retained here as the hosted-future design.
 
 ### 3.3 Webhook-fed forge-fact cache
 
