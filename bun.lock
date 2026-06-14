@@ -157,9 +157,11 @@
       "dependencies": {
         "@ai-sdk/anthropic": "^3.0.64",
         "@ai-sdk/react": "^3.0.143",
+        "@atta/adapter-langgraph": "workspace:*",
         "@atta/cms": "workspace:*",
         "@atta/crypto": "workspace:*",
         "@atta/db": "workspace:*",
+        "@atta/engine": "workspace:*",
         "@atta/herald-ai-mcp": "workspace:*",
         "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",

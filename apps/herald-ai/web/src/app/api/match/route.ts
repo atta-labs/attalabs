@@ -1,16 +1,32 @@
 import { createHash } from 'node:crypto'
-import { createAnthropic } from '@ai-sdk/anthropic'
-import { generateText } from 'ai'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { NextResponse } from 'next/server'
+import { LangGraphAdapter } from '@atta/adapter-langgraph'
+import { compileFlow, type Flow, loadFlow } from '@atta/engine'
 import { decryptVendorKeys } from '@atta/crypto'
 import { getProviderKeys } from '@atta/db/queries'
 
 import { db } from '@/db'
 import { getUserByUsername } from '@/db/queries'
 import { DANI_PROFILE } from '@/lib/profile'
-import { MATCH_REPORT_SCHEMA, SKEPTICAL_AUDITOR_PROMPT } from '@/lib/prompts'
+import { MATCH_REPORT_SCHEMA } from '@/lib/prompts'
 import { extractSignals } from '@/lib/signals'
 import type { MatchReport } from '@/lib/types'
+
+// Resolve the auditor YAML once at module load. Path is relative to this file
+// (apps/herald-ai/web/src/app/api/match/route.ts); four ".." reach web/, then yamls/.
+// Next.js traces this into the deployment via outputFileTracingIncludes.
+const HERALD_AUDITOR_YAML_PATH = join(dirname(fileURLToPath(import.meta.url)), '../../../../yamls/herald-auditor.yaml')
+
+let cachedFlow: Flow | null = null
+function getAuditorFlow(): Flow {
+  if (!cachedFlow) {
+    cachedFlow = loadFlow(readFileSync(HERALD_AUDITOR_YAML_PATH, 'utf-8'))
+  }
+  return cachedFlow
+}
 
 // In-memory cache
 const cache = new Map<string, { report: MatchReport; timestamp: number }>()
@@ -233,30 +249,33 @@ GITHUB SIGNALS:
 ${signalEvidence.length > 0 ? signalEvidence.map((s) => `- ${s}`).join('\n') : '- No GitHub signals available'}
 
 JOB DESCRIPTION:
-${jd.trim()}
+${jd.trim()}`
 
-Respond with valid JSON matching this schema exactly:
-${MATCH_REPORT_SCHEMA}`
+    const flow = getAuditorFlow()
+    const plan = compileFlow(flow, userPrompt, undefined, { schema: MATCH_REPORT_SCHEMA })
+    const adapter = new LangGraphAdapter({ providerKeys: { anthropic: apiKey! } })
 
-    const anthropic = createAnthropic({ apiKey: apiKey! })
-
-    // Attempt generation with 15s hard timeout (signals + LLM combined)
+    // Attempt generation with 25s hard timeout. Retain the 2-attempt + partial-fallback
+    // contract verbatim — the engine call replaces only the LLM invocation.
     let report: MatchReport | null = null
 
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const { text } = await Promise.race([
-          generateText({
-            model: anthropic('claude-sonnet-4-20250514'),
-            system: SKEPTICAL_AUDITOR_PROMPT,
-            prompt: userPrompt,
-            maxOutputTokens: 2000,
-            temperature: 0.3
-          }),
+        const conclusion = await Promise.race([
+          adapter.execute({ plan }),
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error('LLM timeout')), 25000))
         ])
 
-        report = parseMatchReport(text, { name: profile.name, title: profile.title, github: profile.github })
+        if (conclusion.terminalState === 'FAILED') {
+          console.warn(`[Herald] Engine returned FAILED (attempt ${attempt + 1}):`, conclusion.error ?? 'unknown')
+          continue
+        }
+
+        report = parseMatchReport(conclusion.content, {
+          name: profile.name,
+          title: profile.title,
+          github: profile.github
+        })
         if (report) break
 
         console.warn(`[Herald] Failed to parse LLM response (attempt ${attempt + 1}), retrying...`)
