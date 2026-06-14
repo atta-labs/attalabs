@@ -10,6 +10,7 @@ import type {
   StateCondition
 } from '@atta/engine'
 import type { VendorId } from '@atta/models'
+import type { CustomToolHandlerMap } from './custom-tool-loop'
 import { buildStateGraph } from './graph-builder'
 import { createDefaultLlmCall, createMultiVendorLlmCall } from './llm'
 import type { ProviderKeys } from './llm'
@@ -161,11 +162,14 @@ export class LangGraphAdapter implements Adapter {
    * in subsequent tasks.
    */
   private async runExecution(state: ExecutionState, hooks: ExecutionHooks, params: ExecuteParams): Promise<Conclusion> {
-    // Resolve LLM call: user override > multi-vendor keys > single Anthropic key
+    // Resolve LLM call: user override > multi-vendor keys > single Anthropic key.
+    // customTools is passed only via the multi-vendor path; the default Anthropic-only
+    // path uses createDefaultLlmCall and currently does not register custom tools
+    // (preserves byte-identical behavior for callers that don't opt in).
     const llmCall =
       params.llmCall ??
       (this.config.providerKeys
-        ? createMultiVendorLlmCall(this.config.providerKeys, this.config.agentVendorOverrides)
+        ? createMultiVendorLlmCall(this.config.providerKeys, this.config.agentVendorOverrides, this.config.customTools)
         : createDefaultLlmCall(this.config.apiKey))
 
     // Apply per-agent model overrides from reviewerConfig before execution.
@@ -521,4 +525,19 @@ export interface LangGraphAdapterConfig {
    * per-call via ExecuteParams.timeoutMs. Default: 5 minutes.
    */
   defaultTimeoutMs?: number
+
+  /**
+   * Optional registry of client-side custom tool handlers, keyed by tool name.
+   *
+   * When an agent declares `customTools: [{ name, description, parameters }]`
+   * AND the name matches a registered handler here, the adapter runs a
+   * multi-turn loop on the Anthropic vendor: each `tool_use` block from the
+   * model triggers the registered handler, the result is sent back as a
+   * `tool_result`, and the loop continues until the model stops calling tools
+   * (bounded by MAX_CUSTOM_TOOL_ITERATIONS).
+   *
+   * If absent — or if no agent declares matching `customTools` — execution
+   * is byte-identical to the single-shot Anthropic path used today.
+   */
+  customTools?: CustomToolHandlerMap
 }

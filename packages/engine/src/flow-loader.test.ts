@@ -132,4 +132,38 @@ describe('loadFlow', () => {
     )
     expect(() => loadFlow(yaml)).toThrow()
   })
+
+  it('parses custom_tools from YAML into camelCase customTools on the agent (additive field)', () => {
+    const yaml = MINIMAL_SOLO_YAML.replace(
+      '  - name: Agent\n    system_prompt: Answer directly.\n',
+      `  - name: Agent
+    system_prompt: Answer directly.
+    custom_tools:
+      - name: add
+        description: Add two numbers
+        parameters:
+          type: object
+          properties:
+            a: { type: number }
+            b: { type: number }
+          required: [a, b]
+`
+    )
+    const flow = loadFlow(yaml)
+    const agent = flow.agents[0]!
+    expect(agent.customTools).toBeDefined()
+    expect(agent.customTools).toHaveLength(1)
+    expect(agent.customTools![0]!.name).toBe('add')
+    expect(agent.customTools![0]!.description).toBe('Add two numbers')
+    expect((agent.customTools![0]!.parameters as { type: string }).type).toBe('object')
+  })
+
+  it('leaves customTools undefined when YAML omits custom_tools (the Vāda case)', () => {
+    // Additivity: every existing YAML in the catalog has no custom_tools.
+    // Loading them must continue to produce agents whose customTools is undefined,
+    // so compile-flow propagates undefined into Plan.agents and the adapter takes
+    // the byte-identical single-shot path.
+    const flow = loadFlow(MINIMAL_SOLO_YAML)
+    expect(flow.agents[0]!.customTools).toBeUndefined()
+  })
 })

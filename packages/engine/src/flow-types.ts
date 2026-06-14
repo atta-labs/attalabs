@@ -43,6 +43,19 @@ export interface Round {
   onFailure?: OnFailureSpec
 }
 
+/**
+ * Specification for a client-side custom tool declared on a FlowAgent.
+ *
+ * Mirrors the @atta/agents CustomToolSpec — kept here so the engine type
+ * surface is self-contained for YAML loading and validation. Absent on every
+ * legacy spec → no behavior change.
+ */
+export interface FlowCustomToolSpec {
+  name: string
+  description: string
+  parameters: Record<string, unknown>
+}
+
 export interface FlowAgent {
   name: string
   description?: string
@@ -50,6 +63,7 @@ export interface FlowAgent {
   model?: string
   maxTokens?: number
   tools?: string[]
+  customTools?: FlowCustomToolSpec[]
   outputFormat?: 'text' | 'structured'
   outputSchema?: Record<string, unknown>
   classifier?: {

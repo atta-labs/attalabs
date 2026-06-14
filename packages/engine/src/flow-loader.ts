@@ -24,6 +24,7 @@ export function loadFlow(yamlContent: string): Flow {
       model: a.model,
       maxTokens: a.max_tokens,
       tools: a.tools,
+      customTools: a.custom_tools,
       outputFormat: a.output_format,
       outputSchema: a.output_schema,
       classifier: a.classifier ? { mode: a.classifier.mode, budget: a.classifier.budget } : undefined,

@@ -8,6 +8,17 @@ export { LangGraphAdapter } from './adapter'
 export type { LangGraphAdapterConfig, ReviewerConfig } from './adapter'
 export { buildStateGraph } from './graph-builder'
 export type { NodeExecutor, NodeExecutionContext } from './graph-builder'
+export {
+  customToolSpecToAnthropicTool,
+  MAX_CUSTOM_TOOL_ITERATIONS,
+  runAnthropicCustomToolLoop
+} from './custom-tool-loop'
+export type {
+  CustomToolHandler,
+  CustomToolHandlerMap,
+  RunCustomToolLoopParams,
+  RunCustomToolLoopResult
+} from './custom-tool-loop'
 export { createDefaultLlmCall, createMultiVendorLlmCall } from './llm'
 export type { ProviderKeys } from './llm'
 export { createNodeExecutor } from './node-executor'
