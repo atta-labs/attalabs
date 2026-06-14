@@ -1,0 +1,80 @@
+name: Conventions
+
+# Mirrors the three highest-value LOCAL conventions (commit-message format, Biome
+# lint/format, no hardcoded colors) into CI so they bind every writer — not only
+# local Claude Code agents going through Husky / lint-staged / the skill-check hook.
+# The local mechanisms still run for fast feedback; these CI jobs are the layer that
+# catches writes made via the GitHub API/MCP, direct pushes, and hand-merges.
+#
+# These checks must be wired into branch protection as required status checks for
+# them to actually block merges. That is a Principal action on GitHub Settings;
+# this workflow ships the checks themselves.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  commit-lint:
+    name: Commit-message format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint commits in PR range
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        # Reuses commitlint.config.js — the same rules Husky enforces locally, so
+        # local and CI cannot diverge on commit format.
+        run: bunx commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+
+  biome:
+    name: Biome lint/format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # `bun run lint` calls `biome lint .` per the root package.json. Format and
+      # lint are run together via the same Biome config that lint-staged uses
+      # locally, so the gate is identical to local enforcement.
+      - name: Biome check (lint + format)
+        run: bun run format-and-lint
+
+  no-hardcoded-colors:
+    name: Forbidden colors (UI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Diff-scoped: scans only the added lines in changed UI files. Encodes the
+      # patterns documented in .claude/skills/ui-theme-tokens/SKILL.md. Designed to
+      # under-match rather than over-match — pre-existing violations elsewhere are
+      # intentionally not flagged.
+      - name: Run check-forbidden-colors
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bun scripts/check-forbidden-colors.ts --pr
