@@ -1017,3 +1017,38 @@ This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choi
 - Lock: NO — first time both Herald call paths share one route + one engine cell; revisit once batch has been observed in production. Type 1 because it replaces two call paths, deletes a previously load-bearing constant, and locks in the cell/route boundary that the matrix UI (task 4) and per-audit vendor selector (task 3b) will plug into.
 
 ---
+
+## D-046 — Conventions enforced in CI (commit format, Biome, forbidden colors) to govern every write path
+
+**Date:** 2026-06-14
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Developer (`ci-conventions` task, June 14, 2026)
+**Ratified by:** Principal (in-session)
+
+**Context:** Three conventions were enforced only by local mechanisms: commit-message format (Husky + commitlint), Biome lint/format (lint-staged), and the "no hardcoded colors" rule from `.claude/skills/ui-theme-tokens/SKILL.md` (the PreToolUse skill-check hook that forces UI skills to be loaded before editing `.tsx`). Those mechanisms only fire for a local agent committing inside a checkout. Any write via the GitHub API / MCP — or a direct push, or a hand-merge — bypasses all of them. Evidence on main: commit history contains non-conforming messages (`Record the aeg-core…`, `Backlog two items…`, `Reconcile herald-backlog…` — none match the `Type: description` format commitlint requires) because they were authored via the API where commitlint never ran. PR #105 merged with a lowercase scope for the same reason. The structural gap is: local hooks bind one class of writer; CI binds every class of writer.
+
+**Decision:** Promote the three highest-value local checks to GitHub Actions CI jobs that run on every PR regardless of how commits were authored. Local hooks are NOT replaced — they stay (fast feedback during a local agent's edit loop). CI is added as the layer that catches what the local layer structurally cannot.
+
+1. **`commit-lint` (CI job).** Runs `commitlint --from <base> --to <head>` over the PR commit range, **reusing the existing `commitlint.config.js`** (the same rule set Husky uses locally — no forked configuration, so local and CI cannot diverge).
+2. **`biome` (CI job).** Runs `bun run format-and-lint` (i.e. `biome check .`) over the working tree. Same config as lint-staged uses locally.
+3. **`no-hardcoded-colors` (CI job + new script `scripts/check-forbidden-colors.ts`).** Diff-scoped: scans only the added lines in changed `.tsx` / `.jsx` / `.ts` / `.js` / `.css` files. Encodes the four pattern groups documented in `ui-theme-tokens/SKILL.md` (Tailwind palette classes, arbitrary color brackets `bg-[#…]` / `text-[oklch(…)]`, absolute colors `text-white` / `bg-black`, inline-style color literals). The canonical token source `packages/ui/styles/globals.css` and CSS custom-property definition lines are skipped to avoid false-positives on legitimate `oklch(…)` definitions. The gate deliberately **under-matches rather than over-matches** — pre-existing violations elsewhere in the repo (legacy debt in `packages/ui`) are not flagged; only newly-introduced violations block.
+
+**Alternatives rejected:**
+- Keep relying on the local skill-check hook: rejected — the hook only fires for tools the harness runs (`Edit` / `Write` / `NotebookEdit` inside a local Claude Code session). A `gh api` write, a Cursor edit, a hand-merge, or a direct `git push` are all invisible to it. The gap was the whole problem.
+- Add lint as a Turbo job and call it from a single CI workflow: rejected for this task — kept each convention as an independent job so a failure points clearly at which convention broke (commit-format, Biome, or colors). Bundling reduces signal.
+- Run color check whole-file instead of diff-scoped: rejected — legacy `packages/ui` files contain 11 known pre-existing violations (verified during self-test). Whole-file scanning would block every PR that touched those files until the legacy debt was paid. Diff-scoping turns the gate into a "stop the bleeding" rule, not a "boil the ocean" rule.
+- Make the CI commit-format rule stricter than the local one (e.g. require Conventional Commits `feat(scope):`): rejected — local and CI must agree. Reusing `commitlint.config.js` guarantees identical behavior; a divergent rule set is its own drift hazard. The repo's existing format (`Feat: description`, `Type:` enum from `commitlint.config.js`) is the source of truth.
+- Arm the checks as required status checks in branch protection as part of this task: explicitly out of scope. Arming is a Principal action in GitHub Settings → Branches → ruleset, which this task does not perform. The task ships the *checks*; the Principal arms them. Until armed, the gate is advisory (Observe-mode floor, `state-machine.md` §12).
+
+**Consequences:**
+- `.github/workflows/conventions.yml` — new; three jobs (`commit-lint`, `biome`, `no-hardcoded-colors`), all on `pull_request: [opened, synchronize, reopened]`.
+- `scripts/check-forbidden-colors.ts` — new; diff-scoped UI color check. Self-test evidence: catches 11 deliberate violations in a fixture file; returns clean against the unchanged `apps/aeg/web/studio` scaffold; finds 11 known legacy violations across `packages/ui` (debt tracking, not blocking — they only matter if a PR re-touches those lines).
+- `aeg-root/state-machine.md` §12 — three rows moved from "Trusted (agent discipline)" / aspirational-but-not-installed to "Enforced (CI blocks merge)": commit-message format, Biome lint/format, forbidden colors in UI. `verify-docs` and the Issue-template / no-forbidden-fields gates stay where they were.
+- `aeg-project/changelog.md` — entry added.
+- Local hooks (`.husky/`, `.claude/hooks/check-skill.sh`, lint-staged): **unchanged.** Fast local feedback is preserved.
+- **Follow-up (Principal, not in this task):** in GitHub → Settings → Branches → ruleset for `main`, add `commit-lint`, `biome`, and `no-hardcoded-colors` (plus Vercel) to "Require status checks to pass." Until that is done, the checks run but do not block merges — the task ships the mechanism, the Principal arms it.
+- Lock: NO — first cut of CI-enforced conventions; revisit once a real PR exercises all three jobs and the Principal arms branch protection. Type 1 because it changes the enforcement gradient (`state-machine.md` §12), which governs how every future merge is gated.
+
+---
