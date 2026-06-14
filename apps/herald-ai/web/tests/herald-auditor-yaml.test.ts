@@ -6,12 +6,12 @@ import { MATCH_REPORT_SCHEMA } from '../src/lib/prompts'
 
 const YAML_PATH = join(import.meta.dirname, '../yamls/herald-auditor.yaml')
 
-// Guards the relative-path math used by src/app/api/match/route.ts at runtime.
+// Guards the relative-path math used by src/app/api/audit/route.ts at runtime.
 // route.ts resolves the YAML via `../../../../yamls/herald-auditor.yaml` from
 // dirname(import.meta.url). This test replays the same expression from the
 // route's directory; if either side drifts, this test fails before the route
 // silently falls into its partial-report fallback at runtime.
-const ROUTE_DIR = join(import.meta.dirname, '../src/app/api/match')
+const ROUTE_DIR = join(import.meta.dirname, '../src/app/api/audit')
 const YAML_PATH_FROM_ROUTE = join(ROUTE_DIR, '../../../../yamls/herald-auditor.yaml')
 
 function load() {
