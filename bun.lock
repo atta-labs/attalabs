@@ -15,6 +15,28 @@
         "typescript": "^5.7.0",
       },
     },
+    "apps/aeg/web/studio": {
+      "name": "@atta/aeg-studio",
+      "version": "0.1.0",
+      "dependencies": {
+        "@atta/auth": "workspace:*",
+        "@atta/ui": "workspace:*",
+        "lucide-react": "^1.7.0",
+        "next": "^16.2.1",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+      },
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "@tailwindcss/postcss": "^4.0.0",
+        "@types/node": "^22.0.0",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "postcss": "^8.5.0",
+        "tailwindcss": "^4.0.0",
+        "typescript": "^5.7.0",
+      },
+    },
     "apps/atta-ai/mcp-server": {
       "name": "@atta/atta-ai-mcp-server",
       "version": "0.0.1",
@@ -631,6 +653,8 @@
     "@atta/admin": ["@atta/admin@workspace:tools/admin"],
 
     "@atta/aeg-core": ["@atta/aeg-core@workspace:packages/aeg-core"],
+
+    "@atta/aeg-studio": ["@atta/aeg-studio@workspace:apps/aeg/web/studio"],
 
     "@atta/agents": ["@atta/agents@workspace:packages/atta-agents"],
 
@@ -4413,6 +4437,8 @@
     "@asamuzakjp/dom-selector/lru-cache": ["lru-cache@11.2.7", "", {}, "sha512-aY/R+aEsRelme17KGQa/1ZSIpLpNYYrhcrepKTZgE+W3WM16YMCaPwOHLHsmopZHELU0Ojin1lPVxKR0MihncA=="],
 
     "@atta/admin/@types/node": ["@types/node@22.19.15", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-F0R/h2+dsy5wJAUe3tAU6oqa2qbWY5TpNfL/RGmo1y38hiyO1w3x2jPtt76wmuaJI4DQnOBu21cNXQ2STIUUWg=="],
+
+    "@atta/aeg-studio/@types/node": ["@types/node@22.19.15", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-F0R/h2+dsy5wJAUe3tAU6oqa2qbWY5TpNfL/RGmo1y38hiyO1w3x2jPtt76wmuaJI4DQnOBu21cNXQ2STIUUWg=="],
 
     "@atta/atta-ai-web/@types/node": ["@types/node@22.19.15", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-F0R/h2+dsy5wJAUe3tAU6oqa2qbWY5TpNfL/RGmo1y38hiyO1w3x2jPtt76wmuaJI4DQnOBu21cNXQ2STIUUWg=="],
 
