@@ -32,7 +32,7 @@ export function BulkAudit({ hasKey }: { hasKey: boolean }) {
     setErrorMsg(null)
 
     try {
-      const res = await fetch('/api/recruiter/batch', {
+      const res = await fetch('/api/audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jd, candidates })

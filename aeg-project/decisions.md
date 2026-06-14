@@ -974,7 +974,51 @@ This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choi
 
 ---
 
-## D-045 — Conventions enforced in CI (commit format, Biome, forbidden colors) to govern every write path
+## D-045 — Herald endpoints unified into `/api/audit`; batch on `@atta/engine`; `SKEPTICAL_AUDITOR_PROMPT` deleted
+
+**Date:** 2026-06-14
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Developer (`herald-onto-engine` iteration, task 2, #89)
+**Ratified by:** Principal
+
+**Context:** D-044 put `/api/match` on `@atta/engine` via the solo `herald-auditor.yaml`, but left `/api/recruiter/batch` untouched. Batch carried a near-duplicate of the auditor's per-pair logic — its own `buildPrompt`, `parseMatchReport`, `runSingleMatch` — and was the only remaining importer of the `SKEPTICAL_AUDITOR_PROMPT` TypeScript constant. The constant was preserved across D-044 explicitly to keep batch compiling; with batch unmigrated, the auditor prompt lived in two places (the YAML and the constant), the engine call path covered only half the audit traffic, and Herald had two endpoints performing one operation. The `herald-onto-engine` iteration's task 2 (issue #89) finishes the migration and unifies the endpoints.
+
+**Decision:** Both audit call paths are folded into one `POST /api/audit` route whose unit of work is the shared engine-backed audit cell. Specifics:
+
+1. **One endpoint, two payload shapes.** `POST /api/audit` dispatches on payload: a `candidates` array selects the batch shape (`{ jd, candidates[] }` → `{ results: [...] }`); absence of `candidates` selects the single shape (`{ job_description, username | _test_profile_override | (none, falls back to DANI_PROFILE) }` → `MatchReport`). Same Herald-owned glue around the cell — `extractSignals` 3s pre-fetch, the 25s × 2-attempt LLM wrapper, `parseMatchReport` with its code-enforced NO-FIT hard-requirement gate, `buildPartialReport` fallback, the 24h in-memory `sha256(jd + profile)` cache.
+2. **Shared engine-backed cell — `runSingleMatch(profile, jd, apiKey)`.** Both shapes call the same per-pair function, which calls `loadFlow → compileFlow → LangGraphAdapter.execute` with `MATCH_REPORT_SCHEMA` substituted into `{{schema}}` at compile time (identical to D-044's match path). Batch fans the cell out via `Promise.all` across candidates. There is no longer a direct `generateText()` call anywhere in Herald.
+3. **Auth + key resolution preserved per shape (D-033).** Single shape: profile audit runs on the **profile owner's** stored BYOK key (DB-resolved by `username`); test/fallback paths use the server `ANTHROPIC_API_KEY`. Batch shape: requires Clerk auth and runs on the **logged-in user's** stored BYOK key, returning 402 if missing. The decision about *whose* key is unchanged; it is now enforced in one place per call shape, not duplicated across two routes.
+4. **Validations preserved verbatim.** JD ≥ 20 chars (400), batch ≥ 1 and ≤ 10 candidates (400), missing master encryption key (500), missing BYOK key for batch (402), missing BYOK key for profile audit (503), unknown username (404), test/fallback missing `ANTHROPIC_API_KEY` (500), `Unauthorized` (401) for batch without Clerk session. Top-level catch returns the per-shape error: a partial `MatchReport` for single (so the Envoy UI never crashes), `{ error: 'Batch audit failed' }` with status 500 for batch (matching the original batch error shape).
+5. **Rate limit repointed to `/api/audit`.** `src/proxy.ts` now matches `req.nextUrl.pathname === '/api/audit'` instead of `/api/match`. Side effect: the per-IP 5/h cap (Upstash, `herald:match` prefix) now also covers batch calls, where previously it did not. Acceptable — batch is authenticated and one batch call is one IP hit (up to 10 candidates internally). If batch volume justifies a distinct policy later, that's a follow-up.
+6. **`SKEPTICAL_AUDITOR_PROMPT` deleted.** With batch migrated, the constant has no importers (`rg SKEPTICAL_AUDITOR_PROMPT --type ts` returns only a markdown-text reference inside `packages/aeg-core/src/parse-iteration.test.ts`, which asserts on the historical *rationale text* of the herald-onto-engine iteration file — not a code-level import). The auditor prompt's canonical source is now `apps/herald-ai/web/yamls/herald-auditor.yaml` alone. `MATCH_REPORT_SCHEMA` stays in `prompts.ts` — it is still the parser contract and the `{{schema}}` template input.
+7. **Old routes deleted, not redirected.** `apps/herald-ai/web/src/app/api/match/route.ts` and `apps/herald-ai/web/src/app/api/recruiter/batch/route.ts` are removed; the empty `match/`, `recruiter/batch/`, and `recruiter/` directories are removed. Callers are repointed at the source: `EnvoyFlow.tsx` (single) and `BulkAudit.tsx` (batch) now POST to `/api/audit`. No backwards-compatibility shim — Herald is the only consumer of these routes and they ship together.
+
+**Alternatives rejected:**
+- Keep two routes; just share the engine-backed cell via an internal helper — rejected: leaves the duplication at the route-handler layer (auth, validation, top-level catch) and keeps `/api/recruiter` alive for one of its prior two routes (its sibling, also recruiter-only). One endpoint per *operation* is the boundary; "single profile audit" and "batch profile audit" are the same operation with different input cardinality.
+- Make `/api/audit` always batch-shaped (single = batch of one) — rejected: forces a wrapping/unwrapping shim at the Envoy caller for no gain, and the Envoy single audit is anonymous + profile-owner-keyed while batch is authenticated + logged-in-user-keyed; collapsing the two shapes collapses two different auth paths. The two payload shapes carry meaningful semantic differences (D-033), so they are dispatched in the handler rather than forced into one envelope.
+- Skip the rate-limit repoint and leave `/api/match` matchable for one release — rejected: the route is deleted in the same PR; matching a path that doesn't exist is dead code.
+- Leave `SKEPTICAL_AUDITOR_PROMPT` exported as a no-op shim with a deprecation comment — rejected (cf. CLAUDE.md "no backwards-compatibility hacks"): the constant has no importers; ship the delete.
+
+**Consequences:**
+- `apps/herald-ai/web/src/app/api/audit/route.ts` — new; the unified endpoint. Handlers: `handleSingle`, `handleBatch`. Shared cell: `runSingleMatch`. Identical YAML-loading + compile + adapter call as D-044's match path; the cell is the boundary between Herald glue and the engine substrate.
+- `apps/herald-ai/web/src/app/api/match/route.ts` — deleted.
+- `apps/herald-ai/web/src/app/api/recruiter/batch/route.ts` — deleted (parent `recruiter/` directory removed too).
+- `apps/herald-ai/web/src/lib/prompts.ts` — `SKEPTICAL_AUDITOR_PROMPT` removed; the bridge comment removed; `MATCH_REPORT_SCHEMA` retained as the parser/`{{schema}}` contract.
+- `apps/herald-ai/web/src/components/envoy/EnvoyFlow.tsx` — `fetch('/api/match', …)` → `fetch('/api/audit', …)`.
+- `apps/herald-ai/web/src/components/audit/BulkAudit.tsx` — `fetch('/api/recruiter/batch', …)` → `fetch('/api/audit', …)`.
+- `apps/herald-ai/web/src/proxy.ts` — rate-limit guard repointed from `/api/match` to `/api/audit`.
+- `apps/herald-ai/web/tests/match-engine.test.ts` — fetch URL updated to `/api/audit`.
+- `apps/herald-ai/web/tests/herald-auditor-yaml.test.ts` — relative-path guard updated from `…/api/match` to `…/api/audit`.
+- `apps/herald-ai/specs/herald-app-architecture.md` — audit pipeline section rewritten to describe one engine-backed `/api/audit`; both legacy routes named as retired.
+- `apps/herald-ai/specs/herald-backlog.md` — "Endpoint unification" item marked done.
+- Engine + adapter packages: `git diff main --stat` against `packages/engine` and `packages/adapter-langgraph` is empty. No Vāda blast radius by construction.
+- Lock: NO — first time both Herald call paths share one route + one engine cell; revisit once batch has been observed in production. Type 1 because it replaces two call paths, deletes a previously load-bearing constant, and locks in the cell/route boundary that the matrix UI (task 4) and per-audit vendor selector (task 3b) will plug into.
+
+---
+
+## D-046 — Conventions enforced in CI (commit format, Biome, forbidden colors) to govern every write path
 
 **Date:** 2026-06-14
 **Status:** ACTIVE
