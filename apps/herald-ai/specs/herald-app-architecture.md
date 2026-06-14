@@ -2,9 +2,9 @@
 
 **Status:** draft
 **Scope:** Herald web app (`apps/herald-ai/web`) — routes, topbar, library resolution, settings, public profile, audit pipeline.
-**Last updated:** 2026-06-13 (post `herald-onto-engine` task 1, PR for #88).
+**Last updated:** 2026-06-14 (post `herald-onto-engine` task 2, PR for #89).
 
-This spec records the architecture established by the `herald-profile-refactor` work (June 2026) plus the `herald-onto-engine` migration (task 1, June 13). It is the canonical reference for how the Herald app is structured. Decisions behind it: D-031 (standalone Clerk/DB), D-034 (one Bulk Audit operation), D-035 (library resolution), D-036 (flat routes + unified topbar), D-044 (auditor on `@atta/engine` via solo YAML).
+This spec records the architecture established by the `herald-profile-refactor` work (June 2026) plus the `herald-onto-engine` migration (tasks 1–2, June 13–14). It is the canonical reference for how the Herald app is structured. Decisions behind it: D-031 (standalone Clerk/DB), D-034 (one Bulk Audit operation), D-035 (library resolution), D-036 (flat routes + unified topbar), D-044 (auditor on `@atta/engine` via solo YAML), D-045 (endpoints unified into `/api/audit`).
 
 ---
 
@@ -95,33 +95,39 @@ One provider key per Herald user. Profile audits (a recruiter auditing a publish
 
 ---
 
-## 8. Audit pipeline (D-044)
+## 8. Audit pipeline (D-044, D-045)
 
-`POST /api/match` runs the Skeptical Auditor through the shared `@atta/engine` + `@atta/adapter-langgraph` substrate. There is no longer a direct `generateText()` call in `route.ts`.
+Both audit call paths run through one endpoint — `POST /api/audit` — backed by the shared `@atta/engine` + `@atta/adapter-langgraph` substrate. There is no `generateText()` call anywhere in Herald: the legacy `/api/match` and `/api/recruiter/batch` routes are retired.
 
-The auditor agent (system prompt + model + classifier behaviour + message template) lives in `apps/herald-ai/web/yamls/herald-auditor.yaml` — a v2.0 solo flow with one agent (`SkepticalAuditor`, `claude-sonnet-4-20250514`, `classifier.mode: skip`). On the first request the route loads the YAML via `loadFlow(readFileSync(...))` (cached at module load) and compiles it with `compileFlow(flow, userPrompt, undefined, { schema: MATCH_REPORT_SCHEMA })`. The `{{schema}}` customVar is substituted into the agent's system prompt at compile time, so the model-instruction and `parseMatchReport`'s validation share one schema definition. The Plan is executed by `LangGraphAdapter.execute({ plan })` with `providerKeys: { anthropic: apiKey }` (BYOK: owner's stored key for profile audits, `ANTHROPIC_API_KEY` for tests/fallback).
+The auditor agent (system prompt + model + classifier behaviour + message template) lives in `apps/herald-ai/web/yamls/herald-auditor.yaml` — a v2.0 solo flow with one agent (`SkepticalAuditor`, `claude-sonnet-4-20250514`, `classifier.mode: skip`). On the first request the route loads the YAML via `loadFlow(readFileSync(...))` (cached at module load) and compiles it with `compileFlow(flow, userPrompt, undefined, { schema: MATCH_REPORT_SCHEMA })`. The `{{schema}}` customVar is substituted into the agent's system prompt at compile time, so the model-instruction and `parseMatchReport`'s validation share one schema definition. The Plan is executed by `LangGraphAdapter.execute({ plan })` with `providerKeys: { anthropic: apiKey }`.
 
-The engine call replaces only the LLM invocation. Everything around it is preserved:
+### One endpoint, two payload shapes (D-045)
+
+`POST /api/audit` dispatches on payload shape:
+
+- **Single shape** — `{ job_description, username? | _test_profile_override? }` → returns a `MatchReport`. The Envoy single-profile audit (`EnvoyFlow.tsx`). Auth is open; the audit runs on the **profile owner's** stored BYOK key (DB-resolved by `username`, D-033). Test and Dani-fallback paths use the server `ANTHROPIC_API_KEY`.
+- **Batch shape** — `{ jd, candidates[] }` → returns `{ results: { username, report, error? }[] }`. The Bulk Audit (`BulkAudit.tsx`). Requires a Clerk session; runs on the **logged-in user's** stored BYOK key (D-033); 402 if missing. `Promise.all` fan-out across candidates (≤ 10).
+
+Both shapes call the same `runSingleMatch(profile, jd, apiKey)` cell — the engine-backed unit of work. Everything around it is preserved verbatim from D-044:
 
 - **2-attempt retry, 25s timeout** wrapping `adapter.execute(...)` via `Promise.race`. `Conclusion.terminalState === 'FAILED'` advances to the next retry attempt rather than throwing — the engine surfaces errors via the Conclusion shape, not exceptions.
 - **`extractSignals` pre-fetch** (3s timeout, best-effort) still produces the GitHub signal evidence appended to `userPrompt`. Task 7 (#102) will retire this pre-fetch by giving the auditor agent a GitHub tool declared in the YAML.
-- **24h in-memory cache** keyed on `sha256(jd + profile)`, identical.
+- **24h in-memory cache** keyed on `sha256(jd + profile)`. Shared by both shapes — a batch entry that re-tests an already-cached profile+JD pair hits cache.
 - **`parseMatchReport`** with its **code-enforced NO-FIT hard-requirement gate** is unchanged. The gate is deliberately Herald code, not a model gate — it must never become model-controlled.
-- **`buildPartialReport` fallback** is unchanged: both attempts failing yields a `B+ / Good Fit / Low confidence` partial report so the UI never crashes.
+- **`buildPartialReport` fallback** is unchanged: both attempts failing yields a `B+ / Good Fit / Low confidence` partial report so the UI never crashes (single shape). The batch shape returns `{ error: 'Audit failed' }` for that individual candidate inside the `results[]`, so the rest of the batch is unaffected.
 
-The engine and adapter packages are consumed unchanged: `git diff main --stat` against `packages/engine` and `packages/adapter-langgraph` is empty in the migration PR, which means no Vāda blast radius by construction.
+Rate limit: `src/proxy.ts` applies the Upstash 5/h per-IP cap to `POST /api/audit` (was `/api/match` pre-D-045). Side effect: batch calls are now in scope of the cap, but one batch call counts as one hit even when it audits up to 10 candidates internally.
+
+The engine and adapter packages are consumed unchanged: `git diff main --stat` against `packages/engine` and `packages/adapter-langgraph` is empty in this PR, which means no Vāda blast radius by construction.
 
 `apps/herald-ai/web/next.config.ts` transpiles `@atta/engine` + `@atta/adapter-langgraph` and adds `outputFileTracingIncludes: { '/**': ['./yamls/**'] }` so the YAML is bundled into the serverless function (Vāda's pattern, scoped to Herald's local `yamls/` dir).
-
-`/api/recruiter/batch` is still on the legacy direct `generateText` path; task 2 of this iteration migrates it onto the engine and then `SKEPTICAL_AUDITOR_PROMPT` (still exported from `prompts.ts` as a TODO bridge) can be deleted. Until then, the YAML and the constant are kept in lockstep at the prompt level.
 
 ---
 
 ## 9. Known follow-ups (not built here)
 
-- Endpoint unification: `BulkAudit` still calls `/api/recruiter/batch`; fold `/api/match` + `/api/recruiter/batch` into one `/api/audit` cell runner (`runSingleMatch` is the reusable cell). Now also: both call sites should run through the engine.
-- N×M matrix UI and polymorphic inputs (link / pasted text / .md / .pdf / stored profile).
+- N×M matrix UI and polymorphic inputs (link / pasted text / .md / .pdf / stored profile). Plugs straight into the existing `/api/audit` cell — `runSingleMatch` is the per-pair primitive.
+- Per-audit vendor + model picker on the Bulk Audit surface (`herald-onto-engine` task 3b, #90) — leverages the engine's vendor-agnostic Plan to let the user choose any model their stored keys support.
 - Per-key rate limit / cap on profile audits (abuse surface: strangers spend the owner's key budget — D-033).
 - `herald.attalabs.dev` deploy verification.
 - Auditor signal-gathering as a YAML-declared tool (`herald-onto-engine` task 7, #102) — retires the `extractSignals` pre-fetch.
-- Batch route onto the engine (`herald-onto-engine` task 2) — unblocks deleting `SKEPTICAL_AUDITOR_PROMPT` from `prompts.ts`.

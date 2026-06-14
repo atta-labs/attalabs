@@ -973,3 +973,82 @@ This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choi
 - Lock: NO — first migration of Herald onto the shared engine; revisit once the auditor has been observed in production and after task 2 (batch route) and task 7 (auditor tools) lands. Type 1 because it replaces a core call path and establishes the pattern other Herald LLM call sites will follow.
 
 ---
+
+## D-045 — Herald endpoints unified into `/api/audit`; batch on `@atta/engine`; `SKEPTICAL_AUDITOR_PROMPT` deleted
+
+**Date:** 2026-06-14
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Developer (`herald-onto-engine` iteration, task 2, #89)
+**Ratified by:** Principal
+
+**Context:** D-044 put `/api/match` on `@atta/engine` via the solo `herald-auditor.yaml`, but left `/api/recruiter/batch` untouched. Batch carried a near-duplicate of the auditor's per-pair logic — its own `buildPrompt`, `parseMatchReport`, `runSingleMatch` — and was the only remaining importer of the `SKEPTICAL_AUDITOR_PROMPT` TypeScript constant. The constant was preserved across D-044 explicitly to keep batch compiling; with batch unmigrated, the auditor prompt lived in two places (the YAML and the constant), the engine call path covered only half the audit traffic, and Herald had two endpoints performing one operation. The `herald-onto-engine` iteration's task 2 (issue #89) finishes the migration and unifies the endpoints.
+
+**Decision:** Both audit call paths are folded into one `POST /api/audit` route whose unit of work is the shared engine-backed audit cell. Specifics:
+
+1. **One endpoint, two payload shapes.** `POST /api/audit` dispatches on payload: a `candidates` array selects the batch shape (`{ jd, candidates[] }` → `{ results: [...] }`); absence of `candidates` selects the single shape (`{ job_description, username | _test_profile_override | (none, falls back to DANI_PROFILE) }` → `MatchReport`). Same Herald-owned glue around the cell — `extractSignals` 3s pre-fetch, the 25s × 2-attempt LLM wrapper, `parseMatchReport` with its code-enforced NO-FIT hard-requirement gate, `buildPartialReport` fallback, the 24h in-memory `sha256(jd + profile)` cache.
+2. **Shared engine-backed cell — `runSingleMatch(profile, jd, apiKey)`.** Both shapes call the same per-pair function, which calls `loadFlow → compileFlow → LangGraphAdapter.execute` with `MATCH_REPORT_SCHEMA` substituted into `{{schema}}` at compile time (identical to D-044's match path). Batch fans the cell out via `Promise.all` across candidates. There is no longer a direct `generateText()` call anywhere in Herald.
+3. **Auth + key resolution preserved per shape (D-033).** Single shape: profile audit runs on the **profile owner's** stored BYOK key (DB-resolved by `username`); test/fallback paths use the server `ANTHROPIC_API_KEY`. Batch shape: requires Clerk auth and runs on the **logged-in user's** stored BYOK key, returning 402 if missing. The decision about *whose* key is unchanged; it is now enforced in one place per call shape, not duplicated across two routes.
+4. **Validations preserved verbatim.** JD ≥ 20 chars (400), batch ≥ 1 and ≤ 10 candidates (400), missing master encryption key (500), missing BYOK key for batch (402), missing BYOK key for profile audit (503), unknown username (404), test/fallback missing `ANTHROPIC_API_KEY` (500), `Unauthorized` (401) for batch without Clerk session. Top-level catch returns the per-shape error: a partial `MatchReport` for single (so the Envoy UI never crashes), `{ error: 'Batch audit failed' }` with status 500 for batch (matching the original batch error shape).
+5. **Rate limit repointed to `/api/audit`.** `src/proxy.ts` now matches `req.nextUrl.pathname === '/api/audit'` instead of `/api/match`. Side effect: the per-IP 5/h cap (Upstash, `herald:match` prefix) now also covers batch calls, where previously it did not. Acceptable — batch is authenticated and one batch call is one IP hit (up to 10 candidates internally). If batch volume justifies a distinct policy later, that's a follow-up.
+6. **`SKEPTICAL_AUDITOR_PROMPT` deleted.** With batch migrated, the constant has no importers (`rg SKEPTICAL_AUDITOR_PROMPT --type ts` returns only a markdown-text reference inside `packages/aeg-core/src/parse-iteration.test.ts`, which asserts on the historical *rationale text* of the herald-onto-engine iteration file — not a code-level import). The auditor prompt's canonical source is now `apps/herald-ai/web/yamls/herald-auditor.yaml` alone. `MATCH_REPORT_SCHEMA` stays in `prompts.ts` — it is still the parser contract and the `{{schema}}` template input.
+7. **Old routes deleted, not redirected.** `apps/herald-ai/web/src/app/api/match/route.ts` and `apps/herald-ai/web/src/app/api/recruiter/batch/route.ts` are removed; the empty `match/`, `recruiter/batch/`, and `recruiter/` directories are removed. Callers are repointed at the source: `EnvoyFlow.tsx` (single) and `BulkAudit.tsx` (batch) now POST to `/api/audit`. No backwards-compatibility shim — Herald is the only consumer of these routes and they ship together.
+
+**Alternatives rejected:**
+- Keep two routes; just share the engine-backed cell via an internal helper — rejected: leaves the duplication at the route-handler layer (auth, validation, top-level catch) and keeps `/api/recruiter` alive for one of its prior two routes (its sibling, also recruiter-only). One endpoint per *operation* is the boundary; "single profile audit" and "batch profile audit" are the same operation with different input cardinality.
+- Make `/api/audit` always batch-shaped (single = batch of one) — rejected: forces a wrapping/unwrapping shim at the Envoy caller for no gain, and the Envoy single audit is anonymous + profile-owner-keyed while batch is authenticated + logged-in-user-keyed; collapsing the two shapes collapses two different auth paths. The two payload shapes carry meaningful semantic differences (D-033), so they are dispatched in the handler rather than forced into one envelope.
+- Skip the rate-limit repoint and leave `/api/match` matchable for one release — rejected: the route is deleted in the same PR; matching a path that doesn't exist is dead code.
+- Leave `SKEPTICAL_AUDITOR_PROMPT` exported as a no-op shim with a deprecation comment — rejected (cf. CLAUDE.md "no backwards-compatibility hacks"): the constant has no importers; ship the delete.
+
+**Consequences:**
+- `apps/herald-ai/web/src/app/api/audit/route.ts` — new; the unified endpoint. Handlers: `handleSingle`, `handleBatch`. Shared cell: `runSingleMatch`. Identical YAML-loading + compile + adapter call as D-044's match path; the cell is the boundary between Herald glue and the engine substrate.
+- `apps/herald-ai/web/src/app/api/match/route.ts` — deleted.
+- `apps/herald-ai/web/src/app/api/recruiter/batch/route.ts` — deleted (parent `recruiter/` directory removed too).
+- `apps/herald-ai/web/src/lib/prompts.ts` — `SKEPTICAL_AUDITOR_PROMPT` removed; the bridge comment removed; `MATCH_REPORT_SCHEMA` retained as the parser/`{{schema}}` contract.
+- `apps/herald-ai/web/src/components/envoy/EnvoyFlow.tsx` — `fetch('/api/match', …)` → `fetch('/api/audit', …)`.
+- `apps/herald-ai/web/src/components/audit/BulkAudit.tsx` — `fetch('/api/recruiter/batch', …)` → `fetch('/api/audit', …)`.
+- `apps/herald-ai/web/src/proxy.ts` — rate-limit guard repointed from `/api/match` to `/api/audit`.
+- `apps/herald-ai/web/tests/match-engine.test.ts` — fetch URL updated to `/api/audit`.
+- `apps/herald-ai/web/tests/herald-auditor-yaml.test.ts` — relative-path guard updated from `…/api/match` to `…/api/audit`.
+- `apps/herald-ai/specs/herald-app-architecture.md` — audit pipeline section rewritten to describe one engine-backed `/api/audit`; both legacy routes named as retired.
+- `apps/herald-ai/specs/herald-backlog.md` — "Endpoint unification" item marked done.
+- Engine + adapter packages: `git diff main --stat` against `packages/engine` and `packages/adapter-langgraph` is empty. No Vāda blast radius by construction.
+- Lock: NO — first time both Herald call paths share one route + one engine cell; revisit once batch has been observed in production. Type 1 because it replaces two call paths, deletes a previously load-bearing constant, and locks in the cell/route boundary that the matrix UI (task 4) and per-audit vendor selector (task 3b) will plug into.
+
+---
+
+## D-046 — Conventions enforced in CI (commit format, Biome, forbidden colors) to govern every write path
+
+**Date:** 2026-06-14
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Developer (`ci-conventions` task, June 14, 2026)
+**Ratified by:** Principal (in-session)
+
+**Context:** Three conventions were enforced only by local mechanisms: commit-message format (Husky + commitlint), Biome lint/format (lint-staged), and the "no hardcoded colors" rule from `.claude/skills/ui-theme-tokens/SKILL.md` (the PreToolUse skill-check hook that forces UI skills to be loaded before editing `.tsx`). Those mechanisms only fire for a local agent committing inside a checkout. Any write via the GitHub API / MCP — or a direct push, or a hand-merge — bypasses all of them. Evidence on main: commit history contains non-conforming messages (`Record the aeg-core…`, `Backlog two items…`, `Reconcile herald-backlog…` — none match the `Type: description` format commitlint requires) because they were authored via the API where commitlint never ran. PR #105 merged with a lowercase scope for the same reason. The structural gap is: local hooks bind one class of writer; CI binds every class of writer.
+
+**Decision:** Promote the three highest-value local checks to GitHub Actions CI jobs that run on every PR regardless of how commits were authored. Local hooks are NOT replaced — they stay (fast feedback during a local agent's edit loop). CI is added as the layer that catches what the local layer structurally cannot.
+
+1. **`commit-lint` (CI job).** Runs `commitlint --from <base> --to <head>` over the PR commit range, **reusing the existing `commitlint.config.js`** (the same rule set Husky uses locally — no forked configuration, so local and CI cannot diverge).
+2. **`biome` (CI job).** Runs `bun run format-and-lint` (i.e. `biome check .`) over the working tree. Same config as lint-staged uses locally.
+3. **`no-hardcoded-colors` (CI job + new script `scripts/check-forbidden-colors.ts`).** Diff-scoped: scans only the added lines in changed `.tsx` / `.jsx` / `.ts` / `.js` / `.css` files. Encodes the four pattern groups documented in `ui-theme-tokens/SKILL.md` (Tailwind palette classes, arbitrary color brackets `bg-[#…]` / `text-[oklch(…)]`, absolute colors `text-white` / `bg-black`, inline-style color literals). The canonical token source `packages/ui/styles/globals.css` and CSS custom-property definition lines are skipped to avoid false-positives on legitimate `oklch(…)` definitions. The gate deliberately **under-matches rather than over-matches** — pre-existing violations elsewhere in the repo (legacy debt in `packages/ui`) are not flagged; only newly-introduced violations block.
+
+**Alternatives rejected:**
+- Keep relying on the local skill-check hook: rejected — the hook only fires for tools the harness runs (`Edit` / `Write` / `NotebookEdit` inside a local Claude Code session). A `gh api` write, a Cursor edit, a hand-merge, or a direct `git push` are all invisible to it. The gap was the whole problem.
+- Add lint as a Turbo job and call it from a single CI workflow: rejected for this task — kept each convention as an independent job so a failure points clearly at which convention broke (commit-format, Biome, or colors). Bundling reduces signal.
+- Run color check whole-file instead of diff-scoped: rejected — legacy `packages/ui` files contain 11 known pre-existing violations (verified during self-test). Whole-file scanning would block every PR that touched those files until the legacy debt was paid. Diff-scoping turns the gate into a "stop the bleeding" rule, not a "boil the ocean" rule.
+- Make the CI commit-format rule stricter than the local one (e.g. require Conventional Commits `feat(scope):`): rejected — local and CI must agree. Reusing `commitlint.config.js` guarantees identical behavior; a divergent rule set is its own drift hazard. The repo's existing format (`Feat: description`, `Type:` enum from `commitlint.config.js`) is the source of truth.
+- Arm the checks as required status checks in branch protection as part of this task: explicitly out of scope. Arming is a Principal action in GitHub Settings → Branches → ruleset, which this task does not perform. The task ships the *checks*; the Principal arms them. Until armed, the gate is advisory (Observe-mode floor, `state-machine.md` §12).
+
+**Consequences:**
+- `.github/workflows/conventions.yml` — new; three jobs (`commit-lint`, `biome`, `no-hardcoded-colors`), all on `pull_request: [opened, synchronize, reopened]`.
+- `scripts/check-forbidden-colors.ts` — new; diff-scoped UI color check. Self-test evidence: catches 11 deliberate violations in a fixture file; returns clean against the unchanged `apps/aeg/web/studio` scaffold; finds 11 known legacy violations across `packages/ui` (debt tracking, not blocking — they only matter if a PR re-touches those lines).
+- `aeg-root/state-machine.md` §12 — three rows moved from "Trusted (agent discipline)" / aspirational-but-not-installed to "Enforced (CI blocks merge)": commit-message format, Biome lint/format, forbidden colors in UI. `verify-docs` and the Issue-template / no-forbidden-fields gates stay where they were.
+- `aeg-project/changelog.md` — entry added.
+- Local hooks (`.husky/`, `.claude/hooks/check-skill.sh`, lint-staged): **unchanged.** Fast local feedback is preserved.
+- **Follow-up (Principal, not in this task):** in GitHub → Settings → Branches → ruleset for `main`, add `commit-lint`, `biome`, and `no-hardcoded-colors` (plus Vercel) to "Require status checks to pass." Until that is done, the checks run but do not block merges — the task ships the mechanism, the Principal arms it.
+- Lock: NO — first cut of CI-enforced conventions; revisit once a real PR exercises all three jobs and the Principal arms branch protection. Type 1 because it changes the enforcement gradient (`state-machine.md` §12), which governs how every future merge is gated.
+
+---

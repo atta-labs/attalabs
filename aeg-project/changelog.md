@@ -8,6 +8,20 @@
 
 ---
 
+## June 14, 2026 — Conventions enforced in CI (commit format, Biome, forbidden colors)
+
+### Process / tooling
+- **D-046 (this PR)** — Three conventions promoted from local-hook-only to CI-enforced: commit-message format, Biome lint/format, and the no-hardcoded-colors UI rule. The gap was structural: Husky / lint-staged / the `check-skill.sh` PreToolUse hook only bind a local Claude Code agent's edits — they are silent for writes via the GitHub API/MCP, direct pushes, and hand-merges. Evidence on main: non-conforming commit headers (PR #105 and several `Record …` / `Backlog …` / `Reconcile …` history entries) authored via the API where commitlint never ran. New CI workflow `.github/workflows/conventions.yml` adds three independent jobs — `commit-lint` (reuses `commitlint.config.js`), `biome` (runs `bun run format-and-lint`), `no-hardcoded-colors` (new diff-scoped script `scripts/check-forbidden-colors.ts` that encodes the four pattern groups from `ui-theme-tokens/SKILL.md`). The color check is deliberately under-matching: scans only added lines, skips `globals.css` and CSS custom-property definitions, finds 11 known legacy violations in `packages/ui` but does not block PRs that don't re-touch those lines. Local hooks are unchanged. `state-machine.md` §12 updated to move the three conventions from "Trusted (agent discipline)" to "Enforced (CI blocks merge)". **Principal follow-up:** arm the three new checks as required status checks in GitHub Settings → Branches → ruleset for `main`; until armed, the gate runs but does not block.
+
+---
+
+## June 14, 2026 — verify-docs Tier-parsing fix
+
+### Process / tooling
+- **PR #106** — `fix(verify-docs)`: the docs gate could not parse a bold `**Tier:** 3` field in a PR body (the `**` wraps the colon; the old regex expected the colon outside the bold), so a correctly-tiered PR parsed as `null`, silently defaulted to Tier 3 (strictest), and then failed on the *unrelated* C4 rule (tier-3 needs a decision log). This is how PR #105 (aeg-core) merged red. Two fixes: (1) `readTierFromPrBody` now matches plain `Tier:`, bold-colon `**Tier:**`, and bold-label `**Tier**:`; (2) a missing/unparseable Tier is now an **explicit error** (new check `C0 tier-required`, "declare your tier") instead of a silent escalation to strict — the script never guesses the tier. Output consolidated into `finish()` so the early C0 exit prints consistently. Full mode unchanged; genuine Tier-3-without-decision-log still fails C4 once the tier parses. Surfaced operationally after #105; follow-up: add the docs check to `main`'s required status checks once this lands.
+
+---
+
 ## June 3, 2026 — Cetana F6 (`cetana watch`)
 
 ### Cetana

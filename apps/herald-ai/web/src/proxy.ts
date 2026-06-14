@@ -20,8 +20,8 @@ const ratelimit =
     : null
 
 export default clerkMiddleware(async (auth, req) => {
-  // Rate limit POST /api/match
-  if (req.method === 'POST' && req.nextUrl.pathname === '/api/match') {
+  // Rate limit POST /api/audit
+  if (req.method === 'POST' && req.nextUrl.pathname === '/api/audit') {
     if (ratelimit) {
       const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
       try {
