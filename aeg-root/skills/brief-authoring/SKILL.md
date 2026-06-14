@@ -1,6 +1,6 @@
 ---
 name: brief-authoring
-description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers the Brief Author's conversational protocol, required sections, inheriting the Planner's rationale via the planner-brief contract, the contract-conformance checklist, the mandatory technical-dependency / tech-surface-map / agent-selection-with-reasoning sections, the optional Ticket/Project fields, model selection, the model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), the mandatory worktree-first step, the brief-lands-in-the-PR-body rule, the explicit documentation-update list, the post-PR review passes, and anti-patterns.
+description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers the Brief Author's conversational protocol, required sections, inheriting the Planner's rationale via the planner-brief contract, the contract-conformance checklist, the mandatory technical-dependency / tech-surface-map / agent-selection-with-reasoning sections, the optional Ticket/Project fields, model selection, the model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), the mandatory worktree-first step, the brief-lands-in-the-PR-body rule, the standing autonomy clause, the explicit documentation-update list, the post-PR review passes, and anti-patterns.
 ---
 
 <!-- CANONICAL SOURCE (D-039). This file is the canonical home of the `brief-authoring` skill, inside the AEG unit (aeg-root/skills/). The copy at .claude/skills/brief-authoring/SKILL.md is a GENERATED VIEW produced by `aeg generate-skills` for the agent harness that loads from .claude/ — edit THIS file, then regenerate; never edit the generated view by hand. -->
@@ -78,7 +78,7 @@ Before a brief is dispatchable, confirm **every one of the seven Planner fields 
 - [ ] **Stop-and-escalate** → are the Planner's stop conditions copied into the brief's **Stop conditions (§9)**, substance-verbatim?
 - [ ] **No instruction contradicts the surface map** → if the brief tells the executor to **delete or rename a shared symbol** (a constant, type, export, function), confirm **every importer is inside the §4 surface.** If an importer is out-of-surface, the "delete it" instruction and the "don't touch that file" boundary contradict — defer the deletion to the task that owns the importer, and say so in the brief. (See the **shared-symbol importer check** in §4.)
 
-Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
+Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; the standing autonomy clause present in §10; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
 
 ---
 
@@ -175,9 +175,21 @@ Typecheck passes; lint passes; tests pass; production build passes (catches stri
 
 Explicit list that causes STOP-and-report rather than improvising: pre-flight failures (incl. worktree couldn't be created); a technical dependency from Section 3 not actually present; a dispatch gate not satisfied (a `depends-on` PR not merged, or a `conflicts-with` sibling's PR open); the executor's own dig contradicts the inherited Planner's rationale (boundary moved / sizing broke — escalate `severity:strategy`); the task's stop-and-escalate condition from the Planner's rationale is hit; **a brief instruction turns out to contradict another** (e.g. "delete a shared symbol" vs. "don't touch an out-of-surface importer of it") — do the safe half (keep the symbol), flag the contradiction in the PR body, and let the Brief Author/Principal resolve it; design gap discovered; test fails after multiple attempts; about to touch files outside the Section 4 surface; any destructive action not explicitly authorized.
 
+The §9 stop conditions are **load-bearing** — they are the genuine escalations, and the standing autonomy clause (§10) explicitly does **not** suppress them. An agent that halts here is doing the right thing; an agent that halts for a low-value clarifying question it could resolve itself is not (that is what the autonomy clause removes).
+
 ### 10. Constraints
 
 What the executor must NOT do: off-limits branches/paths (the out-of-surface set from Section 4); explicitly deferred features (do not add); the planner's **traps to avoid** turned into explicit "do NOT do X; do Y instead"; forbidden patterns (skipping verification hooks, an unapproved datastore, auto-remove); and — always — **never write status anywhere** (status is derived from the forge) and **never add execution metadata to the iteration file**.
+
+#### Standing autonomy clause (mandatory — every brief carries it, verbatim)
+
+Every brief's Constraints section includes this clause, word for word:
+
+> **Autonomy:** Do not stop to ask clarifying questions. For any ambiguity not covered by a Section 9 stop condition, choose the most reasonable option consistent with this brief, record the choice in the PR body, and continue. Halt only for the explicit Section 9 stop conditions — and when you halt, record the blocker in the PR body or an Issue comment rather than waiting interactively for input.
+
+This clause is what makes a dispatched agent run to completion unattended instead of pausing for input it can resolve itself. It removes the *low-value* check-ins; it does **not** suppress the §9 stop conditions, which remain the genuine escalations (a contradicted boundary, an under-specified format, a hit stop-and-escalate trap) and must still halt the agent. The line it draws: resolve-and-record for everything inside the brief's discretion; halt-and-record for the §9 conditions; never pause interactively for a question the brief already answers or the Developer is empowered to decide.
+
+**Permission-prompt friction is a tool-layer concern, not a brief concern.** "Do you want to run this command / make this edit?" prompts come from the coding-agent's permission system, not from the brief — handle them there (e.g. Claude Code's `auto` permission mode, set once in `~/.claude/settings.json`, which removes routine prompts while a classifier still guards genuinely risky actions, and which also nudges the agent to keep working without stopping for clarifying questions). The brief governs *what* to build and *when* to halt; the tool governs *whether each action needs approval*. Don't try to solve permission friction in the brief.
 
 ### 11. Deliverable
 
@@ -249,7 +261,7 @@ When in doubt, assign Tier 3. verify-docs defaults to Tier 3 when the PR body ha
 ```
 **principal_delegate:** [scope of any authority delegated to the Developer]
 ```
-Present only when the Principal explicitly delegates a decision. Without it, contested choices escalate via the escalation mechanism. Scope must be specific: "Developer may choose the output format," not "Developer may decide architecture."
+Present only when the Principal explicitly delegates a decision. Without it, contested choices escalate via the escalation mechanism. Scope must be specific: "Developer may choose the output format," not "Developer may decide architecture." (The standing autonomy clause in §10 already empowers the Developer to resolve in-brief ambiguity without asking; `principal_delegate` is for a *named, specific* decision the Principal hands over beyond that.)
 
 ```
 **spike:** true
@@ -301,7 +313,7 @@ Use **`[NEEDS CLARIFICATION]`** inline markers to surface gaps rather than guess
 
 **Resolution protocol:** before dispatching, collect all markers, present them to the Principal as a numbered list, wait for resolution on each (don't dispatch with unresolved markers), replace each with the answer inline. If the Principal defers one, replace with `[DEVELOPER DECIDES: ...]` so the executor knows it's intentional. (This is conversational-protocol stage 5 — surfaced, numbered, waited on.)
 
-A pre-flight `[NEEDS CLARIFICATION]` should be resolved in the brief; if an ambiguity surfaces mid-execution instead, the Developer escalates via the escalation mechanism — but a well-authored brief anticipates most of these.
+These markers are resolved **before dispatch**, by the Principal — they are the Brief Author's pre-flight ambiguity check, not a license for the agent to stop mid-run. They are distinct from the standing autonomy clause (§10), which governs ambiguity the agent meets *during* execution: a dispatched brief has **no** open `[NEEDS CLARIFICATION]` markers (they were all resolved or turned into `[DEVELOPER DECIDES: …]`), so at run time the agent resolves-and-records rather than pausing. A pre-flight `[NEEDS CLARIFICATION]` should be resolved in the brief; if an ambiguity surfaces mid-execution instead, the Developer follows the autonomy clause (resolve, record, continue) unless it rises to a §9 stop condition — but a well-authored brief anticipates most of these.
 
 Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention only — Spec Kit CLI not adopted.
 
@@ -326,6 +338,7 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 - ❌ An empty documentation-update list on a Tier 1+ brief
 - ❌ Listing `roadmap.md` in a doc-update list — it's retired
 - ❌ Instructing the executor to write status anywhere — status is derived from the forge
+- ❌ Omitting the standing autonomy clause (§10) — the agent pauses for input it could resolve itself, defeating unattended dispatch; or, the inverse, writing a clause so broad it tells the agent to push past the §9 stop conditions (those must still halt it)
 - ❌ Not specifying stop conditions — the executor improvises when it should ask
 - ❌ Conflating what with how — specify BOTH
 - ❌ Leaving scope boundaries implicit — the executor will touch adjacent files
