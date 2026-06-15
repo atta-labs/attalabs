@@ -26,6 +26,7 @@ function buildAgents(flow: Flow, model: string, customVars: Record<string, strin
       description: fa.description ?? '',
       systemPrompt: renderVars(fa.systemPrompt, customVars),
       tools: fa.tools,
+      customTools: fa.customTools,
       model: fa.model ?? model,
       outputSchema: fa.outputSchema
     }

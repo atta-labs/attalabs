@@ -1052,3 +1052,47 @@ This keeps the backlog deliberately **out of the flow** (a load-bearing AEG choi
 - Lock: NO — first cut of CI-enforced conventions; revisit once a real PR exercises all three jobs and the Principal arms branch protection. Type 1 because it changes the enforcement gradient (`state-machine.md` §12), which governs how every future merge is gated.
 
 ---
+
+## D-047 — Custom client-side tool execution added to `@atta/adapter-langgraph` as an additive, opt-in capability
+
+**Date:** 2026-06-14
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Developer (`herald-onto-engine` task 7a, June 14, 2026)
+**Ratified by:** Principal (in-session)
+
+**Context:** The adapter supported only provider-native server tools (Anthropic-executed `web_search` / `web_fetch`). There was no loop in which the engine pauses, runs an app-supplied TypeScript function, and feeds the result back to the model — proven by `node-executor.ts` (single-shot `llmCall`) and `graph-state.ts` (`toolUseHistory` documented as "best-effort — server tools don't emit countable tool_use blocks"). Task 7b (Herald's GitHub tool) needs the engine to do precisely this; 7a builds the capability with a throwaway trivial tool, not Herald's. The cardinal constraint was additive/opt-in: Vāda runs on this exact adapter, so an agent with no custom tools declared must execute byte-identically to today.
+
+**Decision:** Add a new branch inside `llm.ts`'s Anthropic vendor path that activates only when (1) the agent declares `customTools: [{ name, description, parameters }]`, (2) at least one declared name matches a handler registered on the adapter at construction time, and (3) the agent has no `outputSchema` (structured-output mode is mutually exclusive with multi-turn tool use today). When all three hold, the call routes to a bounded multi-turn loop (`runAnthropicCustomToolLoop`) that runs the handler on each emitted `tool_use`, sends back `tool_result`, and continues until the model stops calling tools or `MAX_CUSTOM_TOOL_ITERATIONS` (10) is hit. When any condition is false, the existing single-shot Anthropic call runs unchanged — proving the byte-identical guarantee.
+
+The gate predicate `resolveRegisteredCustomTools(agent, handlers)` is extracted as a pure function and is the **single source of truth** for whether the loop runs. It is unit-tested in isolation against six invariants (no customTools → `[]`; customTools but no handlers → `[]`; handlers undefined → `[]`; structured output → `[]`; declared + registered → returns the spec; per-name filtering). If any of those return non-empty for a Vāda agent that today declares no `customTools`, the loop activates for Vāda — so the assertions form the additivity invariant in code.
+
+Surface shape: app-supplied handlers register on `LangGraphAdapter` constructor (`customTools?: Record<string, async (args) => result>`). Tool **specs** live on the agent in YAML (`custom_tools: [{ name, description, parameters }]`), threaded through `flow-schema.ts` → `flow-loader.ts` → `compile-flow.ts` → `Plan.agents`. The engine stays content-agnostic — the spec is data the YAML author wrote, not content the engine injected.
+
+**Alternatives rejected:**
+- Put the loop inside `node-executor.ts` calling `llmCall` multiple times: rejected — would require widening the engine's `LlmCallFn` type to expose tool_use blocks. The change would leak provider-specific multi-turn semantics into a provider-neutral engine type. Keeping the loop inside the Anthropic branch contains the change to the adapter layer where multi-vendor SDK shape already lives.
+- Inline the tool spec on `Agent.tools` as a mixed `(string | object)[]`: rejected — changes the existing `tools: string[]` contract, which the brief explicitly flagged as a Vāda-safety risk. Adding `customTools` as a separate optional field is purely additive: every existing YAML and TypeScript caller stays well-typed.
+- Resolve tool specs only at the adapter (don't put them in YAML): rejected — splits the tool definition across two surfaces (YAML lists the name, code holds the spec) and makes Herald's task 7b YAML opaque about what the model actually sees. Carrying the spec in YAML matches the engine's "everything declarative" philosophy.
+- Pass `customTools` through the default Anthropic-only path (`createDefaultLlmCall`): rejected for this task — `createDefaultLlmCall` is the single-key backward-compatibility wrapper; widening it would change its existing test surface. The multi-vendor path (`createMultiVendorLlmCall`) is where every production caller already lives, so the new third argument is added there. The default path remains untouched — an additional belt for the additivity guarantee.
+- Skip the iteration cap and trust the model to stop: rejected — a buggy handler or a confused model could request the same tool forever. `MAX_CUSTOM_TOOL_ITERATIONS = 10` is a finite-cost ceiling; exceeding it throws a named error rather than spinning forever.
+
+**Consequences:**
+- `packages/atta-agents/src/index.ts`: `CustomToolSpec` interface added; `Agent.customTools?: CustomToolSpec[]` added. Both additive.
+- `packages/engine/src/flow-types.ts`: `FlowCustomToolSpec` added; `FlowAgent.customTools?: FlowCustomToolSpec[]` added.
+- `packages/engine/src/flow-schema.ts`: `CustomToolSpecSchema` added; `FlowAgentSchema.custom_tools` (snake_case) accepted optionally.
+- `packages/engine/src/flow-loader.ts`: `custom_tools` → `customTools` mapped at the boundary.
+- `packages/engine/src/compile-flow.ts`: `customTools` propagated from `FlowAgent` into `Plan.agents[name]`.
+- `packages/adapter-langgraph/src/custom-tool-loop.ts`: new module — `runAnthropicCustomToolLoop`, `resolveRegisteredCustomTools`, `customToolSpecToAnthropicTool`, `MAX_CUSTOM_TOOL_ITERATIONS` constant.
+- `packages/adapter-langgraph/src/llm.ts`: `createMultiVendorLlmCall` gains a third optional argument `customToolHandlers`; Anthropic branch gains a single gated `if` that routes to the loop when the gate predicate returns non-empty. The single-shot paths (text and structured) are untouched.
+- `packages/adapter-langgraph/src/adapter.ts`: `LangGraphAdapterConfig.customTools?: CustomToolHandlerMap` added; passed through to `createMultiVendorLlmCall`. `createDefaultLlmCall` path unchanged.
+- `packages/adapter-langgraph/src/index.ts`: new module surfaces re-exported.
+- Test coverage:
+  - `custom-tool-loop.test.ts` (new, 12 tests): 6 additivity-gate invariants, 1 spec-conversion test, 3 loop positive-path tests (tool_use → handler → end_turn; no-tool first response; handler error → `is_error: true` tool_result), 2 bound tests (max-iter throws; default constant pinned to 10).
+  - `flow-loader.test.ts` (+2 tests): `custom_tools` round-trips snake→camel; omitted `custom_tools` leaves `customTools` undefined (the Vāda case).
+  - **Baseline adapter test suite (31 tests) stays green unchanged.** Combined with the gate test asserting the loop is unreachable without a declared+registered+non-structured custom tool, this is the byte-identical proof.
+- Diff scope: 11 files across `packages/adapter-langgraph`, `packages/engine`, `packages/atta-agents`. **Zero `apps/` changes** (Herald's tool is task 7b, not here).
+- `aeg-project/changelog.md` — entry to be added in a follow-up commit if/when the iteration's append-only ledger calls for it.
+- Lock: NO — first cut of the engine's custom-tool capability. The shape is likely to evolve once Herald (7b) and any future custom-tool consumer expose pain points. Type 1 because it changes the shared-engine surface (`Agent` type, `Plan.agents` shape, adapter constructor options, the Anthropic call path) that every consumer depends on.
+
+---

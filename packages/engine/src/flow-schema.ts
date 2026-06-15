@@ -32,6 +32,12 @@ export const RoundSchema = z.object({
   on_failure: OnFailureSpecSchema.optional()
 })
 
+export const CustomToolSpecSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(1),
+  parameters: z.record(z.string(), z.unknown())
+})
+
 export const FlowAgentSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
@@ -39,6 +45,7 @@ export const FlowAgentSchema = z.object({
   model: z.string().optional(),
   max_tokens: z.number().int().min(1).optional(),
   tools: z.array(z.string()).optional(),
+  custom_tools: z.array(CustomToolSpecSchema).optional(),
   output_format: z.enum(['text', 'structured']).optional(),
   output_schema: z.record(z.string(), z.unknown()).optional(),
   classifier: z

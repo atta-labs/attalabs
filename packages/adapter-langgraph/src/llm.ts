@@ -4,6 +4,12 @@ import OpenAI from 'openai'
 import type { LlmCallFn, LlmCallResult } from '@atta/engine'
 import { getVendor, resolveVendorByPrefix, type VendorId } from '@atta/models'
 import { ANTHROPIC_TOOL_REGISTRY } from './tools'
+import {
+  customToolSpecToAnthropicTool,
+  resolveRegisteredCustomTools,
+  runAnthropicCustomToolLoop,
+  type CustomToolHandlerMap
+} from './custom-tool-loop'
 
 /**
  * API keys keyed by VendorId. Omit a key to disable that vendor (calls throw).
@@ -81,7 +87,8 @@ async function callOpenAICompat(params: {
  */
 export function createMultiVendorLlmCall(
   keys: ProviderKeys,
-  agentVendorOverrides?: Record<string, VendorId>
+  agentVendorOverrides?: Record<string, VendorId>,
+  customToolHandlers?: CustomToolHandlerMap
 ): LlmCallFn {
   return async ({ model, agent, systemPrompt, userPrompt }) => {
     const vendorId = agentVendorOverrides?.[agent.name] ?? resolveVendorByPrefix(model)
@@ -122,6 +129,28 @@ export function createMultiVendorLlmCall(
           return tool
         })
         .filter(Boolean)
+
+      // Custom-tool loop activation: agent declares customTools AND at least one
+      // matches a registered handler. Gating with handlers ensures the additive
+      // branch is unreachable when no app registers custom tools — preserving
+      // byte-identical behavior for every agent without declared customTools
+      // (i.e. every Vāda agent today). resolveRegisteredCustomTools is the
+      // single source of truth for this decision and is unit-tested.
+      const registeredCustomToolSpecs = resolveRegisteredCustomTools(agent, customToolHandlers)
+      if (registeredCustomToolSpecs.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mergedTools: any[] = [...resolvedTools, ...registeredCustomToolSpecs.map(customToolSpecToAnthropicTool)]
+        const { content, tokensInput, tokensOutput } = await runAnthropicCustomToolLoop({
+          messagesCreate: (p) => client.messages.create(p) as Promise<Anthropic.Message>,
+          model,
+          systemPrompt,
+          userPrompt,
+          tools: mergedTools,
+          handlers: customToolHandlers!
+        })
+        const elapsedMs = Date.now() - startTime
+        return { content, structured: undefined, tokensInput, tokensOutput, elapsedMs, model }
+      }
 
       if (agent.outputSchema) {
         const response = await client.messages.create({

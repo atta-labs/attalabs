@@ -8,6 +8,13 @@
 
 ---
 
+## June 14, 2026 — Custom client-side tool execution in `@atta/adapter-langgraph` (task 7a)
+
+### Engine / adapter
+- **Task 7a (#102)** — Adds custom client-side tool execution to `@atta/adapter-langgraph` as an additive, opt-in capability. The adapter previously supported only Anthropic-executed server tools (`web_search`, `web_fetch`); there was no loop for app-supplied TypeScript handlers. 7a builds that loop with a trivial throwaway tool (`add(a,b)`) covered by unit tests — Herald's real GitHub tool is task 7b, deliberately not bundled here. Surface shape: agents declare tool specs in YAML (`custom_tools: [{ name, description, parameters }]`, threaded through `flow-schema` → `flow-loader` → `compile-flow` → `Plan.agents`); the app registers handlers on the adapter (`LangGraphAdapter({ customTools: { add: async ({a,b}) => a+b } })`); the Anthropic vendor branch in `llm.ts` routes to a new bounded multi-turn loop (`runAnthropicCustomToolLoop`, capped at `MAX_CUSTOM_TOOL_ITERATIONS = 10`) only when the agent declares a custom tool AND a matching handler is registered AND the agent has no `outputSchema`. The gate `resolveRegisteredCustomTools` is extracted as a pure function and is the single source of truth — six additivity-invariant tests prove it returns `[]` for every Vāda case. The 31 existing adapter tests stay green unchanged; combined with the gate tests, this is the byte-identical proof. Diff scope: 11 files in `packages/{adapter-langgraph, engine, atta-agents}`, **zero `apps/` changes**. D-047 logged (Status ACTIVE, Type 1, Lock NO).
+
+---
+
 ## June 14, 2026 — Herald per-key rate limit on profile audits
 
 ### Herald
