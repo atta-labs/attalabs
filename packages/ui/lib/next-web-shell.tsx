@@ -3,6 +3,7 @@ import { AuthProvider } from '@atta/auth/provider'
 import { generateThemeCSSForScheme, getGoogleFontsUrl, transformColorGroup } from '@atta/cms'
 import type { CMSBranding, CMSTheme, PortalUiConfig } from '@atta/cms'
 import { cookies } from 'next/headers'
+import Script from 'next/script'
 import type { ReactNode } from 'react'
 import { COLOR_SCHEME_COOKIE, resolveColorScheme, type ColorScheme } from './color-scheme'
 import { CookieNameProvider } from './cookie-name-context'
@@ -11,9 +12,15 @@ import { ThemeProvider } from './theme-context'
 import type { UILibrary } from './library-loader'
 import { ToastProvider } from '../libraries/basic/components/display/toast'
 
-// Injected as the first <script> in <head> during dev only.
-// Runs synchronously before Turbopack's HMR bootstrap — guarantees extension
-// errors never reach handleGlobalErrors() or the terminal [browser] log.
+// Injected as an early <script> in dev only.
+// Runs before HMR bootstrap — guarantees extension errors never reach
+// handleGlobalErrors() or the terminal [browser] log.
+//
+// Delivered via next/script with strategy="beforeInteractive" rather than a raw
+// <script dangerouslySetInnerHTML> tag: in Next 16 / React 19, a raw inline
+// <script> rendered inside a Server Component throws "Encountered a script tag
+// while rendering React component". next/script is the supported escape hatch
+// for early inline scripts and renders without that error.
 const EXTENSION_FILTER_SCRIPT = `(function(){var p=['chrome-extension://','moz-extension://','safari-web-extension://'];function x(s){if(!s)return false;for(var i=0;i<p.length;i++){if(s.indexOf(p[i])!==-1)return true;}return false;}function xRej(ev){var r=ev&&ev.reason;if(!r)return false;if(typeof r==='object'){var c=r.code;if(c===4001||c===4100||c===4200||c===4900||c===4901)return true;}try{return x(r.stack)||x(r.message)||x(String(r));}catch(e){return false;}}var prev=window.onerror;window.onerror=function(m,s,l,c,e){if(x(s)||x(e&&e.stack))return true;return prev?prev(m,s,l,c,e):false;};window.addEventListener('error',function(e){if(x(e.filename)||x(e.error&&e.error.stack)){e.stopImmediatePropagation();e.preventDefault();}},true);var _ael=EventTarget.prototype.addEventListener;EventTarget.prototype.addEventListener=function(type,cb,opts){if(this===window&&type==='unhandledrejection'&&typeof cb==='function'){var orig=cb;cb=function(ev){if(!xRej(ev))return orig.apply(this,arguments);};}return _ael.call(this,type,cb,opts);};})();`
 
 interface NextWebShellProps {
@@ -71,7 +78,9 @@ export async function NextWebShell({
       {/* biome-ignore lint/style/noHeadElement: root layout renders the document head */}
       <head>
         {process.env.NODE_ENV === 'development' && (
-          <script dangerouslySetInnerHTML={{ __html: EXTENSION_FILTER_SCRIPT }} />
+          <Script id='extension-error-filter' strategy='beforeInteractive'>
+            {EXTENSION_FILTER_SCRIPT}
+          </Script>
         )}
         {fontsUrl && (
           <>
