@@ -62,8 +62,12 @@ function ProviderKeyRow({ vendor, label, configured, onSaved }: ProviderKeyRowPr
     setRemoving(true)
     try {
       const res = await fetch(`/api/keys/provider/${vendor}`, { method: 'DELETE' })
-      if (!res.ok) return
+      if (!res.ok) {
+        errorToast(`Couldn't remove ${label} API key`)
+        return
+      }
       onSaved()
+      successToast(`${label} API key removed`)
     } finally {
       setRemoving(false)
     }
