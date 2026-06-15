@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Button, Input, Badge } from '@atta/ui'
+import { useToastContext } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
-import { Trash2, Eye, EyeOff } from 'lucide-react'
+import { Trash2, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { ProviderIcon } from '@lobehub/icons'
 import { VENDORS, VENDOR_ORDER, type VendorId } from '@atta/models'
 
@@ -33,6 +34,7 @@ function ProviderKeyRow({ vendor, label, configured, onSaved }: ProviderKeyRowPr
   const [saving, setSaving] = useState(false)
   const [removing, setRemoving] = useState(false)
   const [showValue, setShowValue] = useState(false)
+  const { successToast, errorToast } = useToastContext()
 
   const handleSave = async () => {
     if (!value.trim()) return
@@ -43,10 +45,14 @@ function ProviderKeyRow({ vendor, label, configured, onSaved }: ProviderKeyRowPr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vendor, key: value.trim() })
       })
-      if (!res.ok) return
+      if (!res.ok) {
+        errorToast(`Couldn't save ${label} API key`)
+        return
+      }
       setValue('')
       setEditing(false)
       onSaved()
+      successToast(`${label} API key saved`)
     } finally {
       setSaving(false)
     }
@@ -189,9 +195,12 @@ export function ProviderKeysSection() {
           Unable to load provider key status.
         </Text>
       ) : providerStatus === null ? (
-        <Text as='p' muted className='text-sm'>
-          Loading…
-        </Text>
+        <div className='flex items-center gap-2 py-3'>
+          <Loader2 className='h-3.5 w-3.5 animate-spin text-muted-foreground' />
+          <Text as='p' muted className='text-sm'>
+            Loading…
+          </Text>
+        </div>
       ) : (
         <div className='divide-y divide-border'>
           {VENDOR_LIST.map((v) => (
