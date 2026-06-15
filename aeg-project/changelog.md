@@ -8,6 +8,13 @@
 
 ---
 
+## June 15, 2026 — Herald auditor gathers GitHub signals via engine custom-tool (task 7b)
+
+### Herald
+- **Task 7b (#103)** — Wires Herald's auditor to gather GitHub evidence through the custom client-side tool execution shipped in task 7a (#102/#115) instead of the deterministic `extractSignals` pre-fetch. `herald-auditor.yaml` now declares a `custom_tools` entry on `SkepticalAuditor` — `fetch_github_signals(github_handle: string) → string[]` — with a TOOLS section in the system prompt telling the model to call it exactly once when the candidate profile includes a github_handle. The audit doctrine (linguistic rules, hard/soft requirement classification, grading logic, mitigation rule) is unchanged. `app/api/audit/route.ts` registers a TS handler on `LangGraphAdapter` (`customTools: { fetch_github_signals: githubSignalToolHandler }`) that wraps the existing `extractSignals` with the same 3s per-call budget — worst-case GitHub latency is preserved, only the call site moves from a pre-LLM pre-fetch into the engine's tool loop. The "GITHUB SIGNALS:" pre-pended block is dropped from the prompt; instead, the profile header now includes a `GitHub handle:` line so the model has the argument it needs (or an explicit "(none provided — do not call fetch_github_signals)" when missing). `extractSignals` itself is retained (it's the tool body, and `/api/mcp/signals` still consumes it directly); only the deterministic pre-fetch invocation is retired. **Per-attempt LLM timeout bumped 25s → 45s** because the agentic loop runs at least two model turns per audit (turn 1: decide & emit tool_use → tool exec → turn 2: synthesize the JSON report); end-to-end smoke against Claude Sonnet on a real GitHub profile measured ~42s for the full loop with 17 signal entries returned and a CLEAN `MatchReport` (grade A, 7 signal entries, parsed successfully). NO-FIT hard-requirement gate, SHA-256 cache, 2-attempt retry, and `buildPartialReport` fallback are unchanged — all enforced in `parseMatchReport` as before, so the model still cannot override the disqualifying-requirement code rule. Surface: 2 files (`apps/herald-ai/web/yamls/herald-auditor.yaml`, `apps/herald-ai/web/src/app/api/audit/route.ts`); **zero `packages/` changes** — the engine and adapter were consumed unchanged per the 7a/7b split (Vāda still untouched).
+
+---
+
 ## June 15, 2026 — Shared docs renderer in `@atta/aeg-core` + Studio docs section (task 7)
 
 ### AEG

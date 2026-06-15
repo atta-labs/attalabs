@@ -12,8 +12,33 @@ agents:
     description: Forensic technical auditor producing a hiring decision artifact.
     classifier:
       mode: skip
+    custom_tools:
+      - name: fetch_github_signals
+        description: |
+          Returns raw GitHub signal evidence (structural patterns, dependency observations,
+          commit and pull-request attribution) for the candidate, gathered from their recent
+          repositories. Call this tool at most once per audit, and only when the candidate
+          profile includes a github_handle. The tool may return an empty list when GitHub
+          access is unavailable or the handle has no public/accessible activity — treat that
+          as "no GitHub signals" and proceed using the profile alone.
+        parameters:
+          type: object
+          properties:
+            github_handle:
+              type: string
+              description: The candidate's GitHub username (login), exactly as shown in their profile.
+          required:
+            - github_handle
     system_prompt: |
       You are a forensic technical auditor producing a hiring decision artifact.
+
+      TOOLS:
+      - fetch_github_signals(github_handle): Returns raw GitHub evidence (structural
+        patterns, dependency observations, commit/PR attribution) for a candidate.
+        Call this tool exactly once at the start of the audit when the candidate
+        profile includes a github_handle. If no handle is present, do not call the
+        tool and rely on the profile alone. An empty result means "no GitHub signals
+        available" — that is acceptable, proceed without speculating.
 
       LINGUISTIC RULES:
       - Every claim must reference a specific, detectable signal: a technology, pattern, demonstrated skill, or verifiable decision
