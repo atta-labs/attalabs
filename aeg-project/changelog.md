@@ -8,6 +8,13 @@
 
 ---
 
+## June 15, 2026 — Shared docs renderer in `@atta/aeg-core` + Studio docs section (task 7)
+
+### AEG
+- **Task 7 (#101)** — Adds a shared docs renderer to `@atta/aeg-core` (new `./docs` sub-export) and wires Studio's `/docs` route to it. The renderer is content-source-agnostic: pure helpers (`parseDocFrontmatter` / `deriveTitle` / `stripLeadingH1` / `buildDocNav` / `findDoc` / `getNextDoc` / `getPrevDoc`) take the markdown body + a list of `Doc` records, group them into ordered sections, and two React components (`DocSidebar` client, `DocPage` RSC) consume that model — no `fs` and no hardcoded paths inside `aeg-core`. The `/docs` route in `apps/aeg/web/studio` owns the I/O: `src/lib/docs/load-aeg-docs.ts` walks `aeg-root/` at the app boundary, derives `title` from the first H1 (frontmatter `title` overrides), `section` from the parent directory (`contracts/` → Contracts, `roles/` → Roles, `diagrams/` → Diagrams, `iterations/` → Iterations, `skills/` → Skills, root → Overview), and feeds the `DocNav` to the renderer. Markdown is rendered with `react-markdown` + `remark-gfm` rather than MDX — `<X>` placeholders in role docs (e.g. `roles/planner.md`) break MDX as unterminated JSX, and `aeg-root/**/*.md` has no JSX surface to preserve. `apps/aeg/web/studio/src/app/docs/page.tsx` redirects to `/docs/process` (the canonical entry doc per its own opening lines); `[...slug]/page.tsx` is the catch-all and statically prerenders all 22 aeg-root docs. **Zero edits to `StudioSidebar.tsx` / `StudioShell.tsx` / root `layout.tsx`** (task 2's planted `/docs` placeholder link is reused as-is; #98's territory is untouched). Built shared so the future Portal inherits it (D-001).
+
+---
+
 ## June 15, 2026 — AEG Studio projects + iterations pages (task 4)
 
 ### AEG
