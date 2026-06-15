@@ -55,18 +55,20 @@ export default async function CandidateSettingsPage({ searchParams }: { searchPa
   }
 
   return (
-    <CatalogProvider catalog={catalog}>
-      <div className='h-full overflow-y-auto'>
-        <div className='mx-auto max-w-[700px] px-6 py-8'>
-          <div className='mb-8 flex items-center justify-between gap-4'>
-            <div>
-              <h1 className='font-serif text-xl tracking-tight'>Settings</h1>
-              <p className='mt-1 font-mono text-xs text-muted-foreground'>Profile, API keys, and social connections.</p>
-            </div>
-            <PublishToggle initialIsPublished={profile.isPublished} hasAnyKey={hasAnyKey} />
+    // CatalogProvider renders a wrapping <div className={className}> — without
+    // h-full here, the inner overflow-y-auto container had no bounded height,
+    // and (app)/layout.tsx's `<main flex-1 overflow-hidden>` clipped content
+    // with no scrollable element in between (api-keys tab list got cut off).
+    <CatalogProvider catalog={catalog} className='h-full overflow-y-auto'>
+      <div className='mx-auto max-w-[700px] px-6 py-8'>
+        <div className='mb-8 flex items-center justify-between gap-4'>
+          <div>
+            <h1 className='font-serif text-xl tracking-tight'>Settings</h1>
+            <p className='mt-1 font-mono text-xs text-muted-foreground'>Profile, API keys, and social connections.</p>
           </div>
-          <ProfileEditor profile={profile} defaultTab={defaultTab} />
+          <PublishToggle initialIsPublished={profile.isPublished} hasAnyKey={hasAnyKey} />
         </div>
+        <ProfileEditor profile={profile} defaultTab={defaultTab} />
       </div>
     </CatalogProvider>
   )
