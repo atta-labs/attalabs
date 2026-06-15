@@ -1,9 +1,12 @@
 import { TopBar } from '@atta/ui/topbar'
 import type { ReactNode } from 'react'
+import { readRegistry } from '@/lib/aeg-fs'
 import { AegLogo } from './AegLogo'
 import { StudioSidebar } from './StudioSidebar'
 
-export function StudioShell({ children }: { children: ReactNode }) {
+export async function StudioShell({ children }: { children: ReactNode }) {
+  const projects = await readRegistry().catch(() => [])
+
   return (
     <>
       <TopBar
@@ -17,7 +20,7 @@ export function StudioShell({ children }: { children: ReactNode }) {
       />
       <div className='flex h-[calc(100dvh-3.5rem)] overflow-hidden'>
         <aside className='h-full shrink-0 overflow-hidden'>
-          <StudioSidebar />
+          <StudioSidebar projects={projects} />
         </aside>
         <div className='flex-1 min-w-0 overflow-y-auto'>
           <div className='mx-auto max-w-5xl px-8 py-8'>{children}</div>
