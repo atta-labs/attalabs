@@ -58,3 +58,4 @@ next-env.d.ts
 
 # Cetana local config
 .cetana.json
+.claude/scheduled_tasks.lock
