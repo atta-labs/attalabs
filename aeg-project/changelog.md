@@ -15,6 +15,13 @@
 
 ---
 
+## June 15, 2026 — AEG Studio task-dependency-graph view (task 6)
+
+### AEG
+- **Task 6 (#99)** — Studio iteration pages now offer a graph view of the topology table. New route `/projects/<name>/iterations/<slug>/graph` reads the iteration via `@atta/aeg-core`'s `parseIteration` and renders `Task[]` as a directed graph with `@xyflow/react` (the React Flow library that powers `@atta/ui/engine-flow`). `dependsOn` edges are drawn as solid directed arrows ranked left-to-right by Dagre, with the arrow pointing from the upstream task to the dependent (so the visual flow is "earliest required → latest required"). `conflictsWith` edges are drawn as dashed, marker-less lines in `--warning`, deduplicated across the symmetric pair (`{a→b, b→a}` collapses to a single line). Custom `TaskNode` renders the task id, title, issue number, and project chips on a `--card` surface; a small legend in the section header tells the two edge types apart. The graph container is sized exactly to the laid-out content at `zoom=1` (the page scrolls vertically; the graph section scrolls horizontally only when wider than the viewport), reusing the auto-height pattern from `FlowGraph` for parity with how Vāda renders its Plan visualizations. A "View as graph" CTA on the iteration page links to the new route; the breadcrumb adds a `…/graph` segment with a return link to the topology table. **Zero edits to `@atta/ui/engine-flow`, `@atta/ui`, or shared Studio layout** (`StudioShell` / `StudioSidebar` untouched — kanban (#100) territory). `Tier: 1`. Verified locally against the live `aeg-ui-v1` iteration: the 9 tasks render with the correct `1→3`, `1→4`, `1→5`, `1→6`, `1→7`, `1→9`, `2→4`, `2→5`, `2→6`, `2→7`, `3→5`, `4→9` directed edges, plus the symmetric `4↔5`, `4↔6`, `5↔6` conflicts collapsed to three dashed lines. Closes #99.
+
+---
+
 ## June 15, 2026 — Shared docs renderer in `@atta/aeg-core` + Studio docs section (task 7)
 
 ### AEG
