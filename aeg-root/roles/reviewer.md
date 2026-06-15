@@ -81,3 +81,7 @@ If you discover something that needs a decision above review authority — the b
 ## Where you sit in the process
 
 Phase 10 (Review) in `process.md`. The order is: **code-reviewer pass (you) → security pass (`roles/security.md`) → Principal code review → TL spec review → merge.** Your verdict feeds the human reviews; it does not replace them.
+
+## Turn-end: append one row to the iteration's token ledger
+
+After posting the verdict, append one row to `aeg-root/iterations/<name>.tokens.md` — `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date` — with `Phase: <task-id>: review` and `Role: Reviewer`. You run on **claude.ai**, which cannot read its own token count; leave the numeric cells as `—`. The Principal fills them from the claude.ai UI usage figure. A re-review (after the Developer pushes fixes) appends another row, never an edit. See `iterations/README.md` §12.

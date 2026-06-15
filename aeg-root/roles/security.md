@@ -71,3 +71,7 @@ A security finding that implies a product/architecture decision (e.g., "the whol
 ## Where you sit in the process
 
 Phase 10 (Review) in `process.md`: code-reviewer pass → **security pass (you)** → Principal code review → TL spec review → merge.
+
+## Turn-end: append one row to the iteration's token ledger
+
+After posting the verdict, append one row to `aeg-root/iterations/<name>.tokens.md` — `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date` — with `Phase: <task-id>: security` and `Role: Security`. You run on **claude.ai**, which cannot read its own token count; leave the numeric cells as `—`. The Principal fills them from the claude.ai UI usage figure. A re-pass after the Developer's fixes appends another row. See `iterations/README.md` §12.

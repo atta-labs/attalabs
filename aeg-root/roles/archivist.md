@@ -92,3 +92,7 @@ If a Tier 3 decision entry is missing, required docs didn't move, or a required 
 ## Where you sit in the process
 
 The last step of Phase 10 / the flow (`process.md`): code-reviewer pass → security pass → Principal code review → TL spec review → merge → **close-out (you)**. After you, the task is done, durable, and provenanced.
+
+## Turn-end: append one row to the iteration's token ledger
+
+At close-out, append one row to `aeg-root/iterations/<name>.tokens.md` — `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date` — with `Phase: <task-id>: archive` and `Role: Archivist`. When you run as automation in Claude Code, you are a **terminal role**: fill the numeric cells with exact values from the session meter. When you run by hand as a conversational pass on claude.ai, leave them as `—` and the Principal fills them later. Drift cron: as part of the close-out checks, flag any merged task in this iteration that has **no Developer row** for `<task-id>: develop` (the role obligation was missed), and any inline `## Token ledger` section that violates the append-only rule (an existing row was edited rather than a new one appended). See `iterations/README.md` §12; `state-machine.md` §13.

@@ -58,6 +58,8 @@ The TL is one role with three modes. Make the mode shift explicit to the Princip
 
 **What you do NOT do in Brief Author mode:** write production code; open or merge PRs (except doc PRs the Principal approved); dispatch tasks autonomously (the Principal dispatches).
 
+**Turn-end ledger row (Planner / Brief Author modes).** At the end of every planning session and every brief-author session, append one row to `aeg-root/iterations/<name>.tokens.md` — `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date` — with `Phase: planning` (Planner mode, iteration-wide) or `Phase: <task-id>: brief` (Brief Author mode, per task) and `Role: Planner` / `Role: Brief Author`. You run on **claude.ai**, which cannot read its own token count; leave the numeric cells as `—`. The Principal fills them from the claude.ai UI usage figure. Re-entry (re-plan, re-brief) appends another row. See `iterations/README.md` §12; ledger is a `state-machine.md` §13 append-only artifact.
+
 ---
 
 ## What the TL owns
