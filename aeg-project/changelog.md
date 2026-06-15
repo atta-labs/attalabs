@@ -8,6 +8,13 @@
 
 ---
 
+## June 15, 2026 — N×M matrix audit UI in Bulk Audit (task 4)
+
+### Herald
+- **Task 4 (#91)** — Bulk Audit now accepts N CVs (Herald usernames, max 10) × M job descriptions (max 5) and renders one forensic match report per pair as an N×M grid, replacing the previous single-JD stacked view. Pure UI work in `apps/herald-ai/web/src/components/audit/BulkAudit.tsx` — `/api/audit`, `runSingleMatch`, the `extractSignals` pre-fetch, the SHA-256 cache, the 25s LLM timeout, the NO-FIT hard-requirement gate, and `buildPartialReport` are consumed unchanged. The matrix fans out client-side: for each (cv, jd) pair the UI POSTs `{ jd, candidates: [username] }` to the existing batch shape, so the in-route 10-candidate cap and existing validations are trivially respected. Each cell tracks its own `loading | loaded | error` state — a failed pair (HTTP error or `report: null` from the API) shows a destructive error card while sibling cells continue to render their `ReportView` (reused as-is from the single-pair path). Inputs use a dynamic JD list (add/remove, cap 5) plus the existing newline-separated username textarea (cap 10); column headers show truncated JD previews. No `@atta/ui` source edits, no engine/adapter edits, semantic color tokens only (one inline-style exception: runtime-computed `gridTemplateColumns: repeat(M, …)` — values not expressible in Tailwind). Closes #91. (`herald-onto-engine` task 4.)
+
+---
+
 ## June 14, 2026 — Custom client-side tool execution in `@atta/adapter-langgraph` (task 7a)
 
 ### Engine / adapter
