@@ -10,6 +10,13 @@ dist/
 build/
 **/.turbo/
 docs/
+# Re-include AEG docs renderer (aeg-core) + Studio docs route (task 7).
+!packages/aeg-core/src/docs/
+!packages/aeg-core/src/docs/**
+!apps/aeg/web/studio/src/app/docs/
+!apps/aeg/web/studio/src/app/docs/**
+!apps/aeg/web/studio/src/lib/docs/
+!apps/aeg/web/studio/src/lib/docs/**
 
 # Environment
 .env

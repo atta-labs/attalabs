@@ -15,10 +15,13 @@
     "@atta/auth": "workspace:*",
     "@atta/ui": "workspace:*",
     "@octokit/graphql": "^8.1.1",
+    "gray-matter": "^4.0.3",
     "lucide-react": "^1.7.0",
     "next": "^16.2.1",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@atta/typescript-config": "workspace:*",
