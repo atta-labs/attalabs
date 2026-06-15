@@ -14,7 +14,11 @@ export async function getUserByUsername(username: string) {
       .where(eq(schema.heraldProfiles.username, username))
       .limit(1)
     return rows[0] ?? null
-  } catch {
+  } catch (err) {
+    // Log before returning null so schema drift / connection failures don't
+    // masquerade as "user not found" 404s (cost an hour during the
+    // audit_model_vendor incident on 2026-06-15).
+    console.error('[getUserByUsername] DB error:', err instanceof Error ? err.message : err)
     return null
   }
 }
