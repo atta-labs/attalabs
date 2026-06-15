@@ -8,6 +8,13 @@
 
 ---
 
+## June 15, 2026 — AEG Studio projects + iterations pages (task 4)
+
+### AEG
+- **Task 4 (#98)** — Studio sidebar now lists the repo's real projects (read from `aeg-root/projects.md` via `@atta/aeg-core`'s `parseRegistry`), and the navigational spine is wired: `/projects` (all projects) → `/projects/<name>` (project detail with active vs. archived iterations) → `/projects/<name>/iterations/<slug>` (iteration topology table from `parseIteration`). Active/archived is sourced from the file location (top of `aeg-root/iterations/` vs. `iterations/completed/`) per `iterations/README.md` §11 — the in-file `Lifecycle:` marker is parsed but not treated as authority. An iteration appears under a project when any task in its topology table declares that project, so cross-project iterations (`aeg-ui-v1` under both `aeg` and `aeg-core`) surface correctly under each. Surface: 4 new files in `apps/aeg/web/studio/src` (`lib/aeg-fs/`, `projects/page.tsx`, `projects/[name]/page.tsx`, `projects/[name]/iterations/[slug]/page.tsx`), plus modifications to `StudioShell.tsx` (now async, reads registry) and `StudioSidebar.tsx` (accepts `projects` prop, replaces the prior stubs). **Zero `@atta/ui` edits** (consumed only — Vāda/Herald not in blast radius). Semantic tokens only. Verified against this repo: `/projects` lists all 7 registered projects; `/projects/aeg` shows `aeg-ui-v1` under Active; `/projects/herald` shows `herald-onto-engine` under Active; `/projects/aeg/iterations/aeg-ui-v1` renders all 9 task rows with correct issue numbers, projects, depends-on and conflicts-with edges. Kanban (#100), graph (#99), and docs (#101) routes are intentionally untouched — they own their own surfaces in the serialized 4→6→5/7 wave.
+
+---
+
 ## June 15, 2026 — N×M matrix audit UI in Bulk Audit (task 4)
 
 ### Herald
