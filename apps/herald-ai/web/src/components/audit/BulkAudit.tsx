@@ -1,63 +1,132 @@
 'use client'
 
+import { Loader2, Plus, X } from 'lucide-react'
 import { useState } from 'react'
-import { Button, Textarea } from '@atta/ui/components'
+import { Button, Card, CardContent, Textarea } from '@atta/ui/components'
 import { ReportView } from '@/components/envoy/ReportView'
 import type { MatchReport } from '@/lib/types'
 
-interface BatchResult {
+const MAX_JDS = 5
+const MAX_CANDIDATES = 10
+
+type CellStatus =
+  | { status: 'loading' }
+  | { status: 'loaded'; report: MatchReport }
+  | { status: 'error'; message: string }
+
+type Cells = Record<string, CellStatus>
+
+function cellKey(cvIdx: number, jdIdx: number): string {
+  return `${cvIdx}-${jdIdx}`
+}
+
+function jdLabel(jd: string, index: number): string {
+  const first = jd.trim().replace(/\s+/g, ' ').slice(0, 60)
+  return first.length > 0 ? `JD ${index + 1} — ${first}${first.length === 60 ? '…' : ''}` : `JD ${index + 1}`
+}
+
+interface AuditBatchResult {
   username: string
   report: MatchReport | null
   error?: string
 }
 
+async function runCell(jd: string, username: string): Promise<CellStatus> {
+  try {
+    const res = await fetch('/api/audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jd, candidates: [username] })
+    })
+    const data = (await res.json()) as { results?: AuditBatchResult[]; error?: string }
+
+    if (!res.ok) {
+      return { status: 'error', message: data.error ?? 'Audit failed.' }
+    }
+    const first = data.results?.[0]
+    if (!first) return { status: 'error', message: 'No result returned.' }
+    if (!first.report) return { status: 'error', message: first.error ?? 'Audit failed.' }
+    return { status: 'loaded', report: first.report }
+  } catch {
+    return { status: 'error', message: 'Network error.' }
+  }
+}
+
 export function BulkAudit({ hasKey }: { hasKey: boolean }) {
-  const [jd, setJd] = useState('')
+  const [jds, setJds] = useState<string[]>([''])
   const [candidatesRaw, setCandidatesRaw] = useState('')
-  const [state, setState] = useState<'idle' | 'loading' | 'result' | 'error'>('idle')
-  const [results, setResults] = useState<BatchResult[]>([])
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [state, setState] = useState<'idle' | 'running' | 'done'>('idle')
+  const [cells, setCells] = useState<Cells>({})
+  const [submittedJds, setSubmittedJds] = useState<string[]>([])
+  const [submittedCvs, setSubmittedCvs] = useState<string[]>([])
 
   const labelClass = 'mb-1.5 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
 
-  async function handleSubmit() {
-    const candidates = candidatesRaw
+  function updateJd(index: number, value: string) {
+    setJds((prev) => prev.map((j, i) => (i === index ? value : j)))
+  }
+
+  function addJd() {
+    setJds((prev) => (prev.length < MAX_JDS ? [...prev, ''] : prev))
+  }
+
+  function removeJd(index: number) {
+    setJds((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev))
+  }
+
+  function parseCandidates(): string[] {
+    return candidatesRaw
       .split(/[\n,]+/)
       .map((s) => s.trim())
       .filter(Boolean)
+      .slice(0, MAX_CANDIDATES)
+  }
 
-    if (!jd.trim() || candidates.length === 0) return
+  const validJds = jds.map((j) => j.trim()).filter((j) => j.length >= 20)
+  const parsedCandidates = parseCandidates()
+  const canRun = validJds.length > 0 && parsedCandidates.length > 0
 
-    setState('loading')
-    setErrorMsg(null)
+  async function handleRun() {
+    if (!canRun) return
 
-    try {
-      const res = await fetch('/api/audit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jd, candidates })
-      })
+    const cvs = parsedCandidates
+    const jdList = validJds
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        setErrorMsg(data.error ?? 'Batch audit failed.')
-        setState('error')
-        return
+    const initial: Cells = {}
+    for (let cvIdx = 0; cvIdx < cvs.length; cvIdx++) {
+      for (let jdIdx = 0; jdIdx < jdList.length; jdIdx++) {
+        initial[cellKey(cvIdx, jdIdx)] = { status: 'loading' }
       }
-
-      setResults(data.results as BatchResult[])
-      setState('result')
-    } catch {
-      setErrorMsg('Network error. Please try again.')
-      setState('error')
     }
+
+    setSubmittedCvs(cvs)
+    setSubmittedJds(jdList)
+    setCells(initial)
+    setState('running')
+
+    const tasks: Promise<void>[] = []
+    for (let cvIdx = 0; cvIdx < cvs.length; cvIdx++) {
+      for (let jdIdx = 0; jdIdx < jdList.length; jdIdx++) {
+        const key = cellKey(cvIdx, jdIdx)
+        const username = cvs[cvIdx] as string
+        const jd = jdList[jdIdx] as string
+        tasks.push(
+          runCell(jd, username).then((result) => {
+            setCells((prev) => ({ ...prev, [key]: result }))
+          })
+        )
+      }
+    }
+
+    await Promise.all(tasks)
+    setState('done')
   }
 
   function handleReset() {
     setState('idle')
-    setResults([])
-    setErrorMsg(null)
+    setCells({})
+    setSubmittedJds([])
+    setSubmittedCvs([])
   }
 
   if (!hasKey) {
@@ -67,62 +136,72 @@ export function BulkAudit({ hasKey }: { hasKey: boolean }) {
           <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Audit</p>
           <h1 className='mt-2 font-serif text-3xl tracking-tight text-foreground'>Bulk Audit</h1>
         </header>
-        <div className='rounded border border-border bg-card/50 px-6 py-8'>
-          <p className='text-sm text-muted-foreground'>
-            Bulk audits run on your Anthropic API key. Add your key in Settings to get started.
-          </p>
-          <a
-            href='/settings?tab=api-keys'
-            className='mt-4 inline-block font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
-          >
-            Settings → API Keys
-          </a>
-        </div>
+        <Card className='bg-card/50'>
+          <CardContent className='px-6 py-8'>
+            <p className='text-sm text-muted-foreground'>
+              Bulk audits run on your Anthropic API key. Add your key in Settings to get started.
+            </p>
+            <a
+              href='/settings?tab=api-keys'
+              className='mt-4 inline-block font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
+            >
+              Settings → API Keys
+            </a>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
-  if (state === 'loading') {
-    return (
-      <div className='mx-auto max-w-[680px] px-6 py-12'>
-        <p className='font-mono text-xs text-muted-foreground'>Running audits…</p>
-      </div>
-    )
-  }
+  if (state === 'running' || state === 'done') {
+    const cvCount = submittedCvs.length
+    const jdCount = submittedJds.length
 
-  if (state === 'error') {
     return (
-      <div className='mx-auto max-w-[680px] px-6 py-12'>
-        <p className='text-sm text-muted-foreground'>{errorMsg}</p>
-        <Button onClick={handleReset} variant='outline' className='mt-4 font-mono text-xs uppercase tracking-[0.2em]'>
-          Try Again
-        </Button>
-      </div>
-    )
-  }
-
-  if (state === 'result') {
-    return (
-      <div className='mx-auto max-w-[680px] px-6 py-8'>
-        <div className='mb-6 flex items-center justify-between'>
+      <div className='px-6 py-8'>
+        <div className='mx-auto mb-6 flex max-w-[1280px] items-center justify-between'>
           <p className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
-            {results.length} Audit{results.length !== 1 ? 's' : ''}
+            {cvCount} × {jdCount} matrix · {cvCount * jdCount} audit{cvCount * jdCount !== 1 ? 's' : ''}
           </p>
-          <Button onClick={handleReset} variant='outline' className='font-mono text-[10px] uppercase tracking-[0.2em]'>
-            New Batch
+          <Button
+            onClick={handleReset}
+            variant='outline'
+            className='font-mono text-[10px] uppercase tracking-[0.2em]'
+            disabled={state === 'running'}
+          >
+            New Matrix
           </Button>
         </div>
-        <div className='space-y-12'>
-          {results.map(({ username, report, error }) => (
-            <div key={username}>
-              {error && !report && (
-                <p className='font-mono text-xs text-muted-foreground'>
-                  {username}: {error}
+
+        <div className='overflow-x-auto pb-4'>
+          <div className='grid gap-4' style={{ gridTemplateColumns: `repeat(${jdCount}, minmax(620px, 1fr))` }}>
+            {submittedJds.map((jd, jdIdx) => (
+              <div key={`header-${jdIdx}-${jd.slice(0, 24)}`} className='border-b border-border pb-3'>
+                <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+                  {jdLabel(jd, jdIdx)}
                 </p>
-              )}
-              {report && <ReportView report={report} />}
-            </div>
-          ))}
+              </div>
+            ))}
+
+            {submittedCvs.flatMap((username, cvIdx) =>
+              submittedJds.map((_jd, jdIdx) => {
+                const cell = cells[cellKey(cvIdx, jdIdx)]
+                return (
+                  <Card key={cellKey(cvIdx, jdIdx)} className='overflow-hidden'>
+                    <CardContent className='p-0'>
+                      <div className='border-b border-border bg-muted/30 px-4 py-2'>
+                        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+                          @{username} <span className='ml-2 text-foreground/40'>·</span>{' '}
+                          <span className='ml-2'>JD {jdIdx + 1}</span>
+                        </p>
+                      </div>
+                      <CellBody cell={cell} username={username} />
+                    </CardContent>
+                  </Card>
+                )
+              })
+            )}
+          </div>
         </div>
       </div>
     )
@@ -134,22 +213,57 @@ export function BulkAudit({ hasKey }: { hasKey: boolean }) {
         <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Audit</p>
         <h1 className='mt-2 font-serif text-3xl tracking-tight text-foreground'>Bulk Audit</h1>
         <p className='mt-2 text-sm text-muted-foreground'>
-          Match multiple Herald candidates against a single job description.
+          Match N Herald candidates against M job descriptions — one forensic report per pair.
         </p>
       </header>
 
-      <div className='space-y-6'>
-        <div>
-          <label className={labelClass} htmlFor='jd'>
-            Job Description
-          </label>
-          <Textarea
-            id='jd'
-            value={jd}
-            onChange={(e) => setJd(e.target.value)}
-            placeholder='Paste the full job description here…'
-            className='min-h-[200px] font-sans text-sm'
-          />
+      <div className='space-y-8'>
+        <div className='space-y-4'>
+          <div className='flex items-baseline justify-between'>
+            <span className={labelClass}>Job Descriptions</span>
+            <span className='font-mono text-[10px] text-muted-foreground'>
+              {jds.length}/{MAX_JDS}
+            </span>
+          </div>
+
+          {jds.map((jd, index) => (
+            <div key={`jd-input-${index}`} className='space-y-1.5'>
+              <div className='flex items-baseline justify-between'>
+                <span className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+                  JD {index + 1}
+                </span>
+                {jds.length > 1 && (
+                  <Button
+                    onClick={() => removeJd(index)}
+                    variant='ghost'
+                    size='sm'
+                    className='h-6 px-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground'
+                  >
+                    <X className='mr-1 h-3 w-3' />
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <Textarea
+                value={jd}
+                onChange={(e) => updateJd(index, e.target.value)}
+                placeholder='Paste a job description (min. 20 characters)…'
+                className='min-h-[160px] font-sans text-sm'
+              />
+            </div>
+          ))}
+
+          {jds.length < MAX_JDS && (
+            <Button
+              onClick={addJd}
+              variant='outline'
+              size='sm'
+              className='font-mono text-[10px] uppercase tracking-[0.2em]'
+            >
+              <Plus className='mr-1 h-3 w-3' />
+              Add Job Description
+            </Button>
+          )}
         </div>
 
         <div>
@@ -161,19 +275,39 @@ export function BulkAudit({ hasKey }: { hasKey: boolean }) {
             value={candidatesRaw}
             onChange={(e) => setCandidatesRaw(e.target.value)}
             placeholder={'dani\njane\nmarcus'}
-            className='min-h-[100px] font-mono text-sm'
+            className='min-h-[120px] font-mono text-sm'
           />
-          <p className='mt-1 font-mono text-[10px] text-muted-foreground'>One username per line, max 10</p>
+          <p className='mt-1 font-mono text-[10px] text-muted-foreground'>
+            One username per line, max {MAX_CANDIDATES}
+          </p>
         </div>
 
-        <Button
-          onClick={handleSubmit}
-          disabled={!jd.trim() || !candidatesRaw.trim()}
-          className='font-mono text-xs uppercase tracking-[0.2em]'
-        >
-          Run Bulk Audit
+        <Button onClick={handleRun} disabled={!canRun} className='font-mono text-xs uppercase tracking-[0.2em]'>
+          Run {parsedCandidates.length || 'N'} × {validJds.length || 'M'} Matrix
         </Button>
       </div>
     </div>
   )
+}
+
+function CellBody({ cell, username }: { cell: CellStatus | undefined; username: string }) {
+  if (!cell || cell.status === 'loading') {
+    return (
+      <div className='flex h-[200px] flex-col items-center justify-center gap-3 px-6'>
+        <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />
+        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Auditing @{username}…</p>
+      </div>
+    )
+  }
+
+  if (cell.status === 'error') {
+    return (
+      <div className='flex h-[200px] flex-col items-center justify-center gap-2 px-6'>
+        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-destructive'>Failed</p>
+        <p className='text-center text-[13px] text-muted-foreground'>{cell.message}</p>
+      </div>
+    )
+  }
+
+  return <ReportView report={cell.report} />
 }
