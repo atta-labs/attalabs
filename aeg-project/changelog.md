@@ -22,6 +22,14 @@
 
 ---
 
+## June 15, 2026 — `ModelPicker` tolerates missing `IdentityProvider` when `configuredRoutes` is supplied
+
+### UI / Herald
+
+- **Fix** — `packages/ui/libraries/basic/components/model/model-picker.tsx` previously called `useIdentity()` unconditionally, which throws when no `IdentityProvider` is mounted in the tree. Herald uses server-side BYOK (keys stored encrypted in Postgres, resolved at SSR) and does not mount `IdentityProvider`, so any page rendering `ModelPicker` — including `/settings` via `ProfileEditor` → `AuditModelSection` — crashed with `useIdentity must be used within <IdentityProvider>` despite the call site passing an explicit `configuredRoutes` prop. The fix: export `IdentityContext` from `@atta/identity/react` and read it via `React.useContext(IdentityContext)` inside the picker; when `configuredRoutes` is supplied by the caller, the picker no longer requires identity at all (`effectiveConfigured = configuredRoutes ?? (identity ? identityConfigured : new Set())`). The identity-driven path is preserved verbatim for Vāda / Atta / Attalabs (which mount the provider): when `configuredRoutes` is undefined the picker still derives the configured-vendor set from `identity.state.keys + identity.state.providers`. Herald's call site (`AuditModelSection.tsx`) is unchanged. No `IdentityProvider` added to Herald — the architectural mismatch (browser BYOK component coupled to a server-BYOK consumer) is fixed at the component boundary, not papered over.
+
+---
+
 ## June 15, 2026 — Shared docs renderer in `@atta/aeg-core` + Studio docs section (task 7)
 
 ### AEG
