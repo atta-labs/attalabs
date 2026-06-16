@@ -64,13 +64,25 @@ function buildPartialReport(name: string, title: string, github: string): MatchR
   }
 }
 
-async function fetchSignalsWithTimeout(handle: string, timeoutMs: number): Promise<string[]> {
+// Per-tool-call budget for GitHub signal fetching. Kept at the same 3s as the
+// retired deterministic pre-fetch so worst-case latency for the GitHub leg is
+// unchanged — the agentic loop adds an extra LLM turn, not extra GitHub wait.
+const GITHUB_SIGNAL_TIMEOUT_MS = 3000
+
+// Per-attempt LLM timeout. Bumped from 25s (single-shot pre-fetch model) to
+// 45s because the engine's custom-tool loop now runs at least two model turns
+// per audit (turn 1: decide & emit tool_use → tool exec → turn 2: synthesize
+// JSON report). 45s gives Anthropic Sonnet enough room for the second turn
+// without leaving spinner-of-death risk if a vendor stalls.
+const AUDIT_LLM_TIMEOUT_MS = 45000
+
+async function fetchGithubSignalsForHandle(handle: string): Promise<string[]> {
   const token = process.env.GITHUB_PAT
   if (!token || !handle) return []
 
   try {
     const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    const timer = setTimeout(() => controller.abort(), GITHUB_SIGNAL_TIMEOUT_MS)
 
     const signals = await Promise.race([
       extractSignals(handle, token),
@@ -82,9 +94,19 @@ async function fetchSignalsWithTimeout(handle: string, timeoutMs: number): Promi
     clearTimeout(timer)
     return signals.map((s) => s.evidence)
   } catch {
-    console.warn('[Herald] Signal fetch timed out or failed, proceeding without signals')
+    console.warn('[Herald] GitHub signal tool timed out or failed, returning empty evidence')
     return []
   }
+}
+
+// Custom-tool handler the engine invokes when the auditor agent emits a
+// `fetch_github_signals` tool_use. The model passes the candidate's
+// github_handle as an argument; absence or non-string values fall through to
+// the empty-handle path (returns []).
+async function githubSignalToolHandler(args: Record<string, unknown>): Promise<string[]> {
+  const raw = args.github_handle
+  const handle = typeof raw === 'string' ? raw.trim() : ''
+  return fetchGithubSignalsForHandle(handle)
 }
 
 function parseMatchReport(
@@ -151,11 +173,20 @@ async function runSingleMatch(
     return cached
   }
 
-  const signalPromise = fetchSignalsWithTimeout(profile.github, 3000)
+  // 7b: GitHub signals are now gathered by the auditor agent via the
+  // `fetch_github_signals` custom tool (declared in herald-auditor.yaml,
+  // registered below on the adapter). The deterministic pre-fetch is retired;
+  // worst-case GitHub latency is preserved by the same 3s per-call budget on
+  // the handler itself. The github_handle is surfaced in the profile block so
+  // the model has what it needs to call the tool.
+  const githubHandleLine = profile.github
+    ? `GitHub handle: ${profile.github}`
+    : 'GitHub handle: (none provided — do not call fetch_github_signals)'
 
   const baseProfile = `CANDIDATE PROFILE:
 Name: ${profile.name}
 Title: ${profile.title}
+${githubHandleLine}
 Summary: ${profile.summary}
 Skills: ${profile.stack.join(', ')}
 
@@ -165,12 +196,7 @@ ${profile.projects.map((p) => `- ${p.title}: ${p.description}`).join('\n')}
 EXPERIENCE:
 ${profile.experience.map((e) => `- ${e.role} at ${e.company} (${e.period})\n  ${e.highlights.join('\n  ')}`).join('\n')}`
 
-  const signalEvidence = await signalPromise
-
   const userPrompt = `${baseProfile}
-
-GITHUB SIGNALS:
-${signalEvidence.length > 0 ? signalEvidence.map((s) => `- ${s}`).join('\n') : '- No GitHub signals available'}
 
 JOB DESCRIPTION:
 ${jd.trim()}`
@@ -179,7 +205,13 @@ ${jd.trim()}`
   // Pass the resolved model into compileFlow so the user's selection wins
   // over flow.defaults.model (engine respects an explicit override).
   const plan = compileFlow(flow, userPrompt, creds.modelId, { schema: MATCH_REPORT_SCHEMA })
-  const adapter = new LangGraphAdapter({ providerKeys: { [creds.vendor]: creds.apiKey } })
+  // Register the GitHub-signal handler so the engine's custom-tool loop activates
+  // when the auditor agent emits a `fetch_github_signals` tool_use block (gated
+  // by resolveRegisteredCustomTools — keyed on the name declared in the YAML).
+  const adapter = new LangGraphAdapter({
+    providerKeys: { [creds.vendor]: creds.apiKey },
+    customTools: { fetch_github_signals: githubSignalToolHandler }
+  })
 
   let report: MatchReport | null = null
 
@@ -187,7 +219,7 @@ ${jd.trim()}`
     try {
       const conclusion = await Promise.race([
         adapter.execute({ plan }),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('LLM timeout')), 25000))
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('LLM timeout')), AUDIT_LLM_TIMEOUT_MS))
       ])
 
       if (conclusion.terminalState === 'FAILED') {
