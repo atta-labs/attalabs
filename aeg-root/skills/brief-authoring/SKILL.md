@@ -55,9 +55,9 @@ The contract's field-by-field mapping (authoritative version lives in the contra
 | Sizing | re-confirm only; if your dig finds it no longer fits → stop-and-escalate |
 | Project(s) + blast radius | `Project:` field + blast-radius re-verification (§8) |
 | Dependency rationale | Technical Dependencies (§3) |
-| Traps to avoid | Context (§2) + Constraints (§10) |
+| Traps to avoid | Context (§2) + Constraints (§11) |
 | Suggested agent-class | `For:` + `Reason:` header (confirm/deviate; you make the final pick) |
-| Stop-and-escalate | Stop conditions (§9) |
+| Stop-and-escalate | Stop conditions (§10) |
 
 **Read it first and build on it. Do not start from a blank page.** The division of labor is deliberate:
 - The **Planner** did a deep technical pass to find the seams and persisted the *durable* conclusions (which don't decay) — that's the contract's producer side.
@@ -73,12 +73,12 @@ Before a brief is dispatchable, confirm **every one of the seven Planner fields 
 - [ ] **Sizing** → re-confirmed it still fits one PR? (If the dig says it no longer fits → **stop-and-escalate**, don't silently re-split.)
 - [ ] **Project(s) + blast radius** → does the `**Project:**` field carry the identical project set, and does **§8 verification** re-verify every named blast-radius consumer?
 - [ ] **Dependency rationale** → did each edge's *why* become a concrete **Technical Dependency (§3)** "what must already exist" precondition?
-- [ ] **Traps to avoid** → is every trap an explicit "do NOT do X; do Y instead" in **Context (§2) / Constraints (§10)**? (Highest-value field — never drop it.)
+- [ ] **Traps to avoid** → is every trap an explicit "do NOT do X; do Y instead" in **Context (§2) / Constraints (§11)**? (Highest-value field — never drop it.)
 - [ ] **Suggested agent-class** → did you confirm or deviate (with reason) and make the final pick in the **`For:` + `Reason:`** header?
-- [ ] **Stop-and-escalate** → are the Planner's stop conditions copied into the brief's **Stop conditions (§9)**, substance-verbatim?
+- [ ] **Stop-and-escalate** → are the Planner's stop conditions copied into the brief's **Stop conditions (§10)**, substance-verbatim?
 - [ ] **No instruction contradicts the surface map** → if the brief tells the executor to **delete or rename a shared symbol** (a constant, type, export, function), confirm **every importer is inside the §4 surface.** If an importer is out-of-surface, the "delete it" instruction and the "don't touch that file" boundary contradict — defer the deletion to the task that owns the importer, and say so in the brief. (See the **shared-symbol importer check** in §4.)
 
-Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; the standing autonomy clause present in §10; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
+Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; **Test Plan (§9) present and tagged** — either `Test Plan: unit-tests-only` (and §4 has no runtime surface) or a checkbox list with at least one `[agent]` or `[principal]` item per reachable surface kind; the standing autonomy clause present in §11; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
 
 ---
 
@@ -171,13 +171,61 @@ A Tier 1+ brief with an empty doc-update list is malformed.
 
 Typecheck passes; lint passes; tests pass; production build passes (catches stricter resolution typecheck misses); manual smoke tests; **every consumer named in the blast radius (Section 4) re-verified** (a shared-package change must prove it didn't regress the other consumers — that's what putting them in `Project(s)` was for); the repo's `verify-docs --pr` gate passes (real gate — D-027); `git diff main --stat` confirms only expected files (the Section 4 surface) were touched. *(The exact commands are this repo's toolchain — substitute the repo's declared equivalents; the obligations are universal.)*
 
-### 9. Stop conditions
+These are the **static** gates — they prove the code compiles, lints, types, tests, and matches the declared surface. They do not prove the feature works. Runtime verification is its own section (§9), separately required, separately gated.
+
+### 9. Test Plan (mandatory — tagged runtime verification, executed before merge)
+
+**The Test Plan is a required brief field.** It is the *runtime* counterpart to §8's static gates: the named, executable observations that prove the shipped change actually works against a booted app, not just that it compiles. The Verifier phase (`aeg-root/roles/verifier.md`) consumes this section directly — without a Test Plan, the Verifier has nothing to run and the merge gate is undefined.
+
+Every Test Plan item carries one of two tags, by who can structurally execute it:
+
+- **`[agent]`** — non-auth, scriptable items the dispatched Developer-agent runs against the booted app: SSRF rejections, route response shapes, parse-error responses, render smoke, malformed-input behavior. Each item names a concrete observable (HTTP status + body, a console line, a DOM node) and the exact command/curl that produces it. The Verifier phase pastes the actual output as evidence — paraphrase is not evidence.
+- **`[principal]`** — auth-gated, key-dependent, or visual items only the Principal can run in a real signed-in browser: a signed-in BYOK audit returning a CLEAN report, a ModelPicker render behind Clerk, a visual confirmation that a card lands in the right column. Each item names what the Principal does and what they should observe. The Principal ticks the box.
+
+Pure-logic tasks (a parser, a sum function, a markdown normaliser — no API route, no page, no server action) declare:
+
+```
+**Test Plan:** unit-tests-only
+```
+
+This is a **first-class allowed value**, not an empty skip — it is the explicit declaration that the brief touches no runtime surface and that the CI unit-test gate is the whole proof. A brief that *does* touch a runtime surface and declares `unit-tests-only` is malformed; Brief Validation rejects it.
+
+A well-formed Test Plan looks like:
+
+```
+**Test Plan:**
+- [ ] **[agent]** SSRF: `curl -X POST .../api/resolve-input -d '{"url":"http://10.0.0.1"}'` → 400 "URL rejected"
+- [ ] **[agent]** Malformed upload: `.md` with binary bytes → 400 "Parse error: …"
+- [ ] **[agent]** Route smoke: `GET /api/audit/health` → 200 `{"ok":true}`
+- [ ] **[principal]** Sign in → upload a CV (PDF) → run audit → CLEAN report with grade A/B/C/D
+- [ ] **[principal]** ModelPicker renders in `/settings`; switching persists across a refresh
+```
+
+The unchecked boxes are the merge gate: an unticked `[agent]` box means the Developer has not yet posted the evidence comment; an unticked `[principal]` box means the Principal has not yet verified in the browser. A PR with an unticked box is not mergeable.
+
+#### Authoring rules
+
+- **Every brief with runtime surface has a Test Plan with at least one `[agent]` item and at least one `[principal]` item when both kinds of paths are reachable.** A brief that touches an API route (= an `[agent]`-runnable surface) AND a page behind Clerk (= a `[principal]`-runnable surface) lists both. A brief that touches only one of those lists only that kind.
+- **A Test Plan is `unit-tests-only` if and only if the §4 Technical Surface Map has no runtime surface in it** — no API route, no page, no server action, no `runtime`-marked file. (If §4 lists, say, `apps/herald-ai/web/src/app/api/foo/route.ts`, you cannot declare `unit-tests-only`.) The two fields are coupled; Brief Validation cross-checks them.
+- **Items name concrete observables, not properties.** "The audit works" is not a test plan item. "Sign in → upload `tests/fixtures/cv-anna.pdf` → audit returns a `MatchReport` with `grade` in `A|B|C|D` and `signals.length > 0`" is.
+- **`[agent]` items must be scriptable from the dispatched-agent surface** — they need no human auth, no Principal-stored BYOK keys, no human eyes on a render. If an item needs any of those, it is `[principal]`. Mis-tagging an `[agent]` item that actually requires auth is the failure mode the Verifier role exists to remove (`roles/verifier.md`); the Brief Author owns the tagging.
+- **The Principal cannot tick `[agent]` boxes and the agent cannot tick `[principal]` boxes.** This asymmetry is the whole shape of the gate (mirror of D-048's chat-vs-terminal token capture). A brief that pretends one actor can satisfy the other's half is malformed.
+
+#### Where the Test Plan lives in the brief
+
+A discrete top-level section between §8 (Verification before claiming done) and §10 (Stop conditions). It does **not** belong inside §6's numbered tasks (that's the build plan, not the verification plan) or inside §8 (that's the static gates, not the runtime ones). Keeping it discrete is what lets the Verifier phase find it without parsing prose.
+
+#### Why it is its own gate, not just part of §8
+
+Across the `aeg-ui-v1` iteration, four features merged CI-green and were broken at runtime — missing DB migration, missing env var, missing IdentityProvider, an unexecuted polymorphic-input test plan. The structural cause: §8's static gates ran (and passed), and the test plan in the brief was *read* by the code-reviewer but never *executed* against the booted app. A separate, named, mandatory Test Plan section + the Verifier phase that consumes it is what closes the gap. (See D-049.)
+
+### 10. Stop conditions
 
 Explicit list that causes STOP-and-report rather than improvising: pre-flight failures (incl. worktree couldn't be created); a technical dependency from Section 3 not actually present; a dispatch gate not satisfied (a `depends-on` PR not merged, or a `conflicts-with` sibling's PR open); the executor's own dig contradicts the inherited Planner's rationale (boundary moved / sizing broke — escalate `severity:strategy`); the task's stop-and-escalate condition from the Planner's rationale is hit; **a brief instruction turns out to contradict another** (e.g. "delete a shared symbol" vs. "don't touch an out-of-surface importer of it") — do the safe half (keep the symbol), flag the contradiction in the PR body, and let the Brief Author/Principal resolve it; design gap discovered; test fails after multiple attempts; about to touch files outside the Section 4 surface; any destructive action not explicitly authorized.
 
-The §9 stop conditions are **load-bearing** — they are the genuine escalations, and the standing autonomy clause (§10) explicitly does **not** suppress them. An agent that halts here is doing the right thing; an agent that halts for a low-value clarifying question it could resolve itself is not (that is what the autonomy clause removes).
+The §10 stop conditions are **load-bearing** — they are the genuine escalations, and the standing autonomy clause (§11) explicitly does **not** suppress them. An agent that halts here is doing the right thing; an agent that halts for a low-value clarifying question it could resolve itself is not (that is what the autonomy clause removes).
 
-### 10. Constraints
+### 11. Constraints
 
 What the executor must NOT do: off-limits branches/paths (the out-of-surface set from Section 4); explicitly deferred features (do not add); the planner's **traps to avoid** turned into explicit "do NOT do X; do Y instead"; forbidden patterns (skipping verification hooks, an unapproved datastore, auto-remove); and — always — **never write status anywhere** (status is derived from the forge) and **never add execution metadata to the iteration file**.
 
@@ -185,13 +233,13 @@ What the executor must NOT do: off-limits branches/paths (the out-of-surface set
 
 Every brief's Constraints section includes this clause, word for word:
 
-> **Autonomy:** Do not stop to ask clarifying questions. For any ambiguity not covered by a Section 9 stop condition, choose the most reasonable option consistent with this brief, record the choice in the PR body, and continue. Halt only for the explicit Section 9 stop conditions — and when you halt, record the blocker in the PR body or an Issue comment rather than waiting interactively for input.
+> **Autonomy:** Do not stop to ask clarifying questions. For any ambiguity not covered by a Section 10 stop condition, choose the most reasonable option consistent with this brief, record the choice in the PR body, and continue. Halt only for the explicit Section 10 stop conditions — and when you halt, record the blocker in the PR body or an Issue comment rather than waiting interactively for input.
 
-This clause is what makes a dispatched agent run to completion unattended instead of pausing for input it can resolve itself. It removes the *low-value* check-ins; it does **not** suppress the §9 stop conditions, which remain the genuine escalations (a contradicted boundary, an under-specified format, a hit stop-and-escalate trap) and must still halt the agent. The line it draws: resolve-and-record for everything inside the brief's discretion; halt-and-record for the §9 conditions; never pause interactively for a question the brief already answers or the Developer is empowered to decide.
+This clause is what makes a dispatched agent run to completion unattended instead of pausing for input it can resolve itself. It removes the *low-value* check-ins; it does **not** suppress the §10 stop conditions, which remain the genuine escalations (a contradicted boundary, an under-specified format, a hit stop-and-escalate trap) and must still halt the agent. The line it draws: resolve-and-record for everything inside the brief's discretion; halt-and-record for the §10 conditions; never pause interactively for a question the brief already answers or the Developer is empowered to decide.
 
 **Permission-prompt friction is a tool-layer concern, not a brief concern.** "Do you want to run this command / make this edit?" prompts come from the coding-agent's permission system, not from the brief — handle them there (e.g. Claude Code's `auto` permission mode, set once in `~/.claude/settings.json`, which removes routine prompts while a classifier still guards genuinely risky actions, and which also nudges the agent to keep working without stopping for clarifying questions). The brief governs *what* to build and *when* to halt; the tool governs *whether each action needs approval*. Don't try to solve permission friction in the brief.
 
-### 11. Deliverable
+### 12. Deliverable
 
 What the executor opens/commits/creates at the end:
 - PR title (exact format)
@@ -200,7 +248,7 @@ What the executor opens/commits/creates at the end:
 - PR description sections required
 - What to report back and in what format
 
-**The PR is not "done" when opened — it is done when it has passed review.** After the PR opens, Phase 10 (`process.md`): code-reviewer pass (independent, fresh context, `roles/reviewer.md`) → security pass (`roles/security.md`, runs the config-security scan if agent/MCP config changed) → Principal code review → TL spec review → merge. The brief ends by telling the Developer to open the PR and stop — the review passes are separate invocations; the Developer addresses REQUEST CHANGES / FAIL findings in follow-up commits on the same branch.
+**The PR is not "done" when opened — it is done when it has passed review AND verification.** After the PR opens (`process.md`): **Phase 10 — Review:** code-reviewer pass (independent, fresh context, `roles/reviewer.md`) → security pass (`roles/security.md`, runs the config-security scan if agent/MCP config changed) → Principal code review → TL spec review. **Phase 11 — Verification (`roles/verifier.md`):** the brief's §9 Test Plan is executed — the Developer-agent runs every `[agent]` item and posts the actual output as evidence; the Principal ticks every `[principal]` box in a real browser. **Phase 12 — Merge:** the Principal merges once both halves are ticked. The brief ends by telling the Developer to open the PR and stop — the review passes and the Verification phase are separate invocations; the Developer addresses REQUEST CHANGES / FAIL findings and re-runs `[agent]` items in follow-up commits on the same branch.
 
 ---
 
@@ -261,7 +309,7 @@ When in doubt, assign Tier 3. verify-docs defaults to Tier 3 when the PR body ha
 ```
 **principal_delegate:** [scope of any authority delegated to the Developer]
 ```
-Present only when the Principal explicitly delegates a decision. Without it, contested choices escalate via the escalation mechanism. Scope must be specific: "Developer may choose the output format," not "Developer may decide architecture." (The standing autonomy clause in §10 already empowers the Developer to resolve in-brief ambiguity without asking; `principal_delegate` is for a *named, specific* decision the Principal hands over beyond that.)
+Present only when the Principal explicitly delegates a decision. Without it, contested choices escalate via the escalation mechanism. Scope must be specific: "Developer may choose the output format," not "Developer may decide architecture." (The standing autonomy clause in §11 already empowers the Developer to resolve in-brief ambiguity without asking; `principal_delegate` is for a *named, specific* decision the Principal hands over beyond that.)
 
 ```
 **spike:** true
@@ -313,7 +361,7 @@ Use **`[NEEDS CLARIFICATION]`** inline markers to surface gaps rather than guess
 
 **Resolution protocol:** before dispatching, collect all markers, present them to the Principal as a numbered list, wait for resolution on each (don't dispatch with unresolved markers), replace each with the answer inline. If the Principal defers one, replace with `[DEVELOPER DECIDES: ...]` so the executor knows it's intentional. (This is conversational-protocol stage 5 — surfaced, numbered, waited on.)
 
-These markers are resolved **before dispatch**, by the Principal — they are the Brief Author's pre-flight ambiguity check, not a license for the agent to stop mid-run. They are distinct from the standing autonomy clause (§10), which governs ambiguity the agent meets *during* execution: a dispatched brief has **no** open `[NEEDS CLARIFICATION]` markers (they were all resolved or turned into `[DEVELOPER DECIDES: …]`), so at run time the agent resolves-and-records rather than pausing. A pre-flight `[NEEDS CLARIFICATION]` should be resolved in the brief; if an ambiguity surfaces mid-execution instead, the Developer follows the autonomy clause (resolve, record, continue) unless it rises to a §9 stop condition — but a well-authored brief anticipates most of these.
+These markers are resolved **before dispatch**, by the Principal — they are the Brief Author's pre-flight ambiguity check, not a license for the agent to stop mid-run. They are distinct from the standing autonomy clause (§11), which governs ambiguity the agent meets *during* execution: a dispatched brief has **no** open `[NEEDS CLARIFICATION]` markers (they were all resolved or turned into `[DEVELOPER DECIDES: …]`), so at run time the agent resolves-and-records rather than pausing. A pre-flight `[NEEDS CLARIFICATION]` should be resolved in the brief; if an ambiguity surfaces mid-execution instead, the Developer follows the autonomy clause (resolve, record, continue) unless it rises to a §10 stop condition — but a well-authored brief anticipates most of these.
 
 Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention only — Spec Kit CLI not adopted.
 
@@ -338,7 +386,12 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 - ❌ An empty documentation-update list on a Tier 1+ brief
 - ❌ Listing `roadmap.md` in a doc-update list — it's retired
 - ❌ Instructing the executor to write status anywhere — status is derived from the forge
-- ❌ Omitting the standing autonomy clause (§10) — the agent pauses for input it could resolve itself, defeating unattended dispatch; or, the inverse, writing a clause so broad it tells the agent to push past the §9 stop conditions (those must still halt it)
+- ❌ Omitting the standing autonomy clause (§11) — the agent pauses for input it could resolve itself, defeating unattended dispatch; or, the inverse, writing a clause so broad it tells the agent to push past the §10 stop conditions (those must still halt it)
+- ❌ **Omitting the Test Plan (§9)** — the Verifier phase has nothing to run; runtime verification falls through the gap between agent and Principal exactly the way it did across `aeg-ui-v1` (the regression D-049 was created to remove)
+- ❌ **Test Plan items with no tag** — `[agent]` vs `[principal]` is the whole shape of the gate; an untagged item cannot be routed to the actor who can run it
+- ❌ **`Test Plan: unit-tests-only` on a brief whose §4 surface includes a runtime path** — the two fields are coupled; declaring `unit-tests-only` while listing API routes or pages in §4 is malformed (Brief Validation rejects it)
+- ❌ **Mis-tagging a `[principal]` item as `[agent]` to make the agent half complete** — the asymmetry is structural (auth, BYOK keys, eyes-on-a-render); reclassifying loses the gate's whole point
+- ❌ **A Test Plan item phrased as a property rather than an observation** — "the audit works" is not a test plan item; the named command + the named observable is
 - ❌ Not specifying stop conditions — the executor improvises when it should ask
 - ❌ Conflating what with how — specify BOTH
 - ❌ Leaving scope boundaries implicit — the executor will touch adjacent files
