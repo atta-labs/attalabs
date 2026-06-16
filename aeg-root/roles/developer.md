@@ -215,6 +215,24 @@ If any of these fail: fix the failure, then re-verify. Do not report done until 
 
 ---
 
+## Pre-merge gate
+
+Before any merge-adjacent action (commenting "MERGE", helping the Principal merge, or pushing a "fix CI" commit after review), run this check on the open PR. If any item fails, post a comment on the PR listing exactly what's missing, and **block and report** — do not proceed with any merge-adjacent action.
+
+The check is tool-agnostic — "reviewer approved" means any reviewer with `state: APPROVED`, whether human, @claude GitHub App, or another agent.
+
+**Tool:** `gh pr view <n> --json reviews,statusCheckRollup,body`
+
+**Check items (all three must pass):**
+
+1. **Reviewer approved?** The JSON `reviews` array contains at least one entry with `state: APPROVED`.
+2. **Test Plan items ticked?** The PR body's Test Plan section contains no unchecked `- [ ] **[agent]**` lines.
+3. **Principal confirmation?** The PR body's Test Plan section contains no unchecked `- [ ] **[principal]**` lines.
+
+If any fails: post a comment listing the exact items missing, and STOP. The Principal decides what to do next.
+
+---
+
 ## Anti-patterns
 
 These are failures the Developer must actively avoid. Several come from real incidents.
