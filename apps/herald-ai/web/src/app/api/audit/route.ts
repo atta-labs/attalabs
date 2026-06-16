@@ -365,6 +365,63 @@ async function handleSingle(body: Record<string, unknown>): Promise<NextResponse
   return NextResponse.json(report)
 }
 
+// Batch shape accepts a polymorphic candidates array. Each entry is either a
+// legacy username string or a discriminated-union object.
+//   - string                                     → look up published Herald profile
+//   - { kind: 'username', value: string }        → same as the string form (explicit)
+//   - { kind: 'text', label: string, text: string }
+//       → ad-hoc CV (pasted text, .md upload, .pdf upload — all normalised to text
+//         by the polymorphic input layer in BulkAudit / /api/audit/resolve-input)
+//
+// Every entry runs through runSingleMatch with the SAME `creds` resolved from
+// the logged-in user (D-033). Ad-hoc text CVs were previously routed through
+// the single-shape _test_profile_override hatch, which fell back to the server
+// ANTHROPIC_API_KEY env var — that bypassed user BYOK and was the gap flagged
+// in PR #123's review.
+type BatchCandidate = string | { kind: 'username'; value: string } | { kind: 'text'; label: string; text: string }
+
+interface NormalisedCandidate {
+  kind: 'username' | 'text'
+  label: string
+  username?: string
+  text?: string
+}
+
+function normaliseBatchCandidate(raw: unknown, fallbackLabel: string): NormalisedCandidate | null {
+  if (typeof raw === 'string') {
+    const username = raw.trim()
+    if (!username) return null
+    return { kind: 'username', label: `@${username}`, username }
+  }
+  if (raw && typeof raw === 'object') {
+    const rec = raw as { kind?: unknown; value?: unknown; text?: unknown; label?: unknown }
+    if (rec.kind === 'username' && typeof rec.value === 'string') {
+      const username = rec.value.trim()
+      if (!username) return null
+      return { kind: 'username', label: `@${username}`, username }
+    }
+    if (rec.kind === 'text' && typeof rec.text === 'string') {
+      const text = rec.text.trim()
+      if (text.length < 50) return null
+      const label = typeof rec.label === 'string' && rec.label.length > 0 ? rec.label : fallbackLabel
+      return { kind: 'text', label, text }
+    }
+  }
+  return null
+}
+
+function syntheticProfileFromText(label: string, text: string): ResolvedProfile {
+  return {
+    name: label,
+    title: '',
+    github: '',
+    summary: text,
+    stack: [],
+    projects: [],
+    experience: []
+  }
+}
+
 async function handleBatch(body: Record<string, unknown>): Promise<NextResponse> {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -391,35 +448,54 @@ async function handleBatch(body: Record<string, unknown>): Promise<NextResponse>
     return NextResponse.json({ error: 'Job description must be at least 20 characters' }, { status: 400 })
   }
   if (!Array.isArray(candidates) || candidates.length === 0) {
-    return NextResponse.json({ error: 'At least one candidate username required' }, { status: 400 })
+    return NextResponse.json({ error: 'At least one candidate required' }, { status: 400 })
   }
   if (candidates.length > 10) {
     return NextResponse.json({ error: 'Maximum 10 candidates per batch' }, { status: 400 })
   }
 
+  const rawCandidates = candidates as BatchCandidate[]
+  const normalised: Array<{ candidate: NormalisedCandidate; rawIndex: number } | { error: string; rawIndex: number }> =
+    rawCandidates.map((raw, idx) => {
+      const c = normaliseBatchCandidate(raw, `Candidate ${idx + 1}`)
+      if (!c) return { error: 'Invalid candidate entry', rawIndex: idx }
+      return { candidate: c, rawIndex: idx }
+    })
+
   const results = await Promise.all(
-    (candidates as string[]).map(async (username) => {
+    normalised.map(async (entry) => {
+      if ('error' in entry) {
+        return { username: `Candidate ${entry.rawIndex + 1}`, report: null, error: entry.error }
+      }
+      const { candidate } = entry
       try {
-        const dbUser = await getUserByUsername(username.trim())
-        if (!dbUser) return { username, report: null, error: 'Profile not found' }
-        const profile: ResolvedProfile = {
-          name: dbUser.name,
-          title: dbUser.title,
-          github: dbUser.githubHandle ?? '',
-          summary: dbUser.summary,
-          stack: JSON.parse(dbUser.stack) as string[],
-          projects: JSON.parse(dbUser.projects) as Array<{ title: string; description: string }>,
-          experience: JSON.parse(dbUser.experience) as Array<{
-            company: string
-            role: string
-            period: string
-            highlights: string[]
-          }>
+        let profile: ResolvedProfile
+        if (candidate.kind === 'username' && candidate.username) {
+          const dbUser = await getUserByUsername(candidate.username)
+          if (!dbUser) return { username: candidate.label, report: null, error: 'Profile not found' }
+          profile = {
+            name: dbUser.name,
+            title: dbUser.title,
+            github: dbUser.githubHandle ?? '',
+            summary: dbUser.summary,
+            stack: JSON.parse(dbUser.stack) as string[],
+            projects: JSON.parse(dbUser.projects) as Array<{ title: string; description: string }>,
+            experience: JSON.parse(dbUser.experience) as Array<{
+              company: string
+              role: string
+              period: string
+              highlights: string[]
+            }>
+          }
+        } else if (candidate.kind === 'text' && candidate.text) {
+          profile = syntheticProfileFromText(candidate.label, candidate.text)
+        } else {
+          return { username: candidate.label, report: null, error: 'Invalid candidate entry' }
         }
         const report = await runSingleMatch(profile, jd, creds)
-        return { username, report }
+        return { username: candidate.label, report }
       } catch {
-        return { username, report: null, error: 'Audit failed' }
+        return { username: candidate.label, report: null, error: 'Audit failed' }
       }
     })
   )
