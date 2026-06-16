@@ -77,26 +77,18 @@ async function resolveCvSlot(slot: CvSlot): Promise<ResolvedCv> {
   return resolveCvFileRequest(slot.input.file, slot.input.kind)
 }
 
-interface SingleProfileOverride {
-  name: string
-  title: string
-  github: string
-  summary: string
-  stack: string[]
-  projects: Array<{ title: string; description: string }>
-  experience: Array<{ company: string; role: string; period: string; highlights: string[] }>
-}
+// Wire every CV kind through the unified batch shape — both profile lookups
+// and ad-hoc text CVs run under the logged-in user's BYOK key resolved
+// server-side in handleBatch. (Previously, non-profile kinds detoured through
+// the single-shape _test_profile_override hatch which spent the server env
+// key — flagged in PR #123 review, fixed here.)
+type BatchCandidatePayload = { kind: 'username'; value: string } | { kind: 'text'; label: string; text: string }
 
-function syntheticProfileForResolvedCv(cv: ResolvedCv): SingleProfileOverride {
-  return {
-    name: cv.candidateLabel,
-    title: '',
-    github: '',
-    summary: cv.text,
-    stack: [],
-    projects: [],
-    experience: []
+function payloadForCv(cv: ResolvedCv): BatchCandidatePayload {
+  if (cv.kind === 'profile' && cv.username) {
+    return { kind: 'username', value: cv.username }
   }
+  return { kind: 'text', label: cv.candidateLabel, text: cv.text }
 }
 
 interface AuditBatchResult {
@@ -107,36 +99,17 @@ interface AuditBatchResult {
 
 async function runCellForResolved(jd: ResolvedJd, cv: ResolvedCv): Promise<CellStatus> {
   try {
-    if (cv.kind === 'profile' && cv.username) {
-      const res = await fetch('/api/audit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jd: jd.text, candidates: [cv.username] })
-      })
-      const data = (await res.json()) as { results?: AuditBatchResult[]; error?: string }
-      if (!res.ok) return { status: 'error', message: data.error ?? 'Audit failed.' }
-      const first = data.results?.[0]
-      if (!first) return { status: 'error', message: 'No result returned.' }
-      if (!first.report) return { status: 'error', message: first.error ?? 'Audit failed.' }
-      return { status: 'loaded', report: first.report }
-    }
-
-    // Text / markdown / pdf CV: send via single-shape with a synthetic profile.
-    // The single-shape path with a profile override uses the server's
-    // ANTHROPIC_API_KEY env fallback; this is flagged in the PR for follow-up
-    // (promoting the seam to user-BYOK once Task 7b lands the new tool path).
     const res = await fetch('/api/audit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        job_description: jd.text,
-        _test_profile_override: syntheticProfileForResolvedCv(cv)
-      })
+      body: JSON.stringify({ jd: jd.text, candidates: [payloadForCv(cv)] })
     })
-    const data = (await res.json()) as MatchReport & { error?: string }
+    const data = (await res.json()) as { results?: AuditBatchResult[]; error?: string }
     if (!res.ok) return { status: 'error', message: data.error ?? 'Audit failed.' }
-    if (!data.grade) return { status: 'error', message: 'Audit returned no grade.' }
-    return { status: 'loaded', report: data as MatchReport }
+    const first = data.results?.[0]
+    if (!first) return { status: 'error', message: 'No result returned.' }
+    if (!first.report) return { status: 'error', message: first.error ?? 'Audit failed.' }
+    return { status: 'loaded', report: first.report }
   } catch {
     return { status: 'error', message: 'Network error.' }
   }

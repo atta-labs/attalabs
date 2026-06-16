@@ -1,12 +1,21 @@
 // Pure-function tests for the audit-input resolution layer (Task 5).
-// Covers: JD URL SSRF validation, HTML text extraction, JD/CV text validation,
-// CV markdown/pdf pass-through. Profile-lookup path is integration-tested
-// elsewhere (it touches the live DB).
+// Covers: JD URL SSRF validation (syntactic, DNS-resolution, redirect-bypass,
+// DNS-rebinding via injected deps), HTML text extraction, JD/CV text
+// validation, CV markdown/pdf pass-through. Profile-lookup path is integration-
+// tested elsewhere (it touches the live DB).
 
 import { describe, expect, it } from 'bun:test'
 
 import { resolveCvInput, resolveJdInput } from '@/lib/audit-input/resolve'
-import { extractMainText, validateJdUrl } from '@/lib/audit-input/url-fetch'
+import {
+  assertSafeResolvedAddresses,
+  extractMainText,
+  fetchAndExtractText,
+  isPrivateIPv6,
+  type ResolvedAddress,
+  type SafeFetchDeps,
+  validateJdUrl
+} from '@/lib/audit-input/url-fetch'
 
 describe('validateJdUrl', () => {
   it('accepts public http(s) URLs', () => {
@@ -90,6 +99,186 @@ describe('resolveJdInput — text kind', () => {
 
   it('rejects JD text shorter than 20 chars', async () => {
     await expect(resolveJdInput({ kind: 'text', value: 'too short' })).rejects.toThrow()
+  })
+})
+
+describe('assertSafeResolvedAddresses', () => {
+  it('accepts public IPv4', () => {
+    expect(() => assertSafeResolvedAddresses([{ address: '93.184.216.34', family: 4 }])).not.toThrow()
+  })
+  it('rejects loopback IPv4', () => {
+    expect(() => assertSafeResolvedAddresses([{ address: '127.0.0.1', family: 4 }])).toThrow()
+  })
+  it('rejects RFC1918 IPv4', () => {
+    expect(() => assertSafeResolvedAddresses([{ address: '10.0.0.1', family: 4 }])).toThrow()
+    expect(() => assertSafeResolvedAddresses([{ address: '192.168.5.5', family: 4 }])).toThrow()
+    expect(() => assertSafeResolvedAddresses([{ address: '172.20.1.1', family: 4 }])).toThrow()
+  })
+  it('rejects cloud metadata IPv4', () => {
+    expect(() => assertSafeResolvedAddresses([{ address: '169.254.169.254', family: 4 }])).toThrow()
+  })
+  it('rejects ANY private IP in a multi-record response (round-robin)', () => {
+    // A real DNS rebinding setup can return [public, private] — we must
+    // reject the WHOLE record set, not just check the first entry.
+    expect(() =>
+      assertSafeResolvedAddresses([
+        { address: '93.184.216.34', family: 4 },
+        { address: '127.0.0.1', family: 4 }
+      ])
+    ).toThrow()
+  })
+  it('rejects IPv6 loopback and ULA', () => {
+    expect(() => assertSafeResolvedAddresses([{ address: '::1', family: 6 }])).toThrow()
+    expect(() => assertSafeResolvedAddresses([{ address: 'fc00::1', family: 6 }])).toThrow()
+    expect(() => assertSafeResolvedAddresses([{ address: 'fd12::abcd', family: 6 }])).toThrow()
+  })
+  it('rejects IPv4-mapped-IPv6 pointing at private IPv4', () => {
+    // ::ffff:127.0.0.1 is a common SSRF bypass — the syntactic URL check
+    // sees an "IPv6 address" but the actual destination is 127.0.0.1.
+    expect(isPrivateIPv6('::ffff:127.0.0.1')).toBe(true)
+    expect(isPrivateIPv6('::ffff:10.0.0.1')).toBe(true)
+    expect(isPrivateIPv6('::ffff:169.254.169.254')).toBe(true)
+    expect(() => assertSafeResolvedAddresses([{ address: '::ffff:127.0.0.1', family: 6 }])).toThrow()
+  })
+  it('rejects an empty record set', () => {
+    expect(() => assertSafeResolvedAddresses([])).toThrow()
+  })
+})
+
+describe('fetchAndExtractText — SSRF defense-in-depth', () => {
+  // Helpers to build mock deps the production fetch never reaches.
+  function mockLookup(map: Record<string, ResolvedAddress[]>) {
+    const calls: string[] = []
+    const lookup: NonNullable<SafeFetchDeps['lookup']> = async (hostname: string) => {
+      calls.push(hostname)
+      const records = map[hostname]
+      if (!records) throw new Error(`ENOTFOUND ${hostname}`)
+      return records
+    }
+    return { lookup, calls }
+  }
+
+  function htmlResponse(body: string): Response {
+    return new Response(body, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } })
+  }
+
+  function redirectResponse(location: string, status = 302): Response {
+    return new Response(null, { status, headers: { location } })
+  }
+
+  it('rejects a 302 → http://169.254.169.254 (cloud metadata) at hop 2', async () => {
+    const { lookup } = mockLookup({
+      'attacker.example.com': [{ address: '93.184.216.34', family: 4 }]
+    })
+    let calls = 0
+    const fetchImpl: NonNullable<SafeFetchDeps['fetchImpl']> = async () => {
+      calls += 1
+      if (calls === 1) {
+        return redirectResponse('http://169.254.169.254/latest/meta-data')
+      }
+      throw new Error('fetchImpl should not be called for the metadata hop — validation must block it')
+    }
+    await expect(fetchAndExtractText('https://attacker.example.com/start', { lookup, fetchImpl })).rejects.toThrow(
+      /private|Internal/i
+    )
+    expect(calls).toBe(1) // only the initial fetch happened — the redirect target was blocked syntactically
+  })
+
+  it('rejects a 302 → http://10.0.0.1 (RFC1918)', async () => {
+    const { lookup } = mockLookup({
+      'attacker.example.com': [{ address: '93.184.216.34', family: 4 }]
+    })
+    let calls = 0
+    const fetchImpl: NonNullable<SafeFetchDeps['fetchImpl']> = async () => {
+      calls += 1
+      if (calls === 1) return redirectResponse('http://10.0.0.1/admin')
+      throw new Error('Should not reach private IP')
+    }
+    await expect(fetchAndExtractText('https://attacker.example.com/x', { lookup, fetchImpl })).rejects.toThrow()
+    expect(calls).toBe(1)
+  })
+
+  it('rejects a redirect to a hostname that DNS-resolves to a private IP (rebinding)', async () => {
+    // Hop 1: public hostname, public IP, returns 302 → second hostname.
+    // Hop 2: second hostname looks innocuous but resolves to 127.0.0.1.
+    // The pre-fetch DNS check at hop 2 must reject before the connect.
+    const { lookup, calls } = mockLookup({
+      'attacker.example.com': [{ address: '93.184.216.34', family: 4 }],
+      'evil.example.com': [{ address: '127.0.0.1', family: 4 }]
+    })
+    let fetchCalls = 0
+    const fetchImpl: NonNullable<SafeFetchDeps['fetchImpl']> = async () => {
+      fetchCalls += 1
+      if (fetchCalls === 1) return redirectResponse('https://evil.example.com/intranet')
+      throw new Error('fetchImpl must not connect when DNS resolves to private')
+    }
+    await expect(fetchAndExtractText('https://attacker.example.com/', { lookup, fetchImpl })).rejects.toThrow(
+      /private|loopback/i
+    )
+    expect(calls).toEqual(['attacker.example.com', 'evil.example.com'])
+    expect(fetchCalls).toBe(1)
+  })
+
+  it('caps redirect chain length', async () => {
+    const { lookup } = mockLookup({
+      'a.example.com': [{ address: '93.184.216.34', family: 4 }],
+      'b.example.com': [{ address: '93.184.216.34', family: 4 }],
+      'c.example.com': [{ address: '93.184.216.34', family: 4 }],
+      'd.example.com': [{ address: '93.184.216.34', family: 4 }],
+      'e.example.com': [{ address: '93.184.216.34', family: 4 }]
+    })
+    let fetchCalls = 0
+    const chain = ['b', 'c', 'd', 'e']
+    const fetchImpl: NonNullable<SafeFetchDeps['fetchImpl']> = async () => {
+      const idx = fetchCalls
+      fetchCalls += 1
+      const next = chain[idx]
+      if (next) return redirectResponse(`https://${next}.example.com/`)
+      return htmlResponse('<p>final</p>')
+    }
+    await expect(fetchAndExtractText('https://a.example.com/', { lookup, fetchImpl })).rejects.toThrow(
+      /Too many redirects/
+    )
+  })
+
+  it('follows a small redirect chain to a public host and returns extracted text', async () => {
+    const { lookup } = mockLookup({
+      'a.example.com': [{ address: '93.184.216.34', family: 4 }],
+      'b.example.com': [{ address: '93.184.216.34', family: 4 }]
+    })
+    let fetchCalls = 0
+    const fetchImpl: NonNullable<SafeFetchDeps['fetchImpl']> = async () => {
+      fetchCalls += 1
+      if (fetchCalls === 1) return redirectResponse('https://b.example.com/jd')
+      return htmlResponse('<html><body><p>Senior Engineer needed</p></body></html>')
+    }
+    const text = await fetchAndExtractText('https://a.example.com/start', { lookup, fetchImpl })
+    expect(text).toContain('Senior Engineer needed')
+    expect(fetchCalls).toBe(2)
+  })
+
+  it('passes the pinned address from DNS resolution into fetchImpl', async () => {
+    const { lookup } = mockLookup({
+      'public.example.com': [{ address: '93.184.216.34', family: 4 }]
+    })
+    let seenPinned: { address: string; family: 4 | 6 } | null = null
+    const fetchImpl: NonNullable<SafeFetchDeps['fetchImpl']> = async (_url, init) => {
+      seenPinned = { address: init.pinnedAddress, family: init.pinnedFamily }
+      return htmlResponse('<p>ok ok ok</p>')
+    }
+    await fetchAndExtractText('https://public.example.com/', { lookup, fetchImpl })
+    expect(seenPinned).toEqual({ address: '93.184.216.34', family: 4 })
+  })
+
+  it('rejects a syntactically-private redirect target with a clear message', async () => {
+    const { lookup } = mockLookup({
+      'public.example.com': [{ address: '93.184.216.34', family: 4 }]
+    })
+    const fetchImpl: NonNullable<SafeFetchDeps['fetchImpl']> = async () =>
+      redirectResponse('http://localhost:6379/INFO')
+    await expect(fetchAndExtractText('https://public.example.com/', { lookup, fetchImpl })).rejects.toThrow(
+      /Redirect blocked/
+    )
   })
 })
 
