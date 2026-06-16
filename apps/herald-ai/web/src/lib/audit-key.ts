@@ -9,7 +9,7 @@
  *   3. Auto-fall-back when the stored selection points at a vendor whose key
  *      has since been revoked — the audit must NEVER dispatch against a
  *      vendor with no key. The fallback is always the YAML default
- *      (Anthropic / claude-sonnet-4-20250514 today), and only resolves if
+ *      (Anthropic / claude-sonnet-4-6 today), and only resolves if
  *      the user still has an Anthropic key. Otherwise we return null and the
  *      caller surfaces a "no key" error to the recruiter — same shape as the
  *      pre-3b behavior.
@@ -37,7 +37,7 @@ import { getUserByClerkId } from '@/db/queries'
 // dispatch path can fall back without re-reading the YAML.
 // must match defaults.model in apps/herald-ai/web/yamls/herald-auditor.yaml
 const DEFAULT_AUDIT_VENDOR: VendorId = 'anthropic'
-const DEFAULT_AUDIT_MODEL = 'claude-sonnet-4-20250514'
+const DEFAULT_AUDIT_MODEL = 'claude-sonnet-4-6'
 
 const KNOWN_VENDORS = new Set<string>(VENDOR_ORDER)
 

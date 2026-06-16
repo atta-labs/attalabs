@@ -96,6 +96,47 @@ export function assertSafeResolvedAddresses(records: ResolvedAddress[]): void {
   }
 }
 
+// Extract `charset=...` from a Content-Type header value. Returns lowercase
+// label or null. Tolerates quotes (`charset="utf-8"`) and surrounding spaces.
+export function parseCharsetFromContentType(contentType: string): string | null {
+  const m = contentType.match(/charset\s*=\s*"?([^";\s]+)"?/i)
+  return m?.[1] ? m[1].toLowerCase() : null
+}
+
+// Scan the leading bytes of an HTML document for an embedded charset
+// declaration. Matches `<meta charset="...">` and
+// `<meta http-equiv="Content-Type" content="...; charset=...">`. We decode the
+// scan window as windows-1252 because every encoding the HTML spec allows
+// here is ASCII-compatible for these byte ranges — the goal is just to read
+// the bytes of the tag, not interpret content. Returns null when nothing is
+// found in the first 1024 bytes (the same window browsers use).
+export function detectCharsetInHtmlPrefix(buf: Uint8Array): string | null {
+  const window = buf.subarray(0, Math.min(buf.byteLength, 1024))
+  const text = new TextDecoder('windows-1252', { fatal: false }).decode(window)
+  const direct = text.match(/<meta[^>]+charset\s*=\s*["']?([a-z0-9_\-:]+)/i)
+  if (direct?.[1]) return direct[1].toLowerCase()
+  const httpEquiv = text.match(
+    /<meta[^>]+http-equiv\s*=\s*["']?content-type["']?[^>]+content\s*=\s*["'][^"']*charset\s*=\s*([a-z0-9_\-:]+)/i
+  )
+  if (httpEquiv?.[1]) return httpEquiv[1].toLowerCase()
+  return null
+}
+
+// Decode raw bytes using header charset first, falling back to an HTML
+// meta-tag charset, then UTF-8. Unknown labels collapse to UTF-8 (TextDecoder
+// throws RangeError on unrecognised labels — we don't surface that to callers).
+export function decodeBody(buf: Uint8Array, contentType: string): string {
+  const headerCharset = parseCharsetFromContentType(contentType)
+  const isHtml = /text\/html|application\/xhtml/.test(contentType)
+  const metaCharset = !headerCharset && isHtml ? detectCharsetInHtmlPrefix(buf) : null
+  const label = headerCharset ?? metaCharset ?? 'utf-8'
+  try {
+    return new TextDecoder(label, { fatal: false }).decode(buf)
+  } catch {
+    return new TextDecoder('utf-8', { fatal: false }).decode(buf)
+  }
+}
+
 export function extractMainText(html: string): string {
   let s = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
   s = s.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
@@ -255,7 +296,7 @@ export async function fetchAndExtractText(rawUrl: string, deps: SafeFetchDeps = 
     buf.set(c, offset)
     offset += c.byteLength
   }
-  const body = new TextDecoder('utf-8', { fatal: false }).decode(buf)
+  const body = decodeBody(buf, contentType)
   if (contentType.includes('text/plain')) {
     return body.trim()
   }

@@ -9,6 +9,7 @@ import { compileFlow, type Flow, loadFlow } from '@atta/engine'
 
 import { getUserByUsername } from '@/db/queries'
 import { resolveAuditCredentials, type ResolvedAuditCredentials } from '@/lib/audit-key'
+import { parseMatchReport } from '@/lib/parse-match-report'
 import { DANI_PROFILE } from '@/lib/profile'
 import { MATCH_REPORT_SCHEMA } from '@/lib/prompts'
 import { perOwnerAuditLimiter } from '@/lib/rate-limit'
@@ -107,41 +108,6 @@ async function githubSignalToolHandler(args: Record<string, unknown>): Promise<s
   const raw = args.github_handle
   const handle = typeof raw === 'string' ? raw.trim() : ''
   return fetchGithubSignalsForHandle(handle)
-}
-
-function parseMatchReport(
-  text: string,
-  candidateInfo: { name: string; title: string; github: string }
-): MatchReport | null {
-  try {
-    const cleaned = text.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '')
-    const parsed = JSON.parse(cleaned)
-
-    if (!parsed.grade || !parsed.recommendation || !parsed.signal) return null
-    if (!Array.isArray(parsed.hard_requirements)) return null
-
-    // Code-enforced NO FIT gate — model cannot override this
-    const failedHardGate = parsed.hard_requirements.some(
-      (r: { kind: string; met: boolean }) => r.kind === 'hard' && !r.met
-    )
-    const grade = failedHardGate ? 'NO FIT' : parsed.grade
-    const recommendation = failedHardGate ? 'No Fit' : parsed.recommendation
-    const confidence = grade === 'NO FIT' ? 'High' : grade === 'A' || grade === 'A-' ? 'High' : 'Moderate'
-
-    return {
-      candidate: candidateInfo,
-      hard_requirements: parsed.hard_requirements,
-      grade,
-      recommendation,
-      confidence,
-      confidence_reasoning: parsed.confidence_reasoning ?? [],
-      signal: parsed.signal ?? [],
-      gaps: parsed.gaps ?? [],
-      interview_hooks: parsed.interview_hooks ?? []
-    }
-  } catch {
-    return null
-  }
 }
 
 interface ResolvedProfile {
@@ -259,7 +225,7 @@ function envFallbackCreds(): ResolvedAuditCredentials | null {
   if (!apiKey) return null
   return {
     vendor: 'anthropic',
-    modelId: 'claude-sonnet-4-20250514',
+    modelId: 'claude-sonnet-4-6',
     apiKey,
     fellBackFromSelection: false
   }

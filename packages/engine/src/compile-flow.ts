@@ -20,7 +20,9 @@ function renderVars(text: string, vars: Record<string, string>): string {
 
 function buildAgents(flow: Flow, model: string, customVars: Record<string, string>): Record<string, Agent> {
   const agents: Record<string, Agent> = {}
+  const defaultMaxTokens = flow.defaults.maxTokens
   for (const fa of flow.agents) {
+    const maxTokens = fa.maxTokens ?? defaultMaxTokens
     agents[fa.name] = {
       name: fa.name,
       description: fa.description ?? '',
@@ -28,6 +30,7 @@ function buildAgents(flow: Flow, model: string, customVars: Record<string, strin
       tools: fa.tools,
       customTools: fa.customTools,
       model: fa.model ?? model,
+      ...(maxTokens !== undefined ? { maxTokens } : {}),
       outputSchema: fa.outputSchema
     }
   }

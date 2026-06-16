@@ -23,12 +23,24 @@ describe('herald-auditor.yaml', () => {
     const flow = load()
     expect(flow.schemaVersion).toBe('2.0')
     expect(flow.id).toBe('herald-auditor')
-    expect(flow.defaults.model).toBe('claude-sonnet-4-20250514')
+    expect(flow.defaults.model).toBe('claude-sonnet-4-6')
     expect(flow.rounds).toHaveLength(1)
     expect(flow.rounds[0]?.agents).toHaveLength(1)
     expect(flow.agents).toHaveLength(1)
     expect(flow.agents[0]?.name).toBe('SkepticalAuditor')
     expect(flow.agents[0]?.classifier?.mode).toBe('skip')
+  })
+
+  it('pins defaults.max_tokens at the headroom the audit report needs', () => {
+    // Production logs from June 2026 showed the model emitting 3.5k–4k output
+    // tokens for a single audit report; the prior 2000-token cap silently
+    // truncated the JSON and the parser fell into its partial-report fallback.
+    // 8000 leaves room for the schema-bound output plus the report's own
+    // reasoning. This is the regression guard — if someone lowers it back to
+    // ≤ 4000 the audit will start truncating in prod and this test will catch
+    // it in CI.
+    const flow = load()
+    expect(flow.defaults.maxTokens).toBe(8000)
   })
 
   it('compiles to a solo Plan with the auditor as the single node', () => {
@@ -44,6 +56,15 @@ describe('herald-auditor.yaml', () => {
     expect(plan.graph.nodes.solo?.agentName).toBe('SkepticalAuditor')
     expect(plan.graph.edges).toHaveLength(0)
     expect(plan.graph.conditionalEdges).toHaveLength(0)
+  })
+
+  it('propagates defaults.max_tokens onto the compiled SkepticalAuditor agent', () => {
+    // The adapter reads agent.maxTokens to set the Anthropic request param.
+    // If compileFlow drops it (the bug PR #129 fixes), the adapter falls back
+    // to its built-in 4096 default and the audit truncates again.
+    const flow = load()
+    const plan = compileFlow(flow, 'test question', undefined, { schema: MATCH_REPORT_SCHEMA })
+    expect(plan.agents.SkepticalAuditor?.maxTokens).toBe(8000)
   })
 
   it('substitutes {{schema}} into the auditor system prompt at compileFlow time', () => {

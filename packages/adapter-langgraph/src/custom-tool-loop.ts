@@ -76,6 +76,12 @@ export interface RunCustomToolLoopParams {
   handlers: CustomToolHandlerMap
   /** Override the iteration cap for tests. Defaults to MAX_CUSTOM_TOOL_ITERATIONS. */
   maxIterations?: number
+  /**
+   * Per-turn Anthropic `max_tokens`. Defaults to 4096 to preserve historical
+   * behavior for callers (and tests) that don't pass it. Flow-driven values
+   * arrive via llm.ts after compileFlow propagates them from the YAML.
+   */
+  maxTokens?: number
 }
 
 export interface RunCustomToolLoopResult {
@@ -105,6 +111,7 @@ export function customToolSpecToAnthropicTool(spec: CustomToolSpec): any {
 export async function runAnthropicCustomToolLoop(params: RunCustomToolLoopParams): Promise<RunCustomToolLoopResult> {
   const { messagesCreate, model, systemPrompt, userPrompt, tools, handlers } = params
   const maxIterations = params.maxIterations ?? MAX_CUSTOM_TOOL_ITERATIONS
+  const maxTokens = params.maxTokens ?? 4096
 
   const messages: Anthropic.Messages.MessageParam[] = [{ role: 'user', content: userPrompt }]
   let totalTokensInput = 0
@@ -113,7 +120,7 @@ export async function runAnthropicCustomToolLoop(params: RunCustomToolLoopParams
   for (let iteration = 0; iteration < maxIterations; iteration++) {
     const response = await messagesCreate({
       model,
-      max_tokens: 4096,
+      max_tokens: maxTokens,
       system: systemPrompt,
       messages,
       ...(tools.length > 0 ? { tools } : {})

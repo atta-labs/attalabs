@@ -227,6 +227,49 @@ describe('runAnthropicCustomToolLoop — positive path', () => {
   })
 })
 
+// ─── max_tokens wire-through (Herald audit truncation regression) ────────────
+
+describe('runAnthropicCustomToolLoop — max_tokens propagation', () => {
+  it('passes the caller-supplied maxTokens through to messagesCreate verbatim', async () => {
+    // The Herald auditor truncation bug was caused by the loop hard-coding
+    // max_tokens: 4096 regardless of what the YAML / Plan asked for. After
+    // the fix, llm.ts forwards `agent.maxTokens` here, and we forward it to
+    // the Anthropic call. This test pins that contract.
+    const seenMaxTokens: number[] = []
+    const messagesCreate: AnthropicMessagesCreate = async (params) => {
+      seenMaxTokens.push(params.max_tokens)
+      return makeTextResponse('done')
+    }
+    await runAnthropicCustomToolLoop({
+      messagesCreate,
+      model: 'claude-test',
+      systemPrompt: '',
+      userPrompt: 'go',
+      tools: [],
+      handlers: {},
+      maxTokens: 8000
+    })
+    expect(seenMaxTokens).toEqual([8000])
+  })
+
+  it('falls back to 4096 when maxTokens is omitted (preserves historical behavior)', async () => {
+    const seenMaxTokens: number[] = []
+    const messagesCreate: AnthropicMessagesCreate = async (params) => {
+      seenMaxTokens.push(params.max_tokens)
+      return makeTextResponse('done')
+    }
+    await runAnthropicCustomToolLoop({
+      messagesCreate,
+      model: 'claude-test',
+      systemPrompt: '',
+      userPrompt: 'go',
+      tools: [],
+      handlers: {}
+    })
+    expect(seenMaxTokens).toEqual([4096])
+  })
+})
+
 // ─── Bound: max iterations ────────────────────────────────────────────────────
 
 describe('runAnthropicCustomToolLoop — iteration bound', () => {

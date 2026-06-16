@@ -4,8 +4,8 @@ display_name: Herald Skeptical Auditor
 description: Forensic CV-to-JD match audit. Solo flow — one auditor agent emits a JSON match report; Herald's parser enforces the NO-FIT hard-requirement gate in code.
 
 defaults:
-  model: claude-sonnet-4-20250514
-  max_tokens: 2000
+  model: claude-sonnet-4-6
+  max_tokens: 8000
 
 agents:
   - name: SkepticalAuditor
