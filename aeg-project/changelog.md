@@ -10,6 +10,13 @@
 
 ---
 
+## June 16, 2026 — AEG pre-merge forge gate in Developer role
+
+### AEG
+- **Pre-merge gate** — Added a pre-merge verification gate to the Developer role that any Developer must run before any merge-adjacent action (commenting "MERGE", helping the Principal merge, or pushing a "fix CI" commit after review). The gate verifies: (1) at least one reviewer has `state: APPROVED` on the PR, (2) the PR body's Test Plan section has no unchecked `- [ ] **[agent]**` lines, (3) the PR body's Test Plan section has no unchecked `- [ ] **[principal]**` lines. If any check fails, the Developer posts a comment listing the exact missing items and blocks — the Principal decides whether to proceed. The check is tool-agnostic and forge-readable: `gh pr view <n> --json reviews,statusCheckRollup,body`. Surface: `aeg-root/roles/developer.md` (new `Pre-merge gate` section after verification) + `aeg-root/aeg-manual-flow.md` (gate documented as Step 6 prerequisite in §5). Tier 1.
+
+---
+
 ## June 16, 2026 — AEG Studio kanban board + task detail (task 5)
 
 ### AEG
