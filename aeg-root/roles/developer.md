@@ -79,7 +79,7 @@ All Tier 0 items, plus:
 All Tier 1 items, plus:
 
 - [ ] Decision log entry appended with: status (ACTIVE/PENDING), type (1/2), rationale, alternatives rejected, consequences
-- [ ] State docs updated: per-unit `aeg-project/state.md` if state changed (for every project the task lists), `aeg-project/now.md` if active work changed, `aeg-project/changelog.md` appended
+- [ ] State docs updated: per-unit `aeg-project/state.md` if state changed (for every project the task lists), `aeg-project/now.md` if active work changed, `aeg-project/changelog/YYYY-MM-DD-<branch>.md` entry created
 - [ ] Lock entry created with `Lock: YES` if the decision closes an irreversible branch
 - [ ] If a lock was conformed to or challenged, the brief contained the appropriate acknowledgment block
 - [ ] Merge happens at a ratification window (do not open the PR and expect immediate merge for Tier 3 work)
@@ -212,6 +212,24 @@ Before you say you are done or open a PR, run all of the following (substitute y
 7. `git diff main --stat` — paste the full change list; confirm only expected files changed
 
 If any of these fail: fix the failure, then re-verify. Do not report done until all pass. Do not say "tests pass" without running the test command and seeing the output.
+
+---
+
+## Pre-merge gate
+
+Before any merge-adjacent action (commenting "MERGE", helping the Principal merge, or pushing a "fix CI" commit after review), run this check on the open PR. If any item fails, post a comment on the PR listing exactly what's missing, and **block and report** — do not proceed with any merge-adjacent action.
+
+The check is tool-agnostic — "reviewer approved" means any reviewer with `state: APPROVED`, whether human, @claude GitHub App, or another agent.
+
+**Tool:** `gh pr view <n> --json reviews,statusCheckRollup,body`
+
+**Check items (all three must pass):**
+
+1. **Reviewer approved?** The JSON `reviews` array contains at least one entry with `state: APPROVED`.
+2. **Test Plan items ticked?** The PR body's Test Plan section contains no unchecked `- [ ] **[agent]**` lines.
+3. **Principal confirmation?** The PR body's Test Plan section contains no unchecked `- [ ] **[principal]**` lines.
+
+If any fails: post a comment listing the exact items missing, and STOP. The Principal decides what to do next.
 
 ---
 

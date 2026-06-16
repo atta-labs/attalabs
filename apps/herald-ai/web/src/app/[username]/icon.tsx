@@ -26,6 +26,7 @@ export default async function Icon({ params }: { params: Promise<{ username: str
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
+        {/* biome-ignore lint/performance/noImgElement: ImageResponse from next/og requires img for OG image generation */}
         <img
           src={avatarUrl}
           alt=''

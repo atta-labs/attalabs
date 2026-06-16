@@ -115,6 +115,20 @@ Keep all of this **light** — a sentence at each seam, not paragraphs. The goal
 
 Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` and self-locates from forge state. Nobody writes status — the forge already reflects every transition. Every conversational role in this table follows the conversational protocol (§4.5): it announces itself, signposts its stage, and closes out clearly.
 
+### Pre-merge gate (Step 6 prerequisite)
+
+Before the Principal merges (Step 6), any Developer helping merge or pushing a "fix CI" commit after review must run this gate. If any item fails, post a comment on the PR listing exactly what's missing, and **block and report** — do not proceed with merge.
+
+**Tool:** `gh pr view <n> --json reviews,statusCheckRollup,body`
+
+**Check items (all three must pass):**
+
+1. **Reviewer approved?** The JSON `reviews` array contains at least one entry with `state: APPROVED`.
+2. **Test Plan items ticked?** The PR body's Test Plan section contains no unchecked `- [ ] **[agent]**` lines.
+3. **Principal confirmation?** The PR body's Test Plan section contains no unchecked `- [ ] **[principal]**` lines.
+
+If any fails: post a comment listing the exact items missing. The Principal decides whether to proceed.
+
 > **At the end of every role's turn: append one row to the iteration's token/cost ledger** (`aeg-root/iterations/<name>.tokens.md`). Phase, Role, Agent/Model, Tokens in, Tokens out, Cost, Date — never edit a row; re-entry appends. Terminal roles (Developer in Claude Code; Archivist when automated) fill the numeric cells from `/cost`; claude.ai roles (Planner, Brief Author, Reviewer, Security) leave them as `—` and the Principal fills them later from the claude.ai UI usage figure. See `iterations/README.md` §12 for the canonical format and the rationale; the file is a §13 append-only artifact.
 
 ---

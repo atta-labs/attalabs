@@ -163,7 +163,7 @@ Do not leave documentation as an implication of the tier checklist. **List the e
 
 - **Tier 0** — usually none. State "No doc updates required (Tier 0)."
 - **Tier 1** — name each: which spec(s) reflect the new behavior, which skill(s) if a convention shifted, `docs-index.md` if files were added/removed/renamed.
-- **Tier 3** — all Tier 1 items, plus: the exact decision log (`aeg-project/decisions.md` or which `apps/*/specs/*-decisions.md`) and the D-### to append; which state docs change (`state.md`, `now.md`, `changelog.md`, the iteration file, per-project backlogs); whether a `Lock: YES` entry is created. **Never** list `roadmap.md` — it's retired; roadmap planning lives outside AEG.
+- **Tier 3** — all Tier 1 items, plus: the exact decision log (`aeg-project/decisions.md` or which `apps/*/specs/*-decisions.md`) and the D-### to append; which state docs change (`state.md`, `now.md`, `aeg-project/changelog/YYYY-MM-DD-<branch>.md`, the iteration file, per-project backlogs); whether a `Lock: YES` entry is created. **Never** list `roadmap.md` — it's retired; roadmap planning lives outside AEG.
 
 A Tier 1+ brief with an empty doc-update list is malformed.
 
