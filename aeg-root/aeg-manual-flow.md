@@ -115,6 +115,8 @@ Keep all of this **light** — a sentence at each seam, not paragraphs. The goal
 
 Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` and self-locates from forge state. Nobody writes status — the forge already reflects every transition. Every conversational role in this table follows the conversational protocol (§4.5): it announces itself, signposts its stage, and closes out clearly.
 
+> **At the end of every role's turn: append one row to the iteration's token/cost ledger** (`aeg-root/iterations/<name>.tokens.md`). Phase, Role, Agent/Model, Tokens in, Tokens out, Cost, Date — never edit a row; re-entry appends. Terminal roles (Developer in Claude Code; Archivist when automated) fill the numeric cells from `/cost`; claude.ai roles (Planner, Brief Author, Reviewer, Security) leave them as `—` and the Principal fills them later from the claude.ai UI usage figure. See `iterations/README.md` §12 for the canonical format and the rationale; the file is a §13 append-only artifact.
+
 ---
 
 ## 6. Per-role entry gates (refusal language)

@@ -146,3 +146,54 @@ export type DerivedIteration = {
    */
   unknownEdges: UnknownEdge[]
 }
+
+// ---------- Token ledger (iterations/<name>.tokens.md) ----------
+
+/**
+ * One row of the append-only per-iteration token/cost ledger. See
+ * `aeg-root/iterations/README.md` §12 for the canonical format. Each role
+ * appends one row at the end of its turn; re-entry appends another row.
+ * The iteration total is `sum(rows)`, derived at read time — never stored.
+ *
+ * The two capture sources surface here as `null` cells: a row written by a
+ * claude.ai role (Planner / Brief Author / Reviewer / Security) before the
+ * Principal has filled in its usage figure has `tokensIn`/`tokensOut`/`cost`
+ * as `null`; a terminal-role row (Developer / Archivist with `/cost`) has
+ * exact numbers.
+ */
+export type LedgerRow = {
+  /** Free-text phase identifier. Convention: `<task-id>: <phase>` per task
+   * (e.g. `9: develop`), or a bare phase for iteration-wide work (e.g.
+   * `planning`). The parser does not enforce the convention — the Phase
+   * cell is opaque so the table can be re-pivoted later. */
+  phase: string
+  role: string
+  /** Free-text — the role's agent + model (e.g. `claude-opus-4-7 (CC)`,
+   * `claude-opus-4-7 (chat)`). The PRICING table dependency is on the
+   * model name, not on the parser. */
+  agentModel: string
+  /** `null` when the cell was `—` / `-` / empty (unknown — claude.ai
+   * row not yet filled). */
+  tokensIn: number | null
+  tokensOut: number | null
+  /** Cost in USD as a number. `null` for unknown. Cost depends on the
+   * adapter's PRICING table — when the model is missing from it, this is
+   * `0` from the source row, not `null` (a known limitation, not a parser
+   * bug). */
+  cost: number | null
+  /** Raw date cell — typically `YYYY-MM-DD`. Captured as a string so the
+   * model docs can evolve the format without breaking the parser. */
+  date: string
+}
+
+/**
+ * `sumLedger(rows)` output — pure aggregate over the rows in source order.
+ * Null cells contribute zero; the row count is preserved so a UI can show
+ * "N entries totalling …".
+ */
+export type LedgerTotals = {
+  tokensIn: number
+  tokensOut: number
+  cost: number
+  rows: number
+}

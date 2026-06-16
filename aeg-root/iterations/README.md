@@ -220,7 +220,67 @@ There is no single "current iteration." `aeg-root/iterations/` holds every activ
 
 ---
 
-## 12. One-line pitch
+## 12. The per-iteration token/cost ledger — append-only, derived total
+
+Every role that runs in an iteration reports its **token spend and cost** by appending one row to a per-iteration ledger at the end of its turn. The ledger is the cost-legibility counterpart to derived task status: the forge tells you *what happened*, the ledger tells you *what it cost*. Per-phase agent spend is something neither raw GitHub nor most "agentic" tools surface; AEG does, by giving it the same shape as everything else here — append-only, immutable rows, no stored aggregate.
+
+### Where it lives
+
+One sibling file per iteration: `aeg-root/iterations/<name>.tokens.md` (next to `<name>.md`).
+
+The sibling form is chosen deliberately over an inline `## Token ledger` section in the iteration file: two roles appending rows at the same time on the same file is exactly the kind of merge-collision the topology file's "Planner-only at plan time" rule was set up to avoid. Keeping the ledger in its own append-only file makes a Planner editing the topology and a Developer reporting a turn-end never touch the same bytes. The parser (`@atta/aeg-core`'s `parseLedger`) also accepts the inline form for any iteration that chose it.
+
+### Format
+
+A single markdown table; columns are fixed. Cell conventions match the rest of the model (em-dash for unknown).
+
+```markdown
+# Token ledger — <iteration-name>
+
+Append-only. Each row records one role's turn at a phase. Re-entry appends a **new** row. The iteration total is `sum(rows)`, derived at read time, never stored.
+
+| Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date |
+|-------|------|-------------|-----------|------------|------|------|
+| planning       | Planner      | claude-opus-4-7 (chat) |    —   |    —  |    —    | 2026-06-13 |
+| 9: brief       | Brief Author | claude-opus-4-7 (chat) |    —   |    —  |    —    | 2026-06-15 |
+| 9: develop     | Developer    | claude-opus-4-7 (CC)   | 184327 | 12502 | $3.4781 | 2026-06-15 |
+| 9: review      | Reviewer     | claude-opus-4-7 (chat) |    —   |    —  |    —    | 2026-06-15 |
+```
+
+- **Phase** — free-text. Convention: `<task-id>: <phase>` for per-task work (e.g. `9: develop`, `9: review`), or a bare phase for iteration-wide work (e.g. `planning`). Phase is opaque to the parser; the convention exists so a future view can pivot by task.
+- **Role** — the AEG role doing the work (`Planner`, `Brief Author`, `Developer`, `Reviewer`, `Security`, `Archivist`).
+- **Agent/Model** — the role's agent + model, with the surface in parentheses: `claude-opus-4-7 (CC)` for Claude Code (terminal), `claude-opus-4-7 (chat)` for a claude.ai conversation. The surface matters because it is what tells you which capture source applies (below).
+- **Tokens in / Tokens out** — integers from the meter, or `—` for "not yet known."
+- **Cost** — USD as `$X.XXXX` from the adapter's PRICING table, or `—`. *(V1 honesty: the PRICING table is currently missing some recent models — e.g. `claude-sonnet-4-20250514` — so cost can read `$0.00` for an otherwise real row. Tokens are still exact; that gap is a known Herald-backlog dependency, not a ledger bug.)*
+- **Date** — `YYYY-MM-DD`.
+
+### The append rule (read this exactly the way you read derived status)
+
+- At the end of a role's turn, **append one row**.
+- **Never edit** an existing row. If you discover a mistake, append a new row that supersedes it in prose (or fix the source file in a separate, declared edit — same exception that `state-machine.md` §13 carves for forward-reference fields).
+- **Re-entry appends.** A Developer dispatched for `9: develop`, asked for changes, and re-running for `9: develop` again writes a **second** `9: develop` row — never a sum, never an overwrite. The two rows both count.
+- The **iteration total is `sum(rows)`**, derived at read time, never stored. This is the same philosophy as forge-derived status (don't store the aggregate; sum the immutable entries) and the append-only decision log. A stored total reintroduces the merge-collision + stale-aggregate problem.
+
+### Two capture sources (the design constraint, not a bug)
+
+Token reporting is asymmetric — and any honest design has to encode that, because the asymmetry is a property of the surfaces, not of AEG:
+
+- **Terminal roles run in Claude Code (Developer; Archivist when automated).** The session knows its tokens. The role appends the row itself, with exact numbers from `/cost`. Cetana (this repo's orchestrator) can capture this at dispatch-end automatically; in manual mode the Developer fills it before opening the PR.
+- **claude.ai roles run in chat (Planner; Brief Author; Reviewer; Security).** A claude.ai conversation **cannot read its own token count** via tool or API. The role still appends a row at turn-end — phase, role, model, date — but leaves the numeric cells as `—`. The **Principal** fills them later from the claude.ai UI usage figure (or leaves them approximate; the row is still load-bearing because tokens are still in the iteration's total even when one cell is unknown).
+
+V1 accepts the manual seam: chat turns are the cheap ones; coding (terminal) dominates spend and is captured exactly. Auto-capture for terminal roles is the obvious next layer; auto-capture for chat roles depends on the surface giving us a self-token API, which it does not today.
+
+### Anti-regression
+
+The ledger is a Section-13 append-only artifact. The familiar forbidden moves apply:
+
+- **No stored total.** Do not add a "current total" row, header field, or anything that has to be edited when a row appends. Derive it.
+- **No edits to past rows** (except the forward-reference exception in §13: filling a previously `—` numeric cell from the claude.ai UI is permitted — it does not change history, only completes it).
+- **No "current spend"** field anywhere — including the iteration file's header. The forge holds execution state; the ledger file holds the cost history. The thin iteration file holds topology. Three artifacts, three concerns.
+
+---
+
+## 13. One-line pitch
 
 > AEG does not plan your project. It governs how your project gets executed by agents — safely, coherently, and coordinated across a team.
 

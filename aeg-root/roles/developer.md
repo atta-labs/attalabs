@@ -45,6 +45,8 @@ These gates read live forge state. You never write status anywhere — opening y
 
 **Opening the PR with a complete description.** The PR description must (1) **carry the full brief** — paste it into the PR body; it is the brief's permanent, durable home, and the Reviewer and Archivist read it there; (2) follow the template: what shipped, validated mechanism if applicable, what's NOT in scope, next steps; (3) carry the `Tier:` declaration (`Tier: 0|1|3`) so the verify-docs gate reads the correct tier; (4) reference the task's Issue (`Closes #N`) so the merge auto-closes it. The description is not optional — the reviews depend on it. Opening the PR is itself the `in-flight → in-review` transition; you write no status field.
 
+**Appending one row to the iteration's token ledger at turn-end.** Before opening the PR (and again before each `changes-requested → in-review` re-push), append one row to `aeg-root/iterations/<name>.tokens.md`: `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date`. You are a **terminal role** — your session knows its own tokens (this repo's instance: `/cost` in Claude Code), so your row's numeric cells are exact, not `—`. Re-entry (a second turn after `CHANGES_REQUESTED`) appends a **new** row — never edits the first. See `iterations/README.md` §12 and `state-machine.md` §13.
+
 ---
 
 ## Documentation is part of every task
@@ -61,6 +63,7 @@ All of the following must pass before the PR is opened:
 - [ ] Code passes lint/format (this repo: `bun run format-and-lint`)
 - [ ] Tests pass if applicable (this repo: `bun test`)
 - [ ] PR description follows the template, carries the brief, and declares `Tier: 0`
+- [ ] One row appended to `aeg-root/iterations/<name>.tokens.md` with exact tokens from `/cost` (and again on each re-push after `CHANGES_REQUESTED`)
 
 ### Tier 1 checklist
 
