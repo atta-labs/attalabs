@@ -12,29 +12,32 @@ For the visual schema, see `diagrams/process-flow.md` (being brought in line wit
 
 ## Where tasks come from: the iteration
 
-The eleven phases below are the **per-task** flow. Tasks do not appear from nowhere — they are produced by the **Planner** (a Team Leader mode) when an iteration is planned: the Planner turns an intent plus a slice of tickets into a set of **forge Issues** (one per task) plus a thin topology file declaring their `depends-on` / `conflicts-with` edges (`iterations/README.md`, `roles/planner.md`). Each Issue that enters the flow below is a task the Planner already shaped.
+The twelve phases below are the **per-task** flow. Tasks do not appear from nowhere — they are produced by the **Planner** (a Team Leader mode) when an iteration is planned: the Planner turns an intent plus a slice of tickets into a set of **forge Issues** (one per task) plus a thin topology file declaring their `depends-on` / `conflicts-with` edges (`iterations/README.md`, `roles/planner.md`). Each Issue that enters the flow below is a task the Planner already shaped.
 
 **Status is never stored.** Throughout every phase, a task's status is *derived* from the forge — Issue open/assigned, branch existence, PR open, review decision, merge — never written to a label or a file. When a phase below says a task "becomes in-review," it means *a PR was opened*, not that anyone set a status field.
 
 ---
 
-## The eleven phases
+## The twelve phases
 
 Every piece of work moves through some subset of these. Trivial work (Tier 0) skips most; complex work (Tier 3) hits all and may loop back from review.
 
 ```
-1. Idea origination
-2. Pressure-testing (optional; high-stakes only)
-3. Brief authoring (just-in-time)
-4. Brief validation
-5. Dispatch
-6. Execution
-7. Escalation (optional; only when Developer blocks)
-8. Task Done verification
-9. Pull request opened
+1.  Idea origination
+2.  Pressure-testing (optional; high-stakes only)
+3.  Brief authoring (just-in-time)
+4.  Brief validation
+5.  Dispatch
+6.  Execution
+7.  Escalation (optional; only when Developer blocks)
+8.  Task Done verification
+9.  Pull request opened
 10. Review (agent passes, then human reviews)
-11. Merge
+11. Verification (runtime test plan execution — agent half + Principal half)
+12. Merge
 ```
+
+> **Doctrine: CI green ≠ app boots ≠ feature works.** Phase 11 (Verification) exists because four consecutive `aeg-ui-v1` features merged CI-green and were broken at runtime. The static gates of Phase 8 and the diff-reading reviews of Phase 10 cannot exercise an auth-gated / key-dependent / browser-rendered path. Phase 11 closes that gap with a tagged, executed test plan (see `roles/verifier.md` and D-049).
 
 After merge, the **Archivist** runs close-out (`roles/archivist.md`). That's the final step of the flow.
 
@@ -85,7 +88,7 @@ When a task is picked up for execution, the TL writes its brief — **just-in-ti
 - An explicit documentation-update list tied to the tier
 - Optional `Ticket:` (reference-only provenance) and, in a multi-project repo, `Project:` (resolves against `projects.md`)
 - Clear scope, stop conditions, Task Done checklist
-- A deliverable section stating "done" means "passed Phase 10 review," not "PR opened"
+- A deliverable section stating "done" means "passed Phase 11 verification," not "PR opened"
 
 A brief is self-contained and executable without further conversation. If it needs clarifying questions, it's incomplete.
 
@@ -231,7 +234,28 @@ If both pass (and agent verdicts are APPROVE/PASS or their findings resolved) �
 
 ---
 
-## Phase 11: Merge
+## Phase 11: Verification (runtime test plan)
+
+**Who:** the Developer-agent (for `[agent]` items) and the Principal (for `[principal]` items). Verification is a *phase*, not a new actor — see `roles/verifier.md`.
+
+A PR that has passed code review and security review still has not been run. The reviews read the diff; the static gates of Phase 8 prove the code compiles and types and tests; CI does not boot the app. Phase 11 boots it, executes the brief's **Test Plan** (a required brief field, `brief-authoring/SKILL.md` §9), and posts the results onto the PR. Doctrine: **CI green ≠ app boots ≠ feature works** — runtime verification is its own gate.
+
+The test plan is split by who can structurally execute each item:
+
+- **`[agent]` items** (non-auth, scriptable — SSRF rejections, parse checks, route responses, render smoke). The Developer-agent boots the relevant dev server(s) from the PR's branch, runs each `[agent]` item, and posts the actual output as evidence on the PR. Paraphrase is not evidence; the command + the response body is.
+- **`[principal]` items** (auth-gated, key-dependent, visual — a signed-in BYOK audit, a ModelPicker render behind Clerk, a card landing in the right column). The Principal runs each item in a browser with the dev server up and ticks the box on the PR. The agent **cannot** tick `[principal]` boxes and the Principal does **not** tick `[agent]` boxes — the asymmetry is the whole shape of the gate (mirror of D-048's chat-vs-terminal token capture).
+
+**`Test Plan: unit-tests-only`** is a first-class allowed value for pure-logic briefs (a parser, a sum function, a markdown normaliser — nothing the §4 Technical Surface Map lists as a runtime path). When the brief declares it, Phase 11 is satisfied by the CI unit-test gate alone; no runtime execution is required. Brief Validation rejects `unit-tests-only` on a brief whose §4 surface includes a runtime path.
+
+**The merge gate.** A PR is not mergeable while any Test Plan checkbox is unticked — `[agent]` items waiting for evidence, or `[principal]` items waiting for Principal confirmation. An `[agent]` item that fails returns the PR to the Developer on the same branch (same loop as a `CHANGES_REQUESTED` review); a `[principal]` failure does the same. Re-running an item appends a fresh evidence comment; it does not edit the previous one.
+
+**Enforcement note:** today, the Verifier phase is **trusted discipline** — Phase 11 requires it, but no CI bot mechanically gates the merge on unticked boxes yet. A `verify-test-plan` CI check (a checkbox-state parse over the PR body) is the optional enforcer companion to this phase; whether it ships is decided per-iteration. The doctrine (Phase 11 exists; the brief carries a tagged Test Plan; an unticked box means not-yet-mergeable) holds whether the CI enforcer is on or off. Brief Validation rejects a brief that touches a runtime surface and has no tagged Test Plan.
+
+**Exit:** every `[agent]` Test Plan item has an evidence comment on the PR and is ticked; every `[principal]` item is ticked by the Principal. Or: the brief declared `Test Plan: unit-tests-only` and the §4 surface is pure-logic.
+
+---
+
+## Phase 12: Merge
 
 **Who:** Principal (or TL if explicit per-PR delegation was set in the brief).
 
@@ -278,7 +302,10 @@ A rollback is its own task with its own brief. The decision to roll back is a Ty
 - **Developer scope creep** — "while I'm here…" is a new task and a new brief.
 - **TL self-ratifying Type 1 decisions in solo sessions** — they queue as PENDING for a ratification window.
 - **Skipping the Task Done checklist under deadline pressure** — it's the load-bearing discipline; skipping it is how the BYOK gap happened.
-- **Treating "PR opened" as "done"** — done is "passed Phase 10 review."
+- **Treating "PR opened" as "done"** — done is "passed Phase 11 verification" (which requires Phase 10 review to have already passed).
+- **Treating "review passed" as "ready to merge"** — review reads the diff; verification runs the booted app. CI green ≠ app boots ≠ feature works. An unticked Test Plan box is the merge gate even when the reviews are clean.
+- **Inventing a Test Plan at verification time when the brief omitted one** — that is the Brief Author's job by design; verification *executes* the plan, it does not author it. A missing Test Plan is a brief-validation failure (`needs:brief-correction`).
+- **Mis-tagging a `[principal]` Test Plan item as `[agent]`** to make the agent half look complete — the asymmetry is structural (the agent surface lacks auth/keys/eyes); reclassifying loses the point of the split (D-049).
 - **Building a dynamic conflict scanner** to catch what the Planner missed — declare conflicts conservatively and serialize instead (`iterations/README.md` §9).
 
 ---

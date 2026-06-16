@@ -1,0 +1,31 @@
+name: Verify Test Plan
+
+# Runtime Test Plan checkbox-state gate (D-049).
+# Asserts the Verifier phase's discipline: a PR is not mergeable while any
+# `- [ ]` box in the brief's Test Plan section is unticked. `Test Plan: unit-tests-only`
+# (first-class allowed value) passes by default.
+#
+# Triggers on `edited` too so PR-body ticks update the gate without forcing an
+# empty commit. The job runs but does not block merge until the Principal arms
+# it in branch protection — same convention the Conventions and verify-docs
+# workflows follow (state-machine.md §12 advisory → enforced gradient).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  verify-test-plan:
+    name: Runtime Test Plan checkbox state
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Run verify-test-plan
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: bun scripts/verify-test-plan.ts
