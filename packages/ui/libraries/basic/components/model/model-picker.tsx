@@ -1,6 +1,6 @@
 'use client'
 
-import { useIdentity } from '@atta/identity/react'
+import { IdentityContext } from '@atta/identity/react'
 import type { ModelEntry, VendorId } from '@atta/models'
 import { VENDORS, VENDOR_ORDER, getVendor } from '@atta/models'
 import { ProviderIcon } from '@lobehub/icons'
@@ -79,14 +79,19 @@ export function ModelPicker({
   const [searchValue, setSearchValue] = React.useState('')
   const [expandedGroups, setExpandedGroups] = React.useState<Set<VendorId>>(new Set())
 
-  const identity = useIdentity()
+  // Read IdentityContext directly (not via useIdentity) so this component works
+  // in apps that don't mount IdentityProvider — e.g. Herald, where BYOK keys
+  // live server-side and the caller passes configuredRoutes explicitly.
+  const identity = React.useContext(IdentityContext)
   const identityConfigured = React.useMemo(
     () =>
-      new Set<VendorId>([
-        ...(Object.keys(identity.state.keys) as VendorId[]),
-        ...(identity.state.providers as VendorId[])
-      ]),
-    [identity.state.keys, identity.state.providers]
+      identity
+        ? new Set<VendorId>([
+            ...(Object.keys(identity.state.keys) as VendorId[]),
+            ...(identity.state.providers as VendorId[])
+          ])
+        : new Set<VendorId>(),
+    [identity]
   )
   const effectiveConfigured = configuredRoutes ?? identityConfigured
 

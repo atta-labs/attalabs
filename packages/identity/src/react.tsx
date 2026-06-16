@@ -33,7 +33,11 @@ export interface IdentityValue {
   passkeySupported: boolean
 }
 
-const IdentityContext = createContext<IdentityValue | null>(null)
+// Exported so consumers (e.g. ModelPicker) can read the context directly via
+// useContext and tolerate a missing provider — products that don't mount
+// IdentityProvider (e.g. Herald's server-side BYOK) should still be able to
+// render BYOK-aware UI when they pass in their own configured-vendor set.
+export const IdentityContext = createContext<IdentityValue | null>(null)
 
 export function IdentityProvider({ children }: { children: ReactNode }) {
   const [keys, setKeys] = useState<ApiKeyMap>({})
