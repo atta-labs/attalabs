@@ -1,7 +1,7 @@
 import { Badge } from '@atta/ui/components/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components/table'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { GitBranch } from 'lucide-react'
+import { GitBranch, LayoutGrid } from 'lucide-react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { readIteration, readProject } from '@/lib/aeg-fs'
@@ -58,14 +58,24 @@ export default async function IterationPage({ params }: { params: Promise<Params
             Tasks (topology)
           </h2>
           {iteration.tasks.length > 0 ? (
-            <NextLink
-              variant='unstyled'
-              href={`/projects/${project.name}/iterations/${slug}/graph`}
-              className='inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-accent hover:text-accent'
-            >
-              <GitBranch className='size-3.5' aria-hidden />
-              <span>View as graph</span>
-            </NextLink>
+            <div className='flex flex-wrap items-center gap-2'>
+              <NextLink
+                variant='unstyled'
+                href={`/projects/${project.name}/iterations/${slug}/board`}
+                className='inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-accent hover:text-accent'
+              >
+                <LayoutGrid className='size-3.5' aria-hidden />
+                <span>View as board</span>
+              </NextLink>
+              <NextLink
+                variant='unstyled'
+                href={`/projects/${project.name}/iterations/${slug}/graph`}
+                className='inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-accent hover:text-accent'
+              >
+                <GitBranch className='size-3.5' aria-hidden />
+                <span>View as graph</span>
+              </NextLink>
+            </div>
           ) : null}
         </div>
         {iteration.tasks.length === 0 ? (

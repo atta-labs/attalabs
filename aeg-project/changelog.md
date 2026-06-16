@@ -8,6 +8,16 @@
 
 ---
 
+## June 16, 2026 — AEG Studio kanban board + task detail (task 5)
+
+### AEG
+- **Task 5 (#100)** — Studio iteration pages now offer a kanban view of an iteration's tasks plus a per-task detail view that surfaces the brief from the PR body. New route `/projects/<name>/iterations/<slug>/board` reads the iteration via `@atta/aeg-core`'s `parseIteration`, loads the live forge facts through the existing `fetchForgeFacts` adapter, and hands both to `deriveIteration` — derived status is read from `aeg-core`, never re-derived in the component. Columns map to the seven `DerivedStatus` values from `iterations/README.md` §3 in lifecycle order (`backlog` → `todo` → `in-flight` → `in-review` → `changes-requested` → `merged` → `blocked`); each task card shows id, title, issue number, project chips, and a blockers indicator when `dependsOnNotMerged` or `conflictsWithOpenOrInFlight` is non-empty. Clicking a card opens `/projects/<name>/iterations/<slug>/tasks/<id>` — the detail view shows the derived-status badge, an identity panel (issue, projects, depends-on/conflicts-with edges with blocker highlighting), a forge-links panel (Issue + PR with state), and the brief markdown rendered from the PR body via `react-markdown`/`remark-gfm`. The brief is fetched from the **PR body**, not the Issue — the model's "where briefs live" rule (`iterations/README.md` §7).
+- **`@atta/aeg-studio` lib additions:** `src/lib/forge/fetch-pull-request-brief.ts` — server-only batched GraphQL fetch of `{ number, url, state, body }` for one or more `task/<iteration>/<id>` head refs, mirroring `fetchForgeFacts`'s no-token / unreachable degradation contract. `src/lib/forge/resolve-repo.ts` — reads `AEG_REPO` env or `git remote get-url origin`, returns `null` when neither resolves. `src/lib/forge/load-snapshot.ts` — high-level loader that combines repo resolution + forge facts + `deriveIteration` for one iteration; shared between board and task-detail pages so the live-status read happens once per request.
+- **Graceful degradation verified locally** against the live `aeg-ui-v1` iteration (8 tasks already merged at task-5 start time): with `gh auth`, every merged task lands in the `Merged` column and task 5 lands in `Backlog` (no PR yet) — matches `gh pr list` exactly. Without a token, every task drops to `Backlog`, a "Live status unavailable" banner renders, and no exception is thrown — the topology remains useful before GitHub is reachable. Task-detail under the same no-token mode renders the identity panel, hides the PR/Issue links, and shows a "Live brief unavailable" notice for the brief section. The iteration topology page (#118) and graph page (#121) are untouched apart from a new "View as board" CTA next to the existing "View as graph" CTA.
+- Tier 1 — `aeg` only. **No `@atta/ui` edits**, no `@atta/aeg-core` edits, no shared Studio layout edits (`StudioShell` / `StudioSidebar` untouched — the board lives under the per-iteration namespace, not in the global Explore sidebar). Semantic tokens only. Closes #100.
+
+---
+
 ## June 16, 2026 — Polymorphic audit inputs in Bulk Audit (task 5)
 
 ### Herald
