@@ -2,6 +2,8 @@
 
 **Completed work log.** Append-only, most recent first.
 
+> **Structure:** This file is compiled from individual changelog entries in `changelog/YYYY-MM-DD-<branch>.md`. Agents write entries to individual files per branch to avoid merge conflicts on parallel work. The Archivist compiles entries into this index.
+
 → [now.md](now.md) — active work
 → [roadmap.md](roadmap.md) — tracks + sequencing
 → [lessons.md](lessons.md) — calibration

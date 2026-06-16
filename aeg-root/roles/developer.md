@@ -79,7 +79,7 @@ All Tier 0 items, plus:
 All Tier 1 items, plus:
 
 - [ ] Decision log entry appended with: status (ACTIVE/PENDING), type (1/2), rationale, alternatives rejected, consequences
-- [ ] State docs updated: per-unit `aeg-project/state.md` if state changed (for every project the task lists), `aeg-project/now.md` if active work changed, `aeg-project/changelog.md` appended
+- [ ] State docs updated: per-unit `aeg-project/state.md` if state changed (for every project the task lists), `aeg-project/now.md` if active work changed, `aeg-project/changelog/YYYY-MM-DD-<branch>.md` entry created
 - [ ] Lock entry created with `Lock: YES` if the decision closes an irreversible branch
 - [ ] If a lock was conformed to or challenged, the brief contained the appropriate acknowledgment block
 - [ ] Merge happens at a ratification window (do not open the PR and expect immediate merge for Tier 3 work)
