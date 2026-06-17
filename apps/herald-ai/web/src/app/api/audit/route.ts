@@ -199,11 +199,25 @@ ${jd.trim()}`
         continue
       }
 
-      report = parseMatchReport(conclusion.content, {
-        name: profile.name,
-        title: profile.title,
-        github: profile.github
-      })
+      report = parseMatchReport(
+        conclusion.content,
+        {
+          name: profile.name,
+          title: profile.title,
+          github: profile.github
+        },
+        {
+          onParseFailure: ({ reason, head, tail }) => {
+            // Diagnostic for the parse-failure mode the prior change-history
+            // could not see — without this, every "Returning partial report"
+            // line in the log was unactionable. Keep the prefix/suffix small
+            // so log volume stays sane.
+            console.warn(`[Herald] parseMatchReport rejected response (attempt ${attempt + 1}): ${reason}`)
+            console.warn(`[Herald]   head: ${head}`)
+            console.warn(`[Herald]   tail: ${tail}`)
+          }
+        }
+      )
       if (report) break
 
       console.warn(`[Herald] Failed to parse LLM response (attempt ${attempt + 1}), retrying...`)
@@ -214,12 +228,22 @@ ${jd.trim()}`
     }
   }
 
+  // Track whether we fell back so we can decide on caching. Caching the partial
+  // is the trap that made every "Try again" click serve the SAME broken report
+  // for 24h after a single failed attempt — the user kept seeing the partial
+  // even after the underlying bug had been fixed, because the cache had it
+  // pinned. From now on, only real reports get cached; partial fallbacks are
+  // computed fresh on every retry until the real report parses.
+  let isPartial = false
   if (!report) {
     console.warn('[Herald] Returning partial report after failed attempts')
     report = buildPartialReport(profile.name, profile.title, profile.github)
+    isPartial = true
   }
 
-  cache.set(cacheKey, { report, timestamp: Date.now() })
+  if (!isPartial) {
+    cache.set(cacheKey, { report, timestamp: Date.now() })
+  }
   return report
 }
 

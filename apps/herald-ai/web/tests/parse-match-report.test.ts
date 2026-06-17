@@ -112,6 +112,35 @@ describe('parseMatchReport — full-length report regression', () => {
     expect(parseMatchReport(JSON.stringify({ grade: 'A', recommendation: 'Good Fit' }), CANDIDATE)).toBeNull()
   })
 
+  it('tolerates prose before and after the JSON object (model-emitted commentary)', () => {
+    // The Skeptical Auditor system prompt forbids prose outside the JSON, but
+    // Sonnet occasionally emits a leading "Here is the report:" or trailing
+    // commentary anyway. Pre-fix, JSON.parse threw and parseMatchReport
+    // returned null; post-fix the parser slices the first balanced {...}
+    // object and parses that, so the audit doesn't fall into the partial
+    // fallback for a recoverable formatting drift.
+    const json = JSON.stringify(buildFullReport(2))
+    const wrapped = `Here is the forensic match audit:\n\n${json}\n\nLet me know if you need anything else.`
+    const report = parseMatchReport(wrapped, CANDIDATE)
+    expect(report).not.toBeNull()
+    expect(report?.grade).toBe('A-')
+    expect(report?.signal.length).toBe(8)
+  })
+
+  it('reports parse-failure diagnostics through onParseFailure callback', () => {
+    // The route uses this callback to log a head/tail snippet of the model's
+    // raw response when the parser rejects it, so future failures are
+    // diagnosable without re-reading source.
+    const diagnostics: Array<{ reason: string; head: string; tail: string }> = []
+    const result = parseMatchReport('this is not json at all', CANDIDATE, {
+      onParseFailure: (info) => diagnostics.push(info)
+    })
+    expect(result).toBeNull()
+    expect(diagnostics).toHaveLength(1)
+    expect(diagnostics[0]!.reason).toContain('no balanced JSON object')
+    expect(diagnostics[0]!.head).toBe('this is not json at all')
+  })
+
   it('enforces the NO FIT hard-requirement gate regardless of the model-reported grade', () => {
     const report = parseMatchReport(
       JSON.stringify({
