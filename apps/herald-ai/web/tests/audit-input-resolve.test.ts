@@ -9,9 +9,12 @@ import { describe, expect, it } from 'bun:test'
 import { resolveCvInput, resolveJdInput } from '@/lib/audit-input/resolve'
 import {
   assertSafeResolvedAddresses,
+  decodeBody,
+  detectCharsetInHtmlPrefix,
   extractMainText,
   fetchAndExtractText,
   isPrivateIPv6,
+  parseCharsetFromContentType,
   type ResolvedAddress,
   type SafeFetchDeps,
   validateJdUrl
@@ -85,6 +88,107 @@ describe('extractMainText', () => {
     expect(text).toContain('Cost & benefit')
     expect(text).toContain('<=')
     expect(text).toContain('"ok"')
+  })
+})
+
+describe('parseCharsetFromContentType', () => {
+  it('extracts charset from a Content-Type header', () => {
+    expect(parseCharsetFromContentType('text/html; charset=utf-8')).toBe('utf-8')
+    expect(parseCharsetFromContentType('text/html;charset=ISO-8859-1')).toBe('iso-8859-1')
+    expect(parseCharsetFromContentType('text/html; charset="windows-1252"')).toBe('windows-1252')
+  })
+  it('returns null when no charset is declared', () => {
+    expect(parseCharsetFromContentType('text/html')).toBeNull()
+    expect(parseCharsetFromContentType('')).toBeNull()
+  })
+})
+
+describe('detectCharsetInHtmlPrefix', () => {
+  const enc = new TextEncoder()
+  it('detects <meta charset="..."> in the head', () => {
+    const html = '<!doctype html><html><head><meta charset="windows-1252"><title>X</title></head><body></body></html>'
+    expect(detectCharsetInHtmlPrefix(enc.encode(html))).toBe('windows-1252')
+  })
+  it('detects <meta http-equiv="Content-Type" ...>', () => {
+    const html =
+      '<!doctype html><html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>X</title></head><body></body></html>'
+    expect(detectCharsetInHtmlPrefix(enc.encode(html))).toBe('iso-8859-1')
+  })
+  it('returns null when no meta charset is present in the first 1024 bytes', () => {
+    const html = '<!doctype html><html><head><title>X</title></head><body><p>Hi</p></body></html>'
+    expect(detectCharsetInHtmlPrefix(enc.encode(html))).toBeNull()
+  })
+})
+
+describe('decodeBody — charset-aware decoding', () => {
+  // The bug we're regression-testing: when a remote JD page is served as
+  // windows-1252 (or any non-UTF-8 charset), decoding it as UTF-8 produces
+  // mojibake — e.g. the Binance careers page came through as "worldâs",
+  // "Binanceâs", "â¢" before this fix. After the fix, the decoder honors
+  // the header (or the meta tag) so the LLM sees clean prose.
+
+  // The bytes 0x91, 0x92 (curly quotes) and 0x95 (bullet) are valid in
+  // windows-1252 but are UTF-8-invalid lead bytes — easy mojibake repro.
+  const win1252 = new Uint8Array([
+    0x42,
+    0x69,
+    0x6e,
+    0x61,
+    0x6e,
+    0x63,
+    0x65,
+    0x92,
+    0x73,
+    0x20, // Binance’s
+    0x77,
+    0x6f,
+    0x72,
+    0x6c,
+    0x64,
+    0x91,
+    0x73,
+    0x0a, // world‘s
+    0x95,
+    0x20,
+    0x62,
+    0x75,
+    0x6c,
+    0x6c,
+    0x65,
+    0x74 // • bullet
+  ])
+
+  it('decodes windows-1252 bytes correctly when the header declares charset=windows-1252', () => {
+    const out = decodeBody(win1252, 'text/html; charset=windows-1252')
+    expect(out).toContain('Binance’s')
+    expect(out).toContain('world‘s')
+    expect(out).toContain('• bullet')
+    expect(out).not.toContain('â')
+  })
+
+  it('falls back to the HTML meta charset when the header omits it', () => {
+    const enc = new TextEncoder()
+    const head = enc.encode('<html><head><meta charset="windows-1252"></head><body>')
+    const tail = enc.encode('</body></html>')
+    const buf = new Uint8Array(head.byteLength + win1252.byteLength + tail.byteLength)
+    buf.set(head, 0)
+    buf.set(win1252, head.byteLength)
+    buf.set(tail, head.byteLength + win1252.byteLength)
+    const out = decodeBody(buf, 'text/html')
+    expect(out).toContain('Binance’s')
+    expect(out).not.toContain('â')
+  })
+
+  it('defaults to UTF-8 when neither header nor meta declares a charset', () => {
+    const utf8Bytes = new TextEncoder().encode('Senior Engineer — remote ✓')
+    const out = decodeBody(utf8Bytes, 'text/html')
+    expect(out).toBe('Senior Engineer — remote ✓')
+  })
+
+  it('survives an unknown charset label by falling back to UTF-8', () => {
+    const utf8Bytes = new TextEncoder().encode('hello world')
+    const out = decodeBody(utf8Bytes, 'text/html; charset=not-a-real-encoding-XYZ')
+    expect(out).toBe('hello world')
   })
 })
 

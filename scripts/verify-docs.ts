@@ -157,7 +157,7 @@ function runPrMode(): void {
   const tier = readTierFromPrBody()
   if (tier === null) {
     errors.push(
-      'C0 tier-required: No `Tier:` field found in the PR body. Add `Tier: 0`, `Tier: 1`, or `Tier: 3` (plain or bold, e.g. `**Tier:** 3`) so the correct documentation gate applies. (state-machine.md Section 9)'
+      'C0 tier-required: No `Tier:` field found in the PR body. The canonical PR-body form — including the exact `Tier:` syntax this gate accepts (`Tier: 1` or `**Tier:** 1`, not `Tier 1`) — lives in `aeg-root/roles/developer.md` § PR body — canonical form. Copy that block into the PR body. (state-machine.md Section 9)'
     )
     // Report and exit here — every downstream check keys off the tier, so
     // running them against a guessed tier is what caused the confusing failure.

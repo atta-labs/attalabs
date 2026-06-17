@@ -51,6 +51,12 @@ export interface Agent {
   customTools?: CustomToolSpec[]
   /** Model override for this agent. Falls back to the team/experiment-level model if unset. */
   model?: string
+  /**
+   * Maximum output tokens for this agent's LLM call. When set, the adapter
+   * passes it as the Anthropic `max_tokens` request param (and the equivalent
+   * for other vendors). Adapters fall back to their built-in default when unset.
+   */
+  maxTokens?: number
   /** JSON Schema for structured output. When set, the adapter must enforce structured responses. */
   outputSchema?: Record<string, unknown>
 }

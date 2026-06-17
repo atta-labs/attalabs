@@ -9,6 +9,7 @@ import { compileFlow, type Flow, loadFlow } from '@atta/engine'
 
 import { getUserByUsername } from '@/db/queries'
 import { resolveAuditCredentials, type ResolvedAuditCredentials } from '@/lib/audit-key'
+import { parseMatchReport } from '@/lib/parse-match-report'
 import { DANI_PROFILE } from '@/lib/profile'
 import { MATCH_REPORT_SCHEMA } from '@/lib/prompts'
 import { perOwnerAuditLimiter } from '@/lib/rate-limit'
@@ -69,12 +70,18 @@ function buildPartialReport(name: string, title: string, github: string): MatchR
 // unchanged — the agentic loop adds an extra LLM turn, not extra GitHub wait.
 const GITHUB_SIGNAL_TIMEOUT_MS = 3000
 
-// Per-attempt LLM timeout. Bumped from 25s (single-shot pre-fetch model) to
-// 45s because the engine's custom-tool loop now runs at least two model turns
-// per audit (turn 1: decide & emit tool_use → tool exec → turn 2: synthesize
-// JSON report). 45s gives Anthropic Sonnet enough room for the second turn
-// without leaving spinner-of-death risk if a vendor stalls.
-const AUDIT_LLM_TIMEOUT_MS = 45000
+// Per-attempt LLM timeout. History:
+//   25s → 45s (task 7b) when the custom-tool loop made the audit a 2-turn
+//                       dialogue (decide+tool_use → tool fetch → synthesize).
+//   45s → 90s (this PR) once defaults.max_tokens rose 2000 → 8000. With the
+//                       larger output cap, Sonnet's non-streaming wall-time
+//                       for the synthesis turn (~4000 real output tokens at
+//                       ~80 tok/s) regularly cleared 45s and triggered the
+//                       "took longer than expected" partial-report fallback
+//                       (Dani's live audit on this branch, June 17). 90s
+//                       gives the 2-turn loop full headroom while still
+//                       capping spinner-of-death at a tolerable UX window.
+const AUDIT_LLM_TIMEOUT_MS = 90000
 
 async function fetchGithubSignalsForHandle(handle: string): Promise<string[]> {
   const token = process.env.GITHUB_PAT
@@ -107,41 +114,6 @@ async function githubSignalToolHandler(args: Record<string, unknown>): Promise<s
   const raw = args.github_handle
   const handle = typeof raw === 'string' ? raw.trim() : ''
   return fetchGithubSignalsForHandle(handle)
-}
-
-function parseMatchReport(
-  text: string,
-  candidateInfo: { name: string; title: string; github: string }
-): MatchReport | null {
-  try {
-    const cleaned = text.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '')
-    const parsed = JSON.parse(cleaned)
-
-    if (!parsed.grade || !parsed.recommendation || !parsed.signal) return null
-    if (!Array.isArray(parsed.hard_requirements)) return null
-
-    // Code-enforced NO FIT gate — model cannot override this
-    const failedHardGate = parsed.hard_requirements.some(
-      (r: { kind: string; met: boolean }) => r.kind === 'hard' && !r.met
-    )
-    const grade = failedHardGate ? 'NO FIT' : parsed.grade
-    const recommendation = failedHardGate ? 'No Fit' : parsed.recommendation
-    const confidence = grade === 'NO FIT' ? 'High' : grade === 'A' || grade === 'A-' ? 'High' : 'Moderate'
-
-    return {
-      candidate: candidateInfo,
-      hard_requirements: parsed.hard_requirements,
-      grade,
-      recommendation,
-      confidence,
-      confidence_reasoning: parsed.confidence_reasoning ?? [],
-      signal: parsed.signal ?? [],
-      gaps: parsed.gaps ?? [],
-      interview_hooks: parsed.interview_hooks ?? []
-    }
-  } catch {
-    return null
-  }
 }
 
 interface ResolvedProfile {
@@ -227,11 +199,25 @@ ${jd.trim()}`
         continue
       }
 
-      report = parseMatchReport(conclusion.content, {
-        name: profile.name,
-        title: profile.title,
-        github: profile.github
-      })
+      report = parseMatchReport(
+        conclusion.content,
+        {
+          name: profile.name,
+          title: profile.title,
+          github: profile.github
+        },
+        {
+          onParseFailure: ({ reason, head, tail }) => {
+            // Diagnostic for the parse-failure mode the prior change-history
+            // could not see — without this, every "Returning partial report"
+            // line in the log was unactionable. Keep the prefix/suffix small
+            // so log volume stays sane.
+            console.warn(`[Herald] parseMatchReport rejected response (attempt ${attempt + 1}): ${reason}`)
+            console.warn(`[Herald]   head: ${head}`)
+            console.warn(`[Herald]   tail: ${tail}`)
+          }
+        }
+      )
       if (report) break
 
       console.warn(`[Herald] Failed to parse LLM response (attempt ${attempt + 1}), retrying...`)
@@ -242,12 +228,22 @@ ${jd.trim()}`
     }
   }
 
+  // Track whether we fell back so we can decide on caching. Caching the partial
+  // is the trap that made every "Try again" click serve the SAME broken report
+  // for 24h after a single failed attempt — the user kept seeing the partial
+  // even after the underlying bug had been fixed, because the cache had it
+  // pinned. From now on, only real reports get cached; partial fallbacks are
+  // computed fresh on every retry until the real report parses.
+  let isPartial = false
   if (!report) {
     console.warn('[Herald] Returning partial report after failed attempts')
     report = buildPartialReport(profile.name, profile.title, profile.github)
+    isPartial = true
   }
 
-  cache.set(cacheKey, { report, timestamp: Date.now() })
+  if (!isPartial) {
+    cache.set(cacheKey, { report, timestamp: Date.now() })
+  }
   return report
 }
 
@@ -259,7 +255,7 @@ function envFallbackCreds(): ResolvedAuditCredentials | null {
   if (!apiKey) return null
   return {
     vendor: 'anthropic',
-    modelId: 'claude-sonnet-4-20250514',
+    modelId: 'claude-sonnet-4-6',
     apiKey,
     fellBackFromSelection: false
   }

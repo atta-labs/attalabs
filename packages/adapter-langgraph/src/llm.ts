@@ -130,6 +130,12 @@ export function createMultiVendorLlmCall(
         })
         .filter(Boolean)
 
+      // Per-agent output cap. The compiled Plan propagates maxTokens from
+      // flow.defaults.max_tokens / agent.max_tokens (engine compileFlow), so
+      // YAMLs control truncation. Falls back to 4096 for agents that don't set
+      // it — preserves byte-identical behavior for every existing Vāda agent.
+      const anthropicMaxTokens = agent.maxTokens ?? 4096
+
       // Custom-tool loop activation: agent declares customTools AND at least one
       // matches a registered handler. Gating with handlers ensures the additive
       // branch is unreachable when no app registers custom tools — preserving
@@ -146,7 +152,8 @@ export function createMultiVendorLlmCall(
           systemPrompt,
           userPrompt,
           tools: mergedTools,
-          handlers: customToolHandlers!
+          handlers: customToolHandlers!,
+          maxTokens: anthropicMaxTokens
         })
         const elapsedMs = Date.now() - startTime
         return { content, structured: undefined, tokensInput, tokensOutput, elapsedMs, model }
@@ -155,7 +162,7 @@ export function createMultiVendorLlmCall(
       if (agent.outputSchema) {
         const response = await client.messages.create({
           model,
-          max_tokens: 4096,
+          max_tokens: anthropicMaxTokens,
           system: systemPrompt,
           messages: [{ role: 'user', content: userPrompt }],
           tools: [
@@ -177,7 +184,7 @@ export function createMultiVendorLlmCall(
       } else {
         const response = await client.messages.create({
           model,
-          max_tokens: 4096,
+          max_tokens: anthropicMaxTokens,
           system: systemPrompt,
           messages: [{ role: 'user', content: userPrompt }],
           ...(resolvedTools.length > 0 ? { tools: resolvedTools } : {})

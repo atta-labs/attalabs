@@ -154,6 +154,15 @@ You were invoked specifically to review a PR. You run with fresh context on purp
 2. **Read `roles/archivist.md`** — the close-out checklist.
 3. **Work the checklist** — Issue closed, decision logged if Tier 3, changelog appended, docs coherent, per-project `state.md`/`now.md` updated for every project the task listed, provenance block posted to the merged PR. Flag (don't perform) orphaned branches and worktree removal. Write no task status — the merge is the status.
 
+### Mandatory forge check (before any brief, audit, or recommendation)
+
+Run or fetch before producing output that depends on knowing what's in flight:
+- Open PRs: `gh pr list --state open`
+- Recent merges: `gh pr list --state merged --limit 20`
+
+No brief, no audit finding, no "next steps" recommendation is valid without this.
+Forge state > file state > memory. Always.
+
 ### Hard rule — the spec-check gate
 
 If Dani asks a strategic, architectural, or product-shape question about a named product, and you have not read the specs for that product, **stop and read them first.** No "thinking out loud first." Applies in Strategist/Planner mode. Does NOT apply when executing a brief (the brief specifies scope; do not expand it).
