@@ -8,21 +8,21 @@
 **Where the plan lives** (the old `roadmap.md` is retired — global D-029). The plan is the backlogs, not the iterations:
 - Per-project: `apps/vada-ai/specs/vada-backlog.md` · `apps/cetana-ai/specs/cetana-backlog.md` · `apps/herald-ai/specs/herald-backlog.md`
 - Cross-cutting / AEG-itself: `specs/ecosystem-backlog.md`
-- **Active execution:** `aeg-root/iterations/` — a slice *pulled from a backlog* when it's actually being built. (None active right now.)
+- **Active execution:** `aeg-root/iterations/` — a slice *pulled from a backlog* when it's actually being built. **herald-onto-engine: complete ✅. aeg-ui-v1: complete except task 9-view (#110).**
 
 ---
 
 ## In flight now
 
-Nothing actively dispatched. No active iteration.
+**PR #132** — Herald audit fix (max_tokens truncation, stale model, JD charset encoding). Open, awaiting Principal browser-test verification of a real audit.
 
 ---
 
-## Next 3 things (candidates to pull into the first iteration)
+## Next 3 things
 
-1. **AEG UI** — the deployed AEG product that visualizes an iteration's tasks (status derived from the forge). This is the intended **first real iteration** — decompose into its own task graph (derive module, GitHub App auth, webhook fact-cache, attention queue, repo-rollup, DAG view).
-2. **Cetana F7 — `cetana status`** — fleet overview: running / blocked (question + severity) / recently completed. Ready to dispatch. (Separate iteration from the AEG UI.)
-3. **Test Vāda Reviewers end-to-end** — add OpenAI + xAI keys to Vercel first (manual, 5 min), then run a real Reviewers deliberation at `vada.attalabs.dev`. First time ever tested.
+1. **Merge PR #132** after Principal browser-tests a real audit against the fix.
+2. **Build task 9-view** (#110, token ledger Studio display) — unblocked, brief needed.
+3. **PR body contract in developer.md** — brief written, ready to dispatch.
 
 ---
 

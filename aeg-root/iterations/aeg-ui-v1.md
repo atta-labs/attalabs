@@ -1,12 +1,12 @@
 # Iteration: aeg-ui-v1 — June 2026
 
-Lifecycle: active
+> **Status (June 17):** 9 of 10 tasks merged. Task 9-view (#110, token ledger Studio display) is the only remaining task — never built, unblocked. All other tasks are on main.
 
 **Goal (execution, not roadmap-why):** build **AEG Studio** — the local, no-auth tool that reads *this* monorepo's AEG artifacts off disk and reads GitHub locally (operator's own token) for live per-task status, and renders this repo's governance: projects → iterations → tasks (kanban by derived status) → task detail (brief from the PR body), a task-dependency-graph view, and the full model documentation. Plus the shared **`@atta/aeg-core`** package (parser + `deriveIteration` + the shared docs renderer) that Studio runs on and the future public **Portal** will inherit.
 
 **Center of gravity:** `@atta/aeg-core` (the shared substrate) + AEG Studio (its first consumer). Per AEG-product D-001, AEG is two products over this core — **Studio** (local, this iteration) and **Portal** (public, future). This iteration builds the core and Studio only; the Portal is explicitly out.
 
-**Repo:** attalabs (`daniboomerang/atta.ai`)   ·   **Team Leader:** Dani
+**Repo:** attalabs (`daniboomerang/attalabs`)   ·   **Team Leader:** Dani
 
 > **Status is derived from the forge, not stored here.** This file is topology + the planner's durable rationale only. Live status is `gh pr list` / the forge, never written here. Per `iterations/README.md` §11, the Archivist sets `Lifecycle: complete` and moves this file to `iterations/completed/` when every task is merged — it is never deleted (the rationale is durable history).
 
@@ -53,7 +53,6 @@ Lifecycle: active
 - **Traps to avoid:** keep it **pure** — the temptation is to read files/call GitHub inside it; don't, or it becomes untestable and couples to a runtime. The parser must tolerate the *real* current artifact shapes (the `herald-onto-engine` iteration file's table + rationale blocks; the `aeg-ui-v1` file's; the lifecycle marker just added) — use the live files as fixtures. `deriveIteration` must mirror the status table in `iterations/README.md` §3 exactly (don't invent statuses).
 - **Suggested agent-class:** **mid-to-high** — pure logic, but the parsing + derivation correctness is the heart of the product; worth careful work and exhaustive tests.
 - **Stop-and-escalate:** if the artifact formats turn out under-specified for reliable parsing (ambiguous table shapes across iteration files), STOP and escalate `severity:strategy` — the fix may be to tighten the iteration-file format in the model, not to write a fragile parser.
-- **Status:** MERGED (PR #105).
 
 ### Task 2 — Scaffold `apps/aeg/web/studio` + top-bar/sidebar shell · Issue #95
 **Project(s):** aeg · **Depends-on:** — · **Conflicts-with:** —
@@ -65,7 +64,7 @@ Lifecycle: active
 - **Traps to avoid:** **do not edit `@atta/ui`** — reuse `TopBar` via its existing props (`isSignedIn`/`accountMenu` exist per global D-036; Studio is no-auth so pass the no-auth shape). Confirm whether Studio uses the CMS-library chrome pattern (like Herald, D-035) or plain `@atta/ui` (simpler; likely correct for an infra tool). Copy the Next.js worktree-root resolution fix the other apps needed (`next.config.ts`).
 - **Suggested agent-class:** **mid** — app scaffold + layout reuse; mechanical but multi-file. Reference the existing app setups closely.
 - **Stop-and-escalate:** if scaffolding reveals the shell genuinely needs a new shared `@atta/ui` capability (not just reuse), STOP and escalate `severity:strategy` (it pulls Vāda/Herald into scope).
-- **Status:** MERGED (PR #108). Plain `@atta/ui` (no CMS chrome). Known follow-up backlogged: TopBar `useUser()` is unconditional → Studio needs Clerk env to boot (a `@atta/ui` change, Vāda/Herald in blast radius).
+- **Note:** Plain `@atta/ui` (no CMS chrome). Known follow-up backlogged: TopBar `useUser()` is unconditional → Studio needs Clerk env to boot (a `@atta/ui` change, Vāda/Herald in blast radius).
 
 ### Task 3 — Local GitHub read adapter → forge facts for `deriveIteration` · Issue #97
 **Project(s):** aeg, aeg-core · **Depends-on:** 1 · **Conflicts-with:** —
