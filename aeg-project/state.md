@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** June 11, 2026 (AEG restructured: root `project-management/` split into `aeg-root/` (model) + `aeg-project/` (state); per-project `project-management/` renamed to `aeg-project/`; "product" erased from AEG vocabulary in favor of "project" — global D-041)
+**Last updated:** June 17, 2026 (herald-onto-engine complete; aeg-ui-v1 complete except task 9-view; AEG state docs synced to current reality)
 **Purpose:** Single snapshot of where everything stands across the AttaLabs ecosystem.
 
 This doc lives in the repo at `aeg-project/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -232,9 +232,11 @@ V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 S
 ### Herald — *standalone AttaLabs product; Phase 2 done, Phase 3 (recruiter self-serve) next*
 
 **Full state:** `apps/herald-ai/aeg-project/state.md` — read that file for Herald detail. Backlog: `apps/herald-ai/specs/herald-backlog.md`.
-**Phases:** Phase 1 (candidate Envoy) complete June 1 (PR #70). Phase 2 (self-service onboarding + admin redesign) complete June 1–2 (PRs #74/#75) — **needs production verification** (avatar/CV upload not tested in prod). **Phase 3 — recruiter self-serve (paste JD + N CVs → batch forensic audit → ranked reports) is NEXT** (the active heavy refactor; being built copy-paste, outside the AEG flow, by Principal's choice). Phase 4 (recruiter as distinct B2B surface) is future.
+**Phases:** Phase 1 (candidate Envoy) complete June 1 (PR #70). Phase 2 (self-service onboarding + admin redesign) complete June 1–2 (PRs #74/#75) — **needs production verification** (avatar/CV upload not tested in prod). **Phase 3 — recruiter self-serve (paste JD + N CVs → batch forensic audit → ranked reports) complete June 16** — built as the herald-onto-engine AEG iteration (engine onboarding + multi-vendor BYOK + Bulk Audit UI). Phase 4 (recruiter as distinct B2B surface) is future.
 
 **Backlog note (June 10):** Herald's backlog now logs the **engine migration + multi-vendor BYOK** work (move Herald's one AI call onto `@atta/engine` + a Flow YAML; make the API Keys tab support all 12 vendors + per-audit model choice like Vāda — Herald is Anthropic-only today). Sequenced as likely one atomic PR with endpoint unification at the start of the bulk-audit (Phase 3) work. See `apps/herald-ai/specs/herald-backlog.md`.
+
+**Phase 3 integration (June 16):** Phase 3 (recruiter self-serve: bulk audit, N CVs × M JDs) was pulled into the AEG flow as the **herald-onto-engine iteration** — now complete. Engine onboarding + multi-vendor BYOK + Bulk Audit UI all merged.
 
 **Status:** Standalone forensic CV-to-JD match tool. Sibling product in AttaLabs, NOT part of Atta-the-product (D-025). Built by Dani. Exposes itself via MCP for integration — Atta or any MCP host can invoke it as one of many external tools. Separate Clerk app.
 
@@ -353,6 +355,8 @@ This ecosystem uses the repo as the source of truth for project management. See 
 
 ### Recently shipped (most recent first)
 
+**June 16–17, 2026 — herald-onto-engine + aeg-ui-v1 iterations complete.** Engine onboarding for Herald with multi-vendor BYOK + Bulk Audit UI (8 merged PRs). AEG Studio scaffolded with project/iteration topology, kanban, task-dependency graph, shared docs renderer, and verification role (11 merged PRs). Task 9-view (token ledger display) unblocked.
+
 **June 11, 2026 — AEG folder restructure + "product"→"project" vocabulary erasure (D-041, PR #86).** Root `project-management/` split into `aeg-root/` (the model — exists once, at the root only) and `aeg-project/` (the living state — one at the root, one per project). Per-project `apps/*/project-management/` renamed to `apps/*/aeg-project/`. "Product" erased from AEG vocabulary in favor of "project" (the AEG unit-of-work); brand-instance product references (Atta, Vāda, Herald, …) and the `severity:product` label literal kept. `products.md` → `projects.md`; brief `Product:` → `Project:`; `aeg.sh add-product` → `add-project`. Orient-from-root rule added to `coordination.md` and `state-machine.md`. One commit, revertible with one `git revert`.
 
 **June 10, 2026 — AEG product folder + backlog relocation + D-030 ratification (direct to main + PR #83).**
@@ -443,7 +447,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - Cetana F7 (`cetana status`) — ready to dispatch
 - Spec refresh-and-ratify pass (Vāda first) → Integrity Reviewer (spec-integrity chain, `specs/ecosystem-backlog.md`)
 
-**Active iterations:** none. `iterations/` holds only `README.md` until the AEG-UI iteration is planned.
+**Active iterations:** herald-onto-engine: complete ✅ (June 16). aeg-ui-v1: complete except task 9-view (#110).
 
 **Drafted briefs awaiting dispatch:** none.
 
