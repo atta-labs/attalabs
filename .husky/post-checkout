@@ -2,4 +2,7 @@
 # Skip file checkouts to avoid pointless work.
 if [ "${3:-0}" = "1" ]; then
   bash "$(git rev-parse --show-toplevel)/tools/sync-env-from-main.sh" || true
+  # Activate Husky in this worktree so commit-msg fires at commit time.
+  # Without this, agents bypass commitlint silently on every worktree add.
+  bun install --frozen-lockfile --silent 2>/dev/null || true
 fi
