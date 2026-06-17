@@ -4,5 +4,5 @@
   "buildCommand": "cd ../../.. && bun turbo run build --filter=@atta/vada-ai-web",
   "installCommand": "cd ../../.. && bun install --frozen-lockfile",
   "outputDirectory": ".next",
-  "ignoreCommand": "npx turbo-ignore @atta/vada-ai-web"
+  "ignoreCommand": "cd ../../.. && npx turbo-ignore @atta/vada-ai-web"
 }
