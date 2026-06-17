@@ -43,9 +43,58 @@ These gates read live forge state. You never write status anywhere — opening y
 
 **Frequent commits.** Small, frequent commits on the feature branch. One logical change per commit. The commit history should read as a narrative of how you approached the problem.
 
-**Opening the PR with a complete description.** The PR description must (1) **carry the full brief** — paste it into the PR body; it is the brief's permanent, durable home, and the Reviewer and Archivist read it there; (2) follow the template: what shipped, validated mechanism if applicable, what's NOT in scope, next steps; (3) carry the `Tier:` declaration (`Tier: 0|1|3`) so the verify-docs gate reads the correct tier; (4) reference the task's Issue (`Closes #N`) so the merge auto-closes it. The description is not optional — the reviews depend on it. Opening the PR is itself the `in-flight → in-review` transition; you write no status field.
+**Opening the PR with a complete description.** The PR description must (1) **carry the full brief** — paste it into the PR body; it is the brief's permanent, durable home, and the Reviewer and Archivist read it there; (2) follow the canonical form in [§ PR body — canonical form](#pr-body--canonical-form) below — that section holds the verbatim copy-pasteable template, including the **exact `Tier:` field syntax** the `verify-docs` gate requires; (3) reference the task's Issue (`Closes #N`) so the merge auto-closes it. The description is not optional — the reviews depend on it. Opening the PR is itself the `in-flight → in-review` transition; you write no status field.
 
 **Appending one row to the iteration's token ledger at turn-end.** Before opening the PR (and again before each `changes-requested → in-review` re-push), append one row to `aeg-root/iterations/<name>.tokens.md`: `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date`. You are a **terminal role** — your session knows its own tokens (this repo's instance: `/cost` in Claude Code), so your row's numeric cells are exact, not `—`. Re-entry (a second turn after `CHANGES_REQUESTED`) appends a **new** row — never edits the first. See `iterations/README.md` §12 and `state-machine.md` §13.
+
+---
+
+## PR body — canonical form
+
+This is the verbatim PR-body template every Developer pastes when opening a PR. Copy the fenced block below into the PR body, fill the placeholders, and commit no other shape. The `verify-docs` CI gate (`state-machine.md` §9) reads the **`Tier:` field** from this body — written exactly as shown, the gate passes; written any other way (`Tier 1`, `Tier-1`, `Tier:1` without space, etc.) the gate fails.
+
+This form is **forge-agnostic.** It depends on no GitHub feature, no `.github/PULL_REQUEST_TEMPLATE.md`, no agent-specific skill. It is the source of truth that travels with the methodology.
+
+```markdown
+## Summary
+
+<one paragraph: what shipped, the validated mechanism (if any), and the
+durable why. Links to `Closes #<N>` go here.>
+
+## Test plan
+
+<every runtime-observable check, tagged `[agent]` or `[principal]`. Pure-logic
+tasks use the explicit `Test Plan: unit-tests-only` sentinel instead of an
+empty list.>
+
+- [ ] **[agent]** <scriptable / non-auth / no-vendor-key check — e.g. a unit
+      test, a typecheck, a curl against a booted route. The agent runs this
+      and pastes the actual command output as evidence.>
+- [ ] **[principal]** <auth-gated / vendor-key-dependent / visual / browser
+      check — e.g. signing in with Clerk and running a real BYOK audit. The
+      Principal runs this in a browser and ticks the box.>
+
+## Scope
+
+<one-paragraph summary of the blast radius — projects touched, packages
+edited, shared-package consumers affected, non-goals. End with the Tier
+field on its own line:>
+
+**Tier:** 1
+```
+
+**Field rules (read once, follow forever):**
+
+| Field            | Requirement                                                                                                                                                                       |
+|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Summary          | One paragraph. Closes the Issue with `Closes #<N>` somewhere in the body.                                                                                                         |
+| Test plan        | Every runtime check tagged `[agent]` or `[principal]`. The brief-authoring skill makes this a **required** field — empty plans use `Test Plan: unit-tests-only` as the sentinel.   |
+| `[agent]` items  | Items the Developer-agent can run end-to-end before opening the PR. Paste the **actual command output**, not a paraphrase. (This is the `[agent]` half of the Verification phase, see `state-machine.md` § Verification.) |
+| `[principal]` items | Items only the Principal can run (auth-gated, vendor-key-dependent, visual). The agent **does not tick these** — the Principal does, after running in a real browser.            |
+| Scope            | One paragraph + the Tier field. Ends with `**Tier:** 0 \| 1 \| 3` on its own line.                                                                                                |
+| **Tier syntax**  | Exactly `Tier: 0`, `Tier: 1`, `Tier: 3` (plain) — or `**Tier:** 0`, `**Tier:** 1`, `**Tier:** 3` (bold). `Tier 1` (no colon), `Tier-1`, `Tier:1` (no space) are **rejected** by CI. |
+
+**What this section is NOT:** not a style guide, not exhaustive PR etiquette. It is the **contract** for the four shapes `verify-docs`, Brief Validation, the Verification phase, and the Pre-merge gate all read. Add anything you want beneath the four sections; don't omit or reshape any of them.
 
 ---
 
