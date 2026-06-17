@@ -1187,3 +1187,36 @@ The model half ships the format + the per-role obligation + the parser. The **St
 - **Lock: NO** — this is the first cut of the Verification phase. The split, the tag set (`[agent]` / `[principal]`), the `unit-tests-only` allowed value, and the merge-gate shape are all subject to revision once the phase has been run across enough tasks to surface its real failure modes. Type 1 because it adds a phase to the per-task flow that every Tier 1+ PR must satisfy — a constitutional change to what "ready to merge" means.
 
 ---
+
+## D-050 — Iteration Archivist as a first-class AEG role
+
+**Date:** 2026-06-17
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Developer (role/iteration-archivist brief, June 17, 2026)
+**Ratified by:** Principal (via this brief's dispatch + merge)
+
+**Context:** When `herald-onto-engine` and `aeg-ui-v1` finished, no AEG role owned the iteration close event. Phase 13 was added to `process.md` (PR #136) but named steps without assigning ownership or a dispatch contract. The result was three cleanup PRs, stale state docs for days, and a Studio showing completed iterations as active. Iteration close is a significant, named event deserving its own role — not a conditional buried in the per-task Archivist or an automated afterthought.
+
+**Decision:** Add `aeg-root/roles/iteration-archivist.md` as a first-class peer role to `archivist.md`. The Iteration Archivist owns Phase 13 (Iteration Close) entirely. It is dispatched by explicit Principal declaration, not triggered by automation. It is forge-agnostic — requires no GitHub Actions or external tooling. It executes all close-out steps: forge verification, retrospective assembly, iteration archival, state doc refresh, pending decision surfacing, provenance posting.
+
+**Alternatives rejected:**
+- *Extend the per-task Archivist with an "if all tasks done" conditional* — hidden logic, easy to miss, wrong scope. The per-task Archivist closes individual tasks; conflating scopes creates confusion about what triggers it.
+- *GitHub Actions workflow to detect completion and trigger close* — forge-specific, breaks AEG's portability, makes iteration close an automated afterthought rather than a deliberate Principal act. AEG must be self-contained.
+- *Automate the trigger (fire when last PR merges)* — iteration close requires retrospective judgment and a "what's next" declaration. These are not mechanical. The explicit Principal dispatch is the correct gate.
+
+**Consequences:**
+- The Principal now has a named, dispatchable role for iteration close. The command is unambiguous: "Run the Iteration Archivist for iteration X."
+- Per-task Archivist scope is unchanged. Both roles exist; neither substitutes for the other. A disambiguation paragraph is added to `archivist.md` to prevent confusion.
+- Phase 13 in `process.md` now has a clear owner with a self-contained role doc.
+- Future iterations will close cleanly without manual cleanup PRs or stale state docs.
+
+**Artifacts:**
+- `aeg-root/roles/iteration-archivist.md` — new role doc with full entry gate, checklist, output format, and distinction from the per-task Archivist.
+- `aeg-root/roles/archivist.md` — disambiguation paragraph added (scope: closes individual tasks, not iterations; Iteration Archivist handles Phase 13).
+- `aeg-root/process.md` Phase 13 — updated "Who" line, steps renamed to reflect Iteration Archivist ownership, no automation assumed.
+
+**Lock: NO** — first cut of the Iteration Archivist role. The entry gate, the checklist structure, and the output format may be refined after the first real-world run. Type 1 because it defines a new, role-level change to the close-out flow that affects every iteration going forward.
+
+---

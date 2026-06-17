@@ -270,27 +270,29 @@ The Principal merges. Tier 3 work merges during a ratification window (`coordina
 
 ## Phase 13: Iteration Close
 
-**Who:** Principal (initiates), Team Leader (writes summary), Archivist (detects / flags).
+**Who:** Principal (declares), Iteration Archivist (executes).
 
-When the last task of an iteration has merged, the iteration enters close. The Principal initiates it explicitly; the Archivist may detect it automatically in future versions (all task PRs merged, no open branches matching `task/<iteration>/*`).
+When the last task of an iteration has merged, the Principal declares it done and dispatches the Iteration Archivist with an explicit declaration that the iteration is closed. The Iteration Archivist (roles/iteration-archivist.md) owns all close-out steps. No automation or GitHub Actions required — self-contained, forge-agnostic.
 
-**Steps:**
+**Steps (executed by the Iteration Archivist):**
 
-1. **Verify all tasks merged** — query the forge to confirm no open PR or branch exists for any task in the iteration (`gh pr list --state open` filtered to the iteration's branches returns nothing).
+1. **Verify the forge** — confirm all task PRs are merged, all task Issues are closed, no orphaned branches remain.
 
-2. **Run a brief retrospective** — what went well, what stalled, what to carry into the next iteration or into lessons. Record observations into `aeg-project/lessons.md` (calibration, not a full post-mortem). This is lightweight — high-level patterns, not task-by-task review (the close-out provenance block captured that per-task).
+2. **Write the retrospective** — append a new section to `aeg-project/lessons.md` with observations on what went well, what stalled, carry-forward lessons, decisions made, and unbuilt tasks. Assembled from merged PR summaries, decision log, and topology — not invented.
 
 3. **Archive the iteration** — set `Lifecycle: complete` as the first line after the iteration file's heading, move the file from `aeg-root/iterations/` to `aeg-root/iterations/completed/` (one commit: `git mv`). This signals to the AEG Studio and any reader that the iteration is no longer active.
 
 4. **Update state docs** — refresh `aeg-project/now.md` (in-flight work, next 3 things, active iterations summary) and `aeg-project/state.md` (last-updated date, active iterations, recently shipped section). Reflects the post-iteration reality.
 
-5. **Ratify pending Type 1 decisions** — any Type 1 decisions from the iteration that were logged as PENDING during the flow are now brought to a ratification window if they haven't been. Ratified decisions move from `ratification-queue.md` to `decisions.md`.
+5. **Surface pending Type 1 decisions** — query the decision log for entries from this iteration with `Status: PENDING`. List them explicitly; the Principal ratifies at the next ratification window.
 
-6. **Principal declares what's next** — the Principal articulates whether the next step is a new iteration (if yes, hands off to the Team Leader to Planner mode) or something else (a pause, a pivot, a cross-cutting initiative). The Team Leader, if assigned to plan, writes the first brief of the next iteration's first task and is ready to dispatch.
+6. **Update docs-index.md** — if iteration tasks added, removed, or renamed files tracked in the index, confirm it reflects the current state.
 
-**Artifacts:** no new commits are required after the iteration file is moved and state docs are updated — those commits *are* the close-out. Lessons appended to `lessons.md`. Ratification decisions updated in the decision log.
+7. **Post iteration provenance** — comment on the last merged task PR with a summary of tasks completed, duration, archival path, pending ratifications, and any dangling items.
 
-**Exit:** iteration is archived, state docs are current, pending decisions are ratified or explicitly deferred, and the Principal has declared what's next.
+**Artifacts:** no new commits beyond the iteration file move and state doc updates — those commits *are* the close-out. Lessons appended to `lessons.md`. Pending decisions surfaced (not ratified by the Archivist).
+
+**Exit:** iteration is archived, state docs are current, pending decisions are surfaced, and the Principal has declared what's next (new iteration, pause, pivot, cross-cutting initiative).
 
 ---
 
