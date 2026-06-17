@@ -18,7 +18,7 @@ The twelve phases below are the **per-task** flow. Tasks do not appear from nowh
 
 ---
 
-## The twelve phases
+## The thirteen phases
 
 Every piece of work moves through some subset of these. Trivial work (Tier 0) skips most; complex work (Tier 3) hits all and may loop back from review.
 
@@ -35,6 +35,7 @@ Every piece of work moves through some subset of these. Trivial work (Tier 0) sk
 10. Review (agent passes, then human reviews)
 11. Verification (runtime test plan execution — agent half + Principal half)
 12. Merge
+13. Iteration Close
 ```
 
 > **Doctrine: CI green ≠ app boots ≠ feature works.** Phase 11 (Verification) exists because four consecutive `aeg-ui-v1` features merged CI-green and were broken at runtime. The static gates of Phase 8 and the diff-reading reviews of Phase 10 cannot exercise an auth-gated / key-dependent / browser-rendered path. Phase 11 closes that gap with a tagged, executed test plan (see `roles/verifier.md` and D-049).
@@ -267,7 +268,33 @@ The Principal merges. Tier 3 work merges during a ratification window (`coordina
 
 ---
 
-## What happens after merge
+## Phase 13: Iteration Close
+
+**Who:** Principal (initiates), Team Leader (writes summary), Archivist (detects / flags).
+
+When the last task of an iteration has merged, the iteration enters close. The Principal initiates it explicitly; the Archivist may detect it automatically in future versions (all task PRs merged, no open branches matching `task/<iteration>/*`).
+
+**Steps:**
+
+1. **Verify all tasks merged** — query the forge to confirm no open PR or branch exists for any task in the iteration (`gh pr list --state open` filtered to the iteration's branches returns nothing).
+
+2. **Run a brief retrospective** — what went well, what stalled, what to carry into the next iteration or into lessons. Record observations into `aeg-project/lessons.md` (calibration, not a full post-mortem). This is lightweight — high-level patterns, not task-by-task review (the close-out provenance block captured that per-task).
+
+3. **Archive the iteration** — set `Lifecycle: complete` as the first line after the iteration file's heading, move the file from `aeg-root/iterations/` to `aeg-root/iterations/completed/` (one commit: `git mv`). This signals to the AEG Studio and any reader that the iteration is no longer active.
+
+4. **Update state docs** — refresh `aeg-project/now.md` (in-flight work, next 3 things, active iterations summary) and `aeg-project/state.md` (last-updated date, active iterations, recently shipped section). Reflects the post-iteration reality.
+
+5. **Ratify pending Type 1 decisions** — any Type 1 decisions from the iteration that were logged as PENDING during the flow are now brought to a ratification window if they haven't been. Ratified decisions move from `ratification-queue.md` to `decisions.md`.
+
+6. **Principal declares what's next** — the Principal articulates whether the next step is a new iteration (if yes, hands off to the Team Leader to Planner mode) or something else (a pause, a pivot, a cross-cutting initiative). The Team Leader, if assigned to plan, writes the first brief of the next iteration's first task and is ready to dispatch.
+
+**Artifacts:** no new commits are required after the iteration file is moved and state docs are updated — those commits *are* the close-out. Lessons appended to `lessons.md`. Ratification decisions updated in the decision log.
+
+**Exit:** iteration is archived, state docs are current, pending decisions are ratified or explicitly deferred, and the Principal has declared what's next.
+
+---
+
+## What happens after merge and iteration close
 
 The Principal eventually removes the worktree (`git worktree remove …`) — deliberate friction; the worktree is sometimes useful for post-merge inspection. The decision logs, specs, and skills are now canonical repo state that future sessions read. If the work introduced a Lock, future briefs touching that area must reference or explicitly challenge it.
 

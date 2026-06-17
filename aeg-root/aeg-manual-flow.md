@@ -120,6 +120,14 @@ Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` 
 
 > **Verification is a phase, not a new actor.** Steps 7a and 7b are different halves of the **Verifier phase** (`roles/verifier.md`), split by who can structurally execute each test-plan item: the Developer-agent runs `[agent]` items because they don't require auth/keys/eyes-on-render; the Principal runs `[principal]` items because they do. Mirror of D-048's chat-vs-terminal token-capture asymmetry. **Doctrine: CI green ≠ app boots ≠ feature works** — a passed review is not a green light to merge; a ticked-checkbox Test Plan is. A brief whose §4 surface is pure-logic declares `Test Plan: unit-tests-only` (a first-class allowed value) and Phase 11 is satisfied by the CI unit-test gate alone — no runtime execution needed.
 
+### Iteration-close trigger
+
+**When the last open task branch for an iteration is merged, the iteration enters Iteration Close** (Phase 13 in `process.md`). Detect this by querying the forge: `gh pr list --state open --json number,headRefName` filtered to branches matching `task/<iteration>/*` — if nothing returns, the iteration's last task has merged.
+
+The Principal **initiates** iteration close explicitly (declares "we're closing this iteration" and hands off to the Team Leader). The Archivist **may detect** it automatically in future versions — when all task PRs merged and no open branches remain for the iteration. Until then, the Principal's explicit call is the gate.
+
+See `process.md` Phase 13 for the full close-out steps: verify all tasks merged, run a brief retrospective, archive the iteration file, update state docs, ratify pending Type 1 decisions, declare what's next.
+
 ### Pre-merge gate (Step 8 prerequisite)
 
 Before the Principal merges (Step 8), any Developer helping merge or pushing a "fix CI" commit after review must run this gate — it is the mechanical check that the Verifier phase (Steps 7a + 7b) is actually complete. If any item fails, post a comment on the PR listing exactly what's missing, and **block and report** — do not proceed with merge.
