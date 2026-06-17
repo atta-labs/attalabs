@@ -35,7 +35,8 @@ When resolved, add below the entry:
 - Why it needs ratification: Tier 3 by impact (touches ratified specs `vada-state.md`, `generic-flow-refactor.md`, `vada-decisions.md`, plus three skill files and the global PM appends `changelog.md` + `now.md`). Type 2 because no new architectural decisions are introduced — the PR documents the consequences of decisions already ratified (D-033, D-034, global D-025).
 - Out of scope (deliberately deferred to "patch when touched for other work" per `roadmap.md` Stale specs): `vada-product-spec.md`, `vada-product-recognitions.md`, `vada-reviewers-spec.md`, `vada-teams-catalog/*`, `mcp-architecture.md`, `vada-mcp-server/SKILL.md`, `atta-adapter-langgraph/SKILL.md`, `model-picker/SKILL.md`, `atta-teams/SKILL.md`.
 - Deadline context: blocks two follow-ups — (a) `atta-engine/SKILL.md`, `vada-yaml-authoring/SKILL.md`, `vada-architecture/SKILL.md` still teach v1 vocabulary if not merged, which misleads any agent dispatched against the v2 codebase; (b) `aeg-project/now.md` and `changelog.md` are out of sync with main reality (D-033 + D-034 + v2 naming shipped May 12-13 with no PM updates).
-- Status: PENDING
+- Status: RESOLVED
+- Resolved: 2026-05-13 | Principal action: ratified | Notes: merged as PR #49
 
 ---
 
