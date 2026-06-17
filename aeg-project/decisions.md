@@ -1220,3 +1220,30 @@ The model half ships the format + the per-role obligation + the parser. The **St
 **Lock: NO** — first cut of the Iteration Archivist role. The entry gate, the checklist structure, and the output format may be refined after the first real-world run. Type 1 because it defines a new, role-level change to the close-out flow that affects every iteration going forward.
 
 ---
+
+## D-051 — Agent implementation packages at `packages/agents/<name>/`; workspace glob extended to `packages/*/*`
+
+**Date:** 2026-06-17
+**Status:** ACTIVE
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (planning session, June 17, 2026)
+**Ratified by:** Principal (in-session)
+
+**Context:** Planning the three-iteration batch (herald-agents-v2, aeg-governance-ui-v2, vada-agents-v2) required deciding where D-046 agent implementation packages live physically. `packages/atta-agents` already exists as a type-only package (`Agent`, `CustomToolSpec` interfaces). The D-046 vision — self-contained agent packages with YAML + tools + schema + `run()` export — does not fit inside it: types and implementations have different consumers and different lifecycles. A reviewer pass (June 17) flagged that placing packages at `packages/agents/<name>/` would not work under the existing workspace glob (`packages/*`), which matches only one level deep. Two layout options were put to the Principal.
+
+**Decision (A2):** Agent implementation packages live at `packages/agents/<name>/` (N self-contained packages, one per agent). The workspace configuration adds `packages/*/*` to the glob so these packages are workspace members and can be resolved as `@atta/<name>`. `packages/atta-agents` remains the shared type package (interfaces only) — separate concern, separate lifecycle, unchanged. First execution: `packages/agents/forensic-hiring-auditor/` in herald-agents-v2 task 2, which also adds the glob. The `run()` export API shape and the internal handler-registration pattern are established by herald-agents-v2/2 and followed by all subsequent agent packages.
+
+**Alternatives rejected:**
+- A1 — one `@atta/agents` package at `packages/agents/` with per-agent subdirs under `src/`: rejected. Loses the self-contained deployable unit property D-046 describes — a single package with many subdirs cannot be independently versioned or consumed. The glob change in A2 is trivial; the structural clarity of per-agent packages is worth it.
+- A3 — N flat packages at `packages/<name>/`: rejected. Clutters the root, loses the agents/ grouping, makes it impossible to scan all agent packages without a naming convention.
+
+**Consequences:**
+- `packages/agents/` directory created by herald-agents-v2/2.
+- Workspace glob extended to include `packages/*/*` by herald-agents-v2/2.
+- `packages/atta-agents` unchanged.
+- All future agent packages follow the shape of `packages/agents/forensic-hiring-auditor/`: YAML + tools + schema + gates + `run()` export.
+- Decision logged as part of herald-agents-v2 task 1, per Principal direction in the June 17 planning session.
+- Type 2 — reversible.
+
+---
