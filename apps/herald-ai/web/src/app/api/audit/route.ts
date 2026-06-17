@@ -70,12 +70,18 @@ function buildPartialReport(name: string, title: string, github: string): MatchR
 // unchanged — the agentic loop adds an extra LLM turn, not extra GitHub wait.
 const GITHUB_SIGNAL_TIMEOUT_MS = 3000
 
-// Per-attempt LLM timeout. Bumped from 25s (single-shot pre-fetch model) to
-// 45s because the engine's custom-tool loop now runs at least two model turns
-// per audit (turn 1: decide & emit tool_use → tool exec → turn 2: synthesize
-// JSON report). 45s gives Anthropic Sonnet enough room for the second turn
-// without leaving spinner-of-death risk if a vendor stalls.
-const AUDIT_LLM_TIMEOUT_MS = 45000
+// Per-attempt LLM timeout. History:
+//   25s → 45s (task 7b) when the custom-tool loop made the audit a 2-turn
+//                       dialogue (decide+tool_use → tool fetch → synthesize).
+//   45s → 90s (this PR) once defaults.max_tokens rose 2000 → 8000. With the
+//                       larger output cap, Sonnet's non-streaming wall-time
+//                       for the synthesis turn (~4000 real output tokens at
+//                       ~80 tok/s) regularly cleared 45s and triggered the
+//                       "took longer than expected" partial-report fallback
+//                       (Dani's live audit on this branch, June 17). 90s
+//                       gives the 2-turn loop full headroom while still
+//                       capping spinner-of-death at a tolerable UX window.
+const AUDIT_LLM_TIMEOUT_MS = 90000
 
 async function fetchGithubSignalsForHandle(handle: string): Promise<string[]> {
   const token = process.env.GITHUB_PAT
