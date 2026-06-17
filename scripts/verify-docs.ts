@@ -199,10 +199,16 @@ function runPrMode(): void {
     )
   }
 
-  // C4 — Tier 3 must carry a decision log entry.
-  if (effectiveTier === 3 && decisionLogs.length === 0) {
+  // C4 — Tier 3 must carry either a new decision log entry OR a reference to an
+  // existing decision this work conforms to. The conformance path exists for PRs
+  // that implement work under an already-recorded decision without introducing a
+  // new architectural choice (e.g. adding contracts under the decision that
+  // established the contract system). A `Conforms-to: D-###` or
+  // `Conforms-to-lock: D-###` field in the PR body satisfies this path.
+  const conformsToDecision = /Conforms-to(?:-lock)?\s*:\s*\*{0,2}\s*D-\d+/i.test(process.env.PR_BODY || '')
+  if (effectiveTier === 3 && decisionLogs.length === 0 && !conformsToDecision) {
     errors.push(
-      'C4 tier3-decision-log: Tier 3 work requires a decision log entry (global decisions.md or a per-project *-decisions.md). None changed in this PR. (state-machine.md Section 9)'
+      'C4 tier3-decision-log: Tier 3 work requires either (a) a decision log entry (global decisions.md or a per-project *-decisions.md), or (b) a `Conforms-to: D-###` or `Conforms-to-lock: D-###` field in the PR body for conforming work. Neither found. (state-machine.md Section 9)'
     )
   }
 }
