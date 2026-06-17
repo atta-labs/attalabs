@@ -69,7 +69,17 @@ function ResultActions({ onNewAudit }: { onNewAudit: () => void }) {
 }
 
 const ANIMATION_DURATION = 5000
-const API_TIMEOUT = 35000
+// Client-side fetch timeout. MUST stay strictly larger than the server's
+// max wall time so the server always wins the race — otherwise the browser
+// aborts before the server can return its real response (the failure mode
+// Dani hit in dev on June 17 with API_TIMEOUT = 35 000 vs. server's 90 000-ms
+// AUDIT_LLM_TIMEOUT_MS). The server short-circuits on `LLM timeout` (no retry
+// after a timeout — see runSingleMatch in app/api/audit/route.ts), so worst-
+// case server wall time is one 90 s LLM window + the 3 s GitHub-tool budget +
+// a small overhead — well under 120 s. Server is the source of truth for the
+// partial-report fallback; the client should never declare "took longer than
+// expected" on its own.
+const API_TIMEOUT = 120_000
 
 export function EnvoyFlow({
   profile,
