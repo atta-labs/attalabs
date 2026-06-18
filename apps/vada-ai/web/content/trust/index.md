@@ -12,19 +12,15 @@ Your provider API keys are stored on Vāda's servers, <span className="text-acce
 
 This is not a policy we follow. It's how the system is built.
 
-## What changed in May 2026
-
-Earlier versions of Vāda kept your keys in your browser only — encrypted with a passkey, stored in IndexedDB, and sent to our server only as part of each deliberation request. We never persisted them. That model was strictly stronger for at-rest privacy, but it had one structural limitation: it required you to be in your browser. An AI assistant connecting to Vāda from a different machine — say, Claude.ai using our hosted MCP server — has no access to your browser's encrypted store.
-
-When we shipped hosted MCP in May 2026, we had to choose: stay browser-only and skip hosted MCP, or accept a deliberate trust escalation. We chose the latter. This page describes the resulting architecture honestly.
+Vāda uses server-side key storage because it's required for hosted MCP. When an AI assistant connects to Vāda from a different machine — say, Claude.ai using our hosted MCP server — it has no access to your browser's local storage. Keeping keys server-side is a deliberate trust escalation from the original browser-only model, made to support cross-device and agent use cases. This page describes the resulting architecture honestly.
 
 ## Where your keys live, end-to-end
 
 ### At rest
 
-Your keys are stored in Vāda's database in the `user_provider_keys` table — one row per provider per user. The key material is <span className="text-accent">envelope-encrypted</span> with AES-256-GCM. The encryption uses Additional Authenticated Data (AAD) bound to your Clerk user ID, so a row swap between users is detectable on decrypt.
+Your keys are stored in Vāda's database in the `user_provider_keys` table — one row per user, with all your provider keys bundled together in an <span className="text-accent">envelope-encrypted</span> JSON payload. The encryption is AES-256-GCM. The Additional Authenticated Data (AAD) is bound to your Clerk user ID, so a row swap between users is detectable on decrypt.
 
-The master encryption key is held in our production environment as an environment variable. A future version will migrate this master key to a managed KMS; the schema already reserves a `kms_key_id` column to support per-row migration without breaking existing ciphertexts.
+The master encryption key is held in our production environment as an environment variable. A future version will migrate this master key to a managed KMS.
 
 ### In memory, during a request
 
@@ -49,7 +45,7 @@ So you know exactly where the line is, here's what Vāda's servers persist:
 - Your deliberation questions and round transcripts
 - Conclusions and structured synthesis output
 - Your account metadata via Clerk (Clerk ID, email)
-- Model assignments per agent (in localStorage, not the DB)
+- Model assignments per agent (stored in the DB in the `user_team_models` table)
 - Encrypted provider API keys (the rows in `user_provider_keys`)
 - Vāda API keys for hosted MCP, hashed with SHA-256 (the rows in `api_keys`)
 - Hosted MCP session logs (which tools were called, when)
@@ -62,13 +58,13 @@ A Vāda operator with database access AND the master key can decrypt your keys. 
 
 A Vāda compromise during an active request can expose any keys decrypted in that handler's memory. This is the same as before for in-flight requests — but now it's a category we ship intentionally rather than a known caveat.
 
-A subpoena reaching Vāda for stored data CAN compel decryption. Pre-May-2026 there was nothing at rest to compel. This is honest, not a dealbreaker.
+A subpoena reaching Vāda for stored data CAN compel decryption. Under a browser-only model there is nothing at rest to compel; server-side storage changes that calculus. This is honest, not a dealbreaker.
 
 Hosted MCP API keys are distinct from provider keys. API keys (`vada_*`) are bearer tokens used to authenticate MCP clients. They're hashed with SHA-256 — the keys have 256 bits of randomness, which makes brute-force infeasible. You generate them in Settings → API Keys and revoke them individually.
 
 ## Cross-device behavior
 
-Because keys are now stored server-side, switching devices is transparent. Sign in on a new device — your keys are already there. This is a behavior change from the prior model, where each device had its own IndexedDB copy.
+Because keys are stored server-side, switching devices is transparent. Sign in on a new device — your keys are already there.
 
 ## Key rotation
 
