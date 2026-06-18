@@ -163,7 +163,7 @@ Do not leave documentation as an implication of the tier checklist. **List the e
 
 - **Tier 0** — usually none. State "No doc updates required (Tier 0)."
 - **Tier 1** — name each: which spec(s) reflect the new behavior, which skill(s) if a convention shifted, `docs-index.md` if files were added/removed/renamed.
-- **Tier 3** — all Tier 1 items, plus: the exact decision log (`aeg-project/decisions.md` or which `apps/*/specs/*-decisions.md`) and the D-### to append; which state docs change (`state.md`, `now.md`, `aeg-project/changelog/YYYY-MM-DD-<branch>.md`, the iteration file, per-project backlogs); whether a `Lock: YES` entry is created. **Never** list `roadmap.md` — it's retired; roadmap planning lives outside AEG.
+- **Tier 3** — all Tier 1 items, plus: a decision anchor — either (a) the exact decision log file (`aeg-project/decisions.md` or which `apps/*/specs/*-decisions.md`) and the D-### to append, or (b) a `Conforms-to: D-###` field in the brief's header (for work that implements an existing decision without introducing a new one — omit the decision log file from the doc-update list in this case). Also: which state docs change (`state.md`, `now.md`, `aeg-project/changelog/YYYY-MM-DD-<branch>.md`, the iteration file, per-project backlogs); whether a `Lock: YES` entry is created. **Never** list `roadmap.md` — it's retired; roadmap planning lives outside AEG.
 
 A Tier 1+ brief with an empty doc-update list is malformed.
 
@@ -300,9 +300,15 @@ Every brief includes the following metadata. These fields gate dispatch and rati
 
 - **Tier 0** — trivial. Checklist: typecheck, lint, tests, PR description.
 - **Tier 1** — implementation. Checklist: Tier 0 + specs updated + `verify-docs` passes.
-- **Tier 3** — project/roadmap change. Checklist: Tier 1 + decision log entry + state docs updated + lock entry if applicable.
+- **Tier 3** — project/roadmap change. Checklist: Tier 1 + decision log entry + state docs updated + lock entry if applicable. **C4 compliance (verify-docs gate):** the PR must carry either (a) a `decisions.md` or per-project `*-decisions.md` change in the diff, or (b) a `Conforms-to: D-###` field in the PR body for work that implements an existing decision without introducing a new one. A Tier 3 brief with neither is malformed — do not dispatch it.
 
 When in doubt, assign Tier 3. verify-docs defaults to Tier 3 when the PR body has no `Tier:` field, so always declare it explicitly. The `Tier:` in the PR body is the **binding source of truth**; the `tier:*` label on the Issue is its synced projection (`state-machine.md` §14 — field wins on conflict).
+
+```
+**Conforms-to:** [D-### — the existing decision this work implements]
+```
+
+Required on every Tier 3 brief **unless** a decision log file (`decisions.md` or `*-decisions.md`) is in the §4 surface map (in which case the new D-### entry is the decision anchor and this field is omitted). For conforming work — implementing an established pattern without introducing a new architectural choice — state the D-### of the governing decision here. The `verify-docs` C4 gate reads this field from the PR body; a Tier 3 PR with no decision log change and no `Conforms-to:` field fails the gate. (See §7 doc-update list for the full Tier 3 decision-anchor rule.)
 
 ### Optional
 
