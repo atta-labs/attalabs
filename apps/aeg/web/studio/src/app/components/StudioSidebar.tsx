@@ -12,7 +12,7 @@ import {
 } from '@atta/ui/components/sidebar'
 import { NextLink } from '@atta/ui/lib/next-link'
 import type { Project } from '@atta/aeg-core'
-import { BookOpen, FolderKanban, GitBranch } from 'lucide-react'
+import { BookOpen, FolderKanban, GitBranch, LayoutList } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import type { ComponentType } from 'react'
 
@@ -73,6 +73,26 @@ export function StudioSidebar({ projects }: { projects: Project[] }) {
                   </span>
                 </SidebarMenuItem>
               )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup className='py-2'>
+          <SidebarGroupLabel className='font-sans text-[0.7rem] font-semibold tracking-[0.12em] uppercase text-sidebar-foreground/60'>
+            Iterations
+          </SidebarGroupLabel>
+          <SidebarGroupContent className='mt-1'>
+            <SidebarMenu className='gap-0.5'>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  size='sm'
+                  isActive={pathname === '/iterations'}
+                  render={<NextLink variant='unstyled' href='/iterations' />}
+                  className='h-auto min-h-8 items-center gap-3 py-1.5 font-sans text-sm font-normal'
+                >
+                  <LayoutList className='size-4 shrink-0' />
+                  <span>All iterations</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
