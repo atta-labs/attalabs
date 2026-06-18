@@ -17,6 +17,7 @@
     "@lobehub/icons": "^5.4.0",
     "@ai-sdk/react": "^3.0.143",
     "@atta/adapter-langgraph": "workspace:*",
+    "@atta/forensic-hiring-auditor": "workspace:*",
     "@atta/cms": "workspace:*",
     "@atta/crypto": "workspace:*",
     "@atta/db": "workspace:*",

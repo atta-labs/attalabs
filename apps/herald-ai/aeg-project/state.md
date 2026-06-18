@@ -80,7 +80,7 @@ Separate onboarding, pricing tier, team invite. B2B. Do not spec until Phase 4 v
 - `@atta/crypto` BYOK: provider keys envelope-encrypted in `herald_provider_keys` (AES-256-GCM, AAD-bound to `clerkId`)
 - Vercel Blob (`herald-ai-blob`, FRA1) for avatar + CV storage
 - Sanity CMS for themes
-- GitHub PAT for signal detection (exercised as a YAML-declared custom tool via `signals.ts`)
+- GitHub PAT for signal detection (exercised as a YAML-declared custom tool via `@atta/forensic-hiring-auditor`)
 
 ---
 
@@ -94,10 +94,8 @@ Separate onboarding, pricing tier, team invite. B2B. Do not spec until Phase 4 v
 | `apps/herald-ai/web/src/app/api/audit/route.ts` | Unified forensic audit endpoint (`handleSingle` + `handleBatch`, shared `runSingleMatch` cell) |
 | `apps/herald-ai/web/src/app/api/admin/upload/route.ts` | Vercel Blob upload |
 | `apps/herald-ai/web/src/lib/audit-key.ts` | `resolveAuditCredentials` — per-user BYOK resolution + model selection |
-| `apps/herald-ai/web/src/lib/signals.ts` | GitHub signal-detection (now the registered tool body for the YAML auditor) |
 | `apps/herald-ai/web/src/lib/prompts.ts` | `MATCH_REPORT_SCHEMA` — parser contract, `{{schema}}` template input (do not modify) |
-| `apps/herald-ai/web/yamls/herald-auditor.yaml` | Auditor YAML — system prompt, model, classifier, GitHub tool declaration |
 | `apps/herald-ai/web/src/components/portal/AdminEditorPage.tsx` | Two-column profile editor |
 | `apps/herald-ai/web/src/db/schema.ts` | Drizzle schema |
 | `apps/herald-ai/web/docs/BUILD-SPEC.md` | Full product spec |
-
+| `packages/agents/forensic-hiring-auditor/` | Self-contained agent package: YAML, signals, parser, `run()` export (D-046/D-051) |

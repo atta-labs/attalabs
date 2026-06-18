@@ -192,6 +192,7 @@
         "@atta/crypto": "workspace:*",
         "@atta/db": "workspace:*",
         "@atta/engine": "workspace:*",
+        "@atta/forensic-hiring-auditor": "workspace:*",
         "@atta/herald-ai-mcp": "workspace:*",
         "@atta/instrumentation": "workspace:*",
         "@atta/models": "workspace:*",
@@ -370,6 +371,20 @@
       "peerDependencies": {
         "next": "^16.0.0",
         "react": "^19.0.0",
+      },
+    },
+    "packages/agents/forensic-hiring-auditor": {
+      "name": "@atta/forensic-hiring-auditor",
+      "version": "0.1.0",
+      "dependencies": {
+        "@atta/adapter-langgraph": "workspace:*",
+        "@atta/engine": "workspace:*",
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "@types/node": "^20.0.0",
+        "typescript": "^5.7.0",
       },
     },
     "packages/atta-agents": {
@@ -704,6 +719,8 @@
     "@atta/db": ["@atta/db@workspace:packages/db"],
 
     "@atta/engine": ["@atta/engine@workspace:packages/engine"],
+
+    "@atta/forensic-hiring-auditor": ["@atta/forensic-hiring-auditor@workspace:packages/agents/forensic-hiring-auditor"],
 
     "@atta/herald-ai-mcp": ["@atta/herald-ai-mcp@workspace:apps/herald-ai/mcp"],
 
@@ -4470,6 +4487,8 @@
     "@atta/db/@types/node": ["@types/node@22.19.15", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-F0R/h2+dsy5wJAUe3tAU6oqa2qbWY5TpNfL/RGmo1y38hiyO1w3x2jPtt76wmuaJI4DQnOBu21cNXQ2STIUUWg=="],
 
     "@atta/engine/zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
+
+    "@atta/forensic-hiring-auditor/zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
 
     "@atta/herald-ai-web/@types/node": ["@types/node@22.19.15", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-F0R/h2+dsy5wJAUe3tAU6oqa2qbWY5TpNfL/RGmo1y38hiyO1w3x2jPtt76wmuaJI4DQnOBu21cNXQ2STIUUWg=="],
 

@@ -1,0 +1,58 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { LangGraphAdapter } from '@atta/adapter-langgraph'
+import { compileFlow, loadFlow } from '@atta/engine'
+import type { Flow } from '@atta/engine'
+import { type ParseMatchReportOptions, parseMatchReport } from './parse'
+import { githubSignalToolHandler } from './tools/github-signals'
+import type { CandidateInfo } from './parse'
+import type { MatchReport } from './schema'
+
+export type { MatchReport, HardRequirement } from './schema'
+export { parseMatchReport } from './parse'
+export type { CandidateInfo, ParseMatchReportOptions } from './parse'
+export { extractSignals } from './tools/github-signals'
+export type { RawSignal } from './tools/github-signals'
+
+const YAML_PATH = join(dirname(fileURLToPath(import.meta.url)), '../yamls/herald-auditor.yaml')
+
+let cachedYaml: string | null = null
+function getYamlContent(): string {
+  if (!cachedYaml) cachedYaml = readFileSync(YAML_PATH, 'utf-8')
+  return cachedYaml
+}
+
+let cachedFlow: Flow | null = null
+function getFlow(): Flow {
+  if (!cachedFlow) cachedFlow = loadFlow(getYamlContent())
+  return cachedFlow
+}
+
+export interface RunAuditInput {
+  /** The formatted CANDIDATE PROFILE + JOB DESCRIPTION message — constructed by Herald */
+  profile: string
+  modelId: string
+  vendor: string
+  apiKey: string
+  /** MATCH_REPORT_SCHEMA — Herald's domain knowledge, injected as {{schema}} template var */
+  schema: string
+  /** Candidate identity for the MatchReport.candidate field */
+  candidateInfo: CandidateInfo
+  /** Optional diagnostic callback on parse failure */
+  onParseFailure?: ParseMatchReportOptions['onParseFailure']
+}
+
+export async function run(input: RunAuditInput): Promise<MatchReport | null> {
+  const flow = getFlow()
+  const plan = compileFlow(flow, input.profile, input.modelId, { schema: input.schema })
+  const adapter = new LangGraphAdapter({
+    providerKeys: { [input.vendor]: input.apiKey },
+    customTools: { fetch_github_signals: githubSignalToolHandler }
+  })
+  const conclusion = await adapter.execute({ plan })
+  if (conclusion.terminalState === 'FAILED') return null
+  return parseMatchReport(conclusion.content, input.candidateInfo, {
+    onParseFailure: input.onParseFailure
+  })
+}
