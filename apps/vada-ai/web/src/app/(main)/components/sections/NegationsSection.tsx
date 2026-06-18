@@ -10,15 +10,15 @@ interface Negation {
 const NEGATIONS: Negation[] = [
   {
     headline: 'Vāda is not a chatbot.',
-    subline: 'No memory. No personality. No ongoing relationship.'
-  },
-  {
-    headline: 'Vāda is not a swarm.',
-    subline: "No tools. No file access. No code execution. Agents think. They don't act."
+    subline: 'No memory. No personality. No ongoing relationship. A fresh room for every question.'
   },
   {
     headline: 'Vāda is not a workflow.',
-    subline: 'No steps. No automation. No integrations.'
+    subline: 'No steps. No pipelines. No automation. Deliberation, not execution.'
+  },
+  {
+    headline: 'Vāda is not a search engine.',
+    subline: 'It does not retrieve answers. It produces judgment on the question you bring.'
   },
   {
     headline: 'Vāda is not trying to be helpful.',

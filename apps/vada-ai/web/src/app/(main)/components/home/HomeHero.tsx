@@ -23,7 +23,7 @@ export function HomeHero() {
               Vāda
             </Heading>
             <Text className='text-xl font-mono uppercase tracking-widest text-muted-foreground'>
-              Deliberation Teams
+              Multi-model deliberation
             </Text>
           </div>
 
@@ -33,6 +33,12 @@ export function HomeHero() {
               className={`text-2xl text-foreground text-center max-w-md transition-[clip-path] duration-[900ms] ease-out ${animationComplete ? '[clip-path:inset(0_0_0_0)]' : '[clip-path:inset(0_100%_0_0)]'}`}
             >
               The room outperforms the individual.
+            </Text>
+            <Text
+              as='p'
+              className={`text-base text-muted-foreground text-center max-w-sm transition-opacity duration-700 ease-out ${animationComplete ? 'opacity-100 delay-500' : 'opacity-0 delay-0'}`}
+            >
+              Bring a question. A team of AI models debates it. You get the disagreement, not just the answer.
             </Text>
 
             <div
