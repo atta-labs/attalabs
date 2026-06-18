@@ -41,7 +41,7 @@ export default async function IterationGraphPage({ params }: { params: Promise<P
 
       <header className='space-y-3'>
         <div className='flex items-center gap-3'>
-          <p className='font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground'>Iteration · Graph</p>
+          <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Iteration · Graph</p>
           {archived ? (
             <Badge className='bg-muted/40 text-muted-foreground border-border'>Archived</Badge>
           ) : (
@@ -58,9 +58,7 @@ export default async function IterationGraphPage({ params }: { params: Promise<P
 
       <section className='space-y-4'>
         <div className='flex flex-wrap items-center justify-between gap-3'>
-          <h2 className='font-sans text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground'>
-            Dependency graph
-          </h2>
+          <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Dependency graph</h2>
           <Legend />
         </div>
         <TaskGraph tasks={iteration.tasks} />

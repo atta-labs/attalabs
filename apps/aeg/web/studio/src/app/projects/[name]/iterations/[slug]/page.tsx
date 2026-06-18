@@ -37,7 +37,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
 
       <header className='space-y-3'>
         <div className='flex items-center gap-3'>
-          <p className='font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground'>Iteration</p>
+          <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Iteration</p>
           {archived ? (
             <Badge className='bg-muted/40 text-muted-foreground border-border'>Archived</Badge>
           ) : (
@@ -54,9 +54,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
 
       <section className='space-y-3'>
         <div className='flex flex-wrap items-center justify-between gap-3'>
-          <h2 className='font-sans text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground'>
-            Tasks (topology)
-          </h2>
+          <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Tasks (topology)</h2>
           {iteration.tasks.length > 0 ? (
             <div className='flex flex-wrap items-center gap-2'>
               <NextLink
@@ -122,7 +120,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
 
       {iteration.backlog.length > 0 && (
         <section className='space-y-3'>
-          <h2 className='font-sans text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground'>Backlog</h2>
+          <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Backlog</h2>
           <ul className='space-y-1.5 font-sans text-sm text-muted-foreground'>
             {iteration.backlog.map((item) => (
               <li key={item} className='leading-relaxed'>

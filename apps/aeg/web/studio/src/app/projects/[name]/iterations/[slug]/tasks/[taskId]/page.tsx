@@ -119,7 +119,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
 
       <header className='space-y-3'>
         <div className='flex flex-wrap items-center gap-3'>
-          <p className='font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground'>Task</p>
+          <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Task</p>
           <Badge className={`${visual.badgeClass} font-mono text-[0.65rem] uppercase tracking-wider`}>
             {visual.label}
           </Badge>
@@ -148,7 +148,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
 
       <section className='space-y-3'>
         <div className='flex items-center justify-between gap-3'>
-          <h2 className='flex items-center gap-2 font-sans text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground'>
+          <h2 className='flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground'>
             <FileText className='size-4' aria-hidden />
             <span>Brief</span>
           </h2>
@@ -192,9 +192,7 @@ function MetaPanel({
 }) {
   return (
     <div className='rounded-lg border border-border bg-card p-4'>
-      <h3 className='mb-3 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground'>
-        Identity
-      </h3>
+      <h3 className='mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground'>Identity</h3>
       <dl className='grid gap-2 font-mono text-xs text-muted-foreground sm:grid-cols-[10ch_1fr]'>
         <dt>task</dt>
         <dd className='font-semibold text-foreground'>{taskRow.id}</dd>
@@ -274,7 +272,7 @@ function EdgeList({
 function LinksPanel({ issueUrl, brief }: { issueUrl: string | null; brief: PullRequestBrief | null }) {
   return (
     <div className='rounded-lg border border-border bg-card p-4'>
-      <h3 className='mb-3 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground'>Forge</h3>
+      <h3 className='mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground'>Forge</h3>
       <ul className='space-y-2 font-sans text-sm'>
         <li>
           {issueUrl ? (

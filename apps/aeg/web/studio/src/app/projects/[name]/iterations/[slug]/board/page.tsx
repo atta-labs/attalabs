@@ -47,7 +47,7 @@ export default async function IterationBoardPage({ params }: { params: Promise<P
 
       <header className='space-y-3'>
         <div className='flex items-center gap-3'>
-          <p className='font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground'>Iteration · Board</p>
+          <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Iteration · Board</p>
           {archived ? (
             <Badge className='bg-muted/40 text-muted-foreground border-border'>Archived</Badge>
           ) : (
@@ -76,9 +76,7 @@ export default async function IterationBoardPage({ params }: { params: Promise<P
 
       <section className='space-y-3'>
         <div className='flex flex-wrap items-center justify-between gap-3'>
-          <h2 className='font-sans text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground'>
-            Derived status
-          </h2>
+          <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Derived status</h2>
           <p className='font-sans text-xs text-muted-foreground/70'>
             Columns = derived statuses from <span className='font-mono'>iterations/README.md</span> §3.
           </p>
