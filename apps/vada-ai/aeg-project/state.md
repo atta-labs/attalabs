@@ -40,6 +40,7 @@ All shipped. Universal round-based schema v2 (D-033), hosted MCP, single-source 
 - 7 experimental teams (hidden from public catalog): `a0-baseline`, `a1-baseline`, `brokered-trio`, `brokered-quartet`, `crucible`, `sparring`, `war-room`
 
 **Recent PRs:**
+- PR #147 — Homepage rewrite: removed engine/YAML sections (PositioningSection, MechanismSection, EcosystemSection), added product-focused sections (WhatItIs, WhyItWorks, TryIt, McpDeveloper), CMS branding fetch removed from page.tsx (open)
 - PR #65 — provider key validation before `runLangGraph` dispatch ✓
 - PR #77 — Reviewers system prompt v2 (open, pending merge)
 
