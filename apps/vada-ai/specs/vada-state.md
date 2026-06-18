@@ -1,3 +1,17 @@
+**Status:** ratified
+
+## Most recent session — Jun 18, 2026
+
+Homepage rewrite. Removed sections that described implementation internals (YAML, Atta Engine, `compileFlow`) and replaced them with product-focused copy that accurately describes what Vāda does. Key changes:
+
+- Deleted `PositioningSection` (YAML syntax + engine diagram), `MechanismSection` (BYOK callout + round geometry), `EcosystemSection` (Atta/Vitakka branding — products not yet public), `ArchitectureDiagram`, `PositioningDiagram`
+- Removed async CMS branding fetches (`getAttaBranding`, `getVitakkaBranding`) from homepage; page is now a plain sync Server Component
+- Added `WhatItIsSection`, `WhyItWorksSection`, `TryItSection`, `McpDeveloperSection` — all static, no CMS dependencies
+- Updated `NegationsSection`: removed "No tools. No file access. No code execution." (a YAML-level decision per D-046, not a product constraint); replaced with "Vāda is not a search engine."
+- Updated `HomeHero`: subtitle "Deliberation Teams" → "Multi-model deliberation"; added concrete second line after animation
+
+---
+
 ## Most recent session — May 12-13, 2026
 
 D-033 generic flow refactor + D-034 cleanup landed. Vāda's YAML schema, engine compiler, and all consumers now operate on a single universal round-based model (v2 schema). Key changes:
@@ -28,8 +42,8 @@ BYOK + Settings restructure (branch: `feat/shared-keys-ui`). Key changes:
 
 > **Framing note (2026-04-30):** The "Brokered mode" and "Autonomous mode" product categories used in older entries have been retired. Current framing uses the Vāda Teams catalog (YAML specs at `apps/vada-ai/yamls/`). See `vada-reviewers-spec.md` for the in-progress Vāda Reviewers team spec.
 
-**Last updated:** May 13, 2026
-**Last milestone:** D-033 generic flow refactor + D-034 cleanup shipped. v2 universal round-based YAML schema is live. All 9 catalog YAMLs migrated, all consumers updated.
+**Last updated:** Jun 18, 2026
+**Last milestone:** Homepage rewrite — removed engine/implementation sections, replaced with product-focused copy (PR #147).
 **Next milestone:** Track B Item 3b — Reviewer prompt iteration.
 
 ---

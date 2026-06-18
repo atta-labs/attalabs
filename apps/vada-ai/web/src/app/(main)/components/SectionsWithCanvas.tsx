@@ -1,25 +1,19 @@
-import { EcosystemSection } from './sections/EcosystemSection'
-import { MechanismSection } from './sections/MechanismSection'
+import { McpDeveloperSection } from './sections/McpDeveloperSection'
 import { NegationsSection } from './sections/NegationsSection'
-import { PositioningSection } from './sections/PositioningSection'
 import { SeeItWorkSection } from './sections/SeeItWorkSection'
+import { TryItSection } from './sections/TryItSection'
+import { WhatItIsSection } from './sections/WhatItIsSection'
+import { WhyItWorksSection } from './sections/WhyItWorksSection'
 
-interface SectionsWithCanvasProps {
-  brandings: {
-    atta: any
-    vada: any
-    vitakka: any
-  }
-}
-
-export function SectionsWithCanvas({ brandings }: SectionsWithCanvasProps) {
+export function SectionsWithCanvas() {
   return (
     <div className='relative z-10'>
-      <PositioningSection />
-      <SeeItWorkSection />
-      <MechanismSection />
+      <WhatItIsSection />
+      <WhyItWorksSection />
       <NegationsSection />
-      <EcosystemSection brandings={brandings} />
+      <SeeItWorkSection />
+      <TryItSection />
+      <McpDeveloperSection />
     </div>
   )
 }
