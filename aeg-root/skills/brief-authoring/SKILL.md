@@ -292,6 +292,15 @@ N↔M, reference-only provenance (the company's ticket system, e.g. Jira/Linear)
 
 Every brief includes the following metadata. These fields gate dispatch and ratification.
 
+**Tier self-check (mandatory — run this before declaring Tier, never before):**
+Look at the surface map. Then:
+- Code only, no spec files, no decision log → **Tier 0** (unless it introduces a meaningful new capability)
+- Code + at least one spec file updated → **Tier 1**
+- Code + decision log entry → **Tier 3**
+- If Tier 0: C3 and C4 do not apply. No doc file needed. No `Conforms-to` needed.
+
+Write the Tier **last**, after the surface map is fully defined. Never declare Tier before the surface map is complete.
+
 ### Required
 
 ```
