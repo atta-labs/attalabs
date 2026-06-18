@@ -3,6 +3,7 @@ export type DocFrontmatter = {
   description?: string
   section?: string
   order?: number
+  parent?: string
 }
 
 export type Doc = {
@@ -13,6 +14,8 @@ export type Doc = {
   order: number
   href: string
   filePath: string
+  children?: Doc[]
+  parentSlug?: string
 }
 
 export type DocSection = {

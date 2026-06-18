@@ -4,6 +4,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { buildDocNav, deriveTitle, parseDocFrontmatter } from '@atta/aeg-core/docs'
 import type { Doc, DocNav } from '@atta/aeg-core/docs'
+import { nestDocChildren } from './nest-doc-children'
 
 const SECTION_ORDER = ['Overview', 'Contracts', 'Roles', 'Diagrams', 'Iterations', 'Skills']
 const DOCS_BASE_PATH = '/docs'
@@ -92,12 +93,15 @@ export async function loadAegDocs(): Promise<LoadedDocs> {
       section,
       order,
       href: `${DOCS_BASE_PATH}/${slug}`,
-      filePath
+      filePath,
+      parentSlug: parsed.frontmatter.parent
     })
     bodyBySlug.set(slug, parsed.body)
   }
 
-  const nav = buildDocNav(docs, { sectionOrder: SECTION_ORDER })
+  const { topLevel, flat } = nestDocChildren(docs)
+  const navSections = buildDocNav(topLevel, { sectionOrder: SECTION_ORDER })
+  const nav: DocNav = { sections: navSections.sections, flat }
   cache = { nav, bodyBySlug, basePath: DOCS_BASE_PATH }
   return cache
 }
