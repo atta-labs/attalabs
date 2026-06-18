@@ -13,6 +13,7 @@
   "dependencies": {
     "@atta/aeg-core": "workspace:*",
     "@atta/auth": "workspace:*",
+    "@atta/cms": "workspace:*",
     "@atta/ui": "workspace:*",
     "@dagrejs/dagre": "^1.1.4",
     "@octokit/graphql": "^8.1.1",

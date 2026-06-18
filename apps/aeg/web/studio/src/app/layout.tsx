@@ -1,4 +1,7 @@
-import { AuthProvider } from '@atta/auth/provider'
+export const dynamic = 'force-dynamic'
+
+import { cmsClient, getAttaBranding, getAttaConfig } from '@atta/cms'
+import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import { TopBar } from '@atta/ui/topbar'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
@@ -11,23 +14,24 @@ export const metadata: Metadata = {
   description: 'Local governance studio for AEG artifacts.'
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const [config, branding] = await Promise.all([
+    getAttaConfig(cmsClient).catch(() => null),
+    getAttaBranding(cmsClient).catch(() => null)
+  ])
+
   return (
-    <html lang='en' data-theme='dark'>
-      <body className='min-h-screen bg-background text-foreground'>
-        <AuthProvider>
-          <TopBar
-            logo={
-              <div className='flex items-center gap-2 text-foreground'>
-                <AegLogo className='h-6 w-6' />
-                <span className='font-serif text-lg tracking-tight'>AEG</span>
-              </div>
-            }
-            isSignedIn={false}
-          />
-          <StudioShell>{children}</StudioShell>
-        </AuthProvider>
-      </body>
-    </html>
+    <NextWebShell config={config} branding={branding} styleId='aeg-theme' cookieName='aeg-color-scheme'>
+      <TopBar
+        logo={
+          <div className='flex items-center gap-2 text-foreground'>
+            <AegLogo className='h-6 w-6' />
+            <span className='font-serif text-lg tracking-tight'>AEG</span>
+          </div>
+        }
+        isSignedIn={false}
+      />
+      <StudioShell>{children}</StudioShell>
+    </NextWebShell>
   )
 }
