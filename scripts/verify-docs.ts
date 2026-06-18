@@ -176,7 +176,7 @@ function runPrMode(): void {
     if (!existsSync(p)) continue // deleted
     if (!hasStatusBlock(readFileSync(p, 'utf8'))) {
       errors.push(
-        `C1 spec-status: ${p} is missing a \`Status:\` block (draft|target|ratified|retired). See state-machine.md Section 5.`
+        `C1 spec-status: ${p} is missing a \`Status:\` block (accepted values: draft, target, ratified, retired). See state-machine.md Section 5.`
       )
     }
   }

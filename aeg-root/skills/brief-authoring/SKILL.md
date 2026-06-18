@@ -161,6 +161,7 @@ Break work into Parts (major areas) and numbered tasks within each. Each task sp
 
 Do not leave documentation as an implication of the tier checklist. **List the exact doc artifacts this brief must touch, by name.** This is what `verify-docs` (a real gate — Section 10) and the code-reviewer check against.
 
+- **Spec files in the surface map must carry a `Status:` field** — any spec file listed in §4 that lacks one must have `Status: draft|target|ratified|retired` added as part of this task. The `verify-docs` C1 gate (accepted values: draft, target, ratified, retired) will fail the PR otherwise.
 - **Tier 0** — usually none. State "No doc updates required (Tier 0)."
 - **Tier 1** — name each: which spec(s) reflect the new behavior, which skill(s) if a convention shifted, `docs-index.md` if files were added/removed/renamed.
 - **Tier 3** — all Tier 1 items, plus: a decision anchor — either (a) the exact decision log file (`aeg-project/decisions.md` or which `apps/*/specs/*-decisions.md`) and the D-### to append, or (b) a `Conforms-to: D-###` field in the brief's header (for work that implements an existing decision without introducing a new one — omit the decision log file from the doc-update list in this case). Also: which state docs change (`state.md`, `now.md`, `aeg-project/changelog/YYYY-MM-DD-<branch>.md`, the iteration file, per-project backlogs); whether a `Lock: YES` entry is created. **Never** list `roadmap.md` — it's retired; roadmap planning lives outside AEG.
