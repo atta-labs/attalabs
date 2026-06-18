@@ -18,7 +18,7 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { ChevronDown } from 'lucide-react'
 import type { Doc, DocNav } from '../types'
 
-export type DocSidebarProps = { nav: DocNav; pathname: string; basePath?: string }
+export type DocSidebarProps = { nav: DocNav; pathname: string }
 
 export function DocSidebar({ nav, pathname }: DocSidebarProps) {
   return (
@@ -63,7 +63,7 @@ function FlatDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
 }
 
 function CollapsibleDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
-  const hasActiveChild = doc.children?.some((c) => pathname === c.href) ?? false
+  const hasActiveChild = pathname === doc.href || (doc.children?.some((c) => pathname === c.href) ?? false)
 
   return (
     <Collapsible defaultOpen={hasActiveChild} className='group/collapsible'>
