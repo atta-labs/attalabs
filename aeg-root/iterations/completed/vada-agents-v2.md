@@ -1,5 +1,6 @@
+Lifecycle: complete
+
 # Iteration: vada-agents-v2 — June–July 2026
-Lifecycle: active
 
 Goal: Migrate all Vāda YAMLs into `packages/agents/` (following the pattern established by
 herald-agents-v2), make Vāda a thin consumer, fix known bugs, refine Reviewers prompt,
