@@ -142,7 +142,7 @@ Numbered checklist. **The first pre-flight step is always creating a worktree â€
 Every brief's pre-flight begins with the worktree command. Never write a brief that assumes the executor is already in the right place, and never tell it to "create a branch" without first creating a worktree:
 
 ```
-git worktree add .worktrees/task/<iteration>/<n> -b task/<iteration>/<n> origin/main && cd .worktrees/task/<iteration>/<n>
+git worktree add .worktrees/task/<iteration>/<n> -b task/<iteration>/<n> origin/main && cd .worktrees/task/<iteration>/<n> && bun install --frozen-lockfile --silent
 ```
 
 The branch convention is `task/<iteration>/<n>` â€” this is what lets any role derive the task's status from the forge (branch exists, PR open, merged). When dispatched by an automation layer, the layer creates this worktree for you; the brief still states the command explicitly so a manual paste behaves identically.

@@ -133,7 +133,11 @@ Role is determined by environment and context — not by which agent you are. Re
 1. **Read the brief completely** before writing any code.
 2. **Read `roles/developer.md`** — confirm the entry gate, tier, stop conditions, verification checklist.
 3. **Check the dispatch gates against the forge** — is every `depends-on` task's PR merged? Is any `conflicts-with` sibling's PR open? If a gate isn't satisfied, STOP (the task serializes).
-4. **Create the worktree** — Step 0, branch `task/<iteration>/<n>` from `origin/main`. Do this before anything else.
+4. **Create the worktree** — Step 0, branch `task/<iteration>/<n>` from `origin/main`. Do this before anything else:
+   ```
+   git worktree add .worktrees/task/<iteration>/<n> -b task/<iteration>/<n> origin/main && cd .worktrees/task/<iteration>/<n> && bun install --frozen-lockfile --silent
+   ```
+   The `bun install` step initializes Husky, which fires the post-checkout hook (`tools/sync-env-from-main.sh`) to symlink `.env*.local` files from the main checkout.
 5. **Run remaining pre-flight** — `git status`, `git log --oneline -3`, confirm the branch.
 6. **Identify which skills apply** — the brief's scope determines which skills to invoke.
 7. **Do not begin implementation** until gates are clear, worktree exists, pre-flight passes, skill-check is satisfied.
