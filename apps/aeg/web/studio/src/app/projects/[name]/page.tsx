@@ -22,7 +22,7 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
   return (
     <div className='space-y-8'>
       <header className='space-y-3'>
-        <p className='font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground'>Project</p>
+        <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Project</p>
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>{project.name}</h1>
         <dl className='grid gap-2 font-mono text-xs text-muted-foreground sm:grid-cols-[10ch_1fr]'>
           <dt>path</dt>
@@ -67,7 +67,7 @@ function IterationGroup({
 }) {
   return (
     <section className='space-y-3'>
-      <h2 className='flex items-center gap-2 font-sans text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground'>
+      <h2 className='flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground'>
         {icon}
         <span>{label}</span>
       </h2>
