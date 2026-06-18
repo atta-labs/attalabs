@@ -133,7 +133,7 @@ Lessons accumulated through April-May:
 - **Task 6 (per-key rate limit) shipped with graceful degradation only.** Upstash Redis creds expired before the iteration started, so rate limiting was wired up at the `/api/audit` middleware layer but could not enforce — the operational dependency (fresh creds) was known pre-dispatch but not resolved as a pre-flight step.
 - **PRICING table gap was pre-existing but surfaced during task 1 smoke test.** `claude-sonnet-4-20250514` (the YAML's pinned model) was not in the adapter's PRICING table, so every Herald audit reported `$0.00` cost. Not caused by the iteration; deferred as its own fix (currently listed in the Herald backlog).
 
-### Carry-forward lessons (add to lessons.md calibration section if not already there)
+### Carry-forward lessons
 
 - **Shared-engine additivity requires unit-test proof, not just "should work."** The `resolveRegisteredCustomTools` 6-gate suite (D-047) is the pattern — assert byte-identical behavior for callers without custom tools, not only that custom tools work. Any future shared-engine capability should carry the same invariant proof.
 - **Runtime production testing should follow within days of iteration close.** The auditor quality issues (PR #132) were invisible to typecheck/lint/tests; they required a real audit in a real browser. The Verification phase (D-049) formalizes this — `[principal]` items are the mechanism.

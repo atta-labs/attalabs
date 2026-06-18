@@ -65,6 +65,7 @@ Separate onboarding, pricing tier, team invite. B2B. Do not spec until Phase 4 v
 **Known issues:**
 - Upstash Redis creds expired — per-key rate limit wired at `/api/audit` middleware but not enforced (graceful degradation). Provision fresh creds at upstash.com.
 - PRICING table missing `claude-sonnet-4-20250514` — every Herald audit reports `$0.00` estimated cost. Pre-existing; not caused by the herald-onto-engine iteration. Fix: add pinned model to adapter PRICING table (shared-package change, Vāda in blast radius).
+- `MASTER_ENCRYPTION_KEY` must be present in Herald's Vercel env for the BYOK decrypt path to work (audit calls with a stored provider key will fail without it).
 - Drizzle constraint naming mismatch: `herald_profiles_username_key` vs `herald_profiles_username_unique` — prompts on every `drizzle-kit push`. Cosmetic.
 
 ---
