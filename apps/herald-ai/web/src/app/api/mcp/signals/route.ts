@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { extractSignals } from '@/lib/signals'
+import { extractSignals } from '@atta/forensic-hiring-auditor'
 
 export async function GET(request: NextRequest) {
   const username = request.nextUrl.searchParams.get('username')

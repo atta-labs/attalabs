@@ -1,13 +1,4 @@
-// Parses the JSON match-report payload produced by the Skeptical Auditor.
-// Pure: takes the model's raw `content` string + the canonical candidate info,
-// returns a typed MatchReport or null. The NO-FIT hard-requirement gate is
-// enforced here in code — the model cannot override it.
-//
-// Extracted from app/api/audit/route.ts so the parser can be unit-tested in
-// isolation (the route file cannot be imported under bun:test today because
-// it pulls in `next/server`).
-
-import type { MatchReport } from './types'
+import type { MatchReport } from './schema.ts'
 
 export interface CandidateInfo {
   name: string
@@ -16,20 +7,13 @@ export interface CandidateInfo {
 }
 
 export interface ParseMatchReportOptions {
-  /** Optional logger called once on parse failure with a short diagnostic. */
   onParseFailure?: (info: { reason: string; head: string; tail: string }) => void
 }
 
-// Strip a leading ```json fence and a trailing ``` fence (the most common
-// shape models emit when they wrap the JSON).
 function stripFences(text: string): string {
   return text.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '')
 }
 
-// Fallback for when the model emits prose before or after the JSON object
-// (e.g. "Here is the report:" or trailing markdown), which JSON.parse rejects.
-// Slice from the first `{` to the matching balanced `}`, ignoring braces
-// inside string literals. Returns null if no balanced object exists.
 function extractFirstJsonObject(text: string): string | null {
   const start = text.indexOf('{')
   if (start === -1) return null
@@ -92,7 +76,6 @@ export function parseMatchReport(
   candidateInfo: CandidateInfo,
   opts: ParseMatchReportOptions = {}
 ): MatchReport | null {
-  // Attempt 1: strip markdown fences, parse the whole text.
   const cleaned = stripFences(text)
   try {
     const parsed = JSON.parse(cleaned)
@@ -108,10 +91,6 @@ export function parseMatchReport(
     // Fall through to the prose-tolerant fallback.
   }
 
-  // Attempt 2: pull the first balanced {...} object and parse it. Handles the
-  // case where the model emits prose before or after the JSON (e.g. "Here is
-  // the JSON:\n{ ... }\n" or trailing commentary the system prompt forbids
-  // but models occasionally produce anyway).
   const sliced = extractFirstJsonObject(cleaned)
   if (sliced) {
     try {

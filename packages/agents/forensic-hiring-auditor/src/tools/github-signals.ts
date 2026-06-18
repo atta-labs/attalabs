@@ -73,13 +73,11 @@ async function githubFetch<T>(path: string, token: string): Promise<T | null> {
 }
 
 async function getRecentRepos(username: string, token: string): Promise<GitHubRepo[]> {
-  // Fetch user-owned repos + repos accessible via PAT (orgs, collabs)
   const [userRepos, allRepos] = await Promise.all([
     githubFetch<GitHubRepo[]>(`/users/${username}/repos?sort=pushed&per_page=10&type=owner`, token),
     githubFetch<GitHubRepo[]>('/user/repos?sort=pushed&per_page=20&affiliation=owner,organization_member', token)
   ])
 
-  // Merge and deduplicate, skip repos where user is just a collaborator on someone else's personal repo
   const seen = new Set<string>()
   const merged: GitHubRepo[] = []
 
@@ -88,13 +86,11 @@ async function getRecentRepos(username: string, token: string): Promise<GitHubRe
     seen.add(repo.full_name)
     const isOwnedByUser = repo.owner.login.toLowerCase() === username.toLowerCase()
     const isOrgRepo = repo.owner.type === 'Organization'
-    // Only keep repos owned by the user OR owned by an org — skip other users' personal repos
     if (isOwnedByUser || isOrgRepo) {
       merged.push(repo)
     }
   }
 
-  // Sort by most recently pushed and take top 5
   const top5 = merged.sort((a, b) => new Date(b.pushed_at).getTime() - new Date(a.pushed_at).getTime()).slice(0, 5)
 
   console.info('[Herald] GitHub repos fetched:', {
@@ -113,10 +109,8 @@ async function getAuthorCommits(
   author: string,
   token: string
 ): Promise<{ count: number; paths: Set<string>; messages: string[] }> {
-  // Try GitHub login first, then fall back to email via user profile
   let commits = await githubFetch<GitHubCommit[]>(`/repos/${owner}/${repo}/commits?author=${author}&per_page=30`, token)
 
-  // If no commits found by login, try fetching user email and retry
   if (!commits || commits.length === 0) {
     const emails = await githubFetch<{ email: string }[]>('/user/emails', token)
     const primaryEmail = emails?.find((e) => e.email)?.email
@@ -202,7 +196,6 @@ async function extractSignalsFromRepo(repo: GitHubRepo, username: string, token:
     depsFound: deps.length
   })
 
-  // Commit attribution
   if (commitData.count > 0) {
     const paths = [...commitData.paths].filter(Boolean).slice(0, 5)
     const pathSuffix = paths.length > 0 ? ` across ${paths.join(', ')}` : ''
@@ -214,7 +207,6 @@ async function extractSignalsFromRepo(repo: GitHubRepo, username: string, token:
     })
   }
 
-  // PR attribution
   if (prData.count > 0) {
     signals.push({
       type: 'unknown',
@@ -224,7 +216,6 @@ async function extractSignalsFromRepo(repo: GitHubRepo, username: string, token:
     })
   }
 
-  // Structural file detection
   for (const file of rootFiles) {
     const pattern = STRUCTURAL_PATTERNS[file]
     if (pattern) {
@@ -237,7 +228,6 @@ async function extractSignalsFromRepo(repo: GitHubRepo, username: string, token:
     }
   }
 
-  // Dependency detection
   for (const dep of deps) {
     for (const [pattern, meta] of Object.entries(DEP_PATTERNS)) {
       if (dep === pattern || dep.startsWith(pattern)) {
@@ -275,4 +265,38 @@ export async function extractSignals(username: string, token: string): Promise<R
   })
 
   return all
+}
+
+// Per-tool-call budget for GitHub signal fetching. Kept at the same 3s as the
+// retired deterministic pre-fetch so worst-case latency for the GitHub leg is
+// unchanged.
+export const GITHUB_SIGNAL_TIMEOUT_MS = 3000
+
+export async function fetchGithubSignalsForHandle(handle: string): Promise<string[]> {
+  const token = process.env.GITHUB_PAT
+  if (!token || !handle) return []
+
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), GITHUB_SIGNAL_TIMEOUT_MS)
+
+    const signals = await Promise.race([
+      extractSignals(handle, token),
+      new Promise<never>((_, reject) => {
+        controller.signal.addEventListener('abort', () => reject(new Error('Signal fetch timeout')))
+      })
+    ])
+
+    clearTimeout(timer)
+    return signals.map((s) => s.evidence)
+  } catch {
+    console.warn('[Herald] GitHub signal tool timed out or failed, returning empty evidence')
+    return []
+  }
+}
+
+export async function githubSignalToolHandler(args: Record<string, unknown>): Promise<string[]> {
+  const raw = args.github_handle
+  const handle = typeof raw === 'string' ? raw.trim() : ''
+  return fetchGithubSignalsForHandle(handle)
 }
