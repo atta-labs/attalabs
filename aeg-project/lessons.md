@@ -113,6 +113,44 @@ Lessons accumulated through April-May:
 
 ---
 
+## herald-onto-engine — retrospective (June 2026)
+
+**Duration:** June 13, 2026 → June 15, 2026 (first task PR #104 merged → last task PR #123 merged)
+**Tasks completed:** 8 of 8 planned (tasks 1, 2, 3b, 4, 5, 6, 7a, 7b)
+**Tasks dropped/deferred:** Task 3a ("multi-vendor structured output in the engine") — deliberately dropped June 12, before the iteration started, by Brief Author dig proving Herald didn't need it (Herald's prompt already requested JSON-as-text and parsed it, like Vāda). Not an execution failure — removed from scope before any code was written.
+
+### What went well
+
+- **The planner readiness gate caught the 7→7a+7b split before the brief shipped.** Task 7 assumed the engine could run custom client-side tools; the dig proved it couldn't (`node-executor.ts` + `graph-state.ts` confirmed there was no call→tool→call loop). Splitting into 7a (shared engine capability) and 7b (Herald's tool) prevented a silent engine gap from landing inside a Herald-framed brief where it would have been invisible.
+- **The Brief Author dig dropped task 3a before code was written.** Both model self-corrections (3a drop, 7→7a+7b split) happened in the planning phase, not during execution — the design-time error catching the brief author promises was demonstrated in production for the first time.
+- **Engine adoption (task 1) was zero-engine-change.** The engine already ran any vendor as text; Herald's YAML expressed the call without requiring any modification to `packages/engine` or `packages/adapter-langgraph`. Confirmed by empty diffs on both packages after task 1 merged.
+- **Additive/opt-in constraint on task 7a held.** The 6-gate `resolveRegisteredCustomTools` test suite proved byte-identical behavior for Vāda agents (no custom tools declared → empty array, loop unreachable). 31 baseline adapter tests stayed green after 7a shipped.
+- **Wave parallelism worked.** Task 7a ran independently from the Herald chain (no deps) and completed before 7b needed it. Max concurrent inflight: 2-3 tasks in wave 3.
+
+### What stalled or caused rework
+
+- **PR #132 was required after iteration close.** The auditor had a max_tokens truncation bug (reports cut mid-sentence), a stale model pin, and a JD URL charset encoding issue — all surfaced by runtime production use, not by the iteration's test suite. CI-green ≠ report quality.
+- **Task 6 (per-key rate limit) shipped with graceful degradation only.** Upstash Redis creds expired before the iteration started, so rate limiting was wired up at the `/api/audit` middleware layer but could not enforce — the operational dependency (fresh creds) was known pre-dispatch but not resolved as a pre-flight step.
+- **PRICING table gap was pre-existing but surfaced during task 1 smoke test.** `claude-sonnet-4-20250514` (the YAML's pinned model) was not in the adapter's PRICING table, so every Herald audit reported `$0.00` cost. Not caused by the iteration; deferred as its own fix (currently listed in the Herald backlog).
+
+### Carry-forward lessons
+
+- **Shared-engine additivity requires unit-test proof, not just "should work."** The `resolveRegisteredCustomTools` 6-gate suite (D-047) is the pattern — assert byte-identical behavior for callers without custom tools, not only that custom tools work. Any future shared-engine capability should carry the same invariant proof.
+- **Runtime production testing should follow within days of iteration close.** The auditor quality issues (PR #132) were invisible to typecheck/lint/tests; they required a real audit in a real browser. The Verification phase (D-049) formalizes this — `[principal]` items are the mechanism.
+- **Operational credential gaps block task 6-class work.** Both Upstash Redis creds (rate limiting) and OpenAI/xAI keys (Vāda benchmarks) have been blocked by expired or missing secrets. A pre-flight cred check should be a named item in any iteration brief that has an operational dependency.
+
+### Decisions made this iteration (Type 1, ratified)
+
+- **D-044** — Herald auditor migrated onto `@atta/engine` via solo YAML (task 1). Status: ACTIVE.
+- **D-045** — Herald endpoints unified into `/api/audit`; `SKEPTICAL_AUDITOR_PROMPT` deleted (task 2). Status: ACTIVE.
+- **D-047** — Custom client-side tool execution added to `@atta/adapter-langgraph` as additive/opt-in capability (task 7a). Status: ACTIVE.
+
+### Unbuilt tasks
+
+Task 3a (multi-vendor structured output in the engine): dropped intentionally pre-brief (June 12). Principal-approved drop after Brief Author dig proved Herald didn't need it. Backlogged as an optional future engine enhancement.
+
+---
+
 ## L‑005 — Stale skills/specs actively mislead: the auth skill said "never per-project Clerk" while Herald had its own
 
 **Context:** `.claude/skills/auth/SKILL.md` asserted "one Clerk app for the entire ecosystem / never create a per-project Clerk app" as a hard rule, while D-031 had already established Herald as a standalone with its own Clerk app. An agent reading the skill would have applied the wrong identity model to Herald.

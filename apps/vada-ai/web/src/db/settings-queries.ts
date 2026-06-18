@@ -2,9 +2,6 @@ import 'server-only'
 import { and, eq } from 'drizzle-orm'
 import { db, schema } from './index'
 
-// NOTE: API keys are not stored server-side. They live in the user's browser
-// (passkey-encrypted IndexedDB or in-memory). See /trust.
-
 // ── Team Models ───────────────────────────────────────────────────────────────
 
 export interface TeamModelEntry {

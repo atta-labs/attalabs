@@ -1,6 +1,6 @@
 # Vāda · BYOK Architecture (Current State)
 
-**Status:** Implementation reality as of May 6, 2026.
+**Status:** ratified
 **Last major change:** May 4, 2026 — single-source-keys reversal (D-028) and hosted MCP shipped (D-029). See `vada-decisions.md` for the architectural decision history.
 
 This document describes how BYOK actually works in Vāda today.
@@ -19,7 +19,7 @@ The current model is **server-side at rest, decrypted per-request**: provider ke
 
 ## What Vāda does today
 
-You bring your own API keys. They are stored in Vāda's database, **envelope-encrypted at rest** in the `user_provider_keys` table. The encryption is bound to your user identity (your Clerk `clerkId` is the AAD on every ciphertext), so a row swap between users is detectable on decrypt. The master key is held in the `MASTER_ENCRYPTION_KEY` environment variable on Vāda's production deployment; KMS migration is reserved as future work via the `kms_key_id` column on each row.
+You bring your own API keys. They are stored in Vāda's database, **envelope-encrypted at rest** in the `user_provider_keys` table. The encryption is bound to your user identity (your Clerk `clerkId` is the AAD on every ciphertext), so a swap between users is detectable on decrypt. The master key is held in the `MASTER_ENCRYPTION_KEY` environment variable on Vāda's production deployment; KMS migration is reserved as future work.
 
 When you run a deliberation — whether through the web app or through hosted MCP — Vāda's server fetches your encrypted key for the relevant provider, decrypts it inside the request handler using the master key, calls the provider on your behalf, and lets the plaintext key go out of scope. The plaintext is never logged, never persisted, never returned in any response body or error payload.
 
@@ -30,10 +30,9 @@ When you run a deliberation — whether through the web app or through hosted MC
 ### At rest (Vāda's database)
 
 - **Table:** `user_provider_keys` (defined in `packages/db/src/schema/keys.ts`, ecosystem-shared per D-030)
-- **One row per `(clerk_id, provider)` pair.** Providers: `anthropic`, `google`, `openai`, `xai`.
-- **Columns:** `id`, `user_id`, `provider`, `key_ciphertext`, `key_iv`, `kms_key_id`, `created_at`, `updated_at`.
-- **Encryption:** AES-256-GCM. The data key is derived from the master key in `MASTER_ENCRYPTION_KEY` env var; AAD on each ciphertext is the user's `clerkId`. Implementation in `packages/crypto/`.
-- **`kms_key_id` versioning:** carries a version identity (`'env:v1'` in current shipped state) so that a future migration to KMS-managed master keys can be performed per-row without breaking existing ciphertexts.
+- **One row per user.** All provider keys are bundled in a single AES-256-GCM encrypted JSONB payload.
+- **Columns:** `id`, `clerk_id`, `encrypted_payload` (JSONB), `created_at`, `updated_at`.
+- **Encryption:** AES-256-GCM applied to a JSONB payload containing all provider keys. The master key comes from the `MASTER_ENCRYPTION_KEY` env var; AAD on each ciphertext is the user's `clerkId`. Implementation in `packages/crypto/`.
 
 ### Storage schema (api_keys — for hosted MCP authentication)
 
@@ -132,7 +131,7 @@ Because keys are now stored server-side, switching devices is transparent — yo
 
 Future hardening, captured for completeness:
 
-- **KMS migration (V2):** move the master key from `MASTER_ENCRYPTION_KEY` env var to a KMS-managed key. The `kms_key_id` column is reserved for this — per-row migration without breaking existing ciphertexts.
+- **KMS migration (V2):** move the master key from `MASTER_ENCRYPTION_KEY` env var to a KMS-managed key. Migration path would re-encrypt the `encrypted_payload` JSONB per user without downtime.
 - **Audit log for key access events:** record per-decryption events (which clerkId, which provider, which route) for security audit. Retention policy TBD.
 - **Per-key tool scoping:** restrict an individual `api_keys` row to specific tools (e.g., a key authorized for `vada__consult` but not `vada__deliberate`). Useful for embedded integrations.
 - **Hosted MCP rate limiting:** per-user / per-key invocation caps. Pricing-tier dependent.
