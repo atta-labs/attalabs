@@ -1,6 +1,6 @@
 # Vāda · BYOK Architecture (Current State)
 
-**Status:** Implementation reality as of May 6, 2026.
+**Status:** ratified
 **Last major change:** May 4, 2026 — single-source-keys reversal (D-028) and hosted MCP shipped (D-029). See `vada-decisions.md` for the architectural decision history.
 
 This document describes how BYOK actually works in Vāda today.
