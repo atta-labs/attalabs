@@ -1,5 +1,6 @@
 export type DocFrontmatter = {
   title?: string
+  sidebarTitle?: string
   description?: string
   section?: string
   order?: number
@@ -9,6 +10,7 @@ export type DocFrontmatter = {
 export type Doc = {
   slug: string
   title: string
+  sidebarTitle?: string
   description?: string
   section: string
   order: number

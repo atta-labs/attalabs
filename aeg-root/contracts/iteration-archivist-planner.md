@@ -1,3 +1,6 @@
+---
+sidebar_title: Iteration Archivist → Planner
+---
 # Contract: Iteration Archivist → Planner
 
 **Status:** active

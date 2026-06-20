@@ -1,3 +1,6 @@
+---
+sidebar_title: Planner
+---
 # Role: Planner
 
 **A mode of the Team Leader.** Same intelligence as the Brief Author, one altitude up. The Brief Author turns one intent into one brief; the Planner turns an intent plus a slice of tickets into a whole **iteration** — a set of forge Issues plus the thin topology file (`aeg-root/iterations/<name>.md`).

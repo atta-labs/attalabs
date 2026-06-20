@@ -1,3 +1,6 @@
+---
+sidebar_title: Tokens (aeg-gov-ui-v2)
+---
 # Token ledger — aeg-governance-ui-v2
 
 Append-only per-iteration token/cost ledger. Format + rationale: `aeg-root/iterations/README.md` §12. Append-only artifact class: `aeg-root/state-machine.md` §13.

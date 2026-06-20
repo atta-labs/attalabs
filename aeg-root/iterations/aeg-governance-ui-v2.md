@@ -1,3 +1,6 @@
+---
+sidebar_title: aeg-governance-ui-v2
+---
 # Iteration: aeg-governance-ui-v2 — June–July 2026
 Lifecycle: active
 

@@ -1,3 +1,6 @@
+---
+sidebar_title: System Architecture
+---
 # System architecture diagram — the orchestration tool (Cetana)
 
 Module-level view of the software that **automates** the AEG flow in this repo. **No agents in this diagram** — no roles, just code modules, files, services, and their connections.

@@ -1,3 +1,6 @@
+---
+sidebar_title: Coordination
+---
 # Atta Coordination — How to Work With This System
 
 **This file lives in the repo at `aeg-root/coordination.md`.**

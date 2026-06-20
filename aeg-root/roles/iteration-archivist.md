@@ -1,3 +1,6 @@
+---
+sidebar_title: Iteration Archivist
+---
 # Iteration Archivist — Role Reference
 
 **Audience:** An agent (or the Principal acting in archival capacity) invoked to **close out** a completed iteration — the final step of Phase 13. Triggered by explicit Principal declaration, not by automation.

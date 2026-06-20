@@ -1,3 +1,6 @@
+---
+sidebar_title: Reviewer → Archivist
+---
 # Contract: Reviewer → per-task Archivist
 
 **Status:** active

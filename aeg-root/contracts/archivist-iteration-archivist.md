@@ -1,3 +1,6 @@
+---
+sidebar_title: Archivist → Iteration Archivist
+---
 # Contract: per-task Archivist → Iteration Archivist
 
 **Status:** active

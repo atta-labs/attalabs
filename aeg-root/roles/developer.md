@@ -1,3 +1,6 @@
+---
+sidebar_title: Developer
+---
 # Developer — Role Reference
 
 **Audience:** the coding agent (whatever CLI/IDE agent the team uses — e.g. Claude Code, Codex, or another), executing a dispatched brief.

@@ -1,3 +1,6 @@
+---
+sidebar_title: Verifier
+---
 # Verifier — Role Reference
 
 **Audience:** the Developer agent (running its turn on the open PR) and the Principal (running it by hand against a booted app). Verification is a **phase**, not a new actor: the Developer-agent satisfies the `[agent]` half, the Principal satisfies the `[principal]` half, and a PR is not mergeable until both halves are satisfied.

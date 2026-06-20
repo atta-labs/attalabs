@@ -12,6 +12,16 @@ describe('parseDocFrontmatter', () => {
     expect(out.body.trimStart().startsWith('# Roles')).toBe(true)
   })
 
+  it('extracts sidebarTitle and sidebar_title from YAML frontmatter', () => {
+    const rawCamel = '---\ntitle: Long Title\nsidebarTitle: Short Camel\n---\n\n# Long Title\n'
+    const outCamel = parseDocFrontmatter(rawCamel)
+    expect(outCamel.frontmatter.sidebarTitle).toBe('Short Camel')
+
+    const rawSnake = '---\ntitle: Long Title\nsidebar_title: Short Snake\n---\n\n# Long Title\n'
+    const outSnake = parseDocFrontmatter(rawSnake)
+    expect(outSnake.frontmatter.sidebarTitle).toBe('Short Snake')
+  })
+
   it('returns empty frontmatter object when no YAML block is present', () => {
     const raw = '# Process\n\nFirst paragraph.\n'
     const out = parseDocFrontmatter(raw)

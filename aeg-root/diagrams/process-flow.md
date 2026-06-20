@@ -1,3 +1,6 @@
+---
+sidebar_title: Process Flow
+---
 # Process flow diagram
 
 Visual representation of the AEG workflow described in `process.md`. Shows actors, artifacts, gates, and decision points.

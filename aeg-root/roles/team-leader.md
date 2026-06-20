@@ -1,3 +1,6 @@
+---
+sidebar_title: Team Leader
+---
 # Team Leader — Role Reference
 
 **Audience:** an agent on a chat / planning surface (whatever conversational agent the team uses).

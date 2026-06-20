@@ -66,7 +66,7 @@ function FlatDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
             : 'text-sidebar-foreground/60 hover:text-sidebar-foreground'
         }`}
       >
-        <span className='line-clamp-2'>{doc.title}</span>
+        <span className='line-clamp-2'>{doc.sidebarTitle ?? doc.title}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>
   )
@@ -91,7 +91,7 @@ function CollapsibleDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
             />
           }
         >
-          <span className='line-clamp-2'>{doc.title}</span>
+          <span className='line-clamp-2'>{doc.sidebarTitle ?? doc.title}</span>
           <ChevronDown className='ml-auto size-3.5 shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-180' />
         </CollapsibleTrigger>
       </SidebarMenuItem>
@@ -111,7 +111,7 @@ function CollapsibleDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
                       : 'text-sidebar-foreground/60 hover:text-sidebar-foreground'
                   }`}
                 >
-                  <span className='line-clamp-2'>{child.title}</span>
+                  <span className='line-clamp-2'>{child.sidebarTitle ?? child.title}</span>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
             )

@@ -89,6 +89,7 @@ export async function loadAegDocs(): Promise<LoadedDocs> {
     docs.push({
       slug,
       title,
+      sidebarTitle: parsed.frontmatter.sidebarTitle,
       description: parsed.frontmatter.description,
       section,
       order,
