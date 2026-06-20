@@ -33,10 +33,23 @@ function Collapsible({ open, defaultOpen, onOpenChange, ...props }: CollapsibleP
   )
 }
 
-type CollapsibleTriggerProps = React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.CollapsibleTrigger>
+type CollapsibleTriggerProps = React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.CollapsibleTrigger> & {
+  render?: React.ReactElement
+}
 
-function CollapsibleTrigger({ ...props }: CollapsibleTriggerProps) {
-  return <CollapsiblePrimitive.CollapsibleTrigger data-slot='collapsible-trigger' {...props} />
+function CollapsibleTrigger({ render, children, ...props }: CollapsibleTriggerProps) {
+  if (render) {
+    return (
+      <CollapsiblePrimitive.CollapsibleTrigger asChild {...props}>
+        {React.cloneElement(render, {}, children)}
+      </CollapsiblePrimitive.CollapsibleTrigger>
+    )
+  }
+  return (
+    <CollapsiblePrimitive.CollapsibleTrigger data-slot='collapsible-trigger' {...props}>
+      {children}
+    </CollapsiblePrimitive.CollapsibleTrigger>
+  )
 }
 
 type CollapsibleContentProps = Omit<

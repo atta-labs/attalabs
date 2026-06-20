@@ -1,3 +1,6 @@
+---
+sidebar_title: Security Reviewer
+---
 # Security Reviewer — Role Reference
 
 **Audience:** An agent invoked to perform the security pass on an open pull request — pasted a security-review prompt manually, or auto-dispatched by an automation layer as the `security` pass.

@@ -15,9 +15,15 @@ export function parseDocFrontmatter(raw: string): ParsedDoc {
 
   const frontmatter: DocFrontmatter = {}
   if (typeof fm.title === 'string') frontmatter.title = fm.title
+  if (typeof fm.sidebarTitle === 'string') {
+    frontmatter.sidebarTitle = fm.sidebarTitle
+  } else if (typeof fm.sidebar_title === 'string') {
+    frontmatter.sidebarTitle = fm.sidebar_title
+  }
   if (typeof fm.description === 'string') frontmatter.description = fm.description
   if (typeof fm.section === 'string') frontmatter.section = fm.section
   if (typeof fm.order === 'number') frontmatter.order = fm.order
+  if (typeof fm.parent === 'string') frontmatter.parent = fm.parent
 
   const h1Match = content.match(H1_PATTERN)
   const firstH1 = h1Match?.[1]?.trim()

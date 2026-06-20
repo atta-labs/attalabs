@@ -1,3 +1,6 @@
+---
+sidebar_title: Manual Flow
+---
 # AEG — Running the Flow by Hand
 
 **Agentic Execution Governance (AEG)**, manual mode. The playbook for running the flow with nothing but a coding agent, a Git forge, and this repo — no orchestration tool required.

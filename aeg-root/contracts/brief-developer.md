@@ -1,3 +1,6 @@
+---
+sidebar_title: Brief → Developer
+---
 # Contract: Brief Author → Developer
 
 **Status:** active

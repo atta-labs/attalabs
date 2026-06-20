@@ -1,3 +1,6 @@
+---
+sidebar_title: Reviewer Prompt
+---
 # Reviewer Prompt — Multi-AI Adversarial Review
 
 **Audience:** Stateless AI reviewers (Gemini, Grok, DeepSeek, ChatGPT, or equivalent). The Team Leader pastes this document alongside any brief or architectural proposal when running an adversarial reviewer round.

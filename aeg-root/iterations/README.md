@@ -1,3 +1,6 @@
+---
+sidebar_title: Iterations Overview
+---
 # Iterations — the top of AEG
 
 **Status:** ratified

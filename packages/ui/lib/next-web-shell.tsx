@@ -22,6 +22,8 @@ interface NextWebShellProps {
   branding?: CMSBranding | null
   styleId: string
   cookieName?: string
+  /** When false, skips AuthProvider and Clerk appearance setup. Default: true. */
+  withAuth?: boolean
 }
 
 export async function NextWebShell({
@@ -29,7 +31,8 @@ export async function NextWebShell({
   config,
   branding,
   styleId,
-  cookieName = COLOR_SCHEME_COOKIE
+  cookieName = COLOR_SCHEME_COOKIE,
+  withAuth = true
 }: NextWebShellProps) {
   const theme = config?.userInterface?.theme ?? null
   const cmsScheme = config?.userInterface?.colorScheme as ColorScheme | undefined
@@ -46,7 +49,7 @@ export async function NextWebShell({
   const fontsUrl = theme?.typography ? getGoogleFontsUrl(theme.typography) : null
 
   let appearance: ReturnType<typeof buildClerkAppearance> | undefined
-  if (theme) {
+  if (withAuth && theme) {
     const colorGroup = colorScheme === 'dark' ? theme.dark : theme.light
     const resolved = transformColorGroup(colorGroup)
     appearance = buildClerkAppearance(
@@ -85,7 +88,17 @@ export async function NextWebShell({
       </head>
       <body className='min-h-screen bg-background text-foreground'>
         {themeCSS && <style id={styleId} dangerouslySetInnerHTML={{ __html: themeCSS }} />}
-        <AuthProvider appearance={appearance}>
+        {withAuth ? (
+          <AuthProvider appearance={appearance}>
+            <ThemeProvider theme={theme as CMSTheme | null} styleId={styleId}>
+              <LibraryProvider library={libraryId}>
+                <CookieNameProvider cookieName={cookieName}>
+                  <ToastProvider defaultPosition='bottom-right'>{children}</ToastProvider>
+                </CookieNameProvider>
+              </LibraryProvider>
+            </ThemeProvider>
+          </AuthProvider>
+        ) : (
           <ThemeProvider theme={theme as CMSTheme | null} styleId={styleId}>
             <LibraryProvider library={libraryId}>
               <CookieNameProvider cookieName={cookieName}>
@@ -93,7 +106,7 @@ export async function NextWebShell({
               </CookieNameProvider>
             </LibraryProvider>
           </ThemeProvider>
-        </AuthProvider>
+        )}
       </body>
     </html>
   )

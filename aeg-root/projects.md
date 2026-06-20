@@ -1,3 +1,6 @@
+---
+sidebar_title: Projects
+---
 # Projects in this repo
 
 **The project registry.** Declares the projects in this repo and where each one's specs and per-project state live. The `Project` field on a task (a forge Issue) resolves against this file: `Project: vada` → the Developer reads that project's specs, the Archivist updates its per-project state.

@@ -1,3 +1,6 @@
+---
+sidebar_title: Process
+---
 # Process: From idea to merged code
 
 This document describes how work flows through the AEG operational model — from the moment the Principal has an idea to the moment that work merges to `main` with all specs, skills, and decision logs updated.

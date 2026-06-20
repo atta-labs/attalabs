@@ -1,5 +1,6 @@
 ---
 name: aeg
+sidebar_title: Operating Model (aeg)
 description: The front door to Agentic Execution Governance (AEG) — the operating model every agent works inside. Load at the start of ANY session in this repo, before doing anything substantive, regardless of role. Covers what AEG is, the four truth domains, forge-derived status, the iteration topology file, where the plan vs the flow vs governance live, the dispatch gates, the brief, the anti-regression rules, the orient-from-root layout (`aeg-root/` model + `aeg-project/` state — D-041), and the model-vs-product distinction. Ends by routing to the aeg-roles skill and the reading order. Does NOT cover role specifics (see aeg-roles + roles/*.md) or brief authoring (see brief-authoring).
 ---
 

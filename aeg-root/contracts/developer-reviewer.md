@@ -1,3 +1,6 @@
+---
+sidebar_title: Developer → Reviewer
+---
 # Contract: Developer → Reviewer
 
 **Status:** active

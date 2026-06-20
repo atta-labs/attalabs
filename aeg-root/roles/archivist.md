@@ -1,3 +1,6 @@
+---
+sidebar_title: Archivist
+---
 # Archivist — Role Reference
 
 **Audience:** An agent (or an automation layer) invoked to **close out** a merged pull request — the final step of the flow. Often automated, but fully runnable by hand.

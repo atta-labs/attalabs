@@ -5,6 +5,8 @@ import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { stripLeadingH1 } from '../parse-doc'
 import type { Doc } from '../types'
 
+import { StickyDocHeader } from './StickyDocHeader'
+
 export type DocPageProps = {
   doc: Doc
   body: string
@@ -71,50 +73,53 @@ export function DocPage({ doc, body, next, prev, basePath = '/docs' }: DocPagePr
   const content = stripLeadingH1(body)
 
   return (
-    <article className='space-y-8'>
-      <header className='space-y-3'>
-        <span className='font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground'>{doc.section}</span>
-        <h1 className='font-serif text-4xl font-light leading-tight text-foreground'>{doc.title}</h1>
-        {doc.description && <p className='text-lg leading-relaxed text-muted-foreground'>{doc.description}</p>}
-      </header>
+    <>
+      <StickyDocHeader title={doc.title} section={doc.section} />
+      <article className='space-y-4 pt-4'>
+        <header className='space-y-3'>
+          <span className='font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground'>{doc.section}</span>
+          <h1 className='font-serif text-4xl font-light leading-tight text-foreground'>{doc.title}</h1>
+          {doc.description && <p className='text-lg leading-relaxed text-muted-foreground'>{doc.description}</p>}
+        </header>
 
-      <hr className='border-border opacity-60' />
+        <hr className='border-border opacity-60' />
 
-      <div className='text-base'>
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-          {content}
-        </ReactMarkdown>
-      </div>
+        <div className='text-base doc-page-content'>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+            {content}
+          </ReactMarkdown>
+        </div>
 
-      {(prev || next) && (
-        <>
-          <hr className='border-border opacity-60' />
-          <footer className='flex items-center justify-between gap-4 pt-2'>
-            {prev ? (
-              <Link
-                href={`${basePath}/${prev.slug}`}
-                className='group flex items-center gap-2 font-serif text-base text-foreground transition-colors hover:text-accent'
-              >
-                <ArrowLeft className='size-4 transition-transform group-hover:-translate-x-0.5' />
-                <span>{prev.title}</span>
-              </Link>
-            ) : (
-              <span />
-            )}
-            {next ? (
-              <Link
-                href={`${basePath}/${next.slug}`}
-                className='group flex items-center gap-2 font-serif text-base text-foreground transition-colors hover:text-accent'
-              >
-                <span>{next.title}</span>
-                <ArrowRight className='size-4 transition-transform group-hover:translate-x-0.5' />
-              </Link>
-            ) : (
-              <span />
-            )}
-          </footer>
-        </>
-      )}
-    </article>
+        {(prev || next) && (
+          <>
+            <hr className='border-border opacity-60' />
+            <footer className='flex items-center justify-between gap-4 pt-2'>
+              {prev ? (
+                <Link
+                  href={`${basePath}/${prev.slug}`}
+                  className='group flex items-center gap-2 font-serif text-base text-foreground transition-colors hover:text-accent'
+                >
+                  <ArrowLeft className='size-4 transition-transform group-hover:-translate-x-0.5' />
+                  <span>{prev.title}</span>
+                </Link>
+              ) : (
+                <span />
+              )}
+              {next ? (
+                <Link
+                  href={`${basePath}/${next.slug}`}
+                  className='group flex items-center gap-2 font-serif text-base text-foreground transition-colors hover:text-accent'
+                >
+                  <span>{next.title}</span>
+                  <ArrowRight className='size-4 transition-transform group-hover:translate-x-0.5' />
+                </Link>
+              ) : (
+                <span />
+              )}
+            </footer>
+          </>
+        )}
+      </article>
+    </>
   )
 }

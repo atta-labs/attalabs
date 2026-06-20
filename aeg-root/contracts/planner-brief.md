@@ -1,3 +1,6 @@
+---
+sidebar_title: Planner → Brief
+---
 # Contract: Planner → Brief Author
 
 **Status:** active

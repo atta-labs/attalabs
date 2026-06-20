@@ -9,6 +9,7 @@
 
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
+@source "../../../packages/aeg-core/src/**/*.{ts,tsx}";
 
 @theme inline {
   --color-background: var(--background);
@@ -69,7 +70,6 @@
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
   }
-
 }
 
 @layer components {

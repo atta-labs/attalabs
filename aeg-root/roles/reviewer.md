@@ -1,3 +1,6 @@
+---
+sidebar_title: Reviewer
+---
 # Reviewer — Role Reference
 
 **Audience:** An agent invoked specifically to review an open pull request — pasted a review prompt manually, or auto-dispatched by an automation layer as the `code-reviewer` pass.

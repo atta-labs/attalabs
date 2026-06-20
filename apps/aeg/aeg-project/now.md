@@ -1,10 +1,10 @@
 # AEG (product) — Now
 
-**Updated:** 2026-06-10
+**Updated:** 2026-06-20
 
 ## In flight
 
-- Nothing. Product folder just scaffolded (spec-only). No active iteration.
+- **Studio Layout Refactor** (active on branch `task/aeg-governance-ui-v2/theme`) — Move main navigation to TopBar, add fixed secondary projects sub-bar, and fixed thin docs sidebar with independent scrolling.
 
 ## Next
 

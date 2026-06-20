@@ -1,3 +1,6 @@
+---
+sidebar_title: Principal
+---
 # Principal — Role Reference
 
 **Audience:** AI agents (Team Leader, Developer) interacting WITH the Principal. Not the Principal themself. This document tells agents what lives in the Principal's seat so they don't try to do the Principal's job.

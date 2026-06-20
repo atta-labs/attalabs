@@ -1,3 +1,6 @@
+---
+sidebar_title: State Machine
+---
 # State Machine — the Agentic Execution Governance (AEG) Model
 
 The constitution. This document defines the **Agentic Execution Governance (AEG)** model — the authoritative reference for artifacts, mutation permissions, authority hierarchy, escalation paths, and governance mechanics. AEG is governance plus orchestration of delegated AI execution; it is not project management (there is no product plan, timeline, or resource tracking here).
