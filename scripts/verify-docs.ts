@@ -69,6 +69,22 @@ function isDecisionLog(p: string): boolean {
   return p === 'aeg-project/decisions.md' || /-decisions\.md$/.test(p)
 }
 
+/**
+ * Derive a tier from the changed-file list when no `Tier:` field is in the PR body.
+ *
+ * Rules (in priority order):
+ *   1. Decision log in diff       → Tier 3  (caller must still emit C0 — explicit declaration required)
+ *   2. Spec or doc file in diff   → Tier 1
+ *   3. Otherwise (code/config…)   → Tier 0
+ *
+ * Exported for unit tests.
+ */
+export function deriveTierFromDiff(changed: string[]): 0 | 1 | 3 {
+  if (changed.some(isDecisionLog)) return 3
+  if (changed.some((p) => isSpecFile(p) || isDocFile(p))) return 1
+  return 0
+}
+
 function hasStatusBlock(content: string): boolean {
   return /(^|\n)\s*(\*\*)?Status:?(\*\*)?\s*:?\s*(draft|target|ratified|retired)/i.test(content)
 }
@@ -149,22 +165,24 @@ function runPrMode(): void {
     return
   }
 
-  // A missing Tier is an EXPLICIT error, not a silent escalation. Previously the
-  // script defaulted a parse-miss to Tier 3 and then failed on a *different*
-  // rule (C4), which produced a confusing red build for what is really a
-  // "declare your tier" problem (this is exactly how PR #105 failed). Make the
-  // author declare the tier; do not guess.
-  const tier = readTierFromPrBody()
-  if (tier === null) {
-    errors.push(
-      'C0 tier-required: No `Tier:` field found in the PR body. The canonical PR-body form — including the exact `Tier:` syntax this gate accepts (`Tier: 1` or `**Tier:** 1`, not `Tier 1`) — lives in `aeg-root/roles/developer.md` § PR body — canonical form. Copy that block into the PR body. (state-machine.md Section 9)'
-    )
-    // Report and exit here — every downstream check keys off the tier, so
-    // running them against a guessed tier is what caused the confusing failure.
-    finish()
-    return
+  const tierFromBody = readTierFromPrBody()
+  let effectiveTier: 0 | 1 | 3
+  if (tierFromBody !== null) {
+    effectiveTier = tierFromBody
+  } else {
+    const derived = deriveTierFromDiff(changed)
+    if (derived === 3) {
+      // Decision-log in diff — Tier 3 has lock/irreversibility implications.
+      // Auto-derive is blocked; the author must confirm with an explicit declaration.
+      errors.push(
+        'C0 tier-required: No `Tier:` field found in the PR body, and the diff includes a decision log — Tier 3 work requires an explicit `Tier: 3` declaration (lock/irreversibility implications a human must confirm). The canonical PR-body form lives in `aeg-root/roles/developer.md` § PR body — canonical form. (state-machine.md Section 9)'
+      )
+      finish()
+      return
+    }
+    notes.push(`no Tier field in PR body; derived Tier ${derived} from diff`)
+    effectiveTier = derived
   }
-  const effectiveTier: 0 | 1 | 3 = tier
 
   const codeFiles = changed.filter(isCodeFile)
   const docFiles = changed.filter(isDocFile)
@@ -260,7 +278,9 @@ function finish(): void {
 
 // ---- run -------------------------------------------------------------------
 
-if (mode === 'pr') runPrMode()
-else runFullMode()
+if (import.meta.main) {
+  if (mode === 'pr') runPrMode()
+  else runFullMode()
 
-finish()
+  finish()
+}
