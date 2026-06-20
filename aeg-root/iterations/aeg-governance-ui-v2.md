@@ -162,3 +162,7 @@ do not alter the ledger files themselves.
 - Task 1 here has no dependencies and must merge BEFORE herald-agents-v2/1 dispatches
   and BEFORE vada-agents-v2/1 dispatches. It is the structural prerequisite for both
   other iterations' Planner readiness gates.
+
+## Shipped
+
+- Token ledger view shipped on iteration detail page (parseLedger + sumLedger, D-048).
