@@ -22,21 +22,21 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
   const getBulletColorClass = (name: string) => {
     switch (name) {
       case 'vada':
-        return 'bg-emerald-500 dark:bg-emerald-400'
+        return 'bg-project-vada'
       case 'cetana':
-        return 'bg-sky-500 dark:bg-sky-400'
+        return 'bg-project-cetana'
       case 'herald':
-        return 'bg-purple-500 dark:bg-purple-400'
+        return 'bg-project-herald'
       case 'aeg':
-        return 'bg-amber-500 dark:bg-amber-400'
+        return 'bg-project-aeg'
       case 'aeg-core':
-        return 'bg-orange-500 dark:bg-orange-400'
+        return 'bg-project-aeg-core'
       case 'atta':
-        return 'bg-pink-500 dark:bg-pink-400'
+        return 'bg-project-atta'
       case 'desktop':
-        return 'bg-zinc-400 dark:bg-zinc-500'
+        return 'bg-project-desktop'
       default:
-        return 'bg-zinc-400 dark:bg-zinc-500'
+        return 'bg-project-desktop'
     }
   }
 
@@ -56,9 +56,7 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
                 variant='unstyled'
                 href={`/projects/${p.name}`}
                 className={`px-3 py-1 rounded-full transition-colors flex items-center gap-1.5 ${
-                  isActive
-                    ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-semibold'
-                    : 'text-muted-foreground hover:text-foreground'
+                  isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <span className={`size-1.5 rounded-full shrink-0 ${getBulletColorClass(p.name)}`} />

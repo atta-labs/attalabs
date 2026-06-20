@@ -42,6 +42,14 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  --color-project-vada: var(--project-vada);
+  --color-project-cetana: var(--project-cetana);
+  --color-project-herald: var(--project-herald);
+  --color-project-aeg: var(--project-aeg);
+  --color-project-aeg-core: var(--project-aeg-core);
+  --color-project-atta: var(--project-atta);
+  --color-project-desktop: var(--project-desktop);
+
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
@@ -59,6 +67,24 @@
 }
 
 @layer base {
+  :root {
+    --project-vada: #10b981;
+    --project-cetana: #0ea5e9;
+    --project-herald: #a855f7;
+    --project-aeg: #f59e0b;
+    --project-aeg-core: #f97316;
+    --project-atta: #ec4899;
+    --project-desktop: #71717a;
+  }
+  html[data-theme="dark"] {
+    --project-vada: #34d399;
+    --project-cetana: #38bdf8;
+    --project-herald: #c084fc;
+    --project-aeg: #fbbf24;
+    --project-aeg-core: #fb923c;
+    --project-atta: #f472b6;
+    --project-desktop: #a1a1aa;
+  }
   * {
     @apply border-border outline-ring/50;
   }
@@ -70,7 +96,6 @@
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
   }
-
 }
 
 @layer components {
