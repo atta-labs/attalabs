@@ -1247,3 +1247,38 @@ The model half ships the format + the per-role obligation + the parser. The **St
 - Type 2 — reversible.
 
 ---
+
+## D-052 — Archival coherence gates — downstream roles hard-STOP on skipped Archivist
+
+**Date:** 2026-06-21
+**Status:** ACTIVE
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (task/aeg-coherence-gates)
+**Ratified by:** Principal (in-session)
+**Conforms-to:** D-042
+
+**Context:** The per-task Archivist (Phase 12) and Iteration Archivist (Phase 13) are manual-dispatch-only. During fast-moving work they get skipped, causing `now.md`, `state.md`, and `completed/` to drift out of sync with the forge. The Planner's readiness gate item 8 (D-042) already checks whether the previous iteration is archived before planning, but nothing fires earlier in the execution cycle. A Developer can start a new task in an iteration while the preceding task's close-out was never run, and nothing stops them. The provenance block comment — posted by the per-task Archivist on each merged PR per `aeg-root/contracts/reviewer-archivist.md` — is a forge-derived, queryable, binary signal: either it exists (Archivist ran) or it does not (Archivist skipped). Its presence is detectable by any role with `gh pr view` access, with no side effects.
+
+**Decision:** Add contract-level hard-STOP gates that fire in the Developer entry gate — before any code is written, and before any PR is opened:
+
+1. **Per-task archival gate (before step 0).** Before executing step 0, the Developer queries the most-recently-merged task PR in the iteration and checks whether it carries a provenance block comment. If the block is absent, the per-task Archivist was skipped. STOP: *"Prior task PR #N in iteration `<name>` has no provenance block — the per-task Archivist must run before this task proceeds. Dispatch the per-task Archivist for #N first."* First task in an iteration (no prior merged task PR): gate passes trivially.
+
+2. **Iteration archival gate (before opening PR).** Before opening a PR against any product, the Developer confirms each product's previous iteration is in `aeg-root/iterations/completed/`. If any prior iteration exists in `iterations/` but not `completed/` with all its task PRs merged, STOP: *"Product `<X>`'s previous iteration `<name>` is complete but not archived — the Iteration Archivist must run before new work on this product. Dispatch it first."*
+
+These two gates are deliberately not CI, not automation, and not scripts. AEG is a human-run protocol; the enforcement must be runnable by any dispatched agent using only the forge (`gh` CLI). A contract-level hard STOP achieves the same effect as a CI drift check: it refuses to proceed without requiring any build infrastructure. The provenance block's presence/absence is an immutable, forge-readable fact.
+
+**Alternatives rejected:**
+- A1 — GitHub Actions workflow that checks for provenance blocks after merge: rejected. AEG must not require CI infrastructure — the enforcement must live in the protocol itself. CI creates a fragile dependency and obscures the methodology's origin.
+- A2 — Archivist triggered automatically on PR merge via webhook or action: rejected. Same reason as A1 plus: automation running close-out silently removes the human review point. The Principal wants close-out to be a visible, dispatched act, not an invisible side effect.
+- A3 — Planner item 8 alone is sufficient: rejected. Planner item 8 fires at planning time, which is too late — multiple per-task close-outs can be skipped between planning passes. The Developer gate fires at every task start, catching drift as it accumulates.
+
+**Consequences:**
+- `aeg-root/contracts/reviewer-archivist.md` consumer obligations updated: provenance block comment named as the downstream coherence signal; its absence hard-stops the next Developer.
+- `aeg-root/contracts/brief-developer.md` consumer obligations updated: prior-archival precondition (hard STOP before step 0) added as the first obligation.
+- `aeg-root/contracts/developer-reviewer.md` producer obligations updated: prior-archival precondition noted as a prerequisite the Developer must satisfy before producing a valid PR.
+- `aeg-root/roles/developer.md` entry gate updated: items 3 (per-task archival gate, before step 0) and 4 (iteration archival gate, before opening PR) added; preamble updated from "validate two things" to "validate the following."
+- Planner's readiness gate item 8 (iteration archival, D-042) is unchanged — this decision adds an earlier-firing Developer gate for the same condition; the two gates are complementary.
+- Type 2 — reversible.
+
+---

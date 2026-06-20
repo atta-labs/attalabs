@@ -54,6 +54,7 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 
 ## Consumer obligations (the Developer)
 
+- **Prior-archival precondition (hard STOP before step 0).** Before executing step 0, query the most-recently-merged task PR in this iteration (`gh pr list --state merged --json number,headRefName,mergedAt` filtered to `task/<iteration>/*`, newest by `mergedAt`). Check whether it carries a provenance block comment (`gh pr view <N> --json comments` — look for `"AEG … provenance"` or per-task provenance marker). If the block is absent, the per-task Archivist was skipped. STOP: *"Prior task PR #N in iteration `<name>` has no provenance block — the per-task Archivist must run before this task proceeds. Dispatch the per-task Archivist for #N first."* Do not begin work. If no prior merged task PR exists in the iteration (this is the first task), this check passes trivially. This gate is enforced in `aeg-root/roles/developer.md` (entry gate, item 3) and the coherence signal it reads is defined in `aeg-root/contracts/reviewer-archivist.md`.
 - Read the full brief before opening the worktree. Not a skim — every section.
 - Execute step 0 first, always. Never branch from `HEAD` of the current local checkout.
 - Verify all dependencies are merged before the first line of code.
