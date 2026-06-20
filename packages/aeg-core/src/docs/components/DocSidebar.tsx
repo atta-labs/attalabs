@@ -26,7 +26,7 @@ export function DocSidebar({ nav, pathname }: DocSidebarProps) {
   return (
     <SidebarProvider
       style={{ '--sidebar-width': '11rem' } as React.CSSProperties}
-      className='h-full min-h-0 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'
+      className='h-full min-h-0 w-(--sidebar-width) shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'
     >
       <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
         {nav.sections.map((section) => (
