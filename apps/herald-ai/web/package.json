@@ -23,6 +23,8 @@
     "@atta/db": "workspace:*",
     "@atta/engine": "workspace:*",
     "@atta/herald-ai-mcp": "workspace:*",
+    "@herald/mcp-server": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@atta/instrumentation": "workspace:*",
     "@atta/models": "workspace:*",
     "@atta/ui": "workspace:*",

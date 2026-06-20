@@ -1,0 +1,25 @@
+{
+  "name": "@herald/mcp-server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/server.ts",
+  "types": "./src/server.ts",
+  "exports": {
+    ".": "./src/server.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@atta/forensic-hiring-auditor": "workspace:*"
+  },
+  "devDependencies": {
+    "@atta/typescript-config": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.7.0"
+  }
+}
