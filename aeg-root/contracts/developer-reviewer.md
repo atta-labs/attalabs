@@ -42,6 +42,7 @@ Every item the Developer produces in the open PR (left) has exactly one obligati
 
 ## Producer obligations (the Developer)
 
+- **Prior-archival precondition satisfied.** Before starting any work on this task, the Developer must have passed the prior-archival precondition defined in `aeg-root/contracts/brief-developer.md` (consumer obligations) and enforced in `aeg-root/roles/developer.md` (entry gate, item 3): the most-recently-merged task PR in the iteration carries a provenance block comment. A PR produced without first passing this gate was produced outside protocol — the provenance chain is broken and the close-out for the preceding task is incomplete.
 - CI must be green before requesting review. Do not request review with a red CI and expect the Reviewer to begin.
 - The brief must be in the PR body, unmodified — pasted verbatim, not summarized or paraphrased.
 - The diff must touch only files in the brief's Technical Surface Map (§4). Files outside it are a stop-and-escalate before opening the PR, not a finding for the Reviewer to catch.

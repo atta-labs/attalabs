@@ -23,12 +23,24 @@ You are NOT the Developer if you are in a chat/planning surface talking with the
 
 ## Entry gate (self-locating)
 
-Before writing any code, validate two things — and refuse if either fails:
+Before writing any code, validate the following — and refuse if any fails:
 
 1. **Is my input a well-formed brief?** It must carry tier, scope, stop conditions, and a deliverable. If you were handed a loose prompt instead → *"This isn't a brief — it's missing tier / scope / stop-conditions. Get one from the Brief Author; I don't infer scope from a prompt."* If a multi-project repo and `Project:` doesn't resolve against `aeg-root/projects.md` → *"Project 'x' isn't registered."*
 2. **Are my dispatch gates satisfied?** Check the forge (not a status file — status is derived):
    - Every `depends-on` task's **PR is merged**. If not → *"Task N depends on <dep>, whose PR isn't merged yet. Not starting — it serializes behind it."*
    - No `conflicts-with` sibling has an **open PR** (or is otherwise in-flight). If one does → *"Task N conflicts with <sibling>, whose PR is open. Not starting until it merges."*
+3. **Prior-archival precondition (hard STOP before step 0).** Before executing step 0, query the most-recently-merged task PR in this iteration:
+   ```
+   gh pr list --state merged --json number,headRefName,mergedAt \
+     | jq '[.[] | select(.headRefName | startswith("task/<iteration>/"))] | sort_by(.mergedAt) | last'
+   ```
+   Then check whether that PR carries a provenance block comment:
+   ```
+   gh pr view <N> --json comments \
+     | jq '.comments[].body | select(test("AEG.*provenance|provenance.*task"; "i"))'
+   ```
+   If the result is empty, the per-task Archivist was skipped. STOP: *"Prior task PR #N in iteration `<name>` has no provenance block — the per-task Archivist must run before this task proceeds. Dispatch the per-task Archivist for #N first."* Do not begin work. If no prior merged task PR exists in the iteration (this is the first task), this check passes trivially. The contract governing this signal is `aeg-root/contracts/reviewer-archivist.md`; the full obligation is in `aeg-root/contracts/brief-developer.md`.
+4. **Prior-iteration-archival precondition.** Before opening a PR against any product, confirm each product named in the brief's `Project:` field has its previous iteration archived. For each product, check whether a prior iteration for that product exists in `aeg-root/iterations/` but NOT in `aeg-root/iterations/completed/`. If any such unarchived iteration exists and all its task PRs are merged, the Iteration Archivist has not run. STOP: *"Product `<X>`'s previous iteration `<name>` is complete but not archived — the Iteration Archivist must run before new work on this product. Dispatch it first."* If there is no prior iteration on a product, this gate passes trivially. The contract governing this gate is `aeg-root/contracts/iteration-archivist-planner.md`.
 
 These gates read live forge state. You never write status anywhere — opening your branch and PR *is* the status. (See `iterations/README.md` §3, §8.)
 
