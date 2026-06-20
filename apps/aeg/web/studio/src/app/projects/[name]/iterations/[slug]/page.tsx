@@ -1,16 +1,40 @@
 import { Badge } from '@atta/ui/components/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components/table'
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@atta/ui/components/table'
 import { NextLink } from '@atta/ui/lib/next-link'
+import { parseLedger, sumLedger } from '@atta/aeg-core'
 import { GitBranch, LayoutGrid } from 'lucide-react'
 import type { Metadata } from 'next'
+import { existsSync, readFileSync } from 'node:fs'
+import path from 'node:path'
 import { notFound } from 'next/navigation'
-import { readIteration, readProject } from '@/lib/aeg-fs'
+import { findAegRoot, readIteration, readProject } from '@/lib/aeg-fs'
 
 type Params = { name: string; slug: string }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { name, slug } = await params
   return { title: `${slug} · ${name} · AEG Studio` }
+}
+
+function readLedgerFile(slug: string): string | null {
+  try {
+    const root = findAegRoot()
+    const ledgerPath = path.join(root, 'iterations', `${slug}.tokens.md`)
+    if (!existsSync(ledgerPath)) return null
+    return readFileSync(ledgerPath, 'utf8')
+  } catch {
+    return null
+  }
+}
+
+function formatTokens(n: number | null): string {
+  if (n === null) return '—'
+  return n.toLocaleString('en-US')
+}
+
+function formatCost(n: number | null): string {
+  if (n === null) return '—'
+  return `$${n.toFixed(4)}`
 }
 
 export default async function IterationPage({ params }: { params: Promise<Params> }) {
@@ -20,6 +44,10 @@ export default async function IterationPage({ params }: { params: Promise<Params
   if (!detail) notFound()
 
   const { iteration, archived } = detail
+
+  const ledgerMd = readLedgerFile(slug)
+  const ledgerRows = ledgerMd !== null ? parseLedger(ledgerMd) : null
+  const ledgerTotals = ledgerRows !== null ? sumLedger(ledgerRows) : null
 
   return (
     <div className='space-y-8'>
@@ -130,6 +158,73 @@ export default async function IterationPage({ params }: { params: Promise<Params
           </ul>
         </section>
       )}
+
+      <section className='space-y-3'>
+        <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Token ledger</h2>
+        {ledgerRows === null ? (
+          <p className='font-sans text-sm text-muted-foreground/70'>No ledger data yet.</p>
+        ) : ledgerRows.length === 0 ? (
+          <p className='font-sans text-sm text-muted-foreground/70'>No ledger data yet.</p>
+        ) : (
+          <div className='rounded-lg border border-border bg-card'>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Phase</TableHead>
+                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Role</TableHead>
+                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Agent / Model</TableHead>
+                  <TableHead className='w-28 text-right font-sans text-xs uppercase tracking-wider'>
+                    Tokens in
+                  </TableHead>
+                  <TableHead className='w-28 text-right font-sans text-xs uppercase tracking-wider'>
+                    Tokens out
+                  </TableHead>
+                  <TableHead className='w-24 text-right font-sans text-xs uppercase tracking-wider'>Cost</TableHead>
+                  <TableHead className='w-28 font-sans text-xs uppercase tracking-wider'>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ledgerRows.map((row, idx) => (
+                  <TableRow key={`${row.phase}-${idx}`}>
+                    <TableCell className='font-mono text-xs text-foreground'>{row.phase}</TableCell>
+                    <TableCell className='font-sans text-sm text-card-foreground'>{row.role || '—'}</TableCell>
+                    <TableCell className='font-mono text-xs text-muted-foreground'>{row.agentModel || '—'}</TableCell>
+                    <TableCell className='text-right font-mono text-xs text-card-foreground'>
+                      {formatTokens(row.tokensIn)}
+                    </TableCell>
+                    <TableCell className='text-right font-mono text-xs text-card-foreground'>
+                      {formatTokens(row.tokensOut)}
+                    </TableCell>
+                    <TableCell className='text-right font-mono text-xs text-card-foreground'>
+                      {formatCost(row.cost)}
+                    </TableCell>
+                    <TableCell className='font-mono text-xs text-muted-foreground'>{row.date || '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+              {ledgerTotals !== null && (
+                <TableFooter>
+                  <TableRow>
+                    <TableCell colSpan={3} className='font-mono text-xs font-semibold text-foreground'>
+                      Total ({ledgerTotals.rows} {ledgerTotals.rows === 1 ? 'entry' : 'entries'})
+                    </TableCell>
+                    <TableCell className='text-right font-mono text-xs font-semibold text-foreground'>
+                      {ledgerTotals.tokensIn > 0 ? ledgerTotals.tokensIn.toLocaleString('en-US') : '—'}
+                    </TableCell>
+                    <TableCell className='text-right font-mono text-xs font-semibold text-foreground'>
+                      {ledgerTotals.tokensOut > 0 ? ledgerTotals.tokensOut.toLocaleString('en-US') : '—'}
+                    </TableCell>
+                    <TableCell className='text-right font-mono text-xs font-semibold text-foreground'>
+                      {ledgerTotals.cost > 0 ? `$${ledgerTotals.cost.toFixed(4)}` : '—'}
+                    </TableCell>
+                    <TableCell />
+                  </TableRow>
+                </TableFooter>
+              )}
+            </Table>
+          </div>
+        )}
+      </section>
     </div>
   )
 }
