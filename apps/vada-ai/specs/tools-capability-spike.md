@@ -1,6 +1,7 @@
 # Tools / MCP Capability Spike — S0 Findings
 
 **Iteration:** vada-production-v1 · **Task:** S0 · **Tier:** 0 · **Spike:** true  
+**Status:** draft  
 **Date:** 2026-06-20  
 **Files read:** `adapter-langgraph/src/{llm,tools,custom-tool-loop,adapter,graph-builder,node-executor}.ts` · `engine/src/{flow-schema,flow-types,compile-flow,types}.ts` · `models/src/vendors.ts` · `agents/forensic-hiring-auditor/src/index.ts` + `yamls/herald-auditor.yaml`
 
