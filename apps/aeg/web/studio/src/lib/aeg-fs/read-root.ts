@@ -19,7 +19,14 @@ import 'server-only'
 import { existsSync } from 'node:fs'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import { parseIteration, parseRegistry, type Iteration, type Project, type Registry } from '@atta/aeg-core'
+import {
+  parseIteration,
+  parseRegistry,
+  type Iteration,
+  type Lifecycle,
+  type Project,
+  type Registry
+} from '@atta/aeg-core'
 
 const ITERATIONS_DIR = 'iterations'
 const COMPLETED_DIR = 'completed'
@@ -33,10 +40,14 @@ export type IterationSummary = {
   fileSlug: string
   /** Source of truth: file location, not the in-file marker. */
   archived: boolean
+  /** In-file `Lifecycle:` marker. Defaults to `'active'` when absent. */
+  lifecycle: Lifecycle
   /** First-paragraph goal — empty when missing. */
   goal: string
   /** Number of rows in `## Tasks (topology)`. */
   taskCount: number
+  /** Deduplicated project names referenced across all tasks in this iteration. */
+  projects: string[]
 }
 
 let cachedRoot: string | null = null
@@ -71,7 +82,9 @@ export async function readProject(name: string): Promise<Project | undefined> {
 async function listIterationFiles(dir: string): Promise<string[]> {
   if (!existsSync(dir)) return []
   const entries = await fs.readdir(dir, { withFileTypes: true })
-  return entries.filter((e) => e.isFile() && e.name.endsWith('.md') && e.name !== 'README.md').map((e) => e.name)
+  return entries
+    .filter((e) => e.isFile() && e.name.endsWith('.md') && e.name !== 'README.md' && !e.name.endsWith('.tokens.md'))
+    .map((e) => e.name)
 }
 
 async function readOne(dir: string, file: string): Promise<{ fileSlug: string; iteration: Iteration }> {
@@ -104,12 +117,20 @@ export async function listIterations(): Promise<IterationLists> {
 }
 
 function toSummary(fileSlug: string, iteration: Iteration, archived: boolean): IterationSummary {
+  const seen = new Set<string>()
+  for (const task of iteration.tasks) {
+    for (const p of task.projects) {
+      seen.add(p)
+    }
+  }
   return {
     name: iteration.name || fileSlug,
     fileSlug,
     archived,
+    lifecycle: iteration.lifecycle,
     goal: iteration.goal,
-    taskCount: iteration.tasks.length
+    taskCount: iteration.tasks.length,
+    projects: Array.from(seen)
   }
 }
 
