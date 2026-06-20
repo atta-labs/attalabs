@@ -47,17 +47,6 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
       gap={4}
       className='border-b border-border bg-card px-6 py-2.5 h-10 font-mono text-[11px] select-none shrink-0'
     >
-      <Text
-        as='span'
-        size='xs'
-        weight='bold'
-        className='font-sans tracking-widest uppercase text-muted-foreground/80 text-[10px]'
-      >
-        Projects
-      </Text>
-      <Text as='span' className='text-muted-foreground/30'>
-        ·
-      </Text>
       <Flex align='center' gap={2} className='overflow-x-auto no-scrollbar'>
         {projects.map((p, idx) => {
           const isActive = activeProjectName === p.name
