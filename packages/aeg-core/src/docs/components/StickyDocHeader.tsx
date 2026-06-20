@@ -49,7 +49,7 @@ export function StickyDocHeader({ title, section }: StickyDocHeaderProps) {
 
   return (
     <div
-      className={`sticky top-0 z-20 -mx-12 -mt-10 mb-8 border-b border-border/40 bg-background/80 px-12 py-3 backdrop-blur-md transition-all duration-300 ${
+      className={`sticky top-0 z-20 -mx-12 mb-8 border-b border-border/40 bg-background/80 px-12 py-3 backdrop-blur-md transition-all duration-300 ${
         isSticky ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
       }`}
     >

@@ -24,7 +24,10 @@ export type DocSidebarProps = { nav: DocNav; pathname: string }
 
 export function DocSidebar({ nav, pathname }: DocSidebarProps) {
   return (
-    <SidebarProvider className='h-full min-h-0 w-44 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'>
+    <SidebarProvider
+      style={{ '--sidebar-width': '11rem' } as React.CSSProperties}
+      className='h-full min-h-0 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'
+    >
       <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
         {nav.sections.map((section) => (
           <SidebarGroup key={section.id} className='py-1.5'>
@@ -80,7 +83,7 @@ function CollapsibleDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
             <SidebarMenuButton
               size='sm'
               isActive={hasActiveChild}
-              className={`h-auto min-h-7 py-1 font-sans text-[13px] tracking-tight font-normal ${
+              className={`h-auto min-h-7 py-1 font-sans text-[13px] tracking-tight font-normal [&>span:last-child]:whitespace-normal [&>span:last-child]:leading-snug ${
                 hasActiveChild
                   ? 'text-sidebar-accent-foreground font-semibold'
                   : 'text-sidebar-foreground/60 hover:text-sidebar-foreground'
@@ -102,7 +105,7 @@ function CollapsibleDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
                   size='sm'
                   isActive={isChildActive}
                   render={<NextLink variant='unstyled' href={child.href} />}
-                  className={`h-auto min-h-7 py-1 font-sans text-[13px] tracking-tight font-normal ${
+                  className={`h-auto min-h-7 py-1 font-sans text-[13px] tracking-tight font-normal [&>span:last-child]:whitespace-normal [&>span:last-child]:leading-snug ${
                     isChildActive
                       ? 'text-sidebar-accent-foreground font-semibold'
                       : 'text-sidebar-foreground/60 hover:text-sidebar-foreground'

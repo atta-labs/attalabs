@@ -9,7 +9,7 @@ export default async function DocsLayout({ children }: { children: ReactNode }) 
   return (
     <Flex className='h-full w-full overflow-hidden'>
       <DocSidebarHost nav={nav} />
-      <main className='flex-1 overflow-y-auto px-12 py-10 bg-background'>
+      <main className='flex-1 overflow-y-auto px-12 pb-10 bg-background'>
         <div className='mx-auto max-w-4xl'>{children}</div>
       </main>
     </Flex>
