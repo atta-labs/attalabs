@@ -151,6 +151,42 @@ Task 3a (multi-vendor structured output in the engine): dropped intentionally pr
 
 ---
 
+## aeg-governance-ui-v2 — retrospective (June 2026)
+
+**Duration:** June 18, 2026 → June 20, 2026 (first task PR #144 merged → last task PR #155 merged)
+**Tasks completed:** 4 of 4 planned (topology tasks 1, 2, 3, 4 — task 1 split into 1a+1b by Brief Author = 5 planned PRs; 1 unplanned PR #152 task/theme also merged)
+**Tasks dropped/deferred:** None. All topology tasks completed.
+
+### What went well
+
+- **Contracts-first before UI.** Task 1a (5 role-seam contracts) merged June 18 — before any UI work dispatched. The governance model was structurally complete before the Studio was built to visualize it. This is the right sequencing and held cleanly.
+- **1a/1b Brief Author split.** Separating governance writing (1a) from the discovery audit (1b) let both proceed without touching the same files. The spike found 16 gaps and produced `aeg-root/discovery/2026-06-17-governance-gaps.md` — a structured backlog of remaining inconsistencies before the next iteration.
+- **Exact-copy Studio refactor pattern held.** Task 2's brief said "copy exactly, do not redesign." The refactor lifted the science layout from `apps/vada-ai/web/src/app/(main)/_archived-science/` verbatim and adapted only nav items. No redesign debt was introduced.
+- **Token ledger display closed the open loop.** Task 4 delivered the Studio view half of D-048 (the `parseLedger` + `sumLedger` model half had shipped in aeg-ui-v1 task 9). The two-session deferred pattern (model first, then view) worked — `sumLedger()` was a clean hook when task 4 consumed it.
+
+### What stalled or caused rework
+
+- **task/theme was unplanned.** CMS config wiring (PR #152) was not in the iteration topology — it was added mid-iteration because the Studio rendered with bare tokens after task 2. A non-functional requirements check during task 2's brief would have caught that `NextWebShell` wiring was missing. Cost: one extra PR, one extra round-trip.
+- **No GitHub Issues were filed.** All topology entries carry `#TBD` — Issues were never created. The iteration ran without the Issue layer entirely. Forge-derived status was impossible; the task-ledger map in the retrospective is assembled from PR head branches alone, not Issue numbers.
+- **Per-task Archivist did not run on any of the 6 PRs.** All provenance blocks are absent. The Iteration Archivist flag (in DANGLING) carries this forward for Principal decision.
+
+### Carry-forward lessons (add to calibration section if not already there)
+
+- **Check non-functional requirements (theme, auth, CMS wiring) at brief time, not post-merge.** When a task creates a new surface or shell, the brief's surface map should list environmental wiring (CMS config, `NextWebShell`, `IdentityProvider`) alongside functional routes. Missing these produces an unplanned cosmetic follow-up PR.
+- **File Issues before dispatching any task.** `#TBD` is not a valid forge reference. The brief-developer contract requires an Issue number before the Developer starts. Iteration planning should create the Issues immediately after the topology is locked — not defer to "TBD."
+
+### Decisions made this iteration (Type 1, ratified)
+
+No Type 1 decisions were authored during task execution (June 18–20). The planning-phase decisions immediately before this iteration:
+- **D-050** — Iteration Archivist as a first-class AEG role (June 17). Status: ACTIVE.
+- **D-051** — Agent implementation packages at `packages/agents/<name>/`; workspace glob extended (June 17). Status: ACTIVE.
+
+### Unbuilt tasks
+
+None. All 4 topology tasks completed.
+
+---
+
 ## L‑005 — Stale skills/specs actively mislead: the auth skill said "never per-project Clerk" while Herald had its own
 
 **Context:** `.claude/skills/auth/SKILL.md` asserted "one Clerk app for the entire ecosystem / never create a per-project Clerk app" as a hard rule, while D-031 had already established Herald as a standalone with its own Clerk app. An agent reading the skill would have applied the wrong identity model to Herald.

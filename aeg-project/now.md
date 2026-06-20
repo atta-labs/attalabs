@@ -8,21 +8,19 @@
 **Where the plan lives** (the old `roadmap.md` is retired — global D-029). The plan is the backlogs, not the iterations:
 - Per-project: `apps/vada-ai/specs/vada-backlog.md` · `apps/cetana-ai/specs/cetana-backlog.md` · `apps/herald-ai/specs/herald-backlog.md`
 - Cross-cutting / AEG-itself: `specs/ecosystem-backlog.md`
-- **Active execution:** `aeg-root/iterations/` — a slice *pulled from a backlog* when it's actually being built. **herald-onto-engine: complete ✅. aeg-ui-v1: complete except task 9-view (#110).**
+- **Active execution:** `aeg-root/iterations/` — a slice *pulled from a backlog* when it's actually being built. **herald-onto-engine: complete ✅. aeg-ui-v1: complete ✅. aeg-governance-ui-v2: complete ✅.**
 
 ---
 
 ## In flight now
 
-**PR #132** — Herald audit fix (max_tokens truncation, stale model, JD charset encoding). Open, awaiting Principal browser-test verification of a real audit.
+Nothing currently in active execution. Three iterations have closed (herald-onto-engine, aeg-ui-v1, aeg-governance-ui-v2). herald-agents-v2, vada-agents-v2 are open as parallel active iterations; see their own `aeg-project/` state docs.
 
 ---
 
 ## Next 3 things
 
-1. **Merge PR #132** after Principal browser-tests a real audit against the fix.
-2. **Build task 9-view** (#110, token ledger Studio display) — unblocked, brief needed.
-3. **PR body contract in developer.md** — brief written, ready to dispatch.
+Principal to declare. The governance model (aeg-governance-ui-v2) and Studio UI (aeg-ui-v1) are both complete. Options: (1) next AEG iteration (forge-derived status / GitHub App auth), (2) Vāda reviewer prompt iteration (Track B 3b), (3) Cetana F7 (`cetana status`). Principal decides.
 
 ---
 

@@ -2,7 +2,7 @@
 sidebar_title: aeg-governance-ui-v2
 ---
 # Iteration: aeg-governance-ui-v2 — June–July 2026
-Lifecycle: active
+Lifecycle: complete
 
 Goal: Complete the AEG model by writing all missing role-seam contracts and adding the
 Planner readiness gate that enforces iteration close-out before new planning begins
