@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { NextLink } from '@atta/ui/lib/next-link'
+import { Flex, Text } from '@atta/ui/shared'
 import type { Project } from '@atta/aeg-core'
 
 export function ProjectsSubBar({ projects }: { projects: Project[] }) {
@@ -40,16 +41,28 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
   }
 
   return (
-    <div className='border-b border-border bg-card px-6 py-2.5 h-10 flex items-center justify-start gap-4 font-mono text-[11px] select-none shrink-0'>
-      <span className='font-sans font-bold tracking-widest text-[10px] uppercase text-muted-foreground/80'>
+    <Flex
+      align='center'
+      justify='start'
+      gap={4}
+      className='border-b border-border bg-card px-6 py-2.5 h-10 font-mono text-[11px] select-none shrink-0'
+    >
+      <Text
+        as='span'
+        size='xs'
+        weight='bold'
+        className='font-sans tracking-widest uppercase text-muted-foreground/80 text-[10px]'
+      >
         Projects
-      </span>
-      <span className='text-muted-foreground/30'>·</span>
-      <div className='flex items-center gap-2 overflow-x-auto no-scrollbar'>
+      </Text>
+      <Text as='span' className='text-muted-foreground/30'>
+        ·
+      </Text>
+      <Flex align='center' gap={2} className='overflow-x-auto no-scrollbar'>
         {projects.map((p, idx) => {
           const isActive = activeProjectName === p.name
           return (
-            <span key={p.name} className='flex items-center gap-2'>
+            <Flex key={p.name} as='span' align='center' gap={2}>
               <NextLink
                 variant='unstyled'
                 href={`/projects/${p.name}`}
@@ -60,13 +73,17 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
                 }`}
               >
                 <span className={`size-1.5 rounded-full shrink-0 ${getBulletColorClass(p.name)}`} />
-                <span>{p.name}</span>
+                <Text as='span'>{p.name}</Text>
               </NextLink>
-              {idx < projects.length - 1 && <span className='text-muted-foreground/30'>·</span>}
-            </span>
+              {idx < projects.length - 1 && (
+                <Text as='span' className='text-muted-foreground/30'>
+                  ·
+                </Text>
+              )}
+            </Flex>
           )
         })}
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   )
 }

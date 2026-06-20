@@ -5,6 +5,7 @@ import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import { TopBar } from '@atta/ui/topbar'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import { Flex, Text } from '@atta/ui/shared'
 import '@atta/ui/globals.css'
 import { AegLogo } from './components/AegLogo'
 import { StudioShell } from './components/StudioShell'
@@ -37,10 +38,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <TopBar
         logo={
-          <div className='flex items-center gap-2 text-foreground'>
+          <Flex align='center' gap={2} className='text-foreground'>
             <AegLogo className='h-6 w-6' />
-            <span className='font-serif text-lg tracking-tight'>AEG</span>
-          </div>
+            <Text as='span' className='font-serif text-lg tracking-tight'>
+              AEG
+            </Text>
+          </Flex>
         }
         links={links}
         withAuth={false}

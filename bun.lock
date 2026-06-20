@@ -357,6 +357,7 @@
       "name": "@atta/aeg-core",
       "version": "0.0.1",
       "dependencies": {
+        "@atta/ui": "workspace:*",
         "gray-matter": "^4.0.3",
         "react-markdown": "^10.1.0",
         "remark-gfm": "^4.0.1",
