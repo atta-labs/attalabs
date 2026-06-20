@@ -75,7 +75,7 @@ export function DocPage({ doc, body, next, prev, basePath = '/docs' }: DocPagePr
   return (
     <>
       <StickyDocHeader title={doc.title} section={doc.section} />
-      <article className='space-y-8 pt-10'>
+      <article className='space-y-4 pt-4'>
         <header className='space-y-3'>
           <span className='font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground'>{doc.section}</span>
           <h1 className='font-serif text-4xl font-light leading-tight text-foreground'>{doc.title}</h1>

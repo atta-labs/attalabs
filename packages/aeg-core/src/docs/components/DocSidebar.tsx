@@ -25,13 +25,13 @@ export type DocSidebarProps = { nav: DocNav; pathname: string }
 export function DocSidebar({ nav, pathname }: DocSidebarProps) {
   return (
     <SidebarProvider
-      style={{ '--sidebar-width': '11rem' } as React.CSSProperties}
+      style={{ '--sidebar-width': '16rem' } as React.CSSProperties}
       className='h-full min-h-0 w-(--sidebar-width) shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'
     >
       <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
         {nav.sections.map((section) => (
           <SidebarGroup key={section.id} className='py-1.5'>
-            <SidebarGroupLabel className='font-sans text-[10px] font-bold tracking-[0.15em] uppercase text-sidebar-foreground/50'>
+            <SidebarGroupLabel className='font-sans text-[11px] font-bold tracking-[0.15em] uppercase text-sidebar-foreground/60'>
               {section.label}
             </SidebarGroupLabel>
             <SidebarGroupContent className='mt-1'>

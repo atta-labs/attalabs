@@ -102,7 +102,7 @@ function TopBarWithAuth({
 
   return (
     <nav className='w-full border-b border-border'>
-      <div className='flex h-14 w-full items-center px-6'>
+      <div className='relative flex h-14 w-full items-center px-6'>
         {/* Logo — pinned left */}
         <div className='flex flex-1 items-center'>
           {logo ? (
@@ -114,8 +114,8 @@ function TopBarWithAuth({
           )}
         </div>
 
-        {/* Desktop nav links — truly centered */}
-        <div className='hidden items-center gap-8 md:flex'>
+        {/* Desktop nav links — absolutely centered */}
+        <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex'>
           {visibleLinks.map(({ href, label, exact, external }) => (
             <NextLink
               key={href}
@@ -234,7 +234,7 @@ function TopBarNoAuth({ logo, logoText = '', logoHref = '/', logoUrl, logoTaglin
 
   return (
     <nav className='w-full border-b border-border'>
-      <div className='flex h-14 w-full items-center px-6'>
+      <div className='relative flex h-14 w-full items-center px-6'>
         {/* Logo — pinned left */}
         <div className='flex flex-1 items-center'>
           {logo ? (
@@ -246,8 +246,8 @@ function TopBarNoAuth({ logo, logoText = '', logoHref = '/', logoUrl, logoTaglin
           )}
         </div>
 
-        {/* Desktop nav links — truly centered */}
-        <div className='hidden items-center gap-8 md:flex'>
+        {/* Desktop nav links — absolutely centered */}
+        <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex'>
           {links.map(({ href, label, exact, external }) => (
             <NextLink
               key={href}

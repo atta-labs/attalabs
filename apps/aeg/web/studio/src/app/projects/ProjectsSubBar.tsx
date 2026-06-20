@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { Flex, Text } from '@atta/ui/shared'
+import { Flex } from '@atta/ui/shared'
 import type { Project } from '@atta/aeg-core'
 
 export function ProjectsSubBar({ projects }: { projects: Project[] }) {
@@ -19,31 +19,10 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
 
   const activeProjectName = getActiveProjectName()
 
-  const getBulletColorClass = (name: string) => {
-    switch (name) {
-      case 'vada':
-        return 'bg-project-vada'
-      case 'cetana':
-        return 'bg-project-cetana'
-      case 'herald':
-        return 'bg-project-herald'
-      case 'aeg':
-        return 'bg-project-aeg'
-      case 'aeg-core':
-        return 'bg-project-aeg-core'
-      case 'atta':
-        return 'bg-project-atta'
-      case 'desktop':
-        return 'bg-project-desktop'
-      default:
-        return 'bg-project-desktop'
-    }
-  }
-
   return (
     <Flex
       align='center'
-      justify='start'
+      justify='center'
       gap={4}
       className='border-b border-border bg-card px-6 py-2.5 h-10 font-mono text-[11px] select-none shrink-0'
     >
@@ -59,14 +38,9 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
                   isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <span className={`size-1.5 rounded-full shrink-0 ${getBulletColorClass(p.name)}`} />
-                <Text as='span'>{p.name}</Text>
+                <span className='text-xs'>{p.name}</span>
               </NextLink>
-              {idx < projects.length - 1 && (
-                <Text as='span' className='text-muted-foreground/30'>
-                  ·
-                </Text>
-              )}
+              {idx < projects.length - 1 && <span className='text-muted-foreground/30'>·</span>}
             </Flex>
           )
         })}
