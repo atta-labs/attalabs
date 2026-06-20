@@ -26,6 +26,7 @@ Principal to declare. The governance model (aeg-governance-ui-v2) and Studio UI 
 
 ## Manual work pending
 
+- **Close Issue #110 manually** — task 9 view half (token ledger Studio display) merged via PR #153 on branch `task/aeg-governance-ui-v2/4`; auto-close did not fire; issue remains open.
 - **Add OpenAI + xAI keys to Vercel** — Vercel → vada-ai project → Settings → Environment Variables → add `OPENAI_API_KEY` and `XAI_API_KEY`. Unblocks Reviewers end-to-end testing.
 - **Upstash Redis credentials for Herald** — `.env.local` creds expired. Rate limiting degrades gracefully but isn't active. Provision at upstash.com, update `.env.local` + Vercel env vars for `herald.attalabs.dev`.
 - **Herald deploy verification** — confirm `https://herald.attalabs.dev/admin` works post-PR-#75 (avatar upload, CV upload, bio save, theme picker).

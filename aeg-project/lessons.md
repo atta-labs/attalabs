@@ -192,3 +192,42 @@ None. All 4 topology tasks completed.
 **Context:** `.claude/skills/auth/SKILL.md` asserted "one Clerk app for the entire ecosystem / never create a per-project Clerk app" as a hard rule, while D-031 had already established Herald as a standalone with its own Clerk app. An agent reading the skill would have applied the wrong identity model to Herald.
 
 **Lesson:** When a decision creates an exception to a documented rule, update the skill/spec in the **same** pass, not "later." A stale skill is worse than a missing one — it asserts a falsehood with authority. Capture exceptions explicitly (the auth skill now has a "Herald exception" section). Doc updates ride as a separate PR from the code, but they are not optional follow-ups — do them while the change is fresh.
+
+---
+
+## aeg-ui-v1 — retrospective (June 2026)
+
+**Duration:** June 14, 2026 → June 20, 2026 (PR #105 merged → PR #153 merged — task 9 view half)
+**Tasks completed:** 10 of 10 planned
+**Tasks dropped/deferred:** none
+
+### What went well
+
+- **The pure `@atta/aeg-core` foundation held.** Task 1's zero-I/O constraint (no filesystem, no GitHub client, only typed inputs) produced 49 passing tests and an immediately consumable substrate. All downstream tasks (3, 4, 5, 6, 7, 9) consumed it without modification. The pureness constraint also let both Studio (local) and the future Portal (hosted) inherit it — the multi-consumer design was free because I/O was never a coupling point. PR #105.
+- **The 4→6→5 serialization of the app-surface wave prevented shared-shell collisions.** The planner declared conflicts explicitly and serialized; none of the three tasks (projects/iterations nav, dependency graph, kanban) touched each other's routing files. No merge conflicts across the wave.
+- **Task 9's model/view split was flagged in the brief and kept the iteration moving.** The brief for PR #122 explicitly noted "#110 stays open for the Studio view follow-up" — this prevented task 9's view half from blocking the iteration's main wave (which would have stalled on the pages surface then occupied by task 6).
+- **`@atta/ui/engine-flow` was reused for the graph view (task 6) without modifying the shared package.** Zero blast radius on Vāda/Herald from task 6's dependency graph — exactly what the planner readiness gate was designed to confirm in advance.
+- **`@atta/aeg-core` reused as a fixture source.** The live iteration + registry files were vendored as test fixtures at `packages/aeg-core/src/fixtures/` — tests proved real-world correctness rather than synthetic coverage.
+
+### What stalled or caused rework
+
+- **Four runtime failures merged CI-green across this iteration.** A missing DB migration (Studio kanban), a missing env var (Herald BYOK key), a missing IdentityProvider (ModelPicker render path), and an unexecuted polymorphic-input test plan (Herald bulk audit) all slipped past typecheck + lint + unit-test gates. Root cause: no role owned runtime verification. This structural gap was the direct motivation for D-049 (Verification Phase), which this iteration produced as its own remedy in task 10. The remedy was produced by the same iteration that created the evidence — an honest self-correction.
+- **Task 9 view half landed on a different iteration's branch.** The view half of task 9 (PR #153) merged on branch `task/aeg-governance-ui-v2/4` rather than a `task/aeg-ui-v1/*` branch. As a result, GitHub's auto-close did not fire on Issue #110, which remains open. The work is complete; the signal is wrong.
+- **Local worktrees not cleaned up after merges.** `.worktrees/task/aeg-ui-v1/{4,5,6,7,9,10}` survived after their PRs merged. This is the recurring pattern from L-001 — worktrees are not garbage-collected automatically and must be flagged explicitly at iteration close.
+- **Per-task Archivist provenance blocks absent on most task PRs.** The per-task Archivist did not run on the majority of merges in this iteration, leaving the forge without task-level provenance signals. This creates a gap for the archival coherence gates added by PR #159. The iteration is functionally complete and forensically auditable from PR bodies — the per-task provenance block is the missing formality.
+
+### Carry-forward lessons (add to lessons.md calibration section if not already there)
+
+- **Issue auto-close only fires from the PR's own branch.** When a task's second half lands on a different iteration's branch, the original issue must be closed manually. Add manual-close as an explicit step in brief wrap-up when a task spans two branches.
+- **Worktrees must be flagged for removal at iteration close.** Add "flag surviving worktrees for git worktree remove" to the Iteration Archivist's DANGLING section — and at the next iteration's Developer entry gate, confirm the list is empty.
+- **CI-green is not feature-green.** The Verification Phase (D-049) now makes this contractual. Any brief touching a runtime surface requires a `[principal]` item in the test plan that the agent structurally cannot tick.
+
+### Decisions made this iteration (Type 1, ratified)
+
+- **D-043** — Session-2 AEG model additions: label vocabulary, iteration lifecycle + concurrency, conversational protocol (June 12, planning session for this iteration). Status: ACTIVE.
+- **D-048** — Append-only per-iteration token/cost ledger added to the AEG model (task 9 model half, June 15). Status: ACTIVE.
+- **D-049** — AEG model: Verification phase + runtime Test Plan as a brief field and merge gate (task 10, June 16). Status: ACTIVE.
+
+### Unbuilt tasks
+
+None. All 10 tasks completed and merged.

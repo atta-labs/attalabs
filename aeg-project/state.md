@@ -159,17 +159,19 @@ Flat routes at `apps/vada-ai/web/src/app/(main)/`:
 
 See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: file may be slightly stale post-May-4-5; flagged for cleanup).
 
-### AEG — *model ratified (D-029, D-030); product scaffolded (`apps/aeg/`, spec-only) — the designated first iteration*
+### AEG — *model ratified (D-029, D-030); AEG Studio V1 shipped (aeg-ui-v1, June 2026)*
 
-**Status:** The **model** is ratified and live (global D-029, PR #80 merged June 4; enhancements D-030 ratified ACTIVE June 10). The **product** now has a real home — `apps/aeg/` was scaffolded June 10 (global D-038), spec-only; no `apps/aeg/web` code yet. Building the UI is the intended first real iteration.
+**Status:** The **model** is ratified and live (global D-029, PR #80 merged June 4; enhancements D-030 ratified ACTIVE June 10). **AEG Studio V1 shipped** (aeg-ui-v1 iteration, June 14–20, 2026) — `apps/aeg/web/studio` is built and running with `@atta/aeg-core` as its substrate. Iteration archived to `aeg-root/iterations/completed/aeg-ui-v1.md`.
 
 **What it is:** Atta Agentic Execution Governance — the forge-native, orchestrator-independent model above (see "Operational model"). The product is two things: (1) a Next.js UI (`apps/aeg/web`) that reads an AEG repo's `iterations/*.md` (topology) + the Git forge (derived status) + the backlogs (plan) and renders an attention queue (default), repos grouped by tag, each repo's iterations, and the iteration DAG; and (2) `aeg.sh`, a neutral scaffolder that lays down the AEG structure in any repo (and creates a specified unit's folders per D-037). AEG-only (a repo must practice AEG to render). Connects repos via a GitHub App (OAuth, read-only, per-repo, tokens encrypted via `@atta/crypto`); a webhook-fed cache of *forge facts* (not authored status) keeps reads fast within rate limits.
+
+**AEG Studio V1 (aeg-ui-v1, shipped June 2026):** Local read-only tool at `apps/aeg/web/studio`. Features: `@atta/aeg-core` pure parser + `deriveIteration`; local GitHub forge adapter; projects/iterations topology pages; kanban (derived status) + task detail (brief from PR body); task-dependency graph (`@atta/ui/engine-flow`); shared docs renderer; AEG logo mark; append-only token/cost ledger (model + Studio view); Verification phase + runtime merge gate (D-049). Substrate (`@atta/aeg-core`) inheritable by the future Portal.
 
 **Orchestrator-independence is structural (D-038):** AEG does **not** know Cetana. Cetana is the optional orchestrator (a sibling product at `apps/cetana-ai/`) that automates AEG's dispatch/escalation slice — it knows AEG, not the reverse. The UI may render an orchestrator's activity read-only as forge facts; it never contains or depends on the orchestrator. Cetana is never moved inside `apps/aeg/`.
 
 **Folder:** `apps/aeg/` (meta/infra app → no `-ai` suffix, matching `apps/attalabs`, `apps/desktop`). Specs at `apps/aeg/specs/` (`aeg-app-architecture.md`, `aeg-backlog.md`, `aeg-decisions.md`); state layer at `apps/aeg/aeg-project/` (`state.md`, `now.md`). Deploy target `aeg.attalabs.dev`.
 
-**Next:** decompose the AEG UI into the first iteration (pure `deriveIteration` module → GitHub App auth + encrypted token store → webhook fact-cache → attention queue → repo-rollup → DAG view). Must render the plan (backlogs) as well as execution (iterations) — OQ-cross-14. `aeg.sh` sequences alongside the derive module. Full write-up in `apps/aeg/specs/aeg-backlog.md`.
+**Next:** Principal to declare second iteration (Portal public surface, `aeg.sh`, or attention-queue features per `apps/aeg/specs/aeg-backlog.md`).
 
 ### Atta — *deep-thinking AI consumer product; composition not yet deployed*
 
@@ -455,7 +457,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 
 **Does not exist yet:**
 - Atta-the-product (composed Vāda + Vitakka + Sati)
-- `apps/aeg/web` (the AEG product UI — first iteration; the folder + specs exist, the code does not)
+- `apps/aeg/web` — AEG Studio V1 shipped (aeg-ui-v1, June 2026). Next: Portal (public hosted surface, future).
 - `apps/account/web` — DEFERRED indefinitely (D-030 — see vada-decisions, distinct from global D-030)
 - Sati standalone surface — scope deferred
 - Hosted MCP hardening (rate limiting, audit log, KMS, per-key tool scoping)
