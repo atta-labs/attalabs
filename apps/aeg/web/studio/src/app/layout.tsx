@@ -20,6 +20,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     getAttaBranding(cmsClient).catch(() => null)
   ])
 
+  const links = [
+    { label: 'Projects', href: '/projects' },
+    { label: 'Iterations', href: '/iterations' },
+    { label: 'Dependency graph', href: '/graph' },
+    { label: 'Docs', href: '/docs' }
+  ]
+
   return (
     <NextWebShell
       config={config}
@@ -35,6 +42,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <span className='font-serif text-lg tracking-tight'>AEG</span>
           </div>
         }
+        links={links}
         withAuth={false}
       />
       <StudioShell>{children}</StudioShell>

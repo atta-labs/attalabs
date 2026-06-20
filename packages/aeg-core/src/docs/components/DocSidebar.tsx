@@ -22,11 +22,11 @@ export type DocSidebarProps = { nav: DocNav; pathname: string }
 
 export function DocSidebar({ nav, pathname }: DocSidebarProps) {
   return (
-    <SidebarProvider className='h-full min-h-0 w-56 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'>
+    <SidebarProvider className='h-full min-h-0 w-52 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'>
       <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
         {nav.sections.map((section) => (
-          <SidebarGroup key={section.id} className='py-2'>
-            <SidebarGroupLabel className='font-sans text-[0.7rem] font-semibold tracking-[0.12em] uppercase text-sidebar-foreground/60'>
+          <SidebarGroup key={section.id} className='py-1.5'>
+            <SidebarGroupLabel className='font-sans text-[10px] font-bold tracking-[0.15em] uppercase text-sidebar-foreground/50'>
               {section.label}
             </SidebarGroupLabel>
             <SidebarGroupContent className='mt-1'>
@@ -54,7 +54,7 @@ function FlatDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
         size='sm'
         isActive={pathname === doc.href}
         render={<NextLink variant='unstyled' href={doc.href} />}
-        className='h-auto min-h-8 py-1.5 font-sans text-sm font-normal [&>span:last-child]:whitespace-normal [&>span:last-child]:leading-snug'
+        className='h-auto min-h-7 py-1 font-sans text-[13px] tracking-tight font-normal [&>span:last-child]:whitespace-normal [&>span:last-child]:leading-snug'
       >
         <span>{doc.title}</span>
       </SidebarMenuButton>
@@ -73,7 +73,7 @@ function CollapsibleDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
             <SidebarMenuButton
               size='sm'
               isActive={hasActiveChild}
-              className='h-auto min-h-8 py-1.5 font-sans text-sm font-normal'
+              className='h-auto min-h-7 py-1 font-sans text-[13px] tracking-tight font-normal'
             />
           }
         >
@@ -89,7 +89,7 @@ function CollapsibleDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
                 size='sm'
                 isActive={pathname === child.href}
                 render={<NextLink variant='unstyled' href={child.href} />}
-                className='font-sans text-sm font-normal'
+                className='h-auto min-h-7 py-1 font-sans text-[13px] tracking-tight font-normal'
               >
                 <span>{child.title}</span>
               </SidebarMenuSubButton>

@@ -6,9 +6,11 @@ export default async function DocsLayout({ children }: { children: ReactNode }) 
   const { nav } = await loadAegDocs()
 
   return (
-    <div className='flex gap-8'>
+    <div className='flex h-full w-full overflow-hidden'>
       <DocSidebarHost nav={nav} />
-      <div className='flex-1 min-w-0'>{children}</div>
+      <main className='flex-1 overflow-y-auto px-12 py-10 bg-background'>
+        <div className='mx-auto max-w-4xl'>{children}</div>
+      </main>
     </div>
   )
 }
