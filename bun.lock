@@ -178,6 +178,19 @@
         "typescript": "^5.7.0",
       },
     },
+    "apps/herald-ai/mcp-server": {
+      "name": "@herald/mcp-server",
+      "version": "0.0.1",
+      "dependencies": {
+        "@atta/forensic-hiring-auditor": "workspace:*",
+        "@modelcontextprotocol/sdk": "^1.29.0",
+      },
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "@types/node": "^20.0.0",
+        "typescript": "^5.7.0",
+      },
+    },
     "apps/herald-ai/mobile": {
       "name": "@atta/herald-ai-mobile",
       "version": "0.1.0",
@@ -199,7 +212,9 @@
         "@atta/models": "workspace:*",
         "@atta/ui": "workspace:*",
         "@clerk/nextjs": "^7.0.7",
+        "@herald/mcp-server": "workspace:*",
         "@lobehub/icons": "^5.4.0",
+        "@modelcontextprotocol/sdk": "^1.29.0",
         "@neondatabase/serverless": "^1.0.2",
         "@upstash/ratelimit": "^2.0.8",
         "@upstash/redis": "^1.37.0",
@@ -1279,6 +1294,8 @@
     "@giscus/react": ["@giscus/react@3.1.0", "", { "dependencies": { "giscus": "^1.6.0" }, "peerDependencies": { "react": "^16 || ^17 || ^18 || ^19", "react-dom": "^16 || ^17 || ^18 || ^19" } }, "sha512-0TCO2TvL43+oOdyVVGHDItwxD1UMKP2ZYpT6gXmhFOqfAJtZxTzJ9hkn34iAF/b6YzyJ4Um89QIt9z/ajmAEeg=="],
 
     "@google/generative-ai": ["@google/generative-ai@0.24.1", "", {}, "sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q=="],
+
+    "@herald/mcp-server": ["@herald/mcp-server@workspace:apps/herald-ai/mcp-server"],
 
     "@hono/node-server": ["@hono/node-server@1.19.12", "", { "peerDependencies": { "hono": "^4" } }, "sha512-txsUW4SQ1iilgE0l9/e9VQWmELXifEFvmdA1j6WFh/aFPj99hIntrSsq/if0UWyGVkmrRPKA1wCeP+UCr1B9Uw=="],
 

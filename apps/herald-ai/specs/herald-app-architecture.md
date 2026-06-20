@@ -1,10 +1,10 @@
 # Herald — app architecture
 
 **Status:** draft
-**Scope:** Herald web app (`apps/herald-ai/web`) — routes, topbar, library resolution, settings, public profile, audit pipeline.
-**Last updated:** 2026-06-14 (post `herald-onto-engine` task 2, PR for #89).
+**Scope:** Herald web app (`apps/herald-ai/web`) — routes, topbar, library resolution, settings, public profile, audit pipeline, MCP surface.
+**Last updated:** 2026-06-20 (post `herald-agents-v2` task 3 — MCP surface, PR #156).
 
-This spec records the architecture established by the `herald-profile-refactor` work (June 2026) plus the `herald-onto-engine` migration (tasks 1–2, June 13–14). It is the canonical reference for how the Herald app is structured. Decisions behind it: D-031 (standalone Clerk/DB), D-034 (one Bulk Audit operation), D-035 (library resolution), D-036 (flat routes + unified topbar), D-044 (auditor on `@atta/engine` via solo YAML), D-045 (endpoints unified into `/api/audit`).
+This spec records the architecture established by the `herald-profile-refactor` work (June 2026) plus the `herald-onto-engine` migration (tasks 1–2, June 13–14), and the `herald-agents-v2` MCP surface (task 3, June 2026). It is the canonical reference for how the Herald app is structured. Decisions behind it: D-031 (standalone Clerk/DB), D-034 (one Bulk Audit operation), D-035 (library resolution), D-036 (flat routes + unified topbar), D-044 (auditor on `@atta/engine` via solo YAML), D-045 (endpoints unified into `/api/audit`), D-046 (agent package extraction), D-051 (MCP surface).
 
 ---
 
@@ -127,7 +127,24 @@ The engine and adapter packages are consumed unchanged: `git diff main --stat` a
 
 ---
 
-## 9. Known follow-ups (not built here)
+## 9. MCP surface (D-046, D-051)
+
+Herald exposes one MCP tool — `herald__audit` — at `herald.attalabs.dev/api/mcp`. The route handler lives at `apps/herald-ai/web/src/app/api/mcp/route.ts`; the server definition lives in `apps/herald-ai/mcp-server/` (`@herald/mcp-server`).
+
+**Tool:** `herald__audit({ profile: string, jd: string }) → MatchReport`
+
+The handler mirrors Vāda's MCP pattern:
+
+- **Bearer auth** — `verifyApiKeyBearer(authHeader, 'herald', ...)` against Herald's `api_keys` table (same schema as Vāda, `product` defaults to `'herald'`).
+- **Rate limiting** — same Upstash pattern as `/api/audit`.
+- **BYOK resolution** — delegates to `resolveAuditCredentials(clerkId)` (the same path as the `/api/audit` route), so vendor + model selection and fallback logic are identical.
+- **Dispatch** — calls `run()` from `@atta/forensic-hiring-auditor` and returns the `MatchReport`.
+
+`candidateInfo` (`name`, `title`, `github`) is passed as empty strings in the MCP context — the auditor reads the free-form `profile` text for evaluation; the `candidate` field in the output will be empty strings. A future improvement could extract these from the profile text.
+
+---
+
+## 10. Known follow-ups (not built here)
 
 - N×M matrix UI and polymorphic inputs (link / pasted text / .md / .pdf / stored profile). Plugs straight into the existing `/api/audit` cell — `runSingleMatch` is the per-pair primitive.
 - Per-audit (one-off) vendor + model override on the Bulk Audit surface. The per-user default landed in task 3b (#90); a per-audit override (e.g. "run THIS batch on GPT-5 even though my default is Claude") is the natural next step but explicitly out of scope for V1.
