@@ -117,30 +117,39 @@ flag it in the PR body as a new Issue rather than silently patching.
 ---
 
 ### Task 3 — Tool/MCP substrate
-**Boundary:** Generalize tool support in the adapter and engine so any YAML can declare
-tools/MCPs and they are dispatched across vendors. Based on S0's recommendations.
-Specifically: (a) vendor-native tool passthrough — if S0 found gaps in how google-genai and
-openai-compat branches handle tool-use responses, fix them here; (b) per-YAML tool
-declarations beyond the current `custom_tools` (e.g. `mcp_servers`, `native_tools`);
-(c) OpenRouter plugin-param passthrough (`plugins`, `models` body params) so a future
-`FUSION-matched` condition can configure Fusion's panel via the adapter.
+**Conforms-to: D-053**
+**Boundary:** Generalize tool support in the adapter so any YAML can declare tools and they
+are dispatched across vendors. Scope is Option A+B only per D-053 — no engine schema change:
+(a) Per-vendor tool registries + forwarding: add `GOOGLE_TOOL_REGISTRY` and
+`OPENAI_COMPAT_TOOL_REGISTRY` in `tools.ts`; update `callGoogle()` and
+`callOpenAICompat()` to accept and forward tools and handle vendor-specific tool-use
+responses. Enables `tools: [web_search]` in any YAML to dispatch to the correct
+vendor-native API (Gemini grounding, OpenAI function calling, xAI Live Search, etc.).
+(b) OpenAI-compat custom tool loop: add `runOpenAICompatCustomToolLoop` mirroring
+`runAnthropicCustomToolLoop` but using OpenAI's `tool_calls` / `tool_results` message
+format. Enables Herald-style `custom_tools` declarations on GPT/Grok/Groq agents.
+OpenRouter plugin-param passthrough (`plugins`, `models` body params) stays as-is for the
+future `FUSION-matched` cell — no change in T3 scope.
+External MCP server equipping (Option C) is explicitly OUT of T3 scope per D-053 — it
+requires a new `mcp_servers` field in `@atta/engine` flow-schema and must be decided
+separately. See Backlog.
 Also: minimal observability hook — if the adapter has no structured logging of per-call
 cost/tokens/model, add a callback or event so the benchmark harness (T9) can capture
 measured data. If Langfuse or equivalent is already wired anywhere in the monorepo, thread
 it here; if not, a lightweight in-memory event emitter is sufficient for T9's needs —
 Langfuse integration is a follow-up.
 **Sizing:** Large. One PR. Blast radius is shared — re-verify herald audit + vada deliberate.
-**Project(s) + blast radius:** vada, engine, adapter, herald (re-verify both consumers).
+**Project(s) + blast radius:** vada, adapter, herald (re-verify both consumers). Engine is
+NOT in blast radius — no engine schema change in T3.
 **Dependency rationale:** Depends on S0 (recommendations drive the implementation) and T1
 (Vāda must be on the new package structure before testing tool dispatch through it).
-**Traps to avoid:** Do NOT hardcode vendor-specific tool syntax in the engine — the engine
-is content-agnostic. Tool declarations are YAML data; the adapter interprets them per
-vendor. If a new YAML schema field is needed (e.g. `mcp_servers`), that IS a shared-engine
-contract change — escalate first.
+**Traps to avoid:** Do NOT attempt to wire external MCP servers here — that belongs in the
+deferred Option C task (see Backlog). Do NOT hardcode vendor-specific tool syntax in the
+engine — the engine is content-agnostic. Tool declarations are YAML data; the adapter
+interprets them per vendor.
 **Suggested agent-class:** high.
-**Stop-and-escalate:** If supporting external MCP servers requires a new `@atta/engine`
-flow-schema field, escalate `severity:strategy` before implementing — Vāda + Herald blast
-radius.
+**Stop-and-escalate:** If any part of Option A+B requires a new `@atta/engine` flow-schema
+field, escalate `severity:strategy` before implementing — that is Option C territory.
 
 ---
 
@@ -350,6 +359,10 @@ escalate `severity:strategy`.
 - `FUSION-matched` condition — Fusion configured with the same panel + judge models as
   VR-S-cross, isolating synthesis prompt discipline vs their judge prompt. Requires T3's
   OpenRouter plugin passthrough to be proven and stable. Fast-follow after T13.
+- External MCP server equipping (Option C) — agents declare `mcp_servers`; requires a new
+  `@atta/engine` flow-schema field (`FlowAgentSchema` + `FlowAgent` + `compile-flow.ts`
+  propagation) with blast radius across Vāda + Herald. Deferred — needs a deliberate
+  engine-schema decision before dispatch. Conforms-to: D-053.
 - Regulation → AEG mechanism mapping doc (EU AI Act / SLSA) turning benchmark output
   into compliance evidence — deferred, noted in D-030.
 - `aeg.sh generate-skills` step to rebuild `.claude/` harness view — deferred.
