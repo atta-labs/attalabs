@@ -1,4 +1,3 @@
-import { Badge } from '@atta/ui/components/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components/card'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Archive, ArrowRight, GitBranch } from 'lucide-react'
@@ -59,7 +58,7 @@ function IterationGroup({
       {iterations.length === 0 ? (
         <p className='font-sans text-sm text-muted-foreground/70'>{emptyHint}</p>
       ) : (
-        <div className='grid gap-3'>
+        <div className='grid gap-3 sm:grid-cols-2'>
           {iterations.map((it) => (
             <IterationCard key={it.fileSlug} iteration={it} />
           ))}
@@ -92,26 +91,20 @@ function IterationCard({ iteration: it }: { iteration: IterationSummary }) {
   const content = (
     <Card className='border-0 bg-transparent'>
       <CardHeader className='pb-2'>
-        <CardTitle className='flex items-center justify-between gap-3 font-serif text-lg text-card-foreground'>
-          <span className='truncate'>{it.name}</span>
+        <CardTitle className='flex items-center justify-between font-serif text-xl text-card-foreground'>
+          <span>{it.name}</span>
           {href ? (
             <ArrowRight className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent' />
           ) : null}
         </CardTitle>
       </CardHeader>
-      <CardContent className='space-y-2'>
-        {it.goal ? <p className='line-clamp-2 font-sans text-sm text-card-foreground/85'>{it.goal}</p> : null}
-        <div className='flex flex-wrap items-center gap-2'>
-          <span className='font-mono text-xs text-muted-foreground'>
-            {it.taskCount} task{it.taskCount === 1 ? '' : 's'}
-          </span>
-          <LifecycleBadge lifecycle={it.lifecycle} />
-          {it.projects.map((p) => (
-            <Badge key={p} className='bg-muted/40 text-card-foreground border-border font-mono text-xs'>
-              {p}
-            </Badge>
-          ))}
-        </div>
+      <CardContent className='space-y-1 font-mono text-xs text-muted-foreground'>
+        <p>
+          {it.taskCount} task{it.taskCount === 1 ? '' : 's'} ·{' '}
+          <span className={it.lifecycle === 'active' ? 'text-primary' : ''}>{it.lifecycle}</span>
+        </p>
+        {it.projects.length > 0 && <p>projects · {it.projects.join(' · ')}</p>}
+        {it.goal && <p className='line-clamp-2 font-sans text-xs'>{it.goal}</p>}
       </CardContent>
     </Card>
   )
@@ -129,11 +122,4 @@ function IterationCard({ iteration: it }: { iteration: IterationSummary }) {
       {content}
     </NextLink>
   )
-}
-
-function LifecycleBadge({ lifecycle }: { lifecycle: IterationSummary['lifecycle'] }) {
-  if (lifecycle === 'complete') {
-    return <Badge className='bg-muted/40 text-muted-foreground border-border font-mono text-xs'>complete</Badge>
-  }
-  return <Badge className='bg-primary/10 text-primary border-primary/40 font-mono text-xs'>active</Badge>
 }
