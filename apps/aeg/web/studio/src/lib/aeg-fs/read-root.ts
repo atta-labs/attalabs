@@ -130,6 +130,28 @@ async function toSummary(fileSlug: string, iteration: Iteration, archived: boole
     for (const p of task.projects) seen.add(p)
   }
 
+  const total = iteration.tasks.length
+  const base = {
+    name: iteration.name || fileSlug,
+    fileSlug,
+    archived,
+    lifecycle: iteration.lifecycle,
+    goal: iteration.goal,
+    taskCount: total,
+    projects: Array.from(seen)
+  }
+
+  // Archived iterations are complete by definition — skip GitHub entirely.
+  if (archived) {
+    return { ...base, taskCounts: { total, done: total, ongoing: 0, todo: 0, forgeAvailable: true } }
+  }
+
+  // Active: only query GitHub when at least one task has an issue number.
+  const hasIssues = iteration.tasks.some((t) => t.issue !== null)
+  if (!hasIssues) {
+    return { ...base, taskCounts: { total, done: 0, ongoing: 0, todo: total, forgeAvailable: false } }
+  }
+
   const snapshot = await loadIterationSnapshot(iteration, fileSlug)
   let done = 0
   let ongoing = 0
@@ -141,20 +163,8 @@ async function toSummary(fileSlug: string, iteration: Iteration, archived: boole
   }
 
   return {
-    name: iteration.name || fileSlug,
-    fileSlug,
-    archived,
-    lifecycle: iteration.lifecycle,
-    goal: iteration.goal,
-    taskCount: iteration.tasks.length,
-    projects: Array.from(seen),
-    taskCounts: {
-      total: iteration.tasks.length,
-      done,
-      ongoing,
-      todo,
-      forgeAvailable: !snapshot.unavailable
-    }
+    ...base,
+    taskCounts: { total, done, ongoing, todo, forgeAvailable: !snapshot.unavailable }
   }
 }
 
