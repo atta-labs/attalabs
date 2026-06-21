@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** June 17, 2026 (herald-onto-engine complete; aeg-ui-v1 complete except task 9-view; AEG state docs synced to current reality)
+**Last updated:** June 21, 2026 (aeg-governance-ui-v2 complete; all three June iterations archived)
 **Purpose:** Single snapshot of where everything stands across the AttaLabs ecosystem.
 
 This doc lives in the repo at `aeg-project/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -355,6 +355,8 @@ This ecosystem uses the repo as the source of truth for project management. See 
 
 ### Recently shipped (most recent first)
 
+**June 18–20, 2026 — aeg-governance-ui-v2 iteration complete.** Completed the AEG model by writing all five missing role-seam contracts (`aeg-root/contracts/brief-developer.md`, `developer-reviewer.md`, `reviewer-archivist.md`, `archivist-iteration-archivist.md`, `iteration-archivist-planner.md`), adding Planner readiness gate item 8 (enforces iteration archival before new planning on any product), and running a governance gap discovery spike (`aeg-root/discovery/2026-06-17-governance-gaps.md`, 16 gaps documented). AEG Studio fully refactored with the science layout pattern (replacing `StudioShell` + `StudioSidebar`), wired to Atta CMS config via `NextWebShell`, and extended with a cross-product `/iterations` view and token ledger display on the iteration detail page. 6 PRs merged (#144 task/1a, #145 task/1b, #149 task/2, #152 task/theme unplanned, #153 task/4, #155 task/3).
+
 **June 16–17, 2026 — herald-onto-engine + aeg-ui-v1 iterations complete.** Engine onboarding for Herald with multi-vendor BYOK + Bulk Audit UI (8 merged PRs). AEG Studio scaffolded with project/iteration topology, kanban, task-dependency graph, shared docs renderer, and verification role (11 merged PRs). Task 9-view (token ledger display) unblocked.
 
 **June 11, 2026 — AEG folder restructure + "product"→"project" vocabulary erasure (D-041, PR #86).** Root `project-management/` split into `aeg-root/` (the model — exists once, at the root only) and `aeg-project/` (the living state — one at the root, one per project). Per-project `apps/*/project-management/` renamed to `apps/*/aeg-project/`. "Product" erased from AEG vocabulary in favor of "project" (the AEG unit-of-work); brand-instance product references (Atta, Vāda, Herald, …) and the `severity:product` label literal kept. `products.md` → `projects.md`; brief `Product:` → `Project:`; `aeg.sh add-product` → `add-project`. Orient-from-root rule added to `coordination.md` and `state-machine.md`. One commit, revertible with one `git revert`.
@@ -447,7 +449,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - Cetana F7 (`cetana status`) — ready to dispatch
 - Spec refresh-and-ratify pass (Vāda first) → Integrity Reviewer (spec-integrity chain, `specs/ecosystem-backlog.md`)
 
-**Active iterations:** herald-onto-engine: complete ✅ (June 16). aeg-ui-v1: complete except task 9-view (#110).
+**Active iterations:** herald-onto-engine: complete ✅ (June 16). aeg-ui-v1: complete ✅ (June 20). aeg-governance-ui-v2: complete ✅ (June 20). herald-agents-v2 and vada-agents-v2: active (parallel execution).
 
 **Drafted briefs awaiting dispatch:** none.
 

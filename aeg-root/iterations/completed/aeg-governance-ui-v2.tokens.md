@@ -15,3 +15,4 @@ Append-only per-iteration token/cost ledger. Format + rationale: `aeg-root/itera
 |-------|------|-------------|-----------|------------|------|------|
 | theme: brief | Brief Author | gemini-3.5-flash (chat) | — | — | — | 2026-06-20 |
 | theme: develop | Developer | gemini-3.5-flash (chat) | — | — | — | 2026-06-20 |
+| iteration-close | Iteration Archivist | claude-sonnet-4-6 | — | — | — | 2026-06-21 |
