@@ -1,12 +1,13 @@
 # Iteration: vada-production-v1 — June–July 2026
 Lifecycle: active
 
-Goal: Make Vāda production-ready. Migrate all YAMLs into `packages/agents/` with tools
-equipped from day one; add Fusion as a first-class team (real + native pattern); run a
-DRACO-style benchmark across all teams + Fusion on identical prompts; replace
-`CalculatorStats` estimates with measured cost/time/tokens/quality on the Teams page;
-add SmartTextInput and deliberation UI tool support. Exit bar: tool-equipped reviewers,
-4+ teams in catalog, repeatable benchmark, Teams page shows measured stats publicly.
+Goal: Make Vāda production-ready. Migrate all YAMLs into `packages/agents/`; equip
+reviewer tools in T3a after the T3 substrate lands; add Fusion as a first-class team
+(real + native pattern); run a DRACO-style benchmark across all teams + Fusion on
+identical prompts; replace `CalculatorStats` estimates with measured cost/time/tokens/quality
+on the Teams page; add SmartTextInput and deliberation UI tool support. Exit bar:
+tool-equipped reviewers, 4+ teams in catalog, repeatable benchmark, Teams page shows
+measured stats publicly.
 
 Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 
@@ -19,14 +20,15 @@ Previously completed in vada-agents-v2 (carry-forward, not re-dispatched):
 | # | Task | Issue | Project(s) | Depends-on | Conflicts-with |
 |---|------|-------|------------|------------|----------------|
 | S0 | Tools/MCP capability spike — determine what agents can be equipped with (in-process custom tools, per-vendor web search, external MCP servers); produce capability matrix + recommended substrate approach | #TBD | vada, engine, adapter | — | — |
-| 1 | YAML migration + bug fixes + tool equipping — all 9 YAMLs to `packages/agents/`; Vāda thin consumer; fix Reviewers ERROR + Sparring duplicate-Critic; equip reviewers maximally with web search + reachable MCPs across vendors; update YAML-location refs | #TBD | vada, engine, adapter | S0, herald-agents-v2/2 | — |
+| 1 | YAML migration + bug fixes — all 9 YAMLs to `packages/agents/`; Vāda thin consumer; fix Reviewers ERROR + Sparring duplicate-Critic; update YAML-location refs. Tool-equipping moved to T3a (see D-053). | #TBD | vada, engine | S0, herald-agents-v2/2 | — |
 | 2 | Stale spec cleanup — vada-state.md full rewrite, CLAUDE.md, teams-catalog stale refs, byok refs, backlog | #TBD | vada | 1 | — |
 | 3 | Tool/MCP substrate — generalize tool support in the adapter so any YAML can declare tools/MCPs; OpenRouter plugin-param passthrough | #TBD | vada, engine, adapter, herald | S0, 1 | — |
+| 3a | Equip reviewers — give Gemini/GPT/Grok reviewer agents web search + reachable vendor-native tools using T3 substrate; tool config declarative in YAML, not hardcoded in the route | #TBD | vada, adapter | 3 | — |
 | 4 | `vada-fusion` (real Fusion) — single-agent YAML routed through `vendor: openrouter`, `model: openrouter/fusion`; add `OPENROUTER_API_KEY` | #TBD | vada | 1 | — |
 | 5 | `vada-fusion-native` — own parallel-panel → synthesizer → audit flow; tool-equipped; adopt Fusion techniques (web-off synthesis, partial-coverage + blind-spots categories, gating) | #TBD | vada, engine, adapter | 3 | — |
 | 6 | SmartTextInput — extract multi-kind input from Herald's Jd/CvInputControl into `@atta/ui`; wire into Vāda `/deliberate`; Herald wrappers internal-only refactor, external props unchanged | #TBD | vada, herald, atta | 1 | herald-agents-v2/4 |
 | 7 | Deliberation UI tool/MCP support — YAML declares `required_inputs`; UI validates context-completeness before dispatch; tool-equipped YAMLs runnable end-to-end | #TBD | vada, engine | 3, 6 | — |
-| 8 | Reviewers prompt iteration — B-3b + B-3c; Principal-driven loop; incorporate Fusion techniques; patch vada-reviewers-spec.md §8 phantom consensus | #TBD | vada | 1 | — |
+| 8 | Reviewers prompt iteration — B-3b + B-3c; Principal-driven loop; incorporate Fusion techniques; patch vada-reviewers-spec.md §8 phantom consensus | #TBD | vada | 3a | — |
 | 9 | Benchmark harness — repeatable runner across all conditions (A0, A1, VR-NS, VR-S-same, VR-S-cross, MW, FUSION-default, FUSION-native); capture measured cost/latency/tokens; structured DB storage; implement §6a comparison protocol | #TBD | vada | 1, 4 | — |
 | 10 | Quality audit — DRACO-style weighted rubric; blind LLM judge (not a panelist) + second-judge sanity check; negative marking; per-question-type breakdown; full conditions matrix | #TBD | vada | 8, 9 | — |
 | 11 | Benchmark run + results doc — execute; document; decide fate of rounds teams from data | #TBD | vada | 10 | — |
@@ -59,42 +61,35 @@ new engine schema field," flag it — it resizes T3.
 
 ---
 
-### Task 1 — YAML migration + bug fixes + tool equipping
-**Boundary:** Three concerns in one PR (D-B says tools during migration):
+### Task 1 — YAML migration + bug fixes
+**Boundary:** Two concerns in one PR:
 (a) Move all 9 Vāda YAMLs from `apps/vada-ai/web/yamls/` into per-agent packages under
 `packages/agents/` following EXACTLY the shape of `packages/agents/forensic-hiring-auditor/`.
 Rewire the deliberation route as a thin consumer. Update YAML-location refs in
 `vada-state.md` and `vada-backlog.md`.
 (b) Fix the two known bugs: Reviewers ERROR (diagnose from real logs, don't guess — reproduce
 first; may be provider-key routing or Clerk/BYOK); Sparring duplicate-Critic (diagnose, fix).
-(c) Equip the reviewer agents maximally with tools using S0's recommendations. Per D-B,
-price is not a constraint — quality is. Gemini reviewers get Google grounding/search if
-the adapter supports it; GPT reviewers get web search; Grok reviewers get X/web search.
-If S0 reveals the adapter cannot pass vendor-native web search today, implement the minimum
-adapter change needed to enable it for reviewers — or stop-and-escalate if it requires a
-shared-contract change beyond the adapter's current extension points.
-NOT in scope: new Fusion teams, SmartTextInput, deliberation UI changes.
+NOT in scope: tool equipping (moved to T3a per Option-1 reorder — see D-053), new Fusion
+teams, SmartTextInput, deliberation UI changes.
 **Sizing:** Large. One PR. Single verification story (`vada__deliberate` returns a result on
-the new package AND reviewers can invoke web search tools). Bounded but complex — three
-concerns means three independent failure modes. Agent-class: high.
+the new package). Bounded but complex — two concerns means two independent failure modes.
+Agent-class: high.
 **Project(s) + blast radius:** vada (primary, deliberation route rewired), engine (re-verify
-herald audit still works — no engine files should change), adapter (may change for web-search
-passthrough — herald must re-verify), aeg-core (YAML location changes — verify parsers still
-pass). NOT in blast radius: herald app code (the forensic-hiring-auditor package is already
-migrated; this task doesn't touch it).
-**Dependency rationale:** Depends on S0 (need the capability findings before equipping tools)
-and herald-agents-v2/2 (package shape + glob already established by that PR — don't
-re-establish it, follow it).
+herald audit still works — no engine files should change), aeg-core (YAML location changes —
+verify parsers still pass). Adapter NOT in blast radius — T1 no longer touches it for
+tool-search passthrough (that belongs in T3a). NOT in blast radius: herald app code (the
+forensic-hiring-auditor package is already migrated; this task doesn't touch it).
+**Dependency rationale:** Depends on S0 (capability findings inform T3a's equipping work
+downstream) and herald-agents-v2/2 (package shape + glob already established by that PR —
+don't re-establish it, follow it).
 **Traps to avoid:** Copy the package shape EXACTLY from `packages/agents/forensic-hiring-
 auditor/` — do not reinvent. Do NOT attempt to fix Reviewers ERROR without first reading
 real logs or reproducing locally. Do NOT conflate bug diagnosis with bug fix — diagnose
 first, fix second, note the diagnosis in the PR body. Do NOT change `@atta/engine`
-shared contracts. If tool equipping requires a shared adapter contract change, that
-portion belongs in T3, not T1 — split the PR if needed and escalate.
+shared contracts. Do NOT begin tool equipping here — that is T3a's work.
 **Suggested agent-class:** high.
 **Stop-and-escalate:** If Reviewers ERROR is Clerk/BYOK (not routing/SDK), escalate
-`severity:strategy` before fixing. If tool equipping requires engine schema changes,
-escalate `severity:strategy` — that belongs in T3.
+`severity:strategy` before fixing.
 
 ---
 
@@ -108,8 +103,9 @@ reversed by D-016), `vada-byok-principles.md` (browser-only model). Update
 NOT in scope: `vada-reviewers-spec.md` (patched in T8 when the prompt iteration touches it).
 **Sizing:** Doc-only. One PR. Bounded (6–7 files).
 **Project(s) + blast radius:** vada only.
-**Dependency rationale:** Depends on T1 — vada-state.md must reflect where YAMLs now live
-and which tools are equipped.
+**Dependency rationale:** Depends on T1 — vada-state.md must reflect where YAMLs now live.
+Note: tool-equipping state (delivered by T3a, not T1) need not be finalized at T2 merge
+time — document tools as "pending T3a" if T3a has not yet landed.
 **Suggested agent-class:** mid — doc rewrite.
 **Stop-and-escalate:** If auditing reveals a behavioral gap not in any spec or decision log,
 flag it in the PR body as a new Issue rather than silently patching.
@@ -150,6 +146,34 @@ interprets them per vendor.
 **Suggested agent-class:** high.
 **Stop-and-escalate:** If any part of Option A+B requires a new `@atta/engine` flow-schema
 field, escalate `severity:strategy` before implementing — that is Option C territory.
+
+---
+
+### Task 3a — Equip reviewers
+**Conforms-to: D-053**
+**Boundary:** Give the Gemini, GPT, and Grok reviewer agents web search + reachable
+vendor-native tools using the T3 substrate (per-vendor tool registries + forwarding, from
+Option A+B). Tool config is declarative in each reviewer YAML (`tools: [web_search]` or
+equivalent); nothing is hardcoded in the deliberation route. Per D-B, price is not a
+constraint — quality is.
+NOT in scope: external MCP server equipping (Option C, deferred per D-053), new agent
+packages, changes to the engine schema.
+**Sizing:** Medium. One PR. Verification story: each reviewer YAML declares tools; an
+end-to-end deliberation confirms web-search tool calls appear in real vendor API logs.
+Agent-class: high.
+**Project(s) + blast radius:** vada (YAML updates in `packages/agents/`), adapter (re-verify
+tool dispatch per vendor — T3 already built the substrate; T3a configures it). Herald is
+NOT in blast radius unless the adapter's tool dispatch path is modified.
+**Dependency rationale:** Depends on T3 — the per-vendor tool registries and forwarding
+substrate must be in place before reviewer YAMLs can declare tools and have them dispatched
+correctly across Gemini/GPT/Grok.
+**Traps to avoid:** Do not hardcode tool configuration in the deliberation route — it must
+stay in YAML. Do not add vendor-specific branching logic in T3a; that belongs in T3's
+registries. Do not attempt external MCP equipping — that is Option C (deferred, see Backlog).
+**Suggested agent-class:** high.
+**Stop-and-escalate:** If equipping reviewers requires anything beyond what T3's substrate
+already exposes (new adapter APIs, new engine schema fields), stop — it means T3 was
+incomplete; escalate `severity:strategy` before proceeding.
 
 ---
 
@@ -251,11 +275,13 @@ improved reviewer + synthesizer YAMLs in `packages/agents/` with iteration histo
 documented.
 **Sizing:** Research + prompt iteration. Principal-in-the-loop. One PR.
 **Project(s) + blast radius:** vada only (YAMLs in `packages/agents/`).
-**Dependency rationale:** Depends on T1 — reviewers must be tool-equipped and on the new
-package before iterating their prompts.
+**Dependency rationale:** Depends on T3a — reviewers must be tool-equipped (T3a) and on the
+new package (T1) before iterating their prompts; prompt iteration on un-equipped reviewers
+gives no signal about their real ceiling.
 **Suggested agent-class:** high.
-**Stop-and-escalate:** If Reviewers ERROR from T1 is not fully resolved, stop and report —
-cannot iterate on a broken team.
+**Stop-and-escalate:** If Reviewers ERROR from T1 is not fully resolved, or if T3a's
+tool-equipping is not confirmed live, stop and report — cannot iterate on a broken or
+un-equipped team.
 
 ---
 
@@ -303,7 +329,7 @@ benchmark on un-iterated prompts gives no signal) and T9 (harness must exist to 
 conditions).
 **Suggested agent-class:** high.
 **Stop-and-escalate:** DRACO is a deep-research benchmark — reviewers will score poorly
-until T1's tool-equipping is verified live. If reviewers are not using web tools in
+until T3a's tool-equipping is verified live. If reviewers are not using web tools in
 practice by the time T10 runs, flag it and run the benchmark anyway (the data proves
 the point about tool necessity).
 
