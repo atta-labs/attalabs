@@ -1,5 +1,7 @@
 # Iteration: aeg-ui-v1 — June 2026
 
+Lifecycle: complete
+
 > **Status (June 17):** 9 of 10 tasks merged. Task 9-view (#110, token ledger Studio display) is the only remaining task — never built, unblocked. All other tasks are on main.
 
 **Goal (execution, not roadmap-why):** build **AEG Studio** — the local, no-auth tool that reads *this* monorepo's AEG artifacts off disk and reads GitHub locally (operator's own token) for live per-task status, and renders this repo's governance: projects → iterations → tasks (kanban by derived status) → task detail (brief from the PR body), a task-dependency-graph view, and the full model documentation. Plus the shared **`@atta/aeg-core`** package (parser + `deriveIteration` + the shared docs renderer) that Studio runs on and the future public **Portal** will inherit.

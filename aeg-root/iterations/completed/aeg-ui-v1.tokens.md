@@ -14,3 +14,4 @@ Append-only per-iteration token/cost ledger. Format + rationale: `aeg-root/itera
 |-------|------|-------------|-----------|------------|------|------|
 | 9: brief | Brief Author | claude-opus-4-7 (chat) | — | — | — | 2026-06-15 |
 | 9: develop | Developer | claude-opus-4-7 (CC) | — | — | — | 2026-06-15 |
+| iteration-close | Iteration Archivist | claude-sonnet-4-6 (CC) | — | — | — | 2026-06-21 |
