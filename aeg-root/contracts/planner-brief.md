@@ -45,6 +45,7 @@ Every field the Planner emits in the rationale (left) has exactly one named home
 
 ## Producer obligations (the Planner)
 
+- **Cut a real forge Issue for every task before dispatch.** Before the Brief Author can author a brief, the Planner must have replaced any `#TBD` in the topology table's Issue column with a real GitHub Issue number. A `#TBD` entry means the task is backlog — it is neither briefable nor executable. The Brief Author hard-STOPs on `#TBD` during Dig (D-054); the Developer hard-STOPs at entry gate item 3 (D-054). Cutting the Issue is the backlog → todo promotion (`iterations/README.md` §3) and is a Planner-only act.
 - Emit a rationale block per task containing **all seven left-column fields**. (Enforced in `planner.md` — a task missing its rationale is refused.)
 - The rationale holds durable conclusions only — no perishable line-level detail (that's the Brief Author's half).
 - `Project(s)` must include every shared-package consumer in the blast radius (the blast-radius rule in `planner.md`).
