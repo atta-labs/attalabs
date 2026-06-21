@@ -30,6 +30,24 @@ The Brief Author's stages — name them, and say which you're in:
 
 2. **Dig** — the deep pass for the *perishable* detail (current signatures, exact file list, final model pick). Narrate the load-bearing reads: *"Reading `llm.ts` now to get the current vendor-branch shape for the surface map."* If the dig **contradicts** the rationale (boundary moved, sizing broke), STOP and say so — that's a `severity:strategy` escalation back to the Planner, announced, not a silent fix.
 
+   **Archival precondition check (D-052) — complete during Dig, before Draft:** Before authoring, verify the archival precondition against the forge. Two checks, in order:
+
+   - **(a) Per-task archival.** Query the most-recently-merged task PR in this iteration:
+     ```
+     gh pr list --state merged --json number,headRefName,mergedAt \
+       | jq '[.[] | select(.headRefName | startswith("task/<iteration>/"))] | sort_by(.mergedAt) | last'
+     ```
+     Then confirm that PR carries a provenance block comment:
+     ```
+     gh pr view <N> --json comments \
+       | jq '.comments[].body | select(test("AEG.*provenance|provenance.*task"; "i"))'
+     ```
+     If the result is empty, the per-task Archivist was skipped. **STOP — do NOT author the brief:** *"Prior task PR #N in iteration `<name>` has no provenance block — the per-task Archivist must run before this task can be briefed. Dispatch the per-task Archivist for #N first."* First task in an iteration (no prior merged task PR) passes trivially.
+
+   - **(b) Iteration archival.** For each product named in the brief's `Project:` field, check whether a prior iteration for that product exists in `aeg-root/iterations/` but is absent from `aeg-root/iterations/completed/`. If any such unarchived iteration exists and all its task PRs are merged, the Iteration Archivist has not run. **STOP — do NOT author the brief:** *"Product `<X>`'s previous iteration `<name>` is complete but not archived — the Iteration Archivist must run before this task can be briefed. Dispatch it first."* First iteration on a product passes trivially.
+
+   A brief authored for an unauthorable task is a wasted dispatch round-trip: the Developer's D-052 gate (`developer.md` entry gate items 3 and 4) will refuse it at execution. Catch it here, one stage earlier.
+
 3. **Draft** — write the brief, every required section. Move in confirmable steps for a big brief; for a small one, draft it and reflect the shape back before finalizing.
 
 4. **Contract checklist** — run the seven-field conformance check (below) out loud, so the Principal sees every Planner field landed in its brief home. This is the briefing analogue of the Planner's readiness gate: a visible gate, not a silent one.
@@ -78,6 +96,7 @@ Before a brief is dispatchable, confirm **every one of the seven Planner fields 
 - [ ] **Suggested agent-class** → did you confirm or deviate (with reason) and make the final pick in the **`For:` + `Reason:`** header?
 - [ ] **Stop-and-escalate** → are the Planner's stop conditions copied into the brief's **Stop conditions (§10)**, substance-verbatim?
 - [ ] **No instruction contradicts the surface map** → if the brief tells the executor to **delete or rename a shared symbol** (a constant, type, export, function), confirm **every importer is inside the §4 surface.** If an importer is out-of-surface, the "delete it" instruction and the "don't touch that file" boundary contradict — defer the deletion to the task that owns the importer, and say so in the brief. (See the **shared-symbol importer check** in §4.)
+- [ ] **Archival precondition (D-052)** → does the most-recently-merged task PR in this iteration carry a provenance block comment (per-task Archivist ran), and does each product named in `Project:` have its previous iteration in `aeg-root/iterations/completed/` (Iteration Archivist ran)? If either fails, this task is **not authorable** — STOP and surface the owed Archivist dispatch to the Principal before proceeding. (Mirrors Developer entry gate items 3 and 4; catches it one stage earlier, during Dig.)
 
 Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; **Test Plan (§9) present and tagged** — either `Test Plan: unit-tests-only` (and §4 has no runtime surface) or a checkbox list with at least one `[agent]` or `[principal]` item per reachable surface kind; the standing autonomy clause present in §11; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
 
@@ -419,6 +438,7 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 - ❌ Assuming the executor has read prior session context — it hasn't
 - ❌ A `Project:` value that doesn't resolve against the registry, or that omits a blast-radius consumer the Planner listed — malformed; fix or `aeg add-project` first
 - ❌ Closing out without signaling completion + whose move is next — the Principal is left unsure whether the brief is dispatchable
+- ❌ **Authoring a brief for a task whose prior task isn't archived** (no provenance block on the most-recently-merged task PR in the iteration) or whose product's previous iteration isn't in `aeg-root/iterations/completed/` — the Developer's D-052 gate (entry gate items 3 and 4) will reject it at execution; the Brief Author must catch it first during Dig and surface the owed Archivist dispatch rather than handing the Principal a brief the Developer will immediately refuse
 
 ---
 
