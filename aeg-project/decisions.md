@@ -1282,3 +1282,37 @@ These two gates are deliberately not CI, not automation, and not scripts. AEG is
 - Type 2 — reversible.
 
 ---
+
+## D-053 — Vāda tool substrate — Option A+B now; external MCP (Option C) deferred
+
+**Date:** 2026-06-21
+**Status:** ACTIVE
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (task/vada-production-v1/D-053)
+**Ratified by:** Principal (in-session)
+
+**Context:** S0 spike (PR #154, `apps/vada-ai/specs/tools-capability-spike.md`) established that tool support today is Anthropic-only: `runAnthropicCustomToolLoop` handles custom tools and `ANTHROPIC_TOOL_REGISTRY` handles per-vendor web search, but `callGoogle()` and `callOpenAICompat()` have zero tool handling. Per-vendor web search exists only for Anthropic; Google grounding and OpenAI-compat function calling are not wired. External MCP has no client infrastructure anywhere in the adapter and requires a new `mcp_servers` field in the `@atta/engine` flow-schema — a contract change with blast radius across Vāda + Herald. The decision about MCP scope in T3 was escalated to the Principal as `severity:strategy` per the S0 spike's STOP-AND-ESCALATE notice.
+
+**Decision:** Option A+B now (pure adapter, no engine schema change):
+
+- **(A) Per-vendor tool registries + forwarding:** Add `GOOGLE_TOOL_REGISTRY` and `OPENAI_COMPAT_TOOL_REGISTRY` in `tools.ts`; update `callGoogle()` and `callOpenAICompat()` to accept and forward tools, and handle vendor-specific tool-use responses. Enables `tools: [web_search]` in any YAML to dispatch to the correct vendor-native API across all vendors.
+- **(B) OpenAI-compat custom tool loop:** Add `runOpenAICompatCustomToolLoop` mirroring `runAnthropicCustomToolLoop` but using OpenAI's `tool_calls` / `tool_results` message format. Enables Herald-style `custom_tools` declarations on GPT/Grok/Groq agents.
+- **OpenRouter plugin-param passthrough** (`plugins`, `models` body params) stays as-is for the future `FUSION-matched` cell — no change in T3 scope.
+
+Option C (external MCP servers) is deferred to a separate future task, gated on a deliberate engine-flow-schema decision.
+
+**Rationale:** A+B is pure-adapter/contained — no engine contract change, no blast radius beyond `@atta/adapter-langgraph` — and is the benchmark prerequisite: reviewers score poorly on DRACO until they have web tools across all vendors. Option C is `severity:strategy`, engine-schema/blast-radius, and must not be coupled to contained adapter work.
+
+**Alternatives rejected:**
+
+- *C-now:* rejected — couples a contained adapter change to an engine-contract change (`mcp_servers` field in `FlowAgentSchema`) with Vāda + Herald blast radius. The right sequencing is: ship A+B as a contained PR; decide MCP schema separately before any MCP work begins.
+- *Do-nothing:* rejected — reviewers cannot compete or be fairly benchmarked without web tools across Google, OpenAI-compat, and xAI vendors. The DRACO benchmark is a production exit criterion; this gap blocks it.
+
+**Consequences:**
+
+- T3 in `aeg-root/iterations/vada-production-v1.md` is scoped to Option A+B only; external MCP equipping is removed from T3's boundary.
+- A backlog entry for Option C (external MCP equipping) is added to `vada-production-v1.md` with an explicit `Conforms-to: D-053` marker and a note that engine-schema decision gates it.
+- Type 2 — reversible.
+
+---
