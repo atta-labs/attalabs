@@ -1,35 +1,8 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui/components/tabs'
-import { NextLink } from '@atta/ui/lib/next-link'
-import { ArrowRight } from 'lucide-react'
 import type { IterationSummary } from '@/lib/aeg-fs'
-
-function IterationCard({ projectName, it }: { projectName: string; it: IterationSummary }) {
-  return (
-    <NextLink
-      variant='unstyled'
-      href={`/projects/${projectName}/iterations/${it.fileSlug}`}
-      className='group block rounded-lg border border-border bg-card transition-colors hover:border-accent'
-    >
-      <Card className='border-0 bg-transparent'>
-        <CardHeader className='pb-2'>
-          <CardTitle className='flex items-center justify-between font-serif text-xl text-card-foreground'>
-            <span>{it.name}</span>
-            <ArrowRight className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent' />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-1 font-mono text-xs text-muted-foreground'>
-          <p>
-            {it.taskCount} task{it.taskCount === 1 ? '' : 's'}
-          </p>
-          {it.goal && <p className='line-clamp-2 font-sans text-xs'>{it.goal}</p>}
-        </CardContent>
-      </Card>
-    </NextLink>
-  )
-}
+import { IterationCard } from '@/app/components/IterationCard'
 
 function IterationsGrid({
   projectName,
@@ -46,7 +19,12 @@ function IterationsGrid({
   return (
     <div className='grid gap-3 sm:grid-cols-2'>
       {iterations.map((it) => (
-        <IterationCard key={it.fileSlug} projectName={projectName} it={it} />
+        <IterationCard
+          key={it.fileSlug}
+          iteration={it}
+          href={`/projects/${projectName}/iterations/${it.fileSlug}`}
+          showProjects={false}
+        />
       ))}
     </div>
   )
