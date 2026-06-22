@@ -137,7 +137,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
                   <TableHead className='w-16 font-sans text-xs uppercase tracking-wider'>#</TableHead>
                   <TableHead className='w-72 font-sans text-xs uppercase tracking-wider'>Task</TableHead>
                   <TableHead className='w-[70px] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
+                  <TableHead className='min-w-[140px] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
                   <TableHead className='w-[100px] font-sans text-xs uppercase tracking-wider'>Depends on</TableHead>
                   <TableHead className='w-[100px] font-sans text-xs uppercase tracking-wider'>Conflicts with</TableHead>
                 </TableRow>
@@ -156,7 +156,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
                         const status = taskStatusMap.get(String(task.id))
                         const visual = status ? statusVisual(status) : null
                         return (
-                          <div className='space-y-1.5'>
+                          <div className='flex flex-col items-start gap-1.5'>
                             <span className='font-mono text-xs text-muted-foreground'>
                               {task.issue !== null ? `#${task.issue}` : '—'}
                             </span>
