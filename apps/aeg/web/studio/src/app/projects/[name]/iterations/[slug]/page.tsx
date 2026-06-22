@@ -7,7 +7,9 @@ import type { Metadata } from 'next'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { notFound } from 'next/navigation'
+import type { DerivedStatus } from '@atta/aeg-core'
 import { findAegRoot, readIteration, readProject } from '@/lib/aeg-fs'
+import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
 import { TaskTitleCell } from './_components/TaskTitleCell'
 
 type Params = { name: string; slug: string }
@@ -45,6 +47,12 @@ export default async function IterationPage({ params }: { params: Promise<Params
   if (!detail) notFound()
 
   const { iteration, archived } = detail
+
+  const snapshot = await loadIterationSnapshot(iteration, slug)
+  const taskStatusMap = new Map<string, DerivedStatus>()
+  for (const dt of snapshot.derived.tasks) {
+    taskStatusMap.set(dt.task.id, dt.status)
+  }
 
   const ledgerMd = readLedgerFile(slug)
   const ledgerRows = ledgerMd !== null ? parseLedger(ledgerMd) : null
@@ -127,7 +135,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
                   <TableRow key={task.id}>
                     <TableCell className='font-mono text-sm font-semibold text-foreground'>{task.id}</TableCell>
                     <TableCell>
-                      <TaskTitleCell title={task.title} />
+                      <TaskTitleCell title={task.title} status={taskStatusMap.get(task.id)} />
                     </TableCell>
                     <TableCell className='font-mono text-xs text-muted-foreground'>
                       {task.issue !== null ? `#${task.issue}` : '—'}
