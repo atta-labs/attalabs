@@ -7,9 +7,9 @@ export function TaskTitleCell({ title }: { title: string }) {
   return (
     <TooltipProvider>
       <Tooltip>
-        <div className='flex items-start gap-1.5'>
-          <span className='line-clamp-2 font-sans text-sm text-card-foreground'>{title}</span>
-          <TooltipTrigger className='mt-0.5 shrink-0 text-muted-foreground/50 hover:text-muted-foreground'>
+        <div className='flex min-w-0 items-center gap-1.5'>
+          <span className='truncate font-sans text-sm text-card-foreground'>{title}</span>
+          <TooltipTrigger className='shrink-0 text-muted-foreground/50 hover:text-muted-foreground'>
             <Info className='size-3.5' aria-label='Full task description' />
           </TooltipTrigger>
         </div>
