@@ -1,13 +1,12 @@
 import { Badge } from '@atta/ui/components/badge'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@atta/ui/components/table'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { parseLedger, sumLedger } from '@atta/aeg-core'
-import { GitBranch, LayoutGrid } from 'lucide-react'
+import { parseLedger, sumLedger, type DerivedStatus } from '@atta/aeg-core'
+import { AlertTriangle, GitBranch, LayoutGrid } from 'lucide-react'
 import type { Metadata } from 'next'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { notFound } from 'next/navigation'
-import type { DerivedStatus } from '@atta/aeg-core'
 import { findAegRoot, readIteration, readProject } from '@/lib/aeg-fs'
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
 import { statusVisual } from './_lib/status-display'
@@ -126,6 +125,18 @@ export default async function IterationPage({ params }: { params: Promise<Params
             </div>
           ) : null}
         </div>
+
+        {snapshot.unavailable ? (
+          <div className='flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-warning'>
+            <AlertTriangle className='size-4 shrink-0 translate-y-0.5' aria-hidden />
+            <p className='font-sans text-xs leading-relaxed'>
+              Live status unavailable — task statuses shown as <span className='font-mono'>backlog</span>. Set{' '}
+              <span className='font-mono'>GITHUB_TOKEN</span>, run <span className='font-mono'>gh auth login</span>, or
+              set <span className='font-mono'>AEG_REPO</span> to enable forge-derived status.
+            </p>
+          </div>
+        ) : null}
+
         {iteration.tasks.length === 0 ? (
           <p className='font-sans text-sm text-muted-foreground/70'>
             No tasks declared in this iteration's topology table.

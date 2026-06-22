@@ -14,12 +14,12 @@
  *   Types: TaskRef, FetchForgeFactsInput, ForgeFactsSnapshot
  */
 
-export { fetchForgeFacts, buildBranchName } from './fetch-forge-facts'
+export { fetchForgeFacts, buildBranchName, fetchForgeTasksByLabel } from './fetch-forge-facts'
 export { mapForgeFacts, AEG_BLOCKED_LABEL } from './map-forge-facts'
 export { fetchPullRequestBriefs } from './fetch-pull-request-brief'
 export { resolveRepo } from './resolve-repo'
-export { loadIterationSnapshot } from './load-snapshot'
-export type { IterationSnapshot } from './load-snapshot'
+export { loadIterationSnapshot, loadIterationProgress } from './load-snapshot'
+export type { IterationSnapshot, IterationProgress } from './load-snapshot'
 export type { FetchForgeFactsInput, ForgeFactsSnapshot, TaskRef, RawTaskFacts } from './types'
 export type {
   PullRequestBrief,

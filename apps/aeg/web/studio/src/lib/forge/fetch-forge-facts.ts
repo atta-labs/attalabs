@@ -28,6 +28,82 @@ export function buildBranchName(iteration: string, taskId: string): string {
   return `task/${iteration}/${taskId}`
 }
 
+/**
+ * Discover iteration task refs from the forge by querying Issues labeled
+ * `iteration:<slug>`. Returns an empty array when:
+ *   - No token is available.
+ *   - The label has no issues (e.g. archived iterations that pre-date the label
+ *     convention).
+ *   - Any network/API error occurs.
+ *
+ * Callers use this to resolve `#TBD` issue numbers in the topology file;
+ * the result is merged with topology refs by `load-snapshot.ts`.
+ */
+export async function fetchForgeTasksByLabel(input: {
+  owner: string
+  repo: string
+  iterationSlug: string
+  token?: string
+}): Promise<Array<{ id: string; issue: number }>> {
+  const token = await resolveGithubToken(input.token)
+  if (!token) return []
+
+  const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
+  const label = `iteration:${input.iterationSlug}`
+
+  let response: LabelIssuesResponse
+  try {
+    response = await client<LabelIssuesResponse>(LABEL_ISSUES_QUERY, {
+      owner: input.owner,
+      repo: input.repo,
+      label
+    })
+  } catch {
+    return []
+  }
+
+  const nodes = response.repository?.issues?.nodes
+  if (!nodes) return []
+
+  const refs: Array<{ id: string; issue: number }> = []
+  for (const node of nodes) {
+    const taskId = parseTaskIdFromTitle(node.title, input.iterationSlug)
+    if (taskId !== null) refs.push({ id: taskId, issue: node.number })
+  }
+  return refs
+}
+
+const LABEL_ISSUES_QUERY = `
+  query IterationIssues($owner: String!, $repo: String!, $label: String!) {
+    repository(owner: $owner, name: $repo) {
+      issues(first: 50, labels: [$label], states: [OPEN, CLOSED]) {
+        nodes {
+          number
+          title
+        }
+      }
+    }
+  }
+`
+
+type LabelIssuesResponse = {
+  repository: {
+    issues: { nodes: Array<{ number: number; title: string }> }
+  } | null
+}
+
+/**
+ * Parse the task ID from the AEG issue title convention:
+ *   `[<iteration-slug>] <task-id> — <title>`
+ *
+ * Returns `null` for titles that do not follow the convention.
+ */
+function parseTaskIdFromTitle(title: string, iterationSlug: string): string | null {
+  const escapedSlug = iterationSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = title.match(new RegExp(`^\\[${escapedSlug}\\]\\s+(\\S+)\\s+[—-]`))
+  return match?.[1] ?? null
+}
+
 export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<ForgeFactsSnapshot> {
   const token = await resolveGithubToken(input.token)
   if (!token) {

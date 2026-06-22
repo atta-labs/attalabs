@@ -27,7 +27,7 @@ import {
   type Project,
   type Registry
 } from '@atta/aeg-core'
-import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
+import { loadIterationProgress } from '@/lib/forge/load-snapshot'
 
 const ITERATIONS_DIR = 'iterations'
 const COMPLETED_DIR = 'completed'
@@ -56,6 +56,10 @@ export type IterationSummary = {
     todo: number
     forgeAvailable: boolean
   }
+  /** Task identity refs for forge progress queries — `{ id, issue }` per task.
+   *  `issue` is `null` when the topology carries `#TBD`; the forge loader
+   *  resolves real issue numbers via the `iteration:<slug>` label. */
+  taskRefs: Array<{ id: string; issue: number | null }>
 }
 
 let cachedRoot: string | null = null
@@ -138,7 +142,8 @@ async function toSummary(fileSlug: string, iteration: Iteration, archived: boole
     lifecycle: iteration.lifecycle,
     goal: iteration.goal,
     taskCount: total,
-    projects: Array.from(seen)
+    projects: Array.from(seen),
+    taskRefs: iteration.tasks.map((t) => ({ id: t.id, issue: t.issue }))
   }
 
   // Archived iterations are complete by definition — skip GitHub entirely.
@@ -146,25 +151,18 @@ async function toSummary(fileSlug: string, iteration: Iteration, archived: boole
     return { ...base, taskCounts: { total, done: total, ongoing: 0, todo: 0, forgeAvailable: true } }
   }
 
-  // Active: only query GitHub when at least one task has an issue number.
-  const hasIssues = iteration.tasks.some((t) => t.issue !== null)
-  if (!hasIssues) {
-    return { ...base, taskCounts: { total, done: 0, ongoing: 0, todo: total, forgeAvailable: false } }
-  }
-
-  const snapshot = await loadIterationSnapshot(iteration, fileSlug)
-  let done = 0
-  let ongoing = 0
-  let todo = 0
-  for (const { status } of snapshot.derived.tasks) {
-    if (status === 'merged') done++
-    else if (status === 'in-flight' || status === 'in-review' || status === 'changes-requested') ongoing++
-    else todo++
-  }
-
+  // Active: use loadIterationProgress, which resolves #TBD issue numbers via
+  // the iteration:<slug> label (D-055) before fetching forge facts.
+  const progress = await loadIterationProgress(base.taskRefs, fileSlug)
   return {
     ...base,
-    taskCounts: { total, done, ongoing, todo, forgeAvailable: !snapshot.unavailable }
+    taskCounts: {
+      total,
+      done: progress.merged,
+      ongoing: progress.active,
+      todo: progress.todo + progress.backlog + progress.blocked,
+      forgeAvailable: !progress.unavailable
+    }
   }
 }
 
