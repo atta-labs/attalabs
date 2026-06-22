@@ -10,6 +10,7 @@ import { notFound } from 'next/navigation'
 import type { DerivedStatus } from '@atta/aeg-core'
 import { findAegRoot, readIteration, readProject } from '@/lib/aeg-fs'
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
+import { statusVisual } from './_lib/status-display'
 import { TaskTitleCell } from './_components/TaskTitleCell'
 
 type Params = { name: string; slug: string }
@@ -52,6 +53,17 @@ export default async function IterationPage({ params }: { params: Promise<Params
   const taskStatusMap = new Map<string, DerivedStatus>()
   for (const dt of snapshot.derived.tasks) {
     taskStatusMap.set(dt.task.id, dt.status)
+  }
+
+  // Map task id → issue number for resolving depends-on / conflicts-with
+  const taskIssueMap = new Map<string, number | null>()
+  for (const task of iteration.tasks) {
+    taskIssueMap.set(String(task.id), task.issue)
+  }
+  const resolveDepLabel = (id: string): string => {
+    if (!taskIssueMap.has(id)) return id
+    const issue = taskIssueMap.get(id)
+    return issue !== null ? `#${issue}` : id
   }
 
   const ledgerMd = readLedgerFile(slug)
@@ -124,30 +136,45 @@ export default async function IterationPage({ params }: { params: Promise<Params
                 <TableRow>
                   <TableHead className='w-16 font-sans text-xs uppercase tracking-wider'>#</TableHead>
                   <TableHead className='w-72 font-sans text-xs uppercase tracking-wider'>Task</TableHead>
-                  <TableHead className='w-20 font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
+                  <TableHead className='w-[70px] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Depends on</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Conflicts with</TableHead>
+                  <TableHead className='w-[100px] font-sans text-xs uppercase tracking-wider'>Depends on</TableHead>
+                  <TableHead className='w-[100px] font-sans text-xs uppercase tracking-wider'>Conflicts with</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {iteration.tasks.map((task) => (
                   <TableRow key={task.id}>
-                    <TableCell className='font-mono text-sm font-semibold text-foreground'>{task.id}</TableCell>
-                    <TableCell>
-                      <TaskTitleCell title={task.title} status={taskStatusMap.get(task.id)} />
+                    <TableCell className='align-top font-mono text-sm font-semibold text-foreground'>
+                      {task.id}
                     </TableCell>
-                    <TableCell className='font-mono text-xs text-muted-foreground'>
-                      {task.issue !== null ? `#${task.issue}` : '—'}
+                    <TableCell className='align-top'>
+                      <TaskTitleCell title={task.title} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='w-[70px] align-top'>
+                      {(() => {
+                        const status = taskStatusMap.get(String(task.id))
+                        const visual = status ? statusVisual(status) : null
+                        return (
+                          <div className='space-y-1.5'>
+                            <span className='font-mono text-xs text-muted-foreground'>
+                              {task.issue !== null ? `#${task.issue}` : '—'}
+                            </span>
+                            {visual && (
+                              <Badge className={`${visual.badgeClass} font-mono text-[0.6rem]`}>{visual.label}</Badge>
+                            )}
+                          </div>
+                        )
+                      })()}
+                    </TableCell>
+                    <TableCell className='align-top'>
                       <EdgeList items={task.projects} variant='project' />
                     </TableCell>
-                    <TableCell>
-                      <EdgeList items={task.dependsOn} variant='edge' />
+                    <TableCell className='w-[100px] max-w-[100px] align-top'>
+                      <DepList items={task.dependsOn} resolve={resolveDepLabel} />
                     </TableCell>
-                    <TableCell>
-                      <EdgeList items={task.conflictsWith} variant='edge' />
+                    <TableCell className='w-[100px] max-w-[100px] align-top'>
+                      <DepList items={task.conflictsWith} resolve={resolveDepLabel} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -240,12 +267,27 @@ export default async function IterationPage({ params }: { params: Promise<Params
   )
 }
 
+function DepList({ items, resolve }: { items: string[]; resolve: (id: string) => string }) {
+  if (items.length === 0) {
+    return <span className='font-mono text-xs text-muted-foreground/60'>—</span>
+  }
+  return (
+    <div className='max-h-24 space-y-1 overflow-y-auto'>
+      {items.map((id) => (
+        <span key={id} className='block font-mono text-xs text-muted-foreground'>
+          {resolve(id)}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function EdgeList({ items, variant }: { items: string[]; variant: 'project' | 'edge' }) {
   if (items.length === 0) {
     return <span className='font-mono text-xs text-muted-foreground/60'>—</span>
   }
   return (
-    <div className='flex flex-wrap gap-1.5'>
+    <div className='flex flex-wrap gap-1'>
       {items.map((item) => (
         <Badge
           key={item}
