@@ -1316,3 +1316,38 @@ Option C (external MCP servers) is deferred to a separate future task, gated on 
 - Type 2 — reversible.
 
 ---
+
+## D-054 — No-Issue tasks are not dispatchable — Developer and Brief Author hard-STOP on #TBD; Issue-cutting is the enforced backlog→todo promotion
+
+**Date:** 2026-06-22
+**Status:** ACTIVE
+**Type:** 2
+**Lock:** NO
+**Authored by:** Developer (task/aeg-issue-gate)
+**Ratified by:** Principal (on merge)
+**Conforms-to:** D-052
+
+**Context:** During the session that planned vada-production-v1, herald-agents-v2, and aeg-governance-ui-v2, tasks were dispatched with `#TBD` in their Issue column — meaning no forge Issue had been cut before work started. This left merged PRs with no Issue to derive status from (the Studio progress bar reads 0% because there is nothing to match), and means `Closes #N` could not be written in the PR body. The AEG model already defines that assigning an Issue is the `backlog → todo` promotion (`iterations/README.md` §3) and that `backlog` tasks are unassigned Issues — but this was never enforced at the Developer entry gate or the Brief Author's Dig stage. D-052 established the prior-archival gate pattern (contract-level hard-STOP on skipped Archivist steps, detectable from the forge); this decision applies the same pattern to the Issue-existence precondition.
+
+**Decision:** A task whose topology entry has `#TBD` or a blank Issue column has no forge Issue — it is **backlog**, not `todo`, and is **not dispatchable**. Two hard-STOP gates enforce this:
+
+1. **Developer entry gate (item 3, before step 0).** Before executing step 0, the Developer checks the iteration topology file for a real GitHub Issue number. If the column is `#TBD` or blank, STOP: *"Task <id> in iteration `<name>` has no Issue (#TBD) — it is backlog, not dispatchable. The Planner must cut the Issue and promote it to todo before this task can start."*
+
+2. **Brief Author precondition (Dig stage check (a), before Draft).** Before authoring a brief, the Brief Author checks the topology file for a real Issue number. If `#TBD` or blank, STOP — do NOT author the brief: *"Task <id> in iteration `<name>` has no Issue (#TBD) — it is backlog, not dispatchable. The Planner must cut the Issue first."* Catches the gap one stage earlier than the Developer gate.
+
+Cutting the Issue and recording its number in the topology table is the Planner's act of backlog → todo promotion. Not every task must have an Issue at plan time — backlog tasks may remain `#TBD` until promoted. But before any task is briefable or executable, the Planner must cut its Issue. This obligation is added to `roles/planner.md` (hard gate in plan-integrity gates) and `contracts/planner-brief.md` (producer obligation).
+
+**Alternatives rejected:**
+- *CI check on PR body for `Closes #N`:* rejected — would catch the gap at PR-open time, after the Developer has already done the work. The Developer gate fires before step 0 (zero work done); catching it at PR-open is too late and wastes the Developer's session.
+- *Allowing work to start with #TBD if the Issue is cut mid-session:* rejected — the brief cannot carry `Closes #N` at opening time, the PR body is frozen at open, and the Issue number must be deterministic before work starts. A "cut it mid-session" approach leaves a window where the forge has no Issue to track status from.
+- *A script that auto-creates the Issue from the topology entry:* rejected — AEG is a human-run protocol; Issue-cutting is a Planner judgment act (naming, labeling, dependency linking), not a mechanical derivation. The enforcement must live in the protocol itself, not in tooling.
+
+**Consequences:**
+- `aeg-root/roles/developer.md` — entry gate: new item 3 (Issue-existence precondition, hard STOP before step 0); existing items 3 and 4 renumbered to 4 and 5. Trailing note updated to distinguish forge-read gates (items 4, 5) from the topology-read gate (item 3).
+- `aeg-root/contracts/brief-developer.md` — consumer obligations: new Issue-existence precondition bullet (before the archival bullet); archival bullet's developer.md item reference updated (3 → 4).
+- `aeg-root/skills/brief-authoring/SKILL.md` — Dig stage precondition block restructured: from two D-052 checks to three checks (Issue-existence (a), per-task archival (b), iteration archival (c)); contract-conformance checklist gains Issue-existence item; anti-patterns section gains Issue-existence anti-pattern; archival anti-pattern reference updated (items 3 and 4 → items 4 and 5).
+- `aeg-root/roles/planner.md` — "What you produce" updated: Issue-cutting obligation made explicit; hard gate added to plan-integrity gates: refuse to dispatch a task whose Issue column is `#TBD`.
+- `aeg-root/contracts/planner-brief.md` — producer obligations: Issue-cutting precondition bullet added as first obligation.
+- Type 2 — reversible.
+
+---
