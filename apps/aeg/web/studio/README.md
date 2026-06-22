@@ -16,4 +16,7 @@ Runs at `http://localhost:3005`.
 
 ## Status
 
-Wave-1 shell only — top bar + sidebar render with stub data. Real artifact reads + pages arrive in subsequent tasks.
+Live reads from disk + forge:
+
+- Projects, iterations, tasks, and dependency graph are read from `aeg-root/` on disk.
+- Iteration task status is derived from the forge (Issues + PRs) per D-055: the Studio queries GitHub by `iteration:<slug>` label, resolves `#TBD` issue numbers, and derives each task's status via `deriveIteration`. Progress counts (merged / active / todo / backlog / blocked) appear on iteration cards and the detail task table. Degrades gracefully when no GitHub auth is present.
