@@ -5,9 +5,9 @@ import { loadFlow } from './flow-loader'
 import type { Flow } from './flow-types'
 
 // Anchor: this file lives at packages/engine/src/
-// Going up 3 levels reaches the repo root; yamls live at apps/vada-ai/yamls/
+// Going up 2 levels reaches packages/; yamls live at packages/agents/vada-deliberation/yamls/
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const DEFAULT_CATALOG_DIR = join(__dirname, '../../../apps/vada-ai/yamls')
+const DEFAULT_CATALOG_DIR = join(__dirname, '../../agents/vada-deliberation/yamls')
 
 function catalogDir(): string {
   return process.env.VADA_YAMLS_DIR ?? DEFAULT_CATALOG_DIR

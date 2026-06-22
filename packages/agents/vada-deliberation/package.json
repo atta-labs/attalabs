@@ -1,0 +1,23 @@
+{
+  "name": "@atta/vada-deliberation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@atta/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@atta/typescript-config": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.7.0"
+  }
+}

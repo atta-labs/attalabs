@@ -9,8 +9,8 @@ import type { Plan, PlanEdge, PlanNode } from './types'
 const QUESTION = 'Test question for baseline snapshot'
 const MODEL = 'claude-sonnet-4-6'
 
-// __dirname = packages/engine/src; yamls are at ../../../apps/vada-ai/yamls/
-const YAMLS_DIR = join(__dirname, '../../../apps/vada-ai/yamls')
+// __dirname = packages/engine/src; yamls are at ../../agents/vada-deliberation/yamls/
+const YAMLS_DIR = join(__dirname, '../../agents/vada-deliberation/yamls')
 const BASELINE_DIR = '/tmp'
 
 // ── Fixtures ───────────────────────────────────────────────────────────────────

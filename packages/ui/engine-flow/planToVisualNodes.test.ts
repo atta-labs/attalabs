@@ -4,9 +4,9 @@ import { describe, it, expect } from 'vitest'
 import { loadFlow, compileFlow } from '@atta/engine'
 import { planToVisualNodes } from './planToVisualNodes'
 
-// Catalog YAMLs live at apps/vada-ai/yamls/
-// From engine-flow/: up 4 levels (ui/packages/worktree-root) then apps/vada-ai/yamls
-const YAMLS_DIR = join(import.meta.dirname, '../../../apps/vada-ai/yamls')
+// Catalog YAMLs live at packages/agents/vada-deliberation/yamls/
+// From engine-flow/: up 3 levels to repo root, then packages/agents/vada-deliberation/yamls
+const YAMLS_DIR = join(import.meta.dirname, '../../../packages/agents/vada-deliberation/yamls')
 
 function visualize(id: string) {
   const yaml = readFileSync(join(YAMLS_DIR, `${id}.yaml`), 'utf-8')
