@@ -8,6 +8,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { notFound } from 'next/navigation'
 import { findAegRoot, readIteration, readProject } from '@/lib/aeg-fs'
+import { TaskTitleCell } from './_components/TaskTitleCell'
 
 type Params = { name: string; slug: string }
 
@@ -125,7 +126,9 @@ export default async function IterationPage({ params }: { params: Promise<Params
                 {iteration.tasks.map((task) => (
                   <TableRow key={task.id}>
                     <TableCell className='font-mono text-sm font-semibold text-foreground'>{task.id}</TableCell>
-                    <TableCell className='font-sans text-sm text-card-foreground'>{task.title}</TableCell>
+                    <TableCell>
+                      <TaskTitleCell title={task.title} />
+                    </TableCell>
                     <TableCell className='font-mono text-xs text-muted-foreground'>
                       {task.issue !== null ? `#${task.issue}` : '—'}
                     </TableCell>
