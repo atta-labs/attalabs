@@ -1,8 +1,10 @@
 'use client'
 
-import { Loader2, Plus, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2, Plus, X } from 'lucide-react'
 import { useState } from 'react'
+import { Badge } from '@atta/ui/components/badge'
 import { Button, Card, CardContent } from '@atta/ui/components'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/components'
 
 import { ReportView } from '@/components/envoy/ReportView'
 import { resolveCvFileRequest, resolveCvJsonRequest, resolveJdRequest } from '@/lib/audit-input/client'
@@ -113,6 +115,20 @@ async function runCellForResolved(jd: ResolvedJd, cv: ResolvedCv): Promise<CellS
   } catch {
     return { status: 'error', message: 'Network error.' }
   }
+}
+
+function gradeColorClass(grade: MatchReport['grade']): string {
+  if (grade === 'NO FIT') return 'text-destructive'
+  if (grade === 'STRETCH') return 'text-warning'
+  if (grade === 'A' || grade === 'A-') return 'text-success'
+  return 'text-foreground'
+}
+
+function gradeBadgeClass(grade: MatchReport['grade']): string {
+  if (grade === 'NO FIT') return 'bg-destructive/10 text-destructive border-destructive/40'
+  if (grade === 'STRETCH') return 'bg-warning/10 text-warning border-warning/40'
+  if (grade === 'A' || grade === 'A-') return 'bg-success/10 text-success border-success/40'
+  return 'bg-muted text-muted-foreground border-border'
 }
 
 export function BulkAudit({ hasKey }: { hasKey: boolean }) {
@@ -249,54 +265,95 @@ export function BulkAudit({ hasKey }: { hasKey: boolean }) {
   if (state === 'running' || state === 'done') {
     const cvCount = submittedCvs.length
     const jdCount = submittedJds.length
+    const totalCells = cvCount * jdCount
+    const completedCells = Object.values(cells).filter((c) => c.status !== 'loading').length
+    const errorCells = Object.values(cells).filter((c) => c.status === 'error').length
+    const isRunning = state === 'running'
 
     return (
       <div className='px-6 py-8'>
-        <div className='mx-auto mb-6 flex max-w-[1280px] items-center justify-between'>
-          <p className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
-            {cvCount} × {jdCount} matrix · {cvCount * jdCount} audit{cvCount * jdCount !== 1 ? 's' : ''}
-          </p>
-          <Button
-            onClick={handleReset}
-            variant='outline'
-            className='font-mono text-[10px] uppercase tracking-[0.2em]'
-            disabled={state === 'running'}
-          >
-            New Matrix
-          </Button>
+        {/* Matrix header bar */}
+        <div className='mx-auto mb-6 max-w-[1440px]'>
+          <div className='flex items-center justify-between'>
+            <div>
+              <p className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+                {cvCount} candidate{cvCount !== 1 ? 's' : ''} × {jdCount} JD{jdCount !== 1 ? 's' : ''} — {totalCells}{' '}
+                audit{totalCells !== 1 ? 's' : ''}
+              </p>
+              {isRunning ? (
+                <p className='mt-0.5 flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground'>
+                  <Loader2 className='h-3 w-3 animate-spin' />
+                  {completedCells}/{totalCells} complete
+                </p>
+              ) : (
+                <p className='mt-0.5 font-mono text-[10px] text-muted-foreground'>
+                  {errorCells > 0 ? (
+                    <span>
+                      {completedCells - errorCells} done · <span className='text-destructive'>{errorCells} failed</span>
+                    </span>
+                  ) : (
+                    <span className='text-success'>All audits complete</span>
+                  )}
+                </p>
+              )}
+            </div>
+            <Button
+              onClick={handleReset}
+              variant='outline'
+              className='font-mono text-[10px] uppercase tracking-[0.2em]'
+              disabled={isRunning}
+            >
+              New Matrix
+            </Button>
+          </div>
         </div>
 
-        <div className='overflow-x-auto pb-4'>
-          <div className='grid gap-4' style={{ gridTemplateColumns: `repeat(${jdCount}, minmax(620px, 1fr))` }}>
+        {/* Matrix grid */}
+        <div className='mx-auto max-w-[1440px] overflow-x-auto pb-4'>
+          <div
+            className='grid gap-x-4 gap-y-6'
+            style={{ gridTemplateColumns: `160px repeat(${jdCount}, minmax(480px, 1fr))` }}
+          >
+            {/* Header row: blank corner + JD column headers */}
+            <div className='border-b border-border pb-3' />
             {submittedJds.map((jd, jdIdx) => (
-              <div key={`header-${jdIdx}-${jd.sourceLabel}`} className='border-b border-border pb-3'>
+              <div key={`jd-header-${jdIdx}`} className='border-b border-border pb-3'>
                 <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-                  JD {jdIdx + 1} —{' '}
-                  <span className='text-foreground/70'>
-                    {jd.kind === 'url' ? `URL · ${jd.sourceLabel}` : jd.sourceLabel}
-                  </span>
+                  JD {jdIdx + 1}
+                </p>
+                <p className='mt-0.5 truncate font-mono text-[11px] text-foreground/70'>
+                  {jd.kind === 'url' ? jd.sourceLabel : jd.sourceLabel}
                 </p>
               </div>
             ))}
 
-            {submittedCvs.flatMap((cv, cvIdx) =>
-              submittedJds.map((_jd, jdIdx) => {
-                const cell = cells[cellKey(cvIdx, jdIdx)]
-                return (
-                  <Card key={cellKey(cvIdx, jdIdx)} className='overflow-hidden'>
-                    <CardContent className='p-0'>
-                      <div className='border-b border-border bg-muted/30 px-4 py-2'>
-                        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-                          {cv.candidateLabel} <span className='ml-2 text-foreground/40'>·</span>{' '}
-                          <span className='ml-2'>JD {jdIdx + 1}</span>
-                        </p>
-                      </div>
-                      <CellBody cell={cell} candidateLabel={cv.candidateLabel} />
-                    </CardContent>
-                  </Card>
-                )
-              })
-            )}
+            {/* Data rows: candidate label + cells */}
+            {submittedCvs.map((cv, cvIdx) => (
+              <>
+                {/* Row label */}
+                <div key={`cv-label-${cvIdx}`} className='flex items-start pt-4'>
+                  <div>
+                    <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+                      Candidate {cvIdx + 1}
+                    </p>
+                    <p className='mt-0.5 font-mono text-[11px] text-foreground'>{cv.candidateLabel}</p>
+                  </div>
+                </div>
+
+                {/* Result cells for this candidate */}
+                {submittedJds.map((_jd, jdIdx) => {
+                  const cell = cells[cellKey(cvIdx, jdIdx)]
+                  return (
+                    <AuditCell
+                      key={cellKey(cvIdx, jdIdx)}
+                      cell={cell}
+                      candidateLabel={cv.candidateLabel}
+                      jdLabel={`JD ${jdIdx + 1}`}
+                    />
+                  )
+                })}
+              </>
+            ))}
           </div>
         </div>
       </div>
@@ -403,7 +460,7 @@ export function BulkAudit({ hasKey }: { hasKey: boolean }) {
           )}
         </div>
 
-        {resolveError && <p className='font-mono text-xs text-destructive'>Couldn’t resolve inputs — {resolveError}</p>}
+        {resolveError && <p className='font-mono text-xs text-destructive'>Couldn't resolve inputs — {resolveError}</p>}
 
         <Button
           onClick={handleRun}
@@ -426,26 +483,100 @@ export function BulkAudit({ hasKey }: { hasKey: boolean }) {
   )
 }
 
-function CellBody({ cell, candidateLabel }: { cell: CellStatus | undefined; candidateLabel: string }) {
+interface AuditCellProps {
+  cell: CellStatus | undefined
+  candidateLabel: string
+  jdLabel: string
+}
+
+function AuditCell({ cell, candidateLabel, jdLabel }: AuditCellProps) {
+  const [expanded, setExpanded] = useState(false)
+
   if (!cell || cell.status === 'loading') {
     return (
-      <div className='flex h-[200px] flex-col items-center justify-center gap-3 px-6'>
-        <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />
-        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-          Auditing {candidateLabel}…
-        </p>
-      </div>
+      <Card className='overflow-hidden'>
+        <CardContent className='flex h-[160px] flex-col items-center justify-center gap-3 p-6'>
+          <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />
+          <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+            Auditing {candidateLabel}…
+          </p>
+        </CardContent>
+      </Card>
     )
   }
 
   if (cell.status === 'error') {
     return (
-      <div className='flex h-[200px] flex-col items-center justify-center gap-2 px-6'>
-        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-destructive'>Failed</p>
-        <p className='text-center text-[13px] text-muted-foreground'>{cell.message}</p>
-      </div>
+      <Card className='overflow-hidden border-destructive/30'>
+        <CardContent className='flex h-[160px] flex-col items-center justify-center gap-2 p-6'>
+          <Badge className='bg-destructive/10 text-destructive border-destructive/40 font-mono text-[9px] uppercase tracking-[0.2em]'>
+            Failed
+          </Badge>
+          <p className='text-center font-mono text-[11px] text-muted-foreground'>{cell.message}</p>
+        </CardContent>
+      </Card>
     )
   }
 
-  return <ReportView report={cell.report} />
+  const { report } = cell
+  const signalCount = report.signal.length
+  const hardCount = report.hard_requirements?.filter((r) => r.kind === 'hard').length ?? 0
+  const hardMetCount = report.hard_requirements?.filter((r) => r.kind === 'hard' && r.met).length ?? 0
+
+  return (
+    <Card className='overflow-hidden'>
+      {/* Compact summary header */}
+      <div className='border-b border-border bg-muted/20 px-4 py-3'>
+        <div className='flex items-center justify-between gap-3'>
+          <div className='flex items-center gap-2.5'>
+            <span
+              className={`font-serif text-xl font-bold leading-none tracking-tight ${gradeColorClass(report.grade)}`}
+            >
+              {report.grade}
+            </span>
+            <Badge
+              variant='outline'
+              className={`font-mono text-[9px] uppercase tracking-[0.15em] ${gradeBadgeClass(report.grade)}`}
+            >
+              {report.confidence}
+            </Badge>
+          </div>
+          <div className='flex items-center gap-3'>
+            {hardCount > 0 && (
+              <span className='font-mono text-[10px] text-muted-foreground'>
+                <span className={hardMetCount === hardCount ? 'text-success' : 'text-destructive'}>
+                  {hardMetCount}/{hardCount}
+                </span>{' '}
+                hard req
+              </span>
+            )}
+            <span className='font-mono text-[10px] text-muted-foreground'>
+              {signalCount} signal{signalCount !== 1 ? 's' : ''}
+            </span>
+          </div>
+        </div>
+        <p className='mt-1.5 line-clamp-2 text-[12px] leading-relaxed text-foreground/80'>{report.recommendation}</p>
+      </div>
+
+      {/* Expand / collapse toggle */}
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <CollapsibleTrigger asChild>
+          <Button
+            variant='ghost'
+            className='flex w-full items-center justify-between rounded-none border-0 px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:bg-accent/10 hover:text-foreground'
+          >
+            <span>
+              {jdLabel} · {candidateLabel}
+            </span>
+            {expanded ? <ChevronUp className='h-3 w-3' /> : <ChevronDown className='h-3 w-3' />}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className='border-t border-border'>
+            <ReportView report={report} />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  )
 }
