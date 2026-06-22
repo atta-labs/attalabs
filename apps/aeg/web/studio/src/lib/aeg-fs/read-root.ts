@@ -27,6 +27,7 @@ import {
   type Project,
   type Registry
 } from '@atta/aeg-core'
+import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
 
 const ITERATIONS_DIR = 'iterations'
 const COMPLETED_DIR = 'completed'
@@ -48,6 +49,13 @@ export type IterationSummary = {
   taskCount: number
   /** Deduplicated project names referenced across all tasks in this iteration. */
   projects: string[]
+  taskCounts: {
+    total: number
+    done: number
+    ongoing: number
+    todo: number
+    forgeAvailable: boolean
+  }
 }
 
 let cachedRoot: string | null = null
@@ -111,26 +119,52 @@ export async function listIterations(): Promise<IterationLists> {
   const archivedLoaded = await Promise.all(archivedFiles.map((f) => readOne(archivedDir, f)))
 
   return {
-    active: activeLoaded.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, false)),
-    archived: archivedLoaded.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, true))
+    active: await Promise.all(activeLoaded.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, false))),
+    archived: await Promise.all(archivedLoaded.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, true)))
   }
 }
 
-function toSummary(fileSlug: string, iteration: Iteration, archived: boolean): IterationSummary {
+async function toSummary(fileSlug: string, iteration: Iteration, archived: boolean): Promise<IterationSummary> {
   const seen = new Set<string>()
   for (const task of iteration.tasks) {
-    for (const p of task.projects) {
-      seen.add(p)
-    }
+    for (const p of task.projects) seen.add(p)
   }
-  return {
+
+  const total = iteration.tasks.length
+  const base = {
     name: iteration.name || fileSlug,
     fileSlug,
     archived,
     lifecycle: iteration.lifecycle,
     goal: iteration.goal,
-    taskCount: iteration.tasks.length,
+    taskCount: total,
     projects: Array.from(seen)
+  }
+
+  // Archived iterations are complete by definition — skip GitHub entirely.
+  if (archived) {
+    return { ...base, taskCounts: { total, done: total, ongoing: 0, todo: 0, forgeAvailable: true } }
+  }
+
+  // Active: only query GitHub when at least one task has an issue number.
+  const hasIssues = iteration.tasks.some((t) => t.issue !== null)
+  if (!hasIssues) {
+    return { ...base, taskCounts: { total, done: 0, ongoing: 0, todo: total, forgeAvailable: false } }
+  }
+
+  const snapshot = await loadIterationSnapshot(iteration, fileSlug)
+  let done = 0
+  let ongoing = 0
+  let todo = 0
+  for (const { status } of snapshot.derived.tasks) {
+    if (status === 'merged') done++
+    else if (status === 'in-flight' || status === 'in-review' || status === 'changes-requested') ongoing++
+    else todo++
+  }
+
+  return {
+    ...base,
+    taskCounts: { total, done, ongoing, todo, forgeAvailable: !snapshot.unavailable }
   }
 }
 
@@ -178,9 +212,8 @@ export async function iterationsForProject(
 
   const filterAndSummarize = async (dir: string, files: string[], archived: boolean) => {
     const loaded = await Promise.all(files.map((f) => readOne(dir, f)))
-    return loaded
-      .filter(({ iteration }) => iteration.tasks.some((t) => t.projects.includes(projectName)))
-      .map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, archived))
+    const filtered = loaded.filter(({ iteration }) => iteration.tasks.some((t) => t.projects.includes(projectName)))
+    return Promise.all(filtered.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, archived)))
   }
 
   const [active, archived] = await Promise.all([

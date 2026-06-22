@@ -7,7 +7,11 @@ import type { Metadata } from 'next'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { notFound } from 'next/navigation'
+import type { DerivedStatus } from '@atta/aeg-core'
 import { findAegRoot, readIteration, readProject } from '@/lib/aeg-fs'
+import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
+import { statusVisual } from './_lib/status-display'
+import { TaskTitleCell } from './_components/TaskTitleCell'
 
 type Params = { name: string; slug: string }
 
@@ -44,6 +48,24 @@ export default async function IterationPage({ params }: { params: Promise<Params
   if (!detail) notFound()
 
   const { iteration, archived } = detail
+
+  const snapshot = await loadIterationSnapshot(iteration, slug)
+  const taskStatusMap = new Map<string, DerivedStatus>()
+  for (const dt of snapshot.derived.tasks) {
+    taskStatusMap.set(dt.task.id, dt.status)
+  }
+
+  // Map task id → issue number for resolving depends-on / conflicts-with
+  const taskIssueMap = new Map<string, number | null>()
+  for (const task of iteration.tasks) {
+    taskIssueMap.set(String(task.id), task.issue)
+  }
+  const resolveDepLabel = (id: string): string | null => {
+    if (id.includes('/')) return null
+    if (!taskIssueMap.has(id)) return id
+    const issue = taskIssueMap.get(id)
+    return issue !== null ? `#${issue}` : id
+  }
 
   const ledgerMd = readLedgerFile(slug)
   const ledgerRows = ledgerMd !== null ? parseLedger(ledgerMd) : null
@@ -110,36 +132,55 @@ export default async function IterationPage({ params }: { params: Promise<Params
           </p>
         ) : (
           <div className='rounded-lg border border-border bg-card'>
-            <Table>
+            <Table className='table-fixed'>
               <TableHeader>
                 <TableRow>
-                  <TableHead className='w-16 font-sans text-xs uppercase tracking-wider'>#</TableHead>
+                  <TableHead className='w-[4%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>Task</TableHead>
-                  <TableHead className='w-20 font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Depends on</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Conflicts with</TableHead>
+                  <TableHead className='w-[10%] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
+                  <TableHead className='w-[15%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
+                  <TableHead className='w-[10%] font-sans text-xs uppercase tracking-wider'>Deps</TableHead>
+                  <TableHead className='w-[12%] font-sans text-xs uppercase tracking-wider'>Conflicts</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {iteration.tasks.map((task) => (
-                  <TableRow key={task.id}>
-                    <TableCell className='font-mono text-sm font-semibold text-foreground'>{task.id}</TableCell>
-                    <TableCell className='font-sans text-sm text-card-foreground'>{task.title}</TableCell>
-                    <TableCell className='font-mono text-xs text-muted-foreground'>
-                      {task.issue !== null ? `#${task.issue}` : '—'}
-                    </TableCell>
-                    <TableCell>
-                      <EdgeList items={task.projects} variant='project' />
-                    </TableCell>
-                    <TableCell>
-                      <EdgeList items={task.dependsOn} variant='edge' />
-                    </TableCell>
-                    <TableCell>
-                      <EdgeList items={task.conflictsWith} variant='edge' />
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {iteration.tasks.map((task) => {
+                  const status = taskStatusMap.get(String(task.id))
+                  const visual = status ? statusVisual(status) : null
+                  return (
+                    <TableRow key={task.id}>
+                      <TableCell className='align-top font-mono text-sm font-semibold text-foreground'>
+                        {task.id}
+                      </TableCell>
+                      <TableCell className='align-top'>
+                        <TaskTitleCell title={task.title} />
+                      </TableCell>
+                      <TableCell className='align-top'>
+                        <div className='space-y-1'>
+                          <p className='font-mono text-xs text-muted-foreground'>
+                            {task.issue !== null ? `#${task.issue}` : '—'}
+                          </p>
+                          {visual && (
+                            <div>
+                              <Badge variant='outline' className={`${visual.badgeClass} font-mono p-1 text-[0.6rem]`}>
+                                {visual.label}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className='align-top'>
+                        <EdgeList items={task.projects} />
+                      </TableCell>
+                      <TableCell className='align-top'>
+                        <DepList items={task.dependsOn} resolve={resolveDepLabel} />
+                      </TableCell>
+                      <TableCell className='align-top'>
+                        <DepList items={task.conflictsWith} resolve={resolveDepLabel} />
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </div>
@@ -229,23 +270,32 @@ export default async function IterationPage({ params }: { params: Promise<Params
   )
 }
 
-function EdgeList({ items, variant }: { items: string[]; variant: 'project' | 'edge' }) {
+function DepList({ items, resolve }: { items: string[]; resolve: (id: string) => string | null }) {
+  const resolved = items.map((id) => ({ id, label: resolve(id) })).filter((x) => x.label !== null)
+  if (resolved.length === 0) {
+    return <span className='font-mono text-xs text-muted-foreground/60'>—</span>
+  }
+  return (
+    <div className='max-h-24 space-y-1 overflow-y-auto'>
+      {resolved.map(({ id, label }) => (
+        <span key={id} className='block font-mono text-xs text-muted-foreground'>
+          {label}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function EdgeList({ items }: { items: string[] }) {
   if (items.length === 0) {
     return <span className='font-mono text-xs text-muted-foreground/60'>—</span>
   }
   return (
-    <div className='flex flex-wrap gap-1.5'>
+    <div className='flex flex-col gap-0.5'>
       {items.map((item) => (
-        <Badge
-          key={item}
-          className={
-            variant === 'project'
-              ? 'bg-muted/40 text-card-foreground border-border font-mono text-xs'
-              : 'bg-muted/30 text-muted-foreground border-border font-mono text-xs'
-          }
-        >
+        <span key={item} className='font-mono text-xs text-card-foreground'>
           {item}
-        </Badge>
+        </span>
       ))}
     </div>
   )
