@@ -143,41 +143,41 @@ export default async function IterationPage({ params }: { params: Promise<Params
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {iteration.tasks.map((task) => (
-                  <TableRow key={task.id}>
-                    <TableCell className='align-top font-mono text-sm font-semibold text-foreground'>
-                      {task.id}
-                    </TableCell>
-                    <TableCell className='align-top'>
-                      <TaskTitleCell title={task.title} />
-                    </TableCell>
-                    <TableCell className='w-[70px] align-top'>
-                      {(() => {
-                        const status = taskStatusMap.get(String(task.id))
-                        const visual = status ? statusVisual(status) : null
-                        return (
-                          <div className='flex flex-col items-start gap-1.5'>
-                            <span className='font-mono text-xs text-muted-foreground'>
-                              {task.issue !== null ? `#${task.issue}` : '—'}
-                            </span>
-                            {visual && (
-                              <Badge className={`${visual.badgeClass} font-mono text-[0.6rem]`}>{visual.label}</Badge>
-                            )}
-                          </div>
-                        )
-                      })()}
-                    </TableCell>
-                    <TableCell className='align-top'>
-                      <EdgeList items={task.projects} variant='project' />
-                    </TableCell>
-                    <TableCell className='w-[100px] max-w-[100px] align-top'>
-                      <DepList items={task.dependsOn} resolve={resolveDepLabel} />
-                    </TableCell>
-                    <TableCell className='w-[100px] max-w-[100px] align-top'>
-                      <DepList items={task.conflictsWith} resolve={resolveDepLabel} />
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {iteration.tasks.map((task) => {
+                  const status = taskStatusMap.get(String(task.id))
+                  const visual = status ? statusVisual(status) : null
+                  return (
+                    <TableRow key={task.id}>
+                      <TableCell className='align-top font-mono text-sm font-semibold text-foreground'>
+                        {task.id}
+                      </TableCell>
+                      <TableCell className='align-top'>
+                        <TaskTitleCell title={task.title} />
+                      </TableCell>
+                      <TableCell className='w-[70px] align-top'>
+                        <div className='space-y-1'>
+                          <p className='font-mono text-xs text-muted-foreground'>
+                            {task.issue !== null ? `#${task.issue}` : '—'}
+                          </p>
+                          {visual && (
+                            <Badge className={`${visual.badgeClass} w-fit font-mono text-[0.6rem]`}>
+                              {visual.label}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className='align-top'>
+                        <EdgeList items={task.projects} variant='project' />
+                      </TableCell>
+                      <TableCell className='w-[100px] max-w-[100px] align-top'>
+                        <DepList items={task.dependsOn} resolve={resolveDepLabel} />
+                      </TableCell>
+                      <TableCell className='w-[100px] max-w-[100px] align-top'>
+                        <DepList items={task.conflictsWith} resolve={resolveDepLabel} />
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </div>
@@ -287,7 +287,7 @@ function EdgeList({ items, variant }: { items: string[]; variant: 'project' | 'e
     return <span className='font-mono text-xs text-muted-foreground/60'>—</span>
   }
   return (
-    <div className='flex flex-wrap gap-1'>
+    <div className={variant === 'project' ? 'flex flex-col gap-1' : 'flex flex-wrap gap-1'}>
       {items.map((item) => (
         <Badge
           key={item}
