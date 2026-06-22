@@ -97,6 +97,8 @@ fetchForgeFacts({ owner, repo, iteration, tasks, token? })
 
 The `ForgeFacts` shape is owned by `@atta/aeg-core` (`packages/aeg-core/src/types.ts`) — the adapter imports it; it does not redefine it. The branch ref convention is `task/<iteration>/<id>` (per `aeg-root/iterations/README.md`).
 
+**Label-based task ref resolution (D-055).** Active iteration `.md` topology files carry `#TBD` for issue numbers (task IDs are assigned before the GitHub Issue exists). The adapter resolves real issue numbers at render time: `fetchForgeTasksByLabel(owner, repo, slug)` queries Issues tagged `iteration:<slug>` and parses task IDs from the title pattern `[<slug>] <id> — <title>`. The resolved refs are merged with topology refs so `deriveIteration` can derive real per-task status even before the `.md` is updated. Archived iterations that no longer carry the label degrade gracefully (empty result → topology refs only → all tasks shown as `backlog`). The Studio surfaces aggregate progress counts (merged / active / todo / backlog / blocked) on iteration cards and a Status column on the iteration detail task table.
+
 Implementation contract:
 
 - **Read-only, always** (D-029). No writes, no labels written, no comments posted. The GraphQL query is a `query`, never a `mutation`.
