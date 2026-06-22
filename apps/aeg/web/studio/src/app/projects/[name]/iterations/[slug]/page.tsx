@@ -60,7 +60,8 @@ export default async function IterationPage({ params }: { params: Promise<Params
   for (const task of iteration.tasks) {
     taskIssueMap.set(String(task.id), task.issue)
   }
-  const resolveDepLabel = (id: string): string => {
+  const resolveDepLabel = (id: string): string | null => {
+    if (id.includes('/')) return null
     if (!taskIssueMap.has(id)) return id
     const issue = taskIssueMap.get(id)
     return issue !== null ? `#${issue}` : id
@@ -131,15 +132,15 @@ export default async function IterationPage({ params }: { params: Promise<Params
           </p>
         ) : (
           <div className='rounded-lg border border-border bg-card'>
-            <Table>
+            <Table className='table-fixed'>
               <TableHeader>
                 <TableRow>
-                  <TableHead className='w-16 font-sans text-xs uppercase tracking-wider'>#</TableHead>
-                  <TableHead className='w-72 font-sans text-xs uppercase tracking-wider'>Task</TableHead>
-                  <TableHead className='w-[70px] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
-                  <TableHead className='min-w-[140px] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-                  <TableHead className='w-[100px] font-sans text-xs uppercase tracking-wider'>Depends on</TableHead>
-                  <TableHead className='w-[100px] font-sans text-xs uppercase tracking-wider'>Conflicts with</TableHead>
+                  <TableHead className='w-[4%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
+                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Task</TableHead>
+                  <TableHead className='w-[10%] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
+                  <TableHead className='w-[15%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
+                  <TableHead className='w-[10%] font-sans text-xs uppercase tracking-wider'>Deps</TableHead>
+                  <TableHead className='w-[12%] font-sans text-xs uppercase tracking-wider'>Conflicts</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -154,25 +155,27 @@ export default async function IterationPage({ params }: { params: Promise<Params
                       <TableCell className='align-top'>
                         <TaskTitleCell title={task.title} />
                       </TableCell>
-                      <TableCell className='w-[70px] align-top'>
+                      <TableCell className='align-top'>
                         <div className='space-y-1'>
                           <p className='font-mono text-xs text-muted-foreground'>
                             {task.issue !== null ? `#${task.issue}` : '—'}
                           </p>
                           {visual && (
-                            <Badge className={`${visual.badgeClass} w-fit font-mono text-[0.6rem]`}>
-                              {visual.label}
-                            </Badge>
+                            <div>
+                              <Badge variant='outline' className={`${visual.badgeClass} font-mono p-1 text-[0.6rem]`}>
+                                {visual.label}
+                              </Badge>
+                            </div>
                           )}
                         </div>
                       </TableCell>
                       <TableCell className='align-top'>
-                        <EdgeList items={task.projects} variant='project' />
+                        <EdgeList items={task.projects} />
                       </TableCell>
-                      <TableCell className='w-[100px] max-w-[100px] align-top'>
+                      <TableCell className='align-top'>
                         <DepList items={task.dependsOn} resolve={resolveDepLabel} />
                       </TableCell>
-                      <TableCell className='w-[100px] max-w-[100px] align-top'>
+                      <TableCell className='align-top'>
                         <DepList items={task.conflictsWith} resolve={resolveDepLabel} />
                       </TableCell>
                     </TableRow>
@@ -267,38 +270,32 @@ export default async function IterationPage({ params }: { params: Promise<Params
   )
 }
 
-function DepList({ items, resolve }: { items: string[]; resolve: (id: string) => string }) {
-  if (items.length === 0) {
+function DepList({ items, resolve }: { items: string[]; resolve: (id: string) => string | null }) {
+  const resolved = items.map((id) => ({ id, label: resolve(id) })).filter((x) => x.label !== null)
+  if (resolved.length === 0) {
     return <span className='font-mono text-xs text-muted-foreground/60'>—</span>
   }
   return (
     <div className='max-h-24 space-y-1 overflow-y-auto'>
-      {items.map((id) => (
+      {resolved.map(({ id, label }) => (
         <span key={id} className='block font-mono text-xs text-muted-foreground'>
-          {resolve(id)}
+          {label}
         </span>
       ))}
     </div>
   )
 }
 
-function EdgeList({ items, variant }: { items: string[]; variant: 'project' | 'edge' }) {
+function EdgeList({ items }: { items: string[] }) {
   if (items.length === 0) {
     return <span className='font-mono text-xs text-muted-foreground/60'>—</span>
   }
   return (
-    <div className={variant === 'project' ? 'flex flex-col gap-1' : 'flex flex-wrap gap-1'}>
+    <div className='flex flex-col gap-0.5'>
       {items.map((item) => (
-        <Badge
-          key={item}
-          className={
-            variant === 'project'
-              ? 'bg-muted/40 text-card-foreground border-border font-mono text-xs'
-              : 'bg-muted/30 text-muted-foreground border-border font-mono text-xs'
-          }
-        >
+        <span key={item} className='font-mono text-xs text-card-foreground'>
           {item}
-        </Badge>
+        </span>
       ))}
     </div>
   )
