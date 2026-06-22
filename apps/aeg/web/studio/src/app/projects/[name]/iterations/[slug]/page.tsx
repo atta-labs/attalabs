@@ -115,7 +115,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
               <TableHeader>
                 <TableRow>
                   <TableHead className='w-16 font-sans text-xs uppercase tracking-wider'>#</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Task</TableHead>
+                  <TableHead className='w-72 font-sans text-xs uppercase tracking-wider'>Task</TableHead>
                   <TableHead className='w-20 font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>Depends on</TableHead>
@@ -126,7 +126,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
                 {iteration.tasks.map((task) => (
                   <TableRow key={task.id}>
                     <TableCell className='font-mono text-sm font-semibold text-foreground'>{task.id}</TableCell>
-                    <TableCell>
+                    <TableCell className='max-w-0 overflow-hidden'>
                       <TaskTitleCell title={task.title} />
                     </TableCell>
                     <TableCell className='font-mono text-xs text-muted-foreground'>
