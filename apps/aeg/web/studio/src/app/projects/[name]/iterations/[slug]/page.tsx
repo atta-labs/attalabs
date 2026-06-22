@@ -126,7 +126,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
                 {iteration.tasks.map((task) => (
                   <TableRow key={task.id}>
                     <TableCell className='font-mono text-sm font-semibold text-foreground'>{task.id}</TableCell>
-                    <TableCell className='max-w-0 overflow-hidden'>
+                    <TableCell>
                       <TaskTitleCell title={task.title} />
                     </TableCell>
                     <TableCell className='font-mono text-xs text-muted-foreground'>
