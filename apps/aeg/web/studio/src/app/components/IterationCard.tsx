@@ -19,7 +19,11 @@ function TaskProgress({ counts }: TaskProgressProps) {
   }
 
   if (done === total) {
-    return <span className='font-mono text-xs font-medium text-success'>done</span>
+    return (
+      <span className='inline-block rounded border border-success/50 px-1.5 py-0.5 font-mono text-xs font-medium uppercase tracking-wider text-success'>
+        done
+      </span>
+    )
   }
 
   const pct = total > 0 ? Math.round((done / total) * 100) : 0
