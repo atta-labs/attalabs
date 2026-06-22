@@ -1351,3 +1351,39 @@ Cutting the Issue and recording its number in the topology table is the Planner'
 - Type 2 — reversible.
 
 ---
+
+## D-055 — Tasks-are-Issues: forge Issues as canonical task source; thin file is topology-only
+
+**Date:** 2026-06-22
+**Status:** ACTIVE
+**Type:** 3
+**Lock:** NO
+**Authored by:** TL (task `aeg/tasks-are-issues`, 2026-06-22)
+**Ratified by:** Principal (in-task brief)
+
+**Context:** D-029 declared "a task IS a GitHub Issue" but practice drifted: live iterations (`vada-production-v1`, `herald-agents-v2`) used `#TBD` placeholders in the Issue column and stored task prose and the Planner's rationale entirely in the iteration `.md` file. The thin file thereby functioned as both a task-definition store and a topology map — duplicating or replacing the Issue. An iteration with `#TBD` rows cannot be dispatched from the forge; the Brief Author must load the `.md`, not query the Issue, to read the rationale. The result contradicts the cardinal rule: "the forge holds what is happening; the file and the issue hold the plan." D-054 enforced the dispatch gate; D-055 establishes the stronger form — the model-level rule that rationale lives on Issues and the thin file is topology-only.
+
+**Decision:**
+
+1. **Cutting forge Issues IS the Planner's canonical plan act.** An iteration is not fully planned until every task row has a real forge Issue number. `#TBD` is forbidden in any dispatched or active iteration — it signals an incomplete plan, not a placeholder to fill later. (D-054 makes this a dispatch hard-STOP; D-055 makes it a Planner model obligation.)
+
+2. **The thin file is topology-only.** `aeg-root/iterations/<name>.md` holds the task→Issue link, `depends-on` edges, `conflicts-with` edges, iteration grouping, and the backlog lane. It does NOT hold task prose, boundary descriptions, or the Planner's rationale. The thin file is a routing map; the Issue is the task definition.
+
+3. **The Planner's rationale lives on the Issue body.** The seven rationale fields (Boundary, Sizing, Project(s)+blast radius, Dependency rationale, Traps to avoid, Suggested agent-class, Stop-and-escalate) are written into the Issue body at plan time. The Brief Author reads them from the Issue — the forge artifact — not from the `.md`. This makes the `planner-brief` contract's carrier the Issue, not the iteration file.
+
+4. **A required Issue template** (`.github/ISSUE_TEMPLATE/aeg-task.md`) enforces the minimal metadata structure — iteration label, project labels, `depends-on`, `conflicts-with`, ticket link — and nothing else per §9 (no planning metadata). The Planner's rationale is free-form in the body below the template fields.
+
+**Supersedes:** `iterations/README.md` §11's language about "the file carries the Planner's rationale for each task" — which is corrected to "the Issues carry the Planner's rationale; the file carries the topology." The §11 durability rule (iterations are never deleted) remains fully intact: the archived file carries the durable topology; the Issues (frozen forge artifacts) carry the durable rationale. Neither is deleted; neither duplicates the other.
+
+**Alternatives rejected:**
+- Keep rationale in both thin file and Issue: rejected — duplicates content; when the Brief Author or Principal annotates the rationale on the Issue, the file drifts.
+- Keep rationale only in thin file: rejected — requiring Brief Authors to load the iteration file for every task confirms the Issue is not actually the canonical source. The forge is the interface; the file is the archive.
+
+**Consequences:**
+- `iterations/README.md` §4 updated: thin-file format explicitly forbids rationale blocks; states that the Issue carries the rationale. §11 updated: "Issues carry rationale; the file carries topology."
+- `roles/planner.md` §"What you produce": Issue-cutting named as the canonical plan-completion act; two new hard gates added: refuse `#TBD` rows in the topology (Planner-model obligation, complements D-054's dispatch gate); refuse rationale written into the thin file.
+- `contracts/planner-brief.md`: hand-off carrier section clarified — the carrier is the Issue body (not the iteration file row) (D-055).
+- `.github/ISSUE_TEMPLATE/aeg-task.md` created.
+- `vada-production-v1.md` and `herald-agents-v2.md`: thinned to topology-only; rationale moved to the created Issues (#167–#188); `#TBD` replaced with real Issue numbers.
+
+---

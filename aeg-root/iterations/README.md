@@ -82,7 +82,11 @@ So: there is **no status column anywhere.** The Developer does not "flip to in-r
 
 ## 4. The thin iteration file — topology only
 
-One file per iteration at `aeg-root/iterations/<name>.md`. It holds **only** what the forge models poorly: the task→issue mapping and the dependency/conflict graph. It contains **no status, no PR numbers, no merge dates, no timestamps — nothing the forge already knows.** Its task topology is edited only by the Planner, at plan time, so it cannot race and cannot drift on status (it stores none). The one exception is the iteration's own **lifecycle marker** (active/complete — §12), a single header line the Archivist sets at close-out; this is the iteration's lifecycle, not per-task execution status, and it is set once when the whole iteration ends. Template:
+One file per iteration at `aeg-root/iterations/<name>.md`. It holds **only** what the forge models poorly: the task→Issue mapping and the dependency/conflict graph. It contains **no status, no PR numbers, no merge dates, no timestamps — nothing the forge already knows. It contains no task prose, no boundary descriptions, no rationale — nothing that belongs on the Issue.** Its task topology is edited only by the Planner, at plan time, so it cannot race and cannot drift on status (it stores none). The one exception is the iteration's own **lifecycle marker** (active/complete — §12), a single header line the Archivist sets at close-out; this is the iteration's lifecycle, not per-task execution status, and it is set once when the whole iteration ends.
+
+**`#TBD` rows are forbidden.** Every task row must carry a real forge Issue number. An iteration that contains `#TBD` is an incomplete plan — the Planner has not cut the Issues, which is the canonical plan act (D-055). **The Planner's rationale (Boundary, Sizing, Project(s)+blast radius, Dependency rationale, Traps to avoid, Suggested agent-class, Stop-and-escalate) lives on the Issue body.** The thin file row carries only the Issue link and edges; it does not contain or repeat the rationale. Brief Authors read the rationale from the Issue, not from this file.
+
+Template:
 
 ```
 # Iteration: <short name> — <timeframe>
@@ -204,7 +208,7 @@ The earlier sections describe a single iteration's *internals*. This section cov
 
 ### Iterations are never deleted — they are durable history
 
-A completed iteration file is **kept, moved, never removed.** The reason is the rule we already locked: the file carries the **Planner's rationale** for each task, and the rationale is *durable* — the architectural reasoning that decided each boundary, blast radius, and trap does not decay. Paired with the provenance blocks on the merged PRs, the archived iteration file is the **forensic record of why the work was shaped the way it was**: what was split from what, which traps were foreseen, what the blast radius was. That record is the whole reason the rationale is mandatory (D-042). Deleting it would throw away the most valuable thing the Planner produced. So: `completed/` is an archive, not a graveyard; `git` retains full history regardless, and the moved file keeps it human-browsable.
+A completed iteration file is **kept, moved, never removed.** The **Issues** carry the Planner's rationale for each task — the durable architectural reasoning that decided each boundary, blast radius, and trap (D-055). The archived iteration file carries the **topology** — which tasks were planned, their grouping, and their dependency/conflict edges. Neither artifact is deleted: the file moves to `completed/` (human-browsable topology archive); the Issues remain on the forge (frozen forge artifacts with the full rationale). Paired with the provenance blocks on the merged PRs, the archived file + Issues together are the **forensic record of why the work was shaped the way it was**: what was split from what, which traps were foreseen, what the blast radius was. `completed/` is an archive, not a graveyard; `git` retains full history regardless, and the moved file keeps the topology human-browsable.
 
 (The Archivist also flags merged-but-undeleted **worktrees** and orphaned branches at this point — those *are* ephemeral and get cleaned up, §3. The iteration *file* is not ephemeral; the worktrees are. Don't confuse the two.)
 

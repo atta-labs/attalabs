@@ -19,9 +19,9 @@ This is the first of AEG's role-seam contracts. Others (`brief-developer`, `deve
 
 ## The hand-off carrier
 
-The Planner's output unit is the **task**, which exists as a forge Issue (identity + metadata) and a row in the iteration topology file. The thing that crosses this seam is the **Planner's rationale** block, which the Planner writes into both the Issue body and the iteration file. The Brief Author reads that rationale and turns it into the executable brief that lands in the PR body.
+The Planner's output unit is the **task**, which exists as a forge Issue (identity + metadata + Planner's rationale) and a row in the iteration topology file (Issue link + edges only). The thing that crosses this seam is the **Planner's rationale** block, which the Planner writes into the **Issue body**. The Brief Author reads the rationale from the Issue — the forge artifact — and turns it into the executable brief that lands in the PR body. The iteration file row is a topology pointer (the Issue number); the Issue is the definition. (D-055)
 
-The Planner persists **durable conclusions** (which do not decay). The Brief Author adds **perishable detail** (current signatures, exact files, final model pick) at dispatch. Neither re-does the other's half; the rationale is the carrier between them.
+The Planner persists **durable conclusions** (which do not decay). The Brief Author adds **perishable detail** (current signatures, exact files, final model pick) at dispatch. Neither re-does the other's half; the rationale is the carrier between them, and the Issue is its home.
 
 ---
 
