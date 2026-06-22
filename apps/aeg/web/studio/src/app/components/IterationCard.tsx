@@ -18,12 +18,16 @@ function TaskProgress({ counts }: TaskProgressProps) {
     )
   }
 
+  if (done === total) {
+    return <span className='font-mono text-xs font-medium text-success'>done</span>
+  }
+
   const pct = total > 0 ? Math.round((done / total) * 100) : 0
 
   return (
     <div className='space-y-1'>
       <div className='h-1 overflow-hidden rounded-full bg-muted'>
-        <div className='h-full rounded-full bg-primary' style={{ width: `${pct}%` }} />
+        <div className='h-full rounded-full bg-success' style={{ width: `${pct}%` }} />
       </div>
       <div className='flex items-center justify-between'>
         <span>
