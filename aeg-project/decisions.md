@@ -1387,3 +1387,44 @@ Cutting the Issue and recording its number in the topology table is the Planner'
 - `vada-production-v1.md` and `herald-agents-v2.md`: thinned to topology-only; rationale moved to the created Issues (#167–#188); `#TBD` replaced with real Issue numbers.
 
 ---
+
+## D-056 — Brief-contract task-status coherence
+
+**Date:** 2026-06-23
+**Status:** ACTIVE
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (aeg/brief-coherence-contract, 2026-06-23)
+**Ratified by:** Principal (in-task brief)
+
+**Context:** Three structural failures in recent sessions allowed tasks to be authored and executed on top of unarchived priors:
+1. "merged" was treated as "done" when the real archival bar is all three: Issue-closed + PR-in-main + provenance-present. A merged PR whose Issue remains open or whose provenance block is absent passes through the existing D-052 gate only partially.
+2. The per-task Archivist's Issue-close was best-effort — relying on GitHub's `Closes #N` auto-close, which is advisory and does not reliably fire across all branch/merge configurations. This meant the Issue could remain open after merge with no mandatory step catching it.
+3. "Accepted backfill of old provenance" was misread as "the gate doesn't apply to this new task" — conflating a permitted historical debt record with a bypass of the active-prior archival requirement.
+
+The brief contract (`aeg-root/contracts/brief-developer.md`) is the enforcement point: both the Brief Author (Dig stage) and the Developer (entry gate) read it before proceeding.
+
+**Decision:**
+
+1. **Three-predicate archival bar (Issue-closed + PR-in-main + provenance-present).** A prior task is "done" only when all three predicates hold. The Brief Author and Developer MUST verify all three for every in-scope prior task before proceeding. "PR merged" alone is not sufficient.
+
+2. **Scope of "prior task" is explicit.** Three cases, each stated: mid-iteration task (every earlier task in the same iteration that this task depends on); first task of an iteration (the entire previous iteration for that product must be archived); all tasks (every cross-iteration dependency declared in the topology must satisfy all three predicates).
+
+3. **Accepted-backfill distinction.** Deferring provenance backfill on already-closed historical iterations is a permitted debt record. Proceeding with new work while an active prior task's archival is incomplete is not. An accepted historical backlog is a debt record, not a gate bypass. The coherence precondition applies to active prior tasks; it cannot be waived by citing accepted historical gaps.
+
+4. **Single-closer rule.** The per-task Archivist closes the task Issue as an explicit, mandatory step via `gh issue close <N>`. GitHub's `Closes #N` auto-close is advisory-only (unreliable across branch/merge configs). One closer: the Archivist. The Archivist confirms the closed state after running the command.
+
+5. **Proactive status report.** Before beginning any brief-authoring or execution phase, the chat-surface role proactively reports the coherence status of all three predicates for every in-scope prior task to the Principal. The pattern is detect-and-INFORM, not only detect-and-refuse. Silence is not an acceptable "all good" signal.
+
+**Alternatives rejected:**
+- Tighten only the Developer gate: rejected. The Brief Author gate fires one stage earlier and catches the gap before a brief the Developer will immediately refuse is dispatched. Both gates must encode the full three-predicate bar.
+- Rely on CI to detect open Issues after merge: rejected. D-052's rationale applies equally here — AEG enforcement lives in the protocol, not in CI infrastructure.
+- Leave auto-close as the issue-closing mechanism: rejected. GitHub auto-close is advisory, fires inconsistently across merge configurations, and creates a race condition between merge and Issue-close that breaks the provenance check. An explicit mandatory Archivist step removes the ambiguity.
+
+**Consequences:**
+- `aeg-root/contracts/brief-developer.md`: new "Task-status coherence precondition" section added (hard-STOP section with three-predicate bar, scope definition, accepted-backfill distinction). Consumer obligation (Developer) updated to reference the new section. Producer obligation (Brief Author) updated to mandate the same check.
+- `aeg-root/skills/brief-authoring/SKILL.md`: Dig stage precondition checks rewritten to use three-predicate bar; accepted-backfill distinction added; contract-conformance checklist item updated; anti-pattern updated.
+- `aeg-root/roles/archivist.md`: checklist item 1 (Issue closed) rewritten as an explicit mandatory step via `gh issue close <N>`; auto-close noted as advisory-only; single-closer rule stated.
+- `aeg-root/aeg-manual-flow.md`: §4.5 conversational protocol extended with step 8 — proactive coherence status report before any brief-authoring or execution phase (detect-and-INFORM).
+
+---

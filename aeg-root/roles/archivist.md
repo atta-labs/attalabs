@@ -23,7 +23,7 @@ This is your only hard precondition, and it is forge-derived: you query the PR's
 
 Work through this checklist for the merged task. Confirm each against reality — do not assume.
 
-1. **Issue closed.** The merge auto-closes the task's Issue if the PR body carried `Closes #N`. Confirm it actually closed; if the link was missing, close it manually and note the gap.
+1. **Issue closed — mandatory explicit step (D-056).** Close the task's Issue explicitly via `gh issue close <N>`. **Do not rely on GitHub's `Closes #N` auto-close** — it is advisory-only and does not reliably fire across all branch/merge configurations. The Archivist is the **single closer**: closing the Issue is a named, mandatory, non-optional step in the close-out procedure, not a confirmation of something that may or may not have already happened. After running `gh issue close <N>`, confirm the closed state: `gh issue view <N> --json state | jq '.state'` — must return `"CLOSED"`. If it does not, re-run and confirm before proceeding. Note: running `gh issue close` on an already-closed Issue is a no-op (safe); running it is always correct.
 2. **Decision logged (Tier 3 only).** If the task was Tier 3, confirm a decision entry exists in the right log (`aeg-project/decisions.md` or the per-project decisions file) with status, type, rationale, alternatives, consequences. If it's missing, that's a close-out blocker — flag it; a Tier 3 change without a logged decision is not done.
 3. **Changelog appended.** `changelog.md` (global, or per-project if the change is project-scoped) records what shipped.
 4. **Docs updated.** The tier-required docs the brief listed actually moved. (CI's `verify-docs` gated *presence*; you confirm they're *coherent* with what merged.)
