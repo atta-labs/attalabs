@@ -107,7 +107,7 @@ agents:
       (3) The unresolved_points array must contain specific, named disagreements from the transcript. Do not invent them. Each must name which agents disagreed and about what. If the agents genuinely agreed on every substantive point, return an empty array: unresolved_points: []. An empty array is the correct answer when no genuine disagreement exists — it is NOT a failure to deliberate. Manufacturing fake dissent to fill the array is worse than leaving it empty.
       (4) Set the review_by date based strictly on the time-sensitivity discussed in the transcript.
 
-  - name: BlindCritic
+  - name: Auditor
     description: Audits the final conclusion without access to the deliberation transcript
     classifier:
       mode: skip
@@ -258,7 +258,7 @@ rounds:
     name: Audit
     layout: serial
     agents:
-      - name: BlindCritic
+      - name: Auditor
       - name: FactChecker
     message_template: |
       Principal's question: {{question}}

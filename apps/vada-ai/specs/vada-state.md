@@ -40,7 +40,7 @@ BYOK + Settings restructure (branch: `feat/shared-keys-ui`). Key changes:
 
 # Vāda — Current State
 
-> **Framing note (2026-04-30):** The "Brokered mode" and "Autonomous mode" product categories used in older entries have been retired. Current framing uses the Vāda Teams catalog (YAML specs at `apps/vada-ai/yamls/`). See `vada-reviewers-spec.md` for the in-progress Vāda Reviewers team spec.
+> **Framing note (2026-04-30):** The "Brokered mode" and "Autonomous mode" product categories used in older entries have been retired. Current framing uses the Vāda Teams catalog (YAML specs at `packages/agents/vada-deliberation/yamls/`). See `vada-reviewers-spec.md` for the in-progress Vāda Reviewers team spec.
 
 **Last updated:** Jun 18, 2026
 **Last milestone:** Homepage rewrite — removed engine/implementation sections, replaced with product-focused copy (PR #147).
@@ -292,7 +292,7 @@ Skills (`.claude/skills/`):
 - `atta-engine/SKILL.md` — engine internals
 
 YAMLs:
-- `apps/vada-ai/yamls/` — all deliberation specs (9 files, all `schema_version: "2.0"`)
+- `packages/agents/vada-deliberation/yamls/` — all deliberation specs (9 files, all `schema_version: "2.0"`)
 
 ---
 

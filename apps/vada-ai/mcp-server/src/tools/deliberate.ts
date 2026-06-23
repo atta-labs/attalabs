@@ -1,5 +1,5 @@
 import { compileFlow } from '@atta/engine'
-import { LangGraphAdapter, createMultiVendorLlmCall } from '@atta/adapter-langgraph'
+import { LangGraphAdapter } from '@atta/adapter-langgraph'
 import type { ProviderKeys } from '@atta/adapter-langgraph'
 import { lookupSpec } from '../spec-registry'
 import { logSession } from '../session-logger'
@@ -33,10 +33,9 @@ export async function runDeliberate(input: DeliberateInput, providerKeys: Provid
   const flow = lookupSpec(input.team ?? 'vada-reviewers')
   const plan = compileFlow(flow, input.question, DEFAULT_MODEL)
 
-  const llmCall = createMultiVendorLlmCall(providerKeys)
-  const adapter = new LangGraphAdapter({ apiKey: providerKeys.anthropic })
+  const adapter = new LangGraphAdapter({ providerKeys })
   const startedAt = Date.now()
-  const conclusion = await adapter.execute({ plan, customVars: {}, llmCall })
+  const conclusion = await adapter.execute({ plan, customVars: {} })
   const durationMs = Date.now() - startedAt
 
   const estimatedUsd =
