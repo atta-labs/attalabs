@@ -43,9 +43,9 @@ describe('deriveIteration: §3 status table (each status)', () => {
   // One synthetic task; vary its forge facts to hit every status row.
   const oneTask = iteration([task('1')])
 
-  it('backlog: issue open, unassigned', () => {
+  it('todo: issue open, unassigned (D-059: no backlog inside iterations)', () => {
     const d = deriveIteration(oneTask, new Map([['1', facts()]]))
-    expect(d.tasks[0]?.status).toBe('backlog')
+    expect(d.tasks[0]?.status).toBe('todo')
   })
 
   it('todo: issue open, assigned, no branch yet', () => {
@@ -110,9 +110,9 @@ describe('deriveIteration: §3 status table (each status)', () => {
 })
 
 describe('deriveIteration: missing forge facts', () => {
-  it('treats a task absent from the forge map as backlog', () => {
+  it('treats a task absent from the forge map as todo (D-059: iteration tasks are minimum todo)', () => {
     const d = deriveIteration(iteration([task('1')]), new Map())
-    expect(d.tasks[0]?.status).toBe('backlog')
+    expect(d.tasks[0]?.status).toBe('todo')
   })
 })
 
@@ -175,7 +175,7 @@ describe('deriveIteration: §8 dispatch gates', () => {
     expect(t3?.blockers.conflictsWithOpenOrInFlight).toEqual([])
   })
 
-  it('conflicts-with sibling backlog/todo → dispatchable (not occupying collision domain yet)', () => {
+  it('conflicts-with sibling todo → dispatchable (not occupying collision domain yet)', () => {
     const forge = new Map<string, ForgeFacts>([
       ['2', facts({ assigned: true })], // todo
       ['3', facts({ assigned: true })]
@@ -195,7 +195,7 @@ describe('deriveIteration: unknown edge references', () => {
       { from: '1', to: 'phantom', kind: 'conflicts-with' }
     ])
     // The task is still derived; unknown edges are diagnostic only.
-    expect(d.tasks[0]?.status).toBe('backlog')
+    expect(d.tasks[0]?.status).toBe('todo')
     // Unknown edges do not contribute to blockers either.
     expect(d.tasks[0]?.blockers.dependsOnNotMerged).toEqual([])
     expect(d.tasks[0]?.blockers.conflictsWithOpenOrInFlight).toEqual([])
@@ -226,7 +226,7 @@ describe('deriveIteration: live herald-onto-engine.md + today’s forge snapshot
         blockedLabel: false
       }
     ]
-    // Tasks 2, 3b, 4, 5, 6, 7a, 7b absent → backlog (the conservative read).
+    // Tasks 2, 3b, 4, 5, 6, 7a, 7b absent → todo (D-059: no forge facts = minimum todo).
   ])
 
   const derived = deriveIteration(iter, snapshot)
@@ -237,14 +237,14 @@ describe('deriveIteration: live herald-onto-engine.md + today’s forge snapshot
     expect(statusOf('1')).toBe('merged')
   })
 
-  it('all other tasks derive backlog (absent from snapshot)', () => {
-    expect(statusOf('2')).toBe('backlog')
-    expect(statusOf('3b')).toBe('backlog')
-    expect(statusOf('4')).toBe('backlog')
-    expect(statusOf('5')).toBe('backlog')
-    expect(statusOf('6')).toBe('backlog')
-    expect(statusOf('7a')).toBe('backlog')
-    expect(statusOf('7b')).toBe('backlog')
+  it('all other tasks derive todo (absent from snapshot — D-059: minimum todo)', () => {
+    expect(statusOf('2')).toBe('todo')
+    expect(statusOf('3b')).toBe('todo')
+    expect(statusOf('4')).toBe('todo')
+    expect(statusOf('5')).toBe('todo')
+    expect(statusOf('6')).toBe('todo')
+    expect(statusOf('7a')).toBe('todo')
+    expect(statusOf('7b')).toBe('todo')
   })
 
   it('task 2 becomes dispatchable now that its depends-on (1) is merged', () => {

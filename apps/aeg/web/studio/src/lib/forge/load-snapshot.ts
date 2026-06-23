@@ -16,8 +16,8 @@
  * Degrades gracefully when:
  *   - The git remote can't be resolved (`resolveRepo` returns `null`).
  *   - The forge adapter returns `unavailable: true`.
- *   In both cases the derived statuses fall back to `backlog` — the
- *   conservative read from `deriveIteration` when no facts are known.
+ *   In both cases the derived statuses fall back to `todo` — iteration tasks
+ *   are committed work; `deriveIteration` emits `todo` when no facts are known (D-059).
  *
  * SERVER-ONLY.
  */
@@ -91,7 +91,7 @@ export async function loadIterationProgress(
   const total = taskRefs.length
   const repo = await resolveRepo()
   if (!repo) {
-    return { total, merged: 0, active: 0, todo: 0, backlog: total, blocked: 0, unavailable: true }
+    return { total, merged: 0, active: 0, todo: total, backlog: 0, blocked: 0, unavailable: true }
   }
 
   const resolvedRefs = await resolveRefs(repo, slug, taskRefs)
@@ -103,7 +103,7 @@ export async function loadIterationProgress(
   })
 
   if (snapshot.unavailable) {
-    return { total, merged: 0, active: 0, todo: 0, backlog: total, blocked: 0, unavailable: true }
+    return { total, merged: 0, active: 0, todo: total, backlog: 0, blocked: 0, unavailable: true }
   }
 
   // Use a minimal Iteration (no edge data needed for progress counts).

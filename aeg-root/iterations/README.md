@@ -64,13 +64,14 @@ A task **is** a forge Issue. Its status is not a field anyone writes — it is *
 
 | Status | Derived from (the forge fact) |
 |--------|-------------------------------|
-| `backlog` | Issue open, **unassigned** |
-| `todo` | Issue open, **assigned**, no branch yet |
+| `todo` | Issue open (assigned or unassigned), no branch yet; or no forge facts known — iteration tasks are committed work, minimum `todo` (D-059) |
 | `in-flight` | A branch `task/<iteration>/<n>` exists, **no PR** open |
 | `in-review` | PR open |
 | `changes-requested` | PR open, `reviewDecision: CHANGES_REQUESTED` |
 | `merged` | PR merged (Issue auto-closes) |
 | `blocked` | An `aeg:blocked` label is present |
+
+`backlog` is a **project-level concept only** — ideas/maybe-tasks in markdown that live outside the iteration flow (`specs/<unit>-backlog.md`, Jira, etc.). Once a task is placed in a launched iteration it is committed work and derives `todo` at minimum, never `backlog`. See D-059.
 
 So: there is **no status column anywhere.** The Developer does not "flip to in-review" — *opening the PR is the in-review signal*. The close-out does not "flip to merged" — *the merge is that signal*. The branch-name convention `task/<iteration>/<n>` is what links a task number to its branch and PR, so any role finds a task's live status with one forge query and writes nothing. `blocked` is the one state with no native forge fact, so it is a label (cheap, native, doesn't race).
 
@@ -201,8 +202,8 @@ The earlier sections describe a single iteration's *internals*. This section cov
 
 ### The lifecycle: planned → active → complete → archived
 
-- **planned** — the thin file exists and the Issues are cut, but nothing is assigned. Every task is `backlog`. The iteration is a plan on paper.
-- **active** — at least one task has been assigned (`todo`) or is further along. The iteration is in flight. `Lifecycle: active` in the header.
+- **planned** — the thin file exists and the Issues are cut, but no work has started. Every task is `todo` (open, unassigned — committed iteration work, minimum `todo` per D-059). The iteration is a plan ready to execute.
+- **active** — at least one task has an open branch (`in-flight`) or is further along. The iteration is in flight. `Lifecycle: active` in the header.
 - **complete** — **every task's PR is merged** (every task derives to `merged` from the forge). The work is done. At this point — and only this point — the **Archivist** sets `Lifecycle: complete` in the header (one line; the single lifecycle mutation the file ever takes after plan time) and assembles the per-task provenance blocks on the merged PRs (D-030). "Complete" is itself **derived** from the forge (all linked PRs merged); the header marker is a convenience flag the Archivist writes once, not a status anyone maintains.
 - **archived** — a complete iteration's file **moves to `aeg-root/iterations/completed/<name>.md`**. It is **not deleted.**
 

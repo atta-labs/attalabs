@@ -51,8 +51,7 @@ A **task is a forge Issue.** Its status is never written anywhere — it is **de
 
 | Status | Forge fact |
 |--------|-----------|
-| `backlog` | Issue open, unassigned |
-| `todo` | Issue open, assigned, no branch |
+| `todo` | Issue open (assigned or unassigned), no branch — D-059: all open iteration tasks are minimum `todo`; `backlog` is project-level only |
 | `in-flight` | branch `task/<iteration>/<n>` exists, no PR |
 | `in-review` | PR open |
 | `changes-requested` | PR open, `reviewDecision: CHANGES_REQUESTED` |

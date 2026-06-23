@@ -43,7 +43,7 @@ export type ForgeFactsSnapshot = {
   /**
    * `true` when GitHub was unreachable or no token was available. The facts
    * map will be empty in this case; `deriveIteration` then treats every task
-   * as `backlog`, which is correct ("conservative read" per the type doc).
+   * as `todo` — iteration tasks are committed work, minimum `todo` (D-059).
    */
   unavailable: boolean
   /** Diagnostic — logged, not user-facing. Empty when `unavailable` is false. */

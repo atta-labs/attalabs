@@ -12,7 +12,7 @@
  *   - No token discoverable → returns `{ facts: empty, unavailable: true }`.
  *   - Network error / 401 / 403 / 5xx → same.
  *   - Tasks with no Issue number (`null`) are omitted from the query and the
- *     map; `deriveIteration` treats absent entries as `backlog`.
+ *     map; `deriveIteration` treats absent entries as `todo` (D-059).
  *
  * SERVER-ONLY. Pulls `node:child_process` transitively via `./github-token`.
  */
