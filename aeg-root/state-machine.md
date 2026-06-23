@@ -126,7 +126,7 @@ Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer i
 | **Decision logs** (per-project + global) | Approves Type 1 entries; ratifies PENDING Type 2 at windows | Appends Type 2 entries; announces Type 1 to ratification queue | Appends in PR per brief scope | Validates D-### sequence and supersession integrity |
 | **Skills** (canonical `aeg-root/skills/*/SKILL.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale skill references in drift cron |
 | **Agent defs** | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale agent references in drift cron |
-| **`state.md`**, **`now.md`** | Approves PR | Writes in PR (append-style for `now.md`) | Flags state changes needed in PR description | Updates per-project state at close-out, for every project the task listed |
+| **`state.md`** | Approves PR | Writes in PR | Flags state changes needed in PR description | Updates per-project state at close-out, for every project the task listed |
 | **Per-project backlogs** (`apps/*/specs/*-backlog.md`), `specs/ecosystem-backlog.md` | Approves PR | Writes (held/future items — out of the flow) | — | — |
 | **`changelog.md`** | Approves PR | Appends per PR (never edits existing) | — | Appends at close-out |
 | **`lessons.md`** | Approves PR | Appends lessons; monthly review | — | — |
@@ -169,7 +169,7 @@ Used when verifying state, resolving contradictions, running verify-docs, post-m
 2. Ratified specs (`Status: ratified` + supporting D-###)
 3. Shipped code (main — what actually runs)
 4. Aspirational specs (`Status: target`)
-5. PM docs (`state.md`, `now.md`, iteration files, `changelog.md`, `lessons.md`) — status snapshots / plan topology
+5. PM docs (`state.md`, iteration files, `changelog.md`, `lessons.md`) — non-derivable operational facts / plan topology (active status derived from forge)
 6. Skills + `thinking.md`
 7. Briefs / Issues / PR descriptions — intent at time of writing
 8. Conversation logs / tool runtime logs — lowest

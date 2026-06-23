@@ -44,7 +44,7 @@ Conversation logs / thinking are **not** artifacts — never cite them as author
 
 - **The plan (backlogs)** → a unit's `specs/`: `specs/<unit>-backlog.md` (per unit / per project) and a repo-level backlog in the root `specs/`. **Out of the flow.** The Planner *may* read it to compose an iteration but the flow never operates on it.
 - **The flow + governance (the model)** → the **root** `aeg-root/`: the constitution, the role docs, the skills, the iteration files. Exists **once**, at the repo root only (D-041).
-- **The living state** → `aeg-project/`: one at the repo root (for monorepo-level work) and one per unit (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). Holds only `state.md`, `now.md`, `changelog.md`, `decisions.md`, `lessons.md`, `ratification-queue.md` — never the model.
+- **The living state** → `aeg-project/`: one at the repo root (for monorepo-level work) and one per unit (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). Holds only `state.md`, `changelog.md`, `decisions.md`, `lessons.md`, `ratification-queue.md` — never the model. (`now.md` is retired — D-057; active/blocked/next is derived from the forge.)
 - **`roadmap.md` is retired** (D-029). Never read or write it.
 
 The model layer exists **once**, at repo-root `aeg-root/`. A unit's `aeg-project/` carries only that unit's *living state* — never a copy of the model. The AEG skills are part of the model and live at `aeg-root/skills/` (canonical); the `.claude/skills/` copies are a generated view (D-039).
@@ -87,4 +87,4 @@ Principal → Team Leader → Developer → Reviewer (code + security) → merge
 
 ## 11. What to do next (the reading order)
 
-After this skill, load in order: **`aeg-roles`** (routes you to your role doc) → your **`aeg-root/roles/<role>.md`** → **`aeg-root/iterations/README.md`** (if planning or executing) → **`aeg-project/state.md`** + **`now.md`** (current state) → the active **`iterations/<name>.md`** if one exists. The canonical session-start protocol is `aeg-root/coordination.md`; this skill is its fast front-door summary, not a replacement. When the two disagree, `coordination.md` and `state-machine.md` win.
+After this skill, load in order: **`aeg-roles`** (routes you to your role doc) → your **`aeg-root/roles/<role>.md`** → **`aeg-root/iterations/README.md`** (if planning or executing) → **`aeg-project/state.md`** (non-derivable operational facts) + **forge queries** (active tasks, blocked, next — see `coordination.md` "Session-start forge queries") → the active **`iterations/<name>.md`** if one exists. The canonical session-start protocol is `aeg-root/coordination.md`; this skill is its fast front-door summary, not a replacement. When the two disagree, `coordination.md` and `state-machine.md` win.

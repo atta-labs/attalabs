@@ -143,7 +143,7 @@ The branch name `task/<iteration>/<n>` is the convention that links the task to 
 
 **Who:** Developer (the coding agent — spawned or pasted).
 
-Per `roles/developer.md`, the Developer reads `coordination.md` / `state.md` / `now.md` / its role doc, the relevant skills (auto-loaded when matching code is touched) and project specs, confirms pre-flight (starting with the worktree), and works in small, frequent commits on the `task/<iteration>/<n>` branch. When dispatched by an automation layer, it streams progress events to that layer.
+Per `roles/developer.md`, the Developer reads `coordination.md` / `state.md` / its role doc, derives live execution state from the forge (session-start queries in `coordination.md`), reads the relevant skills (auto-loaded when matching code is touched) and project specs, confirms pre-flight (starting with the worktree), and works in small, frequent commits on the `task/<iteration>/<n>` branch. When dispatched by an automation layer, it streams progress events to that layer.
 
 The Developer cannot author its own briefs, expand scope without escalation, modify files outside scope, skip verification hooks, skip the Task Done checklist, or **write status anywhere** (status is derived). If the brief is wrong or contradicts reality, it escalates (Phase 7) — it does not paper over confusion or improvise outside scope.
 
@@ -265,7 +265,7 @@ The test plan is split by who can structurally execute each item:
 
 The Principal merges. Tier 3 work merges during a ratification window (`coordination.md`); Tier 0/1 anytime. The merge **auto-closes the linked Issue** (via `Closes #N`) — and the merge *is* the `merged` status; nobody writes a label. An automation layer may surface a completion notification.
 
-**Post-merge: the Archivist closes out** (`roles/archivist.md`) — confirms the Issue closed, decision logged if Tier 3, changelog appended, docs coherent, per-project `state.md`/`now.md` updated for every project the task listed, `docs-index.md` regenerated. It **flags** (does not perform) orphaned branches and worktree removal. It writes no task status.
+**Post-merge: the Archivist closes out** (`roles/archivist.md`) — confirms the Issue closed, decision logged if Tier 3, changelog appended, docs coherent, per-project `state.md` updated for every project the task listed, `docs-index.md` regenerated. It **flags** (does not perform) orphaned branches and worktree removal. It writes no task status.
 
 **Exit:** code is in main, Issue closed, close-out done.
 
@@ -285,7 +285,7 @@ When the last task of an iteration has merged, the Principal declares it done an
 
 3. **Archive the iteration** — set `Lifecycle: complete` as the first line after the iteration file's heading, move the file from `aeg-root/iterations/` to `aeg-root/iterations/completed/` (one commit: `git mv`). This signals to the AEG Studio and any reader that the iteration is no longer active.
 
-4. **Update state docs** — refresh `aeg-project/now.md` (in-flight work, next 3 things, active iterations summary) and `aeg-project/state.md` (last-updated date, active iterations, recently shipped section). Reflects the post-iteration reality.
+4. **Update state docs** — refresh `aeg-project/state.md` (last-updated date, current focus pointer, recently shipped section, clear any resolved pending-manual-ops). Active-work state is derived from the forge — no `now.md` (D-057).
 
 5. **Surface pending Type 1 decisions** — query the decision log for entries from this iteration with `Status: PENDING`. List them explicitly; the Principal ratifies at the next ratification window.
 

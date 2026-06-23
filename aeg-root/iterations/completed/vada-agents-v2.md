@@ -203,9 +203,7 @@ This is the validation layer for the whole iteration.
 against an un-iterated prompt gives no meaningful signal about whether the iteration improved
 quality).
 **Suggested agent-class:** high — judgment, synthesis, multi-model evaluation.
-**Stop-and-escalate:** If the OpenAI + xAI keys are not yet added to Vercel (manual work
-item in `now.md`), the cross-vendor benchmark conditions cannot run. Stop and flag — the
-Principal must add the keys before dispatch.
+**Stop-and-escalate:** If the OpenAI + xAI keys are not yet added to Vercel (pending manual op in `aeg-project/state.md` or the per-product `apps/vada-ai/aeg-project/state.md`), the cross-vendor benchmark conditions cannot run. Stop and flag — the Principal must add the keys before dispatch.
 
 ## Backlog (this iteration, not yet dispatched)
 

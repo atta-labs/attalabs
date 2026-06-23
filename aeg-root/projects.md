@@ -42,7 +42,7 @@ This registry is the **authority for valid project names.** A `Project:` value i
 
 `Project` is **multi-valued.** A task carries as many projects as it genuinely touches: usually one (`Project: vada`), sometimes several (`Project: engine, herald`, or more). Not an exception — cross-project PRs are an expected shape. The Planner decides split-vs-combine by **verification coupling** (see `iterations/README.md` §6): provable independently → separate tasks with a `depends-on` edge; provable only as a unit → one task / branch / PR / multiple projects. The same `Ticket:` rides on all resulting tasks, so work stays atomic in Jira however it's shaped in AEG.
 
-When a task lists multiple projects, every mechanism fans out: the Developer reads every listed project's specs; the PR is reviewed through each project's lens (more projects = more review lenses = proportionally more rigor, matching the wider blast radius); the Archivist updates every listed project's `state.md`/`now.md`.
+When a task lists multiple projects, every mechanism fans out: the Developer reads every listed project's specs; the PR is reviewed through each project's lens (more projects = more review lenses = proportionally more rigor, matching the wider blast radius); the Archivist updates every listed project's `state.md` (non-derivable operational facts; `now.md` is retired — D-057).
 
 ## Routing vs. conflicts — two different granularities
 

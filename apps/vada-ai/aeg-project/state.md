@@ -11,6 +11,16 @@ YAML-driven deliberation runtime. The engine executes deliberation configuration
 
 ---
 
+## Pending manual operations
+
+- **Add OpenAI + xAI keys to Vercel** — Vercel → vada-ai → Settings → Environment Variables. Unblocks Reviewers end-to-end testing.
+- **Generate a Vāda API key** — needed to test the hosted MCP via Claude Code CLI.
+- **Configure Claude Code MCP connector** — point at `https://vada.attalabs.dev/api/mcp` with bearer auth.
+- **Dispatch T3a (#178)** — equip reviewers with web search + vendor-native tools using the T3 substrate. Unblocked now that T3 (#177) merged.
+- **Dispatch T2 (#176)** — stale spec cleanup. Depends on T1 only; unblocked.
+
+---
+
 ## Phase plan
 
 ### ✅ Complete — engine, schema, MCP, vendor registry

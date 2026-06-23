@@ -16,7 +16,7 @@ Companion to `process.md` (the eleven-phase walkthrough), `state-machine.md` (th
 AEG "init" is not software — it is a **state the repo is in**. A repo is running AEG when **everything the flow references is present**:
 
 1. **The model layer** — `aeg-root/` scaffold (exists ONCE, at the repo root only): `state-machine.md`, `coordination.md`, `process.md`, `aeg-manual-flow.md`, `iterations/README.md`, `roles/`, `skills/` (the AEG skills — canonical home per D-039); plus `projects.md` only once multi-project (D-041).
-2. **The living-state layer** — `aeg-project/` (one at the repo root, one per project): `state.md`, `now.md`, `changelog.md`, `decisions.md`, `lessons.md`, `ratification-queue.md`. State only — never the model (D-041).
+2. **The living-state layer** — `aeg-project/` (one at the repo root, one per project): `state.md`, `changelog.md`, `decisions.md`, `lessons.md`, `ratification-queue.md`. State only — never the model (D-041). (`now.md` is retired — D-057; active/blocked/next is derived from the forge.)
 3. **The enforcement layer (referenced by the model, so it must travel with it):**
    - `.aeg/packages` — the static collision-domain list (conflicts are package-level, `iterations/README.md` §5).
    - `.github/workflows/verify-docs.yml` + the `verify-docs` script — the doc-tier CI gate (D-027).
@@ -177,7 +177,7 @@ If any fails: post a comment listing the exact items missing. The Principal deci
 
 **Archivist** (close-out)
 - Requires a **merged** PR. Refuses: not merged → *"Nothing to close out; merge first."*
-- Confirms: Issue closed (the merge auto-closes it if linked), decision logged if Tier 3, changelog appended, docs updated, per-unit `state.md`/`now.md` updated for every project the task listed. Sets the iteration's `Lifecycle: complete` marker and moves the file to `iterations/completed/` when every task is merged (`iterations/README.md` §11).
+- Confirms: Issue closed (the merge auto-closes it if linked), decision logged if Tier 3, changelog appended, docs updated, per-unit `state.md` updated for every project the task listed. Sets the iteration's `Lifecycle: complete` marker and moves the file to `iterations/completed/` when every task is merged (`iterations/README.md` §11). (`now.md` no longer exists — D-057.)
 - Assembles the **provenance block** from frozen facts (brief, PR reviews, decision log, merge metadata) and posts it to the merged PR (append-only, never a status field) — see `roles/archivist.md`.
 - Flags — does not perform — orphaned branches (branch with no/stale PR) and local worktree removal as cleanup candidates for the human. Writes no status (the merge already is the status).
 - Produces a close-out report listing anything dangling.

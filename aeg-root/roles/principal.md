@@ -25,7 +25,7 @@ The Principal holds final authority over:
 - **Author briefs.** The TL does this (Brief Author mode). The Principal approves briefs but does not draft them.
 - **Plan iterations.** The TL does this (Planner mode). The Principal approves the iteration but does not decompose it.
 - **Execute tasks.** The Developer executes. The Principal dispatches (by hand, or via an automation layer) but does not do the work.
-- **Manage day-to-day PM docs.** The TL maintains `state.md`, `now.md`, the iteration files, `thinking.md`, and decision logs during working sessions. The Principal approves and merges.
+- **Manage day-to-day PM docs.** The TL maintains `state.md`, the iteration files, `thinking.md`, and decision logs during working sessions. The Principal approves and merges. (`now.md` is retired — D-057; active-work state is derived from the forge.)
 - **Monitor every blocked task.** The TL watches `needs:execution-input` and `needs:strategy-input`. The Principal monitors `needs:principal-input` only.
 
 ---

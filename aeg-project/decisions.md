@@ -1428,3 +1428,55 @@ The brief contract (`aeg-root/contracts/brief-developer.md`) is the enforcement 
 - `aeg-root/aeg-manual-flow.md`: §4.5 conversational protocol extended with step 8 — proactive coherence status report before any brief-authoring or execution phase (detect-and-INFORM).
 
 ---
+
+## D-057 — Retire now.md; current state derived from the forge
+
+**Date:** 2026-06-23
+**Status:** ACTIVE
+**Type:** 2
+**Tier:** 3
+**Lock:** NO
+**Authored by:** Developer (aeg/retire-now-md, 2026-06-23)
+**Ratified by:** Principal (in-task brief)
+
+**Context:** `now.md` (global at `aeg-project/` and per-product at `apps/*/aeg-project/`) was a hand-maintained file holding active work, next candidates, and blocked tasks. It drifted continuously: archivists updated it manually, sessions started with stale in-flight sections, and its "Next 3 things" section was always behind the forge reality. The file was a derived-state proxy for information the Git forge already holds exactly — open Issues by iteration label, open PRs, `aeg:blocked` labels — with zero maintenance cost. D-029 declared "task status is derived from the forge, never stored," but now.md was still being written as if active-work status belonged in a file. D-055 and D-056 further tightened forge-primacy, making now.md the last remaining hand-maintained derived-state file. This decision is the capstone of the forge-as-source-of-truth direction established by D-029, refined by D-055/D-056.
+
+**Decision:**
+
+1. **`now.md` is retired everywhere.** The global `aeg-project/now.md` and all per-product `apps/*/aeg-project/now.md` files are deleted. No new `now.md` is ever created.
+
+2. **Current execution state is derived from the forge, not read from a file.** Agents orient by running:
+   - "What's active?" → `gh issue list --label "iteration:<slug>" --state open`
+   - "What's next?" → open Issues in the iteration without an assigned open PR
+   - "What's blocked?" → `gh issue list --label "aeg:blocked" --state open`
+   - "What merged recently?" → `gh pr list --state merged --limit 20`
+
+3. **Durable non-derivable knowledge moves to `state.md`.** Anything `now.md` held that the forge genuinely cannot derive — known production issues, env-var requirements, phase intent, pending manual operations — moves to `state.md` under a "Pending manual operations" section. Active-work status (what's in-flight, what's next) does not move because the forge derives it exactly.
+
+4. **"Current focus" is expressed as a one-line pointer in `state.md`** ("Current focus: <iteration>"). This is the simplest approach: no label-convention changes needed, no new forge label vocabulary, readable in one line. The pointer is updated by the Iteration Archivist at close-out (clearing the previous iteration's focus, pointing at the next one when the Principal declares it).
+
+5. **The `iteration-archivist-planner.md` contract is updated.** The Iteration Archivist's producer obligations drop from four artifacts to three: archived iteration file + updated `state.md` + retrospective in `lessons.md`. The "what's next" artifact is eliminated — the Planner derives next candidates from the forge directly.
+
+**Alternatives rejected:**
+- *Keep now.md but auto-generate it from the forge:* rejected — the auto-generated version would be stale the moment it was written; it creates a false sense of a file being authoritative. The forge query is always fresher and costs nothing.
+- *Replace now.md with a priority label convention:* rejected — label conventions require a new vocabulary decision, add forge-maintenance overhead, and are no more queryable than the existing `iteration:<slug>` + `aeg:blocked` pattern already in place.
+- *Keep now.md for "Pending manual ops" only:* rejected — `state.md` already carries non-derivable operational facts; adding a separate file for pending-manual-ops is unnecessary fragmentation.
+
+**Consequences:**
+- `aeg-project/now.md` and all `apps/*/aeg-project/now.md` files deleted.
+- `aeg-root/coordination.md`: reading order updated (now.md → forge queries); "Session-start forge queries" section added; PM files table updated; TL and Archivist session-start protocols updated; "When state changes" section updated; "What goes where" table updated.
+- `aeg-root/state-machine.md`: mutation matrix row updated; authority hierarchy updated.
+- `aeg-root/process.md`: Phase 6 and Phase 13 step 4 updated.
+- `aeg-root/aeg-manual-flow.md`: living-state layer description updated; Archivist close-out updated.
+- `aeg-root/contracts/iteration-archivist-planner.md`: hand-off reduced from four to three artifacts; now.md retirement noted; consumer obligations updated to forge-query pattern.
+- `aeg-root/contracts/archivist-iteration-archivist.md`: "follow-up Issues" row updated.
+- `aeg-root/roles/iteration-archivist.md`: Step 4 (now.md update) removed; output format updated.
+- `aeg-root/roles/archivist.md`, `team-leader.md`, `developer.md`, `principal.md`: now.md references replaced.
+- `aeg-root/projects.md`: multi-project fan-out note updated.
+- `aeg-root/skills/aeg/SKILL.md`, `aeg-roles/SKILL.md`, `brief-authoring/SKILL.md`: now.md references replaced.
+- `aeg-root/diagrams/system-architecture.md`: diagram labels updated.
+- `aeg-project/state.md`: "Current focus" section added; "Pending manual operations" section added with items relocated from now.md; now.md removed from living-state list; doc-system section updated.
+- Per-product `state.md` files: "Pending manual operations" sections added with items relocated from their now.md.
+- `aeg-project/changelog.md`, `aeg-project/lessons.md`: nav links updated.
+
+---

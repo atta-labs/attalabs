@@ -2,8 +2,7 @@
 
 **Calibration lessons and anti-patterns.** Append-only. Review monthly.
 
-→ [now.md](now.md) — active work
-→ [roadmap.md](roadmap.md) — tracks + sequencing
+→ [state.md](state.md) — current operational state
 → [changelog.md](changelog.md) — what shipped
 
 ---

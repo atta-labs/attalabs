@@ -38,7 +38,7 @@ Always also skim `roles/principal.md` to know what sits in the Principal's seat 
 - **Developer** — executes ONE dispatched brief. **Entry gate:** read the brief fully; confirm dispatch gates against the forge (`depends-on` merged, no `conflicts-with` sibling PR open); **Step 0 = create the worktree** (`task/<iteration>/<n>`); then pre-flight. Opens the PR and stops — does not merge, does not review itself, never writes status.
 - **Reviewer (code)** — invoked fresh on an open PR. **Entry gate:** an open PR with the brief in its body, else refuse. Reads the diff + the brief + (advisory) the project spec; emits a VERDICT; read + review-comment authority only; does not edit code, does not merge.
 - **Reviewer (security)** — as above, security lens; runs a config-security scan if agent/MCP config changed (D-028).
-- **Archivist** — **entry gate:** the PR is merged, else refuse. Works the close-out checklist (Issue closed, decision logged if Tier 3, changelog appended, per-unit `state.md`/`now.md` updated, provenance block posted, orphan branch/worktree flagged). Writes **no** task status — the merge *is* the status.
+- **Archivist** — **entry gate:** the PR is merged, else refuse. Works the close-out checklist (Issue closed, decision logged if Tier 3, changelog appended, per-unit `state.md` updated, provenance block posted, orphan branch/worktree flagged). Writes **no** task status — the merge *is* the status. (`now.md` is retired — D-057.)
 
 ## 3. Authority boundaries (so roles don't bleed)
 

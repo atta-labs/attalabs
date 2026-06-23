@@ -1,11 +1,31 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** June 21, 2026 (aeg-governance-ui-v2 complete; all three June iterations archived)
-**Purpose:** Single snapshot of where everything stands across the AttaLabs ecosystem.
+**Last updated:** June 23, 2026 (D-057: now.md retired; forge is the source of truth for active/blocked/next)
+**Purpose:** Non-derivable operational facts across the AttaLabs ecosystem. For live execution state (active tasks, blocked, next), derive from the forge — see `coordination.md` "Session-start forge queries."
 
 This doc lives in the repo at `aeg-project/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
 
 Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
+
+---
+
+## Current focus
+
+**herald-agents-v2** and **vada-production-v1** are the active parallel iterations. Check `gh issue list --label "iteration:herald-agents-v2" --state open` and `gh issue list --label "iteration:vada-production-v1" --state open` for live task status.
+
+---
+
+## Pending manual operations
+
+These require Principal action and are not trackable as forge Issues:
+
+- **Close Issue #110 manually** — task 9 view half (token ledger Studio display) merged via PR #153 on branch `task/aeg-governance-ui-v2/4`; auto-close did not fire; issue remains open.
+- **Add OpenAI + xAI keys to Vercel** — Vercel → vada-ai project → Settings → Environment Variables → add `OPENAI_API_KEY` and `XAI_API_KEY`. Unblocks Reviewers end-to-end testing.
+- **Upstash Redis credentials for Herald** — `.env.local` creds expired. Rate limiting degrades gracefully but isn't active. Provision at upstash.com, update `.env.local` + Vercel env vars for `herald.attalabs.dev`.
+- **Herald deploy verification** — confirm `https://herald.attalabs.dev/admin` works post-PR-#75 (avatar upload, CV upload, bio save, theme picker).
+- **Worktree graveyard cleanup** — `git worktree prune && git fetch --prune && git branch --merged main | grep -v "^\* \|main" | xargs git branch -D`
+- **Vitakka Clerk app deletion** — unused, no users. 2 minutes.
+- **Generate Vāda API key + configure Claude Code MCP connector** — point at `https://vada.attalabs.dev/api/mcp` with bearer auth. Final step in hosted MCP dogfooding.
 
 ---
 
@@ -40,9 +60,9 @@ Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
 - `aeg-root/reviewer-prompt.md` — template for adversarial multi-AI reviewer rounds
 
 **Living state (in `aeg-project/`, one at root + one per project):**
-- `aeg-project/decisions.md` — global cross-project decision log, **D-001 to D-041**
+- `aeg-project/decisions.md` — global cross-project decision log, **D-001 to D-057**
 - `aeg-project/ratification-queue.md` — append-only queue for decisions awaiting Principal ratification
-- `aeg-project/state.md` / `now.md` / `changelog.md` / `lessons.md` — current state / active work / shipped log / calibration
+- `aeg-project/state.md` / `changelog.md` / `lessons.md` — current state / shipped log / calibration (active-work state is derived from the forge — D-057)
 
 The monorepo's own plan lives at `specs/ecosystem-backlog.md` (the root `specs/` folder, per D-037 — the ecosystem-level counterpart to each project's `apps/<project>/specs/<project>-backlog.md`).
 
@@ -169,7 +189,7 @@ See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: fil
 
 **Orchestrator-independence is structural (D-038):** AEG does **not** know Cetana. Cetana is the optional orchestrator (a sibling product at `apps/cetana-ai/`) that automates AEG's dispatch/escalation slice — it knows AEG, not the reverse. The UI may render an orchestrator's activity read-only as forge facts; it never contains or depends on the orchestrator. Cetana is never moved inside `apps/aeg/`.
 
-**Folder:** `apps/aeg/` (meta/infra app → no `-ai` suffix, matching `apps/attalabs`, `apps/desktop`). Specs at `apps/aeg/specs/` (`aeg-app-architecture.md`, `aeg-backlog.md`, `aeg-decisions.md`); state layer at `apps/aeg/aeg-project/` (`state.md`, `now.md`). Deploy target `aeg.attalabs.dev`.
+**Folder:** `apps/aeg/` (meta/infra app → no `-ai` suffix, matching `apps/attalabs`, `apps/desktop`). Specs at `apps/aeg/specs/` (`aeg-app-architecture.md`, `aeg-backlog.md`, `aeg-decisions.md`); state layer at `apps/aeg/aeg-project/` (`state.md`). Deploy target `aeg.attalabs.dev`.
 
 **Next:** Principal to declare second iteration (Portal public surface, `aeg.sh`, or attention-queue features per `apps/aeg/specs/aeg-backlog.md`).
 
@@ -253,7 +273,7 @@ V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 S
 - `apps/cetana-ai/` — Cetana V0/V0.5 (coordinator + CLI + MCP servers). No UI. Internal dev tooling / the optional AEG orchestrator.
 - `apps/herald-ai/` — Herald product (web + mobile + mcp). Separate auth.
 - `apps/vitakka-ai/` — scaffold; build not yet started.
-- `apps/aeg/` — **spec-only scaffold (D-038, June 10).** AEG the product: `specs/` (architecture, backlog, decisions) + `aeg-project/` (state, now — renamed per D-041). No `apps/aeg/web` code yet → `aeg.attalabs.dev`. The designated first real iteration.
+- `apps/aeg/` — **spec-only scaffold (D-038, June 10).** AEG the product: `specs/` (architecture, backlog, decisions) + `aeg-project/` (state — renamed per D-041; `now.md` retired per D-057). No `apps/aeg/web` code yet → `aeg.attalabs.dev`. The designated first real iteration.
 - `apps/desktop/` — AttaLabs Desktop. Spec-only (DRAFT / NOT RATIFIED). Tauri shell embedding the web products + a local CLI transport.
 
 `apps/atta-labs-ai/` was deleted April 28 (Operations cleanup).
@@ -349,7 +369,7 @@ Vāda's web app maintains its DB schema via `bun run db:push` from `apps/vada-ai
 
 This ecosystem uses the repo as the source of truth for project management. See `coordination.md` for full rules.
 
-**AEG files (in repo, split per D-041):** the **model** lives in `aeg-root/` (`coordination.md`, `state-machine.md`, `aeg-manual-flow.md`, `process.md`, `projects.md`, `reviewer-prompt.md`, plus `iterations/` (README + active iterations), `roles/` (principal, team-leader, developer, reviewer, security, archivist), `skills/`, and `diagrams/`); the **living state** lives in `aeg-project/` (`state.md`, `now.md`, `changelog.md`, `lessons.md`, `decisions.md`, `ratification-queue.md`) — one at the repo root, one per project at `apps/<x>/aeg-project/`. Plus `docs-index.md` at repo root. **`roadmap.md` is retired (D-029).**
+**AEG files (in repo, split per D-041):** the **model** lives in `aeg-root/` (`coordination.md`, `state-machine.md`, `aeg-manual-flow.md`, `process.md`, `projects.md`, `reviewer-prompt.md`, plus `iterations/` (README + active iterations), `roles/` (principal, team-leader, developer, reviewer, security, archivist), `skills/`, and `diagrams/`); the **living state** lives in `aeg-project/` (`state.md`, `changelog.md`, `lessons.md`, `decisions.md`, `ratification-queue.md`) — one at the repo root, one per project at `apps/<x>/aeg-project/`. Plus `docs-index.md` at repo root. **`roadmap.md` is retired (D-029). `now.md` is retired (D-057) — active/blocked/next state is derived from the forge.**
 
 **Backlogs (the plan) live in `specs/` (D-037):** `specs/ecosystem-backlog.md` (monorepo / cross-cutting / AEG-the-model) and `apps/<project>/specs/<project>-backlog.md` (per project, including `apps/aeg/specs/aeg-backlog.md`). The rule: a unit's *plan* lives in its `specs/`; the AEG *model* lives once in `aeg-root/`; a unit's *living state* lives in its `aeg-project/`. (`docs/ecosystem-backlog.md` was moved to `specs/` June 10; the dead `plan.md` redirect stub from D-024 was removed the same day.)
 
@@ -436,7 +456,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - All `@atta/*` packages (incl. `@atta/crypto`, `@atta/ui/account`, `@atta/ui/engine-flow`, `@atta/db` shared key schemas)
 - `packages/models/src/vendors.ts` — vendor registry (12 vendors)
 - 9 YAML teams (2 published, 7 experimental)
-- `aeg-root/` + `aeg-project/` — full AEG model doc set (constitution, manual-flow, process, iterations/README, projects, roles ×6, skills ×3, diagrams ×2) + global state (decisions to D-041, state, now, changelog, lessons, ratification-queue); `.github/workflows/verify-docs.yml` live
+- `aeg-root/` + `aeg-project/` — full AEG model doc set (constitution, manual-flow, process, iterations/README, projects, roles ×6, skills ×3, diagrams ×2) + global state (decisions to D-057, state, changelog, lessons, ratification-queue); `.github/workflows/verify-docs.yml` live
 - `specs/ecosystem-backlog.md` — the monorepo's plan (moved from `docs/`, D-037)
 - `apps/aeg/specs/` + `apps/aeg/aeg-project/` — AEG product spec-only scaffold (D-038); no `apps/aeg/web` yet
 - `apps/desktop/specs/` — AttaLabs Desktop spec set (DRAFT / NOT RATIFIED); no `apps/desktop` code yet

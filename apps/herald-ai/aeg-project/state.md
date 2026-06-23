@@ -13,6 +13,15 @@ A candidate creates an **Envoy**: a public profile page at `herald.attalabs.dev/
 
 ---
 
+## Pending manual operations
+
+- **Provision fresh Upstash Redis creds** — per-key rate limiting degrades gracefully but is inactive. Provision at upstash.com, update `.env.local` + Vercel env vars for `herald.attalabs.dev`.
+- **`MASTER_ENCRYPTION_KEY`** must be present in Herald's Vercel env for BYOK decrypt path to work.
+- **Dispatch task 6 (#172)** — per-owner per-day rate limit on public profile audits. Depends on task 2 (#168, merged).
+- **Dispatch task 7 (#173)** — deploy verification: `herald.attalabs.dev` Phase 2 flows (avatar, CV upload, bio save, onboarding, Bulk Audit with real BYOK). Depends on task 2 (#168, merged).
+
+---
+
 ## Phase plan
 
 ### Phase 1 — Candidate use case complete ✅ (June 1, 2026)

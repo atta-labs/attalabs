@@ -77,13 +77,9 @@ If you don't have the information to fill a field, write "unknown — Principal 
 - Do NOT delete the file — the rationale is durable history. Do NOT edit content beyond adding `Lifecycle: complete`. The topology and Planner's rationale are permanent.
 - Confirm `aeg-root/iterations/completed/<name>.md` exists and `aeg-root/iterations/<name>.md` does not exist after the move.
 
-### 4. Update `aeg-project/now.md`
+### 4. Update `aeg-project/state.md`
 
-- Remove the iteration from "In flight now" or "Active execution" section
-- Update the "Next 3 things" section to reflect post-iteration reality — but do not decide what's next (that's the Principal). Write "Principal to declare" if not told.
-- Update the "Active iterations" note to exclude this iteration
-
-### 5. Update `aeg-project/state.md`
+> **`now.md` is retired (D-057).** Do not look for or update `now.md` — it no longer exists. "What's next" is derived from the forge by the Planner (`gh issue list --label "iteration:<slug>" --state open`), not written to a file.
 
 - Bump "Last updated" to today
 - Move the iteration from the "active" to "complete" list in the iterations summary
@@ -159,8 +155,7 @@ RETROSPECTIVE: appended to aeg-project/lessons.md ✓ | INCOMPLETE (reason)
 ARCHIVED: aeg-root/iterations/completed/<name>.md ✓ | FAILED (reason)
 
 STATE DOCS:
-- now.md: updated ✓ | needs Principal input on next 3 things
-- state.md: updated ✓
+- state.md: updated ✓ (current-focus pointer, pending-manual-ops, recently-shipped entry)
 
 PENDING RATIFICATIONS: [list D-### with one-line description] | none
 
