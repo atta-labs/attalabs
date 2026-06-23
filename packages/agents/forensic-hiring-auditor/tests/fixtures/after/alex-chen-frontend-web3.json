@@ -1,0 +1,117 @@
+{
+  "_fixture_meta": {
+    "prompt_version": "after",
+    "candidate": "Alex Chen (PERFECT_MATCH profile)",
+    "jd": "Senior Frontend Engineer — Web3",
+    "captured": "2026-06-23",
+    "notes": "Target-form output the improved prompt (Task 5) is designed to produce. Evidence-tiered signals, artifact-anchored hooks, evidence-backed mitigations. This is the quality bar for regression — if a future audit on this pair regresses to the 'before' pattern, the prompt has degraded."
+  },
+  "candidate": {
+    "name": "Alex Chen",
+    "title": "Senior Frontend Architect",
+    "github": "alex-chen"
+  },
+  "hard_requirements": [
+    {
+      "requirement": "8+ years of frontend engineering experience",
+      "kind": "hard",
+      "met": true,
+      "evidence": "Profile states 12 years; Senior Frontend Architect role at DeFi Protocol (2020–2024) is the most recent anchor — 4 years at principal architect level, preceded by earlier experience to reach 12 years total."
+    },
+    {
+      "requirement": "Expert-level React and Next.js (App Router)",
+      "kind": "hard",
+      "met": true,
+      "evidence": "NFT Marketplace project explicitly cites Next.js App Router. DeFi Trading Dashboard cites React at 500k MAU scale. Both projects are described with architectural specificity (server-side blockchain data fetching, sub-100ms render performance) rather than bare stack claims."
+    },
+    {
+      "requirement": "TypeScript — strict mode, no any",
+      "kind": "hard",
+      "met": true,
+      "evidence": "Zod-validated component APIs in the design system project implies schema-first TypeScript discipline. Zod is listed in both stack and GitHub signals (confirmed dependency). This is corroborated evidence, not a bare stack listing."
+    },
+    {
+      "requirement": "Web3 integration experience: wagmi, ethers.js, or viem",
+      "kind": "hard",
+      "met": true,
+      "evidence": "wagmi v2 specifically cited in DeFi Trading Dashboard context (wallet integration, multi-chain Ethereum/Polygon/Arbitrum). GitHub signals confirm wagmi dependency in recent repos. This is High-confidence — both profile claim and GitHub corroboration."
+    },
+    {
+      "requirement": "Monorepo experience (Turborepo or Nx)",
+      "kind": "hard",
+      "met": true,
+      "evidence": "GitHub signal detects turbo.json in recent repos (High-confidence structural pattern). Profile states the Turborepo migration at DeFi Protocol reduced CI time by 60% — a measurable outcome anchored to a specific employer and time period."
+    },
+    {
+      "requirement": "Design system experience — building and maintaining component libraries",
+      "kind": "hard",
+      "met": true,
+      "evidence": "Radix-based design system project: Zod-validated component APIs, Storybook documentation, Chromatic visual regression, adopted across 4 product teams. GitHub signals confirm radix-ui and storybook dependencies. High-confidence: profile detail plus GitHub corroboration."
+    }
+  ],
+  "grade": "A",
+  "recommendation": "Strong Fit",
+  "confidence": "High",
+  "confidence_reasoning": [
+    "All six hard requirements met with corroborated evidence — not bare stack listings. wagmi, Turborepo, and Radix UI are confirmed in GitHub signals in addition to profile claims, placing the core Web3 and architecture claims in the High-confidence tier.",
+    "Scale evidence is credible: 500k MAU DeFi dashboard, multi-chain wallet integration, design system across 4 teams. The specificity of these claims (named protocols, user counts, team counts) is consistent with direct ownership rather than peripheral involvement.",
+    "Recency is strong: DeFi Protocol role ended 2024, GitHub signals are from recently-pushed repos. No evidence-staleness concern.",
+    "The only gap (The Graph / on-chain indexing) is a soft nice-to-have with no hard-requirement weight. Mitigation is evidence-backed."
+  ],
+  "signal": [
+    {
+      "title": "wagmi v2 multi-chain wallet integration — production scale",
+      "observation": "DeFi Trading Dashboard profile entry cites wagmi v2 wallet integration specifically (not wagmi v1 or a generic 'wagmi' claim). Multi-chain scope: Ethereum, Polygon, Arbitrum. GitHub signals confirm wagmi as a current dependency in recently-pushed repos (High-confidence structural corroboration).",
+      "interpretation": "This predicts genuine comfort with the wallet UX lifecycle — connect/disconnect, chain-switching, transaction broadcasting, error states. The v2-specific citation suggests the candidate tracked the API surface change, not just carried forward existing code.",
+      "confidence": "High"
+    },
+    {
+      "title": "Turborepo monorepo — CI outcome ownership",
+      "observation": "Profile: Turborepo migration at DeFi Protocol reduced CI time by 60%. GitHub signals confirm turbo.json in recent repos (structural pattern, High-confidence). The 60% figure is a measurable outcome tied to a specific employer context — not a vague 'improved CI' claim.",
+      "interpretation": "Candidate has owned the monorepo infrastructure decision end-to-end, not just consumed it. The CI metric implies measurement discipline and awareness of cross-team impact — directly relevant for a team adopting Turborepo across product lines.",
+      "confidence": "High"
+    },
+    {
+      "title": "Radix UI design system — cross-team adoption",
+      "observation": "Radix-based design system: headless primitives, Zod-validated component APIs, Storybook, Chromatic visual regression, adopted across 4 product teams. GitHub signals confirm @radix-ui and storybook as active dependencies. Both profile specificity and GitHub corroboration present.",
+      "interpretation": "Adopted across 4 teams is the key signal — it indicates the system was well-designed enough that other teams could not easily ignore it. Chromatic visual regression points to maintenance discipline beyond initial build.",
+      "confidence": "High"
+    },
+    {
+      "title": "Next.js App Router — server-side blockchain data pattern",
+      "observation": "NFT Marketplace project cites Next.js App Router with server-side blockchain data fetching and IPFS media resolution. This is a specific architectural choice (server-side vs. client-side blockchain calls) with a named justification context.",
+      "interpretation": "The server-side blockchain fetching pattern (likely to avoid exposing RPC endpoints to clients, improve SEO, reduce client bundle) signals the candidate thinks about Web3 architecture at the boundary between on-chain and off-chain — not just at the wallet-connect layer.",
+      "confidence": "Medium"
+    },
+    {
+      "title": "Zod schema validation — applied across architectural layers",
+      "observation": "Zod appears in: stack listing, design system (Zod-validated component APIs), and GitHub signals (active dependency in recent repos). Three independent evidence sources for the same technology.",
+      "interpretation": "Using Zod to validate component APIs (not just API responses) indicates the candidate applies schema-first thinking as a cross-cutting discipline, which maps directly to the JD's TypeScript strict-mode requirement.",
+      "confidence": "High"
+    },
+    {
+      "title": "WebSocket and real-time render performance — measurable outcome",
+      "observation": "DeFi Trading Dashboard cites WebSocket price feeds and sub-100ms render performance at 500k MAU. The performance threshold is stated as a concrete target, not a vague claim.",
+      "interpretation": "Sub-100ms render at DeFi scale requires deliberate profiling and optimization work (virtualization, debouncing, selective re-render). This is relevant to any real-time DeFi UI where latency is user-visible.",
+      "confidence": "Medium"
+    }
+  ],
+  "gaps": [
+    {
+      "gap": "No The Graph or on-chain indexing experience surfaced",
+      "severity": "minor",
+      "mitigation": "Profile shows server-side blockchain data fetching in the NFT Marketplace App Router context — the candidate has navigated the on-chain data access problem and made an architectural choice between RPC-direct and indexed approaches. The Graph is a step along this axis, not a foreign concept. Confirm familiarity in the technical screen rather than assuming it is absent."
+    },
+    {
+      "gap": "Smart contract write-path depth not evidenced",
+      "severity": "minor",
+      "mitigation": "DeFi Trading Dashboard cites ERC-721/1155 transaction flows in the NFT Marketplace, which implies frontend-initiated contract writes. Depth of ABI integration (read vs. write, error decoding, gas estimation) is best probed in the interview — the adjacent evidence is strong enough that absence of a direct claim is not disqualifying."
+    }
+  ],
+  "interview_hooks": [
+    "The DeFi Trading Dashboard specifically cites wagmi v2 — that was a significant API change from v1. Walk me through one concrete migration decision you made (a pattern that changed or a hook that disappeared) and how you handled the cross-team rollout at a 500k-MAU product.",
+    "Your Turborepo migration reduced CI time by 60% at DeFi Protocol. Eighteen months on, what is the actual ongoing maintenance overhead compared to the monolith — and if you were starting the same migration today with what you know now, what would you change about the approach?",
+    "The NFT Marketplace uses server-side blockchain data fetching in Next.js App Router rather than client-side RPC calls. That is a deliberate architectural choice. Walk me through why you landed there — what failure modes were you solving for, and what are the tradeoffs you accepted (e.g., caching latency, SSR cost on-chain vs. off-chain)?",
+    "Your Radix-based design system was adopted across 4 product teams. Adoption across teams usually requires more than technical quality — walk me through one case where another team pushed back on the system and how you resolved it without owning their codebase."
+  ]
+}

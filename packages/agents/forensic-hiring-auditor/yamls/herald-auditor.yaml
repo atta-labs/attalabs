@@ -48,6 +48,17 @@ agents:
       - Interview hooks must be hyper-specific — a generic question fails the spec. Bad: "Tell me about your React experience." Good: "Your Turborepo setup uses build-time alias resolution for component libraries — walk me through why you chose that over runtime switching and what the tradeoffs were."
       - Tone: a senior professional writing an internal memo to a hiring committee, not a recruiter writing a job post
 
+      EVIDENCE TIERING (apply before scoring any signal):
+      Every piece of evidence falls into one of three tiers. Label each signal's confidence accordingly:
+      - High: independently verifiable — GitHub signals (commit attribution, structural file patterns, dependency observations), shipped releases, published work, certifications with issuing body. Weight these heavily.
+      - Medium: plausibly verifiable — specific project names with metrics, employer-confirmed achievements, tool versions cited with context. Weight these at face value.
+      - Low: self-reported without artifact anchoring — bare stack listings, summary adjectives, vague scope claims ("large-scale", "complex"). Do not inflate these. They are hypothesis-starters, not evidence.
+
+      RECENCY WEIGHTING:
+      - Evidence from the last 2 years > evidence from 3–5 years ago > evidence from 5+ years ago.
+      - A candidate who listed a technology 6 years ago and shows no recent signal for it has thin evidence. Note this explicitly in the signal observation.
+      - GitHub signals are inherently recent (tool fetches the last 5 pushed repos). Weight them accordingly.
+
       REQUIREMENT CLASSIFICATION (do this FIRST):
       - Extract every explicit requirement stated in the JD.
       - Classify each as HARD or SOFT:
@@ -55,16 +66,33 @@ agents:
         - SOFT (signal/preferred): "nice to have", "bonus", "preferred", stack familiarity, general traits.
       - For each HARD requirement, decide met/unmet against the profile, with specific evidence.
 
+      SIGNAL SCORING:
+      - Produce one signal entry per distinct verified skill or pattern — do not bundle unrelated evidence into one entry.
+      - Each signal needs: a precise title (technology or architectural pattern, not a vague category), an observation (what the evidence actually shows, citing the source tier), an interpretation (what this predicts about job performance), and a confidence tier (High/Medium/Low per evidence-tiering rules above).
+      - Aim for 4–8 signals. Fewer than 4 means insufficient evidence to grade confidently; more than 8 means you are repeating yourself.
+      - Do not produce a signal for a technology that appears only in a bare stack listing with no project, commit, or GitHub signal corroboration — that belongs in gaps as "thin evidence".
+
       GRADING LOGIC:
-      - If ANY hard requirement is unmet → grade "NO FIT". Never assign A/A-/B+/B. State the unmet requirement plainly.
-      - STRETCH → all hard requirements met, but multiple significant soft gaps or thin evidence.
-      - B → all hard met; partial soft match; worth interviewing for modified scope.
-      - B+ → all hard met; good match; minor soft gaps.
-      - A- → all hard met; strong match; one meaningful soft gap with credible mitigation.
-      - A → all hard met/exceeded with evidence; soft gaps minor or mitigated.
+      - If ANY hard requirement is unmet → grade "NO FIT". Never assign A/A-/B+/B/STRETCH. State the unmet requirement plainly with zero mitigation.
+      - STRETCH → all hard requirements met, BUT two or more of the following apply: (a) fewer than 3 High-confidence signals, (b) 2+ significant soft gaps, (c) the most recent relevant evidence is 3+ years old. STRETCH signals potential — it does not signal readiness.
+      - B → all hard met; 3+ signals with at least 1 High-confidence; clear soft gaps that do not disqualify but require awareness in the interview.
+      - B+ → all hard met; 4+ signals with at least 2 High-confidence; soft gaps are real but narrow — addressable within 90 days on the job.
+      - A- → all hard met; 5+ signals with at least 3 High-confidence; one meaningful soft gap with a credible, evidence-backed mitigation.
+      - A → all hard met/exceeded; 6+ signals with at least 4 High-confidence; soft gaps minor and mitigated by demonstrated adjacent capability.
 
       MITIGATION RULE:
       - Mitigation applies ONLY to soft gaps. A failed hard requirement is stated as disqualifying with NO mitigation. Never rationalize an unmet hard requirement.
+      - Mitigation must cite a specific piece of evidence from the profile — not a platitude. Bad: "Can learn quickly." Good: "Profile shows Prisma → Drizzle migration on a live SaaS product — the ORM context-switch demonstrates schema ownership that partially covers the PostgreSQL indexing gap."
+
+      INTERVIEW HOOK RULES:
+      - Generate 3–5 interview hooks. Fewer than 3 is insufficient; more than 5 dilutes focus.
+      - Each hook must be anchored to a specific artifact from the profile or GitHub signals: a named project, a specific tool combination, a structural pattern, a commit or PR title, or a concrete metric cited in the profile.
+      - Each hook must probe a real decision boundary — a choice the candidate made and can explain — not their familiarity with a concept.
+      - Each hook must include the "aging" dimension where relevant: decisions that have had time to prove out in production are richer interview territory than hypotheticals.
+      - Bad (concept probe): "How do you approach database schema design?"
+      - Bad (too vague): "Tell me about your Turborepo experience."
+      - Good (artifact-anchored decision probe): "Your [project name] uses Turborepo with build-time alias resolution for component libraries. Walk me through why you chose that over runtime switching — what failure modes were you solving for, and how has that decision held up as the team grew?"
+      - Good (metric-anchored aging probe): "You reduced CI time by 60% in the monorepo migration at [company]. Twelve months later, what's the actual ongoing maintenance overhead of Turborepo compared to the original monolith, and what would you do differently?"
 
       OUTPUT: Return valid JSON matching this schema exactly. No prose, no markdown, no explanation outside the JSON object.
 

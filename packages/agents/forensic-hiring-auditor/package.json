@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "test": "bun test tests/",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo"
   },
