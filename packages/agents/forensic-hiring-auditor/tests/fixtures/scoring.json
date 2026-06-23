@@ -1,0 +1,61 @@
+{
+  "_meta": {
+    "description": "Before/after quality scores for the herald-auditor prompt improvements (herald-agents-v2 Task 5).",
+    "fixture_pair": "alex-chen-frontend-web3",
+    "scoring_framework": "Four dimensions, 1–3 each. Target: 2+ on all, 3 on all is ideal.",
+    "evaluator": "Prompt author (Task 5 developer) — static evaluation against measurable criteria."
+  },
+  "dimensions": {
+    "signal_evidence_tier": {
+      "description": "Do signals cite evidence tier (High/Medium/Low) with a specific artifact, or are they bare CV stack listings?",
+      "before": {
+        "score": 1,
+        "rationale": "Signals bundle evidence without tier labeling. 'listed in stack' is treated as equivalent to GitHub-confirmed dependency. Signal 1 ('React and Next.js experience') has no artifact anchor — it is a generic statement of familiarity. Signal 3 ('Monorepo and build tooling') mentions GitHub signals but does not explain why that raises confidence vs. a bare listing."
+      },
+      "after": {
+        "score": 3,
+        "rationale": "Every signal carries an explicit confidence tier (High/Medium). Signals distinguish between GitHub-corroborated evidence (wagmi, turbo.json, radix-ui as active dependencies) and Medium-confidence profile claims (server-side blockchain pattern, WebSocket performance metric). The two-source corroboration is called out explicitly in signals 1, 2, 3, 5."
+      }
+    },
+    "signal_specificity": {
+      "description": "Are signals specific about the architectural decision or production outcome, or do they describe generic familiarity?",
+      "before": {
+        "score": 1,
+        "rationale": "Signal 1: 'extensive React and Next.js experience listed across multiple projects' — no decision boundary, no production outcome. Signal 2 bundles wagmi + ethers.js + viem + DeFi + NFT into one entry with no architectural specificity. Signal 4 mentions Storybook documentation but does not cite the cross-team adoption signal that is actually the most meaningful fact in the profile."
+      },
+      "after": {
+        "score": 3,
+        "rationale": "Each signal focuses on one technology or architectural pattern with a specific production outcome or decision boundary. Signal 1 is wagmi v2 specifically (v2 vs. v1 carries signal). Signal 2 is Turborepo + CI outcome (60% improvement, named employer). Signal 3 is design system + cross-team adoption (4 teams, Chromatic). Signal 4 is Next.js App Router + server-side blockchain fetching as a named architectural choice."
+      }
+    },
+    "interview_hook_quality": {
+      "description": "Are hooks artifact-anchored decision probes with an aging dimension, or are they concept-probe questions?",
+      "before": {
+        "score": 1,
+        "rationale": "All four hooks are concept probes. 'Can you tell me about your experience with wagmi' — no artifact, no decision boundary. 'How do you approach building a design system' — completely generic, any designer could answer this. 'What is your experience with Turborepo' — a topic, not a probe. None of the hooks cite a specific project, decision, version, metric, or time dimension."
+      },
+      "after": {
+        "score": 3,
+        "rationale": "All four hooks are artifact-anchored with decision boundaries. Hook 1: wagmi v2 migration specifically, with the cross-team rollout dimension. Hook 2: Turborepo CI outcome, with the explicit 'eighteen months on' aging question that probes maintenance reality vs. initial win. Hook 3: server-side vs. client-side blockchain fetching — a specific architectural fork in the NFT Marketplace. Hook 4: design system cross-team adoption conflict — probes the human/political dimension that is harder to fake than technical knowledge."
+      }
+    },
+    "gap_mitigation_quality": {
+      "description": "Are gaps named precisely with evidence-backed mitigations, or are they vague with platitude mitigations?",
+      "before": {
+        "score": 1,
+        "rationale": "Gap 1 mitigation: 'Candidate is a quick learner and can pick up smart contract interaction given their strong Web3 foundation.' — a platitude with no profile evidence cited. Gap 2 mitigation: 'Strong general engineering ability means this can be learned on the job.' — another platitude. Neither mitigation references any specific artifact from the profile."
+      },
+      "after": {
+        "score": 3,
+        "rationale": "Gap 1 mitigation cites the specific server-side blockchain fetching pattern in the NFT Marketplace App Router context — a concrete adjacent skill that demonstrates the candidate has already navigated the on-chain data access problem. Gap 2 mitigation cites ERC-721/1155 transaction flows as adjacent evidence, and frames the interview hook correctly ('probe in the screen, not disqualify from the list')."
+      }
+    }
+  },
+  "totals": {
+    "before": 4,
+    "after": 12,
+    "max_possible": 12,
+    "delta": 8
+  },
+  "summary": "The before prompt produced a report that passed the structural schema check (correct JSON shape, correct grade) but failed on all four quality dimensions — it could have been written by reading the profile without the auditor persona. The after prompt, by enforcing evidence tiering, evidence-tiered signal confidence, SIGNAL_SCORING quantity rules, and artifact-anchored interview hook rules, produces a report that a hiring committee could use to discriminate between two A-grade candidates — which is the actual job the auditor is meant to do."
+}

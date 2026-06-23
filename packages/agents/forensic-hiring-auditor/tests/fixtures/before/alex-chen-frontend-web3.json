@@ -1,0 +1,104 @@
+{
+  "_fixture_meta": {
+    "prompt_version": "before",
+    "candidate": "Alex Chen (PERFECT_MATCH profile)",
+    "jd": "Senior Frontend Engineer — Web3",
+    "captured": "2026-06-23",
+    "notes": "Representative of production output patterns observed before Task 5 prompt improvements. Failure modes are real failure modes from the old prompt — generic signals, bundled evidence, concept-probe hooks, platitude mitigations."
+  },
+  "candidate": {
+    "name": "Alex Chen",
+    "title": "Senior Frontend Architect",
+    "github": "alex-chen"
+  },
+  "hard_requirements": [
+    {
+      "requirement": "8+ years of frontend engineering experience",
+      "kind": "hard",
+      "met": true,
+      "evidence": "Profile states 12 years experience."
+    },
+    {
+      "requirement": "Expert-level React and Next.js (App Router)",
+      "kind": "hard",
+      "met": true,
+      "evidence": "Listed in stack and mentioned in projects."
+    },
+    {
+      "requirement": "TypeScript — strict mode, no any",
+      "kind": "hard",
+      "met": true,
+      "evidence": "TypeScript is listed in the stack."
+    },
+    {
+      "requirement": "Web3 integration experience: wagmi, ethers.js, or viem",
+      "kind": "hard",
+      "met": true,
+      "evidence": "wagmi and ethers.js listed in stack."
+    },
+    {
+      "requirement": "Monorepo experience (Turborepo or Nx)",
+      "kind": "hard",
+      "met": true,
+      "evidence": "Turborepo listed in stack."
+    },
+    {
+      "requirement": "Design system experience",
+      "kind": "hard",
+      "met": true,
+      "evidence": "Built a design system component in projects."
+    }
+  ],
+  "grade": "A",
+  "recommendation": "Strong Fit",
+  "confidence": "High",
+  "confidence_reasoning": [
+    "Strong stack match across all required technologies.",
+    "12 years of experience exceeds the 8-year requirement.",
+    "Web3 experience is well-represented in profile."
+  ],
+  "signal": [
+    {
+      "title": "React and Next.js experience",
+      "observation": "Alex has extensive React and Next.js experience listed across multiple projects.",
+      "interpretation": "Candidate is familiar with modern React patterns and can work in the App Router paradigm.",
+      "confidence": "High"
+    },
+    {
+      "title": "Web3 and DeFi stack knowledge",
+      "observation": "wagmi, ethers.js, and viem are listed in the candidate's technology stack. Projects include a DeFi Trading Dashboard and NFT Marketplace.",
+      "interpretation": "Candidate has experience with Web3 integration. The DeFi and NFT projects indicate real exposure to blockchain UX patterns.",
+      "confidence": "High"
+    },
+    {
+      "title": "Monorepo and build tooling",
+      "observation": "Turborepo is mentioned in the stack. GitHub signals include turbo.json pattern.",
+      "interpretation": "Candidate understands monorepo architecture.",
+      "confidence": "High"
+    },
+    {
+      "title": "Design system experience",
+      "observation": "Candidate built a Radix-based design system with Storybook documentation.",
+      "interpretation": "Can lead design system work across teams.",
+      "confidence": "Medium"
+    }
+  ],
+  "gaps": [
+    {
+      "gap": "Smart contract interaction depth unknown",
+      "severity": "minor",
+      "mitigation": "Candidate is a quick learner and can pick up smart contract interaction given their strong Web3 foundation."
+    },
+    {
+      "gap": "No explicit The Graph or on-chain indexing experience",
+      "severity": "minor",
+      "mitigation": "Strong general engineering ability means this can be learned on the job."
+    }
+  ],
+  "interview_hooks": [
+    "Can you tell me about your experience with wagmi and how you've used it in production?",
+    "How do you approach building a design system from scratch?",
+    "What is your experience with Turborepo and monorepo architecture?",
+    "How have you handled wallet UX patterns and transaction lifecycles in your past work?"
+  ]
+}
