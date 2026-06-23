@@ -2,6 +2,9 @@ import type { Metadata } from 'next'
 import { listIterations } from '@/lib/aeg-fs'
 import { IterationsTabs } from './IterationsTabs'
 
+// Forge reads derive live Issue/PR state from GitHub — never serve from cache.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Iterations · AEG Studio'
 }
