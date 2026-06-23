@@ -24,6 +24,20 @@ Principal to declare. The governance model (aeg-governance-ui-v2) and Studio UI 
 
 ---
 
+## Archival record — 2026-06-23
+
+Archival sweep of merged-but-unarchived tasks (chore/archive-merged-tasks, PR opened same date):
+
+| Task | Issue | PR | Action |
+|------|-------|----|--------|
+| vada-production-v1 T1 | #175 | #192 | Issue already closed by merge. Provenance block posted. |
+| herald-agents-v2 task 4 | #170 | #191 | Issue closed manually (auto-close did not fire despite 'Closes #170' in body). Provenance block posted. |
+| herald-agents-v2 task 1 | #167 | #148 | Issue closed manually (no 'Closes' link in PR body). Provenance block posted. |
+| herald-agents-v2 task 2 | #168 | #150 | Issue closed manually (no 'Closes' link in PR body). Provenance block posted. DANGLING: Tier 3 task, no recorded Reviewer APPROVE verdict. |
+| herald-agents-v2 task 3 | #169 | #156 | Issue closed manually (no 'Closes' link in PR body). Provenance block posted. |
+
+---
+
 ## Manual work pending
 
 - **Close Issue #110 manually** — task 9 view half (token ledger Studio display) merged via PR #153 on branch `task/aeg-governance-ui-v2/4`; auto-close did not fire; issue remains open.
