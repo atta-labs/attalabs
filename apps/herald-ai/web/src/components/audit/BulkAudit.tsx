@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronDown, ChevronUp, Loader2, Plus, X } from 'lucide-react'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Badge } from '@atta/ui/components/badge'
 import { Button, Card, CardContent } from '@atta/ui/components'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/components'
@@ -329,9 +329,9 @@ export function BulkAudit({ hasKey }: { hasKey: boolean }) {
 
             {/* Data rows: candidate label + cells */}
             {submittedCvs.map((cv, cvIdx) => (
-              <>
+              <Fragment key={`cv-row-${cvIdx}`}>
                 {/* Row label */}
-                <div key={`cv-label-${cvIdx}`} className='flex items-start pt-4'>
+                <div className='flex items-start pt-4'>
                   <div>
                     <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
                       Candidate {cvIdx + 1}
@@ -352,7 +352,7 @@ export function BulkAudit({ hasKey }: { hasKey: boolean }) {
                     />
                   )
                 })}
-              </>
+              </Fragment>
             ))}
           </div>
         </div>
@@ -560,16 +560,18 @@ function AuditCell({ cell, candidateLabel, jdLabel }: AuditCellProps) {
 
       {/* Expand / collapse toggle */}
       <Collapsible open={expanded} onOpenChange={setExpanded}>
-        <CollapsibleTrigger asChild>
-          <Button
-            variant='ghost'
-            className='flex w-full items-center justify-between rounded-none border-0 px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:bg-accent/10 hover:text-foreground'
-          >
-            <span>
-              {jdLabel} · {candidateLabel}
-            </span>
-            {expanded ? <ChevronUp className='h-3 w-3' /> : <ChevronDown className='h-3 w-3' />}
-          </Button>
+        <CollapsibleTrigger
+          render={
+            <Button
+              variant='ghost'
+              className='flex w-full items-center justify-between rounded-none border-0 px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:bg-accent/10 hover:text-foreground'
+            />
+          }
+        >
+          <span>
+            {jdLabel} · {candidateLabel}
+          </span>
+          {expanded ? <ChevronUp className='h-3 w-3' /> : <ChevronDown className='h-3 w-3' />}
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className='border-t border-border'>
