@@ -41,7 +41,7 @@ This also changes what gets prioritized. The most valuable artifacts to develop 
 ### How this manifests in the codebase
 
 - Engine has zero branches on workflow type or mode (Phase 7.2)
-- All deliberation configuration lives in YAML files in `apps/vada-ai/yamls/`
+- All deliberation configuration lives in YAML files in `packages/agents/vada-deliberation/yamls/`
 - MCP receives full YAML content per call (consumers can pass any YAML, not just registered ones)
 - The vada.ai web app's deliberation runner uses the same YAML mechanism as third-party MCP consumers — there is no privileged path
 

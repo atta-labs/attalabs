@@ -38,8 +38,4 @@ These are judgment/iteration loops, not clean "agent → PR" tasks. They belong 
 ## Stale specs (patch opportunistically when touched)
 
 - `vada-product-spec.md`, `vada-product-recognitions.md`
-- `vada-state.md` — phase update post-May-4/5
 - `vada-reviewers-spec.md` — verify MCP/BYOK references; §8 phantom-consensus not in locked decisions
-- `vada-teams-catalog/02-mcp-tool-interface.md` — stale `apiKey` body param (post-D-028 reads keys from DB by `clerkId`)
-- `vada-teams-catalog/04-caller-claude-protocol.md` — "Caller Claude owns synthesis" reversed by D-016
-- `apps/vada-ai/CLAUDE.md` — Settings tab table still shows Teams tab

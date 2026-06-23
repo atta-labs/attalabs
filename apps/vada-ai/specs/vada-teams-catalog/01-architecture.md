@@ -166,7 +166,7 @@ Brokered reuses existing Vāda packages:
 - **`@atta/db`** — session persistence via Drizzle + Neon Postgres.
 - **`@atta/auth`** — Clerk user ID for session scoping.
 - **`@vada/agents`** — reviewer agent definitions (Strategist, Critic, Devil's Advocate) with system prompts and metadata. Used by `consult.ts` directly.
-- **`apps/vada-ai/yamls/`** — YAML specs (`brokered-trio-v1.yaml`, `brokered-quartet-v1.yaml`). Replaced `@vada/teams` (deleted).
+- **`packages/agents/vada-deliberation/yamls/`** — YAML specs (`brokered-trio-v1.yaml`, `brokered-quartet-v1.yaml`). Replaced `@vada/teams` (deleted).
 - **`@vada/mcp-server`** — MCP tool handlers that wire the above together.
 
 Brokered does NOT use (V1):

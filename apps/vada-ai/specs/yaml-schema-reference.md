@@ -410,7 +410,7 @@ Shape detection is a deliberate pragmatic choice: the engine could in principle 
 
 ## YAML Files
 
-All built-in specs live at `apps/vada-ai/yamls/`. New specs go here. Filenames are unversioned (D-013 + D-025).
+All built-in specs live at `packages/agents/vada-deliberation/yamls/`. New specs go here. Filenames are unversioned (D-013 + D-025).
 
 | File | Shape | Status |
 |------|-------|--------|

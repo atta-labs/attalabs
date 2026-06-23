@@ -32,7 +32,7 @@ Both surfaces expose the same two tools (`vada__consult`, `vada__deliberate`) an
 
 ## Context
 
-The MCP server exposes Vāda's deliberation capabilities as MCP tools. Any MCP-compatible client (Claude.ai, Claude Desktop, Cursor, etc.) can invoke these tools to run deliberations and consultations. YAML specs are auto-discovered from the catalog directory (`apps/vada-ai/yamls/`) using `readdirSync`; `validateAllSpecs()` runs at startup to fail fast on malformed YAMLs.
+The MCP server exposes Vāda's deliberation capabilities as MCP tools. Any MCP-compatible client (Claude.ai, Claude Desktop, Cursor, etc.) can invoke these tools to run deliberations and consultations. YAML specs are auto-discovered from the catalog directory (`packages/agents/vada-deliberation/yamls/`) using `readdirSync`; `validateAllSpecs()` runs at startup to fail fast on malformed YAMLs.
 
 Location: `apps/vada-ai/mcp-server/src/`
 
@@ -46,8 +46,8 @@ apps/vada-ai/mcp-server/src/
 ├── spec-registry.ts        # Dynamic YAML discovery; lookupSpec / listPublicSpecs / validateAllSpecs
 ├── session-logger.ts       # Writes session logs to Postgres via @atta/db
 └── tools/
-    ├── consult.ts          # vada__consult — builds inline BrokeredWorkflow spec from reviewer profiles
-    └── deliberate.ts       # vada__deliberate — uses lookupSpec + compileSpec for catalog team specs
+    ├── consult.ts          # vada__consult — builds inline `Flow` from reviewer profiles
+    └── deliberate.ts       # vada__deliberate — uses lookupSpec + compileFlow for catalog team specs
 ```
 
 The hosted HTTP server lives at:
@@ -66,7 +66,7 @@ It uses the same `consult.ts` / `deliberate.ts` tool implementations as the stdi
 
 Caller selects reviewers by role (`strategist`, `critic`, `devils_advocate`, `domain_expert`), provides a question with context, and each reviewer responds independently with no cross-visibility. No rounds, no synthesis, no audit.
 
-`consult.ts` builds an inline `DeliberationSpec` (of type `BrokeredWorkflow`) at call time from the reviewer specs. It does NOT use `spec-registry.ts`. It calls `compileSpec()` directly on the constructed spec.
+`consult.ts` constructs a `Flow` inline at call time from the reviewer specs. It uses `spec-registry.ts` (`lookupSpec`) to load the base YAML, then overrides agent selection per the `reviewers[]` input. It calls `compileFlow()` directly.
 
 Key behaviors:
 - Validates input with Zod (structured shape with `context` field, or legacy shape with `brief`)
@@ -75,7 +75,7 @@ Key behaviors:
 - Passes `classifier: { mode: 'skip' }` for all agents (single-shot, no classifier overhead)
 - Logs the session to Postgres via `session-logger.ts`
 
-Agent source: agents are imported from `@vada/agents` (`apps/vada-ai/agents/`). The `reviewerProfiles` map in `consult.ts` maps role name strings to agent definitions.
+Agent definitions live in the YAML spec loaded via `lookupSpec` (auto-discovered from `packages/agents/vada-deliberation/yamls/`).
 
 **Per-reviewer model overrides (`reviewer_config`, May 11, PR #31).** Optional `reviewer_config: Record<agentName, modelId>` parameter overrides the per-agent YAML default model on a per-call basis. Used primarily for configurable teams like Vāda Reviewers and Vāda Reviewers + Synthesis where each slot is independently vendor-bound. Example: `reviewer_config: { "Gemini": "gemini-2.5-pro", "GPT": "gpt-4o" }`. Validated against the vendor registry (`packages/models/src/vendors.ts`):
 
@@ -90,7 +90,7 @@ The resolved vendor map flows through `agentVendorOverrides` into `createMultiVe
 
 Caller provides a question and a team name. The server looks up the named YAML spec from the catalog and runs a full deliberation (rounds + synthesis + audit + revision).
 
-`deliberate.ts` calls `lookupSpec(teamName)` from `spec-registry.ts`, then `compileSpec(spec, question, model)`.
+`deliberate.ts` calls `lookupSpec(teamName)` from `spec-registry.ts`, then `compileFlow(flow, question, model)`.
 
 The `team` enum is pruned to the currently published specs only: `vada-reviewers`, `vada-reviewers-synthesis` (PR #31, May 11). Experimental specs (`crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline`, `brokered-trio`, `brokered-quartet`) remain accessible by explicit `spec_id` via `vada__consult` but are not advertised in the `vada__deliberate` enum.
 
@@ -98,7 +98,7 @@ The `team` enum is pruned to the currently published specs only: `vada-reviewers
 
 ## Spec Registry
 
-`spec-registry.ts` provides dynamic access to the YAML catalog. It delegates to `@atta/engine` for discovery — adding a YAML file to `apps/vada-ai/yamls/` is sufficient for it to be accessible.
+`spec-registry.ts` provides dynamic access to the YAML catalog. It delegates to `@atta/engine` for discovery — adding a YAML file to `packages/agents/vada-deliberation/yamls/` is sufficient for it to be accessible.
 
 ```ts
 import { lookupSpec, listPublicSpecs } from './spec-registry'
@@ -131,7 +131,7 @@ Current catalog (May 11, 2026): 9 YAMLs total — **2 published** (`vada-reviewe
 
 ## Adding a New Public Spec
 
-1. Create `apps/vada-ai/yamls/<name>.yaml` (no `-v1` suffix — see D-025)
+1. Create `packages/agents/vada-deliberation/yamls/<name>.yaml` (no `-v1` suffix — see D-025)
 2. The spec is **auto-discovered** — no changes to `spec-registry.ts` needed
 3. If it should be addressable by a short alias from `vada__deliberate`, add to the `ALIASES` map:
    ```ts
@@ -139,9 +139,9 @@ Current catalog (May 11, 2026): 9 YAMLs total — **2 published** (`vada-reviewe
    ```
 4. Write a verify script in `apps/vada-ai/web/scripts/verify-<name>-port.ts` following `verify-sparring-port.ts`:
    ```ts
-   import { loadYamlFromCatalog, compileSpec } from '@atta/engine'
-   const spec = loadYamlFromCatalog('my-spec')
-   const plan = compileSpec(spec, question, model)
+   import { loadYamlFromCatalog, compileFlow } from '@atta/engine'
+   const flow = loadYamlFromCatalog('my-spec')
+   const plan = compileFlow(flow, question, model)
    const conclusion = await adapter.execute({ plan, customVars: {} })
    ```
 5. Run the verify script to confirm it executes end-to-end
@@ -161,7 +161,7 @@ Current catalog (May 11, 2026): 9 YAMLs total — **2 published** (`vada-reviewe
 ## Anti-patterns
 
 - ❌ Importing from `@vada/teams` — that package is deleted
-- ❌ Calling `compile()` directly — use `compileSpec(spec, question, model)` from `@atta/engine`
+- ❌ Calling `compile()` directly — use `compileFlow(flow, question, model)` from `@atta/engine`
 - ❌ Modifying YAML files to add tool names without verifying the tool exists in the adapter registry
 - ❌ Manually adding to a SPECS object in `spec-registry.ts` — the registry is now dynamic; just create the YAML file
 - ❌ Logging session before the deliberation completes — always log after `adapter.execute()` returns

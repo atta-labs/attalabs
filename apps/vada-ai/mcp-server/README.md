@@ -127,7 +127,7 @@ MCP client (Claude Desktop, Cursor, etc.)
   → @vada/mcp-server (vada__consult / vada__deliberate)
   → @atta/adapter-langgraph (cognitive router + LangGraph execution)
   → @atta/engine (YAML → loadSpec → compileSpec → Plan)
-  → @vada/agents + YAML specs (apps/vada-ai/yamls/)
+  → @vada/agents + YAML specs (packages/agents/vada-deliberation/yamls/)
   → Anthropic API (LLM calls + web search)
   → @atta/db (session persistence)
 ```

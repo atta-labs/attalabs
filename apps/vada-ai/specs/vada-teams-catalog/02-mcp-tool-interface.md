@@ -2,7 +2,7 @@
 
 ## The tool: `vada__consult`
 
-One tool. The caller specifies a set of reviewers inline; `consult.ts` builds a `DeliberationSpec` from those reviewer specs and dispatches them in parallel through the Vāda deliberation engine. Returns structured responses per reviewer.
+One tool. The caller specifies a set of reviewers inline; `consult.ts` builds an inline `Flow` from those reviewer specs and dispatches them in parallel through the Vāda deliberation engine. Returns structured responses per reviewer.
 
 The name `vada__consult` is what ships in Phase 4. Earlier specs used `vada__deliberate` aspirationally; the actual tool is named `consult` to distinguish Brokered from Autonomous and to fit naturally as a verb in Caller Claude's vocabulary ("let me consult Vāda on this").
 
@@ -280,7 +280,7 @@ Caller Claude should inform user and suggest trying again.
 {
   "status": "complete",
   "session_id": "sess_2b3c4d",
-  "session_url": "https://vada.ai/brokered/consultations/sess_2b3c4d",
+  "session_url": "https://vada.attalabs.dev/s/sess_2b3c4d",
   "total_latency_ms": 48230,
   "total_cost_cents": 12,
   "responses": [
@@ -328,4 +328,4 @@ The V1 target schema described in this doc is now implemented:
 - Input: `{ context, question, reviewers[{role, notes?, domain?}], current_leaning?, stakes?, session_title? }`
 - Output: `{ responses[], session_id, session_url, cost_breakdown }`
 
-The legacy `{ brief, reviewers[] }` shape (from Phase 4) has been fully replaced. `consult.ts` builds an inline `DeliberationSpec` from the structured reviewer specs, calls `compileSpec()`, and dispatches in parallel.
+The legacy `{ brief, reviewers[] }` shape (from Phase 4) has been fully replaced. `consult.ts` builds an inline `Flow` from the structured reviewer specs, calls `compileFlow()`, and dispatches in parallel.

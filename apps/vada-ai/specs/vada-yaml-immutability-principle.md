@@ -83,7 +83,7 @@ The implementation of this commitment can be:
 
 **Marked status.** The YAML carries a `benchmarked: true` flag once it has benchmark data. The CI checks for changes to benchmarked files and rejects them.
 
-**External registry.** A separate file (e.g., `apps/vada-ai/yamls/.locked.json`) tracks which YAMLs are locked. Locking happens automatically when the first benchmark run attaches. Modification attempts are rejected.
+**External registry.** A separate file (e.g., `packages/agents/vada-deliberation/yamls/.locked.json`) tracks which YAMLs are locked. Locking happens automatically when the first benchmark run attaches. Modification attempts are rejected.
 
 **File system.** Locked YAMLs become read-only. Unlocking requires explicit override.
 
@@ -120,7 +120,7 @@ When in doubt, fork. Forks are cheap. Corrupted benchmark data is not.
 Each YAML's benchmark history reveals its own cost-quality profile. Plotting all YAMLs on a (cost, quality) chart shows the Pareto frontier. Identifying which configurations are dominated (cheaper alternatives produce equal or better quality) becomes data, not opinion.
 
 ### Catalog as living archive
-The collection of YAMLs in `apps/vada-ai/yamls/` is a living archive. Old configurations remain even when superseded. Users can choose any of them. Researchers can compare patterns across years.
+The collection of YAMLs in `packages/agents/vada-deliberation/yamls/` is a living archive. Old configurations remain even when superseded. Users can choose any of them. Researchers can compare patterns across years.
 
 ### Reproducibility
 A user reporting "I ran crucible-v1 and got X" can be verified by running crucible-v1 again — the file hasn't changed. A user reporting "I ran crucible-v2 and got Y" can be verified independently. Reproducibility is structural, not aspirational.
@@ -159,12 +159,12 @@ When a YAML is superseded by a newer version, the older version stays. Users may
 
 ## How this interacts with the registry
 
-Vāda's MCP server loads a set of YAMLs at startup (the "registry"). Not every YAML in `apps/vada-ai/yamls/` needs to be in the registry — only the ones publicly exposed.
+Vāda's MCP server loads a set of YAMLs at startup (the "registry"). Not every YAML in `packages/agents/vada-deliberation/yamls/` needs to be in the registry — only the ones publicly exposed.
 
 The registry is allowed to change. Today's registry might include `crucible-v1` and `sparring-v1`. Tomorrow's might include `crucible-v2` and `sparring-v2` (with v1 still in the catalog but not registered).
 
 This separates two concerns:
-- **Catalog membership** (the `apps/vada-ai/yamls/` directory contents) — append-only after benchmarking
+- **Catalog membership** (the `packages/agents/vada-deliberation/yamls/` directory contents) — append-only after benchmarking
 - **Registry membership** (which YAMLs the MCP exposes by default) — mutable
 
 A user knowing a YAML's id can still invoke it directly via full-content MCP calls (D-017), even if it's no longer in the registry.

@@ -9,7 +9,7 @@ description: Vāda agent and team configurations. Load when adding/modifying age
 
 Deliberation content is split across two concerns:
 
-- **YAML spec files** (`apps/vada-ai/yamls/`) — deliberation configs that define agents and workflows. These replaced the deleted `@vada/teams` TypeScript package. All seven built-in specs live here as YAML files. Agent system prompts, tool configs, and flow structure are all in YAML.
+- **YAML spec files** (`packages/agents/vada-deliberation/yamls/`) — deliberation configs that define agents and workflows. These replaced the deleted `@vada/teams` TypeScript package. All seven built-in specs live here as YAML files. Agent system prompts, tool configs, and flow structure are all in YAML.
 - **Agent visuals** (`apps/vada-ai/web/src/components/agents/visuals/`) — display-only metadata for web UI rendering (colors, face indices, display names). No runtime deliberation logic. Used only by the web app.
 
 No runtime logic lives in either location. YAML specs compose agents into deliberations; visuals directory provides UI-only rendering config.
@@ -25,7 +25,7 @@ No runtime logic lives in either location. YAML specs compose agents into delibe
 apps/vada-ai/web/src/components/agents/visuals/
 └── index.ts                       # VadaAgentVisual type + per-agent display configs (web-only)
 
-apps/vada-ai/yamls/
+packages/agents/vada-deliberation/yamls/
 ├── sparring.yaml                  # 2-agent default (Strategist + Critic, 3 rounds)
 ├── crucible.yaml                  # 4-agent heavy team
 ├── war-room.yaml                  # 6-agent heavyweight
@@ -61,7 +61,7 @@ If you find yourself wanting to flip any of these, STOP. Surface to Principal.
 
 Agents are defined directly in YAML specs. The `@vada/agents` package is deleted — do not reference it.
 
-For `consult.ts` (Brokered mode), reviewer personas are defined inline as `DeliberationSpec` objects built at call time. No separate agent config files.
+For `consult.ts` (Brokered mode), reviewer personas are loaded via `lookupSpec` from the YAML catalog. Agent definitions live in the loaded `Flow`, not in separate config files.
 
 For web UI display (colors, face indices), see `apps/vada-ai/web/src/components/agents/visuals/`.
 
@@ -156,7 +156,7 @@ Full schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`
 ```ts
 import { lookupSpec, listPublicSpecs } from './spec-registry'
 
-// By full spec ID (auto-discovered from apps/vada-ai/yamls/)
+// By full spec ID (auto-discovered from packages/agents/vada-deliberation/yamls/)
 const spec = lookupSpec('sparring')
 const spec = lookupSpec('crucible')
 
@@ -192,7 +192,7 @@ Do not deviate without Principal approval. Empirically grounded.
 
 ### `name` is PascalCase and Unique
 
-Agent names in YAML `flow.rounds.agents`, `flow.audit.agents`, `flow.synthesis.agent`, and `reviewers[].agent` must exactly match the `name` field in the corresponding agent definition. Mismatches fail at `loadSpec()` or `compileSpec()`.
+Agent names in YAML `rounds[].agents[].name` must exactly match the `name` field in the top-level `agents[]` definition. Mismatches fail at `loadFlow()` or `compileFlow()`.
 
 ```yaml
 # ✅
@@ -247,7 +247,7 @@ For use with `vada__consult` (Brokered mode):
 
 ## Adding a New Team (YAML spec)
 
-1. Create `apps/vada-ai/yamls/<team-name>.yaml` (no `-v1` suffix — see D-025)
+1. Create `packages/agents/vada-deliberation/yamls/<team-name>.yaml` (no `-v1` suffix — see D-025)
 2. Define agents inline in the YAML
 3. The spec is **auto-discovered** — no changes to `spec-registry.ts` needed
 4. Add to ALIASES map only if a short-name is needed for MCP UX

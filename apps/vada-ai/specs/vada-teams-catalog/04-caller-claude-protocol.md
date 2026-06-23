@@ -14,7 +14,7 @@ In this role, the Caller Claude:
 - Recognizes deliberation-worthy moments in the conversation
 - Asks permission before invoking Vāda (unless explicitly asked)
 - Writes high-quality briefs
-- Invokes `vada__deliberate` with appropriate reviewer selection
+- Invokes `vada__consult` with appropriate reviewer selection
 - Receives Vāda's synthesizer output (rendered + structured) and integrates it conversationally for the user
 - Flags its own position when it diverges from reviewer consensus
 - Escalates to the user (Principal) when judgment is required

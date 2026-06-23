@@ -11,7 +11,7 @@ A YAML spec is a complete, self-contained deliberation configuration. It defines
 
 As of D-033 (vada-decisions.md, May 12-13, 2026), all flows use **schema version 2.0** — the universal round-based model. The three v1 shapes (brokered-no-synthesis, brokered-with-synthesis, rounds-based) collapsed into one schema. The compiler detects which shape a YAML expresses from its topology and emits matching Plan node ids.
 
-File location: `apps/vada-ai/yamls/<spec-id>.yaml` (no version suffix — see global D-013 + vada-decisions.md D-025).
+File location: `packages/agents/vada-deliberation/yamls/<spec-id>.yaml` (no version suffix — see global D-013 + vada-decisions.md D-025).
 
 Full schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`.
 
@@ -307,7 +307,7 @@ The shape is `rounds-audit` because the audit round declares `on_failure.action:
 
 ## Registering — auto-discovery
 
-New YAMLs are **auto-discovered**. The engine's `listPublicSpecs()` uses `readdirSync` to enumerate `apps/vada-ai/yamls/`; the MCP `spec-registry.ts` delegates to it. Just creating the YAML file is enough for it to appear in the catalog and in MCP tool enums.
+New YAMLs are **auto-discovered**. The engine's `listPublicSpecs()` uses `readdirSync` to enumerate `packages/agents/vada-deliberation/yamls/`; the MCP `spec-registry.ts` delegates to it. Just creating the YAML file is enough for it to appear in the catalog and in MCP tool enums.
 
 `validateAllSpecs()` runs at startup — a malformed YAML crashes the server on start. This is intentional (fail-fast). The 10 validation rules from D-033 are enforced by `validateFlow` (called by `loadFlow`).
 
@@ -328,10 +328,8 @@ To make a spec addressable by a short alias from `vada__deliberate`, add it to t
 Create `apps/vada-ai/web/scripts/verify-<spec-name>.ts`:
 
 ```ts
-import { compileFlow, loadFlow } from '@atta/engine'
+import { compileFlow, loadFlow, loadYamlFromCatalog } from '@atta/engine'
 import { LangGraphAdapter } from '@atta/adapter-langgraph'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) { console.error('ANTHROPIC_API_KEY not set'); process.exit(1) }
@@ -339,7 +337,7 @@ if (!apiKey) { console.error('ANTHROPIC_API_KEY not set'); process.exit(1) }
 const adapter = new LangGraphAdapter({ apiKey })
 const model = process.env.VADA_TEST_MODEL ?? 'claude-haiku-4-5-20251001'
 
-const flow = loadFlow(readFileSync(join(process.cwd(), '../yamls/my-spec.yaml'), 'utf-8'))
+const flow = loadYamlFromCatalog('my-spec')
 
 const plan = compileFlow(flow, 'Should a startup prioritize growth speed or sustainable unit economics?', model)
 const conclusion = await adapter.execute({ plan, customVars: {}, timeoutMs: 1_200_000 })
