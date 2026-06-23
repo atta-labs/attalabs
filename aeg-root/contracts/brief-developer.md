@@ -52,10 +52,34 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 - Stop conditions must be explicit, not inferred. Every known failure mode for this task belongs in §10 — the Developer will not invent stop conditions that aren't stated.
 - The surface map must be bounded and named. "Wherever else turns out to need it" is not a surface map.
 
+## Task-status coherence precondition — hard STOP before authoring or executing any task (D-056)
+
+The Brief Author MUST verify this precondition before authoring any task brief. The Developer MUST verify it before step 0. **If any predicate fails for any in-scope prior, STOP and report to the Principal what is owed — do NOT author, do NOT begin work, do NOT rationalize past it.**
+
+**The archival bar.** A prior task is "done" when ALL THREE predicates hold:
+1. Its forge Issue is **closed**
+2. Its PR is **merged to main**
+3. Its **provenance block** comment is present on the merged PR (posted by the Archivist)
+
+"PR merged" alone is NOT the bar. A merged PR whose Issue is still open, or whose provenance block is absent, is an incomplete archival — the Archivist has not fully closed out.
+
+**Scope of "prior task" — verify all three predicates for each:**
+- **Mid-iteration task:** every earlier task in the same iteration that this task depends on (direct `depends-on` edges).
+- **First task of an iteration:** the entire previous iteration of that product must be archived — all Issues closed, all PRs in main, all tasks with provenance blocks, iteration file in `aeg-root/iterations/completed/`.
+- **ALL tasks:** every cross-iteration dependency declared in the topology (e.g. a vada task that depends on a herald task from another iteration) must also satisfy all three predicates.
+
+**Hard STOP language:** *"Prior task [Y] does not pass the coherence gate: Issue #N is [open/closed], PR #M is [merged/unmerged], provenance block is [present/absent]. The Archivist must fully close out task [Y] before this task can proceed. Here is what is owed: [list]."*
+
+**Accepted-backfill never bypasses this gate.** Deferring backfill of historical provenance on **already-closed iterations** is a permitted debt record; proceeding with a new task on an **unarchived active prior** is not. The accepted-gap clause is strictly limited to closed historical iterations; it cannot be cited to bypass the coherence precondition for tasks in an active iteration. An accepted historical backlog is a debt record, not a gate bypass. The coherence precondition applies to active prior tasks; it cannot be waived by citing accepted historical gaps.
+
+The Brief Author's enforcement is at Dig stage, item (b) (see `aeg-root/skills/brief-authoring/SKILL.md`). The Developer's enforcement is at entry gate items 3–5 (see `aeg-root/roles/developer.md`). The Brief Author gate fires one stage earlier than the Developer gate — catching the gap before a brief the Developer will immediately refuse is dispatched.
+
+---
+
 ## Consumer obligations (the Developer)
 
 - **Issue-existence precondition (hard STOP before step 0).** Before executing step 0, locate this task in its iteration topology file (`aeg-root/iterations/<name>.md`) and confirm the Issue column carries a real GitHub Issue number — not `#TBD`, not blank. If it is `#TBD` or blank, the task has no forge Issue: it is backlog, not dispatchable. STOP: *"Task <id> in iteration `<name>` has no Issue (#TBD) — it is backlog, not dispatchable. The Planner must cut the Issue and promote it to todo before this task can start."* This gate is enforced in `aeg-root/roles/developer.md` (entry gate, item 3).
-- **Prior-archival precondition (hard STOP before step 0).** Before executing step 0, query the most-recently-merged task PR in this iteration (`gh pr list --state merged --json number,headRefName,mergedAt` filtered to `task/<iteration>/*`, newest by `mergedAt`). Check whether it carries a provenance block comment (`gh pr view <N> --json comments` — look for `"AEG … provenance"` or per-task provenance marker). If the block is absent, the per-task Archivist was skipped. STOP: *"Prior task PR #N in iteration `<name>` has no provenance block — the per-task Archivist must run before this task proceeds. Dispatch the per-task Archivist for #N first."* Do not begin work. If no prior merged task PR exists in the iteration (this is the first task), this check passes trivially. This gate is enforced in `aeg-root/roles/developer.md` (entry gate, item 4) and the coherence signal it reads is defined in `aeg-root/contracts/reviewer-archivist.md`.
+- **Prior-archival precondition (hard STOP before step 0).** Before executing step 0, apply the task-status coherence precondition above to every in-scope prior task. Verify all three predicates (Issue closed, PR in main, provenance block present) for each. If any predicate fails for any in-scope prior, STOP: report to the Principal exactly what is owed and do not begin work. If no prior task exists in scope (first task of a fresh iteration with no prior iteration on this product), this check passes trivially. This gate is enforced in `aeg-root/roles/developer.md` (entry gate, items 4–5) and the coherence signal it reads is defined in `aeg-root/contracts/reviewer-archivist.md`.
 - Read the full brief before opening the worktree. Not a skim — every section.
 - Execute step 0 first, always. Never branch from `HEAD` of the current local checkout.
 - Verify all dependencies are merged before the first line of code.

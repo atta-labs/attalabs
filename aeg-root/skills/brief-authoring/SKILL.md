@@ -30,21 +30,33 @@ The Brief Author's stages — name them, and say which you're in:
 
 2. **Dig** — the deep pass for the *perishable* detail (current signatures, exact file list, final model pick). Narrate the load-bearing reads: *"Reading `llm.ts` now to get the current vendor-branch shape for the surface map."* If the dig **contradicts** the rationale (boundary moved, sizing broke), STOP and say so — that's a `severity:strategy` escalation back to the Planner, announced, not a silent fix.
 
-   **Precondition checks (D-052, D-054) — complete during Dig, before Draft:** Before authoring, verify the following preconditions. Three checks, in order:
+   **Task-status coherence precondition (D-056) — complete during Dig, before Draft:** Before authoring any brief, apply the full coherence precondition from `aeg-root/contracts/brief-developer.md`. The archival bar for any prior task is all three of: (1) Issue closed, (2) PR merged to main, (3) provenance block present on the merged PR. "PR merged" alone is NOT sufficient. **STOP — do NOT author the brief** if any predicate fails for any in-scope prior task; report to the Principal what is owed.
+
+   **Accepted-backfill never bypasses this precondition.** Deferring provenance backfill on already-closed historical iterations is a permitted debt record. But that acceptance clause is strictly limited to closed historical iterations. Proceeding with a new brief on an unarchived active prior — citing "we accepted the backfill gap" — is not permitted. An accepted historical backlog is a debt record, not a gate bypass. The coherence precondition applies to active prior tasks; it cannot be waived by citing accepted historical gaps.
+
+   **Scope of "prior task" (state all three explicitly in your STOP report):**
+   - **Mid-iteration task:** every earlier task in the same iteration that this task depends on.
+   - **First task of an iteration:** the entire previous iteration of that product must be archived (all Issues closed, all PRs in main, all provenance blocks present, iteration file in `completed/`).
+   - **ALL tasks:** every cross-iteration dependency declared in the topology must satisfy all three predicates.
+
+   **Precondition checks — three checks, in order:**
 
    - **(a) Issue-existence (D-054).** Locate this task in its iteration topology file (`aeg-root/iterations/<name>.md`) and confirm the Issue column carries a real GitHub Issue number — not `#TBD`, not blank. If it is `#TBD` or blank, the task has no forge Issue. **STOP — do NOT author the brief:** *"Task <id> in iteration `<name>` has no Issue (#TBD) — it is backlog, not dispatchable. The Planner must cut the Issue first."* First task ever in a brand-new iteration may lack Issues if the Planner has not finished cutting them; stop and surface the gap regardless. A brief cannot carry a `Closes #N` reference if there is no N.
 
-   - **(b) Per-task archival (D-052).** Query the most-recently-merged task PR in this iteration:
+   - **(b) Prior-task coherence (D-052, D-056).** For every in-scope prior task, verify all three archival predicates. First: query the most-recently-merged task PR in this iteration:
      ```
      gh pr list --state merged --json number,headRefName,mergedAt \
        | jq '[.[] | select(.headRefName | startswith("task/<iteration>/"))] | sort_by(.mergedAt) | last'
      ```
-     Then confirm that PR carries a provenance block comment:
-     ```
-     gh pr view <N> --json comments \
-       | jq '.comments[].body | select(test("AEG.*provenance|provenance.*task"; "i"))'
-     ```
-     If the result is empty, the per-task Archivist was skipped. **STOP — do NOT author the brief:** *"Prior task PR #N in iteration `<name>` has no provenance block — the per-task Archivist must run before this task can be briefed. Dispatch the per-task Archivist for #N first."* First task in an iteration (no prior merged task PR) passes trivially.
+     Then check all three predicates on that PR:
+     - **Issue closed:** `gh issue view <issue-N> --json state | jq '.state'` — must be `"CLOSED"`
+     - **PR in main:** confirmed by the merged status of the PR above
+     - **Provenance block present:**
+       ```
+       gh pr view <N> --json comments \
+         | jq '.comments[].body | select(test("AEG.*provenance|provenance.*task"; "i"))'
+       ```
+     If any predicate fails, **STOP — do NOT author the brief.** Report the exact status of all three predicates: *"Prior task PR #N (Issue #M) does not pass the coherence gate: Issue #M is [open/closed], PR #N is [merged/unmerged], provenance block is [present/absent]. The Archivist must fully close out the prior task before this brief can be authored."* First task in an iteration (no prior merged task PR) passes trivially.
 
    - **(c) Iteration archival (D-052).** For each product named in the brief's `Project:` field, check whether a prior iteration for that product exists in `aeg-root/iterations/` but is absent from `aeg-root/iterations/completed/`. If any such unarchived iteration exists and all its task PRs are merged, the Iteration Archivist has not run. **STOP — do NOT author the brief:** *"Product `<X>`'s previous iteration `<name>` is complete but not archived — the Iteration Archivist must run before this task can be briefed. Dispatch it first."* First iteration on a product passes trivially.
 
@@ -99,7 +111,7 @@ Before a brief is dispatchable, confirm **every one of the seven Planner fields 
 - [ ] **Stop-and-escalate** → are the Planner's stop conditions copied into the brief's **Stop conditions (§10)**, substance-verbatim?
 - [ ] **No instruction contradicts the surface map** → if the brief tells the executor to **delete or rename a shared symbol** (a constant, type, export, function), confirm **every importer is inside the §4 surface.** If an importer is out-of-surface, the "delete it" instruction and the "don't touch that file" boundary contradict — defer the deletion to the task that owns the importer, and say so in the brief. (See the **shared-symbol importer check** in §4.)
 - [ ] **Issue-existence precondition (D-054)** → does the task's Issue column in the iteration topology file carry a real GitHub Issue number (not `#TBD`, not blank)? If not, the task is backlog — **STOP** and surface the need for the Planner to cut the Issue before proceeding. A brief cannot carry `Closes #N` without a real N. (Mirrors Developer entry gate item 3; catches it one stage earlier, during Dig.)
-- [ ] **Archival precondition (D-052)** → does the most-recently-merged task PR in this iteration carry a provenance block comment (per-task Archivist ran), and does each product named in `Project:` have its previous iteration in `aeg-root/iterations/completed/` (Iteration Archivist ran)? If either fails, this task is **not authorable** — STOP and surface the owed Archivist dispatch to the Principal before proceeding. (Mirrors Developer entry gate items 4 and 5; catches it one stage earlier, during Dig.)
+- [ ] **Task-status coherence precondition (D-052, D-056)** → for every in-scope prior task, do all three predicates hold: Issue closed, PR merged to main, provenance block present? If any predicate fails, this task is **not authorable** — STOP and report to the Principal exactly what is owed. An accepted historical backlog is a debt record, not a gate bypass: the coherence precondition applies to active prior tasks and cannot be waived by citing accepted gaps. (Mirrors Developer entry gate items 4 and 5; catches it one stage earlier, during Dig.)
 
 Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; **Test Plan (§9) present and tagged** — either `Test Plan: unit-tests-only` (and §4 has no runtime surface) or a checkbox list with at least one `[agent]` or `[principal]` item per reachable surface kind; the standing autonomy clause present in §11; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
 
@@ -442,7 +454,7 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 - ❌ A `Project:` value that doesn't resolve against the registry, or that omits a blast-radius consumer the Planner listed — malformed; fix or `aeg add-project` first
 - ❌ Closing out without signaling completion + whose move is next — the Principal is left unsure whether the brief is dispatchable
 - ❌ **Authoring a brief for a task whose Issue column is `#TBD` or blank** — the task is backlog, not dispatchable; there is no `#N` for `Closes #N`; the Developer's D-054 gate (entry gate item 3) will refuse it at execution. Catch it during Dig and surface the owed Planner action (cut the Issue) rather than handing the Principal a brief the Developer will immediately refuse.
-- ❌ **Authoring a brief for a task whose prior task isn't archived** (no provenance block on the most-recently-merged task PR in the iteration) or whose product's previous iteration isn't in `aeg-root/iterations/completed/` — the Developer's D-052 gate (entry gate items 4 and 5) will reject it at execution; the Brief Author must catch it first during Dig and surface the owed Archivist dispatch rather than handing the Principal a brief the Developer will immediately refuse
+- ❌ **Authoring a brief for a task whose prior task doesn't pass the coherence gate** — the bar is all three: Issue closed, PR merged to main, provenance block present. "PR merged" alone is not sufficient. An accepted historical provenance backlog on already-closed iterations does not bypass this gate for new work on active priors. Catch the gap during Dig and surface what is owed — don't hand the Principal a brief the Developer will immediately refuse (D-052, D-056)
 
 ---
 
