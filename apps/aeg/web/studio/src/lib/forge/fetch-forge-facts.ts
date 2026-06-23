@@ -156,9 +156,14 @@ export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<Forg
 
 /**
  * Build one batched GraphQL query with three aliased sub-queries per task:
- *   <alias>_issue   — issue.state, assignees count, labels
+ *   <alias>_issue   — issue.state, assignees count, labels, closing PR via timelineItems
  *   <alias>_ref     — ref existence for refs/heads/task/<iter>/<id>
- *   <alias>_prs     — latest PR with that head branch (any state)
+ *   <alias>_prs     — latest PR with that head branch (fallback when no closing PR)
+ *
+ * The issue sub-query includes timelineItems(CLOSED_EVENT) to surface the PR
+ * that actually closed the issue — this is the primary source for prState/merged.
+ * The branch-based _prs query is kept as a fallback for in-flight tasks whose
+ * PR is on the conventionally-named branch but the issue is still open.
  *
  * Costs ~3 nodes per task. For 8 tasks that's ~24 nodes / 1 HTTP call;
  * comfortably under GitHub's per-hour points budget (default 5000).
@@ -175,6 +180,18 @@ function buildBatchQuery(iteration: string, tasks: Array<TaskRef & { issue: numb
       state
       assignees(first: 1) { totalCount }
       labels(first: 50) { nodes { name } }
+      timelineItems(first: 1, itemTypes: [CLOSED_EVENT]) {
+        nodes {
+          ... on ClosedEvent {
+            closer {
+              ... on PullRequest {
+                state
+                reviewDecision
+              }
+            }
+          }
+        }
+      }
     }
     ${a}_ref: ref(qualifiedName: ${JSON.stringify(`refs/heads/${branch}`)}) {
       name
@@ -203,10 +220,19 @@ function aliasFor(taskId: string): string {
   return `t_${sanitized}`
 }
 
+type PrCloserNode = {
+  state: 'OPEN' | 'CLOSED' | 'MERGED'
+  reviewDecision: 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | null
+} | null
+
 type IssueNode = {
   state: 'OPEN' | 'CLOSED'
   assignees: { totalCount: number }
   labels: { nodes: Array<{ name: string }> }
+  /** First CLOSED_EVENT — the PR (or commit) that closed the issue, if any. */
+  timelineItems: {
+    nodes: Array<{ closer: PrCloserNode }>
+  }
 } | null
 
 type RefNode = { name: string } | null
@@ -231,6 +257,13 @@ function extractRawFromResponse(repository: NonNullable<BatchResponse['repositor
   const issue = repository[`${alias}_issue`] as IssueNode | undefined
   const ref = repository[`${alias}_ref`] as RefNode | undefined
   const prs = repository[`${alias}_prs`] as PrsNode | undefined
+
+  // Prefer the PR that actually closed the issue (branch-name-independent).
+  // Fall back to the branch-named PR for in-flight tasks (open issue, PR open
+  // on the task/<iter>/<id> branch).
+  const closingPr = issue?.timelineItems?.nodes?.[0]?.closer ?? null
+  const branchPr = prs && prs.nodes.length > 0 && prs.nodes[0] ? prs.nodes[0] : null
+
   return {
     issue: issue
       ? {
@@ -240,7 +273,7 @@ function extractRawFromResponse(repository: NonNullable<BatchResponse['repositor
         }
       : null,
     refExists: Boolean(ref && ref.name.length > 0),
-    pullRequest: prs && prs.nodes.length > 0 && prs.nodes[0] ? prs.nodes[0] : null
+    pullRequest: closingPr ?? branchPr
   }
 }
 
