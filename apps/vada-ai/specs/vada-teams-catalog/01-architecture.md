@@ -1,5 +1,7 @@
 # 01 — Architecture
 
+**Status:** draft
+
 ## Component overview
 
 ```

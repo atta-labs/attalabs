@@ -1,5 +1,7 @@
 # 02 — MCP Tool Interface
 
+**Status:** ratified
+
 ## The tool: `vada__consult`
 
 One tool. The caller specifies a set of reviewers inline; `consult.ts` builds an inline `Flow` from those reviewer specs and dispatches them in parallel through the Vāda deliberation engine. Returns structured responses per reviewer.

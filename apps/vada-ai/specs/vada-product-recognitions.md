@@ -1,7 +1,7 @@
 # Vāda — Product Recognitions
 
 **Date captured:** April 25, 2026
-**Status:** Architectural recognition. Foundational. Updates infrequent.
+**Status:** ratified
 
 ---
 

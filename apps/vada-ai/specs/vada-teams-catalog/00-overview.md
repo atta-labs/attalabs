@@ -1,6 +1,6 @@
 # Vāda Brokered Deliberation — Specification
 
-**Status:** V1 specification — partial implementation (Phase 4 complete)
+**Status:** draft
 **Last updated:** April 2026
 **Audience:** Implementers, Principal, reviewers
 

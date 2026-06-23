@@ -1,5 +1,7 @@
 # 04 — Caller Claude Protocol
 
+**Status:** ratified
+
 This document describes how the Caller Claude (the Claude instance the user is chatting with) uses Vāda Brokered. It defines the behavioral protocol, not the tool mechanics (see document 02 for those).
 
 This is the operational heart of Brokered. The tool is simple; the protocol is the product.

@@ -1,7 +1,7 @@
 # Vāda — YAML Immutability Principle
 
 **Date captured:** April 25, 2026
-**Status:** Partially superseded by D-025 (April 26, 2026)
+**Status:** ratified
 
 > **April 26, 2026 — Naming convention section superseded (D-025).** The `-v1` / `-vN` suffix naming convention described in the "Naming convention" section below was dropped in Phase 7.3. YAML files are now named semantically without version suffixes (`crucible.yaml`, not `crucible-v1.yaml`). All other sections of this document remain active: the core principle (do not modify benchmarked YAMLs; iterate by forking) is unchanged. The worked example references to `-v1` / `-v2` filenames are illustrative; the actual mechanism (copy, new id, benchmark separately) still applies.
 

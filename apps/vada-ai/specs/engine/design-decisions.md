@@ -1,5 +1,7 @@
 # Vāda Engine — Design Decisions
 
+**Status:** ratified
+
 Locked decisions from Phase 0. Each entry records what was decided, why, and the concern it addresses.
 Rationale references reviewer consensus from the 6 deliberation rounds that validated the API surface.
 

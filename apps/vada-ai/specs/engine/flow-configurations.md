@@ -1,5 +1,7 @@
 # Engine Flow Configurations
 
+**Status:** ratified
+
 Reference for the four RoundsWorkflow configurations supported by `@atta/engine`. Use this when selecting a team structure or debugging graph shape.
 
 ---

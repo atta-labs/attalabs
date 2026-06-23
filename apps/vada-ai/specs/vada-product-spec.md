@@ -1,6 +1,6 @@
 # Vāda — Product Specification
 
-**Status:** Living document. Reflects current locked understanding.
+**Status:** ratified
 **Last significant update:** April 2026 (post Round 23 reviewer integration).
 
 This document describes what Vāda is, how it's structured, how it's accessed, and what business it intends to run. Tech details (types, APIs, implementation decisions) live in `engine/design-decisions.md` and in the source code. This doc is about the product, not the code.
