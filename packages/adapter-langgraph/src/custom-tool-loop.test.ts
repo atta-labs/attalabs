@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'bun:test'
 import type Anthropic from '@anthropic-ai/sdk'
+import type OpenAI from 'openai'
 import {
   MAX_CUSTOM_TOOL_ITERATIONS,
   customToolSpecToAnthropicTool,
+  customToolSpecToOpenAITool,
   resolveRegisteredCustomTools,
   runAnthropicCustomToolLoop,
+  runOpenAICompatCustomToolLoop,
   type AnthropicMessagesCreate,
-  type CustomToolHandlerMap
+  type CustomToolHandlerMap,
+  type OpenAICompatMessagesCreate
 } from './custom-tool-loop'
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -300,5 +304,283 @@ describe('runAnthropicCustomToolLoop — iteration bound', () => {
     // Constant is exported for callers to reason about budgets; pin it so
     // bumping the default is an explicit, reviewable change.
     expect(MAX_CUSTOM_TOOL_ITERATIONS).toBe(10)
+  })
+})
+
+// ─── OpenAI-compat loop: spec conversion ─────────────────────────────────────
+
+describe('customToolSpecToOpenAITool', () => {
+  it('maps name, description, parameters → OpenAI function tool spec', () => {
+    const addSpec = {
+      name: 'add',
+      description: 'Add two numbers',
+      parameters: {
+        type: 'object',
+        properties: { a: { type: 'number' }, b: { type: 'number' } },
+        required: ['a', 'b']
+      }
+    }
+    const tool = customToolSpecToOpenAITool(addSpec)
+    expect(tool).toEqual({
+      type: 'function',
+      function: {
+        name: 'add',
+        description: 'Add two numbers',
+        parameters: addSpec.parameters
+      }
+    })
+  })
+})
+
+// ─── OpenAI-compat loop: positive paths ──────────────────────────────────────
+
+function makeOpenAITextResponse(
+  text: string,
+  usage = { prompt_tokens: 10, completion_tokens: 5 }
+): OpenAI.Chat.ChatCompletion {
+  return {
+    id: 'chatcmpl-text',
+    object: 'chat.completion',
+    created: 0,
+    model: 'gpt-test',
+    choices: [
+      {
+        index: 0,
+        message: { role: 'assistant', content: text, refusal: null },
+        finish_reason: 'stop',
+        logprobs: null
+      }
+    ],
+    usage: { ...usage, total_tokens: usage.prompt_tokens + usage.completion_tokens }
+  } as unknown as OpenAI.Chat.ChatCompletion
+}
+
+function makeOpenAIToolCallResponse(
+  name: string,
+  args: Record<string, unknown>,
+  id = 'call_1',
+  usage = { prompt_tokens: 8, completion_tokens: 4 }
+): OpenAI.Chat.ChatCompletion {
+  return {
+    id: 'chatcmpl-tool',
+    object: 'chat.completion',
+    created: 0,
+    model: 'gpt-test',
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: 'assistant',
+          content: null,
+          refusal: null,
+          tool_calls: [
+            {
+              id,
+              type: 'function',
+              function: { name, arguments: JSON.stringify(args) }
+            }
+          ]
+        },
+        finish_reason: 'tool_calls',
+        logprobs: null
+      }
+    ],
+    usage: { ...usage, total_tokens: usage.prompt_tokens + usage.completion_tokens }
+  } as unknown as OpenAI.Chat.ChatCompletion
+}
+
+describe('runOpenAICompatCustomToolLoop — positive path', () => {
+  it('runs handler when model emits tool_calls, then completes on stop', async () => {
+    const handlerCalls: Array<Record<string, unknown>> = []
+    const handlers: CustomToolHandlerMap = {
+      add: async (args) => {
+        handlerCalls.push(args)
+        return (args.a as number) + (args.b as number)
+      }
+    }
+
+    const sentMessages: OpenAI.Chat.ChatCompletionMessageParam[][] = []
+    let callCount = 0
+    const messagesCreate: OpenAICompatMessagesCreate = async (params) => {
+      sentMessages.push(params.messages as OpenAI.Chat.ChatCompletionMessageParam[])
+      callCount += 1
+      if (callCount === 1) {
+        return makeOpenAIToolCallResponse('add', { a: 2, b: 3 }, 'call_abc')
+      }
+      return makeOpenAITextResponse('The sum is 5.')
+    }
+
+    const tool = customToolSpecToOpenAITool({
+      name: 'add',
+      description: 'Add two numbers',
+      parameters: { type: 'object', properties: { a: { type: 'number' }, b: { type: 'number' } }, required: ['a', 'b'] }
+    })
+
+    const result = await runOpenAICompatCustomToolLoop({
+      messagesCreate,
+      model: 'gpt-test',
+      systemPrompt: 'You are a calculator.',
+      userPrompt: 'What is 2+3?',
+      tools: [tool],
+      handlers
+    })
+
+    // Handler was called with the model's args
+    expect(handlerCalls).toEqual([{ a: 2, b: 3 }])
+
+    // Final content is the model's post-tool text
+    expect(result.content).toBe('The sum is 5.')
+
+    // Token totals accumulate across both turns
+    expect(result.tokensInput).toBe(10 + 8)
+    expect(result.tokensOutput).toBe(5 + 4)
+
+    // Two calls: one for tool_call, one for final answer
+    expect(callCount).toBe(2)
+
+    // Second call: system + user + assistant(tool_calls) + tool result
+    expect(sentMessages[1]).toHaveLength(4)
+    expect(sentMessages[1]![0]!.role).toBe('system')
+    expect(sentMessages[1]![1]!.role).toBe('user')
+    expect(sentMessages[1]![2]!.role).toBe('assistant')
+    expect(sentMessages[1]![3]!.role).toBe('tool')
+    const toolResult = sentMessages[1]![3] as OpenAI.Chat.ChatCompletionToolMessageParam
+    expect(toolResult.tool_call_id).toBe('call_abc')
+    expect(toolResult.content).toBe('5')
+  })
+
+  it('returns text immediately when first response has finish_reason stop', async () => {
+    let calls = 0
+    const handlers: CustomToolHandlerMap = {
+      add: async () => {
+        throw new Error('handler should not be called')
+      }
+    }
+    const messagesCreate: OpenAICompatMessagesCreate = async () => {
+      calls += 1
+      return makeOpenAITextResponse('No tool needed.')
+    }
+    const result = await runOpenAICompatCustomToolLoop({
+      messagesCreate,
+      model: 'gpt-test',
+      systemPrompt: 'sys',
+      userPrompt: 'hi',
+      tools: [],
+      handlers
+    })
+    expect(calls).toBe(1)
+    expect(result.content).toBe('No tool needed.')
+  })
+
+  it('exits immediately when model emits tool_calls for an unregistered tool', async () => {
+    let calls = 0
+    const handlers: CustomToolHandlerMap = {}
+    const messagesCreate: OpenAICompatMessagesCreate = async () => {
+      calls += 1
+      return makeOpenAIToolCallResponse('unknown_tool', { x: 1 })
+    }
+    const result = await runOpenAICompatCustomToolLoop({
+      messagesCreate,
+      model: 'gpt-test',
+      systemPrompt: 'sys',
+      userPrompt: 'go',
+      tools: [],
+      handlers
+    })
+    expect(calls).toBe(1)
+    // content is null when finish_reason is tool_calls — normalize to empty string
+    expect(result.content).toBe('')
+  })
+
+  it('captures handler errors and returns them as tool message content', async () => {
+    const handlers: CustomToolHandlerMap = {
+      add: async () => {
+        throw new Error('boom')
+      }
+    }
+    const messagesCreate: OpenAICompatMessagesCreate = async (params) => {
+      const turn = params.messages.length
+      if (turn === 2) return makeOpenAIToolCallResponse('add', { a: 1 }, 'call_err')
+      // Second call: verify the tool message contains the error
+      const toolMsg = params.messages[params.messages.length - 1] as OpenAI.Chat.ChatCompletionToolMessageParam
+      expect(toolMsg.role).toBe('tool')
+      expect(toolMsg.content).toContain('boom')
+      return makeOpenAITextResponse('Recovered.')
+    }
+    const result = await runOpenAICompatCustomToolLoop({
+      messagesCreate,
+      model: 'gpt-test',
+      systemPrompt: '',
+      userPrompt: 'go',
+      tools: [],
+      handlers
+    })
+    expect(result.content).toBe('Recovered.')
+  })
+})
+
+// ─── OpenAI-compat loop: max_tokens propagation ──────────────────────────────
+
+describe('runOpenAICompatCustomToolLoop — max_tokens propagation', () => {
+  it('passes caller-supplied maxTokens through to messagesCreate', async () => {
+    const seenMaxTokens: number[] = []
+    const messagesCreate: OpenAICompatMessagesCreate = async (params) => {
+      seenMaxTokens.push(params.max_tokens as number)
+      return makeOpenAITextResponse('done')
+    }
+    await runOpenAICompatCustomToolLoop({
+      messagesCreate,
+      model: 'gpt-test',
+      systemPrompt: '',
+      userPrompt: 'go',
+      tools: [],
+      handlers: {},
+      maxTokens: 8000
+    })
+    expect(seenMaxTokens).toEqual([8000])
+  })
+
+  it('falls back to 4096 when maxTokens is omitted', async () => {
+    const seenMaxTokens: number[] = []
+    const messagesCreate: OpenAICompatMessagesCreate = async (params) => {
+      seenMaxTokens.push(params.max_tokens as number)
+      return makeOpenAITextResponse('done')
+    }
+    await runOpenAICompatCustomToolLoop({
+      messagesCreate,
+      model: 'gpt-test',
+      systemPrompt: '',
+      userPrompt: 'go',
+      tools: [],
+      handlers: {}
+    })
+    expect(seenMaxTokens).toEqual([4096])
+  })
+})
+
+// ─── OpenAI-compat loop: iteration bound ─────────────────────────────────────
+
+describe('runOpenAICompatCustomToolLoop — iteration bound', () => {
+  it('throws after maxIterations when model keeps emitting tool_calls', async () => {
+    let toolCallCount = 0
+    const handlers: CustomToolHandlerMap = { add: async () => 1 }
+    const messagesCreate: OpenAICompatMessagesCreate = async () => {
+      toolCallCount += 1
+      return makeOpenAIToolCallResponse('add', { a: 1 }, `call_${toolCallCount}`)
+    }
+
+    await expect(
+      runOpenAICompatCustomToolLoop({
+        messagesCreate,
+        model: 'gpt-test',
+        systemPrompt: '',
+        userPrompt: 'loop',
+        tools: [],
+        handlers,
+        maxIterations: 3
+      })
+    ).rejects.toThrow(/Exceeded MAX_CUSTOM_TOOL_ITERATIONS \(3\)/)
+
+    expect(toolCallCount).toBe(3)
   })
 })

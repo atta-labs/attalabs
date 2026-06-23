@@ -18,6 +18,7 @@
  * Bounded by MAX_CUSTOM_TOOL_ITERATIONS to prevent runaway tool calls.
  */
 import type Anthropic from '@anthropic-ai/sdk'
+import type OpenAI from 'openai'
 import type { CustomToolSpec } from '@atta/agents'
 
 /** Async handler the adapter runs server-side when the model emits tool_use. */
@@ -108,6 +109,143 @@ export function customToolSpecToAnthropicTool(spec: CustomToolSpec): any {
  * Run the multi-turn loop. Returns the final assistant text after the model
  * stops emitting tool_use for registered handlers.
  */
+// ─── OpenAI-compat tool loop ──────────────────────────────────────────────────
+
+/**
+ * Build an OpenAI function tool spec from a CustomToolSpec.
+ * Mirrors customToolSpecToAnthropicTool for the openai-compat branch.
+ */
+export function customToolSpecToOpenAITool(spec: CustomToolSpec): OpenAI.Chat.ChatCompletionTool {
+  return {
+    type: 'function',
+    function: {
+      name: spec.name,
+      description: spec.description,
+      parameters: spec.parameters as Record<string, unknown>
+    }
+  }
+}
+
+/**
+ * Minimal callable signature for client.chat.completions.create (non-streaming),
+ * parallel to AnthropicMessagesCreate for the openai-compat branch.
+ */
+export type OpenAICompatMessagesCreate = (
+  params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
+) => Promise<OpenAI.Chat.ChatCompletion>
+
+export interface RunOpenAICompatCustomToolLoopParams {
+  messagesCreate: OpenAICompatMessagesCreate
+  model: string
+  systemPrompt: string
+  userPrompt: string
+  /** Full tool list sent to the model — server tool specs + registered custom tool specs merged. */
+  tools: OpenAI.Chat.ChatCompletionTool[]
+  /** Map of registered handlers keyed by tool name. */
+  handlers: CustomToolHandlerMap
+  /** Override the iteration cap for tests. Defaults to MAX_CUSTOM_TOOL_ITERATIONS. */
+  maxIterations?: number
+  /** Per-turn max_tokens. Defaults to 4096. */
+  maxTokens?: number
+}
+
+/**
+ * Multi-turn OpenAI-compat tool execution loop.
+ *
+ * Mirrors runAnthropicCustomToolLoop but uses OpenAI's tool_calls / tool message format.
+ * Unlike Anthropic where web_search is a server-side tool, ALL tools here require
+ * client-side execution via registered handlers. If the model calls a tool with no
+ * registered handler, the loop exits immediately and returns whatever text the model
+ * has produced so far.
+ *
+ * Works for any openai-compat vendor: openai, xai, groq, deepseek, mistral, etc.
+ */
+export async function runOpenAICompatCustomToolLoop(
+  params: RunOpenAICompatCustomToolLoopParams
+): Promise<RunCustomToolLoopResult> {
+  const { messagesCreate, model, systemPrompt, userPrompt, tools, handlers } = params
+  const maxIterations = params.maxIterations ?? MAX_CUSTOM_TOOL_ITERATIONS
+  const maxTokens = params.maxTokens ?? 4096
+
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt }
+  ]
+  let totalTokensInput = 0
+  let totalTokensOutput = 0
+
+  for (let iteration = 0; iteration < maxIterations; iteration++) {
+    const response = await messagesCreate({
+      model,
+      max_tokens: maxTokens,
+      messages,
+      ...(tools.length > 0 ? { tools } : {})
+    })
+
+    totalTokensInput += response.usage?.prompt_tokens ?? 0
+    totalTokensOutput += response.usage?.completion_tokens ?? 0
+
+    const choice = response.choices[0]
+    if (!choice) {
+      return { content: '', tokensInput: totalTokensInput, tokensOutput: totalTokensOutput }
+    }
+
+    const message = choice.message
+    const toolCalls = message.tool_calls ?? []
+    const handledToolCalls = toolCalls.filter((tc) => handlers[tc.function.name] !== undefined)
+
+    // Stop conditions: model finished without tool calls, or no registered handlers match.
+    if (choice.finish_reason !== 'tool_calls' || handledToolCalls.length === 0) {
+      const content = (message.content ?? '').trim()
+      return { content, tokensInput: totalTokensInput, tokensOutput: totalTokensOutput }
+    }
+
+    // Append assistant turn verbatim — OpenAI requires the original tool_calls back
+    // so it can match results to calls by tool_call_id.
+    messages.push({
+      role: 'assistant',
+      content: message.content,
+      tool_calls: message.tool_calls
+    })
+
+    // Run handlers concurrently; map results (or errors) to tool messages.
+    const toolResults: OpenAI.Chat.ChatCompletionToolMessageParam[] = await Promise.all(
+      handledToolCalls.map(async (tc) => {
+        const handler = handlers[tc.function.name]!
+        let args: Record<string, unknown>
+        try {
+          args = JSON.parse(tc.function.arguments) as Record<string, unknown>
+        } catch {
+          args = {}
+        }
+        try {
+          const result = await handler(args)
+          return {
+            role: 'tool' as const,
+            tool_call_id: tc.id,
+            content: typeof result === 'string' ? result : JSON.stringify(result)
+          }
+        } catch (err) {
+          const errMessage = err instanceof Error ? err.message : String(err)
+          return {
+            role: 'tool' as const,
+            tool_call_id: tc.id,
+            content: `Tool '${tc.function.name}' failed: ${errMessage}`
+          }
+        }
+      })
+    )
+
+    messages.push(...toolResults)
+  }
+
+  throw new Error(
+    `[runOpenAICompatCustomToolLoop] Exceeded MAX_CUSTOM_TOOL_ITERATIONS (${maxIterations}) for model '${model}'`
+  )
+}
+
+// ─── Anthropic loop ───────────────────────────────────────────────────────────
+
 export async function runAnthropicCustomToolLoop(params: RunCustomToolLoopParams): Promise<RunCustomToolLoopResult> {
   const { messagesCreate, model, systemPrompt, userPrompt, tools, handlers } = params
   const maxIterations = params.maxIterations ?? MAX_CUSTOM_TOOL_ITERATIONS

@@ -3,12 +3,15 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import OpenAI from 'openai'
 import type { LlmCallFn, LlmCallResult } from '@atta/engine'
 import { getVendor, resolveVendorByPrefix, type VendorId } from '@atta/models'
-import { ANTHROPIC_TOOL_REGISTRY } from './tools'
+import { ANTHROPIC_TOOL_REGISTRY, GOOGLE_TOOL_REGISTRY, OPENAI_COMPAT_TOOL_REGISTRY } from './tools'
 import {
   customToolSpecToAnthropicTool,
+  customToolSpecToOpenAITool,
   resolveRegisteredCustomTools,
   runAnthropicCustomToolLoop,
-  type CustomToolHandlerMap
+  runOpenAICompatCustomToolLoop,
+  type CustomToolHandlerMap,
+  type OpenAICompatMessagesCreate
 } from './custom-tool-loop'
 
 /**
@@ -24,6 +27,9 @@ async function callGoogle(params: {
   systemPrompt: string
   userPrompt: string
   apiKey: string
+  /** Google Tool[] configs resolved from GOOGLE_TOOL_REGISTRY (e.g. [{ googleSearch: {} }]). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tools?: any[]
 }): Promise<Pick<LlmCallResult, 'content' | 'tokensInput' | 'tokensOutput'>> {
   const genAI = new GoogleGenerativeAI(params.apiKey)
   const genModel = genAI.getGenerativeModel({
@@ -31,7 +37,18 @@ async function callGoogle(params: {
     systemInstruction: params.systemPrompt
   })
 
-  const result = await genModel.generateContent(params.userPrompt)
+  // When tools are declared (e.g. googleSearch grounding), use the structured
+  // request form. Otherwise keep the simple string form for backward compat.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const request: any =
+    params.tools && params.tools.length > 0
+      ? {
+          contents: [{ role: 'user', parts: [{ text: params.userPrompt }] }],
+          tools: params.tools
+        }
+      : params.userPrompt
+
+  const result = await genModel.generateContent(request)
   const response = result.response
 
   const content = response.text().trim()
@@ -50,19 +67,29 @@ async function callOpenAICompat(params: {
   userPrompt: string
   apiKey: string
   baseURL?: string
+  /**
+   * Vendor-specific extra body params merged into the request (e.g. OpenRouter
+   * plugin params: { plugins: [...] }). No YAML schema field — configured at
+   * adapter construction via vendorExtraBody.
+   */
+  extraBody?: Record<string, unknown>
 }): Promise<Pick<LlmCallResult, 'content' | 'tokensInput' | 'tokensOutput'>> {
   const client = new OpenAI({
     apiKey: params.apiKey,
     ...(params.baseURL ? { baseURL: params.baseURL } : {})
   })
 
-  const response = await client.chat.completions.create({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const createParams: any = {
     model: params.model,
     messages: [
       { role: 'system', content: params.systemPrompt },
       { role: 'user', content: params.userPrompt }
-    ]
-  })
+    ],
+    ...(params.extraBody ?? {})
+  }
+
+  const response = await client.chat.completions.create(createParams)
 
   const content = response.choices[0]?.message?.content?.trim() ?? ''
   const tokensInput = response.usage?.prompt_tokens ?? 0
@@ -81,14 +108,19 @@ async function callOpenAICompat(params: {
  *
  * Dispatch is sdkShape-based (not per-provider hardcoded):
  *   anthropic    → Anthropic SDK (tools + structured output)
- *   google-genai → Google Generative AI SDK
+ *   google-genai → Google Generative AI SDK (grounding tools via GOOGLE_TOOL_REGISTRY)
  *   openai-compat → OpenAI SDK + vendor's registered baseURL (covers openai, groq, xai,
  *                   deepseek, cerebras, mistral, together, fireworks, openrouter, ollama)
+ *                   with tool loop for custom_tools and server tools via OPENAI_COMPAT_TOOL_REGISTRY
+ *
+ * vendorExtraBody: per-vendor extra body params merged into every request for that vendor.
+ * No YAML schema field — used for adapter-level configuration (e.g. OpenRouter plugin params).
  */
 export function createMultiVendorLlmCall(
   keys: ProviderKeys,
   agentVendorOverrides?: Record<string, VendorId>,
-  customToolHandlers?: CustomToolHandlerMap
+  customToolHandlers?: CustomToolHandlerMap,
+  vendorExtraBody?: Partial<Record<VendorId, Record<string, unknown>>>
 ): LlmCallFn {
   return async ({ model, agent, systemPrompt, userPrompt }) => {
     const vendorId = agentVendorOverrides?.[agent.name] ?? resolveVendorByPrefix(model)
@@ -212,11 +244,24 @@ export function createMultiVendorLlmCall(
         )
       }
 
+      // Resolve Google-native tools (e.g. googleSearch grounding) from GOOGLE_TOOL_REGISTRY.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const googleTools: any[] = (agent.tools ?? []).flatMap((name) => {
+        const tool = GOOGLE_TOOL_REGISTRY[name]
+        if (!tool) {
+          console.warn(
+            `[LangGraphAdapter] Agent '${agent.name}' requests unknown tool '${name}' for google-genai — skipping`
+          )
+        }
+        return tool ? [tool] : []
+      })
+
       const { content, tokensInput, tokensOutput } = await callGoogle({
         model,
         systemPrompt,
         userPrompt,
-        apiKey: key
+        apiKey: key,
+        ...(googleTools.length > 0 ? { tools: googleTools } : {})
       })
 
       const elapsedMs = Date.now() - startTime
@@ -231,12 +276,65 @@ export function createMultiVendorLlmCall(
         )
       }
 
+      const extraBodyForVendor = vendorExtraBody?.[vendorId] ?? {}
+
+      // Resolve server-tool function specs from OPENAI_COMPAT_TOOL_REGISTRY.
+      // Unlike Anthropic (server-side execution) these are function calling specs —
+      // the model emits tool_calls and the loop executes handlers client-side.
+      // Gate on outputSchema: tool loop is incompatible with structured-output mode.
+      const resolvedServerTools: OpenAI.Chat.ChatCompletionTool[] = agent.outputSchema
+        ? []
+        : (agent.tools ?? []).flatMap((name) => {
+            const tool = OPENAI_COMPAT_TOOL_REGISTRY[name]
+            if (!tool) {
+              console.warn(
+                `[LangGraphAdapter] Agent '${agent.name}' requests unknown tool '${name}' for openai-compat — skipping`
+              )
+            }
+            return tool ? [tool as OpenAI.Chat.ChatCompletionTool] : []
+          })
+
+      const registeredCustomToolSpecs = resolveRegisteredCustomTools(agent, customToolHandlers)
+      const allTools: OpenAI.Chat.ChatCompletionTool[] = [
+        ...resolvedServerTools,
+        ...registeredCustomToolSpecs.map(customToolSpecToOpenAITool)
+      ]
+
+      if (allTools.length > 0) {
+        const client = new OpenAI({
+          apiKey: key ?? '',
+          ...(vendor.baseURL ? { baseURL: vendor.baseURL } : {})
+        })
+
+        // Capture extraBody in closure so every messagesCreate call includes it.
+        const messagesCreate: OpenAICompatMessagesCreate = (p) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const merged: any = Object.keys(extraBodyForVendor).length > 0 ? { ...p, ...extraBodyForVendor } : p
+          return client.chat.completions.create(merged) as Promise<OpenAI.Chat.ChatCompletion>
+        }
+
+        const { content, tokensInput, tokensOutput } = await runOpenAICompatCustomToolLoop({
+          messagesCreate,
+          model,
+          systemPrompt,
+          userPrompt,
+          tools: allTools,
+          handlers: customToolHandlers ?? {},
+          maxTokens: agent.maxTokens ?? 4096
+        })
+
+        const elapsedMs = Date.now() - startTime
+        return { content, structured: undefined, tokensInput, tokensOutput, elapsedMs, model }
+      }
+
+      // Single-shot: no tools declared. Pass extraBody for OpenRouter plugin params, etc.
       const { content, tokensInput, tokensOutput } = await callOpenAICompat({
         model,
         systemPrompt,
         userPrompt,
         apiKey: key ?? '',
-        baseURL: vendor.baseURL
+        baseURL: vendor.baseURL,
+        ...(Object.keys(extraBodyForVendor).length > 0 ? { extraBody: extraBodyForVendor } : {})
       })
 
       const elapsedMs = Date.now() - startTime
