@@ -1,0 +1,5 @@
+## June 23, 2026 — Vāda T3: per-vendor tool substrate + OpenAI-compat custom tool loop
+
+### Vāda / Adapter
+
+- **T3 (#177, PR #194)** — Generalized tool support in `@atta/adapter-langgraph` so any YAML can declare tools across all vendor shapes. Three new registries: `GOOGLE_TOOL_REGISTRY` (Gemini native grounding via `{ googleSearch: {} }` — server-executed, no client handler needed), `OPENAI_COMPAT_TOOL_REGISTRY` (web_search as OpenAI function tool spec — requires client handler), and the existing `ANTHROPIC_TOOL_REGISTRY`. `callGoogle()` extended with optional tools forwarding using structured `generateContent` form. New `runOpenAICompatCustomToolLoop` mirrors the Anthropic tool loop using OpenAI's `tool_calls` / tool message format. `callOpenAICompat()` accepts optional `extraBody` for per-vendor passthrough (e.g. OpenRouter plugins). Google and OpenAI-compat branches in `createMultiVendorLlmCall` now consume `resolvedTools`. 17 new tests + 62 pass total across 5 files. Anthropic tool loop byte-identical to pre-T3 — Herald blast radius zero. Tier 1. Conforms-to D-053 (Option A + B). Option C (external MCP servers) deferred.

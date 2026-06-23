@@ -9,22 +9,21 @@
 
 ## In flight
 
-**herald-agents-v2** iteration active. Task 1 (housekeeping — Archivist close-out, state doc rewrites, backlog fix) is the current work. Task 2 (agent migration — forensic-hiring-auditor package) dispatched after task 1 merges.
+**herald-agents-v2** iteration active. Tasks 1–5 are all merged (housekeeping, agent migration, Herald MCP, Bulk Audit UX, report quality). Tasks 6 (abuse cap) and 7 (deploy verification) are next.
 
 ---
 
 ## Next 3 things
 
-1. **Merge herald-agents-v2 task 1** — this housekeeping PR.
-2. **Dispatch herald-agents-v2 task 2** — forensic-hiring-auditor agent package (`packages/agents/forensic-hiring-auditor/`). First D-051 agent package in the monorepo.
-3. **Verify admin end-to-end in production** — go to `https://herald.attalabs.dev/admin`, test avatar upload, CV upload, bio save, theme picker. Confirm all DB columns work.
+1. **Dispatch task 6 (#172)** — per-owner per-day rate limit on public profile audits (D-033 follow-up). Depends on task 2 (#168, merged).
+2. **Dispatch task 7 (#173)** — deploy verification: `herald.attalabs.dev` Phase 2 flows (avatar, CV upload, bio save, onboarding, Bulk Audit with real BYOK). Depends on task 2 (#168, merged).
+3. **Provision fresh Upstash Redis creds** — rate limiting (task 6) will be wired but inactive without live creds.
 
 ---
 
 ## Manual work pending
 
-- **Provision fresh Upstash Redis creds** — per-key rate limiting is wired but not enforced. Provision at upstash.com, update `.env.local` + Vercel env vars for `herald.attalabs.dev`.
-- **Deploy verification** — confirm production build post herald-onto-engine: admin routes, Bulk Audit N×M grid, polymorphic inputs (URL/pdf/md/profile).
+- **Provision fresh Upstash Redis creds** — per-key rate limiting degrades gracefully but is inactive. Provision at upstash.com, update `.env.local` + Vercel env vars for `herald.attalabs.dev`.
 - **`MASTER_ENCRYPTION_KEY`** must be present in Herald's Vercel env for BYOK decrypt path to work.
 
 ---
