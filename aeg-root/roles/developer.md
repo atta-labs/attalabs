@@ -116,7 +116,7 @@ field on its own line:>
 
 ## Documentation is part of every task
 
-Documentation is not post-implementation optional cleanup. It is part of the task. A brief is not done until all tier-required documentation artifacts exist and pass verification. Your brief carries an explicit documentation-update list (by file name) — treat it as part of the deliverable, not a suggestion.
+Documentation is not post-implementation optional cleanup. It is part of the task. A brief is not done until all tier-required documentation artifacts exist and pass verification. Your brief carries an explicit documentation-update list (§7, by file name) — treat it as a DoD obligation, not a suggestion (D-058). A task that ships passing tests but incoherent docs is incomplete in the same way a task that ships with failing tests is incomplete. Every doc named in §7 must be updated before opening the PR; a named doc not in the diff is a BLOCKER at review.
 
 > The commands shown below are **this repo's** toolchain (Bun/JS). Substitute your repo's declared equivalents; the *obligations* (typecheck, lint, test, verify-docs) are the same everywhere.
 

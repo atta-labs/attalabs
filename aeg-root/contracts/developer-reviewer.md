@@ -35,6 +35,7 @@ Every item the Developer produces in the open PR (left) has exactly one obligati
 | **Surface map respected** (diff touches only files named in the brief's §4) | First diff check | If the diff touches files outside the surface map, that is a BLOCKER finding before reading any logic. |
 | **Task Done checklist ticked** | Confirms Developer self-checked | The Reviewer verifies the checklist is present and ticked. An unticked item that the Reviewer then finds broken is a MAJOR finding. |
 | **`[agent]` Test Plan items run with evidence comment** | Confirms runtime verification | The Reviewer checks that actual command output was posted for every `[agent]` item. Missing evidence = unticked item = MAJOR finding. |
+| **§7 doc-update list honored** (every named doc updated in the diff) | Doc coupling check — first diff step after surface-map check | A §7-named doc absent from the diff or present but incorrect is a BLOCKER (D-058 — §7 is a DoD obligation, not guidance). `verify-docs` gates structural presence; the Reviewer gates content correctness. |
 
 **Reading the table:** left is the producer obligation (Developer role doc and this contract enforce it), right is the consumer obligation (Reviewer role doc and this contract enforce it). The two role docs must not contradict this table.
 
@@ -43,6 +44,7 @@ Every item the Developer produces in the open PR (left) has exactly one obligati
 ## Producer obligations (the Developer)
 
 - **Prior-archival precondition satisfied.** Before starting any work on this task, the Developer must have passed the prior-archival precondition defined in `aeg-root/contracts/brief-developer.md` (consumer obligations) and enforced in `aeg-root/roles/developer.md` (entry gate, item 3): the most-recently-merged task PR in the iteration carries a provenance block comment. A PR produced without first passing this gate was produced outside protocol — the provenance chain is broken and the close-out for the preceding task is incomplete.
+- **§7 doc-update list honored.** Every doc named in §7 must be updated in the diff before opening the PR. A PR with §7 items outstanding is not ready for review; do not open it and expect the Reviewer to discover the gap. (D-058)
 - CI must be green before requesting review. Do not request review with a red CI and expect the Reviewer to begin.
 - The brief must be in the PR body, unmodified — pasted verbatim, not summarized or paraphrased.
 - The diff must touch only files in the brief's Technical Surface Map (§4). Files outside it are a stop-and-escalate before opening the PR, not a finding for the Reviewer to catch.
@@ -55,6 +57,7 @@ Every item the Developer produces in the open PR (left) has exactly one obligati
 - Read the brief before the diff. This is not optional — the brief is the intent document; the diff without the brief is just code.
 - Do not start if CI is red. Post a comment: *"CI is red — returning to Developer. Start review once CI is green."*
 - Check surface map compliance as the first diff-inspection step. A surface map violation is a BLOCKER before any logic review.
+- **Verify §7 doc-update list compliance as a BLOCKER gate (D-058).** For every doc named in §7, confirm it appears in the diff AND is correct (not just present — `verify-docs` already checks presence). A §7-named doc absent from the diff or present but wrong is a BLOCKER finding before reviewing logic. This is a hard gate, not an advisory; §7 is a DoD commitment.
 - Produce a structured verdict per `roles/reviewer.md` output format — with severity tags on every finding. A verdict without severity tags is malformed.
 - Do not edit the code. Do not expand scope. Do not approve to be agreeable.
 - Append one row to the iteration's token ledger after posting the verdict (and again on each re-review after `CHANGES_REQUESTED`).

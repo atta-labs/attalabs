@@ -30,6 +30,10 @@ The Brief Author's stages — name them, and say which you're in:
 
 2. **Dig** — the deep pass for the *perishable* detail (current signatures, exact file list, final model pick). Narrate the load-bearing reads: *"Reading `llm.ts` now to get the current vendor-branch shape for the surface map."* If the dig **contradicts** the rationale (boundary moved, sizing broke), STOP and say so — that's a `severity:strategy` escalation back to the Planner, announced, not a silent fix.
 
+   **Read obligation (D-058) — complete during Dig, before Draft:** As part of the Dig, identify any specs/skills/docs relevant to this task's code surface and read them. This obligation is conditional — if no docs exist for this surface, it is trivially satisfied. The Planner's "Docs to keep coherent" rationale field is the starting point; your own reading may surface additional docs the Planner missed. Then:
+   - (a) Surface in **Context (§2)** what the Developer must know from those docs — explicitly, not by reference ("read X for context" is not surfacing knowledge).
+   - (b) Populate **§7 doc-update list** from this reading — name every doc this task will make incoherent. The §7 list is the DoD obligation (parallel to tests); a §7 populated from memory rather than reading is the failure D-058 exists to close. If genuinely no documented surface is touched, state "No doc updates required (Tier 0)" in §7 explicitly.
+
    **Task-status coherence precondition (D-056) — complete during Dig, before Draft:** Before authoring any brief, apply the full coherence precondition from `aeg-root/contracts/brief-developer.md`. The archival bar for any prior task is all three of: (1) Issue closed, (2) PR merged to main, (3) provenance block present on the merged PR. "PR merged" alone is NOT sufficient. **STOP — do NOT author the brief** if any predicate fails for any in-scope prior task; report to the Principal what is owed.
 
    **Accepted-backfill never bypasses this precondition.** Deferring provenance backfill on already-closed historical iterations is a permitted debt record. But that acceptance clause is strictly limited to closed historical iterations. Proceeding with a new brief on an unarchived active prior — citing "we accepted the backfill gap" — is not permitted. An accepted historical backlog is a debt record, not a gate bypass. The coherence precondition applies to active prior tasks; it cannot be waived by citing accepted historical gaps.
@@ -91,6 +95,7 @@ The contract's field-by-field mapping (authoritative version lives in the contra
 | Traps to avoid | Context (§2) + Constraints (§11) |
 | Suggested agent-class | `For:` + `Reason:` header (confirm/deviate; you make the final pick) |
 | Stop-and-escalate | Stop conditions (§10) |
+| Docs to keep coherent | §7 documentation-update list — starting point, supplemented by your own Dig reading (D-058) |
 
 **Read it first and build on it. Do not start from a blank page.** The division of labor is deliberate:
 - The **Planner** did a deep technical pass to find the seams and persisted the *durable* conclusions (which don't decay) — that's the contract's producer side.
@@ -112,6 +117,7 @@ Before a brief is dispatchable, confirm **every one of the seven Planner fields 
 - [ ] **No instruction contradicts the surface map** → if the brief tells the executor to **delete or rename a shared symbol** (a constant, type, export, function), confirm **every importer is inside the §4 surface.** If an importer is out-of-surface, the "delete it" instruction and the "don't touch that file" boundary contradict — defer the deletion to the task that owns the importer, and say so in the brief. (See the **shared-symbol importer check** in §4.)
 - [ ] **Issue-existence precondition (D-054)** → does the task's Issue column in the iteration topology file carry a real GitHub Issue number (not `#TBD`, not blank)? If not, the task is backlog — **STOP** and surface the need for the Planner to cut the Issue before proceeding. A brief cannot carry `Closes #N` without a real N. (Mirrors Developer entry gate item 3; catches it one stage earlier, during Dig.)
 - [ ] **Task-status coherence precondition (D-052, D-056)** → for every in-scope prior task, do all three predicates hold: Issue closed, PR merged to main, provenance block present? If any predicate fails, this task is **not authorable** — STOP and report to the Principal exactly what is owed. An accepted historical backlog is a debt record, not a gate bypass: the coherence precondition applies to active prior tasks and cannot be waived by citing accepted gaps. (Mirrors Developer entry gate items 4 and 5; catches it one stage earlier, during Dig.)
+- [ ] **Read obligation + §7 populated from reading (D-058)** → did you identify and read the relevant specs/skills/docs for this task's code surface during the Dig? Does §7 name every doc this task will make incoherent (or state "No doc updates required" if none)? A §7 populated from memory rather than from reading is malformed — the Brief Author's reading is what makes the DoD obligation trustworthy.
 
 Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; **Test Plan (§9) present and tagged** — either `Test Plan: unit-tests-only` (and §4 has no runtime surface) or a checkbox list with at least one `[agent]` or `[principal]` item per reachable surface kind; the standing autonomy clause present in §11; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
 
@@ -422,6 +428,7 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 
 ## Anti-patterns
 
+- ❌ **Skipping the read-obligation Dig step (D-058)** — authoring a brief without identifying and reading the relevant specs/skills/docs means §2 carries stale or absent doc-knowledge, and §7 is populated from memory rather than reading; both lead to a Developer who either over-updates or under-updates docs, defeating the DoD gate
 - ❌ Running the whole briefing silently and dumping the brief at the end — violating the conversational protocol; the Principal couldn't see the rationale-inherit, the dig, or the contract checklist, so couldn't govern them
 - ❌ Starting from a blank page instead of the Planner's rationale — re-deriving (often differently) what the planner already concluded, and losing the traps the planner flagged
 - ❌ Dropping any field of the planner-brief contract — every rationale field has a named home in the brief; a dropped field is a lost conclusion (run the contract-conformance checklist)

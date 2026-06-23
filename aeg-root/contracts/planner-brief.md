@@ -38,6 +38,7 @@ Every field the Planner emits in the rationale (left) has exactly one named home
 | **Traps to avoid** (concrete pitfalls the dig surfaced) | Context (§2) + Constraints (§10) | The trap becomes an explicit "do NOT do X; do Y instead" the executing agent cannot miss. Highest-value field — never drop it. |
 | **Suggested agent-class** (high/mid/fast + one-line reason) | `For:` + `Reason:` header | The Brief Author confirms or deviates (with stated reason) and makes the **final** model pick. Class is the planner's; pick is the brief's. |
 | **Stop-and-escalate** (when the agent must stop, not improvise) | Stop conditions (§9) | The planner's stop conditions are copied into the brief's stop-condition list verbatim in substance. |
+| **Docs to keep coherent** (which specs/skills/docs this task will make incoherent) | §7 documentation-update list | The Brief Author turns the Planner's named list into the explicit §7 doc-update items. Conditional: if the Planner stated "No docs touched," §7 is "No doc updates required (Tier 0)." If the Planner named docs, they are all in §7. (D-058) |
 
 **Reading the table:** left is the producer obligation (Planner role doc enforces it), right is the consumer obligation (brief-authoring skill enforces it). The two role docs must not contradict this table; if either needs to change what it emits or consumes, it changes *here*, and both sides update together.
 
@@ -46,15 +47,17 @@ Every field the Planner emits in the rationale (left) has exactly one named home
 ## Producer obligations (the Planner)
 
 - **Cut a real forge Issue for every task before dispatch.** Before the Brief Author can author a brief, the Planner must have replaced any `#TBD` in the topology table's Issue column with a real GitHub Issue number. A `#TBD` entry means the task is backlog — it is neither briefable nor executable. The Brief Author hard-STOPs on `#TBD` during Dig (D-054); the Developer hard-STOPs at entry gate item 3 (D-054). Cutting the Issue is the backlog → todo promotion (`iterations/README.md` §3) and is a Planner-only act.
-- Emit a rationale block per task containing **all seven left-column fields**. (Enforced in `planner.md` — a task missing its rationale is refused.)
+- Emit a rationale block per task containing **all eight left-column fields**. (Enforced in `planner.md` — a task missing its rationale is refused.) The eighth field, **Docs to keep coherent**, must name every spec/skill/doc this task will make incoherent, or state "No docs touched" explicitly. Omitting it forces the Brief Author to populate §7 from memory — the exact failure D-058 exists to close.
 - The rationale holds durable conclusions only — no perishable line-level detail (that's the Brief Author's half).
 - `Project(s)` must include every shared-package consumer in the blast radius (the blast-radius rule in `planner.md`).
+- **Read relevant docs before emitting the "Docs to keep coherent" field.** The D-058 read obligation requires the Planner to have identified and read the relevant specs/skills/docs before planning. The "Docs to keep coherent" field is only trustworthy if it was derived from reading, not from memory.
 
 ## Consumer obligations (the Brief Author)
 
 - Read the rationale first; **start from it, never from a blank page**. (Enforced in `brief-authoring`.)
 - Consume **every** right-column mapping — no field dropped.
 - Add the perishable detail the planner deliberately left out (current signatures, exact file list, final model pick).
+- **Read obligation (D-058):** During the Dig, identify and read any specs/skills/docs relevant to this task's code surface. Then (a) surface in Context (§2) what the Developer must know from those docs, and (b) populate §7 from this reading — the Planner's "Docs to keep coherent" field is the starting point, but the Brief Author's own reading may surface additional docs the Planner missed.
 - If the Brief Author's own dig **contradicts** the rationale (the boundary moved, sizing no longer holds), that is a `severity:strategy` escalation back toward the Planner — not a silent override.
 
 ---

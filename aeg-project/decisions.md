@@ -1480,3 +1480,50 @@ The brief contract (`aeg-root/contracts/brief-developer.md`) is the enforcement 
 - `aeg-project/changelog.md`, `aeg-project/lessons.md`: nav links updated.
 
 ---
+
+## D-058 — Doc/spec/skill coherence is bidirectional: read obligation (Planner + Brief Author) + write obligation as DoD gate
+
+**Date:** 2026-06-23
+**Status:** ACTIVE
+**Type:** 2
+**Tier:** 3
+**Lock:** NO
+**Authored by:** Principal
+
+**Context:** Documentation coherence was enforced only on the output side: the brief's §7 doc-update list required Tier 1+ briefs to name docs, and `verify-docs` gated on their presence. But neither the Planner nor the Brief Author was required to *read* the relevant specs/skills/docs before planning or briefing. The result: tasks could be planned and briefed in ignorance of the documented surface they were about to change — the Planner would name docs in the rationale only if they happened to know about them already, and the Brief Author's §7 list was populated from memory rather than from reading. This is the input-side gap. Separately, §7 was framed as a section requirement rather than a hard DoD gate — `verify-docs` checks presence and structural correctness, but not content coherence; the Reviewer's doc-coupling check was advisory, not a formal BLOCKER. Doc coherence is the same class of obligation as test coverage: both exist to prevent a change from making a surface unreliable, just for different consumers (agents vs. humans reading docs). The input side (read) and output side (write) are two halves of one principle: you cannot keep docs coherent if you haven't read them first, and reading them is worthless if you don't update them.
+
+**Decision:**
+
+**Pillar 1 — Read obligation (input side).**
+
+The **Planner**, before cutting tasks, MUST:
+1. Identify any specs/skills/docs relevant to the work's code surface.
+2. Read them.
+3. Plan tasks knowing the documented surface — including which docs each task will make incoherent (the new "Docs to keep coherent" rationale field, which feeds the Brief Author's §7).
+
+The **Brief Author**, before writing a brief, MUST:
+1. Identify any specs/skills/docs relevant to this task's code surface.
+2. Read them.
+3. Write the brief knowing that surface: (a) surface in Context (§2) what the Developer must know from those docs, and (b) populate §7 from this reading — naming every doc the task will make incoherent.
+
+This obligation is **conditional on docs existing**. AEG assumes no specific external structure and names no specific folder. If no specs/skills/docs exist for a given code surface, the read obligation is trivially satisfied. The obligation is the act of identifying and reading whatever exists. This generalizes the existing spec-check gate (previously applied only to strategic questions about a named product with unread specs) to all task-planning and brief-authoring.
+
+**Pillar 2 — Write obligation as DoD gate (output side).**
+
+A task MUST update every doc it makes incoherent. This is a Definition-of-Done gate, parallel to tests: a task that ships passing tests but incoherent docs is incomplete in the same way as a task that ships with failing tests. The §7 doc-update list in the brief is the DoD obligation list — not a recommendation, not a reminder. The Developer treats §7 as a deliverable checklist; a named doc not updated is a BLOCKER at review. `verify-docs` continues to gate structural presence; the Reviewer now gates content correctness as a BLOCKER, not an advisory check.
+
+**Alternatives rejected:**
+- *Leave it to verify-docs alone:* rejected — verify-docs checks presence and structural correctness, not content coherence. A doc can be present and pass CI while being wrong. The Reviewer's doc-coupling check is the content gate; this decision makes it a BLOCKER gate, not advisory.
+- *Apply only to Tier 1+:* rejected — the read obligation applies regardless of tier because the Planner and Brief Author cannot know in advance whether any docs will be affected. The write obligation (§7) already tracked tier; that tiering is unchanged.
+- *Apply only when specs exist in a known folder:* rejected — AEG is a portable methodology; hardcoding a folder creates coupling. The conditional is "if docs exist, read them" — the Planner/Brief Author is responsible for identifying what exists.
+
+**Consequences:**
+- `aeg-root/roles/planner.md`: Readiness gate item 2 upgraded from "reachable" to "read"; rationale required fields gain an 8th field: **Docs to keep coherent** — which specs/skills/docs this task will make incoherent, named explicitly for the Brief Author's §7. Hard gate added: refuse to plan without having read the relevant docs.
+- `aeg-root/skills/brief-authoring/SKILL.md`: Dig stage gains explicit read-obligation step (identify + read relevant docs before Draft); contract-conformance checklist gains a docs-read + §7-populated check; anti-patterns gain one entry (skipping the read-obligation Dig step).
+- `aeg-root/contracts/planner-brief.md`: New contract row: **Docs to keep coherent** → §7 documentation-update list. The Planner's 8th rationale field maps to the Brief Author's §7.
+- `aeg-root/contracts/brief-developer.md`: New contract row: **Documentation-update list (§7)** → Developer updates every named doc before claiming done. §7 is a formal DoD obligation in the contract.
+- `aeg-root/contracts/developer-reviewer.md`: New contract row: **§7 doc-update list honored** → Reviewer verifies every named doc was updated and correct. A §7-named doc absent from the diff or present but wrong is a BLOCKER.
+- `aeg-root/roles/developer.md`: "Documentation is part of every task" section updated with DoD framing.
+- `aeg-root/roles/reviewer.md`: Doc coupling (item 6) updated: a §7-named doc not updated is a BLOCKER, not a MAJOR.
+
+---

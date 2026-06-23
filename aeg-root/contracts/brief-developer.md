@@ -35,6 +35,7 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 | **Context (§2)** including boundary + traps | Mental model before any code | The Developer reads the boundary ("what this task is NOT") to know what to refuse to build, and the traps to know what not to do. |
 | **Technical Dependencies (§3)** | Verify all depends-on are merged | The Developer confirms every named dependency is on `main` before starting. A depends-on not yet merged is a hard stop. |
 | **Technical Surface Map (§4)** | Bounds the diff | The Developer touches only files in the surface map. Files outside it are a stop-and-escalate. |
+| **Documentation-update list (§7)** | Self-check before opening PR + Reviewer doc check | The Developer updates every doc named in §7 before claiming done. §7 is a DoD obligation (D-058), not a recommendation — a named doc not updated is a BLOCKER at review. `verify-docs --pr` gates structural presence; the Reviewer gates content correctness. |
 | **Task Done checklist (§8)** | Self-check before opening PR | The Developer runs every item before opening the PR. An unchecked item means the PR is not ready. |
 | **Test Plan (§9)** tagged `[agent]` / `[principal]` | Runs `[agent]` items; leaves `[principal]` for Principal | The Developer runs every `[agent]` item and posts evidence. Does not tick `[principal]` boxes. |
 | **Stop conditions (§10)** | Halt triggers | The Developer stops and posts a blocker comment on the Issue when any condition is met. Never improvises past a stop condition. |
@@ -51,6 +52,7 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 - The worktree step 0 command must be exact — branch name, base ref (`origin/main`), and destination path must all be present.
 - Stop conditions must be explicit, not inferred. Every known failure mode for this task belongs in §10 — the Developer will not invent stop conditions that aren't stated.
 - The surface map must be bounded and named. "Wherever else turns out to need it" is not a surface map.
+- **§7 doc-update list must be populated from reading, not memory (D-058).** The Brief Author's Dig must identify and read any relevant specs/skills/docs before drafting §7. §7 for Tier 1+ must be non-empty unless the surface map genuinely touches no documented surface (state "No doc updates required" explicitly in that case). A §7 populated from the Planner's rationale alone without the Brief Author's own reading is malformed.
 
 ## Task-status coherence precondition — hard STOP before authoring or executing any task (D-056)
 
@@ -78,6 +80,7 @@ The Brief Author's enforcement is at Dig stage, item (b) (see `aeg-root/skills/b
 
 ## Consumer obligations (the Developer)
 
+- **Honor the §7 doc-update list (D-058).** Every doc named in §7 must be updated as part of the task deliverable — not post-merge cleanup, not a follow-up task. A named doc not updated is a BLOCKER at review. If §7 names a doc you cannot find or access, stop and report — do not silently skip it.
 - **Issue-existence precondition (hard STOP before step 0).** Before executing step 0, locate this task in its iteration topology file (`aeg-root/iterations/<name>.md`) and confirm the Issue column carries a real GitHub Issue number — not `#TBD`, not blank. If it is `#TBD` or blank, the task has no forge Issue: it is backlog, not dispatchable. STOP: *"Task <id> in iteration `<name>` has no Issue (#TBD) — it is backlog, not dispatchable. The Planner must cut the Issue and promote it to todo before this task can start."* This gate is enforced in `aeg-root/roles/developer.md` (entry gate, item 3).
 - **Prior-archival precondition (hard STOP before step 0).** Before executing step 0, apply the task-status coherence precondition above to every in-scope prior task. Verify all three predicates (Issue closed, PR in main, provenance block present) for each. If any predicate fails for any in-scope prior, STOP: report to the Principal exactly what is owed and do not begin work. If no prior task exists in scope (first task of a fresh iteration with no prior iteration on this product), this check passes trivially. This gate is enforced in `aeg-root/roles/developer.md` (entry gate, items 4–5) and the coherence signal it reads is defined in `aeg-root/contracts/reviewer-archivist.md`.
 - Read the full brief before opening the worktree. Not a skim — every section.
