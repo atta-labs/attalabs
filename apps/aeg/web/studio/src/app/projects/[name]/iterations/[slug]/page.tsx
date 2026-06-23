@@ -133,7 +133,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
           <div className='flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-warning'>
             <AlertTriangle className='size-4 shrink-0 translate-y-0.5' aria-hidden />
             <p className='font-sans text-xs leading-relaxed'>
-              Live status unavailable — task statuses shown as <span className='font-mono'>backlog</span>. Set{' '}
+              Live status unavailable — task statuses shown as <span className='font-mono'>todo</span>. Set{' '}
               <span className='font-mono'>GITHUB_TOKEN</span>, run <span className='font-mono'>gh auth login</span>, or
               set <span className='font-mono'>AEG_REPO</span> to enable forge-derived status.
             </p>

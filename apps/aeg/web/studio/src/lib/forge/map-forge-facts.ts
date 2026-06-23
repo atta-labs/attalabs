@@ -18,7 +18,7 @@
  *                    (Only `'changes_requested'` flips status per types.ts.)
  *
  * Missing issue → return `null` (caller omits the task from the map, which
- * `deriveIteration` treats as `backlog` — the conservative read).
+ * `deriveIteration` treats as `todo` — iteration tasks are minimum `todo` per D-059).
  */
 
 import type { ForgeFacts, RawTaskFacts } from './types'

@@ -80,12 +80,12 @@ export type Iteration = {
  * status table needs is present here, and only those.
  *
  * Conventions for missing entries: a task absent from the `Map<TaskId,
- * ForgeFacts>` passed to `deriveIteration` is treated as `backlog` (no
- * forge fact known yet — the conservative read).
+ * ForgeFacts>` passed to `deriveIteration` is treated as `todo` — iteration
+ * tasks are committed work; `backlog` is a project-level concept (D-059).
  */
 export type ForgeFacts = {
   issueState: 'open' | 'closed'
-  /** Issue assignee present. Drives the `backlog → todo` transition (§3). */
+  /** Issue assignee present. No longer affects `todo` derivation (D-059). */
   assigned: boolean
   /** A `task/<iteration>/<n>` branch exists on the forge. */
   branchExists: boolean

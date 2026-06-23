@@ -5,8 +5,9 @@
  * the status `deriveIteration` produced.
  *
  * Column order is editorial — left-to-right walks the task through its
- * lifecycle (backlog → done), with `blocked` at the end as the holding pen
- * for tasks lifted out of normal flow.
+ * lifecycle (todo → done), with `blocked` at the end as the holding pen
+ * for tasks lifted out of normal flow. `backlog` is project-level only (D-059)
+ * and never appears on the iteration board.
  *
  * Sharing between the kanban board, the task-detail badge, and any future
  * surface is deliberate so the colour vocabulary stays consistent.
@@ -15,7 +16,6 @@
 import type { DerivedStatus } from '@atta/aeg-core'
 
 export const STATUS_ORDER: DerivedStatus[] = [
-  'backlog',
   'todo',
   'in-flight',
   'in-review',

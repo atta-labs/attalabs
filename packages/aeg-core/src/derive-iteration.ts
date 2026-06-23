@@ -25,7 +25,7 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
   const unknownEdges: UnknownEdge[] = []
   const derived: DerivedTask[] = []
   for (const task of iteration.tasks) {
-    const status = statuses.get(task.id) ?? 'backlog'
+    const status = statuses.get(task.id) ?? 'todo'
     const dependsOnNotMerged: string[] = []
     for (const dep of task.dependsOn) {
       if (!byId.has(dep)) {
@@ -58,26 +58,24 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
 
 /**
  * Map a single task's forge facts to its derived status. Mirrors the §3 table
- * exactly: `blocked` wins over everything else, then `merged`, then
- * `changes-requested`, then `in-review`, then `in-flight`, then
- * `todo`/`backlog` from the issue facts alone.
+ * (D-059): `blocked` wins over everything else, then `merged`, then
+ * `changes-requested`, then `in-review`, then `in-flight`, then `todo` for all
+ * remaining open-issue cases (assigned or not — both are `todo` inside an
+ * iteration per D-059).
  *
- * A missing `forgeFacts` entry → `backlog`. The brief permits "backlog/todo
- * from issue facts alone"; with no facts at all the conservative read is
- * "unknown — show as backlog until the forge tells us otherwise."
+ * A missing `forgeFacts` entry → `todo`. Iteration tasks are committed work;
+ * `backlog` is a project-level concept only and is never emitted here (D-059).
  */
 function deriveStatus(facts: ForgeFacts | undefined): DerivedStatus {
-  if (!facts) return 'backlog'
+  if (!facts) return 'todo'
   if (facts.blockedLabel) return 'blocked'
   if (facts.prState === 'merged') return 'merged'
   if (facts.prState === 'open') {
     return facts.reviewDecision === 'changes_requested' ? 'changes-requested' : 'in-review'
   }
   if (facts.branchExists) return 'in-flight'
-  if (facts.issueState === 'open') {
-    return facts.assigned ? 'todo' : 'backlog'
-  }
-  // Issue closed, no PR merged — unusual (e.g. closed not-planned). Surface as
-  // backlog; the row likely shouldn't be in the table anymore.
-  return 'backlog'
+  if (facts.issueState === 'open') return 'todo'
+  // Issue closed, no PR merged — anomalous (e.g. closed not-planned). Still
+  // minimum todo per D-059; the row likely shouldn't be in the table anymore.
+  return 'todo'
 }

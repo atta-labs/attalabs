@@ -1527,3 +1527,55 @@ A task MUST update every doc it makes incoherent. This is a Definition-of-Done g
 - `aeg-root/roles/reviewer.md`: Doc coupling (item 6) updated: a §7-named doc not updated is a BLOCKER, not a MAJOR.
 
 ---
+
+## D-059 — Iteration task states are todo → in-flight → in-review → done; backlog is project-level only
+
+**Date:** 2026-06-23
+**Status:** ACTIVE
+**Type:** 2
+**Tier:** 3
+**Lock:** NO
+**Authored by:** Developer (dispatched by Principal)
+
+**Context:** D-029's §3 status table defined `backlog` as "Issue open, unassigned" — a derived state an iteration task could reach. A subsequent design principle clarified that the project-level backlog (ideas/maybe-tasks in markdown) is distinct from an iteration's committed work. That distinction makes `backlog` incoherent as an iteration-task state: once a task is placed in a launched iteration it is committed work, not a maybe-idea. In practice, every open unassigned task in `vada-production-v1` — including T3a, T4, T5, and others — renders as "Backlog" on the AEG Studio board despite being real, committed iteration work. The mislabeling misrepresents the board and the project's actual execution state.
+
+**Decision:**
+
+Inside a launched iteration, the only task states are:
+
+| Status | Derived from (the forge fact) |
+|--------|-------------------------------|
+| `todo` | Issue open, regardless of assignment; or no forge facts known yet (unqueried task) |
+| `in-flight` | A branch `task/<iteration>/<n>` exists, no PR open |
+| `in-review` | PR open |
+| `changes-requested` | PR open, `reviewDecision: CHANGES_REQUESTED` |
+| `merged` | PR merged (Issue auto-closes) |
+| `blocked` | An `aeg:blocked` label is present |
+
+`backlog` is removed from iteration derivation. The `'backlog'` value in the `DerivedStatus` union type is retained for potential future project-level views; `deriveIteration` / `deriveStatus` no longer emit it for any iteration task.
+
+**Consequences of the "no forge facts" case:** tasks with no Issue number (`#TBD`) are absent from the forge query and thus absent from the facts map. They now derive `todo` instead of `backlog` — still committed iteration work, still not dispatchable without an Issue (the Developer and Brief Author hard-STOP on `#TBD` per D-054). Showing them as `todo` rather than `backlog` better signals "this needs an Issue cut" than the prior `backlog` signal which looked optional.
+
+**Supersedes:** D-029's backlog-inside-iteration definition ("Issue open, unassigned → backlog").
+
+**Alternatives rejected:**
+- *Keep `backlog` for the unassigned case, add a separate "pending" status for unqueried tasks:* rejected — two near-identical statuses add confusion and complexity. The design principle is "once in an iteration = committed work = minimum todo." Unassigned and unqueried are both pre-work states deserving the same `todo` signal.
+- *Remove `backlog` from the `DerivedStatus` type entirely:* rejected — project-level views may legitimately need the value for non-iteration contexts. Stop emitting it from iteration derivation; keep it in the type.
+
+**Consequences:**
+- `packages/aeg-core/src/derive-iteration.ts`: `deriveStatus` never returns `'backlog'`; both the "no facts" case and the "open + unassigned" case return `'todo'`; the `??` fallback in the second pass updated.
+- `packages/aeg-core/src/types.ts`: `ForgeFacts` JSDoc updated; `DerivedStatus` retains `'backlog'` in the union.
+- `packages/aeg-core/src/derive-iteration.test.ts`: tests updated to expect `'todo'` where previously `'backlog'` was expected.
+- `aeg-root/iterations/README.md`: §3 status table updated (backlog removed; open+unassigned → todo); §11 planned-phase description updated.
+- `aeg-root/state-machine.md`: inline status derivation sentence updated.
+- `aeg-root/aeg-manual-flow.md`: §2 task model status table updated.
+- `aeg-root/roles/developer.md`: entry gate item 3 STOP message updated (remove "it is backlog" language for `#TBD` tasks).
+- `aeg-root/contracts/brief-developer.md`: same gate updated.
+- `aeg-root/contracts/planner-brief.md`: "backlog → todo promotion" language updated.
+- `apps/aeg/web/studio/src/app/projects/[name]/iterations/[slug]/_lib/status-display.ts`: `'backlog'` removed from `STATUS_ORDER`; comment updated.
+- `apps/aeg/web/studio/src/lib/forge/load-snapshot.ts`: unavailable-fallback returns updated; JSDoc comment updated.
+- `apps/aeg/web/studio/src/lib/forge/types.ts`, `map-forge-facts.ts`, `fetch-forge-facts.ts`: comments updated.
+- `apps/aeg/web/studio/src/app/projects/[name]/iterations/[slug]/board/page.tsx`, `page.tsx`: user-facing "shown as backlog" messages updated.
+- `apps/aeg/web/studio/README.md`: progress-counts description updated.
+
+---
