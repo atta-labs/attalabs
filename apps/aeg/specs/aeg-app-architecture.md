@@ -2,7 +2,7 @@
 
 **Status:** draft
 **Scope:** the AEG product — now understood as **two products over a shared core** (AEG-product D-001): **Studio** (the local repo-reading tool) and **Portal** (the public deployed docs/marketing/download site), both consuming `@atta/aeg-core`. Plus the `aeg.sh` scaffolder.
-**Last updated:** 2026-06-14 (local read adapter shipped — `aeg-ui-v1` task 3, §3.2).
+**Last updated:** 2026-06-23 (PR resolution: closing PR via CLOSED_EVENT, branch-named PR as fallback — §3.2).
 
 This spec is the canonical reference for AEG **the product**. It is distinct from AEG **the model** (the governance/flow constitution), which lives at the repo root in `aeg-root/` (`state-machine.md`, `aeg-manual-flow.md`, `iterations/README.md`, the role docs, `contracts/`) and governs the whole monorepo. The model is the thing; this product makes the thing visible and adoptable.
 
@@ -105,6 +105,7 @@ Implementation contract:
 - **Local auth, no auth system.** Token resolution: explicit override → `GITHUB_TOKEN` → `GH_TOKEN` → `gh auth token`. The adapter never builds an auth flow and never persists a token.
 - **Server-only.** The I/O modules import `node:child_process` (for the `gh` fallback) — Next.js refuses to bundle this file into a client component. The token never reaches the browser.
 - **One batched GraphQL query per snapshot.** Issue facts, ref existence, and the latest PR for each task are aliased into a single request — rate-limit-friendly, and `pullRequest.reviewDecision` is a first-class field, so we never aggregate REST `/reviews`.
+- **PR resolution strategy: closing PR first, branch-named PR as fallback.** For each task's Issue the adapter queries `timelineItems(CLOSED_EVENT)` to find the PR that actually closed the issue — this is branch-name-independent and handles PRs whose head branch does not match the `task/<iteration>/<id>` convention (e.g. `task/vada-production-v1/T1` vs. the guessed `task/vada-production-v1/1`). The branch-based `pullRequests(headRefName: ...)` query is retained as a fallback for in-flight tasks where the issue is still open and the conventional branch name applies.
 - **Pure mapper, isolated I/O.** The `(raw GitHub data) → ForgeFacts` mapping (`map-forge-facts.ts`) is pure and unit-tested with fixtures; the I/O layer (`fetch-forge-facts.ts`) is the only place that talks to GitHub. This mirrors `@atta/aeg-core`'s purity discipline.
 - **Graceful no-token degradation.** Missing token / network failure / 401 / 403 / repo not visible → returns `{ facts: empty map, unavailable: true, reason }` rather than throwing. `deriveIteration` then maps every task to `backlog` (the conservative read defined in `types.ts`), so Studio still renders the file-derived topology; only live status is absent. The `unavailable` flag is the soft signal Studio can surface ("live status unavailable") without inferring it from an empty map.
 - **No cache, no webhook, no persistent store.** That is the deferred hosted path below.
