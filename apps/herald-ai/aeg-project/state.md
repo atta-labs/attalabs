@@ -1,6 +1,6 @@
 # Herald — Current State
 
-**Last updated:** June 18, 2026
+**Last updated:** June 22, 2026
 **Purpose:** Per-product snapshot for Herald. Agents working in `apps/herald-ai/` read this before starting any task.
 
 ---
@@ -39,9 +39,11 @@ Herald's AI call migrated onto `@atta/engine` + `@atta/adapter-langgraph` as a Y
 
 **Key decisions:** D-044 (engine migration), D-045 (endpoint unification), D-047 (custom client-side tool execution in shared engine).
 
-### Phase 4 — Agent migration ← ACTIVE (herald-agents-v2 iteration)
+### Phase 4 — Agent migration + UX overhaul ← ACTIVE (herald-agents-v2 iteration)
 
-Move Herald's auditor logic into a self-contained `packages/agents/forensic-hiring-auditor/` package with YAML + tools + schema + `run()` export. First instance of the D-051 agent package pattern. Task 1 (housekeeping, this task) first; task 2 (agent package) after.
+Herald's auditor migrated into `packages/agents/forensic-hiring-auditor/` (D-046/D-051, task 2 — PR #150). MCP surface exposed at `/api/mcp` as `herald__audit` (task 3 — PR #156). Bulk Audit result surface overhauled (task 4): matrix now has row/column headers, compact result cards (grade + confidence badge + hard-req ratio + signal count + recommendation excerpt), and inline expandable full report via Collapsible.
+
+In progress: tasks 5–7 (report quality, remaining iteration tasks).
 
 ### Phase 5 — Recruiter as distinct product surface (future)
 Separate onboarding, pricing tier, team invite. B2B. Do not spec until Phase 4 validated.
@@ -60,7 +62,7 @@ Separate onboarding, pricing tier, team invite. B2B. Do not spec until Phase 4 v
 
 **Needs production verification:**
 - Admin end-to-end: `https://herald.attalabs.dev/admin` — avatar upload, CV upload, bio save, theme picker
-- Bulk Audit N×M matrix in production (renders per-pair grid correctly)
+- Bulk Audit N×M matrix in production — matrix layout + expandable cells (herald-agents-v2 task 4)
 
 **Known issues:**
 - Upstash Redis creds expired — per-key rate limit wired at `/api/audit` middleware but not enforced (graceful degradation). Provision fresh creds at upstash.com.
@@ -98,4 +100,5 @@ Separate onboarding, pricing tier, team invite. B2B. Do not spec until Phase 4 v
 | `apps/herald-ai/web/src/components/portal/AdminEditorPage.tsx` | Two-column profile editor |
 | `apps/herald-ai/web/src/db/schema.ts` | Drizzle schema |
 | `apps/herald-ai/web/docs/BUILD-SPEC.md` | Full product spec |
+| `apps/herald-ai/web/src/components/audit/BulkAudit.tsx` | Bulk Audit matrix + AuditCell (compact result card + inline expandable report) |
 | `packages/agents/forensic-hiring-auditor/` | Self-contained agent package: YAML, signals, parser, `run()` export (D-046/D-051) |
