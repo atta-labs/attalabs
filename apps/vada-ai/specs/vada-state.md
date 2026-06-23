@@ -197,9 +197,9 @@ Single-round deliberation is a structurally weaker approximation of what the man
 
 ## What's in flight
 
-D-033 docs cleanup PR (this PR) bringing all Vāda specs and skills into alignment with the v2 schema and `compileFlow` engine.
+T2 spec/skill reconciliation (this PR) — aligning vada-state.md, CLAUDE.md, teams-catalog docs, skills, and all stale YAML path references with T1's YAML migration (paths now at `packages/agents/vada-deliberation/yamls/`) and T3's per-vendor tool substrate.
 
-Next focused work after docs PR merges: reviewer prompt iteration (Track B Item 3b).
+Next focused work after T2 merges: reviewer prompt iteration (Track B Item 3b).
 
 ---
 

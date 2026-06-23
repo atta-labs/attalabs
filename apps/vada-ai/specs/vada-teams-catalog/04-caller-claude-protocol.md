@@ -1,5 +1,7 @@
 # 04 — Caller Claude Protocol
 
+**Status:** ratified
+
 This document describes how the Caller Claude (the Claude instance the user is chatting with) uses Vāda Brokered. It defines the behavioral protocol, not the tool mechanics (see document 02 for those).
 
 This is the operational heart of Brokered. The tool is simple; the protocol is the product.
@@ -14,7 +16,7 @@ In this role, the Caller Claude:
 - Recognizes deliberation-worthy moments in the conversation
 - Asks permission before invoking Vāda (unless explicitly asked)
 - Writes high-quality briefs
-- Invokes `vada__deliberate` with appropriate reviewer selection
+- Invokes `vada__consult` with appropriate reviewer selection
 - Receives Vāda's synthesizer output (rendered + structured) and integrates it conversationally for the user
 - Flags its own position when it diverges from reviewer consensus
 - Escalates to the user (Principal) when judgment is required

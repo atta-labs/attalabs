@@ -86,7 +86,7 @@ All shipped. Universal round-based schema v2 (D-033), hosted MCP, single-source 
 | `apps/vada-ai/specs/vada-decisions.md` | Vāda-specific decision log |
 | `apps/vada-ai/specs/yaml-schema-reference.md` | YAML schema v2 definitive reference |
 | `apps/vada-ai/specs/vada-reviewers-spec.md` | Reviewers team spec (rev 5 + v2 prompt) |
-| `apps/vada-ai/yamls/` | All 9 deliberation YAML specs |
+| `packages/agents/vada-deliberation/yamls/` | All 9 deliberation YAML specs |
 | `apps/vada-ai/web/src/app/api/deliberation/[id]/workflow/run/route.ts` | Main deliberation route |
 | `apps/vada-ai/web/src/app/api/mcp/route.ts` | Hosted MCP endpoint |
 | `.claude/skills/vada-architecture/SKILL.md` | Architecture master reference — read before any cross-cutting change |

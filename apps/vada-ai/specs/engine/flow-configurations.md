@@ -1,5 +1,7 @@
 # Engine Flow Configurations
 
+**Status:** ratified
+
 Reference for the four RoundsWorkflow configurations supported by `@atta/engine`. Use this when selecting a team structure or debugging graph shape.
 
 ---
@@ -100,4 +102,4 @@ terminal-k → audit-BlindCritic-k → audit-FactChecker-k
 
 ## Brokered workflow (Phase 7.2 — YAML)
 
-Brokered specs are defined in YAML using the `reviewers:` section with `response.mode: concatenate`. There is no separate `BrokeredWorkflow` type in `@atta/engine`; the YAML is compiled via `compileSpec()` which calls `specToTeam()` and then the standard `compile()`. Reviewer nodes are parallel solo-role nodes with no audit, no synthesis, no revision. See `apps/vada-ai/yamls/brokered-trio-v1.yaml` for a reference spec and `specs/yaml-schema-reference.md` for the full schema.
+Brokered specs are defined in YAML using the `reviewers:` section with `response.mode: concatenate`. There is no separate `BrokeredWorkflow` type in `@atta/engine`; the YAML is compiled via `compileSpec()` which calls `specToTeam()` and then the standard `compile()`. Reviewer nodes are parallel solo-role nodes with no audit, no synthesis, no revision. See `packages/agents/vada-deliberation/yamls/brokered-trio-v1.yaml` for a reference spec and `specs/yaml-schema-reference.md` for the full schema.

@@ -99,7 +99,7 @@ import type {
 | `validateFlow(flow)` | Run the 10 structural/semantic rules. Called internally by `loadFlow`. Exposed for callers that already have a `Flow` object. |
 | `resolveAgentFailure(round)` | Compute the round's effective `agent_failure` policy applying Rule 10 defaults (parallel→continue, serial→abort) when not explicitly declared. |
 | `InvalidFlowConfigError` | Thrown by `validateFlow` and `loadFlow` on rule violations. Includes the rule number and a human-readable message. |
-| `loadFromCatalog(id: string)` | Load a flow by ID from the catalog directory (`apps/vada-ai/yamls/`). Anchors on `import.meta.url`; env var `VADA_YAMLS_DIR` overrides path. |
+| `loadFromCatalog(id: string)` | Load a flow by ID from the catalog directory (`packages/agents/vada-deliberation/yamls/`). Anchors on `import.meta.url`; env var `VADA_YAMLS_DIR` overrides path. |
 | `listPublicSpecs()` | Return all non-experimental flows from the catalog, sorted alphabetically. Uses `readdirSync`. |
 | `Flow` | Top-level v2 spec type (rounds + agents + defaults + metadata) |
 | `Round` | Single round (agents, layout, repeats, message_template, agent_failure, on_failure) |
@@ -352,7 +352,7 @@ PR #47 (D-033 PR 2) removed the option of adding a new compiler. There is no `co
 
 For most additions:
 
-1. Create `apps/vada-ai/yamls/<new-spec>.yaml` following the v2 schema (see `yaml-schema-reference.md` + `vada-yaml-authoring` skill)
+1. Create `packages/agents/vada-deliberation/yamls/<new-spec>.yaml` following the v2 schema (see `yaml-schema-reference.md` + `vada-yaml-authoring` skill)
 2. Auto-discovery: dropping the file in the directory is enough — `listPublicSpecs()` finds it, MCP `spec-registry.ts` delegates to it
 3. Write a verify script in `apps/vada-ai/web/scripts/verify-<new-spec>.ts` using `loadFlow` + `compileFlow`
 4. Run verify script; confirm transcript length matches expected count

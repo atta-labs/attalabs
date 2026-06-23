@@ -1,6 +1,6 @@
 # Vāda Brokered Deliberation — Specification
 
-**Status:** V1 specification — partial implementation (Phase 4 complete)
+**Status:** draft
 **Last updated:** April 2026
 **Audience:** Implementers, Principal, reviewers
 
@@ -34,7 +34,7 @@ Three distinct roles in every Brokered interaction:
 
 **Already shipped (Phase 4):**
 - One MCP tool: `vada__consult` — dispatches 2-5 reviewers in parallel through the Vāda deliberation engine
-- Brokered specs (`brokered-trio-v1.yaml`, `brokered-quartet-v1.yaml`) in `apps/vada-ai/yamls/` — compiled via `compileSpec` into a reviewer-mode Plan (no audit, no synthesis, no revision)
+- Brokered specs (`brokered-trio-v1.yaml`, `brokered-quartet-v1.yaml`) in `packages/agents/vada-deliberation/yamls/` — compiled via `compileSpec` into a reviewer-mode Plan (no audit, no synthesis, no revision)
 - `@vada/agents` — Strategist + Critic + Devil's Advocate system prompts
 - Reviewer system prompts in `@vada/agents` (inherited from Crucible; validated for Brokered use in Phase 6)
 - Session persistence to Postgres for dashboard review and audit

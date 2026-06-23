@@ -2,7 +2,7 @@
 
 Vada AI is a multi-agent deliberation engine. Multiple LLM agents debate a question across rounds, producing a synthesized conclusion with a full audit trail. Ships as an MCP server and a web UI. "Vāda" means "deliberation" in Pali.
 
-**Domain:** vada.ai
+**Domain:** vada.attalabs.dev
 
 ---
 
@@ -41,19 +41,18 @@ Agent display metadata (`VadaAgentVisual` type + per-agent configs) lives in `we
 | BYOK principles | [specs/vada-byok-principles.md](specs/vada-byok-principles.md) | BYOK architecture principles |
 | Vāda human | [specs/vada-human.md](specs/vada-human.md) | Human-facing narrative |
 
-### Brokered Deliberation (`specs/brokered-deliberation/`)
+### Vāda Teams Catalog (`specs/vada-teams-catalog/`)
 
-`vada__consult` MCP tool — full spec in read order (00 → 06).
+`vada__consult` MCP tool — full spec in read order (00 → 05).
 
 | Spec | Purpose |
 |------|---------|
-| [00-overview.md](specs/brokered-deliberation/00-overview.md) | What Brokered is, operational model, design principles |
-| [01-architecture.md](specs/brokered-deliberation/01-architecture.md) | Component diagram, data flow, sequence diagrams |
-| [02-mcp-tool-interface.md](specs/brokered-deliberation/02-mcp-tool-interface.md) | Tool schema, parameters, return shape |
-| [03-reviewer-personas.md](specs/brokered-deliberation/03-reviewer-personas.md) | System prompts for each persona, output formats |
-| [04-caller-claude-protocol.md](specs/brokered-deliberation/04-caller-claude-protocol.md) | How Caller Claude uses Vāda, when to invoke |
-| [05-orchestration-rules.md](specs/brokered-deliberation/05-orchestration-rules.md) | When to escalate, when to add rounds |
-| [06-implementation-plan.md](specs/brokered-deliberation/06-implementation-plan.md) | Commit sequence, test gates, verification |
+| [00-overview.md](specs/vada-teams-catalog/00-overview.md) | What Brokered is, operational model, design principles |
+| [01-architecture.md](specs/vada-teams-catalog/01-architecture.md) | Component diagram, data flow, sequence diagrams |
+| [02-mcp-tool-interface.md](specs/vada-teams-catalog/02-mcp-tool-interface.md) | Tool schema, parameters, return shape |
+| [03-reviewer-personas.md](specs/vada-teams-catalog/03-reviewer-personas.md) | System prompts for each persona, output formats |
+| [04-caller-claude-protocol.md](specs/vada-teams-catalog/04-caller-claude-protocol.md) | How Caller Claude uses Vāda, when to invoke |
+| [05-orchestration-rules.md](specs/vada-teams-catalog/05-orchestration-rules.md) | When to escalate, when to add rounds |
 
 ### Engine (`specs/engine/`)
 

@@ -80,7 +80,7 @@ import { Button } from '@atta/ui/components/button'
 import { db } from '@atta/db'
 import { currentUser } from '@atta/auth'
 import { getProfile } from '@atta/cms/queries/profile'
-import { compileSpec } from '@atta/engine'
+import { compileFlow } from '@atta/engine'
 
 // ✅ app-internal
 import { getUserById } from '@/db/queries'

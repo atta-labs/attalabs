@@ -15,13 +15,13 @@ Vāda is a YAML-driven multi-agent deliberation runtime, shipping as an MCP serv
 - **Atta-the-product** is a separate composed product (Vāda + Vitakka + Sati) targeting `atta.ai` when ready. Not yet deployed.
 - Vāda has two permanent surfaces: standalone at `vada.attalabs.dev` (current) and as the deliberation layer inside Atta-the-product (future).
 
-The product surface today is the catalog of YAML team specs at `apps/vada-ai/yamls/`. The engine treats every YAML identically — there are no per-team code branches. As of D-033 (May 12-13, 2026, vada-decisions.md), the YAML schema is `2.0` and all flows are expressed as a sequence of rounds.
+The product surface today is the catalog of YAML team specs at `packages/agents/vada-deliberation/yamls/`. The engine treats every YAML identically — there are no per-team code branches. As of D-033 (May 12-13, 2026, vada-decisions.md), the YAML schema is `2.0` and all flows are expressed as a sequence of rounds.
 
 ---
 
 ## Vāda Teams Catalog
 
-Vāda exposes deliberation as a catalog of YAML team specs compiled by the Atta engine. Both MCP tools are generic — there are no per-team tools. The catalog currently contains 9 YAML team specs at `apps/vada-ai/yamls/` (2 published, 7 experimental). New teams are added by authoring YAML and dropping the file into the directory — the engine's `listPublicSpecs()` discovers it dynamically.
+Vāda exposes deliberation as a catalog of YAML team specs compiled by the Atta engine. Both MCP tools are generic — there are no per-team tools. The catalog currently contains 9 YAML team specs at `packages/agents/vada-deliberation/yamls/` (2 published, 7 experimental). New teams are added by authoring YAML and dropping the file into the directory — the engine's `listPublicSpecs()` discovers it dynamically.
 
 | MCP Tool | Behavior | Cost | Serves |
 |----------|----------|------|--------|
@@ -58,7 +58,7 @@ USER CHAT CLIENT            (Claude.ai web, Claude Desktop, Claude Code CLI, Cur
   (includes cognitive router nodes; SDK-shape dispatch per vada-decisions.md D-032 vendor registry)
         ↓ per-turn dispatch
 YAML specs + agent visuals  MOAT-B    → see skill: vada-yaml-authoring
-  (v2 deliberation YAML files in apps/vada-ai/yamls/; agent UI types in web/src/components/agents/visuals/)
+  (v2 deliberation YAML files in packages/agents/vada-deliberation/yamls/; agent UI types in web/src/components/agents/visuals/)
         ↓ agent config
 PROVIDER APIs               (12 vendors registered in @atta/models: anthropic, openai, google, xai, groq,
                              openrouter, deepseek, cerebras, mistral, together, fireworks, ollama)
@@ -122,12 +122,13 @@ Use this framework when labeling new work. Do NOT call something a moat unless i
 | 12 | Doc audit pass | ✅ complete (May 6) |
 | 13 | Vendor registry consolidation (vada-decisions.md D-032) | ✅ complete (May 11) |
 | 14 | D-033 generic flow refactor + D-034 cleanup | ✅ complete (May 12-13) |
-| 15 | Reviewer prompt iteration (Track B Item 3b) | queued |
-| 16 | Synthesizer prompt iteration (Track B Item 3c) | queued |
-| 17 | First Vāda Reviewers benchmark run (Track B Item 4) | queued |
-| 18 | Benchmark architecture redesign | queued |
-| 19 | YAML cost calculator UI | queued |
-| 20 | Validation experiments + cost-quality frontier | queued |
+| 15 | Per-vendor tool substrate — GOOGLE_TOOL_REGISTRY + OPENAI_COMPAT_TOOL_REGISTRY + openai-compat custom tool loop (vada-decisions.md D-053) | ✅ complete (Jun 23) |
+| 16 | Reviewer prompt iteration (Track B Item 3b) | queued |
+| 17 | Synthesizer prompt iteration (Track B Item 3c) | queued |
+| 18 | First Vāda Reviewers benchmark run (Track B Item 4) | queued |
+| 19 | Benchmark architecture redesign | queued |
+| 20 | YAML cost calculator UI | queued |
+| 21 | Validation experiments + cost-quality frontier | queued |
 | MOAT-A | vada.attalabs.dev dashboard (full transcript + cost attribution) | required pre-launch |
 | MOAT-B | One verticalized team + 100+ validated corpus | required pre-launch |
 

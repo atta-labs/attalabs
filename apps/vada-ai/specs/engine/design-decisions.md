@@ -1,5 +1,7 @@
 # Vāda Engine — Design Decisions
 
+**Status:** ratified
+
 Locked decisions from Phase 0. Each entry records what was decided, why, and the concern it addresses.
 Rationale references reviewer consensus from the 6 deliberation rounds that validated the API surface.
 
@@ -10,7 +12,7 @@ Rationale references reviewer consensus from the 6 deliberation rounds that vali
 **Three-layer decoupling (App / Engine / Adapter)**
 The app layer owns Teams, questions, and how results are presented. The engine owns compilation — transforming Teams into Plans. The adapter owns execution — invoking LLMs and advancing ExecutionState. This separation means compilation logic lives once in the engine and is not duplicated across runtimes. Per Round 6 consensus, the adapter must remain dumb: if it starts making compilation decisions, every adapter diverges.
 
-*Phase 7.2 note:* Teams are now authored as YAML specs (`apps/vada-ai/yamls/`). The `loadSpec` + `compileSpec` public API handles YAML → Plan without exposing `compile()` directly. `specToTeam()` bridges YAML to the internal TypeScript `Team` type. The three-layer decoupling is unchanged; only the authoring surface moved from TypeScript to YAML.
+*Phase 7.2 note:* Teams are now authored as YAML specs (`packages/agents/vada-deliberation/yamls/`). The `loadSpec` + `compileSpec` public API handles YAML → Plan without exposing `compile()` directly. `specToTeam()` bridges YAML to the internal TypeScript `Team` type. The three-layer decoupling is unchanged; only the authoring surface moved from TypeScript to YAML.
 
 **Pure data plans (JSON-serializable)**
 Plans are fully serializable to JSON. This enables storage, replay, MCP serving, offline inspection, and diffing across runs without any special serialization logic. Per Round 13 consensus, serializability is load-bearing for the MCP use case where plans are retrieved and executed by remote agents. Function fields (hooks, llmCall, questionFilter) are runtime-only and never part of the Plan structure.
@@ -131,7 +133,7 @@ All comparisons are pairwise: for N variants, N*(N-1)/2 pairs are judged indepen
 V1 Mastra had one Synthesizer agent that ran both in rounds and as the terminal node, switching behavior via a `CONCLUSION_MODE_PROMPT` injection. The engine port splits this into two agents: `Synthesizer` participates in each deliberation round and produces plain-text synthesis; `ConclusionSynthesizer` runs only as the terminal node and carries an `outputSchema` that produces a structured conclusion JSON. The split reflects genuinely different roles — round synthesis is exploratory and comparative, terminal synthesis is committed and structured. Collapsing them into one agent required prompt injection to change the role at runtime, which obscures the intent. This pattern generalizes: when an agent's role changes based on its position in the graph, splitting it into two named agents is preferred over runtime prompt switching. *Files: `apps/vada-ai/web/src/examples/agents/synthesizer.ts`, `apps/vada-ai/web/src/examples/agents/conclusion-synthesizer.ts`*
 
 **Revision condition keyword-based for V1 behavior parity**
-V1's `classifyVerdict` function triggered revision when BlindCritic's output contained "FLAG". The port uses `revisionCondition: { type: 'contains', value: 'FLAG', caseSensitive: false }` — a direct translation. The engine supports structured JSON audit output (`json-field-equals`, `json-field-truthy`), but that was not used here. Upgrading BlindCritic to produce structured output during a port introduces a confound: it becomes impossible to distinguish infrastructure changes (adapter, graph topology) from quality changes (audit signal fidelity). Behavior parity during Phase 2 keeps the V1 benchmark results directly comparable. Whether structured audit output improves revision quality is a Phase 6 research question. *File: `apps/vada-ai/yamls/crucible-v1.yaml` (formerly `apps/vada-ai/web/src/examples/teams/crucible.ts` — migrated to YAML in Phase 7.2)*
+V1's `classifyVerdict` function triggered revision when BlindCritic's output contained "FLAG". The port uses `revisionCondition: { type: 'contains', value: 'FLAG', caseSensitive: false }` — a direct translation. The engine supports structured JSON audit output (`json-field-equals`, `json-field-truthy`), but that was not used here. Upgrading BlindCritic to produce structured output during a port introduces a confound: it becomes impossible to distinguish infrastructure changes (adapter, graph topology) from quality changes (audit signal fidelity). Behavior parity during Phase 2 keeps the V1 benchmark results directly comparable. Whether structured audit output improves revision quality is a Phase 6 research question. *File: `packages/agents/vada-deliberation/yamls/crucible-v1.yaml` (formerly `apps/vada-ai/web/src/examples/teams/crucible.ts` — migrated to YAML in Phase 7.2)*
 
 ---
 
