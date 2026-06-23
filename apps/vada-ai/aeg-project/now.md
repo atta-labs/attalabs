@@ -9,23 +9,23 @@
 
 ## In flight
 
-- **PR #77** — Reviewers system prompt v2 (anti-convergence, structured output). Open, pending merge. Rebase completed June 2.
+**vada-production-v1** iteration active. T1 (YAML migration, PR #192) and T3 (per-vendor tool substrate, PR #194) are merged. T2 (stale spec cleanup, #176) is open and not yet dispatched.
 
 ---
 
 ## Next 3 things
 
-1. **Merge PR #77** — once green
-2. **Add OpenAI + xAI keys to Vercel** (manual, 5 min) — go to Vercel → vada-ai project → Settings → Environment Variables. Add `OPENAI_API_KEY` and `XAI_API_KEY`. This unblocks Reviewers end-to-end testing.
-3. **Test Reviewers end-to-end** — go to `vada.attalabs.dev`, pick Reviewers team, run a real deliberation with a vendor-diverse config (Anthropic + Google + OpenAI). Confirm all 3 reviewers respond. Then test Reviewers + Synthesis.
+1. **Dispatch T3a (#178)** — equip reviewers with web search + vendor-native tools using the T3 substrate; tool config declarative in YAML. Unblocked now that T3 (#177) merged.
+2. **Dispatch T2 (#176)** — stale spec cleanup (vada-state.md rewrite, CLAUDE.md, teams-catalog). Depends on T1 only; unblocked.
+3. **Add OpenAI + xAI keys to Vercel** (manual, 5 min) — Vercel → vada-ai → Settings → Environment Variables. Unblocks Reviewers end-to-end testing.
 
 ---
 
 ## Manual work pending
 
-- **Add OpenAI + xAI keys to Vercel** — Reviewers are blocked without these
+- **Add OpenAI + xAI keys to Vercel** — Reviewers multi-vendor testing blocked without these
 - **Generate a Vāda API key** — needed to test the hosted MCP via Claude Code CLI
-- **Configure Claude Code MCP connector** — point it at `https://vada.attalabs.dev/api/mcp` with bearer auth
+- **Configure Claude Code MCP connector** — point at `https://vada.attalabs.dev/api/mcp` with bearer auth
 
 ---
 

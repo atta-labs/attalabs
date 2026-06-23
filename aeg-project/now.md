@@ -14,7 +14,7 @@
 
 ## In flight now
 
-Nothing currently in active execution. Three iterations have closed (herald-onto-engine, aeg-ui-v1, aeg-governance-ui-v2). herald-agents-v2, vada-agents-v2 are open as parallel active iterations; see their own `aeg-project/` state docs.
+**herald-agents-v2** and **vada-production-v1** are open as parallel active iterations. Three prior iterations closed (herald-onto-engine, aeg-ui-v1, aeg-governance-ui-v2). See per-project `aeg-project/` state docs for current task status.
 
 ---
 
@@ -35,6 +35,13 @@ Archival sweep of merged-but-unarchived tasks (chore/archive-merged-tasks, PR op
 | herald-agents-v2 task 1 | #167 | #148 | Issue closed manually (no 'Closes' link in PR body). Provenance block posted. |
 | herald-agents-v2 task 2 | #168 | #150 | Issue closed manually (no 'Closes' link in PR body). Provenance block posted. DANGLING: Tier 3 task, no recorded Reviewer APPROVE verdict. |
 | herald-agents-v2 task 3 | #169 | #156 | Issue closed manually (no 'Closes' link in PR body). Provenance block posted. |
+
+D-056 first-run archival (chore/archive-t3-herald5, same date):
+
+| Task | Issue | PR | Action |
+|------|-------|----|--------|
+| vada-production-v1 T3 | #177 | #194 | Issue already closed by merge (auto-close fired). `gh issue close 177` confirmed no-op. Provenance block posted. |
+| herald-agents-v2 task 5 | #171 | #193 | Issue already closed by merge (auto-close fired). `gh issue close 171` confirmed no-op. Provenance block posted. |
 
 ---
 
