@@ -1,5 +1,18 @@
 **Status:** ratified
 
+## Most recent session — Jun 23, 2026
+
+Per-vendor tool substrate (vada-production-v1 T3, PR #194). The adapter now forwards tool declarations to all three vendor branches, not just Anthropic. Key changes:
+
+- `GOOGLE_TOOL_REGISTRY` added: `web_search → { googleSearch: {} }` — Gemini native grounding. No client-side handler required; Gemini executes the search on Google's infrastructure. `callGoogle()` extended to accept tool configs and uses the structured `generateContent({ contents, tools })` form when tools are present.
+- `OPENAI_COMPAT_TOOL_REGISTRY` added: `web_search → OpenAI function tool spec`. All 10 openai-compat vendors (OpenAI, xAI, Groq, Mistral, DeepSeek, etc.) can now forward function tool specs to the model.
+- `runOpenAICompatCustomToolLoop` added — multi-turn tool execution loop for openai-compat, parallel to the existing Anthropic loop. Uses OpenAI's `tool_calls` / tool message format. Activated when any tools (server registry + custom) are declared on an openai-compat agent.
+- `createMultiVendorLlmCall` gains optional `vendorExtraBody` (4th param) for per-vendor extra body params (e.g. OpenRouter plugin passthrough). No YAML schema field.
+- `resolvedTools` is now consumed in all three vendor branches. Anthropic branch unchanged in behavior — Herald's `SkepticalAuditor + fetch_github_signals` path is unaffected.
+- See D-053 for the Option A+B/C boundary decision. Option C (external MCP servers requiring engine schema changes) remains deferred.
+
+---
+
 ## Most recent session — Jun 18, 2026
 
 Homepage rewrite. Removed sections that described implementation internals (YAML, Atta Engine, `compileFlow`) and replaced them with product-focused copy that accurately describes what Vāda does. Key changes:
@@ -42,8 +55,8 @@ BYOK + Settings restructure (branch: `feat/shared-keys-ui`). Key changes:
 
 > **Framing note (2026-04-30):** The "Brokered mode" and "Autonomous mode" product categories used in older entries have been retired. Current framing uses the Vāda Teams catalog (YAML specs at `packages/agents/vada-deliberation/yamls/`). See `vada-reviewers-spec.md` for the in-progress Vāda Reviewers team spec.
 
-**Last updated:** Jun 18, 2026
-**Last milestone:** Homepage rewrite — removed engine/implementation sections, replaced with product-focused copy (PR #147).
+**Last updated:** Jun 23, 2026
+**Last milestone:** Per-vendor tool substrate — GOOGLE_TOOL_REGISTRY + OPENAI_COMPAT_TOOL_REGISTRY + openai-compat custom tool loop (PR #194, D-053 Option A+B).
 **Next milestone:** Track B Item 3b — Reviewer prompt iteration.
 
 ---
@@ -142,6 +155,28 @@ Universal round-based YAML schema shipped across the stack. PR #41 added the new
 The architectural ideal in D-033 ("engine has zero branches on workflow type") is met for the YAML schema layer (one schema, zero discriminators) but pragmatically weakened in the compiler — `compileFlow` contains shape detection over `flow.rounds` topology to emit matching node ids. The decision is documented in D-033 as deliberate; a future cleanup PR could revisit it once the adapter is refactored.
 
 See `yaml-schema-reference.md` for the canonical schema documentation. See `generic-flow-refactor.md` for the design doc. See vada-decisions.md D-033 and D-034.
+
+### Phase 15 — Per-vendor tool substrate (Jun 23, 2026)
+
+PR #194. `@atta/adapter-langgraph` now supports tool forwarding across all three vendor SDK shapes, not just Anthropic. Implements D-053 Option A+B.
+
+**Option A — Per-vendor tool registries (tools.ts):**
+- `GOOGLE_TOOL_REGISTRY`: `web_search → { googleSearch: {} }`. Gemini grounding is a native server-side capability; no client-side handler required. `callGoogle()` updated to accept `tools?: any[]` and uses structured `generateContent({ contents, tools })` form when tools are present, simple string form otherwise (backward compat preserved).
+- `OPENAI_COMPAT_TOOL_REGISTRY`: `web_search → OpenAI function tool spec`. Unlike Anthropic's server-side tools, openai-compat function tools require client-side handler execution. Callers must register a handler in `customToolHandlers` under the same name.
+- Both registries share the same logical key space as `ANTHROPIC_TOOL_REGISTRY`. An agent declaring `tools: ['web_search']` in YAML dispatches to the correct vendor-native format via whichever registry matches the resolved `sdkShape`.
+
+**Option B — OpenAI-compat custom tool loop (custom-tool-loop.ts):**
+- `runOpenAICompatCustomToolLoop` added — mirrors `runAnthropicCustomToolLoop` using OpenAI's `tool_calls` / tool message format.
+- Activated when `allTools.length > 0` (server tools from registry + custom tools from `resolveRegisteredCustomTools`); falls through to single-shot when no tools declared.
+- `customToolSpecToOpenAITool` helper converts `CustomToolSpec` to OpenAI function tool format.
+
+**OpenRouter extra-body passthrough:** `callOpenAICompat()` accepts optional `extraBody?: Record<string, unknown>`. `createMultiVendorLlmCall` gains an optional 4th param `vendorExtraBody?: Partial<Record<VendorId, Record<string, unknown>>>` for per-vendor extra body params (e.g. `{ openrouter: { plugins: [...] } }`). No YAML schema field — adapter-construction level only.
+
+**Blast radius:** The Anthropic branch in `createMultiVendorLlmCall` is byte-identical to pre-T3. Herald's `SkepticalAuditor + fetch_github_signals` custom-tool path is unaffected. 62 tests pass (17 new), `@atta/forensic-hiring-auditor:typecheck` clean.
+
+**Deferred (Option C):** External MCP server support requires a new `mcp_servers` field in `@atta/engine` `FlowAgentSchema` — a contract change with blast radius across Vāda + Herald. Deferred to a separate task per D-053.
+
+See D-053 in `aeg-project/decisions.md` for the A+B/C boundary rationale.
 
 ---
 
