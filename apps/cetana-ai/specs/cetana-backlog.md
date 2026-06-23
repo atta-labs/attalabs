@@ -26,6 +26,10 @@ Migrated from the retired global `roadmap.md` (June 3, 2026; roadmap retired by 
 
 These two are related — one is about authoring artifacts, the other about deliberating over them. They could land together or separately. Track opens after F12.
 
+## Unscoped (needs a brief before dispatch)
+
+- **Per-worker frozen task-state snapshot at spawn.** When the Cetana coordinator spawns a worker (`claude-spawner.ts`), fetch that task's GitHub Issue fields via the API and cache them as an immutable in-memory payload the worker reads for the duration of its run — so the worker executes against a frozen task definition and cannot drift if the Issue changes mid-run. This is a Cetana executor feature, NOT an AEG concern (AEG stays executor-agnostic per D-038). Forge-native refinement of an external-reviewer suggestion; relevant now that tasks-are-Issues (D-055) makes the Issue the canonical task definition.
+
 ---
 
 *Note on naming: Cetana automates only the orchestration slice of AEG; it is not AEG itself. See `aeg-root/coordination.md`.*
