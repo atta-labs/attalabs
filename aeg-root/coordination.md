@@ -24,8 +24,8 @@ If you are starting a fresh session and need to orient:
 2. `aeg-root/state-machine.md` — the constitution; artifact states, roles, permissions, decision schema
 3. `aeg-root/roles/{your-role}.md` — Team Leader (incl. Planner & Brief Author modes), Developer, Principal, Reviewer, Security, or Archivist
 4. `aeg-root/iterations/README.md` — the iteration model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
-5. `aeg-project/state.md` — what is true right now across the ecosystem
-6. `aeg-project/now.md` — what is active, what is next, what is blocked
+5. `aeg-project/state.md` — what is true right now across the ecosystem (non-derivable operational facts; current focus pointer)
+6. **Derive current execution state from the forge** — see the "Session-start forge queries" section below
 7. `aeg-root/iterations/<name>.md` — the current iteration's task topology (the plan); live status is queried from the forge, not read here
 8. `aeg-project/changelog.md` — what shipped (skim headers; read entries when context needed)
 9. `aeg-project/lessons.md` — calibration lessons + anti-patterns (read when authoring briefs or post-mortems)
@@ -45,6 +45,33 @@ For deeper context on the operational model design:
 
 Do not generate strategy, plan an iteration, or author briefs until you have read `state-machine.md` and the spec for any project in scope.
 
+### Session-start forge queries — deriving current state
+
+`now.md` is retired (D-057). Current execution state is **derived from the forge**, not read from a file. Run these queries to answer the three orientation questions:
+
+**"What's active?"** — open Issues with an `iteration:<slug>` label, or check open PRs:
+```bash
+gh issue list --label "iteration:<slug>" --state open
+gh pr list --state open
+```
+
+**"What's next?"** — open Issues in the current iteration that have no open PR (unassigned branch):
+```bash
+gh issue list --label "iteration:<slug>" --state open --assignee ""
+# Then for each: gh pr list --state open | grep "task/<slug>/"
+```
+
+**"What's blocked?"** — Issues with the `aeg:blocked` label:
+```bash
+gh issue list --label "aeg:blocked" --state open
+```
+
+**"What's the current focus?"** — read `aeg-project/state.md` (the "Current focus" one-liner at the top) and the active iteration file at `aeg-root/iterations/<name>.md`.
+
+**"What merged recently?"** — `gh pr list --state merged --limit 20`
+
+No brief, no audit finding, no "next steps" recommendation is valid without this forge check. Forge state > file state > memory. Always.
+
 ---
 
 ## The coordination model — four truth domains
@@ -63,13 +90,14 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 | File | Purpose | Update cadence |
 |------|---------|----------------|
 | `aeg-root/coordination.md` | This file. Rules, names, how to work. | Rare (system changes only) |
-| `aeg-project/state.md` | What is true right now across the ecosystem. | Whenever state changes |
-| `aeg-project/now.md` | Active work, next 3 things, blocked, manual tasks. | Daily |
+| `aeg-project/state.md` | Non-derivable operational facts: known production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer. | Whenever state changes |
 | `aeg-root/iterations/<name>.md` | The current iteration's task topology (edges, grouping). Plan only — no status. | At plan time (Planner) |
 | `aeg-project/changelog.md` | Append-only completed work log. | Per PR (append only) |
 | `aeg-project/lessons.md` | Calibration lessons + anti-patterns. | Monthly review |
 | `aeg-project/decisions.md` | Global cross-project decision log. | When decisions are made |
 | `docs-index.md` | Discovery map of repo content. Auto-generated. | When repo files added/removed/renamed |
+
+> **`now.md` is retired (D-057).** Active work, blocked tasks, and next candidates are derived from the forge (see "Session-start forge queries" above). The forge is the single source of truth for what is happening; `state.md` holds what the forge cannot derive.
 
 The roadmap is **not** an AEG file — it lives in the company's tool (or, for solo AttaLabs work, in the backlogs `apps/<project>/specs/<project>-backlog.md` per project and `specs/ecosystem-backlog.md` for the monorepo, which are reference docs out of the flow). The old global `roadmap.md` is retired. **Backlog convention (D-037, D-041):** a unit's *plan* lives in its `specs/` (`specs/ecosystem-backlog.md` for the monorepo; `apps/<project>/specs/<project>-backlog.md` per project); a unit's *flow + governance* lives in the root `aeg-root/` (model, exists once); its *living state* lives in its `aeg-project/` (one at the root for monorepo-level work, one per project).
 
@@ -127,9 +155,10 @@ Role is determined by environment and context — not by which agent you are. Re
 
 1. **Read `state-machine.md`** — confirm the authority matrix and decision schema.
 2. **Read `roles/team-leader.md`** — confirm which mode you're in (Strategist / Planner / Brief Author). If planning an iteration, also read `roles/planner.md`.
-3. **Read `state.md` and `now.md`** — orient on current ecosystem state. Read the current `iterations/<name>.md` for in-flight task topology.
-4. **Check `decisions.md` and `ratification-queue.md`** — any PENDING items for today's window?
-5. **Determine the project in scope** — apply the spec-check gate (below) before anything substantive.
+3. **Read `state.md`** — orient on current ecosystem state, known production issues, and pending manual ops. Read the current `iterations/<name>.md` for in-flight task topology.
+4. **Derive live execution state from the forge** — run the session-start forge queries above: open Issues by `iteration:<slug>`, open PRs, `aeg:blocked` labels.
+5. **Check `decisions.md` and `ratification-queue.md`** — any PENDING items for today's window?
+6. **Determine the project in scope** — apply the spec-check gate (below) before anything substantive.
 
 ### If you are the Developer (a coding-agent surface, executing a brief)
 
@@ -159,12 +188,14 @@ You were invoked specifically to review a PR. You run with fresh context on purp
 
 1. **Confirm the PR is merged** — your only hard precondition (forge-derived). If not merged, refuse.
 2. **Read `roles/archivist.md`** — the close-out checklist.
-3. **Work the checklist** — Issue closed, decision logged if Tier 3, changelog appended, docs coherent, per-project `state.md`/`now.md` updated for every project the task listed, provenance block posted to the merged PR. Flag (don't perform) orphaned branches and worktree removal. Write no task status — the merge is the status.
+3. **Work the checklist** — Issue closed, decision logged if Tier 3, changelog appended, docs coherent, per-project `state.md` updated for every project the task listed (remove stale operational notes; `now.md` no longer exists — D-057), provenance block posted to the merged PR. Flag (don't perform) orphaned branches and worktree removal. Write no task status — the merge is the status.
 
 ### Mandatory forge check (before any brief, audit, or recommendation)
 
 Run or fetch before producing output that depends on knowing what's in flight:
+- Open Issues (current iteration): `gh issue list --label "iteration:<slug>" --state open`
 - Open PRs: `gh pr list --state open`
+- Blocked Issues: `gh issue list --label "aeg:blocked" --state open`
 - Recent merges: `gh pr list --state merged --limit 20`
 
 No brief, no audit finding, no "next steps" recommendation is valid without this.
@@ -198,11 +229,12 @@ Locked (D-013). Spec filenames are `{product}-spec.md` or `{component}-spec.md` 
 
 ### When state changes, update `state.md`
 
-State changes: a project phase advances, an app ships/scaffolds, auth/DNS config changes, any "what is true right now" fact. The TL updates `state.md` (commit or PR) before the session ends. For Tier 3 work, the state update goes in the same PR.
+State changes: a project phase advances, an app ships/scaffolds, auth/DNS config changes, a known production issue is resolved, a pending manual op is completed. The TL updates `state.md` (commit or PR) before the session ends. For Tier 3 work, the state update goes in the same PR.
+
+Active work, next candidates, and blocked tasks are **derived from the forge** — they are never written to a file. (D-057 — `now.md` is retired.)
 
 ### When the plan changes, update the appropriate file
 
-- **Active work changes** (new dispatch, priority shift, blocker resolved, phase completes) → `now.md`
 - **The execution plan changes** (a task's edges, a new task, iteration scope) → the current `iterations/<name>.md` (Planner, at plan time). Live task *status* is never written — it's derived from the forge.
 - **Held/future project items change** → the relevant per-project backlog (`apps/<project>/specs/<project>-backlog.md`) or the ecosystem backlog (`specs/ecosystem-backlog.md`) — out of the flow.
 - **Work completes and ships** (PR merged) → append to `changelog.md` (most recent first; never edit existing entries)
@@ -226,14 +258,13 @@ Log to `decisions.md` (global) or the per-project log during the conversation. A
 | A project spec, ecosystem vision, naming decision | Repo only |
 | Global decision log | `aeg-project/decisions.md` |
 | Per-project decision log | `apps/{project}/specs/{project}-decisions.md` |
-| Current state (project phase, what shipped) | `aeg-project/state.md` |
-| Active work, next 3 things, manual tasks | `aeg-project/now.md` |
+| Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | `aeg-project/state.md` |
 | The execution plan (task topology, edges) | `aeg-root/iterations/<name>.md` |
 | Held / future project items | `apps/{project}/specs/{project}-backlog.md` (per project) or `specs/ecosystem-backlog.md` (monorepo) |
 | Completed work log (append only) | `aeg-project/changelog.md` |
 | Calibration lessons + anti-patterns | `aeg-project/lessons.md` |
 | Items awaiting Principal ratification | `aeg-project/ratification-queue.md` |
-| Live task status | **Nowhere — derived from the forge** (`gh pr list`, Issues view) |
+| Live task status (what's active, blocked, next) | **Nowhere — derived from the forge** (`gh issue list --label "iteration:<slug>"`, `gh pr list`, Issues view) |
 | Adding/removing/renaming a repo file | Repo + `bun docs:index` |
 | Fundamental coordination rules | This file |
 

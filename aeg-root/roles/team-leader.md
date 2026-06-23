@@ -55,7 +55,7 @@ The TL is one role with three modes. Make the mode shift explicit to the Princip
 
 **What you do:**
 - Author briefs per the `brief-authoring` skill — load the skill before writing. The brief is the task's full context; it is pasted to the Developer and lands in the PR body (never committed, never in the Issue).
-- Update per-project `state.md` / `now.md` and decision logs as work progresses.
+- Update per-project `state.md` and decision logs as work progresses. (`now.md` is retired — D-057; live execution state is derived from the forge.)
 - Review specs on completed PRs for coherence (not technical accuracy — that's Principal's code review).
 - Maintain `ratification-queue.md` — append items before windows, mark resolved after.
 
@@ -75,7 +75,7 @@ The TL is one role with three modes. Make the mode shift explicit to the Princip
 
 **Brief authoring.** Every task brief follows the brief-authoring skill. The TL writes briefs just-in-time; the Principal approves; the brief lands in the PR body at dispatch.
 
-**State doc maintenance.** Per-project `state.md` / `now.md`, the current iteration file(s), `decisions.md`, `ratification-queue.md`. The TL keeps these current. (Note: the iteration file holds *topology only* — never execution status, which is derived from the forge.)
+**State doc maintenance.** Per-project `state.md`, the current iteration file(s), `decisions.md`, `ratification-queue.md`. The TL keeps these current. (`now.md` is retired — D-057; active/blocked/next state is derived from the forge via `gh issue list` and `gh pr list`. The iteration file holds *topology only* — never execution status.)
 
 **Spec review on completed PRs.** After a Developer opens a PR, the TL reviews spec/skill/decision-log changes for coherence — does the spec describe what was built, is the decision log honest, are cross-references intact. NOT technical correctness (Principal's code review).
 

@@ -27,7 +27,7 @@ Work through this checklist for the merged task. Confirm each against reality �
 2. **Decision logged (Tier 3 only).** If the task was Tier 3, confirm a decision entry exists in the right log (`aeg-project/decisions.md` or the per-project decisions file) with status, type, rationale, alternatives, consequences. If it's missing, that's a close-out blocker — flag it; a Tier 3 change without a logged decision is not done.
 3. **Changelog appended.** `changelog.md` (global, or per-project if the change is project-scoped) records what shipped.
 4. **Docs updated.** The tier-required docs the brief listed actually moved. (CI's `verify-docs` gated *presence*; you confirm they're *coherent* with what merged.)
-5. **Per-project status updated — for every project the task listed.** Update each listed project's `state.md` (if state changed) and `now.md` (remove the finished work, surface what's next). A multi-project task updates *every* listed project's `aeg-project/`. This is the one place you write to per-project state — and note: this is project *status documentation*, not task status (task status stays derived from the forge).
+5. **Per-project status updated — for every project the task listed.** Update each listed project's `state.md` if state changed (phase advance, resolved known issue, updated pending-manual-ops). A multi-project task updates *every* listed project's `aeg-project/`. This is the one place you write to per-project state — and note: this is project *status documentation*, not task status (task status stays derived from the forge). (`now.md` no longer exists — D-057.)
 6. **`docs-index.md`** updated if files were added, removed, or renamed.
 7. **Provenance block assembled** (see below) and posted to the merged PR record.
 
@@ -64,7 +64,7 @@ You flag these in your report because performing them is either outside your rea
 
 ## What you do NOT do
 
-- **Write task status.** Status is derived from the forge. The merge *is* the `merged` status; you confirm it, you never record it in a file. (Per-project `state.md`/`now.md` is project status documentation, a different thing.)
+- **Write task status.** Status is derived from the forge. The merge *is* the `merged` status; you confirm it, you never record it in a file. (Per-project `state.md` is project *operational* documentation — non-derivable facts only — a different thing.)
 - **Author provenance facts.** You assemble from frozen sources; you never compute, infer, or invent a provenance field.
 - **Reopen or re-litigate the work.** It merged; close-out is bookkeeping, not a second review.
 - **Merge anything.** Merge already happened; if it didn't, you refuse (entry gate).
@@ -78,7 +78,7 @@ CLOSE-OUT: task N (PR #M) — COMPLETE | INCOMPLETE
 DONE:
 - Issue #N closed
 - changelog appended
-- <project> state.md / now.md updated
+- <project> state.md updated
 - provenance block posted to PR #M
 - ...
 

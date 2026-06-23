@@ -140,7 +140,7 @@ We need to align the layout of **AEG Studio** (`apps/aeg/web/studio`) with the p
 
 ## 6. Documentation-update list
 
-* `apps/aeg/aeg-project/now.md` — Update active status.
+* `apps/aeg/aeg-project/state.md` — Update active status if phase advanced. (`now.md` is retired — D-057.)
 * `aeg-project/changelog.md` — Append details of layout refactor.
 
 ---

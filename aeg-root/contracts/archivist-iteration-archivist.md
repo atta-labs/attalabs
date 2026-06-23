@@ -31,7 +31,7 @@ Every output the per-task Archivist produces (left) has exactly one obligation f
 |---|---|---|
 | **Provenance block comment** on each merged PR | Entry gate verification | The Iteration Archivist verifies every task PR has a provenance block comment before starting close-out. A missing provenance block means that task's per-task Archivist close-out was incomplete — stop and flag: *"Task N's PR has no provenance block — per-task Archivist did not run for this task. Flag for Principal before proceeding."* |
 | **`lessons.md` entries** for any `BLOCKER`/`MAJOR` findings that merged | Retrospective assembly | The Iteration Archivist reads `aeg-project/lessons.md` entries since the iteration started and includes the patterns they identify in the retrospective's "What stalled or caused rework" and "Carry-forward lessons" sections. |
-| **Follow-up Issues** opened for `STALE-SPEC` findings | State doc update | The Iteration Archivist notes open follow-up Issues in `aeg-project/now.md` under "known open issues." A `STALE-SPEC` finding with no follow-up Issue is a DANGLING item — flag it for the Principal. |
+| **Follow-up Issues** opened for `STALE-SPEC` findings | State doc update | The Iteration Archivist notes open follow-up Issues in `aeg-project/state.md` under "Pending manual operations" (or in the output report as DANGLING items). A `STALE-SPEC` finding with no follow-up Issue is a DANGLING item — flag it for the Principal. (`now.md` is retired — D-057.) |
 
 **Reading the table:** left is the producer obligation (per-task Archivist role doc and this contract enforce it), right is the consumer obligation (Iteration Archivist role doc and this contract enforce it). The two role docs must not contradict this table.
 
@@ -48,7 +48,7 @@ Every output the per-task Archivist produces (left) has exactly one obligation f
 
 - Verify every task PR has a provenance block comment before starting. If any is missing, stop and flag — do not proceed with partial close-out. Partial close-out is worse than no close-out: it creates a plausible-looking but incomplete record.
 - Read `aeg-project/lessons.md` entries since the iteration start date before assembling the retrospective. Carry-forward lessons that appear in `lessons.md` but are not reflected in the retrospective are a gap.
-- Note open follow-up Issues in `aeg-project/now.md`. If a `STALE-SPEC` finding has no follow-up Issue (the per-task Archivist missed it), flag it as DANGLING and open the Issue on behalf of the Principal.
+- Note open follow-up Issues in `aeg-project/state.md` (under "Pending manual operations") or in the close-out report as DANGLING items. If a `STALE-SPEC` finding has no follow-up Issue (the per-task Archivist missed it), flag it as DANGLING and open the Issue on behalf of the Principal. (`now.md` is retired — D-057.)
 - Do not assemble the iteration retrospective from memory or inference — assemble it from merged PR summaries, `lessons.md` entries, and the iteration topology file. The retrospective is a structured projection of facts.
 
 ---

@@ -244,7 +244,7 @@ flowchart TB
 
     Merge[PR merged — auto-closes Issue] --> CloseOut[Archivist close-out]
     CloseOut --> ChangeLog[Append changelog]
-    CloseOut --> PerProject[Update per-project state.md / now.md<br/>for every project the task listed]
+    CloseOut --> PerProject[Update per-project state.md<br/>for every project the task listed<br/>(now.md retired — D-057)]
     CloseOut --> IndexRegen[Regenerate docs-index.md]
     CloseOut --> SeqValid[Validate D-### sequence within each log]
     CloseOut --> Orphans[Flag orphaned branches + worktrees]
@@ -321,7 +321,7 @@ flowchart TB
         Manual[aeg-root/aeg-manual-flow.md<br/>running the flow by hand]
         StateMach[aeg-root/state-machine.md<br/>artifacts, mutations, hierarchy]
         Decisions[aeg-project/decisions.md — global decision log]
-        StateNow[aeg-project/state.md + now.md — current snapshot]
+        StateNow[aeg-project/state.md — non-derivable operational facts<br/>(now.md retired D-057 — active state from forge)]
         Iterations[aeg-root/iterations/ — README + per-iteration<br/>topology files the plan]
         Projects[aeg-root/projects.md — project registry]
         Reviewer[aeg-root/reviewer-prompt.md — for stateless AIs]
@@ -384,7 +384,7 @@ flowchart LR
     H --> I[Principal code review]
     I --> J[TL spec review]
     J --> K[Principal merge — Issue auto-closes]
-    K --> L[Archivist close-out:<br/>changelog, per-project now.md, docs-index]
+    K --> L[Archivist close-out:<br/>changelog, per-project state.md, docs-index]
 
     classDef devNode fill:#c8e6c9,stroke:#2e7d32,color:#000
     classDef ciNode fill:#ffe0b2,stroke:#e65100,color:#000

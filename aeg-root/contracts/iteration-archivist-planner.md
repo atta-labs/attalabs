@@ -24,11 +24,10 @@ This contract formalizes the close-out outputs the Iteration Archivist must prod
 Four artifacts, all produced by the Iteration Archivist at close-out:
 
 1. The **archived iteration file** at `aeg-root/iterations/completed/<name>.md` — the physical signal.
-2. The updated **`aeg-project/state.md`** — the authoritative current-state snapshot for the product.
-3. The updated **`aeg-project/now.md`** — the declared "what's next" after the iteration.
-4. The **retrospective** appended to `aeg-project/lessons.md` — the durable failure-mode record.
+2. The updated **`aeg-project/state.md`** — the authoritative current-state snapshot for the product (current-focus pointer, resolved pending-manual-ops, recently-shipped entry).
+3. The **retrospective** appended to `aeg-project/lessons.md` — the durable failure-mode record.
 
-All four must exist before the Planner is authorized to plan the next iteration on the product.
+All three must exist before the Planner is authorized to plan the next iteration on the product. (`now.md` is retired — D-057. "What's next" is derived from the forge: open Issues without an assigned PR in the current iteration, plus `gh issue list --label "iteration:<slug>" --state open`.)
 
 ---
 
@@ -39,9 +38,10 @@ Every artifact the Iteration Archivist produces (left) has exactly one obligatio
 | Iteration Archivist produces | Planner consumes at | What the consumption means |
 |---|---|---|
 | **Archived iteration file** at `aeg-root/iterations/completed/<name>.md` | Readiness gate item 8 | The Planner MUST confirm this file exists before planning any new iteration on the same product. Absence means the Iteration Archivist has not run — planning is blocked. |
-| **Updated `aeg-project/state.md`** reflecting current product state | Readiness gate item 2 (specs reachable) | The Planner reads the updated state doc as the authoritative current-state snapshot. A state doc not updated by the Iteration Archivist means the plan is built on wrong assumptions about what the product looks like post-iteration. |
-| **Updated `aeg-project/now.md`** with "what's next" | Planner's starting context | The Planner reads `now.md` to understand what the previous iteration declared as next candidates. A `now.md` not updated since the iteration closed contains stale "in flight now" entries that will mislead the planning pass. |
+| **Updated `aeg-project/state.md`** reflecting current product state (current-focus pointer updated, pending-manual-ops current, recently-shipped entry added) | Readiness gate item 2 (specs reachable) | The Planner reads the updated state doc as the authoritative current-state snapshot. A state doc not updated by the Iteration Archivist means the plan is built on wrong assumptions about what the product looks like post-iteration. |
 | **Retrospective** appended to `aeg-project/lessons.md` | Readiness gate item 5 (locked decisions known) | The Planner reads lessons since the last iteration to avoid re-litigating resolved decisions or repeating known failure modes. A missing retrospective means the Planner plans blind to the iteration's carry-forward lessons. |
+
+> **`now.md` is retired (D-057).** "What's next" is not a produced artifact — it is derived from the forge: `gh issue list --label "iteration:<slug>" --state open` filtered to Issues with no open PR. The Planner runs this query directly rather than reading a file that would need hand-maintenance.
 
 **Reading the table:** left is the producer obligation (Iteration Archivist role doc and this contract enforce it), right is the consumer obligation (Planner role doc and this contract enforce it). The two role docs must not contradict this table.
 
@@ -50,16 +50,17 @@ Every artifact the Iteration Archivist produces (left) has exactly one obligatio
 ## Producer obligations (the Iteration Archivist)
 
 - Move the iteration file to `completed/` — this is the **physical signal** the Planner's gate checks. A close-out that does everything else but fails to move the file is an incomplete close-out that correctly blocks planning.
-- Update `aeg-project/state.md` to reflect the iteration's output. A state doc that still describes work in progress after the iteration closed is a bug in the close-out.
-- Declare "what's next" in `aeg-project/now.md`. The Iteration Archivist does not decide what's next (that's the Principal) — they write "Principal to declare" if not told. But they do update the in-flight sections and remove the completed iteration.
-- Append the retrospective to `aeg-project/lessons.md`. These four outputs are the close-out contract. A close-out missing any of them is incomplete and the Planner's gate will correctly block.
+- Update `aeg-project/state.md` to reflect the iteration's output: update the current-focus pointer, add a recently-shipped entry, clear resolved pending-manual-ops. A state doc that still describes work in progress after the iteration closed is a bug in the close-out.
+- Append the retrospective to `aeg-project/lessons.md`. These three outputs are the close-out contract. A close-out missing any of them is incomplete and the Planner's gate will correctly block.
+- **Do not** update `now.md` — it no longer exists (D-057). "What's next" is derived from the forge by the Planner, not written by the Archivist.
 
 ## Consumer obligations (the Planner)
 
 - Run readiness gate item 8 before planning any iteration that includes a product: confirm `aeg-root/iterations/completed/<name>.md` exists for the previous iteration on each product in scope.
 - If any prior iteration on an in-scope product exists in `aeg-root/iterations/` but NOT in `completed/`, STOP: *"The previous iteration `<name>` on `<product>` has not been archived — the Iteration Archivist has not run. Dispatch the Iteration Archivist for `<name>` before planning proceeds."*
 - Do not improvise around a missing close-out. "The Iteration Archivist probably ran" is not a passed gate. The filesystem check is the gate. If the file isn't there, stop.
-- Read the updated `state.md`, `now.md`, and `lessons.md` as the authoritative current-state snapshot — not a previous session's memory, not an earlier planning pass. These documents reflect what the iteration actually shipped; planning against anything else is planning against stale reality.
+- Read the updated `state.md` and `lessons.md` as the authoritative current-state snapshot — not a previous session's memory, not an earlier planning pass. These documents reflect what the iteration actually shipped; planning against anything else is planning against stale reality.
+- Derive "what's next" from the forge: `gh issue list --label "iteration:<slug>" --state open` filtered to Issues without an assigned open PR. Do not look for a `now.md` — it no longer exists (D-057).
 
 ---
 
