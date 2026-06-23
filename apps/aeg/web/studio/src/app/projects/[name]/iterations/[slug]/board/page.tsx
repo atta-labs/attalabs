@@ -9,6 +9,9 @@ import { readIteration, readProject } from '@/lib/aeg-fs'
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
 import { STATUS_ORDER, statusVisual } from '../_lib/status-display'
 
+// Forge reads derive live Issue/PR state from GitHub — never serve from cache.
+export const dynamic = 'force-dynamic'
+
 type Params = { name: string; slug: string }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {

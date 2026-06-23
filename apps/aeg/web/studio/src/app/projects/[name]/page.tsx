@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation'
 import { iterationsForProject, readProject } from '@/lib/aeg-fs'
 import { ProjectIterationsTabs } from './ProjectIterationsTabs'
 
+// Forge reads derive live Issue/PR state from GitHub — never serve from cache.
+export const dynamic = 'force-dynamic'
+
 type Params = { name: string }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {

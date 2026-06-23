@@ -11,6 +11,9 @@ import { fetchPullRequestBriefs, type PullRequestBrief } from '@/lib/forge/fetch
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
 import { statusVisual } from '../../_lib/status-display'
 
+// Forge reads derive live Issue/PR state from GitHub — never serve from cache.
+export const dynamic = 'force-dynamic'
+
 type Params = { name: string; slug: string; taskId: string }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
