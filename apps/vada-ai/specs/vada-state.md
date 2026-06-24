@@ -2,7 +2,18 @@
 
 ## Most recent session — Jun 23, 2026
 
-Tool indicators on team cards (vada-production-v1, PR #207). The `/teams` page and `/teams/[slug]` detail page now surface a "web search" badge on agents that declare `tools: [web_search]` in their YAML, conditioned on server-side search infrastructure being configured (`TAVILY_API_KEY` or `GOOGLE_SEARCH_API_KEY`+`GOOGLE_SEARCH_CX`). Only a boolean is passed to the client — no key value is exposed. The badge renders on the three Reviewers team agents (Gemini, GPT, Grok) in both the sphere view (`TeamCard`) and the agent detail tab (`AgentTab`). Per-vendor accuracy check (Gemini native grounding regardless of Tavily) deferred for v1; declare+configured check is accurate for the current catalog.
+Reviewer sphere identity + tool indicator corner glyph (vada-production-v1, PR #207).
+
+**Reviewer sphere identity (model-driven, not name-driven):**
+- `VadaAgent` already fell through to vendor inference for reviewer slots (Gemini/GPT/Grok are not in `AGENTS`). What was missing: AgentTab hardcoded `model={undefined}` for all agents, stripping reviewer identity on the `/teams/[slug]` detail page. Fixed: AgentTab now passes `model={agent.model}` so reviewer slots render with the correct vendor color and provider icon face.
+- `VadaAgent` now shows a `NoModelSelectedIcon` (Shuffle from lucide-react, `text-muted-foreground`) as the face when a reviewer slot has no model assigned — communicates "you choose" without implying a vendor. This state applies to unconfigured Deliberate reviewer slots.
+- Roled agents (Synthesizer, FactChecker, BlindCritic etc.) are unaffected — they resolve via `AGENT_BY_ROLE` and keep their portrait face + sphere color.
+
+**Tool indicator refactor:**
+- `AgentWebSearchBadge` (full-width bar below sphere) removed; replaced by `AgentToolIndicator` — a small corner glyph anchored bottom-left of the sphere circle.
+- `AgentToolIndicator` takes a `tool: 'web_search'` prop; renders a `Globe` icon in a `bg-card border-border` chip matching the existing model-badge style. Accessible via `role='img'` + `aria-label`.
+- Threaded via new `toolBadge` prop on `AIAgent` / `AIASphere` (`badgeLeft` slot at `bottom: -4px, left: -4px`), keeping model badge (bottom-right) and tool badge (bottom-left) from colliding.
+- `vada-reviewers-synthesis.yaml` reviewers already had `tools: [web_search]` from PR #209 — no YAML change needed.
 
 ---
 

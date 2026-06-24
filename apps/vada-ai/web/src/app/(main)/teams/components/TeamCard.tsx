@@ -4,7 +4,7 @@ import { Card, CardContent } from '@atta/ui/components'
 import { Heading } from '@atta/ui/shared'
 import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
-import { AgentWebSearchBadge } from '@/components/AgentWebSearchBadge'
+import { AgentToolIndicator } from '@/components/AgentToolIndicator'
 import Link from 'next/link'
 import { getDisplayAgentNames, getFlowAgentCount, getFlowShapeLabel } from '@/lib/flow-helpers'
 
@@ -41,19 +41,17 @@ function Sphere({
 }) {
   const hasWebSearch = searchAvailable && agent.tools?.includes('web_search')
   return (
-    <div className='flex flex-col items-center gap-1'>
-      <VadaAgent
-        id={`card-${specId}-${agent.name}`}
-        name={agent.name}
-        role={agent.role}
-        model={agent.role ? undefined : (agent.model ?? defaultModel)}
-        state='speaking'
-        size={size}
-        visible
-        label={agent.role ? undefined : 'REVIEWER'}
-      />
-      {hasWebSearch && <AgentWebSearchBadge />}
-    </div>
+    <VadaAgent
+      id={`card-${specId}-${agent.name}`}
+      name={agent.name}
+      role={agent.role}
+      model={agent.role ? undefined : (agent.model ?? defaultModel)}
+      state='speaking'
+      size={size}
+      visible
+      label={agent.role ? undefined : 'REVIEWER'}
+      toolBadge={hasWebSearch ? <AgentToolIndicator tool='web_search' /> : undefined}
+    />
   )
 }
 
