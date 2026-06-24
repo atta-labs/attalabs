@@ -2,7 +2,7 @@
 
 **Author:** Claude (Atta ecosystem — Critic role)
 **Date:** May 8, 2026
-**Status:** Revision 5. Implementation-ready pending final reviewer pass.
+**Status:** draft
 **Audience:** Implementers and final-pass reviewers.
 
 **Revision note (rev 5):** Three additions to the reviewer and synthesizer prompts, derived from a cross-vendor research synthesis (Gemini, Grok, ChatGPT) on multi-agent orchestration patterns conducted in parallel with the rev 4 work. The research surfaced five convergent patterns; three of those five were already in rev 4 (DO-NOT-FLAG list, GROUNDED/INFERRED tagging, structured synthesis schema with grounded-over-inferred weighting). The remaining two, plus one structural refinement, land here:
