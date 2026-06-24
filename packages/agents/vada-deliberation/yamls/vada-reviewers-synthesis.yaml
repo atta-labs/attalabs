@@ -10,7 +10,7 @@ defaults:
 
 agents:
   - name: Gemini
-    description: "Gemini reviewer — critical external perspective via Google's Gemini model"
+    description: "Independent reviewer slot — critical external perspective from the model you assign, with live web access."
     model: gemini-2.5-pro
     editable: true
     tools: [web_search]
@@ -55,7 +55,7 @@ agents:
       your concern.
 
   - name: GPT
-    description: "GPT reviewer — critical external perspective via OpenAI's GPT model"
+    description: "Independent reviewer slot — critical external perspective from the model you assign, with live web access."
     model: gpt-4o
     editable: true
     tools: [web_search]
@@ -100,7 +100,7 @@ agents:
       your concern.
 
   - name: Grok
-    description: "Grok reviewer — critical external perspective via xAI's Grok model"
+    description: "Independent reviewer slot — critical external perspective from the model you assign, with live web access."
     model: grok-3
     editable: true
     tools: [web_search]
