@@ -3,6 +3,7 @@
 import { findModelEntryByModelId, useCatalog } from '@atta/models'
 import { ModelIcon } from '@atta/ui/components'
 import { ProviderIcon } from '@lobehub/icons'
+import { Sparkles } from 'lucide-react'
 import { inferVendor } from './vendors'
 
 // Prefixes that @lobehub/icons ModelIcon renders with a real icon (not the brain fallback).
@@ -21,25 +22,17 @@ interface ModelOrProviderIconProps {
 
 /**
  * Shown when a reviewer slot has no model selected yet.
- * Two overlapping grey discs — communicates "multiple models, you choose"
+ * Single grey AI-sparkle glyph — communicates "AI / model slot — you choose"
  * without implying any specific vendor.
  */
-export function NoModelSelectedIcon({ size = 36, className }: { size?: number; className?: string }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox='0 0 36 36'
-      fill='none'
-      aria-label='No model selected — pick one to configure this slot'
-      className={className ?? 'text-muted-foreground'}
-    >
-      {/* back circle — offset up-right, lower opacity */}
-      <circle cx='21' cy='15' r='11' fill='currentColor' opacity='0.35' />
-      {/* front circle — offset down-left, higher opacity */}
-      <circle cx='15' cy='21' r='11' fill='currentColor' opacity='0.55' />
-    </svg>
-  )
+export function NoModelSelectedIcon({
+  size = 36,
+  className = 'text-muted-foreground'
+}: {
+  size?: number
+  className?: string
+}) {
+  return <Sparkles size={size} className={className} />
 }
 
 export function ModelOrProviderIcon({ model, size = 36 }: ModelOrProviderIconProps) {
