@@ -2,6 +2,32 @@
 
 ## Most recent session — Jun 23, 2026
 
+Hero configure-then-deliberate flow + post-save auto-dispatch + DeliberatePanel → TeamSummary swap (vada-production-v1, PR #207, tool-badges branch).
+
+**Commit 1 — Hero CONFIGURE affordance (DeliberateSection.tsx):**
+- Added CONFIGURE Button (ghost variant, font-mono) inline with the empty-state TeamPicker row.
+- Rendered only when `selectedSpec?.agents.some(a => a.editable)` is true — hidden for non-editable specs.
+- Calls `form.openReviewerModal()` on click.
+- `ReviewerConfigModal` now mounts from the empty state (gated on `form.showReviewerModal`), wired to `form.handleModalSave` / `form.closeReviewerModal`. Previously the modal only mounted from the active state inside `DeliberatePanel`.
+
+**Commit 2 — Post-save auto-dispatch (useDeliberateForm.ts):**
+- `handleModalSave` previously stored config + closed modal. Now additionally dispatches via `dispatchRef.current()` if `questionRef.current.trim()` is non-empty after saving.
+- Added `questionRef` (mirrors the existing `selectedSpecIdRef` pattern) for a stale-free synchronous read of the current question inside the `useCallback`.
+- `dispatchRef.current()` re-validates internally using the freshly persisted config — no duplicate check needed at the call site.
+- Empty question → modal closes only; no dispatch.
+
+**Commit 3 — DeliberatePanel → TeamSummary swap (DeliberateSection.tsx):**
+- Active-state rendering replaced: `DeliberatePanel`'s two-card layout removed; `TeamSummary` renders instead.
+- `TeamSummary` wired: `spec={selectedSpec}`, `onConfigure={form.openReviewerModal}`, `actions` slot contains benchmark checkbox + Deliberate button.
+- Benchmark checkbox (previously inside `DeliberatePanel`) preserved in the `actions` slot, using the same `form.benchmarkEnabled` / `form.setBenchmarkEnabled` wire.
+- Deliberate button: `onClick={form.handleStart}`, `disabled={!form.canStart}`.
+- `ReviewerConfigModal` remains mounted from active state, gated on `form.showReviewerModal`.
+- `DeliberatePanel` deleted — confirmed no other importers at the time of deletion.
+
+---
+
+## Most recent session — Jun 23, 2026
+
 Ghost-layer unmount + submit-path audit (vada-production-v1, PR #207, tool-badges branch).
 
 **Problem 1 — Submit path audit:**
