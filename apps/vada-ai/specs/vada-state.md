@@ -2,6 +2,25 @@
 
 ## Most recent session — Jun 23, 2026
 
+`SmartPromptInput` gains `actions` slot + Vāda Deliberate hero moves TeamPicker + CONFIGURE inside the input (vada-production-v1, PR #207, tool-badges branch).
+
+**Commit 1 — `@atta/ui/smart-prompt-input` refactor (smart-prompt-input.tsx):**
+- New optional prop `actions?: React.ReactNode` for Gemini-style action chips next to the submit button.
+- Single-line state (and no attachments): `actions` render inline on the right of the textarea, immediately before submit; submit stays rightmost.
+- Multi-line / attachments present: `actions` drop into the existing footer row, between any tools/hint and the submit button.
+- Detection approach: measure the textarea's `scrollHeight` against computed `lineHeight + paddingTop + paddingBottom + 1px slack`, re-measured on every `onInput`. The textarea grows via `field-sizing-content`, so no `ResizeObserver` is needed; a 1px slack prevents sub-pixel jitter from flipping the layout.
+- Textarea node is resolved via `querySelector('textarea[name="message"]')` from a wrapper `ref` — the vendored `PromptInputTextarea` is a plain function component without ref forwarding, and patching the vendor file would cost more than this targeted DOM query.
+- Backwards-compatible default: when `actions` is not passed (Herald's case), the component renders the same DOM tree as before — same `PromptInputTextarea` placement, same footer with submit on the right, same attachment header, same full-width-CTA path. Herald's `JDInput` call site is unchanged and unaffected.
+
+**Commit 2 — Vāda Deliberate hero uses the `actions` slot (DeliberateSection.tsx):**
+- Removed the standalone `<div className='flex items-center justify-center gap-3'>` row that previously held `TeamPicker` + `CONFIGURE` + `View team`.
+- `TeamPicker` and the conditional `CONFIGURE` button now live inside the `SmartPromptInput`'s `actions` prop. The same `selectedSpec?.agents.some(a => a.editable)` gate is preserved — CONFIGURE only renders for specs with editable agents.
+- `View team` link kept as a small `<NextLink>` centered immediately below the input (separate concern from deliberation controls — navigates to `/teams/[slug]`).
+- The hero heading and intro paragraph above the input are unchanged.
+- Active-state input (the fixed-bottom bar when a question has been submitted) keeps its current shape with no `actions` — the team picker and CTA already live on the `TeamSummary` card above it.
+
+## Most recent session — Jun 23, 2026
+
 Hero configure-then-deliberate flow + post-save auto-dispatch + DeliberatePanel → TeamSummary swap (vada-production-v1, PR #207, tool-badges branch).
 
 **Commit 1 — Hero CONFIGURE affordance (DeliberateSection.tsx):**

@@ -54,19 +54,31 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 </p>
               </div>
 
-              <div className='flex items-center justify-center gap-3'>
-                <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
-                {selectedSpec?.agents.some((a) => a.editable) && (
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={form.openReviewerModal}
-                    className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent'
-                  >
-                    Configure
-                  </Button>
-                )}
-                {selectedSpec && (
+              <SmartPromptInput
+                onSubmit={handleSmartSubmit}
+                placeholder='What decision are you wrestling with?'
+                submitOn='cmdenter'
+                hint='Cmd+Enter to deliberate'
+                status={form.loading ? 'loading' : 'idle'}
+                actions={
+                  <>
+                    <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
+                    {selectedSpec?.agents.some((a) => a.editable) && (
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={form.openReviewerModal}
+                        className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent'
+                      >
+                        Configure
+                      </Button>
+                    )}
+                  </>
+                }
+              />
+
+              {selectedSpec && (
+                <div className='flex justify-center'>
                   <NextLink
                     href={`/teams/${selectedSpec.id}`}
                     variant='prose'
@@ -75,16 +87,8 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                     View team
                     <ArrowUpRight className='size-3' />
                   </NextLink>
-                )}
-              </div>
-
-              <SmartPromptInput
-                onSubmit={handleSmartSubmit}
-                placeholder='What decision are you wrestling with?'
-                submitOn='cmdenter'
-                hint='Cmd+Enter to deliberate'
-                status={form.loading ? 'loading' : 'idle'}
-              />
+                </div>
+              )}
             </div>
           </div>
 
