@@ -3,7 +3,7 @@
 import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent } from '@/components/agents/VadaAgent'
 import type { AgentRole } from '@/components/agents/VadaAgent'
-import { AgentWebSearchBadge } from '@/components/AgentWebSearchBadge'
+import { AgentToolIndicator } from '@/components/AgentToolIndicator'
 import { getDisplayAgentNames } from '@/lib/flow-helpers'
 
 export function AgentTab({ spec, searchAvailable }: { spec: Flow; searchAvailable: boolean }) {
@@ -18,13 +18,19 @@ export function AgentTab({ spec, searchAvailable }: { spec: Flow; searchAvailabl
             id={`agent-tab-${spec.id}-${agent.name}`}
             name={agent.name}
             role={agent.role as AgentRole | undefined}
-            model={undefined}
+            // For roled agents the role drives face/color; model shows as badge.
+            // For reviewer slots (no role), model drives the vendor sphere identity.
+            model={agent.model}
             state='speaking'
             size='md'
             visible
+            toolBadge={
+              searchAvailable && agent.tools?.includes('web_search') ? (
+                <AgentToolIndicator tool='web_search' />
+              ) : undefined
+            }
           />
           <p className='text-sm leading-relaxed text-foreground/70'>{agent.description}</p>
-          {searchAvailable && agent.tools?.includes('web_search') && <AgentWebSearchBadge />}
         </div>
       ))}
     </div>

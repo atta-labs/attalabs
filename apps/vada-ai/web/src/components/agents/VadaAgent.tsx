@@ -2,7 +2,7 @@
 
 import { AgentSphere, type AgentSphereProps } from '@atta/ui/agents'
 import { AGENTS, AGENT_BY_ROLE, type AgentName, type AgentRole } from '@/components/agents/visuals'
-import { ModelOrProviderIcon } from './ModelOrProviderIcon'
+import { ModelOrProviderIcon, NoModelSelectedIcon } from './ModelOrProviderIcon'
 import { AGENT_FACES as REDUCTIVE_FACES } from './faces/agent-faces-minimal'
 import { AGENT_FACES as EMBLEMATIC_FACES } from './faces/agent-faces-full'
 import { VENDORS, inferVendor } from './vendors'
@@ -53,6 +53,12 @@ export function VadaAgent({
   } else if (model) {
     face = <ModelOrProviderIcon model={model} size={36} />
     faceOpacity = faceOpacityProp ?? 0.9
+    faceTranslateY = '0'
+  } else {
+    // Reviewer slot with no model selected — neutral multi-model glyph communicates
+    // "you choose" without implying any vendor.
+    face = <NoModelSelectedIcon size={36} />
+    faceOpacity = faceOpacityProp ?? 0.7
     faceTranslateY = '0'
   }
 

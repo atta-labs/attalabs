@@ -3,6 +3,7 @@
 import { findModelEntryByModelId, useCatalog } from '@atta/models'
 import { ModelIcon } from '@atta/ui/components'
 import { ProviderIcon } from '@lobehub/icons'
+import { Shuffle } from 'lucide-react'
 import { inferVendor } from './vendors'
 
 // Prefixes that @lobehub/icons ModelIcon renders with a real icon (not the brain fallback).
@@ -17,6 +18,20 @@ function hasModelIcon(model: string): boolean {
 interface ModelOrProviderIconProps {
   model: string
   size?: number
+}
+
+/**
+ * Shown when a reviewer slot has no model selected yet.
+ * Communicates "any model / you choose" — visually neutral, no vendor brand.
+ */
+export function NoModelSelectedIcon({ size = 36 }: { size?: number }) {
+  return (
+    <Shuffle
+      aria-label='No model selected — pick one to configure this slot'
+      className='text-muted-foreground'
+      style={{ width: size, height: size }}
+    />
+  )
 }
 
 export function ModelOrProviderIcon({ model, size = 36 }: ModelOrProviderIconProps) {
