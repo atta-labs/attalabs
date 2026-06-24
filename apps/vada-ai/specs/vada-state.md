@@ -2,6 +2,21 @@
 
 ## Most recent session — Jun 23, 2026
 
+Ghost-layer unmount + submit-path audit (vada-production-v1, PR #207, tool-badges branch).
+
+**Problem 1 — Submit path audit:**
+- Traced `SmartPromptInput.onSubmit` → `handleSmartSubmit` → `form.handleStartWithText(text)` → `handleStartImplRef.current(q)` → `dispatchRef.current(overrideQuestion)` → `POST /api/deliberation/start` → `router.push(/deliberation/${session_id})`.
+- `handleStartWithText` was already wired correctly: it passes the explicit question text directly as `overrideQuestion`, bypassing the React-batched `question` state read. The `effectiveCanStart` guard inside the ref uses `effectiveQuestion` (the override), not the stale state value. No integration was missing — the submit path was complete.
+- No code change required for Problem 1.
+
+**Problem 2 — Ghost layer (empty state visible underneath active state on scroll):**
+- Root cause: both empty-state and active-state layers were always mounted. Empty state used `opacity-0 pointer-events-none` CSS toggling, so it was invisible but remained in the DOM and participated in layout. On scroll, the empty-state content (heading, TeamPicker, SmartPromptInput) was visible beneath the active panel.
+- Fix: converted both layers to conditional render (`{!isActive && <EmptyState />}` / `{isActive && <ActiveState />}`). Safe to unmount because all state that the empty layer displays (selected team, question text) is lifted into `useDeliberateForm` — `TeamPicker` is fully stateless (value+onChange props), `SmartPromptInput` is uncontrolled. No state is lost on unmount.
+- Removed `cn` import (no longer needed after removing conditional className logic). Removed `aria-hidden` and `transition-all duration-300` from the layout wrappers — now handled cleanly by React mount/unmount.
+- Stop condition not triggered: all state from the empty layer (`selectedSpecId`, `question`) lives in the hook. Unmounting is safe.
+
+## Most recent session — Jun 23, 2026
+
 Flow tab model icons + Deliberate chat-style layout + SmartPromptInput (vada-production-v1, PR #207, tool-badges branch).
 
 **Commit 1 — Flow tab nodes show real model icon and vendor color (AgentFlowNode.tsx):**
