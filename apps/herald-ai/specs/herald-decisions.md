@@ -1,8 +1,15 @@
 # Herald Decisions
 
-## D-001 — Type 2 — ACTIVE — 2026-06-24
+**Status:** draft
 
-**Herald admin theme save not reflected at :3000 — root cause**
+---
+
+## D-001 — Herald admin theme save not reflected at :3000 — root cause
+
+**Date:** 2026-06-24
+**Status:** ACTIVE
+**Type:** 2
+**Authored by:** TL
 
 Root cause: **A — inactive theme**. `heraldConfig.userInterface.theme` in Sanity project `e9gbd2d1` references `theme-storm` ("Storm"), not Cobalt. The admin tool correctly writes to `e9gbd2d1` (via `getCmsClientsForProject('herald')` using the hardcoded `PROJECT_IDS.herald = 'e9gbd2d1'` and a valid `SANITY_API_TOKEN_HERALD`). The Cobalt theme document (`theme-cobalt`) exists in that project with both `dark` and `light` fields populated — the save landed. But `heraldConfig` points at Storm, so Herald renders Storm on every request regardless of Cobalt edits.
 
