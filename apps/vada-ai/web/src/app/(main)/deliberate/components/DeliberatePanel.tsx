@@ -40,7 +40,12 @@ function MiniTeamCard({ spec, isSelected, onClick }: { spec: Flow; isSelected: b
     >
       <div className='flex flex-col items-center justify-center gap-2  text-center w-full'>
         <span className='font-sans text-sm font-semibold text-foreground leading-tight w-full'>{spec.displayName}</span>
-        <span className='font-mono text-[8px] uppercase tracking-widest text-muted-foreground w-full'>
+        <span
+          className={cn(
+            'font-mono text-[8px] uppercase tracking-widest w-full',
+            isSelected ? 'text-accent-foreground' : 'text-muted-foreground'
+          )}
+        >
           {getFlowAgentCount(spec)} agents · {getFlowShapeLabel(spec)}
         </span>
       </div>

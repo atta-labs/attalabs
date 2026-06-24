@@ -26,6 +26,12 @@ Calculator model list + YAML descriptions + Deliberate button fix + per-agent re
 - Added `variant='default'` explicitly. This makes the intent unambiguous and ensures all library variants (basic, animate, retro, brutal) use the correct CTA styling without relying on fallback inference.
 - Stop condition not triggered: the button wraps only `onStart` (the dispatch handler from `useDeliberateForm`). No benchmark state, no submission logic, no conditional branches live inside the button element itself. Safe UI-only change.
 
+**Fix 5 — MiniTeamCard sub-label contrast on selected state (DeliberatePanel.tsx):**
+- The `MiniTeamCard` component's sub-label `<span>` ("N agents · SHAPE") was unconditionally `text-muted-foreground`, even when the card was in its selected state (`bg-accent` fill). `muted-foreground` is calibrated against `background`/`card` surfaces; on a magenta `accent` fill it is unreadable.
+- Fix: conditional className using `text-accent-foreground` when `isSelected`, `text-muted-foreground` otherwise. `accent-foreground` is the CMS-managed paired token for `accent` backgrounds — it is contrast-tested against the accent fill across all product themes.
+- Scope: `MiniTeamCard` is a file-local function component defined inside `DeliberatePanel.tsx`. Not exported, not shared. The `/teams/` page's `TeamCard` component uses `text-muted-foreground` sub-labels against `bg-card` (always unselected) — correct pairing, unaffected.
+- Neither stop condition triggered: component is not shared, and `--accent-foreground` is a properly defined paired token in the CMS theme schema.
+
 ---
 
 ## Most recent session — Jun 23, 2026
