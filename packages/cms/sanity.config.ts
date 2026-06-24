@@ -32,20 +32,14 @@ export default defineConfig({
               .title('Atta Content')
               .items([
                 S.listItem()
-                  .title('Atta Config')
-                  .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
+                  .title('AttalLabs Config')
+                  .child(
+                    S.document().schemaType('attalabsConfig').documentId('attalabsConfig').title('AttalLabs Config')
+                  ),
                 S.listItem()
                   .title('Branding')
-                  .child(S.document().schemaType('branding').documentId('branding-atta').title('Atta Branding')),
-                S.listItem()
-                  .title('User Interface')
                   .child(
-                    S.list()
-                      .title('Atta User Interface')
-                      .items([
-                        S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Atta Themes')),
-                        S.listItem().title('Libraries').child(S.documentTypeList('library').title('Atta Libraries'))
-                      ])
+                    S.document().schemaType('branding').documentId('branding-attalabs').title('AttalLabs Branding')
                   )
               ])
           : isVada
@@ -57,17 +51,7 @@ export default defineConfig({
                     .child(S.document().schemaType('vadaConfig').documentId('vadaConfig').title('Vada Config')),
                   S.listItem()
                     .title('Branding')
-                    .child(S.document().schemaType('branding').documentId('branding-vada').title('Vada Branding')),
-                  S.listItem()
-                    .title('User Interface')
-                    .child(
-                      S.list()
-                        .title('Vada User Interface')
-                        .items([
-                          S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Vada Themes')),
-                          S.listItem().title('Libraries').child(S.documentTypeList('library').title('Vada Libraries'))
-                        ])
-                    )
+                    .child(S.document().schemaType('branding').documentId('branding-vada').title('Vada Branding'))
                 ])
             : isVitakka
               ? S.list()
@@ -82,18 +66,6 @@ export default defineConfig({
                       .title('Branding')
                       .child(
                         S.document().schemaType('branding').documentId('branding-vitakka').title('Vitakka Branding')
-                      ),
-                    S.listItem()
-                      .title('User Interface')
-                      .child(
-                        S.list()
-                          .title('Vitakka User Interface')
-                          .items([
-                            S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Vitakka Themes')),
-                            S.listItem()
-                              .title('Libraries')
-                              .child(S.documentTypeList('library').title('Vitakka Libraries'))
-                          ])
                       )
                   ])
               : isAttalabs
@@ -101,21 +73,11 @@ export default defineConfig({
                     .title('AttalLabs Content')
                     .items([
                       S.listItem()
-                        .title('AttalLabs Config')
-                        .child(
-                          S.document()
-                            .schemaType('attalabsConfig')
-                            .documentId('attalabsConfig')
-                            .title('AttalLabs Config')
-                        ),
+                        .title('Atta Config')
+                        .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
                       S.listItem()
                         .title('Branding')
-                        .child(
-                          S.document()
-                            .schemaType('branding')
-                            .documentId('branding-attalabs')
-                            .title('AttalLabs Branding')
-                        ),
+                        .child(S.document().schemaType('branding').documentId('branding-atta').title('Atta Branding')),
                       S.listItem()
                         .title('User Interface')
                         .child(
@@ -143,18 +105,6 @@ export default defineConfig({
                         .title('Branding')
                         .child(
                           S.document().schemaType('branding').documentId('branding-herald').title('Herald Branding')
-                        ),
-                      S.listItem()
-                        .title('User Interface')
-                        .child(
-                          S.list()
-                            .title('Herald User Interface')
-                            .items([
-                              S.listItem().title('Themes').child(S.documentTypeList('uiTheme').title('Herald Themes')),
-                              S.listItem()
-                                .title('Libraries')
-                                .child(S.documentTypeList('library').title('Herald Libraries'))
-                            ])
                         )
                     ])
     }),

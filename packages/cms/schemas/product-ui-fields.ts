@@ -1,13 +1,12 @@
 import { defineField } from 'sanity'
 
-export function productUserInterfaceFields(productLabel: string) {
+export function productUserInterfaceFields(_productLabel: string) {
   return [
     defineField({
       name: 'theme',
-      title: 'Theme',
-      type: 'reference',
-      to: [{ type: 'uiTheme' }],
-      description: `Active theme for the ${productLabel}`
+      title: 'Theme ID',
+      type: 'string',
+      description: `Active theme ID from Atta project (e.g. "theme-cobalt")`
     }),
     defineField({
       name: 'colorScheme',
@@ -23,10 +22,9 @@ export function productUserInterfaceFields(productLabel: string) {
     }),
     defineField({
       name: 'library',
-      title: 'Library',
-      type: 'reference',
-      to: [{ type: 'library' }],
-      description: `Active component library for the ${productLabel}`
+      title: 'Library ID',
+      type: 'string',
+      description: `Active component library ID from Atta project (e.g. "library-basic")`
     })
   ]
 }

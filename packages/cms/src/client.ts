@@ -13,10 +13,10 @@ export const cmsConfig = {
  */
 export const PROJECT_IDS = {
   herald: 'e9gbd2d1',
-  atta: '892o2m9f',
+  atta: 'l5n0n8nn',
   vada: 'ofnj2ojb',
   vitakka: 'o56nzgrr',
-  attalabs: 'l5n0n8nn'
+  attalabs: '892o2m9f'
 } as const
 
 export type ProductKey = keyof typeof PROJECT_IDS

@@ -23,9 +23,9 @@ export default async function ThemeEditPage({ params }: { params: Promise<{ proj
   if (!isValidProject(project)) notFound()
 
   const validProject = project as ProjectKey
-  const { readClient } = getCmsClientsForProject(validProject)
+  const { readClient: attaReadClient } = getCmsClientsForProject('attalabs')
 
-  const theme = await readClient
+  const theme = await attaReadClient
     .fetch<FetchedTheme>(
       `*[_type == "uiTheme" && _id == $themeId][0] {
         _id, name, description, light, dark, typography, spacing, shadows

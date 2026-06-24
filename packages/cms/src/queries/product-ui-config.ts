@@ -1,5 +1,6 @@
 import type { SanityClient } from '@sanity/client'
 import type { PortalUiConfig } from '../types'
+import { createProductClient } from '../client'
 
 const THEME_PROJECTION = `{
   _id,
@@ -20,26 +21,50 @@ const LIBRARY_PROJECTION = `{
   order
 }`
 
-const PRODUCT_UI_QUERY = (documentType: string, documentId: string) =>
-  `*[_type == "${documentType}" && _id == "${documentId}"][0] {
-      _id,
-      userInterface {
-        "theme": theme-> ${THEME_PROJECTION},
-        colorScheme,
-        "library": library-> ${LIBRARY_PROJECTION}
-      }
-    }`
-
-/** Fetch a product UI config singleton with dereferenced theme and library */
+/** Fetch a product UI config singleton with dynamically resolved theme and library from Atta */
 export async function getProductUiConfig(
   client: SanityClient,
   documentType: string,
   documentId: string
 ): Promise<PortalUiConfig | null> {
   // Bypass Sanity CDN so theme changes from the admin are visible immediately.
-  // useCdn: true (production default) caches responses and delays propagation after saves.
   const liveClient = client.withConfig({ useCdn: false })
-  return liveClient.fetch(PRODUCT_UI_QUERY(documentType, documentId))
+
+  // 1. Fetch local config (now containing string IDs)
+  const config = await liveClient.fetch(
+    `*[_type == $documentType && _id == $documentId][0] {
+      _id,
+      userInterface {
+        theme,
+        colorScheme,
+        library
+      }
+    }`,
+    { documentType, documentId }
+  )
+
+  if (!config?.userInterface) {
+    return config
+  }
+
+  const ui = config.userInterface
+  const attaClient = createProductClient('attalabs', { useCdn: false })
+
+  // 2. Fetch full details from Atta project if theme/library are string references
+  const [themeDoc, libraryDoc] = await Promise.all([
+    typeof ui.theme === 'string'
+      ? attaClient.fetch(`*[_type == "uiTheme" && _id == $id][0] ${THEME_PROJECTION}`, { id: ui.theme })
+      : Promise.resolve(null),
+    typeof ui.library === 'string'
+      ? attaClient.fetch(`*[_type == "library" && _id == $id][0] ${LIBRARY_PROJECTION}`, { id: ui.library })
+      : Promise.resolve(null)
+  ])
+
+  // 3. Reconstruct standard PortalUiConfig shape so layout consumers require zero changes
+  config.userInterface.theme = themeDoc
+  config.userInterface.library = libraryDoc
+
+  return config
 }
 
 export async function getHeraldConfig(client: SanityClient): Promise<PortalUiConfig | null> {
