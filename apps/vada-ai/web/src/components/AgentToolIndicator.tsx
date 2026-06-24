@@ -32,9 +32,9 @@ export function AgentToolIndicator({ tool }: AgentToolIndicatorProps) {
     <span
       role='img'
       aria-label={label}
-      className='flex items-center justify-center rounded-md border border-border bg-card p-0.5 shadow-sm'
+      className='flex items-center justify-center rounded-md border border-border bg-card p-1 shadow-sm'
     >
-      <Icon aria-hidden className='size-3 text-muted-foreground' />
+      <Icon aria-hidden className='size-4 text-muted-foreground' />
     </span>
   )
 }

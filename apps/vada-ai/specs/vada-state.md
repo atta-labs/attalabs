@@ -2,6 +2,26 @@
 
 ## Most recent session — Jun 23, 2026
 
+Empty+grey no-model state for reviewer slots + bigger web-search glyph (vada-production-v1, PR #207, tool-badges branch).
+
+**Empty+grey reviewer sphere (Commit 1 — `userConfigured` prop):**
+- Root cause: reviewer slots carried a YAML default `model:` field, so `VadaAgent` always took the vendor-icon path and never rendered the empty+grey state — even though the user had never picked a model.
+- Fix: purely UI-layer. Added `userConfigured?: boolean` prop to `VadaAgent`. When `false` (or omitted and the slot is a reviewer), the sphere renders the `NoModelSelectedIcon` (Shuffle glyph, `text-muted-foreground`) and uses `var(--muted-foreground)` as the sphere color — empty interior, grey fill. When `true`, existing vendor-icon + vendor-color logic applies unchanged.
+- The YAML `model` field is **not removed or ignored at the engine layer** — it still flows through `compileFlow` and the adapter for execution. The prop is a UI rendering gate only.
+- **Teams page** (`TeamCard.tsx`): all reviewer-type agents (`!agent.role`) pass `userConfigured={false}` — the Teams listing has no per-slot selection UI, so all reviewer slots are "you choose."
+- **Teams detail page** (`AgentTab.tsx`): same — reviewer slots pass `userConfigured={false}`. No per-slot config UI on this page.
+- **Deliberate page** (`TeamSummary.tsx`): reviewer slots pass `userConfigured={Boolean(userConfig?.[a.name])}` — only true when the user has explicitly saved a model to localStorage via the ReviewerConfigModal. YAML defaults (`a.model ?? defaultModel`) do not count as "configured."
+- Roled agents (Synthesizer, FactChecker, BlindCritic, etc.) are unaffected — they resolve via `AGENT_BY_ROLE` before any `userConfigured` logic runs. The prop is ignored entirely for roled agents.
+- Token used for grey sphere: `var(--muted-foreground)` (inline CSS custom property injected into AgentSphere `color` prop, consistent with how vendor color vars are passed).
+
+**Bigger web-search corner glyph (Commit 2 — `AgentToolIndicator.tsx`):**
+- Icon increased from `size-3` to `size-4` (16px). Chip padding scaled from `p-0.5` to `p-1` to keep the chip balanced around the larger icon.
+- No other logic changes. Corner positioning and `role='img'` / `aria-label` unchanged.
+
+---
+
+## Most recent session — Jun 23, 2026
+
 Reviewer sphere identity + tool indicator corner glyph (vada-production-v1, PR #207).
 
 **Reviewer sphere identity (model-driven, not name-driven):**
