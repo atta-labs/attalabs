@@ -2,6 +2,31 @@
 
 ## Most recent session — Jun 23, 2026
 
+Flow tab model icons + Deliberate chat-style layout + SmartPromptInput (vada-production-v1, PR #207, tool-badges branch).
+
+**Commit 1 — Flow tab nodes show real model icon and vendor color (AgentFlowNode.tsx):**
+- `AgentFlowNode` was passing `model={undefined}` to `VadaAgent`, causing every flow topology node to render the grey no-model sphere — even when the YAML default model was known.
+- Fix: destructure `model` from `AgentNodeData` (already populated by `planToVisualNodes` from `agentDef?.model ?? plan.model`) and pass it to `VadaAgent` together with `userConfigured={true}`.
+- `userConfigured={true}` is correct for Flow tab nodes: they represent the actual YAML topology, not unconfigured reviewer slots. The model IS known and should be displayed with vendor color and provider icon.
+- Only the Flow tab rendering context is affected. Teams page cards and Deliberate reviewer slots continue to pass their own `userConfigured` values unchanged.
+
+**Commit 2 — Deliberate page: chat-style empty/active layout (DeliberateSection.tsx, page.tsx):**
+- Redesigned `DeliberateSection` to manage two states based on whether `question.trim().length > 0`.
+- **Empty state**: centered hero layout (`min-h-[calc(100dvh-3.5rem)] flex flex-col items-center justify-center`) — heading + brief description, `TeamPicker` + link to `/teams/[slug]` for the selected team, and the input.
+- **Active state** (question non-empty): `DeliberatePanel` in a scrollable content area with `pb-[200px]` clearance, and the input fixed at the viewport bottom via `fixed inset-x-0 bottom-0 z-30 bg-background/95 backdrop-blur-md border-t border-border` — same pattern as Herald's `JDInput` sticky bottom.
+- The empty↔active transition is CSS-driven: `opacity-0 pointer-events-none select-none` toggled on each layer via `cn()`. Both layers are always mounted (no conditional render) to avoid remounting the form inputs.
+- Page wrapper simplified from `min-h-[calc(100dvh-3.5rem)] flex flex-col justify-center` to `relative min-h-[calc(100dvh-3.5rem)]` — section now owns its height management.
+- Stop condition not triggered: `useDeliberateForm` state shape unchanged. The transition is purely at the layout layer.
+
+**Commit 3 — SmartPromptInput wired into Deliberate page (DeliberateSection.tsx, useDeliberateForm.ts):**
+- Replaced `QuestionInputArea` (plain `Textarea`) with `@atta/ui/smart-prompt-input` `SmartPromptInput`.
+- Provider dependency check: `SmartPromptInput` wraps its own vendored `TooltipProvider` from `@radix-ui/react-tooltip`. No Herald-specific context or provider is required. Drop-in for any Next.js app.
+- Submit wiring: `SmartPromptInput` is uncontrolled (no `value`/`onChange`); it fires `onSubmit(text, files)`. Added `handleStartWithText(q: string)` to `useDeliberateForm` — a stable `useCallback` ref that accepts an explicit question string, bypassing the React-batched state read that would occur if `setQuestion(text)` and `handleStart()` were called synchronously in the same event handler.
+- The `dispatchRef.current` was extended to accept `overrideQuestion?: string`; both `canStart` gating and the benchmark baseline call use `effectiveQuestion` (override or state). The `handleStartImplRef` received the same treatment.
+- **File/PDF backend**: Vāda has no file ingestion endpoint. Files are accepted and rendered in the `SmartPromptInput` attachment tiles, but only `text` is forwarded to `/api/deliberation/start`. This is the scoped-out path noted in the PR body.
+
+## Most recent session — Jun 23, 2026
+
 Calculator model list + YAML descriptions + Deliberate button fix + per-agent reviewer description neutralization (vada-production-v1, PR #207, tool-badges branch).
 
 **Fix 1 — Calculator model list (calculator.ts):**
