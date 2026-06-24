@@ -2,6 +2,12 @@
 
 ## Most recent session — Jun 23, 2026
 
+Tool indicators on team cards (vada-production-v1, PR #207). The `/teams` page and `/teams/[slug]` detail page now surface a "web search" badge on agents that declare `tools: [web_search]` in their YAML, conditioned on server-side search infrastructure being configured (`TAVILY_API_KEY` or `GOOGLE_SEARCH_API_KEY`+`GOOGLE_SEARCH_CX`). Only a boolean is passed to the client — no key value is exposed. The badge renders on the three Reviewers team agents (Gemini, GPT, Grok) in both the sphere view (`TeamCard`) and the agent detail tab (`AgentTab`). Per-vendor accuracy check (Gemini native grounding regardless of Tavily) deferred for v1; declare+configured check is accurate for the current catalog.
+
+---
+
+## Most recent session — Jun 23, 2026
+
 Per-vendor tool substrate (vada-production-v1 T3, PR #194). The adapter now forwards tool declarations to all three vendor branches, not just Anthropic. Key changes:
 
 - `GOOGLE_TOOL_REGISTRY` added: `web_search → { googleSearch: {} }` — Gemini native grounding. No client-side handler required; Gemini executes the search on Google's infrastructure. `callGoogle()` extended to accept tool configs and uses the structured `generateContent({ contents, tools })` form when tools are present.
