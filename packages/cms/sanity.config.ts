@@ -22,7 +22,7 @@ export default defineConfig({
           : 'Herald CMS',
   projectId:
     process.env.SANITY_STUDIO_PROJECT_ID ||
-    (isAtta ? '892o2m9f' : isVada ? 'ofnj2ojb' : isVitakka ? 'o56nzgrr' : isAttalabs ? 'l5n0n8nn' : 'e9gbd2d1'),
+    (isAtta ? 'l5n0n8nn' : isVada ? 'ofnj2ojb' : isVitakka ? 'o56nzgrr' : isAttalabs ? '892o2m9f' : 'e9gbd2d1'),
   dataset: process.env.SANITY_STUDIO_DATASET || 'production',
   plugins: [
     structureTool({
@@ -32,15 +32,11 @@ export default defineConfig({
               .title('Atta Content')
               .items([
                 S.listItem()
-                  .title('AttalLabs Config')
-                  .child(
-                    S.document().schemaType('attalabsConfig').documentId('attalabsConfig').title('AttalLabs Config')
-                  ),
+                  .title('Atta Config')
+                  .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
                 S.listItem()
                   .title('Branding')
-                  .child(
-                    S.document().schemaType('branding').documentId('branding-attalabs').title('AttalLabs Branding')
-                  )
+                  .child(S.document().schemaType('branding').documentId('branding-atta').title('Atta Branding'))
               ])
           : isVada
             ? S.list()
@@ -73,11 +69,21 @@ export default defineConfig({
                     .title('AttalLabs Content')
                     .items([
                       S.listItem()
-                        .title('Atta Config')
-                        .child(S.document().schemaType('attaConfig').documentId('attaConfig').title('Atta Config')),
+                        .title('AttalLabs Config')
+                        .child(
+                          S.document()
+                            .schemaType('attalabsConfig')
+                            .documentId('attalabsConfig')
+                            .title('AttalLabs Config')
+                        ),
                       S.listItem()
                         .title('Branding')
-                        .child(S.document().schemaType('branding').documentId('branding-atta').title('Atta Branding')),
+                        .child(
+                          S.document()
+                            .schemaType('branding')
+                            .documentId('branding-attalabs')
+                            .title('AttalLabs Branding')
+                        ),
                       S.listItem()
                         .title('User Interface')
                         .child(

@@ -21,11 +21,11 @@
     "studio:deploy:attalabs": "SANITY_STUDIO_PRODUCT=attalabs sanity deploy",
     "studio:deploy:all": "bun run studio:deploy -- -y && bun run studio:deploy:atta -- -y && bun run studio:deploy:vada -- -y && bun run studio:deploy:vitakka -- -y && bun run studio:deploy:attalabs -- -y",
     "seed:branding": "bun run ./scripts/seed-branding.ts",
-    "seed:branding:atta": "SANITY_PROJECT_ID=892o2m9f SANITY_SEED_PRODUCT=atta bun run ./scripts/seed-branding.ts",
+    "seed:branding:atta": "SANITY_PROJECT_ID=l5n0n8nn SANITY_SEED_PRODUCT=atta bun run ./scripts/seed-branding.ts",
     "seed:branding:vada": "SANITY_PROJECT_ID=ofnj2ojb SANITY_SEED_PRODUCT=vada bun run ./scripts/seed-branding.ts",
     "seed:branding:vitakka": "SANITY_PROJECT_ID=o56nzgrr SANITY_SEED_PRODUCT=vitakka bun run ./scripts/seed-branding.ts",
     "seed:branding:herald": "SANITY_PROJECT_ID=e9gbd2d1 SANITY_SEED_PRODUCT=herald bun run ./scripts/seed-branding.ts",
-    "seed:branding:attalabs": "SANITY_PROJECT_ID=l5n0n8nn SANITY_SEED_PRODUCT=attalabs bun run ./scripts/seed-branding.ts",
+    "seed:branding:attalabs": "SANITY_PROJECT_ID=892o2m9f SANITY_SEED_PRODUCT=attalabs bun run ./scripts/seed-branding.ts",
     "migrate:herald-to-product": "bun run ./scripts/migrate-herald-to-product.ts",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo"
