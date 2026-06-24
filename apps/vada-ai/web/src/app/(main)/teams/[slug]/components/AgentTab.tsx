@@ -3,9 +3,10 @@
 import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent } from '@/components/agents/VadaAgent'
 import type { AgentRole } from '@/components/agents/VadaAgent'
+import { AgentWebSearchBadge } from '@/components/AgentWebSearchBadge'
 import { getDisplayAgentNames } from '@/lib/flow-helpers'
 
-export function AgentTab({ spec }: { spec: Flow }) {
+export function AgentTab({ spec, searchAvailable }: { spec: Flow; searchAvailable: boolean }) {
   const displayNames = new Set(getDisplayAgentNames(spec))
   const roundAgents = spec.agents.filter((a: FlowAgent) => displayNames.has(a.name))
 
@@ -23,6 +24,7 @@ export function AgentTab({ spec }: { spec: Flow }) {
             visible
           />
           <p className='text-sm leading-relaxed text-foreground/70'>{agent.description}</p>
+          {searchAvailable && agent.tools?.includes('web_search') && <AgentWebSearchBadge />}
         </div>
       ))}
     </div>

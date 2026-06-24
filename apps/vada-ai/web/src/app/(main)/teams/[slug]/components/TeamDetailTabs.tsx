@@ -10,9 +10,10 @@ import { FlowTab } from './FlowTab'
 interface TeamDetailTabsProps {
   spec: Flow
   plan: Plan
+  searchAvailable: boolean
 }
 
-export function TeamDetailTabs({ spec, plan }: TeamDetailTabsProps) {
+export function TeamDetailTabs({ spec, plan, searchAvailable }: TeamDetailTabsProps) {
   return (
     <Tabs defaultValue='agents' className='space-y-6'>
       <TabsList>
@@ -22,7 +23,7 @@ export function TeamDetailTabs({ spec, plan }: TeamDetailTabsProps) {
       </TabsList>
 
       <TabsContent value='agents'>
-        <AgentTab spec={spec} />
+        <AgentTab spec={spec} searchAvailable={searchAvailable} />
       </TabsContent>
 
       <TabsContent value='calculator'>
