@@ -18,6 +18,9 @@ Empty+grey no-model state for reviewer slots + bigger web-search glyph (vada-pro
 - Icon increased from `size-3` to `size-4` (16px). Chip padding scaled from `p-0.5` to `p-1` to keep the chip balanced around the larger icon.
 - No other logic changes. Corner positioning and `role='img'` / `aria-label` unchanged.
 
+**No-model glyph replacement (Commit 3 — `ModelOrProviderIcon.tsx`):**
+- `NoModelSelectedIcon` replaced: the `Shuffle` lucide icon is gone. The new glyph is two overlapping filled grey circles (inline SVG, 36×36 viewBox). Back circle at `cx=21 cy=15 r=11 opacity=0.35`; front circle at `cx=15 cy=21 r=11 opacity=0.55`. Both circles use `fill="currentColor"` so the component inherits `text-muted-foreground` from its `className` prop (defaulting to that token when no `className` is supplied). Communicates "multiple models, you choose" — no vendor logos, no semantic content inside the circles.
+
 ---
 
 ## Most recent session — Jun 23, 2026
