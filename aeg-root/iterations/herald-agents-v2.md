@@ -18,6 +18,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 5 | Report quality — research existing forensic hiring frameworks + vendor-diverse LLM review + real improvement to agent YAML/prompt with fixture-based before/after evidence | #171  | herald, aeg-core    | #168       | —                        |
 | 6 | Abuse cap — per-owner per-day rate limit on public profile audits (D-033 follow-up)                                                 | #172  | herald              | #168       | —                        |
 | 7 | Deploy verification — `herald.attalabs.dev` Phase 2 flows (avatar, CV upload, bio save, onboarding, Bulk Audit with real BYOK)      | #173  | herald              | #168       | —                        |
+| 8 | Owner `/ui` + `/settings` relocated under `/[username]` (owner-gated, build-time library per D-035) + topbar Palette/Settings icon buttons via `extraActions` + Bulk Audit excluded from profile layout. Supersedes D-036 route/nav (→ D-060). | #210 | herald | — | — |
 
 ## Backlog (this iteration, not yet dispatched)
 
