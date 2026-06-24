@@ -263,7 +263,7 @@ Several things about this workflow matter for the design of Vāda Reviewers:
 
 **The brief is the magic.** The quality of the workflow's output depends overwhelmingly on the brief. Dani has learned over hundreds of iterations that vague briefs produce vague reviews; specific briefs with explicit sub-questions and explicit DO-NOT-FLAG lists produce sharp reviews. The brief is where the cognitive work concentrates. The team architecture supports the brief; the brief does the heavy lifting.
 
-**The reviewers are chats, not raw models.** Critically: the empirical workflow is validated against AI products (Gemini app, Grok web, ChatGPT) that wrap the underlying model in a product harness — system prompts, tools, default behaviors. The validated outputs come from those wrapped products. Raw API calls to the same models produce *different* outputs: less hedging, no prior-conversation context, more raw and sometimes more wrong. This fidelity gap is the central technical risk of automating the workflow. *(T3a update 2026-06-24: web search has been closed — Gemini uses native grounding, GPT/Grok use a function-calling handler. Remaining gap: product harness system prompts and conversation memory.)*
+**The reviewers are chats, not raw models.** Critically: the empirical workflow is validated against AI products (Gemini app, Grok web, ChatGPT) that wrap the underlying model in a product harness — system prompts, tools, default behaviors. The validated outputs come from those wrapped products. Raw API calls to the same models produce *different* outputs: less hedging, no prior-conversation context, more raw and sometimes more wrong. This fidelity gap is the central technical risk of automating the workflow. *(T3a update 2026-06-24: web search has been closed for both the Reviewers team and the Reviewers + Synthesis team — Gemini uses native grounding, GPT/Grok use a function-calling handler. Synthesizer agent (Claude) deliberately has no tools. Remaining gap: product harness system prompts and conversation memory.)*
 
 **One round is the default.** The vast majority of decisions stop after one round. Multi-round is an option, not a baseline.
 
@@ -338,7 +338,7 @@ All reviewer invocations go through direct provider APIs (or OpenRouter for unif
 Properties:
 - Implementation cost is low (existing engine capability via the LangGraph adapter)
 - No subprocess lifecycle complexity, no per-CLI quirks
-- Fidelity gap to chat products is real and known: no product harness system prompts, no conversation memory, raw model defaults *(T3a 2026-06-24: web search gap closed — see §2.3)*
+- Fidelity gap to chat products is real and known: no product harness system prompts, no conversation memory, raw model defaults *(T3a + T3a follow-up 2026-06-24: web search gap closed for both Reviewers and Reviewers + Synthesis teams — see §7.3)*
 - The cognitive design (brief, reviewer system prompt, optional synthesizer) is what is actually being tested
 
 If v1 API mode ties or beats the manual workflow on Dani's test cases, the cognitive design is validated. CLI mode then becomes an optional enhancement, not a rescue.
@@ -1364,11 +1364,13 @@ The rev 2 compromise: still no enforced schema on reviewers in v1 (to preserve f
 
 ### 7.3 Should reviewers have tool access mid-review?
 
-Reviewers in v1 API mode have no tool access (no web search, no filesystem, no code execution). This is a known fidelity gap.
+~~Reviewers in v1 API mode have no tool access (no web search, no filesystem, no code execution). This is a known fidelity gap.~~
 
-**Still open:** even in API mode, providers like Anthropic and OpenAI now support tool use via API. We could selectively grant web search to reviewers when the brief asks them to verify external claims. The cost is added latency and complexity; the benefit is closing part of the fidelity gap without committing to CLI mode.
+**Resolved (T3a + T3a follow-up, 2026-06-24):** `web_search` has been added to the Gemini, GPT, and Grok reviewer agents in both teams — `vada-reviewers.yaml` (T3a, PR #205) and `vada-reviewers-synthesis.yaml` (T3a follow-up). The Synthesizer agent (Claude/Anthropic) deliberately has no tools — it operates on reviewer transcripts only. Remaining fidelity gap: product harness system prompts and conversation memory (no change from before).
 
-The rev 2 position: don't add this to v1. Test API-no-tools first to establish a baseline. If the v1 benchmark shows reviewers are blocked by missing context (e.g., they can't verify a fact about a recent event), v1.5 adds web search as an opt-in reviewer tool.
+~~**Still open:** even in API mode, providers like Anthropic and OpenAI now support tool use via API. We could selectively grant web search to reviewers when the brief asks them to verify external claims. The cost is added latency and complexity; the benefit is closing part of the fidelity gap without committing to CLI mode.~~
+
+~~The rev 2 position: don't add this to v1. Test API-no-tools first to establish a baseline. If the v1 benchmark shows reviewers are blocked by missing context (e.g., they can't verify a fact about a recent event), v1.5 adds web search as an opt-in reviewer tool.~~
 
 ### 7.4 The brief — primary AI vs user authorship
 
@@ -1432,7 +1434,7 @@ To avoid ambiguity for implementers, here is what is decided in rev 4 versus wha
 **Deferred (open questions to be resolved during v1 implementation, by benchmark, or by future reviewers):**
 
 - Optional structured-schema enforcement on reviewers (§7.2) — leaning no for v1, possible for v1.5
-- Reviewer tool access (§7.3) — leaning no for v1, web search possible in v1.5
+- ~~Reviewer tool access (§7.3) — leaning no for v1, web search possible in v1.5~~ **Resolved (T3a + T3a follow-up, 2026-06-24): web_search added to all non-Anthropic reviewers in both teams.**
 - Brief authorship UX in the web UI (§7.4) — to be designed during UI implementation
 - Final product name (§7.5) — "Vāda Reviewers" through v1, eat-our-own-dogfood naming review before external launch
 - How to communicate that structured synthesis is scaffold, not conclusion (§7.7) — UX and prompt-engineering question
