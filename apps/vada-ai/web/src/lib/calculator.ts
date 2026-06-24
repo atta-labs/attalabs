@@ -1,21 +1,27 @@
 import type { Flow } from '@atta/engine'
 import { detectShape } from './flow-helpers'
 
+// Prices in USD per 1M tokens. Update when vendors publish new pricing.
+// Models here mirror the overlay's flagship entries (packages/models/src/overlay.ts).
 export const MODEL_PRICES: Record<string, { input: number; output: number }> = {
   'claude-sonnet-4-6': { input: 3.0, output: 15.0 },
   'claude-opus-4-7': { input: 15.0, output: 75.0 },
-  'gpt-4o': { input: 2.5, output: 10.0 },
-  'gpt-4o-mini': { input: 0.15, output: 0.6 },
+  'gpt-5': { input: 75.0, output: 300.0 },
+  'gpt-4.1': { input: 2.0, output: 8.0 },
   'gemini-2.5-pro': { input: 1.25, output: 5.0 },
-  'grok-3': { input: 5.0, output: 15.0 }
+  'grok-4': { input: 3.0, output: 15.0 },
+  'grok-3': { input: 3.0, output: 15.0 }
 }
 
+// One entry per vendor — reflects the overlay's current flagship per provider.
+// When the overlay adds a new frontier model, add it here too.
 export const CALCULATOR_MODELS = [
   { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
   { id: 'claude-opus-4-7', label: 'Claude Opus 4.7' },
-  { id: 'gpt-4o', label: 'GPT-4o' },
-  { id: 'gpt-4o-mini', label: 'GPT-4o mini' },
+  { id: 'gpt-5', label: 'GPT-5' },
+  { id: 'gpt-4.1', label: 'GPT-4.1' },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { id: 'grok-4', label: 'Grok 4' },
   { id: 'grok-3', label: 'Grok 3' }
 ] as const
 
