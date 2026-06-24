@@ -2,7 +2,7 @@
 
 import type { ChatStatus, FileUIPart } from 'ai'
 import { FileText, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -34,6 +34,20 @@ export interface SmartPromptInputProps {
   className?: string
   /** Paste text longer than this char count as a file attachment instead of textarea fill */
   pasteToFileChars?: number
+  /**
+   * Gemini-style action slot rendered next to the submit button.
+   *
+   * - When the textarea is at its minimum (single line / unfilled),
+   *   `actions` renders inline on the right side of the textarea,
+   *   immediately before the submit button (submit stays rightmost).
+   * - When the textarea wraps to 2+ lines (or attachments are present),
+   *   `actions` drops into the footer row beneath the textarea,
+   *   to the right of any existing tools, before the submit button.
+   *
+   * When `actions` is not provided, the input renders exactly as before
+   * (Herald-compatible default).
+   */
+  actions?: React.ReactNode
 }
 
 const statusMap: Record<SmartPromptStatus, ChatStatus> = {
@@ -115,10 +129,14 @@ function AttachmentTileItem({
   )
 }
 
-function AttachmentTiles() {
+function AttachmentTiles({ onCountChange }: { onCountChange?: (count: number) => void }) {
   const { files, remove } = usePromptInputAttachments()
   const [extras, setExtras] = useState<Map<string, FileExtra>>(new Map())
   const loadedIds = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    onCountChange?.(files.length)
+  }, [files.length, onCountChange])
 
   useEffect(() => {
     for (const f of files) {
@@ -185,15 +203,52 @@ export function SmartPromptInput({
   status = 'idle',
   onStop,
   className,
-  pasteToFileChars
+  pasteToFileChars,
+  actions
 }: SmartPromptInputProps) {
   const chatStatus = statusMap[status]
   const [rejectionError, setRejectionError] = useState<string | null>(null)
   const useFullWidthCta = Boolean(ctaLabel)
+  const hasActions = actions !== undefined && actions !== null && actions !== false
+
+  // Track textarea single-line vs multi-line for Gemini-style responsive placement.
+  // Detection: measure the textarea's scrollHeight on input and compare to the
+  // line-height baseline captured on first paint. The textarea grows via
+  // `field-sizing-content`, so re-measuring on `onInput` (and on mount) catches
+  // every height change that matters — no ResizeObserver needed.
+  //
+  // We resolve the textarea node by querying the wrapper rather than forwarding
+  // a ref through the vendored PromptInputTextarea — that component is a plain
+  // function component without ref forwarding, and patching the vendor file to
+  // add it would cost more than this targeted DOM query.
+  const inputRowRef = useRef<HTMLDivElement | null>(null)
+  const [isMultiLine, setIsMultiLine] = useState(false)
+  const [attachmentCount, setAttachmentCount] = useState(0)
+
+  const remeasure = () => {
+    const el = inputRowRef.current?.querySelector<HTMLTextAreaElement>('textarea[name="message"]')
+    if (!el) return
+    const styles = window.getComputedStyle(el)
+    const lineHeight = Number.parseFloat(styles.lineHeight)
+    const paddingTop = Number.parseFloat(styles.paddingTop)
+    const paddingBottom = Number.parseFloat(styles.paddingBottom)
+    if (!Number.isFinite(lineHeight) || lineHeight <= 0) return
+    // Allow ~1px rounding slack so a perfectly single-line textarea never
+    // bounces into multi-line on a sub-pixel difference.
+    const singleLineHeight = lineHeight + paddingTop + paddingBottom + 1
+    setIsMultiLine(el.scrollHeight > singleLineHeight)
+  }
+
+  useLayoutEffect(() => {
+    if (!hasActions) return
+    remeasure()
+  }, [hasActions])
 
   const handleSubmit = (message: PromptInputMessage) => {
     setRejectionError(null)
     onSubmit(message.text, message.files)
+    // Re-measure after submit — clearing the textarea collapses it back to one line.
+    requestAnimationFrame(() => remeasure())
   }
 
   const handleError = ({ code }: { code: string; message: string }) => {
@@ -203,18 +258,46 @@ export function SmartPromptInput({
     }
   }
 
-  const hasFooterContent = !!(accept || hint || !useFullWidthCta)
+  // Footer renders whenever we have tools, hint, or the default submit position.
+  // With `actions`, when single-line we lift actions+submit inline next to the
+  // textarea — so the footer is only needed if tools/hint exist or we're in
+  // multi-line mode (where actions and submit live in the footer).
+  const inlineMode = hasActions && !isMultiLine && attachmentCount === 0
+  const hasFooterContent = hasActions
+    ? !useFullWidthCta && (!!accept || !!hint || !inlineMode)
+    : !!(accept || hint || !useFullWidthCta)
 
   return (
     <TooltipProvider>
       <div className={className}>
         <PromptInput accept={accept} onSubmit={handleSubmit} onError={handleError}>
-          <AttachmentTiles />
-          <PromptInputTextarea
-            placeholder={placeholder}
-            submitOnCmdEnter={submitOn === 'cmdenter'}
-            pasteToFileChars={pasteToFileChars}
-          />
+          <AttachmentTiles onCountChange={hasActions ? setAttachmentCount : undefined} />
+          {hasActions ? (
+            <div ref={inputRowRef} className='flex flex-row items-end gap-1'>
+              <PromptInputTextarea
+                placeholder={placeholder}
+                submitOnCmdEnter={submitOn === 'cmdenter'}
+                pasteToFileChars={pasteToFileChars}
+                onInput={remeasure}
+              />
+              {inlineMode && (
+                <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>
+                  <div className='flex items-center gap-1'>{actions}</div>
+                  {!useFullWidthCta && (
+                    <PromptInputSubmit status={chatStatus} onStop={onStop}>
+                      {ctaLabel}
+                    </PromptInputSubmit>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <PromptInputTextarea
+              placeholder={placeholder}
+              submitOnCmdEnter={submitOn === 'cmdenter'}
+              pasteToFileChars={pasteToFileChars}
+            />
+          )}
           {hasFooterContent && (
             <PromptInputFooter>
               <PromptInputTools>
@@ -228,7 +311,17 @@ export function SmartPromptInput({
                 )}
                 {hint && <span className='font-mono text-[10px] text-muted-foreground'>{hint}</span>}
               </PromptInputTools>
-              {!useFullWidthCta && (
+              {hasActions && !inlineMode && (
+                <div className='flex items-center gap-1'>
+                  <div className='flex items-center gap-1'>{actions}</div>
+                  {!useFullWidthCta && (
+                    <PromptInputSubmit status={chatStatus} onStop={onStop}>
+                      {ctaLabel}
+                    </PromptInputSubmit>
+                  )}
+                </div>
+              )}
+              {!hasActions && !useFullWidthCta && (
                 <PromptInputSubmit status={chatStatus} onStop={onStop}>
                   {ctaLabel}
                 </PromptInputSubmit>
