@@ -20,12 +20,7 @@ type InputGroupAddonProps = HTMLAttributes<HTMLDivElement> & {
 }
 
 export function InputGroupAddon({ className, align: _align, ...props }: InputGroupAddonProps) {
-  return (
-    <div
-      className={cn('flex flex-row items-center px-2 py-1 border-t border-border first:border-t-0', className)}
-      {...props}
-    />
-  )
+  return <div className={cn('flex flex-row items-center px-2 py-1', className)} {...props} />
 }
 
 const sizeMap: Record<string, string> = {

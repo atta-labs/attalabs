@@ -58,7 +58,6 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 onSubmit={handleSmartSubmit}
                 placeholder='What decision are you wrestling with?'
                 submitOn='cmdenter'
-                hint='Cmd+Enter to deliberate'
                 status={form.loading ? 'loading' : 'idle'}
                 actions={
                   <>
