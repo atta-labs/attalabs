@@ -22,7 +22,7 @@ export default defineConfig({
           : 'Herald CMS',
   projectId:
     process.env.SANITY_STUDIO_PROJECT_ID ||
-    (isAtta ? 'l5n0n8nn' : isVada ? 'ofnj2ojb' : isVitakka ? 'o56nzgrr' : isAttalabs ? '892o2m9f' : 'e9gbd2d1'),
+    (isAtta ? '892o2m9f' : isVada ? 'ofnj2ojb' : isVitakka ? 'o56nzgrr' : isAttalabs ? 'l5n0n8nn' : 'e9gbd2d1'),
   dataset: process.env.SANITY_STUDIO_DATASET || 'production',
   plugins: [
     structureTool({
