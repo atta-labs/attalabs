@@ -3,14 +3,15 @@
 import type { FileUIPart } from 'ai'
 import type { Flow } from '@atta/engine'
 import { Button } from '@atta/ui/components/button'
+import { Checkbox } from '@atta/ui/components/checkbox'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
-import { ArrowUpRight } from 'lucide-react'
-import { DeliberatePanel } from './DeliberatePanel'
+import { ArrowUpRight, GitCompare, Loader2 } from 'lucide-react'
 import { useDeliberateForm } from './useDeliberateForm'
 import { MigrationPrompt } from './MigrationPrompt'
 import { ReviewerConfigModal } from './ReviewerConfigModal'
 import { TeamPicker } from './TeamPicker'
+import { TeamSummary } from './TeamSummary'
 
 interface DeliberateSectionProps {
   remainingToday: number
@@ -98,33 +99,47 @@ export function DeliberateSection(props: DeliberateSectionProps) {
         </>
       )}
 
-      {/* ── Active state — team panel scrolls, input is fixed at bottom ── */}
+      {/* ── Active state — team summary scrolls, input is fixed at bottom ── */}
       {isActive && (
         <div>
           {/* Scrollable content area — padded at the bottom to clear the fixed input bar */}
           <div className='pb-[200px]'>
             <div className='mx-auto w-full max-w-5xl px-6 pt-8'>
               <MigrationPrompt configuredProviders={props.configuredProviders} />
-              <div className='mt-4'>
-                <DeliberatePanel
-                  specs={props.specs}
-                  configuredProviders={props.configuredProviders}
-                  selectedSpecId={form.selectedSpecId}
-                  onSelectSpec={form.setSelectedSpecId}
-                  globalModel={form.globalModel}
-                  onGlobalModelChange={form.setGlobalModel}
-                  benchmarkEnabled={form.benchmarkEnabled}
-                  onBenchmarkChange={form.setBenchmarkEnabled}
-                  onStart={form.handleStart}
-                  loading={form.loading}
-                  canStart={form.canStart}
-                  needsUnlock={form.needsUnlock}
-                  showReviewerModal={form.showReviewerModal}
-                  onConfigure={form.openReviewerModal}
-                  onModalSave={form.handleModalSave}
-                  onModalClose={form.closeReviewerModal}
-                />
-              </div>
+              {selectedSpec && (
+                <div className='mt-4 flex flex-col gap-4'>
+                  <TeamSummary
+                    spec={selectedSpec}
+                    onConfigure={form.openReviewerModal}
+                    actions={
+                      <div className='flex items-center justify-between gap-4'>
+                        <label
+                          htmlFor='active-benchmark-checkbox'
+                          className='flex items-center gap-2 text-[13px] text-muted-foreground hover:text-accent cursor-pointer'
+                        >
+                          <Checkbox
+                            id='active-benchmark-checkbox'
+                            checked={form.benchmarkEnabled}
+                            onCheckedChange={(v) => form.setBenchmarkEnabled(v === true)}
+                          />
+                          <GitCompare className='size-3.5' />
+                          Run benchmark comparison
+                        </label>
+                        <Button
+                          variant='default'
+                          size='sm'
+                          onClick={form.handleStart}
+                          disabled={!form.canStart}
+                          className='flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest'
+                        >
+                          {form.loading && <Loader2 className='size-3 animate-spin' />}
+                          {form.loading ? 'Starting…' : form.needsUnlock ? 'Unlock & Deliberate' : 'Deliberate'}
+                        </Button>
+                      </div>
+                    }
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -139,6 +154,15 @@ export function DeliberateSection(props: DeliberateSectionProps) {
               />
             </div>
           </div>
+
+          {form.showReviewerModal && selectedSpec && (
+            <ReviewerConfigModal
+              spec={selectedSpec}
+              onSave={form.handleModalSave}
+              onClose={form.closeReviewerModal}
+              configuredProviders={props.configuredProviders}
+            />
+          )}
         </div>
       )}
     </>
