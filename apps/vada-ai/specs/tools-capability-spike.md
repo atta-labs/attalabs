@@ -1,9 +1,11 @@
 # Tools / MCP Capability Spike — S0 Findings
 
 **Iteration:** vada-production-v1 · **Task:** S0 · **Tier:** 0 · **Spike:** true  
-**Status:** draft  
-**Date:** 2026-06-20  
+**Status:** reconciled (T3 + T3a shipped)  
+**Date:** 2026-06-20 · **Reconciled:** 2026-06-24  
 **Files read:** `adapter-langgraph/src/{llm,tools,custom-tool-loop,adapter,graph-builder,node-executor}.ts` · `engine/src/{flow-schema,flow-types,compile-flow,types}.ts` · `models/src/vendors.ts` · `agents/forensic-hiring-auditor/src/index.ts` + `yamls/herald-auditor.yaml`
+
+> **T3 + T3a implementation status (2026-06-24):** Options A + B from §4 are now shipped. `GOOGLE_TOOL_REGISTRY` and `OPENAI_COMPAT_TOOL_REGISTRY` exist in `tools.ts`. `createMultiVendorLlmCall` routes per `sdkShape`. `runOpenAICompatCustomToolLoop` handles function calling for GPT/Grok/etc. `webSearchHandler` (exported from `@atta/adapter-langgraph`) provides Google CSE / Tavily / fallback execution for OpenAI-compat vendors. Vāda Reviewers (Gemini, GPT, Grok) now declare `tools: [web_search]` in their YAML. MCP (Option C) remains a future task.
 
 ---
 
