@@ -241,6 +241,7 @@ export function DeliberatePanel({
             />
           )}
           <Button
+            variant='default'
             size='sm'
             onClick={onStart}
             disabled={!canStart}

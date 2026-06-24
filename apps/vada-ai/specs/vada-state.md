@@ -2,6 +2,29 @@
 
 ## Most recent session — Jun 23, 2026
 
+Calculator model list + YAML descriptions + Deliberate button fix (vada-production-v1, PR #207, tool-badges branch).
+
+**Fix 1 — Calculator model list (calculator.ts):**
+- `CALCULATOR_MODELS` and `MODEL_PRICES` were hardcoded with stale entries (`gpt-4o`, `gpt-4o-mini`) no longer present in the overlay's flagship list.
+- Updated to mirror the overlay in `packages/models/src/overlay.ts`: one or two representative entries per vendor (Anthropic, OpenAI, Google, xAI). Removed `gpt-4o` / `gpt-4o-mini`; added `gpt-5` and `gpt-4.1`. Added `grok-4` alongside `grok-3`.
+- The source of truth going forward: when the overlay's flagship list changes, `CALCULATOR_MODELS` / `MODEL_PRICES` should be updated to match. There is no runtime helper that derives them automatically — the overlay is static, so the calculator list is kept manually in sync.
+
+**Fix 2 — YAML descriptions (vada-deliberation/yamls/):**
+- `vada-reviewers.yaml` and `vada-reviewers-synthesis.yaml`: old descriptions named "Gemini, GPT, and Grok" explicitly, implying vendor-locked slots. Updated to state that each slot is user-chosen (any vendor you have a key for) and that each reviewer has live web access via Vāda's search infrastructure.
+- `sparring.yaml`, `crucible.yaml`, `war-room.yaml`: descriptions did not mention web search. Updated to accurately reflect that key agents have live web access (these agents have `tools: [web_search, ...]` in the YAML).
+- `brokered-quartet.yaml`: DomainExpert has `tools: [web_search, web_fetch]`. Updated description to note this.
+- `brokered-trio.yaml`: no agents have web_search tools; description unchanged.
+- The `description:` field is shown verbatim in TeamCard (teams listing), on the team detail page, and inside the Deliberate panel's right card.
+
+**Fix 3 — Deliberate button (DeliberatePanel.tsx):**
+- The "Deliberate" button had no explicit `variant` prop. Without an explicit variant, the compiled default is `'default'` = `bg-primary text-primary-foreground`. In Vāda's dark theme, `primary` is a purple hue and `primary-foreground` was not visually distinct enough, producing an unreadable label.
+- Added `variant='default'` explicitly. This makes the intent unambiguous and ensures all library variants (basic, animate, retro, brutal) use the correct CTA styling without relying on fallback inference.
+- Stop condition not triggered: the button wraps only `onStart` (the dispatch handler from `useDeliberateForm`). No benchmark state, no submission logic, no conditional branches live inside the button element itself. Safe UI-only change.
+
+---
+
+## Most recent session — Jun 23, 2026
+
 Empty+grey no-model state for reviewer slots + bigger web-search glyph (vada-production-v1, PR #207, tool-badges branch).
 
 **Empty+grey reviewer sphere (Commit 1 — `userConfigured` prop):**
