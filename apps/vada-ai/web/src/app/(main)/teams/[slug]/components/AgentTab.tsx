@@ -11,7 +11,7 @@ export function AgentTab({ spec, searchAvailable }: { spec: Flow; searchAvailabl
   const roundAgents = spec.agents.filter((a: FlowAgent) => displayNames.has(a.name))
 
   return (
-    <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+    <div className='flex flex-col gap-4'>
       {roundAgents.map((agent: FlowAgent) => (
         <div key={agent.name} className='flex flex-col gap-4 rounded-lg border border-border/40 bg-card p-6'>
           <VadaAgent
