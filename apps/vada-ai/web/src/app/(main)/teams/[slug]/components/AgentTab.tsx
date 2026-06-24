@@ -19,8 +19,11 @@ export function AgentTab({ spec, searchAvailable }: { spec: Flow; searchAvailabl
             name={agent.name}
             role={agent.role as AgentRole | undefined}
             // For roled agents the role drives face/color; model shows as badge.
-            // For reviewer slots (no role), model drives the vendor sphere identity.
+            // For reviewer slots (no role), model prop is present (YAML default) but
+            // userConfigured=false so the sphere shows empty+grey — the teams detail
+            // page has no per-slot selection UI, so all reviewer slots are "you choose".
             model={agent.model}
+            userConfigured={agent.role ? undefined : false}
             state='speaking'
             size='md'
             visible

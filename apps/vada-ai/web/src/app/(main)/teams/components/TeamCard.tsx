@@ -40,12 +40,17 @@ function Sphere({
   searchAvailable: boolean
 }) {
   const hasWebSearch = searchAvailable && agent.tools?.includes('web_search')
+  // Teams page is a "you choose" preview — reviewer slots are never user-configured
+  // here (no per-slot model selection UI exists on the teams listing page).
+  // Roled agents ignore userConfigured; passing false is harmless for them.
+  const isReviewer = !agent.role
   return (
     <VadaAgent
       id={`card-${specId}-${agent.name}`}
       name={agent.name}
       role={agent.role}
       model={agent.role ? undefined : (agent.model ?? defaultModel)}
+      userConfigured={isReviewer ? false : undefined}
       state='speaking'
       size={size}
       visible
