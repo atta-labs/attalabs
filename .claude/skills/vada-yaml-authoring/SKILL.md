@@ -358,6 +358,47 @@ Note the API surface: `loadFlow` and `compileFlow` replaced the v1 `loadSpec` / 
 
 ---
 
+## Declaring Tools on Agents
+
+Add a `tools` list to an agent declaration. The logical name resolves to the correct vendor-native format automatically based on the agent's vendor at runtime.
+
+```yaml
+agents:
+  - name: MyReviewer
+    model: gemini-2.5-pro
+    tools: [web_search]
+    classifier:
+      mode: skip
+    system_prompt: |
+      ...
+```
+
+### Per-vendor support matrix
+
+| `sdkShape` | Vendors | `web_search` resolves to | Requires handler? |
+|------------|---------|--------------------------|-------------------|
+| `anthropic` | Claude (all variants) | Anthropic server tool `web_search_20260209` — Anthropic executes | No |
+| `google-genai` | Gemini | Native `{ googleSearch: {} }` grounding — Google executes | No |
+| `openai-compat` | GPT, Grok, Groq, Mistral, etc. | OpenAI function tool spec — model emits `tool_calls`, adapter executes client-side | **Yes** |
+
+For OpenAI-compat vendors, the app must register a handler on `LangGraphAdapter` at construction time:
+
+```ts
+import { LangGraphAdapter, webSearchHandler } from '@atta/adapter-langgraph'
+
+new LangGraphAdapter({
+  apiKey,
+  providerKeys,
+  customTools: { web_search: webSearchHandler }
+})
+```
+
+`webSearchHandler` (exported from `@atta/adapter-langgraph`) resolves Google CSE → Tavily → graceful empty fallback based on available env vars. Google and Anthropic vendors need no handler — they execute the tool on their own infrastructure.
+
+**Tool name unknown for a vendor:** the adapter logs a warning and skips the tool rather than throwing — so a YAML declaring `tools: [web_search]` on a mixed-vendor team is safe even if a vendor doesn't have that tool in its registry.
+
+---
+
 ## Classifier Mode Guidance
 
 | Situation | Use |
@@ -404,7 +445,7 @@ Only omit `classifier` entirely for agents with no tools declared. For agents wi
 - ❌ Agent name mismatch between round `agents[].name` and top-level `agents[].name` — exact case-sensitive match required (validation Rule 4).
 - ❌ Setting `classifier.mode: always_tools` for a pure audit agent — defeats the audit-as-blindness mechanism.
 - ❌ Omitting `classifier` on a tool-enabled agent — be explicit. Implicit `skip` means tools are silently dropped.
-- ❌ Adding `tools` to `agents[]` without verifying the tool name exists in the adapter registry (`tools.ts` in `@atta/adapter-langgraph`).
+- ❌ Adding `tools` to `agents[]` without verifying the tool name exists in the relevant per-vendor registry (`ANTHROPIC_TOOL_REGISTRY`, `GOOGLE_TOOL_REGISTRY`, or `OPENAI_COMPAT_TOOL_REGISTRY` in `packages/adapter-langgraph/src/tools.ts`). Unknown names are skipped with a warning, not a throw — silent no-ops are hard to debug.
 - ❌ Targeting `on_failure.target` to the same round or a later round — Rule 3 rejects this. Audit rounds must come after their revision target.
 - ❌ Adding `-v1` / `-v2` suffix to a filename or `id` — global D-013 + vada-decisions.md D-025 keep filenames unversioned. Version history lives in git + decision logs.
 - ❌ Not writing a verify script — silent regressions are the enemy.

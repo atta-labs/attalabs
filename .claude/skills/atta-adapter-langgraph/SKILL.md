@@ -7,7 +7,7 @@ description: LangGraph execution + cognitive router internals. Load when working
 
 ## Context
 
-The adapter takes compiled Plans from `@atta/engine` and executes them via LangGraph. LLM calls go directly through `@anthropic-ai/sdk` (no LangChain wrapper — it has a `top_p` bug we specifically avoid). The cognitive router lives here as internal nodes, NOT a separate package.
+The adapter takes compiled Plans from `@atta/engine` and executes them via LangGraph. LLM calls are dispatched through a multi-vendor call factory (`createMultiVendorLlmCall`) that handles Anthropic, Google (Gemini), and any OpenAI-compat vendor (GPT, Grok, Groq, Mistral, …). All calls go direct to vendor SDKs — no LangChain wrapper (it has a `top_p` bug we specifically avoid). The cognitive router lives here as internal nodes, NOT a separate package.
 
 This is where Plans become real. Engine is pure; adapter is the runtime.
 
@@ -39,8 +39,10 @@ packages/adapter-langgraph/src/
 ├── graph-builder.ts          # Plan → StateGraph; injects classifier nodes before tool-enabled agents
 ├── graph-state.ts            # LangGraph state annotations + reducers
 ├── node-executor.ts          # Per-agent execution; tool filtering via state.toolDecisions
-├── llm.ts                    # Direct Anthropic SDK wrapper
-├── tools.ts                  # Tool registry (logical name → Anthropic API type)
+├── llm.ts                    # Multi-vendor LLM dispatch (Anthropic / Google / OpenAI-compat)
+├── tools.ts                  # Per-vendor tool registries (ANTHROPIC / GOOGLE / OPENAI_COMPAT)
+├── custom-tool-loop.ts       # Custom-tool execution loops (Anthropic + OpenAI-compat)
+├── web-search-handler.ts     # webSearchHandler for OpenAI-compat vendors (Google CSE / Tavily / fallback)
 └── cognitive-router/
     └── classifier.ts         # Haiku-based intent classifier node factory
 ```
@@ -87,17 +89,47 @@ Reducers matter. Wrong reducer causes data loss across parallel nodes (especiall
 
 ## Tool Registry
 
-In `tools.ts`. Maps logical names → Anthropic API specifications.
+In `tools.ts`. Three per-vendor registries share the same logical key space — an agent declaring `tools: [web_search]` resolves to the correct vendor-native format via whichever registry matches the `sdkShape`.
+
+### `ANTHROPIC_TOOL_REGISTRY`
+
+Anthropic server-side tools. Anthropic executes these on their infrastructure; no client-side handler needed.
 
 ```ts
-{
-  logicalName: 'web_search',
-  anthropicType: 'web_search_20260209',   // KEEP CURRENT — old tags get API-rejected
-  allowed_callers: ['direct'],            // REQUIRED for Haiku tool use
-}
+web_search: { type: 'web_search_20260209', name: 'web_search', allowed_callers: ['direct'] }
+web_fetch:  { type: 'web_fetch_20260209',  name: 'web_fetch',  allowed_callers: ['direct'] }
 ```
 
 **Watch out:** Anthropic tool type tags have dates. `web_fetch_20251203` was stale and rejected mid-session; `web_fetch_20260209` is current as of 2026-04. Verify against Anthropic docs when adding tools.
+
+`allowed_callers: ['direct']` is **required** — without it, Haiku rejects tool use with "does not support programmatic tool calling."
+
+### `GOOGLE_TOOL_REGISTRY`
+
+Gemini native tool configurations. Google executes these on their infrastructure; no client-side handler needed.
+
+```ts
+web_search: { googleSearch: {} }   // native Gemini grounding
+```
+
+### `OPENAI_COMPAT_TOOL_REGISTRY`
+
+OpenAI function tool specifications. Unlike Anthropic/Google server tools, these require **client-side execution**: the model signals intent via `tool_calls` and the adapter runs the matching handler. Callers must register a `CustomToolHandlerMap` (via `adapter.customTools`) with a handler under the same name.
+
+```ts
+web_search: {
+  type: 'function',
+  function: {
+    name: 'web_search',
+    description: 'Search the web for current information on a topic.',
+    parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }
+  }
+}
+```
+
+**`webSearchHandler`** — exported from `@atta/adapter-langgraph`. Resolves `GOOGLE_SEARCH_API_KEY`+`GOOGLE_SEARCH_CX` (Google CSE) → `TAVILY_API_KEY` → graceful empty fallback. Register on the adapter via `customTools: { web_search: webSearchHandler }`.
+
+Google (Gemini) and Anthropic vendors resolve their own tool natively — `webSearchHandler` is only needed for OpenAI-compat vendors (GPT, Grok, Groq, etc.).
 
 ---
 
@@ -125,18 +157,24 @@ Injected BEFORE each tool-enabled agent node. Graph-builder rewires incoming edg
 
 ## Rules
 
-### Direct Anthropic SDK Only
+### No LangChain Wrappers for LLM Calls
 
-LangChain wrapper has a `top_p` bug. Never use it for LLM calls.
+LangChain wrappers have a `top_p` bug. Always call vendor SDKs directly.
 
 ```ts
-// ✅ Direct SDK
+// ✅ Direct vendor SDK (Anthropic example)
 import Anthropic from '@anthropic-ai/sdk';
 const client = new Anthropic();
 const response = await client.messages.create({ ... });
 
+// ✅ Direct vendor SDK (Google example)
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// ✅ Direct vendor SDK (OpenAI-compat example)
+import OpenAI from 'openai';
+
 // ❌ Never import LangChain wrappers for LLM calls
-import { ChatAnthropic } from '@langchain/anthropic';  // has top_p bug
+import { ChatAnthropic } from '@langchain/anthropic';  // top_p bug
 ```
 
 ### Recursion Limit 150
@@ -221,8 +259,9 @@ Mitigations:
 
 ## Anti-patterns
 
-- ❌ LangChain wrappers for LLM calls (use `@anthropic-ai/sdk` directly)
-- ❌ Forgetting `allowed_callers: ['direct']` in tool registry (Haiku rejection)
+- ❌ LangChain wrappers for LLM calls (use vendor SDKs directly — `@anthropic-ai/sdk`, `@google/generative-ai`, `openai`)
+- ❌ Forgetting `allowed_callers: ['direct']` in `ANTHROPIC_TOOL_REGISTRY` entries (Haiku rejection)
+- ❌ Registering `webSearchHandler` for Google/Anthropic vendors — they resolve their own tool natively; the handler is only for OpenAI-compat
 - ❌ `recursionLimit: 25` (default; insufficient for classifier-augmented graphs)
 - ❌ Mutating state outside LangGraph annotations (causes races with parallel nodes)
 - ❌ Treating `MAX_REVISIONS` as failure (it's a valid terminal state)

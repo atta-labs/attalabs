@@ -8,8 +8,22 @@
 import 'server-only'
 import { compileFlow, loadYamlFromCatalog } from '@atta/engine'
 import type { ExecutionHooks, Plan } from '@atta/engine'
-import { LangGraphAdapter } from '@atta/adapter-langgraph'
+import { LangGraphAdapter, webSearchHandler } from '@atta/adapter-langgraph'
 import type { ProviderKeys } from '@atta/adapter-langgraph'
+
+/**
+ * Handler map registered on the adapter for OpenAI-compat vendor tool loops.
+ *
+ * web_search: executes when a GPT/Grok/Groq agent declares `tools: [web_search]`
+ * in YAML and the model emits a web_search tool_call. Resolution order:
+ * Google CSE (GOOGLE_SEARCH_API_KEY + GOOGLE_SEARCH_CX) → Tavily (TAVILY_API_KEY) → empty fallback.
+ *
+ * Google (Gemini) uses native googleSearch grounding — no handler required.
+ * Anthropic uses server-side web_search_20260209 — no handler required.
+ */
+const VADA_TOOL_HANDLERS = {
+  web_search: webSearchHandler
+}
 import { getCatalog, resolveVendorByPrefix, findModelEntryByModelId, getVendor, type VendorId } from '@atta/models'
 import type { ReviewerConfig } from '@/lib/reviewer-models'
 import { auth } from '@atta/auth/hooks'
@@ -72,7 +86,8 @@ async function runLangGraph(
     apiKey,
     providerKeys: providerKeys && Object.keys(providerKeys).length > 0 ? providerKeys : undefined,
     reviewerConfig,
-    agentVendorOverrides
+    agentVendorOverrides,
+    customTools: VADA_TOOL_HANDLERS
   })
 
   const hooks: ExecutionHooks = {

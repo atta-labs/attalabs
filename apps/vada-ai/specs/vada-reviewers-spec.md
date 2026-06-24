@@ -2,7 +2,7 @@
 
 **Author:** Claude (Atta ecosystem — Critic role)
 **Date:** May 8, 2026
-**Status:** Revision 5. Implementation-ready pending final reviewer pass.
+**Status:** draft
 **Audience:** Implementers and final-pass reviewers.
 
 **Revision note (rev 5):** Three additions to the reviewer and synthesizer prompts, derived from a cross-vendor research synthesis (Gemini, Grok, ChatGPT) on multi-agent orchestration patterns conducted in parallel with the rev 4 work. The research surfaced five convergent patterns; three of those five were already in rev 4 (DO-NOT-FLAG list, GROUNDED/INFERRED tagging, structured synthesis schema with grounded-over-inferred weighting). The remaining two, plus one structural refinement, land here:
@@ -263,7 +263,7 @@ Several things about this workflow matter for the design of Vāda Reviewers:
 
 **The brief is the magic.** The quality of the workflow's output depends overwhelmingly on the brief. Dani has learned over hundreds of iterations that vague briefs produce vague reviews; specific briefs with explicit sub-questions and explicit DO-NOT-FLAG lists produce sharp reviews. The brief is where the cognitive work concentrates. The team architecture supports the brief; the brief does the heavy lifting.
 
-**The reviewers are chats, not raw models.** Critically: the empirical workflow is validated against AI products (Gemini app, Grok web, ChatGPT) that wrap the underlying model in a product harness — system prompts, tools, default behaviors. The validated outputs come from those wrapped products. Raw API calls to the same models produce *different* outputs: less hedging, no web search, no prior-conversation context, more raw and sometimes more wrong. This fidelity gap is the central technical risk of automating the workflow.
+**The reviewers are chats, not raw models.** Critically: the empirical workflow is validated against AI products (Gemini app, Grok web, ChatGPT) that wrap the underlying model in a product harness — system prompts, tools, default behaviors. The validated outputs come from those wrapped products. Raw API calls to the same models produce *different* outputs: less hedging, no prior-conversation context, more raw and sometimes more wrong. This fidelity gap is the central technical risk of automating the workflow. *(T3a update 2026-06-24: web search has been closed — Gemini uses native grounding, GPT/Grok use a function-calling handler. Remaining gap: product harness system prompts and conversation memory.)*
 
 **One round is the default.** The vast majority of decisions stop after one round. Multi-round is an option, not a baseline.
 
@@ -338,7 +338,7 @@ All reviewer invocations go through direct provider APIs (or OpenRouter for unif
 Properties:
 - Implementation cost is low (existing engine capability via the LangGraph adapter)
 - No subprocess lifecycle complexity, no per-CLI quirks
-- Fidelity gap to chat products is real and known: no tool access, no product harness system prompts, no conversation memory, raw model defaults
+- Fidelity gap to chat products is real and known: no product harness system prompts, no conversation memory, raw model defaults *(T3a 2026-06-24: web search gap closed — see §2.3)*
 - The cognitive design (brief, reviewer system prompt, optional synthesizer) is what is actually being tested
 
 If v1 API mode ties or beats the manual workflow on Dani's test cases, the cognitive design is validated. CLI mode then becomes an optional enhancement, not a rescue.
