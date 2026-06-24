@@ -127,6 +127,11 @@ export function useDeliberateForm({
   const selectedSpecIdRef = useRef(selectedSpecId)
   selectedSpecIdRef.current = selectedSpecId
 
+  // Stable ref for question — read synchronously in handleModalSave to check
+  // whether to auto-dispatch after save, without creating a stale closure dep.
+  const questionRef = useRef(question)
+  questionRef.current = question
+
   useEffect(() => {
     if (initialError) errorToast('Could not start deliberation', initialError)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -290,6 +295,13 @@ export function useDeliberateForm({
   const handleModalSave = useCallback((config: ReviewerConfig) => {
     setReviewerConfig(selectedSpecIdRef.current, config)
     setShowReviewerModal(false)
+    // Post-save auto-dispatch: if a question is already entered, fire immediately
+    // now that the config is saved. dispatchRef.current re-validates internally
+    // using the just-persisted config, so we pass no override.
+    const currentQuestion = questionRef.current.trim()
+    if (currentQuestion) {
+      void dispatchRef.current()
+    }
   }, [])
 
   const closeReviewerModal = useCallback(() => setShowReviewerModal(false), [])
