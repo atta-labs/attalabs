@@ -1,7 +1,7 @@
 schema_version: "2.0"
 id: vada-reviewers
 display_name: "Reviewers"
-description: "Three different LLMs review your problem in parallel — Gemini, GPT, and Grok give independent perspectives. Vendor diversity over role specialization."
+description: "Three reviewer slots run in parallel. You choose the model for each slot — any vendor you have a key for. Each reviewer has live web access via Vāda's search infrastructure. Vendor diversity over role specialization."
 experimental: false
 benchmarked: false
 

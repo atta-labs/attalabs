@@ -1,7 +1,7 @@
 schema_version: "2.0"
 id: sparring
 display_name: Sparring
-description: "Two agents go head-to-head across three rounds. Strategist and Critic stress-test each other's reasoning before a synthesizer reconciles their final positions."
+description: "Two agents go head-to-head across three rounds. Strategist and Critic stress-test each other's reasoning — both have live web access — before a synthesizer reconciles their final positions."
 experimental: true
 
 defaults:

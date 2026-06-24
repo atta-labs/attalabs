@@ -1,7 +1,7 @@
 schema_version: "2.0"
 id: vada-reviewers-synthesis
 display_name: "Reviewers + Synthesis"
-description: "Three different LLMs review independently, then a synthesizer extracts consensus, contradictions, and unique insights into a structured analysis."
+description: "Three reviewer slots run in parallel — you choose the model for each slot. Each reviewer has live web access. A synthesizer then extracts consensus, contradictions, and unique insights into a structured analysis."
 experimental: false
 benchmarked: false
 
