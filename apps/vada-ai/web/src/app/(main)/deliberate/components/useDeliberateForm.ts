@@ -77,6 +77,8 @@ export interface DeliberateFormState {
   benchmarkEnabled: boolean
   setBenchmarkEnabled: (v: boolean) => void
   handleStart: () => Promise<void>
+  /** Submit with an explicit question text — used by SmartPromptInput which owns its own value. */
+  handleStartWithText: (q: string) => Promise<void>
   faceStyle: FaceStyle
   showReviewerModal: boolean
   handleModalSave: (config: ReviewerConfig) => void
@@ -199,15 +201,23 @@ export function useDeliberateForm({
     (hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec)
 
   // Core dispatch — skips the reviewer config gate (used post-modal-save).
-  const dispatchRef = useRef<() => Promise<void>>(() => Promise.resolve())
-  dispatchRef.current = async () => {
-    if (!canStart) return
+  // Accepts an optional explicit question text (used by SmartPromptInput submit path
+  // where the component owns its own value and passes it via onSubmit).
+  const dispatchRef = useRef<(overrideQuestion?: string) => Promise<void>>(() => Promise.resolve())
+  dispatchRef.current = async (overrideQuestion?: string) => {
+    const effectiveQuestion = (overrideQuestion ?? question).trim()
+    const effectiveCanStart =
+      !!effectiveQuestion &&
+      remainingToday > 0 &&
+      !loading &&
+      (hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec)
+    if (!effectiveCanStart) return
     setLoading(true)
 
     // The apiKey is not sent to /start. The deliberation page passes it to
     // /workflow/run?stream=true when the SSE stream opens. See /trust.
     const body: Record<string, unknown> = {
-      question: question.trim(),
+      question: effectiveQuestion,
       specId: selectedSpecId,
       ...(globalModel && {
         provider: globalModel.provider,
@@ -237,7 +247,7 @@ export function useDeliberateForm({
     if (benchmarkEnabled && globalModel) {
       const baselineApiKey = globalModel.provider === 'ollama' ? 'ollama-local' : globalModel.apiKey || undefined
       if (baselineApiKey) {
-        void fireBaselineBenchmark(session_id, question.trim(), { ...globalModel, apiKey: baselineApiKey })
+        void fireBaselineBenchmark(session_id, effectiveQuestion, { ...globalModel, apiKey: baselineApiKey })
       }
     }
 
@@ -250,9 +260,15 @@ export function useDeliberateForm({
   // the agent spheres to flicker on input. The ref-indirection keeps the
   // exposed callback's identity stable across renders while always calling
   // the latest closure (which sees fresh state).
-  const handleStartImplRef = useRef<() => Promise<void>>(() => Promise.resolve())
-  handleStartImplRef.current = async () => {
-    if (!canStart) return
+  const handleStartImplRef = useRef<(overrideQuestion?: string) => Promise<void>>(() => Promise.resolve())
+  handleStartImplRef.current = async (overrideQuestion?: string) => {
+    const effectiveQuestion = (overrideQuestion ?? question).trim()
+    const effectiveCanStart =
+      !!effectiveQuestion &&
+      remainingToday > 0 &&
+      !loading &&
+      (hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec)
+    if (!effectiveCanStart) return
     // For specs with editable reviewer agents, gate on a valid stored config.
     // If the config is missing or stale keys, show the modal instead of dispatching.
     const spec = specs.find((s) => s.id === selectedSpecId)
@@ -266,9 +282,10 @@ export function useDeliberateForm({
         }
       }
     }
-    await dispatchRef.current()
+    await dispatchRef.current(overrideQuestion)
   }
   const handleStart = useCallback(() => handleStartImplRef.current(), [])
+  const handleStartWithText = useCallback((q: string) => handleStartImplRef.current(q), [])
 
   const handleModalSave = useCallback((config: ReviewerConfig) => {
     setReviewerConfig(selectedSpecIdRef.current, config)
@@ -292,6 +309,7 @@ export function useDeliberateForm({
     benchmarkEnabled,
     setBenchmarkEnabled,
     handleStart,
+    handleStartWithText,
     faceStyle,
     showReviewerModal,
     handleModalSave,

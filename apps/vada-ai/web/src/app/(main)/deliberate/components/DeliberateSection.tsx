@@ -1,10 +1,11 @@
 'use client'
 
+import type { FileUIPart } from 'ai'
 import type { Flow } from '@atta/engine'
 import { cn } from '@atta/ui/lib/utils'
 import { NextLink } from '@atta/ui/lib/next-link'
+import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
 import { ArrowUpRight } from 'lucide-react'
-import { QuestionInputArea } from './QuestionInputArea'
 import { DeliberatePanel } from './DeliberatePanel'
 import { useDeliberateForm } from './useDeliberateForm'
 import { MigrationPrompt } from './MigrationPrompt'
@@ -24,6 +25,15 @@ export function DeliberateSection(props: DeliberateSectionProps) {
 
   const isActive = form.question.trim().length > 0
   const selectedSpec = props.specs.find((s) => s.id === form.selectedSpecId) ?? props.specs[0]
+
+  // SmartPromptInput owns its own value; onSubmit provides text + files.
+  // Vāda has no file ingestion backend — files are accepted in the UI but
+  // not forwarded to any endpoint. Only text is dispatched.
+  function handleSmartSubmit(text: string, _files: FileUIPart[]) {
+    if (!text.trim()) return
+    form.setQuestion(text)
+    void form.handleStartWithText(text)
+  }
 
   return (
     <>
@@ -60,7 +70,13 @@ export function DeliberateSection(props: DeliberateSectionProps) {
             )}
           </div>
 
-          <QuestionInputArea question={form.question} onQuestionChange={form.setQuestion} />
+          <SmartPromptInput
+            onSubmit={handleSmartSubmit}
+            placeholder='What decision are you wrestling with?'
+            submitOn='cmdenter'
+            hint='Cmd+Enter to deliberate'
+            status={form.loading ? 'loading' : 'idle'}
+          />
         </div>
       </div>
 
@@ -102,7 +118,12 @@ export function DeliberateSection(props: DeliberateSectionProps) {
         {/* Fixed input bar — sticky to viewport bottom, same pattern as Herald's JDInput */}
         <div className='fixed inset-x-0 bottom-0 z-30 bg-background/95 backdrop-blur-md border-t border-border'>
           <div className='mx-auto w-full max-w-5xl px-6 py-4'>
-            <QuestionInputArea question={form.question} onQuestionChange={form.setQuestion} />
+            <SmartPromptInput
+              onSubmit={handleSmartSubmit}
+              placeholder='What decision are you wrestling with?'
+              submitOn='cmdenter'
+              status={form.loading ? 'loading' : 'idle'}
+            />
           </div>
         </div>
       </div>
