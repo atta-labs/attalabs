@@ -19,6 +19,7 @@ Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
 
 These require Principal action and are not trackable as forge Issues:
 
+- **Add Attalabs write token to tools/admin env** — `SANITY_API_TOKEN_ATTALABS` must be configured in Vercel environment variables and local `.env.local` for `tools/admin` to authorize theme/library mutations.
 - **Close Issue #110 manually** — task 9 view half (token ledger Studio display) merged via PR #153 on branch `task/aeg-governance-ui-v2/4`; auto-close did not fire; issue remains open.
 - **Add OpenAI + xAI keys to Vercel** — Vercel → vada-ai project → Settings → Environment Variables → add `OPENAI_API_KEY` and `XAI_API_KEY`. Unblocks Reviewers end-to-end testing.
 - **Upstash Redis credentials for Herald** — `.env.local` creds expired. Rate limiting degrades gracefully but isn't active. Provision at upstash.com, update `.env.local` + Vercel env vars for `herald.attalabs.dev`.
@@ -69,6 +70,13 @@ The monorepo's own plan lives at `specs/ecosystem-backlog.md` (the root `specs/`
 The `.claude/skills/brief-authoring/SKILL.md` is the canonical brief authoring guide (tier, principal_delegate, spike, Type 1/2 declaration, lock acknowledgment, optional `Ticket:`/`Project:`, brief-lands-in-PR-body).
 
 PM docs are in the repo (not Claude.ai project knowledge). Any Claude session reads them via GitHub MCP or worktree access.
+
+## CMS theme and library centralization migration (D-060)
+
+The migration of UI themes and component libraries from Atta (`892o2m9f`) to Attalabs (`l5n0n8nn`) was run and verified.
+- **Script**: `packages/cms/scripts/migrate-themes-and-libraries.ts`
+- **Verification query**: `sanity documents query "*[_type in ['uiTheme', 'library']]{_id, _type, name}" --project-id l5n0n8nn`
+- **Results**: Verified that exactly 19 themes (prefixed with `theme-`) and 4 component libraries (prefixed with `library-`) reside in the `l5n0n8nn` target dataset.
 
 ---
 

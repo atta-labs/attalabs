@@ -11,7 +11,7 @@ const MODEL = 'claude-sonnet-4-6'
 
 // __dirname = packages/engine/src; yamls are at ../../agents/vada-deliberation/yamls/
 const YAMLS_DIR = join(__dirname, '../../agents/vada-deliberation/yamls')
-const BASELINE_DIR = '/tmp'
+const BASELINE_DIR = join(__dirname, 'baselines')
 
 // ── Fixtures ───────────────────────────────────────────────────────────────────
 

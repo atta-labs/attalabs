@@ -6,12 +6,12 @@ import type { ProjectKey } from '@/lib/project-config'
 import type { ThemeEditorData } from './_types'
 
 export async function createThemeAction(
-  project: ProjectKey,
+  _project: ProjectKey,
   name: string,
   description?: string
 ): Promise<{ _id: string; name: string }> {
   try {
-    const { writeClient } = getCmsClientsForProject(project)
+    const { writeClient } = getCmsClientsForProject('attalabs')
     const doc = {
       _type: 'uiTheme' as const,
       name,
@@ -20,31 +20,35 @@ export async function createThemeAction(
     const result = await writeClient.create(doc)
     return { _id: result._id, name: result.name as string }
   } catch {
-    throw new Error('Failed to create theme. Check your SANITY_API_TOKEN for this project.')
+    throw new Error('Failed to create theme. Check your SANITY_API_TOKEN_ATTALABS or SANITY_API_TOKEN.')
   }
 }
 
-export async function renameThemeAction(project: ProjectKey, id: string, name: string): Promise<void> {
+export async function renameThemeAction(_project: ProjectKey, id: string, name: string): Promise<void> {
   try {
-    const { writeClient } = getCmsClientsForProject(project)
+    const { writeClient } = getCmsClientsForProject('attalabs')
     await writeClient.patch(id).set({ name }).commit()
   } catch {
     throw new Error('Failed to rename theme.')
   }
 }
 
-export async function publishThemeAction(project: ProjectKey, id: string, vars: Record<string, string>): Promise<void> {
+export async function publishThemeAction(
+  _project: ProjectKey,
+  id: string,
+  vars: Record<string, string>
+): Promise<void> {
   try {
-    const { writeClient } = getCmsClientsForProject(project)
+    const { writeClient } = getCmsClientsForProject('attalabs')
     await writeClient.patch(id).set({ dark: vars }).commit()
   } catch {
     throw new Error('Failed to publish theme vars.')
   }
 }
 
-export async function updateThemeAction(project: ProjectKey, id: string, data: ThemeEditorData): Promise<void> {
+export async function updateThemeAction(_project: ProjectKey, id: string, data: ThemeEditorData): Promise<void> {
   try {
-    const { writeClient } = getCmsClientsForProject(project)
+    const { writeClient } = getCmsClientsForProject('attalabs')
     await writeClient
       .patch(id)
       .set({
@@ -63,9 +67,9 @@ export async function updateThemeAction(project: ProjectKey, id: string, data: T
   }
 }
 
-export async function deleteThemeAction(project: ProjectKey, id: string): Promise<void> {
+export async function deleteThemeAction(_project: ProjectKey, id: string): Promise<void> {
   try {
-    const { writeClient } = getCmsClientsForProject(project)
+    const { writeClient } = getCmsClientsForProject('attalabs')
     await writeClient.delete(id)
   } catch {
     throw new Error('Failed to delete theme.')
@@ -83,7 +87,7 @@ export async function setActiveThemeAction(
     await writeClient
       .patch(configDocId)
       .set({
-        'userInterface.theme': { _type: 'reference', _ref: id },
+        'userInterface.theme': id,
         'userInterface.colorScheme': colorScheme
       })
       .commit()

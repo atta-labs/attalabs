@@ -1,0 +1,293 @@
+{
+  "schemaVersion": "1.0",
+  "question": "Test question for baseline snapshot",
+  "model": "claude-sonnet-4-6",
+  "specId": "sparring",
+  "teamName": "sparring",
+  "agents": {
+    "Strategist": {
+      "name": "Strategist",
+      "description": "Maps the landscape, identifies opportunities, risks, and paths forward",
+      "systemPrompt": "You are the Strategist. Your job is to map the landscape — identify the opportunity, the risk, and the path forward. Your instinct is to expand and show what is possible.\n\nYou are providing a single-shot standalone analysis. The Principal will see your response alongside other reviewers, but you have no visibility into their inputs. This is your only turn. Take a clear position and provide actionable recommendations.\n\nThe Principal may state a current leaning in the brief. Treat it as a hypothesis to be tested, not a conclusion to defend. Your job is to evaluate whether the leaning survives strategic scrutiny.\n\nStructure your response around these elements:\n\n1. Landscape assessment (2-3 sentences): What is the actual decision space? What is the Principal not seeing?\n2. The opportunity (1-2 paragraphs): What is the upside case? What would success look like?\n3. The risk (1-2 paragraphs): What could go wrong? Which assumptions are load-bearing?\n4. Recommended path (3-5 bullets): Concrete next steps with decision criteria and timelines.\n5. Confidence (1 sentence): State your confidence (High/Medium/Low) and the one thing that would change your recommendation.\n\nBe decisive. If the answer is clear, say so. Anticipate likely objections and address them proactively rather than hedging.\n\nIf the decision landscape is genuinely unambiguous and the Principal's leaning is clearly correct, say so directly: \"This is straightforward. Do X because [reason].\" Do not manufacture complexity where none exists.\n\nDo not update your position merely because someone might disagree. Update only when a specific, named structural flaw has been demonstrated. Disagreement without demonstration is not evidence. Identify potential flaws in your own reasoning before the Principal does.\n\nDo not use phrases like \"it depends,\" \"both have merit,\" or \"on the other hand\" unless there is genuine structural ambiguity that you explicitly name and analyze.\n\nLength: aim for 300-500 words. Shorter is better if the answer is clear.\n",
+      "tools": ["web_search", "web_fetch"],
+      "model": "claude-sonnet-4-6"
+    },
+    "Critic": {
+      "name": "Critic",
+      "description": "Attacks assumptions, timelines, and logistical leaps to strengthen the final answer",
+      "systemPrompt": "You are the Critic. Your job is to find what is wrong. You attack assumptions, timelines, and logistical leaps. Your instinct is to destroy — not out of malice, but because a plan that survives criticism is a plan worth following.\n\nYou are providing a single-shot standalone critical analysis. The Principal will see your response alongside other reviewers, but you have no visibility into their inputs. This is your only turn. Be decisive.\n\nThe Principal may state a current leaning in the brief. Treat it as a hypothesis to be falsified, not a conclusion to defend.\n\nStructure your response around these elements (typically 2-5 assumptions, but use judgment):\n\n1. Load-bearing assumptions and falsification: Name the key assumptions the Principal's leaning depends on. For each, state the specific evidence that would prove it wrong, and what happens if it fails.\n2. Verdict: State clearly either:\n   - \"The premise survives my criticism because [X].\" OR\n   - \"The premise fails because [Y]. The alternative is [Z].\"\n3. One question the Principal cannot yet answer: Expose the critical unknown.\n\nIf a premise is genuinely sound, say so directly: \"This frame has no fatal flaws. Proceed.\" Manufacturing criticism when none exists damages trust.\n\nDecisiveness is mandatory. Avoid hedging phrases like \"could go either way\" or \"both options have merit.\" If the answer requires specifying conditions, name them and say how to test which branch is real.\n\nIf you destroy a premise and a clearly superior alternative exists, propose it. Do not merely leave broken ideas; point toward a stronger foundation.\n\nLength: aim for 300-500 words. Shorter is better if decisive.\n",
+      "tools": ["web_search"],
+      "model": "claude-sonnet-4-6"
+    },
+    "ConclusionSynthesizer": {
+      "name": "ConclusionSynthesizer",
+      "description": "Produces the final structured verdict from the deliberation transcript",
+      "systemPrompt": "You are producing the final conclusion of a deliberation. Your job is to commit to a clear answer.\n\nMODE CHANGE: During the deliberation rounds, you operated under instructions to map agreement and disagreement without concluding — to stay a mapmaker, not a decider. Those instructions are now lifted. In this pass, your job is to commit. The deliberation is over. Deliver the verdict.\n\nCRITICAL: The \"recommendation\" field MUST directly answer the Principal's question. If they asked \"Should I do X?\", your recommendation must start with \"Yes\" or \"No\" or \"Not yet\" — followed by the reasoning. Do NOT hedge. Do NOT say \"it depends\" or \"further evaluation is needed.\"\n\nWrite the recommendation as a clear, actionable statement that captures not just what was decided but why. Keep it concise prose — no code blocks, no nested JSON. If the question asked for code, name the chosen approach in the recommendation; the engine will emit the code separately. The key_condition should be the single most important assumption that must hold for the recommendation to be valid. Output must conform exactly to the JSON schema.\n\nRules:\n(1) Do NOT use conversational filler (e.g., \"Here is the JSON\", \"Based on the deliberation\").\n(2) If the agents genuinely could not agree, state the strongest position in the recommendation and put the dissent in unresolved_points. Do NOT use the recommendation field to say \"the agents disagreed.\"\n(3) The unresolved_points array must contain specific, named disagreements from the transcript. Do not invent them. Each must name which agents disagreed and about what. If the agents genuinely agreed on every substantive point, return an empty array: unresolved_points: []. An empty array is the correct answer when no genuine disagreement exists — it is NOT a failure to deliberate. Manufacturing fake dissent to fill the array is worse than leaving it empty.\n(4) Set the review_by date based strictly on the time-sensitivity discussed in the transcript.\n",
+      "model": "claude-sonnet-4-6",
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "recommendation": {
+            "type": "string"
+          },
+          "key_condition": {
+            "type": "string"
+          },
+          "unresolved_points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "point": {
+                  "type": "string"
+                },
+                "agents_involved": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": ["point", "agents_involved"]
+            }
+          },
+          "review_by": {
+            "type": "string"
+          }
+        },
+        "required": ["recommendation", "key_condition", "unresolved_points", "review_by"]
+      }
+    },
+    "Auditor": {
+      "name": "Auditor",
+      "description": "Audits the final conclusion without access to the deliberation transcript",
+      "systemPrompt": "You are the Blind Auditor. You have no access to the deliberation transcript. You are seeing only the Principal's original question and the final Conclusion.\n\nTask:\n\nRULE 0 (Constraint Audit): The system REQUIRES the output to be a JSON object. Do NOT flag the output for being JSON. Look at the Principal's original question. If they asked for a specific format (e.g., \"5 lines\"), evaluate ONLY the raw text string inside the \"recommendation\" field. CRITICAL: In JSON, line breaks are represented by the \"\\n\" character. You MUST treat every \"\\n\" as a valid, physical line break when counting lines or evaluating formatting. If the text string does not obey the constraint, flag it.\n\nRULE 1 (Decisiveness Audit): The recommendation MUST directly answer the Principal's question. If the Principal asked \"Should I do X?\", the recommendation must commit to a position (Yes, No, Not yet, or a specific alternative). If the recommendation hedges, lists considerations without concluding, or says \"it depends\" or \"further evaluation needed\", flag it as: \"FLAG: recommendation - Does not directly answer the question.\"\n\nLOGIC AUDIT: Does this conclusion logically hold up entirely on its own? Is there any claim here that is mathematically, logically, or strategically unsupported by the premise of the question? Has the Synthesizer papered over a disagreement to create a fake consensus?\n\nOutput:\nIf formatting, decisiveness, and logic are entirely sound, output ONLY the word \"PASS\". Do NOT explain your reasoning.\nIf flawed, your objection must identify the specific field (recommendation, key_condition, or unresolved_points) that is flawed and state exactly what is wrong. Format: \"FLAG: [Field Name] - [Exact Objection]\". Vague objections are not actionable.\n",
+      "model": "claude-sonnet-4-6"
+    },
+    "FactChecker": {
+      "name": "FactChecker",
+      "description": "Audits factual claims in the conclusion via web search",
+      "systemPrompt": "You are the Fact Auditor. You have access to web_search and web_fetch tools.\n\nYou are given the Principal's original question and the final Conclusion produced by a deliberation system.\n\nTask:\nIdentify 2–4 specific, verifiable factual claims in the Conclusion — statistics, dates, named entities, technical specifications, or cited facts. Focus on claims that are central to the recommendation's validity, not peripheral color.\n\nUse web_search and web_fetch to verify them. If a claim cannot be located online, note the absence but do not flag on absence alone unless the claim is clearly fabricated.\n\nOutput:\nIf all verified claims are accurate (or unverifiable without contradiction): output ONLY the word \"PASS\". Do NOT explain your reasoning.\nIf a central factual claim is demonstrably incorrect: output \"FLAG: [exact claim] — [what the evidence shows]\".\nReport at most one FLAG — the most consequential error only. Vague objections are not actionable.\n",
+      "tools": ["web_search", "web_fetch"],
+      "model": "claude-sonnet-4-6"
+    }
+  },
+  "classifierModes": {
+    "Strategist": "auto",
+    "Critic": "auto",
+    "ConclusionSynthesizer": "skip",
+    "Auditor": "skip",
+    "FactChecker": "auto"
+  },
+  "maxRevisions": 1,
+  "responseMode": "synthesize",
+  "responseNode": "terminal-0",
+  "graph": {
+    "nodes": {
+      "round-0-Strategist": {
+        "id": "round-0-Strategist",
+        "agentName": "Strategist",
+        "inputTemplate": "{{#if roundIndex}}\nThe following is the deliberation transcript so far:\n\n{{#each outputsByRound}}{{#each this}}[Round {{@../index}} — {{this.agentName}}]\n{{this.content}}\n\n---\n\n{{/each}}{{/each}}\nThe original question is: {{question}}\n\nYou must read the transcript of the prior rounds. Address the friction generated in the room. CRITICAL UI REQUIREMENT: If you are directly attacking or responding to a specific agent's prior point, you MUST begin your response with the exact tag [TARGET: AgentName]. Example: [TARGET: Critic] You are assuming a frictionless market, but...\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{else}}\n{{question}}\n\nThis is the first round. You are seeing this question for the first time. Respond ONLY to the Principal's prompt. Do not address or reference other agents, as they have not spoken yet.\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{/if}}\n",
+        "role": "round",
+        "kind": "parallel-peer",
+        "metadata": {
+          "roundIndex": 0,
+          "totalRounds": 3
+        }
+      },
+      "round-0-Critic": {
+        "id": "round-0-Critic",
+        "agentName": "Critic",
+        "inputTemplate": "{{#if roundIndex}}\nThe following is the deliberation transcript so far:\n\n{{#each outputsByRound}}{{#each this}}[Round {{@../index}} — {{this.agentName}}]\n{{this.content}}\n\n---\n\n{{/each}}{{/each}}\nThe original question is: {{question}}\n\nYou must read the transcript of the prior rounds. Address the friction generated in the room. CRITICAL UI REQUIREMENT: If you are directly attacking or responding to a specific agent's prior point, you MUST begin your response with the exact tag [TARGET: AgentName]. Example: [TARGET: Critic] You are assuming a frictionless market, but...\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{else}}\n{{question}}\n\nThis is the first round. You are seeing this question for the first time. Respond ONLY to the Principal's prompt. Do not address or reference other agents, as they have not spoken yet.\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{/if}}\n",
+        "role": "round",
+        "kind": "parallel-peer",
+        "metadata": {
+          "roundIndex": 0,
+          "totalRounds": 3
+        }
+      },
+      "round-1-Strategist": {
+        "id": "round-1-Strategist",
+        "agentName": "Strategist",
+        "inputTemplate": "{{#if roundIndex}}\nThe following is the deliberation transcript so far:\n\n{{#each outputsByRound}}{{#each this}}[Round {{@../index}} — {{this.agentName}}]\n{{this.content}}\n\n---\n\n{{/each}}{{/each}}\nThe original question is: {{question}}\n\nYou must read the transcript of the prior rounds. Address the friction generated in the room. CRITICAL UI REQUIREMENT: If you are directly attacking or responding to a specific agent's prior point, you MUST begin your response with the exact tag [TARGET: AgentName]. Example: [TARGET: Critic] You are assuming a frictionless market, but...\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{else}}\n{{question}}\n\nThis is the first round. You are seeing this question for the first time. Respond ONLY to the Principal's prompt. Do not address or reference other agents, as they have not spoken yet.\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{/if}}\n",
+        "role": "round",
+        "kind": "parallel-peer",
+        "metadata": {
+          "roundIndex": 1,
+          "totalRounds": 3
+        }
+      },
+      "round-1-Critic": {
+        "id": "round-1-Critic",
+        "agentName": "Critic",
+        "inputTemplate": "{{#if roundIndex}}\nThe following is the deliberation transcript so far:\n\n{{#each outputsByRound}}{{#each this}}[Round {{@../index}} — {{this.agentName}}]\n{{this.content}}\n\n---\n\n{{/each}}{{/each}}\nThe original question is: {{question}}\n\nYou must read the transcript of the prior rounds. Address the friction generated in the room. CRITICAL UI REQUIREMENT: If you are directly attacking or responding to a specific agent's prior point, you MUST begin your response with the exact tag [TARGET: AgentName]. Example: [TARGET: Critic] You are assuming a frictionless market, but...\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{else}}\n{{question}}\n\nThis is the first round. You are seeing this question for the first time. Respond ONLY to the Principal's prompt. Do not address or reference other agents, as they have not spoken yet.\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{/if}}\n",
+        "role": "round",
+        "kind": "parallel-peer",
+        "metadata": {
+          "roundIndex": 1,
+          "totalRounds": 3
+        }
+      },
+      "round-2-Strategist": {
+        "id": "round-2-Strategist",
+        "agentName": "Strategist",
+        "inputTemplate": "{{#if roundIndex}}\nThe following is the deliberation transcript so far:\n\n{{#each outputsByRound}}{{#each this}}[Round {{@../index}} — {{this.agentName}}]\n{{this.content}}\n\n---\n\n{{/each}}{{/each}}\nThe original question is: {{question}}\n\nYou must read the transcript of the prior rounds. Address the friction generated in the room. CRITICAL UI REQUIREMENT: If you are directly attacking or responding to a specific agent's prior point, you MUST begin your response with the exact tag [TARGET: AgentName]. Example: [TARGET: Critic] You are assuming a frictionless market, but...\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{else}}\n{{question}}\n\nThis is the first round. You are seeing this question for the first time. Respond ONLY to the Principal's prompt. Do not address or reference other agents, as they have not spoken yet.\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{/if}}\n",
+        "role": "round",
+        "kind": "parallel-peer",
+        "metadata": {
+          "roundIndex": 2,
+          "totalRounds": 3
+        }
+      },
+      "round-2-Critic": {
+        "id": "round-2-Critic",
+        "agentName": "Critic",
+        "inputTemplate": "{{#if roundIndex}}\nThe following is the deliberation transcript so far:\n\n{{#each outputsByRound}}{{#each this}}[Round {{@../index}} — {{this.agentName}}]\n{{this.content}}\n\n---\n\n{{/each}}{{/each}}\nThe original question is: {{question}}\n\nYou must read the transcript of the prior rounds. Address the friction generated in the room. CRITICAL UI REQUIREMENT: If you are directly attacking or responding to a specific agent's prior point, you MUST begin your response with the exact tag [TARGET: AgentName]. Example: [TARGET: Critic] You are assuming a frictionless market, but...\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{else}}\n{{question}}\n\nThis is the first round. You are seeing this question for the first time. Respond ONLY to the Principal's prompt. Do not address or reference other agents, as they have not spoken yet.\n\n[CRITICAL REMINDER - THE PRINCIPAL'S EXACT QUESTION: \"{{question}}\"\nYour current argument MUST directly serve this specific question and STRICTLY obey ANY constraints within it (whether formatting, length, tone, persona, or logic). Do not drift into the abstract.]\n{{/if}}\n",
+        "role": "round",
+        "kind": "parallel-peer",
+        "metadata": {
+          "roundIndex": 2,
+          "totalRounds": 3
+        }
+      },
+      "terminal-0": {
+        "id": "terminal-0",
+        "agentName": "ConclusionSynthesizer",
+        "inputTemplate": "{{#if isRevision}}\nThe original question is: \"{{question}}\"\n\nParticipants in this deliberation: {{participants}}\n\nDeliberation transcript:\n\n{{#each outputsByRound}}{{#each this}}[Round {{@../index}} — {{this.agentName}}]\n{{this.content}}\n\n---\n\n{{/each}}{{/each}}\nThe Synthesizer's previous conclusion was audited and flagged. Here is what was produced:\n\n{{lastOutputByAgent.ConclusionSynthesizer.content}}\n\nThe auditor's objection: {{auditOutputs.[0].content}}\n\n---\n\nCRITICAL INSTRUCTION — READ THIS BEFORE GENERATING:\n\n1. You MUST output valid JSON matching the conclusion schema. No markdown, no explanation, just the JSON object.\n\n2. Regenerate the conclusion from the transcript above — do not simply patch the broken conclusion text. The transcript is ground truth. The previous conclusion may contain corruption or hallucination; trust the transcript, not the previous output.\n\n3. The \"recommendation\" field MUST directly answer the Principal's question: \"{{question}}\"\n   - If the objection says the recommendation \"does not directly answer the question\": rewrite it to START with \"No,\" or \"Yes,\" or \"Not yet —\" followed by the reasoning drawn from the transcript.\n   - Do NOT hedge. Do NOT say \"it depends\" or \"further evaluation is needed.\"\n\n4. The \"key_condition\" field must state the single most important assumption, taken from the transcript.\n\n5. The \"unresolved_points\" field must list specific disagreements from the transcript with the agents involved. Do not invent them. If the agents agreed on every substantive point, return an empty array.\n\nGENERATE THE REVISED JSON NOW:\n{{else}}\nThe original question is: \"{{question}}\"\n\nParticipants in this deliberation: {{participants}}\n\nDeliberation transcript:\n\n{{#each outputsByRound}}{{#each this}}[Round {{@../index}} — {{this.agentName}}]\n{{this.content}}\n\n---\n\n{{/each}}{{/each}}\nCRITICAL INSTRUCTION — READ THIS BEFORE GENERATING:\n\n1. You MUST output valid JSON matching the conclusion schema. No markdown, no explanation, just the JSON object.\n\n2. The \"recommendation\" field MUST directly answer the Principal's question: \"{{question}}\"\n   - If the question is \"Should I...?\", start with \"No,\" or \"Yes,\" or \"Not yet —\" followed by the reasoning.\n   - Do NOT hedge. Do NOT say \"it depends\" or \"further evaluation is needed.\"\n   - The deliberation already happened. You are delivering the verdict, not asking more questions.\n\n3. The \"key_condition\" field must state the single most important assumption.\n\n4. The \"unresolved_points\" field must list specific disagreements from the transcript with the agents involved. Do not invent them.\n\n5. Keep the \"recommendation\" field concise prose. No code blocks. No nested JSON. If the question asked for code, name the chosen approach in the recommendation — do not paste code into this field.\n\nGENERATE THE JSON NOW:\n{{/if}}\n",
+        "role": "terminal",
+        "kind": "synthesizer",
+        "metadata": {
+          "totalRounds": 3,
+          "revisionIndex": 0
+        }
+      },
+      "terminal-1": {
+        "id": "terminal-1",
+        "agentName": "ConclusionSynthesizer",
+        "inputTemplate": "{{#if isRevision}}\nThe original question is: \"{{question}}\"\n\nParticipants in this deliberation: {{participants}}\n\nDeliberation transcript:\n\n{{#each outputsByRound}}{{#each this}}[Round {{@../index}} — {{this.agentName}}]\n{{this.content}}\n\n---\n\n{{/each}}{{/each}}\nThe Synthesizer's previous conclusion was audited and flagged. Here is what was produced:\n\n{{lastOutputByAgent.ConclusionSynthesizer.content}}\n\nThe auditor's objection: {{auditOutputs.[0].content}}\n\n---\n\nCRITICAL INSTRUCTION — READ THIS BEFORE GENERATING:\n\n1. You MUST output valid JSON matching the conclusion schema. No markdown, no explanation, just the JSON object.\n\n2. Regenerate the conclusion from the transcript above — do not simply patch the broken conclusion text. The transcript is ground truth. The previous conclusion may contain corruption or hallucination; trust the transcript, not the previous output.\n\n3. The \"recommendation\" field MUST directly answer the Principal's question: \"{{question}}\"\n   - If the objection says the recommendation \"does not directly answer the question\": rewrite it to START with \"No,\" or \"Yes,\" or \"Not yet —\" followed by the reasoning drawn from the transcript.\n   - Do NOT hedge. Do NOT say \"it depends\" or \"further evaluation is needed.\"\n\n4. The \"key_condition\" field must state the single most important assumption, taken from the transcript.\n\n5. The \"unresolved_points\" field must list specific disagreements from the transcript with the agents involved. Do not invent them. If the agents agreed on every substantive point, return an empty array.\n\nGENERATE THE REVISED JSON NOW:\n{{else}}\nThe original question is: \"{{question}}\"\n\nParticipants in this deliberation: {{participants}}\n\nDeliberation transcript:\n\n{{#each outputsByRound}}{{#each this}}[Round {{@../index}} — {{this.agentName}}]\n{{this.content}}\n\n---\n\n{{/each}}{{/each}}\nCRITICAL INSTRUCTION — READ THIS BEFORE GENERATING:\n\n1. You MUST output valid JSON matching the conclusion schema. No markdown, no explanation, just the JSON object.\n\n2. The \"recommendation\" field MUST directly answer the Principal's question: \"{{question}}\"\n   - If the question is \"Should I...?\", start with \"No,\" or \"Yes,\" or \"Not yet —\" followed by the reasoning.\n   - Do NOT hedge. Do NOT say \"it depends\" or \"further evaluation is needed.\"\n   - The deliberation already happened. You are delivering the verdict, not asking more questions.\n\n3. The \"key_condition\" field must state the single most important assumption.\n\n4. The \"unresolved_points\" field must list specific disagreements from the transcript with the agents involved. Do not invent them.\n\n5. Keep the \"recommendation\" field concise prose. No code blocks. No nested JSON. If the question asked for code, name the chosen approach in the recommendation — do not paste code into this field.\n\nGENERATE THE JSON NOW:\n{{/if}}\n",
+        "role": "terminal",
+        "kind": "revision-terminal",
+        "metadata": {
+          "totalRounds": 3,
+          "revisionIndex": 1
+        }
+      },
+      "__END__": {
+        "id": "__END__",
+        "agentName": "__END__",
+        "inputTemplate": "",
+        "role": "solo",
+        "kind": "system-sentinel",
+        "metadata": {}
+      },
+      "audit-Auditor-0": {
+        "id": "audit-Auditor-0",
+        "agentName": "Auditor",
+        "inputTemplate": "Principal's question: {{question}}\n\nConclusion to Review:\n{{conclusion}}\n",
+        "role": "audit",
+        "kind": "auditor",
+        "metadata": {
+          "revisionIndex": 0
+        }
+      },
+      "audit-FactChecker-0": {
+        "id": "audit-FactChecker-0",
+        "agentName": "FactChecker",
+        "inputTemplate": "Principal's question: {{question}}\n\nConclusion to Review:\n{{conclusion}}\n",
+        "role": "audit",
+        "kind": "auditor",
+        "metadata": {
+          "revisionIndex": 0
+        }
+      },
+      "audit-Auditor-1": {
+        "id": "audit-Auditor-1",
+        "agentName": "Auditor",
+        "inputTemplate": "Principal's question: {{question}}\n\nConclusion to Review:\n{{conclusion}}\n",
+        "role": "audit",
+        "kind": "auditor",
+        "metadata": {
+          "revisionIndex": 1
+        }
+      },
+      "audit-FactChecker-1": {
+        "id": "audit-FactChecker-1",
+        "agentName": "FactChecker",
+        "inputTemplate": "Principal's question: {{question}}\n\nConclusion to Review:\n{{conclusion}}\n",
+        "role": "audit",
+        "kind": "auditor",
+        "metadata": {
+          "revisionIndex": 1
+        }
+      }
+    },
+    "edges": [
+      {
+        "from": "round-0-Strategist",
+        "to": "round-0-Critic",
+        "kind": "ordering"
+      },
+      {
+        "from": "round-0-Critic",
+        "to": "round-1-Strategist",
+        "kind": "ordering"
+      },
+      {
+        "from": "round-1-Strategist",
+        "to": "round-1-Critic",
+        "kind": "ordering"
+      },
+      {
+        "from": "round-1-Critic",
+        "to": "round-2-Strategist",
+        "kind": "ordering"
+      },
+      {
+        "from": "round-2-Strategist",
+        "to": "round-2-Critic",
+        "kind": "ordering"
+      },
+      {
+        "from": "round-2-Critic",
+        "to": "terminal-0",
+        "kind": "flow"
+      },
+      {
+        "from": "audit-Auditor-0",
+        "to": "audit-FactChecker-0",
+        "kind": "ordering"
+      },
+      {
+        "from": "terminal-0",
+        "to": "audit-Auditor-0",
+        "kind": "flow"
+      },
+      {
+        "from": "audit-Auditor-1",
+        "to": "audit-FactChecker-1",
+        "kind": "ordering"
+      },
+      {
+        "from": "terminal-1",
+        "to": "audit-Auditor-1",
+        "kind": "flow"
+      }
+    ],
+    "conditionalEdges": [
+      {
+        "from": "audit-FactChecker-0",
+        "ifTrue": "terminal-1",
+        "ifFalse": "__END__",
+        "condition": {
+          "anyOf": ["audit-Auditor-0", "audit-FactChecker-0"],
+          "check": {
+            "type": "contains",
+            "value": "FLAG",
+            "caseSensitive": false
+          }
+        }
+      }
+    ],
+    "entryNode": "round-0-Strategist"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "question": "Test question for baseline snapshot",
+  "model": "claude-sonnet-4-6",
+  "specId": "a0-baseline",
+  "teamName": "a0-baseline",
+  "agents": {
+    "A0": {
+      "name": "A0",
+      "description": "Naive single-shot baseline — direct answer, no framing",
+      "systemPrompt": "Answer the user's question directly. No framing, no caveats. If code is useful, include it.",
+      "model": "claude-sonnet-4-6"
+    }
+  },
+  "maxRevisions": 0,
+  "responseMode": "synthesize",
+  "responseNode": "solo",
+  "graph": {
+    "nodes": {
+      "solo": {
+        "id": "solo",
+        "agentName": "A0",
+        "inputTemplate": "{{question}}",
+        "role": "solo",
+        "kind": "solo-agent",
+        "metadata": {}
+      }
+    },
+    "edges": [],
+    "conditionalEdges": [],
+    "entryNode": "solo"
+  }
+}

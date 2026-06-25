@@ -14,10 +14,11 @@ export default async function ThemesPage({ params }: { params: Promise<{ project
 
   const validProject = project as ProjectKey
   const { readClient } = getCmsClientsForProject(validProject)
+  const { readClient: attaReadClient } = getCmsClientsForProject('attalabs')
   const { configDocId } = PROJECT_CONFIG[validProject]
 
   const [themes, config] = await Promise.all([
-    getThemes(readClient).catch(() => []),
+    getThemes(attaReadClient).catch(() => []),
     getProductUiConfig(readClient, configDocId, configDocId).catch(() => null)
   ])
 
