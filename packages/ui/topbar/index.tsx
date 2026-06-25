@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { SignInButton, UserButton, useUser } from '@atta/auth'
-import { Menu, X } from 'lucide-react'
+import { LogIn, Menu, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { Button as BasicButton } from '../libraries/basic/components/interactive/button'
 import { useComponents } from '../lib/library-provider'
@@ -140,8 +140,9 @@ function TopBarWithAuth({
             </>
           ) : (
             <SignInButton mode='modal'>
-              <Button variant='outline' className='h-8 px-3 text-xs'>
-                Sign in
+              <Button variant='outline' className='h-8 gap-2 px-2.5 text-xs md:px-3'>
+                <LogIn className='h-4 w-4' />
+                <span>Sign in</span>
               </Button>
             </SignInButton>
           )}
@@ -207,8 +208,9 @@ function TopBarWithAuth({
                 {!isSignedIn && (
                   <div className='flex h-14 items-center border-b border-border/30'>
                     <SignInButton mode='modal'>
-                      <Button variant='outline' className='text-sm'>
-                        Sign in
+                      <Button variant='outline' className='gap-2 text-sm'>
+                        <LogIn className='h-4 w-4' />
+                        <span>Sign in</span>
                       </Button>
                     </SignInButton>
                   </div>
