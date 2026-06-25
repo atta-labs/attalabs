@@ -50,9 +50,9 @@ Herald's AI call migrated onto `@atta/engine` + `@atta/adapter-langgraph` as a Y
 
 ### Phase 4 — Agent migration + UX overhaul ← ACTIVE (herald-agents-v2 iteration)
 
-Herald's auditor migrated into `packages/agents/forensic-hiring-auditor/` (D-046/D-051, task 2 — PR #150). MCP surface exposed at `/api/mcp` as `herald__audit` (task 3 — PR #156). Bulk Audit result surface overhauled (task 4): matrix now has row/column headers, compact result cards (grade + confidence badge + hard-req ratio + signal count + recommendation excerpt), and inline expandable full report via Collapsible.
+Herald's auditor migrated into `packages/agents/forensic-hiring-auditor/` (D-046/D-051, task 2 — PR #150). MCP surface exposed at `/api/mcp` as `herald__audit` (task 3 — PR #156). Bulk Audit result surface overhauled (task 4): matrix now has row/column headers, compact result cards (grade + confidence badge + hard-req ratio + signal count + recommendation excerpt), and inline expandable full report via Collapsible. Owner appearance editor and Settings hub relocated from `(app)/{ui,settings}` to `/[username]/(owner)/{ui,settings}` via sibling route-group split (D-061, task 8 — PR #213); D-035 (Lock: YES) preserved by construction. Topbar gained right-cluster icon+label buttons (Settings on `HeraldTopBar`, Theme on `envoy-shell`) and a mobile collapse (logo · color-scheme · hamburger).
 
-In progress: tasks 5–7 (report quality, remaining iteration tasks).
+In progress: tasks 6–7 (per-owner rate limit, deploy verification). Tasks 5 (report quality) and 8 (route relocation) merged.
 
 ### Phase 5 — Recruiter as distinct product surface (future)
 Separate onboarding, pricing tier, team invite. B2B. Do not spec until Phase 4 validated.
