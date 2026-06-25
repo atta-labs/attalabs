@@ -2,6 +2,19 @@
 
 ## Most recent session — Jun 23, 2026
 
+`SmartPromptInput` gains `actionsPosition` prop + Vāda Deliberate hero moves TeamPicker + CONFIGURE to the LEFT and uses `variant='outline'` (vada-production-v1, PR #207, tool-badges branch).
+
+**Commit — `@atta/ui/smart-prompt-input` + Vāda Deliberate hero:**
+- `SmartPromptInput` gains new optional prop `actionsPosition?: 'left' | 'right'` (default `'right'`). Backwards-compatible: when not passed (Herald's `JDInput` case) the layout is byte-identical to before — Herald is unaffected.
+- `'left'` placement, inline mode (single-line, no attachments): row becomes `[actions] [textarea ........] [submit]` — actions LEAD the row, submit stays rightmost.
+- `'left'` placement, multi-line / attachments mode: footer becomes `[actions, ActionMenu, hint]` on the left + `[submit]` on the right. Previously actions sat next to submit on the right; now they lead the existing toolbar/hint group.
+- Vāda hero (`DeliberateSection.tsx`): passes `actionsPosition='left'` to the empty-state `SmartPromptInput`. The `actions` payload (TeamPicker + conditional CONFIGURE) is unchanged in content and gating.
+- CONFIGURE `Button` (in `DeliberateSection.tsx`): switched from `variant='ghost'` to `variant='outline'`. Hover-color override (`hover:text-accent-foreground`) preserved so the outline button's hover pair is canonical (`hover:bg-accent/20` from the base outline variant + `hover:text-accent-foreground` from the call site).
+- `TeamPicker.tsx`: `DropdownMenuTrigger`'s `Button` switched from `variant='ghost'` to `variant='outline'`. Cleaned up the `hover:bg-transparent p-0` overrides that were specific to the ghost link-look — the outline button now uses default padding/border and a `font-mono text-[10px] uppercase tracking-widest` text styling consistent with CONFIGURE. Hover pair (`hover:bg-accent/20` from base + `hover:text-accent-foreground` from call site) follows the canonical doctrine.
+- No new tokens introduced. All color choices stay on `background` / `accent` / `accent-foreground` / `muted-foreground` / `foreground` per `.claude/skills/ui-theme-tokens/SKILL.md`.
+
+## Most recent session — Jun 23, 2026
+
 Token discipline fix on Deliberate hero — TeamPicker dropdown description readability + CONFIGURE hover color (vada-production-v1, PR #207, tool-badges branch).
 
 **Symptom:** Two visual bugs in the empty-state hero controls now living inside `SmartPromptInput`'s `actions` slot.

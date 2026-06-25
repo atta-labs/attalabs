@@ -59,12 +59,13 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 placeholder='What decision are you wrestling with?'
                 submitOn='cmdenter'
                 status={form.loading ? 'loading' : 'idle'}
+                actionsPosition='left'
                 actions={
                   <>
                     <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
                     {selectedSpec?.agents.some((a) => a.editable) && (
                       <Button
-                        variant='ghost'
+                        variant='outline'
                         size='sm'
                         onClick={form.openReviewerModal}
                         className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent-foreground'

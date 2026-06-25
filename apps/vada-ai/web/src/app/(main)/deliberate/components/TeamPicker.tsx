@@ -18,15 +18,13 @@ export function TeamPicker({ specs, value, onChange }: TeamPickerProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant='ghost'
+          variant='outline'
           size='sm'
-          className='h-auto gap-1.5 p-0 text-foreground/70 hover:bg-transparent hover:text-foreground'
+          className='gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent-foreground'
         >
           <span className='flex items-center gap-1.5'>
             <Users2 className='h-3 w-3' />
-            <span className='font-mono text-[10px] uppercase tracking-widest'>
-              {selected?.displayName ?? 'Select team'}
-            </span>
+            <span>{selected?.displayName ?? 'Select team'}</span>
           </span>
           <ChevronsUpDown className='h-3 w-3' />
         </Button>

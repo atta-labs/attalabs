@@ -48,6 +48,19 @@ export interface SmartPromptInputProps {
    * (Herald-compatible default).
    */
   actions?: React.ReactNode
+  /**
+   * Which side of the input the `actions` slot occupies.
+   *
+   * - `'right'` (default): actions render to the right of the textarea (inline
+   *   mode) or on the right side of the footer (multi-line mode), immediately
+   *   before the submit button. This is the original, Herald-compatible layout.
+   * - `'left'`: actions LEAD the input.
+   *   - Inline mode: `[actions] [textarea ........] [submit]`
+   *   - Multi-line mode: footer becomes `[actions, tools, hint] ... [submit]`.
+   *
+   * Has no effect when `actions` is not provided.
+   */
+  actionsPosition?: 'left' | 'right'
 }
 
 const statusMap: Record<SmartPromptStatus, ChatStatus> = {
@@ -204,12 +217,14 @@ export function SmartPromptInput({
   onStop,
   className,
   pasteToFileChars,
-  actions
+  actions,
+  actionsPosition = 'right'
 }: SmartPromptInputProps) {
   const chatStatus = statusMap[status]
   const [rejectionError, setRejectionError] = useState<string | null>(null)
   const useFullWidthCta = Boolean(ctaLabel)
   const hasActions = actions !== undefined && actions !== null && actions !== false
+  const actionsOnLeft = hasActions && actionsPosition === 'left'
 
   // Track textarea single-line vs multi-line for Gemini-style responsive placement.
   // Detection: measure the textarea's scrollHeight on input and compare to the
@@ -274,13 +289,18 @@ export function SmartPromptInput({
           <AttachmentTiles onCountChange={hasActions ? setAttachmentCount : undefined} />
           {hasActions ? (
             <div ref={inputRowRef} className='flex flex-row items-end gap-1'>
+              {inlineMode && actionsOnLeft && (
+                <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>
+                  <div className='flex items-center gap-1'>{actions}</div>
+                </div>
+              )}
               <PromptInputTextarea
                 placeholder={placeholder}
                 submitOnCmdEnter={submitOn === 'cmdenter'}
                 pasteToFileChars={pasteToFileChars}
                 onInput={remeasure}
               />
-              {inlineMode && (
+              {inlineMode && !actionsOnLeft && (
                 <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>
                   <div className='flex items-center gap-1'>{actions}</div>
                   {!useFullWidthCta && (
@@ -288,6 +308,13 @@ export function SmartPromptInput({
                       {ctaLabel}
                     </PromptInputSubmit>
                   )}
+                </div>
+              )}
+              {inlineMode && actionsOnLeft && !useFullWidthCta && (
+                <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>
+                  <PromptInputSubmit status={chatStatus} onStop={onStop}>
+                    {ctaLabel}
+                  </PromptInputSubmit>
                 </div>
               )}
             </div>
@@ -301,6 +328,7 @@ export function SmartPromptInput({
           {hasFooterContent && (
             <PromptInputFooter>
               <PromptInputTools>
+                {hasActions && !inlineMode && actionsOnLeft && <div className='flex items-center gap-1'>{actions}</div>}
                 {accept && (
                   <PromptInputActionMenu>
                     <PromptInputActionMenuTrigger />
@@ -311,7 +339,7 @@ export function SmartPromptInput({
                 )}
                 {hint && <span className='font-mono text-[10px] text-muted-foreground'>{hint}</span>}
               </PromptInputTools>
-              {hasActions && !inlineMode && (
+              {hasActions && !inlineMode && !actionsOnLeft && (
                 <div className='flex items-center gap-1'>
                   <div className='flex items-center gap-1'>{actions}</div>
                   {!useFullWidthCta && (
@@ -320,6 +348,11 @@ export function SmartPromptInput({
                     </PromptInputSubmit>
                   )}
                 </div>
+              )}
+              {hasActions && !inlineMode && actionsOnLeft && !useFullWidthCta && (
+                <PromptInputSubmit status={chatStatus} onStop={onStop}>
+                  {ctaLabel}
+                </PromptInputSubmit>
               )}
               {!hasActions && !useFullWidthCta && (
                 <PromptInputSubmit status={chatStatus} onStop={onStop}>
