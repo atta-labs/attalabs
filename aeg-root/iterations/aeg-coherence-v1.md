@@ -11,7 +11,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 
 | # | Task                                                                                                                                | Issue | Project(s) | Depends-on | Conflicts-with |
 |---|-------------------------------------------------------------------------------------------------------------------------------------|-------|------------|------------|----------------|
-| 1 | Coherence seam: `aeg-root/doc-owners` manifest + `verify-docs` C5 coverage gate + `Doc-waiver` / `Doc-ack` labels + D-062 full entry | #214  | aeg        | —          | —              |
+| 1 | Coherence seam: `aeg-root/doc-owners` file (code→doc bindings) + `verify-docs` C5 coverage gate + `Doc-ack`/`Doc-waiver` PR-body fields + D-062 full entry | #214  | aeg        | —          | —              |
 
 ## Backlog (this iteration, not yet dispatched)
 
@@ -21,5 +21,5 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 
 ## Cross-iteration dependencies
 
-- None at plan time. `aeg-coherence-v1` touches `packages/aeg-core` + `scripts/verify-docs.ts` + `.github/labels.yml` + `aeg-root/doc-owners/` + `aeg-project/decisions.md`. No open iteration's `Project(s)` column lists `aeg` or `aeg-core`; `vada-production-v1` and `herald-agents-v2` are product-code iterations, file-disjoint by construction. Safe to run fully in parallel with them.
-- A T1 Planner readiness re-check is required before any subsequent task in this iteration dispatches: confirm no new iteration has declared an `aeg-core` / `scripts/verify-docs.ts` task in the interim.
+- None at plan time. `aeg-coherence-v1` touches `scripts/verify-docs.ts` + `aeg-root/{state-machine.md, doc-owners, roles, contracts}` + `aeg-project/decisions.md`. No open iteration's `Project(s)` column lists `aeg`; `vada-production-v1` and `herald-agents-v2` are product-code iterations, file-disjoint by construction. Safe to run fully in parallel with them.
+- A T1 Planner readiness re-check is required before any subsequent task in this iteration dispatches: confirm no new iteration has declared a `scripts/verify-docs.ts` task in the interim.
