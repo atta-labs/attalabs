@@ -27,6 +27,7 @@
     "seed:branding:herald": "SANITY_PROJECT_ID=e9gbd2d1 SANITY_SEED_PRODUCT=herald bun run ./scripts/seed-branding.ts",
     "seed:branding:attalabs": "SANITY_PROJECT_ID=l5n0n8nn SANITY_SEED_PRODUCT=attalabs bun run ./scripts/seed-branding.ts",
     "migrate:herald-to-product": "bun run ./scripts/migrate-herald-to-product.ts",
+    "migrate:themes-and-libraries": "bun run ./scripts/migrate-themes-and-libraries.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "clean": "rm -rf dist .turbo"

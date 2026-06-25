@@ -6,7 +6,7 @@ export function productUserInterfaceFields(_productLabel: string) {
       name: 'theme',
       title: 'Theme ID',
       type: 'string',
-      description: `Active theme ID from Atta project (e.g. "theme-cobalt")`
+      description: 'Active theme ID from Attalabs project (e.g. "theme-cobalt")'
     }),
     defineField({
       name: 'colorScheme',
@@ -24,7 +24,7 @@ export function productUserInterfaceFields(_productLabel: string) {
       name: 'library',
       title: 'Library ID',
       type: 'string',
-      description: `Active component library ID from Atta project (e.g. "library-basic")`
+      description: 'Active component library ID from Attalabs project (e.g. "library-basic")'
     })
   ]
 }

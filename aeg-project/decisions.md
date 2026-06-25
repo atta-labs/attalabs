@@ -1587,7 +1587,7 @@ Inside a launched iteration, the only task states are:
 **Type:** 1
 **Tier:** 3
 **Lock:** YES
-**Authored by:** Developer (dispatched by Principal)
+**Authored by:** TL (centralization task, June 25, 2026)
 **Ratified by:** Principal (pending)
 
 **Context:** Originally, each product database (Vāda, Vitakka, Herald, Attā) had its own local desk structure and database-level references to themes and component libraries, creating redundant copies of themes across datasets. Swapping/altering project URLs directly caused domain confusion (atta vs attalabs subdomains).

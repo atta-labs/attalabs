@@ -71,6 +71,13 @@ The `.claude/skills/brief-authoring/SKILL.md` is the canonical brief authoring g
 
 PM docs are in the repo (not Claude.ai project knowledge). Any Claude session reads them via GitHub MCP or worktree access.
 
+## CMS theme and library centralization migration (D-060)
+
+The migration of UI themes and component libraries from Atta (`892o2m9f`) to Attalabs (`l5n0n8nn`) was run and verified.
+- **Script**: `packages/cms/scripts/migrate-themes-and-libraries.ts`
+- **Verification query**: `sanity documents query "*[_type in ['uiTheme', 'library']]{_id, _type, name}" --project-id l5n0n8nn`
+- **Results**: Verified that exactly 19 themes (prefixed with `theme-`) and 4 component libraries (prefixed with `library-`) reside in the `l5n0n8nn` target dataset.
+
 ---
 
 ## Brand & domain
