@@ -45,13 +45,15 @@ export async function POST(request: Request) {
       })
     }
 
-    // Bust Next.js cache so changes appear immediately on all pages
+    // Bust Next.js cache so changes appear immediately on all pages.
+    // D-060: /ui and /settings now live under /{username}/(owner)/, so the
+    // owner-segment paths must be revalidated alongside the public profile.
     const user = await getUserByClerkId(userId)
     if (user?.username) {
       revalidatePath(`/${user.username}`)
+      revalidatePath(`/${user.username}/ui`)
+      revalidatePath(`/${user.username}/settings`)
     }
-    revalidatePath('/ui')
-    revalidatePath('/settings')
 
     return NextResponse.json({ success: true })
   } catch (err) {

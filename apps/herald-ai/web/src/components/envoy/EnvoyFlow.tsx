@@ -192,6 +192,7 @@ export function EnvoyFlow({
         candidateDiscord={localProfile.discord}
         auditAvailable={hasAnyKey}
         isOwner={isOwner}
+        ownerSettingsHref={`/${username}/settings?tab=api-keys`}
         preview={previewMode}
       />
     )
