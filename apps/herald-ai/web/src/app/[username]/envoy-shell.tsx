@@ -2,13 +2,14 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Download, ExternalLink } from 'lucide-react'
+import { Download, ExternalLink, Palette } from 'lucide-react'
 import { useUser } from '@atta/auth'
 import { HeraldAccountMenu } from '@/components/HeraldAccountMenu'
 import { Button as BasicButton } from '@atta/ui/components/button'
 import { useComponents } from '@atta/ui/lib/library-provider'
-import { TopBar, type TopBarLink } from '@atta/ui/topbar'
+import { TopBar } from '@atta/ui/topbar'
 import { cn } from '@atta/ui/lib/utils'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { HeroCollapseProvider, useHeroCollapse } from '@/components/envoy/hero-collapse-context'
@@ -30,12 +31,6 @@ async function downloadCv(url: string, filename: string) {
   }
 }
 
-const OWNER_LINKS: TopBarLink[] = [
-  { label: 'Bulk Audit', href: '/bulk-audit' },
-  { label: 'UI', href: '/ui' },
-  { label: 'Settings', href: '/settings' }
-]
-
 export interface ProfileIdentity {
   name: string | null
   title: string | null
@@ -46,11 +41,13 @@ export interface ProfileIdentity {
 function EnvoyNavContent({
   logoUrl,
   profileIdentity,
-  isOwner
+  isOwner,
+  username
 }: {
   logoUrl: string | null
   profileIdentity: ProfileIdentity
   isOwner: boolean
+  username: string
 }) {
   const { isCollapsed } = useHeroCollapse()
   const { user } = useUser()
@@ -81,14 +78,33 @@ function EnvoyNavContent({
   return (
     <>
       {/* Row 1 — standard app topbar (shared TopBar). In-flow at top of the page — public profile only.
-          Scrolls away with the page; Row 2 (fixed) takes over once the hero is collapsed. */}
+          Scrolls away with the page; Row 2 (fixed) takes over once the hero is collapsed.
+          D-060: Bulk Audit / UI / Settings nav links are gone from the profile topbar; the owner-only
+          Palette icon button below opens the appearance editor at /{username}/ui. The main app gear
+          (→ /{me}/settings) lives on HeraldTopBar — the profile topbar deliberately does not duplicate it. */}
       <div className='bg-background'>
         <TopBar
           logoText='Herald'
           logoUrl={logoUrl}
           logoTagline={['Forensic hiring', 'audits']}
           isSignedIn={!!user}
-          signedInLinks={isOwner ? OWNER_LINKS : []}
+          signedInLinks={[]}
+          extraActions={
+            isOwner ? (
+              <Button
+                asChild
+                variant='outline'
+                size='icon'
+                className='h-8 w-8'
+                aria-label='Edit appearance'
+                title='Edit appearance'
+              >
+                <Link href={`/${username}/ui`}>
+                  <Palette className='h-4 w-4' />
+                </Link>
+              </Button>
+            ) : undefined
+          }
           accountMenu={<HeraldAccountMenu />}
         />
       </div>
@@ -149,14 +165,15 @@ export interface EnvoyShellProps {
   logoUrl: string | null
   profileIdentity: ProfileIdentity
   isOwner?: boolean
+  username: string
 }
 
-export function EnvoyShell({ children, logoUrl, profileIdentity, isOwner = false }: EnvoyShellProps) {
+export function EnvoyShell({ children, logoUrl, profileIdentity, isOwner = false, username }: EnvoyShellProps) {
   return (
     <HeroCollapseProvider>
       <div className='relative min-h-dvh'>
         <Suspense>
-          <EnvoyNavContent logoUrl={logoUrl} profileIdentity={profileIdentity} isOwner={isOwner} />
+          <EnvoyNavContent logoUrl={logoUrl} profileIdentity={profileIdentity} isOwner={isOwner} username={username} />
         </Suspense>
         <main className='relative'>{children}</main>
       </div>
