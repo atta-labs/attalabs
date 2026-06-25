@@ -1743,3 +1743,12 @@ Each pointer path is verified to exist; binding 4 is **self-referential** — th
 - **Reversal cost:** delete `aeg-root/doc-owners`; remove the C5 block from `scripts/verify-docs.ts` + tests; remove §15 from state-machine.md and the cross-refs; revert role/contract edits; mark this entry SUPERSEDED. The gate is dormant the moment the file is gone — no consumer code depends on C5 running. The reversal is mechanical because the design forces every dependency to flow through the single file.
 
 **Lock rationale:** `Lock: NO`. The single-file format and dormancy semantics are deliberately narrow scope. Broadening either (multi-file ownership, character-class globs, hard-fail on missing-file dormancy) is a new D-### that supersedes this one — not an in-place edit. Keeping Lock NO preserves the option to walk the seam back to dormant globally without an irreversibility tax; the dormancy floor is what makes that walk-back safe.
+
+---
+
+## D-063 — Coherence completeness: no-doc allow-list + decision-number integrity
+
+**Status:** reserved
+**Type:** 1
+
+Reserved by Planner for aeg-coherence-v1 task 2 (Principal-ratified in-session). Full entry lands in the T2 implementing PR per Tier-3 DoD.
