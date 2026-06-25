@@ -52,7 +52,7 @@ export async function HeraldTopBar({ context = 'main' }: { context?: 'main' | 'o
       >
         <Link href={`/${user.username}/settings`}>
           <SettingsIcon className='h-4 w-4' />
-          <span className='hidden md:inline'>Settings</span>
+          <span>Settings</span>
         </Link>
       </Button>
     ) : undefined

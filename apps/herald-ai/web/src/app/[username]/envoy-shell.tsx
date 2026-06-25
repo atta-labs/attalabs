@@ -94,13 +94,13 @@ function EnvoyNavContent({
               <Button
                 asChild
                 variant='outline'
-                size='icon'
-                className='h-8 w-8'
-                aria-label='Edit appearance'
-                title='Edit appearance'
+                aria-label='Theme'
+                title='Theme'
+                className='h-8 gap-2 px-2.5 text-xs md:px-3'
               >
                 <Link href={`/${username}/ui`}>
                   <Palette className='h-4 w-4' />
+                  <span>Theme</span>
                 </Link>
               </Button>
             ) : undefined
