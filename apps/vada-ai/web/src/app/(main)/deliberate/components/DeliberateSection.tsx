@@ -67,7 +67,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                         variant='ghost'
                         size='sm'
                         onClick={form.openReviewerModal}
-                        className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent'
+                        className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent-foreground'
                       >
                         Configure
                       </Button>

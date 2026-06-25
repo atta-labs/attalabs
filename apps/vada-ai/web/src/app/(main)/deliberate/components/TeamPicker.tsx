@@ -35,15 +35,20 @@ export function TeamPicker({ specs, value, onChange }: TeamPickerProps) {
         {specs.map((spec) => {
           const count = getFlowAgentCount(spec)
           const shape = getFlowShapeLabel(spec)
+          const isSelected = spec.id === value
           return (
             <DropdownMenuItem
               key={spec.id}
               onSelect={() => onChange(spec.id)}
-              className={spec.id === value ? 'bg-accent' : ''}
+              className={`group ${isSelected ? 'bg-accent text-accent-foreground' : ''}`}
             >
               <div className='flex flex-col gap-0.5 py-0.5'>
                 <span className='text-sm font-sans'>{spec.displayName}</span>
-                <span className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
+                <span
+                  className={`font-mono text-[10px] uppercase tracking-widest ${
+                    isSelected ? 'text-accent-foreground/80' : 'text-muted-foreground'
+                  } group-data-[highlighted]:text-accent-foreground/80`}
+                >
                   {count} agents · {shape}
                 </span>
               </div>

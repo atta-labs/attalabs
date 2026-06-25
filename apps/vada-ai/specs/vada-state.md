@@ -2,6 +2,26 @@
 
 ## Most recent session — Jun 23, 2026
 
+Token discipline fix on Deliberate hero — TeamPicker dropdown description readability + CONFIGURE hover color (vada-production-v1, PR #207, tool-badges branch).
+
+**Symptom:** Two visual bugs in the empty-state hero controls now living inside `SmartPromptInput`'s `actions` slot.
+- TeamPicker dropdown: the per-team description line (`{count} agents · {shape}`) was illegible when its item was highlighted — `bg-accent` background under a hardcoded `text-muted-foreground` description gives near-zero contrast.
+- CONFIGURE button: text turned red-ish on hover. Root cause: `Button variant='ghost'` applies `hover:bg-accent` (token: `--accent`). The call site added `hover:text-accent` — same token — making text and background land on the same color. In Vāda's amber-leaning theme this reads as a solid red-orange block. Doctrine violation: ghost-on-hover must pair `bg-accent` with `text-accent-foreground`, never `text-accent`.
+
+**Fix — DeliberateSection.tsx (CONFIGURE button):**
+- Swapped `hover:text-accent` for `hover:text-accent-foreground` on the CONFIGURE `Button`. Matches the canonical ghost hover pair documented in `.claude/skills/ui-theme-tokens/SKILL.md` (`bg-accent` always pairs with `text-accent-foreground`). No other classNames changed — `variant='ghost'` is correct for a small inline action.
+
+**Fix — TeamPicker.tsx (dropdown item description):**
+- Added `group` to each `DropdownMenuItem`, then on the description span used `group-data-[highlighted]:text-accent-foreground/80`. Default state stays `text-muted-foreground` for the canonical "quiet ink on popover" look; on Radix's `data-[highlighted]` (hover + keyboard nav), the description flips to `text-accent-foreground/80` so it stays readable on the `bg-accent` row.
+- Fixed a paired-token bug while here: the selected-row className was `bg-accent` only — added `text-accent-foreground` so the title doesn't read on accent-on-accent for the user's current pick. Description on selected row uses `text-accent-foreground/80` to mirror the highlight state.
+
+**What was already correct (verified):**
+- TeamPicker uses canonical `@atta/ui` `DropdownMenu` + `DropdownMenuTrigger` + `DropdownMenuContent` + `DropdownMenuItem` from `@atta/ui/components` (the build-time resolved animate library). Trigger is `Button variant='ghost'` from the same library. No hand-rolled `<button>` or raw `<div>` lists.
+- CONFIGURE is `@atta/ui` `Button variant='ghost' size='sm'` — not `destructive`, not raw HTML. The bug was purely a className token mispair at the call site.
+- No `text-red-*`, no `bg-[#hex]`, no inline `style={{}}` introduced or present on either control.
+
+## Most recent session — Jun 23, 2026
+
 `SmartPromptInput` gains `actions` slot + Vāda Deliberate hero moves TeamPicker + CONFIGURE inside the input (vada-production-v1, PR #207, tool-badges branch).
 
 **Commit 1 — `@atta/ui/smart-prompt-input` refactor (smart-prompt-input.tsx):**
