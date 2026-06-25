@@ -149,6 +149,27 @@ describe('evaluateC5 — six required paths', () => {
     expect(r.notes[0]).toMatch(/out of scope/)
   })
 
+  it('separator tolerance — Doc-waiver with a plain hyphen separator suppresses the binding', () => {
+    // Same as the em-dash waiver test above, but the pointer↔reason separator
+    // is " - " (whitespace + ASCII hyphen + whitespace) rather than " — ". Both
+    // forms must work so a human typing on a US keyboard gets the same result
+    // as one pasting the canonical em-dash form. Pointer contains hyphens
+    // (`ui-components`, `SKILL.md`) which must NOT be mistaken for the separator.
+    const body = 'Doc-waiver: .claude/skills/ui-components/SKILL.md - out of scope this PR; tracked in #999'
+    const r = evaluateC5(['packages/ui/topbar/index.tsx'], OWNERS, body, fileExists([]))
+    expect(r.errors).toEqual([])
+    expect(r.notes.length).toBe(1)
+    expect(r.notes[0]).toMatch(/C5 doc-waiver active/)
+    expect(r.notes[0]).toMatch(/out of scope/)
+  })
+
+  it('separator tolerance — Doc-ack with a plain hyphen separator satisfies a URL binding', () => {
+    // Mirror of the em-dash url-ack test, with the separator typed as " - ".
+    const body = 'Doc-ack: https://example.com/foo-docs - confirmed, no change needed'
+    const r = evaluateC5(['packages/foo/index.ts'], OWNERS, body, fileExists([]))
+    expect(r.errors).toEqual([])
+  })
+
   it('multiple bindings — strong-pass for one + strong-fail for another → only the failing error', () => {
     const r = evaluateC5(
       // matches both topbar binding AND verify-docs binding; only the topbar SKILL.md is in the diff.

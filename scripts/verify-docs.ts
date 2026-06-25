@@ -216,9 +216,20 @@ function pointerToPath(p: string): string {
 type DocAck = { surface: string; note: string }
 type DocWaiver = { pointer: string; reason: string }
 
+// Separator between <pointer> and <note|reason>. Tolerates em-dash (—),
+// en-dash (–), or a plain ASCII hyphen-minus (-) with REQUIRED surrounding
+// whitespace. Required whitespace around `-` disambiguates the separator
+// from hyphens that legitimately appear inside pointers (e.g. `aeg-root`,
+// `.claude/skills/ui-components/SKILL.md`). Non-greedy `(.+?)` for the
+// pointer plus this anchored separator means the pointer naturally stops
+// at the first valid separator without literally excluding `-` from
+// the pointer character set.
+const SEPARATOR = /(?:[ \t]*[—–][ \t]*|[ \t]+-[ \t]+)/.source
+
 function readDocAcks(body: string): DocAck[] {
   const acks: DocAck[] = []
-  for (const m of body.matchAll(/^[ \t]*Doc-ack[ \t]*:[ \t]*([^\n—]+?)[ \t]*—[ \t]*(.+?)[ \t]*$/gim)) {
+  const re = new RegExp(`^[ \\t]*Doc-ack[ \\t]*:[ \\t]*(.+?)${SEPARATOR}(.+?)[ \\t]*$`, 'gim')
+  for (const m of body.matchAll(re)) {
     acks.push({ surface: m[1].trim(), note: m[2].trim() })
   }
   return acks
@@ -226,7 +237,8 @@ function readDocAcks(body: string): DocAck[] {
 
 function readDocWaivers(body: string): DocWaiver[] {
   const waivers: DocWaiver[] = []
-  for (const m of body.matchAll(/^[ \t]*Doc-waiver[ \t]*:[ \t]*([^\n—]+?)[ \t]*—[ \t]*(.+?)[ \t]*$/gim)) {
+  const re = new RegExp(`^[ \\t]*Doc-waiver[ \\t]*:[ \\t]*(.+?)${SEPARATOR}(.+?)[ \\t]*$`, 'gim')
+  for (const m of body.matchAll(re)) {
     waivers.push({ pointer: m[1].trim(), reason: m[2].trim() })
   }
   return waivers

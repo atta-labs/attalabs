@@ -466,6 +466,8 @@ These are **PR-body fields**, parsed from the body text — *not* GitHub labels.
 - `Doc-ack: <pointer> — <note>` — acknowledgment for URL bindings.
 - `Doc-waiver: <pointer> — <reason>` — per-binding escape for in-repo bindings the author chose not to update in this PR (logged for audit; the Reviewer judges whether the waiver is justified).
 
+The separator between `<pointer>` and `<note>` / `<reason>` is **flexible**: em-dash `—`, en-dash `–`, or a plain ASCII hyphen `-` (with surrounding whitespace) are all accepted by `verify-docs`. The em-dash form remains canonical in templates and prose, but a human typing `Doc-waiver: <pointer> - <reason>` on a US keyboard parses identically. Required whitespace around the ASCII hyphen disambiguates it from hyphens that legitimately appear inside pointers (e.g. `aeg-root/doc-owners`, `.claude/skills/ui-components/SKILL.md`); writers do not need to think about it as long as they put a space on each side.
+
 ### Where this leaves the Reviewer
 
 The Reviewer no longer carries the cognitive load of remembering *which* doc lives at *which* surface — `verify-docs` does that. The Reviewer's doc-coupling job (`roles/reviewer.md`, item 6) shrinks to **judging correctness of the covered doc**: did the doc update actually reflect the code change, or is it a no-op edit to silence the gate? A passing C5 plus an incorrect doc update is still a BLOCKER. (D-058 + D-062 together: coverage is mechanical; correctness is the Reviewer's.)
