@@ -1674,3 +1674,12 @@ Inside a launched iteration, the only task states are:
 - `apps/herald-ai/specs/herald-decisions.md`: D-061 entry (Herald-local detail; this entry is the cross-product source of truth).
 - Reversible. Reversal cost: re-create `app/(app)/ui/` + `app/(app)/settings/`, fold `(profile)` + `(owner)` layouts back, restore `signedInLinks` + delete `extraActions`. The relocation is a routing refactor; the locked invariant under it (D-035) does not move.
 - Username reservation: `ui` and `settings` are now unusable as vanity slugs under `/[username]`. The onboarding `check-username` API gains them as reserved values in a small follow-up; both are unlikely vanity URLs and not a blocker.
+
+---
+
+## D-062 — AEG coherence seam: doc-owners manifest + verify-docs coverage gate
+
+**Status:** reserved
+**Type:** 1
+
+Reserved by Planner for aeg-coherence-v1 (Principal-ratified in-session). Full entry lands in the T1 implementing PR per Tier-3 DoD.
