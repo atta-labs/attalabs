@@ -114,6 +114,29 @@ Reversal (folding Herald into the shared Clerk app) requires migrating Herald id
 
 Unrelated to auth but adjacent in Herald's layout: Herald's **app chrome** uses the build-time CMS library; the **user's saved library preference applies only to their public `/[username]` profile** (D-035). Don't wire app-chrome components to a user-library provider. See `apps/herald-ai/specs/herald-app-architecture.md` §4.
 
+### Herald owner-route gate (D-061)
+
+Herald has a per-route ownership gate on top of Clerk auth: routes under `app/[username]/(owner)/*` (currently `/{username}/ui` and `/{username}/settings`) are only accessible to the signed-in user whose own `username` matches the `[username]` URL segment.
+
+`app/[username]/(owner)/layout.tsx` runs the gate in this order:
+
+```ts
+const { userId } = await auth()
+if (!userId) redirect('/sign-in')                              // anonymous → /sign-in
+
+const user = await getUserByClerkId(userId)
+if (!user?.onboardingComplete) redirect('/onboarding')         // half-onboarded → /onboarding
+
+const { username: segment } = await params
+if (user.username !== segment) notFound()                      // wrong owner → 404
+```
+
+The public profile at `/[username]` (rendered by the sibling `(profile)` route group) stays open and unaffected; only the `(owner)` subtree is gated.
+
+This is *not* middleware-level — `proxy.ts` only protects `/bulk-audit(.*)` and `/onboarding`. The owner segment is matched dynamically (`/:username/ui`, `/:username/settings`) which is more naturally expressed in the layout. The Clerk middleware does its usual `auth.protect()` job for the unauthenticated case via the `redirect('/sign-in')` in the layout; the ownership check is layout-only because it depends on a DB lookup the middleware can't do.
+
+If adding more owner-only routes under `/[username]/`, place them inside `(owner)/` — they will inherit the gate for free. Routes that should stay public (visible to anyone visiting `/[username]/*`) go inside `(profile)/`.
+
 ---
 
 ## Middleware (protecting routes)

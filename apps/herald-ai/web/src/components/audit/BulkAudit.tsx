@@ -131,7 +131,7 @@ function gradeBadgeClass(grade: MatchReport['grade']): string {
   return 'bg-muted text-muted-foreground border-border'
 }
 
-export function BulkAudit({ hasKey }: { hasKey: boolean }) {
+export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsHref: string }) {
   const [jds, setJds] = useState<JdSlot[]>(() => [newJdSlot()])
   const [cvs, setCvs] = useState<CvSlot[]>(() => [newCvSlot()])
   const [state, setState] = useState<'idle' | 'resolving' | 'running' | 'done'>('idle')
@@ -251,7 +251,7 @@ export function BulkAudit({ hasKey }: { hasKey: boolean }) {
               Bulk audits run on your Anthropic API key. Add your key in Settings to get started.
             </p>
             <a
-              href='/settings?tab=api-keys'
+              href={settingsHref}
               className='mt-4 inline-block font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
             >
               Settings → API Keys

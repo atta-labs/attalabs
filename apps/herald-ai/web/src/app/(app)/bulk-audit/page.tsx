@@ -33,7 +33,10 @@ export default async function BulkAuditPage() {
 
   return (
     <div className='h-full overflow-y-auto'>
-      <BulkAudit hasKey={hasKey} />
+      <BulkAudit
+        hasKey={hasKey}
+        settingsHref={user.username ? `/${user.username}/settings?tab=api-keys` : '/onboarding'}
+      />
     </div>
   )
 }

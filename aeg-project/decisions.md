@@ -1614,3 +1614,63 @@ Inside a launched iteration, the only task states are:
 - `apps/herald-ai/specs/herald-app-architecture.md` (noted dynamic resolution of library string IDs)
 - `aeg-project/state.md` (added `SANITY_API_TOKEN_ATTALABS` manual setup item)
 
+---
+
+## D-061 — Herald: owner `/ui` + `/settings` relocated under `/[username]/(owner)/`; topbar icon buttons via `extraActions`
+
+**Date:** 2026-06-25
+**Status:** ACTIVE
+**Type:** 1
+**Tier:** 3
+**Lock:** NO (the relocation itself is reversible; the D-035 invariant it preserves remains Lock: YES)
+**Authored by:** Developer (dispatched by Principal, herald-agents-v2 task 8, #210 / PR for this branch)
+**Ratified by:** Principal (in-session)
+
+**Scope:** Herald (`apps/herald-ai/web`) + one mobile-section rewrite in `packages/ui/topbar/index.tsx` (responsive collapse — see part (3) below). No engine/adapter change. Vāda's cosmetic blast radius: its existing `extraActions` Settings icon now appears inside the mobile hamburger sheet (previously hidden < md) — strict accessibility improvement.
+
+**Context:** D-036 placed Herald's owner-only appearance editor (`/ui`) and Settings hub (`/settings`) as flat routes inside the `(app)` route group, with `HeraldTopBar` carrying Bulk Audit / UI / Settings / `/username` as centered nav links. The editor and Settings both target the signed-in user's own profile, so the URL space wants them in the same identity namespace (`/[username]/ui`, `/[username]/settings`); the duplicate UI + Settings labels on the public profile topbar were nav clutter. A naive relocation under `app/[username]/` would inherit the parent layout's `EnvoyLibraryShell` and render the owner editor on the visitor's library — a direct D-035 (Lock: YES) regression.
+
+**Decision:**
+
+1. **Route-group split under `app/[username]/`.** Two sibling layouts replace the previous flat layout:
+   - `app/[username]/(profile)/layout.tsx` wraps the public profile with `EnvoyLibraryShell` (user library) + `EnvoyShell`. Renders `(profile)/page.tsx`.
+   - `app/[username]/(owner)/layout.tsx` is a server-component layout that runs auth + ownership gating (anonymous → `/sign-in`; non-onboarded → `/onboarding`; signed-in but `user.username !== segment` → `notFound()`) and wraps owner pages with `CandidateShell` fed the **build-time** library id (mirroring `app/(app)/layout.tsx`) + the same `HeraldTopBar` used everywhere else in app chrome. Renders `(owner)/ui/page.tsx` and `(owner)/settings/page.tsx`.
+   - `app/[username]/layout.tsx` becomes a metadata-only passthrough (icon route + `return children`). It deliberately does not introduce any `LibraryProvider` — the route-group split is the structural enforcement of "owner chrome = build-time library, profile = user library."
+   - `app/(app)/ui/` and `app/(app)/settings/` are **deleted** with no redirect. Sweeps: `proxy.ts` matchers, `api/admin/profile/route.ts` `revalidatePath` calls, internal `href` links.
+
+2. **Topbar buttons via the existing `extraActions` slot.** Herald-local — no prop-surface change to `@atta/ui/topbar`.
+   - `HeraldTopBar` takes an optional `context: 'main' | 'owner'` prop. With `context='main'` (default, used by `(app)/layout.tsx`), `signedInLinks` = Bulk Audit + `/username`. With `context='owner'` (used by `(owner)/layout.tsx`), `signedInLinks` = `/username` only — the owner appearance/settings space does not double up with the audit nav. The Settings gear in `extraActions` is the single navigation between the two owner surfaces.
+   - `HeraldTopBar.extraActions` = Settings button → `/{me}/settings` whenever signed in + onboarded. Renders with the same responsive icon+label pattern as `HeraldAccountMenu` (icon-only ≤ md, icon + "Settings" ≥ md), so the right cluster reads as two equally-weighted labelled buttons (Settings · Sign out) rather than one unlabelled icon next to a labelled button.
+   - `envoy-shell.tsx` `signedInLinks` = `[]` on the public profile topbar (Bulk Audit excluded per the brief; UI + Settings replaced by the Theme icon+label button).
+   - `envoy-shell.tsx` `extraActions` = Theme button (Palette icon + "Theme" label) → `/{username}/ui` only when `isOwner`. The Settings gear is intentionally NOT mirrored on the profile topbar — the main `HeraldTopBar` is the single Settings entry point.
+   - All three buttons (Settings · Theme · Sign out) render with the same outline icon+label style (`h-8 gap-2 px-2.5 text-xs md:px-3`), so the right cluster reads as a row of equally-weighted labelled affordances. "Theme" is preferred over "UI" because it labels the user-facing concept (visual styling of the public profile) rather than the implementation noun.
+
+3. **Responsive collapse — shared `@atta/ui/topbar` update.** Below `md` the topbar collapses to logo · `ColorSchemeToggle` · hamburger. `extraActions` and `accountMenu` no longer render in the mobile actions row; they move into the hamburger sheet (after the nav links, before Sign-in). The hamburger renders unconditionally below `md`. Single mobile-section rewrite inside `packages/ui/topbar/index.tsx`; the prop surface (`signedInLinks`, `extraActions`, `accountMenu`, `isSignedIn`) is unchanged.
+   - **Vāda impact:** Vāda's `(main)/layout.tsx` already passes an `extraActions` Settings icon button; before this change it was hidden below `md` (the mobile row never rendered `extraActions`); after this change it appears in Vāda's hamburger sheet at narrow widths — strictly an accessibility improvement.
+   - **AEG Studio:** uses `withAuth={false}` → `TopBarNoAuth`, unaffected.
+   - The brief's stop-and-escalate clause guarded against a collision with vada-production-v1/6 (#181, SmartTextInput extraction). #181 is not currently open, the files are disjoint (`packages/ui/topbar/index.tsx` vs. `packages/ui/smart-prompt-input/*`), so the collision is not triggered. Principal authorised the change in-session.
+
+4. **D-035 preservation is by construction.** The two sibling route groups feed their own `LibraryProvider`s; the empty `[username]/layout.tsx` exists to NOT inherit one to a child. The verification recipe in `herald-app-architecture.md` §4 is extended: setting `user.library = retro` must leave `/bulk-audit`, `/onboarding`, `/[username]/ui`, and `/[username]/settings` on the build-time library; only `/[username]` switches.
+
+**Supersedes:** D-036's route layout for `/ui` + `/settings` and its `HeraldTopBar` nav-link treatment of UI + Settings. The rest of D-036 (flat `/bulk-audit` + `/onboarding`, single shared `HeraldTopBar`, no avatar, themed `HeraldAccountMenu` sign-out) remains in force. D-035 (Lock: YES) is preserved unchanged.
+
+**Alternatives rejected:**
+
+- *Drop the route group and make `/ui` + `/settings` plain children of `app/[username]/`.* Rejected — they would inherit `EnvoyLibraryShell`, violating D-035 (Lock: YES). The route-group split is the cheapest structural guarantee.
+- *Modify `@atta/ui/topbar` to expose a new owner-actions API.* Rejected — `extraActions` already exists and is unused by Vāda. A shared change would collide with vada-production-v1/6 (#181, SmartTextInput extraction) on the same package; serializing cross-iteration work to win a small ergonomic gain is the wrong trade. The brief's stop-and-escalate clause flagged exactly this risk.
+- *Keep UI + Settings as centered nav links, just rewrite the hrefs.* Rejected — nav-link clutter on the profile topbar was half the motivation; icon buttons match the right-cluster affordance already used (theme toggle, account menu, CV download/open).
+- *Also place a Settings gear on the public-profile topbar (mirroring the main one).* Rejected — duplication is a maintenance burden; the main `HeraldTopBar` is on every other route a signed-in user visits; one-line extension if the need surfaces.
+
+**Consequences:**
+
+- `apps/herald-ai/web/src/app/[username]/(owner)/layout.tsx` (new), `(profile)/layout.tsx` (new), `(owner)/ui/page.tsx` + `(owner)/settings/page.tsx` + `(profile)/page.tsx` (relocations).
+- `app/[username]/layout.tsx` reduced to metadata + passthrough. `app/(app)/ui/` + `app/(app)/settings/` deleted.
+- `components/HeraldTopBar.tsx`: drop UI + Settings links; add Settings (lucide) gear `extraActions` → `/{username}/settings`.
+- `app/[username]/envoy-shell.tsx`: empty `signedInLinks`; Palette (lucide) `extraActions` → `/{username}/ui` when `isOwner`; `username` prop threaded from `(profile)/layout.tsx`.
+- `proxy.ts` matchers carry `/bulk-audit(.*)` + `/onboarding` only; owner-segment auth lives in the layout.
+- `api/admin/profile/route.ts` `revalidatePath` calls updated to `/{username}/ui` + `/{username}/settings`.
+- `components/audit/BulkAudit.tsx` + `components/envoy/JDInput.tsx`: the two `/settings?tab=api-keys` links now consume a username-bearing href passed from their respective pages (`bulk-audit/page.tsx`, `EnvoyFlow.tsx`).
+- `apps/herald-ai/specs/herald-app-architecture.md` §2 / §3 / §4 rewritten; §4 verification recipe extended to cover the owner-segment routes.
+- `apps/herald-ai/specs/herald-decisions.md`: D-061 entry (Herald-local detail; this entry is the cross-product source of truth).
+- Reversible. Reversal cost: re-create `app/(app)/ui/` + `app/(app)/settings/`, fold `(profile)` + `(owner)` layouts back, restore `signedInLinks` + delete `extraActions`. The relocation is a routing refactor; the locked invariant under it (D-035) does not move.
+- Username reservation: `ui` and `settings` are now unusable as vanity slugs under `/[username]`. The onboarding `check-username` API gains them as reserved values in a small follow-up; both are unlikely vanity URLs and not a blocker.

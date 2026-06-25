@@ -44,6 +44,7 @@ export function JDInput({
   candidateDiscord,
   auditAvailable = true,
   isOwner = false,
+  ownerSettingsHref,
   preview = false
 }: {
   onSubmit: (jd: string) => void
@@ -60,6 +61,7 @@ export function JDInput({
   candidateDiscord?: string
   auditAvailable?: boolean
   isOwner?: boolean
+  ownerSettingsHref?: string
   preview?: boolean
 }) {
   const { setIsCollapsed } = useHeroCollapse()
@@ -335,7 +337,7 @@ export function JDInput({
           <div className='mx-auto flex max-w-[680px] items-center justify-between px-6 py-3'>
             <p className='font-mono text-xs text-warning'>No API key — recruiters can't run audits yet.</p>
             <a
-              href='/settings?tab=api-keys'
+              href={ownerSettingsHref ?? '/'}
               className='shrink-0 font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
             >
               Settings → API Keys

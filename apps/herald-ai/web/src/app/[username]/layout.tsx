@@ -1,11 +1,5 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { auth } from '@clerk/nextjs/server'
-import { cmsClient, getHeraldBranding } from '@atta/cms'
-import { getUserByUsername } from '@/db/queries'
-import { EnvoyShell } from './envoy-shell'
-import { EnvoyLibraryShell } from '@/components/envoy/EnvoyLibraryShell'
-import type { UILibrary } from '@atta/ui/lib/library-loader'
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params
@@ -14,36 +8,11 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   }
 }
 
-export default async function EnvoyLayout({
-  children,
-  params
-}: {
-  children: ReactNode
-  params: Promise<{ username: string }>
-}) {
-  const { username } = await params
-  const [branding, user, { userId }] = await Promise.all([
-    getHeraldBranding(cmsClient).catch(() => null),
-    getUserByUsername(username),
-    auth()
-  ])
-
-  const isOwner = userId !== null && user != null && userId === user.clerkId
-
-  const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
-  const profileIdentity = {
-    name: user?.name ?? null,
-    title: user?.title ?? null,
-    avatarUrl: user?.avatarUrl ?? null,
-    cvUrl: user?.cvUrl ?? null
-  }
-  const userLibrary = (user?.library ?? 'basic') as UILibrary
-
-  return (
-    <EnvoyLibraryShell initialLibrary={userLibrary}>
-      <EnvoyShell logoUrl={logoUrl} profileIdentity={profileIdentity} isOwner={isOwner}>
-        {children}
-      </EnvoyShell>
-    </EnvoyLibraryShell>
-  )
+// D-035 / D-060: this layout intentionally does NOT wrap children in a
+// library provider. The public profile is wrapped by (profile)/layout.tsx with
+// the user's library (EnvoyLibraryShell); the owner sub-routes /ui + /settings
+// are wrapped by (owner)/layout.tsx with the build-time CMS library. Putting a
+// provider here would cross the two paths and re-introduce the D-035 regression.
+export default function UsernameLayout({ children }: { children: ReactNode }) {
+  return children
 }

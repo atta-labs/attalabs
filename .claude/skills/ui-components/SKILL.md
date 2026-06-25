@@ -262,6 +262,27 @@ const library = config?.userInterface?.library?.id ?? 'basic'
 
 ---
 
+## `@atta/ui/topbar` `TopBar` — responsive contract
+
+`TopBar` from `@atta/ui/topbar` is the shared topbar used by every product's signed-in app chrome (Vāda, Herald, Atta, Vitakka; AEG Studio uses it via `withAuth={false}`). It exposes four mountable slots:
+
+| Slot | Where it renders ≥ md | Where it renders < md |
+|------|----------------------|-----------------------|
+| `signedInLinks` (centered nav links) | Absolutely centered between logo and the right cluster | Inside the hamburger sheet, stacked vertically with `h-14` rows |
+| `extraActions` (right-cluster buttons) | In the right cluster, **immediately before** `accountMenu` | Inside the hamburger sheet, **below** the nav links and **above** `accountMenu` |
+| `accountMenu` (Sign out / `<UserButton/>`) | At the end of the right cluster | Inside the hamburger sheet, **below** `extraActions` |
+| `SignInButton` (signed-out only) | In the right cluster, alone | Inside the hamburger sheet |
+
+**Below `md` the topbar collapses to: logo · `ColorSchemeToggle` · hamburger.** Nothing else renders inline. The hamburger renders unconditionally below `md` because there is always at least Sign-in or account UI to surface.
+
+When wiring an action that belongs in the right cluster (Settings gear, theme switcher, owner-only buttons): use `extraActions` and trust the responsive contract — your button will appear in the desktop cluster and inside the mobile sheet automatically. Do NOT manually duplicate it in a custom mobile row; that creates two-place-to-fix drift.
+
+When a button has both icon and label (Sign out, Settings, Theme — Herald's pattern post-D-061): always render the label text. Do **not** wrap it in `<span className='hidden md:inline'>` — the label is hidden in the desktop cluster only by the topbar's own breakpoint, not by per-button visibility classes. Inside the mobile sheet the label needs to be visible.
+
+The contract lives at `packages/ui/topbar/index.tsx` (single source of truth). Adding a new slot (or changing where `extraActions` renders) requires updating every consumer's mental model — touch with care.
+
+---
+
 ## Layout Philosophy
 
 These rules apply to all products:

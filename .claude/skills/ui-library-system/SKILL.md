@@ -7,14 +7,15 @@ description: How the @atta/ui multi-library system works — build-time generati
 
 ## Overview
 
-`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each product uses exactly one at a time, controlled by its Sanity CMS config. There are two ways an app resolves which library it uses:
+`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each product uses exactly one at a time per surface, controlled by its Sanity CMS config (and, post-D-060, by the central `attalabs` library registry the per-product configs reference). There are two ways an app resolves which library it uses:
 
 | Pattern | Used By | How |
 |---------|---------|-----|
 | **Build-time generation** | Vada, Atta, Vitakka | `generate-ui.ts` runs at build, writes a generated index; tsconfig points `@atta/ui` at that file |
-| **Runtime switching** | Herald | `LibraryProvider` + `useLibraryLoader` dynamically import the active library in the browser |
+| **Runtime switching** | Herald (public profile only) | `LibraryProvider` + `useLibraryLoader` dynamically import the active library in the browser |
+| **Hybrid** | **Herald** (whole app) | Both of the above, on different route subtrees — see "Pattern 3" below |
 
-Both patterns are valid. Choose based on whether the library selection is static (per-app) or dynamic (per-user).
+Both base patterns are valid. Choose based on whether the library selection is static (per-app) or dynamic (per-user). Herald is the hybrid case because it mixes the two: the **app chrome** is the product's fixed CMS-driven design system (build-time-style), while each user's **public profile** carries the user's saved library choice (runtime).
 
 ---
 
@@ -148,6 +149,35 @@ const loadLibrary = useCallback((library: UILibrary) => {
 - App needs **per-user library selection** (different users see different UI styles)
 - Library selection must change **without a rebuild**
 - Acceptable tradeoff: small dynamic import delay on first render
+
+---
+
+## Pattern 3 — Hybrid: build-time chrome + runtime per-user surface (Herald)
+
+Herald is **not** a pure runtime-switching app. It uses **both** patterns on **disjoint route subtrees** — and crossing them silently is a recurring regression class (`apps/aeg/project-management/decisions.md` D-035, Lock: YES).
+
+### Two surfaces, two providers
+
+| Surface | Route subtree | LibraryProvider fed with | Source |
+|---------|---------------|--------------------------|--------|
+| **App chrome (build-time)** | `app/(app)/*` (`/bulk-audit`, `/onboarding`) **and** `app/[username]/(owner)/*` (`/{username}/ui`, `/{username}/settings`) | `getHeraldConfig(cmsClient).userInterface.library.id` — the product's CMS-managed library | `app/(app)/layout.tsx` and `app/[username]/(owner)/layout.tsx` each wrap children in `<CandidateShell initialLibrary={chromeLibrary}>` |
+| **Public profile (runtime per-user)** | `app/[username]/(profile)/*` (`/{username}` only) | `user.library` from Herald's DB | `app/[username]/(profile)/layout.tsx` wraps children in `<EnvoyLibraryShell initialLibrary={userLibrary}>` |
+
+`app/[username]/layout.tsx` is intentionally a **no-op passthrough** (`return children` + the icon `generateMetadata`). It deliberately does **not** wrap children in any `LibraryProvider` — putting one there would inherit a provider into both the `(profile)` and `(owner)` subtrees, crossing the build-time and per-user paths. The route-group split (`(profile)` vs `(owner)`) exists precisely so the two sibling layouts can feed their own providers without the parent leaking one. Touching `[username]/layout.tsx` to "save a hop" is the canonical D-035 regression — don't.
+
+### Where the build-time library id actually comes from (post-D-060)
+
+Theme and library metadata live centrally in the `attalabs` Sanity dataset. The `@atta/cms` resolver (`getProductUiConfig` / `getHeraldConfig`) intercepts the string `library` id stored in `heraldConfig.userInterface.library`, fetches the full `library` document from `attalabs`, and reconstructs `config.userInterface.library` so consumers (the build-time generator AND `(app)/layout.tsx` / `(owner)/layout.tsx` at runtime) see the same `library.id` string. That string is what both layouts feed `CandidateShell`, and what `scripts/generate-ui.ts` reads to write the `packages/ui/generated/herald/components.ts` alias target. Hybrid Herald therefore looks like Pattern 1 to the build-time generator and looks like Pattern 2 to its public-profile subtree, with both pulling the same source-of-truth library id through the central resolver.
+
+### Verification recipe (D-035, expanded for D-061)
+
+Set `user.library = retro` in Herald's DB (or via the appearance editor). Reload `/bulk-audit`, `/onboarding`, `/{username}/ui`, `/{username}/settings`, and `/{username}` (the public profile). The first four must stay on the **build-time** library; only the last switches to `retro`. The three surfaces (`(app)`, `(owner)`, `(profile)`) are independent — and they all resolve their library id through the same D-060 central-CMS path.
+
+### When to Use This Pattern
+
+- App is both an authenticated tool (chrome stays on the brand's design system) **and** a public per-user surface (visitors style it for themselves).
+- You need the chrome to be uneditable by the user even on routes that share the user's URL namespace (e.g. `/{username}/settings`).
+- You can afford to keep two layout files in sync — both must feed `LibraryProvider`, but with different sources.
 
 ---
 

@@ -2,9 +2,9 @@
 
 **Status:** draft
 **Scope:** Herald web app (`apps/herald-ai/web`) — routes, topbar, library resolution, settings, public profile, audit pipeline, MCP surface.
-**Last updated:** 2026-06-20 (post `herald-agents-v2` task 3 — MCP surface, PR #156).
+**Last updated:** 2026-06-25 (post `herald-agents-v2` task 8 — owner routes under `/[username]`, topbar icon buttons, PR for D-061; reconciled with D-060 central-CMS theme/library resolution).
 
-This spec records the architecture established by the `herald-profile-refactor` work (June 2026) plus the `herald-onto-engine` migration (tasks 1–2, June 13–14), and the `herald-agents-v2` MCP surface (task 3, June 2026). It is the canonical reference for how the Herald app is structured. Decisions behind it: D-031 (standalone Clerk/DB), D-034 (one Bulk Audit operation), D-035 (library resolution), D-036 (flat routes + unified topbar), D-044 (auditor on `@atta/engine` via solo YAML), D-045 (endpoints unified into `/api/audit`), D-046 (agent package extraction), D-051 (MCP surface).
+This spec records the architecture established by the `herald-profile-refactor` work (June 2026) plus the `herald-onto-engine` migration (tasks 1–2, June 13–14), the `herald-agents-v2` MCP surface (task 3), and the `herald-agents-v2` owner-routes relocation (task 8, D-061). It is the canonical reference for how the Herald app is structured. Decisions behind it: D-031 (standalone Clerk/DB), D-034 (one Bulk Audit operation), D-035 (library resolution — Lock: YES), D-036 (flat routes + unified topbar), D-044 (auditor on `@atta/engine` via solo YAML), D-045 (endpoints unified into `/api/audit`), D-046 (agent package extraction), D-051 (MCP surface), D-060 (central-CMS theme/library resolution under attalabs), D-061 (owner `/ui` + `/settings` relocated under `/[username]` — supersedes the route + nav portion of D-036).
 
 ---
 
@@ -20,39 +20,49 @@ The **public profile** (`/[username]`) is a permanent, shareable forensic profil
 
 ## 2. Routes
 
-The signed-in app lives under an `(app)` route group (a route group adds **no** URL segment — it only shares a layout). The old `/candidate/*` tree is deleted.
+The signed-in app lives under an `(app)` route group (a route group adds **no** URL segment — it only shares a layout). The old `/candidate/*` tree is deleted. The owner appearance editor and Settings hub were relocated from the `(app)` group to the public-profile segment under `/[username]/(owner)/` (D-061) — same identity space as the profile they edit, owner-gated, but rendered on the build-time library per D-035.
 
 ```
-app/(app)/layout.tsx        shared signed-in layout: auth guard + CandidateShell + HeraldTopBar
-app/(app)/bulk-audit/       /bulk-audit   logged-in home, the audit tool
-app/(app)/ui/               /ui           public-profile appearance editor
-app/(app)/settings/         /settings     Profile / Experience / Connections / API Keys / Account
-app/(app)/onboarding/       /onboarding   AIOnboarding gate
-app/(marketing)/            marketing / landing
-app/[username]/             public profile + EnvoyShell (its own layout)
+app/(app)/layout.tsx              shared signed-in layout: auth guard + CandidateShell + HeraldTopBar
+app/(app)/bulk-audit/             /bulk-audit             logged-in home, the audit tool
+app/(app)/onboarding/             /onboarding             AIOnboarding gate
+app/(marketing)/                  marketing / landing
+app/[username]/layout.tsx         metadata-only passthrough (icon route)
+app/[username]/(profile)/         /[username]             public profile + EnvoyShell + EnvoyLibraryShell (user library)
+app/[username]/(owner)/layout.tsx auth-gate + CandidateShell(build-time library) + HeraldTopBar
+app/[username]/(owner)/ui/        /[username]/ui          public-profile appearance editor (owner-only)
+app/[username]/(owner)/settings/  /[username]/settings    Profile / Experience / Connections / API Keys / Account (owner-only)
 ```
 
 - Logged-in home is `/bulk-audit`.
-- Onboarding gate: signed-in but `!onboardingComplete` → `/onboarding`; complete → `/bulk-audit`.
-- `/[username]` is the only surface outside the `(app)` group with a published profile; it has its own layout (`EnvoyLibraryShell` + `EnvoyShell`).
-- There is no "Dashboard" concept. Nav is **Bulk Audit · UI · Settings · /username**.
+- Onboarding gate: signed-in but `!onboardingComplete` → `/onboarding`; complete → `/bulk-audit`. The owner layout enforces the same gate before its ownership check so a half-onboarded user (still username-less) routes to `/onboarding` instead of 404.
+- **Owner gate (D-061):** `/[username]/(owner)/*` resolves the signed-in user; redirects anonymous to `/sign-in`; calls `notFound()` if the signed-in user's `username` does not match the `[username]` URL segment. The public profile `/[username]` remains open and unaffected.
+- Route groups (parentheses) add no URL segment: the public URL of `(profile)/page.tsx` is `/[username]`; the owner URLs are `/[username]/ui` and `/[username]/settings`. The `[username]/layout.tsx` is intentionally a no-op wrapper (returns `children` plus the icon metadata) — putting any `LibraryProvider` there would cross the D-035 paths.
+- There is no "Dashboard" concept. Nav from the main `HeraldTopBar` is **Bulk Audit · /username** (UI + Settings are now right-cluster icon buttons, see §3).
 
 ---
 
 ## 3. Topbar
 
-There is **one shared topbar** everywhere except the public profile's own shell.
+There is **one shared topbar** everywhere except the public profile's own shell, plus two icon-button slots (D-061):
 
-- `HeraldTopBar` (`src/components/HeraldTopBar.tsx`) is a **server component** that calls `auth()`, looks up the user for `username` + `onboardingComplete`, and renders the shared `@atta/ui/topbar` `TopBar` with `isSignedIn={!!userId}` (SSR auth — no sign-in/out flash), `signedInLinks` = Bulk Audit / UI / Settings / `/username`, and `accountMenu={<HeraldAccountMenu/>}`.
+- `HeraldTopBar` (`src/components/HeraldTopBar.tsx`) is a **server component** that calls `auth()`, looks up the user for `username` + `onboardingComplete`, takes an optional `context` prop (`'main' | 'owner'`), and renders the shared `@atta/ui/topbar` `TopBar` with:
+  - `isSignedIn={!!userId}` (SSR auth — no sign-in/out flash),
+  - `signedInLinks` = Bulk Audit + `/username` on `context='main'`; just `/username` on `context='owner'`,
+  - `extraActions` = a Settings button (gear icon + responsive "Settings" label, matching `HeraldAccountMenu`) → `/{username}/settings`, rendered whenever the user is signed in + onboarded,
+  - `accountMenu={<HeraldAccountMenu/>}`.
 - **No avatar in any topbar.** Identity lives in Settings → Account.
-- `HeraldAccountMenu` is a themed Sign-out button (library `Button` via `useComponents()`, not Clerk `UserButton`). Responsive: text on desktop, icon-only on mobile.
-- All topbar action buttons (theme toggle, sign-in/out, profile CV download/open) share one compact size (~h-8).
+- `HeraldAccountMenu` is a themed Sign-out button (library `Button` via `useComponents()`, not Clerk `UserButton`). Responsive: icon-with-text on `md+`, icon-only below.
+- Topbar action buttons share one compact `h-8` height. Outline buttons with both icon + label (Sign out, Settings) use `gap-2 px-2.5 text-xs md:px-3`; pure icon affordances (theme toggle, CV download/open on the docked identity bar) use `size='icon' h-8 w-8`.
+- `extraActions` is the right-cluster slot in the shared `TopBar` (rendered immediately before `accountMenu`). It is a backwards-compatible slot — Vāda already uses it; D-061 reuses it on Herald rather than introducing a new prop on `@atta/ui/topbar`.
+- The `(owner)` layout (`/[username]/(owner)/layout.tsx`) renders `HeraldTopBar` with `context='owner'`; the `(app)` layout renders it without a prop (defaulting to `'main'`). The Bulk Audit link is therefore present on `/bulk-audit` and `/onboarding` but absent from `/[username]/ui` + `/[username]/settings` — the owner appearance/settings space does not double up with the audit nav.
+- **Responsive collapse (D-061).** Below `md` the topbar shrinks to logo · `ColorSchemeToggle` · hamburger. Nav links, `extraActions` (Herald: Settings gear · Palette/Theme), and `accountMenu` (Sign out / Sign in) all move into the hamburger sheet, so the bar reads as a clean two-button row at narrow widths. The shared `@atta/ui/topbar` orchestrates this — `extraActions` and `accountMenu` are no longer mirrored in the mobile actions row; the sheet hosts them instead. Vāda's existing `extraActions` Settings button inherits the same placement (previously inaccessible on mobile; now lives in the sheet beneath the nav links).
 
 ### Public profile topbar (`/[username]`)
 
 The public profile uses a **two-bar** structure, identical on desktop and mobile:
 
-1. **Row 1** is the shared `TopBar` — logo left, owner nav links centered (when `isOwner`), theme + auth right. Literally the same component as every other page.
+1. **Row 1** is the shared `TopBar` — logo left, no centered nav links (D-061 removes Bulk Audit / UI / Settings from the profile topbar), theme + auth right. When `isOwner`, `extraActions` carries a Palette icon button → `/{username}/ui` (the appearance editor). The Settings gear is **not** duplicated on the profile topbar — the main `HeraldTopBar` (visible on every other route) is the single place for Settings access.
 2. **Row 2** is a sticky identity bar directly beneath: avatar (with pennant), name + title, CV download/open. Slides in as the hero scrolls away (`useHeroCollapse`).
 
 The earlier bespoke desktop centered-identity column was deleted (it caused overlap). Identity and the topbar are never in the same row.
@@ -63,16 +73,21 @@ The earlier bespoke desktop centered-identity column was deleted (it caused over
 
 Herald has two library-resolution paths. Getting these crossed is the single most expensive bug this refactor produced, so the rule is explicit:
 
-- **App chrome** — topbar, Settings, /ui editor, Bulk Audit, everything under `(app)` — MUST render the **build-time CMS library** (`@atta/ui/components`, aliased to `packages/ui/generated/herald/components.ts`, generated from `heraldConfig.userInterface.library.id`). This is the app's fixed design system. It is **not** user-configurable.
-- **The user's saved library preference (`user.library`)** applies **only** to their public `/[username]` profile, resolved dynamically via `useComponents()` / `LibraryProvider` (`EnvoyLibraryShell`).
+- **App chrome** — main `HeraldTopBar`, Bulk Audit, onboarding, the owner appearance editor at `/[username]/ui`, and the owner Settings at `/[username]/settings` — MUST render the **build-time CMS library** (`@atta/ui/components`, aliased to `packages/ui/generated/herald/components.ts`, generated from `heraldConfig.userInterface.library.id`). This is the app's fixed design system. It is **not** user-configurable.
+- **The user's saved library preference (`user.library`)** applies **only** to their public `/[username]` profile (the `(profile)` route group), resolved dynamically via `useComponents()` / `LibraryProvider` (`EnvoyLibraryShell`).
 
-Concretely:
-- `app/(app)/layout.tsx` feeds `CandidateShell` → `LibraryProvider` the **build-time** library id, sourced from `getHeraldConfig(cmsClient).userInterface.library.id` (the same value the generator reads). It deliberately ignores `user.library`.
-- **Dynamic CMS Resolution (D-060):** Theme and library metadata are stored and managed centrally in the `attalabs` (`l5n0n8nn`) Sanity dataset. In the local product datasets (e.g. `heraldConfig`), they are defined as simple string IDs. The `cms` package's resolver (`getProductUiConfig` / `getHeraldConfig`) intercepts these string IDs (or legacy references), fetches the fully populated structures from the central `attalabs` database, and reconstructs the standard `PortalUiConfig` object shape to avoid breaking downstream consumers.
-- `app/[username]/layout.tsx` feeds `EnvoyLibraryShell` → `LibraryProvider` the **user's** `user.library`.
-- App-chrome components that pick components must import from `@atta/ui/components` (build-time) — not via `useComponents()` against a user-library provider. (`useComponents()` is correct only inside the `(app)` tree if and only if that tree's provider is fed the build-time id, which it is.)
+Concretely (post-D-061, which inherits the central-CMS resolution introduced by D-060):
 
-**Verification:** set `user.library` to something other than the build-time library (e.g. retro). The app chrome (topbar, settings, /ui) must stay on the build-time library; only `/[username]` renders the user's choice. The two are independent.
+- **Where the build-time id comes from (D-060 — central CMS resolution).** Theme and library metadata live centrally in the `attalabs` (`l5n0n8nn`) Sanity dataset. In each product's local dataset (e.g. `heraldConfig`), `userInterface.theme` and `userInterface.library` are stored as simple string IDs. The `cms` package's resolver (`getProductUiConfig` / `getHeraldConfig`) intercepts those string IDs (or legacy references), fetches the fully populated structures from the central `attalabs` database, and reconstructs the standard `PortalUiConfig` shape so downstream consumers see the same object regardless of where the metadata physically lives. The build-time UI generator (`scripts/generate-ui.ts`) consumes this same resolver, so the alias `@atta/ui/components` → `packages/ui/generated/herald/components.ts` always matches what `getHeraldConfig(cmsClient).userInterface.library.id` returns at runtime — the field is a `library.id` string regardless of central vs. legacy storage.
+
+- **Where the build-time id is plugged in (D-061 — per-route resolution).**
+  - `app/(app)/layout.tsx` feeds `CandidateShell` → `LibraryProvider` the build-time library id (`getHeraldConfig(cmsClient).userInterface.library.id`). It deliberately ignores `user.library`. Wraps `/bulk-audit` and `/onboarding`.
+  - `app/[username]/(owner)/layout.tsx` mirrors the `(app)` layout: feeds `CandidateShell` the **build-time** library id, then renders the same `HeraldTopBar` + main. Wraps `/[username]/ui` and `/[username]/settings`. Two layouts, one library-resolution rule — adding a third app-chrome surface follows this template.
+  - `app/[username]/(profile)/layout.tsx` feeds `EnvoyLibraryShell` → `LibraryProvider` the **user's** `user.library`. This is the only place `user.library` drives rendering.
+  - `app/[username]/layout.tsx` is a metadata-only passthrough (icon route + `return children`). It deliberately does **not** wrap children in a `LibraryProvider` — putting one there would cross the build-time and user paths and reintroduce the D-035 regression. The `(owner)` and `(profile)` route groups exist precisely so the two sibling layouts can feed their own providers without inheriting a parent provider.
+  - App-chrome components that pick components must import from `@atta/ui/components` (build-time) — not via `useComponents()` against a user-library provider. (`useComponents()` is correct only inside an app-chrome tree if and only if that tree's provider is fed the build-time id, which `(app)/layout.tsx` and `(owner)/layout.tsx` both do.)
+
+**Verification recipe (unchanged from D-035, expanded to cover D-061):** set `user.library` to something other than the build-time library (e.g. `retro`). The main app chrome (`HeraldTopBar` on `/bulk-audit`, `/onboarding`) must stay on the build-time library; the owner editors at `/[username]/ui` and `/[username]/settings` must stay on the build-time library; only `/[username]` (the public profile) renders the user's choice. The three surfaces are independent — and they all resolve their library id through the same D-060 central-CMS path, so confirming `getHeraldConfig(...).userInterface.library.id` returns the expected string is sufficient to know the build-time generation was correct.
 
 ---
 

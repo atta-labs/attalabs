@@ -36,7 +36,7 @@ export function HeraldAccountMenu() {
       onClick={() => signOut({ redirectUrl: '/' })}
     >
       <LogOut className='h-4 w-4' />
-      <span className='hidden md:inline'>Sign out</span>
+      <span>Sign out</span>
     </Button>
   )
 }
