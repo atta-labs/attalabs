@@ -9,6 +9,31 @@
 
 ---
 
+## June 25, 2026 — Herald: owner `/ui` + `/settings` relocated under `/[username]/(owner)/` (task 8, D-061)
+
+### Herald / UI
+
+- **Task 8 (#210, PR #213)** — Relocates Herald's owner appearance editor and Settings hub from the flat `(app)` route group into the `/[username]/(owner)/` segment, alongside a sibling `(profile)` route group at the same level. The `[username]/layout.tsx` is deliberately reduced to a metadata + passthrough so it introduces no `LibraryProvider` — the two sibling groups each feed their own: `(profile)` uses `EnvoyLibraryShell` (user library), `(owner)` uses `CandidateShell` with the build-time library id. This is the structural enforcement of D-035 (Lock: YES — "owner chrome = build-time library; public profile = user library"); the brief's verification recipe (`user.library = retro` ⇒ chrome stays build-time, only `/A` switches) extends cleanly to the new routes. Topbar nav rewrites: `HeraldTopBar` drops the duplicate UI + Settings centered links and gains a right-cluster `Settings` button (icon + label) via the shared `extraActions` slot → `/{me}/settings`; `envoy-shell` renders a `Theme` button (Palette icon + label) → `/{username}/ui` only when `isOwner`. Below `md` the topbar collapses to logo · color-scheme toggle · hamburger — `extraActions` + `accountMenu` move into the hamburger sheet. Single mobile-section rewrite in `packages/ui/topbar/index.tsx`; the prop surface is unchanged. Vāda inherits this as a strict accessibility improvement — its existing `extraActions` Settings icon, previously hidden below `md`, now appears in the hamburger sheet. AEG Studio uses `TopBarNoAuth` and is unaffected. Old `app/(app)/ui/` and `app/(app)/settings/` deleted; internal hrefs, `proxy.ts` matchers, and `revalidatePath` calls all swept to the new owner-segment routes. Engine / adapter / `@atta/cms` / `@atta/db` / `@atta/auth` / `@atta/identity` / `@atta/models` / `@atta/storage` / `@atta/crypto` untouched. **Ratifies D-061** (status ACTIVE; renumbered from a draft D-060 after rebase onto main — PR #212's D-060 is the central-CMS centralisation; task 8 is now D-061). **Supersedes:** D-036's route layout for `/ui` + `/settings` and its `HeraldTopBar` nav-link treatment of UI + Settings (rest of D-036 still in force). **Conforms-to D-035** (Lock: YES — preserved). **Inherits D-060** (central-CMS theme/library resolution — `(owner)/layout.tsx` consumes the same `getHeraldConfig(...).userInterface.library.id` post-resolution). Tier 3. Closes #210.
+- **Outstanding (not a blocker, recorded for the next task):** the `ui-library-system` skill staleness flagged in TL review — the new C5 coherence gate (D-062, PR #216) is now armed against the `packages/ui/topbar/**` and `packages/ui/libraries/**` bindings, so a future shared-topbar / library edit without the matching SKILL.md update will fail verify-docs; the pre-existing skill staleness itself remains a punch-list item for `aeg-coherence-v1` T4 (Planner §7 auto-derivation, #219) and T3 (bind-all + staleness audit, #218).
+
+---
+
+## June 25, 2026 — Centralize CMS themes and component libraries under Attalabs (D-060)
+
+### CMS / Cross-product
+
+- **task/aeg-governance-ui-v2/centralize-themes-attalabs (no Issue, PR #212)** — Centralises the storage, mutation, and schema representation of UI themes (`uiTheme`) and component libraries (`library`) into the central Attalabs Sanity database (`l5n0n8nn`). Per-product schemas (Vāda, Vitakka, Herald, Attā) change `theme` and `library` from reference fields to raw string IDs so the central registry is the single source of truth. `getProductUiConfig` in `@atta/cms` is rewritten to dynamically resolve theme/library metadata from the `attalabs` client by string ID, with backward compatibility for the legacy reference objects and graceful `null` fallback to prevent silent chrome regressions. Admin tool CRUD theme actions and `setActiveThemeAction` now write directly to the `attalabs` client. Studio "Themes" / "Libraries" listings are restricted to the Attalabs Sanity Studio. Migration: 19 themes (`theme-*`) and 4 libraries (`library-*`) replicated from old dataset `atta` (`892o2m9f`) into `attalabs` (`l5n0n8nn`) via `packages/cms/scripts/migrate-themes-and-libraries.ts`; verification query confirmed exact counts. D-035 (Lock: YES) preserved by construction — the build-time config shape `getHeraldConfig().userInterface.library.id` is reproduced through the dynamic lookup. CI test stabilisation bundled: `vitest` added to the root `check` pipeline (filtered to `@atta/cms`) and `test` task wired into `turbo.json`; `@atta/engine` `plan-baseline` snapshots relocated from `/tmp` into a local `baselines/` directory to unblock `compile-flow.test.ts`. **Ratifies D-060** (status ACTIVE). Tier 3. Pending manual action: `SANITY_API_TOKEN_ATTALABS` must be set in Vercel + local `.env.local` for `tools/admin` to authorize mutations (already logged in root `aeg-project/state.md`).
+
+---
+
+## June 24, 2026 — Vāda T3a follow-up: equip synthesis-team reviewers with web search
+
+### Vāda / Adapter
+
+- **T3a follow-up (no Issue, PR #209)** — Extends the T3a treatment (PR #205, #178) to the synthesis-team reviewers. Adds `tools: [web_search]` to the Gemini, GPT, and Grok reviewer agents in `vada-reviewers-synthesis.yaml`, placed identically (after `editable: true`, before `classifier:`) to the format used in `vada-reviewers.yaml`. The synthesizer agent (Claude/Anthropic, commit-only role) is deliberately unchanged — no tools. Immutability respected — `benchmarked: false` on the YAML at edit time. `apps/vada-ai/specs/vada-reviewers-spec.md` cleaned of three stale "no tool access / still open" passages (§2.3, §4.1 fidelity-gap note, §7.3 resolved note, §8 open-questions strikethrough). Tier 1. Conforms-to D-053. No new Issue opened — direct sibling of #178 (T3a), tracked through the PR alone.
+
+---
+
 ## June 25, 2026 — AEG coherence seam — `aeg-root/doc-owners` + `verify-docs` C5 (D-062)
 
 ### AEG
