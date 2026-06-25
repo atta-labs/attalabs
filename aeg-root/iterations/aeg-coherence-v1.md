@@ -9,15 +9,17 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 
 ## Tasks (topology)
 
-| # | Task                                                                                                                                | Issue | Project(s) | Depends-on | Conflicts-with |
-|---|-------------------------------------------------------------------------------------------------------------------------------------|-------|------------|------------|----------------|
-| 1 | Coherence seam: `aeg-root/doc-owners` file (code→doc bindings) + `verify-docs` C5 coverage gate + `Doc-ack`/`Doc-waiver` PR-body fields + D-062 full entry | #214  | aeg        | —          | —              |
+| # | Task                                                                                                                                | Issue | Project(s) | Depends-on        | Conflicts-with |
+|---|-------------------------------------------------------------------------------------------------------------------------------------|-------|------------|-------------------|----------------|
+| 1 | Coherence seam: `aeg-root/doc-owners` file (code→doc bindings) + `verify-docs` C5 coverage gate + `Doc-ack`/`Doc-waiver` PR-body fields + D-062 full entry | #214  | aeg        | —                 | —              |
+| 2 | Enforcement hardening: decision-number integrity + manifest validity + completeness scoreboard (reserves D-063)                     | #217  | aeg        | #214              | —              |
+| 3 | Bind-all + staleness audit: drive linkage to 100%, emit fix punch-list                                                              | #218  | aeg        | #217              | —              |
+| 4 | Planner §7 auto-derivation from `doc-owners`                                                                                        | #219  | aeg        | #218              | —              |
+| 5 | Coherence completeness verification (100% gate)                                                                                     | #220  | aeg        | #219, #218, 6…n   | —              |
 
 ## Backlog (this iteration, not yet dispatched)
 
-- **T2 — decision-number reservation + duplicate D-NNN check.** Add a CI step (or a `verify-docs` C6) that scans open PRs + `aeg-project/decisions.md` for duplicate or skipped `D-NNN` numbers, and surfaces the next free number. Closes the failure mode that just bit task 8 (parallel branches both claimed D-060, recovered via post-merge renumber to D-061).
-- **T3 — Planner §7 auto-derivation from doc-owners.** Once the manifest exists (T1), the Planner stops hand-curating the "Docs to keep coherent" list — it derives it from the manifest + the boundary's intended files. The Planner output becomes the input C5 reads at PR time, so plan and gate cannot drift.
-- **T4 — one-time staleness audit of existing skills/specs against current decisions.** Walk `D-001 … D-061` and the `.claude/skills/` set + product specs; populate the initial manifest entries; flag any skill/spec that contradicts a current decision and needs a follow-up cleanup PR. Bounded one-shot — no automation, just the seed pass.
+- **Fix punch-list (tasks 6…n) — spawned by task 3.** The staleness audit in task 3 (#218) emits one new Issue per contradiction it finds between a newly-bound doc and `D-001 … D-063`. Those Issues are the iteration's fix punch-list and must all close before task 5 (#220) can pass its 100%-coherence exit gate. Numbering is sequential from the next free integer at the time T4 runs; the set is cut from real audit findings, not pre-enumerated here.
 
 ## Cross-iteration dependencies
 
