@@ -48,8 +48,10 @@ A naive relocation — making `/ui` and `/settings` plain children of `app/[user
    - `app/(app)/ui/` and `app/(app)/settings/` are **deleted**, with no redirect. Middleware matchers, `revalidatePath` calls in `api/admin/profile/route.ts`, and internal links are swept.
 
 2. **Topbar buttons via `extraActions`, not nav links.**
-   - `HeraldTopBar.signedInLinks` drops `UI` + `Settings`; it now carries Bulk Audit + `/username` only.
-   - `extraActions` on `HeraldTopBar` carries a Settings (gear) icon button → `/{me}/settings` whenever the user is signed in + onboarded.
+   - `HeraldTopBar.signedInLinks` drops `UI` + `Settings`. It now takes an optional `context: 'main' | 'owner'` prop:
+     - `context='main'` (default — used by `app/(app)/layout.tsx`): Bulk Audit + `/username`.
+     - `context='owner'` (used by `app/[username]/(owner)/layout.tsx`): `/username` only — the owner appearance/settings space does not double up with the audit nav. The Settings gear in `extraActions` still routes between the two owner surfaces.
+   - `extraActions` on `HeraldTopBar` carries a Settings button → `/{me}/settings` whenever the user is signed in + onboarded. The button uses the same responsive icon+label pattern as `HeraldAccountMenu` (icon-only ≤ md, icon + "Settings" ≥ md) so it visually matches the Sign out button next to it instead of looking like an unlabelled icon affordance.
    - `extraActions` on the public-profile topbar (`envoy-shell.tsx`) carries a Palette icon button → `/{username}/ui` **only when `isOwner`**.
    - `envoy-shell.tsx` `OWNER_LINKS` becomes empty: Bulk Audit / UI / Settings are gone from the profile topbar's centered nav. The Settings gear is intentionally NOT duplicated on the profile topbar — the main `HeraldTopBar` is the single place for Settings access.
    - `extraActions` is an existing slot on the shared `@atta/ui/topbar` (introduced as a backwards-compatible prop). No `@atta/ui` change is part of this decision; cross-iteration blast radius into vada-production-v1/6 (#181) stays zero.

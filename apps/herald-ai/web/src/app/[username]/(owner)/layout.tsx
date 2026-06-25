@@ -39,7 +39,7 @@ export default async function OwnerLayout({
   return (
     <CandidateShell initialLibrary={chromeLibrary}>
       <div className='flex h-screen flex-col'>
-        <HeraldTopBar />
+        <HeraldTopBar context='owner' />
         <main className='flex-1 overflow-hidden'>{children}</main>
       </div>
     </CandidateShell>

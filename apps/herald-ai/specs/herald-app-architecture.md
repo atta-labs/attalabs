@@ -46,15 +46,16 @@ app/[username]/(owner)/settings/  /[username]/settings    Profile / Experience /
 
 There is **one shared topbar** everywhere except the public profile's own shell, plus two icon-button slots (D-061):
 
-- `HeraldTopBar` (`src/components/HeraldTopBar.tsx`) is a **server component** that calls `auth()`, looks up the user for `username` + `onboardingComplete`, and renders the shared `@atta/ui/topbar` `TopBar` with:
+- `HeraldTopBar` (`src/components/HeraldTopBar.tsx`) is a **server component** that calls `auth()`, looks up the user for `username` + `onboardingComplete`, takes an optional `context` prop (`'main' | 'owner'`), and renders the shared `@atta/ui/topbar` `TopBar` with:
   - `isSignedIn={!!userId}` (SSR auth — no sign-in/out flash),
-  - `signedInLinks` = Bulk Audit / `/username`,
-  - `extraActions` = a Settings (gear) icon button → `/{username}/settings` (rendered whenever the user is signed in + onboarded),
+  - `signedInLinks` = Bulk Audit + `/username` on `context='main'`; just `/username` on `context='owner'`,
+  - `extraActions` = a Settings button (gear icon + responsive "Settings" label, matching `HeraldAccountMenu`) → `/{username}/settings`, rendered whenever the user is signed in + onboarded,
   - `accountMenu={<HeraldAccountMenu/>}`.
 - **No avatar in any topbar.** Identity lives in Settings → Account.
-- `HeraldAccountMenu` is a themed Sign-out button (library `Button` via `useComponents()`, not Clerk `UserButton`). Responsive: text on desktop, icon-only on mobile.
-- All topbar action buttons (theme toggle, sign-in/out, profile CV download/open, gear, palette) share one compact size (`h-8 w-8` for icon buttons).
-- `extraActions` is the right-cluster slot in the shared `TopBar` (rendered immediately before `accountMenu`). It is a backwards-compatible slot — Vāda and other Atta-family consumers do not use it. D-061 uses this slot rather than introducing a new prop on `@atta/ui/topbar`.
+- `HeraldAccountMenu` is a themed Sign-out button (library `Button` via `useComponents()`, not Clerk `UserButton`). Responsive: icon-with-text on `md+`, icon-only below.
+- Topbar action buttons share one compact `h-8` height. Outline buttons with both icon + label (Sign out, Settings) use `gap-2 px-2.5 text-xs md:px-3`; pure icon affordances (theme toggle, CV download/open on the docked identity bar) use `size='icon' h-8 w-8`.
+- `extraActions` is the right-cluster slot in the shared `TopBar` (rendered immediately before `accountMenu`). It is a backwards-compatible slot — Vāda already uses it; D-061 reuses it on Herald rather than introducing a new prop on `@atta/ui/topbar`.
+- The `(owner)` layout (`/[username]/(owner)/layout.tsx`) renders `HeraldTopBar` with `context='owner'`; the `(app)` layout renders it without a prop (defaulting to `'main'`). The Bulk Audit link is therefore present on `/bulk-audit` and `/onboarding` but absent from `/[username]/ui` + `/[username]/settings` — the owner appearance/settings space does not double up with the audit nav.
 
 ### Public profile topbar (`/[username]`)
 

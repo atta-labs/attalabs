@@ -1639,11 +1639,11 @@ Inside a launched iteration, the only task states are:
    - `app/(app)/ui/` and `app/(app)/settings/` are **deleted** with no redirect. Sweeps: `proxy.ts` matchers, `api/admin/profile/route.ts` `revalidatePath` calls, internal `href` links.
 
 2. **Topbar buttons via the existing `extraActions` slot.** No `@atta/ui` change.
-   - `HeraldTopBar.signedInLinks` = Bulk Audit + `/username` (drops UI + Settings).
-   - `HeraldTopBar.extraActions` = Settings (gear) icon button → `/{me}/settings` whenever signed in + onboarded.
-   - `envoy-shell.tsx` `signedInLinks` = `[]` on the public profile topbar (Bulk Audit excluded per the brief; UI + Settings replaced by the icon button).
+   - `HeraldTopBar` takes an optional `context: 'main' | 'owner'` prop. With `context='main'` (default, used by `(app)/layout.tsx`), `signedInLinks` = Bulk Audit + `/username`. With `context='owner'` (used by `(owner)/layout.tsx`), `signedInLinks` = `/username` only — the owner appearance/settings space does not double up with the audit nav. The Settings gear in `extraActions` is the single navigation between the two owner surfaces.
+   - `HeraldTopBar.extraActions` = Settings button → `/{me}/settings` whenever signed in + onboarded. Renders with the same responsive icon+label pattern as `HeraldAccountMenu` (icon-only ≤ md, icon + "Settings" ≥ md), so the right cluster reads as two equally-weighted labelled buttons (Settings · Sign out) rather than one unlabelled icon next to a labelled button.
+   - `envoy-shell.tsx` `signedInLinks` = `[]` on the public profile topbar (Bulk Audit excluded per the brief; UI + Settings replaced by the Palette icon button).
    - `envoy-shell.tsx` `extraActions` = Palette icon button → `/{username}/ui` only when `isOwner`. The Settings gear is intentionally NOT mirrored on the profile topbar — the main `HeraldTopBar` is the single Settings entry point.
-   - Icon buttons render with the active library's `Button size='icon'` via `useComponents()` (or `@atta/ui/components/button` on server components). They sit in the right cluster, immediately before `accountMenu`. Both carry aria-labels.
+   - Both buttons render via the shared `TopBar` right-cluster slot. The Palette button stays `size='icon'` because it shares a visual register with the CV download/open icon buttons on the docked identity bar; the Settings button is icon+label because it pairs with Sign out in the main chrome cluster.
 
 3. **D-035 preservation is by construction.** The two sibling route groups feed their own `LibraryProvider`s; the empty `[username]/layout.tsx` exists to NOT inherit one to a child. The verification recipe in `herald-app-architecture.md` §4 is extended: setting `user.library = retro` must leave `/bulk-audit`, `/onboarding`, `/[username]/ui`, and `/[username]/settings` on the build-time library; only `/[username]` switches.
 
