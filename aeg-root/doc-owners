@@ -1,0 +1,34 @@
+# aeg-root/doc-owners — code → doc bindings for the coherence seam (D-062).
+#
+# Format: one binding per line, CODEOWNERS-shaped.
+#     <code-glob>  <doc-pointer>
+# Whitespace-separated. Lines starting with `#` and blank lines are ignored.
+#
+# Glob syntax (kept deliberately simple — no character classes):
+#   `**`  matches any sequence (including `/`)
+#   `*`   matches any sequence not containing `/`
+#   every other character is literal — so Next.js dynamic-route segments
+#   like `[username]` match literally, no escaping required.
+#
+# Pointer forms:
+#   in-repo path             e.g. `.claude/skills/ui-components/SKILL.md`
+#   in-repo path with anchor e.g. `aeg-root/state-machine.md#section-9`
+#   URL                      e.g. `https://example.com/docs/x`
+#
+# Coverage rule (enforced by C5 in `scripts/verify-docs.ts`):
+#   When a code file in the PR matches a glob:
+#     - in-repo pointer  → that path must appear in the PR diff, else FAIL
+#     - URL pointer      → require a `Doc-ack: <pointer> — <note>` PR-body line
+#     - dangling pointer → in-repo pointer that does not exist on disk: FAIL
+#   Escape:
+#     `Doc-waiver: <pointer> — <reason>` in the PR body suppresses one binding
+#     for one PR (logged for audit).
+#
+# Dormancy:
+#   This file absent, OR no glob matches any changed code file → silent no-op.
+#   The gate has no opinion until you teach it one.
+
+packages/ui/topbar/**                            .claude/skills/ui-components/SKILL.md
+packages/ui/libraries/**                         .claude/skills/ui-library-system/SKILL.md
+apps/herald-ai/web/src/app/[username]/**         apps/herald-ai/specs/herald-app-architecture.md
+scripts/verify-docs.ts                           aeg-root/state-machine.md

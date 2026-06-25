@@ -138,6 +138,177 @@ function overrideActive(): boolean {
   return false
 }
 
+// ---- C5 doc-coverage (doc-owners) -----------------------------------------
+
+const DOC_OWNERS_PATH = 'aeg-root/doc-owners'
+
+export type DocOwnersBinding = { glob: string; pointer: string; lineNum: number }
+
+export type C5Result = { errors: string[]; notes: string[] }
+
+/**
+ * Parse the doc-owners file. Each non-blank, non-comment line is
+ *   `<code-glob>  <doc-pointer>`
+ *
+ * Comments start with `#`. Pointer is in-repo path, path#anchor, or URL.
+ * Returns the parsed bindings + any malformed-line errors.
+ */
+export function parseDocOwners(content: string): { bindings: DocOwnersBinding[]; errors: string[] } {
+  const bindings: DocOwnersBinding[] = []
+  const errors: string[] = []
+  const lines = content.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i] ?? ''
+    const stripped = raw.replace(/#.*$/, '').trim()
+    if (!stripped) continue
+    const parts = stripped.split(/\s+/)
+    if (parts.length < 2) {
+      errors.push(
+        `C5 doc-owners-parse: ${DOC_OWNERS_PATH}:${i + 1} — malformed binding (expected "<glob>  <pointer>", got "${raw.trim()}").`
+      )
+      continue
+    }
+    const [glob, ...pointerParts] = parts
+    bindings.push({ glob: glob ?? '', pointer: pointerParts.join(' '), lineNum: i + 1 })
+  }
+  return { bindings, errors }
+}
+
+/**
+ * Translate a doc-owners glob to a RegExp. Deliberately simple — only `*` and
+ * `**` are special; every other character is literal so Next.js dynamic-route
+ * segments like `[username]` match without escaping.
+ */
+export function globToRegex(pat: string): RegExp {
+  let re = '^'
+  let i = 0
+  while (i < pat.length) {
+    const c = pat[i]
+    if (c === '*') {
+      if (pat[i + 1] === '*') {
+        re += '.*'
+        i += 2
+      } else {
+        re += '[^/]*'
+        i += 1
+      }
+    } else if (/[.+^$|(){}[\]\\?]/.test(c as string)) {
+      re += `\\${c}`
+      i += 1
+    } else {
+      re += c
+      i += 1
+    }
+  }
+  re += '$'
+  return new RegExp(re)
+}
+
+function isUrlPointer(p: string): boolean {
+  return /^https?:\/\//.test(p)
+}
+
+function pointerToPath(p: string): string {
+  const idx = p.indexOf('#')
+  return idx === -1 ? p : p.slice(0, idx)
+}
+
+type DocAck = { surface: string; note: string }
+type DocWaiver = { pointer: string; reason: string }
+
+function readDocAcks(body: string): DocAck[] {
+  const acks: DocAck[] = []
+  for (const m of body.matchAll(/^[ \t]*Doc-ack[ \t]*:[ \t]*([^\n—]+?)[ \t]*—[ \t]*(.+?)[ \t]*$/gim)) {
+    acks.push({ surface: m[1].trim(), note: m[2].trim() })
+  }
+  return acks
+}
+
+function readDocWaivers(body: string): DocWaiver[] {
+  const waivers: DocWaiver[] = []
+  for (const m of body.matchAll(/^[ \t]*Doc-waiver[ \t]*:[ \t]*([^\n—]+?)[ \t]*—[ \t]*(.+?)[ \t]*$/gim)) {
+    waivers.push({ pointer: m[1].trim(), reason: m[2].trim() })
+  }
+  return waivers
+}
+
+/**
+ * Pure evaluator for the C5 doc-coverage check. The runtime wrapper reads
+ * `aeg-root/doc-owners` from disk and `PR_BODY` from env; this function takes
+ * both as inputs and an injectable file-exists for unit tests.
+ *
+ * Dormancy: a null `docOwnersContent` (absent file) OR no glob matching any
+ * changed code file produces an empty result — no errors, no notes.
+ */
+export function evaluateC5(
+  changed: string[],
+  docOwnersContent: string | null,
+  prBody: string,
+  fileExists: (p: string) => boolean = existsSync
+): C5Result {
+  const out: C5Result = { errors: [], notes: [] }
+
+  if (docOwnersContent === null) return out
+
+  const { bindings, errors: parseErrors } = parseDocOwners(docOwnersContent)
+  for (const e of parseErrors) out.errors.push(e)
+  if (bindings.length === 0) return out
+
+  const codeFiles = changed.filter(isCodeFile)
+  const fired: DocOwnersBinding[] = []
+  for (const b of bindings) {
+    const re = globToRegex(b.glob)
+    if (codeFiles.some((f) => re.test(f))) fired.push(b)
+  }
+  if (fired.length === 0) return out
+
+  const waivers = readDocWaivers(prBody)
+  const acks = readDocAcks(prBody)
+
+  for (const b of fired) {
+    const waived = waivers.find((w) => w.pointer === b.pointer)
+    if (waived) {
+      out.notes.push(
+        `C5 doc-waiver active for ${b.pointer} (binding ${DOC_OWNERS_PATH}:${b.lineNum}): ${waived.reason}`
+      )
+      continue
+    }
+
+    if (isUrlPointer(b.pointer)) {
+      const acked = acks.some((a) => a.surface === b.pointer)
+      if (!acked) {
+        out.errors.push(
+          `C5 doc-coverage: code change matched ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\` → ${b.pointer}). External pointer requires \`Doc-ack: ${b.pointer} — <note>\` in the PR body, or \`Doc-waiver: ${b.pointer} — <reason>\` to skip.`
+        )
+      }
+      continue
+    }
+
+    const pointerPath = pointerToPath(b.pointer)
+    if (!fileExists(pointerPath)) {
+      out.errors.push(
+        `C5 doc-owners-dangling: ${DOC_OWNERS_PATH}:${b.lineNum} points to ${b.pointer}, which does not exist on disk. Fix the binding or add the doc.`
+      )
+      continue
+    }
+
+    if (!changed.includes(pointerPath)) {
+      out.errors.push(
+        `C5 doc-coverage: code change matched ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\` → ${b.pointer}), but ${pointerPath} is not in the PR diff. Update it, or add \`Doc-waiver: ${b.pointer} — <reason>\` to the PR body.`
+      )
+    }
+  }
+
+  return out
+}
+
+function runC5(changed: string[]): void {
+  const content = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
+  const result = evaluateC5(changed, content, process.env.PR_BODY || '')
+  for (const e of result.errors) errors.push(e)
+  for (const n of result.notes) notes.push(n)
+}
+
 // ---- PR mode ---------------------------------------------------------------
 
 function runPrMode(): void {
@@ -229,6 +400,9 @@ function runPrMode(): void {
       'C4 tier3-decision-log: Tier 3 work requires either (a) a decision log entry (global decisions.md or a per-project *-decisions.md), or (b) a `Conforms-to: D-###` or `Conforms-to-lock: D-###` field in the PR body for conforming work. Neither found. (state-machine.md Section 9)'
     )
   }
+
+  // C5 — code→doc coverage via aeg-root/doc-owners (dormant when absent).
+  runC5(changed)
 }
 
 // ---- full mode -------------------------------------------------------------

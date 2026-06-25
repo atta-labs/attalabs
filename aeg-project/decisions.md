@@ -1677,9 +1677,69 @@ Inside a launched iteration, the only task states are:
 
 ---
 
-## D-062 — AEG coherence seam: doc-owners manifest + verify-docs coverage gate
+## D-062 — AEG coherence seam: `aeg-root/doc-owners` + `verify-docs` C5 coverage gate
 
-**Status:** reserved
+**Date:** 2026-06-25
+**Status:** ACTIVE
 **Type:** 1
+**Tier:** 3
+**Lock:** NO (single-file format and dormancy semantics are intentionally narrow; broadening either is a new D-### that supersedes this one).
+**Supersedes:** the reservation stub of D-062 (Planner placeholder, never ratified — replaced by this entry).
+**Authored by:** Developer (dispatched by Principal, aeg-coherence-v1 task 1, #214)
+**Ratified by:** Principal (in-session)
 
-Reserved by Planner for aeg-coherence-v1 (Principal-ratified in-session). Full entry lands in the T1 implementing PR per Tier-3 DoD.
+**Context:** D-058 made doc/spec/skill coherence a bidirectional obligation — Planner and Brief Author MUST read the relevant docs before planning/briefing, and the brief's §7 doc-update list is a Definition-of-Done gate the Reviewer enforces as a BLOCKER. But the output side was still presence-only: C3 in `verify-docs` checked "some doc changed" for Tier 1+, not "the doc that owns the surface that just moved changed." There was no machine-readable map from a code-surface glob to the doc that explains it, so the question "you changed `packages/ui/topbar`, did `ui-components/SKILL.md` move?" was mechanically unanswerable — every Reviewer had to remember the entire `code → doc` graph in their head. D-058 closed the read side; D-062 closes the output side. Without it the Planner's §7 list (and any future auto-derivation of it) has no constitutional surface to bind to.
+
+**Decision:**
+
+A single file at `aeg-root/doc-owners` — CODEOWNERS-shaped, one `<code-glob>  <doc-pointer>` per line, `#` comments — is the **single source of truth** for code → doc bindings. `scripts/verify-docs.ts` gains a new check (C5) that, for each changed code file in a PR, glob-matches against every binding and enforces a **bind-or-waive** rule per matched binding:
+
+- **Strong-pass** — in-repo pointer in the PR diff.
+- **URL-ack** — pointer is a URL and the PR body carries `Doc-ack: <pointer> — <note>` whose `<pointer>` exactly matches the binding URL.
+- **Waiver** — `Doc-waiver: <pointer> — <reason>` in the PR body, per-PR per-binding, logged for audit.
+- **Dangling** (a binding whose in-repo pointer doesn't exist on disk) — distinct FAIL with a "fix the binding or add the doc" message, never silently ignored.
+
+`Doc-ack:` and `Doc-waiver:` are **PR-body fields**, parsed from body text — *not* GitHub labels. The closed label vocabulary (Section 14) is unchanged.
+
+**Dormancy is the floor.** If `aeg-root/doc-owners` is absent, OR the file exists but no binding's glob matches any changed code file, C5 returns immediately — no output, no error. The gate has no opinion until a binding is declared. This makes the new code safe to ship to repos that have not yet adopted the seam and lets a repo grow coverage incrementally one binding at a time.
+
+**Tier-orthogonality is the ceiling.** The tier system (Section 9) answers "what class of work is this?"; the coherence seam answers "which docs did *this specific edit* make incoherent?". A Tier-0 PR touching a bound surface MUST satisfy C5; a Tier-3 PR touching no bound surface satisfies C5 trivially. Both gates run; both must pass.
+
+**Glob syntax is deliberately simple** — only `*` (sequence not containing `/`) and `**` (any sequence including `/`) are special. Every other character is literal so Next.js dynamic-route segments like `[username]` match without escaping. This is narrower than CODEOWNERS' `fnmatch` (which treats `[]` as character classes); the narrower surface trades expressive power for plain readability of the four-binding seed.
+
+**Initial seed (four bindings, the seam goes live on day one):**
+
+1. `packages/ui/topbar/**` → `.claude/skills/ui-components/SKILL.md`
+2. `packages/ui/libraries/**` → `.claude/skills/ui-library-system/SKILL.md`
+3. `apps/herald-ai/web/src/app/[username]/**` → `apps/herald-ai/specs/herald-app-architecture.md`
+4. `scripts/verify-docs.ts` → `aeg-root/state-machine.md`
+
+Each pointer path is verified to exist; binding 4 is **self-referential** — this PR edits `scripts/verify-docs.ts` and therefore C5 (in CI on this very PR) requires `aeg-root/state-machine.md` in the diff. Deliverable 1 of this task edits state-machine.md (Section 15 + cross-refs in §9 + §12), so the PR satisfies the gate it introduces.
+
+**Out of scope of this decision** (separately reserved on the iteration backlog, not bundled here):
+
+- **T2** — decision-number reservation + duplicate `D-NNN` check (the failure mode that caused the recent D-060→D-061 renumber).
+- **T3** — Planner §7 auto-derivation from `doc-owners` (so the Planner stops hand-curating the list and the brief's §7 cannot drift from the gate's input).
+- **T4** — one-time staleness audit of existing skills/specs against current decisions; seeds the manifest beyond the four-binding floor.
+
+**Alternatives rejected:**
+
+- *Extend C3 ("some doc changed") to a stronger heuristic instead of adding C5:* rejected. C3's value is exactly its bluntness — "if you're shipping Tier 1+ code, you owe at least *some* doc update." Adding surface-specific intelligence to C3 would conflate "tier requires docs" with "this code surface has bound docs"; they are orthogonal questions answered by different gates.
+- *A multi-file `doc-owners/` directory with one file per project/package:* rejected. The four-binding seed and the foreseeable next 20 bindings fit easily in one file; multi-file ownership re-introduces drift between sibling files for the same code surface. Single-file format is the simpler invariant and is what the dispatched brief specified.
+- *Use a full glob library (Bun.Glob, micromatch) with CODEOWNERS' character-class semantics:* rejected. Character classes (`[abc]`) would treat Next.js dynamic-route segments like `[username]` as character classes, not literals — the four-binding seed includes one such path. A simple two-special-character parser (`*`, `**`) is more readable, has no dependency, and matches author intent for paths that contain literal brackets.
+- *Use GitHub labels (`doc-ack:*` / `doc-waiver:*`) instead of PR-body fields:* rejected. Labels are a closed-set vocabulary governed by Section 14; per-pointer ack/waiver values cannot be enumerated as labels. Body fields are precedented (`Conforms-to:`, `Tier:`) and let the value carry the pointer string verbatim.
+- *Embed C5 in a new `packages/aeg-core` package alongside the derive-iteration logic:* rejected. C5 reads files from disk and the PR body; it is a CI-runner concern that lives in the script that already runs it. Extracting it would couple `aeg-core` to filesystem and env-var assumptions it has no other reason to carry. In-script keeps the parser, the predicates (`isCodeFile`), and the dormancy semantics together.
+
+**Consequences:**
+
+- `aeg-root/doc-owners` (NEW) — the seam's single source of truth; seeded with four bindings (see Decision above).
+- `scripts/verify-docs.ts` — adds `parseDocOwners`, `globToRegex`, `evaluateC5`, `runC5`; C5 invoked inside `runPrMode` after C1–C4 (which are unchanged byte-for-byte). Pure evaluator is exported for tests.
+- `scripts/verify-docs.test.ts` — adds unit-test coverage for all six paths: strong-pass, strong-fail, url-ack (with the absent-ack mirror), dangling, dormant (absent file + no-glob-fires), waiver, plus a multi-binding case.
+- `aeg-root/state-machine.md` — adds Section 15 (Coherence Seam — Doc Coverage); cross-refs from §9 (tier-orthogonality note) and §12 (C5 added to the enforced-mechanisms list).
+- `aeg-root/roles/developer.md` — § PR body — canonical form documents `Doc-ack:` and `Doc-waiver:` as body fields; "Documentation is part of every task" frames update-or-waive as a DoD gate explicitly (D-058 + D-062 together).
+- `aeg-root/roles/reviewer.md` — doc-coupling check (item 6) updated: presence is now mechanical (C5), the Reviewer judges *correctness of the covered doc*; a passing C5 + an incorrect/no-op doc update is still a BLOCKER.
+- `aeg-root/contracts/developer-reviewer.md` — new contract row: **doc-owners coverage (C5)** as a Developer producer obligation and a Reviewer consumer obligation (presence mechanical, correctness judged).
+- `aeg-root/iterations/aeg-coherence-v1.tokens.md` — developer row appended at PR-open per D-058's terminal-role obligation.
+- **Reversal cost:** delete `aeg-root/doc-owners`; remove the C5 block from `scripts/verify-docs.ts` + tests; remove §15 from state-machine.md and the cross-refs; revert role/contract edits; mark this entry SUPERSEDED. The gate is dormant the moment the file is gone — no consumer code depends on C5 running. The reversal is mechanical because the design forces every dependency to flow through the single file.
+
+**Lock rationale:** `Lock: NO`. The single-file format and dormancy semantics are deliberately narrow scope. Broadening either (multi-file ownership, character-class globs, hard-fail on missing-file dormancy) is a new D-### that supersedes this one — not an in-place edit. Keeping Lock NO preserves the option to walk the seam back to dormant globally without an irreversibility tax; the dormancy floor is what makes that walk-back safe.

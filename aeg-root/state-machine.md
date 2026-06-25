@@ -292,6 +292,8 @@ Every piece of work is assigned an impact tier; the tier determines required doc
 
 **Canonical PR-body form (including the exact `Tier:` syntax).** The verbatim, copy-pasteable PR-body template — Summary / Test plan / Scope with `**Tier:** N` — lives in [`roles/developer.md` § PR body — canonical form](roles/developer.md#pr-body--canonical-form). That section is the single source of truth for the field shape `verify-docs` accepts; do not freestyle the PR body or maintain a parallel template elsewhere (not in `.github/PULL_REQUEST_TEMPLATE.md`, not in an agent-runtime skill).
 
+**Tier orthogonality with the coherence seam (Section 15).** The tier system above asks *"how much documentation does this class of work require?"* — a class-level question. The coherence seam asks the orthogonal *"which specific docs does **this** code change make incoherent?"* — a per-change question, answered from `aeg-root/doc-owners`. A Tier-0 PR with no bound code surface need not touch any doc; a Tier-0 PR that edits a code surface bound in `doc-owners` MUST update (or `Doc-waiver:` / `Doc-ack:`) that doc. They are different axes; both gates run; both must pass.
+
 ---
 
 ## Section 10: Ratification Windows
@@ -327,6 +329,7 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 ### Enforced (CI blocks merge)
 
 - **Tier-appropriate documentation** — the `verify-docs` script checks the PR's tier has the corresponding artifact changes; fails CI if missing. **Real (D-027)**, not a stub. The blocking workflow is installed at `.github/workflows/verify-docs.yml`. The gate also runs locally (this repo: `bun run verify-docs --pr`). (In observe mode this runs report-only.)
+- **Coherence seam — code→doc coverage (C5)** — the same `verify-docs` script reads `aeg-root/doc-owners`, glob-matches changed code files, and fails CI if a matched binding's doc is not in the diff (or, for URL pointers, not acknowledged via `Doc-ack:` in the PR body). The escape hatch is per-binding (`Doc-waiver: <pointer> — <reason>` in the PR body — logged for audit). **Dormant when `aeg-root/doc-owners` is absent or no glob matches** — the gate has no opinion until the repo teaches it one. **Real (D-062)**, no stub period. Full seam defined in Section 15.
 - **Commit-message format** — `commitlint` (reusing the same `commitlint.config.js` Husky runs locally) runs against every commit in the PR range. Real (D-046), installed at `.github/workflows/conventions.yml::commit-lint`. Closes the gap where API/MCP writes, direct pushes, and hand-merges bypass Husky entirely (evidence: pre-D-046 main contains several non-conforming commit headers authored via the API). Until armed in branch protection the job runs but does not block — Principal action to arm.
 - **Biome lint/format** — `bun run format-and-lint` (i.e. `biome check .`) runs on every PR. Real (D-046), installed at `.github/workflows/conventions.yml::biome`. Same Biome config as lint-staged enforces locally — local and CI cannot diverge. Until armed in branch protection the job runs but does not block.
 - **Forbidden colors in UI** — `scripts/check-forbidden-colors.ts` (diff-scoped) runs on every PR. Real (D-046), installed at `.github/workflows/conventions.yml::no-hardcoded-colors`. Encodes the four pattern groups in `.claude/skills/ui-theme-tokens/SKILL.md`: Tailwind palette classes, arbitrary color brackets (`bg-[#…]`, `text-[oklch(…)]`), absolute colors (`text-white`, `bg-black`), and inline-style color literals. Scans only added lines, so it blocks new violations without forcing a "boil the ocean" legacy cleanup. Until armed in branch protection the job runs but does not block.
@@ -412,3 +415,65 @@ No label outside this table may be applied to a task Issue or its PR. (The Archi
 ### Why no other labels
 
 Everything teams commonly reach for is already covered without a label: *status* (derived from the forge), *priority/estimates/points* (planning metadata — lives in the company's tool, rejected on Issues by §2 + CI), *project* (the `Project:` field), *assignee* (a native forge field, and assignment is the `todo` transition). Adding a label for any of these would re-introduce a second, drifting source of truth for a fact the model already has a home for. The vocabulary stays small on purpose.
+
+---
+
+## Section 15: Coherence Seam — Doc Coverage (`aeg-root/doc-owners`)
+
+The seam between **code change** and **the doc that explains the surface that just moved**. D-058 made bidirectional doc coherence an obligation (read before planning, update as DoD); D-062 makes the **output side mechanically verifiable** so the Reviewer judges *correctness of the covered doc*, not its presence. The Developer↔Reviewer seam for coverage is enforced by `verify-docs`; the seam for correctness remains the Reviewer's job (Section 3 + `contracts/developer-reviewer.md`).
+
+### The single source of truth: `aeg-root/doc-owners`
+
+One CODEOWNERS-shaped file at the repo root of the AEG model:
+
+- Each non-blank, non-comment line is `<code-glob>  <doc-pointer>` (whitespace-separated).
+- `#` starts a comment to end of line; blank lines are ignored.
+- **Glob syntax is deliberately simple** — only `*` (sequence not containing `/`) and `**` (any sequence including `/`) are special; every other character is literal. Next.js dynamic-route segments like `[username]` match without escaping.
+- **Pointer forms:** in-repo path; in-repo `path#anchor`; or a `https://…` URL.
+- **The file is optional.** Its absence is dormancy, not failure — see below.
+
+The file is a Class 1 artifact (repo file, git-tracked) and changes via the normal PR flow. Edits to `aeg-root/doc-owners` are themselves Tier 3 when they reshape the seam (e.g. broadening enforcement to a new package); routine additions of a single binding for an already-bound family follow the surrounding work's tier.
+
+### The bind-or-waive rule (enforced by C5 in `scripts/verify-docs.ts`)
+
+For each changed code file in the PR, glob-match against every binding. Per **matched** binding, exactly one of these must be true at PR-open:
+
+| Branch | What satisfies the gate |
+|---|---|
+| **Strong-pass** | The in-repo pointer is in the PR diff. |
+| **URL-ack** | The pointer is a URL **and** the PR body carries `Doc-ack: <pointer> — <note>` whose `<pointer>` exactly matches the binding's URL. |
+| **Waiver** | The PR body carries `Doc-waiver: <pointer> — <reason>`. Per-PR, per-binding; logged for audit; one binding at a time. |
+
+If none of the above hold, C5 fails the PR. A binding whose in-repo pointer **does not exist on disk** is a distinct *dangling* failure (fix the binding or add the doc) — never silently ignored, because a dangling pointer is the failure mode the seam was built to prevent.
+
+### Dormancy (silent no-op)
+
+Two cases produce **no output and no error** — not a "pass" message, nothing at all:
+
+1. `aeg-root/doc-owners` is absent.
+2. The file exists but no binding's glob matches any changed code file.
+
+The seam has no opinion until the repo teaches it one. This is what makes the gate safe to ship to repos that have not yet adopted the seam, and what lets a repo grow coverage incrementally one binding at a time.
+
+### Orthogonality to the tier system
+
+The tier system (Section 9) is class-level — "what kind of work is this, and what docs does that kind of work require?" The coherence seam is per-change — "this specific edit moved this specific surface; the doc bound to that surface must move with it." A Tier 0 PR that edits a bound code surface MUST satisfy C5; a Tier 3 PR that touches no bound code surface satisfies C5 trivially. Both gates run on every PR; both must pass.
+
+### PR-body fields — `Doc-ack:` and `Doc-waiver:`
+
+These are **PR-body fields**, parsed from the body text — *not* GitHub labels. They live alongside `Conforms-to: D-###` and `Tier:` in the canonical PR body (form in `roles/developer.md` § PR body — canonical form). No new label vocabulary is added; the closed set in Section 14 is unchanged.
+
+- `Doc-ack: <pointer> — <note>` — acknowledgment for URL bindings.
+- `Doc-waiver: <pointer> — <reason>` — per-binding escape for in-repo bindings the author chose not to update in this PR (logged for audit; the Reviewer judges whether the waiver is justified).
+
+### Where this leaves the Reviewer
+
+The Reviewer no longer carries the cognitive load of remembering *which* doc lives at *which* surface — `verify-docs` does that. The Reviewer's doc-coupling job (`roles/reviewer.md`, item 6) shrinks to **judging correctness of the covered doc**: did the doc update actually reflect the code change, or is it a no-op edit to silence the gate? A passing C5 plus an incorrect doc update is still a BLOCKER. (D-058 + D-062 together: coverage is mechanical; correctness is the Reviewer's.)
+
+### What is explicitly out of scope for D-062
+
+- **Planner §7 auto-derivation** from `doc-owners` — backlog T3. Until then the Planner still hand-curates the brief's §7 doc-update list per D-058.
+- **One-time staleness audit** of existing skills/specs to seed the initial bindings — backlog T4.
+- **Decision-number reservation** (the failure mode that caused the recent D-060→D-061 renumber) — backlog T2.
+
+These are tracked on `aeg-root/iterations/aeg-coherence-v1.md`; this section governs only the seam itself.

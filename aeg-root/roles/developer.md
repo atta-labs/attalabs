@@ -109,14 +109,19 @@ field on its own line:>
 | `[principal]` items | Items only the Principal can run (auth-gated, vendor-key-dependent, visual). The agent **does not tick these** — the Principal does, after running in a real browser.            |
 | Scope            | One paragraph + the Tier field. Ends with `**Tier:** 0 \| 1 \| 3` on its own line.                                                                                                |
 | **Tier syntax**  | Exactly `Tier: 0`, `Tier: 1`, `Tier: 3` (plain) — or `**Tier:** 0`, `**Tier:** 1`, `**Tier:** 3` (bold). `Tier 1` (no colon), `Tier-1`, `Tier:1` (no space) are **rejected** by CI. |
+| `Conforms-to:`   | Optional. `Conforms-to: D-###` or `Conforms-to-lock: D-###` — satisfies the Tier-3 decision-log requirement (C4) when the work implements an already-recorded decision rather than introducing a new one. |
+| `Doc-ack:`       | Optional. `Doc-ack: <pointer> — <note>` — acknowledges an external (URL) binding in `aeg-root/doc-owners` that fired on this PR. `<pointer>` must exactly match the binding URL. **Body field, not a label.** (state-machine.md Section 15) |
+| `Doc-waiver:`    | Optional. `Doc-waiver: <pointer> — <reason>` — per-binding, per-PR escape for an in-repo binding the author intentionally did not update. `<pointer>` must exactly match the binding pointer. Logged for audit; the Reviewer judges whether the waiver is justified. **Body field, not a label.** (state-machine.md Section 15) |
 
-**What this section is NOT:** not a style guide, not exhaustive PR etiquette. It is the **contract** for the four shapes `verify-docs`, Brief Validation, the Verification phase, and the Pre-merge gate all read. Add anything you want beneath the four sections; don't omit or reshape any of them.
+**What this section is NOT:** not a style guide, not exhaustive PR etiquette. It is the **contract** for the shapes `verify-docs` (C0–C5), Brief Validation, the Verification phase, and the Pre-merge gate all read. Add anything you want beneath the four sections; don't omit or reshape any of them.
 
 ---
 
 ## Documentation is part of every task
 
 Documentation is not post-implementation optional cleanup. It is part of the task. A brief is not done until all tier-required documentation artifacts exist and pass verification. Your brief carries an explicit documentation-update list (§7, by file name) — treat it as a DoD obligation, not a suggestion (D-058). A task that ships passing tests but incoherent docs is incomplete in the same way a task that ships with failing tests is incomplete. Every doc named in §7 must be updated before opening the PR; a named doc not in the diff is a BLOCKER at review.
+
+**Update-or-waive is a DoD gate (D-062).** Beyond §7, `verify-docs` C5 mechanically enforces code → doc coverage from `aeg-root/doc-owners`. Whenever your diff touches a code surface bound in that file, you must do exactly one of: (a) update the bound doc in the same PR; (b) for URL bindings, add a `Doc-ack: <pointer> — <note>` body field; (c) add a `Doc-waiver: <pointer> — <reason>` body field, per-binding, with a real reason — the Reviewer judges whether it's justified. Doing none of these is not an option; the gate will fail CI. The seam is dormant when `aeg-root/doc-owners` is absent or no binding matches, so a PR that touches no bound surface has no obligation. (state-machine.md Section 15.)
 
 > The commands shown below are **this repo's** toolchain (Bun/JS). Substitute your repo's declared equivalents; the *obligations* (typecheck, lint, test, verify-docs) are the same everywhere.
 
