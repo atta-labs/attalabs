@@ -1579,3 +1579,38 @@ Inside a launched iteration, the only task states are:
 - `apps/aeg/web/studio/README.md`: progress-counts description updated.
 
 ---
+
+## D-060 — Cross-Product Theme Centralization under Attalabs
+
+**Date:** 2026-06-25
+**Status:** ACTIVE
+**Type:** 1
+**Tier:** 3
+**Lock:** YES
+**Authored by:** Developer (dispatched by Principal)
+**Ratified by:** Principal (pending)
+
+**Context:** Originally, each product database (Vāda, Vitakka, Herald, Attā) had its own local desk structure and database-level references to themes and component libraries, creating redundant copies of themes across datasets. Swapping/altering project URLs directly caused domain confusion (atta vs attalabs subdomains).
+
+**Decision:**
+- Store and manage themes (`uiTheme` schema) and component libraries (`library` schema) **exclusively** in the central Attalabs database (`l5n0n8nn` -> `attalabs.sanity.studio`).
+- Keep the original project ID mappings (`atta` = `892o2m9f`, `attalabs` = `l5n0n8nn`) so that the Sanity URLs match the product names exactly:
+  * `https://atta.sanity.studio/` points to project `892o2m9f` (`atta`).
+  * `https://attalabs.sanity.studio/` points to project `l5n0n8nn` (`attalabs`).
+- Modify `getProductUiConfig` in the `cms` package to resolve theme/library IDs dynamically from the central `attalabs` database, supporting both legacy reference objects and new string IDs.
+- Hide the "Themes" and "Libraries" editor sections from the sidebars in other product studios (Vāda, Vitakka, Herald, Attā).
+- Migrate all existing 19 themes and 4 libraries from the old project `892o2m9f` to the central `l5n0n8nn` database.
+
+**Alternatives rejected:**
+- *Swapping project subdomains:* Rejected because it causes extreme user confusion with Sanity's domain configuration.
+- *Inline definitions:* Rejected because the central registry database is the single source of truth.
+
+**Consequences:**
+- `packages/cms/src/client.ts` (restored original IDs)
+- `packages/cms/src/queries/product-ui-config.ts` (dynamic resolver + legacy support)
+- `packages/cms/sanity.config.ts` (custom desk filters)
+- `packages/cms/sanity.cli.ts` (reverted mapping)
+- `tools/admin/src/app/[project]/themes/actions.ts` (admin tool writes to attalabs client)
+- `apps/herald-ai/specs/herald-app-architecture.md` (noted dynamic resolution of library string IDs)
+- `aeg-project/state.md` (added `SANITY_API_TOKEN_ATTALABS` manual setup item)
+

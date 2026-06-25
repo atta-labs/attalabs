@@ -28,13 +28,15 @@
     "seed:branding:attalabs": "SANITY_PROJECT_ID=l5n0n8nn SANITY_SEED_PRODUCT=attalabs bun run ./scripts/seed-branding.ts",
     "migrate:herald-to-product": "bun run ./scripts/migrate-herald-to-product.ts",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "clean": "rm -rf dist .turbo"
   },
   "devDependencies": {
     "@atta/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
   },
   "dependencies": {
     "@sanity/client": "^7.20.0",

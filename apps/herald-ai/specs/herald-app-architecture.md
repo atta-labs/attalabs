@@ -68,6 +68,7 @@ Herald has two library-resolution paths. Getting these crossed is the single mos
 
 Concretely:
 - `app/(app)/layout.tsx` feeds `CandidateShell` → `LibraryProvider` the **build-time** library id, sourced from `getHeraldConfig(cmsClient).userInterface.library.id` (the same value the generator reads). It deliberately ignores `user.library`.
+- **Dynamic CMS Resolution (D-060):** Theme and library metadata are stored and managed centrally in the `attalabs` (`l5n0n8nn`) Sanity dataset. In the local product datasets (e.g. `heraldConfig`), they are defined as simple string IDs. The `cms` package's resolver (`getProductUiConfig` / `getHeraldConfig`) intercepts these string IDs (or legacy references), fetches the fully populated structures from the central `attalabs` database, and reconstructs the standard `PortalUiConfig` object shape to avoid breaking downstream consumers.
 - `app/[username]/layout.tsx` feeds `EnvoyLibraryShell` → `LibraryProvider` the **user's** `user.library`.
 - App-chrome components that pick components must import from `@atta/ui/components` (build-time) — not via `useComponents()` against a user-library provider. (`useComponents()` is correct only inside the `(app)` tree if and only if that tree's provider is fed the build-time id, which it is.)
 

@@ -20,7 +20,7 @@ export async function createThemeAction(
     const result = await writeClient.create(doc)
     return { _id: result._id, name: result.name as string }
   } catch {
-    throw new Error('Failed to create theme. Check your SANITY_API_TOKEN for this project.')
+    throw new Error('Failed to create theme. Check your SANITY_API_TOKEN_ATTALABS or SANITY_API_TOKEN.')
   }
 }
 

@@ -48,21 +48,33 @@ export async function getProductUiConfig(
   }
 
   const ui = config.userInterface
+  const themeId = typeof ui.theme === 'string' ? ui.theme : ui.theme?._ref
+  const libraryId = typeof ui.library === 'string' ? ui.library : ui.library?._ref
+
   const attaClient = createProductClient('attalabs', { useCdn: false })
 
-  // 2. Fetch full details from Atta project if theme/library are string references
+  // 2. Fetch full details from Attalabs project if theme/library are string or reference IDs
   const [themeDoc, libraryDoc] = await Promise.all([
-    typeof ui.theme === 'string'
-      ? attaClient.fetch(`*[_type == "uiTheme" && _id == $id][0] ${THEME_PROJECTION}`, { id: ui.theme })
+    themeId
+      ? attaClient.fetch(`*[_type == "uiTheme" && _id == $id][0] ${THEME_PROJECTION}`, { id: themeId })
       : Promise.resolve(null),
-    typeof ui.library === 'string'
-      ? attaClient.fetch(`*[_type == "library" && _id == $id][0] ${LIBRARY_PROJECTION}`, { id: ui.library })
+    libraryId
+      ? attaClient.fetch(`*[_type == "library" && _id == $id][0] ${LIBRARY_PROJECTION}`, { id: libraryId })
       : Promise.resolve(null)
   ])
 
   // 3. Reconstruct standard PortalUiConfig shape so layout consumers require zero changes
-  config.userInterface.theme = themeDoc
-  config.userInterface.library = libraryDoc
+  if (themeDoc) {
+    config.userInterface.theme = themeDoc
+  } else if (themeId) {
+    config.userInterface.theme = null
+  }
+
+  if (libraryDoc) {
+    config.userInterface.library = libraryDoc
+  } else if (libraryId) {
+    config.userInterface.library = null
+  }
 
   return config
 }
