@@ -31,6 +31,15 @@ These are judgment/iteration loops, not clean "agent → PR" tasks. They belong 
 - **E11 Per-key tool scoping** — restrict an API key to specific tools.
 - **E12 OAuth as alternative to bearer auth** — works around Anthropic's claude.ai connector-broker `ofid_*` bug that fails bearer-auth self-hosted MCP. Only matters if claude.ai web adoption matters; Claude Code CLI works today.
 
+## Multimodal / file ingestion (planned — principal-confirmed)
+
+The smart input accepts files/images today, but Vāda has no ingestion backend — `handleSmartSubmit` drops the `FileUIPart[]` (see `DeliberateSection.tsx`, "no file ingestion backend" comment). The affordance is currently decorative. To let configured models analyze uploads:
+
+- **Ingestion** — encode/store attachments (R2?) and thread them onto the deliberation payload alongside `{{question}}`; today only question text flows through the round templates.
+- **Multimodal model calls** — `packages/adapter-langgraph/src/llm.ts` builds text-only content. Add vendor-specific multimodal blocks: Anthropic image/document content blocks, OpenAI `image_url`, Google `inlineData`. PDFs/docs: extract text or pass as document blocks.
+- **Capability guard** — Council/Reviewers let the user pick any model per slot; not all support vision. Gate or warn when an image is routed to a text-only model rather than failing the slot opaquely.
+- Cross-cuts every team (Council, Reviewers, Sparring, …), not Council-specific. Sizeable — its own iteration when the Planner pulls it.
+
 ## Research / parking lot
 
 - **Vāda Desktop — CLI-subprocess providers.** Karpathy's `llm-council` precedent. "Use what you already pay for" chat-subscription transport. Likely lives at the Atta ecosystem level (Vitakka or a future consumer surface), NOT a Vāda product line. Transport mode already specced in `vada-reviewers-spec.md` §3.5 (v1.5, conditional on benchmark data). Research only — no active task.
