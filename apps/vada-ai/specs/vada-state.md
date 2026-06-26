@@ -2,6 +2,34 @@
 
 ## Most recent session — Jun 27, 2026
 
+PR #207 polish — five visual / UX fixes on the deliberate hero input + Configure modal (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, additive commits on the existing one.
+
+**Fix 1 — Seamless inner textarea (root cause of the "double border" report).**
+
+After Phase 1's DI refactor (`809970db`), the consuming app injects its `@atta/ui` `Textarea` into `SmartPromptInput`. Vāda uses the `animate` library which re-exports the `basic/installed/textarea.tsx` shadcn variant; that component brings its own `border border-input`, `rounded-lg`, `dark:bg-input/30` tint, `focus-visible:border-ring focus-visible:ring-3`, native resize handle, and `min-h-16` baseline. Inside `SmartPromptInput`'s `InputGroup` chrome those defaults produce a textarea-inside-a-container look and an inner focus ring on top of the outer `focus-within:ring-1`.
+
+Fix is call-site only (no `@atta/ui` Textarea defaults touched — that would propagate to every consumer of `<Textarea>` everywhere). `DeliberateSection.tsx` now defines `HERO_TEXTAREA_CLASSNAME` (`min-h-0 border-0 rounded-none bg-transparent dark:bg-transparent focus-visible:border-transparent focus-visible:ring-0 resize-none`) and passes it via `textareaClassName`. tailwind-merge resolves the conflicts (`border-0` wins over `border`, `rounded-none` over `rounded-lg`, `min-h-0` over both the vendor's `min-h-16` and the injected component's `min-h-16`, `focus-visible:ring-0` over `focus-visible:ring-3`). Applied at both Vāda hero sites (empty-state centered, active-state fixed bottom bar). Herald's `JDInput` does NOT pass `textareaClassName`, so its visible chrome is byte-identical to before.
+
+**Fix 2 — Textarea growth restored (same root, no separate fix).**
+
+The "fixed at one line" symptom and the inner border are the same bug surfaced twice. Both the vendor's wrapper and the injected `Textarea` keep `field-sizing-content max-h-40 overflow-y-auto`. With `min-h-0` overriding the two `min-h-16` baselines, the textarea collapses to 1 line when empty and grows by `field-sizing-content` up to `max-h-40` (~7 lines at `text-sm`), then scrolls. No JS auto-resize fallback was needed — `field-sizing-content` is supported on the injected `<textarea>` element and only required the `min-h-*` baseline to be defeated.
+
+**Fix 3 — Multi-line "divider" is the textarea bottom border (same root again).**
+
+The horizontal line that appeared above the footer row when the textarea wrapped was the bottom edge of the injected Textarea's own `border border-input` — not a footer divider in `SmartPromptInput`. The wrapper's `InputGroupAddon` carries no `border-t` in the current vendor (verified). With Fix 1 stripping the inner textarea border, the divider is gone.
+
+**Fix 4 — Team identity inside `ReviewerConfigModal`.**
+
+Added a team-identity header at the top of the modal: `spec.displayName` (font-serif, lg) + `spec.description` (text-muted-foreground). No prop-shape change — the modal already accepts a full `Flow`. The existing "Configure models" title is now demoted to a sub-section heading (font-serif, base) so the team identity is the visual anchor.
+
+**Fix 5 — "View team" moved into the modal.**
+
+Removed the standalone "View team ↗" link that sat below the empty-state input — pulled `NextLink` + `ArrowUpRight` out of `DeliberateSection.tsx`. Added an equivalent link inside `ReviewerConfigModal.tsx` next to the team identity header, routed to `/teams/${spec.id}`. Single navigation path to the team detail page, anchored to the place where you're already thinking about that specific team.
+
+No stop condition hit. Herald `JDInput` unchanged. `bun run typecheck --force && bun run check` pass. `verify-docs --pr` pass.
+
+## Previous session — Jun 27, 2026
+
 PR #207 completion — Phases 1, 4, 5 of the deliberate UX + working-deliberations brief (vada-production-v1, `task/vada-production-v1/tool-badges`). Phases 2, 3 landed in the prior session (frontier-chat + morphing button + dropdown restyle). The acceptance test for PR #207 is: (1) clean frontier-grade input UX, and (2) deliberations actually run and render.
 
 **Phase 1 — `SmartPromptInput` dependency injection (commit `809970db`).**

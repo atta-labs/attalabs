@@ -6,6 +6,8 @@ import type { VendorId } from '@atta/models'
 import { useCatalog } from '@atta/models'
 import { Button, ModelPicker, useToastContext } from '@atta/ui'
 import { Dialog, DialogContent, DialogTitle } from '@atta/ui/components/dialog'
+import { NextLink } from '@atta/ui/lib/next-link'
+import { ArrowUpRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { getReviewerConfig, resolveVendor as resolveVendorFromCatalog } from '@/lib/reviewer-models'
@@ -118,8 +120,28 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
       }}
     >
       <DialogContent className='w-full max-w-md space-y-6 border-border bg-card p-6'>
+        {/* Team identity header — names the team being configured so the user
+            never has to leave the modal to confirm "which team is this?". The
+            "View team" link is the single navigation path from here; it lives
+            in the modal (not below the input) so the empty-state input flow
+            stays focused on the question, not the team. */}
+        <div className='space-y-2'>
+          <div className='space-y-0.5'>
+            <h2 className='font-serif text-lg text-foreground'>{spec.displayName}</h2>
+            {spec.description && <p className='text-sm text-muted-foreground'>{spec.description}</p>}
+          </div>
+          <NextLink
+            href={`/teams/${spec.id}`}
+            variant='prose'
+            className='inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:text-accent'
+          >
+            View team
+            <ArrowUpRight className='size-3' />
+          </NextLink>
+        </div>
+
         <div className='space-y-1'>
-          <DialogTitle className='font-serif text-lg text-foreground'>Configure models</DialogTitle>
+          <DialogTitle className='font-serif text-base text-foreground'>Configure models</DialogTitle>
           <p className='text-sm text-muted-foreground'>
             Pick a model for each slot. All need unlocked API keys to run.
           </p>

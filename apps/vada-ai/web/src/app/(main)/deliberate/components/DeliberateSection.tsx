@@ -12,9 +12,8 @@ import {
   DropdownMenuTrigger,
   Textarea
 } from '@atta/ui'
-import { NextLink } from '@atta/ui/lib/next-link'
 import { SmartPromptInput, type SmartPromptComponents } from '@atta/ui/smart-prompt-input'
-import { ArrowUp, ArrowUpRight, GitCompare, Loader2 } from 'lucide-react'
+import { ArrowUp, GitCompare, Loader2 } from 'lucide-react'
 import { useDeliberateForm } from './useDeliberateForm'
 import { MigrationPrompt } from './MigrationPrompt'
 import { ReviewerConfigModal } from './ReviewerConfigModal'
@@ -35,6 +34,33 @@ const smartPromptComponents: SmartPromptComponents = {
   DropdownMenuContent,
   DropdownMenuItem
 }
+
+/**
+ * Textarea overrides for the Vāda hero — strips the injected `@atta/ui` Textarea's
+ * own chrome so the inner textarea looks like part of the outer `InputGroup`
+ * surface, not a nested field.
+ *
+ * The injected basic/animate `Textarea` ships with `border border-input`,
+ * `rounded-lg`, `dark:bg-input/30`, focus ring (`focus-visible:border-ring
+ * focus-visible:ring-3 focus-visible:ring-ring/50`), native resize handle, and
+ * `min-h-16`. That's the right default when used as a standalone form field, but
+ * inside SmartPromptInput it produces a textarea-inside-a-container look with a
+ * visible bottom border that doubles as a multi-line "footer divider".
+ *
+ * tailwind-merge resolves the conflicting classes deterministically (border-0
+ * wins over `border`, `rounded-none` over `rounded-lg`, `min-h-0` over
+ * `min-h-16`, `focus-visible:ring-0` over `focus-visible:ring-3`). `min-h-0`
+ * also defeats the vendor's own `min-h-16` baseline so the textarea collapses
+ * to a true single line on first paint and grows via `field-sizing-content`.
+ */
+const HERO_TEXTAREA_CLASSNAME = [
+  'min-h-0',
+  'border-0',
+  'rounded-none',
+  'bg-transparent dark:bg-transparent',
+  'focus-visible:border-transparent focus-visible:ring-0',
+  'resize-none'
+].join(' ')
 
 interface DeliberateSectionProps {
   remainingToday: number
@@ -139,31 +165,17 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 status={form.loading ? 'loading' : 'idle'}
                 actionsPosition='right'
                 className='[&>form>div]:rounded-xl [&>form>div]:shadow-lg'
-                // The vendored PromptInputTextarea defaults to min-h-16 (=4rem), which
-                // forces scrollHeight above singleLineHeight on first paint and pins
-                // the layout in multi-line mode forever. min-h-0 lets the textarea
-                // collapse to its true single-line height; tailwind-merge resolves the
-                // conflict in our favor.
-                textareaClassName='min-h-0'
+                // See HERO_TEXTAREA_CLASSNAME definition above for the full rationale —
+                // strips the injected `@atta/ui` Textarea's own border / rounded /
+                // focus ring / resize handle / `min-h-16` so the textarea blends
+                // seamlessly into the surrounding `InputGroup` chrome.
+                textareaClassName={HERO_TEXTAREA_CLASSNAME}
                 components={smartPromptComponents}
                 actions={
                   <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
                 }
                 submitSlot={<MorphingSubmitButton canStart={form.canStart} onConfigure={form.openReviewerModal} />}
               />
-
-              {selectedSpec && (
-                <div className='flex justify-center'>
-                  <NextLink
-                    href={`/teams/${selectedSpec.id}`}
-                    variant='prose'
-                    className='flex items-center gap-1 text-xs text-muted-foreground'
-                  >
-                    View team
-                    <ArrowUpRight className='size-3' />
-                  </NextLink>
-                </div>
-              )}
             </div>
           </div>
 
@@ -230,6 +242,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 placeholder='What decision are you wrestling with?'
                 submitOn='cmdenter'
                 status={form.loading ? 'loading' : 'idle'}
+                textareaClassName={HERO_TEXTAREA_CLASSNAME}
                 components={smartPromptComponents}
               />
             </div>
