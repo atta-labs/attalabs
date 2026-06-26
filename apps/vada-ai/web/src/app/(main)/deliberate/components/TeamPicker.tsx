@@ -43,21 +43,42 @@ export function TeamPicker({ specs, value, onChange }: TeamPickerProps) {
           // trigger's short pill) plus a corrected subtitle from the spec-local
           // label map. `getFlowShapeLabel` returned "parallel reviewers" for
           // every brokered spec — wrong for Council; the label map is the fix.
+          //
+          // Hover treatment (per user feedback): switch the TEXT color, not
+          // the BACKGROUND. The installed `DropdownMenuItem`
+          // (`packages/ui/libraries/basic/installed/dropdown-menu.tsx` line 59)
+          // ships `focus:bg-accent focus:text-accent-foreground` — Radix sets
+          // `focus` on the highlighted item, which produces a strong
+          // background fill on hover. We do NOT modify the installed component
+          // (that would change every dropdown in every product). Instead we
+          // neutralize at the call site: `focus:bg-transparent` cancels the
+          // background fill (tailwind-merge lets this win because both
+          // utilities live in the `background-color` family), and we re-route
+          // the highlight to text-only via `focus:text-accent`. The result is
+          // a quiet, text-shift hover that does not flash an accent fill.
+          //
+          // Selected state still uses `bg-accent text-accent-foreground` —
+          // that is a persistent commitment, not a transient highlight, so
+          // the fill is appropriate per the theme-tokens doctrine
+          // (`primary`/`accent` fills for "this is selected", text-only
+          // accent for "this is being hovered").
           const label = getSpecLabel(spec.id, spec)
           const isSelected = spec.id === value
           return (
             <DropdownMenuItem
               key={spec.id}
               onSelect={() => onChange(spec.id)}
-              className={`group ${isSelected ? 'bg-accent text-accent-foreground' : ''}`}
+              className={
+                isSelected ? 'group bg-accent text-accent-foreground' : 'group focus:bg-transparent focus:text-accent'
+              }
             >
               <div className='flex flex-col gap-0.5 py-0.5'>
                 <span className='text-sm font-sans'>{spec.displayName}</span>
                 {label.subtitle && (
                   <span
                     className={`font-mono text-[10px] uppercase tracking-widest ${
-                      isSelected ? 'text-accent-foreground/80' : 'text-muted-foreground'
-                    } group-data-[highlighted]:text-accent-foreground/80`}
+                      isSelected ? 'text-accent-foreground/80' : 'text-muted-foreground group-focus:text-accent/80'
+                    }`}
                   >
                     {label.subtitle}
                   </span>

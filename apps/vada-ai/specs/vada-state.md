@@ -2,6 +2,72 @@
 
 ## Most recent session — Jun 27, 2026
 
+PR #207 five focused fixes (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, one additive commit on the existing one.
+
+**Fix 1 — Bulletproof multi-line oscillation in `SmartPromptInput`.**
+
+Two prior attempts (lineHeight `'normal'` fallback in `694fd4e2`, then deadband hysteresis at 1.1× / 1.5× in `c63f9050`) failed. The user reported persistent flapping: typing characters flipped 2 lines → 1 line → 2 lines → 1 line continuously. The deadband approach did not work because the layout's textarea width depends on `inlineMode` which depends on `isMultiLine`: inline mode is narrower (actions cluster eats horizontal space), footer mode is full width. So the same text that wraps at narrow width fits on one line at full width — and the contentHeight measurement crosses both the enter and exit thresholds across that swap. A wider deadband would only delay the oscillation.
+
+Fix in `packages/ui/smart-prompt-input/smart-prompt-input.tsx::remeasure`: replace the dual-threshold with a one-way latch.
+
+  ENTER (inline → multi-line): `contentHeight > lineHeight * 1.5` (≥ 2 visible lines)
+  EXIT (multi-line → inline): `textarea.value.trim().length === 0` (user cleared the input)
+
+Emptiness is invariant under width changes by construction — the layout's width swap cannot trip the latch back, because the swap does not change whether the user's typed text is empty. The user clears, the latch resets, they type again starting in inline mode. Mental walkthrough verified for every transition (empty → 1 char → wrap → more text → delete back to 1 char → empty → type again); no oscillation path exists.
+
+Herald is unaffected: `hasActions = false` short-circuits the layout effect and `remeasure` is only wired into `onInput` inside the `hasActions` branch, so `JDInput` never measures or latches.
+
+**Fix 2 — Modal layout: selectors as standard form rows, not centered.**
+
+User screenshot showed the Configure modal's model-picker triggers floating visually centered on the column rather than aligned as form rows. Each slot was rendered as a stacked label-above-input pair (`flex flex-col gap-1.5`), and ModelPicker's trigger has its own min-width — at the dialog's `max-w-md` width the trigger sat in the middle of the column. The label sat above on the left; the gap between them read as "the selector is floating" rather than "this is a form".
+
+Fix in `ReviewerConfigModal.tsx`: replace the stacked layout with a two-column CSS grid (`grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3`). Each agent row uses `<div className='contents'>` so its label and selector become direct grid children — the labels' column auto-sizes to the longest label, the selectors' column is `1fr` and stretches to the right edge of the dialog body. Selectors now align consistently down the right side; labels align consistently on the left. Reads as a normal form (label-left, control-right) rather than as floating selectors.
+
+**Fix 3 — Smart-prompt-input wrapper surface elevation.**
+
+User report: "I almost do not see the input." Root cause: the vendored `InputGroup` uses `bg-card` for the input surface, and in Vāda's current theme `--card` is close enough to `--background` that the input does not read as a distinct surface — no visible edge between the input chrome and the page canvas.
+
+Fix in `DeliberateSection.tsx::HERO_WRAPPER_CLASSNAME`: add `[&>form>div]:bg-popover` to the existing wrapper className. Per the `ui-theme-tokens` role doctrine, `popover` is the "floating object" token reserved for transient surfaces — themes can give it stronger separation from canvas than `card` (the doctrine literally says: "Same idea as `card` but reserved for floating/temporary surfaces so themes can give them stronger separation"). The hero input is the only interactive surface on an otherwise empty page; treating it as a floating object rather than a card matches its visual role.
+
+Consistency with the dropdown: `TeamPicker.tsx` line 39 already uses `bg-popover` on its dropdown content. So the trigger surface and the open dropdown sit on the same elevation tier — visually coherent. The fixed bottom bar (active-state input) is NOT elevated to `bg-popover` because it already has its own page-level chrome (`border-t border-border bg-background/95 backdrop-blur-md`) around the SmartPromptInput; no separate inner elevation needed.
+
+Herald is unaffected: only Vāda passes `HERO_WRAPPER_CLASSNAME`.
+
+**Fix 4 — Dropdown hover: text color, not background.**
+
+User feedback: on hover of a team item, the user wants the text color to change instead of the background fill. Investigation: the `bg-accent` on hover comes from the installed `DropdownMenuItem` (`packages/ui/libraries/basic/installed/dropdown-menu.tsx` line 59 ships `focus:bg-accent focus:text-accent-foreground` — Radix sets `focus` on the highlighted item). The installed component is NOT modified (stop condition: would change every dropdown in every product).
+
+Fix at the call site in `TeamPicker.tsx`: neutralize the installed component's hover at the call site by passing `focus:bg-transparent focus:text-accent` for non-selected items. tailwind-merge resolves the conflicts deterministically — `focus:bg-transparent` wins over `focus:bg-accent` (same `background-color` family on the same variant), and `focus:text-accent` wins over `focus:text-accent-foreground` (same `color` family). The subtitle span uses `group-focus:text-accent/80` to follow the same rule. The selected state (commitment, persistent) keeps `bg-accent text-accent-foreground` because the doctrine reserves background fills for selected/active states; text-only accent is for transient hover.
+
+Result: on hover, text shifts to accent color; background stays the dropdown's `bg-popover`. Selected item still reads as `bg-accent` filled. No installed component touched.
+
+**Fix 5 — UI rule violations introduced by PR #207.**
+
+Confirmed `Heading` + `Text` exist in `@atta/ui/shared` (`packages/ui/libraries/shared/components/index.ts` lines 2–3). Confirmed `Card`, `CardContent`, `CardHeader` exist in `@atta/ui/components/card` (line 8 of basic library).
+
+Replaced:
+
+- `DeliberateSection.tsx`: 1 new `<h1>` (line 183) → `<Heading level={1} size='3xl' className='font-serif font-normal text-foreground'>`. `font-normal` overrides Heading's baked `font-bold` so the visual is byte-identical to the previous raw `<h1>` (which had no bold).
+- `CouncilFeed.tsx`: 3 hand-rolled card surfaces → `<Card>` + `<CardHeader>` + `<CardContent>`:
+  - `AnswerColumn` (was `<article>` with `bg-card/40 p-4`) — Card with `gap-4 bg-card/40 p-4 py-4` override (tailwind-merge drops Card's `py-6` and `bg-card`/`[background:var(--gradient-card),var(--card)]` when explicit `p-4` + `bg-card/40` are passed).
+  - `SynthesisPanel` (was `<section>` with `bg-card p-5`) — Card with `gap-5 p-5 py-5` override (keeps default `bg-card` with gradient overlay; the Synthesis panel is the conclusion section, full elevation is the design intent).
+  - `Your Question` block (was `<div>` with `bg-card p-4`) — Card with `mb-8 gap-2 p-4 py-4` override.
+- `CouncilFeed.tsx`: 3 raw `<p>` tags → `<Text as='p' size='...'>`:
+  - "Thinking… / Waiting to answer…" (`AnswerColumn`).
+  - "Synthesizing the council… / Waiting for all answers…" (`SynthesisPanel`).
+  - The question text inside the "Your Question" card.
+  - The `synthesis.bottomLine` `<p>` is also converted to Text.
+
+Out of scope (audit-flagged but not introduced in this PR — left for separate cleanup):
+
+- `tsconfig` library resolution drift across all four apps (Claim 1 in previous session) — system-wide.
+- Pre-existing raw HTML in `TeamSummary`, `DeliberationFeed`, `BenchmarkReport`, etc.
+- `--warning-foreground` undefined token in `MockModeBanner` + `DeliberationFeed`.
+
+**Verification.** `bun run typecheck` + `bun run check` pass. Herald byte-identity confirmed: `SmartPromptInput` changes are gated on `hasActions` (Herald passes none); `HERO_WRAPPER_CLASSNAME` / `FIXED_BAR_WRAPPER_CLASSNAME` are Vāda-only call-site classNames; `TeamPicker` is Vāda-only.
+
+## Previous session — Jun 27, 2026
+
 PR #207 morphing button bug + external audit verification (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, one additive commit on the existing one.
 
 **Fix 12 — Morphing button rendered Configure on empty input.**

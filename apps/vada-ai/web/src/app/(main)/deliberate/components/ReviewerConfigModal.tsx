@@ -157,13 +157,18 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
           </NextLink>
         </DialogHeader>
 
-        {/* Body — only the model selectors. The previous "Configure models"
-            sub-heading + description duplicated the modal title; removed so the
-            modal reads cleanly: title (team identity + verb) → selectors → footer. */}
-        <div className='flex flex-col gap-4'>
+        {/* Body — standard two-column form rows. Each row is a label on the
+            LEFT and the model selector on the RIGHT. The label column is auto-
+            sized to its longest text (so labels align flush-right of their
+            column); the selector column is `1fr` so the trigger stretches to
+            the right edge of the dialog body. This replaces the previous
+            stacked "label above input" layout, which left the selectors
+            visually centered on the column and reading as floating rather than
+            as a normal form. */}
+        <div className='grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3'>
           {editableAgents.map((agent) => (
-            <div key={agent.name} className='flex flex-col gap-1.5'>
-              <div className='text-[11px] font-mono uppercase tracking-widest text-muted-foreground'>
+            <div key={agent.name} className='contents'>
+              <div className='font-mono text-[11px] uppercase tracking-widest text-muted-foreground'>
                 {reviewerLabels[agent.name]}
               </div>
               <ModelPicker

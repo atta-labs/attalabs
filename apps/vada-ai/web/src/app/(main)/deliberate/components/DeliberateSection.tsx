@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
   Textarea
 } from '@atta/ui'
+import { Heading } from '@atta/ui/shared'
 import { SmartPromptInput, type SmartPromptComponents } from '@atta/ui/smart-prompt-input'
 import { ArrowUp, GitCompare, Loader2 } from 'lucide-react'
 import { useDeliberateForm } from './useDeliberateForm'
@@ -64,30 +65,47 @@ const HERO_TEXTAREA_CLASSNAME = [
 
 /**
  * `className` applied to the SmartPromptInput wrapper that strips the
- * vendored `InputGroup`'s `focus-within:ring-1 focus-within:ring-ring` chrome.
+ * vendored `InputGroup`'s `focus-within:ring-1 focus-within:ring-ring` chrome
+ * AND elevates the input surface above the page canvas.
  *
- * Root cause of the "purple wrapper on focus" the user reported:
- * `packages/ui/smart-prompt-input/vendor/ui/input-group.tsx` line 10 ships
- * `focus-within:ring-1 focus-within:ring-ring` on its outer `<div>`. In Vāda's
- * theme `--ring` resolves to a magenta/purple-leaning value — visually it reads
- * as purple on the elevated input surface.
+ * Two problems we fix together at the call site:
  *
- * Per the ui-theme-tokens skill we don't modify globals.css from here — we
- * choose a different visual at the call site. The InputGroup keeps its
- * `border-border` resting border (calibrated against `--card`/`--popover`,
- * neutral), and on focus we suppress the ring. Result: a neutral, calm input
- * surface that respects the theme while not flashing purple.
+ * 1. Purple focus ring. `packages/ui/smart-prompt-input/vendor/ui/input-group.tsx`
+ *    line 10 ships `focus-within:ring-1 focus-within:ring-ring` on its outer
+ *    `<div>`. In Vāda's theme `--ring` resolves to a magenta/purple-leaning
+ *    value — visually it reads as purple on the input surface. Solved by
+ *    `focus-within:ring-0`.
+ *
+ * 2. "I almost cannot see the input." The InputGroup ships `bg-card` by
+ *    default. In Vāda's current theme `--card` is so close to `--background`
+ *    that the input does not read as a distinct surface above the page canvas
+ *    — there is no visible edge between the input chrome and the page.
+ *    Solved by overriding the inner surface to `bg-popover`. Per the
+ *    ui-theme-tokens role doctrine, `popover` is the "floating object" token
+ *    reserved for transient surfaces (popovers, dropdowns, command palettes)
+ *    and themes can give it stronger separation from canvas than `card`.
+ *    Using it here is consistent — the hero input is the only interactive
+ *    surface on an otherwise empty page; treating it as a floating object
+ *    rather than a card matches its visual role and gets stronger
+ *    edge-separation for free in every theme.
+ *
+ *    The dropdown content (`TeamPicker`) is already `bg-popover` (see
+ *    `TeamPicker.tsx` line 39), so the trigger surface and the open menu sit
+ *    on the same elevation tier — visually coherent.
  *
  * The `[&>form>div]` selector targets the InputGroup which is the direct
- * `<div>` child of the `<form>` rendered by `PromptInput`. We retain the
- * elevation styling (rounded-xl + shadow-lg) on the hero, and add ring
- * suppression on both Vāda call sites (hero + fixed bottom bar).
+ * `<div>` child of the `<form>` rendered by `PromptInput`. The hero adds
+ * elevation styling (rounded-xl + shadow-lg + bg-popover) plus ring
+ * suppression. The fixed bottom bar (active state) keeps ring suppression
+ * only — the bar already has `border-t border-border bg-background/95`
+ * around it, so the inner input does not need separate elevation there.
  *
- * NB: this is a Vāda-only opt-out — Herald's SmartPromptInput call site does
- * NOT pass this className, so Herald keeps the canonical shadcn focus ring.
+ * NB: this is a Vāda-only opt-in — Herald's SmartPromptInput call site does
+ * NOT pass this className, so Herald keeps the canonical shadcn focus ring
+ * and `bg-card` surface (byte-identical to before).
  */
 const NO_PURPLE_FOCUS_RING = '[&>form>div]:focus-within:ring-0'
-const HERO_WRAPPER_CLASSNAME = `[&>form>div]:rounded-xl [&>form>div]:shadow-lg ${NO_PURPLE_FOCUS_RING}`
+const HERO_WRAPPER_CLASSNAME = `[&>form>div]:rounded-xl [&>form>div]:shadow-lg [&>form>div]:bg-popover ${NO_PURPLE_FOCUS_RING}`
 const FIXED_BAR_WRAPPER_CLASSNAME = NO_PURPLE_FOCUS_RING
 
 interface DeliberateSectionProps {
@@ -180,7 +198,17 @@ export function DeliberateSection(props: DeliberateSectionProps) {
               <MigrationPrompt configuredProviders={props.configuredProviders} />
 
               <div className='text-center'>
-                <h1 className='font-serif text-3xl text-foreground'>What are you wrestling with?</h1>
+                {/* `Heading` from `@atta/ui/shared` is the component equivalent
+                    of the raw `<h1>` per RULE 1. We pass `level={1}` so the
+                    rendered tag stays `<h1>` (semantic / SEO unchanged) and a
+                    `size` so the font-size class wins over the level default.
+                    `font-normal` is required to override the component's baked
+                    `font-bold` (the original was unbolded). Family + color
+                    applied via className (font-serif + text-foreground —
+                    byte-identical visual to the previous raw `<h1>`). */}
+                <Heading level={1} size='3xl' className='font-serif font-normal text-foreground'>
+                  What are you wrestling with?
+                </Heading>
               </div>
 
               {/* Frontier-chat layout: TeamPicker as a small pill on the right of the

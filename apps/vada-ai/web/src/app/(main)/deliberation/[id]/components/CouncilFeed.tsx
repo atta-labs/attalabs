@@ -17,6 +17,8 @@
 
 import type { VendorId } from '@atta/models'
 import { ModelIcon } from '@atta/ui/components'
+import { Card, CardContent, CardHeader } from '@atta/ui/components/card'
+import { Text } from '@atta/ui/shared'
 import { AIACanvas, AIASphere } from '@atta/ui/canvas'
 import { useId, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -106,8 +108,18 @@ function AnswerColumn({ agentName, modelInfo, answer, isStreaming, isComplete }:
   const sphereState = isComplete ? 'complete' : 'speaking'
 
   return (
-    <article className='flex flex-col gap-4 rounded-xl border border-border bg-card/40 p-4'>
-      <header className='flex items-center gap-3'>
+    // `Card` replaces the previous hand-rolled `<article>` per RULE 1. The
+    // override className tweaks default Card chrome to match the answer
+    // column's softer treatment: `gap-4` (Card has no inherent gap between
+    // its CardHeader and CardContent — they sit flush), `bg-card/40` for the
+    // softer surface (`[background:var(--gradient-card),var(--card)]` from
+    // Card's defaults is dropped by tailwind-merge when we set a `bg-*` class
+    // explicitly), and `p-4 py-4` to defeat Card's mandatory `py-6` plus the
+    // `CardHeader`/`CardContent` `px-6`. `as` would be ideal here for the
+    // semantic `<article>` element, but Card is a plain `<div>` — accept the
+    // tradeoff (the article element was decorative, not load-bearing for AT).
+    <Card className='gap-4 bg-card/40 p-4 py-4'>
+      <CardHeader className='flex items-center gap-3 px-0'>
         <AIASphere
           id={sphereId}
           size='sm'
@@ -127,20 +139,22 @@ function AnswerColumn({ agentName, modelInfo, answer, isStreaming, isComplete }:
             <span className='truncate font-mono text-[9px] text-muted-foreground'>{modelInfo.modelId}</span>
           )}
         </div>
-      </header>
-      <div className='min-h-[160px] text-[13px] leading-relaxed text-foreground/90'>
+      </CardHeader>
+      <CardContent className='min-h-[160px] px-0 text-[13px] leading-relaxed text-foreground/90'>
         {answer ? (
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
             {answer}
           </ReactMarkdown>
         ) : (
-          <p className='m-0 italic text-muted-foreground'>{isStreaming ? 'Thinking…' : 'Waiting to answer…'}</p>
+          <Text as='p' size='sm' muted className='m-0 italic'>
+            {isStreaming ? 'Thinking…' : 'Waiting to answer…'}
+          </Text>
         )}
         {isStreaming && !isComplete && answer && (
           <span className='ml-0.5 inline-block h-3 w-px animate-pulse bg-foreground align-middle' />
         )}
-      </div>
-    </article>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -156,8 +170,15 @@ function SynthesisPanel({ synthesizerModelId, synthesis, isPending }: SynthesisP
   const sphereState = synthesis ? 'complete' : 'speaking'
 
   return (
-    <section className='flex flex-col gap-5 rounded-xl border border-border bg-card p-5'>
-      <header className='flex items-center gap-3 border-b border-border pb-3'>
+    // `Card` replaces the previous hand-rolled `<section>` per RULE 1. The
+    // override className tweaks default Card chrome: `gap-5` (matches the
+    // original `flex flex-col gap-5`), `p-5 py-5` to defeat Card's
+    // `py-6`/`CardHeader`/`CardContent` `px-6`, and `bg-card` is already the
+    // Card default — we let the gradient overlay come through unchanged so
+    // the Synthesis panel reads as a fully elevated card (the design intent
+    // for the conclusion section of the page).
+    <Card className='gap-5 p-5 py-5'>
+      <CardHeader className='flex items-center gap-3 border-b border-border px-0 pb-3'>
         <AIASphere
           id={sphereId}
           size='sm'
@@ -172,43 +193,47 @@ function SynthesisPanel({ synthesizerModelId, synthesis, isPending }: SynthesisP
             <span className='font-mono text-[10px] text-muted-foreground'>{synthesizerModelId}</span>
           )}
         </div>
-      </header>
+      </CardHeader>
 
-      {synthesis ? (
-        <>
-          {synthesis.agreements.length > 0 && (
-            <div>
-              <div className='mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-success'>Agree</div>
-              <ul className='m-0 list-disc space-y-1.5 pl-5 text-[13px] leading-relaxed text-foreground/85'>
-                {synthesis.agreements.map((line, i) => (
-                  <li key={i}>{line}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {synthesis.disagreements.length > 0 && (
-            <div className='border-t border-border pt-4'>
-              <div className='mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-warning'>Disagree</div>
-              <ul className='m-0 list-disc space-y-1.5 pl-5 text-[13px] leading-relaxed text-foreground/85'>
-                {synthesis.disagreements.map((line, i) => (
-                  <li key={i}>{line}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {synthesis.bottomLine && (
-            <div className='border-t border-border pt-4'>
-              <div className='mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-primary'>Bottom line</div>
-              <p className='m-0 text-[14px] leading-relaxed text-foreground/90'>{synthesis.bottomLine}</p>
-            </div>
-          )}
-        </>
-      ) : (
-        <p className='m-0 text-[13px] italic text-muted-foreground'>
-          {isPending ? 'Synthesizing the council…' : 'Waiting for all answers…'}
-        </p>
-      )}
-    </section>
+      <CardContent className='flex flex-col gap-5 px-0'>
+        {synthesis ? (
+          <>
+            {synthesis.agreements.length > 0 && (
+              <div>
+                <div className='mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-success'>Agree</div>
+                <ul className='m-0 list-disc space-y-1.5 pl-5 text-[13px] leading-relaxed text-foreground/85'>
+                  {synthesis.agreements.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {synthesis.disagreements.length > 0 && (
+              <div className='border-t border-border pt-4'>
+                <div className='mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-warning'>Disagree</div>
+                <ul className='m-0 list-disc space-y-1.5 pl-5 text-[13px] leading-relaxed text-foreground/85'>
+                  {synthesis.disagreements.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {synthesis.bottomLine && (
+              <div className='border-t border-border pt-4'>
+                <div className='mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-primary'>Bottom line</div>
+                <Text as='p' size='md' className='m-0 leading-relaxed text-foreground/90'>
+                  {synthesis.bottomLine}
+                </Text>
+              </div>
+            )}
+          </>
+        ) : (
+          <Text as='p' size='sm' muted className='m-0 italic'>
+            {isPending ? 'Synthesizing the council…' : 'Waiting for all answers…'}
+          </Text>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -279,12 +304,24 @@ function CouncilScene({
 
   return (
     <div className='mx-auto w-full max-w-5xl px-5 pb-16 pt-6'>
-      <div className='mb-8 rounded-xl border border-border bg-card p-4'>
-        <div className='mb-2 font-mono text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground'>
-          Your Question
-        </div>
-        <p className='m-0 text-base leading-relaxed text-foreground/90'>{question}</p>
-      </div>
+      {/* `Card` replaces the previous hand-rolled `<div>` per RULE 1. The
+          override className tweaks default Card chrome to match the original
+          tighter padding: `mb-8` for the bottom margin (sits below the page
+          header, above the answer grid), `p-4 py-4` to defeat Card's `py-6`,
+          and `gap-2` between the label and the question text. The label
+          renders as plain `<div>` (mono micro-label, not a heading). */}
+      <Card className='mb-8 gap-2 p-4 py-4'>
+        <CardHeader className='px-0'>
+          <div className='font-mono text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground'>
+            Your Question
+          </div>
+        </CardHeader>
+        <CardContent className='px-0'>
+          <Text as='p' size='md' className='m-0 leading-relaxed text-foreground/90'>
+            {question}
+          </Text>
+        </CardContent>
+      </Card>
 
       {/* Answer columns — N up. Each streams independently as its
           `agent_completed` SSE event arrives (see useDeliberation.ts). Token

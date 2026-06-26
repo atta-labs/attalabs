@@ -304,7 +304,7 @@ export function SmartPromptInput({
   // matter how many lines wrapped. We derive the line height from `font-size * 1.2`
   // when computed style reports `'normal'` (the browser default).
   //
-  // ── Hysteresis ──
+  // ── Bulletproof one-way latch ──
   // The naïve single-threshold approach (enter+exit at the same `lineHeight * 1.5`)
   // caused layout flapping: in inline mode the textarea has NARROWER width (actions
   // + submit take horizontal space on the right), so content can wrap to 2 lines
@@ -312,17 +312,32 @@ export function SmartPromptInput({
   // same content fits on 1 line → flip back to inline → wrap again → ... infinite
   // oscillation as the user types.
   //
-  // Fix: separate ENTER and EXIT thresholds with a deadband. Once we're in
-  // multi-line, we only exit when content has shrunk *well below* a single line's
-  // height — meaning the user has deleted enough that even at footer (full) width
-  // a single line definitely fits. The deadband is wide enough that a single
-  // remeasure cannot cross both thresholds, so the state holds.
+  // A two-threshold "deadband" (enter at 1.5x, exit at 1.1x) did NOT solve it
+  // either — when the layout swaps width on the next remeasure the content height
+  // crosses both thresholds at once and the latch trips back. The root problem
+  // is that BOTH width conditions can produce contentHeight values inside the
+  // deadband as the user types one character at a time.
   //
-  //   ENTER multi-line: contentHeight > lineHeight * 1.5   (≥ 2 lines)
-  //   EXIT  multi-line: contentHeight < lineHeight * 1.1   (~ 1 short line)
+  // Fix: lock the latch. Once `isMultiLine = true`, only return to inline mode
+  // when the textarea is essentially empty (`value.trim().length === 0`). The
+  // user has to clear the input to reset the layout. This is invariant under
+  // width changes by construction — width swaps don't change whether the user's
+  // text is empty. Mental walkthrough:
   //
-  // Using the functional setState form gives us the previous value without
-  // adding a ref or stale-closure traps.
+  //   Empty                          → inline (initial)
+  //   Type 1 char                    → contentHeight ~= lineHeight, stays inline
+  //   Type until wrap                → contentHeight > lineHeight * 1.5, flips to multi-line (footer)
+  //   Footer width fits on 1 line    → DOES NOT flip back (latch locked)
+  //   Type more                      → stays multi-line
+  //   Delete back to 1 char          → still multi-line (latch locked)
+  //   Delete to empty                → flips back to inline
+  //   Type again                     → starts inline
+  //
+  // No oscillation possible: every state transition requires the user to
+  // either type past the enter threshold or clear the input completely.
+  //
+  // Herald is unaffected: `hasActions = false` short-circuits the layout effect
+  // and `remeasure` is only wired to `onInput` inside the `hasActions` branch.
   const inputRowRef = useRef<HTMLDivElement | null>(null)
   const [isMultiLine, setIsMultiLine] = useState(false)
   const [attachmentCount, setAttachmentCount] = useState(0)
@@ -344,16 +359,15 @@ export function SmartPromptInput({
     // Tailwind padding/border overrides on the injected textarea.
     const contentHeight = el.scrollHeight - paddingTop - paddingBottom - borderTop - borderBottom
     const enterThreshold = lineHeight * 1.5
-    const exitThreshold = lineHeight * 1.1
     setIsMultiLine((prev) => {
-      if (prev) {
-        // Currently multi-line: only exit when content has shrunk below the
-        // strict single-line floor. This prevents the inline-vs-footer width
-        // change from itself triggering a flip back.
-        return contentHeight >= exitThreshold
-      }
-      // Currently inline: enter multi-line at the 1.5x threshold.
-      return contentHeight > enterThreshold
+      // ENTER: from inline, only enter when content meaningfully exceeds one
+      // line (≥ 2 visible lines at the narrower inline width).
+      if (!prev) return contentHeight > enterThreshold
+      // EXIT: once multi-line, stay multi-line until the input is essentially
+      // empty. This is the bulletproof rule that defeats width-swap oscillation:
+      // emptiness is invariant under the layout's width change, so the latch
+      // cannot trip back on the next remeasure.
+      return el.value.trim().length > 0
     })
   }
 
