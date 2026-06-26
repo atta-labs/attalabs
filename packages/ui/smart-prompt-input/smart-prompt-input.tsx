@@ -61,6 +61,36 @@ export interface SmartPromptInputProps {
    * Has no effect when `actions` is not provided.
    */
   actionsPosition?: 'left' | 'right'
+  /**
+   * Caller-provided submit element rendered in place of the default
+   * `PromptInputSubmit`. The caller is fully responsible for the node — its
+   * submit logic, accessibility, and whatever Cmd+Enter handling it wants.
+   *
+   * Used by Vāda's hero for a morphing Configure ↔ Submit button: when the
+   * form is invalid the slot renders a CONFIGURE button that opens the
+   * reviewer modal (no submit); when the form is valid it renders a real
+   * submit button. Either-or, never both.
+   *
+   * The slot is honored in BOTH inline mode and footer mode. It replaces the
+   * default `PromptInputSubmit` in either location; no other behavior changes.
+   *
+   * When `submitSlot` is undefined, the input renders the default
+   * `PromptInputSubmit` exactly as before (Herald-compatible).
+   *
+   * Has no effect when `useFullWidthCta` is in effect (`ctaLabel` set), since
+   * that path renders a full-width CTA button instead of `PromptInputSubmit`.
+   */
+  submitSlot?: React.ReactNode
+  /**
+   * Optional className passed through to the inner `<textarea>`. Lets callers
+   * tune textarea-only styling (e.g. `min-h-0` to defeat the vendor default
+   * `min-h-16` so the textarea collapses to a true single line) without
+   * touching the surrounding container.
+   *
+   * Merged via `cn`/`tailwind-merge` AFTER the vendor defaults, so any utility
+   * class passed here wins for its property family.
+   */
+  textareaClassName?: string
 }
 
 const statusMap: Record<SmartPromptStatus, ChatStatus> = {
@@ -218,13 +248,27 @@ export function SmartPromptInput({
   className,
   pasteToFileChars,
   actions,
-  actionsPosition = 'right'
+  actionsPosition = 'right',
+  submitSlot,
+  textareaClassName
 }: SmartPromptInputProps) {
   const chatStatus = statusMap[status]
   const [rejectionError, setRejectionError] = useState<string | null>(null)
   const useFullWidthCta = Boolean(ctaLabel)
   const hasActions = actions !== undefined && actions !== null && actions !== false
   const actionsOnLeft = hasActions && actionsPosition === 'left'
+  // When the caller provides a custom submit element, render it in place of
+  // the default `PromptInputSubmit` in every code path below — inline mode AND
+  // footer mode. When undefined we fall through to the Herald-compatible default.
+  const hasSubmitSlot = submitSlot !== undefined && submitSlot !== null && submitSlot !== false
+  const renderSubmit = () =>
+    hasSubmitSlot ? (
+      submitSlot
+    ) : (
+      <PromptInputSubmit status={chatStatus} onStop={onStop}>
+        {ctaLabel}
+      </PromptInputSubmit>
+    )
 
   // Track textarea single-line vs multi-line for Gemini-style responsive placement.
   // Detection: measure the textarea's scrollHeight on input and compare to the
@@ -299,23 +343,16 @@ export function SmartPromptInput({
                 submitOnCmdEnter={submitOn === 'cmdenter'}
                 pasteToFileChars={pasteToFileChars}
                 onInput={remeasure}
+                className={textareaClassName}
               />
               {inlineMode && !actionsOnLeft && (
                 <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>
                   <div className='flex items-center gap-1'>{actions}</div>
-                  {!useFullWidthCta && (
-                    <PromptInputSubmit status={chatStatus} onStop={onStop}>
-                      {ctaLabel}
-                    </PromptInputSubmit>
-                  )}
+                  {!useFullWidthCta && renderSubmit()}
                 </div>
               )}
               {inlineMode && actionsOnLeft && !useFullWidthCta && (
-                <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>
-                  <PromptInputSubmit status={chatStatus} onStop={onStop}>
-                    {ctaLabel}
-                  </PromptInputSubmit>
-                </div>
+                <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>{renderSubmit()}</div>
               )}
             </div>
           ) : (
@@ -323,6 +360,7 @@ export function SmartPromptInput({
               placeholder={placeholder}
               submitOnCmdEnter={submitOn === 'cmdenter'}
               pasteToFileChars={pasteToFileChars}
+              className={textareaClassName}
             />
           )}
           {hasFooterContent && (
@@ -342,23 +380,11 @@ export function SmartPromptInput({
               {hasActions && !inlineMode && !actionsOnLeft && (
                 <div className='flex items-center gap-1'>
                   <div className='flex items-center gap-1'>{actions}</div>
-                  {!useFullWidthCta && (
-                    <PromptInputSubmit status={chatStatus} onStop={onStop}>
-                      {ctaLabel}
-                    </PromptInputSubmit>
-                  )}
+                  {!useFullWidthCta && renderSubmit()}
                 </div>
               )}
-              {hasActions && !inlineMode && actionsOnLeft && !useFullWidthCta && (
-                <PromptInputSubmit status={chatStatus} onStop={onStop}>
-                  {ctaLabel}
-                </PromptInputSubmit>
-              )}
-              {!hasActions && !useFullWidthCta && (
-                <PromptInputSubmit status={chatStatus} onStop={onStop}>
-                  {ctaLabel}
-                </PromptInputSubmit>
-              )}
+              {hasActions && !inlineMode && actionsOnLeft && !useFullWidthCta && renderSubmit()}
+              {!hasActions && !useFullWidthCta && renderSubmit()}
             </PromptInputFooter>
           )}
           {useFullWidthCta && (

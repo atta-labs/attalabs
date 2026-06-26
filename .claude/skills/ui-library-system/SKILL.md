@@ -336,6 +336,83 @@ All four patterns are needed. Our libraries use `export type * from '../../../ty
 
 ---
 
+## Cross-product composite components
+
+Some components in `@atta/ui` live OUTSIDE the four-library system because they are
+composite primitives shared across products (Herald, Vāda, …) and the library
+swap doesn't apply to them. `SmartPromptInput` is the current example. It lives
+at `packages/ui/smart-prompt-input/` and is imported as
+`@atta/ui/smart-prompt-input`. Its contract is documented here — the library
+contract validator does NOT cover composite components, so any prop addition
+must update this section instead.
+
+### `SmartPromptInput` — Gemini-style prompt entry
+
+Located at `packages/ui/smart-prompt-input/smart-prompt-input.tsx`. Wraps the
+vendored `PromptInput*` primitives (`vendor/prompt-input.tsx`) and adds:
+
+- Attachment tile header (tile-with-meta layout)
+- Single-line ↔ multi-line responsive switching driven by textarea
+  `scrollHeight` measurement
+- Optional caller-provided **actions slot** (left or right) and **submit slot**
+- Caller-tunable **textarea className** for one-off layout overrides
+
+#### Layout modes
+
+The component runs in one of two layout modes, chosen automatically:
+
+| Mode | When | Where actions / submit live |
+|------|------|----------------------------|
+| Inline | `actions` provided AND textarea is single-line AND no attachments | On the same row as the textarea |
+| Footer | otherwise | In `PromptInputFooter` under the textarea |
+
+The submit element (default `PromptInputSubmit`, or `submitSlot` when provided)
+is always rendered exactly once — in whichever mode is active.
+
+#### Props
+
+| Prop | Type | Default | Purpose |
+|------|------|---------|---------|
+| `onSubmit` | `(text, files) => void` | — | Required. Receives the final text + converted file parts. |
+| `placeholder` | `string` | — | Textarea placeholder. |
+| `submitOn` | `'enter' \| 'cmdenter' \| 'button'` | `'enter'` | Keyboard submission policy. |
+| `ctaLabel` | `string` | — | If set, replaces the icon submit with a full-width CTA bar. Disables `submitSlot`. |
+| `hint` | `string` | — | Small mono hint in the footer. |
+| `accept` | `string` | — | File-input accept string. Shows the action menu (paperclip). |
+| `status` | `SmartPromptStatus` | `'idle'` | Drives the submit icon / spinner. |
+| `onStop` | `() => void` | — | Called when user clicks Stop during streaming. |
+| `className` | `string` | — | On the outer wrapper. |
+| `pasteToFileChars` | `number` | — | Paste of ≥ N chars becomes a file attachment instead of textarea fill. |
+| `actions` | `React.ReactNode` | — | Action chips slot (e.g. Vāda's TeamPicker). Responsive placement per layout mode. |
+| `actionsPosition` | `'left' \| 'right'` | `'right'` | Side of the textarea (inline) / footer (multi-line) the `actions` occupy. |
+| `submitSlot` | `React.ReactNode` | — | Caller-provided submit element replacing the default `PromptInputSubmit`. Caller owns submit logic, Cmd+Enter behavior, and accessibility for the node. Honored in both inline and footer modes. **Ignored when `ctaLabel` is set (full-width CTA path).** Used by Vāda's hero to render a morphing Configure ↔ Submit button. |
+| `textareaClassName` | `string` | — | Extra className merged onto the inner `<textarea>` AFTER vendor defaults (`field-sizing-content max-h-40 min-h-16 overflow-y-auto`). Use to defeat a specific utility — e.g. `min-h-0` to allow the textarea to collapse to a true single line. Tailwind-merge resolves conflicts in favor of the caller's class for the same property family. |
+
+#### Herald-compatible default (do NOT change)
+
+When `actions`, `submitSlot`, and `textareaClassName` are all undefined (Herald's
+`JDInput` call site), the rendered tree is byte-identical to the original:
+default `PromptInputTextarea`, footer with the default `PromptInputSubmit`.
+Any future addition to this component must preserve that invariant — Herald is
+locked on the default render path.
+
+#### Adding a new caller-controllable slot
+
+If a new product needs to customize SmartPromptInput, add a new optional prop
+the same way `submitSlot` was added:
+
+1. **Additive only.** Default behavior with the prop unset must match the
+   previous behavior bit-for-bit. Herald's JDInput is the canary.
+2. **Honor it in every code path the default would render in.** `submitSlot`
+   replaces the default submit in BOTH inline and footer modes — partial
+   replacement is a confusing footgun.
+3. **Update this section** in the same PR (D-058 doc-coherence). The props
+   table is the contract; if it's not here, future agents won't know the slot exists.
+4. **No library swap.** SmartPromptInput is a single implementation. Do not
+   create per-library variants.
+
+---
+
 ## File Reference
 
 | File | Purpose |
@@ -347,5 +424,6 @@ All four patterns are needed. Our libraries use `export type * from '../../../ty
 | `packages/ui/lib/library-provider.tsx` | `LibraryProvider` + `useComponents()` for runtime switching |
 | `packages/ui/lib/library-loader.ts` | `useLibraryLoader` — dynamic import with race condition guard |
 | `packages/ui/libraries/{name}/components/index.ts` | The canonical export list for each library |
+| `packages/ui/smart-prompt-input/smart-prompt-input.tsx` | Composite prompt entry — see "Cross-product composite components" above |
 | `apps/{app}/web/tsconfig.json` | Path aliases that point `@atta/ui` at the generated index |
 | `apps/{app}/web/next.config.ts` | Calls `generateUIIndex` at build time |
