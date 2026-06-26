@@ -2,6 +2,44 @@
 
 ## Most recent session — Jun 27, 2026
 
+PR #207 morphing button bug + external audit verification (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, one additive commit on the existing one.
+
+**Fix 12 — Morphing button rendered Configure on empty input.**
+
+User report: with the team fully configured (Reviewers), clicking the morphing button on an empty input opened the Configure modal — a nonsensical action because the team is already configured.
+
+Root cause: the previous `canStart` predicate (`!!question.trim() && remainingToday > 0 && !loading && (hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec)`) mixed two distinct concepts — "is there text to submit?" and "is the team ready to receive a submission?" The morphing button used `canStart` to choose between Submit (true) and Configure (false). With empty text, `canStart` was false → rendered as Configure → clicking opened the modal even when config was valid.
+
+Fix in `useDeliberateForm.ts`: split the predicates. `hasQuestion = !!question.trim()` is a pure input-state signal; `isConfigValid = hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec` is a pure team/keys signal. `canStart` keeps the composite meaning (`hasQuestion && remainingToday > 0 && !loading && isConfigValid`) so the bottom-bar "Deliberate" CTA and the dispatch handlers are unaffected. The morphing button now consumes `hasQuestion` + `isConfigValid` directly.
+
+Fix in `DeliberateSection.tsx`: `MorphingSubmitButton` returns `null` when `!hasQuestion` (Gemini-style empty state — no button visible, the placeholder invites the user to type). When `hasQuestion`, it always renders, and `type` / `aria-label` / `onClick` flip based on `isConfigValid` (submit vs configure modal). Decided over a disabled button because disabled buttons still attract focus and read as "this is available"; a clean empty submit area communicates "compose first" more clearly. `isActive` (the hero-vs-active-state layout switch) is unified with `hasQuestion` so the two render conditions can never disagree.
+
+Cmd+Enter coherence: the vendored textarea handler in `smart-prompt-input/vendor/prompt-input.tsx` calls `form.requestSubmit()` regardless of what's in the submit slot. With `hasQuestion && !isConfigValid`, the form's `onSubmit` fires `handleStartWithText` which routes through `handleStartImplRef.current`. Previously that function did `if (!effectiveCanStart) return` — silent no-op when config was invalid. Now it short-circuits only on quota/loading/empty input, then runs the spec check that opens the modal for editable specs with missing/invalid config. So Cmd+Enter lands in the same place as the visible button click in every state.
+
+**Audit verification (separate audit reported 4 claims against PR #207).**
+
+Verified each claim against the code and against `.claude/skills/ui-library-system/SKILL.md` + `.claude/skills/ui-components/SKILL.md` + `.claude/skills/ui-theme-tokens/SKILL.md`. Recommendation per claim is in the report; nothing pre-existing was changed in this commit (scope guard: PR #207 is the deliberate UX / Council results PR, not a Vāda code-quality sweep).
+
+- **Claim 1 — `tsconfig.json` path map (`@atta/ui` resolves to basic, not animate).** **TRUE + PRE-EXISTING + system-wide.** `apps/vada-ai/web/tsconfig.json` aliases `@atta/ui/components` only — NOT root `@atta/ui`. So `import { Button } from '@atta/ui'` falls through `packages/ui/package.json` exports `"." → "./libraries/basic/components/index.ts"`. Verified: `libraries/animate/installed/button.tsx` has `motion.button` from framer-motion; `libraries/basic/installed/button.tsx` does not. The intent (as commented in `DeliberateSection.tsx`) is "import from `@atta/ui` which the build-time generator resolves to the active library" — but the generator only writes `generated/vada/components.ts`, which is reached via `@atta/ui/components`, not `@atta/ui` root. The ui-library-system SKILL "Pattern 1" example shows `@atta/ui` (root) being aliased; the actual codebase aliases `@atta/ui/components` instead. This pattern is identical across all four apps (Herald, Atta, Vitakka, Vada) — a system-wide drift. **Stop condition triggered.** A theme/library resolution change has app-wide blast radius (would change which Button/Card/Badge variant renders in every product). Flag prominently for a separate PR with explicit visual review per product; do NOT fix in PR #207.
+
+- **Claim 2 — Raw HTML typography (`<h1>`, `<h2>`, `<p>`) violates UI rules.** **TRUE + MOSTLY PRE-EXISTING.** `Heading` and `Text` exist in `@atta/ui/shared` (verified `packages/ui/libraries/shared/components/index.ts` line 2 + 3). Per `ui-components` SKILL RULE 1, raw `<h1>/<h2>/<p>` are forbidden when a component equivalent exists. Vāda uses them inconsistently: settings/sessions/mcp pages do use `Heading` / `Text` (verified `import { Heading, Text } from '@atta/ui/shared'`), but deliberate/teams/deliberation pages use raw HTML. PR #207 introduces 1 new raw `<h1>` (`DeliberateSection.tsx` line 167 — the hero heading "What are you wrestling with?") and multiple raw `<p>` in the new `CouncilFeed.tsx` (lines 137, 202, 207, 286). The widespread pre-existing raw HTML in `TeamSummary`, `DeliberationFeed`, `BenchmarkReport`, etc. predates PR #207. **Recommendation:** out of scope for PR #207 — flag for a Vāda code-quality cleanup PR that converts the deliberate / teams / deliberation surfaces to `Heading` / `Text` consistently.
+
+- **Claim 3 — Hand-rolled cards / badges.** **TRUE + introduced by PR #207 (CouncilFeed) + widespread pre-existing elsewhere.** `CouncilFeed.tsx` (new file in PR #207) has three hand-rolled card surfaces: `<div className='mb-8 rounded-xl border border-border bg-card p-4'>` (line 282 — Your Question card), `<article className='… rounded-xl border border-border bg-card/40 p-4'>` (line 109), `<section className='… rounded-xl border border-border bg-card p-5'>` (line 159). Should be `<Card>` from `@atta/ui` per `ui-components` SKILL RULE 1. Pre-existing `BenchmarkReport.tsx` already has the same pattern in ~10 places. **Recommendation:** out of scope — the cleanup should hit `BenchmarkReport` + `CouncilFeed` together in a follow-up PR so the visual treatment stays consistent.
+
+- **Claim 4 — `text-warning-foreground` undefined.** **TRUE + PRE-EXISTING.** Verified `packages/ui/styles/globals.css` defines `--color-warning: var(--warning)` (line 32) but NO `--warning-foreground`. The `ui-theme-tokens` SKILL explicitly confirms: "`success-foreground` and `warning-foreground` do not exist." Two consumers exist: `MockModeBanner.tsx` (created in commit `730adec3` "Feat: /trust page, mock-mode banner, CSP doc note" — on main pre-PR) and `DeliberationFeed.tsx` lines 115/116 (blame: `40bb25162` on main — pre-PR). The class falls through to no color. **Recommendation:** out of scope — fix by either adding the token to `globals.css` + theme schema + `NextWebShell` (per the skill's "If a Token Is Missing" procedure) OR replacing both call sites with `text-warning` (text-on-canvas) + `bg-warning/10` patterns per the doctrine's "status as soft fill" pattern. Either approach is one cleanup PR, ~2 lines per file.
+
+**What got fixed in this commit:** Morphing button predicate split + Cmd+Enter coherence + `MorphingSubmitButton` renders `null` on empty input.
+
+**What was flagged for separate work:**
+- `tsconfig` library resolution drift across all four apps (Claim 1) — needs system-wide PR with per-product visual review.
+- Raw HTML typography in deliberate / teams / deliberation surfaces (Claim 2) — Vāda code-quality cleanup PR.
+- Hand-rolled cards in `BenchmarkReport` + `CouncilFeed` (Claim 3) — same cleanup PR as above or its own.
+- `text-warning-foreground` undefined token (Claim 4) — one-line cleanup PR (add token OR rewrite call sites).
+
+No stop conditions triggered for the morphing-button fix itself. The `tsconfig` claim DID trigger the "app-wide blast radius" stop — flagged, not fixed. `bun run typecheck` + `bun run check` pass.
+
+## Previous session — Jun 27, 2026
+
 PR #207 polish — five visual / UX fixes on the deliberate hero input + Configure modal (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, additive commits on the existing one.
 
 **Fix 1 — Seamless inner textarea (root cause of the "double border" report).**

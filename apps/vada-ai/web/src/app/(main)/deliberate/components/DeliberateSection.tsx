@@ -102,33 +102,50 @@ interface DeliberateSectionProps {
 /**
  * Morphing Configure ↔ Submit element for the hero `SmartPromptInput.submitSlot`.
  *
- * The VISUAL is identical in both states — a filled circular icon-only ArrowUp
- * button. Only the click behavior and `aria-label` differ:
+ * Gemini-style behavior:
  *
- * - `canStart = true`  → real submit button (`type='submit'`). The vendored
- *   textarea keyboard handler finds it via `button[type="submit"]` and fires
- *   `form.requestSubmit()` on Cmd+Enter; the form's `onSubmit` runs normally.
- * - `canStart = false` → button is `type='button'` and clicking it opens the
- *   reviewer config modal. Cmd+Enter still calls `form.requestSubmit()` (the
- *   textarea handler runs regardless of what's in the slot), which routes
- *   through `handleSmartSubmit → handleStartWithText`; that function
- *   re-validates with `validateKeysForConfig` and opens the modal when the
- *   config is missing — so the keyboard path lands in the same place as the
- *   visible button. No silent submission of an invalid form.
+ * - `hasQuestion = false` → the slot renders `null`. The submit area is empty;
+ *   there is nothing to click and nothing to mis-submit. The user is invited
+ *   by the placeholder to type, not by a hovering CTA. (Decided over a disabled
+ *   button because disabled buttons still attract focus and read as "this is
+ *   available" — a clean empty state communicates "compose first" more clearly.)
+ * - `hasQuestion && isConfigValid` → real submit button (`type='submit'`). The
+ *   vendored textarea keyboard handler finds it via `button[type="submit"]` and
+ *   fires `form.requestSubmit()` on Cmd+Enter; the form's `onSubmit` runs.
+ * - `hasQuestion && !isConfigValid` → button is `type='button'` and clicking it
+ *   opens the reviewer config modal. Cmd+Enter still calls `form.requestSubmit()`
+ *   (the textarea handler runs regardless of what's in the slot), which routes
+ *   through `handleSmartSubmit → handleStartWithText`; for editable specs that
+ *   handler now opens the modal too (instead of silent no-op) so the keyboard
+ *   path lands in the same place as the visible button.
  *
- * Why one visual instead of a "Configure" word button: the user always sees
- * the same prominent CTA. They learn that if the form isn't ready, clicking
- * opens the configure modal. Differentiation happens through `aria-label`
- * (screen readers) and the modal that opens — not through morphing copy.
+ * The VISUAL is identical in submit and configure states — a filled circular
+ * icon-only ArrowUp. Only `type`, `aria-label`, and `onClick` differ. The user
+ * always sees the same prominent CTA when there is text; differentiation
+ * happens through the modal that opens (not through morphing copy).
+ *
+ * The previous bug: this slot rendered the configure variant whenever `canStart`
+ * was false. Because `canStart` required BOTH text and a valid config, an empty
+ * input on a fully-configured team produced a button that opened the modal —
+ * a nonsensical action (config is already valid). Splitting predicates fixes it.
  */
-function MorphingSubmitButton({ canStart, onConfigure }: { canStart: boolean; onConfigure: () => void }) {
+function MorphingSubmitButton({
+  hasQuestion,
+  isConfigValid,
+  onConfigure
+}: {
+  hasQuestion: boolean
+  isConfigValid: boolean
+  onConfigure: () => void
+}) {
+  if (!hasQuestion) return null
   return (
     <Button
-      type={canStart ? 'submit' : 'button'}
+      type={isConfigValid ? 'submit' : 'button'}
       variant='default'
       size='icon'
-      aria-label={canStart ? 'Submit deliberation' : 'Configure team'}
-      onClick={canStart ? undefined : onConfigure}
+      aria-label={isConfigValid ? 'Submit deliberation' : 'Configure team'}
+      onClick={isConfigValid ? undefined : onConfigure}
     >
       <ArrowUp className='size-4' />
     </Button>
@@ -138,7 +155,10 @@ function MorphingSubmitButton({ canStart, onConfigure }: { canStart: boolean; on
 export function DeliberateSection(props: DeliberateSectionProps) {
   const form = useDeliberateForm(props)
 
-  const isActive = form.question.trim().length > 0
+  // `isActive` mirrors `hasQuestion` — keep them as the same signal so the
+  // hero-vs-active layout switch and the morphing button's render condition
+  // can never disagree.
+  const isActive = form.hasQuestion
   const selectedSpec = props.specs.find((s) => s.id === form.selectedSpecId) ?? props.specs[0]
 
   // SmartPromptInput owns its own value; onSubmit provides text + files.
@@ -190,7 +210,13 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 actions={
                   <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
                 }
-                submitSlot={<MorphingSubmitButton canStart={form.canStart} onConfigure={form.openReviewerModal} />}
+                submitSlot={
+                  <MorphingSubmitButton
+                    hasQuestion={form.hasQuestion}
+                    isConfigValid={form.isConfigValid}
+                    onConfigure={form.openReviewerModal}
+                  />
+                }
               />
             </div>
           </div>

@@ -72,6 +72,20 @@ export interface DeliberateFormState {
   setGlobalModel: (m: ModelSelection | null) => void
   loading: boolean
   canStart: boolean
+  /**
+   * True when the input has non-empty text. Split out from `canStart` so the
+   * hero's morphing button can render at all (Gemini-style empty state: no
+   * button visible until the user types).
+   */
+  hasQuestion: boolean
+  /**
+   * True when the selected team is ready to receive a submission — either
+   * the saved reviewer config validates against current keys (editable specs),
+   * or all agent vendors for the spec have keys (non-editable specs). Split out
+   * so the morphing button can decide submit-vs-configure independently of
+   * whether there is text to submit.
+   */
+  isConfigValid: boolean
   needsUnlock: boolean
   hasAnyKey: boolean
   benchmarkEnabled: boolean
@@ -199,11 +213,17 @@ export function useDeliberateForm({
     })
   })()
 
-  const canStart =
-    !!question.trim() &&
-    remainingToday > 0 &&
-    !loading &&
-    (hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec)
+  // ── Predicate split (Gemini-style morphing button) ──
+  // `hasQuestion` answers "is there text to submit?" — purely an input-state
+  // signal. `isConfigValid` answers "is the team ready to receive a submission?"
+  // — purely a team/keys signal. They are independent: the hero needs to know
+  // both so it can decide whether to render the button at all (`hasQuestion`)
+  // AND, when rendered, whether clicking it submits or opens the config modal
+  // (`isConfigValid`). `canStart` keeps the composite meaning for existing
+  // callers (the bottom-bar "Deliberate" CTA, the dispatch handlers).
+  const hasQuestion = !!question.trim()
+  const isConfigValid = hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec
+  const canStart = hasQuestion && remainingToday > 0 && !loading && isConfigValid
 
   // Core dispatch — skips the reviewer config gate (used post-modal-save).
   // Accepts an optional explicit question text (used by SmartPromptInput submit path
@@ -283,14 +303,13 @@ export function useDeliberateForm({
   const handleStartImplRef = useRef<(overrideQuestion?: string) => Promise<void>>(() => Promise.resolve())
   handleStartImplRef.current = async (overrideQuestion?: string) => {
     const effectiveQuestion = (overrideQuestion ?? question).trim()
-    const effectiveCanStart =
-      !!effectiveQuestion &&
-      remainingToday > 0 &&
-      !loading &&
-      (hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec)
-    if (!effectiveCanStart) return
-    // For specs with editable reviewer agents, gate on a valid stored config.
-    // If the config is missing or stale keys, show the modal instead of dispatching.
+    // Empty input → silently no-op. Quota/loading gates are also hard no-ops
+    // (the user already sees a toast for the quota case; loading is transient).
+    if (!effectiveQuestion || remainingToday <= 0 || loading) return
+    // For specs with editable reviewer agents, missing/invalid config opens the
+    // modal instead of silently no-op'ing. This matches the morphing button's
+    // click behavior: text + invalid config → configure modal (both via mouse
+    // and via Cmd+Enter through this code path).
     const spec = specs.find((s) => s.id === selectedSpecId)
     if (spec) {
       const editableAgents = spec.agents.filter((a) => a.editable)
@@ -300,6 +319,13 @@ export function useDeliberateForm({
           setShowReviewerModal(true)
           return
         }
+      } else if (!hasKeysForNonEditableSpec) {
+        // Non-editable spec with missing vendor keys — no modal exists to
+        // configure (the user adds keys via /settings). Silent no-op preserves
+        // the existing behavior; the bottom-bar "Deliberate" button is disabled
+        // in this state and the hero button click never reaches here (it
+        // doesn't have a configure path for non-editable specs).
+        return
       }
     }
     await dispatchRef.current(overrideQuestion)
@@ -331,6 +357,8 @@ export function useDeliberateForm({
     setGlobalModel,
     loading,
     canStart,
+    hasQuestion,
+    isConfigValid,
     needsUnlock,
     hasAnyKey,
     benchmarkEnabled,
