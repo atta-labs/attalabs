@@ -943,3 +943,43 @@ The two changes are paired because they share a common cause: forward-extensibil
 - Documentation: this entry plus the changelog and `vada-state.md` Phase 14 entry. The skill docs (`atta-engine/SKILL.md`, `vada-yaml-authoring/SKILL.md`) reflect the single-variant `RevisionCondition` and the engine-throws-on-unsupported-signal-types behaviour in the in-flight docs cleanup PR.
 - No schema change. `flow-schema.ts` still accepts `equals` and `matches` at parse time. The schema is the forward-compatibility surface; the compiler is the implementation honesty surface.
 - Future work: when `signal.type: 'equals'` or `'matches'` actually needs to ship, the work is (1) implement evaluation in `compile-flow.ts buildRevisionCondition`, (2) expand `RevisionCondition` back to a discriminated union, (3) restore the corresponding adapter switch-case branches, (4) add test coverage. The structural separation between schema (permissive) and compiler (strict) means this future expansion is additive, not breaking.
+
+---
+
+## D-035: Council = web question-answering team, distinct from draft-critique Reviewers
+
+**Date:** Jun 23, 2026 (vada-production-v1, branch `task/vada-production-v1/council-teams`)
+**Status:** ACTIVE
+**Type:** 2
+**Area:** Vāda Teams catalog — `packages/agents/vada-deliberation/yamls/vada-council.yaml`, `vada-council-synthesis.yaml`. No engine change.
+
+**Decision summary:** Introduce two new web teams — **Council** and **Council + Synthesis** — that answer the user's question directly with N vendor-diverse models in parallel. No draft. No critique framing. Each model is an independent answer slot with live web access. The Council variant returns three independent answers side by side. The Council + Synthesis variant adds one synthesizer agent that compares the answers into `{ agreements, disagreements, bottomLine }`. The existing Reviewers and Reviewers + Synthesis teams are untouched and remain canonical for the **critique-a-draft** workflow (a primary AI's draft → reviewers attack it).
+
+**Alternatives rejected:**
+- Repurpose Reviewers to answer questions when no draft is provided — rejected. Reviewer prompts are heavily tuned for adversarial critique (PHANTOM CONSENSUS FLAG, PRIMARY CONCERN structure, EVIDENCE referencing the draft, WHAT WOULD CHANGE MY MIND). Reusing them for direct answers would either degrade the critique workflow or produce off-shape answers when used without a draft. Two teams, two prompts.
+- One unified team with a runtime "has draft?" flag — rejected as YAML schema bloat. The two shapes have different agent prompts, different message templates, and different downstream UI surfaces. A flag in YAML would not collapse the underlying divergence; it would just defer the divergence to runtime branching in the adapter or UI. Keep the shapes separate at the catalog level.
+- Ship only Council (no synthesizer variant) — rejected. The synthesizer materializes the comparison work the user would otherwise do by eye across three columns. Both variants are useful; one without the other is incomplete.
+
+**Rationale:**
+
+Vāda's Reviewers teams answer the question "I have a draft — what's wrong with it?" Council answers a different question: "I have a question — what do several models think?" Both are deliberation patterns, but their inputs differ (draft present vs absent) and their agent roles differ (adversarial critic vs independent answerer). Conflating them under one team would require either (a) generic prompts that handle both contexts (degrading both) or (b) runtime branching that hides the divergence from the YAML catalog (the catalog is the source of truth for deliberation shapes; hidden branching breaks that contract).
+
+The synthesizer in Council + Synthesis intentionally produces a different output shape from the Reviewers + Synthesis Synthesizer. Reviewers + Synthesis emits a richly structured analysis ({ participants, consensus, uniqueInsights, contradictions, rejected, recommendations, verification }) because the source material is critique with GROUNDED/INFERRED tags. Council's source material is answers, not critique — there is no draft to ground claims against. The right output is the three-field shape: what the models agree on, what they disagree on, and the through-line. Forcing Council into the Reviewers synthesis shape would introduce phantom fields the agent has no material to populate.
+
+**Synthesis output contract (locked):**
+
+```ts
+{ agreements: string[], disagreements: string[], bottomLine: string }
+```
+
+The future Council results view consumes this contract directly.
+
+**Consequences:**
+
+- Two new YAMLs in `packages/agents/vada-deliberation/yamls/`: `vada-council.yaml` (3 agents, 1 round, `layout: parallel`) and `vada-council-synthesis.yaml` (4 agents, 2 rounds: parallel answer + serial synthesis).
+- Both YAMLs are auto-discovered by `listPublicSpecs()` — no registry edits required.
+- `vada-council` and `vada-council-synthesis` agents use `tools: [web_search]` and `classifier.mode: skip` — independent single-shot answerers, no classifier overhead, web search forwarded directly (per-vendor tool substrate, see vada-state Jun 23, 2026 / D-053).
+- The Synthesizer agent uses `role: synthesizer`, fixed `model: claude-sonnet-4-6`, `classifier.mode: skip`, no `tools`, no `editable` — mirrors the Reviewers + Synthesis Synthesizer structure exactly, differing only in prompt and output shape.
+- The existing rounds UI (`ConclusionPanel` and the synthesis parser) is keyed to the Reviewers JSON shape and will **not** render the Council `{ agreements, disagreements, bottomLine }` synthesis correctly. This is expected — the Council results view (columns + AIASphere/matrix + synthesis panel) is a separate task. Do not retrofit the old rounds UI to handle both shapes; the Council view will read the contract directly.
+- Engine: 70/70 tests pass. Both YAMLs validate cleanly against the D-033 rules (Rule 1: rounds≥1, Rule 4: agent refs exist, Rule 8: per-agent templates on the answer round, etc.). `compileFlow` shape detection identifies `vada-council` as `brokered-no-synth` and `vada-council-synthesis` as `brokered-synth`.
+- Reviewers and Reviewers + Synthesis are untouched — the critique-a-draft workflow remains canonical and unchanged.
