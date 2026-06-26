@@ -1,6 +1,42 @@
 **Status:** ratified
 
-## Most recent session — Jun 26, 2026
+## Most recent session — Jun 27, 2026
+
+Frontier-chat hero layout + morphing Configure/Submit slot + dropdown restyle (vada-production-v1, PR #207, `task/vada-production-v1/tool-badges`).
+
+**Commit 1 — `@atta/ui/smart-prompt-input`: `submitSlot` + `textareaClassName`.**
+- New optional prop `submitSlot?: React.ReactNode` replaces the default `PromptInputSubmit` in BOTH inline and footer modes. When undefined the render is byte-identical to before — Herald's `JDInput` passes no new props and is unaffected.
+- New optional prop `textareaClassName?: string` is merged onto the inner textarea AFTER vendor defaults so callers can defeat utilities like `min-h-16` via tailwind-merge (no vendor patch needed).
+- Footer divider question: the vendored InputGroup uses `flex flex-col` with no border between textarea and footer — there is no shared "footer divider" class to opt out of. No `hideFooterDivider` prop introduced. Any further visual separation is a call-site decision (Vāda elevates the InputGroup with a child-selector `shadow-lg`).
+- Skill update (D-058, mandatory): `.claude/skills/ui-library-system/SKILL.md` gains a new "Cross-product composite components" section documenting the SmartPromptInput contract (all props in a table, the Herald-compatible invariant, and the rule for adding any new slot). The library-contract validator does NOT cover composite components, so the skill section IS the contract.
+
+**Commit 2 — Vāda hero: frontier-chat layout (`DeliberateSection.tsx`).**
+- `actionsPosition` flipped from `'left'` to `'right'`. TeamPicker sits inline-right of the textarea on a single line and drops into the footer when the textarea wraps.
+- CONFIGURE removed from the `actions` array — `actions` now carries only TeamPicker. CONFIGURE is morphed into the submit slot in Commit 3 so the form never shows both a disabled-submit AND a Configure button.
+- Single-line root cause + fix: vendored `PromptInputTextarea` defaults to `min-h-16` (=4rem), which made `el.scrollHeight > singleLineHeight` true on first paint — `isMultiLine` registered true forever and `inlineMode` never engaged. Fix: pass `textareaClassName='min-h-0'` from the call site. `tailwind-merge` resolves `min-h-16` ↔ `min-h-0` in favor of the caller. No vendor file changes.
+- Container surface lifted via a child-selector className `[&>form>div]:rounded-xl [&>form>div]:shadow-lg` on the outer wrapper. Keeps the Grok-like elevation local to the Vāda call site without leaking surface decisions into shared SmartPromptInput.
+
+**Commit 3 — Morphing Configure ↔ Submit + dispatchRef fresh-read fix.**
+- New `MorphingSubmitButton` (inline in `DeliberateSection.tsx`, passed to `SmartPromptInput.submitSlot`). When `form.canStart` is true → real submit (`type='submit'`, ArrowUp). When false → CONFIGURE outline button (`type='button'`) that opens the reviewer modal. Either-or, never both.
+- Cmd+Enter: the vendored textarea handler calls `form.requestSubmit()` regardless of slot content. Routes through `handleSmartSubmit → handleStartWithText`, which re-validates and opens the modal when reviewer config is missing. So the keyboard path lands in the same place as the visible button — no silent submission of an invalid form, no separate handler.
+- `dispatchRef.current` now re-reads `getReviewerConfig` from localStorage and re-runs `validateKeysForConfig` fresh, instead of trusting the render-closure `hasValidReviewerConfig` flag. This matters because `handleModalSave` writes the config and then calls `dispatchRef.current()` synchronously — that call uses the dispatchRef assigned during the PREVIOUS render, whose closure was computed BEFORE the localStorage write. The PR-body claim "dispatchRef.current re-validates internally using the just-persisted config" is now accurate.
+- Hover doctrine on CONFIGURE: `hover:bg-accent/20` (from outline base) + `hover:text-accent-foreground` (call site). Never `hover:text-accent` — the May 23 bug.
+
+**Commit 4 — Dropdown restyle + short labels + Council copy fix.**
+- `TeamPicker.tsx` `DropdownMenuContent` switched to `bg-popover border-border shadow-lg max-h-[60vh] overflow-y-auto`. `bg-popover` is the floating-surface token (per `.claude/skills/ui-theme-tokens/SKILL.md` doctrine) — separates the menu from the page canvas. `max-h + overflow-y` keeps long spec catalogs scrollable.
+- Trigger shows the SHORT label only (small pill). Open items show the full `display_name` + corrected subtitle.
+- New `getSpecLabel` in `apps/vada-ai/web/src/lib/flow-helpers.ts` returns `{ short, subtitle }` per spec id. Explicit entries for the four current public specs (Council, Council +S, Reviewers, Reviewers +S); generic specs fall back to `displayName` with no subtitle.
+- Council misnomer fix: `getFlowShapeLabel` returned "parallel reviewers" for EVERY brokered spec — wrong for Council (which is answer-a-question, not critique-a-draft). The dropdown subtitle now sources from `getSpecLabel.subtitle` so Council reads "3 models · parallel" instead. `getFlowShapeLabel` itself is left as-is (other callers may still rely on it); the spec-label map is the presentation surface.
+- Label map is Vāda-local on purpose. Team identity stays in the YAML's `display_name` / `description` — `SPEC_LABELS` is presentation-only. A TODO comment in `flow-helpers.ts` notes the option to promote `short_name` onto the engine `Flow` type if other consumers grow.
+
+**Herald byte-identity verification:** re-read `apps/herald-ai/web/src/components/envoy/JDInput.tsx` line 325 with the new SmartPromptInput. Herald passes no `actions`, `submitSlot`, or `textareaClassName` — falls through to `hasActions = false` branch, default footer with `PromptInputSubmit`. `renderSubmit()` returns the same `<PromptInputSubmit status={chatStatus} onStop={onStop}>{ctaLabel}</PromptInputSubmit>` JSX as the original inline code. Identical DOM tree.
+
+**Stop conditions:** none hit.
+- Commit 1: `submitSlot` is purely additive; Herald path unchanged. Divider not in shared code, so no `hideFooterDivider` prop introduced.
+- Commit 2: single-line fix is a call-site `textareaClassName='min-h-0'` override — no vendor restructure.
+- Commit 3: `dispatchRef` IS re-triggerable after a fresh read; the previous render-closure pattern was the bug. Fixed in-place.
+
+## Previous session — Jun 26, 2026
 
 Council teams added on PR #207 (vada-production-v1, branch `task/vada-production-v1/tool-badges`). Two new YAML specs landed under `packages/agents/vada-deliberation/yamls/`:
 
