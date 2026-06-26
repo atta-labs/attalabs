@@ -2,7 +2,10 @@ import { loadYamlFromCatalog } from '@atta/engine'
 import { Text } from '@atta/ui/components'
 import { getBenchmarkMetrics, getSessionWithTranscript } from '@/db/queries'
 import { extractRenderableConclusion } from '@/engine/conclusion-rescue'
+import { CouncilFeed } from './components/CouncilFeed'
 import { DeliberationFeed } from './components/DeliberationFeed'
+
+const COUNCIL_SPEC_IDS = new Set(['vada-council', 'vada-council-synthesis'])
 
 export default async function DeliberationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -82,6 +85,35 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
         judgeAvailable: !!benchmark.judgeResponse
       }
     : null
+
+  // Council teams (vada-council / vada-council-synthesis) render a distinct
+  // view: N parallel answer columns, no rounds, no CONCLUSION/CLEAN badges,
+  // optional Council synthesis read via the locked
+  // `{agreements, disagreements, bottomLine}` contract. Everything else
+  // (Reviewers, Sparring, Crucible, War-Room) still routes through
+  // DeliberationFeed — those rounds components are intentionally untouched.
+  const isCouncil = session.specId ? COUNCIL_SPEC_IDS.has(session.specId) : false
+  if (isCouncil) {
+    return (
+      <CouncilFeed
+        sessionId={id}
+        question={session.question}
+        agentRoles={session.agents}
+        agentModels={agentModels ?? undefined}
+        modelByRole={modelByRole}
+        defaultProvider={session.provider ?? null}
+        defaultModelId={session.modelId ?? null}
+        initialEntries={initialEntries}
+        initialConclusion={initialConclusion}
+        initialState={session.state}
+        initialTerminalState={session.terminalState ?? null}
+        benchmark={benchmarkClient}
+        teamName={teamName}
+        specId={session.specId ?? undefined}
+        hasSynthesizer={hasSynthesizer}
+      />
+    )
+  }
 
   return (
     <DeliberationFeed
