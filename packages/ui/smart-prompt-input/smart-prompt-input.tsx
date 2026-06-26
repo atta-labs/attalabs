@@ -301,11 +301,28 @@ export function SmartPromptInput({
   // so `getComputedStyle(el).lineHeight` returns the literal string `'normal'` and
   // `parseFloat('normal')` returns `NaN`. The previous implementation early-returned
   // on `NaN` and never flipped `isMultiLine`, freezing the input in inline mode no
-  // matter how many lines wrapped. The fix below derives the line height from
-  // `font-size * 1.2` when computed style reports `'normal'` (the browser default),
-  // and compares content height (scrollHeight minus padding minus border) against
-  // a 1.5x line-height threshold so a single visual line never bounces multi-line
-  // on sub-pixel rounding, and a second visible line trips it unambiguously.
+  // matter how many lines wrapped. We derive the line height from `font-size * 1.2`
+  // when computed style reports `'normal'` (the browser default).
+  //
+  // ── Hysteresis ──
+  // The naïve single-threshold approach (enter+exit at the same `lineHeight * 1.5`)
+  // caused layout flapping: in inline mode the textarea has NARROWER width (actions
+  // + submit take horizontal space on the right), so content can wrap to 2 lines
+  // and flip `isMultiLine = true` → footer mode (textarea is now FULL width) →
+  // same content fits on 1 line → flip back to inline → wrap again → ... infinite
+  // oscillation as the user types.
+  //
+  // Fix: separate ENTER and EXIT thresholds with a deadband. Once we're in
+  // multi-line, we only exit when content has shrunk *well below* a single line's
+  // height — meaning the user has deleted enough that even at footer (full) width
+  // a single line definitely fits. The deadband is wide enough that a single
+  // remeasure cannot cross both thresholds, so the state holds.
+  //
+  //   ENTER multi-line: contentHeight > lineHeight * 1.5   (≥ 2 lines)
+  //   EXIT  multi-line: contentHeight < lineHeight * 1.1   (~ 1 short line)
+  //
+  // Using the functional setState form gives us the previous value without
+  // adding a ref or stale-closure traps.
   const inputRowRef = useRef<HTMLDivElement | null>(null)
   const [isMultiLine, setIsMultiLine] = useState(false)
   const [attachmentCount, setAttachmentCount] = useState(0)
@@ -326,9 +343,18 @@ export function SmartPromptInput({
     // Content area = scrollHeight minus padding and border. Independent of
     // Tailwind padding/border overrides on the injected textarea.
     const contentHeight = el.scrollHeight - paddingTop - paddingBottom - borderTop - borderBottom
-    // 1.5x line height is the unambiguous "more than 1 line" threshold —
-    // a single line is ~1.0x with rounding slack; a second line lands at ~2.0x.
-    setIsMultiLine(contentHeight > lineHeight * 1.5)
+    const enterThreshold = lineHeight * 1.5
+    const exitThreshold = lineHeight * 1.1
+    setIsMultiLine((prev) => {
+      if (prev) {
+        // Currently multi-line: only exit when content has shrunk below the
+        // strict single-line floor. This prevents the inline-vs-footer width
+        // change from itself triggering a flip back.
+        return contentHeight >= exitThreshold
+      }
+      // Currently inline: enter multi-line at the 1.5x threshold.
+      return contentHeight > enterThreshold
+    })
   }
 
   useLayoutEffect(() => {
@@ -365,7 +391,17 @@ export function SmartPromptInput({
         <PromptInput accept={accept} onSubmit={handleSubmit} onError={handleError}>
           <AttachmentTiles onCountChange={hasActions ? setAttachmentCount : undefined} />
           {hasActions ? (
-            <div ref={inputRowRef} className='flex flex-row items-end gap-1'>
+            // `items-center` aligns the textarea's first line with the vertical
+            // center of the actions cluster (the cluster's intrinsic height is
+            // `icon-button + py-1.5` ≈ 48px; a single-line textarea is ≈ 36px).
+            // With `items-end` the textarea sat at the bottom of the row and
+            // the placeholder/first line floated to the TOP of the textarea
+            // while the icon button appeared centered in its taller container —
+            // they read as misaligned. With `items-center`, the textarea's
+            // single line and the icon share a baseline. Once `isMultiLine`
+            // flips, the actions+submit move to the footer row so vertical
+            // centering doesn't drift as the textarea grows multi-line.
+            <div ref={inputRowRef} className='flex flex-row items-center gap-1'>
               {inlineMode && actionsOnLeft && (
                 <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>
                   <div className='flex items-center gap-1'>{actions}</div>

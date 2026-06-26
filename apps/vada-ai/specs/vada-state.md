@@ -36,6 +36,50 @@ Fix in `packages/ui/smart-prompt-input/smart-prompt-input.tsx`: when computed st
 
 Herald's `JDInput` passes no `actions` prop, so `hasActions = false`, the `useLayoutEffect` early-returns, the `inputRowRef` branch never renders, and `remeasure` is never wired to a real `onInput`. The detection function exists but never runs for Herald — zero behavior change there. Verified by reading `apps/herald-ai/web/src/components/envoy/JDInput.tsx`: no `actions=` on either `SmartPromptInput` site.
 
+**Fix 7 — Unify the morphing button visual to a single icon-only ArrowUp.**
+
+Previous shape (commit `56c70a66`) had two visually distinct states for `MorphingSubmitButton`: when `canStart=true` it rendered a filled icon button (`variant='default' size='icon'`, ArrowUp); when `canStart=false` it rendered an outline text button with the word "Configure". That communicates validity by literally morphing copy, but it also makes the inline row's right cluster jump between an icon-shaped pill and a wider word-pill on every render where reviewer config changes — and it makes the affordance for "I clicked but nothing happened" be a small outline pill rather than the prominent CTA the user is used to.
+
+New shape: single visual, identical in both states — `variant='default' size='icon'` filled circular ArrowUp button. Only `type`, `onClick`, and `aria-label` differ. When `canStart=true` the button is `type='submit'` so the vendored textarea handler (`form?.querySelector('button[type="submit"]')`) finds it for Cmd+Enter and the form `onSubmit` fires. When `canStart=false` the button is `type='button'` and clicking it opens the reviewer modal directly. Cmd+Enter still routes through `handleSmartSubmit → handleStartWithText` (no `type='submit'` to find means `form?.querySelector` returns null and the keyboard handler bails before `requestSubmit()` — but `handleStartWithText` re-validates on every entry path anyway and opens the modal when the config is missing, matching the visible button's behavior). `aria-label` flips between `'Submit deliberation'` and `'Configure team'` so screen readers convey intent without the visual changing.
+
+**Fix 8 — Vertical alignment in `SmartPromptInput` inline mode.**
+
+The hero textarea has `py-2` (~36px tall on a single line of `text-sm`), but the actions cluster has `flex … items-center px-2 py-1.5` wrapping a `size='icon'` button (h-9, ≈36px) plus padding — total cluster height ≈ 48px. The inline row used `flex flex-row items-end`, so the cluster's bottom aligned with the textarea's bottom — the icon centered within its 48px container floated above the textarea's text baseline, while the textarea's single line sat at the TOP of the row (because the textarea was the shorter element). Visually: placeholder at top, icon in the middle.
+
+Fix: change the inline row to `items-center`. Centers the textarea's first line with the icon button's geometric center on the same horizontal axis. Once `isMultiLine` flips, the actions+submit drop into the footer row (`inlineMode = false`) so the inline alignment choice only ever applies to the single-line case where centering is the right call. `items-center` does not affect multi-line behavior — by then the textarea isn't even sharing the row with the cluster.
+
+**Fix 9 — Removed the hero subtitle paragraph.**
+
+The empty-state hero rendered `<h1>What are you wrestling with?</h1>` plus a `<p className='font-sans text-sm text-muted-foreground'>` reading "Pose a decision, question, or problem. A team of AI agents will deliberate on it and return a convergent view." The paragraph editorialized the heading without adding new affordance — the input below it is self-explanatory. Removed the `<p>` and dropped the `space-y-2` from the heading wrapper. Hero is now just heading + input.
+
+**Fix 10 — Hysteresis on `isMultiLine` to stop layout oscillation.**
+
+User report: as they typed past the inline-width wrap point, the input flipped 2 lines → 1 line → 2 lines → 1 line continuously. Single-threshold detection (enter+exit both at `lineHeight * 1.5`) creates an unstable feedback loop because the textarea's available width depends on `inlineMode`, which depends on `isMultiLine`:
+
+- Inline mode = textarea width is *narrower* (actions + submit eat horizontal space on the right).
+- Content wraps to 2 lines at that narrow width → `isMultiLine = true` → footer mode.
+- Footer mode = textarea width is *full* (no inline cluster).
+- Same content fits on 1 line at full width → `contentHeight < threshold` → `isMultiLine = false` → inline mode.
+- Repeat forever on every `onInput`.
+
+Fix in `packages/ui/smart-prompt-input/smart-prompt-input.tsx::remeasure`: separate ENTER and EXIT thresholds with a deadband, and select which to use based on the previous `isMultiLine` value via the functional-setState form.
+
+```ts
+const enterThreshold = lineHeight * 1.5
+const exitThreshold  = lineHeight * 1.1
+setIsMultiLine((prev) =>
+  prev
+    ? contentHeight >= exitThreshold   // currently multi-line → stay until content shrinks well below one line
+    : contentHeight >  enterThreshold  // currently inline → enter at the 2-line threshold
+)
+```
+
+Why these numbers: a single visual line at full width is ≈ `lineHeight * 1.0` with sub-pixel rounding slack. A second visible line lands at ≈ `lineHeight * 2.0`. The ENTER threshold at 1.5x cleanly separates 1-line from 2-line. The EXIT threshold at 1.1x means we only flip back to inline when the content has shrunk to a single line WITH room to spare — content that wraps to 2 lines at inline (narrow) width will, at footer (full) width, still come in well above 1.1x because the same characters fit on a single line at the wider measurement but the single line still has some height. Crucially this lets us interpret the *post-flip* measurement: after entering multi-line, the textarea expands to full width; if the user keeps typing the height stays > 1.1x and we stay multi-line; if the user deletes back to a truly short string the height drops below 1.1x and we exit. No oscillation.
+
+Measurement-pattern note: this is the second hysteresis bug we've hit in this input (the first being detection-frozen-on-`'normal'` from Fix 6). Both surface because the input is doing layout-by-measurement *and* the measured value depends on layout state. The invariant for any future remeasure change: if `contentHeight` (or any measured value) depends on `isMultiLine`, the threshold function MUST consume the previous state, not just the new measurement.
+
+Herald's `JDInput` still passes no `actions`, so the `inputRowRef` branch never renders, `remeasure` is never wired to `onInput`, and the new functional-setState form is never reached. Zero behavior change for Herald.
+
 No stop condition hit. Herald `JDInput` unchanged. `bun run typecheck --force && bun run check` pass. `verify-docs --pr` pass.
 
 ## Previous session — Jun 27, 2026

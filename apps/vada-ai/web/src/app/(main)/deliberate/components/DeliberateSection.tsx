@@ -74,43 +74,35 @@ interface DeliberateSectionProps {
 /**
  * Morphing Configure ↔ Submit element for the hero `SmartPromptInput.submitSlot`.
  *
- * Either-or, never both. The single visible control communicates the form's
- * validity directly — when invalid, the button literally says "Configure" rather
- * than rendering a disabled submit whose disabled reason is opaque.
+ * The VISUAL is identical in both states — a filled circular icon-only ArrowUp
+ * button. Only the click behavior and `aria-label` differ:
  *
  * - `canStart = true`  → real submit button (`type='submit'`). The vendored
  *   textarea keyboard handler finds it via `button[type="submit"]` and fires
  *   `form.requestSubmit()` on Cmd+Enter; the form's `onSubmit` runs normally.
- * - `canStart = false` → CONFIGURE button (`type='button'`). Click opens the
- *   reviewer modal. Cmd+Enter still calls `form.requestSubmit()` (the textarea
- *   handler runs regardless of what's in the slot), which routes through
- *   `handleSmartSubmit → handleStartWithText`; that function re-validates with
- *   `validateKeysForConfig` and opens the modal when the config is missing —
- *   so the keyboard path lands in the same place as the visible button. No
- *   silent submission of an invalid form.
+ * - `canStart = false` → button is `type='button'` and clicking it opens the
+ *   reviewer config modal. Cmd+Enter still calls `form.requestSubmit()` (the
+ *   textarea handler runs regardless of what's in the slot), which routes
+ *   through `handleSmartSubmit → handleStartWithText`; that function
+ *   re-validates with `validateKeysForConfig` and opens the modal when the
+ *   config is missing — so the keyboard path lands in the same place as the
+ *   visible button. No silent submission of an invalid form.
  *
- * Hover follows the outline doctrine pair from `.claude/skills/ui-theme-tokens`:
- * `hover:bg-accent/20` comes from the base outline variant; the call site adds
- * `hover:text-accent-foreground` to complete the pair. Never `hover:text-accent`
- * — same hue as the background reads as a solid block in the amber theme.
+ * Why one visual instead of a "Configure" word button: the user always sees
+ * the same prominent CTA. They learn that if the form isn't ready, clicking
+ * opens the configure modal. Differentiation happens through `aria-label`
+ * (screen readers) and the modal that opens — not through morphing copy.
  */
 function MorphingSubmitButton({ canStart, onConfigure }: { canStart: boolean; onConfigure: () => void }) {
-  if (canStart) {
-    return (
-      <Button type='submit' variant='default' size='icon' aria-label='Deliberate'>
-        <ArrowUp className='size-4' />
-      </Button>
-    )
-  }
   return (
     <Button
-      type='button'
-      variant='outline'
-      size='sm'
-      onClick={onConfigure}
-      className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent-foreground'
+      type={canStart ? 'submit' : 'button'}
+      variant='default'
+      size='icon'
+      aria-label={canStart ? 'Submit deliberation' : 'Configure team'}
+      onClick={canStart ? undefined : onConfigure}
     >
-      Configure
+      <ArrowUp className='size-4' />
     </Button>
   )
 }
@@ -139,12 +131,8 @@ export function DeliberateSection(props: DeliberateSectionProps) {
             <div className='w-full max-w-2xl px-6 flex flex-col gap-6'>
               <MigrationPrompt configuredProviders={props.configuredProviders} />
 
-              <div className='text-center space-y-2'>
+              <div className='text-center'>
                 <h1 className='font-serif text-3xl text-foreground'>What are you wrestling with?</h1>
-                <p className='font-sans text-sm text-muted-foreground'>
-                  Pose a decision, question, or problem. A team of AI agents will deliberate on it and return a
-                  convergent view.
-                </p>
               </div>
 
               {/* Frontier-chat layout: TeamPicker as a small pill on the right of the
