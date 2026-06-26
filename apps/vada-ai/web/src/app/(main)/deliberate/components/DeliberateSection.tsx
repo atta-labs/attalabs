@@ -6,7 +6,7 @@ import { Button } from '@atta/ui/components/button'
 import { Checkbox } from '@atta/ui/components/checkbox'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
-import { ArrowUpRight, GitCompare, Loader2 } from 'lucide-react'
+import { ArrowUp, ArrowUpRight, GitCompare, Loader2 } from 'lucide-react'
 import { useDeliberateForm } from './useDeliberateForm'
 import { MigrationPrompt } from './MigrationPrompt'
 import { ReviewerConfigModal } from './ReviewerConfigModal'
@@ -20,6 +20,50 @@ interface DeliberateSectionProps {
   configuredProviders: string[]
   specs: Flow[]
   initialTeamId?: string
+}
+
+/**
+ * Morphing Configure ↔ Submit element for the hero `SmartPromptInput.submitSlot`.
+ *
+ * Either-or, never both. The single visible control communicates the form's
+ * validity directly — when invalid, the button literally says "Configure" rather
+ * than rendering a disabled submit whose disabled reason is opaque.
+ *
+ * - `canStart = true`  → real submit button (`type='submit'`). The vendored
+ *   textarea keyboard handler finds it via `button[type="submit"]` and fires
+ *   `form.requestSubmit()` on Cmd+Enter; the form's `onSubmit` runs normally.
+ * - `canStart = false` → CONFIGURE button (`type='button'`). Click opens the
+ *   reviewer modal. Cmd+Enter still calls `form.requestSubmit()` (the textarea
+ *   handler runs regardless of what's in the slot), which routes through
+ *   `handleSmartSubmit → handleStartWithText`; that function re-validates with
+ *   `validateKeysForConfig` and opens the modal when the config is missing —
+ *   so the keyboard path lands in the same place as the visible button. No
+ *   silent submission of an invalid form.
+ *
+ * Hover follows the outline doctrine pair from `.claude/skills/ui-theme-tokens`:
+ * `hover:bg-accent/20` comes from the base outline variant; the call site adds
+ * `hover:text-accent-foreground` to complete the pair. Never `hover:text-accent`
+ * — same hue as the background reads as a solid block in the amber theme.
+ */
+function MorphingSubmitButton({ canStart, onConfigure }: { canStart: boolean; onConfigure: () => void }) {
+  if (canStart) {
+    return (
+      <Button type='submit' variant='default' size='icon' aria-label='Deliberate'>
+        <ArrowUp className='size-4' />
+      </Button>
+    )
+  }
+  return (
+    <Button
+      type='button'
+      variant='outline'
+      size='sm'
+      onClick={onConfigure}
+      className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent-foreground'
+    >
+      Configure
+    </Button>
+  )
 }
 
 export function DeliberateSection(props: DeliberateSectionProps) {
@@ -58,9 +102,13 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                   textarea (drops to footer when the textarea wraps). The inner InputGroup
                   surface (`>form>div`) is elevated off the page canvas — soft shadow
                   + a touch more rounding for a Grok-like surface. All semantic tokens;
-                  no hardcoded colors. The CONFIGURE button that used to sit in `actions`
-                  next to the picker is moved out of this slot; Commit 3 wires it into
-                  the morphing submit slot. */}
+                  no hardcoded colors.
+
+                  The `submitSlot` is the morphing Configure ↔ Submit element. When the
+                  form is invalid the slot renders CONFIGURE (opens the reviewer modal);
+                  when valid it renders a real submit. The form never shows both a
+                  disabled submit AND a Configure button — the single visible control
+                  communicates validity directly. */}
               <SmartPromptInput
                 onSubmit={handleSmartSubmit}
                 placeholder='What decision are you wrestling with?'
@@ -77,6 +125,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 actions={
                   <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
                 }
+                submitSlot={<MorphingSubmitButton canStart={form.canStart} onConfigure={form.openReviewerModal} />}
               />
 
               {selectedSpec && (

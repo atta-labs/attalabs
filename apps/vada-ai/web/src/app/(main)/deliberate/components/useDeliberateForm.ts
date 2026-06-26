@@ -208,14 +208,29 @@ export function useDeliberateForm({
   // Core dispatch — skips the reviewer config gate (used post-modal-save).
   // Accepts an optional explicit question text (used by SmartPromptInput submit path
   // where the component owns its own value and passes it via onSubmit).
+  //
+  // Stale-closure note: for editable specs we re-read `getReviewerConfig` from
+  // localStorage and re-run `validateKeysForConfig` HERE instead of trusting
+  // the render-closure `hasValidReviewerConfig` flag. This matters because
+  // `handleModalSave` writes the config to localStorage and then calls
+  // `dispatchRef.current()` synchronously — that call uses the dispatchRef
+  // assigned during the PREVIOUS render, whose `hasValidReviewerConfig`
+  // closure was computed before the localStorage write. Reading freshly
+  // guarantees the post-save auto-dispatch sees the just-persisted config.
   const dispatchRef = useRef<(overrideQuestion?: string) => Promise<void>>(() => Promise.resolve())
   dispatchRef.current = async (overrideQuestion?: string) => {
     const effectiveQuestion = (overrideQuestion ?? question).trim()
+    const reviewerConfigValid = hasEditableAgents
+      ? (() => {
+          const fresh = getReviewerConfig(selectedSpecId)
+          return !!fresh && validateKeysForConfig(fresh, configuredProviders, catalog)
+        })()
+      : true
     const effectiveCanStart =
       !!effectiveQuestion &&
       remainingToday > 0 &&
       !loading &&
-      (hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec)
+      (hasEditableAgents ? reviewerConfigValid : hasKeysForNonEditableSpec)
     if (!effectiveCanStart) return
     setLoading(true)
 
