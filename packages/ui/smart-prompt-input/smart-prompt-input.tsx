@@ -17,7 +17,7 @@ import {
   usePromptInputAttachments,
   type PromptInputMessage
 } from './vendor/prompt-input'
-import { TooltipProvider } from './vendor/ui/tooltip'
+import { SmartPromptComponentsProvider, type SmartPromptComponents } from './vendor/components-context'
 
 export type SmartPromptStatus = 'idle' | 'loading' | 'streaming' | 'error'
 
@@ -91,6 +91,19 @@ export interface SmartPromptInputProps {
    * class passed here wins for its property family.
    */
   textareaClassName?: string
+  /**
+   * INJECTION CONTRACT — see `.claude/skills/ui-library-system/SKILL.md`.
+   *
+   * SmartPromptInput resolves NO library itself. Consuming apps MUST inject
+   * their library's primitives via this prop. Vāda passes them at build-time
+   * from `@atta/ui`; Herald passes them at runtime via `useComponents()`.
+   *
+   * Every key is optional so the input degrades gracefully during the
+   * first-render window (mirrors `JDInput`'s `Button ? <Button…> : <button>`
+   * pattern). When undefined the vendor falls back to a native HTML element
+   * with sane styling.
+   */
+  components?: SmartPromptComponents
 }
 
 const statusMap: Record<SmartPromptStatus, ChatStatus> = {
@@ -250,7 +263,8 @@ export function SmartPromptInput({
   actions,
   actionsPosition = 'right',
   submitSlot,
-  textareaClassName
+  textareaClassName,
+  components
 }: SmartPromptInputProps) {
   const chatStatus = statusMap[status]
   const [rejectionError, setRejectionError] = useState<string | null>(null)
@@ -327,7 +341,7 @@ export function SmartPromptInput({
     : !!(accept || hint || !useFullWidthCta)
 
   return (
-    <TooltipProvider>
+    <SmartPromptComponentsProvider components={components}>
       <div className={className}>
         <PromptInput accept={accept} onSubmit={handleSubmit} onError={handleError}>
           <AttachmentTiles onCountChange={hasActions ? setAttachmentCount : undefined} />
@@ -400,6 +414,6 @@ export function SmartPromptInput({
         </PromptInput>
         {rejectionError && <p className='mt-1.5 font-mono text-[10px] text-destructive'>{rejectionError}</p>}
       </div>
-    </TooltipProvider>
+    </SmartPromptComponentsProvider>
   )
 }

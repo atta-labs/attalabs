@@ -4,14 +4,37 @@ import type { FileUIPart } from 'ai'
 import type { Flow } from '@atta/engine'
 import { Button } from '@atta/ui/components/button'
 import { Checkbox } from '@atta/ui/components/checkbox'
+import {
+  Button as LibraryButton,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Textarea
+} from '@atta/ui'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
+import { SmartPromptInput, type SmartPromptComponents } from '@atta/ui/smart-prompt-input'
 import { ArrowUp, ArrowUpRight, GitCompare, Loader2 } from 'lucide-react'
 import { useDeliberateForm } from './useDeliberateForm'
 import { MigrationPrompt } from './MigrationPrompt'
 import { ReviewerConfigModal } from './ReviewerConfigModal'
 import { TeamPicker } from './TeamPicker'
 import { TeamSummary } from './TeamSummary'
+
+/**
+ * INJECTION CONTRACT (see ui-library-system SKILL.md): SmartPromptInput
+ * resolves NO library — the consumer injects. Vāda's library is build-time
+ * (animate), so we import from `@atta/ui` which the build-time generator
+ * resolves to the active library.
+ */
+const smartPromptComponents: SmartPromptComponents = {
+  Textarea,
+  Button: LibraryButton,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+}
 
 interface DeliberateSectionProps {
   remainingToday: number
@@ -122,6 +145,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 // collapse to its true single-line height; tailwind-merge resolves the
                 // conflict in our favor.
                 textareaClassName='min-h-0'
+                components={smartPromptComponents}
                 actions={
                   <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
                 }
@@ -206,6 +230,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 placeholder='What decision are you wrestling with?'
                 submitOn='cmdenter'
                 status={form.loading ? 'loading' : 'idle'}
+                components={smartPromptComponents}
               />
             </div>
           </div>

@@ -66,7 +66,8 @@ export function JDInput({
 }) {
   const { setIsCollapsed } = useHeroCollapse()
   const sentinelRef = useRef<HTMLDivElement>(null)
-  const { Button, Badge } = useComponents()
+  const components = useComponents()
+  const { Button, Badge } = components
 
   useEffect(() => {
     setIsCollapsed(false)
@@ -329,6 +330,20 @@ export function JDInput({
               hint='Cmd+Enter to submit'
               accept={ACCEPTED_DOC_TYPES}
               pasteToFileChars={1000}
+              // INJECTION CONTRACT (see ui-library-system SKILL.md):
+              // SmartPromptInput resolves NO library. Herald's library is selected
+              // at runtime per user via LibraryProvider; useComponents() returns
+              // the active map (Button/Textarea/DropdownMenu*). The component map
+              // starts empty during the dynamic-import window — the vendor falls
+              // back to native HTML on undefined keys.
+              components={{
+                Textarea: components.Textarea,
+                Button: components.Button,
+                DropdownMenu: components.DropdownMenu,
+                DropdownMenuTrigger: components.DropdownMenuTrigger,
+                DropdownMenuContent: components.DropdownMenuContent,
+                DropdownMenuItem: components.DropdownMenuItem
+              }}
             />
           </div>
         </div>

@@ -346,6 +346,50 @@ at `packages/ui/smart-prompt-input/` and is imported as
 contract validator does NOT cover composite components, so any prop addition
 must update this section instead.
 
+### Governance — shared composites resolve NO library; consumers inject
+
+> **Rule:** A shared composite component MUST NOT import from any concrete
+> library directory (`packages/ui/libraries/{basic|animate|retro|brutal}/...`).
+> Instead it MUST declare a `components` prop and resolve primitives via that
+> prop. The consuming app injects its active library's primitives from
+> `@atta/ui` (build-time pattern) or `useComponents()` (runtime pattern).
+
+This is the `#213` lesson: when a shared input hard-imports `libraries/basic/installed/*`,
+products on `animate` / `retro` / `brutal` silently render the basic
+versions inside it, breaking visual coherence and theme-token discipline.
+It also forecloses Herald's runtime per-user library — a user who has chosen
+`brutal` sees a `basic` input.
+
+**Contract every shared composite MUST follow:**
+
+1. **No library imports in the composite tree.** `grep` for
+   `'../../libraries/'` inside the package — it should match nothing.
+2. **`components?: { Foo?, Bar? }` prop on the public API.** Include only the
+   primitives the composite actually renders. Each entry is optional so the
+   composite degrades gracefully during a runtime library's first-render
+   window. Mirror Herald `JDInput`'s `Button ? <Button…> : <button>` pattern
+   for fallbacks — never crash on `undefined`.
+3. **Threaded via a private context** (e.g. `SmartPromptComponentsProvider`)
+   so internal subtrees can resolve injected primitives without prop drilling.
+4. **Both consumer call sites updated in the same PR** as the contract is
+   added. The composite isn't done shipping until every existing consumer
+   passes `components`.
+
+`SmartPromptInput` is the canonical example — see
+`packages/ui/smart-prompt-input/vendor/components-context.tsx` and the
+`components` entries in `apps/vada-ai/web/.../DeliberateSection.tsx` and
+`apps/herald-ai/web/src/components/envoy/JDInput.tsx`.
+
+**Stop conditions when applying this rule to a NEW composite:**
+
+- A vendored primitive turns out to be used and has no `@atta/ui` library
+  equivalent → STOP and report. Do NOT reintroduce a hardcoded
+  `libraries/basic/...` import. Add the primitive to all four libraries (and
+  the component contract) first.
+- The runtime consumer can't supply a primitive through `useComponents()`
+  without a provider change → STOP. Wiring a fresh provider is in scope; a
+  silent hardcoded-basic fallback is not.
+
 ### `SmartPromptInput` — Gemini-style prompt entry
 
 Located at `packages/ui/smart-prompt-input/smart-prompt-input.tsx`. Wraps the
@@ -387,14 +431,21 @@ is always rendered exactly once — in whichever mode is active.
 | `actionsPosition` | `'left' \| 'right'` | `'right'` | Side of the textarea (inline) / footer (multi-line) the `actions` occupy. |
 | `submitSlot` | `React.ReactNode` | — | Caller-provided submit element replacing the default `PromptInputSubmit`. Caller owns submit logic, Cmd+Enter behavior, and accessibility for the node. Honored in both inline and footer modes. **Ignored when `ctaLabel` is set (full-width CTA path).** Used by Vāda's hero to render a morphing Configure ↔ Submit button. |
 | `textareaClassName` | `string` | — | Extra className merged onto the inner `<textarea>` AFTER vendor defaults (`field-sizing-content max-h-40 min-h-16 overflow-y-auto`). Use to defeat a specific utility — e.g. `min-h-0` to allow the textarea to collapse to a true single line. Tailwind-merge resolves conflicts in favor of the caller's class for the same property family. |
+| `components` | `SmartPromptComponents` | `{}` | **INJECTION CONTRACT** — see Governance section above. Consumer-injected library primitives: `Textarea`, `Button`, `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem`. Each is optional; the composite degrades to a native HTML element with sane styling when undefined (graceful first-paint window for runtime libraries). Vāda injects from `@atta/ui` build-time; Herald injects from `useComponents()`. The shared composite resolves NO library itself. |
 
 #### Herald-compatible default (do NOT change)
 
 When `actions`, `submitSlot`, and `textareaClassName` are all undefined (Herald's
-`JDInput` call site), the rendered tree is byte-identical to the original:
-default `PromptInputTextarea`, footer with the default `PromptInputSubmit`.
-Any future addition to this component must preserve that invariant — Herald is
-locked on the default render path.
+`JDInput` call site), the rendered tree's STRUCTURE is byte-identical to the
+original: default `PromptInputTextarea`, footer with the default
+`PromptInputSubmit`. Any future addition to this component must preserve that
+invariant — Herald is locked on the default render path.
+
+Note: post-injection contract, Herald's tree is the active library's
+`Textarea` / `Button` (whatever the user's runtime library resolved to),
+NOT a vendored basic primitive. That was always the intent — the previous
+hardcoded `libraries/basic/...` import was a bug. Visual styling in `basic`
+remains identical; non-basic libraries now correctly carry through.
 
 #### Adding a new caller-controllable slot
 
