@@ -14,6 +14,7 @@
 
 **Date:** February 2026 (Phase 1)
 **Status:** Active
+**Type:** 1
 
 **Decision:** Remove Mastra entirely. LangGraph is the sole deliberation execution path.
 
@@ -35,6 +36,7 @@
 
 **Date:** February 2026 (Phase 2)
 **Status:** Active
+**Type:** 1
 
 **Decision:** Generic deliberation primitives live under `@atta` (engine, agents, adapter-langgraph). Vāda-specific configurations live under `@vada` and inside `apps/vada-ai/`.
 
@@ -56,6 +58,7 @@
 
 **Date:** March 2026 (Phase 4)
 **Status:** Superseded by D-013
+**Type:** 1
 
 **Decision:** Add `BrokeredWorkflow` as a discriminated union variant alongside `RoundsWorkflow` and `SoloWorkflow`. Implement `compileBrokered` as a dedicated compiler.
 
@@ -78,6 +81,7 @@
 
 **Date:** March 2026 (early Phase 4 / Phase 5)
 **Status:** Reversed by D-016
+**Type:** 1
 
 **Decision:** Synthesis lives outside Vāda. Caller Claude (the AI agent invoking Vāda via MCP) reads reviewer responses and synthesizes them for the user. Vāda's responsibility ends at returning reviewer responses.
 
@@ -100,6 +104,7 @@
 
 **Date:** February 2026 (carried from Mastra-era design)
 **Status:** Active for current Crucible/Sparring YAMLs
+**Type:** 1
 
 **Decision:** Crucible runs 3 rounds with 4 agents (Strategist, Critic, Devil's Advocate, Synthesizer). Sparring runs 3 rounds with 2 agents (Strategist, Critic). Both have BlindCritic + FactChecker dual audit with revision.
 
@@ -120,6 +125,7 @@
 
 **Date:** April 2026 (Phase 6)
 **Status:** Active (parked configuration)
+**Type:** 1
 
 **Decision:** Add a Domain Expert reviewer to Brokered (`brokered-quartet`), gated by `VADA_DOMAIN_EXPERT` environment flag. Domain Expert receives a `domain` parameter that gets injected into its system prompt.
 
@@ -141,6 +147,7 @@
 
 **Date:** April 25, 2026 (Phase 6.7)
 **Status:** Active
+**Type:** 1
 
 **Decision:** Rewrite Strategist, Critic, and Devil's Advocate prompts to remove instructions written for multi-round deliberation. Add explicit single-shot framing, structured output constraints, length constraints, and decisiveness mandates.
 
@@ -164,6 +171,7 @@
 
 **Date:** April 25, 2026 (Phase 6.7)
 **Status:** Active
+**Type:** 1
 
 **Decision:** Replace original judge criteria (alternatives_considered, assumptions_surfaced, actionable_specificity, confidence_calibration, reviewer_divergence) with five new criteria: assumption_surfacing, actionable_specificity, confidence_calibration, frame_quality, length_efficiency.
 
@@ -185,6 +193,7 @@
 
 **Date:** April 25, 2026 (Phase 7.1)
 **Status:** Active
+**Type:** 1
 
 **Decision:** Phase 7.1 produces a design document only. No code changes. Sonnet investigates current code, proposes YAML schema, drafts example YAMLs, surfaces open questions for Principal review before any implementation begins.
 
@@ -206,6 +215,7 @@
 
 **Date:** April 25, 2026 (Phase 7.2 design)
 **Status:** Active
+**Type:** 1
 
 **Decision:** The YAML refactor lands as a single transition (split into Phase A "YAML alongside TypeScript" and Phase B "delete TypeScript"). No long-running parallel migration where old and new exist for weeks.
 
@@ -227,6 +237,7 @@
 
 **Date:** April 25, 2026 (Phase 7.1 / 7.2)
 **Status:** Active
+**Type:** 1
 
 **Decision:** The engine has no code branches on workflow type, mode, or configuration shape. Every variation between deliberations is expressed in YAML and processed identically by the engine.
 
@@ -248,6 +259,7 @@
 
 **Date:** April 25, 2026 (Phase 7.1 OQ-1)
 **Status:** Active
+**Type:** 1
 
 **Decision:** Single-agent flows (A0, A1 baselines) use the standard YAML schema. No special "single-agent shorthand" syntax.
 
@@ -269,6 +281,7 @@
 
 **Date:** April 25, 2026 (Phase 7.2 Phase B)
 **Status:** Active
+**Type:** 1
 
 **Decision:** The `@vada/teams` package is deleted. Team configurations become YAML files. The package's role (defining `Team` objects with workflow + agents) is replaced by `DeliberationSpec` YAML files loaded at runtime.
 
@@ -290,6 +303,7 @@
 
 **Date:** April 25, 2026 (Phase 7.2 OQ-6)
 **Status:** Active
+**Type:** 1
 
 **Decision:** Delete `CustomWorkflow` type and `compileCustom` compiler. They are dead code — no team currently uses them.
 
@@ -311,6 +325,7 @@
 
 **Date:** April 25, 2026 (Phase 7.2 OQ-5)
 **Status:** Active
+**Type:** 1
 
 **Decision:** The `Plan` interface no longer has a `workflowType` field. It has a `specId` field that uniquely identifies the YAML the plan was compiled from.
 
@@ -333,6 +348,7 @@
 
 **Date:** April 25, 2026 (Phase 6.7 / Phase 7.2 recognition)
 **Status:** Active (implementation deferred to Phase 8)
+**Type:** 1
 
 **Decision:** Synthesis is not delegated to Caller Claude. It is produced by Vāda's engine. Every deliberation YAML must specify a synthesizer configuration. The synthesizer is an engine-level agent that produces structured synthesis output (convergence, divergence, new ideas, gaps, proposed solution).
 
@@ -357,6 +373,7 @@ The hybrid option (Vāda + Caller Claude both synthesize) is structurally allowe
 
 **Date:** April 25, 2026 (Phase 7.2 OQ-4)
 **Status:** Active
+**Type:** 1
 
 **Decision:** When invoking the MCP, consumers pass the full YAML content (the file's text) along with the question. Not just a YAML file ID or registry reference.
 
@@ -381,6 +398,7 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 **Date:** April 25, 2026 (Phase 7.2 architectural recognition)
 **Status:** Superseded by D-025 (naming convention only; core immutability intent retained)
+**Type:** 1
 
 **Decision:** Once a YAML file has accumulated benchmark run data, it is treated as immutable. Iteration on the configuration happens by forking — copying the file to a new file with a new `id`, modifying the copy, and benchmarking the new version. Both versions remain in the repository.
 
@@ -407,6 +425,7 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 **Date:** April 25, 2026 (Phase 7.2 Phase B)
 **Status:** Active (process pattern, not architectural decision)
+**Type:** 1
 
 **Decision:** After major refactors, run an explicit three-list audit before committing documentation: (1) files modified in this phase, (2) all documentation in the repo, (3) cross-reference marking each as TOUCHED / STALE / CURRENT / UNKNOWN.
 
@@ -428,6 +447,7 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 **Date:** April 26, 2026
 **Status:** Active
+**Type:** 1
 **Area:** Engine — YAML loading
 
 **Decision summary:** Extract `loadYamlFromCatalog(id)` into `@atta/engine` as the single shared entry point for loading deliberation specs from the catalog directory. All callers (web route, MCP server, verify scripts) use this function rather than computing catalog paths themselves.
@@ -451,6 +471,7 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 **Date:** April 26, 2026
 **Status:** Active
+**Type:** 1
 **Area:** Package architecture
 
 **Decision summary:** The `@vada/agent-metadata` package (display-only metadata for agent visual rendering) was deleted and its types moved directly into `apps/vada-ai/web/src/components/agents/visuals/`.
@@ -472,6 +493,7 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 **Date:** April 26, 2026
 **Status:** Active
+**Type:** 1
 **Area:** MCP server — spec loading
 
 **Decision summary:** `apps/vada-ai/mcp-server/src/spec-registry.ts` no longer maintains a static `SPECS` record. `listPublicSpecs()` delegates to `@atta/engine`'s `listPublicSpecs()` (which uses `readdirSync`). `lookupSpec(id)` calls `loadYamlFromCatalog(id)` on demand. ALIASES remain for short-name UX.
@@ -493,6 +515,7 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 **Date:** April 26, 2026
 **Status:** Active
+**Type:** 1
 **Area:** Web app — deliberation routing
 
 **Decision summary:** Three callsites previously fell back to `'crucible-v1'` when `specId` was absent. All now fail explicitly: `useDeliberateForm` throws if no specs are available at initialization; `/deliberation/start` returns 400 if `specId` is not provided; `/workflow/run` throws if `session.specId` is null.
@@ -513,6 +536,7 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 **Date:** April 26, 2026
 **Status:** Active
+**Type:** 1
 **Area:** Database — sessions table
 
 **Decision summary:** A data-only Drizzle migration (`0015_spec_id_backfill.sql`) strips `-v1` suffixes from existing `sessions.spec_id` values: `UPDATE "sessions" SET "spec_id" = REPLACE("spec_id", '-v1', '') WHERE "spec_id" LIKE '%-v1'`.
@@ -533,6 +557,7 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 **Date:** April 26, 2026
 **Status:** Active (supersedes D-018's naming convention; retains its core immutability intent)
+**Type:** 1
 **Area:** YAML catalog conventions
 
 **Decision summary:** The `-v1` / `-vN` suffix naming convention is dropped. YAML files are named semantically without version suffixes (e.g., `crucible.yaml`, not `crucible-v1.yaml`). Iteration by forking remains correct for benchmarked YAMLs, but the forked name is chosen by the author and need not use numeric suffixes.
@@ -559,6 +584,7 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 **Date:** April 26, 2026
 **Status:** Active
+**Type:** 1
 **Area:** MCP tool API, web app SSE, database persistence
 
 **Decision summary:** When a Vāda spec declares synthesis with `output_format: structured`, both consumers (MCP `vada__deliberate`, web app SSE/database) receive both the rendered text content and the parsed JSON structured field. The consumer chooses how to use each.
@@ -585,6 +611,7 @@ The registry-based shortcut still exists for Vāda's own UI surfaces (vada.ai we
 
 **Date:** May 5, 2026
 **Status:** Active
+**Type:** 1
 
 **Decision summary:** All team configurations (Reviewers, Sparring, Crucible, War Room, and any future team) use a single localStorage key format: `vada:team:<specId>` → `Record<agentName, string>`. The value maps each agent name to its modelId. There is no distinction in storage between editable reviewer-chain teams and non-editable role-based teams.
 
@@ -610,6 +637,7 @@ The DB-backed `userTeamModels` table was removed because it caused a revert-to-C
 
 **Date:** May 4, 2026 (PR #13, `refactor/single-source-keys`)
 **Status:** Active
+**Type:** 1
 
 **Decision summary:** Server-side `user_provider_keys` table (envelope-encrypted at rest) is the single canonical store for user provider API keys. Browser-side IndexedDB-via-passkey is no longer the canonical store; `@atta/identity` is no longer responsible for storing provider keys. Both UI surfaces (Settings → API Keys; the `/deliberate` model picker's inline key dialog) read and write the same server-side store via `POST /api/keys/provider`. This reverses the "two stores with sync" architecture briefly in place earlier in the same week.
 
@@ -637,6 +665,7 @@ The DB-backed `userTeamModels` table was removed because it caused a revert-to-C
 
 **Date:** May 4, 2026 (PRs #9 + #10, `feat/mcp-server`)
 **Status:** Active
+**Type:** 1
 
 **Decision summary:** Hosted MCP server shipped end-to-end. Endpoint at `https://vada.attalabs.dev/api/mcp`. Streamable HTTP transport per the MCP specification. Bearer-token authentication via SHA-256-hashed API keys (`vada_*`) stored in the `api_keys` table. Provider keys stored separately in `user_provider_keys` with envelope encryption (AES-256-GCM, AAD-bound to user_id, env-var-derived master key, version field for future KMS migration). Both `vada__consult` and `vada__deliberate` tools wired through. This is a deliberate trust-model escalation distinct from the prior browser-only BYOK story.
 
@@ -672,6 +701,7 @@ The trust-model escalation is real and intentional: the prior browser-only BYOK 
 
 **Date:** May 5, 2026 (PR `feat/shared-keys-ui`)
 **Status:** Active
+**Type:** 1
 
 **Decision summary:** `ProviderKeysSection` and `ApiKeysSection` extracted from `apps/vada-ai/web/src/app/(main)/settings/components/` into `packages/ui/account/` as shared components — usable by any future Atta product's Settings page. Ecosystem-shared key tables (`api_keys`, `user_provider_keys`, `mcp_sessions`) moved from `apps/vada-ai/web/src/db/schema.ts` to `packages/db/src/schema/keys.ts`. Vāda-specific tables (including `userSettings` for face-style preference) stay in the app-local schema. The Settings → Teams tab is removed; team agent model selection moves inline to the deliberation panel via D-027's unified storage.
 
@@ -725,6 +755,7 @@ When the rationale of an existing entry is wrong but the decision still holds:
 
 **Date:** May 8, 2026
 **Status:** Active
+**Type:** 1
 **Area:** Vāda Reviewers — reviewer + synthesizer system prompts
 
 **Decision summary:** Three additions to the Vāda Reviewers v1 prompt design, captured as rev 5 of `vada-reviewers-spec.md` (§4.1.1, §4.1.2, §3.7). (1) Reviewer system prompt restructured as four explicit labeled sections — Persona, Goal, Posture, Output — replacing the rev 4 prose-ordered prompt with the same content laid out in maintainable sections. (2) Reviewer system prompt now requires a `<verification>` block at the start of every response, enumerating the facts the reviewer is treating as given before critique begins. (3) Synthesizer system prompt now requires phantom consensus detection — when two or more reviewers reach the same surface conclusion through incompatible reasoning, the synthesizer marks the consensus item with `phantom_consensus: true` and explains the underlying disagreement in a `rationale` field on the schema. The synthesizer also de-prioritizes phantom-flagged consensus in recommendations, regardless of GROUNDED/INFERRED status.
@@ -761,6 +792,7 @@ The decision to patch the existing spec rather than create a new principles doc 
 
 **Date:** May 11, 2026 (PR #31, `feat/vendor-registry`)
 **Status:** Active
+**Type:** 1
 **Area:** Vendor routing across `@atta/models`, `@atta/adapter-langgraph`, `apps/vada-ai/web`, `apps/vada-ai/mcp-server`
 
 **Decision summary:** Vendor routing is consolidated into a single registry at `packages/models/src/vendors.ts`. Each registered vendor is a data record carrying `sdkShape` (one of `anthropic`, `google-genai`, `openai-compat`), `baseURL`, `keyConvention`, `modelPrefixes`, `envVar`, and `localOnly`. The adapter (`packages/adapter-langgraph/src/llm.ts`) dispatches by `sdkShape` — three branches total — reading vendor-specific configuration (notably `baseURL`) from the registry at call time. `ProviderKeys` becomes `Partial<Record<VendorId, string>>`. `VendorId = keyof typeof VENDORS` replaces the 5-wide `RouteProvider` union. All prior prefix-resolution implementations (`resolveProvider` in the adapter, `resolveModelVendor` in the web route, the local `resolveVendor` in `reviewer-models.ts`, `NATIVE_ROUTE_BY_MODELS_DEV_ID` + `OPENROUTER_ALLOWED_PROVIDERS` logic in `transform.ts`) are deleted or simplified to consult the registry. `vada__consult` MCP tool gains an optional `reviewer_config: Record<agentName, modelId>` parameter, validated against the registry, refused with structured `local_only_vendor` or `missing_provider_key` errors — same contract surface the web UI's deliberate route already supported.
@@ -805,6 +837,7 @@ The decision to unpublish Crucible/Sparring/War Room in the same PR — rather t
 
 **Date:** May 12, 2026
 **Status:** Active. Design ratified; PRs #41 + #47 + #48 shipped May 12-13, 2026. PR 3 (MCP `agent_config` rename + new SSE events) and PR 4 (UI rewrite) deferred — see `generic-flow-refactor.md` for the deferred-work breakdown.
+**Type:** 1
 **Area:** YAML schema, engine compiler, MCP server, web route handler, SSE event contract, UI renderer
 **Design doc:** `apps/vada-ai/specs/generic-flow-refactor.md`
 
@@ -897,6 +930,7 @@ The naming convention — "round" everywhere instead of "phase" — matches toda
 
 **Date:** May 13, 2026 (PR #48, `chore/d033-signal-and-revision-cleanup`)
 **Status:** Active
+**Type:** 1
 **Area:** Engine — `compile-flow.ts`, `types.ts`; adapter — `adapter.ts`, `graph-builder.ts`
 
 **Decision summary:** Two hardening changes identified during PR #47 (D-033 PR 2) diff review. (1) `compile-flow.ts` `buildRevisionCondition` now throws explicitly when it encounters `signal.type: 'equals'` or `signal.type: 'matches'` instead of silently coercing them to `'contains'`. (2) `RevisionCondition` in `types.ts` collapses from a 3-variant discriminated union (`contains` / `json-field-equals` / `json-field-truthy`) to a single-variant interface (`type: 'contains'`); the dead `json-field-equals` and `json-field-truthy` adapter switch-case branches and the orphaned `getJsonField` helper are deleted from `packages/adapter-langgraph/src/adapter.ts` and `graph-builder.ts`.
