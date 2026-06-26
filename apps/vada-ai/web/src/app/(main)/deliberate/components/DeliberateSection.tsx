@@ -224,6 +224,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                   communicates validity directly. */}
               <SmartPromptInput
                 onSubmit={handleSmartSubmit}
+                onTextChange={form.setQuestion}
                 placeholder='What decision are you wrestling with?'
                 submitOn='cmdenter'
                 status={form.loading ? 'loading' : 'idle'}
@@ -309,6 +310,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
             <div className='mx-auto w-full max-w-5xl px-6 py-4'>
               <SmartPromptInput
                 onSubmit={handleSmartSubmit}
+                onTextChange={form.setQuestion}
                 placeholder='What decision are you wrestling with?'
                 submitOn='cmdenter'
                 status={form.loading ? 'loading' : 'idle'}

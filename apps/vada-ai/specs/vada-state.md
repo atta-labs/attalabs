@@ -2,7 +2,32 @@
 
 ## Most recent session — Jun 27, 2026
 
-PR #207 five focused fixes (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, one additive commit on the existing one.
+PR #207 six focused fixes (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, additive commits on the existing one.
+
+**Fix 6 — Morphing submit button never appeared while typing (`onTextChange`).**
+
+User report: typing into the hero input did nothing — no button morphed in, the layout never transitioned to the active state. Root cause traced from the symptom backwards through three layers:
+
+1. `MorphingSubmitButton` returns `null` when `!hasQuestion` (Gemini empty state by design, Fix 12 of the prior session).
+2. `hasQuestion = !!form.question.trim()` reads from `useDeliberateForm`'s `question` state.
+3. `SmartPromptInput` is uncontrolled — the form's `handleSmartSubmit` calls `form.setQuestion(text)` only on submit. So while the user types, `form.question === ''`, `hasQuestion === false`, the slot stays `null`, and `isActive` (which mirrors `hasQuestion`) stays false. The layout never advances out of the hero.
+
+Fix is additive and minimal: a new optional `onTextChange?: (text: string) => void` prop on `SmartPromptInput`. Wired through to `PromptInputTextarea` in the vendor, where it composes with the existing `onChange` (both the controller branch and the uncontrolled branch) and fires with `e.currentTarget.value` on every change. The textarea stays uncontrolled — we never read `value` back. The consumer mirrors the typed text into its own state purely as an observer.
+
+Vāda passes `onTextChange={form.setQuestion}` at both call sites (hero + fixed bar). Herald passes nothing — its `JDInput` is byte-identical, confirmed with `git diff apps/herald-ai` (empty). `setQuestion` from `useState` is referentially stable so no infinite-render risk.
+
+The existing submit path is preserved by construction: `handleSmartSubmit(text, files)` receives the explicit `text` from the vendor and calls `form.handleStartWithText(text)`, which routes through `handleStartImplRef.current(overrideQuestion)`. The ref-based handler reads `overrideQuestion ?? question` — explicit text wins, no race against the last `onTextChange` flush, and the stale-closure guard (re-reading `getReviewerConfig` + `validateKeysForConfig` from localStorage inside `dispatchRef.current`) is untouched.
+
+Mental walkthrough — every transition:
+- Empty: `form.question = ''` → `hasQuestion = false` → button = `null` → `isActive = false` → hero layout.
+- Type `'h'`: vendor fires `onChange` → composed handler calls `onTextChange('h')` → `form.setQuestion('h')` → re-render → `hasQuestion = true` → `MorphingSubmitButton` renders → `isActive = true` → unmount hero, mount fixed-bar layout.
+- Click button on invalid config: opens `ReviewerConfigModal` (button is `type='button'`, `onClick = openReviewerModal`).
+- Cmd+Enter with text + invalid config: vendor textarea handler calls `form.requestSubmit()` → form's `onSubmit` fires `handleSmartSubmit` → `handleStartWithText(text)` → `handleStartImplRef.current` runs the spec check → opens modal. Same end state as the button click.
+- Delete back to empty: `onTextChange('')` → `setQuestion('')` → `hasQuestion = false` → `isActive = false` → fixed bar unmounts, hero remounts.
+
+Herald is unaffected: `JDInput.tsx` passes no `onTextChange`, both the vendor's composed `onChange` and the consumer's downstream behavior are no-ops when the callback is undefined. Byte-identical to before — confirmed by `git diff apps/herald-ai` returning empty.
+
+
 
 **Fix 1 — Bulletproof multi-line oscillation in `SmartPromptInput`.**
 

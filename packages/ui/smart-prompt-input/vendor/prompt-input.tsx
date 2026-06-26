@@ -568,11 +568,21 @@ export const PromptInput = ({
 export type PromptInputTextareaProps = ComponentProps<typeof InputGroupTextarea> & {
   submitOnCmdEnter?: boolean
   pasteToFileChars?: number
+  /**
+   * Observe-only callback fired on every input change with the current
+   * textarea value. Lets the consumer track text without forcing the input
+   * to become a fully controlled component (we never read `value` back).
+   *
+   * Composes with `onChange` (and the `controlledProps` provider path):
+   * `onTextChange` always fires after the existing handlers run. Safe to omit.
+   */
+  onTextChange?: (text: string) => void
 }
 
 export const PromptInputTextarea = ({
   onChange,
   onKeyDown,
+  onTextChange,
   className,
   placeholder = 'What would you like to know?',
   submitOnCmdEnter = false,
@@ -665,15 +675,27 @@ export const PromptInputTextarea = ({
   const handleCompositionEnd = useCallback(() => setIsComposing(false), [])
   const handleCompositionStart = useCallback(() => setIsComposing(true), [])
 
+  // Compose onChange so `onTextChange` fires on every input. This is the
+  // "uncontrolled-but-observable" path the consumer relies on: the textarea
+  // stays uncontrolled (no `value` prop except in the provider branch), but
+  // the consumer can mirror the typed text into its own state in real time
+  // without taking ownership of the value. Keeps Herald (no `onTextChange`)
+  // byte-identical with the previous behavior.
   const controlledProps = controller
     ? {
         onChange: (e: ChangeEvent<HTMLTextAreaElement>) => {
           controller.textInput.setInput(e.currentTarget.value)
           onChange?.(e)
+          onTextChange?.(e.currentTarget.value)
         },
         value: controller.textInput.value
       }
-    : { onChange }
+    : {
+        onChange: (e: ChangeEvent<HTMLTextAreaElement>) => {
+          onChange?.(e)
+          onTextChange?.(e.currentTarget.value)
+        }
+      }
 
   // INJECTION CONTRACT — see ui-library-system SKILL.md. The shared input
   // ships NO library. The consuming app injects `Textarea` (Vāda via build-time

@@ -104,6 +104,23 @@ export interface SmartPromptInputProps {
    * with sane styling.
    */
   components?: SmartPromptComponents
+  /**
+   * Observe-only callback fired with the current textarea text on every
+   * input. Lets a consumer mirror the typed value into its own state in real
+   * time WITHOUT making the input a fully controlled component (the consumer
+   * never has to pass `value` back in). The textarea remains uncontrolled
+   * locally; this prop is pure observation.
+   *
+   * Used by Vāda's hero to drive the `hasQuestion` predicate (which gates the
+   * morphing submit button and the hero ↔ active layout switch) directly off
+   * the typed text instead of waiting for submit. Herald passes nothing and
+   * remains byte-identical to the prior behavior.
+   *
+   * On submit the existing `onSubmit(text, files)` path is unaffected —
+   * `onSubmit` receives the explicit text, not the consumer's state, so
+   * there is no race between the last `onTextChange` and submit.
+   */
+  onTextChange?: (text: string) => void
 }
 
 const statusMap: Record<SmartPromptStatus, ChatStatus> = {
@@ -264,7 +281,8 @@ export function SmartPromptInput({
   actionsPosition = 'right',
   submitSlot,
   textareaClassName,
-  components
+  components,
+  onTextChange
 }: SmartPromptInputProps) {
   const chatStatus = statusMap[status]
   const [rejectionError, setRejectionError] = useState<string | null>(null)
@@ -426,6 +444,7 @@ export function SmartPromptInput({
                 submitOnCmdEnter={submitOn === 'cmdenter'}
                 pasteToFileChars={pasteToFileChars}
                 onInput={remeasure}
+                onTextChange={onTextChange}
                 className={textareaClassName}
               />
               {inlineMode && !actionsOnLeft && (
@@ -443,6 +462,7 @@ export function SmartPromptInput({
               placeholder={placeholder}
               submitOnCmdEnter={submitOn === 'cmdenter'}
               pasteToFileChars={pasteToFileChars}
+              onTextChange={onTextChange}
               className={textareaClassName}
             />
           )}
