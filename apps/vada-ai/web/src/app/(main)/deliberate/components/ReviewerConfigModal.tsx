@@ -5,7 +5,14 @@ import { probeProviderKey } from '@atta/identity'
 import type { VendorId } from '@atta/models'
 import { useCatalog } from '@atta/models'
 import { Button, ModelPicker, useToastContext } from '@atta/ui'
-import { Dialog, DialogContent, DialogTitle } from '@atta/ui/components/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@atta/ui/components/dialog'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowUpRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -119,37 +126,43 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
         if (!isOpen) onClose()
       }}
     >
-      <DialogContent className='w-full max-w-md space-y-6 border-border bg-card p-6'>
-        {/* Team identity header — names the team being configured so the user
-            never has to leave the modal to confirm "which team is this?". The
-            "View team" link is the single navigation path from here; it lives
-            in the modal (not below the input) so the empty-state input flow
-            stays focused on the question, not the team. */}
-        <div className='space-y-2'>
-          <div className='space-y-0.5'>
-            <h2 className='font-serif text-lg text-foreground'>{spec.displayName}</h2>
-            {spec.description && <p className='text-sm text-muted-foreground'>{spec.description}</p>}
-          </div>
+      {/* Canonical `DialogContent` ships its own surface (`bg-popover`,
+          `text-popover-foreground`, `flex flex-col gap-4 p-6 rounded-lg
+          border border-border shadow-lg`) — we do NOT override `bg-card`
+          here. `bg-popover` is the right surface for floating/transient
+          containers per the theme-token role doctrine.
+          The `flex flex-col gap-4` from the compound governs the spacing
+          between Header / body / Footer uniformly — no hand-rolled
+          `space-y-*` divs. */}
+      <DialogContent className='w-full max-w-md'>
+        <DialogHeader>
+          {/* Title is dynamic per spec — names the team being configured so
+              the user never has to leave the modal to confirm "which team is
+              this?". */}
+          <DialogTitle className='font-serif text-lg text-foreground'>Configure {spec.displayName}</DialogTitle>
+          {/* DialogDescription lives in the proper compound slot so it inherits
+              the canonical `text-sm text-muted-foreground` styling and the
+              accessible `aria-describedby` association on the dialog. */}
+          {spec.description && <DialogDescription>{spec.description}</DialogDescription>}
+          {/* "View team" link — the single navigation path out of this modal.
+              Mono micro-label, hover-to-accent per the doctrine (hover always
+              reaches for `accent`). */}
           <NextLink
             href={`/teams/${spec.id}`}
             variant='prose'
-            className='inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:text-accent'
+            className='inline-flex w-fit items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:text-accent'
           >
             View team
             <ArrowUpRight className='size-3' />
           </NextLink>
-        </div>
+        </DialogHeader>
 
-        <div className='space-y-1'>
-          <DialogTitle className='font-serif text-base text-foreground'>Configure models</DialogTitle>
-          <p className='text-sm text-muted-foreground'>
-            Pick a model for each slot. All need unlocked API keys to run.
-          </p>
-        </div>
-
-        <div className='space-y-4'>
+        {/* Body — only the model selectors. The previous "Configure models"
+            sub-heading + description duplicated the modal title; removed so the
+            modal reads cleanly: title (team identity + verb) → selectors → footer. */}
+        <div className='flex flex-col gap-4'>
           {editableAgents.map((agent) => (
-            <div key={agent.name} className='space-y-1.5'>
+            <div key={agent.name} className='flex flex-col gap-1.5'>
               <div className='text-[11px] font-mono uppercase tracking-widest text-muted-foreground'>
                 {reviewerLabels[agent.name]}
               </div>
@@ -167,14 +180,18 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
           ))}
         </div>
 
-        <div className='flex gap-3 pt-2'>
-          <Button onClick={handleSave} disabled={!allConfigured} className='flex-1'>
-            Save
-          </Button>
-          <Button onClick={onClose} variant='outline' className='flex-1'>
+        {/* DialogFooter — canonical compound slot. Inherits `mt-2 flex
+            flex-col-reverse gap-2 sm:flex-row sm:justify-end` from the
+            primitive, so spacing matches the header automatically. No
+            hand-rolled `pt-*` padding hack. */}
+        <DialogFooter>
+          <Button onClick={onClose} variant='outline'>
             Cancel
           </Button>
-        </div>
+          <Button onClick={handleSave} disabled={!allConfigured}>
+            Save
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

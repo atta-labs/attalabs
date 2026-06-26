@@ -82,6 +82,65 @@ Herald's `JDInput` still passes no `actions`, so the `inputRowRef` branch never 
 
 No stop condition hit. Herald `JDInput` unchanged. `bun run typecheck --force && bun run check` pass. `verify-docs --pr` pass.
 
+**Fix 11 — Full UI-rules audit of PR #207 + purple-focus root cause + Configure modal cleanup + compound-component refactor.**
+
+User reported the smart-prompt-input wrapper rendering purple on focus and the Configure modal showing inconsistent spacing between the title and the footer buttons. Required a complete UI-rules audit of every change introduced by PR #207 before any fix.
+
+**Audit findings (PR #207 vs `origin/main`, all UI files).**
+
+- `packages/ui/libraries/*/installed/*` — **no modifications** (governance check 1: passed). The PR only touches `packages/ui/smart-prompt-input/`, `packages/ui/canvas/aia-{agent,sphere}.tsx`, and app-level files.
+- Hardcoded palette / hex / oklch / hsl / `text-white` / `bg-black` — **zero** violations in the diff. Searched via `git diff origin/main...HEAD -- packages/ui apps/vada-ai apps/herald-ai | grep -E "text-(red|green|blue|yellow|amber|purple|pink|indigo|violet|fuchsia|cyan|teal|emerald|lime|orange|rose|sky|stone|zinc|slate|neutral|gray)-\d|bg-\[#|text-\[#|#[a-fA-F0-9]{6}|oklch\(|hsl\(|text-white|bg-black"` — empty.
+- New inline `style={{}}` with color value — **zero**. The only new inline style is `style={{ position: 'absolute', bottom: '-4px', left: '-4px', zIndex: 2, display: 'inline-flex' }}` in `packages/ui/canvas/aia-sphere.tsx` for the new `badgeLeft` slot; mirrors the existing `badge` slot one line above (`right: '-4px'`). Positional values only, no color.
+- `--accent` / `--accent-foreground` misuse — none. All accent usages are doctrine-correct: `hover:bg-accent text-accent-foreground` on dropdown items, `hover:text-accent` on text links, `bg-accent text-accent-foreground` on the dropdown's `data-[highlighted]` state. Status indicator `bg-accent` on a 1.5px pulsing dot is appropriate per the theme-token role doctrine ("accent → reactive / special").
+- Compound-component usage — `AlertDialog`, `Card{Header,Content,Footer}` not touched in this PR. `Dialog` was used WITHOUT its compound parts in `ReviewerConfigModal` — flagged here, fixed below.
+- Vendored ai-elements code in `packages/ui/smart-prompt-input/vendor/*` — fair game (not `libraries/*/installed/*`). Pruned cleanly to drop unused Command / Select / HoverCard / Tabs / Spinner surfaces and converted to dependency injection via `SmartPromptComponentsProvider`. Graceful fallbacks for the undefined-on-first-render window mirror Herald's `JDInput` `Button ? <Button…> : <button>` pattern. Approved.
+
+**File-by-file pass/fail:**
+
+- `packages/ui/smart-prompt-input/smart-prompt-input.tsx` — PASS. Semantic tokens only, no inline color styles, no palette classes.
+- `packages/ui/smart-prompt-input/vendor/prompt-input.tsx` — PASS. Cleanly pruned. Native fallbacks use `hover:bg-accent hover:text-accent-foreground` per doctrine.
+- `packages/ui/smart-prompt-input/vendor/components-context.tsx` — PASS. Pure DI plumbing, no styling.
+- `packages/ui/smart-prompt-input/vendor/ui/input-group.tsx` — pre-existing `focus-within:ring-1 focus-within:ring-ring` on the InputGroup wrapper (line 10, NOT introduced by PR #207). Identified as the **purple focus-ring root cause** for Vāda.
+- `packages/ui/canvas/aia-{agent,sphere}.tsx` — PASS. New `badgeLeft` / `toolBadge` props add a bottom-left overlay slot; inline style is positional (mirrors the existing `badge` slot).
+- `apps/vada-ai/web/src/app/(main)/deliberate/components/DeliberateSection.tsx` — PASS at design level; modal modifier classes (`bg-card` override below) flagged at the modal file.
+- `apps/vada-ai/web/src/app/(main)/deliberate/components/ReviewerConfigModal.tsx` — **FAIL** on two counts:
+  - (a) `DialogContent` was overriding `bg-popover` with `bg-card`. Per the theme-token role doctrine `popover` is the correct surface for floating/transient containers (the canonical `DialogContent` from `packages/ui/libraries/basic/installed/dialog.tsx` uses `bg-popover text-popover-foreground`); `card` is reserved for non-floating object surfaces. Override removed.
+  - (b) Hand-rolled `space-y-*` divs were used instead of `DialogHeader` / `DialogFooter` / `DialogDescription`. The compound components exist and were imported but unused. Refactored to use them; spacing is now governed by `DialogContent`'s `flex flex-col gap-4` and `DialogFooter`'s `mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end` — header and footer now share the same rhythm.
+- `apps/vada-ai/web/src/app/(main)/deliberate/components/TeamPicker.tsx` — PASS. All tokens semantic. `outline` variant + `hover:text-accent-foreground` is slightly redundant (the variant already provides `hover:bg-accent/20`) but compatible.
+- `apps/vada-ai/web/src/app/(main)/deliberate/components/TeamSummary.tsx` — PASS.
+- `apps/vada-ai/web/src/app/(main)/deliberation/[id]/components/CouncilFeed.tsx` — PASS. `var(--vendor-*)` resolution via `resolveVendorColor` is the doctrine-correct way to apply vendor identity to canvas spheres (vendor tokens live in `apps/vada-ai/web/src/styles/globals.css`, not Tailwind palette).
+- `apps/vada-ai/web/src/components/AgentToolIndicator.tsx` — PASS. `border-border bg-card text-muted-foreground` only.
+- `apps/vada-ai/web/src/components/RouteAwareFooter.tsx` — PASS. No styling.
+- `apps/vada-ai/web/src/components/agents/{VadaAgent,ModelOrProviderIcon}.tsx` — PASS. `var(--muted-foreground)` is the semantic fallback for unconfigured reviewer slots — correct.
+- `apps/herald-ai/web/src/components/envoy/JDInput.tsx` — **PASS, byte-identity preserved.** Only the new `components={{ … }}` prop is passed to `SmartPromptInput`; Herald renders no `className` or `textareaClassName` override on the input, so Herald's visible chrome is byte-identical to the prior commit. The vendor's native fallback branches activate only when injected primitives are `undefined`, which doesn't happen at steady state.
+
+**Fix — purple focus ring at the SmartPromptInput call sites.**
+
+Root cause: `packages/ui/smart-prompt-input/vendor/ui/input-group.tsx` line 10 ships `focus-within:ring-1 focus-within:ring-ring` on the InputGroup `<div>`. In Vāda's theme `--ring` resolves to a magenta/purple-leaning value and reads as purple on the elevated input surface. NOT a new violation in PR #207; pre-existing vendored ai-elements styling.
+
+Fix lives at the call site, not in globals.css or the vendor file (per the ui-theme-tokens skill — "choose a different token at the call site"). `DeliberateSection.tsx` now defines `NO_PURPLE_FOCUS_RING = '[&>form>div]:focus-within:ring-0'` and applies it via `className` on both Vāda call sites (`HERO_WRAPPER_CLASSNAME` = elevation + ring-off; `FIXED_BAR_WRAPPER_CLASSNAME` = ring-off only). The InputGroup keeps its calibrated `border-border` resting border. Herald passes no `className` to `SmartPromptInput`, so its canonical shadcn focus ring is unchanged — Vāda-only opt-out, no shared chrome touched.
+
+No stop condition hit. The theme tokens in `globals.css` are not modified; the fix is a per-call-site visual choice.
+
+**Fix — `ReviewerConfigModal` cleanup.**
+
+- Removed the "Configure models" sub-section heading + its description ("Pick a model for each slot. All need unlocked API keys to run.") — it duplicated the modal title and added a second visual anchor next to the team identity. Modal now reads: title → selectors → footer.
+- Modal title is now dynamic: `Configure {spec.displayName}` (replaces the hand-rolled `<h2>` team-identity header added in commit `f6836092`).
+- Team description moved into the canonical `DialogDescription` slot inside `DialogHeader` (inherits `text-sm text-muted-foreground` from the primitive and gets `aria-describedby` association on the dialog automatically).
+- "View team" link stays inside `DialogHeader`, below `DialogDescription`. Single navigation path out of the modal, anchored to the team identity.
+
+**Fix — compound components via `Dialog{Header,Title,Description,Footer}`.**
+
+Refactored `ReviewerConfigModal` to use the compound parts that already exist in `@atta/ui/components/dialog`:
+- Header content lives in `<DialogHeader>` (gives `flex flex-col gap-1.5` automatically).
+- Body content (model selectors) is one flex-col block; no hand-rolled spacing wrapper.
+- Footer (`Save` + `Cancel` buttons) lives in `<DialogFooter>` (inherits `mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end` — same rhythm as the header, no margin hacks).
+- `DialogContent` keeps only `w-full max-w-md`; the prior `bg-card p-6 space-y-6 border-border` overrides are dropped because the canonical compound already ships them (`bg-popover p-6 flex flex-col gap-4 rounded-lg border border-border shadow-lg`).
+
+Result: the modal's title-to-footer spacing is now governed by the canonical `gap-4` between compound parts. No hand-rolled `pt-2` / `space-y-6` / margin hacks. Consistent rhythm.
+
+No stop condition hit. The compound parts (`DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter`) are exported by `packages/ui/libraries/basic/installed/dialog.tsx` and resolved via the `@atta/ui/components/*` package.json export.
+
 ## Previous session — Jun 27, 2026
 
 PR #207 completion — Phases 1, 4, 5 of the deliberate UX + working-deliberations brief (vada-production-v1, `task/vada-production-v1/tool-badges`). Phases 2, 3 landed in the prior session (frontier-chat + morphing button + dropdown restyle). The acceptance test for PR #207 is: (1) clean frontier-grade input UX, and (2) deliberations actually run and render.

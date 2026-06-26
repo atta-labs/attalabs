@@ -62,6 +62,34 @@ const HERO_TEXTAREA_CLASSNAME = [
   'resize-none'
 ].join(' ')
 
+/**
+ * `className` applied to the SmartPromptInput wrapper that strips the
+ * vendored `InputGroup`'s `focus-within:ring-1 focus-within:ring-ring` chrome.
+ *
+ * Root cause of the "purple wrapper on focus" the user reported:
+ * `packages/ui/smart-prompt-input/vendor/ui/input-group.tsx` line 10 ships
+ * `focus-within:ring-1 focus-within:ring-ring` on its outer `<div>`. In Vāda's
+ * theme `--ring` resolves to a magenta/purple-leaning value — visually it reads
+ * as purple on the elevated input surface.
+ *
+ * Per the ui-theme-tokens skill we don't modify globals.css from here — we
+ * choose a different visual at the call site. The InputGroup keeps its
+ * `border-border` resting border (calibrated against `--card`/`--popover`,
+ * neutral), and on focus we suppress the ring. Result: a neutral, calm input
+ * surface that respects the theme while not flashing purple.
+ *
+ * The `[&>form>div]` selector targets the InputGroup which is the direct
+ * `<div>` child of the `<form>` rendered by `PromptInput`. We retain the
+ * elevation styling (rounded-xl + shadow-lg) on the hero, and add ring
+ * suppression on both Vāda call sites (hero + fixed bottom bar).
+ *
+ * NB: this is a Vāda-only opt-out — Herald's SmartPromptInput call site does
+ * NOT pass this className, so Herald keeps the canonical shadcn focus ring.
+ */
+const NO_PURPLE_FOCUS_RING = '[&>form>div]:focus-within:ring-0'
+const HERO_WRAPPER_CLASSNAME = `[&>form>div]:rounded-xl [&>form>div]:shadow-lg ${NO_PURPLE_FOCUS_RING}`
+const FIXED_BAR_WRAPPER_CLASSNAME = NO_PURPLE_FOCUS_RING
+
 interface DeliberateSectionProps {
   remainingToday: number
   dailyLimit: number
@@ -152,7 +180,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 submitOn='cmdenter'
                 status={form.loading ? 'loading' : 'idle'}
                 actionsPosition='right'
-                className='[&>form>div]:rounded-xl [&>form>div]:shadow-lg'
+                className={HERO_WRAPPER_CLASSNAME}
                 // See HERO_TEXTAREA_CLASSNAME definition above for the full rationale —
                 // strips the injected `@atta/ui` Textarea's own border / rounded /
                 // focus ring / resize handle / `min-h-16` so the textarea blends
@@ -230,6 +258,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 placeholder='What decision are you wrestling with?'
                 submitOn='cmdenter'
                 status={form.loading ? 'loading' : 'idle'}
+                className={FIXED_BAR_WRAPPER_CLASSNAME}
                 textareaClassName={HERO_TEXTAREA_CLASSNAME}
                 components={smartPromptComponents}
               />
