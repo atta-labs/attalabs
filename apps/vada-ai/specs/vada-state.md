@@ -1,6 +1,27 @@
 **Status:** ratified
 
-## Most recent session — Jun 23, 2026
+## Most recent session — Jun 26, 2026
+
+Council teams added on PR #207 (vada-production-v1, branch `task/vada-production-v1/tool-badges`). Two new YAML specs landed under `packages/agents/vada-deliberation/yamls/`:
+
+- `vada-council.yaml` — three independent answer slots (Gemini / GPT / Grok by default, any vendor-keyed model swappable per slot) answer the user's question in parallel. One round, `layout: parallel`, no synthesis, no draft. Each agent has `tools: [web_search]` and `classifier.mode: skip`.
+- `vada-council-synthesis.yaml` — same three answer slots, plus a `role: synthesizer` agent in a second serial round that compares the three answers using the `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}` template (the post-D-033 pattern, not the broken `{{reviewerResponses}}` of pre-D-033).
+
+The distinction this introduces: Council is an **answer-a-question** team — there is no draft, the models reason from scratch in parallel. The existing Reviewers / Reviewers + Synthesis remain **critique-a-draft** teams — a primary AI has already produced a draft and reviewers attack it. Both shapes are useful; they answer different jobs.
+
+Synthesis output contract (locked here for the future Council results view to consume):
+
+```ts
+{ agreements: string[], disagreements: string[], bottomLine: string }
+```
+
+Known limitation, intentionally deferred: the existing rounds UI's `ConclusionPanel` / synthesis parser is keyed to the Reviewers JSON shape (`{summary, agreements, divergences, recommendation, ...}`) and will not correctly render Council's `{agreements, disagreements, bottomLine}` output. Building the Council results view (columns + AIASphere/matrix + synthesis panel) is a separate task; do not retrofit the old rounds UI to handle both shapes. See D-035.
+
+Both YAMLs are auto-discovered by `listPublicSpecs()` (engine `catalog-loader.ts` enumerates the directory) — no registry edits required. Engine validation (70/70 tests) confirms both pass the D-033 rules. `listPublicSpecs()` now returns 4 public specs: `vada-council, vada-council-synthesis, vada-reviewers, vada-reviewers-synthesis`.
+
+---
+
+## Previous session — Jun 23, 2026
 
 `SmartPromptInput` gains `actionsPosition` prop + Vāda Deliberate hero moves TeamPicker + CONFIGURE to the LEFT and uses `variant='outline'` (vada-production-v1, PR #207, tool-badges branch).
 
@@ -192,7 +213,7 @@ Reviewer sphere identity + tool indicator corner glyph (vada-production-v1, PR #
 
 ---
 
-## Most recent session — Jun 23, 2026
+## Previous session — Jun 23, 2026
 
 Per-vendor tool substrate (vada-production-v1 T3, PR #194). The adapter now forwards tool declarations to all three vendor branches, not just Anthropic. Key changes:
 
@@ -248,8 +269,8 @@ BYOK + Settings restructure (branch: `feat/shared-keys-ui`). Key changes:
 > **Framing note (2026-04-30):** The "Brokered mode" and "Autonomous mode" product categories used in older entries have been retired. Current framing uses the Vāda Teams catalog (YAML specs at `packages/agents/vada-deliberation/yamls/`). See `vada-reviewers-spec.md` for the in-progress Vāda Reviewers team spec.
 
 **Last updated:** Jun 23, 2026
-**Last milestone:** Per-vendor tool substrate — GOOGLE_TOOL_REGISTRY + OPENAI_COMPAT_TOOL_REGISTRY + openai-compat custom tool loop (PR #194, D-053 Option A+B).
-**Next milestone:** Track B Item 3b — Reviewer prompt iteration.
+**Last milestone:** Council + Council + Synthesis teams added — answer-a-question shape distinct from the critique-a-draft Reviewers shape (vada-decisions D-035). Per-vendor tool substrate (PR #194, D-053 Option A+B) shipped the same day.
+**Next milestone:** Council results view — columns + AIASphere/matrix + synthesis panel keyed to the `{ agreements, disagreements, bottomLine }` contract.
 
 ---
 
