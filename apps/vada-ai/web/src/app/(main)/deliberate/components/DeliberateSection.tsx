@@ -54,26 +54,28 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 </p>
               </div>
 
+              {/* Frontier-chat layout: TeamPicker as a small pill on the right of the
+                  textarea (drops to footer when the textarea wraps). The inner InputGroup
+                  surface (`>form>div`) is elevated off the page canvas — soft shadow
+                  + a touch more rounding for a Grok-like surface. All semantic tokens;
+                  no hardcoded colors. The CONFIGURE button that used to sit in `actions`
+                  next to the picker is moved out of this slot; Commit 3 wires it into
+                  the morphing submit slot. */}
               <SmartPromptInput
                 onSubmit={handleSmartSubmit}
                 placeholder='What decision are you wrestling with?'
                 submitOn='cmdenter'
                 status={form.loading ? 'loading' : 'idle'}
-                actionsPosition='left'
+                actionsPosition='right'
+                className='[&>form>div]:rounded-xl [&>form>div]:shadow-lg'
+                // The vendored PromptInputTextarea defaults to min-h-16 (=4rem), which
+                // forces scrollHeight above singleLineHeight on first paint and pins
+                // the layout in multi-line mode forever. min-h-0 lets the textarea
+                // collapse to its true single-line height; tailwind-merge resolves the
+                // conflict in our favor.
+                textareaClassName='min-h-0'
                 actions={
-                  <>
-                    <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
-                    {selectedSpec?.agents.some((a) => a.editable) && (
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        onClick={form.openReviewerModal}
-                        className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent-foreground'
-                      >
-                        Configure
-                      </Button>
-                    )}
-                  </>
+                  <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
                 }
               />
 
