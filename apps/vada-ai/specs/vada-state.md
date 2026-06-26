@@ -26,6 +26,16 @@ Added a team-identity header at the top of the modal: `spec.displayName` (font-s
 
 Removed the standalone "View team ↗" link that sat below the empty-state input — pulled `NextLink` + `ArrowUpRight` out of `DeliberateSection.tsx`. Added an equivalent link inside `ReviewerConfigModal.tsx` next to the team identity header, routed to `/teams/${spec.id}`. Single navigation path to the team detail page, anchored to the place where you're already thinking about that specific team.
 
+**Fix 6 — Multi-line detection in `SmartPromptInput` was frozen on `lineHeight: normal`.**
+
+User report: the hero textarea grew correctly when text wrapped, but the actions row (TeamPicker + Configure/Submit) stayed glued to the right of the textarea instead of dropping below into the footer once a second line appeared. The growth itself worked — `field-sizing-content` + the `min-h-0` override from Fix 1 had the textarea expanding line-by-line up to `max-h-40` — but `inlineMode = hasActions && !isMultiLine && attachmentCount === 0` was stuck on `isMultiLine = false`.
+
+Root cause: shadcn's `<textarea>` primitive (`packages/ui/libraries/basic/installed/textarea.tsx`) sets no explicit `line-height`, so `getComputedStyle(el).lineHeight` returns the literal string `'normal'`. The previous `remeasure()` did `Number.parseFloat(styles.lineHeight)` → `NaN`, then `if (!Number.isFinite(lineHeight)) return` — so the function bailed without ever calling `setIsMultiLine(true)`. The growth was real; the detection threshold simply never fired. Suspect #2 from the diagnostic list (lineHeight resolves to `'normal'` instead of a px value), not the padding/border drift suspect #1.
+
+Fix in `packages/ui/smart-prompt-input/smart-prompt-input.tsx`: when computed style reports `'normal'` (or an empty string), fall back to `fontSize * 1.2` — the browser default that the rendered line actually uses. Then compare *content height* (`scrollHeight - paddingTop - paddingBottom - borderTop - borderBottom`) against `lineHeight * 1.5`. 1.5x is the unambiguous "more than 1 line" threshold: a single line lands at ~1.0x with sub-pixel slack; a second visible line lands at ~2.0x. Independent of any padding / border / `min-h-*` override the consuming app passes through `textareaClassName`, so Vāda's `HERO_TEXTAREA_CLASSNAME` (which strips border and forces `min-h-0`) and any future override surface the same way.
+
+Herald's `JDInput` passes no `actions` prop, so `hasActions = false`, the `useLayoutEffect` early-returns, the `inputRowRef` branch never renders, and `remeasure` is never wired to a real `onInput`. The detection function exists but never runs for Herald — zero behavior change there. Verified by reading `apps/herald-ai/web/src/components/envoy/JDInput.tsx`: no `actions=` on either `SmartPromptInput` site.
+
 No stop condition hit. Herald `JDInput` unchanged. `bun run typecheck --force && bun run check` pass. `verify-docs --pr` pass.
 
 ## Previous session — Jun 27, 2026

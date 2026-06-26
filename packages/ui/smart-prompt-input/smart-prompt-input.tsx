@@ -285,15 +285,27 @@ export function SmartPromptInput({
     )
 
   // Track textarea single-line vs multi-line for Gemini-style responsive placement.
-  // Detection: measure the textarea's scrollHeight on input and compare to the
-  // line-height baseline captured on first paint. The textarea grows via
-  // `field-sizing-content`, so re-measuring on `onInput` (and on mount) catches
-  // every height change that matters — no ResizeObserver needed.
+  // Detection: measure the textarea's actual content height on input and compare
+  // to the line-height baseline. The textarea grows via `field-sizing-content`,
+  // so re-measuring on `onInput` (and on mount) catches every height change that
+  // matters — no ResizeObserver needed.
   //
   // We resolve the textarea node by querying the wrapper rather than forwarding
   // a ref through the vendored PromptInputTextarea — that component is a plain
   // function component without ref forwarding, and patching the vendor file to
-  // add it would cost more than this targeted DOM query.
+  // add it would cost more than this targeted DOM query. The injected
+  // `@atta/ui` Textarea is itself a real `<textarea>` element (no wrapping div),
+  // so `querySelector('textarea[name="message"]')` always lands on the right node.
+  //
+  // Robustness note: shadcn's `<textarea>` ships with no explicit `line-height`,
+  // so `getComputedStyle(el).lineHeight` returns the literal string `'normal'` and
+  // `parseFloat('normal')` returns `NaN`. The previous implementation early-returned
+  // on `NaN` and never flipped `isMultiLine`, freezing the input in inline mode no
+  // matter how many lines wrapped. The fix below derives the line height from
+  // `font-size * 1.2` when computed style reports `'normal'` (the browser default),
+  // and compares content height (scrollHeight minus padding minus border) against
+  // a 1.5x line-height threshold so a single visual line never bounces multi-line
+  // on sub-pixel rounding, and a second visible line trips it unambiguously.
   const inputRowRef = useRef<HTMLDivElement | null>(null)
   const [isMultiLine, setIsMultiLine] = useState(false)
   const [attachmentCount, setAttachmentCount] = useState(0)
@@ -302,14 +314,21 @@ export function SmartPromptInput({
     const el = inputRowRef.current?.querySelector<HTMLTextAreaElement>('textarea[name="message"]')
     if (!el) return
     const styles = window.getComputedStyle(el)
-    const lineHeight = Number.parseFloat(styles.lineHeight)
-    const paddingTop = Number.parseFloat(styles.paddingTop)
-    const paddingBottom = Number.parseFloat(styles.paddingBottom)
+    const fontSize = Number.parseFloat(styles.fontSize)
+    const rawLineHeight = styles.lineHeight
+    const lineHeight =
+      rawLineHeight === 'normal' || rawLineHeight === '' ? fontSize * 1.2 : Number.parseFloat(rawLineHeight)
     if (!Number.isFinite(lineHeight) || lineHeight <= 0) return
-    // Allow ~1px rounding slack so a perfectly single-line textarea never
-    // bounces into multi-line on a sub-pixel difference.
-    const singleLineHeight = lineHeight + paddingTop + paddingBottom + 1
-    setIsMultiLine(el.scrollHeight > singleLineHeight)
+    const paddingTop = Number.parseFloat(styles.paddingTop) || 0
+    const paddingBottom = Number.parseFloat(styles.paddingBottom) || 0
+    const borderTop = Number.parseFloat(styles.borderTopWidth) || 0
+    const borderBottom = Number.parseFloat(styles.borderBottomWidth) || 0
+    // Content area = scrollHeight minus padding and border. Independent of
+    // Tailwind padding/border overrides on the injected textarea.
+    const contentHeight = el.scrollHeight - paddingTop - paddingBottom - borderTop - borderBottom
+    // 1.5x line height is the unambiguous "more than 1 line" threshold —
+    // a single line is ~1.0x with rounding slack; a second line lands at ~2.0x.
+    setIsMultiLine(contentHeight > lineHeight * 1.5)
   }
 
   useLayoutEffect(() => {
