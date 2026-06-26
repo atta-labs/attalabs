@@ -8,9 +8,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@atta/ui/components/dialog'
-import { Button } from '@atta/ui/components/button'
-import { Input } from '@atta/ui/components/input'
-import { Textarea } from '@atta/ui/components/textarea'
+import { Button, Input, Textarea } from '@atta/ui/components'
 import { useRouter } from 'next/navigation'
 import { useId, useState, useTransition } from 'react'
 import { createThemeAction } from '../actions'

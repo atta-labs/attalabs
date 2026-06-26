@@ -8,7 +8,7 @@ import {
   getVadaConfig,
   getVitakkaBranding
 } from '@atta/cms'
-import { ToastProvider } from '@atta/ui/basic/components'
+import { ToastProvider } from '@atta/ui/components'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { AdminShell } from '@/components/admin-shell'

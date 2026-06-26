@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { ChevronDown, Check } from 'lucide-react'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@atta/ui/basic/components'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@atta/ui/components'
 import { PROJECT_CONFIG, PROJECT_KEYS, isValidProject } from '@/lib/project-config'
 import type { ProjectKey } from '@/lib/project-config'
 

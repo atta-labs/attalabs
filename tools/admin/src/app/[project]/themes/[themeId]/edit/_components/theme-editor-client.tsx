@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@atta/ui/components/button'
+import { Button, Textarea, useToastContext } from '@atta/ui/components'
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle
 } from '@atta/ui/components/dialog'
-import { Textarea } from '@atta/ui/components/textarea'
 import { Clipboard, Copy, Download } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
@@ -19,7 +18,6 @@ import { exportShadcnCss } from '@/lib/export-shadcn-css'
 import { parseShadcnCss } from '@/lib/parse-shadcn-css'
 import { PROJECT_CONFIG } from '@/lib/project-config'
 import type { ProjectKey } from '@/lib/project-config'
-import { useToastContext } from '@atta/ui/basic/components'
 import { updateThemeAction } from '../../../actions'
 import type { ThemeEditorData } from '../../../_types'
 import { ThemeForm } from './theme-form'
@@ -71,7 +69,6 @@ export function ThemeEditorClient({ theme, project }: ThemeEditorClientProps) {
   const [data, setData] = useState<ThemeEditorData>(initialData)
   const [colorScheme, setColorScheme] = useState<ColorScheme>('dark')
   const [isPending, startTransition] = useTransition()
-  const [saveError, setSaveError] = useState<string | null>(null)
   const [headerSlot, setHeaderSlot] = useState<Element | null>(null)
   const [exportOpen, setExportOpen] = useState(false)
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
@@ -152,17 +149,15 @@ export function ThemeEditorClient({ theme, project }: ThemeEditorClientProps) {
 
   function handleSave() {
     if (!data.name.trim()) {
-      setSaveError('Name is required.')
+      errorToast('Validation failed', 'Name is required.')
       return
     }
-    setSaveError(null)
     startTransition(async () => {
       try {
         await updateThemeAction(project, theme._id, data)
         successToast('Theme saved', 'Changes persisted to the CMS database.')
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to save.'
-        setSaveError(message)
         errorToast('Save failed', message)
       }
     })
@@ -255,11 +250,6 @@ export function ThemeEditorClient({ theme, project }: ThemeEditorClientProps) {
       </Dialog>
 
       <div className='flex h-full flex-col'>
-        {saveError && (
-          <p className='shrink-0 border-b border-destructive/20 bg-destructive/10 px-4 py-2 font-mono text-xs text-destructive'>
-            {saveError}
-          </p>
-        )}
         <div className='flex min-h-0 flex-1'>
           <div className='flex w-96 shrink-0 flex-col border-r border-border'>
             <div className='flex-1 overflow-y-auto'>

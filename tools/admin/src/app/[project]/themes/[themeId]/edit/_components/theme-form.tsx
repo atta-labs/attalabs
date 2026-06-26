@@ -1,9 +1,6 @@
 'use client'
 
-import { Button } from '@atta/ui/components/button'
-import { Input } from '@atta/ui/components/input'
-import { Slider } from '@atta/ui/components/slider'
-import { Textarea } from '@atta/ui/components/textarea'
+import { Button, Input, Slider, Textarea } from '@atta/ui/components'
 
 const FIELD_INPUT_CLASS = 'flex-1 h-8 rounded-md border border-input bg-background/60 px-2 font-mono text-xs'
 const FULL_INPUT_CLASS = 'h-9 rounded-md border border-input bg-background/60 px-2 text-sm'
