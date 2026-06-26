@@ -2,6 +2,40 @@
 
 ## Most recent session — Jun 27, 2026
 
+PR #207 completion — Phases 1, 4, 5 of the deliberate UX + working-deliberations brief (vada-production-v1, `task/vada-production-v1/tool-badges`). Phases 2, 3 landed in the prior session (frontier-chat + morphing button + dropdown restyle). The acceptance test for PR #207 is: (1) clean frontier-grade input UX, and (2) deliberations actually run and render.
+
+**Phase 1 — `SmartPromptInput` dependency injection (commit `809970db`).**
+
+`packages/ui/smart-prompt-input/` previously hardcoded the `basic` library and vendored its own primitives, so it ignored the consuming app's library (per-user runtime library in Herald, build-time library in Vāda). Refactor: the shared composite resolves NO library; consumers inject.
+
+- New `components` prop: `{ Textarea, Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem }`. Component renders injected primitives; deleted every `'../../libraries/basic/installed/*'` and `libraries/basic/components/*` import in the smart-input tree.
+- Graceful fallback for the undefined-on-first-render window (mirrors `JDInput`'s `Button ? … : raw` pattern). Missing/loading primitive degrades to a native element rather than crashing — important for Herald's per-user library which resolves async via `useComponents()`.
+- Vendor pruning: deleted `attachments.tsx`, `vendor/ui/hover-card.tsx`, `vendor/ui/spinner.tsx`, `vendor/ui/tooltip.tsx`. Remaining vendor surface: `prompt-input.tsx`, `components-context.tsx`, `vendor/ui/input-group.tsx`. Net diff: +319 / -847 lines.
+- `Spinner` replaced with lucide `Loader2` in `PromptInputSubmit` — keeps a status indicator without adding `Spinner` to the contract.
+- Vāda (`DeliberateSection.tsx`) injects from `@atta/ui` (build-time-resolved library). Herald (`JDInput.tsx`) injects from its existing `useComponents()` (per-user runtime library) — no provider change.
+- **`.claude/skills/ui-library-system/SKILL.md` updated** with a "Cross-product composite components" section + injection contract + four-step rule. This closes the governance gap from PR #213 (the same step that was missed there).
+
+**Phase 4 — Council results view (commit `64a833d8`).**
+
+New purpose-built results view for `vada-council` and `vada-council-synthesis`. The existing rounds components (Sparring/crucible/war-room) are untouched.
+
+- `CouncilFeed.tsx` (348 lines new) — N parallel answer columns (one per model) + optional synthesis panel.
+- Each column uses a real `AIASphere` with an **EXPLICIT vendor color** via `resolveVendorColor(modelInfo?.modelId)` → `VENDORS[vendor].color` → `var(--vendor-*)` (from `apps/vada-ai/web/src/components/agents/vendors.ts`). The grey-sphere bug is fixed by construction: no `getAgentConfigByName` fallback (which returned the "strategist" generic config and produced grey spheres on Council).
+- Per-column sphere props: `useId()` for unique IDs, `state={sphereState}` (`speaking` → `complete` derived from `useDeliberationScene`'s per-agent `msg.state`), `showMatrix={!isComplete}`, `alwaysRenderSpheres matchContentHeight` on the `AIACanvas` (scrolling page).
+- Completion-fill streaming consumes existing SSE events via `useDeliberationScene` (rounds transcript flows through `agent_completed` events emitted by `useDeliberation.ts`). Each column flips thinking → answered independently as each model finishes. Token-by-token streaming is out of scope here (requires adapter V2 work — backlogged, not built).
+- Synthesis panel reads the locked contract `{ agreements: string[], disagreements: string[], bottomLine: string }` and renders Agree / Disagree / Bottom line. Council synthesis does NOT route through the existing rounds `ConclusionPanel` (which is keyed to the Reviewers JSON shape).
+- No rounds vocabulary, no "CONCLUSION / CLEAN" labels on the Council view.
+- Per-spec routing in `app/(main)/deliberation/[id]/page.tsx`: `COUNCIL_SPEC_IDS = new Set(['vada-council', 'vada-council-synthesis'])` routes to `<CouncilFeed />`; other specs render the existing components unchanged.
+- Footer suppression: `RouteAwareFooter.tsx` with `FOOTER_SUPPRESSED_PREFIXES = ['/deliberate', '/deliberation/']` — applied via Vāda's `(main)/layout.tsx`. Vāda-only. Herald's layout is untouched.
+
+**Phase 5 — Docs gate (commit `0136cb08`).**
+
+`verify-docs` on PR #207 was failing C2 decision-shape because legacy `vada-decisions.md` entries `D-001..D-034` carry `**Status:** Active` but no `**Type:**` field (the gate added Type as a required field after they were written). All 34 are foundational architectural decisions that predate the current type taxonomy → backfilled with `**Type:** 1` (irreversible — Principal must ratify). `verify-docs --pr` now passes against the PR body.
+
+**Result.** PR #207 covers all six phases of the brief. Phases 2, 3 from prior session; Phases 1, 4, 5 from this session. Phase 6 = this docs note + push.
+
+## Previous session — Jun 27, 2026
+
 Frontier-chat hero layout + morphing Configure/Submit slot + dropdown restyle (vada-production-v1, PR #207, `task/vada-production-v1/tool-badges`).
 
 **Commit 1 — `@atta/ui/smart-prompt-input`: `submitSlot` + `textareaClassName`.**
