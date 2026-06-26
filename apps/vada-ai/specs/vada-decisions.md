@@ -1,5 +1,7 @@
 # Vāda — Architectural Decision Log
 
+**Status:** ratified
+
 **Format:** Append-only. Each entry has a unique ID, date, decision summary, alternatives considered, rationale, and consequences.
 
 **Purpose:** Capture WHY architectural decisions were made, not just what was decided. Future contributors (human or AI) can understand the reasoning rather than re-deriving it.
