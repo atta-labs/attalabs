@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 /* Align Tailwind's dark: variant with our SSR-driven [data-theme="dark"]
    attribute on <html>. Without this, dark: would resolve via the browser's

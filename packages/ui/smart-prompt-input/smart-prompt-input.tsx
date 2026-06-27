@@ -153,6 +153,17 @@ export interface SmartPromptInputProps {
    */
   onTextChange?: (text: string) => void
   /**
+   * Fires whenever the attachment count changes (a file pasted, a long text
+   * paste converted to a file via `pasteToFileChars`, an X-click removal).
+   * Lets the consumer gate a submitSlot button on attachment presence — e.g.
+   * Vāda's MorphingSubmitButton shows when there is question text OR an
+   * attachment, since either is submittable content.
+   *
+   * Mirrors `onTextChange`: pure observation, the SmartPromptInput still owns
+   * its internal `attachmentCount` state.
+   */
+  onAttachmentsChange?: (count: number) => void
+  /**
    * Variant forwarded to the injected `Textarea`. When set the vendor passes
    * `variant={textareaVariant}` to the injected component, giving the consumer
    * a variant-level escape hatch instead of `textareaClassName` overrides.
@@ -212,6 +223,8 @@ function getExt(name: string): string {
   return (name.split('.').pop() ?? '').toUpperCase()
 }
 
+const TILE_EXIT_DURATION_MS = 200
+
 function AttachmentTileItem({
   f,
   extra,
@@ -232,12 +245,39 @@ function AttachmentTileItem({
         ? formatBytes(extra.size)
         : '—'
 
+  // Local exit-animation state: on click, run the exit animation for
+  // TILE_EXIT_DURATION_MS, then call the real `onRemove` to unmount. Calling
+  // `onRemove` synchronously gives no animation because React unmounts the
+  // element instantly. This pattern is local — the parent state machine still
+  // owns the attachment list; we're just delaying the unmount signal.
+  const [isLeaving, setIsLeaving] = useState(false)
+  const handleRemove = () => {
+    if (isLeaving) return
+    setIsLeaving(true)
+    setTimeout(onRemove, TILE_EXIT_DURATION_MS)
+  }
+
   return (
-    <div className='relative flex h-36 w-28 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card'>
+    <div
+      className={cn(
+        'relative flex h-36 w-28 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card',
+        // Entrance: pop in when the tile first mounts.
+        'animate-in fade-in zoom-in-95 duration-200',
+        // Exit: when the user clicks the X, the parent keeps the tile mounted
+        // for `TILE_EXIT_DURATION_MS` so this animation can play. `fill-mode-forwards`
+        // holds the faded/scaled-down end state until React unmounts.
+        isLeaving && 'animate-out fade-out-0 zoom-out-95 fill-mode-forwards duration-200'
+      )}
+    >
       <button
         type='button'
         aria-label={`Remove ${name}`}
-        onClick={onRemove}
+        onClick={handleRemove}
+        // Prevent the button from stealing focus from the textarea on click.
+        // Without this, clicking X moves focus to the button → button unmounts
+        // → focus falls to <body>, and the user's typing position is lost even
+        // though text remains in the textarea.
+        onMouseDown={(e) => e.preventDefault()}
         className='absolute right-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-background shadow ring-1 ring-background/40 transition hover:bg-foreground/80'
       >
         <X className='h-3.5 w-3.5' />
@@ -319,14 +359,28 @@ function AttachmentTiles({ onCountChange }: { onCountChange?: (count: number) =>
     }
   }, [files])
 
-  if (files.length === 0) return null
+  // PromptInputHeader stays mounted in both states so the `grid-template-rows`
+  // 0fr ↔ 1fr trick has a stable wrapper to transition. This is the smoothest
+  // pure-CSS way to animate between 0 and intrinsic content height — no JS,
+  // no transforms (so the focused textarea isn't affected), no measurement
+  // loops. Works in every modern browser.
+  const hasFiles = files.length > 0
 
   return (
-    <PromptInputHeader>
-      <div className='flex flex-wrap gap-2 p-1'>
-        {files.map((f) => (
-          <AttachmentTileItem key={f.id} f={f} extra={extras.get(f.id)} onRemove={() => remove(f.id)} />
-        ))}
+    <PromptInputHeader className={cn(!hasFiles && 'p-0')}>
+      <div
+        className={cn(
+          'grid w-full transition-[grid-template-rows] duration-300 ease-out',
+          hasFiles ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        )}
+      >
+        <div className='overflow-hidden'>
+          <div className='flex flex-wrap gap-2 p-1'>
+            {files.map((f) => (
+              <AttachmentTileItem key={f.id} f={f} extra={extras.get(f.id)} onRemove={() => remove(f.id)} />
+            ))}
+          </div>
+        </div>
       </div>
     </PromptInputHeader>
   )
@@ -350,7 +404,8 @@ export function SmartPromptInput({
   textareaVariant,
   surface = 'card',
   components,
-  onTextChange
+  onTextChange,
+  onAttachmentsChange
 }: SmartPromptInputProps) {
   const chatStatus = statusMap[status]
   const [rejectionError, setRejectionError] = useState<string | null>(null)
@@ -427,6 +482,10 @@ export function SmartPromptInput({
   const inputRowRef = useRef<HTMLDivElement | null>(null)
   const [isMultiLine, setIsMultiLine] = useState(false)
   const [attachmentCount, setAttachmentCount] = useState(0)
+
+  useEffect(() => {
+    onAttachmentsChange?.(attachmentCount)
+  }, [attachmentCount, onAttachmentsChange])
 
   const remeasure = () => {
     const el = inputRowRef.current?.querySelector<HTMLTextAreaElement>('textarea[name="message"]')
@@ -528,6 +587,26 @@ export function SmartPromptInput({
                 <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>{renderSubmit()}</div>
               )}
             </div>
+          ) : inlineMode && !useFullWidthCta ? (
+            // No-actions inline mode: textarea + inline submit (mirrors the
+            // hasActions inline branch, just without the actions cluster). Before
+            // this branch existed, single-line Herald-style inputs rendered the
+            // submit ONLY in the footer, and the footer only appeared when
+            // `accept || hint || !inlineMode` was true — so a Herald consumer
+            // typing one line of text with no hint/accept saw NO submit anywhere.
+            // The default vendor render now always surfaces a submit affordance.
+            <div className='flex flex-row items-center gap-1'>
+              <PromptInputTextarea
+                placeholder={placeholder}
+                submitOnCmdEnter={submitOn === 'cmdenter'}
+                pasteToFileChars={pasteToFileChars}
+                onInput={remeasure}
+                onTextChange={onTextChange}
+                className={textareaClassName}
+                variant={textareaVariant}
+              />
+              <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>{renderSubmit()}</div>
+            </div>
           ) : (
             <PromptInputTextarea
               placeholder={placeholder}
@@ -560,7 +639,7 @@ export function SmartPromptInput({
                 </div>
               )}
               {hasActions && !inlineMode && actionsOnLeft && !useFullWidthCta && renderSubmit()}
-              {!hasActions && !useFullWidthCta && renderSubmit()}
+              {!hasActions && !inlineMode && !useFullWidthCta && renderSubmit()}
             </PromptInputFooter>
           )}
           {useFullWidthCta && (
