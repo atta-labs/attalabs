@@ -18,6 +18,9 @@ import {
   type PromptInputMessage
 } from './vendor/prompt-input'
 import { SmartPromptComponentsProvider, type SmartPromptComponents } from './vendor/components-context'
+import type { TextareaVariant } from '../types/form/textarea'
+
+export type SmartPromptInputSurface = 'card' | 'popover' | 'bare'
 
 export type SmartPromptStatus = 'idle' | 'loading' | 'streaming' | 'error'
 
@@ -121,6 +124,41 @@ export interface SmartPromptInputProps {
    * there is no race between the last `onTextChange` and submit.
    */
   onTextChange?: (text: string) => void
+  /**
+   * Variant forwarded to the injected `Textarea`. When set the vendor passes
+   * `variant={textareaVariant}` to the injected component, giving the consumer
+   * a variant-level escape hatch instead of `textareaClassName` overrides.
+   *
+   * Pair with `surface='popover'` to use `'bare'` — the textarea sheds its own
+   * chrome (border, rounded corners, focus ring, resize handle, `min-h-16`
+   * baseline) and blends into the surrounding InputGroup.
+   *
+   * Defaults to `undefined` so Herald and other existing consumers keep their
+   * library-default Textarea variant — byte-identical.
+   */
+  textareaVariant?: TextareaVariant
+  /**
+   * Container surface treatment. The component owns its own elevation,
+   * focus halo, and surface chrome — call sites should never reach in with
+   * descendant selectors.
+   *
+   * - `'card'` (default) — the vendor's original surface (`bg-card`,
+   *   `focus-within:ring-1 focus-within:ring-ring` on the InputGroup itself).
+   *   Herald and every prior consumer get this; the render is byte-identical
+   *   to before this prop existed.
+   * - `'popover'` — Vāda hero treatment. Elevates the InputGroup to
+   *   `bg-popover` with `rounded-xl shadow-lg`, and moves the focus halo to
+   *   the OUTER wrapper (`focus-within:ring-2 ring-ring/60` + offset). The
+   *   InputGroup's own `overflow-hidden` is swapped to `overflow-clip` so the
+   *   ring is not clipped if you want it back inside; the outer-wrapper ring
+   *   sidesteps the clipping problem entirely.
+   * - `'bare'` — no surface at all. The InputGroup keeps its layout but drops
+   *   its border, background, rounding, and the resting focus ring. Use when
+   *   the consuming layout supplies its own chrome (e.g. a fixed bottom bar
+   *   already wrapped in `border-t bg-background/95`). The focus halo is
+   *   suppressed too.
+   */
+  surface?: SmartPromptInputSurface
 }
 
 const statusMap: Record<SmartPromptStatus, ChatStatus> = {
@@ -281,6 +319,8 @@ export function SmartPromptInput({
   actionsPosition = 'right',
   submitSlot,
   textareaClassName,
+  textareaVariant,
+  surface = 'card',
   components,
   onTextChange
 }: SmartPromptInputProps) {
@@ -446,6 +486,7 @@ export function SmartPromptInput({
                 onInput={remeasure}
                 onTextChange={onTextChange}
                 className={textareaClassName}
+                variant={textareaVariant}
               />
               {inlineMode && !actionsOnLeft && (
                 <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>
@@ -464,6 +505,7 @@ export function SmartPromptInput({
               pasteToFileChars={pasteToFileChars}
               onTextChange={onTextChange}
               className={textareaClassName}
+              variant={textareaVariant}
             />
           )}
           {hasFooterContent && (

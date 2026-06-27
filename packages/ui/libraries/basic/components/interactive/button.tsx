@@ -12,6 +12,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   outline: 'border border-border bg-background hover:bg-accent/20',
   secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
   ghost: 'hover:bg-accent',
+  'ghost-pill': 'border border-border text-muted-foreground hover:text-accent-foreground hover:bg-accent/10',
   link: 'text-primary underline-offset-4 hover:underline',
   square: 'bg-primary text-primary-foreground hover:bg-primary/90 rounded-none',
   ai: 'text-white [background:linear-gradient(90deg,#3b82f6,#8b5cf6,#a855f7,#d946ef)] hover:opacity-90'

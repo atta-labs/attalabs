@@ -12,6 +12,12 @@ export type HeadingSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4x
 export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6
 
 /**
+ * Heading font-weight options. Default `'bold'` matches the existing baked
+ * `font-bold` so any consumer that omits the prop keeps the prior render.
+ */
+export type HeadingWeight = 'normal' | 'medium' | 'semibold' | 'bold'
+
+/**
  * Heading component props contract.
  * Renders semantic h1-h6 elements with consistent typography.
  * All template implementations must satisfy this interface.
@@ -23,4 +29,8 @@ export interface HeadingProps extends React.HTMLAttributes<HTMLHeadingElement> {
   level?: HeadingLevel
   /** Visual size override (decouple semantics from appearance) */
   size?: HeadingSize
+  /** Font weight (overrides the default `font-bold`)
+   * @default 'bold'
+   */
+  weight?: HeadingWeight
 }

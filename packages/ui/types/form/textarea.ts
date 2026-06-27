@@ -4,7 +4,7 @@ import type * as React from 'react'
 /**
  * Textarea variant options available across all templates.
  */
-export type TextareaVariant = 'default' | 'filled' | 'ghost' | 'error' | 'underlined' | 'neubrutalism'
+export type TextareaVariant = 'default' | 'filled' | 'ghost' | 'error' | 'underlined' | 'neubrutalism' | 'bare'
 
 /**
  * Textarea size options available across all templates.

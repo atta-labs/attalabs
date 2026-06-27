@@ -577,6 +577,14 @@ export type PromptInputTextareaProps = ComponentProps<typeof InputGroupTextarea>
    * `onTextChange` always fires after the existing handlers run. Safe to omit.
    */
   onTextChange?: (text: string) => void
+  /**
+   * Variant forwarded to the injected `Textarea`. When the consuming library's
+   * Textarea exposes variants (basic/animate ship `bare`, `ghost`, …), this
+   * lets the consumer reach for the right one without descendant-selector
+   * className overrides. Falls through to the injected component as-is; the
+   * native fallback path ignores it.
+   */
+  variant?: string
 }
 
 export const PromptInputTextarea = ({
@@ -587,6 +595,7 @@ export const PromptInputTextarea = ({
   placeholder = 'What would you like to know?',
   submitOnCmdEnter = false,
   pasteToFileChars,
+  variant,
   ...props
 }: PromptInputTextareaProps) => {
   const controller = useOptionalPromptInputController()
@@ -716,6 +725,7 @@ export const PromptInputTextarea = ({
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         placeholder={placeholder}
+        {...(variant !== undefined && { variant })}
         {...props}
         {...controlledProps}
       />

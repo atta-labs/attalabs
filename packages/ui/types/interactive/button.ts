@@ -5,7 +5,16 @@ import type * as React from 'react'
  * Button variant options available across all templates.
  * Each template must support all these variants.
  */
-export type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'square' | 'ai'
+export type ButtonVariant =
+  | 'default'
+  | 'destructive'
+  | 'outline'
+  | 'secondary'
+  | 'ghost'
+  | 'ghost-pill'
+  | 'link'
+  | 'square'
+  | 'ai'
 
 /**
  * Button size options available across all templates.
