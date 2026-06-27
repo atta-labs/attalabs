@@ -9,7 +9,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  Textarea
+  Textarea,
+  TextReveal
 } from '@atta/ui'
 import { Heading } from '@atta/ui/shared'
 import { SmartPromptInput, type SmartPromptComponents } from '@atta/ui/smart-prompt-input'
@@ -153,7 +154,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                 because Heading defaults to the canvas body font. Color is
                 inherited (canvas body is `text-foreground`). */}
             <Heading level={1} size='3xl' weight='normal' className='font-serif'>
-              What are you wrestling with?
+              <TextReveal text='What are you wrestling with?' />
             </Heading>
           </div>
 

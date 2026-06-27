@@ -131,3 +131,7 @@ export {
   SheetTitle,
   SheetTrigger
 } from '../../basic/installed/sheet'
+
+// Text Reveal
+export { TextReveal } from '../../../text-reveal'
+export type { TextRevealProps } from '../../../text-reveal'

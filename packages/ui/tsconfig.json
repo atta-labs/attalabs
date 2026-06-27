@@ -1,5 +1,5 @@
 {
   "extends": "@atta/typescript-config/base.json",
-  "include": ["types/**/*.ts", "libraries/**/*.ts", "libraries/**/*.tsx", "lib/**/*.ts", "lib/**/*.tsx", "canvas/**/*.ts", "canvas/**/*.tsx", "engine-flow/**/*.ts", "engine-flow/**/*.tsx", "hooks/**/*.ts", "smart-prompt-input/**/*.ts", "smart-prompt-input/**/*.tsx", "../cms/src/global.d.ts"],
+  "include": ["types/**/*.ts", "libraries/**/*.ts", "libraries/**/*.tsx", "lib/**/*.ts", "lib/**/*.tsx", "canvas/**/*.ts", "canvas/**/*.tsx", "engine-flow/**/*.ts", "engine-flow/**/*.tsx", "hooks/**/*.ts", "smart-prompt-input/**/*.ts", "smart-prompt-input/**/*.tsx", "text-reveal/**/*.ts", "text-reveal/**/*.tsx", "../cms/src/global.d.ts"],
   "exclude": ["node_modules", "scripts", "**/*.test.ts", "**/*.test.tsx"]
 }
