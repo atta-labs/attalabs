@@ -33,7 +33,8 @@
     "./scripts/generate-ui": "./scripts/generate-ui.ts",
     "./footer": "./footer/index.tsx",
     "./topbar": "./topbar/index.tsx",
-    "./smart-prompt-input": "./smart-prompt-input/index.ts"
+    "./smart-prompt-input": "./smart-prompt-input/index.ts",
+    "./text-reveal": "./text-reveal/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
