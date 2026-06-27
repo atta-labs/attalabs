@@ -190,10 +190,22 @@ export function DeliberateSection(props: DeliberateSectionProps) {
 
   return (
     <>
-      {/* ── Empty state — centered hero layout — unmounted when active to remove from layout/scroll ── */}
+      {/* ── Empty state — top-biased hero layout (Fix 7: ~upper third instead of
+          vertically centered) — unmounted when active to remove from layout/scroll.
+
+          Why top-biased and not centered: when the textarea wraps into footer
+          mode (`isMultiLine` latch in SmartPromptInput) the InputGroup grows
+          downward, the dropdown row sits very close to the viewport bottom, and
+          the layout reads as cramped at the page edge. Anchoring the content to
+          ~20vh from the top leaves plenty of room below for the input to grow
+          without colliding with the page edge. The header bar is `h-14`
+          (≈3.5rem), and `pt-[20vh]` places the title in the upper third of the
+          remaining space — still centered horizontally via `items-center`, but
+          not vertically. `items-start` replaces `justify-center` so the
+          `pt-[20vh]` controls vertical position deterministically. */}
       {!isActive && (
         <>
-          <div className='min-h-[calc(100dvh-3.5rem)] flex flex-col items-center justify-center'>
+          <div className='min-h-[calc(100dvh-3.5rem)] flex flex-col items-center pt-[20vh]'>
             <div className='w-full max-w-2xl px-6 flex flex-col gap-6'>
               <MigrationPrompt configuredProviders={props.configuredProviders} />
 

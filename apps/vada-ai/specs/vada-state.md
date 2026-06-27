@@ -2,6 +2,34 @@
 
 ## Most recent session — Jun 27, 2026
 
+PR #207 follow-up — custom-class audit, hero repositioning, dropdown-hover explanation (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, one additive commit on the existing one (plus a pre-existing local admin commit `a8a0f5c6` unrelated to this work).
+
+**Audit — custom (non-Tailwind) classNames introduced by PR #207.**
+
+Audit scope: every `*.tsx` / `*.ts` file PR #207 touched (`git diff --name-only origin/main...HEAD~1`, excluding the local admin commit). Each file's `className=` usages were grep'd and inspected. Allowed: standard Tailwind utilities, arbitrary values (`bg-[var(--popover)]`, `w-[280px]`, `pt-[20vh]`), arbitrary-descendant selectors (`[&>form>div]:focus-within:ring-0`), data-attribute variants, group variants, important-prefix utilities (`!size-2`, `!bg-muted-foreground`). Forbidden: CSS-module names, BEM-style classes, non-Tailwind utility libraries.
+
+Result: **clean across all 34 files.** No custom CSS module classes. No BEM. No non-Tailwind utility names. Every className parses as Tailwind. `font-display` (Herald `JDInput.tsx` line 131) exists pre-PR and is unchanged by PR #207 (PR diff for that file is only the `components={...}` injection and a `const components = useComponents()` extract — no className additions). InputGroup vendor file at `packages/ui/smart-prompt-input/vendor/ui/input-group.tsx` uses semantic tokens (`bg-card`, `text-card-foreground`, `focus-within:ring-ring`) — all Tailwind. No corrective changes needed in this commit.
+
+**Fix 7 — Hero content top-biased (not vertically centered).**
+
+User report: when the textarea wraps into footer mode, the dropdown row sits very close to the viewport bottom and the layout reads as cramped at the page edge. Root cause: `DeliberateSection.tsx` empty-state container used `flex flex-col items-center justify-center`, which centers the title + input vertically in the available `min-h-[calc(100dvh-3.5rem)]` space. As the input grows downward (multi-line latch), the bottom edge of the InputGroup approaches the page edge while the title moves further up — but with the input still anchored to the vertical midpoint, the bottom edge gets visually pinned to the lower half.
+
+Fix in `DeliberateSection.tsx`: replace `justify-center` with `pt-[20vh]` and `items-center` with `items-center` (kept — horizontal centering is unchanged). The vertical position is now deterministic: `pt-[20vh]` places the title in the upper third of the available height, leaving the lower ~80% of the viewport for the input to grow into. `items-start` is not needed because `pt-[20vh]` controls vertical position directly; `items-center` continues to handle horizontal centering. Result: header bar visible at the top, ~20% empty space below it, then title + input, then ample room below before the page edge. The active-state layout (fixed bottom bar) is untouched — only the empty-state hero container changed.
+
+No parent constraint fights the reposition: the route-level `CatalogProvider` on `deliberate/page.tsx` line 53 sets `relative min-h-[calc(100dvh-3.5rem)]` and the `(main)/layout.tsx` body uses `flex flex-col min-h-dvh` with `flex-1` children — both pass available height through to the section without imposing a centered alignment.
+
+**Dropdown hover — canonical pattern + Vāda override confirmation (for future reference).**
+
+User asked: "is the UI implementation to hover the entire element instead of the text?" Answer in two parts.
+
+1. **Canonical shadcn / `@atta/ui` behavior is whole-element highlight.** The installed `DropdownMenuItem` at `packages/ui/libraries/basic/installed/dropdown-menu.tsx` line 58–59 ships `focus:bg-accent focus:text-accent-foreground` as the default highlighted-item treatment. Radix sets the `focus` data-state on the currently-highlighted item (keyboard arrow-key navigation OR pointer hover), so the entire row fills with `--accent` and the text flips to `--accent-foreground`. This is the canonical pattern and is intentionally what every dropdown across every product gets out of the box. We did **not** modify the installed component (doing so would change every dropdown in every product — out of scope and a stop-condition violation).
+
+2. **Vāda's `TeamPicker.tsx` overrides this at the call site, and the override is still in effect** (verified at lines 71–73). Non-selected items get `focus:bg-transparent focus:text-accent` passed via `className`. `tailwind-merge` resolves the conflicts deterministically: `focus:bg-transparent` wins over the installed `focus:bg-accent` (same `background-color` family on the same variant), and `focus:text-accent` wins over `focus:text-accent-foreground` (same `color` family). The subtitle span follows the same rule via `group-focus:text-accent/80`. Selected items keep `bg-accent text-accent-foreground` (a persistent commitment, not a transient highlight — fills are appropriate for selected/active state per the theme-tokens doctrine). Net behavior in Vāda's TeamPicker: **text shifts to accent on hover, background stays `bg-popover`. Selected item is the only item with an accent fill.** Every other dropdown in Vāda (and in every other product) keeps the canonical whole-element highlight.
+
+**Verification.** `bun run typecheck --force && bun run check` pass. `bun scripts/verify-docs.ts --pr` pass. Herald byte-identity: this commit touches only `apps/vada-ai/web/src/app/(main)/deliberate/components/DeliberateSection.tsx` and `apps/vada-ai/specs/vada-state.md` — zero Herald files. The local admin commit `a8a0f5c6` (kept per user instruction) does touch Herald-adjacent files but is unrelated to this PR's tool-badges work.
+
+## Previous sub-session — Jun 27, 2026
+
 PR #207 six focused fixes (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, additive commits on the existing one.
 
 **Fix 6 — Morphing submit button never appeared while typing (`onTextChange`).**
