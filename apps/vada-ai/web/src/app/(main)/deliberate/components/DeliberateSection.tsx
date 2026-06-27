@@ -112,9 +112,15 @@ const HERO_TEXTAREA_CLASSNAME = [
  * NOT pass this className, so Herald keeps the canonical shadcn focus ring
  * and `bg-card` surface (byte-identical to before).
  */
-const FOCUS_BORDER_SWAP = '[&>form>div]:focus-within:border-ring'
-const HERO_WRAPPER_CLASSNAME = `[&>form>div]:rounded-xl [&>form>div]:shadow-lg [&>form>div]:bg-popover ${FOCUS_BORDER_SWAP}`
-const FIXED_BAR_WRAPPER_CLASSNAME = FOCUS_BORDER_SWAP
+// The InputGroup ships `overflow-hidden`, which clips any ring/box-shadow on
+// the InputGroup itself. We put the focus halo on the OUTER wrapper instead —
+// the wrapper has no overflow-hidden, so the ring renders as a visible halo
+// around the input. Combined with `border-ring` on the InputGroup for the
+// inner border-color change, you get the canonical shadcn focus pattern.
+const FOCUS_HALO =
+  'rounded-xl focus-within:ring-2 focus-within:ring-ring/60 focus-within:ring-offset-2 focus-within:ring-offset-background [&>form>div]:focus-within:border-ring'
+const HERO_WRAPPER_CLASSNAME = `[&>form>div]:rounded-xl [&>form>div]:shadow-lg [&>form>div]:bg-popover ${FOCUS_HALO}`
+const FIXED_BAR_WRAPPER_CLASSNAME = FOCUS_HALO
 
 interface DeliberateSectionProps {
   remainingToday: number
