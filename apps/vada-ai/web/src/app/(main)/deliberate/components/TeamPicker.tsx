@@ -69,7 +69,7 @@ export function TeamPicker({ specs, value, onChange }: TeamPickerProps) {
               key={spec.id}
               onSelect={() => onChange(spec.id)}
               className={
-                isSelected ? 'group bg-accent text-accent-foreground' : 'group focus:bg-transparent focus:text-accent'
+                isSelected ? 'group bg-accent text-accent-foreground' : 'group focus:!bg-transparent focus:!text-accent'
               }
             >
               <div className='flex flex-col gap-0.5 py-0.5'>
@@ -77,7 +77,7 @@ export function TeamPicker({ specs, value, onChange }: TeamPickerProps) {
                 {label.subtitle && (
                   <span
                     className={`font-mono text-[10px] uppercase tracking-widest ${
-                      isSelected ? 'text-accent-foreground/80' : 'text-muted-foreground group-focus:text-accent/80'
+                      isSelected ? 'text-accent-foreground/80' : 'text-muted-foreground group-focus:!text-accent/80'
                     }`}
                   >
                     {label.subtitle}
