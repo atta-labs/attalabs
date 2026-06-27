@@ -3,7 +3,6 @@
 import type { FileUIPart } from 'ai'
 import type { Flow } from '@atta/engine'
 import { Button } from '@atta/ui/components/button'
-import { Checkbox } from '@atta/ui/components/checkbox'
 import {
   Button as LibraryButton,
   DropdownMenu,
@@ -14,12 +13,11 @@ import {
 } from '@atta/ui'
 import { Heading } from '@atta/ui/shared'
 import { SmartPromptInput, type SmartPromptComponents } from '@atta/ui/smart-prompt-input'
-import { ArrowUp, GitCompare, Loader2 } from 'lucide-react'
+import { ArrowUp } from 'lucide-react'
 import { useDeliberateForm } from './useDeliberateForm'
 import { MigrationPrompt } from './MigrationPrompt'
 import { ReviewerConfigModal } from './ReviewerConfigModal'
 import { TeamPicker } from './TeamPicker'
-import { TeamSummary } from './TeamSummary'
 
 /**
  * INJECTION CONTRACT (see ui-library-system SKILL.md): SmartPromptInput
@@ -186,11 +184,6 @@ function MorphingSubmitButton({
 
 export function DeliberateSection(props: DeliberateSectionProps) {
   const form = useDeliberateForm(props)
-
-  // `isActive` mirrors `hasQuestion` — keep them as the same signal so the
-  // hero-vs-active layout switch and the morphing button's render condition
-  // can never disagree.
-  const isActive = form.hasQuestion
   const selectedSpec = props.specs.find((s) => s.id === form.selectedSpecId) ?? props.specs[0]
 
   // SmartPromptInput owns its own value; onSubmit provides text + files.
@@ -217,14 +210,12 @@ export function DeliberateSection(props: DeliberateSectionProps) {
           remaining space — still centered horizontally via `items-center`, but
           not vertically. `items-start` replaces `justify-center` so the
           `pt-[20vh]` controls vertical position deterministically. */}
-      {!isActive && (
-        <>
-          <div className='min-h-[calc(100dvh-3.5rem)] flex flex-col items-center pt-[20vh]'>
-            <div className='w-full max-w-2xl px-6 flex flex-col gap-6'>
-              <MigrationPrompt configuredProviders={props.configuredProviders} />
+      <div className='min-h-[calc(100dvh-3.5rem)] flex flex-col items-center pt-[20vh]'>
+        <div className='w-full max-w-2xl px-6 flex flex-col gap-6'>
+          <MigrationPrompt configuredProviders={props.configuredProviders} />
 
-              <div className='text-center'>
-                {/* `Heading` from `@atta/ui/shared` is the component equivalent
+          <div className='text-center'>
+            {/* `Heading` from `@atta/ui/shared` is the component equivalent
                     of the raw `<h1>` per RULE 1. We pass `level={1}` so the
                     rendered tag stays `<h1>` (semantic / SEO unchanged) and a
                     `size` so the font-size class wins over the level default.
@@ -232,12 +223,12 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                     `font-bold` (the original was unbolded). Family + color
                     applied via className (font-serif + text-foreground —
                     byte-identical visual to the previous raw `<h1>`). */}
-                <Heading level={1} size='3xl' className='font-serif font-normal text-foreground'>
-                  What are you wrestling with?
-                </Heading>
-              </div>
+            <Heading level={1} size='3xl' className='font-serif font-normal text-foreground'>
+              What are you wrestling with?
+            </Heading>
+          </div>
 
-              {/* Frontier-chat layout: TeamPicker as a small pill on the right of the
+          {/* Frontier-chat layout: TeamPicker as a small pill on the right of the
                   textarea (drops to footer when the textarea wraps). The inner InputGroup
                   surface (`>form>div`) is elevated off the page canvas — soft shadow
                   + a touch more rounding for a Grok-like surface. All semantic tokens;
@@ -248,112 +239,38 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                   when valid it renders a real submit. The form never shows both a
                   disabled submit AND a Configure button — the single visible control
                   communicates validity directly. */}
-              <SmartPromptInput
-                onSubmit={handleSmartSubmit}
-                onTextChange={form.setQuestion}
-                submitOn='cmdenter'
-                status={form.loading ? 'loading' : 'idle'}
-                actionsPosition='right'
-                className={HERO_WRAPPER_CLASSNAME}
-                // See HERO_TEXTAREA_CLASSNAME definition above for the full rationale —
-                // strips the injected `@atta/ui` Textarea's own border / rounded /
-                // focus ring / resize handle / `min-h-16` so the textarea blends
-                // seamlessly into the surrounding `InputGroup` chrome.
-                textareaClassName={HERO_TEXTAREA_CLASSNAME}
-                components={smartPromptComponents}
-                actions={
-                  <TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />
-                }
-                submitSlot={
-                  <MorphingSubmitButton
-                    hasQuestion={form.hasQuestion}
-                    isConfigValid={form.isConfigValid}
-                    onConfigure={form.openReviewerModal}
-                  />
-                }
+          <SmartPromptInput
+            onSubmit={handleSmartSubmit}
+            onTextChange={form.setQuestion}
+            submitOn='cmdenter'
+            status={form.loading ? 'loading' : 'idle'}
+            actionsPosition='right'
+            className={HERO_WRAPPER_CLASSNAME}
+            // See HERO_TEXTAREA_CLASSNAME definition above for the full rationale —
+            // strips the injected `@atta/ui` Textarea's own border / rounded /
+            // focus ring / resize handle / `min-h-16` so the textarea blends
+            // seamlessly into the surrounding `InputGroup` chrome.
+            textareaClassName={HERO_TEXTAREA_CLASSNAME}
+            components={smartPromptComponents}
+            actions={<TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />}
+            submitSlot={
+              <MorphingSubmitButton
+                hasQuestion={form.hasQuestion}
+                isConfigValid={form.isConfigValid}
+                onConfigure={form.openReviewerModal}
               />
-            </div>
-          </div>
-
-          {form.showReviewerModal && selectedSpec && (
-            <ReviewerConfigModal
-              spec={selectedSpec}
-              onSave={form.handleModalSave}
-              onClose={form.closeReviewerModal}
-              configuredProviders={props.configuredProviders}
-            />
-          )}
-        </>
-      )}
-
-      {/* ── Active state — team summary scrolls, input is fixed at bottom ── */}
-      {isActive && (
-        <div>
-          {/* Scrollable content area — padded at the bottom to clear the fixed input bar */}
-          <div className='pb-[200px]'>
-            <div className='mx-auto w-full max-w-5xl px-6 pt-8'>
-              <MigrationPrompt configuredProviders={props.configuredProviders} />
-              {selectedSpec && (
-                <div className='mt-4 flex flex-col gap-4'>
-                  <TeamSummary
-                    spec={selectedSpec}
-                    onConfigure={form.openReviewerModal}
-                    actions={
-                      <div className='flex items-center justify-between gap-4'>
-                        <label
-                          htmlFor='active-benchmark-checkbox'
-                          className='flex items-center gap-2 text-[13px] text-muted-foreground hover:text-accent cursor-pointer'
-                        >
-                          <Checkbox
-                            id='active-benchmark-checkbox'
-                            checked={form.benchmarkEnabled}
-                            onCheckedChange={(v) => form.setBenchmarkEnabled(v === true)}
-                          />
-                          <GitCompare className='size-3.5' />
-                          Run benchmark comparison
-                        </label>
-                        <Button
-                          variant='default'
-                          size='sm'
-                          onClick={form.handleStart}
-                          disabled={!form.canStart}
-                          className='flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest'
-                        >
-                          {form.loading && <Loader2 className='size-3 animate-spin' />}
-                          {form.loading ? 'Starting…' : form.needsUnlock ? 'Unlock & Deliberate' : 'Deliberate'}
-                        </Button>
-                      </div>
-                    }
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Fixed input bar — sticky to viewport bottom, same pattern as Herald's JDInput */}
-          <div className='fixed inset-x-0 bottom-0 z-30 bg-background/95 backdrop-blur-md border-t border-border'>
-            <div className='mx-auto w-full max-w-5xl px-6 py-4'>
-              <SmartPromptInput
-                onSubmit={handleSmartSubmit}
-                onTextChange={form.setQuestion}
-                submitOn='cmdenter'
-                status={form.loading ? 'loading' : 'idle'}
-                className={FIXED_BAR_WRAPPER_CLASSNAME}
-                textareaClassName={HERO_TEXTAREA_CLASSNAME}
-                components={smartPromptComponents}
-              />
-            </div>
-          </div>
-
-          {form.showReviewerModal && selectedSpec && (
-            <ReviewerConfigModal
-              spec={selectedSpec}
-              onSave={form.handleModalSave}
-              onClose={form.closeReviewerModal}
-              configuredProviders={props.configuredProviders}
-            />
-          )}
+            }
+          />
         </div>
+      </div>
+
+      {form.showReviewerModal && selectedSpec && (
+        <ReviewerConfigModal
+          spec={selectedSpec}
+          onSave={form.handleModalSave}
+          onClose={form.closeReviewerModal}
+          configuredProviders={props.configuredProviders}
+        />
       )}
     </>
   )
