@@ -326,7 +326,7 @@ export function JDInput({
               placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
               submitOn='cmdenter'
               pasteToFileChars={1000}
-              textareaClassName='min-h-0'
+              surface='popover'
               textareaVariant='bare'
               // INJECTION CONTRACT (see ui-library-system SKILL.md):
               // SmartPromptInput resolves NO library. Herald's library is selected
