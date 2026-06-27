@@ -15,6 +15,7 @@ import {
 import { Heading } from '@atta/ui/shared'
 import { SmartPromptInput, type SmartPromptComponents } from '@atta/ui/smart-prompt-input'
 import { ArrowUp } from 'lucide-react'
+import { useState } from 'react'
 import { useDeliberateForm } from './useDeliberateForm'
 import { MigrationPrompt } from './MigrationPrompt'
 import { ReviewerConfigModal } from './ReviewerConfigModal'
@@ -92,15 +93,15 @@ interface DeliberateSectionProps {
  * a nonsensical action (config is already valid). Splitting predicates fixes it.
  */
 function MorphingSubmitButton({
-  hasQuestion,
+  hasContent,
   isConfigValid,
   onConfigure
 }: {
-  hasQuestion: boolean
+  hasContent: boolean
   isConfigValid: boolean
   onConfigure: () => void
 }) {
-  if (!hasQuestion) return null
+  if (!hasContent) return null
   return (
     <Button
       type={isConfigValid ? 'submit' : 'button'}
@@ -123,14 +124,36 @@ function MorphingSubmitButton({
 export function DeliberateSection(props: DeliberateSectionProps) {
   const form = useDeliberateForm(props)
   const selectedSpec = props.specs.find((s) => s.id === form.selectedSpecId) ?? props.specs[0]
+  // Tracks attachment presence so the submit button stays visible when the
+  // user has pasted long text that became a file (textarea empty but content
+  // exists). SmartPromptInput owns the canonical count; we mirror it here.
+  const [attachmentCount, setAttachmentCount] = useState(0)
 
-  // SmartPromptInput owns its own value; onSubmit provides text + files.
-  // Vāda has no file ingestion backend — files are accepted in the UI but
-  // not forwarded to any endpoint. Only text is dispatched.
-  function handleSmartSubmit(text: string, _files: FileUIPart[]) {
-    if (!text.trim()) return
-    form.setQuestion(text)
-    void form.handleStartWithText(text)
+  // SmartPromptInput's onSubmit provides text + files. Vāda has no file
+  // ingestion backend — when the user pastes long text it's converted to a
+  // `text/plain` file via `pasteToFileChars`; we decode it back to text here
+  // so the deliberation receives the full content. Non-text files are ignored
+  // (no multimodal backend yet — see vada-backlog.md).
+  function handleSmartSubmit(text: string, files: FileUIPart[]) {
+    let question = text.trim()
+    if (!question && files.length > 0) {
+      const textFile = files.find((f) => f.mediaType?.startsWith('text/'))
+      if (textFile?.url.startsWith('data:')) {
+        const comma = textFile.url.indexOf(',')
+        if (comma !== -1) {
+          const header = textFile.url.slice(0, comma)
+          const data = textFile.url.slice(comma + 1)
+          try {
+            question = header.includes(';base64') ? atob(data) : decodeURIComponent(data)
+          } catch {
+            // ignore decode failure — falls through to the empty-check below
+          }
+        }
+      }
+    }
+    if (!question) return
+    form.setQuestion(question)
+    void form.handleStartWithText(question)
   }
 
   return (
@@ -178,16 +201,18 @@ export function DeliberateSection(props: DeliberateSectionProps) {
           <SmartPromptInput
             onSubmit={handleSmartSubmit}
             onTextChange={form.setQuestion}
+            onAttachmentsChange={setAttachmentCount}
             submitOn='cmdenter'
             status={form.loading ? 'loading' : 'idle'}
             actionsPosition='right'
             surface='popover'
             textareaVariant='bare'
+            pasteToFileChars={1000}
             components={smartPromptComponents}
             actions={<TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />}
             submitSlot={
               <MorphingSubmitButton
-                hasQuestion={form.hasQuestion}
+                hasContent={form.hasQuestion || attachmentCount > 0}
                 isConfigValid={form.isConfigValid}
                 onConfigure={form.openReviewerModal}
               />
