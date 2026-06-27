@@ -10,8 +10,6 @@ import { AvatarFrame } from '@/components/avatar-frame'
 import { SummaryMarkdown } from '@/components/summary-markdown'
 import { useHeroCollapse } from './hero-collapse-context'
 
-const ACCEPTED_DOC_TYPES = '.pdf,.md,.txt,application/pdf,text/markdown,text/plain'
-
 async function downloadCv(url: string, filename: string) {
   try {
     const res = await fetch(url)
@@ -327,9 +325,9 @@ export function JDInput({
               onSubmit={handleSubmit}
               placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
               submitOn='cmdenter'
-              hint='Cmd+Enter to submit'
-              accept={ACCEPTED_DOC_TYPES}
               pasteToFileChars={1000}
+              textareaClassName='min-h-0'
+              textareaVariant='bare'
               // INJECTION CONTRACT (see ui-library-system SKILL.md):
               // SmartPromptInput resolves NO library. Herald's library is selected
               // at runtime per user via LibraryProvider; useComponents() returns

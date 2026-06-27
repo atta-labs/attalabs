@@ -458,9 +458,8 @@ export function SmartPromptInput({
   }
 
   useLayoutEffect(() => {
-    if (!hasActions) return
     remeasure()
-  }, [hasActions])
+  }, [])
 
   const handleSubmit = (message: PromptInputMessage) => {
     setRejectionError(null)
@@ -477,24 +476,22 @@ export function SmartPromptInput({
   }
 
   // Footer renders whenever we have tools, hint, or the default submit position.
-  // With `actions`, when single-line we lift actions+submit inline next to the
+  // When single-line, we lift submit (and actions if present) inline next to the
   // textarea — so the footer is only needed if tools/hint exist or we're in
-  // multi-line mode (where actions and submit live in the footer).
-  const inlineMode = hasActions && !isMultiLine && attachmentCount === 0
-  const hasFooterContent = hasActions
-    ? !useFullWidthCta && (!!accept || !!hint || !inlineMode)
-    : !!(accept || hint || !useFullWidthCta)
+  // multi-line/attachment mode (where they drop to the footer).
+  const inlineMode = !isMultiLine && attachmentCount === 0
+  const hasFooterContent = !useFullWidthCta && (!!accept || !!hint || !inlineMode)
 
   return (
     <SmartPromptComponentsProvider components={components}>
-      <div className={cn(SURFACE_WRAPPER_CLASS[surface], className)}>
+      <div ref={inputRowRef} className={cn(SURFACE_WRAPPER_CLASS[surface], className)}>
         <PromptInput
           accept={accept}
           onSubmit={handleSubmit}
           onError={handleError}
           inputGroupClassName={SURFACE_INPUT_GROUP_CLASS[surface] || undefined}
         >
-          <AttachmentTiles onCountChange={hasActions ? setAttachmentCount : undefined} />
+          <AttachmentTiles onCountChange={setAttachmentCount} />
           {hasActions ? (
             // `items-center` aligns the textarea's first line with the vertical
             // center of the actions cluster (the cluster's intrinsic height is
@@ -506,7 +503,7 @@ export function SmartPromptInput({
             // single line and the icon share a baseline. Once `isMultiLine`
             // flips, the actions+submit move to the footer row so vertical
             // centering doesn't drift as the textarea grows multi-line.
-            <div ref={inputRowRef} className='flex flex-row items-center gap-1'>
+            <div className='flex flex-row items-center gap-1'>
               {inlineMode && actionsOnLeft && (
                 <div className='flex shrink-0 items-center gap-1 px-2 py-1.5'>
                   <div className='flex items-center gap-1'>{actions}</div>
@@ -536,6 +533,7 @@ export function SmartPromptInput({
               placeholder={placeholder}
               submitOnCmdEnter={submitOn === 'cmdenter'}
               pasteToFileChars={pasteToFileChars}
+              onInput={remeasure}
               onTextChange={onTextChange}
               className={textareaClassName}
               variant={textareaVariant}
