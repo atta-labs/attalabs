@@ -64,17 +64,25 @@ const HERO_TEXTAREA_CLASSNAME = [
 ].join(' ')
 
 /**
- * `className` applied to the SmartPromptInput wrapper that strips the
- * vendored `InputGroup`'s `focus-within:ring-1 focus-within:ring-ring` chrome
- * AND elevates the input surface above the page canvas.
+ * `className` applied to the SmartPromptInput wrapper. Two concerns share the
+ * same descendant selector:
  *
- * Two problems we fix together at the call site:
+ * 1. Visible focus indicator. The vendored InputGroup ships
+ *    `focus-within:ring-1 focus-within:ring-ring`, but the same component
+ *    pairs that ring with `overflow-hidden` (see `prompt-input.tsx` line
+ *    `<InputGroup className='overflow-hidden'>`) which clips the ring's
+ *    box-shadow on every side — even when the ring color is correct, the
+ *    user sees nothing on focus. Prior fix here suppressed the ring entirely
+ *    (`focus-within:ring-0`), which removed the purple ring problem but left
+ *    the input with no visible focus state at all.
  *
- * 1. Purple focus ring. `packages/ui/smart-prompt-input/vendor/ui/input-group.tsx`
- *    line 10 ships `focus-within:ring-1 focus-within:ring-ring` on its outer
- *    `<div>`. In Vāda's theme `--ring` resolves to a magenta/purple-leaning
- *    value — visually it reads as purple on the input surface. Solved by
- *    `focus-within:ring-0`.
+ *    Switch from a ring (box-shadow, clipped) to a border-color change on
+ *    focus: the InputGroup already carries a resting `border border-border`,
+ *    so swapping the border to `border-ring` on `focus-within` paints
+ *    in-box, is not clipped by `overflow-hidden`, and uses the same `--ring`
+ *    token the canonical focus indicator points at (theme team is
+ *    recalibrating `--ring` to a confident red in a parallel task — when
+ *    that lands, the focus state automatically follows).
  *
  * 2. "I almost cannot see the input." The InputGroup ships `bg-card` by
  *    default. In Vāda's current theme `--card` is so close to `--background`
@@ -95,18 +103,18 @@ const HERO_TEXTAREA_CLASSNAME = [
  *
  * The `[&>form>div]` selector targets the InputGroup which is the direct
  * `<div>` child of the `<form>` rendered by `PromptInput`. The hero adds
- * elevation styling (rounded-xl + shadow-lg + bg-popover) plus ring
- * suppression. The fixed bottom bar (active state) keeps ring suppression
- * only — the bar already has `border-t border-border bg-background/95`
+ * elevation styling (rounded-xl + shadow-lg + bg-popover) plus the focus
+ * border swap. The fixed bottom bar (active state) carries only the focus
+ * border swap — the bar already has `border-t border-border bg-background/95`
  * around it, so the inner input does not need separate elevation there.
  *
  * NB: this is a Vāda-only opt-in — Herald's SmartPromptInput call site does
  * NOT pass this className, so Herald keeps the canonical shadcn focus ring
  * and `bg-card` surface (byte-identical to before).
  */
-const NO_PURPLE_FOCUS_RING = '[&>form>div]:focus-within:ring-0'
-const HERO_WRAPPER_CLASSNAME = `[&>form>div]:rounded-xl [&>form>div]:shadow-lg [&>form>div]:bg-popover ${NO_PURPLE_FOCUS_RING}`
-const FIXED_BAR_WRAPPER_CLASSNAME = NO_PURPLE_FOCUS_RING
+const FOCUS_BORDER_SWAP = '[&>form>div]:focus-within:border-ring'
+const HERO_WRAPPER_CLASSNAME = `[&>form>div]:rounded-xl [&>form>div]:shadow-lg [&>form>div]:bg-popover ${FOCUS_BORDER_SWAP}`
+const FIXED_BAR_WRAPPER_CLASSNAME = FOCUS_BORDER_SWAP
 
 interface DeliberateSectionProps {
   remainingToday: number

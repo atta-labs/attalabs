@@ -9,7 +9,21 @@ import { useEffect, useState } from 'react'
 import { COLOR_SCHEME_ATTRIBUTE, COLOR_SCHEME_COOKIE_MAX_AGE, DEFAULT_SCHEME, type ColorScheme } from './color-scheme'
 import { useCookieName } from './cookie-name-context'
 
-export function ColorSchemeToggle() {
+/**
+ * Per-product variant override for the toggle's `Button`. Defaults to
+ * `'outline'` so Herald stays byte-identical (its topbar Settings button is
+ * also `outline`). Vāda passes `'ghost'` so the toggle visually matches the
+ * `ghost` Settings gear it sits next to in `/deliberate`.
+ *
+ * The variant is forwarded all the way through; choose by what the *sibling*
+ * icon button in your topbar uses. Two icon buttons next to each other in
+ * the same toolbar should always carry the same variant.
+ */
+export interface ColorSchemeToggleProps {
+  variant?: 'outline' | 'ghost'
+}
+
+export function ColorSchemeToggle({ variant = 'outline' }: ColorSchemeToggleProps = {}) {
   const cookieName = useCookieName()
   const [scheme, setScheme] = useState<ColorScheme>(DEFAULT_SCHEME)
   const comps = useComponents()
@@ -40,7 +54,7 @@ export function ColorSchemeToggle() {
   const label = scheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
 
   return (
-    <Button variant='outline' size='icon' onClick={flip} aria-label={label} title={label} className='h-8 w-8'>
+    <Button variant={variant} size='icon' onClick={flip} aria-label={label} title={label} className='h-8 w-8'>
       <Icon className='h-4 w-4' />
     </Button>
   )

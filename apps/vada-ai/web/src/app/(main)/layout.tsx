@@ -53,7 +53,13 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
       <ToastProvider defaultPosition='bottom-right'>
         <div className='flex flex-col min-h-dvh'>
           <StickyHeaderTopBar isBlurred={true} className='z-40 border-border/40'>
-            <TopBar logo={logo} links={PUBLIC_ROUTES} signedInLinks={AUTH_ROUTES} extraActions={extraActions} />
+            <TopBar
+              logo={logo}
+              links={PUBLIC_ROUTES}
+              signedInLinks={AUTH_ROUTES}
+              extraActions={extraActions}
+              colorSchemeVariant='ghost'
+            />
           </StickyHeaderTopBar>
           <div className='flex-1 flex flex-col'>
             <div className='flex-1'>{children}</div>

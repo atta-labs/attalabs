@@ -48,6 +48,20 @@ export interface TopBarProps {
    * Default: true.
    */
   withAuth?: boolean
+  /**
+   * Visual variant for the `ColorSchemeToggle` icon button rendered in the
+   * topbar's right cluster (and again inside the mobile sheet header strip).
+   *
+   * Defaults to `'outline'` — Herald's topbar Settings button uses `outline`,
+   * so its color-scheme toggle stays byte-identical with the default. Vāda
+   * passes `'ghost'` because its `/deliberate` Settings gear is `ghost`; two
+   * icon buttons next to each other in the same toolbar should match.
+   *
+   * Scoped narrowly on purpose: the topbar component itself owns the toggle
+   * (consumers cannot wrap or replace it from outside), so the per-product
+   * override has to live on the contract.
+   */
+  colorSchemeVariant?: 'outline' | 'ghost'
 }
 
 /** Dispatches to TopBarWithAuth or TopBarNoAuth based on withAuth prop. */
@@ -55,6 +69,11 @@ export function TopBar({ withAuth = true, ...rest }: TopBarProps) {
   if (!withAuth) return <TopBarNoAuth {...rest} />
   return <TopBarWithAuth {...rest} />
 }
+
+// `outline` is the historical (Herald) default. Vāda passes `'ghost'` to
+// match its Settings gear. Centralized so the with-auth and no-auth paths
+// agree on the fallback.
+const DEFAULT_COLOR_SCHEME_VARIANT: 'outline' | 'ghost' = 'outline'
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -86,7 +105,8 @@ function TopBarWithAuth({
   signedInLinks = [],
   extraActions,
   accountMenu,
-  isSignedIn: isSignedInProp
+  isSignedIn: isSignedInProp,
+  colorSchemeVariant = DEFAULT_COLOR_SCHEME_VARIANT
 }: InnerProps) {
   const { user } = useUser()
   const pathname = usePathname()
@@ -132,7 +152,7 @@ function TopBarWithAuth({
 
         {/* Desktop actions — pinned right */}
         <div className='hidden flex-1 items-center justify-end gap-3 md:flex'>
-          <ColorSchemeToggle />
+          <ColorSchemeToggle variant={colorSchemeVariant} />
           {isSignedIn ? (
             <>
               {extraActions}
@@ -156,7 +176,7 @@ function TopBarWithAuth({
             renders unconditionally below md: there is always at least Sign-in or
             account UI to surface. */}
         <div className='ml-auto flex items-center gap-2 md:hidden'>
-          <ColorSchemeToggle />
+          <ColorSchemeToggle variant={colorSchemeVariant} />
           <Sheet>
             <SheetTrigger render={<Button variant='outline' size='icon' aria-label='Open menu' />}>
               <Menu className='h-4 w-4' />
@@ -226,7 +246,15 @@ function TopBarWithAuth({
 
 // ─── Without Clerk auth ────────────────────────────────────────────────────────
 
-function TopBarNoAuth({ logo, logoText = '', logoHref = '/', logoUrl, logoTagline, links = [] }: InnerProps) {
+function TopBarNoAuth({
+  logo,
+  logoText = '',
+  logoHref = '/',
+  logoUrl,
+  logoTagline,
+  links = [],
+  colorSchemeVariant = DEFAULT_COLOR_SCHEME_VARIANT
+}: InnerProps) {
   const pathname = usePathname()
   const comps = useComponents()
   const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
@@ -267,12 +295,12 @@ function TopBarNoAuth({ logo, logoText = '', logoHref = '/', logoUrl, logoTaglin
 
         {/* Desktop actions — pinned right (no auth UI) */}
         <div className='hidden flex-1 items-center justify-end gap-3 md:flex'>
-          <ColorSchemeToggle />
+          <ColorSchemeToggle variant={colorSchemeVariant} />
         </div>
 
         {/* Mobile actions */}
         <div className='ml-auto flex items-center gap-2 md:hidden'>
-          <ColorSchemeToggle />
+          <ColorSchemeToggle variant={colorSchemeVariant} />
           {links.length > 0 && (
             <Sheet>
               <SheetTrigger render={<Button variant='outline' size='icon' aria-label='Open menu' />}>
