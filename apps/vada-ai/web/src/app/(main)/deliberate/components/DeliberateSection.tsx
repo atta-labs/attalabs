@@ -108,6 +108,12 @@ function MorphingSubmitButton({
       size='icon'
       aria-label={isConfigValid ? 'Submit deliberation' : 'Configure team'}
       onClick={isConfigValid ? undefined : onConfigure}
+      // Mount-only entrance animation: when the user types the first character
+      // the button materializes via fade + slight zoom (Gemini/ChatGPT-style).
+      // Per-instance enter animation is a call-site concern (consumer decides
+      // HOW this instance enters), not chrome — the Button's visual identity
+      // (variant, size, color tokens) stays library-owned.
+      className='animate-in fade-in zoom-in-95 duration-300'
     >
       <ArrowUp className='size-4' />
     </Button>
