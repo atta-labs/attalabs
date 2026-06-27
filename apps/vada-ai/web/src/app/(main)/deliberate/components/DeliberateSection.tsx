@@ -34,91 +34,22 @@ const smartPromptComponents: SmartPromptComponents = {
   DropdownMenuItem
 }
 
-/**
- * Textarea overrides for the Vāda hero — strips the injected `@atta/ui` Textarea's
- * own chrome so the inner textarea looks like part of the outer `InputGroup`
- * surface, not a nested field.
+/*
+ * Hero input chrome is owned by SmartPromptInput itself via `surface='popover'`
+ * and `textareaVariant='bare'`. No call-site appearance overrides — the
+ * component knows its own DOM.
  *
- * The injected basic/animate `Textarea` ships with `border border-input`,
- * `rounded-lg`, `dark:bg-input/30`, focus ring (`focus-visible:border-ring
- * focus-visible:ring-3 focus-visible:ring-ring/50`), native resize handle, and
- * `min-h-16`. That's the right default when used as a standalone form field, but
- * inside SmartPromptInput it produces a textarea-inside-a-container look with a
- * visible bottom border that doubles as a multi-line "footer divider".
+ * - `surface='popover'` elevates the InputGroup to `bg-popover` with
+ *   `rounded-xl shadow-lg` and moves the focus halo to the outer wrapper
+ *   (where overflow-hidden does not clip it).
+ * - `textareaVariant='bare'` strips the injected Textarea's own chrome
+ *   (border, rounded, focus-ring, resize handle, `min-h-16` baseline) so the
+ *   textarea blends seamlessly into the surrounding InputGroup.
  *
- * tailwind-merge resolves the conflicting classes deterministically (border-0
- * wins over `border`, `rounded-none` over `rounded-lg`, `min-h-0` over
- * `min-h-16`, `focus-visible:ring-0` over `focus-visible:ring-3`). `min-h-0`
- * also defeats the vendor's own `min-h-16` baseline so the textarea collapses
- * to a true single line on first paint and grows via `field-sizing-content`.
+ * Herald is unaffected — it passes neither prop, so its SmartPromptInput
+ * renders byte-identical to before (surface defaults to 'card', textareaVariant
+ * defaults to undefined → library Textarea variant default).
  */
-const HERO_TEXTAREA_CLASSNAME = [
-  'min-h-0',
-  'border-0',
-  'rounded-none',
-  'bg-transparent dark:bg-transparent',
-  'focus-visible:border-transparent focus-visible:ring-0',
-  'resize-none'
-].join(' ')
-
-/**
- * `className` applied to the SmartPromptInput wrapper. Two concerns share the
- * same descendant selector:
- *
- * 1. Visible focus indicator. The vendored InputGroup ships
- *    `focus-within:ring-1 focus-within:ring-ring`, but the same component
- *    pairs that ring with `overflow-hidden` (see `prompt-input.tsx` line
- *    `<InputGroup className='overflow-hidden'>`) which clips the ring's
- *    box-shadow on every side — even when the ring color is correct, the
- *    user sees nothing on focus. Prior fix here suppressed the ring entirely
- *    (`focus-within:ring-0`), which removed the purple ring problem but left
- *    the input with no visible focus state at all.
- *
- *    Switch from a ring (box-shadow, clipped) to a border-color change on
- *    focus: the InputGroup already carries a resting `border border-border`,
- *    so swapping the border to `border-ring` on `focus-within` paints
- *    in-box, is not clipped by `overflow-hidden`, and uses the same `--ring`
- *    token the canonical focus indicator points at (theme team is
- *    recalibrating `--ring` to a confident red in a parallel task — when
- *    that lands, the focus state automatically follows).
- *
- * 2. "I almost cannot see the input." The InputGroup ships `bg-card` by
- *    default. In Vāda's current theme `--card` is so close to `--background`
- *    that the input does not read as a distinct surface above the page canvas
- *    — there is no visible edge between the input chrome and the page.
- *    Solved by overriding the inner surface to `bg-popover`. Per the
- *    ui-theme-tokens role doctrine, `popover` is the "floating object" token
- *    reserved for transient surfaces (popovers, dropdowns, command palettes)
- *    and themes can give it stronger separation from canvas than `card`.
- *    Using it here is consistent — the hero input is the only interactive
- *    surface on an otherwise empty page; treating it as a floating object
- *    rather than a card matches its visual role and gets stronger
- *    edge-separation for free in every theme.
- *
- *    The dropdown content (`TeamPicker`) is already `bg-popover` (see
- *    `TeamPicker.tsx` line 39), so the trigger surface and the open menu sit
- *    on the same elevation tier — visually coherent.
- *
- * The `[&>form>div]` selector targets the InputGroup which is the direct
- * `<div>` child of the `<form>` rendered by `PromptInput`. The hero adds
- * elevation styling (rounded-xl + shadow-lg + bg-popover) plus the focus
- * border swap. The fixed bottom bar (active state) carries only the focus
- * border swap — the bar already has `border-t border-border bg-background/95`
- * around it, so the inner input does not need separate elevation there.
- *
- * NB: this is a Vāda-only opt-in — Herald's SmartPromptInput call site does
- * NOT pass this className, so Herald keeps the canonical shadcn focus ring
- * and `bg-card` surface (byte-identical to before).
- */
-// The InputGroup ships `overflow-hidden`, which clips any ring/box-shadow on
-// the InputGroup itself. We put the focus halo on the OUTER wrapper instead —
-// the wrapper has no overflow-hidden, so the ring renders as a visible halo
-// around the input. Combined with `border-ring` on the InputGroup for the
-// inner border-color change, you get the canonical shadcn focus pattern.
-const FOCUS_HALO =
-  'rounded-xl focus-within:ring-2 focus-within:ring-ring/60 focus-within:ring-offset-2 focus-within:ring-offset-background [&>form>div]:focus-within:border-ring'
-const HERO_WRAPPER_CLASSNAME = `[&>form>div]:rounded-xl [&>form>div]:shadow-lg [&>form>div]:bg-popover ${FOCUS_HALO}`
-const FIXED_BAR_WRAPPER_CLASSNAME = FOCUS_HALO
 
 interface DeliberateSectionProps {
   remainingToday: number
@@ -215,24 +146,22 @@ export function DeliberateSection(props: DeliberateSectionProps) {
           <MigrationPrompt configuredProviders={props.configuredProviders} />
 
           <div className='text-center'>
-            {/* `Heading` from `@atta/ui/shared` is the component equivalent
-                    of the raw `<h1>` per RULE 1. We pass `level={1}` so the
-                    rendered tag stays `<h1>` (semantic / SEO unchanged) and a
-                    `size` so the font-size class wins over the level default.
-                    `font-normal` is required to override the component's baked
-                    `font-bold` (the original was unbolded). Family + color
-                    applied via className (font-serif + text-foreground —
-                    byte-identical visual to the previous raw `<h1>`). */}
-            <Heading level={1} size='3xl' className='font-serif font-normal text-foreground'>
+            {/* `Heading` from `@atta/ui/shared` is the component equivalent of
+                the raw `<h1>` per RULE 1. The `weight='normal'` prop replaces
+                the prior call-site `font-normal` (which fought the component's
+                baked `font-bold`); semantic font family stays at `font-serif`
+                because Heading defaults to the canvas body font. Color is
+                inherited (canvas body is `text-foreground`). */}
+            <Heading level={1} size='3xl' weight='normal' className='font-serif'>
               What are you wrestling with?
             </Heading>
           </div>
 
           {/* Frontier-chat layout: TeamPicker as a small pill on the right of the
-                  textarea (drops to footer when the textarea wraps). The inner InputGroup
-                  surface (`>form>div`) is elevated off the page canvas — soft shadow
-                  + a touch more rounding for a Grok-like surface. All semantic tokens;
-                  no hardcoded colors.
+                  textarea (drops to footer when the textarea wraps). Surface and
+                  textarea chrome are owned by `SmartPromptInput` itself via the
+                  `surface` and `textareaVariant` props — no call-site appearance
+                  overrides.
 
                   The `submitSlot` is the morphing Configure ↔ Submit element. When the
                   form is invalid the slot renders CONFIGURE (opens the reviewer modal);
@@ -245,12 +174,8 @@ export function DeliberateSection(props: DeliberateSectionProps) {
             submitOn='cmdenter'
             status={form.loading ? 'loading' : 'idle'}
             actionsPosition='right'
-            className={HERO_WRAPPER_CLASSNAME}
-            // See HERO_TEXTAREA_CLASSNAME definition above for the full rationale —
-            // strips the injected `@atta/ui` Textarea's own border / rounded /
-            // focus ring / resize handle / `min-h-16` so the textarea blends
-            // seamlessly into the surrounding `InputGroup` chrome.
-            textareaClassName={HERO_TEXTAREA_CLASSNAME}
+            surface='popover'
+            textareaVariant='bare'
             components={smartPromptComponents}
             actions={<TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />}
             submitSlot={

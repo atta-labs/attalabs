@@ -50,6 +50,7 @@ export const REQUIRED_COMPONENTS = [
   'DropdownMenuContent',
   'DropdownMenuGroup',
   'DropdownMenuItem',
+  'DropdownMenuItemTextHighlight',
   'DropdownMenuLabel',
   'DropdownMenuPortal',
   'DropdownMenuRadioGroup',
@@ -216,6 +217,7 @@ export const REQUIRED_TYPES = [
   'HeadingLevel',
   'HeadingProps',
   'HeadingSize',
+  'HeadingWeight',
 
   // Typography — Text
   'TextAs',

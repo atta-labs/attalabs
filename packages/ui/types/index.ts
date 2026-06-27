@@ -27,7 +27,7 @@ export type { FlexAlign, FlexDirection, FlexJustify, FlexProps, FlexWrap } from 
 export type { SeparatorOrientation, SeparatorProps } from './layout/separator'
 
 // Typography
-export type { HeadingLevel, HeadingProps, HeadingSize } from './typography/heading'
+export type { HeadingLevel, HeadingProps, HeadingSize, HeadingWeight } from './typography/heading'
 export type { TextAs, TextProps, TextSize, TextWeight } from './typography/text'
 
 // Display

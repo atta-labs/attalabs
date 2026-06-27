@@ -19,8 +19,36 @@ import {
 } from './vendor/prompt-input'
 import { SmartPromptComponentsProvider, type SmartPromptComponents } from './vendor/components-context'
 import type { TextareaVariant } from '../types/form/textarea'
+import { cn } from '../lib/utils'
 
 export type SmartPromptInputSurface = 'card' | 'popover' | 'bare'
+
+/**
+ * Surface presets — see `surface` prop docs.
+ *
+ * - `card`: byte-identical default. No outer halo; vendor InputGroup keeps
+ *   its resting focus ring.
+ * - `popover`: outer wrapper carries a soft 2px ring on focus-within (using
+ *   the same `--ring` token); InputGroup is elevated to `bg-popover` with
+ *   `rounded-xl shadow-lg` and the inner vendor ring is suppressed.
+ * - `bare`: no surface chrome at all — the InputGroup drops its border,
+ *   background, rounding, and resting focus ring. Use when the consuming
+ *   layout supplies its own chrome (e.g. fixed bottom bar with own border).
+ */
+const SURFACE_WRAPPER_CLASS: Record<SmartPromptInputSurface, string> = {
+  card: '',
+  popover:
+    'rounded-xl focus-within:ring-2 focus-within:ring-ring/60 focus-within:ring-offset-2 focus-within:ring-offset-background',
+  bare: ''
+}
+
+const SURFACE_INPUT_GROUP_CLASS: Record<SmartPromptInputSurface, string> = {
+  card: '',
+  // Suppress the inner ring (we move the halo to the wrapper) and elevate.
+  popover: 'rounded-xl bg-popover shadow-lg focus-within:ring-0',
+  // Strip everything — the parent layout supplies its own chrome.
+  bare: 'border-0 bg-transparent rounded-none focus-within:ring-0'
+}
 
 export type SmartPromptStatus = 'idle' | 'loading' | 'streaming' | 'error'
 
@@ -459,8 +487,13 @@ export function SmartPromptInput({
 
   return (
     <SmartPromptComponentsProvider components={components}>
-      <div className={className}>
-        <PromptInput accept={accept} onSubmit={handleSubmit} onError={handleError}>
+      <div className={cn(SURFACE_WRAPPER_CLASS[surface], className)}>
+        <PromptInput
+          accept={accept}
+          onSubmit={handleSubmit}
+          onError={handleError}
+          inputGroupClassName={SURFACE_INPUT_GROUP_CLASS[surface] || undefined}
+        >
           <AttachmentTiles onCountChange={hasActions ? setAttachmentCount : undefined} />
           {hasActions ? (
             // `items-center` aligns the textarea's first line with the vertical

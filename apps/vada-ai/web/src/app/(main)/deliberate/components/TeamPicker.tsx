@@ -1,7 +1,14 @@
 'use client'
 
 import type { Flow } from '@atta/engine'
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@atta/ui/components'
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItemTextHighlight,
+  DropdownMenuTrigger
+} from '@atta/ui/components'
+import { cn } from '@atta/ui/lib/utils'
 import { Users2, ChevronsUpDown } from 'lucide-react'
 import { getSpecLabel } from '@/lib/flow-helpers'
 
@@ -18,11 +25,12 @@ export function TeamPicker({ specs, value, onChange }: TeamPickerProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant='outline'
-          size='sm'
-          className='gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent-foreground'
-        >
+        {/*
+         * `ghost-pill`: small bordered pill with muted text → accent text on
+         * hover. The variant owns its own appearance — call-site className
+         * carries only layout (gap, font-mono typography pill chrome).
+         */}
+        <Button variant='ghost-pill' size='sm' className='gap-1.5 font-mono text-[10px] uppercase tracking-widest'>
           <span className='flex items-center gap-1.5'>
             <Users2 className='h-3 w-3' />
             <span>{selectedLabel.short}</span>
@@ -30,58 +38,41 @@ export function TeamPicker({ specs, value, onChange }: TeamPickerProps) {
           <ChevronsUpDown className='h-3 w-3' />
         </Button>
       </DropdownMenuTrigger>
-      {/* Lifted off pure black: `bg-popover` is the floating-surface token (see
-          theme-tokens skill), with `shadow-lg` for a clear separation from the
-          page canvas. max-h + overflow-y keeps long catalogs scrollable as new
-          specs land. */}
+      {/*
+       * `shadow-lg` keeps the dropdown matching the hero input's elevation;
+       * `bg-popover` / `border-border` are canonical on DropdownMenuContent.
+       * max-h + overflow-y keeps long catalogs scrollable.
+       */}
       <DropdownMenuContent align='start' className='w-[280px] max-h-[60vh] overflow-y-auto shadow-lg'>
         {specs.map((spec) => {
-          // Dropdown items show the full `display_name` (more context than the
-          // trigger's short pill) plus a corrected subtitle from the spec-local
-          // label map. `getFlowShapeLabel` returned "parallel reviewers" for
-          // every brokered spec — wrong for Council; the label map is the fix.
-          //
-          // Hover treatment (per user feedback): switch the TEXT color, not
-          // the BACKGROUND. The installed `DropdownMenuItem`
-          // (`packages/ui/libraries/basic/installed/dropdown-menu.tsx` line 59)
-          // ships `focus:bg-accent focus:text-accent-foreground` — Radix sets
-          // `focus` on the highlighted item, which produces a strong
-          // background fill on hover. We do NOT modify the installed component
-          // (that would change every dropdown in every product). Instead we
-          // neutralize at the call site: `focus:bg-transparent` cancels the
-          // background fill (tailwind-merge lets this win because both
-          // utilities live in the `background-color` family), and we re-route
-          // the highlight to text-only via `focus:text-accent`. The result is
-          // a quiet, text-shift hover that does not flash an accent fill.
-          //
-          // Selected state still uses `bg-accent text-accent-foreground` —
-          // that is a persistent commitment, not a transient highlight, so
-          // the fill is appropriate per the theme-tokens doctrine
-          // (`primary`/`accent` fills for "this is selected", text-only
-          // accent for "this is being hovered").
+          // Hover treatment lives in `DropdownMenuItemTextHighlight`: shifts
+          // TEXT to accent (no background fill) for non-selected items, and
+          // renders the canonical accent fill for the selected item. No
+          // `!important`, no installed/* edits, no call-site overrides — see
+          // `packages/ui/libraries/basic/components/interactive/dropdown-menu-item-text-highlight.tsx`
+          // for the design rationale (neutralizes BOTH `focus:` AND
+          // `data-[highlighted]:` highlight rules so tailwind-merge resolves
+          // the conflicts cleanly).
           const label = getSpecLabel(spec.id, spec)
           const isSelected = spec.id === value
           return (
-            <DropdownMenuItem
-              key={spec.id}
-              onSelect={() => onChange(spec.id)}
-              className={
-                isSelected ? 'group bg-accent text-accent-foreground' : 'group focus:!bg-transparent focus:!text-accent'
-              }
-            >
+            <DropdownMenuItemTextHighlight key={spec.id} selected={isSelected} onSelect={() => onChange(spec.id)}>
               <div className='flex flex-col gap-0.5 py-0.5'>
-                <span className='text-sm font-sans'>{spec.displayName}</span>
+                <span className='font-sans text-sm'>{spec.displayName}</span>
                 {label.subtitle && (
                   <span
-                    className={`font-mono text-[10px] uppercase tracking-widest ${
-                      isSelected ? 'text-accent-foreground/80' : 'text-muted-foreground group-focus:!text-accent/80'
-                    }`}
+                    className={cn(
+                      'font-mono text-[10px] uppercase tracking-widest',
+                      isSelected
+                        ? 'text-accent-foreground/80'
+                        : 'text-muted-foreground group-focus:text-accent/80 group-data-[highlighted]:text-accent/80'
+                    )}
                   >
                     {label.subtitle}
                   </span>
                 )}
               </div>
-            </DropdownMenuItem>
+            </DropdownMenuItemTextHighlight>
           )
         })}
       </DropdownMenuContent>

@@ -204,6 +204,13 @@ export type PromptInputProps = Omit<HTMLAttributes<HTMLFormElement>, 'onSubmit' 
   maxFileSize?: number
   onError?: (err: { code: 'max_files' | 'max_file_size' | 'accept'; message: string }) => void
   onSubmit: (message: PromptInputMessage, event: FormEvent<HTMLFormElement>) => void | Promise<void>
+  /**
+   * className applied to the InputGroup (the inner surface). Lets the
+   * top-level `SmartPromptInput` translate its `surface` prop into surface
+   * chrome WITHOUT call-site descendant selectors. Composes with the
+   * vendor's own `overflow-hidden` baseline.
+   */
+  inputGroupClassName?: string
 }
 
 export const PromptInput = ({
@@ -217,6 +224,7 @@ export const PromptInput = ({
   onError,
   onSubmit,
   children,
+  inputGroupClassName,
   ...props
 }: PromptInputProps) => {
   const controller = useOptionalPromptInputController()
@@ -551,7 +559,19 @@ export const PromptInput = ({
         type='file'
       />
       <form className={cn('w-full', className)} onSubmit={handleSubmit} ref={formRef} {...props}>
-        <InputGroup className='overflow-hidden'>{children}</InputGroup>
+        {/*
+         * `overflow-hidden` keeps the historical behavior so existing consumers
+         * (Herald) render byte-identically. Consumers that need a different
+         * overflow (e.g. so an outer focus halo is not clipped by an interior
+         * scroller in a future variant) pass an override via
+         * `inputGroupClassName` — tailwind-merge resolves the conflict.
+         * The vendor's resting focus ring sits on the InputGroup itself
+         * via `focus-within:ring-1 focus-within:ring-ring`; consumers that
+         * want a different focus chrome suppress the inner ring via
+         * `inputGroupClassName` instead of a descendant selector at the
+         * call site.
+         */}
+        <InputGroup className={cn('overflow-hidden', inputGroupClassName)}>{children}</InputGroup>
       </form>
     </>
   )
