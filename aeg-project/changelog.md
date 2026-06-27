@@ -9,6 +9,14 @@
 
 ---
 
+## June 27, 2026 — Vāda deliberate page: production UX + Council deliberations (PR #207)
+
+### Vāda / @atta/ui
+
+- **vada-production-v1 (PR #207)** — Brings the deliberate page to production and ships Council end-to-end; grew past its "tool badges" title by Principal decision. Core: Council teams (`vada-council`, `vada-council-synthesis`) + `CouncilFeed` (explicit vendor-color spheres — grey-sphere bug fixed by construction, completion-fill streaming, locked `{agreements, disagreements, bottomLine}` synthesis), frontier-chat input + morphing Configure↔Submit, dropdown restyle/labels, tool badges, `RouteAwareFooter`. Shared `@atta/ui`: `SmartPromptInput` dependency injection (closes #213), inline-mode generalization, `TextReveal` added to contract + 4 libraries. Rode-along (out of iteration): Herald `JDInput` bare-variant refactor (supersedes "Herald byte-identical"); admin theme-editor fix `a8a0f5c6` + one Herald owner-tree file (kept per Principal, Doc-waiver); Sanity theme contrast (WCAG AA). Deferred: token streaming (adapter V2), multimodal ingestion, topbar basic sweep. Council vada-local D-035; DI contract global D-064. Tier 1.
+
+---
+
 ## June 25, 2026 — Herald: owner `/ui` + `/settings` relocated under `/[username]/(owner)/` (task 8, D-061)
 
 ### Herald / UI

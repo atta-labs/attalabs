@@ -363,6 +363,16 @@ at `packages/ui/smart-prompt-input/` and is imported as
 contract validator does NOT cover composite components, so any prop addition
 must update this section instead.
 
+**Library-resolved primitives that newly joined the contract.** `TextReveal`
+(typography animation primitive) was added to the contract and all four
+libraries — `REQUIRED_COMPONENTS` carries `TextReveal`, `REQUIRED_TYPES`
+carries `TextRevealProps`. Unlike `SmartPromptInput`, `TextReveal` IS a
+library-swapped primitive: each library provides its own implementation,
+and the contract validator covers it (so non-basic libraries can fall back
+to the basic implementation via `export { TextReveal } from '../../basic/...'`).
+Use `import { TextReveal } from '@atta/ui'` from consumer code; no
+injection contract — it resolves like any other library primitive.
+
 ### Governance — shared composites resolve NO library; consumers inject
 
 > **Rule:** A shared composite component MUST NOT import from any concrete
@@ -424,8 +434,15 @@ The component runs in one of two layout modes, chosen automatically:
 
 | Mode | When | Where actions / submit live |
 |------|------|----------------------------|
-| Inline | `actions` provided AND textarea is single-line AND no attachments | On the same row as the textarea |
+| Inline | textarea is single-line AND no attachments | On the same row as the textarea |
 | Footer | otherwise | In `PromptInputFooter` under the textarea |
+
+Inline mode no longer requires consumer-provided `actions` — a no-`actions`
+single-line consumer (Herald `JDInput`) still gets the submit rendered inline
+beside the textarea. Footer's no-`actions` submit is gated on `!inlineMode`
+to avoid a duplicate. Attachment-count tracking is unconditional: the count
+is observed even when no `actions` are provided, so attachment presence
+flips inline → footer mode for every consumer (not just Vāda).
 
 The submit element (default `PromptInputSubmit`, or `submitSlot` when provided)
 is always rendered exactly once — in whichever mode is active.
@@ -448,21 +465,28 @@ is always rendered exactly once — in whichever mode is active.
 | `actionsPosition` | `'left' \| 'right'` | `'right'` | Side of the textarea (inline) / footer (multi-line) the `actions` occupy. |
 | `submitSlot` | `React.ReactNode` | — | Caller-provided submit element replacing the default `PromptInputSubmit`. Caller owns submit logic, Cmd+Enter behavior, and accessibility for the node. Honored in both inline and footer modes. **Ignored when `ctaLabel` is set (full-width CTA path).** Used by Vāda's hero to render a morphing Configure ↔ Submit button. |
 | `textareaClassName` | `string` | — | Extra className merged onto the inner `<textarea>` AFTER vendor defaults (`field-sizing-content max-h-40 min-h-16 overflow-y-auto`). Use to defeat a specific utility — e.g. `min-h-0` to allow the textarea to collapse to a true single line. Tailwind-merge resolves conflicts in favor of the caller's class for the same property family. |
+| `textareaVariant` | `TextareaVariant` | — | Forwarded to the injected `Textarea` (`undefined` keeps the library default). Pair with `surface='popover'` to use `'bare'` — strips the textarea's own border / rounding / focus ring / resize handle / `min-h-16` baseline so it blends into the surrounding `InputGroup`. |
+| `surface` | `'card' \| 'popover' \| 'bare'` | `'card'` | Container chrome preset. `'card'` is the byte-identical original (`bg-card`, `focus-within:ring-1`). `'popover'` elevates the InputGroup to `bg-popover` + `rounded-xl shadow-lg` and moves the focus halo to the OUTER wrapper (sidesteps `overflow-hidden` clipping). `'bare'` strips border / background / rounding / resting ring for hosts that supply their own chrome. |
+| `onTextChange` | `(text: string) => void` | — | Observe-only callback fired on every input. Lets consumers mirror the textarea text into their own state in real time WITHOUT making the input controlled. Vāda uses it to drive `hasQuestion` for the morphing submit button. Herald passes nothing — byte-identical. |
+| `onAttachmentsChange` | `(count: number) => void` | — | Observe-only callback fired whenever the internal attachment count changes (paste-to-file conversion, X-click removal). Lets consumers gate a `submitSlot` button on attachment presence — e.g. Vāda's `MorphingSubmitButton` stays visible when only an attachment is present (textarea empty). |
 | `components` | `SmartPromptComponents` | `{}` | **INJECTION CONTRACT** — see Governance section above. Consumer-injected library primitives: `Textarea`, `Button`, `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem`. Each is optional; the composite degrades to a native HTML element with sane styling when undefined (graceful first-paint window for runtime libraries). Vāda injects from `@atta/ui` build-time; Herald injects from `useComponents()`. The shared composite resolves NO library itself. |
 
-#### Herald-compatible default (do NOT change)
+#### Herald default note
 
-When `actions`, `submitSlot`, and `textareaClassName` are all undefined (Herald's
-`JDInput` call site), the rendered tree's STRUCTURE is byte-identical to the
-original: default `PromptInputTextarea`, footer with the default
-`PromptInputSubmit`. Any future addition to this component must preserve that
-invariant — Herald is locked on the default render path.
+Post-injection contract, Herald's tree is the active library's `Textarea` /
+`Button` (whatever the user's runtime library resolved to), NOT a vendored
+basic primitive. That was always the intent — the previous hardcoded
+`libraries/basic/...` import was a bug.
 
-Note: post-injection contract, Herald's tree is the active library's
-`Textarea` / `Button` (whatever the user's runtime library resolved to),
-NOT a vendored basic primitive. That was always the intent — the previous
-hardcoded `libraries/basic/...` import was a bug. Visual styling in `basic`
-remains identical; non-basic libraries now correctly carry through.
+The earlier "byte-identical default" promise on the Herald `JDInput` render
+path no longer holds: post-PR #207, Herald's `JDInput` opts in to
+`textareaVariant='bare'` and `surface='popover'` to align visually with
+Vāda's hero. This was an explicit Principal call, not a regression. Any
+future addition to the composite must still preserve the Herald-equivalent
+defaults — i.e. omitting `actions`, `submitSlot`, `textareaClassName`,
+`textareaVariant`, and `surface` must reproduce the original card-surface
+render — so a hypothetical third consumer can adopt the composite without
+inheriting Vāda or Herald-specific chrome.
 
 #### Adding a new caller-controllable slot
 

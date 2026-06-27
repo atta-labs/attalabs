@@ -34,6 +34,18 @@ Previously completed in vada-agents-v2 (carry-forward, not re-dispatched):
 | 11  | Benchmark run + results doc — execute; document; decide fate of rounds teams from data                                                                                        | #186  | vada                    | #185             | —              |
 | 12  | Teams page = live measured stats — replace `CalculatorStats` with measured cost/time/tokens/quality per team from DB; reconcile with `/bench`; public                         | #187  | vada                    | #186             | —              |
 | 13  | Production hardening — hosted MCP hardening (E8–E12), error states, observability confirmed, Reviewers ERROR fully closed                                                     | #188  | vada, engine, adapter   | #177, #186       | —              |
+| 6a  | Deliberate-page production UX — frontier-chat hero input, morphing Configure↔Submit, dropdown restyle + short labels (kills Council "reviewers" misnomer), team-identity Configure modal, tool-badge corner glyph + `badgeLeft` slot, `RouteAwareFooter` Vāda-only | —     | vada, @atta/ui          | #181             | —              |
+| 6b  | Council teams + CouncilFeed view — `vada-council` + `vada-council-synthesis` YAMLs (D-035 vada-local); N-column results view (`CouncilFeed`) with vendor-color spheres (`resolveVendorColor → VENDORS[v].color`), completion-fill streaming, locked `{ agreements, disagreements, bottomLine }` synthesis contract; per-spec routing | —     | vada, packages/agents   | #175             | —              |
+| 6c  | `SmartPromptInput` dependency-injection governance — shared composite resolves no library; consumers inject primitives (Vāda from `@atta/ui`, Herald from `useComponents()`); native first-paint fallbacks; closes #213; ratifies D-064 | —     | @atta/ui, vada, herald  | #181             | T6 (absorbed)  |
+
+> **Note:** 6a/6b/6c were absorbed into the in-flight T6 branch under explicit Principal instruction ("keep the deliberate-page work atomic"). They are forge-derived as part of PR #207 (the original tool-badges PR). Topology-only here per AEG convention — status / PR numbers live on the forge.
+
+## Out-of-iteration (landed on this branch by Principal decision, NOT part of `vada-production-v1`)
+
+- **TextReveal component** — added to the `@atta/ui` contract and all four libraries; wired into the Deliberate empty-state hero. Merged in from the sibling branch `task/vada-production-v1/text-reveal`.
+- **Herald `JDInput` refactor** — switched to the new `bare` `Textarea` variant aligned with Vāda; supersedes the earlier "Herald byte-identical" note from the PR's initial scope. Belongs in a future Herald-iteration topology if regression-tested as an architectural change.
+- **Admin theme-editor routing fix** (`tools/admin`) — commit `a8a0f5c6`. Kept on this branch per maintainer instruction; carries one Herald owner-tree file under the Doc-waiver in the PR body. Not a Vāda task.
+- **Sanity CMS theme contrast fixes** — Obsidian, Cobalt, KPOP Demon Hunter, Sage, Storm. Non-code, WCAG AA. Not a Vāda task.
 
 ## Backlog (this iteration, not yet dispatched)
 

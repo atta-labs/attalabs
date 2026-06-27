@@ -23,10 +23,12 @@ import { Input } from '@atta/ui/components/input'
 import { Badge } from '@atta/ui/components/badge'
 import { Textarea } from '@atta/ui/components/textarea'
 import { Heading, Text } from '@atta/ui/shared'
+import { TextReveal } from '@atta/ui'
 
 <Button variant="ghost">Click me</Button>
 <Input placeholder="Type here..." />
 <Card><CardHeader><CardTitle>Title</CardTitle></CardHeader></Card>
+<TextReveal text="What are you wrestling with?" />   // typography reveal animation
 
 // ❌ Never
 <button className="...">Click me</button>
