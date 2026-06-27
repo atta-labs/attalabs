@@ -220,6 +220,23 @@ export { DropdownMenu, ... } from '../../basic/installed/dropdown-menu' // falls
 
 **The contract validator enforces step 5.** You cannot forget — the build fails if any library is missing the export.
 
+### Canonical extension patterns — variants vs. wrappers
+
+When a consumer needs visual behavior the canonical component does not ship by default, choose the lowest-impact extension that satisfies the request without `!important` or descendant selectors at the call site. The library is the single source of truth for component appearance; the call site contributes layout only.
+
+**Add a variant (preferred for additive style options).** The change is a single entry in a `variantClasses` record plus a Union expansion in `packages/ui/types/{group}/{name}.ts`. Examples already in the tree:
+
+- `Button.variant = 'ghost-pill'` (basic) — bordered text-style pill with accent hover. Animate inherits via the shared `buttonVariants` import; retro/brutal use their own `cva` maps and fall back to default styling for unknown variants, which is acceptable since the contract is structural.
+- `Textarea.variant = 'bare'` (basic) — strips border/rounded/bg/focus-ring/resize/min-h-16 for nesting inside a styled container.
+
+Animate's `Textarea` re-exports basic's, so adding to basic automatically reaches animate. Retro/brutal use their own `installed/textarea.tsx` and ignore variants they don't know; if you need the variant to honor in those libraries, propagate explicitly.
+
+**Add a prop (preferred for behavior controls).** Same playbook for typed presets like `Heading.weight`, `SmartPromptInput.surface`, `SmartPromptInput.textareaVariant`. Defaults must preserve byte-identical render for omitting callers. Default to `undefined` and conditionally spread (`{...(prop !== undefined && { variant: prop })}`) when the prop forwards into a vendor primitive that might not understand it — that keeps Herald's render unchanged.
+
+**Add a wrapper (preferred when the change requires reaching into TWO conflicting Tailwind modifier families at once, or when the install file is intentionally locked).** Wrappers live next to the component they extend (`libraries/{name}/components/interactive/{wrapper}.tsx`) and are exported from each library's `components/index.ts`. Libraries that don't customize the underlying primitive can re-export the basic wrapper as a fallback. Add the wrapper + its `Props` type to `component-contract.mjs`. Canonical example: `DropdownMenuItemTextHighlight` neutralizes BOTH `focus:bg-accent` AND `data-[highlighted]:bg-accent` so `tailwind-merge` resolves conflicts cleanly — no `!important` needed. The wrapper accepts `selected?: boolean` to render the canonical accent fill for persistent commitments while transient hover stays text-only.
+
+**Never reach for `!important` at the call site, or descendant selectors (`[&>form>div]:...`) on a component you own.** Both are signals that the component is missing a variant, prop, or wrapper. Back out and add one of the three.
+
 ---
 
 ## Adding a New App
