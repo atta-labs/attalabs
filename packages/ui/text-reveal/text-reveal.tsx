@@ -35,12 +35,12 @@ export function TextReveal({ text, className, wordClassName }: TextRevealProps) 
   const words = text.match(/[\p{L}\p{N}]+[^\s\p{L}\p{N}]?|[^\s]/gu) || []
 
   return (
-    <div className={cn('flex items-center justify-center font-sans p-4', className)}>
+    <div className={cn('inline-block', className)}>
       <motion.div
         variants={containerVariants}
         initial='hidden'
         animate='visible'
-        className='flex flex-wrap justify-center text-2xl font-bold text-center max-w-5xl leading-relaxed'
+        className='flex flex-wrap justify-center'
       >
         {words.map((word, index) => (
           <motion.span
@@ -50,7 +50,7 @@ export function TextReveal({ text, className, wordClassName }: TextRevealProps) 
               duration: 0.8,
               ease: [0.25, 0.46, 0.45, 0.94]
             }}
-            className={cn('mr-3 mt-2.5', wordClassName)}
+            className={cn('mr-[0.25em] mt-0.5', wordClassName)}
           >
             {word}
           </motion.span>

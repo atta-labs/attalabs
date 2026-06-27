@@ -152,6 +152,9 @@ export const REQUIRED_COMPONENTS = [
   'SheetHeader',
   'SheetTitle',
   'SheetTrigger',
+
+  // Text Reveal
+  'TextReveal',
 ]
 
 export const REQUIRED_TYPES = [
@@ -235,6 +238,9 @@ export const REQUIRED_TYPES = [
   'ToastProps',
   'ToastProviderProps',
   'ToastType',
+
+  // Text Reveal
+  'TextRevealProps',
 ]
 
 export const TEMPLATES = ['basic', 'retro', 'animate', 'brutal']

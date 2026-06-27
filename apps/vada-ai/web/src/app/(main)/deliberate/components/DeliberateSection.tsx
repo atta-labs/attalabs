@@ -9,7 +9,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  Textarea
+  Textarea,
+  TextReveal
 } from '@atta/ui'
 import { Heading } from '@atta/ui/shared'
 import { SmartPromptInput, type SmartPromptComponents } from '@atta/ui/smart-prompt-input'
@@ -224,7 +225,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
                     applied via className (font-serif + text-foreground —
                     byte-identical visual to the previous raw `<h1>`). */}
             <Heading level={1} size='3xl' className='font-serif font-normal text-foreground'>
-              What are you wrestling with?
+              <TextReveal text='What are you wrestling with?' />
             </Heading>
           </div>
 
