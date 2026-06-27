@@ -251,7 +251,6 @@ export function DeliberateSection(props: DeliberateSectionProps) {
               <SmartPromptInput
                 onSubmit={handleSmartSubmit}
                 onTextChange={form.setQuestion}
-                placeholder='What decision are you wrestling with?'
                 submitOn='cmdenter'
                 status={form.loading ? 'loading' : 'idle'}
                 actionsPosition='right'
@@ -337,7 +336,6 @@ export function DeliberateSection(props: DeliberateSectionProps) {
               <SmartPromptInput
                 onSubmit={handleSmartSubmit}
                 onTextChange={form.setQuestion}
-                placeholder='What decision are you wrestling with?'
                 submitOn='cmdenter'
                 status={form.loading ? 'loading' : 'idle'}
                 className={FIXED_BAR_WRAPPER_CLASSNAME}
