@@ -34,10 +34,7 @@ export function TeamPicker({ specs, value, onChange }: TeamPickerProps) {
           theme-tokens skill), with `shadow-lg` for a clear separation from the
           page canvas. max-h + overflow-y keeps long catalogs scrollable as new
           specs land. */}
-      <DropdownMenuContent
-        align='start'
-        className='w-[280px] max-h-[60vh] overflow-y-auto border-border bg-popover shadow-lg'
-      >
+      <DropdownMenuContent align='start' className='w-[280px] max-h-[60vh] overflow-y-auto shadow-lg'>
         {specs.map((spec) => {
           // Dropdown items show the full `display_name` (more context than the
           // trigger's short pill) plus a corrected subtitle from the spec-local

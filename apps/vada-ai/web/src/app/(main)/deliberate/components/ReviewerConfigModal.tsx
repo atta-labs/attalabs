@@ -139,7 +139,7 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
           {/* Title is dynamic per spec — names the team being configured so
               the user never has to leave the modal to confirm "which team is
               this?". */}
-          <DialogTitle className='font-serif text-lg text-foreground'>Configure {spec.displayName}</DialogTitle>
+          <DialogTitle>Configure {spec.displayName}</DialogTitle>
           {/* DialogDescription lives in the proper compound slot so it inherits
               the canonical `text-sm text-muted-foreground` styling and the
               accessible `aria-describedby` association on the dialog. */}
@@ -149,8 +149,8 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
               reaches for `accent`). */}
           <NextLink
             href={`/teams/${spec.id}`}
-            variant='prose'
-            className='inline-flex w-fit items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:text-accent'
+            variant='subtle'
+            className='inline-flex w-fit items-center gap-1 text-[11px] uppercase tracking-widest'
           >
             View team
             <ArrowUpRight className='size-3' />
