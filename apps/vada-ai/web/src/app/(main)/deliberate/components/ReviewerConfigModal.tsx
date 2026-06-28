@@ -145,19 +145,21 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
               ModelPicker triggers. Layout-only override, the rest of the
               DialogTitle chrome (`font-serif`, weight, tracking) is kept. */}
           <DialogTitle className='text-xl'>Configure {spec.displayName}</DialogTitle>
-          {/* DialogDescription lives in the proper compound slot so it inherits
-              the canonical `text-sm text-muted-foreground` styling and the
-              accessible `aria-describedby` association on the dialog. */}
-          {spec.description && <DialogDescription>{spec.description}</DialogDescription>}
+          {/* DialogDescription lives in the proper compound slot for the
+              accessible `aria-describedby` association on the dialog. Canonical
+              shadcn ships `text-sm muted-foreground` (subtle subheading). For
+              this modal we want normal body weight, so `text-base` is passed
+              at the call site — the link below uses `variant='link'` with no
+              size override and inherits the same `text-base` from the dialog
+              body, so description + link visually match. The size override
+              lives here, not in `installed/`. */}
+          {spec.description && <DialogDescription className='text-base'>{spec.description}</DialogDescription>}
           {/* "View team" — the single navigation path out of this modal.
-              `variant='prose'` is the canonical link styling: `text-primary`
-              + `underline underline-offset-2 decoration-primary/40`. Inherits
-              body font-size from the modal, so it reads as a proper inline
-              link rather than the prior mono micro-label (which was visually
-              indistinguishable from a static caption — easy to miss). No
-              call-site appearance overrides — layout-only (`inline-flex`,
-              gap, w-fit). */}
-          <NextLink href={`/teams/${spec.id}`} variant='prose' className='inline-flex w-fit items-center gap-1'>
+              `variant='link'` is the color-neutral underlined link. No size
+              override — inherits `text-base` from the dialog body so it sits
+              at the same normal body size as `DialogDescription` and the
+              `ModelPicker` triggers. Classes are layout-only. */}
+          <NextLink href={`/teams/${spec.id}`} variant='link' className='inline-flex w-fit items-center gap-1'>
             View team
             <ArrowUpRight className='size-4' />
           </NextLink>

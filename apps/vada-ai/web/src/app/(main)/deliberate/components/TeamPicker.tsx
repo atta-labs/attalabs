@@ -78,9 +78,14 @@ export function TeamPicker({ specs, value, onChange, onConfigure }: TeamPickerPr
                     <span
                       className={cn(
                         'font-mono text-xs uppercase tracking-widest',
+                        // Selected items + canonical-highlighted items both
+                        // put the parent on bg-accent text-accent-foreground,
+                        // so the subtitle shifts to text-accent-foreground/80
+                        // in both states. Non-highlighted resting state stays
+                        // muted-foreground.
                         isSelected
                           ? 'text-accent-foreground/80'
-                          : 'text-muted-foreground group-focus:text-accent/80 group-data-[highlighted]:text-accent/80'
+                          : 'text-muted-foreground group-focus:text-accent-foreground/80 group-data-[highlighted]:text-accent-foreground/80'
                       )}
                     >
                       {label.subtitle}
