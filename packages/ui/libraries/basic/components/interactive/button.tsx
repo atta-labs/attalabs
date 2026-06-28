@@ -11,8 +11,15 @@ const variantClasses: Record<ButtonVariant, string> = {
   destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
   outline: 'border border-border bg-background hover:bg-accent/20',
   secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-  ghost: 'hover:bg-accent',
-  'ghost-pill': 'border border-border text-muted-foreground hover:text-accent-foreground hover:bg-accent/10',
+  // `ghost` and `ghost-pill` share the same hover doctrine — canonical
+  // shadcn pair: `hover:bg-accent hover:text-accent-foreground`. Both
+  // variants apply the SAME hover so a topbar ghost icon, a smart-prompt
+  // ghost-pill icon, and any other ghost-flavored Button feel identical
+  // under the user's pointer. `ghost-pill` adds a persistent border + muted
+  // baseline text on top — that's the only structural difference between
+  // the two.
+  ghost: 'hover:bg-accent hover:text-accent-foreground',
+  'ghost-pill': 'border border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground',
   link: 'text-primary underline-offset-4 hover:underline',
   square: 'bg-primary text-primary-foreground hover:bg-primary/90 rounded-none',
   ai: 'text-white [background:linear-gradient(90deg,#3b82f6,#8b5cf6,#a855f7,#d946ef)] hover:opacity-90'
