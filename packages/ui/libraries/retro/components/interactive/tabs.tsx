@@ -1,36 +1,31 @@
 'use client'
 
 import type * as React from 'react'
-import {
-  Tabs as InstalledTabs,
-  TabsContent,
-  TabsList as InstalledTabsList,
-  TabsTrigger as InstalledTabsTrigger
-} from '../../installed/tabs'
-import { cn } from '../../../../lib/utils'
+import type { Tabs as BaseTabs } from '@base-ui/react/tabs'
+import { Tabs as InstalledTabs } from '../../installed/tabs'
 
-function Tabs({ className, ...props }: React.ComponentProps<typeof InstalledTabs>) {
-  return <InstalledTabs className={cn('gap-6', className)} {...props} />
-}
+// Adapter ONLY — retroui's canonical exports a single `Tabs` object with
+// dotted children (`Tabs.List`, `Tabs.Trigger`, `Tabs.Content`) via
+// `Object.assign(BaseTabs.Root, { ... })`. Our component contract requires
+// FLAT named exports (`TabsList`, `TabsTrigger`, `TabsContent`). This file
+// flattens the dotted API to the contract shape.
+//
+// Type casts to Base UI primitive types (retroui IS Base UI underneath):
+// retroui defines `ITabsTriggerList` / `ITabsTrigger` / `ITabsContent`
+// interfaces INSIDE the installed file without exporting them, so TypeScript
+// can't write the wrapper's `.d.ts` if we let inference pull in those names.
+// Casting to `BaseTabs.{List,Tab,Panel}.Props` resolves the type signatures
+// against publicly-exported Base UI types — and is semantically correct,
+// since retroui's interfaces extend exactly those props.
+const Tabs = InstalledTabs as typeof BaseTabs.Root
+const TabsList = InstalledTabs.List as React.FC<BaseTabs.List.Props>
+const TabsTrigger = InstalledTabs.Trigger as React.FC<BaseTabs.Tab.Props>
+const TabsContent = InstalledTabs.Content as React.FC<BaseTabs.Panel.Props>
 
-// No container box — just a flat row of tabs
-function TabsList({ className, ...props }: React.ComponentProps<typeof InstalledTabsList>) {
-  return <InstalledTabsList className={cn('border-0 bg-transparent p-0 rounded-none gap-1', className)} {...props} />
-}
+type TabsProps = React.ComponentProps<typeof Tabs>
+type TabsListProps = React.ComponentProps<typeof TabsList>
+type TabsTriggerProps = React.ComponentProps<typeof TabsTrigger>
+type TabsContentProps = React.ComponentProps<typeof TabsContent>
 
-// Square corners, bold, no shadow — active tab fills with primary + thick border
-function TabsTrigger({ className, ...props }: React.ComponentProps<typeof InstalledTabsTrigger>) {
-  return (
-    <InstalledTabsTrigger
-      className={cn(
-        'flex-none rounded-none font-bold border-2 border-transparent',
-        'hover:bg-transparent',
-        'data-[state=active]:shadow-none',
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
-export { Tabs, TabsContent, TabsList, TabsTrigger }
+export { Tabs, TabsList, TabsTrigger, TabsContent }
+export type { TabsProps, TabsListProps, TabsTriggerProps, TabsContentProps }
