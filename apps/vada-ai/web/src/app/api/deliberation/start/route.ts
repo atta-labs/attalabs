@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@atta/auth/hooks'
 import { createSession, getDailySessionCount, getOrCreateUser, initBenchmarkMetrics } from '@/db/queries'
 import { getDailySessionLimit } from '@/schemas'
-import { VENDOR_ORDER, type VendorId } from '@atta/models'
+import { VENDOR_ORDER, resolveVendorByPrefix, type VendorId } from '@atta/models'
 import { loadYamlFromCatalog, listPublicSpecs } from '@atta/engine'
 import { AGENTS } from '@/components/agents/visuals'
 import type { AgentName } from '@/components/agents/visuals'
@@ -51,7 +51,43 @@ export async function POST(request: Request) {
 
   const spec = loadYamlFromCatalog(parsed.data.specId)
   const roundAgentNames: string[] = spec.rounds[0]?.agents.map((a) => a.name) ?? []
-  const agents = roundAgentNames.map((name) => AGENTS[name as AgentName]?.role ?? name)
+  // Same normalization the rest of the stack uses: role agents (Strategist,
+  // Critic, Synthesizer, …) collapse to their `role` string; everything else
+  // (Council slots: Gemini / GPT / Grok) passes through under its raw YAML
+  // name. `modelByRole` in the deliberation page, and the `agentModels` map
+  // we build below, share this exact key space — so a session looked up later
+  // can always find a model for every slot under the same key.
+  const normalizeAgentKey = (name: string): string => AGENTS[name as AgentName]?.role ?? name
+  const agents = roundAgentNames.map(normalizeAgentKey)
+
+  // Build the per-agent resolved model map. Walks `spec.agents` (not just the
+  // first round) so synthesizer slots that live in later rounds — e.g.
+  // vada-council-synthesis round 2 — also get a default. Each agent's YAML
+  // `model` wins; when omitted the spec-level `defaults.model` applies; the
+  // provider is resolved by model-id prefix (sync, sufficient for the
+  // frontier-class defaults we ship — Anthropic / OpenAI / Google / xAI). An
+  // agent whose model resolves to no known prefix is skipped: writing a
+  // `provider: null` entry would break the engine's vendor routing.
+  const resolvedAgentModels: Record<string, { provider: VendorId; modelId: string }> = {}
+  const specDefaultModel = spec.defaults?.model
+  for (const agent of spec.agents) {
+    const modelId = agent.model ?? specDefaultModel
+    if (!modelId) continue
+    const provider = resolveVendorByPrefix(modelId)
+    if (!provider) continue
+    resolvedAgentModels[normalizeAgentKey(agent.name)] = { provider, modelId }
+  }
+  // Overlay user-provided agentModels — caller wins for any slot the user has
+  // configured (the reviewer modal writes per-slot model picks). Normalize
+  // incoming keys through the same `AGENTS[name]?.role ?? name` map so a
+  // payload posted with raw YAML names ("Synthesizer") collapses onto the
+  // same role key ("synthesizer") the defaults already used. Without this
+  // normalization the overlay silently misses the role-agent slots.
+  if (parsed.data.agentModels) {
+    for (const [rawKey, value] of Object.entries(parsed.data.agentModels)) {
+      resolvedAgentModels[normalizeAgentKey(rawKey)] = value
+    }
+  }
 
   // Model connectivity validation happens in the BROWSER with the user's key.
   // The server has no key to probe with — this is the structural BYOK guarantee.
@@ -62,7 +98,7 @@ export async function POST(request: Request) {
     agents,
     parsed.data.provider,
     parsed.data.modelId,
-    parsed.data.agentModels,
+    Object.keys(resolvedAgentModels).length > 0 ? resolvedAgentModels : undefined,
     parsed.data.specId
   )
   if (parsed.data.benchmark) {

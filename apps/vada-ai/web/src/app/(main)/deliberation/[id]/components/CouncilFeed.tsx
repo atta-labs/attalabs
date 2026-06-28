@@ -15,7 +15,7 @@
 // regression on Council. The model→vendor→color path is in
 // `apps/vada-ai/web/src/components/agents/vendors.ts` (`VENDORS[v].color`).
 
-import type { VendorId } from '@atta/models'
+import { findModelEntryByModelId, useCatalog, type ModelEntry, type VendorId } from '@atta/models'
 import { ModelIcon } from '@atta/ui/components'
 import { Card, CardContent, CardHeader } from '@atta/ui/components/card'
 import { Text } from '@atta/ui/shared'
@@ -27,6 +27,8 @@ import { TranscriptActions } from './TranscriptActions'
 import { useDeliberationScene } from './useDeliberationScene'
 import { useJudgeBenchmark } from './useJudgeBenchmark'
 import { MARKDOWN_COMPONENTS } from './markdown-components'
+import { AGENTS } from '@/components/agents/visuals'
+import type { AgentName } from '@/components/agents/visuals'
 import { VENDORS, inferVendor, type VendorId as LocalVendorId } from '@/components/agents/vendors'
 import type { BenchmarkClientState } from './DeliberationFeed'
 
@@ -75,6 +77,21 @@ function resolveVendorColor(modelId: string | undefined | null): string {
   return VENDORS[vendor as LocalVendorId]?.color ?? 'var(--foreground)'
 }
 
+/**
+ * Resolve the registry-quality display name for a model id (e.g.
+ * "Claude Haiku 4.5", "GPT-4o", "Gemini 2.5 Pro"). Uses the catalog's
+ * `label` field — that's what the model registry calls its canonical name
+ * (the dash-cased model id is the technical id; the label is the marketing
+ * one). When the catalog has no entry — the catalog hasn't loaded yet,
+ * the model is local-only, etc — we fall back to the raw model id so the
+ * header is never empty.
+ */
+function resolveModelDisplayName(catalog: ModelEntry[], modelId: string | undefined | null): string {
+  if (!modelId) return ''
+  const entry = findModelEntryByModelId(catalog, modelId)
+  return entry?.label ?? modelId
+}
+
 function parseCouncilSynthesis(raw: Record<string, unknown> | null): CouncilSynthesis | null {
   if (!raw) return null
   // The synthesizer is instructed to return `{agreements, disagreements, bottomLine}`.
@@ -94,18 +111,21 @@ function parseCouncilSynthesis(raw: Record<string, unknown> | null): CouncilSynt
 interface AnswerColumnProps {
   agentName: string
   modelInfo: { provider: string; modelId: string } | undefined
+  /** Catalog from `useCatalog()` — passed in so the column doesn't re-subscribe per row. */
+  catalog: ModelEntry[]
   answer: string | null
   isStreaming: boolean
   isComplete: boolean
 }
 
-function AnswerColumn({ agentName, modelInfo, answer, isStreaming, isComplete }: AnswerColumnProps) {
+function AnswerColumn({ agentName, modelInfo, catalog, answer, isStreaming, isComplete }: AnswerColumnProps) {
   const sphereId = useId()
   // EXPLICIT color — see resolveVendorColor docstring. No getAgentConfigByName.
   const color = resolveVendorColor(modelInfo?.modelId)
   // Show speaking while pending OR streaming; complete once a final answer arrives.
   // (Token streaming is out of scope — adapter V2. Today we flip on completion.)
   const sphereState = isComplete ? 'complete' : 'speaking'
+  const modelDisplayName = resolveModelDisplayName(catalog, modelInfo?.modelId)
 
   return (
     // `Card` replaces the previous hand-rolled `<article>` per RULE 1. The
@@ -128,16 +148,24 @@ function AnswerColumn({ agentName, modelInfo, answer, isStreaming, isComplete }:
           showMatrix={!isComplete}
           particleCount={28}
         />
+        {/* Column identity reads MODEL-first now: the icon + registry display
+            name ("Claude Haiku 4.5") is the primary line, slot role is a
+            small secondary tag below. Previously the slot role (Gemini / GPT
+            / Grok) was the primary and the model id was a sub-line — that
+            made every column on a 3×Haiku run read "Gemini / GPT / Grok"
+            even though the runtime model was the same, hiding the fact that
+            the user reconfigured. The model is what actually answers the
+            question; the slot is just where the answer landed. */}
         <div className='flex min-w-0 flex-col gap-0.5'>
           <div className='flex items-center gap-1.5'>
             {modelInfo && <ModelIcon model={modelInfo.modelId} size={14} type='avatar' />}
             <span className='truncate font-mono text-[11px] uppercase tracking-[0.18em] text-foreground'>
-              {agentName}
+              {modelDisplayName || agentName}
             </span>
           </div>
-          {modelInfo && (
-            <span className='truncate font-mono text-[9px] text-muted-foreground'>{modelInfo.modelId}</span>
-          )}
+          <span className='truncate font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground'>
+            {agentName}
+          </span>
         </div>
       </CardHeader>
       <CardContent className='min-h-[160px] px-0 text-[13px] leading-relaxed text-foreground/90'>
@@ -160,14 +188,16 @@ function AnswerColumn({ agentName, modelInfo, answer, isStreaming, isComplete }:
 
 interface SynthesisPanelProps {
   synthesizerModelId: string | undefined
+  catalog: ModelEntry[]
   synthesis: CouncilSynthesis | null
   isPending: boolean
 }
 
-function SynthesisPanel({ synthesizerModelId, synthesis, isPending }: SynthesisPanelProps) {
+function SynthesisPanel({ synthesizerModelId, catalog, synthesis, isPending }: SynthesisPanelProps) {
   const sphereId = useId()
   const color = resolveVendorColor(synthesizerModelId)
   const sphereState = synthesis ? 'complete' : 'speaking'
+  const synthesizerDisplayName = resolveModelDisplayName(catalog, synthesizerModelId)
 
   return (
     // `Card` replaces the previous hand-rolled `<section>` per RULE 1. The
@@ -187,10 +217,15 @@ function SynthesisPanel({ synthesizerModelId, synthesis, isPending }: SynthesisP
           showMatrix={!synthesis}
           particleCount={32}
         />
-        <div className='flex flex-col'>
+        <div className='flex min-w-0 flex-col'>
           <div className='font-serif text-base text-foreground'>Synthesis</div>
           {synthesizerModelId && (
-            <span className='font-mono text-[10px] text-muted-foreground'>{synthesizerModelId}</span>
+            <div className='flex items-center gap-1.5'>
+              <ModelIcon model={synthesizerModelId} size={12} type='avatar' />
+              <span className='truncate font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground'>
+                {synthesizerDisplayName}
+              </span>
+            </div>
           )}
         </div>
       </CardHeader>
@@ -275,6 +310,8 @@ function CouncilScene({
     specId
   })
 
+  const catalog = useCatalog()
+
   // Answer-column agents are everyone except the synthesizer.
   const answerAgents = useMemo(() => agentRoles.filter((r) => r !== SYNTHESIZER_NAME), [agentRoles])
 
@@ -290,7 +327,18 @@ function CouncilScene({
   }, [s.messages])
 
   const synthesis = useMemo(() => parseCouncilSynthesis(s.conclusion), [s.conclusion])
-  const synthesizerModelId = modelByRole[SYNTHESIZER_NAME]?.modelId ?? agentModels?.[SYNTHESIZER_NAME]?.modelId
+  // Same normalization the server's `start/route.ts` uses when building
+  // `session.agentModels` — Synthesizer (the role agent) collapses to its
+  // `role` string ("synthesizer"). The raw YAML name still works as a
+  // fallback so old sessions written before the normalized server fix
+  // continue to render (their `agentModels` was keyed by the raw name or
+  // not set at all).
+  const synthesizerRoleKey = AGENTS[SYNTHESIZER_NAME as AgentName]?.role ?? SYNTHESIZER_NAME
+  const synthesizerModelId =
+    modelByRole[SYNTHESIZER_NAME]?.modelId ??
+    modelByRole[synthesizerRoleKey]?.modelId ??
+    agentModels?.[SYNTHESIZER_NAME]?.modelId ??
+    agentModels?.[synthesizerRoleKey]?.modelId
 
   useJudgeBenchmark({
     sessionId,
@@ -337,6 +385,7 @@ function CouncilScene({
               key={agentName}
               agentName={agentName}
               modelInfo={modelInfo}
+              catalog={catalog}
               answer={msg?.content ?? null}
               isStreaming={isStreaming}
               isComplete={isComplete}
@@ -352,6 +401,7 @@ function CouncilScene({
         <div className='mt-8'>
           <SynthesisPanel
             synthesizerModelId={synthesizerModelId}
+            catalog={catalog}
             synthesis={synthesis}
             isPending={
               s.currentState === 'CONCLUDING' || s.currentState === 'AUDITING' || s.currentState === 'REVISING'

@@ -256,6 +256,29 @@ export function useDeliberateForm({
 
     // The apiKey is not sent to /start. The deliberation page passes it to
     // /workflow/run?stream=true when the SSE stream opens. See /trust.
+
+    // Lift the saved reviewer config (per-slot model picks from the modal)
+    // onto the /start payload as `agentModels: { [yamlName]: {provider,
+    // modelId} }`. Server-side `start/route.ts` overlays this on its own
+    // spec-default map (keyed by `AGENTS[name]?.role ?? name`), so we keep
+    // the raw YAML names here — server normalizes. Provider is resolved
+    // through `resolveVendor(modelId, catalog)`, which is catalog-authoritative
+    // (vs prefix-only) — handles cross-vendor cases like Groq-served DeepSeek
+    // where prefix matching would mis-route. Entries with no resolvable
+    // vendor are skipped: writing `provider: null` would break Zod validation
+    // server-side, and they wouldn't be runnable either way.
+    const reviewerConfig = getReviewerConfig(selectedSpecId)
+    let agentModels: Record<string, { provider: string; modelId: string }> | undefined
+    if (reviewerConfig) {
+      const entries: Array<[string, { provider: string; modelId: string }]> = []
+      for (const [agentName, modelId] of Object.entries(reviewerConfig)) {
+        const provider = resolveVendor(modelId, catalog)
+        if (!provider) continue
+        entries.push([agentName, { provider, modelId }])
+      }
+      if (entries.length > 0) agentModels = Object.fromEntries(entries)
+    }
+
     const body: Record<string, unknown> = {
       question: effectiveQuestion,
       specId: selectedSpecId,
@@ -263,6 +286,7 @@ export function useDeliberateForm({
         provider: globalModel.provider,
         modelId: globalModel.modelId
       }),
+      ...(agentModels && { agentModels }),
       benchmark: benchmarkEnabled
     }
 
