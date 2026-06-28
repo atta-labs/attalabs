@@ -6,6 +6,8 @@
 
 Migrated from the retired global `roadmap.md` (June 3, 2026; roadmap retired by D-029). See git history of `roadmap.md` for the full prior detail.
 
+> See also: [`vada-rethink.md`](./vada-rethink.md) — June 28, 2026 positioning / research backlog (intention-vs-mechanism teams, MCP center of gravity, frontier UI findings, Fusion / NVIDIA NIM / Hugging Face research items).
+
 ---
 
 ## Reviewers — interactive research (principal-driven, not agent-dispatch)
