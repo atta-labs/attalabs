@@ -148,32 +148,22 @@ function AnswerColumn({ agentName, modelInfo, catalog, answer, isStreaming, isCo
           showMatrix={!isComplete}
           particleCount={28}
         />
-        {/* Column identity reads MODEL-first now: the icon + registry display
-            name ("Claude Haiku 4.5") is the primary line, slot role is a
-            small secondary tag below. Previously the slot role (Gemini / GPT
-            / Grok) was the primary and the model id was a sub-line — that
-            made every column on a 3×Haiku run read "Gemini / GPT / Grok"
-            even though the runtime model was the same, hiding the fact that
-            the user reconfigured. The model is what actually answers the
-            question; the slot is just where the answer landed.
+        {/* Column header shows ONLY the running model — the slot role
+            (Gemini / GPT / Grok) is dropped entirely now. The model is what
+            actually answers the question; the YAML slot it landed in is an
+            implementation detail the user doesn't need to see on the results
+            view. (The slot identity is still authoritative server-side and
+            still visible in the Configure modal where the user assigns
+            models to slots.)
 
-            Type scale uses the standard Tailwind ramp:
-            - Primary (model): `text-sm` (14px) — column heading, must register
-              as identity, not a caption.
-            - Secondary (slot tag): `text-xs` (12px) — small but legible
-              follow-up tag. Lower-weight + muted color carries the demotion.
-            Both lines use `tracking-widest` (Tailwind's widest preset) instead
-            of the prior arbitrary `[0.18em]` / `[0.22em]` — predictable at
-            every text size and a single value across the file. */}
-        <div className='flex min-w-0 flex-col gap-1'>
-          <div className='flex items-center gap-2'>
-            {modelInfo && <ModelIcon model={modelInfo.modelId} size={16} type='avatar' />}
-            <span className='truncate font-mono text-sm uppercase tracking-widest text-foreground'>
-              {modelDisplayName || agentName}
-            </span>
-          </div>
-          <span className='truncate font-mono text-xs uppercase tracking-widest text-muted-foreground'>
-            {agentName}
+            Type scale matches the page's other monospace labels (`Your
+            Question` is `text-xs` too) — model name and meta-labels read as
+            siblings rather than a hierarchy. `tracking-widest` is the single
+            tracking preset used across the file. */}
+        <div className='flex min-w-0 items-center gap-2'>
+          {modelInfo && <ModelIcon model={modelInfo.modelId} size={14} type='avatar' />}
+          <span className='truncate font-mono text-xs uppercase tracking-widest text-foreground'>
+            {modelDisplayName || agentName}
           </span>
         </div>
       </CardHeader>
@@ -229,12 +219,12 @@ function SynthesisPanel({ synthesizerModelId, catalog, synthesis, isPending }: S
         <div className='flex min-w-0 flex-col gap-1'>
           <div className='font-serif text-lg text-foreground'>Synthesis</div>
           {synthesizerModelId && (
-            // Matches the AnswerColumn header scale (text-sm primary + 16px
-            // ModelIcon) so the synthesis card reads as a sibling to the
-            // answer columns above, not as a smaller caption.
+            // Matches the AnswerColumn header scale (text-xs + 14px
+            // ModelIcon) so the synthesis model line is a sibling to the
+            // answer columns above and to the "Your Question" label.
             <div className='flex items-center gap-2'>
-              <ModelIcon model={synthesizerModelId} size={16} type='avatar' />
-              <span className='truncate font-mono text-sm uppercase tracking-widest text-muted-foreground'>
+              <ModelIcon model={synthesizerModelId} size={14} type='avatar' />
+              <span className='truncate font-mono text-xs uppercase tracking-widest text-muted-foreground'>
                 {synthesizerDisplayName}
               </span>
             </div>
