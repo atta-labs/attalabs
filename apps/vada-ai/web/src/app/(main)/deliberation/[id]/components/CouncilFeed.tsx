@@ -155,20 +155,29 @@ function AnswerColumn({ agentName, modelInfo, catalog, answer, isStreaming, isCo
             made every column on a 3×Haiku run read "Gemini / GPT / Grok"
             even though the runtime model was the same, hiding the fact that
             the user reconfigured. The model is what actually answers the
-            question; the slot is just where the answer landed. */}
-        <div className='flex min-w-0 flex-col gap-0.5'>
-          <div className='flex items-center gap-1.5'>
-            {modelInfo && <ModelIcon model={modelInfo.modelId} size={14} type='avatar' />}
-            <span className='truncate font-mono text-[11px] uppercase tracking-[0.18em] text-foreground'>
+            question; the slot is just where the answer landed.
+
+            Type scale uses the standard Tailwind ramp:
+            - Primary (model): `text-sm` (14px) — column heading, must register
+              as identity, not a caption.
+            - Secondary (slot tag): `text-xs` (12px) — small but legible
+              follow-up tag. Lower-weight + muted color carries the demotion.
+            Both lines use `tracking-widest` (Tailwind's widest preset) instead
+            of the prior arbitrary `[0.18em]` / `[0.22em]` — predictable at
+            every text size and a single value across the file. */}
+        <div className='flex min-w-0 flex-col gap-1'>
+          <div className='flex items-center gap-2'>
+            {modelInfo && <ModelIcon model={modelInfo.modelId} size={16} type='avatar' />}
+            <span className='truncate font-mono text-sm uppercase tracking-widest text-foreground'>
               {modelDisplayName || agentName}
             </span>
           </div>
-          <span className='truncate font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground'>
+          <span className='truncate font-mono text-xs uppercase tracking-widest text-muted-foreground'>
             {agentName}
           </span>
         </div>
       </CardHeader>
-      <CardContent className='min-h-[160px] px-0 text-[13px] leading-relaxed text-foreground/90'>
+      <CardContent className='min-h-[160px] px-0 text-sm leading-relaxed text-foreground/90'>
         {answer ? (
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
             {answer}
@@ -217,12 +226,15 @@ function SynthesisPanel({ synthesizerModelId, catalog, synthesis, isPending }: S
           showMatrix={!synthesis}
           particleCount={32}
         />
-        <div className='flex min-w-0 flex-col'>
-          <div className='font-serif text-base text-foreground'>Synthesis</div>
+        <div className='flex min-w-0 flex-col gap-1'>
+          <div className='font-serif text-lg text-foreground'>Synthesis</div>
           {synthesizerModelId && (
-            <div className='flex items-center gap-1.5'>
-              <ModelIcon model={synthesizerModelId} size={12} type='avatar' />
-              <span className='truncate font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground'>
+            // Matches the AnswerColumn header scale (text-sm primary + 16px
+            // ModelIcon) so the synthesis card reads as a sibling to the
+            // answer columns above, not as a smaller caption.
+            <div className='flex items-center gap-2'>
+              <ModelIcon model={synthesizerModelId} size={16} type='avatar' />
+              <span className='truncate font-mono text-sm uppercase tracking-widest text-muted-foreground'>
                 {synthesizerDisplayName}
               </span>
             </div>
@@ -235,8 +247,8 @@ function SynthesisPanel({ synthesizerModelId, catalog, synthesis, isPending }: S
           <>
             {synthesis.agreements.length > 0 && (
               <div>
-                <div className='mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-success'>Agree</div>
-                <ul className='m-0 list-disc space-y-1.5 pl-5 text-[13px] leading-relaxed text-foreground/85'>
+                <div className='mb-2 font-mono text-xs uppercase tracking-widest text-success'>Agree</div>
+                <ul className='m-0 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-foreground/85'>
                   {synthesis.agreements.map((line, i) => (
                     <li key={i}>{line}</li>
                   ))}
@@ -245,8 +257,8 @@ function SynthesisPanel({ synthesizerModelId, catalog, synthesis, isPending }: S
             )}
             {synthesis.disagreements.length > 0 && (
               <div className='border-t border-border pt-4'>
-                <div className='mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-warning'>Disagree</div>
-                <ul className='m-0 list-disc space-y-1.5 pl-5 text-[13px] leading-relaxed text-foreground/85'>
+                <div className='mb-2 font-mono text-xs uppercase tracking-widest text-warning'>Disagree</div>
+                <ul className='m-0 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-foreground/85'>
                   {synthesis.disagreements.map((line, i) => (
                     <li key={i}>{line}</li>
                   ))}
@@ -255,7 +267,7 @@ function SynthesisPanel({ synthesizerModelId, catalog, synthesis, isPending }: S
             )}
             {synthesis.bottomLine && (
               <div className='border-t border-border pt-4'>
-                <div className='mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-primary'>Bottom line</div>
+                <div className='mb-2 font-mono text-xs uppercase tracking-widest text-primary'>Bottom line</div>
                 <Text as='p' size='md' className='m-0 leading-relaxed text-foreground/90'>
                   {synthesis.bottomLine}
                 </Text>
@@ -360,7 +372,7 @@ function CouncilScene({
           renders as plain `<div>` (mono micro-label, not a heading). */}
       <Card className='mb-8 gap-2 p-4 py-4'>
         <CardHeader className='px-0'>
-          <div className='font-mono text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground'>
+          <div className='font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground'>
             Your Question
           </div>
         </CardHeader>
