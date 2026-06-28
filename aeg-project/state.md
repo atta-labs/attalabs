@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** June 23, 2026 (D-057: now.md retired; forge is the source of truth for active/blocked/next)
+**Last updated:** June 28, 2026 (D-057: now.md retired; forge is the source of truth for active/blocked/next)
 **Purpose:** Non-derivable operational facts across the AttaLabs ecosystem. For live execution state (active tasks, blocked, next), derive from the forge — see `coordination.md` "Session-start forge queries."
 
 This doc lives in the repo at `aeg-project/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -11,7 +11,9 @@ Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
 
 ## Current focus
 
-**herald-agents-v2** and **vada-production-v1** are the active parallel iterations. Check `gh issue list --label "iteration:herald-agents-v2" --state open` and `gh issue list --label "iteration:vada-production-v1" --state open` for live task status.
+**herald-agents-v2** and **vada-production-v1** are the active iterations. `vada-production-v1`'s deliberate-page slice (6a/6b/6c + UI-libraries restoration) shipped in PR #207 (merged June 28 — Council deliberations end-to-end); the iteration's back half remains open — Fusion (T4/T5), reviewers-prompt (T8), benchmark (T9–T11), Teams-page measured stats (T12), hardening (T13). The teams-as-a-product rethink (`apps/vada-ai/specs/vada-rethink.md`, draft June 28) gates T8/T11/T12 and is not yet a forge Issue.
+
+Check `gh issue list --label "iteration:herald-agents-v2" --state open` and `gh issue list --label "iteration:vada-production-v1" --state open` for live task status.
 
 ---
 
@@ -107,17 +109,17 @@ Canonical decision docs: `apps/atta-ai/specs/atta-naming-decision.md` (full reas
 
 ## Products
 
-### Vāda — *production live; hosted MCP shipped; reviewer prompt iteration phase next*
+### Vāda — *production live; Council + deliberate page shipped June 28 (PR #207); back-half iteration open*
 
-**Status:** Live at `https://vada.attalabs.dev`. Standalone deliberation engine and the deliberation layer inside Atta. Vāda Teams is the catalog of YAML team specifications compiled by the Atta engine. Vāda Reviewers v1 (vendor-diverse team) registered. **Hosted MCP server live at `https://vada.attalabs.dev/api/mcp` (May 4).** **Single-source-keys reversal locked (May 4) — server-side `user_provider_keys` is canonical, IndexedDB demoted.** **`feat/shared-keys-ui` merged (May 5) — `ProviderKeysSection` / `ApiKeysSection` extracted to `@atta/ui/account`, ecosystem-shared key schemas moved to `@atta/db`.** **Vendor registry consolidation shipped (May 11, PR #31) — single source of truth for vendor metadata, SDK shapes, baseURLs, and routing across all 12 supported vendors.** Reviewer prompt iteration phase is next (Track B Item 3b).
+**Status:** Live at `https://vada.attalabs.dev`. Standalone deliberation engine and the deliberation layer inside Atta. Vāda Teams is the catalog of YAML team specifications compiled by the Atta engine. **Council deliberations shipped June 28 (PR #207):** `vada-council` + `vada-council-synthesis` YAML specs live; `CouncilFeed` view (N independent-answer columns, vendor-color spheres, streaming `{agreements, disagreements, bottomLine}` synthesis); deliberate-page production UX (frontier-chat hero input, morphing Configure↔Submit, tool badges, `RouteAwareFooter`). 4 public teams in catalog. **Hosted MCP server live at `https://vada.attalabs.dev/api/mcp` (May 4).** **Single-source-keys reversal locked (May 4) — server-side `user_provider_keys` is canonical, IndexedDB demoted.** **`feat/shared-keys-ui` merged (May 5) — `ProviderKeysSection` / `ApiKeysSection` extracted to `@atta/ui/account`, ecosystem-shared key schemas moved to `@atta/db`.** **Vendor registry consolidation shipped (May 11, PR #31) — single source of truth for vendor metadata, SDK shapes, baseURLs, and routing across all 12 supported vendors.** Teams-as-a-product rethink in draft (`apps/vada-ai/specs/vada-rethink.md`, June 28) — not yet a forge Issue.
 
 **Web app structure:** Routes are flat. Home is at `/`. The `/autonomous/*` and `/brokered/*` route trees no longer exist.
 
 **Full plan / backlog:** `apps/vada-ai/specs/vada-backlog.md`.
 
-#### Vāda Teams catalog (current state — 9 YAMLs, 2 published)
+#### Vāda Teams catalog (current state — 11 YAMLs, 4 published)
 
-All YAMLs at `apps/vada-ai/yamls/`. Use Sonnet (`claude-sonnet-4-6`) by default; Vāda Reviewers uses vendor-diverse defaults.
+All YAMLs at `packages/agents/vada-deliberation/yamls/`. Use Sonnet (`claude-sonnet-4-6`) by default; Vāda Reviewers uses vendor-diverse defaults.
 
 | Team YAML | Display name | Shape | Status |
 |---|---|---|---|
@@ -130,8 +132,10 @@ All YAMLs at `apps/vada-ai/yamls/`. Use Sonnet (`claude-sonnet-4-6`) by default;
 | `war-room` | War Room | 6 agents × 3 rounds with dual audit and revision | Experimental (unpublished May 11, PR #31) |
 | `vada-reviewers` | Reviewers | 3 vendor-diverse reviewers (configurable per slot), uniform critic role, single-shot, no synthesizer | Published — pending prompt iteration |
 | `vada-reviewers-synthesis` | Reviewers + Synthesis | Same 3 reviewers + Anthropic Synthesizer producing structured JSON | Published — pending prompt iteration |
+| `vada-council` | Council | N independent models answer in parallel (no critique role — vendor identity IS identity) | Published — shipped June 28 (PR #207) |
+| `vada-council-synthesis` | Council + Synthesis | Same N columns + Anthropic Synthesizer: `{agreements, disagreements, bottomLine}` | Published — shipped June 28 (PR #207) |
 
-The 7 experimental YAMLs are filtered out of the public `/teams` catalog by the `experimental: true` flag (`listPublicSpecs()` returns the 2 published only). Crucible, Sparring, and War Room were marked experimental in PR #31 — flow design, system prompts, and inter-agent interactions all need iteration before they should be re-exposed publicly. Vāda Reviewers and Reviewers + Synthesis are the focused public surface area. Fate of the experimental YAMLs depends on data from the Vāda Reviewers benchmark.
+The 7 experimental YAMLs are filtered out of the public `/teams` catalog by the `experimental: true` flag (`listPublicSpecs()` returns the 4 published only). Crucible, Sparring, and War Room were marked experimental in PR #31 — flow design, system prompts, and inter-agent interactions all need iteration before they should be re-exposed publicly. **Taxonomy reconsideration in flight:** `apps/vada-ai/specs/vada-rethink.md` (draft, June 28) questions whether "Council" accurately describes what the team does and how Vāda's team taxonomy should evolve — not yet a forge Issue; gates T8/T11/T12 in vada-production-v1.
 
 **Two known bugs (undiagnosed):** Reviewers team ERROR (provider keys / SDK routing); Sparring duplicates the Critic message. Both pending diagnosis.
 
@@ -151,7 +155,7 @@ The 7 experimental YAMLs are filtered out of the public `/teams` catalog by the 
 - **MCP `reviewer_config` parameter (May 11, PR #31):** `vada__consult` accepts an optional `reviewer_config: Record<agentName, modelId>` field, validated against the vendor registry, refused with structured `local_only_vendor` or `missing_provider_key` errors. Mirrors the web UI's per-slot model configurability; closes the contract gap between MCP and web for the Reviewers and Reviewers + Synthesis teams.
 - **`vada__consult` accepts generic `spec_id`** — routes to any YAML in the catalog
 - `vada__deliberate` MCP tool returns `structured` field alongside `content`
-- 9 YAML team specs in catalog (2 published, 7 experimental — see Vāda Teams catalog table above)
+- 11 YAML team specs in catalog (4 published, 7 experimental — see Vāda Teams catalog table above)
 - Domain Expert agent (uses Handlebars `customVars`)
 - Benchmarks infrastructure (`benchmark_runs` table, judge script, `/bench` dashboard)
 - YAML-driven specs replacing TypeScript mode logic
@@ -183,9 +187,9 @@ Flat routes at `apps/vada-ai/web/src/app/(main)/`:
 
 **Domain:** `vada.attalabs.dev` (production live). Auto-deploys from `main` via Vercel.
 
-**Next:** Reviewer prompt iteration (Track B Item 3b). Test Reviewers end-to-end first (needs OpenAI + xAI keys added to Vercel — manual). Then synthesizer prompt iteration (3c), then first benchmark run (Item 4). Hosted MCP works via Claude Code CLI; Claude.ai web blocked by the broker bug (`ofid_*`).
+**Next (vada-production-v1 back half):** Fusion teams (T4/T5); reviewers-prompt iteration (T8 — gates on `vada-rethink.md` taxonomy decision); benchmark harness + quality audit (T9–T11); Teams-page measured stats (T12); hardening (T13). Test Reviewers end-to-end first (needs OpenAI + xAI keys added to Vercel — manual). Hosted MCP works via Claude Code CLI; Claude.ai web blocked by the broker bug (`ofid_*`).
 
-See `apps/vada-ai/specs/vada-state.md` for full Vāda-internal detail (note: file may be slightly stale post-May-4-5; flagged for cleanup).
+See `apps/vada-ai/aeg-project/state.md` for the current per-project Vāda snapshot.
 
 ### AEG — *model ratified (D-029, D-030); AEG Studio V1 shipped (aeg-ui-v1, June 2026)*
 
@@ -385,6 +389,8 @@ This ecosystem uses the repo as the source of truth for project management. See 
 
 ### Recently shipped (most recent first)
 
+**June 28, 2026 — vada-production-v1 deliberate-page slice + UI-libraries restoration (PR #207).** Council deliberations end-to-end: `vada-council` + `vada-council-synthesis` YAML specs published; `CouncilFeed` (N independent-answer columns, vendor-color spheres via `resolveVendorColor → VENDORS[v].color`; grey-sphere bug fixed by construction; completion-fill streaming; locked `{agreements, disagreements, bottomLine}` synthesis panel); per-spec routing. Deliberate-page production UX: frontier-chat hero input (inline-right single-line → footer multi-line), morphing Configure↔Submit, dropdown restyle/short labels (kills Council "reviewers" misnomer), team-identity Configure modal, tool-badge corner glyph + `badgeLeft` slot, `RouteAwareFooter` (Vāda-only). `SmartPromptInput` dependency-injection contract — shared composites resolve no library; consumers inject primitives (D-064 ACTIVE). `TextReveal` added to `@atta/ui` contract + all 4 libraries. UI-libraries doctrine (D-065 ACTIVE): `installed/*` re-established as verbatim upstream CLI pastes; Biome-ignored; `check-forbidden-colors` gate exempts them; customizations in `components/interactive/*`; Tabs + Button restored to canonical; per-library cva; dropped zero-consumer variants and contract types; skills updated; supersedes #226. 4 teams now in public catalog. Rode-along: Herald `JDInput` bare-variant refactor; `tools/admin` theme-editor routing fix. This is the 6a/6b/6c slice; vada-production-v1 back half (Fusion, benchmark, Teams stats, hardening) remains open.
+
 **June 18–20, 2026 — aeg-governance-ui-v2 iteration complete.** Completed the AEG model by writing all five missing role-seam contracts (`aeg-root/contracts/brief-developer.md`, `developer-reviewer.md`, `reviewer-archivist.md`, `archivist-iteration-archivist.md`, `iteration-archivist-planner.md`), adding Planner readiness gate item 8 (enforces iteration archival before new planning on any product), and running a governance gap discovery spike (`aeg-root/discovery/2026-06-17-governance-gaps.md`, 16 gaps documented). AEG Studio fully refactored with the science layout pattern (replacing `StudioShell` + `StudioSidebar`), wired to Atta CMS config via `NextWebShell`, and extended with a cross-product `/iterations` view and token ledger display on the iteration detail page. 6 PRs merged (#144 task/1a, #145 task/1b, #149 task/2, #152 task/theme unplanned, #153 task/4, #155 task/3).
 
 **June 16–17, 2026 — herald-onto-engine + aeg-ui-v1 iterations complete.** Engine onboarding for Herald with multi-vendor BYOK + Bulk Audit UI (8 merged PRs). AEG Studio scaffolded with project/iteration topology, kanban, task-dependency graph, shared docs renderer, and verification role (11 merged PRs). Task 9-view (token ledger display) unblocked.
@@ -463,7 +469,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - `apps/vitakka-ai/` — scaffold; build not started
 - All `@atta/*` packages (incl. `@atta/crypto`, `@atta/ui/account`, `@atta/ui/engine-flow`, `@atta/db` shared key schemas)
 - `packages/models/src/vendors.ts` — vendor registry (12 vendors)
-- 9 YAML teams (2 published, 7 experimental)
+- 11 YAML teams (4 published, 7 experimental)
 - `aeg-root/` + `aeg-project/` — full AEG model doc set (constitution, manual-flow, process, iterations/README, projects, roles ×6, skills ×3, diagrams ×2) + global state (decisions to D-057, state, changelog, lessons, ratification-queue); `.github/workflows/verify-docs.yml` live
 - `specs/ecosystem-backlog.md` — the monorepo's plan (moved from `docs/`, D-037)
 - `apps/aeg/specs/` + `apps/aeg/aeg-project/` — AEG product spec-only scaffold (D-038); no `apps/aeg/web` yet
@@ -479,7 +485,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - Cetana F7 (`cetana status`) — ready to dispatch
 - Spec refresh-and-ratify pass (Vāda first) → Integrity Reviewer (spec-integrity chain, `specs/ecosystem-backlog.md`)
 
-**Active iterations:** herald-onto-engine: complete ✅ (June 16). aeg-ui-v1: complete ✅ (June 20). aeg-governance-ui-v2: complete ✅ (June 20). herald-agents-v2 and vada-agents-v2: active (parallel execution).
+**Active iterations:** herald-onto-engine: complete ✅ (June 16). aeg-ui-v1: complete ✅ (June 20). aeg-governance-ui-v2: complete ✅ (June 20). herald-agents-v2 and vada-production-v1: active (parallel execution). vada-production-v1's deliberate-page slice (6a/6b/6c) shipped PR #207 June 28; back half (T4/T5/T8–T13) open.
 
 **Drafted briefs awaiting dispatch:** none.
 
