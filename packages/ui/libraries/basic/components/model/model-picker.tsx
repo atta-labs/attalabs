@@ -208,10 +208,10 @@ export function ModelPicker({
           ) : (
             <ProviderIcon provider={selectedEntry.route} size={14} type='avatar' />
           )}
-          <span className='font-mono text-base'>{selectedEntry.label}</span>
+          <span className='text-base'>{selectedEntry.label}</span>
         </span>
       ) : (
-        <span className='font-mono text-base'>Select model</span>
+        <span className='text-base'>Select model</span>
       )}
       <ChevronsUpDown className='h-3 w-3' />
     </Button>
@@ -286,7 +286,7 @@ export function ModelPicker({
               onClick={() => setFlagshipOnly((v) => !v)}
               aria-pressed={flagshipOnly}
               className={cn(
-                'rounded-full px-2 py-0.5 font-mono text-base transition-colors',
+                'rounded-full px-2 py-0.5 text-base transition-colors',
                 flagshipOnly ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -297,7 +297,7 @@ export function ModelPicker({
               onClick={() => setFreeOnly((v) => !v)}
               aria-pressed={freeOnly}
               className={cn(
-                'rounded-full px-2 py-0.5 font-mono text-base transition-colors',
+                'rounded-full px-2 py-0.5 text-base transition-colors',
                 freeOnly ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -373,7 +373,7 @@ export function ModelPicker({
                       <button
                         type='button'
                         onClick={() => toggleGroup(group.route)}
-                        className='font-mono text-base text-muted-foreground hover:text-foreground'
+                        className='text-base text-muted-foreground hover:text-foreground'
                       >
                         {isExpanded ? 'Show fewer' : `Show all ${group.entries.length}`}
                       </button>
