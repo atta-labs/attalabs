@@ -26,8 +26,11 @@ export type SmartPromptInputSurface = 'card' | 'popover' | 'bare'
 /**
  * Surface presets — see `surface` prop docs.
  *
- * - `card`: byte-identical default. No outer halo; vendor InputGroup keeps
- *   its resting focus ring.
+ * - `card`: backward-compatible default for the `surface` prop. No outer halo;
+ *   vendor InputGroup keeps its resting focus ring. (Herald's `JDInput` no
+ *   longer uses this default post-PR #207 — it opts in to `'popover'` to
+ *   align visually with Vāda's hero. New consumers that omit `surface` still
+ *   land here.)
  * - `popover`: outer wrapper carries a soft 2px ring on focus-within (using
  *   the same `--ring` token); InputGroup is elevated to `bg-popover` with
  *   `rounded-xl shadow-lg` and the inner vendor ring is suppressed.
@@ -75,8 +78,13 @@ export interface SmartPromptInputProps {
    *   `actions` drops into the footer row beneath the textarea,
    *   to the right of any existing tools, before the submit button.
    *
-   * When `actions` is not provided, the input renders exactly as before
-   * (Herald-compatible default).
+   * When `actions` is not provided the input still renders a submit — post-PR
+   * #207 the no-actions inline branch surfaces the submit beside the textarea
+   * on a single line (previously the submit only appeared once the footer
+   * mounted, which left Herald-style consumers without one on first render).
+   * The prop default itself is backward-compatible: omitting `actions` keeps
+   * the no-actions code path; the surface change is the path's content, not
+   * the prop semantics.
    */
   actions?: React.ReactNode
   /**
@@ -84,7 +92,8 @@ export interface SmartPromptInputProps {
    *
    * - `'right'` (default): actions render to the right of the textarea (inline
    *   mode) or on the right side of the footer (multi-line mode), immediately
-   *   before the submit button. This is the original, Herald-compatible layout.
+   *   before the submit button. This is the original layout the prop preserves
+   *   as its default.
    * - `'left'`: actions LEAD the input.
    *   - Inline mode: `[actions] [textarea ........] [submit]`
    *   - Multi-line mode: footer becomes `[actions, tools, hint] ... [submit]`.
@@ -105,8 +114,11 @@ export interface SmartPromptInputProps {
    * The slot is honored in BOTH inline mode and footer mode. It replaces the
    * default `PromptInputSubmit` in either location; no other behavior changes.
    *
-   * When `submitSlot` is undefined, the input renders the default
-   * `PromptInputSubmit` exactly as before (Herald-compatible).
+   * When `submitSlot` is undefined the input renders the default
+   * `PromptInputSubmit`. The prop default is backward-compatible (omitting
+   * `submitSlot` selects the canonical submit element); the position that
+   * canonical submit lands in changed for the no-actions inline branch — see
+   * the `actions` prop docs above.
    *
    * Has no effect when `useFullWidthCta` is in effect (`ctaLabel` set), since
    * that path renders a full-width CTA button instead of `PromptInputSubmit`.
@@ -144,8 +156,9 @@ export interface SmartPromptInputProps {
    *
    * Used by Vāda's hero to drive the `hasQuestion` predicate (which gates the
    * morphing submit button and the hero ↔ active layout switch) directly off
-   * the typed text instead of waiting for submit. Herald passes nothing and
-   * remains byte-identical to the prior behavior.
+   * the typed text instead of waiting for submit. Consumers that omit
+   * `onTextChange` simply receive no callback — the prop is purely additive
+   * and backward-compatible.
    *
    * On submit the existing `onSubmit(text, files)` path is unaffected —
    * `onSubmit` receives the explicit text, not the consumer's state, so
@@ -172,8 +185,11 @@ export interface SmartPromptInputProps {
    * chrome (border, rounded corners, focus ring, resize handle, `min-h-16`
    * baseline) and blends into the surrounding InputGroup.
    *
-   * Defaults to `undefined` so Herald and other existing consumers keep their
-   * library-default Textarea variant — byte-identical.
+   * Defaults to `undefined` — backward-compatible at the prop level: consumers
+   * that omit `textareaVariant` keep their library-default Textarea variant.
+   * Herald's `JDInput` post-PR #207 explicitly sets `'bare'` (paired with
+   * `surface='popover'`) and is therefore NOT byte-identical to its pre-PR
+   * render — the default still is.
    */
   textareaVariant?: TextareaVariant
   /**
@@ -183,8 +199,10 @@ export interface SmartPromptInputProps {
    *
    * - `'card'` (default) — the vendor's original surface (`bg-card`,
    *   `focus-within:ring-1 focus-within:ring-ring` on the InputGroup itself).
-   *   Herald and every prior consumer get this; the render is byte-identical
-   *   to before this prop existed.
+   *   Consumers that omit `surface` land here; the prop default is
+   *   backward-compatible. Note: Herald's `JDInput` no longer omits this prop
+   *   post-PR #207 — it sets `surface='popover'` and is therefore not the
+   *   canonical card-surface render at runtime.
    * - `'popover'` — Vāda hero treatment. Elevates the InputGroup to
    *   `bg-popover` with `rounded-xl shadow-lg`, and moves the focus halo to
    *   the OUTER wrapper (`focus-within:ring-2 ring-ring/60` + offset). The
@@ -414,7 +432,10 @@ export function SmartPromptInput({
   const actionsOnLeft = hasActions && actionsPosition === 'left'
   // When the caller provides a custom submit element, render it in place of
   // the default `PromptInputSubmit` in every code path below — inline mode AND
-  // footer mode. When undefined we fall through to the Herald-compatible default.
+  // footer mode. When undefined we fall through to the canonical
+  // `PromptInputSubmit` (omitting `submitSlot` is backward-compatible at the
+  // prop level; the position the canonical submit lands in for no-actions
+  // consumers changed post-PR #207 — see `actions` prop docs).
   const hasSubmitSlot = submitSlot !== undefined && submitSlot !== null && submitSlot !== false
   const renderSubmit = () =>
     hasSubmitSlot ? (
@@ -477,8 +498,12 @@ export function SmartPromptInput({
   // No oscillation possible: every state transition requires the user to
   // either type past the enter threshold or clear the input completely.
   //
-  // Herald is unaffected: `hasActions = false` short-circuits the layout effect
-  // and `remeasure` is only wired to `onInput` inside the `hasActions` branch.
+  // Consumers that don't pass `actions` short-circuit the layout effect:
+  // `hasActions = false` skips the inline ↔ footer remeasure flow, and
+  // `remeasure` is only wired to `onInput` inside the `hasActions` branch.
+  // (Herald used to be the canonical such consumer pre-PR #207; its current
+  // JDInput still passes no `actions` but DOES set `surface='popover'` and
+  // `textareaVariant='bare'`, which affect chrome only — not this latch.)
   const inputRowRef = useRef<HTMLDivElement | null>(null)
   const [isMultiLine, setIsMultiLine] = useState(false)
   const [attachmentCount, setAttachmentCount] = useState(0)
