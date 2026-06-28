@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** June 23, 2026 (D-057: now.md retired; forge is the source of truth for active/blocked/next)
+**Last updated:** June 28, 2026 (D-057: now.md retired; forge is the source of truth for active/blocked/next)
 **Purpose:** Non-derivable operational facts across the AttaLabs ecosystem. For live execution state (active tasks, blocked, next), derive from the forge — see `coordination.md` "Session-start forge queries."
 
 This doc lives in the repo at `aeg-project/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -11,7 +11,9 @@ Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
 
 ## Current focus
 
-**herald-agents-v2** and **vada-production-v1** are the active parallel iterations. Check `gh issue list --label "iteration:herald-agents-v2" --state open` and `gh issue list --label "iteration:vada-production-v1" --state open` for live task status.
+**herald-agents-v2** is the active iteration. **vada-production-v1** is complete — PR #207 merged June 28, 2026 (deliberate page + Council end-to-end; tasks 6a/6b/6c + UI-libraries restoration). The next Vāda work is unscheduled; `apps/vada-ai/specs/vada-rethink.md` (draft, June 28) captures positioning and team-taxonomy rethinking — not yet a forge Issue or iteration.
+
+Check `gh issue list --label "iteration:herald-agents-v2" --state open` for live herald task status.
 
 ---
 

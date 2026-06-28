@@ -1,6 +1,6 @@
 # Vāda — Current State
 
-**Last updated:** June 2, 2026
+**Last updated:** June 28, 2026 (post PR #207 — deliberate page + Council shipped)
 **Purpose:** Per-product snapshot for Vāda. Agents working in `apps/vada-ai/` read this before starting any task. Root `aeg-project/state.md` has full ecosystem context.
 
 ---
@@ -16,51 +16,33 @@ YAML-driven deliberation runtime. The engine executes deliberation configuration
 - **Add OpenAI + xAI keys to Vercel** — Vercel → vada-ai → Settings → Environment Variables. Unblocks Reviewers end-to-end testing.
 - **Generate a Vāda API key** — needed to test the hosted MCP via Claude Code CLI.
 - **Configure Claude Code MCP connector** — point at `https://vada.attalabs.dev/api/mcp` with bearer auth.
-- **Dispatch T2 (#176)** — stale spec cleanup. Depends on T1 only; unblocked.
 
 ---
 
-## Phase plan
+## Current state (as of June 28, 2026)
 
-### ✅ Complete — engine, schema, MCP, vendor registry
-All shipped. Universal round-based schema v2 (D-033), hosted MCP, single-source BYOK, vendor registry (12 vendors), provider key validation (PR #65).
+### Shipped in vada-production-v1 (PR #207, merged June 28)
 
-### Phase B — Reviewers iteration ← CURRENT
+- **Deliberate page** — production UX live: frontier-chat hero input, morphing Configure↔Submit, dropdown restyle/short labels, team-identity Configure modal, tool-badge corner glyph + `badgeLeft` slot, `RouteAwareFooter` (suppresses global footer on `/deliberate` + `/deliberation/[id]`).
+- **Council teams** — `vada-council` + `vada-council-synthesis` YAML specs shipped and published. `CouncilFeed` view: N independent-answer columns, explicit vendor-color spheres (`resolveVendorColor → VENDORS[v].color`; grey-sphere bug fixed by construction), completion-fill streaming, locked `{agreements, disagreements, bottomLine}` synthesis panel. Per-spec routing on the deliberation page.
+- **4 public teams in catalog** — `vada-council`, `vada-council-synthesis`, `vada-reviewers`, `vada-reviewers-synthesis`.
+- **SmartPromptInput DI** — shared composite now resolves no library; consumers inject primitives (Vāda from `@atta/ui`, Herald from `useComponents()`); ratifies D-064.
+- **TextReveal** — added to `@atta/ui` contract + all 4 libraries.
+- **UI-libraries doctrine** — `installed/*` verbatim upstream CLI pastes (shadcn/animate-ui/retroui/neobrutalism); Biome-ignored; customizations in `components/interactive/*`. Tabs + Button restored. D-065 ACTIVE.
 
-**B3b — Reviewer system prompt v2** — PR #77 open (June 1, 2026). Anti-convergence structured output. Pending merge.
+### Positioning rethink in draft
 
-**B3c — Synthesizer prompt iteration** — not started. Same pattern as B3b. Do after B3b merges and Reviewers are tested end-to-end.
-
-**B4 — First benchmark run** — not started. Requires: Reviewers working end-to-end + benchmark architecture redesign (current judge measures transcript concatenation, not synthesized output — structural flaw).
-
-**B5 — Iterate or ship Vāda Reviewers v1** — not started. Decision based on benchmark data.
-
-### Blocked on manual action
-**Reviewers have never been tested end-to-end.** To unblock: add OpenAI + xAI API keys to Vercel env vars for `vada.attalabs.dev`. Without these, the 3-vendor Reviewers team (Anthropic + Google + OpenAI/xAI) can't run. Anthropic works by default.
+`apps/vada-ai/specs/vada-rethink.md` (created June 28) — captures positioning/team-taxonomy rethinking mid-PR. Status: draft. Not a forge Issue, not a dispatched task. The Principal should decide whether to open an Issue before the next Vāda iteration starts.
 
 ---
 
 ## Current build state
 
 **Production live:**
-- `vada.attalabs.dev` — full web app
+- `vada.attalabs.dev` — full web app, deliberate page live
 - `vada.attalabs.dev/api/mcp` — hosted MCP, Streamable HTTP, bearer auth
-- 2 published teams: `vada-reviewers`, `vada-reviewers-synthesis`
+- 4 public teams: `vada-council`, `vada-council-synthesis`, `vada-reviewers`, `vada-reviewers-synthesis`
 - 7 experimental teams (hidden from public catalog): `a0-baseline`, `a1-baseline`, `brokered-trio`, `brokered-quartet`, `crucible`, `sparring`, `war-room`
-
-**Recent PRs:**
-- PR #147 — Homepage rewrite: removed engine/YAML sections (PositioningSection, MechanismSection, EcosystemSection), added product-focused sections (WhatItIs, WhyItWorks, TryIt, McpDeveloper), CMS branding fetch removed from page.tsx (open)
-- PR #65 — provider key validation before `runLangGraph` dispatch ✓
-- PR #77 — Reviewers system prompt v2 (open, pending merge)
-
-**Known bugs:**
-- Sparring duplicates Critic message — open, not fixed
-- Trust page content references browser-only BYOK — stale, needs rewrite
-- `vada-reviewers-synthesis` synthesizer template bug fixed in D-033 migration — confirmed resolved
-
-**Never tested:**
-- Reviewers end-to-end with real vendor-diverse models (blocked on OpenAI + xAI keys)
-- MCP via Claude Code CLI (server confirmed healthy via curl; Claude.ai web has Track E12 broker bug)
 
 ---
 
@@ -81,28 +63,34 @@ All shipped. Universal round-based schema v2 (D-033), hosted MCP, single-source 
 
 | File | Purpose |
 |------|---------|
-| `apps/vada-ai/specs/vada-state.md` | Full Vāda-internal state (detailed, may be slightly stale) |
+| `apps/vada-ai/aeg-project/state.md` | This file — current per-product state |
+| `apps/vada-ai/specs/vada-state.md` | Legacy internal state (pre-June 28, may be stale — see DANGLING note in PR #207 provenance) |
+| `apps/vada-ai/specs/vada-rethink.md` | Positioning/team-taxonomy draft (June 28, not yet a task) |
 | `apps/vada-ai/specs/vada-decisions.md` | Vāda-specific decision log |
 | `apps/vada-ai/specs/yaml-schema-reference.md` | YAML schema v2 definitive reference |
 | `apps/vada-ai/specs/vada-reviewers-spec.md` | Reviewers team spec (rev 5 + v2 prompt) |
-| `packages/agents/vada-deliberation/yamls/` | All 9 deliberation YAML specs |
+| `packages/agents/vada-deliberation/yamls/` | All deliberation YAML specs |
 | `apps/vada-ai/web/src/app/api/deliberation/[id]/workflow/run/route.ts` | Main deliberation route |
 | `apps/vada-ai/web/src/app/api/mcp/route.ts` | Hosted MCP endpoint |
 | `.claude/skills/vada-architecture/SKILL.md` | Architecture master reference — read before any cross-cutting change |
 
 ---
 
-## What's NOT done yet
+## What's NOT done yet (deferred from vada-production-v1)
 
-- Reviewer system prompt v2 — PR #77 open, not merged
-- End-to-end Reviewers test (needs OpenAI + xAI keys in Vercel)
-- Synthesizer prompt iteration (B3c)
-- Benchmark run (B4)
-- Benchmark architecture redesign (judge measures wrong thing)
+- Token streaming (adapter V2)
+- Multimodal ingestion
+- Topbar hardcoded-basic sweep (shared backlog — all products)
+- ~12 un-audited shared `@atta/ui` primitives (Card/Badge/Input/Textarea/DropdownMenu/Popover/Select/Sidebar/Sheet/Table/Toast/Collapsible/Command) — same upstream-canonical sweep applied to Tabs + Button
+- Reviewers system prompt v2 (B-3b, PR #77 open since June 1)
+- End-to-end Reviewers test (blocked on OpenAI + xAI keys in Vercel)
+- Synthesizer prompt iteration (B-3c)
+- Benchmark harness + quality audit
+- Fusion team (`vada-fusion`, `vada-fusion-native`)
+- Teams page measured stats (replace CalculatorStats)
+- Council "REVIEWER N" label in configure modal
+- Deliberation UI tool/MCP support (`required_inputs` validation)
 - Trust page rewrite (references stale BYOK model)
-- `vada.attalabs.dev/api/mcp` via Claude Code CLI tested with real deliberation (not just curl health check)
-- Vāda API key generation UI confirmed working for a new user
-- Sparring duplicate Critic message bug
 
 ---
 
