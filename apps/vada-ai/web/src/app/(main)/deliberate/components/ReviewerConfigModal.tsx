@@ -149,16 +149,17 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
               the canonical `text-sm text-muted-foreground` styling and the
               accessible `aria-describedby` association on the dialog. */}
           {spec.description && <DialogDescription>{spec.description}</DialogDescription>}
-          {/* "View team" link — the single navigation path out of this modal.
-              Mono micro-label, hover-to-accent per the doctrine (hover always
-              reaches for `accent`). */}
-          <NextLink
-            href={`/teams/${spec.id}`}
-            variant='subtle'
-            className='inline-flex w-fit items-center gap-1 text-xs uppercase tracking-widest'
-          >
+          {/* "View team" — the single navigation path out of this modal.
+              `variant='prose'` is the canonical link styling: `text-primary`
+              + `underline underline-offset-2 decoration-primary/40`. Inherits
+              body font-size from the modal, so it reads as a proper inline
+              link rather than the prior mono micro-label (which was visually
+              indistinguishable from a static caption — easy to miss). No
+              call-site appearance overrides — layout-only (`inline-flex`,
+              gap, w-fit). */}
+          <NextLink href={`/teams/${spec.id}`} variant='prose' className='inline-flex w-fit items-center gap-1'>
             View team
-            <ArrowUpRight className='size-3' />
+            <ArrowUpRight className='size-4' />
           </NextLink>
         </DialogHeader>
 
