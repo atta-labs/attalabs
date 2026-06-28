@@ -159,11 +159,11 @@ export const REQUIRED_COMPONENTS = [
 ]
 
 export const REQUIRED_TYPES = [
-  // Button
-  'ButtonProps',
-  'ButtonSize',
-  'ButtonVariant',
-  'ButtonVariantsFn',
+  // Button — only `Button` itself is contracted across libraries. The cross-
+  // library variant/size enums were removed because they had zero consumer
+  // usage and forced every library to extend its canonical with bespoke
+  // names. Each library's installed/ now derives its own ButtonProps from
+  // its own cva (`VariantProps<typeof buttonVariants>`).
 
   // Tabs
   'TabsContentProps',

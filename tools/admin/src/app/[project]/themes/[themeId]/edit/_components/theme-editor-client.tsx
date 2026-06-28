@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@atta/ui/components/dialog'
-import { Clipboard, Copy, Download } from 'lucide-react'
+import { Clipboard, Copy, Download, Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { PortalPreviewFrame } from '@/components/portal/portal-preview-frame'
@@ -188,7 +188,8 @@ export function ThemeEditorClient({ theme, project }: ThemeEditorClientProps) {
         <Download className='h-3.5 w-3.5' />
         Export
       </Button>
-      <Button type='button' size='sm' onClick={handleSave} loading={isPending} disabled={!dirty || isPending}>
+      <Button type='button' size='sm' onClick={handleSave} disabled={!dirty || isPending}>
+        {isPending && <Loader2 className='h-3.5 w-3.5 animate-spin' />}
         Save
       </Button>
     </>

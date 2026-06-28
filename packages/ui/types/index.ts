@@ -1,5 +1,6 @@
-// Interactive
-export type { ButtonProps, ButtonSize, ButtonVariant, ButtonVariantsFn } from './interactive/button'
+// Interactive — Button types live per-library (each library derives its own
+// from its cva). The cross-library Button enums were removed (zero consumer
+// usage and forced bespoke variant names across the libraries).
 export type { TabsContentProps, TabsListProps, TabsProps, TabsTriggerProps } from './interactive/tabs'
 
 // Content

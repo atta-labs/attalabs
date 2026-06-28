@@ -41,11 +41,11 @@ export function TeamPicker({ specs, value, onChange, onConfigure }: TeamPickerPr
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           {/*
-           * `ghost-pill`: small bordered pill with muted text → accent text on
-           * hover. The variant owns its own appearance — call-site className
-           * carries only layout (gap, font-mono typography pill chrome).
+           * `outline` from the canonical Button — bordered, hover bg-accent /
+           * text-accent-foreground. Call-site className carries only layout
+           * (gap) and the font-mono pill typography.
            */}
-          <Button variant='ghost-pill' size='sm' className='gap-1.5 font-mono text-xs uppercase tracking-widest'>
+          <Button variant='outline' size='sm' className='gap-1.5 font-mono text-xs uppercase tracking-widest'>
             <span className='flex items-center gap-1.5'>
               <Users2 className='h-3 w-3' />
               <span>{selectedLabel.short}</span>
@@ -99,15 +99,15 @@ export function TeamPicker({ specs, value, onChange, onConfigure }: TeamPickerPr
       </DropdownMenu>
       {/*
        * Settings affordance — only renders when the consumer supplies
-       * `onConfigure`. Uses the same `ghost-pill` chrome as the team trigger
-       * so the two read as a paired cluster (selection + its config). The
+       * `onConfigure`. Uses the same `outline` chrome as the team trigger so
+       * the two read as a paired cluster (selection + its config). The
        * `w-9 px-0` override is layout-only — neutralizes `size='sm'`'s `px-3`
        * to make the button square (h-9 w-9), matching icon-only convention
        * without inventing a new size variant.
        */}
       {onConfigure && (
         <Button
-          variant='ghost-pill'
+          variant='outline'
           size='sm'
           className='w-9 px-0'
           aria-label='Configure team models'

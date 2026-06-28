@@ -10,8 +10,8 @@ import { cn } from '../../../../lib/utils'
  * Selected state renders persistent accent fill; non-selected items use the
  * canonical hover (`focus:bg-accent focus:text-accent-foreground` +
  * `data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground`) —
- * same accent-bg + accent-foreground doctrine the Button `ghost` / `ghost-pill`
- * variants use, so a dropdown item and a ghost button feel identical under
+ * same accent-bg + accent-foreground doctrine the Button `ghost` / `outline`
+ * variants use, so a dropdown item and a hovered button feel identical under
  * the pointer.
  *
  * Earlier this wrapper neutralized the canonical highlight rules and swapped

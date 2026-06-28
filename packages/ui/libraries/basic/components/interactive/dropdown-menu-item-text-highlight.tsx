@@ -11,8 +11,8 @@ import { cn } from '../../../../lib/utils'
  * the canonical `DropdownMenuItem` hover (`focus:bg-accent
  * focus:text-accent-foreground` + `data-[highlighted]:bg-accent
  * data-[highlighted]:text-accent-foreground`) — same accent-bg + accent-foreground
- * doctrine the Button `ghost` / `ghost-pill` variants use, so a dropdown item
- * and a ghost button feel identical under the pointer.
+ * doctrine the Button `ghost` / `outline` variants use, so a dropdown item
+ * and a hovered button feel identical under the pointer.
  *
  * Earlier this wrapper neutralized BOTH the `focus:bg-accent` and
  * `data-[highlighted]:bg-accent` rules to swap in a text-only highlight
