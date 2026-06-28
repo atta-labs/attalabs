@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@atta/ui/basic/components'
+import { Button } from '@atta/ui/components'
 import { Loader2, Maximize2, Minimize2, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 

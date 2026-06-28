@@ -4,6 +4,7 @@ import { Card, CardContent } from '@atta/ui/components'
 import { Heading } from '@atta/ui/shared'
 import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
+import { AgentToolIndicator } from '@/components/AgentToolIndicator'
 import Link from 'next/link'
 import { getDisplayAgentNames, getFlowAgentCount, getFlowShapeLabel } from '@/lib/flow-helpers'
 
@@ -11,13 +12,14 @@ interface DisplayAgent {
   name: string
   role: AgentRole | undefined
   model: string | undefined
+  tools: string[] | undefined
 }
 
 function getDisplayAgents(flow: Flow): DisplayAgent[] {
   const agentMap = new Map<string, FlowAgent>(flow.agents.map((a) => [a.name, a]))
   const lookup = (name: string): DisplayAgent => {
     const a = agentMap.get(name)
-    return { name, role: a?.role as AgentRole | undefined, model: a?.model }
+    return { name, role: a?.role as AgentRole | undefined, model: a?.model, tools: a?.tools }
   }
   return getDisplayAgentNames(flow).map(lookup)
 }
@@ -28,34 +30,43 @@ function Sphere({
   agent,
   size,
   specId,
-  defaultModel
+  defaultModel,
+  searchAvailable
 }: {
   agent: DisplayAgent
   size: SphereSize
   specId: string
   defaultModel: string
+  searchAvailable: boolean
 }) {
+  const hasWebSearch = searchAvailable && agent.tools?.includes('web_search')
+  // Teams page is a "you choose" preview — reviewer slots are never user-configured
+  // here (no per-slot model selection UI exists on the teams listing page).
+  // Roled agents ignore userConfigured; passing false is harmless for them.
+  const isReviewer = !agent.role
   return (
     <VadaAgent
       id={`card-${specId}-${agent.name}`}
       name={agent.name}
       role={agent.role}
       model={agent.role ? undefined : (agent.model ?? defaultModel)}
+      userConfigured={isReviewer ? false : undefined}
       state='speaking'
       size={size}
       visible
       label={agent.role ? undefined : 'REVIEWER'}
+      toolBadge={hasWebSearch ? <AgentToolIndicator tool='web_search' /> : undefined}
     />
   )
 }
 
-export function TeamCard({ spec }: { spec: Flow }) {
+export function TeamCard({ spec, searchAvailable }: { spec: Flow; searchAvailable: boolean }) {
   const agents = getDisplayAgents(spec)
   const count = getFlowAgentCount(spec)
   const shapeLabel = getFlowShapeLabel(spec)
   const defaultModel = spec.defaults.model
 
-  const sphereProps = { specId: spec.id, defaultModel }
+  const sphereProps = { specId: spec.id, defaultModel, searchAvailable }
 
   let spheres: React.ReactNode
 

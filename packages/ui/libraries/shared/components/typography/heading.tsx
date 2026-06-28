@@ -22,13 +22,20 @@ const sizeClasses: Record<string, string> = {
   '4xl': 'text-4xl'
 }
 
+const weightClasses: Record<string, string> = {
+  normal: 'font-normal',
+  medium: 'font-medium',
+  semibold: 'font-semibold',
+  bold: 'font-bold'
+}
+
 const Heading = React.forwardRef<HTMLHeadingElement, HeadingProps>(
-  ({ level = 2, size, className, children, ...props }, ref) => {
+  ({ level = 2, size, weight = 'bold', className, children, ...props }, ref) => {
     const Tag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
     const sizeClass = size ? sizeClasses[size] : defaultSizeByLevel[level]
 
     return (
-      <Tag ref={ref} className={cn(sizeClass, 'font-bold tracking-tight', className)} {...props}>
+      <Tag ref={ref} className={cn(sizeClass, weightClasses[weight], 'tracking-tight', className)} {...props}>
         {children}
       </Tag>
     )

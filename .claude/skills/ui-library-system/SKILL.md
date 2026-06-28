@@ -5,6 +5,123 @@ description: How the @atta/ui multi-library system works — build-time generati
 
 # UI Library System — Atta AI
 
+> # ⛔ URGENT — DO NOT EDIT `packages/ui/libraries/*/installed/*`
+>
+> **Each library's `installed/` holds the vendored canonical from THAT library's design-system
+> source — installed via shadcn CLI, pasted verbatim, NEVER hand-edited.** The four libraries
+> each have a different upstream:
+>
+> | Library | Upstream source |
+> |---|---|
+> | `basic` | shadcn (`ui.shadcn.com`) |
+> | `animate` | animate-ui (`animate-ui.com`) |
+> | `retro` | retroui |
+> | `brutal` | neobrutalism (`neobrutalism.dev`) |
+>
+> So `installed/<comp>.tsx` in each library is a verbatim CLI paste from that library's
+> upstream. Even a one-character change is a hard rule violation. This applies to ALL files
+> in `installed/` across ALL four libraries — `button.tsx`, `dialog.tsx`, `dropdown-menu.tsx`,
+> `tabs.tsx`, everything. Color tokens, hover classes, padding, sizes, font weights — all of
+> it. NEVER hand-roll your own implementation in `installed/`; ALWAYS pull from upstream.
+>
+> ### The workflow when you need a change
+>
+> 1. **Install via CLI** (or paste the canonical from the upstream's docs) into the right
+>    library's `installed/<comp>.tsx`. Adjust ONLY the import paths (e.g. `@/lib/utils` →
+>    `../../../lib/utils`).
+> 2. **Match the contract** — `packages/ui/component-contract.mjs` requires each library to
+>    export the same set of components + Props types. If the upstream's API is flat named
+>    exports (most are) and matches the contract, just re-export from `components/index.ts`.
+> 3. **If the upstream's API doesn't match the contract** (e.g. retroui's `Object.assign`
+>    dotted API), **add a wrapper** in `components/<comp>.tsx` or `components/interactive/`
+>    that adapts the API to the contract. The wrapper IS editable. `installed/` stays verbatim.
+> 4. **If you want a library-specific variant** — add it to the wrapper layer (e.g.
+>    `components/interactive/<comp>.tsx`), NOT in `installed/`. The `Button.ghost-pill` variant
+>    is the canonical example.
+> 5. **If a consumer in `components/` imports from `installed/` and that's blocking you,**
+>    switch the import to the editable `components/interactive/<component>` (e.g.
+>    `model-picker.tsx` should import `Button` from `../interactive/button`, NOT
+>    `../../installed/button`).
+>
+> See "Canonical extension patterns — variants vs wrappers" below for worked examples
+> (`ghost-pill`, `'bare'`, `Heading.weight`, `SmartPromptInput.surface`,
+> `DropdownMenuItemTextHighlight`, `NextLink 'link'`).
+>
+> ### Why this rule is non-negotiable
+>
+> The `installed/` files MUST stay verbatim against their upstream source so future upstream
+> updates can be **pasted in** instead of **reconciled by hand**. Every deviation in
+> `installed/` becomes drift that has to be reconciled forever after.
+>
+> **One legitimate edit case:** restoring `installed/<comp>.tsx` to canonical when it has
+> drifted from upstream. Pasting the upstream verbatim back into `installed/` IS the rule's
+> spirit ("stay verbatim against upstream") — that's reconciling drift, not adding it. Do
+> this whenever you notice drift; document the upstream URL in the commit message.
+
+---
+
+## Per-library `installed/*` — CLI sources, doctrine, and contract rule (D-065)
+
+The banner above states the rule; this section is the operational reference. Codified by
+D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
+
+### Upstream-source mapping (CLI install commands)
+
+| Library | Upstream | CLI command | Notes |
+|---|---|---|---|
+| `basic` | shadcn/ui | `bunx shadcn@latest add <component>` | Default registry. Slot/asChild idioms. |
+| `animate` | animate-ui | `bunx shadcn@latest add @animate-ui/<component>` | Motion-driven Radix wrappers. Installs a helper tree under `installed/animate-ui/primitives/...` — preserve as-is, never flatten. |
+| `retro` | retroui | `bunx shadcn@latest add @retroui/<component>` | Base UI–based. Often dotted `Object.assign(Tabs.Root, { List, Trigger, Content })` API and `render` instead of `asChild`. |
+| `brutal` | neobrutalism | `bunx shadcn@latest add @neobrutalism/<component>` | Radix-based; `noShadow` / `neutral` / `reverse` variant set instead of `outline`/`destructive`. |
+
+### Doctrine (the rule, restated for skim-readers)
+
+- `installed/<component>.tsx` is a **verbatim CLI paste** from that library's upstream.
+- Adjust only the import paths from the temp install location (e.g. `@/lib/utils` →
+  `../../../lib/utils`) when moving the file under the library. Nothing else.
+- Helper trees the upstream emits (e.g. animate-ui's `installed/animate-ui/primitives/...`)
+  are preserved verbatim alongside the component files. Don't dedupe, don't flatten.
+- **Biome ignores `packages/ui/libraries/*/installed`** (configured in `biome.json` —
+  matches the precedent for `packages/cms/{vada-ai,vitakka-ai}` auto-generated dirs) so
+  formatter rules never fight a fresh CLI paste. Re-installing later just works.
+
+### CLI workflow when adding or restoring a component
+
+1. **Install:** run the matching CLI from the table above. If the upstream registry is down
+   or partial, paste the canonical from the upstream's docs into a scratch file first, then
+   move it.
+2. **Adjust import paths only:** `@/lib/utils` → relative `../../../lib/utils`. Don't touch
+   class strings, variants, types, or formatting. Don't run Biome `--write` against the
+   file — the ignore glob exists for that.
+3. **Wrap only if the upstream shape differs from the cross-library contract:**
+   - Retroui's Tabs ships `Object.assign(Tabs.Root, { List, Trigger, Content })` (dotted API).
+     The contract requires flat named exports — add an adapter in
+     `components/interactive/tabs.tsx` that casts each dotted member to its Base UI primitive
+     prop types (retroui's internal `ITabs*` interfaces are not exported, so casting to the
+     publicly-exported primitive's `Props` is the correct workaround).
+   - Retroui's Button uses `render` (Base UI) instead of `asChild` (Radix). Most consumers
+     don't use either; for those that do, an adapter mapping `asChild`→`render` is added in
+     `components/interactive/button.tsx`.
+4. **Validate:** `bun run validate:ui-contract` — every library must still export all
+   contracted component names + type names.
+
+### Per-library cva rule
+
+- Each library derives its **own** Props from its **own** cva via
+  `VariantProps<typeof buttonVariants>` (or equivalent). Variant names diverge across
+  libraries by design (e.g. brutal's Button has `noShadow`/`neutral`/`reverse`; basic +
+  animate share `outline`/`destructive`/`ghost`/`link`; retroui omits `destructive`).
+- **`component-contract.mjs` validates COMPONENT + TYPE NAMES, NOT variant enums.**
+  We previously kept cross-library `ButtonVariant` / `ButtonSize` / `ButtonVariantsFn` types
+  forcing every library to extend with a shared name set. That gave consumers no real
+  cross-library guarantee (a `variant='ai'` rendered in `basic` would render as the default
+  in `brutal`) and forced bespoke implementations. Removed by D-065 / PR #207. Consumer
+  code that wants cross-library certainty for a specific call site should pick a variant
+  every library exports (default / outline / ghost, depending on coverage) or hard-import
+  from a single library.
+
+---
+
 ## Overview
 
 `@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each product uses exactly one at a time per surface, controlled by its Sanity CMS config (and, post-D-060, by the central `attalabs` library registry the per-product configs reference). There are two ways an app resolves which library it uses:
@@ -220,6 +337,23 @@ export { DropdownMenu, ... } from '../../basic/installed/dropdown-menu' // falls
 
 **The contract validator enforces step 5.** You cannot forget — the build fails if any library is missing the export.
 
+### Canonical extension patterns — variants vs. wrappers
+
+When a consumer needs visual behavior the canonical component does not ship by default, choose the lowest-impact extension that satisfies the request without `!important` or descendant selectors at the call site. The library is the single source of truth for component appearance; the call site contributes layout only.
+
+**Add a variant (preferred for additive style options).** The change is a single entry in a `variantClasses` record plus a Union expansion in `packages/ui/types/{group}/{name}.ts`. Examples already in the tree:
+
+- `Button.variant = 'ghost-pill'` (basic) — bordered text-style pill with accent hover. Animate inherits via the shared `buttonVariants` import; retro/brutal use their own `cva` maps and fall back to default styling for unknown variants, which is acceptable since the contract is structural.
+- `Textarea.variant = 'bare'` (basic) — strips border/rounded/bg/focus-ring/resize/min-h-16 for nesting inside a styled container.
+
+Animate's `Textarea` re-exports basic's, so adding to basic automatically reaches animate. Retro/brutal use their own `installed/textarea.tsx` and ignore variants they don't know; if you need the variant to honor in those libraries, propagate explicitly.
+
+**Add a prop (preferred for behavior controls).** Same playbook for typed presets like `Heading.weight`, `SmartPromptInput.surface`, `SmartPromptInput.textareaVariant`. Defaults must preserve byte-identical render for omitting callers. Default to `undefined` and conditionally spread (`{...(prop !== undefined && { variant: prop })}`) when the prop forwards into a vendor primitive that might not understand it — that keeps Herald's render unchanged.
+
+**Add a wrapper (preferred when the change requires reaching into TWO conflicting Tailwind modifier families at once, or when the install file is intentionally locked).** Wrappers live next to the component they extend (`libraries/{name}/components/interactive/{wrapper}.tsx`) and are exported from each library's `components/index.ts`. Libraries that don't customize the underlying primitive can re-export the basic wrapper as a fallback. Add the wrapper + its `Props` type to `component-contract.mjs`. Canonical example: `DropdownMenuItemTextHighlight` neutralizes BOTH `focus:bg-accent` AND `data-[highlighted]:bg-accent` so `tailwind-merge` resolves conflicts cleanly — no `!important` needed. The wrapper accepts `selected?: boolean` to render the canonical accent fill for persistent commitments while transient hover stays text-only.
+
+**Never reach for `!important` at the call site, or descendant selectors (`[&>form>div]:...`) on a component you own.** Both are signals that the component is missing a variant, prop, or wrapper. Back out and add one of the three.
+
 ---
 
 ## Adding a New App
@@ -336,6 +470,158 @@ All four patterns are needed. Our libraries use `export type * from '../../../ty
 
 ---
 
+## Cross-product composite components
+
+Some components in `@atta/ui` live OUTSIDE the four-library system because they are
+composite primitives shared across products (Herald, Vāda, …) and the library
+swap doesn't apply to them. `SmartPromptInput` is the current example. It lives
+at `packages/ui/smart-prompt-input/` and is imported as
+`@atta/ui/smart-prompt-input`. Its contract is documented here — the library
+contract validator does NOT cover composite components, so any prop addition
+must update this section instead.
+
+**Library-resolved primitives that newly joined the contract.** `TextReveal`
+(typography animation primitive) was added to the contract and all four
+libraries — `REQUIRED_COMPONENTS` carries `TextReveal`, `REQUIRED_TYPES`
+carries `TextRevealProps`. Unlike `SmartPromptInput`, `TextReveal` IS a
+library-swapped primitive: each library provides its own implementation,
+and the contract validator covers it (so non-basic libraries can fall back
+to the basic implementation via `export { TextReveal } from '../../basic/...'`).
+Use `import { TextReveal } from '@atta/ui'` from consumer code; no
+injection contract — it resolves like any other library primitive.
+
+### Governance — shared composites resolve NO library; consumers inject
+
+> **Rule:** A shared composite component MUST NOT import from any concrete
+> library directory (`packages/ui/libraries/{basic|animate|retro|brutal}/...`).
+> Instead it MUST declare a `components` prop and resolve primitives via that
+> prop. The consuming app injects its active library's primitives from
+> `@atta/ui` (build-time pattern) or `useComponents()` (runtime pattern).
+
+This is the `#213` lesson: when a shared input hard-imports `libraries/basic/installed/*`,
+products on `animate` / `retro` / `brutal` silently render the basic
+versions inside it, breaking visual coherence and theme-token discipline.
+It also forecloses Herald's runtime per-user library — a user who has chosen
+`brutal` sees a `basic` input.
+
+**Contract every shared composite MUST follow:**
+
+1. **No library imports in the composite tree.** `grep` for
+   `'../../libraries/'` inside the package — it should match nothing.
+2. **`components?: { Foo?, Bar? }` prop on the public API.** Include only the
+   primitives the composite actually renders. Each entry is optional so the
+   composite degrades gracefully during a runtime library's first-render
+   window. Mirror Herald `JDInput`'s `Button ? <Button…> : <button>` pattern
+   for fallbacks — never crash on `undefined`.
+3. **Threaded via a private context** (e.g. `SmartPromptComponentsProvider`)
+   so internal subtrees can resolve injected primitives without prop drilling.
+4. **Both consumer call sites updated in the same PR** as the contract is
+   added. The composite isn't done shipping until every existing consumer
+   passes `components`.
+
+`SmartPromptInput` is the canonical example — see
+`packages/ui/smart-prompt-input/vendor/components-context.tsx` and the
+`components` entries in `apps/vada-ai/web/.../DeliberateSection.tsx` and
+`apps/herald-ai/web/src/components/envoy/JDInput.tsx`.
+
+**Stop conditions when applying this rule to a NEW composite:**
+
+- A vendored primitive turns out to be used and has no `@atta/ui` library
+  equivalent → STOP and report. Do NOT reintroduce a hardcoded
+  `libraries/basic/...` import. Add the primitive to all four libraries (and
+  the component contract) first.
+- The runtime consumer can't supply a primitive through `useComponents()`
+  without a provider change → STOP. Wiring a fresh provider is in scope; a
+  silent hardcoded-basic fallback is not.
+
+### `SmartPromptInput` — Gemini-style prompt entry
+
+Located at `packages/ui/smart-prompt-input/smart-prompt-input.tsx`. Wraps the
+vendored `PromptInput*` primitives (`vendor/prompt-input.tsx`) and adds:
+
+- Attachment tile header (tile-with-meta layout)
+- Single-line ↔ multi-line responsive switching driven by textarea
+  `scrollHeight` measurement
+- Optional caller-provided **actions slot** (left or right) and **submit slot**
+- Caller-tunable **textarea className** for one-off layout overrides
+
+#### Layout modes
+
+The component runs in one of two layout modes, chosen automatically:
+
+| Mode | When | Where actions / submit live |
+|------|------|----------------------------|
+| Inline | textarea is single-line AND no attachments | On the same row as the textarea |
+| Footer | otherwise | In `PromptInputFooter` under the textarea |
+
+Inline mode no longer requires consumer-provided `actions` — a no-`actions`
+single-line consumer (Herald `JDInput`) still gets the submit rendered inline
+beside the textarea. Footer's no-`actions` submit is gated on `!inlineMode`
+to avoid a duplicate. Attachment-count tracking is unconditional: the count
+is observed even when no `actions` are provided, so attachment presence
+flips inline → footer mode for every consumer (not just Vāda).
+
+The submit element (default `PromptInputSubmit`, or `submitSlot` when provided)
+is always rendered exactly once — in whichever mode is active.
+
+#### Props
+
+| Prop | Type | Default | Purpose |
+|------|------|---------|---------|
+| `onSubmit` | `(text, files) => void` | — | Required. Receives the final text + converted file parts. |
+| `placeholder` | `string` | — | Textarea placeholder. |
+| `submitOn` | `'enter' \| 'cmdenter' \| 'button'` | `'enter'` | Keyboard submission policy. |
+| `ctaLabel` | `string` | — | If set, replaces the icon submit with a full-width CTA bar. Disables `submitSlot`. |
+| `hint` | `string` | — | Small mono hint in the footer. |
+| `accept` | `string` | — | File-input accept string. Shows the action menu (paperclip). |
+| `status` | `SmartPromptStatus` | `'idle'` | Drives the submit icon / spinner. |
+| `onStop` | `() => void` | — | Called when user clicks Stop during streaming. |
+| `className` | `string` | — | On the outer wrapper. |
+| `pasteToFileChars` | `number` | — | Paste of ≥ N chars becomes a file attachment instead of textarea fill. |
+| `actions` | `React.ReactNode` | — | Action chips slot (e.g. Vāda's TeamPicker). Responsive placement per layout mode. |
+| `actionsPosition` | `'left' \| 'right'` | `'right'` | Side of the textarea (inline) / footer (multi-line) the `actions` occupy. |
+| `submitSlot` | `React.ReactNode` | — | Caller-provided submit element replacing the default `PromptInputSubmit`. Caller owns submit logic, Cmd+Enter behavior, and accessibility for the node. Honored in both inline and footer modes. **Ignored when `ctaLabel` is set (full-width CTA path).** Used by Vāda's hero to render a morphing Configure ↔ Submit button. |
+| `textareaClassName` | `string` | — | Extra className merged onto the inner `<textarea>` AFTER vendor defaults (`field-sizing-content max-h-40 min-h-16 overflow-y-auto`). Use to defeat a specific utility — e.g. `min-h-0` to allow the textarea to collapse to a true single line. Tailwind-merge resolves conflicts in favor of the caller's class for the same property family. |
+| `textareaVariant` | `TextareaVariant` | — | Forwarded to the injected `Textarea` (`undefined` keeps the library default). Pair with `surface='popover'` to use `'bare'` — strips the textarea's own border / rounding / focus ring / resize handle / `min-h-16` baseline so it blends into the surrounding `InputGroup`. |
+| `surface` | `'card' \| 'popover' \| 'bare'` | `'card'` | Container chrome preset. `'card'` is the byte-identical original (`bg-card`, `focus-within:ring-1`). `'popover'` elevates the InputGroup to `bg-popover` + `rounded-xl shadow-lg` and moves the focus halo to the OUTER wrapper (sidesteps `overflow-hidden` clipping). `'bare'` strips border / background / rounding / resting ring for hosts that supply their own chrome. |
+| `onTextChange` | `(text: string) => void` | — | Observe-only callback fired on every input. Lets consumers mirror the textarea text into their own state in real time WITHOUT making the input controlled. Vāda uses it to drive `hasQuestion` for the morphing submit button. Herald passes nothing — byte-identical. |
+| `onAttachmentsChange` | `(count: number) => void` | — | Observe-only callback fired whenever the internal attachment count changes (paste-to-file conversion, X-click removal). Lets consumers gate a `submitSlot` button on attachment presence — e.g. Vāda's `MorphingSubmitButton` stays visible when only an attachment is present (textarea empty). |
+| `components` | `SmartPromptComponents` | `{}` | **INJECTION CONTRACT** — see Governance section above. Consumer-injected library primitives: `Textarea`, `Button`, `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem`. Each is optional; the composite degrades to a native HTML element with sane styling when undefined (graceful first-paint window for runtime libraries). Vāda injects from `@atta/ui` build-time; Herald injects from `useComponents()`. The shared composite resolves NO library itself. |
+
+#### Herald default note
+
+Post-injection contract, Herald's tree is the active library's `Textarea` /
+`Button` (whatever the user's runtime library resolved to), NOT a vendored
+basic primitive. That was always the intent — the previous hardcoded
+`libraries/basic/...` import was a bug.
+
+The earlier "byte-identical default" promise on the Herald `JDInput` render
+path no longer holds: post-PR #207, Herald's `JDInput` opts in to
+`textareaVariant='bare'` and `surface='popover'` to align visually with
+Vāda's hero. This was an explicit Principal call, not a regression. Any
+future addition to the composite must still preserve the Herald-equivalent
+defaults — i.e. omitting `actions`, `submitSlot`, `textareaClassName`,
+`textareaVariant`, and `surface` must reproduce the original card-surface
+render — so a hypothetical third consumer can adopt the composite without
+inheriting Vāda or Herald-specific chrome.
+
+#### Adding a new caller-controllable slot
+
+If a new product needs to customize SmartPromptInput, add a new optional prop
+the same way `submitSlot` was added:
+
+1. **Additive only.** Default behavior with the prop unset must match the
+   previous behavior bit-for-bit. Herald's JDInput is the canary.
+2. **Honor it in every code path the default would render in.** `submitSlot`
+   replaces the default submit in BOTH inline and footer modes — partial
+   replacement is a confusing footgun.
+3. **Update this section** in the same PR (D-058 doc-coherence). The props
+   table is the contract; if it's not here, future agents won't know the slot exists.
+4. **No library swap.** SmartPromptInput is a single implementation. Do not
+   create per-library variants.
+
+---
+
 ## File Reference
 
 | File | Purpose |
@@ -347,5 +633,6 @@ All four patterns are needed. Our libraries use `export type * from '../../../ty
 | `packages/ui/lib/library-provider.tsx` | `LibraryProvider` + `useComponents()` for runtime switching |
 | `packages/ui/lib/library-loader.ts` | `useLibraryLoader` — dynamic import with race condition guard |
 | `packages/ui/libraries/{name}/components/index.ts` | The canonical export list for each library |
+| `packages/ui/smart-prompt-input/smart-prompt-input.tsx` | Composite prompt entry — see "Cross-product composite components" above |
 | `apps/{app}/web/tsconfig.json` | Path aliases that point `@atta/ui` at the generated index |
 | `apps/{app}/web/next.config.ts` | Calls `generateUIIndex` at build time |

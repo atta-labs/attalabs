@@ -29,10 +29,10 @@ export function HeraldAccountMenu() {
 
   return (
     <Button
-      variant='outline'
+      variant='ghost'
       aria-label='Sign out'
       title='Sign out'
-      className='h-8 gap-2 px-2.5 text-xs md:px-3'
+      className='h-8 gap-2 px-2.5 text-xs'
       onClick={() => signOut({ redirectUrl: '/' })}
     >
       <LogOut className='h-4 w-4' />

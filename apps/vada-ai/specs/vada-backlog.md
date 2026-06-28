@@ -6,6 +6,8 @@
 
 Migrated from the retired global `roadmap.md` (June 3, 2026; roadmap retired by D-029). See git history of `roadmap.md` for the full prior detail.
 
+> See also: [`vada-rethink.md`](./vada-rethink.md) — June 28, 2026 positioning / research backlog (intention-vs-mechanism teams, MCP center of gravity, frontier UI findings, Fusion / NVIDIA NIM / Hugging Face research items).
+
 ---
 
 ## Reviewers — interactive research (principal-driven, not agent-dispatch)
@@ -30,6 +32,15 @@ These are judgment/iteration loops, not clean "agent → PR" tasks. They belong 
 - **E10 KMS migration** — move master key from env var to KMS-managed. `kms_key_id` column already reserved.
 - **E11 Per-key tool scoping** — restrict an API key to specific tools.
 - **E12 OAuth as alternative to bearer auth** — works around Anthropic's claude.ai connector-broker `ofid_*` bug that fails bearer-auth self-hosted MCP. Only matters if claude.ai web adoption matters; Claude Code CLI works today.
+
+## Multimodal / file ingestion (planned — principal-confirmed)
+
+The smart input accepts files/images today, but Vāda has no ingestion backend — `handleSmartSubmit` drops the `FileUIPart[]` (see `DeliberateSection.tsx`, "no file ingestion backend" comment). The affordance is currently decorative. To let configured models analyze uploads:
+
+- **Ingestion** — encode/store attachments (R2?) and thread them onto the deliberation payload alongside `{{question}}`; today only question text flows through the round templates.
+- **Multimodal model calls** — `packages/adapter-langgraph/src/llm.ts` builds text-only content. Add vendor-specific multimodal blocks: Anthropic image/document content blocks, OpenAI `image_url`, Google `inlineData`. PDFs/docs: extract text or pass as document blocks.
+- **Capability guard** — Council/Reviewers let the user pick any model per slot; not all support vision. Gate or warn when an image is routed to a text-only model rather than failing the slot opaquely.
+- Cross-cuts every team (Council, Reviewers, Sparring, …), not Council-specific. Sizeable — its own iteration when the Planner pulls it.
 
 ## Research / parking lot
 

@@ -50,6 +50,7 @@ export const REQUIRED_COMPONENTS = [
   'DropdownMenuContent',
   'DropdownMenuGroup',
   'DropdownMenuItem',
+  'DropdownMenuItemTextHighlight',
   'DropdownMenuLabel',
   'DropdownMenuPortal',
   'DropdownMenuRadioGroup',
@@ -152,14 +153,17 @@ export const REQUIRED_COMPONENTS = [
   'SheetHeader',
   'SheetTitle',
   'SheetTrigger',
+
+  // Text Reveal
+  'TextReveal',
 ]
 
 export const REQUIRED_TYPES = [
-  // Button
-  'ButtonProps',
-  'ButtonSize',
-  'ButtonVariant',
-  'ButtonVariantsFn',
+  // Button — only `Button` itself is contracted across libraries. The cross-
+  // library variant/size enums were removed because they had zero consumer
+  // usage and forced every library to extend its canonical with bespoke
+  // names. Each library's installed/ now derives its own ButtonProps from
+  // its own cva (`VariantProps<typeof buttonVariants>`).
 
   // Tabs
   'TabsContentProps',
@@ -216,6 +220,7 @@ export const REQUIRED_TYPES = [
   'HeadingLevel',
   'HeadingProps',
   'HeadingSize',
+  'HeadingWeight',
 
   // Typography — Text
   'TextAs',
@@ -235,6 +240,9 @@ export const REQUIRED_TYPES = [
   'ToastProps',
   'ToastProviderProps',
   'ToastType',
+
+  // Text Reveal
+  'TextRevealProps',
 ]
 
 export const TEMPLATES = ['basic', 'retro', 'animate', 'brutal']

@@ -58,20 +58,29 @@ export function TeamSummary({ spec, pickers, actions, onConfigure }: TeamSummary
             </div>
 
             <div className='flex flex-row gap-4 overflow-x-auto pb-1'>
-              {agents.map((a) => (
-                <VadaAgent
-                  key={a.name}
-                  id={`summary-${spec.id}-${a.name}`}
-                  name={a.name}
-                  role={a.role}
-                  model={a.role ? undefined : (userConfig?.[a.name] ?? a.model ?? defaultModel)}
-                  state='speaking'
-                  size='md'
-                  visible
-                  label={a.role ? undefined : 'REVIEWER'}
-                  className='shrink-0'
-                />
-              ))}
+              {agents.map((a) => {
+                // For reviewer slots: the user has configured this agent only when
+                // a model is present in the saved localStorage config. The YAML
+                // default (a.model / defaultModel) is present for engine execution
+                // but must NOT count as "user configured" for UI purposes.
+                const isReviewer = !a.role
+                const userHasConfigured = isReviewer ? Boolean(userConfig?.[a.name]) : undefined
+                return (
+                  <VadaAgent
+                    key={a.name}
+                    id={`summary-${spec.id}-${a.name}`}
+                    name={a.name}
+                    role={a.role}
+                    model={a.role ? undefined : (userConfig?.[a.name] ?? a.model ?? defaultModel)}
+                    userConfigured={userHasConfigured}
+                    state='speaking'
+                    size='md'
+                    visible
+                    label={a.role ? undefined : 'REVIEWER'}
+                    className='shrink-0'
+                  />
+                )
+              })}
             </div>
 
             {hasEditable && onConfigure && (

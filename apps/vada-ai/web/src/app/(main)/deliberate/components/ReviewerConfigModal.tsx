@@ -5,7 +5,16 @@ import { probeProviderKey } from '@atta/identity'
 import type { VendorId } from '@atta/models'
 import { useCatalog } from '@atta/models'
 import { Button, ModelPicker, useToastContext } from '@atta/ui'
-import { Dialog, DialogContent, DialogTitle } from '@atta/ui/components/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@atta/ui/components/dialog'
+import { NextLink } from '@atta/ui/lib/next-link'
+import { ArrowUpRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { getReviewerConfig, resolveVendor as resolveVendorFromCatalog } from '@/lib/reviewer-models'
@@ -117,18 +126,71 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
         if (!isOpen) onClose()
       }}
     >
-      <DialogContent className='w-full max-w-md space-y-6 border-border bg-card p-6'>
-        <div className='space-y-1'>
-          <DialogTitle className='font-serif text-lg text-foreground'>Configure models</DialogTitle>
-          <p className='text-sm text-muted-foreground'>
-            Pick a model for each slot. All need unlocked API keys to run.
-          </p>
-        </div>
+      {/* Canonical `DialogContent` ships its own surface (`bg-popover`,
+          `text-popover-foreground`, `flex flex-col gap-4 p-6 rounded-lg
+          border border-border shadow-lg`) — we do NOT override `bg-card`
+          here. `bg-popover` is the right surface for floating/transient
+          containers per the theme-token role doctrine.
+          The `flex flex-col gap-4` from the compound governs the spacing
+          between Header / body / Footer uniformly — no hand-rolled
+          `space-y-*` divs. */}
+      <DialogContent className='w-full max-w-md'>
+        <DialogHeader>
+          {/* Title is dynamic per spec — names the team being configured so
+              the user never has to leave the modal to confirm "which team is
+              this?". `text-xl` override (canonical baseline is `text-lg`)
+              gives the modal a stronger heading than the default Dialog so
+              the title sits visibly above the REVIEWER N slot labels — the
+              hierarchy is `text-xl` title > `text-xs` slot labels > 10px
+              ModelPicker triggers. Layout-only override, the rest of the
+              DialogTitle chrome (`font-serif`, weight, tracking) is kept. */}
+          <DialogTitle className='text-xl'>Configure {spec.displayName}</DialogTitle>
+          {/* DialogDescription lives in the proper compound slot for the
+              accessible `aria-describedby` association on the dialog. Canonical
+              shadcn ships `text-sm muted-foreground` (subtle subheading). For
+              this modal we want normal body weight, so `text-base` is passed
+              at the call site — the link below uses `variant='link'` with no
+              size override and inherits the same `text-base` from the dialog
+              body, so description + link visually match. The size override
+              lives here, not in `installed/`. */}
+          {spec.description && <DialogDescription className='text-base'>{spec.description}</DialogDescription>}
+          {/* "View team" — the single navigation path out of this modal.
+              `variant='link'` is the color-neutral underlined link. No size
+              override — inherits `text-base` from the dialog body so it sits
+              at the same normal body size as `DialogDescription` and the
+              `ModelPicker` triggers. Classes are layout-only. */}
+          <NextLink href={`/teams/${spec.id}`} variant='link' className='inline-flex w-fit items-center gap-1'>
+            View team
+            <ArrowUpRight className='size-4' />
+          </NextLink>
+        </DialogHeader>
 
-        <div className='space-y-4'>
+        {/* Body — stacked form rows: each agent gets a small mono label
+            (REVIEWER 1 / REVIEWER 2 / SYNTHESIZER …) on top and the model
+            picker directly below it, full-width. The previous two-column grid
+            (label-left, picker-right) compressed the picker into a partial
+            row and made the label feel detached from the control it described.
+            Stacking restores the natural reading order — slot identity first,
+            then the choice for that slot — and lets the trigger fill the dialog
+            width so long model names don't truncate prematurely. */}
+        <div className='flex flex-col gap-4'>
           {editableAgents.map((agent) => (
-            <div key={agent.name} className='space-y-1.5'>
-              <div className='text-[11px] font-mono uppercase tracking-widest text-muted-foreground'>
+            // `items-start` keeps the row's children at the leading edge:
+            // ModelPicker renders a Radix-trigger `Button` (display: inline-flex
+            // with `justify-center` baked into the variant). Inside a flex-col
+            // parent the default `align-items: stretch` would expand the Button
+            // to the row's full width, and `justify-center` then centers its
+            // content — which is why the picker visually drifted away from the
+            // REVIEWER N label above it. `items-start` (align-items: flex-start)
+            // suppresses the stretch, so the Button shrinks to content and
+            // anchors to the left, flush under the label.
+            <div key={agent.name} className='flex flex-col items-start gap-1.5'>
+              {/* `text-xs` (12px) sits between the `text-xl` title above and
+                  the 10px ModelPicker trigger below — slot label reads as a
+                  real heading for the row without competing with the modal
+                  title. `tracking-widest` aligns with the other uppercase
+                  mono labels in the file (single tracking preset). */}
+              <div className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>
                 {reviewerLabels[agent.name]}
               </div>
               <ModelPicker
@@ -145,14 +207,18 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
           ))}
         </div>
 
-        <div className='flex gap-3 pt-2'>
-          <Button onClick={handleSave} disabled={!allConfigured} className='flex-1'>
-            Save
-          </Button>
-          <Button onClick={onClose} variant='outline' className='flex-1'>
+        {/* DialogFooter — canonical compound slot. Inherits `mt-2 flex
+            flex-col-reverse gap-2 sm:flex-row sm:justify-end` from the
+            primitive, so spacing matches the header automatically. No
+            hand-rolled `pt-*` padding hack. */}
+        <DialogFooter>
+          <Button onClick={onClose} variant='outline'>
             Cancel
           </Button>
-        </div>
+          <Button onClick={handleSave} disabled={!allConfigured}>
+            Save
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

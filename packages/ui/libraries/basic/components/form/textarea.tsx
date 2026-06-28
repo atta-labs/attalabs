@@ -17,6 +17,10 @@ const variantClass: Record<string, string> = {
   ghost: 'border-transparent bg-transparent focus-visible:ring-0 focus-visible:border-transparent',
   neubrutalism:
     'border-2 border-foreground rounded-sm shadow-[2px_2px_0px] shadow-muted-foreground focus-visible:ring-0',
+  // Bare: zero chrome — for nesting inside a styled container (e.g. SmartPromptInput's InputGroup).
+  // Strips border, rounded corners, background, focus ring, resize handle, and the `min-h-16` baseline
+  // so the textarea collapses to a true single line and grows via `field-sizing-content`.
+  bare: 'min-h-0 border-0 rounded-none bg-transparent dark:bg-transparent focus-visible:border-transparent focus-visible:ring-0 resize-none',
   error: ''
 }
 

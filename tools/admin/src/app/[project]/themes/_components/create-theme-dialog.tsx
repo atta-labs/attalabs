@@ -8,9 +8,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@atta/ui/components/dialog'
-import { Button } from '@atta/ui/components/button'
-import { Input } from '@atta/ui/components/input'
-import { Textarea } from '@atta/ui/components/textarea'
+import { Button, Input, Textarea } from '@atta/ui/components'
+import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useId, useState, useTransition } from 'react'
 import { createThemeAction } from '../actions'
@@ -109,7 +108,8 @@ export function CreateThemeDialog({ open, onOpenChange, project }: CreateThemeDi
             <Button type='button' variant='ghost' onClick={() => handleOpenChange(false)} disabled={isPending}>
               Cancel
             </Button>
-            <Button type='submit' disabled={isPending || !name.trim()} loading={isPending}>
+            <Button type='submit' disabled={isPending || !name.trim()}>
+              {isPending && <Loader2 className='h-3.5 w-3.5 animate-spin' />}
               Create
             </Button>
           </DialogFooter>

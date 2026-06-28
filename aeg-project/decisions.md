@@ -1752,3 +1752,23 @@ Each pointer path is verified to exist; binding 4 is **self-referential** — th
 **Type:** 1
 
 Reserved by Planner for aeg-coherence-v1 task 2 (Principal-ratified in-session). Full entry lands in the T2 implementing PR per Tier-3 DoD.
+
+---
+
+## D-064 — Shared `@atta/ui` composites resolve no library; consumers inject primitives
+
+**Status:** ACTIVE
+**Type:** 2
+**Date:** 2026-06-27
+**Lock:** NO
+
+A shared composite in `@atta/ui` (e.g. `SmartPromptInput`) MUST NOT resolve a library itself — no `libraries/<x>/installed/*` imports, no static `@atta/ui` self-import for primitives, no internal `useComponents()`. It takes primitives via a `components` prop and renders them, degrading to native HTML for the first-paint window. Consumers inject from their own regime: build-time apps (Vāda) from `@atta/ui`; per-user runtime surfaces (Herald `JDInput`) from `useComponents()`. Rationale: one composite serves both a build-time library (Vāda→animate) and a runtime per-user library (Herald profile); static/hardcoded resolution can't satisfy both. Skill `ui-library-system` updated. Supersedes the implicit hardcode-basic pattern; `packages/ui/topbar/**` still violates it (backlog). First landed PR #207 (`809970db`); closes #213 gap.
+
+## D-065 — `installed/*` is verbatim upstream; per-library cva; contract validates names not enums
+
+**Status:** ACTIVE
+**Type:** 1
+**Date:** 2026-06-28
+**Lock:** NO
+
+Each `packages/ui/libraries/<name>/installed/*` is a verbatim CLI paste from that library's upstream design system (basic→shadcn, animate→animate-ui, retro→retroui, brutal→neobrutalism); never hand-edited, only import-paths adjusted; exempt from automated lint gates (Biome ignore and `check-forbidden-colors`), since the colors and formatting there are upstream's, not ours. Customizations live in `components/interactive/*` wrappers, which the gates DO cover in full. Each library derives its own Props from its own cva; `component-contract.mjs` validates component + type names, not cross-library variant enums. Dropped (zero-consumer): Button variants `ghost-pill`/`square`/`ai`, `RippleButton`, props `loading`/`iconLeft`/`iconRight`, and the `ButtonVariant`/`ButtonSize`/`ButtonVariantsFn` contract types. First landed PR #207 (Tabs `f83ff224`/`0e057a74`, Button `757586ea`).

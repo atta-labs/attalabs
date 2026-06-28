@@ -5,6 +5,11 @@ import { TeamCard } from './components/TeamCard'
 export default function TeamsPage() {
   const specs = listPublicSpecs()
 
+  // Server-side search availability: reflects whether Vāda's search infrastructure
+  // is configured, not per-user BYOK keys. Safe to pass as a boolean to the client.
+  const searchAvailable =
+    !!process.env.TAVILY_API_KEY || (!!process.env.GOOGLE_SEARCH_API_KEY && !!process.env.GOOGLE_SEARCH_CX)
+
   return (
     <div className='mx-auto max-w-5xl space-y-8 px-4 py-12'>
       <div className='space-y-1'>
@@ -18,7 +23,7 @@ export default function TeamsPage() {
 
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
         {specs.map((spec) => (
-          <TeamCard key={spec.id} spec={spec} />
+          <TeamCard key={spec.id} spec={spec} searchAvailable={searchAvailable} />
         ))}
       </div>
     </div>

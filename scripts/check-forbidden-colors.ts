@@ -18,6 +18,9 @@
  * (`packages/ui/styles/globals.css`) are skipped to avoid false-positives on legitimate
  * `oklch(...)` definitions.
  *
+ * `packages/ui/libraries/<lib>/installed/` (and nested helper trees) is exempt — verbatim
+ * upstream CLI paste, see D-065.
+ *
  * Modes:
  *   --pr   Reads BASE_SHA / HEAD_SHA env vars (CI) or falls back to origin/main…HEAD.
  *   (none) Same as --pr (no full-repo scan; the gate is intentionally diff-only).
@@ -177,6 +180,11 @@ function isUiFile(p: string): boolean {
   return /\.(tsx|jsx|ts|js|mts|cts|mjs|cjs|css)$/.test(p)
 }
 
+// `packages/ui/libraries/<name>/installed/**` is verbatim upstream CLI paste (D-065 +
+// Biome ignore). Color choices in there are upstream's, not ours — exempt from this gate.
+// Matches nested helper trees too (e.g. `installed/animate-ui/primitives/...`).
+const INSTALLED_RE = /(?:^|\/)packages\/ui\/libraries\/[^/]+\/installed\//
+
 function scanLine(file: string, line: number, text: string): Violation[] {
   const violations: Violation[] = []
   const trimmed = text.trim()
@@ -245,7 +253,7 @@ function main(): void {
     return
   }
 
-  const added = parseAddedLines(diff).filter((a) => isUiFile(a.file))
+  const added = parseAddedLines(diff).filter((a) => isUiFile(a.file) && !INSTALLED_RE.test(a.file))
   const violations: Violation[] = []
   for (const a of added) {
     violations.push(...scanLine(a.file, a.line, a.text))

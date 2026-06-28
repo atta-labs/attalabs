@@ -2,7 +2,7 @@ import NextLinkPrimitive from 'next/link'
 import type { ComponentProps } from 'react'
 import { cn } from './utils'
 
-export type NextLinkVariant = 'prose' | 'nav' | 'subtle' | 'card' | 'destructive' | 'unstyled' | 'button'
+export type NextLinkVariant = 'prose' | 'link' | 'nav' | 'subtle' | 'card' | 'destructive' | 'unstyled' | 'button'
 
 export type NextLinkProps = ComponentProps<typeof NextLinkPrimitive> & {
   variant?: NextLinkVariant
@@ -11,6 +11,12 @@ export type NextLinkProps = ComponentProps<typeof NextLinkPrimitive> & {
 
 const variants: Record<NextLinkVariant, string> = {
   prose: 'text-primary underline underline-offset-2 decoration-primary/40 hover:decoration-primary transition-colors',
+  // Inline link in body text — inherits the parent's text color (no `text-*`
+  // override), underlined so it's recognizably a link. Hover darkens the
+  // underline decoration without shifting color, so the link sits in the
+  // surrounding prose rather than calling attention to itself the way
+  // `variant='prose'` does with `text-primary`.
+  link: 'underline underline-offset-2 decoration-foreground/40 hover:decoration-foreground transition-colors',
   nav: 'text-muted-foreground transition-colors hover:text-accent',
   subtle: 'font-mono text-xs text-muted-foreground transition-colors hover:text-accent',
   card: 'block transition-opacity hover:opacity-80',

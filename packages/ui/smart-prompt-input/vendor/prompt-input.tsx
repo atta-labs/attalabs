@@ -1,31 +1,28 @@
 'use client'
 
-// Vendored from ai-elements@1.9.0 — do not edit manually
+// Vendored from ai-elements@1.9.0 — pruned to the surface SmartPromptInput uses.
+//
+// PRUNED SURFACE:
+// - Command / Select / HoverCard / Tabs / Body / Provider / standalone Button +
+//   ActionAddScreenshot were vendored for an ai-elements model-picker that no
+//   consumer of SmartPromptInput renders. They have been removed.
+// - Tooltip / Spinner / HoverCard primitives were vendored to support those
+//   pruned exports — they have been removed. Spinner's only live use was inside
+//   PromptInputSubmit; it is now lucide `Loader2`.
+//
+// DEPENDENCY INJECTION (governance — see ui-library-system SKILL.md):
+// This file MUST NOT import from `../../libraries/basic/installed/*` or any
+// other concrete library. Consumers inject primitives via
+// `SmartPromptComponentsProvider`. Vendor surfaces resolve them via the
+// `useSmartPromptComponents()` hook with native fallbacks for the
+// first-render window mirror of Herald's JDInput `Button ? <Button…> : <button>`
+// graceful-fallback pattern.
 
 import type * as React from 'react'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator
-} from '../../libraries/basic/installed/command'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '../../libraries/basic/installed/dropdown-menu'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from './ui/hover-card'
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from './ui/input-group'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../libraries/basic/installed/select'
-import { Spinner } from './ui/spinner'
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { InputGroup, InputGroupAddon, InputGroupTextarea } from './ui/input-group'
 import { cn } from '../../lib/utils'
 import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from 'ai'
-import { CornerDownLeftIcon, ImageIcon, Monitor, PlusIcon, SquareIcon, XIcon } from 'lucide-react'
+import { ArrowDownIcon, ImageIcon, Loader2, PlusIcon, SquareIcon, XIcon } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import type {
   ChangeEvent,
@@ -40,7 +37,8 @@ import type {
   ReactNode,
   RefObject
 } from 'react'
-import { Children, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useSmartPromptComponents } from './components-context'
 
 // ============================================================================
 // Helpers
@@ -58,70 +56,6 @@ const convertBlobUrlToDataUrl = async (url: string): Promise<string | null> => {
     })
   } catch {
     return null
-  }
-}
-
-const captureScreenshot = async (): Promise<File | null> => {
-  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getDisplayMedia) {
-    return null
-  }
-
-  let stream: MediaStream | null = null
-  const video = document.createElement('video')
-  video.muted = true
-  video.playsInline = true
-
-  try {
-    stream = await navigator.mediaDevices.getDisplayMedia({
-      audio: false,
-      video: true
-    })
-
-    video.srcObject = stream
-
-    await new Promise<void>((resolve, reject) => {
-      video.onloadedmetadata = () => resolve()
-      video.onerror = () => reject(new Error('Failed to load screen stream'))
-    })
-
-    await video.play()
-
-    const width = video.videoWidth
-    const height = video.videoHeight
-    if (!width || !height) {
-      return null
-    }
-
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const context = canvas.getContext('2d')
-    if (!context) {
-      return null
-    }
-
-    context.drawImage(video, 0, 0, width, height)
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, 'image/png')
-    })
-    if (!blob) {
-      return null
-    }
-
-    const timestamp = new Date().toISOString().replaceAll(/[:.]/g, '-').replace('T', '_').replace('Z', '')
-
-    return new File([blob], `screenshot-${timestamp}.png`, {
-      lastModified: Date.now(),
-      type: 'image/png'
-    })
-  } finally {
-    if (stream) {
-      for (const track of stream.getTracks()) {
-        track.stop()
-      }
-    }
-    video.pause()
-    video.srcObject = null
   }
 }
 
@@ -177,110 +111,6 @@ export type PromptInputProviderProps = PropsWithChildren<{
   initialInput?: string
 }>
 
-export const PromptInputProvider = ({ initialInput: initialTextInput = '', children }: PromptInputProviderProps) => {
-  const [textInput, setTextInput] = useState(initialTextInput)
-  const clearInput = useCallback(() => setTextInput(''), [])
-
-  const [attachmentFiles, setAttachmentFiles] = useState<(FileUIPart & { id: string })[]>([])
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const openRef = useRef<() => void>(() => {})
-
-  const add = useCallback((files: File[] | FileList) => {
-    const incoming = [...files]
-    if (incoming.length === 0) {
-      return
-    }
-    setAttachmentFiles((prev) => [
-      ...prev,
-      ...incoming.map((file) => ({
-        filename: file.name,
-        id: nanoid(),
-        mediaType: file.type,
-        type: 'file' as const,
-        url: URL.createObjectURL(file)
-      }))
-    ])
-  }, [])
-
-  const remove = useCallback((id: string) => {
-    setAttachmentFiles((prev) => {
-      const found = prev.find((f) => f.id === id)
-      if (found?.url) {
-        URL.revokeObjectURL(found.url)
-      }
-      return prev.filter((f) => f.id !== id)
-    })
-  }, [])
-
-  const clear = useCallback(() => {
-    setAttachmentFiles((prev) => {
-      for (const f of prev) {
-        if (f.url) {
-          URL.revokeObjectURL(f.url)
-        }
-      }
-      return []
-    })
-  }, [])
-
-  const attachmentsRef = useRef(attachmentFiles)
-
-  useEffect(() => {
-    attachmentsRef.current = attachmentFiles
-  }, [attachmentFiles])
-
-  useEffect(
-    () => () => {
-      for (const f of attachmentsRef.current) {
-        if (f.url) {
-          URL.revokeObjectURL(f.url)
-        }
-      }
-    },
-    []
-  )
-
-  const openFileDialog = useCallback(() => {
-    openRef.current?.()
-  }, [])
-
-  const attachments = useMemo<AttachmentsContext>(
-    () => ({
-      add,
-      clear,
-      fileInputRef,
-      files: attachmentFiles,
-      openFileDialog,
-      remove
-    }),
-    [attachmentFiles, add, remove, clear, openFileDialog]
-  )
-
-  const __registerFileInput = useCallback((ref: RefObject<HTMLInputElement | null>, open: () => void) => {
-    fileInputRef.current = ref.current
-    openRef.current = open
-  }, [])
-
-  const controller = useMemo<PromptInputControllerProps>(
-    () => ({
-      __registerFileInput,
-      attachments,
-      textInput: {
-        clear: clearInput,
-        setInput: setTextInput,
-        value: textInput
-      }
-    }),
-    [textInput, clearInput, attachments, __registerFileInput]
-  )
-
-  return (
-    <PromptInputController.Provider value={controller}>
-      <ProviderAttachmentsContext.Provider value={attachments}>{children}</ProviderAttachmentsContext.Provider>
-    </PromptInputController.Provider>
-  )
-}
-
 // ============================================================================
 // Component Context & Hooks
 // ============================================================================
@@ -318,15 +148,17 @@ export const usePromptInputReferencedSources = () => {
   return ctx
 }
 
-export type PromptInputActionAddAttachmentsProps = ComponentProps<typeof DropdownMenuItem> & {
+export type PromptInputActionAddAttachmentsProps = {
   label?: string
+  className?: string
 }
 
 export const PromptInputActionAddAttachments = ({
   label = 'Add photos or files',
-  ...props
+  className
 }: PromptInputActionAddAttachmentsProps) => {
   const attachments = usePromptInputAttachments()
+  const { DropdownMenuItem } = useSmartPromptComponents()
 
   const handleSelect = useCallback(
     (e: Event) => {
@@ -336,51 +168,25 @@ export const PromptInputActionAddAttachments = ({
     [attachments]
   )
 
+  if (DropdownMenuItem) {
+    return (
+      <DropdownMenuItem className={className} onSelect={handleSelect}>
+        <ImageIcon className='mr-2 size-4' /> {label}
+      </DropdownMenuItem>
+    )
+  }
+  // Graceful fallback for first-render window before runtime library loads.
   return (
-    <DropdownMenuItem {...props} onSelect={handleSelect}>
+    <button
+      type='button'
+      className={cn(
+        'flex w-full items-center px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground',
+        className
+      )}
+      onClick={() => attachments.openFileDialog()}
+    >
       <ImageIcon className='mr-2 size-4' /> {label}
-    </DropdownMenuItem>
-  )
-}
-
-export type PromptInputActionAddScreenshotProps = ComponentProps<typeof DropdownMenuItem> & {
-  label?: string
-}
-
-export const PromptInputActionAddScreenshot = ({
-  label = 'Take screenshot',
-  onSelect,
-  ...props
-}: PromptInputActionAddScreenshotProps) => {
-  const attachments = usePromptInputAttachments()
-
-  const handleSelect = useCallback(
-    async (event: Event) => {
-      onSelect?.(event)
-      if (event.defaultPrevented) {
-        return
-      }
-
-      try {
-        const screenshot = await captureScreenshot()
-        if (screenshot) {
-          attachments.add([screenshot])
-        }
-      } catch (error) {
-        if (error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'AbortError')) {
-          return
-        }
-        throw error
-      }
-    },
-    [onSelect, attachments]
-  )
-
-  return (
-    <DropdownMenuItem {...props} onSelect={handleSelect}>
-      <Monitor className='mr-2 size-4' />
-      {label}
-    </DropdownMenuItem>
+    </button>
   )
 }
 
@@ -398,6 +204,13 @@ export type PromptInputProps = Omit<HTMLAttributes<HTMLFormElement>, 'onSubmit' 
   maxFileSize?: number
   onError?: (err: { code: 'max_files' | 'max_file_size' | 'accept'; message: string }) => void
   onSubmit: (message: PromptInputMessage, event: FormEvent<HTMLFormElement>) => void | Promise<void>
+  /**
+   * className applied to the InputGroup (the inner surface). Lets the
+   * top-level `SmartPromptInput` translate its `surface` prop into surface
+   * chrome WITHOUT call-site descendant selectors. Composes with the
+   * vendor's own `overflow-hidden` baseline.
+   */
+  inputGroupClassName?: string
 }
 
 export const PromptInput = ({
@@ -411,6 +224,7 @@ export const PromptInput = ({
   onError,
   onSubmit,
   children,
+  inputGroupClassName,
   ...props
 }: PromptInputProps) => {
   const controller = useOptionalPromptInputController()
@@ -745,7 +559,19 @@ export const PromptInput = ({
         type='file'
       />
       <form className={cn('w-full', className)} onSubmit={handleSubmit} ref={formRef} {...props}>
-        <InputGroup className='overflow-hidden'>{children}</InputGroup>
+        {/*
+         * `overflow-hidden` keeps the historical behavior so existing consumers
+         * (Herald) render byte-identically. Consumers that need a different
+         * overflow (e.g. so an outer focus halo is not clipped by an interior
+         * scroller in a future variant) pass an override via
+         * `inputGroupClassName` — tailwind-merge resolves the conflict.
+         * The vendor's resting focus ring sits on the InputGroup itself
+         * via `focus-within:ring-1 focus-within:ring-ring`; consumers that
+         * want a different focus chrome suppress the inner ring via
+         * `inputGroupClassName` instead of a descendant selector at the
+         * call site.
+         */}
+        <InputGroup className={cn('overflow-hidden', inputGroupClassName)}>{children}</InputGroup>
       </form>
     </>
   )
@@ -759,28 +585,42 @@ export const PromptInput = ({
   )
 }
 
-export type PromptInputBodyProps = HTMLAttributes<HTMLDivElement>
-
-export const PromptInputBody = ({ className, ...props }: PromptInputBodyProps) => (
-  <div className={cn('contents', className)} {...props} />
-)
-
 export type PromptInputTextareaProps = ComponentProps<typeof InputGroupTextarea> & {
   submitOnCmdEnter?: boolean
   pasteToFileChars?: number
+  /**
+   * Observe-only callback fired on every input change with the current
+   * textarea value. Lets the consumer track text without forcing the input
+   * to become a fully controlled component (we never read `value` back).
+   *
+   * Composes with `onChange` (and the `controlledProps` provider path):
+   * `onTextChange` always fires after the existing handlers run. Safe to omit.
+   */
+  onTextChange?: (text: string) => void
+  /**
+   * Variant forwarded to the injected `Textarea`. When the consuming library's
+   * Textarea exposes variants (basic/animate ship `bare`, `ghost`, …), this
+   * lets the consumer reach for the right one without descendant-selector
+   * className overrides. Falls through to the injected component as-is; the
+   * native fallback path ignores it.
+   */
+  variant?: string
 }
 
 export const PromptInputTextarea = ({
   onChange,
   onKeyDown,
+  onTextChange,
   className,
   placeholder = 'What would you like to know?',
   submitOnCmdEnter = false,
   pasteToFileChars,
+  variant,
   ...props
 }: PromptInputTextareaProps) => {
   const controller = useOptionalPromptInputController()
   const attachments = usePromptInputAttachments()
+  const { Textarea } = useSmartPromptComponents()
   const [isComposing, setIsComposing] = useState(false)
 
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = useCallback(
@@ -864,19 +704,56 @@ export const PromptInputTextarea = ({
   const handleCompositionEnd = useCallback(() => setIsComposing(false), [])
   const handleCompositionStart = useCallback(() => setIsComposing(true), [])
 
+  // Compose onChange so `onTextChange` fires on every input. This is the
+  // "uncontrolled-but-observable" path the consumer relies on: the textarea
+  // stays uncontrolled (no `value` prop except in the provider branch), but
+  // the consumer can mirror the typed text into its own state in real time
+  // without taking ownership of the value. Keeps Herald (no `onTextChange`)
+  // byte-identical with the previous behavior.
   const controlledProps = controller
     ? {
         onChange: (e: ChangeEvent<HTMLTextAreaElement>) => {
           controller.textInput.setInput(e.currentTarget.value)
           onChange?.(e)
+          onTextChange?.(e.currentTarget.value)
         },
         value: controller.textInput.value
       }
-    : { onChange }
+    : {
+        onChange: (e: ChangeEvent<HTMLTextAreaElement>) => {
+          onChange?.(e)
+          onTextChange?.(e.currentTarget.value)
+        }
+      }
 
+  // INJECTION CONTRACT — see ui-library-system SKILL.md. The shared input
+  // ships NO library. The consuming app injects `Textarea` (Vāda via build-time
+  // `@atta/ui`, Herald via runtime `useComponents()`). When the injected
+  // component is undefined (e.g. runtime library still loading on first paint),
+  // we degrade to a native textarea with vendor styling — exactly mirroring
+  // JDInput's `Button ? <Button…> : <button>` pattern. This is the difference
+  // between graceful first paint and a crash.
+  const baseClassName = cn('field-sizing-content max-h-40 min-h-16 overflow-y-auto', className)
+
+  if (Textarea) {
+    return (
+      <Textarea
+        className={baseClassName}
+        name='message'
+        onCompositionEnd={handleCompositionEnd}
+        onCompositionStart={handleCompositionStart}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        placeholder={placeholder}
+        {...(variant !== undefined && { variant })}
+        {...props}
+        {...controlledProps}
+      />
+    )
+  }
   return (
     <InputGroupTextarea
-      className={cn('field-sizing-content max-h-40 min-h-16 overflow-y-auto', className)}
+      className={baseClassName}
       name='message'
       onCompositionEnd={handleCompositionEnd}
       onCompositionStart={handleCompositionStart}
@@ -907,76 +784,80 @@ export const PromptInputTools = ({ className, ...props }: PromptInputToolsProps)
   <div className={cn('flex min-w-0 items-center gap-1', className)} {...props} />
 )
 
-export type PromptInputButtonTooltip =
-  | string
-  | {
-      content: ReactNode
-      shortcut?: string
-      side?: ComponentProps<typeof TooltipContent>['side']
-    }
+// ============================================================================
+// ActionMenu — uses injected DropdownMenu primitives
+// ============================================================================
 
-export type PromptInputButtonProps = ComponentProps<typeof InputGroupButton> & {
-  tooltip?: PromptInputButtonTooltip
-}
+export type PromptInputActionMenuProps = { children?: ReactNode } & Record<string, unknown>
 
-export const PromptInputButton = ({
-  variant = 'ghost',
-  className,
-  size,
-  tooltip,
-  ...props
-}: PromptInputButtonProps) => {
-  const newSize = size ?? (Children.count(props.children) > 1 ? 'sm' : 'icon-sm')
-
-  const button = (
-    <InputGroupButton className={cn(className)} size={newSize} type='button' variant={variant} {...props} />
-  )
-
-  if (!tooltip) {
-    return button
+export const PromptInputActionMenu = ({ children, ...props }: PromptInputActionMenuProps) => {
+  const { DropdownMenu } = useSmartPromptComponents()
+  if (DropdownMenu) {
+    return <DropdownMenu {...props}>{children}</DropdownMenu>
   }
-
-  const tooltipContent = typeof tooltip === 'string' ? tooltip : tooltip.content
-  const shortcut = typeof tooltip === 'string' ? undefined : tooltip.shortcut
-  const side = typeof tooltip === 'string' ? 'top' : (tooltip.side ?? 'top')
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side={side}>
-        {tooltipContent}
-        {shortcut && <span className='ml-2 text-muted-foreground'>{shortcut}</span>}
-      </TooltipContent>
-    </Tooltip>
-  )
+  // Graceful fallback: render children inline so the trigger remains visible.
+  // The dropdown won't function until the library loads, but nothing crashes.
+  return <>{children}</>
 }
 
-export type PromptInputActionMenuProps = ComponentProps<typeof DropdownMenu>
-export const PromptInputActionMenu = (props: PromptInputActionMenuProps) => <DropdownMenu {...props} />
+export type PromptInputActionMenuTriggerProps = {
+  className?: string
+  children?: ReactNode
+} & Record<string, unknown>
 
-export type PromptInputActionMenuTriggerProps = PromptInputButtonProps
+export const PromptInputActionMenuTrigger = ({ className, children, ...props }: PromptInputActionMenuTriggerProps) => {
+  const { Button, DropdownMenuTrigger } = useSmartPromptComponents()
 
-export const PromptInputActionMenuTrigger = ({ className, children, ...props }: PromptInputActionMenuTriggerProps) => (
-  <DropdownMenuTrigger asChild>
-    <PromptInputButton className={className} {...props}>
+  const triggerNode = Button ? (
+    <Button type='button' variant='ghost' size='icon' className={className} {...props}>
       {children ?? <PlusIcon className='size-4' />}
-    </PromptInputButton>
-  </DropdownMenuTrigger>
-)
+    </Button>
+  ) : (
+    <button
+      type='button'
+      className={cn(
+        'inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground',
+        className
+      )}
+      {...props}
+    >
+      {children ?? <PlusIcon className='size-4' />}
+    </button>
+  )
 
-export type PromptInputActionMenuContentProps = ComponentProps<typeof DropdownMenuContent>
-export const PromptInputActionMenuContent = ({ className, ...props }: PromptInputActionMenuContentProps) => (
-  <DropdownMenuContent align='start' className={cn(className)} {...props} />
-)
+  if (DropdownMenuTrigger) {
+    return <DropdownMenuTrigger asChild>{triggerNode}</DropdownMenuTrigger>
+  }
+  return triggerNode
+}
 
-export type PromptInputActionMenuItemProps = ComponentProps<typeof DropdownMenuItem>
-export const PromptInputActionMenuItem = ({ className, ...props }: PromptInputActionMenuItemProps) => (
-  <DropdownMenuItem className={cn(className)} {...props} />
-)
+export type PromptInputActionMenuContentProps = {
+  className?: string
+  children?: ReactNode
+} & Record<string, unknown>
 
-export type PromptInputSubmitProps = ComponentProps<typeof InputGroupButton> & {
+export const PromptInputActionMenuContent = ({ className, children, ...props }: PromptInputActionMenuContentProps) => {
+  const { DropdownMenuContent } = useSmartPromptComponents()
+  if (DropdownMenuContent) {
+    return (
+      <DropdownMenuContent align='start' className={className} {...props}>
+        {children}
+      </DropdownMenuContent>
+    )
+  }
+  // Render nothing — without DropdownMenu the menu can't be opened anyway.
+  return null
+}
+
+// ============================================================================
+// Submit button — uses injected Button + lucide icons (Spinner removed)
+// ============================================================================
+
+export type PromptInputSubmitProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   status?: ChatStatus
   onStop?: () => void
+  variant?: string
+  size?: string
 }
 
 export const PromptInputSubmit = ({
@@ -989,12 +870,13 @@ export const PromptInputSubmit = ({
   children,
   ...props
 }: PromptInputSubmitProps) => {
+  const { Button } = useSmartPromptComponents()
   const isGenerating = status === 'submitted' || status === 'streaming'
 
-  let Icon = <CornerDownLeftIcon className='size-4' />
+  let Icon = <ArrowDownIcon className='size-4' />
 
   if (status === 'submitted') {
-    Icon = <Spinner />
+    Icon = <Loader2 className='size-4 animate-spin' />
   } else if (status === 'streaming') {
     Icon = <SquareIcon className='size-4' />
   } else if (status === 'error') {
@@ -1013,120 +895,34 @@ export const PromptInputSubmit = ({
     [isGenerating, onStop, onClick]
   )
 
+  if (Button) {
+    return (
+      <Button
+        aria-label={isGenerating ? 'Stop' : 'Submit'}
+        className={className}
+        onClick={handleClick}
+        size={size}
+        type={isGenerating && onStop ? 'button' : 'submit'}
+        variant={variant}
+        {...props}
+      >
+        {children ?? Icon}
+      </Button>
+    )
+  }
+  // Graceful fallback during runtime-library load window.
   return (
-    <InputGroupButton
+    <button
       aria-label={isGenerating ? 'Stop' : 'Submit'}
-      className={cn(className)}
+      className={cn(
+        'inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50',
+        className
+      )}
       onClick={handleClick}
-      size={size}
       type={isGenerating && onStop ? 'button' : 'submit'}
-      variant={variant}
       {...props}
     >
       {children ?? Icon}
-    </InputGroupButton>
+    </button>
   )
 }
-
-export type PromptInputSelectProps = ComponentProps<typeof Select>
-export const PromptInputSelect = (props: PromptInputSelectProps) => <Select {...props} />
-
-export type PromptInputSelectTriggerProps = ComponentProps<typeof SelectTrigger>
-export const PromptInputSelectTrigger = ({ className, ...props }: PromptInputSelectTriggerProps) => (
-  <SelectTrigger
-    className={cn(
-      'border-none bg-transparent font-medium text-muted-foreground shadow-none transition-colors',
-      'hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground',
-      className
-    )}
-    {...props}
-  />
-)
-
-export type PromptInputSelectContentProps = ComponentProps<typeof SelectContent>
-export const PromptInputSelectContent = ({ className, ...props }: PromptInputSelectContentProps) => (
-  <SelectContent className={cn(className)} {...props} />
-)
-
-export type PromptInputSelectItemProps = ComponentProps<typeof SelectItem>
-export const PromptInputSelectItem = ({ className, ...props }: PromptInputSelectItemProps) => (
-  <SelectItem className={cn(className)} {...props} />
-)
-
-export type PromptInputSelectValueProps = ComponentProps<typeof SelectValue>
-export const PromptInputSelectValue = ({ className, ...props }: PromptInputSelectValueProps) => (
-  <SelectValue className={cn(className)} {...props} />
-)
-
-export type PromptInputHoverCardProps = ComponentProps<typeof HoverCard>
-export const PromptInputHoverCard = ({ openDelay = 0, closeDelay = 0, ...props }: PromptInputHoverCardProps) => (
-  <HoverCard closeDelay={closeDelay} openDelay={openDelay} {...props} />
-)
-
-export type PromptInputHoverCardTriggerProps = ComponentProps<typeof HoverCardTrigger>
-export const PromptInputHoverCardTrigger = (props: PromptInputHoverCardTriggerProps) => <HoverCardTrigger {...props} />
-
-export type PromptInputHoverCardContentProps = ComponentProps<typeof HoverCardContent>
-export const PromptInputHoverCardContent = ({ align = 'start', ...props }: PromptInputHoverCardContentProps) => (
-  <HoverCardContent align={align} {...props} />
-)
-
-export type PromptInputTabsListProps = HTMLAttributes<HTMLDivElement>
-export const PromptInputTabsList = ({ className, ...props }: PromptInputTabsListProps) => (
-  <div className={cn(className)} {...props} />
-)
-
-export type PromptInputTabProps = HTMLAttributes<HTMLDivElement>
-export const PromptInputTab = ({ className, ...props }: PromptInputTabProps) => (
-  <div className={cn(className)} {...props} />
-)
-
-export type PromptInputTabLabelProps = HTMLAttributes<HTMLHeadingElement>
-export const PromptInputTabLabel = ({ className, ...props }: PromptInputTabLabelProps) => (
-  <h3 className={cn('mb-2 px-3 font-medium text-muted-foreground text-xs', className)} {...props} />
-)
-
-export type PromptInputTabBodyProps = HTMLAttributes<HTMLDivElement>
-export const PromptInputTabBody = ({ className, ...props }: PromptInputTabBodyProps) => (
-  <div className={cn('space-y-1', className)} {...props} />
-)
-
-export type PromptInputTabItemProps = HTMLAttributes<HTMLDivElement>
-export const PromptInputTabItem = ({ className, ...props }: PromptInputTabItemProps) => (
-  <div className={cn('flex items-center gap-2 px-3 py-2 text-xs hover:bg-accent', className)} {...props} />
-)
-
-export type PromptInputCommandProps = ComponentProps<typeof Command>
-export const PromptInputCommand = ({ className, ...props }: PromptInputCommandProps) => (
-  <Command className={cn(className)} {...props} />
-)
-
-export type PromptInputCommandInputProps = ComponentProps<typeof CommandInput>
-export const PromptInputCommandInput = ({ className, ...props }: PromptInputCommandInputProps) => (
-  <CommandInput className={cn(className)} {...props} />
-)
-
-export type PromptInputCommandListProps = ComponentProps<typeof CommandList>
-export const PromptInputCommandList = ({ className, ...props }: PromptInputCommandListProps) => (
-  <CommandList className={cn(className)} {...props} />
-)
-
-export type PromptInputCommandEmptyProps = ComponentProps<typeof CommandEmpty>
-export const PromptInputCommandEmpty = ({ className, ...props }: PromptInputCommandEmptyProps) => (
-  <CommandEmpty className={cn(className)} {...props} />
-)
-
-export type PromptInputCommandGroupProps = ComponentProps<typeof CommandGroup>
-export const PromptInputCommandGroup = ({ className, ...props }: PromptInputCommandGroupProps) => (
-  <CommandGroup className={cn(className)} {...props} />
-)
-
-export type PromptInputCommandItemProps = ComponentProps<typeof CommandItem>
-export const PromptInputCommandItem = ({ className, ...props }: PromptInputCommandItemProps) => (
-  <CommandItem className={cn(className)} {...props} />
-)
-
-export type PromptInputCommandSeparatorProps = ComponentProps<typeof CommandSeparator>
-export const PromptInputCommandSeparator = ({ className, ...props }: PromptInputCommandSeparatorProps) => (
-  <CommandSeparator className={cn(className)} {...props} />
-)

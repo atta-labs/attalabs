@@ -1,7 +1,7 @@
 'use client'
 
 import type { CMSTheme } from '@atta/cms'
-import { Button, useToastContext } from '@atta/ui/basic/components'
+import { Button, useToastContext } from '@atta/ui/components'
 import {
   Dialog,
   DialogContent,

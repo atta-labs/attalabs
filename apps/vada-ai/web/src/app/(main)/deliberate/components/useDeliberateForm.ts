@@ -72,11 +72,27 @@ export interface DeliberateFormState {
   setGlobalModel: (m: ModelSelection | null) => void
   loading: boolean
   canStart: boolean
+  /**
+   * True when the input has non-empty text. Split out from `canStart` so the
+   * hero's morphing button can render at all (Gemini-style empty state: no
+   * button visible until the user types).
+   */
+  hasQuestion: boolean
+  /**
+   * True when the selected team is ready to receive a submission — either
+   * the saved reviewer config validates against current keys (editable specs),
+   * or all agent vendors for the spec have keys (non-editable specs). Split out
+   * so the morphing button can decide submit-vs-configure independently of
+   * whether there is text to submit.
+   */
+  isConfigValid: boolean
   needsUnlock: boolean
   hasAnyKey: boolean
   benchmarkEnabled: boolean
   setBenchmarkEnabled: (v: boolean) => void
   handleStart: () => Promise<void>
+  /** Submit with an explicit question text — used by SmartPromptInput which owns its own value. */
+  handleStartWithText: (q: string) => Promise<void>
   faceStyle: FaceStyle
   showReviewerModal: boolean
   handleModalSave: (config: ReviewerConfig) => void
@@ -124,6 +140,11 @@ export function useDeliberateForm({
   // Stable ref for selectedSpecId — used by modal save callback
   const selectedSpecIdRef = useRef(selectedSpecId)
   selectedSpecIdRef.current = selectedSpecId
+
+  // Stable ref for question — read synchronously in handleModalSave to check
+  // whether to auto-dispatch after save, without creating a stale closure dep.
+  const questionRef = useRef(question)
+  questionRef.current = question
 
   useEffect(() => {
     if (initialError) errorToast('Could not start deliberation', initialError)
@@ -192,27 +213,80 @@ export function useDeliberateForm({
     })
   })()
 
-  const canStart =
-    !!question.trim() &&
-    remainingToday > 0 &&
-    !loading &&
-    (hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec)
+  // ── Predicate split (Gemini-style morphing button) ──
+  // `hasQuestion` answers "is there text to submit?" — purely an input-state
+  // signal. `isConfigValid` answers "is the team ready to receive a submission?"
+  // — purely a team/keys signal. They are independent: the hero needs to know
+  // both so it can decide whether to render the button at all (`hasQuestion`)
+  // AND, when rendered, whether clicking it submits or opens the config modal
+  // (`isConfigValid`). `canStart` keeps the composite meaning for existing
+  // callers (the bottom-bar "Deliberate" CTA, the dispatch handlers).
+  const hasQuestion = !!question.trim()
+  const isConfigValid = hasEditableAgents ? hasValidReviewerConfig : hasKeysForNonEditableSpec
+  const canStart = hasQuestion && remainingToday > 0 && !loading && isConfigValid
 
   // Core dispatch — skips the reviewer config gate (used post-modal-save).
-  const dispatchRef = useRef<() => Promise<void>>(() => Promise.resolve())
-  dispatchRef.current = async () => {
-    if (!canStart) return
+  // Accepts an optional explicit question text (used by SmartPromptInput submit path
+  // where the component owns its own value and passes it via onSubmit).
+  //
+  // Stale-closure note: for editable specs we re-read `getReviewerConfig` from
+  // localStorage and re-run `validateKeysForConfig` HERE instead of trusting
+  // the render-closure `hasValidReviewerConfig` flag. This matters because
+  // `handleModalSave` writes the config to localStorage and then calls
+  // `dispatchRef.current()` synchronously — that call uses the dispatchRef
+  // assigned during the PREVIOUS render, whose `hasValidReviewerConfig`
+  // closure was computed before the localStorage write. Reading freshly
+  // guarantees the post-save auto-dispatch sees the just-persisted config.
+  const dispatchRef = useRef<(overrideQuestion?: string) => Promise<void>>(() => Promise.resolve())
+  dispatchRef.current = async (overrideQuestion?: string) => {
+    const effectiveQuestion = (overrideQuestion ?? question).trim()
+    const reviewerConfigValid = hasEditableAgents
+      ? (() => {
+          const fresh = getReviewerConfig(selectedSpecId)
+          return !!fresh && validateKeysForConfig(fresh, configuredProviders, catalog)
+        })()
+      : true
+    const effectiveCanStart =
+      !!effectiveQuestion &&
+      remainingToday > 0 &&
+      !loading &&
+      (hasEditableAgents ? reviewerConfigValid : hasKeysForNonEditableSpec)
+    if (!effectiveCanStart) return
     setLoading(true)
 
     // The apiKey is not sent to /start. The deliberation page passes it to
     // /workflow/run?stream=true when the SSE stream opens. See /trust.
+
+    // Lift the saved reviewer config (per-slot model picks from the modal)
+    // onto the /start payload as `agentModels: { [yamlName]: {provider,
+    // modelId} }`. Server-side `start/route.ts` overlays this on its own
+    // spec-default map (keyed by `AGENTS[name]?.role ?? name`), so we keep
+    // the raw YAML names here — server normalizes. Provider is resolved
+    // through `resolveVendor(modelId, catalog)`, which is catalog-authoritative
+    // (vs prefix-only) — handles cross-vendor cases like Groq-served DeepSeek
+    // where prefix matching would mis-route. Entries with no resolvable
+    // vendor are skipped: writing `provider: null` would break Zod validation
+    // server-side, and they wouldn't be runnable either way.
+    const reviewerConfig = getReviewerConfig(selectedSpecId)
+    let agentModels: Record<string, { provider: string; modelId: string }> | undefined
+    if (reviewerConfig) {
+      const entries: Array<[string, { provider: string; modelId: string }]> = []
+      for (const [agentName, modelId] of Object.entries(reviewerConfig)) {
+        const provider = resolveVendor(modelId, catalog)
+        if (!provider) continue
+        entries.push([agentName, { provider, modelId }])
+      }
+      if (entries.length > 0) agentModels = Object.fromEntries(entries)
+    }
+
     const body: Record<string, unknown> = {
-      question: question.trim(),
+      question: effectiveQuestion,
       specId: selectedSpecId,
       ...(globalModel && {
         provider: globalModel.provider,
         modelId: globalModel.modelId
       }),
+      ...(agentModels && { agentModels }),
       benchmark: benchmarkEnabled
     }
 
@@ -237,7 +311,7 @@ export function useDeliberateForm({
     if (benchmarkEnabled && globalModel) {
       const baselineApiKey = globalModel.provider === 'ollama' ? 'ollama-local' : globalModel.apiKey || undefined
       if (baselineApiKey) {
-        void fireBaselineBenchmark(session_id, question.trim(), { ...globalModel, apiKey: baselineApiKey })
+        void fireBaselineBenchmark(session_id, effectiveQuestion, { ...globalModel, apiKey: baselineApiKey })
       }
     }
 
@@ -250,11 +324,16 @@ export function useDeliberateForm({
   // the agent spheres to flicker on input. The ref-indirection keeps the
   // exposed callback's identity stable across renders while always calling
   // the latest closure (which sees fresh state).
-  const handleStartImplRef = useRef<() => Promise<void>>(() => Promise.resolve())
-  handleStartImplRef.current = async () => {
-    if (!canStart) return
-    // For specs with editable reviewer agents, gate on a valid stored config.
-    // If the config is missing or stale keys, show the modal instead of dispatching.
+  const handleStartImplRef = useRef<(overrideQuestion?: string) => Promise<void>>(() => Promise.resolve())
+  handleStartImplRef.current = async (overrideQuestion?: string) => {
+    const effectiveQuestion = (overrideQuestion ?? question).trim()
+    // Empty input → silently no-op. Quota/loading gates are also hard no-ops
+    // (the user already sees a toast for the quota case; loading is transient).
+    if (!effectiveQuestion || remainingToday <= 0 || loading) return
+    // For specs with editable reviewer agents, missing/invalid config opens the
+    // modal instead of silently no-op'ing. This matches the morphing button's
+    // click behavior: text + invalid config → configure modal (both via mouse
+    // and via Cmd+Enter through this code path).
     const spec = specs.find((s) => s.id === selectedSpecId)
     if (spec) {
       const editableAgents = spec.agents.filter((a) => a.editable)
@@ -264,15 +343,30 @@ export function useDeliberateForm({
           setShowReviewerModal(true)
           return
         }
+      } else if (!hasKeysForNonEditableSpec) {
+        // Non-editable spec with missing vendor keys — no modal exists to
+        // configure (the user adds keys via /settings). Silent no-op preserves
+        // the existing behavior; the bottom-bar "Deliberate" button is disabled
+        // in this state and the hero button click never reaches here (it
+        // doesn't have a configure path for non-editable specs).
+        return
       }
     }
-    await dispatchRef.current()
+    await dispatchRef.current(overrideQuestion)
   }
   const handleStart = useCallback(() => handleStartImplRef.current(), [])
+  const handleStartWithText = useCallback((q: string) => handleStartImplRef.current(q), [])
 
   const handleModalSave = useCallback((config: ReviewerConfig) => {
     setReviewerConfig(selectedSpecIdRef.current, config)
     setShowReviewerModal(false)
+    // Post-save auto-dispatch: if a question is already entered, fire immediately
+    // now that the config is saved. dispatchRef.current re-validates internally
+    // using the just-persisted config, so we pass no override.
+    const currentQuestion = questionRef.current.trim()
+    if (currentQuestion) {
+      void dispatchRef.current()
+    }
   }, [])
 
   const closeReviewerModal = useCallback(() => setShowReviewerModal(false), [])
@@ -287,11 +381,14 @@ export function useDeliberateForm({
     setGlobalModel,
     loading,
     canStart,
+    hasQuestion,
+    isConfigValid,
     needsUnlock,
     hasAnyKey,
     benchmarkEnabled,
     setBenchmarkEnabled,
     handleStart,
+    handleStartWithText,
     faceStyle,
     showReviewerModal,
     handleModalSave,

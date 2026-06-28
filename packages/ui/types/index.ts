@@ -1,5 +1,6 @@
-// Interactive
-export type { ButtonProps, ButtonSize, ButtonVariant, ButtonVariantsFn } from './interactive/button'
+// Interactive — Button types live per-library (each library derives its own
+// from its cva). The cross-library Button enums were removed (zero consumer
+// usage and forced bespoke variant names across the libraries).
 export type { TabsContentProps, TabsListProps, TabsProps, TabsTriggerProps } from './interactive/tabs'
 
 // Content
@@ -27,7 +28,7 @@ export type { FlexAlign, FlexDirection, FlexJustify, FlexProps, FlexWrap } from 
 export type { SeparatorOrientation, SeparatorProps } from './layout/separator'
 
 // Typography
-export type { HeadingLevel, HeadingProps, HeadingSize } from './typography/heading'
+export type { HeadingLevel, HeadingProps, HeadingSize, HeadingWeight } from './typography/heading'
 export type { TextAs, TextProps, TextSize, TextWeight } from './typography/text'
 
 // Display

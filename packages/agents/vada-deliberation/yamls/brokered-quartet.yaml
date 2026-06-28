@@ -1,7 +1,7 @@
 schema_version: "2.0"
 id: brokered-quartet
 display_name: Brokered Quartet
-description: Three advisory reviewers plus Domain Expert. Flag-gated.
+description: Three advisory reviewers plus Domain Expert. Domain Expert has live web access. Flag-gated.
 experimental: true
 
 defaults:

@@ -28,6 +28,11 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '../installed/dropdown-menu'
+// DropdownMenuItemTextHighlight — falls back to basic
+export {
+  DropdownMenuItemTextHighlight,
+  type DropdownMenuItemTextHighlightProps
+} from '../../basic/components/interactive/dropdown-menu-item-text-highlight'
 
 // Interactive — Popover
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../installed/popover'
@@ -138,3 +143,7 @@ export {
   SheetTitle,
   SheetTrigger
 } from '../../basic/installed/sheet'
+
+// Text Reveal
+export { TextReveal } from '../../../text-reveal'
+export type { TextRevealProps } from '../../../text-reveal'

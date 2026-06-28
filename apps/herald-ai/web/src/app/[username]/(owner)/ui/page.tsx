@@ -1,4 +1,4 @@
-import { cmsClient, getLibraries, getThemes } from '@atta/cms'
+import { createProductClient, getLibraries, getThemes } from '@atta/cms'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { AdminEditorPage } from '@/components/portal/AdminEditorPage'
@@ -11,7 +11,11 @@ export default async function CandidateUIPage() {
   const user = await getUserByClerkId(userId)
   if (!user?.onboardingComplete) redirect('/onboarding')
 
-  const [themes, libraries] = await Promise.all([getThemes(cmsClient), getLibraries(cmsClient).catch(() => [])])
+  const attalabsClient = createProductClient('attalabs')
+  const [themes, libraries] = await Promise.all([
+    getThemes(attalabsClient),
+    getLibraries(attalabsClient).catch(() => [])
+  ])
 
   return (
     <div className='h-full'>

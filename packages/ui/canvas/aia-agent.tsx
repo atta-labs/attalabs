@@ -71,6 +71,12 @@ export interface AIAgentProps {
    * keeps @atta/ui/canvas free of @atta/models dependency.
    */
   modelIcon?: ReactNode
+  /**
+   * Optional secondary overlay anchored to the bottom-left of the sphere.
+   * Use for tool indicators (e.g. web-search glyph) so they don't collide with the
+   * model badge which sits bottom-right.
+   */
+  toolBadge?: ReactNode
 }
 
 export function AIAgent({
@@ -95,7 +101,8 @@ export function AIAgent({
   children,
   model,
   modelLabel,
-  modelIcon
+  modelIcon,
+  toolBadge
 }: AIAgentProps) {
   const faceInset = FACE_PADDING
   const thinkingFontPx =
@@ -126,6 +133,7 @@ export function AIAgent({
       className={className}
       labelPosition={labelPosition}
       badge={badge}
+      badgeLeft={toolBadge}
     >
       {face && (
         <div

@@ -19,6 +19,8 @@ Every Atta AI product (Herald, Vāda, Atta, Vitakka) is themed at runtime. Color
 
 If the color you want is not in the list, it does not exist. Pick the closest semantic token by **role** (see doctrine below), or add a new one to `globals.css` and to the CMS theme schema — do **not** reach for the Tailwind palette as an escape hatch.
 
+**One scoped exemption.** `packages/ui/libraries/*/installed/**` is verbatim upstream CLI paste (shadcn / animate-ui / retroui / neobrutalism) — the colors there are upstream's, not ours. Per D-065 those files are exempt from both the Biome ignore and the `check-forbidden-colors` CI gate. The exemption does NOT apply to the `components/interactive/*` wrappers next to them — those are our code, and the rule applies in full.
+
 ---
 
 ## Token Role Doctrine

@@ -4,10 +4,10 @@ import { Button } from '@atta/ui'
 import { auth } from '@atta/auth/hooks'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Logo } from '@atta/ui/shared'
-import { Footer } from '@atta/ui/footer'
 import { TopBar } from '@atta/ui/topbar'
 import { Settings } from 'lucide-react'
 import { StickyHeaderTopBar } from '@/components/StickyHeaderTopBar'
+import { RouteAwareFooter } from '@/components/RouteAwareFooter'
 import { UserPreferencesProvider } from '@/lib/user-preferences-context'
 import { getOrCreateUser } from '@/db/queries'
 import { getUserSettings } from '@/db/settings-queries'
@@ -57,16 +57,7 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
           </StickyHeaderTopBar>
           <div className='flex-1 flex flex-col'>
             <div className='flex-1'>{children}</div>
-            <Footer
-              product='vada'
-              tagline='Multi-agent deliberation'
-              links={[
-                { label: 'Trust', href: '/trust' },
-                { label: 'MCP', href: '/mcp' },
-                { label: 'Teams', href: '/teams' }
-              ]}
-              showProductNav={true}
-            />
+            <RouteAwareFooter />
           </div>
         </div>
       </ToastProvider>

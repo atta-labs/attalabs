@@ -1,7 +1,7 @@
 schema_version: "2.0"
 id: crucible
 display_name: Crucible
-description: "Four agents debate across three rounds. Strategist proposes, Critic challenges, Devil's Advocate breaks, Synthesizer reconciles. Two auditors verify before delivery."
+description: "Four agents debate across three rounds — Strategist proposes, Critic challenges, Devil's Advocate reframes, Synthesizer reconciles. Key agents have live web access. Two auditors verify before delivery."
 experimental: true
 
 defaults:

@@ -5,6 +5,77 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 
 # UI Components — Atta AI (All Products)
 
+> # ⛔ URGENT — DO NOT EDIT `packages/ui/libraries/*/installed/*`
+>
+> **Each library's `installed/` holds the vendored canonical from THAT library's design-system
+> source — installed via shadcn CLI, pasted verbatim, NEVER hand-edited.** Each of the four
+> libraries comes from a different upstream:
+>
+> | Library | Upstream source | CLI install command |
+> |---|---|---|
+> | `basic` | shadcn (`ui.shadcn.com`) | `npx shadcn@latest add <component>` |
+> | `animate` | animate-ui (`animate-ui.com`) | `npx shadcn@latest add @animate-ui/...` |
+> | `retro` | retroui | shadcn-compatible registry |
+> | `brutal` | neobrutalism (`neobrutalism.dev`) | shadcn-compatible registry |
+>
+> **The rule:** `installed/<comp>.tsx` is a verbatim CLI paste from its library's upstream.
+> Even a one-character change is a hard rule violation. NEVER hand-roll your own
+> implementation in `installed/`; ALWAYS pull from upstream.
+>
+> ### How to add or change a primitive — the right workflow
+>
+> 1. **Install via CLI** (or paste the canonical from the upstream's docs) into the right
+>    library's `installed/<comp>.tsx`. Adjust ONLY the import paths to match our directory
+>    layout (e.g. `@/lib/utils` → `../../../lib/utils`) — nothing else.
+> 2. **Check if the upstream's exported API matches our contract** (`packages/ui/component-contract.mjs`).
+>    Most upstreams export flat named components (`Tabs`, `TabsList`, `TabsTrigger`,
+>    `TabsContent`) — those match our contract directly, just re-export from `components/index.ts`
+>    and you're done.
+> 3. **If the upstream's API differs from our contract** (e.g. retroui exports
+>    `Object.assign(Tabs.Root, { List, Trigger, Content })` — dotted API instead of flat),
+>    **add a wrapper** in `components/<comp>.tsx` (or `components/interactive/`) that adapts
+>    the dotted API to our contract's flat named exports. The wrapper IS editable. `installed/`
+>    stays verbatim.
+> 4. **If you want to vary appearance for one library (e.g. add a variant prop)** — that goes
+>    in the wrapper layer (`components/interactive/<comp>.tsx`), NOT in `installed/`. The
+>    `Button.ghost-pill` variant is the canonical example: basic's `installed/button.tsx` is
+>    shadcn canonical, and the additional variant lives in
+>    `packages/ui/libraries/basic/components/interactive/button.tsx`.
+>
+> ### When a consumer in `components/` imports from `installed/` and that's blocking you
+>
+> Switch the import to the editable `components/interactive/<component>` so the consumer
+> benefits from the wrapper / variants without touching `installed/`. Worked example:
+> `model-picker.tsx` should import `Button` from `../interactive/button`, NOT
+> `../../installed/button` — see PR #207.
+>
+> Existing variant additions like `ghost-pill`, `'bare'` (Textarea), and `'link'` (NextLink)
+> are the canonical examples — see "Canonical extension patterns" in
+> `.claude/skills/ui-library-system/SKILL.md`.
+>
+> ### Why this rule is non-negotiable
+>
+> The `installed/` files MUST stay verbatim against their upstream source so future upstream
+> updates can be **pasted in** instead of **reconciled by hand**. Every deviation in
+> `installed/` becomes drift that has to be reconciled forever after.
+>
+> **Red flags that mean STOP — you are about to violate this rule:**
+> - "I'll just change `text-sm` to `text-base` in `installed/`, it's one line."
+> - "I'll add `font-mono` to the trigger here, it's a small tweak."
+> - "I'll fix the hover colour in `installed/`, easier than adding a wrapper."
+> - "Our `installed/<comp>.tsx` was already drifted from upstream when I got here, so a bit
+>   more drift is fine."
+>
+> No to all of them. Either pull the upstream canonical (paste verbatim) or add a wrapper.
+> If you find yourself wanting to edit `installed/`, STOP and pick one of the workflow steps above.
+>
+> **One legitimate edit case:** restoring `installed/<comp>.tsx` to canonical when it has
+> drifted. Pasting the upstream verbatim back into `installed/` IS the rule's spirit ("stay
+> verbatim against upstream") — that's reconciling drift, not adding it. Do this whenever
+> you notice drift; document the upstream URL in the commit message.
+
+---
+
 ## Context
 
 All Atta AI products (Herald, Vada, Atta, Vitakka) share a single UI system via `@atta/ui`. The active component library and theme are set per-product in Sanity CMS and injected at the root layout via `NextWebShell`. These rules apply to every product, every surface.
@@ -23,10 +94,12 @@ import { Input } from '@atta/ui/components/input'
 import { Badge } from '@atta/ui/components/badge'
 import { Textarea } from '@atta/ui/components/textarea'
 import { Heading, Text } from '@atta/ui/shared'
+import { TextReveal } from '@atta/ui'
 
 <Button variant="ghost">Click me</Button>
 <Input placeholder="Type here..." />
 <Card><CardHeader><CardTitle>Title</CardTitle></CardHeader></Card>
+<TextReveal text="What are you wrestling with?" />   // typography reveal animation
 
 // ❌ Never
 <button className="...">Click me</button>
@@ -46,20 +119,27 @@ This includes "simple" cases like tab bars, toggle groups, segmented controls, o
 
 **Required workflow when a component is missing:**
 
-1. Create the component in `packages/ui/libraries/basic/installed/{component}.tsx` (shadcn base)
-2. If the active library is `animate` / `retro` / `brutal`, create the styled variant in `packages/ui/libraries/{library}/installed/{component}.tsx`
-3. Export it from **every** library's `components/index.ts` (animate/retro/brutal can fall back to basic with `export { Tabs } from '../../basic/installed/tabs'`)
-4. Add the component + Props type to `REQUIRED_COMPONENTS` and `REQUIRED_TYPES` in `packages/ui/component-contract.mjs`
-5. Run `bun run validate:ui-contract` — build fails if any library is missing the export
-6. Then use `import { Tabs } from '@atta/ui'` in the app
+1. **Install the upstream canonical via shadcn CLI** into the active library's `installed/`. Each library has its own upstream registry — never hand-roll the file:
+   - `basic` → `bunx shadcn@latest add <component>` (shadcn/ui registry)
+   - `animate` → `bunx shadcn@latest add @animate-ui/<component>`
+   - `retro` → `bunx shadcn@latest add @retroui/<component>`
+   - `brutal` → `bunx shadcn@latest add @neobrutalism/<component>`
+
+   Copy the CLI output verbatim to `packages/ui/libraries/{name}/installed/{component}.tsx`. Adjust ONLY the import paths (e.g. `@/lib/utils` → `../../../lib/utils`). Helper directory trees (e.g. animate-ui's `installed/animate-ui/primitives/...`) are preserved as-is. `installed/*` is Biome-ignored — never reformat.
+2. **Install the canonical in every other library too** (matching its own upstream). If a non-`basic` library has no design-system equivalent, fall back to basic with `export { Tabs } from '../../basic/installed/tabs'` in `components/index.ts`.
+3. **Wrap only if the upstream's exported shape differs from our contract.** Most upstreams export flat named components (`Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`) and re-export from `components/index.ts` directly. If the upstream uses a dotted `Object.assign` API (retroui Tabs) or a different child-prop name (retroui Button's `render` vs `asChild`), add a thin adapter in `components/interactive/{component}.tsx`. The adapter is editable; `installed/` stays verbatim.
+4. **Add the component + its Props type** to `REQUIRED_COMPONENTS` and `REQUIRED_TYPES` in `packages/ui/component-contract.mjs`. The contract validates **component + type NAMES across libraries** — not variant enums. Each library derives its own Props from its own cva via `VariantProps<typeof buttonVariants>`.
+5. **Run `bun run validate:ui-contract`** — build fails if any library is missing the export.
+6. **Then `import { Tabs } from '@atta/ui'`** in the app.
 
 **Red flags that mean STOP — you are about to violate this rule:**
 - "I'll just make a quick tab bar with Buttons"
 - "A simple `<div>` with onClick is enough here"
 - "I'll wrap it in motion.div myself since the library doesn't have it"
 - "It's just this one page, I'll inline it"
+- "I'll hand-write the `installed/` file from memory of the upstream"
 
-Every one of these is a custom primitive in disguise. Stop, add the component to `@atta/ui`, then use it.
+Every one of these is a custom primitive in disguise. Stop, install the upstream canonical via CLI, then use it.
 
 ---
 

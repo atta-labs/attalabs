@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Input } from '@atta/ui/basic/components'
+import { Button, Input } from '@atta/ui/components'
 import { ChevronDown, Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 

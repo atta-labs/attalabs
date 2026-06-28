@@ -42,6 +42,8 @@ interface AIASphereProps {
   children?: ReactNode
   /** Overlay slot (e.g. a model-icon badge). Rendered outside the circular clip, anchored bottom-right. */
   badge?: ReactNode
+  /** Secondary overlay slot. Rendered outside the circular clip, anchored bottom-left. */
+  badgeLeft?: ReactNode
   onClick?: () => void
   className?: string
   matrixColors?: string[]
@@ -84,6 +86,7 @@ function AIASphereInner({
   visible = true,
   children,
   badge,
+  badgeLeft,
   onClick,
   className,
   matrixColors,
@@ -156,6 +159,11 @@ function AIASphereInner({
       {badge && (
         <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', zIndex: 2, display: 'inline-flex' }}>
           {badge}
+        </span>
+      )}
+      {badgeLeft && (
+        <span style={{ position: 'absolute', bottom: '-4px', left: '-4px', zIndex: 2, display: 'inline-flex' }}>
+          {badgeLeft}
         </span>
       )}
     </Tag>

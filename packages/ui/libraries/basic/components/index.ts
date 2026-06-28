@@ -34,6 +34,10 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '../installed/dropdown-menu'
+export {
+  DropdownMenuItemTextHighlight,
+  type DropdownMenuItemTextHighlightProps
+} from './interactive/dropdown-menu-item-text-highlight'
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../installed/popover'
 export {
   Select,
@@ -115,3 +119,7 @@ export {
   SheetTitle,
   SheetTrigger
 } from '../installed/sheet'
+
+// Text Reveal
+export { TextReveal } from '../../../text-reveal'
+export type { TextRevealProps } from '../../../text-reveal'

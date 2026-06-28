@@ -6,7 +6,7 @@ import { VadaAgent } from '@/components/agents/VadaAgent'
 import type { AgentNodeData } from '@atta/ui/engine-flow'
 
 export function AgentFlowNode({ data }: NodeProps) {
-  const { agentName, visualState } = data as AgentNodeData
+  const { agentName, visualState, model } = data as AgentNodeData
 
   const sphereState =
     visualState === 'running' || visualState === 'streaming'
@@ -35,7 +35,8 @@ export function AgentFlowNode({ data }: NodeProps) {
       <VadaAgent
         id={`flow-${agentName}`}
         name={agentName}
-        model={undefined}
+        model={model}
+        userConfigured={true}
         state={sphereState}
         size='sm'
         visible
