@@ -138,8 +138,13 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
         <DialogHeader>
           {/* Title is dynamic per spec — names the team being configured so
               the user never has to leave the modal to confirm "which team is
-              this?". */}
-          <DialogTitle>Configure {spec.displayName}</DialogTitle>
+              this?". `text-xl` override (canonical baseline is `text-lg`)
+              gives the modal a stronger heading than the default Dialog so
+              the title sits visibly above the REVIEWER N slot labels — the
+              hierarchy is `text-xl` title > `text-xs` slot labels > 10px
+              ModelPicker triggers. Layout-only override, the rest of the
+              DialogTitle chrome (`font-serif`, weight, tracking) is kept. */}
+          <DialogTitle className='text-xl'>Configure {spec.displayName}</DialogTitle>
           {/* DialogDescription lives in the proper compound slot so it inherits
               the canonical `text-sm text-muted-foreground` styling and the
               accessible `aria-describedby` association on the dialog. */}
@@ -176,8 +181,13 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
             // REVIEWER N label above it. `items-start` (align-items: flex-start)
             // suppresses the stretch, so the Button shrinks to content and
             // anchors to the left, flush under the label.
-            <div key={agent.name} className='flex flex-col items-start gap-2'>
-              <div className='font-mono text-sm uppercase tracking-wider text-muted-foreground'>
+            <div key={agent.name} className='flex flex-col items-start gap-1.5'>
+              {/* `text-xs` (12px) sits between the `text-xl` title above and
+                  the 10px ModelPicker trigger below — slot label reads as a
+                  real heading for the row without competing with the modal
+                  title. `tracking-widest` aligns with the other uppercase
+                  mono labels in the file (single tracking preset). */}
+              <div className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>
                 {reviewerLabels[agent.name]}
               </div>
               <ModelPicker
