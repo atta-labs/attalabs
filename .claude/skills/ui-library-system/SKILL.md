@@ -5,6 +5,123 @@ description: How the @atta/ui multi-library system works — build-time generati
 
 # UI Library System — Atta AI
 
+> # ⛔ URGENT — DO NOT EDIT `packages/ui/libraries/*/installed/*`
+>
+> **Each library's `installed/` holds the vendored canonical from THAT library's design-system
+> source — installed via shadcn CLI, pasted verbatim, NEVER hand-edited.** The four libraries
+> each have a different upstream:
+>
+> | Library | Upstream source |
+> |---|---|
+> | `basic` | shadcn (`ui.shadcn.com`) |
+> | `animate` | animate-ui (`animate-ui.com`) |
+> | `retro` | retroui |
+> | `brutal` | neobrutalism (`neobrutalism.dev`) |
+>
+> So `installed/<comp>.tsx` in each library is a verbatim CLI paste from that library's
+> upstream. Even a one-character change is a hard rule violation. This applies to ALL files
+> in `installed/` across ALL four libraries — `button.tsx`, `dialog.tsx`, `dropdown-menu.tsx`,
+> `tabs.tsx`, everything. Color tokens, hover classes, padding, sizes, font weights — all of
+> it. NEVER hand-roll your own implementation in `installed/`; ALWAYS pull from upstream.
+>
+> ### The workflow when you need a change
+>
+> 1. **Install via CLI** (or paste the canonical from the upstream's docs) into the right
+>    library's `installed/<comp>.tsx`. Adjust ONLY the import paths (e.g. `@/lib/utils` →
+>    `../../../lib/utils`).
+> 2. **Match the contract** — `packages/ui/component-contract.mjs` requires each library to
+>    export the same set of components + Props types. If the upstream's API is flat named
+>    exports (most are) and matches the contract, just re-export from `components/index.ts`.
+> 3. **If the upstream's API doesn't match the contract** (e.g. retroui's `Object.assign`
+>    dotted API), **add a wrapper** in `components/<comp>.tsx` or `components/interactive/`
+>    that adapts the API to the contract. The wrapper IS editable. `installed/` stays verbatim.
+> 4. **If you want a library-specific variant** — add it to the wrapper layer (e.g.
+>    `components/interactive/<comp>.tsx`), NOT in `installed/`. The `Button.ghost-pill` variant
+>    is the canonical example.
+> 5. **If a consumer in `components/` imports from `installed/` and that's blocking you,**
+>    switch the import to the editable `components/interactive/<component>` (e.g.
+>    `model-picker.tsx` should import `Button` from `../interactive/button`, NOT
+>    `../../installed/button`).
+>
+> See "Canonical extension patterns — variants vs wrappers" below for worked examples
+> (`ghost-pill`, `'bare'`, `Heading.weight`, `SmartPromptInput.surface`,
+> `DropdownMenuItemTextHighlight`, `NextLink 'link'`).
+>
+> ### Why this rule is non-negotiable
+>
+> The `installed/` files MUST stay verbatim against their upstream source so future upstream
+> updates can be **pasted in** instead of **reconciled by hand**. Every deviation in
+> `installed/` becomes drift that has to be reconciled forever after.
+>
+> **One legitimate edit case:** restoring `installed/<comp>.tsx` to canonical when it has
+> drifted from upstream. Pasting the upstream verbatim back into `installed/` IS the rule's
+> spirit ("stay verbatim against upstream") — that's reconciling drift, not adding it. Do
+> this whenever you notice drift; document the upstream URL in the commit message.
+
+---
+
+## Per-library `installed/*` — CLI sources, doctrine, and contract rule (D-065)
+
+The banner above states the rule; this section is the operational reference. Codified by
+D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
+
+### Upstream-source mapping (CLI install commands)
+
+| Library | Upstream | CLI command | Notes |
+|---|---|---|---|
+| `basic` | shadcn/ui | `bunx shadcn@latest add <component>` | Default registry. Slot/asChild idioms. |
+| `animate` | animate-ui | `bunx shadcn@latest add @animate-ui/<component>` | Motion-driven Radix wrappers. Installs a helper tree under `installed/animate-ui/primitives/...` — preserve as-is, never flatten. |
+| `retro` | retroui | `bunx shadcn@latest add @retroui/<component>` | Base UI–based. Often dotted `Object.assign(Tabs.Root, { List, Trigger, Content })` API and `render` instead of `asChild`. |
+| `brutal` | neobrutalism | `bunx shadcn@latest add @neobrutalism/<component>` | Radix-based; `noShadow` / `neutral` / `reverse` variant set instead of `outline`/`destructive`. |
+
+### Doctrine (the rule, restated for skim-readers)
+
+- `installed/<component>.tsx` is a **verbatim CLI paste** from that library's upstream.
+- Adjust only the import paths from the temp install location (e.g. `@/lib/utils` →
+  `../../../lib/utils`) when moving the file under the library. Nothing else.
+- Helper trees the upstream emits (e.g. animate-ui's `installed/animate-ui/primitives/...`)
+  are preserved verbatim alongside the component files. Don't dedupe, don't flatten.
+- **Biome ignores `packages/ui/libraries/*/installed`** (configured in `biome.json` —
+  matches the precedent for `packages/cms/{vada-ai,vitakka-ai}` auto-generated dirs) so
+  formatter rules never fight a fresh CLI paste. Re-installing later just works.
+
+### CLI workflow when adding or restoring a component
+
+1. **Install:** run the matching CLI from the table above. If the upstream registry is down
+   or partial, paste the canonical from the upstream's docs into a scratch file first, then
+   move it.
+2. **Adjust import paths only:** `@/lib/utils` → relative `../../../lib/utils`. Don't touch
+   class strings, variants, types, or formatting. Don't run Biome `--write` against the
+   file — the ignore glob exists for that.
+3. **Wrap only if the upstream shape differs from the cross-library contract:**
+   - Retroui's Tabs ships `Object.assign(Tabs.Root, { List, Trigger, Content })` (dotted API).
+     The contract requires flat named exports — add an adapter in
+     `components/interactive/tabs.tsx` that casts each dotted member to its Base UI primitive
+     prop types (retroui's internal `ITabs*` interfaces are not exported, so casting to the
+     publicly-exported primitive's `Props` is the correct workaround).
+   - Retroui's Button uses `render` (Base UI) instead of `asChild` (Radix). Most consumers
+     don't use either; for those that do, an adapter mapping `asChild`→`render` is added in
+     `components/interactive/button.tsx`.
+4. **Validate:** `bun run validate:ui-contract` — every library must still export all
+   contracted component names + type names.
+
+### Per-library cva rule
+
+- Each library derives its **own** Props from its **own** cva via
+  `VariantProps<typeof buttonVariants>` (or equivalent). Variant names diverge across
+  libraries by design (e.g. brutal's Button has `noShadow`/`neutral`/`reverse`; basic +
+  animate share `outline`/`destructive`/`ghost`/`link`; retroui omits `destructive`).
+- **`component-contract.mjs` validates COMPONENT + TYPE NAMES, NOT variant enums.**
+  We previously kept cross-library `ButtonVariant` / `ButtonSize` / `ButtonVariantsFn` types
+  forcing every library to extend with a shared name set. That gave consumers no real
+  cross-library guarantee (a `variant='ai'` rendered in `basic` would render as the default
+  in `brutal`) and forced bespoke implementations. Removed by D-065 / PR #207. Consumer
+  code that wants cross-library certainty for a specific call site should pick a variant
+  every library exports (default / outline / ghost, depending on coverage) or hard-import
+  from a single library.
+
+---
+
 ## Overview
 
 `@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each product uses exactly one at a time per surface, controlled by its Sanity CMS config (and, post-D-060, by the central `attalabs` library registry the per-product configs reference). There are two ways an app resolves which library it uses:
