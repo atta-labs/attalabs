@@ -5,6 +5,38 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 
 # UI Components — Atta AI (All Products)
 
+> # ⛔ URGENT — DO NOT EDIT `packages/ui/libraries/*/installed/*`
+>
+> **The `installed/` directories hold vendored shadcn primitives. They are READ-ONLY.**
+> Even a one-character change inside `packages/ui/libraries/{basic,animate,retro,brutal}/installed/*.tsx`
+> is a hard rule violation. This applies to:
+> - `button.tsx`, `dialog.tsx`, `dropdown-menu.tsx`, every other installed primitive
+> - color tokens, hover classes, padding, sizes — ALL of it
+> - "just one tiny tweak" — NO. Never.
+>
+> **If you need to change a primitive's appearance or behavior, the ONLY allowed paths are:**
+> 1. Add or modify a variant in the **`components/interactive/<component>.tsx`** layer (or the
+>    equivalent non-`installed` layer), which is the canonical consumer-facing export. That file
+>    re-exports / extends the installed primitive and IS editable.
+> 2. Add a NEW wrapper component in a non-`installed/` directory that composes the installed
+>    primitive (e.g. `DropdownMenuItemTextHighlight` wraps `DropdownMenuItem`).
+> 3. If a consumer-facing component inside `components/` imports from `installed/` and that
+>    coupling is what's blocking you (e.g. `model-picker.tsx` importing `Button` from
+>    `installed/button`), switch the import to the editable `components/interactive/<component>`
+>    so the consumer benefits from variant updates without touching `installed/`.
+>
+> Existing variant additions like `ghost-pill`, `'bare'` (Textarea), and `'link'` (NextLink)
+> are the canonical examples — see "Canonical extension patterns" in
+> `.claude/skills/ui-library-system/SKILL.md`.
+>
+> **Why this rule is non-negotiable:** the installed/ files MUST stay close to canonical
+> shadcn so we can pull upstream updates without conflicts. Every deviation in `installed/`
+> becomes drift that has to be reconciled forever after.
+>
+> If you find yourself wanting to edit `installed/`, STOP and pick one of the three paths above.
+
+---
+
 ## Context
 
 All Atta AI products (Herald, Vada, Atta, Vitakka) share a single UI system via `@atta/ui`. The active component library and theme are set per-product in Sanity CMS and injected at the root layout via `NextWebShell`. These rules apply to every product, every surface.
