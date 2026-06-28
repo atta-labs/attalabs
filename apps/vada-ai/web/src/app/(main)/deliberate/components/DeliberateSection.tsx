@@ -124,6 +124,13 @@ function MorphingSubmitButton({
 export function DeliberateSection(props: DeliberateSectionProps) {
   const form = useDeliberateForm(props)
   const selectedSpec = props.specs.find((s) => s.id === form.selectedSpecId) ?? props.specs[0]
+  // The Settings gear next to the team picker only makes sense for specs that
+  // actually have user-configurable agents (Reviewers / Reviewers + Synthesis).
+  // Non-editable specs (Council, Council + Synthesis) source their models from
+  // YAML — there is nothing for the user to swap. `hasEditableAgents` gates
+  // the gear's render so Council teams don't show an affordance that opens
+  // an empty modal.
+  const hasEditableAgents = selectedSpec?.agents.some((a) => a.editable) ?? false
   // Tracks attachment presence so the submit button stays visible when the
   // user has pasted long text that became a file (textarea empty but content
   // exists). SmartPromptInput owns the canonical count; we mirror it here.
@@ -209,7 +216,14 @@ export function DeliberateSection(props: DeliberateSectionProps) {
             textareaVariant='bare'
             pasteToFileChars={1000}
             components={smartPromptComponents}
-            actions={<TeamPicker specs={props.specs} value={form.selectedSpecId} onChange={form.setSelectedSpecId} />}
+            actions={
+              <TeamPicker
+                specs={props.specs}
+                value={form.selectedSpecId}
+                onChange={form.setSelectedSpecId}
+                onConfigure={hasEditableAgents ? form.openReviewerModal : undefined}
+              />
+            }
             submitSlot={
               <MorphingSubmitButton
                 hasContent={form.hasQuestion || attachmentCount > 0}

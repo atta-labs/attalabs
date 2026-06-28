@@ -150,25 +150,34 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
           <NextLink
             href={`/teams/${spec.id}`}
             variant='subtle'
-            className='inline-flex w-fit items-center gap-1 text-[11px] uppercase tracking-widest'
+            className='inline-flex w-fit items-center gap-1 text-xs uppercase tracking-widest'
           >
             View team
             <ArrowUpRight className='size-3' />
           </NextLink>
         </DialogHeader>
 
-        {/* Body — standard two-column form rows. Each row is a label on the
-            LEFT and the model selector on the RIGHT. The label column is auto-
-            sized to its longest text (so labels align flush-right of their
-            column); the selector column is `1fr` so the trigger stretches to
-            the right edge of the dialog body. This replaces the previous
-            stacked "label above input" layout, which left the selectors
-            visually centered on the column and reading as floating rather than
-            as a normal form. */}
-        <div className='grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3'>
+        {/* Body — stacked form rows: each agent gets a small mono label
+            (REVIEWER 1 / REVIEWER 2 / SYNTHESIZER …) on top and the model
+            picker directly below it, full-width. The previous two-column grid
+            (label-left, picker-right) compressed the picker into a partial
+            row and made the label feel detached from the control it described.
+            Stacking restores the natural reading order — slot identity first,
+            then the choice for that slot — and lets the trigger fill the dialog
+            width so long model names don't truncate prematurely. */}
+        <div className='flex flex-col gap-4'>
           {editableAgents.map((agent) => (
-            <div key={agent.name} className='contents'>
-              <div className='font-mono text-[11px] uppercase tracking-widest text-muted-foreground'>
+            // `items-start` keeps the row's children at the leading edge:
+            // ModelPicker renders a Radix-trigger `Button` (display: inline-flex
+            // with `justify-center` baked into the variant). Inside a flex-col
+            // parent the default `align-items: stretch` would expand the Button
+            // to the row's full width, and `justify-center` then centers its
+            // content — which is why the picker visually drifted away from the
+            // REVIEWER N label above it. `items-start` (align-items: flex-start)
+            // suppresses the stretch, so the Button shrinks to content and
+            // anchors to the left, flush under the label.
+            <div key={agent.name} className='flex flex-col items-start gap-2'>
+              <div className='font-mono text-sm uppercase tracking-wider text-muted-foreground'>
                 {reviewerLabels[agent.name]}
               </div>
               <ModelPicker
