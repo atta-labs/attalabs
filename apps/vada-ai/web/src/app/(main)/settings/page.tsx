@@ -11,8 +11,13 @@ export default async function SettingsPage() {
   const settings = await getUserSettings(clerkId!)
 
   return (
-    <div className='px-6 py-4'>
-      <div className='mx-auto w-full max-w-4xl space-y-6'>
+    // `h-full` fills the parent layout's `flex-1` content slot exactly —
+    // no calc against topbar/footer heights, no risk of the page being
+    // slightly taller than available space. Inner container is a flex
+    // column with `flex-1 min-h-0` so the Provider tab's card can claim
+    // remaining height and scroll inside.
+    <div className='h-full flex flex-col px-6 py-4'>
+      <div className='mx-auto flex w-full min-h-0 max-w-4xl flex-1 flex-col gap-6'>
         <div className='space-y-2'>
           <span className='font-mono text-xs text-muted-foreground'>Configuration</span>
           <Heading level={1} className='font-serif text-4xl font-light leading-tight'>
