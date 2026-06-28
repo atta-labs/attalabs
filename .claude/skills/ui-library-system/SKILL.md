@@ -7,27 +7,56 @@ description: How the @atta/ui multi-library system works — build-time generati
 
 > # ⛔ URGENT — DO NOT EDIT `packages/ui/libraries/*/installed/*`
 >
-> **The `installed/` directories hold vendored shadcn primitives. They are READ-ONLY.**
-> Even a one-character change inside `packages/ui/libraries/{basic,animate,retro,brutal}/installed/*.tsx`
-> is a hard rule violation. This applies to `button.tsx`, `dialog.tsx`, `dropdown-menu.tsx`, every
-> other installed primitive — color tokens, hover classes, padding, sizes — ALL of it.
+> **Each library's `installed/` holds the vendored canonical from THAT library's design-system
+> source — installed via shadcn CLI, pasted verbatim, NEVER hand-edited.** The four libraries
+> each have a different upstream:
 >
-> **Allowed paths when you need a change:**
-> 1. Add or modify a variant in the **`components/interactive/<component>.tsx`** layer (the
->    canonical consumer-facing export). That file re-exports / extends the installed primitive
->    and IS editable.
-> 2. Add a NEW wrapper component in a non-`installed/` directory (e.g. `DropdownMenuItemTextHighlight`).
-> 3. If a `components/` file imports from `installed/` and that's blocking you, switch the
->    import to the editable `components/interactive/<component>` (e.g. `model-picker.tsx`
->    should import `Button` from `../interactive/button`, NOT `../../installed/button`).
+> | Library | Upstream source |
+> |---|---|
+> | `basic` | shadcn (`ui.shadcn.com`) |
+> | `animate` | animate-ui (`animate-ui.com`) |
+> | `retro` | retroui |
+> | `brutal` | neobrutalism (`neobrutalism.dev`) |
+>
+> So `installed/<comp>.tsx` in each library is a verbatim CLI paste from that library's
+> upstream. Even a one-character change is a hard rule violation. This applies to ALL files
+> in `installed/` across ALL four libraries — `button.tsx`, `dialog.tsx`, `dropdown-menu.tsx`,
+> `tabs.tsx`, everything. Color tokens, hover classes, padding, sizes, font weights — all of
+> it. NEVER hand-roll your own implementation in `installed/`; ALWAYS pull from upstream.
+>
+> ### The workflow when you need a change
+>
+> 1. **Install via CLI** (or paste the canonical from the upstream's docs) into the right
+>    library's `installed/<comp>.tsx`. Adjust ONLY the import paths (e.g. `@/lib/utils` →
+>    `../../../lib/utils`).
+> 2. **Match the contract** — `packages/ui/component-contract.mjs` requires each library to
+>    export the same set of components + Props types. If the upstream's API is flat named
+>    exports (most are) and matches the contract, just re-export from `components/index.ts`.
+> 3. **If the upstream's API doesn't match the contract** (e.g. retroui's `Object.assign`
+>    dotted API), **add a wrapper** in `components/<comp>.tsx` or `components/interactive/`
+>    that adapts the API to the contract. The wrapper IS editable. `installed/` stays verbatim.
+> 4. **If you want a library-specific variant** — add it to the wrapper layer (e.g.
+>    `components/interactive/<comp>.tsx`), NOT in `installed/`. The `Button.ghost-pill` variant
+>    is the canonical example.
+> 5. **If a consumer in `components/` imports from `installed/` and that's blocking you,**
+>    switch the import to the editable `components/interactive/<component>` (e.g.
+>    `model-picker.tsx` should import `Button` from `../interactive/button`, NOT
+>    `../../installed/button`).
 >
 > See "Canonical extension patterns — variants vs wrappers" below for worked examples
 > (`ghost-pill`, `'bare'`, `Heading.weight`, `SmartPromptInput.surface`,
 > `DropdownMenuItemTextHighlight`, `NextLink 'link'`).
 >
-> **Why this rule is non-negotiable:** the `installed/` files MUST stay close to canonical
-> shadcn so upstream updates can be pulled without conflicts. Every deviation in `installed/`
-> becomes drift that has to be reconciled forever after.
+> ### Why this rule is non-negotiable
+>
+> The `installed/` files MUST stay verbatim against their upstream source so future upstream
+> updates can be **pasted in** instead of **reconciled by hand**. Every deviation in
+> `installed/` becomes drift that has to be reconciled forever after.
+>
+> **One legitimate edit case:** restoring `installed/<comp>.tsx` to canonical when it has
+> drifted from upstream. Pasting the upstream verbatim back into `installed/` IS the rule's
+> spirit ("stay verbatim against upstream") — that's reconciling drift, not adding it. Do
+> this whenever you notice drift; document the upstream URL in the commit message.
 
 ## Overview
 

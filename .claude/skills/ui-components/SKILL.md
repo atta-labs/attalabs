@@ -7,33 +7,72 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 
 > # ⛔ URGENT — DO NOT EDIT `packages/ui/libraries/*/installed/*`
 >
-> **The `installed/` directories hold vendored shadcn primitives. They are READ-ONLY.**
-> Even a one-character change inside `packages/ui/libraries/{basic,animate,retro,brutal}/installed/*.tsx`
-> is a hard rule violation. This applies to:
-> - `button.tsx`, `dialog.tsx`, `dropdown-menu.tsx`, every other installed primitive
-> - color tokens, hover classes, padding, sizes — ALL of it
-> - "just one tiny tweak" — NO. Never.
+> **Each library's `installed/` holds the vendored canonical from THAT library's design-system
+> source — installed via shadcn CLI, pasted verbatim, NEVER hand-edited.** Each of the four
+> libraries comes from a different upstream:
 >
-> **If you need to change a primitive's appearance or behavior, the ONLY allowed paths are:**
-> 1. Add or modify a variant in the **`components/interactive/<component>.tsx`** layer (or the
->    equivalent non-`installed` layer), which is the canonical consumer-facing export. That file
->    re-exports / extends the installed primitive and IS editable.
-> 2. Add a NEW wrapper component in a non-`installed/` directory that composes the installed
->    primitive (e.g. `DropdownMenuItemTextHighlight` wraps `DropdownMenuItem`).
-> 3. If a consumer-facing component inside `components/` imports from `installed/` and that
->    coupling is what's blocking you (e.g. `model-picker.tsx` importing `Button` from
->    `installed/button`), switch the import to the editable `components/interactive/<component>`
->    so the consumer benefits from variant updates without touching `installed/`.
+> | Library | Upstream source | CLI install command |
+> |---|---|---|
+> | `basic` | shadcn (`ui.shadcn.com`) | `npx shadcn@latest add <component>` |
+> | `animate` | animate-ui (`animate-ui.com`) | `npx shadcn@latest add @animate-ui/...` |
+> | `retro` | retroui | shadcn-compatible registry |
+> | `brutal` | neobrutalism (`neobrutalism.dev`) | shadcn-compatible registry |
+>
+> **The rule:** `installed/<comp>.tsx` is a verbatim CLI paste from its library's upstream.
+> Even a one-character change is a hard rule violation. NEVER hand-roll your own
+> implementation in `installed/`; ALWAYS pull from upstream.
+>
+> ### How to add or change a primitive — the right workflow
+>
+> 1. **Install via CLI** (or paste the canonical from the upstream's docs) into the right
+>    library's `installed/<comp>.tsx`. Adjust ONLY the import paths to match our directory
+>    layout (e.g. `@/lib/utils` → `../../../lib/utils`) — nothing else.
+> 2. **Check if the upstream's exported API matches our contract** (`packages/ui/component-contract.mjs`).
+>    Most upstreams export flat named components (`Tabs`, `TabsList`, `TabsTrigger`,
+>    `TabsContent`) — those match our contract directly, just re-export from `components/index.ts`
+>    and you're done.
+> 3. **If the upstream's API differs from our contract** (e.g. retroui exports
+>    `Object.assign(Tabs.Root, { List, Trigger, Content })` — dotted API instead of flat),
+>    **add a wrapper** in `components/<comp>.tsx` (or `components/interactive/`) that adapts
+>    the dotted API to our contract's flat named exports. The wrapper IS editable. `installed/`
+>    stays verbatim.
+> 4. **If you want to vary appearance for one library (e.g. add a variant prop)** — that goes
+>    in the wrapper layer (`components/interactive/<comp>.tsx`), NOT in `installed/`. The
+>    `Button.ghost-pill` variant is the canonical example: basic's `installed/button.tsx` is
+>    shadcn canonical, and the additional variant lives in
+>    `packages/ui/libraries/basic/components/interactive/button.tsx`.
+>
+> ### When a consumer in `components/` imports from `installed/` and that's blocking you
+>
+> Switch the import to the editable `components/interactive/<component>` so the consumer
+> benefits from the wrapper / variants without touching `installed/`. Worked example:
+> `model-picker.tsx` should import `Button` from `../interactive/button`, NOT
+> `../../installed/button` — see PR #207.
 >
 > Existing variant additions like `ghost-pill`, `'bare'` (Textarea), and `'link'` (NextLink)
 > are the canonical examples — see "Canonical extension patterns" in
 > `.claude/skills/ui-library-system/SKILL.md`.
 >
-> **Why this rule is non-negotiable:** the installed/ files MUST stay close to canonical
-> shadcn so we can pull upstream updates without conflicts. Every deviation in `installed/`
-> becomes drift that has to be reconciled forever after.
+> ### Why this rule is non-negotiable
 >
-> If you find yourself wanting to edit `installed/`, STOP and pick one of the three paths above.
+> The `installed/` files MUST stay verbatim against their upstream source so future upstream
+> updates can be **pasted in** instead of **reconciled by hand**. Every deviation in
+> `installed/` becomes drift that has to be reconciled forever after.
+>
+> **Red flags that mean STOP — you are about to violate this rule:**
+> - "I'll just change `text-sm` to `text-base` in `installed/`, it's one line."
+> - "I'll add `font-mono` to the trigger here, it's a small tweak."
+> - "I'll fix the hover colour in `installed/`, easier than adding a wrapper."
+> - "Our `installed/<comp>.tsx` was already drifted from upstream when I got here, so a bit
+>   more drift is fine."
+>
+> No to all of them. Either pull the upstream canonical (paste verbatim) or add a wrapper.
+> If you find yourself wanting to edit `installed/`, STOP and pick one of the workflow steps above.
+>
+> **One legitimate edit case:** restoring `installed/<comp>.tsx` to canonical when it has
+> drifted. Pasting the upstream verbatim back into `installed/` IS the rule's spirit ("stay
+> verbatim against upstream") — that's reconciling drift, not adding it. Do this whenever
+> you notice drift; document the upstream URL in the commit message.
 
 ---
 
