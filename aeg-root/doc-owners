@@ -32,3 +32,5 @@ packages/ui/topbar/**                            .claude/skills/ui-components/SK
 packages/ui/libraries/**                         .claude/skills/ui-library-system/SKILL.md
 apps/herald-ai/web/src/app/[username]/**         apps/herald-ai/specs/herald-app-architecture.md
 scripts/verify-docs.ts                           aeg-root/state-machine.md
+packages/agents/vada-deliberation/yamls/**       .claude/skills/atta-teams/SKILL.md
+packages/agents/**                               .claude/skills/vada-architecture/SKILL.md

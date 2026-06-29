@@ -1,13 +1,20 @@
 # Iteration: vada-production-v1 — June–July 2026
 Lifecycle: active
 
-Goal: Make Vāda production-ready. Migrate all YAMLs into `packages/agents/`; equip
-reviewer tools in T3a after the T3 substrate lands; add Fusion as a first-class team
-(real + native pattern); run a DRACO-style benchmark across all teams + Fusion on
-identical prompts; replace `CalculatorStats` estimates with measured cost/time/tokens/quality
-on the Teams page; add SmartTextInput and deliberation UI tool support. Exit bar:
-tool-equipped reviewers, 4+ teams in catalog, repeatable benchmark, Teams page shows
-measured stats publicly.
+Goal: Make Vāda production-ready as a belief-revision engine (not a convergence engine).
+Signal = how independent models update under criticism (trajectory, not verdict). Migrate
+all YAMLs into `packages/agents/`; equip reviewer tools in T3a; build Outside Read
+(`vada__consult`, shape `brokered-no-synth`, battlefield-map output) and Belief Revision
+(`vada__deliberate`, shape `rounds-audit`, 2-round cap + objection-novelty-stop detector)
+as the two V1 teams; run a DRACO-style benchmark with Fusion as A2 external baseline
+(not a catalog team); replace `CalculatorStats` with measured stats; add SmartTextInput
+and deliberation UI with battlefield-map render + audit-trail inspection. Both surfaces
+ship: web UI (playground/showroom) and MCP (situated product surface). Exit bar:
+tool-equipped Outside Read + Belief Revision in catalog, battlefield map rendered on
+audit trail, repeatable benchmark, Teams page shows measured stats publicly, MCP
+situated-loop hardened.
+
+Re-scoped June 29 per vada-rethink-v1-decision.md.
 
 Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 
@@ -24,16 +31,16 @@ Previously completed in vada-agents-v2 (carry-forward, not re-dispatched):
 | 2   | Stale spec cleanup — vada-state.md full rewrite, CLAUDE.md, teams-catalog stale refs, byok refs, backlog                                                                      | #176  | vada                    | #175             | —              |
 | 3   | Tool/MCP substrate — generalize tool support in the adapter so any YAML can declare tools/MCPs; OpenRouter plugin-param passthrough                                           | #177  | vada, engine, adapter, herald | #174, #175 | —              |
 | 3a  | Equip reviewers — give Gemini/GPT/Grok reviewer agents web search + reachable vendor-native tools using T3 substrate; tool config declarative in YAML, not hardcoded in the route | #178  | vada, adapter           | #177             | —              |
-| 4   | `vada-fusion` (real Fusion) — single-agent YAML routed through `vendor: openrouter`, `model: openrouter/fusion`; add `OPENROUTER_API_KEY`                                    | #179  | vada                    | #175             | —              |
-| 5   | `vada-fusion-native` — own parallel-panel → synthesizer → audit flow; tool-equipped; adopt Fusion techniques (web-off synthesis, partial-coverage + blind-spots categories, gating) | #180  | vada, adapter           | #177             | —              |
+| 4   | `vada-fusion` (A2 external benchmark) — single-agent YAML via `vendor: openrouter`, `model: openrouter/fusion`; benchmark condition A2 only, NOT a catalog team slot           | #179  | vada                    | #175             | —              |
+| 5   | `vada-fusion-native` (Outside Read engine) — `vada__consult` / `brokered-no-synth`; parallel panel → battlefield-map synthesizer → audit; three presets (find-blind-spots / critique-draft / pre-mortem); attack-vector roles (assumption-hunter / base-rate / failure-mode / second-order); web-off synthesis; map audited by BlindCritic + FactChecker | #180  | vada, adapter           | #177             | —              |
 | 6   | SmartTextInput — extract multi-kind input from Herald's JD/CvInputControl into `@atta/ui`; wire into Vāda `/deliberate`; Herald wrappers internal-only refactor, external props unchanged | #181  | vada, herald, atta      | #175             | #170 (herald-agents-v2/4) |
-| 7   | Deliberation UI tool/MCP support — YAML declares `required_inputs`; UI validates context-completeness before dispatch; tool-equipped YAMLs runnable end-to-end                | #182  | vada, engine, adapter   | #177, #181       | —              |
-| 8   | Reviewers prompt iteration — B-3b + B-3c; Principal-driven loop; incorporate Fusion techniques; patch vada-reviewers-spec.md §8 phantom consensus                             | #183  | vada                    | #178             | —              |
+| 7   | Deliberation UI tool/MCP support — YAML declares `required_inputs`; UI validates context-completeness; battlefield map renders on top of inspectable audit trail (MOAT-A); MCP situated-return in-scope-adjacent | #182  | vada, engine, adapter   | #177, #181       | —              |
+| 8   | Outside Read prompt iteration — four deliverables: preset system prompts (find-blind-spots / critique-draft / pre-mortem), attack-vector role prompts, battlefield-map synthesizer prompt, BlindCritic + FactChecker audit prompts; phantom-consensus guard in vada-reviewers-spec.md §8 | #183  | vada                    | #178             | —              |
 | 9   | Benchmark harness — repeatable runner across all conditions (A0, A1, VR-NS, VR-S-same, VR-S-cross, MW, FUSION-default, FUSION-native); capture measured cost/latency/tokens; structured DB storage; implement §6a comparison protocol | #184  | vada                    | #175, #179       | —              |
 | 10  | Quality audit — DRACO-style weighted rubric; blind LLM judge (not a panelist) + second-judge sanity check; negative marking; per-question-type breakdown; full conditions matrix | #185  | vada                    | #183, #184       | —              |
-| 11  | Benchmark run + results doc — execute; document; decide fate of rounds teams from data                                                                                        | #186  | vada                    | #185             | —              |
+| 11  | Benchmark run + results doc — execute; document; cap Belief Revision rounds at 2; spec the objection-novelty-stop detector (the engineering wedge, not a retirement decision); rounds teams are the Belief Revision wedge | #186  | vada                    | #185             | —              |
 | 12  | Teams page = live measured stats — replace `CalculatorStats` with measured cost/time/tokens/quality per team from DB; reconcile with `/bench`; public                         | #187  | vada                    | #186             | —              |
-| 13  | Production hardening — hosted MCP hardening (E8–E12), error states, observability confirmed, Reviewers ERROR fully closed                                                     | #188  | vada, engine, adapter   | #177, #186       | —              |
+| 13  | Production hardening — MCP situated-loop hardening (first-class: vada__consult + vada__deliberate structured return, error states, streaming contract); hosted MCP hardening (E8–E12); observability confirmed; Reviewers ERROR fully closed | #188  | vada, engine, adapter   | #177, #186       | —              |
 | 6a  | Deliberate-page production UX — frontier-chat hero input, morphing Configure↔Submit, dropdown restyle + short labels (kills Council "reviewers" misnomer), team-identity Configure modal, tool-badge corner glyph + `badgeLeft` slot, `RouteAwareFooter` Vāda-only | —     | vada, @atta/ui          | #181             | —              |
 | 6b  | Council teams + CouncilFeed view — `vada-council` + `vada-council-synthesis` YAMLs (D-035 vada-local); N-column results view (`CouncilFeed`) with vendor-color spheres (`resolveVendorColor → VENDORS[v].color`), completion-fill streaming, locked `{ agreements, disagreements, bottomLine }` synthesis contract; per-spec routing | —     | vada, packages/agents   | #175             | —              |
 | 6c  | `SmartPromptInput` dependency-injection governance — shared composite resolves no library; consumers inject primitives (Vāda from `@atta/ui`, Herald from `useComponents()`); native first-paint fallbacks; closes #213; ratifies D-064 | —     | @atta/ui, vada, herald  | #181             | T6 (absorbed)  |
@@ -71,11 +78,22 @@ Previously completed in vada-agents-v2 (carry-forward, not re-dispatched):
 - All 9 YAMLs in `packages/agents/`; Vāda is a thin consumer; Reviewers ERROR + Sparring
   duplicate-Critic bugs closed.
 - Reviewers tool-equipped (web search + reachable MCPs) across all vendors.
-- Catalog: vada-reviewers, vada-reviewers-synthesis, vada-fusion, vada-fusion-native
-  (+ existing baseline agents). At least 4 deliberation teams.
-- Repeatable benchmark exists; all teams + Fusion measured on identical prompts for
-  cost/latency/tokens/quality; blind-judge quality audit; per-question-type breakdown.
+- Catalog: Outside Read (`vada-fusion-native`, `vada__consult` / `brokered-no-synth`) +
+  Belief Revision (`vada__deliberate` / `rounds-audit`, 2-round cap) as the two V1 teams.
+  Fusion (`vada-fusion`) exists as A2 benchmark condition only, not a user-facing team slot.
+- Battlefield map (`core_agreement` / `concessions` / `irreducible_conflict` / `risk_ranking`)
+  renders on top of the inspectable audit trail (MOAT-A invariant). Map audited by
+  BlindCritic + FactChecker before reaching user.
+- Outside Read has three presets (find-blind-spots / critique-draft / pre-mortem) and four
+  attack-vector roles (assumption-hunter / base-rate / failure-mode / second-order).
+- Belief Revision capped at 2 rounds; objection-novelty-stop detector specced.
+- Repeatable benchmark exists; all conditions (a0-baseline, a1-baseline, A2-fusion,
+  Outside-Read, Belief-Revision) measured for cost/latency/tokens/quality; blind-judge
+  quality audit; per-question-type breakdown.
 - Teams page shows measured stats (not estimates); public.
-- Rounds-team fate decided from benchmark data.
-- Deliberation UI supports tool-equipped YAMLs with context-completeness validation.
-- Specs/state docs current. Hosted MCP hardened. Observability wired.
+- Deliberation UI supports tool-equipped YAMLs with context-completeness validation;
+  battlefield map rendered.
+- MCP situated-loop hardened (`vada__consult` + `vada__deliberate` return structured
+  battlefield-map contract; error states defined; streaming contract documented).
+- Hosted MCP hardened (E8–E12). Observability wired.
+- Specs/state docs current. `vada-rethink-v1-decision.md` is the architecture authority.

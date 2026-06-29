@@ -1772,3 +1772,40 @@ A shared composite in `@atta/ui` (e.g. `SmartPromptInput`) MUST NOT resolve a li
 **Lock:** NO
 
 Each `packages/ui/libraries/<name>/installed/*` is a verbatim CLI paste from that library's upstream design system (basic→shadcn, animate→animate-ui, retro→retroui, brutal→neobrutalism); never hand-edited, only import-paths adjusted; exempt from automated lint gates (Biome ignore and `check-forbidden-colors`), since the colors and formatting there are upstream's, not ours. Customizations live in `components/interactive/*` wrappers, which the gates DO cover in full. Each library derives its own Props from its own cva; `component-contract.mjs` validates component + type names, not cross-library variant enums. Dropped (zero-consumer): Button variants `ghost-pill`/`square`/`ai`, `RippleButton`, props `loading`/`iconLeft`/`iconRight`, and the `ButtonVariant`/`ButtonSize`/`ButtonVariantsFn` contract types. First landed PR #207 (Tabs `f83ff224`/`0e057a74`, Button `757586ea`).
+
+---
+
+## D-066 — Vāda V1 architecture: belief-revision engine, Outside Read + Belief Revision teams, battlefield-map output
+
+**Date:** 2026-06-29
+**Status:** draft (not yet ratified — Principal ratifies on PR merge)
+**Type:** 1
+**Tier:** 3
+**Lock:** NO
+**Authored by:** Planner (dispatched by Principal, vada-production-v1 re-plan)
+
+**Context:** Mid-way through `vada-production-v1`, following the deliberate-page work in PR #207, a full reconsideration of Vāda's framing, team taxonomy, and V1 scope was conducted over 7 rounds of panel deliberation + a competitor teardown (see `apps/vada-ai/specs/vada-rethink.md` for the research backlog). This decision record captures the resolved V1 architecture and re-scopes the 6 affected issues (#179, #180, #182, #183, #186, #188) accordingly. The authoritative detail is in `apps/vada-ai/specs/vada-rethink-v1-decision.md`.
+
+**Decision:**
+
+Vāda is a **belief-revision engine**, not a convergence engine. The signal it surfaces is how independent models update under criticism — who moved, who resisted, who survived — not bare agreement or a consensus score. "Convergence as truth" is retired.
+
+**Two V1 teams:**
+
+1. **Outside Read** — engine call `vada__consult`, shape `brokered-no-synth`. Parallel panel, no cross-talk. Three presets: `find-blind-spots`, `critique-draft`, `pre-mortem` (all use the same routing flow; preset = prompt-only difference). Four attack-vector roles: `assumption-hunter`, `base-rate`, `failure-mode`, `second-order`. Output: battlefield map (`core_agreement` / `concessions` / `irreducible_conflict` / `risk_ranking`). Map audited by BlindCritic + FactChecker before reaching user.
+
+2. **Belief Revision** — engine call `vada__deliberate`, shape `rounds-audit`. Sequential. 2-round cap (safety ceiling). Primary engineering: objection-novelty-stop detector that stops when objection space is exhausted, not when cap is hit. Output: revision trajectory + irreducible unresolved core.
+
+**Fusion = A2 external benchmark.** `vada-fusion` (OpenRouter) is a benchmark condition alongside `a0-baseline` / `a1-baseline`, NOT a user-facing team slot.
+
+**Two surfaces, one engine.** Web UI (playground/showroom, already built) + MCP (situated product surface, primary V1 surface). Both use the same engine output contract. Build order: UI first, then MCP.
+
+**Two non-negotiables:**
+- The battlefield map renders ON TOP of the inspectable audit trail (MOAT-A). Never replaces it.
+- The battlefield map is audited by BlindCritic + FactChecker. Model-written synthesis is the highest verdict-smuggling surface.
+
+**Deferred (NOT V1):** auto-verification; post-answer critique lenses; user-facing YAML authoring; 12-vendor breadth (→ ~4); open-ended loops; orthogonal-prompting-as-moat; Refinement team; Fusion as a team slot.
+
+**Issues re-scoped by this decision:** #179 (T4), #180 (T5), #182 (T7), #183 (T8), #186 (T11), #188 (T13).
+
+**Naming correction:** the brief specified `.claude/skills/teams-layer/SKILL.md` for the `packages/agents/vada-deliberation/yamls/**` doc-owners binding; corrected to the actual path `.claude/skills/atta-teams/SKILL.md` (no `teams-layer` skill exists).
