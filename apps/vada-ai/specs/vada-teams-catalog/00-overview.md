@@ -94,6 +94,22 @@ Read in order. Each document assumes the previous ones are understood.
 
 ---
 
+## Benchmark conditions (not catalog teams)
+
+`vada-fusion` (`packages/agents/vada-fusion/`) is the **A2 external benchmark condition** — it is NOT a user-facing team and does NOT appear on the Teams page. It sits alongside `a0-baseline` and `a1-baseline` in the benchmark matrix:
+
+| Condition | ID | Description |
+|---|---|---|
+| A0 | `a0-baseline` | Single-model, no panel |
+| A1 | `a1-baseline` | Single-model, structured output simulating multi-agent |
+| A2 | `vada-fusion` | OpenRouter Fusion (`openrouter/fusion`) — opaque multi-model judge |
+
+The benchmark answers: "Is Vāda's native synthesis discipline better than Fusion's opaque judge on our own tooling?" That is a benchmark question (T9/T10/T11), not a product slot.
+
+Run with `OPENROUTER_API_KEY` set: `bun scripts/verify-baselines.ts`
+
+---
+
 ## Why this matters
 
 Vāda Brokered's moat isn't the MCP protocol or the engine integration. It's the **quality of thinking each reviewer produces** and the **orchestration protocol the caller Claude follows**. The reviewer system prompts (doc 03) and the caller protocol (doc 04) are Vāda's core intellectual property.

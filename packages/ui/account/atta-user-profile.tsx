@@ -62,7 +62,7 @@ export function AttaUserProfile({ logoLight, logoDark }: AttaUserProfileProps) {
     <UserProfile
       routing='hash'
       appearance={{
-        baseTheme: scheme === 'dark' ? clerkDarkTheme : undefined,
+        theme: scheme === 'dark' ? clerkDarkTheme : undefined,
         variables: {
           ...PROFILE_VARIABLES_BASE,
           colorBackground: surface,
