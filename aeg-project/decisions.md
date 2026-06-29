@@ -1849,3 +1849,87 @@ A new `scripts/verify-coherence.ts` — sibling to `verify-docs.ts`, runnable as
 - `aeg-root/iterations/aeg-coherence-v1.md` — Va and Vb rows added; Goal updated.
 
 **Lock rationale:** `Lock: NO`. The check catalog is defined but implementors may discover that a check needs refinement (e.g. A2's Archivist provenance block format may vary). Narrowing or adding checks is a new D-entry that supersedes this one — not an in-place edit to a locked decision.
+
+---
+
+## D-068 — Role model-capability gating: `min_tier` per YAML agent, UI hard-block
+
+**Date:** 2026-06-29
+**Status:** DRAFT — awaiting Principal ratification (Type 1, engine schema change)
+**Type:** 1
+**Tier:** 3
+**Lock:** NO
+**Authored by:** Planner (dispatched by Principal, vada-production-v1 T16)
+
+**Context:** Live Outside Read test (June 29, 2026) ran all 7 agent slots on Haiku 4.5 to save cost. BattlefieldSynthesizer failed: `terminalState: ERROR`, "synthesis could not be parsed." Root cause: Haiku 4.5 cannot produce strict-JSON synthesis over a ~274k-token multi-agent input. Nothing in the current stack prevents a user from assigning a too-weak model to a demanding slot. Roles have unequal model demands — synthesis/audit need capable models; panel attack-vectors can run cheap (diversity > raw power).
+
+**Principal decision:** Hard-block (UI dropdown hides sub-tier models per role), implemented as a standalone task (T16, #244), sequenced after the benchmark/Fusion chain (depends-on #186 T11).
+
+**Decision (three layers):**
+
+### Layer 1 — Model capability tier in `packages/models`
+
+`packages/models/src/catalog.ts` already defines `ModelEntry.tier: 'frontier' | 'balanced' | 'fast' | 'reasoning'`. `packages/models/src/overlay.ts` already maps flagship models to these tiers. **No new tier taxonomy is needed; the existing four-level taxonomy is the source of truth.**
+
+`vendors.ts` (12 vendor routing entries) is NOT the right home for capability tiers — it describes routing (SDK shape, base URL, key convention), not model power. A vendor like Anthropic spans all tiers (Opus → frontier, Sonnet → balanced, Haiku → fast).
+
+**Proposed linear ordering for `min_tier` comparison:**
+
+```
+frontier ≥ balanced ≥ fast
+```
+
+`reasoning` tier position: **⚑ FLAG FOR PRINCIPAL RATIFICATION.** Reasoning-optimized models (o3, deepseek-r1) have different cost/latency tradeoffs — superior on structured-logic tasks but potentially overkill for synthesis that benefits from fluent prose. Proposed: treat `reasoning` as equivalent to `frontier` for gating purposes (i.e., `min_tier: frontier` admits reasoning models). Await Principal confirmation before implementing.
+
+**Proposed role assignments (⚑ RATIFICATION REQUIRED — do not implement without Principal approval):**
+
+| YAML role | Proposed `min_tier` | Rationale |
+|---|---|---|
+| BattlefieldSynthesizer | `frontier` | Strict-JSON over 274k-token input; failed on Haiku |
+| BlindCritic | `balanced` | Structured critique; needs coherent reasoning |
+| FactChecker | `balanced` | Claim verification; needs reliable retrieval reasoning |
+| Panel attack-vectors (assumption-hunter, base-rate, failure-mode, second-order) | *(unconstrained)* | Diversity > power; cheap models provide independent viewpoints |
+| position-holder (Belief Revision) | `balanced` | Thesis defense across rounds |
+| Challengers (Belief Revision) | *(unconstrained)* | Independent challenge vectors |
+
+### Layer 2 — `min_tier` field per YAML agent
+
+A YAML agent can declare `min_tier: frontier | balanced | fast` (omitted = unconstrained).
+
+**⛔ STOP-AND-ESCALATE: adding `min_tier` to `FlowAgentSchema` (`packages/engine/src/flow-schema.ts`) and `FlowAgent` (`packages/engine/src/flow-types.ts`) is a new engine schema construct.** Per the standing engine-schema rule (pattern from D-053 Option C), this must NOT be silently implemented. The Developer role escalates the proposed Zod schema change + TypeScript type change + consumer impact (compile-flow.ts, flow-loader.ts, adapter, UI) to the Principal before writing code. Principal ratification of the tier assignments (Layer 1) and the schema field (Layer 2) are coupled — do both in one escalation.
+
+YAML form (proposed, not final):
+```yaml
+agents:
+  - name: BattlefieldSynthesizer
+    min_tier: frontier
+    system_prompt: |
+      ...
+  - name: BlindCritic
+    min_tier: balanced
+    system_prompt: |
+      ...
+```
+
+### Layer 3 — UI dropdown hard-block
+
+In the per-slot model dropdown (ReviewerConfigModal / ModelPicker), filter out any `ModelEntry` where `entry.tier` is below the role's `min_tier`. Hard-block only — sub-tier models are hidden, not greyed-out.
+
+**Invalid saved session handling:** if a previously-saved session has a now-invalid model for a slot (because `min_tier` was added or changed), surface it clearly before submission — e.g. a Badge "Model too weak for this role" with forced re-selection before the Submit button enables. Do not silently substitute a higher-tier model.
+
+**Graceful synthesis failure (runtime):** when synthesis fails at runtime despite a valid model (model failures are probabilistic), the run must NOT hard-ERROR and hide everything. Audit trail must remain visible (MOAT-A: trail is the truth, map is convenience). **Planner decision: this belongs in T7 (#182)**, not T16. T7 already owns deliberation UI + MOAT-A audit trail rendering; the synthesis-fallback is a missing-map case, not a gating failure.
+
+**Alternatives rejected:**
+- *Warn-and-allow (soft block):* rejected. Principal decision was hard-block. A warning that users can dismiss reintroduces the root cause (cost-optimizing by choosing too-weak a model) without visibility into the failure mode.
+- *Vendor-level tier in `vendors.ts`:* rejected. Tiers are per-model, not per-vendor. Anthropic has frontier (Opus), balanced (Sonnet), and fast (Haiku) models. A vendor-level tier would either be wrong or meaningless.
+- *Simplified 3-level taxonomy (frontier/mid/light):* rejected in favor of the existing 4-level taxonomy. Introducing a parallel taxonomy creates mapping confusion between the catalog's existing `tier` field and a new `min_tier` vocabulary. Use the same tokens.
+
+**Consequences:**
+- `packages/models/src/overlay.ts` — add doc comment for the tier ordering and min_tier semantics once ratified.
+- `packages/engine/src/flow-schema.ts` — (post-escalation) add `min_tier: z.enum(['frontier', 'balanced', 'fast']).optional()` to `FlowAgentSchema`.
+- `packages/engine/src/flow-types.ts` — (post-escalation) add `minTier?: 'frontier' | 'balanced' | 'fast'` to `FlowAgent`.
+- `apps/vada-ai/` config-modal / ModelPicker — per-slot tier filtering.
+- `apps/vada-ai/specs/vada-teams-catalog/` — doc the `min_tier` assignments per role once Principal ratifies the mapping.
+- `aeg-root/iterations/vada-production-v1.md` — T16 row added (Issue #244), DoD updated with capability-gating exit criterion.
+
+**Lock rationale:** `Lock: NO`. Tier assignments and `reasoning` tier ordering are proposed here but require Principal ratification before implementation. The Zod/TypeScript schema change requires explicit escalation approval. Narrowing, adding, or correcting tier assignments is a new D-entry that supersedes this one — not an in-place edit to a locked decision.
