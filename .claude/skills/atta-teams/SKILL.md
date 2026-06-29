@@ -32,7 +32,8 @@ packages/agents/vada-deliberation/yamls/
 ├── a0-baseline.yaml               # Single-agent naive baseline
 ├── a1-baseline.yaml               # Single-agent structured-output baseline
 ├── brokered-trio.yaml             # 3 reviewers, no rounds (Strategist + Critic + Devil's Advocate)
-└── brokered-quartet.yaml          # 4 reviewers, no rounds (experimental)
+├── brokered-quartet.yaml          # 4 reviewers, no rounds (experimental)
+└── vada-fusion-native.yaml        # Outside Read — 4-agent attack-vector panel → battlefield-map synthesizer → audit (D-036)
 ```
 
 ---

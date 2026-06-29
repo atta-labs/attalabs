@@ -21,7 +21,7 @@ The product surface today is the catalog of YAML team specs at `packages/agents/
 
 ## Vāda Teams Catalog
 
-Vāda exposes deliberation as a catalog of YAML team specs compiled by the Atta engine. Both MCP tools are generic — there are no per-team tools. The catalog currently contains 9 YAML team specs at `packages/agents/vada-deliberation/yamls/` (2 published, 7 experimental). New teams are added by authoring YAML and dropping the file into the directory — the engine's `listPublicSpecs()` discovers it dynamically.
+Vāda exposes deliberation as a catalog of YAML team specs compiled by the Atta engine. Both MCP tools are generic — there are no per-team tools. The catalog currently contains 10 YAML team specs at `packages/agents/vada-deliberation/yamls/` (3 published, 7 experimental). New teams are added by authoring YAML and dropping the file into the directory — the engine's `listPublicSpecs()` discovers it dynamically.
 
 | MCP Tool | Behavior | Cost | Serves |
 |----------|----------|------|--------|
@@ -38,6 +38,7 @@ Both surfaces are live. `vada__consult` accepts an optional `reviewer_config: Re
 | `brokered-quartet` | Brokered Quartet | brokered-no-synth | Experimental |
 | `vada-reviewers` | Reviewers | brokered-no-synth | **Published** |
 | `vada-reviewers-synthesis` | Reviewers + Synthesis | brokered-synth | **Published** |
+| `vada-fusion-native` | Outside Read | rounds-audit | **Published** (D-036; `vada__consult` spec_id) |
 | `sparring` | Sparring | rounds-audit | Experimental (PR #31 unpublished) |
 | `crucible` | Crucible | rounds-audit | Experimental (PR #31 unpublished) |
 | `war-room` | War Room | rounds-audit | Experimental (PR #31 unpublished) |
