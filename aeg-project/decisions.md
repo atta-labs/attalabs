@@ -1809,3 +1809,43 @@ Vāda is a **belief-revision engine**, not a convergence engine. The signal it s
 **Issues re-scoped by this decision:** #179 (T4), #180 (T5), #182 (T7), #183 (T8), #186 (T11), #188 (T13).
 
 **Naming correction:** the brief specified `.claude/skills/teams-layer/SKILL.md` for the `packages/agents/vada-deliberation/yamls/**` doc-owners binding; corrected to the actual path `.claude/skills/atta-teams/SKILL.md` (no `teams-layer` skill exists).
+
+---
+
+## D-067 — Plan↔forge coherence oracle: `scripts/verify-coherence.ts`
+
+**Date:** 2026-06-29
+**Status:** reserved (→ ACTIVE when Va #229 implementing PR merges)
+**Type:** 1
+**Tier:** 3
+**Lock:** NO
+**Authored by:** Planner (dispatched by Principal, aeg-coherence-v1 Va/Vb)
+
+**Context:** D-062 closed the code↔doc coherence seam (doc-owners + verify-docs C5). The plan↔forge seam was left open: the governance model had no deterministic oracle for detecting drift between the iteration topology files (plan) and the forge (GitHub Issue state / PR merge events). This gap produced the "#174 was closed but is it coherent?" class of ambiguity that required manual investigation. The oracle closes this gap without LLM calls, making the detection stateless and CI-runnable.
+
+**Decision:**
+
+A new `scripts/verify-coherence.ts` — sibling to `verify-docs.ts`, runnable as CLI and in CI — is the **plan↔forge coherence oracle**. It is stateless (§9 invariant: no persistent store, each run is a fresh read of forge + files). Zero LLM calls.
+
+**Three inputs:** forge facts (via existing `fetch-forge-facts.ts` / `@octokit/graphql` + `timelineItems(CLOSED_EVENT)` from PR #201); iteration topology (parsed from `aeg-root/iterations/*.md` via the Studio's parser, not a new one); decision logs (`aeg-project/decisions.md` + per-product logs).
+
+**Check catalog:** A1 (closed task has merged closing PR), A2 (closing PR has Archivist provenance comment), A3 (Issue whose closing PR merged is itself closed — the headline auto-close-misfire check), T1 (topology Issue refs resolve), T2 (open labeled Issues appear in topology — orphan-task check), T3 (no `#TBD` in active iteration), D1 (open-PR task has all depends-on closed), L1/L2 (active/completed lifecycle health), L3 (active iteration count, informational), N1/N2/M1/M2/M3 (delegate to T2 #217 if helpers exist, else stub with TODO).
+
+**Output contract:** JSON (`{ check, status, failures: [{ issue, iteration, reason }] }`) + human-readable console summary; exit non-zero on any fail; informational checks (L3) do not affect exit code. The schema is locked — changes require a new D-entry.
+
+**CI requirement:** Must run with `GITHUB_TOKEN` only (no interactive auth). If `GITHUB_TOKEN` is unavailable in the CI context, the check must surface a clear error rather than silently passing.
+
+**Studio surface (Vb #230):** The AEG Studio renders this oracle's output via a "Check Coherence" action — green on exit 0, list-with-Issue-links on non-zero. The Studio is a renderer; it does not re-implement check logic.
+
+**Alternatives rejected:**
+- *LLM-based coherence checking:* rejected. The coherence oracle must be deterministic and cheap to run in CI. LLM calls introduce cost, latency, and non-determinism incompatible with a gate that runs on every PR.
+- *Embedding coherence checks in `verify-docs.ts`:* rejected. `verify-docs` answers "did the PR update the docs it was supposed to?" (the output seam). The oracle answers "does the current governance state match reality?" (the plan↔forge seam). These are orthogonal questions; conflating them would make `verify-docs` context-sensitive in a way that breaks its dormancy semantics.
+- *Persistent state store for forge facts:* rejected. §9 invariant requires statelessness. A fresh read on each invocation is correct; the forge IS the persistent store.
+
+**Consequences:**
+- `scripts/verify-coherence.ts` (NEW) — the oracle; exports a pure evaluator for tests.
+- `scripts/verify-coherence.test.ts` (NEW) — one fixture per check, mocked forge/topology data, covers pass + fail path for each.
+- `aeg-root/state-machine.md` §15 — register the plan↔forge oracle alongside the C5 doc seam.
+- `aeg-root/iterations/aeg-coherence-v1.md` — Va and Vb rows added; Goal updated.
+
+**Lock rationale:** `Lock: NO`. The check catalog is defined but implementors may discover that a check needs refinement (e.g. A2's Archivist provenance block format may vary). Narrowing or adding checks is a new D-entry that supersedes this one — not an in-place edit to a locked decision.
