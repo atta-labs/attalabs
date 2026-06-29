@@ -1815,7 +1815,7 @@ Vāda is a **belief-revision engine**, not a convergence engine. The signal it s
 ## D-067 — Plan↔forge coherence oracle: `scripts/verify-coherence.ts`
 
 **Date:** 2026-06-29
-**Status:** reserved (→ ACTIVE when Va #229 implementing PR merges)
+**Status:** ACTIVE
 **Type:** 1
 **Tier:** 3
 **Lock:** NO
