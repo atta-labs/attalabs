@@ -106,7 +106,7 @@ function MorphingSubmitButton({
     <Button
       type={isConfigValid ? 'submit' : 'button'}
       variant='default'
-      size='icon'
+      size='icon-sm'
       aria-label={isConfigValid ? 'Submit deliberation' : 'Configure team'}
       onClick={isConfigValid ? undefined : onConfigure}
       // Mount-only entrance animation: when the user types the first character
@@ -241,6 +241,7 @@ export function DeliberateSection(props: DeliberateSectionProps) {
           onSave={form.handleModalSave}
           onClose={form.closeReviewerModal}
           configuredProviders={props.configuredProviders}
+          configRequired={!form.isConfigValid}
         />
       )}
     </>

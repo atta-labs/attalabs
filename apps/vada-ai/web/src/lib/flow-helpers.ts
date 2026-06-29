@@ -18,6 +18,19 @@ export function getDisplayAgentNames(flow: Flow): string[] {
     const last = flow.rounds[flow.rounds.length - 1]!
     return [...first.agents.map((a) => a.name), last.agents[0]!.name]
   }
+  if (shape === 'rounds-audit') {
+    const seen = new Set<string>()
+    const ordered: string[] = []
+    for (const round of flow.rounds) {
+      for (const a of round.agents) {
+        if (!seen.has(a.name)) {
+          seen.add(a.name)
+          ordered.push(a.name)
+        }
+      }
+    }
+    return ordered
+  }
   if (shape === 'solo') return flow.agents.slice(0, 1).map((a) => a.name)
   return first.agents.map((a) => a.name)
 }
@@ -27,6 +40,10 @@ export function getFlowAgentCount(flow: Flow): number {
   const first = flow.rounds[0]!
   if (shape === 'solo') return 1
   if (shape === 'brokered-synth') return first.agents.length + 1
+  if (shape === 'rounds-audit') {
+    const unique = new Set(flow.rounds.flatMap((r) => r.agents.map((a) => a.name)))
+    return unique.size
+  }
   return first.agents.length
 }
 
@@ -56,8 +73,15 @@ type SpecLabel = { short: string; subtitle: string }
 const SPEC_LABELS: Record<string, SpecLabel> = {
   'vada-council': { short: 'Council', subtitle: '3 models · parallel' },
   'vada-council-synthesis': { short: 'Council +S', subtitle: '3 models + synthesis' },
+  'vada-fusion-native': { short: 'Outside Read', subtitle: '4 reviewers · audit' },
   'vada-reviewers': { short: 'Reviewers', subtitle: '3 reviewers · parallel' },
   'vada-reviewers-synthesis': { short: 'Reviewers +S', subtitle: '3 reviewers + synthesis' }
+}
+
+// devils_advocate needs the apostrophe; all others are simple snake_case → uppercase words.
+export function formatRoleLabel(role: string): string {
+  const overrides: Record<string, string> = { devils_advocate: "DEVIL'S ADVOCATE" }
+  return overrides[role] ?? role.replace(/_/g, ' ').toUpperCase()
 }
 
 export function getSpecLabel(specId: string, fallback: { displayName: string }): SpecLabel {

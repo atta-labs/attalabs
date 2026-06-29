@@ -92,7 +92,7 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
       if (!modelId) continue
       const provider = resolveVendorByPrefix(modelId)
       if (!provider) continue
-      const roleKey = AGENTS[agent.name as AgentName]?.role ?? agent.name
+      const roleKey = AGENTS[agent.name as AgentName]?.role ?? agent.role ?? agent.name
       specDefaultsByRole[roleKey] = { provider, modelId }
     }
   }

@@ -51,13 +51,20 @@ export async function POST(request: Request) {
 
   const spec = loadYamlFromCatalog(parsed.data.specId)
   const roundAgentNames: string[] = spec.rounds[0]?.agents.map((a) => a.name) ?? []
+  // Per-name role map from the YAML spec — used as a fallback when the agent
+  // name isn't in the static AGENTS registry (e.g. Outside Read panel agents
+  // AssumptionHunter, BaseRate, FailureMode, SecondOrder which carry role:
+  // fields in the YAML but are not pre-registered canonical role names).
+  const specRoleByName: Record<string, string> = Object.fromEntries(
+    spec.agents.filter((a) => a.role).map((a) => [a.name, a.role as string])
+  )
   // Same normalization the rest of the stack uses: role agents (Strategist,
   // Critic, Synthesizer, …) collapse to their `role` string; everything else
   // (Council slots: Gemini / GPT / Grok) passes through under its raw YAML
   // name. `modelByRole` in the deliberation page, and the `agentModels` map
   // we build below, share this exact key space — so a session looked up later
   // can always find a model for every slot under the same key.
-  const normalizeAgentKey = (name: string): string => AGENTS[name as AgentName]?.role ?? name
+  const normalizeAgentKey = (name: string): string => AGENTS[name as AgentName]?.role ?? specRoleByName[name] ?? name
   const agents = roundAgentNames.map(normalizeAgentKey)
 
   // Build the per-agent resolved model map. Walks `spec.agents` (not just the

@@ -129,9 +129,8 @@ export const RoundStrip = memo(function RoundStrip({
             </span>
             <Button
               type='button'
-              size='icon'
+              size='icon-sm'
               variant='ghost'
-              className='size-6'
               onClick={handleCopy}
               aria-label={`Copy round ${round} transcript`}
               disabled={entries.length === 0}
@@ -140,9 +139,8 @@ export const RoundStrip = memo(function RoundStrip({
             </Button>
             <Button
               type='button'
-              size='icon'
+              size='icon-sm'
               variant='ghost'
-              className='size-6'
               onClick={handleDownload}
               aria-label={`Download round ${round} transcript`}
               disabled={entries.length === 0}
