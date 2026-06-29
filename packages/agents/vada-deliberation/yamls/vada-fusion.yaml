@@ -1,0 +1,21 @@
+schema_version: "2.0"
+id: vada-fusion
+display_name: A2 (Fusion)
+description: OpenRouter Fusion — opaque multi-model judge as A2 external benchmark condition. NOT a catalog team. Benchmark use only.
+experimental: true
+
+defaults:
+  model: openrouter/fusion
+
+agents:
+  - name: A2
+    description: OpenRouter Fusion — opaque multi-model synthesis
+    system_prompt: "Answer the user's question directly. No framing, no caveats. If code is useful, include it."
+
+rounds:
+  - id: answer
+    name: Answer
+    layout: serial
+    agents:
+      - name: A2
+    message_template: "{{question}}"

@@ -73,7 +73,8 @@ export const VENDORS = {
     baseURL: 'https://openrouter.ai/api/v1',
     keyConvention: 'bearer',
     keyPrefix: 'sk-or-',
-    envVar: 'OPENROUTER_API_KEY'
+    envVar: 'OPENROUTER_API_KEY',
+    modelPrefixes: ['openrouter/']
   },
   deepseek: {
     id: 'deepseek',
