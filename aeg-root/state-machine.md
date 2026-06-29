@@ -479,3 +479,46 @@ The Reviewer no longer carries the cognitive load of remembering *which* doc liv
 - **Decision-number reservation** (the failure mode that caused the recent D-060→D-061 renumber) — backlog T2.
 
 These are tracked on `aeg-root/iterations/aeg-coherence-v1.md`; this section governs only the seam itself.
+
+---
+
+## Section 15b: Coherence Seam — Plan↔Forge Coverage (`scripts/verify-coherence.ts`)
+
+The seam between **iteration topology files** (the plan — `aeg-root/iterations/*.md`) and **the forge** (GitHub Issue state / PR merge events). D-067 makes this seam deterministically verifiable: a stateless oracle that detects drift without LLM calls, runnable in CI.
+
+### The oracle: `scripts/verify-coherence.ts`
+
+Sibling to `verify-docs.ts`. Runnable as CLI (`bun scripts/verify-coherence.ts`) and in CI (`GITHUB_TOKEN` required). Zero LLM calls; stateless — each run is a fresh read of forge + files.
+
+**Three inputs:**
+1. **Forge facts** — GitHub Issue state + PR merge events via `fetch-forge-facts.ts` (`@octokit/graphql` + `timelineItems(CLOSED_EVENT)`). Same adapter the Studio uses; not forked.
+2. **Iteration topology** — parsed from `aeg-root/iterations/*.md` via `parseIteration` from `@atta/aeg-core`. Same parser the Studio uses; not forked.
+3. **Decision logs** — consulted via N/M checks (delegated to T2 #217).
+
+**Check catalog (D-067):**
+
+| Check | Fail class | What it asserts |
+|---|---|---|
+| A1 | `closed-without-merge` | Every closed task-Issue has a merged closing PR |
+| A2 | `archived-without-provenance` | That closing PR carries an Archivist `### AEG provenance` comment |
+| A3 | `auto-close-misfire` | Every Issue whose closing PR merged is itself closed (**headline check** — #174 class) |
+| T1 | `phantom-issue-ref` | Every topology row's Issue ref resolves to a real Issue |
+| T2 | `orphan-task` | Every open Issue labeled `iteration:X` appears in X's topology |
+| T3 | `tbd-in-active-iteration` | No `#TBD` rows in an active iteration (D-055) |
+| D1 | `dispatched-on-unmet-deps` | An open-PR task has all `depends-on` Issues closed |
+| L1 | `stale-active-iteration` | Active iteration with zero open Issues → should archive |
+| L2 | `premature-archive` | Archived iteration with any open Issue → investigate |
+| L3 | informational | Active iteration count (does not affect exit code) |
+| N/M | delegate | Decision-number + manifest integrity (delegate to T2 #217) |
+
+**Output contract (locked — changes require a new D-entry):**
+```json
+{ "check": "A3", "status": "fail", "failures": [{ "issue": 174, "iteration": "aeg-ui-v1", "task": "3", "reason": "..." }] }
+```
+Exit non-zero on any `fail`. L3 and `info` checks do not affect exit code. `severity:infra` emitted when GITHUB_TOKEN is unavailable in CI.
+
+### What is explicitly out of scope for D-067
+
+- **Studio rendering** of oracle output (Vb #230 — depends on Va).
+- **N/M decision-number integrity** checks (T2 #217 — stubs in place).
+- **CI gate wiring** — the oracle runs as a CLI and is CI-runnable; adding a mandatory CI step is a separate decision.
