@@ -1019,3 +1019,47 @@ The future Council results view consumes this contract directly.
 - The existing rounds UI (`ConclusionPanel` and the synthesis parser) is keyed to the Reviewers JSON shape and will **not** render the Council `{ agreements, disagreements, bottomLine }` synthesis correctly. This is expected — the Council results view (columns + AIASphere/matrix + synthesis panel) is a separate task. Do not retrofit the old rounds UI to handle both shapes; the Council view will read the contract directly.
 - Engine: 70/70 tests pass. Both YAMLs validate cleanly against the D-033 rules (Rule 1: rounds≥1, Rule 4: agent refs exist, Rule 8: per-agent templates on the answer round, etc.). `compileFlow` shape detection identifies `vada-council` as `brokered-no-synth` and `vada-council-synthesis` as `brokered-synth`.
 - Reviewers and Reviewers + Synthesis are untouched — the critique-a-draft workflow remains canonical and unchanged.
+
+## D-036: Outside Read engine — vada-fusion-native architecture
+
+**Date:** 2026-06-29
+**Status:** ACTIVE
+**Type:** 3
+**Issue:** #180
+**PR:** #237
+**Author:** Principal (ratified via merge)
+**Ratifies:** apps/vada-ai/specs/vada-teams-catalog/06-outside-read.md
+
+**Decision:** `vada-fusion-native` is the Outside Read engine. It is the `vada__consult` catalog team for situated consultation. Architecture: a 4-agent attack-vector panel (parallel, no cross-talk) → battlefield-map synthesizer (web-OFF) → BlindCritic + FactChecker audit; max 1 revision.
+
+**Engine shape:** `rounds-audit` at the compiler level. The product label `brokered-no-synth` (from vada-rethink-v1-decision.md §4.1) describes the panel's isolation model (each agent sees only `{{question}}`, no peer outputs), not the engine compiler. `compileBrokeredNoSynth` only processes `flow.rounds[0]` and silently drops subsequent rounds — it cannot compile a 3-phase flow. `rounds-audit` correctly compiles all three phases. Panel isolation is enforced at the template level (`message_template: "{{question}}"` on every panel agent), not by parallel execution.
+
+**Battlefield map contract (locked):**
+```json
+{
+  "core_agreement": "string — non-null; what every reviewer converged on",
+  "concessions": "string[] — may be empty; positions weakened by the panel",
+  "irreducible_conflict": "string — non-null; what the panel could not resolve",
+  "risk_ranking": "string | null — single most load-bearing risk"
+}
+```
+`irreducible_conflict` is non-optional. It is what makes the map honest.
+
+**Attack-vector roles (locked):**
+- AssumptionHunter — Anthropic (claude-sonnet-4-6): load-bearing assumptions the user has not named
+- BaseRate — Google (gemini-2.5-pro): reference class and historical frequency
+- FailureMode — OpenAI (gpt-4o): failure modes the proposal has not addressed
+- SecondOrder — xAI (grok-3): downstream and second-order consequences
+
+All panel agents have `tools: [web_search]`, `classifier.mode: skip` (always-on web access, single-shot, no classifier overhead). BattlefieldSynthesizer has `tools: []` — freshness lives in the panel.
+
+**Audit non-negotiable:** BlindCritic (no tools, logical/structural audit) + FactChecker (`web_search, web_fetch`, factual audit) run before the map reaches the caller. FLAG from either → synthesizer revises (max 1 revision). `CLEAN` and `REVISED` are both valid delivery states.
+
+**Three presets:** `find-blind-spots`, `critique-draft`, `pre-mortem` — same YAML, same routing flow. Preset is caller-level context (question framing), not a YAML routing construct.
+
+**Consequences:**
+- New YAML: `packages/agents/vada-deliberation/yamls/vada-fusion-native.yaml` (rounds-audit shape, 3 rounds: panel, synthesis, audit).
+- New package: `packages/agents/vada-fusion-native/` (workspace: `@atta/vada-fusion-native`) — organizational home for the spec.
+- `vada__consult` ConsultOutput gains `structured: unknown | null` and `terminal_state: string`; transcript mapping uses optional chain for multi-phase flows.
+- Catalog auto-discovered via `listPublicSpecs()` — no registry edits required.
+- `vada__consult` default team remains `brokered-trio`; switching default to `vada-fusion-native` is a separate behavioral decision for Principal.

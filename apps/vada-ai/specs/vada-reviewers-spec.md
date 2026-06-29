@@ -1489,3 +1489,102 @@ The benchmark will tell us. We design Vāda Reviewers honestly: faithful to the 
 If the v1 result is "this is a convenience layer," we ship it as that. If it's "this reproduces the manual workflow's value," we ship it as that. If it's "this is worse than the manual workflow," we redesign rather than ship.
 
 Either way, this is the first Vāda team. It has a shape. It's testable. We start here.
+
+---
+
+## 11. Outside Read — vada-fusion-native (V1 team addition)
+
+**Spec:** `vada-fusion-native.yaml` in `packages/agents/vada-deliberation/yamls/`
+**MCP tool:** `vada__consult` (spec_id: `vada-fusion-native`)
+**Decision authority:** vada-rethink-v1-decision.md §4.1
+
+### 11.1 — Flow architecture
+
+Three phases, one YAML (engine shape: `rounds-audit`):
+
+```
+Attack-Vector Panel (4 agents, parallel isolation)
+        ↓ all panel outputs
+Battlefield Map Synthesis (BattlefieldSynthesizer, web-OFF)
+        ↓ structured battlefield map
+Map Audit (BlindCritic + FactChecker, max_revisions: 1)
+        ↓ CLEAN or REVISED battlefield map
+```
+
+**Panel isolation invariant:** each panel agent's `message_template` is `{{question}}` only. Agents run sequentially (ordering edges from `rounds-audit` compiler) but receive no cross-output. The "parallel, no cross-talk" product guarantee is enforced at the template level.
+
+**Web-off synthesis:** the BattlefieldSynthesizer has no tools. All freshness lives in the panel responses. The synthesizer combines; it does not search. Importing new data at synthesis would contaminate the map without panel attribution.
+
+### 11.2 — Attack-vector roles (vendor-diverse)
+
+| Role | Vendor | Attack vector |
+|---|---|---|
+| `AssumptionHunter` | Anthropic (claude-sonnet-4-6) | Load-bearing assumptions the user has not named |
+| `BaseRate` | Google (gemini-2.5-pro) | Reference class and historical frequency |
+| `FailureMode` | OpenAI (gpt-4o) | Failure modes the proposal has not addressed |
+| `SecondOrder` | xAI (grok-3) | Downstream and second-order consequences |
+
+All four roles have `tools: [web_search]` and `classifier.mode: skip` (single-shot advisory with always-on web access).
+
+### 11.3 — Battlefield map output contract (locked)
+
+```json
+{
+  "core_agreement": string,        // What every reviewer converged on
+  "concessions": string[],         // Positions weakened by the panel's combined attack
+  "irreducible_conflict": string,  // Unresolved core — what remains contested after the panel
+  "risk_ranking": string | null    // Single most load-bearing risk; null when no clear winner
+}
+```
+
+The `irreducible_conflict` field is non-optional and non-skippable. It is what makes the map honest — it names what the panel could NOT resolve, not just what it agreed on.
+
+### 11.4 — Audit non-negotiable (MOAT-A)
+
+Model-written synthesis is the highest verdict-smuggling surface. Two auditors run before the map reaches the caller:
+
+| Auditor | Tools | Audit type |
+|---|---|---|
+| `BlindCritic` | None | Logical/structural: internal consistency, phantom consensus, unsupported leaps |
+| `FactChecker` | `web_search, web_fetch` | Factual: verifiable claims, base rate accuracy, cited precedents |
+
+If either auditor writes `FLAG`, the synthesizer is prompted to revise (max 1 revision). Terminal states `CLEAN` and `REVISED` are both valid delivery states.
+
+### 11.5 — Three presets (prompt-only; same routing flow)
+
+| Preset | How to invoke |
+|---|---|
+| `find-blind-spots` | Frame question: "Here is my thinking about X. What load-bearing assumptions am I missing?" |
+| `critique-draft` | Frame question: "Here is my draft proposal for X. What are its structural or factual weaknesses?" |
+| `pre-mortem` | Frame question: "Assume this plan for X failed in 12 months. Reconstruct the failure." |
+
+The YAML handles all three framings. The preset is caller-level context, not a separate `spec_id`. Agent prompts are written to respond to any of the three framings via their attack-vector lens.
+
+### 11.6 — MCP response shape (vada__consult with vada-fusion-native)
+
+```json
+{
+  "responses": [
+    { "reviewer": "AssumptionHunter", "response": "..." },
+    { "reviewer": "BaseRate", "response": "..." },
+    { "reviewer": "FailureMode", "response": "..." },
+    { "reviewer": "SecondOrder", "response": "..." },
+    { "reviewer": "BattlefieldSynthesizer", "response": "..." },
+    { "reviewer": "BlindCritic", "response": "CLEAR ..." },
+    { "reviewer": "FactChecker", "response": "CLEAR ..." }
+  ],
+  "structured": {
+    "core_agreement": "...",
+    "concessions": ["...", "..."],
+    "irreducible_conflict": "...",
+    "risk_ranking": "..."
+  },
+  "terminal_state": "CLEAN",
+  "session_id": "...",
+  "session_url": "https://vada.attalabs.dev/sessions/...",
+  "cost_breakdown": { ... }
+}
+```
+
+The `structured` field contains the parsed battlefield map JSON. The `terminal_state` is `CLEAN` (audit passed first attempt) or `REVISED` (synthesizer revised after audit FLAG). Both are valid delivery states.
+
