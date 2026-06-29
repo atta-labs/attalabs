@@ -208,10 +208,10 @@ export function ModelPicker({
           ) : (
             <ProviderIcon provider={selectedEntry.route} size={14} type='avatar' />
           )}
-          <span className='text-base'>{selectedEntry.label}</span>
+          <span className='text-sm'>{selectedEntry.label}</span>
         </span>
       ) : (
-        <span className='text-base'>Select model</span>
+        <span className='text-sm'>Select model</span>
       )}
       <ChevronsUpDown className='h-3 w-3' />
     </Button>

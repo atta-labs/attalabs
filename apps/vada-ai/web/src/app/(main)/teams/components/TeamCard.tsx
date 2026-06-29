@@ -6,7 +6,7 @@ import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
 import { AgentToolIndicator } from '@/components/AgentToolIndicator'
 import Link from 'next/link'
-import { getDisplayAgentNames, getFlowAgentCount, getFlowShapeLabel } from '@/lib/flow-helpers'
+import { formatRoleLabel, getDisplayAgentNames, getFlowAgentCount, getFlowShapeLabel } from '@/lib/flow-helpers'
 
 interface DisplayAgent {
   name: string
@@ -54,7 +54,7 @@ function Sphere({
       state='speaking'
       size={size}
       visible
-      label={agent.role ? undefined : 'REVIEWER'}
+      label={agent.role ? formatRoleLabel(agent.role) : 'REVIEWER'}
       toolBadge={hasWebSearch ? <AgentToolIndicator tool='web_search' /> : undefined}
     />
   )

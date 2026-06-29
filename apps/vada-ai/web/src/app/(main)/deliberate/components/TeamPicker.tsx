@@ -110,8 +110,7 @@ export function TeamPicker({ specs, value, onChange, onConfigure }: TeamPickerPr
       {onConfigure && (
         <Button
           variant='outline'
-          size='sm'
-          className='w-9 px-0'
+          size='icon-sm'
           aria-label='Configure team models'
           title='Configure team models'
           onClick={onConfigure}
