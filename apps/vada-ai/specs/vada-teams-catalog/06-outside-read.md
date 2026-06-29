@@ -3,7 +3,7 @@
 **Spec file:** `packages/agents/vada-deliberation/yamls/vada-fusion-native.yaml`
 **Package:** `packages/agents/vada-fusion-native/`
 **MCP tool:** `vada__consult` (spec_id: `vada-fusion-native`)
-**Status:** Published (non-experimental)
+**Status:** draft
 **Decision authority:** vada-rethink-v1-decision.md §4.1, §5
 **Issue:** #180
 
