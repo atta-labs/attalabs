@@ -416,6 +416,18 @@
         "typescript": "^5.7.0",
       },
     },
+    "packages/agents/vada-fusion-native": {
+      "name": "@atta/vada-fusion-native",
+      "version": "0.1.0",
+      "dependencies": {
+        "@atta/engine": "workspace:*",
+      },
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "@types/node": "^20.0.0",
+        "typescript": "^5.7.0",
+      },
+    },
     "packages/atta-agents": {
       "name": "@atta/agents",
       "version": "0.1.0",
@@ -776,6 +788,8 @@
     "@atta/vada-ai-web": ["@atta/vada-ai-web@workspace:apps/vada-ai/web"],
 
     "@atta/vada-deliberation": ["@atta/vada-deliberation@workspace:packages/agents/vada-deliberation"],
+
+    "@atta/vada-fusion-native": ["@atta/vada-fusion-native@workspace:packages/agents/vada-fusion-native"],
 
     "@atta/vitakka-ai-mcp": ["@atta/vitakka-ai-mcp@workspace:apps/vitakka-ai/mcp"],
 

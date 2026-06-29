@@ -1,0 +1,19 @@
+{
+  "name": "@atta/vada-fusion-native",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Outside Read engine — vada-fusion-native team spec (parallel attack-vector panel → battlefield-map synthesizer → BlindCritic/FactChecker audit)",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@atta/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@atta/typescript-config": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.7.0"
+  }
+}

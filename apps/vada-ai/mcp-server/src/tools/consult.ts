@@ -176,12 +176,15 @@ export function validateAndNormalize(args: unknown): ValidationOutcome {
 // ─── Output types ─────────────────────────────────────────────────────────────
 
 export interface ReviewerResponse {
-  reviewer: ReviewerProfileName | 'domain_expert'
+  reviewer: string
   response: string
 }
 
 export interface ConsultOutput {
   responses: ReviewerResponse[]
+  /** Parsed structured output from the synthesis agent (e.g. battlefield map). Null when the spec has no output_schema. */
+  structured: unknown | null
+  terminal_state: string
   session_id: string
   session_url: string
   cost_breakdown: {
@@ -314,13 +317,17 @@ export async function runConsult(
     shareToken: generateShareToken()
   })
 
+  // For multi-phase specs (e.g. vada-fusion-native: panel → synth → audit),
+  // the transcript has more entries than reviewerSpecs. Fall back to agentName.
   const responses: ReviewerResponse[] = conclusion.transcript.map((entry, i) => ({
-    reviewer: input.reviewerSpecs[i]!.profileName as ReviewerProfileName | 'domain_expert',
+    reviewer: input.reviewerSpecs[i]?.profileName ?? entry.agentName,
     response: entry.content
   }))
 
   return {
     responses,
+    structured: conclusion.structured ?? null,
+    terminal_state: conclusion.terminalState,
     session_id: sessionId,
     session_url: `https://vada.attalabs.dev/sessions/${sessionId}`,
     cost_breakdown: {
