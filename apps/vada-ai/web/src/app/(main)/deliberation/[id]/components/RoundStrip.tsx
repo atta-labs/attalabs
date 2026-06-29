@@ -33,6 +33,7 @@ interface RoundStripProps {
   streamingMessage: StreamingMessage | null
   isLive: boolean
   isRoundComplete: boolean
+  phaseTitles?: Record<number, string>
 }
 
 const AGENT_NAME_BY_ROLE: Record<string, AgentName> = {
@@ -75,7 +76,8 @@ export const RoundStrip = memo(function RoundStrip({
   entries,
   streamingMessage,
   isLive,
-  isRoundComplete
+  isRoundComplete,
+  phaseTitles
 }: RoundStripProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -98,7 +100,8 @@ export const RoundStrip = memo(function RoundStrip({
     entries,
     streamingMessage,
     isLive,
-    isRoundComplete
+    isRoundComplete,
+    phaseTitles
   })
 
   useEffect(() => {

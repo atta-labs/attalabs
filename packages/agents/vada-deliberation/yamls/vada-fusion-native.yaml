@@ -28,6 +28,7 @@ defaults:
 
 agents:
   - name: AssumptionHunter
+    role: devils_advocate
     description: "Attack vector: surfaces load-bearing assumptions the user has not named."
     role: devils_advocate
     model: claude-sonnet-4-6
@@ -85,6 +86,7 @@ agents:
       not adequately examined? Yes or no, then the single most important one.
 
   - name: BaseRate
+    role: researcher
     description: "Attack vector: grounds claims in reference class and historical frequency."
     role: researcher
     model: gemini-2.5-pro
@@ -131,6 +133,7 @@ agents:
       specific claim is most at risk from the reference class evidence?
 
   - name: FailureMode
+    role: critic
     description: "Attack vector: enumerates failure modes the proposal has not addressed."
     role: critic
     model: gpt-4o
@@ -178,6 +181,7 @@ agents:
       roughly equal probability)?
 
   - name: SecondOrder
+    role: strategist
     description: "Attack vector: surfaces downstream and second-order consequences."
     role: strategist
     model: grok-3
@@ -235,6 +239,7 @@ agents:
 # the transparency of attribution.
 
   - name: BattlefieldSynthesizer
+    role: synthesizer
     description: "Synthesizer — produces the locked battlefield-map output contract (web-off)."
     role: synthesizer
     model: claude-sonnet-4-6
@@ -313,6 +318,7 @@ agents:
 # FactChecker: factual audit — web search to verify map's verifiable claims
 
   - name: BlindCritic
+    role: critic
     description: "Logical/structural auditor — no tools; blindness is the audit mechanism."
     role: critic
     classifier:
@@ -343,6 +349,7 @@ agents:
       preamble.
 
   - name: FactChecker
+    role: researcher
     description: "Factual auditor — web search to verify verifiable claims in the map."
     role: researcher
     tools: [web_search, web_fetch]

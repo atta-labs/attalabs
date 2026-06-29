@@ -8,6 +8,7 @@ import { Button } from '@atta/ui/components'
 import { AIACanvas } from '@atta/ui/canvas'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { useMemo } from 'react'
+import { BattlefieldMapPanel } from './BattlefieldMapPanel'
 import { ConclusionPanel } from './ConclusionPanel'
 import { RoundStrip } from './RoundStrip'
 import { TranscriptActions } from './TranscriptActions'
@@ -36,6 +37,10 @@ interface DeliberationFeedProps {
   teamName?: string
   specId?: string
   hasSynthesizer?: boolean
+  phaseTitles?: Record<number, string>
+  agentsByRound?: Record<number, string[]>
+  conclusionShape?: 'debate' | 'battlefield-map'
+  agentRoleByName?: Record<string, string>
 }
 
 export function DeliberationFeed(props: DeliberationFeedProps) {
@@ -61,7 +66,11 @@ function DeliberationScene({
   benchmark = null,
   teamName = 'Deliberation',
   specId,
-  hasSynthesizer = true
+  hasSynthesizer = true,
+  phaseTitles,
+  agentsByRound,
+  conclusionShape = 'debate',
+  agentRoleByName
 }: DeliberationFeedProps) {
   const s = useDeliberationScene({
     sessionId,
@@ -73,7 +82,8 @@ function DeliberationScene({
     initialTerminalState,
     defaultProvider: defaultProvider ?? null,
     teamName,
-    specId
+    specId,
+    agentRoleByName
   })
 
   // Group messages by round once, keyed on the messages array reference.
@@ -155,12 +165,13 @@ function DeliberationScene({
                 <RoundStrip
                   round={round}
                   question={question}
-                  agentRoles={agentRoles}
+                  agentRoles={agentsByRound?.[round] ?? agentRoles}
                   modelByRole={modelByRole}
                   entries={roundEntries}
                   streamingMessage={streamingForRound}
                   isLive={s.currentRoundNum === round && s.isLiveSession}
                   isRoundComplete={s.isRoundComplete(round)}
+                  phaseTitles={phaseTitles}
                 />
               </div>
             )
@@ -176,12 +187,20 @@ function DeliberationScene({
 
         {s.showConclusion && s.terminalState && !s.isTerminalButEmpty && (
           <div className='pb-24 pt-4'>
-            <ConclusionPanel
-              terminalState={s.terminalState}
-              conclusion={s.conclusion}
-              agentModels={agentModels}
-              hasSynthesizer={hasSynthesizer}
-            />
+            {conclusionShape === 'battlefield-map' ? (
+              <BattlefieldMapPanel
+                terminalState={s.terminalState}
+                conclusion={s.conclusion}
+                hasSynthesizer={hasSynthesizer}
+              />
+            ) : (
+              <ConclusionPanel
+                terminalState={s.terminalState}
+                conclusion={s.conclusion}
+                agentModels={agentModels}
+                hasSynthesizer={hasSynthesizer}
+              />
+            )}
             <TranscriptActions
               input={{
                 question,

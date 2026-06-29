@@ -50,22 +50,30 @@ export async function POST(request: Request) {
   }
 
   const spec = loadYamlFromCatalog(parsed.data.specId)
-  const roundAgentNames: string[] = spec.rounds[0]?.agents.map((a) => a.name) ?? []
-  // Per-name role map from the YAML spec — used as a fallback when the agent
-  // name isn't in the static AGENTS registry (e.g. Outside Read panel agents
-  // AssumptionHunter, BaseRate, FailureMode, SecondOrder which carry role:
-  // fields in the YAML but are not pre-registered canonical role names).
-  const specRoleByName: Record<string, string> = Object.fromEntries(
-    spec.agents.filter((a) => a.role).map((a) => [a.name, a.role as string])
-  )
-  // Same normalization the rest of the stack uses: role agents (Strategist,
-  // Critic, Synthesizer, …) collapse to their `role` string; everything else
-  // (Council slots: Gemini / GPT / Grok) passes through under its raw YAML
-  // name. `modelByRole` in the deliberation page, and the `agentModels` map
-  // we build below, share this exact key space — so a session looked up later
-  // can always find a model for every slot under the same key.
+  // Build a name→role map from the YAML `role` field for teams whose agents
+  // are not in the AGENTS registry (e.g. Outside Read's AssumptionHunter).
+  // AGENTS registry handles classic teams (Strategist → strategist); specRoleByName
+  // handles any team where the YAML declares a `role` on each agent entry.
+  const specRoleByName: Record<string, string> = {}
+  for (const a of spec.agents) {
+    if (a.role) specRoleByName[a.name] = a.role
+  }
   const normalizeAgentKey = (name: string): string => AGENTS[name as AgentName]?.role ?? specRoleByName[name] ?? name
-  const agents = roundAgentNames.map(normalizeAgentKey)
+  // Session agents = panel round agents only (used as the per-round threshold
+  // in turn-logic.ts's `case 'run_agent'`). Walking all rounds would inflate
+  // the count and break the state-advancement check.
+  const roundAgentNames: string[] = spec.rounds[0]?.agents.map((a) => a.name) ?? []
+  // Normalize and deduplicate (some flows assign multiple YAML names to the
+  // same role, e.g. BlindCritic and FailureMode both resolve to 'critic').
+  const seen = new Set<string>()
+  const agents: string[] = []
+  for (const name of roundAgentNames) {
+    const key = normalizeAgentKey(name)
+    if (!seen.has(key)) {
+      seen.add(key)
+      agents.push(key)
+    }
+  }
 
   // Build the per-agent resolved model map. Walks `spec.agents` (not just the
   // first round) so synthesizer slots that live in later rounds — e.g.

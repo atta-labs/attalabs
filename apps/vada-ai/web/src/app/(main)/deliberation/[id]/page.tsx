@@ -81,6 +81,16 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
   })()
   const { teamName, hasSynthesizer, spec } = specCtx
 
+  // Role lookup from YAML `role` field — matches the normalization in start/route.ts.
+  // Used for agents not in the AGENTS registry (e.g. Outside Read's AssumptionHunter).
+  const specRoleByName: Record<string, string> = {}
+  if (spec) {
+    for (const a of spec.agents) {
+      if (a.role) specRoleByName[a.name] = a.role
+    }
+  }
+  const resolveRole = (name: string): string => AGENTS[name as AgentName]?.role ?? specRoleByName[name] ?? name
+
   // Spec-default map keyed by the same normalized role space the rest of the
   // stack uses (see `start/route.ts`). Lookup-by-role for old sessions where
   // `session.agentModels` is null.
@@ -92,8 +102,7 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
       if (!modelId) continue
       const provider = resolveVendorByPrefix(modelId)
       if (!provider) continue
-      const roleKey = AGENTS[agent.name as AgentName]?.role ?? agent.role ?? agent.name
-      specDefaultsByRole[roleKey] = { provider, modelId }
+      specDefaultsByRole[resolveRole(agent.name)] = { provider, modelId }
     }
   }
 
@@ -105,6 +114,51 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
     const m = agentModels?.[role] ?? globalDefault ?? specDefaultsByRole[role]
     if (m) modelByRole[role] = m
   }
+
+  // Per-round phase title labels derived from the YAML spec round names.
+  // Debate/panel round (spec.rounds[0], with optional repeats) maps to
+  // transcript rounds 1..repeats. Synthesis (the non-audit middle round) maps
+  // to transcript round 0. Falls back to ROUND_TITLES inside useRoundStrip.
+  const phaseTitles: Record<number, string> = {}
+  if (spec && spec.rounds.length > 0) {
+    const debateRound = spec.rounds[0]
+    if (debateRound?.name) {
+      const repeats = debateRound.repeats ?? 1
+      for (let i = 1; i <= repeats; i++) phaseTitles[i] = debateRound.name
+    }
+    // Synthesis round = first non-first round without an on_failure.action revise
+    const synthRound = spec.rounds.find((r, i) => i > 0 && r.onFailure?.action !== 'revise')
+    if (synthRound?.name) phaseTitles[0] = synthRound.name
+  }
+
+  // Per-round agent role arrays — drives which spheres appear in each round strip.
+  // Panel/debate agents for transcript rounds 1+, synthesis agent for round 0.
+  const agentsByRound: Record<number, string[]> = {}
+  if (spec && spec.rounds.length > 0) {
+    const debateRound = spec.rounds[0]
+    const debateRoles = (debateRound?.agents ?? []).map((a) => resolveRole(a.name))
+    const uniqueDebateRoles = Array.from(new Set(debateRoles))
+    const repeats = debateRound?.repeats ?? 1
+    for (let i = 1; i <= repeats; i++) agentsByRound[i] = uniqueDebateRoles
+    const synthRound = spec.rounds.find((r, i) => i > 0 && r.onFailure?.action !== 'revise')
+    if (synthRound) {
+      agentsByRound[0] = Array.from(new Set((synthRound.agents ?? []).map((a) => resolveRole(a.name))))
+    }
+  }
+
+  // Detect battlefield-map shape by checking any agent's output_schema for
+  // the core_agreement field — the locked contract of the Outside Read synthesizer.
+  const conclusionShape: 'debate' | 'battlefield-map' = spec?.agents.some((a) => {
+    const schema = a.outputSchema as Record<string, unknown> | undefined
+    return schema?.properties && 'core_agreement' in (schema.properties as object)
+  })
+    ? 'battlefield-map'
+    : 'debate'
+
+  // Map YAML agent names → visual roles for useDeliberation's agentRole resolution.
+  // Same as specRoleByName; passed through to fix getAgentConfigByName fallback for
+  // agents whose YAML names don't match the AGENTS registry.
+  const agentRoleByName: Record<string, string> = specRoleByName
 
   // Minimal benchmark view the client needs to decide whether to fire the
   // judge call. Full row lives at /deliberation/[id]/benchmark.
@@ -165,6 +219,10 @@ export default async function DeliberationPage({ params }: { params: Promise<{ i
         teamName={teamName}
         specId={session.specId ?? undefined}
         hasSynthesizer={hasSynthesizer}
+        phaseTitles={phaseTitles}
+        agentsByRound={agentsByRound}
+        conclusionShape={conclusionShape}
+        agentRoleByName={agentRoleByName}
       />
     </CatalogProvider>
   )

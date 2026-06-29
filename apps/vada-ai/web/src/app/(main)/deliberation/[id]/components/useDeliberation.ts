@@ -75,18 +75,19 @@ export function useDeliberation(
   initialState = 'PENDING',
   initialTerminalState: string | null = null,
   _defaultProvider: string | null = null,
-  specId?: string
+  specId?: string,
+  agentRoleByName?: Record<string, string>
 ) {
   const isComplete = initialState === 'TERMINAL'
 
   const [messages, setMessages] = useState<DeliberationMessage[]>(() =>
     initialEntries.map((e) => {
       const { text, replyTarget } = parseContent(e.content, e.agent)
-      const config = getAgentConfigByName(e.agent)
+      const agentRole = agentRoleByName?.[e.agent] ?? getAgentConfigByName(e.agent).role
       return {
         id: crypto.randomUUID(),
         agent: e.agent,
-        agentRole: config.role,
+        agentRole,
         round: e.round,
         content: text,
         state: 'complete' as const,
@@ -192,7 +193,7 @@ export function useDeliberation(
               const round = event.round as number
               const content = event.content as string
               const id = event.id as string
-              const config = getAgentConfigByName(agent)
+              const agentRole = agentRoleByName?.[agent] ?? getAgentConfigByName(agent).role
               const { text, replyTarget } = parseContent(content, agent)
               setMessages((prev) => {
                 if (prev.some((m) => m.id === id)) return prev
@@ -201,7 +202,7 @@ export function useDeliberation(
                   {
                     id,
                     agent,
-                    agentRole: config.role,
+                    agentRole,
                     round,
                     content: text,
                     state: 'complete' as const,
