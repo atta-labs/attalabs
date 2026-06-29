@@ -33,7 +33,7 @@ export const heraldProfiles = pgTable('herald_profiles', {
   clerkId: varchar('clerk_id', { length: 255 })
     .primaryKey()
     .references(() => users.clerkId, { onDelete: 'cascade' }),
-  username: varchar('username', { length: 50 }).unique().notNull(),
+  username: varchar('username', { length: 50 }).unique('herald_profiles_username_key').notNull(),
   githubHandle: varchar('github_handle', { length: 100 }),
   name: varchar('name', { length: 255 }).notNull(),
   title: varchar('title', { length: 255 }).notNull(),
