@@ -40,17 +40,21 @@ all three phases; panel isolation is enforced at the template level
 
 ## Roles
 
-| Role | Agent name | Vendor | Attack vector |
-|---|---|---|---|
-| Assumption Hunter | `AssumptionHunter` | Anthropic (claude-sonnet-4-6) | Load-bearing assumptions the user has not named |
-| Base Rate | `BaseRate` | Google (gemini-2.5-pro) | Reference class and historical frequency |
-| Failure Mode | `FailureMode` | OpenAI (gpt-4o) | Failure modes the proposal has not addressed |
-| Second Order | `SecondOrder` | xAI (grok-3) | Downstream and second-order consequences |
-| Battlefield Map | `BattlefieldSynthesizer` | Anthropic (claude-sonnet-4-6) | Synthesizer (web-OFF) |
-| Blind Critic | `BlindCritic` | — | Logical/structural auditor (no tools) |
-| Fact Checker | `FactChecker` | any | Factual auditor (web_search + web_fetch) |
+| Role | Agent name | Vendor | Attack vector | Visual role (`role:` field) |
+|---|---|---|---|---|
+| Assumption Hunter | `AssumptionHunter` | Anthropic (claude-sonnet-4-6) | Load-bearing assumptions the user has not named | `devils_advocate` |
+| Base Rate | `BaseRate` | Google (gemini-2.5-pro) | Reference class and historical frequency | `researcher` |
+| Failure Mode | `FailureMode` | OpenAI (gpt-4o) | Failure modes the proposal has not addressed | `critic` |
+| Second Order | `SecondOrder` | xAI (grok-3) | Downstream and second-order consequences | `strategist` ¹ |
+| Battlefield Map | `BattlefieldSynthesizer` | Anthropic (claude-sonnet-4-6) | Synthesizer (web-OFF) | `synthesizer` |
+| Blind Critic | `BlindCritic` | — | Logical/structural auditor (no tools) | `critic` ² |
+| Fact Checker | `FactChecker` | any | Factual auditor (web_search + web_fetch) | `researcher` ² |
 
 All panel agents have `tools: [web_search]` and `classifier.mode: skip` (always-on web access, single-shot advisory, no classifier overhead).
+
+¹ `strategist` confirmed (Principal, Jun 2026): downstream-consequence framing maps to strategic / big-picture reasoning. `operator` considered and rejected.
+
+² Shared roles are intentional design: panel agents and audit agents carrying the same visual role (critic, researcher) are distinguished by agent name, system prompt, and execution phase. The config modal slot label uses the agent name (not the role) so both `FailureMode` and `BlindCritic` are unambiguous to the user despite sharing the critic face. Count badge grouped by role is a follow-up, not built in this iteration.
 
 ---
 

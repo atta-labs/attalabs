@@ -27,6 +27,10 @@ export function getFlowAgentCount(flow: Flow): number {
   const first = flow.rounds[0]!
   if (shape === 'solo') return 1
   if (shape === 'brokered-synth') return first.agents.length + 1
+  if (shape === 'rounds-audit') {
+    const unique = new Set(flow.rounds.flatMap((r) => r.agents.map((a) => a.name)))
+    return unique.size
+  }
   return first.agents.length
 }
 

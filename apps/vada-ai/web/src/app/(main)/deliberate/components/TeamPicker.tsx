@@ -74,10 +74,12 @@ export function TeamPicker({ specs, value, onChange, onConfigure }: TeamPickerPr
               <DropdownMenuItemTextHighlight key={spec.id} selected={isSelected} onSelect={() => onChange(spec.id)}>
                 <div className='flex flex-col gap-0.5 py-0.5'>
                   <span className='font-sans text-sm'>{spec.displayName}</span>
-                  {label.subtitle && (
+                  {(label.subtitle || spec.description) && (
                     <span
                       className={cn(
-                        'font-mono text-xs uppercase tracking-widest',
+                        'truncate text-xs',
+                        // Shape subtitles use mono uppercase; YAML descriptions use normal text.
+                        label.subtitle ? 'font-mono uppercase tracking-widest' : 'font-sans',
                         // Selected items + canonical-highlighted items both
                         // put the parent on bg-accent text-accent-foreground,
                         // so the subtitle shifts to text-accent-foreground/80
@@ -88,7 +90,7 @@ export function TeamPicker({ specs, value, onChange, onConfigure }: TeamPickerPr
                           : 'text-muted-foreground group-focus:text-accent-foreground/80 group-data-[highlighted]:text-accent-foreground/80'
                       )}
                     >
-                      {label.subtitle}
+                      {label.subtitle || spec.description}
                     </span>
                   )}
                 </div>

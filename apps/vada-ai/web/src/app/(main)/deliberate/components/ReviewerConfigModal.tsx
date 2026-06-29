@@ -103,21 +103,16 @@ export function ReviewerConfigModal({ spec, onSave, onClose, configuredProviders
   // Production catalog: strip Ollama (reviewer slots need hosted models)
   const reviewerCatalog = useMemo(() => catalog.filter((e) => e.route !== 'ollama'), [catalog])
 
-  // Build a label for each agent: editable slots → "REVIEWER N", role agents → role name
-  const reviewerLabels = (() => {
-    const labels: Record<string, string> = {}
-    let n = 1
-    for (const a of editableAgents) {
-      if (a.editable) {
-        labels[a.name] = `REVIEWER ${n++}`
-      } else if (a.role) {
-        labels[a.name] = a.role.toUpperCase().replace(/-/g, ' ')
-      } else {
-        labels[a.name] = a.name.toUpperCase()
-      }
-    }
-    return labels
-  })()
+  // Split CamelCase agent name into display words: "AssumptionHunter" → "Assumption Hunter".
+  // The `uppercase` CSS class handles visual capitalization; names stay distinct across agents
+  // that share a role (e.g. FailureMode and BlindCritic both use the critic face but differ
+  // by name, system_prompt, and phase — the label keeps them unambiguous in the modal).
+  const splitCamelCase = (name: string) => name.replace(/([A-Z])/g, ' $1').trim()
+
+  // Build a label for each agent: always the agent's own name.
+  // Role drives the face/color in the deliberation UI and team cards (via VadaAgent → AGENT_BY_ROLE);
+  // the modal slot label uses the name so agents sharing a role (critic, researcher) remain distinct.
+  const reviewerLabels = Object.fromEntries(editableAgents.map((a) => [a.name, splitCamelCase(a.name)]))
 
   return (
     <Dialog
