@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next'

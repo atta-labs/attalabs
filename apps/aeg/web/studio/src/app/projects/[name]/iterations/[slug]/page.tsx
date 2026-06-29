@@ -1,5 +1,4 @@
-import { Badge } from '@atta/ui/components/badge'
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@atta/ui/components/table'
+import { Badge, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { parseLedger, sumLedger, type DerivedStatus } from '@atta/aeg-core'
 import { AlertTriangle, GitBranch, LayoutGrid } from 'lucide-react'

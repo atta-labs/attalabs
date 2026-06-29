@@ -1,4 +1,4 @@
-import { Badge } from '@atta/ui/components/badge'
+import { Badge } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
