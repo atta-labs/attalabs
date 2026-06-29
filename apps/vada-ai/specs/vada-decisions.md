@@ -1024,6 +1024,7 @@ The future Council results view consumes this contract directly.
 
 **Date:** 2026-06-29
 **Status:** ACTIVE
+**Type:** 3
 **Issue:** #180
 **PR:** #237
 **Author:** Principal (ratified via merge)
