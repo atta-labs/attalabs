@@ -400,6 +400,12 @@ Animate's `Textarea` re-exports basic's, so adding to basic automatically reache
 
 **First step for any missing component:** run `bun run validate:ui-contract`. If the library doesn't export it, the contract will tell you exactly what's missing across all libraries.
 
+**Subpath Import Bypass Bug:**
+If a component (e.g. `Tabs` or `Badge`) renders using the `basic` library styles (or is broken) even though the app's active library is configured as `animate`, check how it is imported.
+* **Incorrect:** `import { Tabs } from '@atta/ui/components/tabs'` (Subpath import)
+* **Correct:** `import { Tabs } from '@atta/ui/components'` (Flat import)
+* **Why:** The `tsconfig.json` path mapping only maps the exact flat string `@atta/ui/components` (no wildcard `/*`). Subpath imports bypass the alias and fall back to `packages/ui/package.json` exports, which route `./components/*` directly to the `basic` library's installed files. Always import flatly from `@atta/ui/components`.
+
 **Build-time apps (Vada):**
 1. Run `bun run validate:ui-contract` — check if the active library is missing the component
 2. Check `packages/ui/generated/vada/components.ts` — what library does it point to?

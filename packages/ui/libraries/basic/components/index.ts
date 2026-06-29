@@ -16,7 +16,7 @@ export { Checkbox } from './form/checkbox'
 export { Button, buttonVariants } from './interactive/button'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
 // Interactive — Tabs
-export { Tabs, TabsContent, TabsList, TabsTrigger } from '../installed/tabs'
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './interactive/tabs'
 export {
   DropdownMenu,
   DropdownMenuCheckboxItem,

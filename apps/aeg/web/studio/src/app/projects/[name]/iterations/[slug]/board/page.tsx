@@ -1,5 +1,4 @@
-import { Badge } from '@atta/ui/components/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components/card'
+import { Badge, Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import type { DerivedStatus, DerivedTask } from '@atta/aeg-core'
 import { AlertTriangle } from 'lucide-react'

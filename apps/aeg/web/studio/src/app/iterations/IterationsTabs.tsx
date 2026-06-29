@@ -1,6 +1,6 @@
 'use client'
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui/components/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui/components'
 import type { IterationSummary } from '@/lib/aeg-fs'
 import { IterationCard } from '@/app/components/IterationCard'
 

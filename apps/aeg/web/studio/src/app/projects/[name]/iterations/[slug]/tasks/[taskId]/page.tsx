@@ -1,4 +1,4 @@
-import { Badge } from '@atta/ui/components/badge'
+import { Badge } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import type { DerivedTask } from '@atta/aeg-core'
 import { CircleDot, ExternalLink, FileText, GitPullRequest, MessageSquareWarning } from 'lucide-react'

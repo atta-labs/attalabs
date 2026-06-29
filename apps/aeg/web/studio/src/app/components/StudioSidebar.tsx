@@ -1,8 +1,10 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/components/collapsible'
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
@@ -14,7 +16,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarProvider
-} from '@atta/ui/components/sidebar'
+} from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ChevronDown } from 'lucide-react'
 import { getAegNavIcon } from '@/lib/nav-icons'
