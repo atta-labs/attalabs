@@ -9,10 +9,14 @@ all YAMLs into `packages/agents/`; equip reviewer tools in T3a; build Outside Re
 as the two V1 teams; run a DRACO-style benchmark with Fusion as A2 external baseline
 (not a catalog team); replace `CalculatorStats` with measured stats; add SmartTextInput
 and deliberation UI with battlefield-map render + audit-trail inspection. Both surfaces
-ship: web UI (playground/showroom) and MCP (situated product surface). Exit bar:
-tool-equipped Outside Read + Belief Revision in catalog, battlefield map rendered on
-audit trail, repeatable benchmark, Teams page shows measured stats publicly, MCP
-situated-loop hardened.
+ship: web UI (playground/showroom) and MCP (situated product surface). Resolve the fate
+of the four pre-rethink catalog teams (Council, Council+Synthesis, Reviewers,
+Reviewers+Synthesis) built before the June 29 rethink — retire, keep, or fold into the
+V1 set — and close the decision-doc gap. Build Belief Revision team (not just spec it).
+Exit bar: Outside Read + Belief Revision as the two and only V1 catalog teams (fate of
+legacy teams resolved and recorded); tool-equipped Outside Read + Belief Revision in
+catalog, battlefield map rendered on audit trail, repeatable benchmark, Teams page shows
+measured stats publicly, MCP situated-loop hardened.
 
 Re-scoped June 29 per vada-rethink-v1-decision.md.
 
@@ -41,6 +45,8 @@ Previously completed in vada-agents-v2 (carry-forward, not re-dispatched):
 | 11  | Benchmark run + results doc — execute; document; cap Belief Revision rounds at 2; spec the objection-novelty-stop detector (the engineering wedge, not a retirement decision); rounds teams are the Belief Revision wedge | #186  | vada                    | #185             | —              |
 | 12  | Teams page = live measured stats — replace `CalculatorStats` with measured cost/time/tokens/quality per team from DB; reconcile with `/bench`; public                         | #187  | vada                    | #186             | —              |
 | 13  | Production hardening — MCP situated-loop hardening (first-class: vada__consult + vada__deliberate structured return, error states, streaming contract); hosted MCP hardening (E8–E12); observability confirmed; Reviewers ERROR fully closed | #188  | vada, engine, adapter   | #177, #186       | —              |
+| 14  | Resolve Council/Reviewers catalog fate — four pre-rethink teams (Council, Council+Synthesis, Reviewers, Reviewers+Synthesis) were built before the June 29 rethink and not named in `vada-rethink-v1-decision.md §4`; surface options with benchmark data, STOP for Principal ratification, then execute (retire/keep/rename/fold) and close the decision-doc gap by updating §4 to name the final catalog set explicitly | #240  | vada                    | #186             | —              |
+| 15  | Build Belief Revision team — `vada__deliberate` / `rounds-audit`; `packages/agents/vada-belief-revision/`; 2-round cap; roles: position-holder + rotating multi-vendor challengers; output `{ revision_trajectory, irreducible_core }`; implement objection-novelty-stop detector per T11 spec; wire into catalog as second V1 team; new catalog spec `07-belief-revision.md`; stop-and-escalate if rounds-audit needs new engine schema field or position-holder needs new role class | #241  | vada, adapter           | #186             | —              |
 | 6a  | Deliberate-page production UX — frontier-chat hero input, morphing Configure↔Submit, dropdown restyle + short labels (kills Council "reviewers" misnomer), team-identity Configure modal, tool-badge corner glyph + `badgeLeft` slot, `RouteAwareFooter` Vāda-only | —     | vada, @atta/ui          | #181             | —              |
 | 6b  | Council teams + CouncilFeed view — `vada-council` + `vada-council-synthesis` YAMLs (D-035 vada-local); N-column results view (`CouncilFeed`) with vendor-color spheres (`resolveVendorColor → VENDORS[v].color`), completion-fill streaming, locked `{ agreements, disagreements, bottomLine }` synthesis contract; per-spec routing | —     | vada, packages/agents   | #175             | —              |
 | 6c  | `SmartPromptInput` dependency-injection governance — shared composite resolves no library; consumers inject primitives (Vāda from `@atta/ui`, Herald from `useComponents()`); native first-paint fallbacks; closes #213; ratifies D-064 | —     | @atta/ui, vada, herald  | #181             | T6 (absorbed)  |
@@ -79,14 +85,21 @@ Previously completed in vada-agents-v2 (carry-forward, not re-dispatched):
   duplicate-Critic bugs closed.
 - Reviewers tool-equipped (web search + reachable MCPs) across all vendors.
 - Catalog: Outside Read (`vada-fusion-native`, `vada__consult` / `brokered-no-synth`) +
-  Belief Revision (`vada__deliberate` / `rounds-audit`, 2-round cap) as the two V1 teams.
-  Fusion (`vada-fusion`) exists as A2 benchmark condition only, not a user-facing team slot.
+  Belief Revision (`vada__deliberate` / `rounds-audit`, 2-round cap) as the **two and
+  only** V1 catalog teams. Fusion (`vada-fusion`) exists as A2 benchmark condition only,
+  not a user-facing team slot. The fate of the four pre-rethink teams (Council,
+  Council+Synthesis, Reviewers, Reviewers+Synthesis) is explicitly resolved and recorded
+  in `vada-rethink-v1-decision.md §4` — no unresolved catalog gap remains.
+- Belief Revision is **built** (not just specced): `vada__deliberate` wired end-to-end,
+  YAML compiled, objection-novelty-stop detector implemented per T11 spec, catalog entry
+  present, `{ revision_trajectory, irreducible_core }` output returned.
 - Battlefield map (`core_agreement` / `concessions` / `irreducible_conflict` / `risk_ranking`)
   renders on top of the inspectable audit trail (MOAT-A invariant). Map audited by
   BlindCritic + FactChecker before reaching user.
 - Outside Read has three presets (find-blind-spots / critique-draft / pre-mortem) and four
   attack-vector roles (assumption-hunter / base-rate / failure-mode / second-order).
-- Belief Revision capped at 2 rounds; objection-novelty-stop detector specced.
+- Belief Revision capped at 2 rounds; objection-novelty-stop detector implemented (not
+  just specced — T11 specs it, T15 builds it).
 - Repeatable benchmark exists; all conditions (a0-baseline, a1-baseline, A2-fusion,
   Outside-Read, Belief-Revision) measured for cost/latency/tokens/quality; blind-judge
   quality audit; per-question-type breakdown.
