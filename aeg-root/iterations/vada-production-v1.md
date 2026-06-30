@@ -56,6 +56,8 @@ Previously completed in vada-agents-v2 (carry-forward, not re-dispatched):
 
 > **Note:** 6a/6b/6c were absorbed into the in-flight T6 branch under explicit Principal instruction ("keep the deliberate-page work atomic"). They are forge-derived as part of PR #207 (the original tool-badges PR). Topology-only here per AEG convention — status / PR numbers live on the forge.
 
+> **⚠️ TOPOLOGY FLAG (Archivist 2026-06-30):** T14 and T15 rows are duplicated in the table above — each appears twice: once with a full long description (added by PR #242) and once with an abbreviated short description (added earlier or by PR #245). The duplicates create inconsistency in the task registry. Planner must merge them into a single canonical row per task ID. Archivist flags only — do not resolve until Principal confirms which description to keep.
+
 ## Out-of-iteration (landed on this branch by Principal decision, NOT part of `vada-production-v1`)
 
 - **TextReveal component** — added to the `@atta/ui` contract and all four libraries; wired into the Deliberate empty-state hero. Merged in from the sibling branch `task/vada-production-v1/text-reveal`.
