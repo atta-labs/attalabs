@@ -1933,3 +1933,45 @@ In the per-slot model dropdown (ReviewerConfigModal / ModelPicker), filter out a
 - `aeg-root/iterations/vada-production-v1.md` — T16 row added (Issue #244), DoD updated with capability-gating exit criterion.
 
 **Lock rationale:** `Lock: NO`. Tier assignments and `reasoning` tier ordering are proposed here but require Principal ratification before implementation. The Zod/TypeScript schema change requires explicit escalation approval. Narrowing, adding, or correcting tier assignments is a new D-entry that supersedes this one — not an in-place edit to a locked decision.
+
+---
+
+## D-069 — AEG enforces its own forge-lifecycle and role-seam contracts mechanically
+
+**Date:** 2026-06-30
+**Status:** ACTIVE
+**Type:** 1 (irreversible — Principal ratified in-session)
+**Lock:** YES
+**Authored by:** TL (Strategist → Planner)
+**Ratified by:** Principal (in-session, 2026-06-30)
+
+**Context:** Recurring incidents (vada #180/#181/#182, aeg-ui-v1 #94/#97, the #182 auto-close misfire) share one root cause: the link between PR-merge ↔ Issue ↔ branch is not guaranteed. AEG derives status from the forge but enforces the integrity invariant that derivation depends on only as *trusted discipline* (§12), so the derivation reads broken wiring as a false status — and the fallback was tuned to be invisible (closed-without-merge → `todo`). AEG is the Principal's top-priority product; a half-enforced AEG taxes every downstream task. Decision taken to promote the load-bearing invariants from trusted to enforced, with zero tech-debt deferral — everything lands in `aeg-coherence-v1`.
+
+**Decision:** AEG enforces its own forge-lifecycle and role-seam contracts mechanically:
+
+1. **The one law.** A task-Issue reaches *done* only via a merged PR that names it (`Closes #N`). A `COMPLETED` close without that merge is **incoherent, not done**. The only sanctioned close-without-merge is `NOT_PLANNED` → **dropped** (never done, never `todo`).
+2. **Honest derivation (T6 / #250).** `deriveStatus` reads GitHub's native `stateReason`; `DerivedStatus` gains `dropped` + `incoherent`; `aeg:incoherent` is added to the §14 label vocabulary. An inconsistent state never resolves to an innocuous status.
+3. **Forge-lifecycle gates (T2 / #217).** A `Closes #N` pre-merge CI check (Layer 1 — prevent); `verify-coherence` run in CI covering A1/A2/A3/L1/L2 (Layer 2 — detect), **enforced at the gated merge step** (point 6 — branch protection is unavailable on this plan), with **A2 blocking** the next in-iteration merge (close-out/archiving back-pressure) and **L1/L2 advisory** (avoids the last-task deadlock).
+4. **Contract structural gates.** planner→brief rationale-completeness (T7 / #251) and brief→developer brief-validation (T8 / #252): the *structural* half of each contract becomes a CI gate; the *semantic* half stays the Reviewer's (trusted). Each defines the canonical machine-parseable grammar for its artifact (rationale block; brief sections + lock-ack).
+5. **Enforcement is CI, scaffolded, graduated.** Mechanical enforcement on a forge IS CI; these are jobs added to AEG's existing scaffolded workflows (no new adoption instructions), behind the observe→enforced gradient — observe mode runs zero CI, full mode is one `aeg init`.
+6. **Agent merge/commit guardrails, free (T9 / #254).** Branch protection — GitHub's only native way to make a red check *block* the merge button — is **unavailable on this private+free repo** (classic protection and rulesets both 403). So mechanical enforcement lives in the **merge step**, not GitHub's button: a `PreToolUse` hook denies any agent merge (`gh pr merge` / `gh api` / `curl` / MCP `merge_pull_request`) unless `gh pr checks` is green; a Husky hook blocks direct commits/pushes to `main`; worktree-first discipline extends to every repo-committing role (not just the Developer brief). **No agent can merge a red PR or commit to main.** CI checks still run and show red/green for free — only the *button-disable* is paid. Branch protection becomes an optional upgrade (paid or public) that adds exactly one thing: a guard against an *untrusted human* clicking GitHub's UI merge button — never a dependency for consistency.
+
+**Boundary (what this is NOT):** AEG does not lock down the GitHub UI (a human can still hand-close an Issue). "Flawless" means **no silent incoherence** — enforce the in-band path, detect-and-flag the out-of-band path, never mis-render. It does **not** auto-reopen a hand-closed Issue (that would fight a legitimate `NOT_PLANNED` close, e.g. #181); it flags `aeg:incoherent` and a human resolves.
+
+**Alternatives rejected:**
+- *Lock the forge down* — GitHub exposes no "require Closes #N" / "prevent issue-close" lever; betrays AEG's "monitoring not restriction" on-ramp.
+- *Reconsider forge-native* — the recurring pain is a missing integrity layer, not a wrong premise; deriving-from-forge is correct (a DB derives views from *enforced* FKs). Throwing it out returns to racing status files.
+- *Auto-reopen hand-closed Issues* — fights legitimate `NOT_PLANNED` closes (#181), creates churn.
+- *Patch `deriveStatus` to treat closed → merged* — hides the A1 coherence violations the model is built to surface.
+- *Defer the contract-enforcement program to a future iteration* — rejected by Principal: AEG perfection is priority-100, zero tech-debt; everything lands in `aeg-coherence-v1`.
+
+**Consequences:**
+- New derived statuses `dropped` + `incoherent`; new label `aeg:incoherent` (§3, §14).
+- The "done" lifecycle (close → close-out → archive) and the planner→brief / brief→developer contracts move from *trusted* to *enforced* (§12).
+- Tasks T6 → T2 → {T7, T8} serialize on the shared CI collision domain (`.github/workflows` + `verify-*` scripts); Vb runs parallel (studio domain disjoint).
+- Legacy unlinked-but-done Issues (#180/#182) read `incoherent` until a human clears them; #181 reads `dropped`. The `Closes #N` gate prevents recurrence.
+- Canonical machine-parseable grammars must be defined for the Planner's rationale block and the brief sections (sub-deliverables of T7/T8) — constitution touches.
+- Branch protection / rulesets are unavailable on the current GitHub plan (private+free); `state-machine.md` §12 currently *falsely* claims gates are "armed in branch protection" — T2 corrects §12 to the real substrate (gated merge step + agent hooks). Enforcement is free; the paid plan only adds a UI-button guard for untrusted-human merges. (Surfaced via a Planner commit that drifted onto `main` with no worktree — captured in `lessons.md` by T9.)
+- T9 (`#254`, harness guardrails) conflicts-with the §12/governance-doc cluster (T2/T7/T8) and serializes there; it is disjoint from T6 (aeg-core) and Vb (studio) and runs parallel to them.
+
+**Lock rationale:** `Lock: YES`. This is the foundational integrity charter for AEG-as-product; future briefs touching status derivation, the forge-lifecycle gates, or the role-seam contract gates MUST `Conforms to lock: D-069` or `Challenges lock: D-069 — <reason>`. Changing the law (close-iff-merged), the terminal-status vocabulary, or the flag-don't-auto-reopen stance is a new D-entry that supersedes this one, not an in-place edit.
