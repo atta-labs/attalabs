@@ -58,6 +58,13 @@ export type ForgeFactsSnapshot = {
 export type RawTaskFacts = {
   issue: {
     state: 'OPEN' | 'CLOSED'
+    /**
+     * GitHub's native close reason. `null` while the issue is open or no reason
+     * was recorded. The pure mapper projects `COMPLETED`/`NOT_PLANNED` onto
+     * `ForgeFacts.stateReason` (`'completed'`/`'not_planned'`), everything else
+     * to `null` — driving the honest terminal-status derivation (D-069).
+     */
+    stateReason: 'COMPLETED' | 'NOT_PLANNED' | 'REOPENED' | null
     assigneesCount: number
     labels: string[]
   } | null
