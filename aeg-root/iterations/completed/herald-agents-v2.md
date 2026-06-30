@@ -1,5 +1,5 @@
 # Iteration: herald-agents-v2 — June–July 2026
-Lifecycle: active
+Lifecycle: complete
 
 Goal: Extract forensic-hiring-auditor intelligence into `packages/agents/forensic-hiring-auditor/`
 (D-046 first execution), make Herald a thin consumer, overhaul Bulk Audit UX, improve report

@@ -9,6 +9,14 @@
 
 ---
 
+## June 30, 2026 — herald-agents-v2 iteration close-out
+
+### Herald / AEG
+
+**herald-agents-v2** (8 tasks, June 18–29, 2026) — Iteration close-out. All task work merged; iteration file archived to `aeg-root/iterations/completed/herald-agents-v2.md`. T1–T5 and T7–T8 closed via PRs #148 #150 #156 #191 #193 #213 #235. T6 (abuse cap) verified already-implemented; closed by Principal. **#234 open bug:** prod `ANTHROPIC_API_KEY` likely expired — fallback on non-BYOK audits; Principal to rotate or defer. Retrospective in `aeg-project/lessons.md`. Coherence note: T6 and T7 sat merged-but-Todo — drift class targeted by aeg-coherence-v1 T2 (#217).
+
+---
+
 ## June 30, 2026 — Vāda T7: Outside Read deliberation UI fixes
 
 ### Vāda

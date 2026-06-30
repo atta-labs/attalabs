@@ -231,3 +231,39 @@ None. All 4 topology tasks completed.
 ### Unbuilt tasks
 
 None. All 10 tasks completed and merged.
+
+---
+
+## herald-agents-v2 — retrospective (June 2026)
+
+**Duration:** June 18, 2026 → June 29, 2026 (PR #148 merged → PR #235 merged — 12 days)
+**Tasks completed:** 7 of 8 planned (T1–T5, T7, T8 via PRs #148, #150, #156, #191, #193, #213, #235; T6 Principal-authorized close — rate limit already-implemented, no PR required)
+**Tasks dropped/deferred:** none — T6 was verified already-satisfied during T7's deploy verification
+
+### What went well
+
+- **D-046 first execution was clean.** Extracting the `forensic-hiring-auditor` intelligence into `packages/agents/forensic-hiring-auditor/` (T2, PR #150) established the `packages/agents/<name>/` pattern (D-051) without any Herald regression — the engine migration went exactly as the planner predicted, with Herald becoming a thin consumer.
+- **MCP exposure (T3) built directly on the T2 foundation.** `herald__audit` at `herald.attalabs.dev/api/mcp` landed with no rework because T2's package boundary was clean. The depends-on serialization (T3 depends-on T2) worked as intended.
+- **PR #235 (T7) was scope-honest.** The brief author correctly scoped deploy verification as code-path analysis, flagged the authentication gap (browser-only flows cannot be verified by an agent), and surfaced #234 as a separate finding rather than marking verification complete. This is the right pattern for deploy-verification tasks.
+- **T8 (owner routes) was a clear planning success.** The re-scope from the original D-036 nav plan to the D-061 `[username]/(owner)/` layout was caught at planning time and cleanly executed in one PR (#213), with zero Vāda regressions from the shared `packages/ui/topbar` changes.
+
+### What stalled or caused rework
+
+- **T6 (#172) and T7 (#173) sat merged-but-Todo for days after their work was done.** Per-task Archivist close-outs were never dispatched at task completion — the Issues stayed open, the forge showed incorrect active state, and the iteration close required retroactive manual closure. This is the exact drift class that aeg-coherence-v1 T2 (#217) enforcement is designed to prevent. Flag explicitly for the aeg iteration: the pattern here (merged → no close-out dispatched → Issues lingering open) is the target condition for D-056 + coherence enforcement.
+- **Production `ANTHROPIC_API_KEY` expired during T7 verification.** The fallback response (grade B+, "audit timed out before full analysis") was returned on every non-BYOK call, confirming the key is expired or revoked. This was not caught by the deploy-verification static analysis and became #234 — an open bug at iteration close. Lesson: deploy-verification briefs should include a live API key health check (not just code-path correctness) as a required principal test-plan item.
+- **T6 had no PR because rate limiting was already implemented.** This is a clean outcome operationally, but the no-PR case required a Principal-authorized manual close — which requires a human decision gate at an unexpected time. Lesson: when a task is dispatched and the Developer discovers the feature is already implemented, the brief should explicitly name the "already-implemented verification + Principal-authorized close" as a recognized completion path, so it doesn't create ambiguity at close-out time.
+
+### Carry-forward lessons (add to lessons.md calibration section if not already there)
+
+- **Per-task Archivist close-out must happen within 24h of PR merge.** Waiting creates forge drift — open Issues for merged PRs, misleading active-state signals, and deferred coherence audits. The aeg-coherence-v1 enforcement (T2, #217) should make this mechanical.
+- **Deploy-verification briefs need a live API key health check.** Static code-path verification is necessary but insufficient — a production environment with an expired key behaves identically to a misconfigured one from a code-path perspective. The `[principal]` test-plan item for deploy-verification should include "confirm prod API key returns a valid response with a fresh curl."
+- **"Already-implemented" is a valid task completion — document it clearly.** When a Developer dispatched for a task discovers the feature is already implemented, the brief should recognize this as a first-class completion path: verify the implementation, note it in the PR, flag for Principal-authorized close. Do not open a trivial PR; do not silently skip the Issue closure.
+
+### Decisions made this iteration (Type 1, ratified)
+
+- **D-051** (Type 2, ACTIVE) — Agent implementation packages at `packages/agents/<name>/`; workspace glob extended to `packages/*/*`. First execution: `forensic-hiring-auditor` in T2. Ratified June 17, 2026.
+- **D-061** (Type 1, ACTIVE) — Herald owner `/ui` + `/settings` relocated under `/[username]/(owner)/`; topbar icon buttons via `extraActions`. Ratified June 25, 2026.
+
+### Unbuilt tasks
+
+None — all 8 tasks either have merged PRs or a Principal-authorized close (T6).

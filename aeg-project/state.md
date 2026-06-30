@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** June 28, 2026 (D-057: now.md retired; forge is the source of truth for active/blocked/next)
+**Last updated:** June 30, 2026 (D-057: now.md retired; forge is the source of truth for active/blocked/next)
 **Purpose:** Non-derivable operational facts across the AttaLabs ecosystem. For live execution state (active tasks, blocked, next), derive from the forge — see `coordination.md` "Session-start forge queries."
 
 This doc lives in the repo at `aeg-project/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -11,9 +11,9 @@ Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
 
 ## Current focus
 
-**herald-agents-v2** and **vada-production-v1** are the active iterations. `vada-production-v1`'s deliberate-page slice (6a/6b/6c + UI-libraries restoration) shipped in PR #207 (merged June 28 — Council deliberations end-to-end); the iteration's back half remains open — Fusion (T4/T5), reviewers-prompt (T8), benchmark (T9–T11), Teams-page measured stats (T12), hardening (T13). The teams-as-a-product rethink (`apps/vada-ai/specs/vada-rethink.md`, draft June 28) gates T8/T11/T12 and is not yet a forge Issue.
+**vada-production-v1** and **aeg-coherence-v1** are the active iterations. `vada-production-v1`'s deliberate-page slice (6a/6b/6c + UI-libraries restoration) shipped in PR #207 (merged June 28 — Council deliberations end-to-end); the iteration's back half remains open — Fusion (T4/T5 merged June 29), reviewers-prompt (T8), benchmark (T9–T11), Teams-page measured stats (T12), hardening (T13). The teams-as-a-product rethink (`apps/vada-ai/specs/vada-rethink.md`, draft June 28) gates T8/T11/T12 and is not yet a forge Issue. **herald-agents-v2 is complete** (8 tasks, June 18–29; iteration archived to `aeg-root/iterations/completed/herald-agents-v2.md`; #234 open bug — prod ANTHROPIC_API_KEY likely expired, Principal to disposition).
 
-Check `gh issue list --label "iteration:herald-agents-v2" --state open` and `gh issue list --label "iteration:vada-production-v1" --state open` for live task status.
+Check `gh issue list --label "iteration:vada-production-v1" --state open` and `gh issue list --label "iteration:aeg-coherence-v1" --state open` for live task status.
 
 ---
 
@@ -25,7 +25,7 @@ These require Principal action and are not trackable as forge Issues:
 - **Close Issue #110 manually** — task 9 view half (token ledger Studio display) merged via PR #153 on branch `task/aeg-governance-ui-v2/4`; auto-close did not fire; issue remains open.
 - **Add OpenAI + xAI keys to Vercel** — Vercel → vada-ai project → Settings → Environment Variables → add `OPENAI_API_KEY` and `XAI_API_KEY`. Unblocks Reviewers end-to-end testing.
 - **Upstash Redis credentials for Herald** — `.env.local` creds expired. Rate limiting degrades gracefully but isn't active. Provision at upstash.com, update `.env.local` + Vercel env vars for `herald.attalabs.dev`.
-- **Herald deploy verification** — confirm `https://herald.attalabs.dev/admin` works post-PR-#75 (avatar upload, CV upload, bio save, theme picker).
+- **Herald deploy verification (browser-auth flows)** — Code paths verified by PR #235 (T7). Manual browser-auth test still required: avatar upload → URL saved, CV upload → download works, bio save → reflects on Envoy, onboarding second user, Bulk Audit with real BYOK key. **#234 blocking BYOK-free audits**: prod `ANTHROPIC_API_KEY` likely expired — rotate in Vercel before re-verifying, or accept-and-defer (Principal to decide).
 - **Worktree graveyard cleanup** — `git worktree prune && git fetch --prune && git branch --merged main | grep -v "^\* \|main" | xargs git branch -D`
 - **Vitakka Clerk app deletion** — unused, no users. 2 minutes.
 - **Generate Vāda API key + configure Claude Code MCP connector** — point at `https://vada.attalabs.dev/api/mcp` with bearer auth. Final step in hosted MCP dogfooding.
@@ -263,7 +263,7 @@ V0 Coordinator shipped May 10 (PR #25). V0.5 spec locked May 11 (PR #33). V0.5 S
 
 **Domain:** `cetana.attalabs.dev` reserved for if/when Cetana ships as a public product surface. Internal tooling today.
 
-### Herald — *standalone AttaLabs product; Phase 2 done, Phase 3 (recruiter self-serve) next*
+### Herald — *standalone AttaLabs product; herald-agents-v2 complete (Jun 29); Phase 4 (recruiter B2B surface) is next*
 
 **Full state:** `apps/herald-ai/aeg-project/state.md` — read that file for Herald detail. Backlog: `apps/herald-ai/specs/herald-backlog.md`.
 **Phases:** Phase 1 (candidate Envoy) complete June 1 (PR #70). Phase 2 (self-service onboarding + admin redesign) complete June 1–2 (PRs #74/#75) — **needs production verification** (avatar/CV upload not tested in prod). **Phase 3 — recruiter self-serve (paste JD + N CVs → batch forensic audit → ranked reports) complete June 16** — built as the herald-onto-engine AEG iteration (engine onboarding + multi-vendor BYOK + Bulk Audit UI). Phase 4 (recruiter as distinct B2B surface) is future.
@@ -389,6 +389,8 @@ This ecosystem uses the repo as the source of truth for project management. See 
 
 ### Recently shipped (most recent first)
 
+**June 18–29, 2026 — herald-agents-v2 iteration complete.** Forensic-hiring-auditor intelligence extracted to `packages/agents/forensic-hiring-auditor/` (D-046 first execution, D-051); Herald made a thin engine consumer; `herald__audit` MCP tool live at `herald.attalabs.dev/api/mcp`; Bulk Audit UX overhauled (N×M matrix, report cards, cell status, polymorphic inputs); report quality improved with evidence-tiered prompt + fixture evidence (14 regression tests); owner `/ui` + `/settings` relocated under `/[username]/(owner)/` with `extraActions` topbar buttons (D-061); deploy verification complete — code paths clean, browser-auth flows need manual principal sign-off. **#234 open bug:** prod `ANTHROPIC_API_KEY` likely expired — fallback triggered on non-BYOK audits; Principal to rotate or defer. T6 (abuse cap) verified already-implemented; closed by Principal (no PR). 7 task PRs: #148, #150, #156, #191, #193, #213, #235 — June 18–29.
+
 **June 28, 2026 — vada-production-v1 deliberate-page slice + UI-libraries restoration (PR #207).** Council deliberations end-to-end: `vada-council` + `vada-council-synthesis` YAML specs published; `CouncilFeed` (N independent-answer columns, vendor-color spheres via `resolveVendorColor → VENDORS[v].color`; grey-sphere bug fixed by construction; completion-fill streaming; locked `{agreements, disagreements, bottomLine}` synthesis panel); per-spec routing. Deliberate-page production UX: frontier-chat hero input (inline-right single-line → footer multi-line), morphing Configure↔Submit, dropdown restyle/short labels (kills Council "reviewers" misnomer), team-identity Configure modal, tool-badge corner glyph + `badgeLeft` slot, `RouteAwareFooter` (Vāda-only). `SmartPromptInput` dependency-injection contract — shared composites resolve no library; consumers inject primitives (D-064 ACTIVE). `TextReveal` added to `@atta/ui` contract + all 4 libraries. UI-libraries doctrine (D-065 ACTIVE): `installed/*` re-established as verbatim upstream CLI pastes; Biome-ignored; `check-forbidden-colors` gate exempts them; customizations in `components/interactive/*`; Tabs + Button restored to canonical; per-library cva; dropped zero-consumer variants and contract types; skills updated; supersedes #226. 4 teams now in public catalog. Rode-along: Herald `JDInput` bare-variant refactor; `tools/admin` theme-editor routing fix. This is the 6a/6b/6c slice; vada-production-v1 back half (Fusion, benchmark, Teams stats, hardening) remains open.
 
 **June 18–20, 2026 — aeg-governance-ui-v2 iteration complete.** Completed the AEG model by writing all five missing role-seam contracts (`aeg-root/contracts/brief-developer.md`, `developer-reviewer.md`, `reviewer-archivist.md`, `archivist-iteration-archivist.md`, `iteration-archivist-planner.md`), adding Planner readiness gate item 8 (enforces iteration archival before new planning on any product), and running a governance gap discovery spike (`aeg-root/discovery/2026-06-17-governance-gaps.md`, 16 gaps documented). AEG Studio fully refactored with the science layout pattern (replacing `StudioShell` + `StudioSidebar`), wired to Atta CMS config via `NextWebShell`, and extended with a cross-product `/iterations` view and token ledger display on the iteration detail page. 6 PRs merged (#144 task/1a, #145 task/1b, #149 task/2, #152 task/theme unplanned, #153 task/4, #155 task/3).
@@ -485,7 +487,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - Cetana F7 (`cetana status`) — ready to dispatch
 - Spec refresh-and-ratify pass (Vāda first) → Integrity Reviewer (spec-integrity chain, `specs/ecosystem-backlog.md`)
 
-**Active iterations:** herald-onto-engine: complete ✅ (June 16). aeg-ui-v1: complete ✅ (June 20). aeg-governance-ui-v2: complete ✅ (June 20). herald-agents-v2 and vada-production-v1: active (parallel execution). vada-production-v1's deliberate-page slice (6a/6b/6c) shipped PR #207 June 28; back half (T4/T5/T8–T13) open.
+**Active iterations:** herald-onto-engine: complete ✅ (June 16). aeg-ui-v1: complete ✅ (June 20). aeg-governance-ui-v2: complete ✅ (June 20). **herald-agents-v2: complete ✅ (June 29) — archived.** vada-production-v1 and aeg-coherence-v1: active (parallel execution). vada-production-v1's deliberate-page slice (6a/6b/6c) shipped PR #207 June 28; Fusion (T4/T5) merged June 29; back half (T8–T13) open. Studio: Active 3→2; Archived 4→5.
 
 **Drafted briefs awaiting dispatch:** none.
 
