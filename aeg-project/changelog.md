@@ -9,6 +9,14 @@
 
 ---
 
+## June 30, 2026 — Vāda T7: Outside Read deliberation UI fixes
+
+### Vāda
+
+- **T7 (#182, PR #246)** — Fixes four UI bugs in the Outside Read deliberation view and ships two engine-layer fixes in the same commit. Role normalization: `start/route.ts` builds `specRoleByName` from YAML `role` fields so `normalizeAgentKey` resolves Outside Read agents (AssumptionHunter → devils_advocate, BaseRate → strategist, FailureMode → critic, SecondOrder → synthesizer) correctly; deduplication Set added so panel agents sharing a role (BlindCritic + FailureMode → critic) don't inflate `session.agents` and break the turn-logic threshold. Phase labels: `phaseTitles: Record<number, string>` computed from spec round names and threaded through `useDeliberationScene` → `DeliberationFeed` → `RoundStrip` / `useRoundStrip`; Outside Read now displays "Attack-Vector Panel" and "Battlefield Map Synthesis" instead of generic "Initial Positions". Conclusion schema: new `BattlefieldMapPanel` component renders the battlefield-map output schema (`core_agreement`, `concessions`, `irreducible_conflict`, `risk_ranking`); `conclusionShape` detection in `page.tsx` routes to `BattlefieldMapPanel` for Outside Read sessions, `ConclusionPanel` for all other teams. Agent sphere filtering: `agentsByRound: Record<number, string[]>` computed from spec rounds and passed per-round to `RoundStrip` so only the correct panel agents render in round 1 (4 attack-vector agents) vs the synthesizer in round 0; `agentRoleByName` threaded through `useDeliberationScene` → `useDeliberation` so SSE `agent_completed` events carry correct role strings. Engine-layer fixes: YAML duplicate-role-key rebase artifact removed from `vada-fusion-native.yaml` (all 7 agents had duplicate `role:` mapping keys from T7 and PR #239 independently adding role fields); structured-output fallback added to `turn-logic.ts` `synthesize`/`revise` cases — `fromStructured` path bypasses the debate-schema Zod parser when `payload.structured` is already populated by the adapter's battlefield-map JSON pre-validation. Display ordering: `displayRounds` sort fixed to push synthesis round (internal index 0) after panel rounds (indices 1+); `displayNumber?: number` prop added to `RoundStrip` so the header shows execution position (1, 2, 3) rather than raw internal indices. Tier 1. Closes #182.
+
+---
+
 ## June 29, 2026 — Vāda T4 + T5: vada-fusion A2 benchmark + Outside Read engine
 
 ### Vāda / Adapter

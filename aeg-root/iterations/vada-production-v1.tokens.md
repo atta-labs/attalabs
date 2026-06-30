@@ -10,3 +10,4 @@ Append-only. One row per phase/role turn. See `iterations/README.md` §12.
 | tool-badges: archive | Archivist | claude-sonnet-4-6 | — | — | — | 2026-06-28 |
 | T4: archive | Archivist | claude-sonnet-4-6 | — | — | — | 2026-06-29 |
 | T5: archive | Archivist | claude-sonnet-4-6 | — | — | — | 2026-06-29 |
+| T7: archive | Archivist | claude-sonnet-4-6 | — | — | — | 2026-06-30 |
