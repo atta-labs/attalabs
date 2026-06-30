@@ -1,1 +1,13 @@
+# Refuse commits made directly on `main`. AEG requires every repo-file change to
+# land on main via a worktree branch + PR + green merge — never a direct commit.
+# Gate on the current branch being main; all other branches fall through to the
+# existing checks. (Branch protection is unavailable on this private+free repo, so
+# this guard lives in the hook.)
+if [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ]; then
+  echo "✖ pre-commit: direct commits to main are forbidden." >&2
+  echo "  AEG routes every change to main through a worktree branch + PR + green merge." >&2
+  echo "  Create a worktree branch (git worktree add … -b task/<iteration>/<n> origin/main) and commit there." >&2
+  exit 1
+fi
+
 bun run check

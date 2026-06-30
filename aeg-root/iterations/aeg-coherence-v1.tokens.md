@@ -9,3 +9,4 @@ Append-only. One row per phase/role turn. See `iterations/README.md` §12.
 | task-1: archive | Archivist | claude-opus-4-7 (CC)   | —         | —          | —    | 2026-06-25 |
 | planning (rest) | Planner   | claude-opus-4-7 (chat) | —         | —          | —    | 2026-06-25 |
 | 6: develop      | Developer | claude-opus-4-8 (CC)   | —         | —          | —    | 2026-07-01 |
+| 9: develop      | Developer | claude-opus-4-8 (CC)   | —         | —          | —    | 2026-07-01 |

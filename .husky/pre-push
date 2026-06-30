@@ -1,0 +1,15 @@
+# Reject any push whose target is `main`. AEG requires every repo-file change to
+# reach main via a worktree branch + PR + green merge — never a direct push.
+# Branch protection is unavailable on this private+free repo, so this guard lives
+# in the hook. Gate on the PUSH TARGET being main, not on "is a worktree" — a
+# legitimate push of a task branch to origin must always pass.
+#
+# git feeds pre-push one line per ref on stdin: `<localref> <localsha> <remoteref> <remotesha>`.
+while read -r _localref _localsha remoteref _remotesha; do
+  if [ "$remoteref" = "refs/heads/main" ]; then
+    echo "✖ pre-push: direct pushes to main are forbidden." >&2
+    echo "  AEG routes every change to main through a worktree branch + PR + green merge." >&2
+    echo "  Push your task/<iteration>/<n> branch and open a PR instead." >&2
+    exit 1
+  fi
+done

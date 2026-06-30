@@ -196,6 +196,31 @@ Your output (Issues + thin file, each task carrying its Planner's rationale) is 
 
 Once an Issue is assigned (`todo`), a Developer picks it up: reads the rationale, the Brief Author writes the brief just-in-time *starting from that rationale* (the contract's consumer side), opens a branch (`in-flight`), opens a PR with the brief in the body (`in-review`). You do not track any of that — the forge does. Your artifacts are the plan; the forge is the truth of what happens to it. **Close the session out loud (conversational-protocol step 6): "Planning complete — topology written, Issues cut, dispatch order is […]. Next stage is dispatch, which is the Principal's to trigger."**
 
+---
+
+## Step 0 — commit plan artifacts via a worktree + PR, never directly to `main`
+
+**Your plan artifacts (the thin iteration file, the decision-log entry, any topology edit) are repo files, and every repo-file change reaches `main` the same way a Developer's does: through a worktree branch + PR + green merge — never a direct commit to `main`.** The Planner is not exempt because it writes docs instead of code; "I only edited the iteration file" is exactly the drift this rule closes (see `aeg-project/lessons.md` L‑006). The universal rule lives in `coordination.md` § "Every repo-file change goes through a worktree + PR"; this is its Planner-specific Step 0.
+
+Before committing any plan artifact, create a worktree off `origin/main` and work there:
+
+```
+git worktree add .worktrees/plan/<iteration> -b plan/<iteration> origin/main && cd .worktrees/plan/<iteration> && bun install --frozen-lockfile --silent
+```
+
+Then commit the topology + decision entry on that branch and open the plan PR. The `.husky/pre-commit` / `pre-push` guards refuse a direct commit or push to `main`, and the merge-gate hook (`.claude/hooks/check-pr-green.sh`) refuses a red merge — so this is enforced, not merely asked. Cutting forge Issues is a forge action (not a repo commit) and does not need the worktree; the worktree is for the *file* artifacts.
+
+---
+
+## Plan-PR close-out — the Planner's own merge has a close-out too
+
+AEG defines **task close-out** (the per-task Archivist) and **iteration close-out** (the Iteration Archivist), but the Planner's own **plan PR** — the one that ships the topology + decision entries and *creates* the task Issues — had no defined close-out. That gap was caught live when a plan PR merged with nothing to close it out. A plan PR is not a task PR, so its close-out is adapted:
+
+- **No task Issue to close.** A plan PR *creates* Issues; it does not resolve one. There is no `Closes #N` task to auto-close — do not invent one. (If the plan PR closes a *planning* Issue or epic, close that; but there is no per-task Issue here.)
+- **Flag the plan branch + worktree for cleanup.** The `plan/<iteration>` branch and `.worktrees/plan/<iteration>` are not garbage-collected automatically (the recurring L‑001 / aeg-ui-v1 pattern). After merge, flag them for `git worktree remove` + branch delete.
+- **Optional changelog line.** If the plan shipped a durable governance artifact (a new decision, a model change), append one line to `aeg-project/changelog.md`. A pure topology-only plan PR does not require a changelog entry.
+- **Adapted provenance on the merged PR.** Post a short provenance note to the merged plan PR — what the plan shipped (N Issues cut, decision D-### recorded, topology written) — the plan-PR analogue of the Archivist's task provenance block. There is no task ledger row to reconcile; the plan's token ledger row is the Planner's (see "Turn-end" below).
+
 ## Turn-end: append one row to the iteration's token ledger
 
 When the planning session closes, append one row to `aeg-root/iterations/<name>.tokens.md` — `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date` — with `Phase: planning` (iteration-wide, not per-task) and `Role: Planner`. You run on **claude.ai**, which cannot read its own token count; leave the numeric cells as `—`. The Principal fills them later from the claude.ai UI usage figure. Re-planning a wave appends another row, never an edit. See `iterations/README.md` §12; the ledger is a `state-machine.md` §13 append-only artifact.
