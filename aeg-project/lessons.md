@@ -195,6 +195,23 @@ None. All 4 topology tasks completed.
 
 ---
 
+## L‑006 — A Planner commit landed on `main` with no worktree; nothing stopped it
+
+**Context:** During an aeg planning session (June 2026), a plan-artifact commit (iteration topology + decision entry) was made **directly on `main`**, with no worktree branch and no PR. Nothing in the harness or Husky stopped it. The Developer brief has carried a worktree-first Step 0 for a long time, but that discipline lived only in the Developer's brief — no other role had a worktree gate, and no mechanism enforced one. The same session also surfaced that an agent could `gh pr merge` a red PR: the green-merge invariant was *trusted* (documented), not *enforced*, because branch protection is unavailable on this private+free repo (classic protection and rulesets both 403).
+
+**Root cause:** worktree-first discipline and the green-merge invariant were **role-doc conventions, not mechanical gates** — and they covered only the Developer. Non-Developer roles (notably the Planner, which commits the iteration file and decision logs) had no Step 0 and no enforcement, so a direct-to-`main` commit was the path of least resistance, and a red merge was one command away.
+
+**Lesson / fix (these guardrails):** promote the invariants from trusted to enforced (D-069), for free, without branch protection:
+- `.husky/pre-commit` refuses commits while on `main`; `.husky/pre-push` refuses pushes targeting `main`. Direct-to-`main` is now mechanically blocked for every role.
+- `.claude/hooks/check-pr-green.sh` (a `PreToolUse` merge-gate hook, sibling to `check-skill.sh`) intercepts every agent merge path — `gh pr merge`, `gh api …/merge`, `curl …/merge`, GitHub MCP `merge_pull_request` — and denies the merge unless `gh pr checks <pr>` is all-green, failing closed when greenness can't be proven.
+- Worktree-first discipline is made universal: a Step 0 in `roles/planner.md` for plan artifacts, and the "every repo-file change goes through a worktree + PR" rule in `coordination.md` for all roles.
+
+**Generalizable rule:** when an invariant matters enough to document, ask whether the path of least resistance violates it. If it does, the invariant needs a mechanical gate, not just a role-doc sentence. A convention only one role reads is not a system property — enforce it at the harness/hook layer where every role hits it.
+
+**Anti-pattern:** relying on role-doc prose to enforce a git-flow invariant (worktree-first, green-merge) while the un-gated direct path stays one command away.
+
+---
+
 ## aeg-ui-v1 — retrospective (June 2026)
 
 **Duration:** June 14, 2026 → June 20, 2026 (PR #105 merged → PR #153 merged — task 9 view half)

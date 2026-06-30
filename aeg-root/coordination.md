@@ -227,6 +227,18 @@ Locked (D-013). Spec filenames are `{product}-spec.md` or `{component}-spec.md` 
 
 ## Coordination rules — keeping sessions in sync
 
+### Every repo-file change goes through a worktree + PR — no direct commits to `main`
+
+**Universal rule, every role.** Any change to a repo-tracked file — code, specs, skills, role docs, the iteration topology, decision logs, changelog, lessons — reaches `main` through a worktree branch + PR + green merge. **No role commits or pushes directly to `main`.** This applies to the Planner editing the iteration file just as much as the Developer editing code: "I only touched a doc" is not an exemption. The drift that produced this rule was a plan commit landing on `main` with no worktree and nothing stopping it (`aeg-project/lessons.md` L‑006).
+
+This is **mechanically enforced**, not merely asked:
+- `.husky/pre-commit` refuses a commit while the current branch is `main`; `.husky/pre-push` refuses any push whose target is `refs/heads/main`. (Husky activates per-worktree via the post-checkout hook, so the guards fire in every worktree.)
+- The merge-gate hook `.claude/hooks/check-pr-green.sh` (a `PreToolUse` hook wired in `.claude/settings.json`, sibling to `check-skill.sh`) intercepts every agent merge path — `gh pr merge`, `gh api …/merge`, `curl …/merge`, and the GitHub MCP `merge_pull_request` tool — and **denies the merge unless `gh pr checks <pr>` is all-green**. A red or pending PR cannot be merged by an agent. The gate fails closed: if greenness can't be proven, the merge is denied.
+
+Branch protection is unavailable on this private+free repo (classic protection and rulesets both 403), so the green-merge + no-direct-commit invariants live in these hooks, not in a GitHub setting. The exception path is the same as everywhere: a `Lock`/override is a Principal action, not an agent one.
+
+The only thing a non-Developer role does *not* route through a worktree is a pure forge action (cutting an Issue, posting a comment, merging via the gate) — those touch the forge, not repo files. Every repo *file* edit goes through the worktree + PR.
+
 ### When state changes, update `state.md`
 
 State changes: a project phase advances, an app ships/scaffolds, auth/DNS config changes, a known production issue is resolved, a pending manual op is completed. The TL updates `state.md` (commit or PR) before the session ends. For Tier 3 work, the state update goes in the same PR.
