@@ -50,6 +50,9 @@ Previously completed in vada-agents-v2 (carry-forward, not re-dispatched):
 | 6a  | Deliberate-page production UX — frontier-chat hero input, morphing Configure↔Submit, dropdown restyle + short labels (kills Council "reviewers" misnomer), team-identity Configure modal, tool-badge corner glyph + `badgeLeft` slot, `RouteAwareFooter` Vāda-only | —     | vada, @atta/ui          | #181             | —              |
 | 6b  | Council teams + CouncilFeed view — `vada-council` + `vada-council-synthesis` YAMLs (D-035 vada-local); N-column results view (`CouncilFeed`) with vendor-color spheres (`resolveVendorColor → VENDORS[v].color`), completion-fill streaming, locked `{ agreements, disagreements, bottomLine }` synthesis contract; per-spec routing | —     | vada, packages/agents   | #175             | —              |
 | 6c  | `SmartPromptInput` dependency-injection governance — shared composite resolves no library; consumers inject primitives (Vāda from `@atta/ui`, Herald from `useComponents()`); native first-paint fallbacks; closes #213; ratifies D-064 | —     | @atta/ui, vada, herald  | #181             | T6 (absorbed)  |
+| 14  | Resolve Council/Reviewers catalog fate (keep/drop/rename/merge)                                                                                                               | #240  | vada                    | #186             | —              |
+| 15  | Build Belief Revision team (`vada__deliberate` / `rounds-audit`, 2-round cap + objection-novelty-stop detector)                                                               | #241  | vada, adapter           | #186             | —              |
+| 16  | Role model-capability gating — `min_tier` per YAML agent; tier ordering in `packages/models`; ModelPicker hard-blocks sub-tier models per slot; invalid saved sessions surfaced clearly. Engine schema change is STOP-AND-ESCALATE (see D-068). | #244  | vada, engine            | #186             | —              |
 
 > **Note:** 6a/6b/6c were absorbed into the in-flight T6 branch under explicit Principal instruction ("keep the deliberate-page work atomic"). They are forge-derived as part of PR #207 (the original tool-badges PR). Topology-only here per AEG convention — status / PR numbers live on the forge.
 
@@ -109,4 +112,6 @@ Previously completed in vada-agents-v2 (carry-forward, not re-dispatched):
 - MCP situated-loop hardened (`vada__consult` + `vada__deliberate` return structured
   battlefield-map contract; error states defined; streaming contract documented).
 - Hosted MCP hardened (E8–E12). Observability wired.
+- Capability-gated model selection: `min_tier` declared per YAML agent role; UI dropdown
+  hard-blocks sub-tier models; invalid saved sessions surfaced before submission.
 - Specs/state docs current. `vada-rethink-v1-decision.md` is the architecture authority.
