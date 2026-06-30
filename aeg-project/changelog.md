@@ -9,6 +9,15 @@
 
 ---
 
+## June 29, 2026 — Vāda T4 + T5: vada-fusion A2 benchmark + Outside Read engine
+
+### Vāda / Adapter
+
+- **T4 (#179, PR #233)** — Wires OpenRouter Fusion as the A2 external benchmark condition for `vada-production-v1`. Creates `packages/agents/vada-fusion/` (`@atta/vada-fusion`) with `vada-fusion.yaml` — single-agent spec (`model: openrouter/fusion`, solo shape, `experimental: true`) — so the benchmark harness can call it as condition A2 alongside `a0-baseline` and `a1-baseline`. Adds `modelPrefixes: ['openrouter/']` to the openrouter vendor entry so `resolveVendorByPrefix('openrouter/fusion')` resolves without explicit `agentVendorOverrides`. Wires A2 into `verify-baselines.ts` via a `providerKeys` adapter; skips gracefully without `OPENROUTER_API_KEY`. `vada-fusion` is NOT a user-facing catalog team slot — benchmark condition only. Pending principal: `OPENROUTER_API_KEY=sk-or-…` live-run of A2 condition in `verify-baselines.ts` (unchecked principal test plan item). Tier 1. Conforms-to `vada-rethink-v1-decision.md §4.3`. Closes #179.
+- **T5 (#180, PR #237)** — Implements the Outside Read engine (`vada-fusion-native`) for `vada__consult`. New YAML `packages/agents/vada-deliberation/yamls/vada-fusion-native.yaml` — 3-phase flow: parallel attack-vector panel (AssumptionHunter/claude-sonnet-4-6, BaseRate/gemini-2.5-pro, FailureMode/gpt-4o, SecondOrder/grok-3) → BattlefieldSynthesizer (web-off, structured `{ core_agreement, concessions, irreducible_conflict, risk_ranking }`) → BlindCritic (no tools) + FactChecker (web_search, web_fetch) audit; max 1 revision. New package `packages/agents/vada-fusion-native/` (`@atta/vada-fusion-native`). Panel isolation enforced via `message_template: "{{question}}"` — panel agents never see each other's outputs. Three presets: `find-blind-spots`, `critique-draft`, `pre-mortem` — same YAML, preset is caller-level context. Engine shape: `rounds-audit` (product framing: brokered-no-synth — panel agents don't cross-talk; see `06-outside-read.md` for rationale on shape vs. framing distinction). `vada__consult` adapter: safe optional-chain for transcript mapping + `structured` and `terminal_state` fields added to `ConsultOutput`. Docs: new `apps/vada-ai/specs/vada-teams-catalog/06-outside-read.md`; §11 appended to `vada-reviewers-spec.md`. Default team for `vada__consult` unchanged (`brokered-trio`) — switching to `vada-fusion-native` requires explicit Principal decision. Tier 3. Conforms-to D-036. Closes #180.
+
+---
+
 ## June 27, 2026 — Vāda deliberate page: production UX + Council deliberations (PR #207)
 
 ### Vāda / @atta/ui
