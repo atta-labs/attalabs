@@ -164,6 +164,7 @@ function DeliberationScene({
                 )}
                 <RoundStrip
                   round={round}
+                  displayNumber={i + 1}
                   question={question}
                   agentRoles={agentsByRound?.[round] ?? agentRoles}
                   modelByRole={modelByRole}

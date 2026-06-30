@@ -30,7 +30,6 @@ agents:
   - name: AssumptionHunter
     role: devils_advocate
     description: "Attack vector: surfaces load-bearing assumptions the user has not named."
-    role: devils_advocate
     model: claude-sonnet-4-6
     editable: true
     tools: [web_search]
@@ -88,7 +87,6 @@ agents:
   - name: BaseRate
     role: researcher
     description: "Attack vector: grounds claims in reference class and historical frequency."
-    role: researcher
     model: gemini-2.5-pro
     editable: true
     tools: [web_search]
@@ -135,7 +133,6 @@ agents:
   - name: FailureMode
     role: critic
     description: "Attack vector: enumerates failure modes the proposal has not addressed."
-    role: critic
     model: gpt-4o
     editable: true
     tools: [web_search]
@@ -183,7 +180,6 @@ agents:
   - name: SecondOrder
     role: strategist
     description: "Attack vector: surfaces downstream and second-order consequences."
-    role: strategist
     model: grok-3
     editable: true
     tools: [web_search]
@@ -241,7 +237,6 @@ agents:
   - name: BattlefieldSynthesizer
     role: synthesizer
     description: "Synthesizer — produces the locked battlefield-map output contract (web-off)."
-    role: synthesizer
     model: claude-sonnet-4-6
     output_format: structured
     output_schema:
@@ -320,7 +315,6 @@ agents:
   - name: BlindCritic
     role: critic
     description: "Logical/structural auditor — no tools; blindness is the audit mechanism."
-    role: critic
     classifier:
       mode: skip
     system_prompt: |
@@ -351,7 +345,6 @@ agents:
   - name: FactChecker
     role: researcher
     description: "Factual auditor — web search to verify verifiable claims in the map."
-    role: researcher
     tools: [web_search, web_fetch]
     classifier:
       mode: auto

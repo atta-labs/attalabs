@@ -26,6 +26,7 @@ import type { DeliberationMessage, StreamingMessage } from './useDeliberation'
 
 interface RoundStripProps {
   round: number
+  displayNumber?: number
   question: string
   agentRoles: string[]
   modelByRole?: Record<string, { provider: string; modelId: string }>
@@ -70,6 +71,7 @@ const AgentMessageText = memo(function AgentMessageText({
 
 export const RoundStrip = memo(function RoundStrip({
   round,
+  displayNumber,
   question,
   agentRoles,
   modelByRole = {},
@@ -122,7 +124,7 @@ export const RoundStrip = memo(function RoundStrip({
             height so the whole header is one tight 48px band. */}
         <div className='flex h-12 min-w-[180px] flex-1 flex-col justify-center gap-1'>
           <div className='font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground'>
-            Round {round} — {roundTitle}
+            Round {displayNumber ?? round} — {roundTitle}
           </div>
           <div className='flex items-center gap-1'>
             <span
