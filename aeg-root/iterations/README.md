@@ -70,8 +70,12 @@ A task **is** a forge Issue. Its status is not a field anyone writes — it is *
 | `changes-requested` | PR open, `reviewDecision: CHANGES_REQUESTED` |
 | `merged` | PR merged (Issue auto-closes) |
 | `blocked` | An `aeg:blocked` label is present |
+| `dropped` | Issue **closed `NOT_PLANNED`**, no merged PR — legitimately abandoned, never done, never `todo` (D-069) |
+| `incoherent` | Issue **closed `COMPLETED`** (or with no recorded close reason), no merged-PR link — done-but-unprovable or a broken close; surfaced for a human, never auto-reopened (D-069) |
 
 `backlog` is a **project-level concept only** — ideas/maybe-tasks in markdown that live outside the iteration flow (`specs/<unit>-backlog.md`, Jira, etc.). Once a task is placed in a launched iteration it is committed work and derives `todo` at minimum, never `backlog`. See D-059.
+
+**A closed-without-merge Issue never resolves to `todo`** (D-069). `todo` implies not-started; a closed Issue is terminal. The derivation reads GitHub's native `stateReason`: `NOT_PLANNED` → `dropped`; anything else (`COMPLETED`, or no reason) → `incoherent`. The one law: a task-Issue reaches *done* only via a merged PR that names it (`Closes #N`); a `COMPLETED` close without that merge is incoherent, not done.
 
 So: there is **no status column anywhere.** The Developer does not "flip to in-review" — *opening the PR is the in-review signal*. The close-out does not "flip to merged" — *the merge is that signal*. The branch-name convention `task/<iteration>/<n>` is what links a task number to its branch and PR, so any role finds a task's live status with one forge query and writes nothing. `blocked` is the one state with no native forge fact, so it is a label (cheap, native, doesn't race).
 

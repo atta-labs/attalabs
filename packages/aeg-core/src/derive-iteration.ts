@@ -59,9 +59,16 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
 /**
  * Map a single task's forge facts to its derived status. Mirrors the §3 table
  * (D-059): `blocked` wins over everything else, then `merged`, then
- * `changes-requested`, then `in-review`, then `in-flight`, then `todo` for all
- * remaining open-issue cases (assigned or not — both are `todo` inside an
- * iteration per D-059).
+ * `changes-requested`, then `in-review`, then `in-flight`, then `todo` for the
+ * open-issue cases (assigned or not — both are `todo` inside an iteration per
+ * D-059), then the honest terminal cases for a closed-without-merge Issue.
+ *
+ * Honest terminal derivation (D-069): a closed Issue with no merged PR must
+ * never resolve to `todo` (which would imply not-started — a lie). It reads
+ * GitHub's native `stateReason`: closed `NOT_PLANNED` → `dropped` (legitimately
+ * abandoned); anything else (closed `COMPLETED` or no reason recorded) →
+ * `incoherent` (genuinely done but unprovable, or a broken close that the
+ * `Closes #N` law was built to surface).
  *
  * A missing `forgeFacts` entry → `todo`. Iteration tasks are committed work;
  * `backlog` is a project-level concept only and is never emitted here (D-059).
@@ -75,7 +82,8 @@ function deriveStatus(facts: ForgeFacts | undefined): DerivedStatus {
   }
   if (facts.branchExists) return 'in-flight'
   if (facts.issueState === 'open') return 'todo'
-  // Issue closed, no PR merged — anomalous (e.g. closed not-planned). Still
-  // minimum todo per D-059; the row likely shouldn't be in the table anymore.
-  return 'todo'
+  // Issue closed, no merged PR (D-069): honest terminal status, never `todo`.
+  // NOT_PLANNED is a legitimate drop; COMPLETED-without-merge (or no reason)
+  // is incoherent — surfaced for a human to resolve, never auto-reopened.
+  return facts.stateReason === 'not_planned' ? 'dropped' : 'incoherent'
 }

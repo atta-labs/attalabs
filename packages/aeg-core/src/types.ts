@@ -98,11 +98,37 @@ export type ForgeFacts = {
   reviewDecision: 'none' | 'changes_requested' | 'approved'
   /** `aeg:blocked` label present. Wins over every other status (§3). */
   blockedLabel: boolean
+  /**
+   * GitHub's native close reason (`stateReason`), projected to AEG's terms:
+   *   - `'completed'`    ← closed COMPLETED
+   *   - `'not_planned'`  ← closed NOT_PLANNED (legitimately dropped)
+   *   - `null`           ← issue open, or no close reason recorded
+   * Drives the honest terminal-status derivation (D-069): a closed Issue with
+   * no merged PR resolves to `dropped` (NOT_PLANNED) or `incoherent`
+   * (COMPLETED-but-unproven) — never the innocuous `todo`.
+   */
+  stateReason: 'completed' | 'not_planned' | null
 }
 
 // ---------- Derivation output ----------
 
-export type DerivedStatus = 'backlog' | 'todo' | 'in-flight' | 'in-review' | 'changes-requested' | 'merged' | 'blocked'
+/**
+ * `dropped` and `incoherent` are the two **honest terminal** statuses (D-069).
+ * A closed Issue with no merged PR must never resolve to `todo` (which implies
+ * not-started). `dropped` = closed `NOT_PLANNED` (legitimately abandoned);
+ * `incoherent` = closed `COMPLETED` but with no merged-PR link (genuinely done
+ * yet unprovable, or a broken close). Both are surfaced, never hidden.
+ */
+export type DerivedStatus =
+  | 'backlog'
+  | 'todo'
+  | 'in-flight'
+  | 'in-review'
+  | 'changes-requested'
+  | 'merged'
+  | 'blocked'
+  | 'dropped'
+  | 'incoherent'
 
 export type DispatchBlockers = {
   /** Depends-on edges whose target is not yet `merged`. */

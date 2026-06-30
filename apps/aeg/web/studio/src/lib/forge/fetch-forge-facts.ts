@@ -178,6 +178,7 @@ function buildBatchQuery(iteration: string, tasks: Array<TaskRef & { issue: numb
       return `
     ${a}_issue: issue(number: ${task.issue}) {
       state
+      stateReason
       assignees(first: 1) { totalCount }
       labels(first: 50) { nodes { name } }
       timelineItems(first: 1, itemTypes: [CLOSED_EVENT]) {
@@ -227,6 +228,8 @@ type PrCloserNode = {
 
 type IssueNode = {
   state: 'OPEN' | 'CLOSED'
+  /** GitHub's native close reason. `null` while the issue is open. */
+  stateReason: 'COMPLETED' | 'NOT_PLANNED' | 'REOPENED' | null
   assignees: { totalCount: number }
   labels: { nodes: Array<{ name: string }> }
   /** First CLOSED_EVENT — the PR (or commit) that closed the issue, if any. */
@@ -268,6 +271,7 @@ function extractRawFromResponse(repository: NonNullable<BatchResponse['repositor
     issue: issue
       ? {
           state: issue.state,
+          stateReason: issue.stateReason,
           assigneesCount: issue.assignees.totalCount,
           labels: issue.labels.nodes.map((n) => n.name)
         }
