@@ -16,6 +16,11 @@
  *                    'CHANGES_REQUESTED' → 'changes_requested'
  *                    'REVIEW_REQUIRED' / null → 'none'
  *                    (Only `'changes_requested'` flips status per types.ts.)
+ *   stateReason    ← issue.stateReason: 'COMPLETED' → 'completed',
+ *                    'NOT_PLANNED' → 'not_planned', 'REOPENED' / null → null.
+ *                    Drives honest terminal derivation (D-069): a closed-no-
+ *                    merge issue derives `dropped` (not_planned) or
+ *                    `incoherent` (completed / null), never `todo`.
  *
  * Missing issue → return `null` (caller omits the task from the map, which
  * `deriveIteration` treats as `todo` — iteration tasks are minimum `todo` per D-059).
@@ -34,8 +39,17 @@ export function mapForgeFacts(raw: RawTaskFacts): ForgeFacts | null {
     blockedLabel: raw.issue.labels.includes(AEG_BLOCKED_LABEL),
     branchExists: raw.refExists,
     prState: mapPrState(raw.pullRequest?.state),
-    reviewDecision: mapReviewDecision(raw.pullRequest?.reviewDecision)
+    reviewDecision: mapReviewDecision(raw.pullRequest?.reviewDecision),
+    stateReason: mapStateReason(raw.issue.stateReason)
   }
+}
+
+function mapStateReason(reason: 'COMPLETED' | 'NOT_PLANNED' | 'REOPENED' | null): ForgeFacts['stateReason'] {
+  if (reason === 'COMPLETED') return 'completed'
+  if (reason === 'NOT_PLANNED') return 'not_planned'
+  // 'REOPENED' and null map to null — no terminal close reason recorded.
+  // A closed-no-merge issue with null stateReason derives `incoherent` (D-069).
+  return null
 }
 
 function mapPrState(state: 'OPEN' | 'CLOSED' | 'MERGED' | undefined): ForgeFacts['prState'] {

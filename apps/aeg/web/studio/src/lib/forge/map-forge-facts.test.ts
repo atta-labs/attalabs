@@ -4,7 +4,7 @@ import type { RawTaskFacts } from './types'
 
 function rawBase(overrides: Partial<RawTaskFacts> = {}): RawTaskFacts {
   return {
-    issue: { state: 'OPEN', assigneesCount: 0, labels: [] },
+    issue: { state: 'OPEN', stateReason: null, assigneesCount: 0, labels: [] },
     refExists: false,
     pullRequest: null,
     ...overrides
@@ -18,37 +18,49 @@ describe('mapForgeFacts', () => {
 
   describe('issueState', () => {
     it("projects OPEN → 'open'", () => {
-      const facts = mapForgeFacts(rawBase({ issue: { state: 'OPEN', assigneesCount: 0, labels: [] } }))
+      const facts = mapForgeFacts(
+        rawBase({ issue: { state: 'OPEN', stateReason: null, assigneesCount: 0, labels: [] } })
+      )
       expect(facts?.issueState).toBe('open')
     })
 
     it("projects CLOSED → 'closed'", () => {
-      const facts = mapForgeFacts(rawBase({ issue: { state: 'CLOSED', assigneesCount: 0, labels: [] } }))
+      const facts = mapForgeFacts(
+        rawBase({ issue: { state: 'CLOSED', stateReason: null, assigneesCount: 0, labels: [] } })
+      )
       expect(facts?.issueState).toBe('closed')
     })
   })
 
   describe('assigned', () => {
     it('is false when no assignees', () => {
-      const facts = mapForgeFacts(rawBase({ issue: { state: 'OPEN', assigneesCount: 0, labels: [] } }))
+      const facts = mapForgeFacts(
+        rawBase({ issue: { state: 'OPEN', stateReason: null, assigneesCount: 0, labels: [] } })
+      )
       expect(facts?.assigned).toBe(false)
     })
 
     it('is true when at least one assignee', () => {
-      const facts = mapForgeFacts(rawBase({ issue: { state: 'OPEN', assigneesCount: 1, labels: [] } }))
+      const facts = mapForgeFacts(
+        rawBase({ issue: { state: 'OPEN', stateReason: null, assigneesCount: 1, labels: [] } })
+      )
       expect(facts?.assigned).toBe(true)
     })
   })
 
   describe('blockedLabel', () => {
     it('is false when the label is absent', () => {
-      const facts = mapForgeFacts(rawBase({ issue: { state: 'OPEN', assigneesCount: 0, labels: ['tier:1'] } }))
+      const facts = mapForgeFacts(
+        rawBase({ issue: { state: 'OPEN', stateReason: null, assigneesCount: 0, labels: ['tier:1'] } })
+      )
       expect(facts?.blockedLabel).toBe(false)
     })
 
     it('is true when aeg:blocked is present (Issue-scoped per state-machine §14)', () => {
       const facts = mapForgeFacts(
-        rawBase({ issue: { state: 'OPEN', assigneesCount: 1, labels: ['tier:1', AEG_BLOCKED_LABEL] } })
+        rawBase({
+          issue: { state: 'OPEN', stateReason: null, assigneesCount: 1, labels: ['tier:1', AEG_BLOCKED_LABEL] }
+        })
       )
       expect(facts?.blockedLabel).toBe(true)
     })
@@ -110,6 +122,36 @@ describe('mapForgeFacts', () => {
     })
   })
 
+  describe('stateReason projection (D-069 — honest terminal derivation)', () => {
+    it("COMPLETED → 'completed'", () => {
+      const facts = mapForgeFacts(
+        rawBase({ issue: { state: 'CLOSED', stateReason: 'COMPLETED', assigneesCount: 1, labels: [] } })
+      )
+      expect(facts?.stateReason).toBe('completed')
+    })
+
+    it("NOT_PLANNED → 'not_planned'", () => {
+      const facts = mapForgeFacts(
+        rawBase({ issue: { state: 'CLOSED', stateReason: 'NOT_PLANNED', assigneesCount: 1, labels: [] } })
+      )
+      expect(facts?.stateReason).toBe('not_planned')
+    })
+
+    it('REOPENED → null (no terminal close reason)', () => {
+      const facts = mapForgeFacts(
+        rawBase({ issue: { state: 'OPEN', stateReason: 'REOPENED', assigneesCount: 1, labels: [] } })
+      )
+      expect(facts?.stateReason).toBeNull()
+    })
+
+    it('null → null (open issue / no reason recorded)', () => {
+      const facts = mapForgeFacts(
+        rawBase({ issue: { state: 'OPEN', stateReason: null, assigneesCount: 0, labels: [] } })
+      )
+      expect(facts?.stateReason).toBeNull()
+    })
+  })
+
   describe('composite fixtures (the kinds of rows Studio will actually render)', () => {
     it('open + unassigned + no branch + no PR → backlog-ish facts', () => {
       const facts = mapForgeFacts(rawBase())
@@ -119,14 +161,15 @@ describe('mapForgeFacts', () => {
         blockedLabel: false,
         branchExists: false,
         prState: 'none',
-        reviewDecision: 'none'
+        reviewDecision: 'none',
+        stateReason: null
       })
     })
 
     it('open + assigned + branch + no PR → in-flight-ish facts', () => {
       const facts = mapForgeFacts(
         rawBase({
-          issue: { state: 'OPEN', assigneesCount: 1, labels: ['tier:3'] },
+          issue: { state: 'OPEN', stateReason: null, assigneesCount: 1, labels: ['tier:3'] },
           refExists: true
         })
       )
@@ -136,7 +179,7 @@ describe('mapForgeFacts', () => {
     it('PR merged + branch deleted (default GitHub behaviour) → merged wins', () => {
       const facts = mapForgeFacts(
         rawBase({
-          issue: { state: 'CLOSED', assigneesCount: 1, labels: [] },
+          issue: { state: 'CLOSED', stateReason: null, assigneesCount: 1, labels: [] },
           refExists: false,
           pullRequest: { state: 'MERGED', reviewDecision: 'APPROVED' }
         })
@@ -148,7 +191,7 @@ describe('mapForgeFacts', () => {
     it('aeg:blocked + open PR → blockedLabel set (deriveIteration treats blocked as winner)', () => {
       const facts = mapForgeFacts(
         rawBase({
-          issue: { state: 'OPEN', assigneesCount: 1, labels: [AEG_BLOCKED_LABEL] },
+          issue: { state: 'OPEN', stateReason: null, assigneesCount: 1, labels: [AEG_BLOCKED_LABEL] },
           refExists: true,
           pullRequest: { state: 'OPEN', reviewDecision: 'CHANGES_REQUESTED' }
         })

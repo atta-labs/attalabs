@@ -35,6 +35,7 @@ function facts(overrides: Partial<ForgeFacts> = {}): ForgeFacts {
     prState: 'none',
     reviewDecision: 'none',
     blockedLabel: false,
+    stateReason: null,
     ...overrides
   }
 }
@@ -87,6 +88,38 @@ describe('deriveIteration: §3 status table (each status)', () => {
       new Map([['1', facts({ issueState: 'closed', branchExists: true, prState: 'merged' })]])
     )
     expect(d.tasks[0]?.status).toBe('merged')
+  })
+
+  it('dropped: issue closed NOT_PLANNED, no merged PR (D-069)', () => {
+    const d = deriveIteration(
+      oneTask,
+      new Map([['1', facts({ issueState: 'closed', prState: 'none', stateReason: 'not_planned' })]])
+    )
+    expect(d.tasks[0]?.status).toBe('dropped')
+  })
+
+  it('incoherent: issue closed COMPLETED but no merged PR link (D-069)', () => {
+    const d = deriveIteration(
+      oneTask,
+      new Map([['1', facts({ issueState: 'closed', prState: 'none', stateReason: 'completed' })]])
+    )
+    expect(d.tasks[0]?.status).toBe('incoherent')
+  })
+
+  it('merged wins over stateReason: closed COMPLETED with merged PR → merged (D-069 regression)', () => {
+    const d = deriveIteration(
+      oneTask,
+      new Map([['1', facts({ issueState: 'closed', branchExists: true, prState: 'merged', stateReason: 'completed' })]])
+    )
+    expect(d.tasks[0]?.status).toBe('merged')
+  })
+
+  it('incoherent: issue closed with no recorded stateReason and no merged PR (D-069)', () => {
+    const d = deriveIteration(
+      oneTask,
+      new Map([['1', facts({ issueState: 'closed', prState: 'none', stateReason: null })]])
+    )
+    expect(d.tasks[0]?.status).toBe('incoherent')
   })
 
   it('blocked: aeg:blocked label wins over every other status', () => {
@@ -223,7 +256,8 @@ describe('deriveIteration: live herald-onto-engine.md + today’s forge snapshot
         branchExists: true,
         prState: 'merged',
         reviewDecision: 'approved',
-        blockedLabel: false
+        blockedLabel: false,
+        stateReason: 'completed'
       }
     ]
     // Tasks 2, 3b, 4, 5, 6, 7a, 7b absent → todo (D-059: no forge facts = minimum todo).
