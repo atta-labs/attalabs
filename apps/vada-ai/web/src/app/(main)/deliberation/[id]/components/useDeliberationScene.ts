@@ -18,6 +18,7 @@ interface UseDeliberationSceneProps {
   defaultProvider: string | null
   teamName?: string
   specId?: string
+  agentRoleByName?: Record<string, string>
 }
 
 export function useDeliberationScene({
@@ -30,7 +31,8 @@ export function useDeliberationScene({
   initialTerminalState,
   defaultProvider,
   teamName = 'Deliberation',
-  specId
+  specId,
+  agentRoleByName
 }: UseDeliberationSceneProps) {
   const { messages, streamingMessage, loadingMessage, streamError, currentState, terminalState, conclusion } =
     useDeliberation(
@@ -41,7 +43,8 @@ export function useDeliberationScene({
       initialState,
       initialTerminalState,
       defaultProvider,
-      specId
+      specId,
+      agentRoleByName
     )
 
   const isLiveSession = currentState !== 'TERMINAL'
@@ -63,10 +66,16 @@ export function useDeliberationScene({
   // Display set = completed rounds ∪ currently-streaming round. Makes an
   // empty RoundStrip appear as soon as the engine starts a new round, even
   // before any content streams back.
+  // Sort: panel rounds (>0) first in ascending order, synthesis (0) last.
+  // Round 0 is always synthesis — it consumes panel output so it must render after.
   const displayRounds = useMemo(() => {
     const set = new Set<number>(rounds)
     if (currentRoundNum) set.add(currentRoundNum)
-    return Array.from(set).sort((a, b) => a - b)
+    return Array.from(set).sort((a, b) => {
+      if (a === 0) return 1
+      if (b === 0) return -1
+      return a - b
+    })
   }, [rounds, currentRoundNum])
 
   // A round is "complete" if the engine has moved past it — either to a later

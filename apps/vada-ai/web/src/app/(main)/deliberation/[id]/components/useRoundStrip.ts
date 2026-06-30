@@ -52,6 +52,7 @@ interface UseRoundStripProps {
   streamingMessage: StreamingMessage | null
   isLive: boolean
   isRoundComplete: boolean
+  phaseTitles?: Record<number, string>
 }
 
 export function useRoundStrip({
@@ -62,7 +63,8 @@ export function useRoundStrip({
   entries,
   streamingMessage,
   isLive,
-  isRoundComplete
+  isRoundComplete,
+  phaseTitles
 }: UseRoundStripProps) {
   const ctx = useAIAContext()
   const catalog = useCatalog()
@@ -104,7 +106,7 @@ export function useRoundStrip({
     if (current) prevSpeakerRef.current = current
   }, [currentSpeaker, round, ctx])
 
-  const roundTitle = ROUND_TITLES[round] ?? `Round ${round}`
+  const roundTitle = phaseTitles?.[round] ?? ROUND_TITLES[round] ?? `Round ${round}`
 
   const statusBadge: RoundStatusBadge = isRoundComplete
     ? { label: 'Done', className: 'border-success text-success' }

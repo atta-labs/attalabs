@@ -28,8 +28,8 @@ defaults:
 
 agents:
   - name: AssumptionHunter
-    description: "Attack vector: surfaces load-bearing assumptions the user has not named."
     role: devils_advocate
+    description: "Attack vector: surfaces load-bearing assumptions the user has not named."
     model: claude-sonnet-4-6
     editable: true
     tools: [web_search]
@@ -85,8 +85,8 @@ agents:
       not adequately examined? Yes or no, then the single most important one.
 
   - name: BaseRate
-    description: "Attack vector: grounds claims in reference class and historical frequency."
     role: researcher
+    description: "Attack vector: grounds claims in reference class and historical frequency."
     model: gemini-2.5-pro
     editable: true
     tools: [web_search]
@@ -131,8 +131,8 @@ agents:
       specific claim is most at risk from the reference class evidence?
 
   - name: FailureMode
-    description: "Attack vector: enumerates failure modes the proposal has not addressed."
     role: critic
+    description: "Attack vector: enumerates failure modes the proposal has not addressed."
     model: gpt-4o
     editable: true
     tools: [web_search]
@@ -178,8 +178,8 @@ agents:
       roughly equal probability)?
 
   - name: SecondOrder
-    description: "Attack vector: surfaces downstream and second-order consequences."
     role: strategist
+    description: "Attack vector: surfaces downstream and second-order consequences."
     model: grok-3
     editable: true
     tools: [web_search]
@@ -235,8 +235,8 @@ agents:
 # the transparency of attribution.
 
   - name: BattlefieldSynthesizer
-    description: "Synthesizer — produces the locked battlefield-map output contract (web-off)."
     role: synthesizer
+    description: "Synthesizer — produces the locked battlefield-map output contract (web-off)."
     model: claude-sonnet-4-6
     output_format: structured
     output_schema:
@@ -313,8 +313,8 @@ agents:
 # FactChecker: factual audit — web search to verify map's verifiable claims
 
   - name: BlindCritic
-    description: "Logical/structural auditor — no tools; blindness is the audit mechanism."
     role: critic
+    description: "Logical/structural auditor — no tools; blindness is the audit mechanism."
     classifier:
       mode: skip
     system_prompt: |
@@ -343,8 +343,8 @@ agents:
       preamble.
 
   - name: FactChecker
-    description: "Factual auditor — web search to verify verifiable claims in the map."
     role: researcher
+    description: "Factual auditor — web search to verify verifiable claims in the map."
     tools: [web_search, web_fetch]
     classifier:
       mode: auto

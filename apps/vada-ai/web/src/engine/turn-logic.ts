@@ -106,10 +106,22 @@ export async function persistTurn(sessionId: string, payload: TurnPayload): Prom
     case 'synthesize': {
       const strict = parseConclusionJson(payload.content)
       const lenient = strict ?? parseConclusionLenient(payload.content, session.agents)
+      // Pre-validated structured output from the adapter (spec declared output_schema).
+      // Handles non-debate conclusion shapes (e.g. battlefield-map) where debate-schema
+      // Zod validation would reject perfectly valid output. The adapter already
+      // validated against the spec's output_schema when it extracted the tool input.
+      const fromStructured =
+        !lenient &&
+        payload.structured &&
+        typeof payload.structured === 'object' &&
+        Object.keys(payload.structured as object).length > 0
+          ? (payload.structured as Record<string, unknown>)
+          : null
+      const conclusionData = lenient ?? fromStructured
       // Do NOT salvage raw output on parse failure — garbled JSON shown to
       // users erodes trust more than a clean ERROR state. Both strict (Zod)
       // and lenient (coerce known drift shapes) already run before this check.
-      if (!lenient) {
+      if (!conclusionData) {
         await deleteConclusionBySession(sessionId)
         await insertConclusion({
           sessionId,
@@ -126,10 +138,10 @@ export async function persistTurn(sessionId: string, payload: TurnPayload): Prom
       await deleteConclusionBySession(sessionId)
       await insertConclusion({
         sessionId,
-        originalJson: lenient,
+        originalJson: conclusionData,
         criticVerdict: strict ? 'PENDING_AUDIT' : 'COERCED_FROM_LOOSE_JSON',
         terminalState: 'UNCONVERGED',
-        reviewBy: lenient.review_by
+        reviewBy: (conclusionData as { review_by?: string }).review_by
       })
       const synthOrderInRound = session.transcriptEntries.filter((e) => e.round === 0).length
       await insertTranscriptEntry({
@@ -168,10 +180,19 @@ export async function persistTurn(sessionId: string, payload: TurnPayload): Prom
       if (!session.conclusion) return
       const strict = parseConclusionJson(payload.content)
       const lenient = strict ?? parseConclusionLenient(payload.content, session.agents)
+      // Same structured-output fallback as synthesize — non-debate schemas need this too.
+      const fromStructured =
+        !lenient &&
+        payload.structured &&
+        typeof payload.structured === 'object' &&
+        Object.keys(payload.structured as object).length > 0
+          ? (payload.structured as Record<string, unknown>)
+          : null
+      const conclusionData = lenient ?? fromStructured
       // Same containment rule as synthesize: never surface unparseable output.
       // The original conclusion is preserved so the Critic's verdict and prior
       // JSON remain intact for the error record.
-      if (!lenient) {
+      if (!conclusionData) {
         await deleteConclusionBySession(sessionId)
         await insertConclusion({
           sessionId,
@@ -191,9 +212,9 @@ export async function persistTurn(sessionId: string, payload: TurnPayload): Prom
         sessionId,
         originalJson: session.conclusion.originalJson,
         criticVerdict: session.conclusion.criticVerdict,
-        revisedJson: lenient,
+        revisedJson: conclusionData,
         terminalState: 'UNCONVERGED',
-        reviewBy: lenient.review_by
+        reviewBy: (conclusionData as { review_by?: string }).review_by
       })
       const reviseOrderInRound = session.transcriptEntries.filter((e) => e.round === 0).length
       await insertTranscriptEntry({
