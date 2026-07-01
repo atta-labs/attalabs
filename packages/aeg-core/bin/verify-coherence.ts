@@ -10,11 +10,17 @@
  * Per D-067. Sibling to verify-docs.ts.
  *
  * Usage:
- *   bun scripts/verify-coherence.ts                   # JSON + human output
- *   bun scripts/verify-coherence.ts --json            # JSON only
- *   bun scripts/verify-coherence.ts --human           # human-readable only
- *   bun scripts/verify-coherence.ts --closes-n        # Closes #N gate (CI — reads BRANCH + PR_BODY env)
- *   GITHUB_TOKEN='' bun scripts/verify-coherence.ts   # test no-token path
+ *   bun packages/aeg-core/bin/verify-coherence.ts                   # JSON + human output
+ *   bun packages/aeg-core/bin/verify-coherence.ts --json            # JSON only
+ *   bun packages/aeg-core/bin/verify-coherence.ts --human           # human-readable only
+ *   bun packages/aeg-core/bin/verify-coherence.ts --closes-n        # Closes #N gate (CI — reads BRANCH + PR_BODY env)
+ *   GITHUB_TOKEN='' bun packages/aeg-core/bin/verify-coherence.ts   # test no-token path
+ *
+ * CWD-independent by design: chdir's to the repo root immediately below, since
+ * this script is also spawned as a subprocess (apps/aeg/web/studio's
+ * /api/coherence route) without an explicit cwd — every relative path in this
+ * file (DOC_OWNERS_PATH, aeg-root/, etc.) must resolve correctly regardless of
+ * the invoking process's own working directory.
  */
 
 import { graphql } from '@octokit/graphql'
@@ -25,6 +31,9 @@ import type { ForgeFacts, Iteration, Task } from '../src/index'
 import { fetchForgeFacts } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-forge-facts'
 import { resolveGithubToken } from '../../../apps/aeg/web/studio/src/lib/forge/github-token'
 import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
+
+const REPO_ROOT = join(import.meta.dir, '../../..')
+process.chdir(REPO_ROOT)
 
 // ---------- grandfather cutoff -----------------------------------------------
 
@@ -687,7 +696,6 @@ export async function fetchOpenIssuesByLabel(
 
 // ---------- iteration file loader --------------------------------------------
 
-const REPO_ROOT = join(import.meta.dir, '../../..')
 const AEG_ROOT = join(REPO_ROOT, 'aeg-root')
 const ITERATIONS_DIR = join(AEG_ROOT, 'iterations')
 const COMPLETED_DIR = join(ITERATIONS_DIR, 'completed')
