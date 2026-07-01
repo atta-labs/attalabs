@@ -36,6 +36,8 @@ function facts(overrides: Partial<ForgeFacts> = {}): ForgeFacts {
     reviewDecision: 'none',
     blockedLabel: false,
     stateReason: null,
+    closedAt: null,
+    mergedAt: null,
     ...overrides
   }
 }
@@ -257,7 +259,9 @@ describe('deriveIteration: live herald-onto-engine.md + today’s forge snapshot
         prState: 'merged',
         reviewDecision: 'approved',
         blockedLabel: false,
-        stateReason: 'completed'
+        stateReason: 'completed',
+        closedAt: null,
+        mergedAt: null
       }
     ]
     // Tasks 2, 3b, 4, 5, 6, 7a, 7b absent → todo (D-059: no forge facts = minimum todo).

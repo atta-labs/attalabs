@@ -30,6 +30,9 @@ function makeFacts(overrides: Partial<ForgeFacts> = {}): ForgeFacts {
     branchExists: false,
     prState: 'none',
     reviewDecision: 'none',
+    stateReason: null,
+    closedAt: null,
+    mergedAt: null,
     ...overrides
   }
 }
@@ -101,6 +104,34 @@ describe('A1: closed-without-merge', () => {
     const entries = [makeEntry('iter-1', '1', 101, undefined)]
     passesWithNoFailures(checkA1(entries))
   })
+
+  it('info — closed-without-merge before COHERENCE_ENFORCED_FROM is grandfathered', () => {
+    const entries = [
+      makeEntry(
+        'iter-1',
+        '1',
+        101,
+        makeFacts({ issueState: 'closed', prState: 'none', closedAt: '2026-06-30T23:59:59Z' })
+      )
+    ]
+    const r = checkA1(entries)
+    expect(r.status).toBe('info')
+    expect(r.failures[0].grandfathered).toBe(true)
+  })
+
+  it('fail — closed-without-merge on/after COHERENCE_ENFORCED_FROM is not grandfathered', () => {
+    const entries = [
+      makeEntry(
+        'iter-1',
+        '1',
+        101,
+        makeFacts({ issueState: 'closed', prState: 'none', closedAt: '2026-07-01T00:00:00Z' })
+      )
+    ]
+    const r = checkA1(entries)
+    expect(r.status).toBe('fail')
+    expect(r.failures[0].grandfathered).toBe(false)
+  })
 })
 
 // ---------- A2: archived-without-provenance ----------------------------------
@@ -133,6 +164,36 @@ describe('A2: archived-without-provenance', () => {
     const map = new Map<string, boolean>()
     passesWithNoFailures(checkA2(entries, map))
   })
+
+  it('info — missing provenance before COHERENCE_ENFORCED_FROM is grandfathered', () => {
+    const entries = [
+      makeEntry(
+        'iter-1',
+        '1',
+        101,
+        makeFacts({ issueState: 'closed', prState: 'merged', mergedAt: '2026-06-15T10:00:00Z' })
+      )
+    ]
+    const map = new Map([['iter-1/1', false]])
+    const r = checkA2(entries, map)
+    expect(r.status).toBe('info')
+    expect(r.failures[0].grandfathered).toBe(true)
+  })
+
+  it('fail — missing provenance on/after COHERENCE_ENFORCED_FROM is not grandfathered', () => {
+    const entries = [
+      makeEntry(
+        'iter-1',
+        '1',
+        101,
+        makeFacts({ issueState: 'closed', prState: 'merged', mergedAt: '2026-07-05T10:00:00Z' })
+      )
+    ]
+    const map = new Map([['iter-1/1', false]])
+    const r = checkA2(entries, map)
+    expect(r.status).toBe('fail')
+    expect(r.failures[0].grandfathered).toBe(false)
+  })
 })
 
 // ---------- A3: auto-close-misfire -------------------------------------------
@@ -158,6 +219,34 @@ describe('A3: auto-close-misfire (headline check)', () => {
 
   it('skip — no facts', () => {
     passesWithNoFailures(checkA3([makeEntry('iter-1', '1', 101, undefined)]))
+  })
+
+  it('info — misfire before COHERENCE_ENFORCED_FROM is grandfathered', () => {
+    const entries = [
+      makeEntry(
+        'iter-1',
+        '1',
+        101,
+        makeFacts({ prState: 'merged', issueState: 'open', mergedAt: '2026-06-01T00:00:00Z' })
+      )
+    ]
+    const r = checkA3(entries)
+    expect(r.status).toBe('info')
+    expect(r.failures[0].grandfathered).toBe(true)
+  })
+
+  it('fail — misfire on/after COHERENCE_ENFORCED_FROM is not grandfathered', () => {
+    const entries = [
+      makeEntry(
+        'iter-1',
+        '1',
+        101,
+        makeFacts({ prState: 'merged', issueState: 'open', mergedAt: '2026-07-02T00:00:00Z' })
+      )
+    ]
+    const r = checkA3(entries)
+    expect(r.status).toBe('fail')
+    expect(r.failures[0].grandfathered).toBe(false)
   })
 })
 
@@ -236,6 +325,48 @@ describe('T3: tbd-in-active-iteration', () => {
   it('pass — archived iteration with null issue is not a T3 concern', () => {
     const entries = [makeEntry('iter-1', '1', null, undefined, true)]
     passesWithNoFailures(checkT3(entries))
+  })
+
+  it('pass — ciIterationSlug scopes check: null issue in OTHER iteration is skipped', () => {
+    const entries = [makeEntry('vada-production-v1', '6a', null, undefined, false)]
+    // Running CI gate for aeg-coherence-v1 → only aeg-coherence-v1 T3 matters
+    passesWithNoFailures(checkT3(entries, 'aeg-coherence-v1'))
+  })
+
+  it('fail — ciIterationSlug scopes check: null issue in SAME iteration still fails', () => {
+    const entries = [makeEntry('aeg-coherence-v1', '99', null, undefined, false)]
+    const r = checkT3(entries, 'aeg-coherence-v1')
+    expect(r.status).toBe('fail')
+    expect(r.failures[0].task).toBe('99')
+  })
+
+  it('info — null issue in iteration whose tasks have pre-cutoff closedAt is grandfathered', () => {
+    const tbdEntry = makeEntry('vada-production-v1', '6a', null, undefined, false)
+    const resolvedEntry = makeEntry(
+      'vada-production-v1',
+      '4',
+      175,
+      makeFacts({ issueState: 'closed', closedAt: '2026-06-20T00:00:00Z' }),
+      false
+    )
+    const r = checkT3([tbdEntry], null, [tbdEntry, resolvedEntry])
+    expect(r.status).toBe('info')
+    expect(r.failures[0].grandfathered).toBe(true)
+  })
+
+  it('fail — null issue in iteration with no pre-cutoff dates is NOT grandfathered', () => {
+    const tbdEntry = makeEntry('new-iter', '1', null, undefined, false)
+    // Enriched entries show the iteration has only post-cutoff activity
+    const resolvedEntry = makeEntry(
+      'new-iter',
+      '2',
+      300,
+      makeFacts({ issueState: 'closed', closedAt: '2026-08-01T00:00:00Z' }),
+      false
+    )
+    const r = checkT3([tbdEntry], null, [tbdEntry, resolvedEntry])
+    expect(r.status).toBe('fail')
+    expect(r.failures[0].grandfathered).toBe(false)
   })
 })
 

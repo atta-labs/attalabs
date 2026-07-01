@@ -40,7 +40,9 @@ export function mapForgeFacts(raw: RawTaskFacts): ForgeFacts | null {
     branchExists: raw.refExists,
     prState: mapPrState(raw.pullRequest?.state),
     reviewDecision: mapReviewDecision(raw.pullRequest?.reviewDecision),
-    stateReason: mapStateReason(raw.issue.stateReason)
+    stateReason: mapStateReason(raw.issue.stateReason),
+    closedAt: raw.issue.closedAt,
+    mergedAt: raw.pullRequest?.mergedAt ?? null
   }
 }
 

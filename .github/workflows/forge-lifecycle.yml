@@ -23,6 +23,8 @@ jobs:
   closes-n-gate:
     name: Closes #N (task-branch PRs)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,6 +47,7 @@ jobs:
     name: Coherence oracle (A1/A2/A3 blocking)
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: write
     steps:
       - uses: actions/checkout@v4

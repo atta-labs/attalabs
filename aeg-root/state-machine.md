@@ -516,9 +516,24 @@ Sibling to `verify-docs.ts`. Runnable as CLI (`bun scripts/verify-coherence.ts`)
 
 **Output contract (locked — changes require a new D-entry):**
 ```json
-{ "check": "A3", "status": "fail", "failures": [{ "issue": 174, "iteration": "aeg-ui-v1", "task": "3", "reason": "..." }] }
+{ "check": "A3", "status": "fail", "failures": [{ "issue": 174, "iteration": "aeg-ui-v1", "task": "3", "reason": "...", "grandfathered": false }] }
 ```
-Exit non-zero on any `fail`. L3 and `info` checks do not affect exit code. `severity:infra` emitted when GITHUB_TOKEN is unavailable in CI.
+Exit non-zero on any `fail`. `info` and `pass` checks do not affect exit code. `severity:infra` emitted when GITHUB_TOKEN is unavailable in CI.
+
+**Grandfather cutoff — `COHERENCE_ENFORCED_FROM = '2026-07-01'`:**
+
+Legacy incoherences that predate the cutoff are emitted as `status: "info"` (visible in the report) rather than `"fail"` (which blocks CI). Rationale: branch protection is unavailable on the free plan; pre-existing repo-wide debt (legacy vada/herald/aeg-ui iterations) cannot be retro-fixed, so a hard gate on those findings would make every new PR un-mergeable.
+
+| Check | Terminal event date used for grandfather test |
+|---|---|
+| A1 (`closed-without-merge`) | Issue `closedAt` |
+| A2 (`archived-without-provenance`) | Closing PR `mergedAt` |
+| A3 (`auto-close-misfire`) | Closing PR `mergedAt` |
+| T3 (`tbd-in-active-iteration`) | Proxy: any task in the iteration with `closedAt`/`mergedAt` before cutoff |
+
+A finding is `grandfathered: true` when its terminal event is strictly before `COHERENCE_ENFORCED_FROM`. When ALL findings for a check are grandfathered the check status is `info`; if any finding is post-cutoff the status is `fail`.
+
+**T3 branch scoping:** When `BRANCH` or `GITHUB_HEAD_REF` env matches `task/<iter>/<n>`, T3 only checks tasks in `<iter>`. This prevents a PR against `aeg-coherence-v1` from being blocked by `#TBD` rows in other (vada, herald) iterations.
 
 ### What is explicitly out of scope for D-067
 

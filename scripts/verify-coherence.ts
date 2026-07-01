@@ -27,6 +27,25 @@ import { resolveGithubToken } from '../apps/aeg/web/studio/src/lib/forge/github-
 import { resolveRepo } from '../apps/aeg/web/studio/src/lib/forge/resolve-repo'
 import { DOC_OWNERS_PATH, checkDecisionNumbers, checkManifestValidity } from './verify-docs'
 
+// ---------- grandfather cutoff -----------------------------------------------
+
+/**
+ * Incoherences whose terminal forge event predates this date are grandfathered:
+ * emitted as `status: "info"` (visible in the report) rather than `"fail"`
+ * (which blocks CI). Applies to A1/A2/A3/T3.
+ *
+ * Rationale: branch protection is unavailable on the free plan; pre-existing
+ * repo-wide debt (legacy vada/herald/aeg-ui iterations) can't be retro-fixed,
+ * so a hard gate on those findings would make every new PR un-mergeable.
+ */
+const COHERENCE_ENFORCED_FROM = '2026-07-01'
+
+/** True when `isoDate` is an ISO string whose date portion is strictly before `COHERENCE_ENFORCED_FROM`. */
+function isGrandfathered(isoDate: string | null | undefined): boolean {
+  if (!isoDate) return false
+  return isoDate.slice(0, 10) < COHERENCE_ENFORCED_FROM
+}
+
 // ---------- types -------------------------------------------------------------
 
 export type CheckFailure = {
@@ -34,6 +53,8 @@ export type CheckFailure = {
   iteration: string
   task?: string
   reason: string
+  /** True when the terminal event predates `COHERENCE_ENFORCED_FROM` — finding is info, not fail. */
+  grandfathered?: boolean
 }
 
 export type CheckResult = {
@@ -62,6 +83,7 @@ export type IterationFile = {
 /**
  * A1: Every closed task-Issue has a merged closing PR.
  * Fail class: `closed-without-merge`
+ * Terminal event date: `issueClosedAt` — grandfathered when before `COHERENCE_ENFORCED_FROM`.
  */
 export function checkA1(entries: TaskEntry[]): CheckResult {
   const failures: CheckFailure[] = []
@@ -72,16 +94,25 @@ export function checkA1(entries: TaskEntry[]): CheckResult {
         issue: e.task.issue,
         iteration: e.iterationSlug,
         task: e.task.id,
-        reason: `Issue closed but closing PR is not merged (prState: ${e.facts.prState})`
+        reason: `Issue closed but closing PR is not merged (prState: ${e.facts.prState})`,
+        grandfathered: isGrandfathered(e.facts.closedAt)
       })
     }
   }
-  return { check: 'A1', status: failures.length > 0 ? 'fail' : 'pass', failures }
+  const activeFails = failures.filter((f) => !f.grandfathered)
+  const status = activeFails.length > 0 ? 'fail' : failures.length > 0 ? 'info' : 'pass'
+  return {
+    check: 'A1',
+    status,
+    failures,
+    note: status === 'info' ? `${failures.length} grandfathered (pre-${COHERENCE_ENFORCED_FROM})` : undefined
+  }
 }
 
 /**
  * A2: The closing PR of each closed task-Issue carries an Archivist provenance block.
  * Fail class: `archived-without-provenance`
+ * Terminal event date: `prMergedAt` — grandfathered when before `COHERENCE_ENFORCED_FROM`.
  *
  * `hasProvenanceByKey`: Map keyed by `${iterSlug}/${taskId}` → true when the
  * closing PR has a comment containing `### AEG provenance`.
@@ -101,16 +132,25 @@ export function checkA2(entries: TaskEntry[], hasProvenanceByKey: Map<string, bo
         issue: e.task.issue,
         iteration: e.iterationSlug,
         task: e.task.id,
-        reason: 'Closing PR has no `### AEG provenance` comment (Archivist close-out missing)'
+        reason: 'Closing PR has no `### AEG provenance` comment (Archivist close-out missing)',
+        grandfathered: isGrandfathered(e.facts.mergedAt)
       })
     }
   }
-  return { check: 'A2', status: failures.length > 0 ? 'fail' : 'pass', failures }
+  const activeFails = failures.filter((f) => !f.grandfathered)
+  const status = activeFails.length > 0 ? 'fail' : failures.length > 0 ? 'info' : 'pass'
+  return {
+    check: 'A2',
+    status,
+    failures,
+    note: status === 'info' ? `${failures.length} grandfathered (pre-${COHERENCE_ENFORCED_FROM})` : undefined
+  }
 }
 
 /**
  * A3: Every Issue whose closing PR merged is itself closed.
  * Fail class: `auto-close-misfire` — the headline check (#174 class).
+ * Terminal event date: `prMergedAt` — grandfathered when before `COHERENCE_ENFORCED_FROM`.
  */
 export function checkA3(entries: TaskEntry[]): CheckResult {
   const failures: CheckFailure[] = []
@@ -121,11 +161,19 @@ export function checkA3(entries: TaskEntry[]): CheckResult {
         issue: e.task.issue,
         iteration: e.iterationSlug,
         task: e.task.id,
-        reason: 'Closing PR is merged but Issue is still open (GitHub auto-close misfire)'
+        reason: 'Closing PR is merged but Issue is still open (GitHub auto-close misfire)',
+        grandfathered: isGrandfathered(e.facts.mergedAt)
       })
     }
   }
-  return { check: 'A3', status: failures.length > 0 ? 'fail' : 'pass', failures }
+  const activeFails = failures.filter((f) => !f.grandfathered)
+  const status = activeFails.length > 0 ? 'fail' : failures.length > 0 ? 'info' : 'pass'
+  return {
+    check: 'A3',
+    status,
+    failures,
+    note: status === 'info' ? `${failures.length} grandfathered (pre-${COHERENCE_ENFORCED_FROM})` : undefined
+  }
 }
 
 /**
@@ -186,20 +234,53 @@ export function checkT2(
  * Fail class: `tbd-in-active-iteration`
  *
  * A task in an active iteration has a null issue ref (empty / `—` / `#TBD`).
+ *
+ * `ciIterationSlug`: when set (parsed from `BRANCH`/`GITHUB_HEAD_REF` env),
+ *   only tasks in THAT iteration are checked — prevents vada/herald legacy
+ *   #TBD rows from blocking a PR against an unrelated iteration.
+ *
+ * `enrichedEntries`: when provided (post-forge-fetch), used to determine if an
+ *   iteration predates `COHERENCE_ENFORCED_FROM` by proxy: if the iteration has
+ *   any task whose `closedAt` or `mergedAt` is pre-cutoff, its #TBD rows are
+ *   grandfathered as `info`.
  */
-export function checkT3(entries: TaskEntry[]): CheckResult {
+export function checkT3(
+  entries: TaskEntry[],
+  ciIterationSlug?: string | null,
+  enrichedEntries?: TaskEntry[]
+): CheckResult {
+  // Build set of iterations that are pre-enforcement (by proxy: any task with a pre-cutoff date).
+  const preEnforcement = new Set<string>()
+  if (enrichedEntries) {
+    for (const e of enrichedEntries) {
+      if (isGrandfathered(e.facts?.closedAt) || isGrandfathered(e.facts?.mergedAt)) {
+        preEnforcement.add(e.iterationSlug)
+      }
+    }
+  }
+
   const failures: CheckFailure[] = []
   for (const e of entries) {
     if (!e.archived && e.task.issue === null) {
+      // Branch-scope: in CI for a specific iteration, only check that iteration.
+      if (ciIterationSlug && e.iterationSlug !== ciIterationSlug) continue
       failures.push({
         issue: null,
         iteration: e.iterationSlug,
         task: e.task.id,
-        reason: `Task ${e.task.id} in active iteration has no Issue ref (#TBD or empty) — D-055 requires all active tasks to have Issue numbers`
+        reason: `Task ${e.task.id} in active iteration has no Issue ref (#TBD or empty) — D-055 requires all active tasks to have Issue numbers`,
+        grandfathered: preEnforcement.has(e.iterationSlug)
       })
     }
   }
-  return { check: 'T3', status: failures.length > 0 ? 'fail' : 'pass', failures }
+  const activeFails = failures.filter((f) => !f.grandfathered)
+  const status = activeFails.length > 0 ? 'fail' : failures.length > 0 ? 'info' : 'pass'
+  return {
+    check: 'T3',
+    status,
+    failures,
+    note: status === 'info' ? `${failures.length} grandfathered (pre-${COHERENCE_ENFORCED_FROM})` : undefined
+  }
 }
 
 /**
@@ -634,13 +715,22 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
   const files = loadIterationFiles()
   const results: CheckResult[] = []
 
-  // ---------- pure local checks (no forge) ----------
+  // ---------- CI scope detection ----------
+  // Parse the PR's iteration from BRANCH (CI) or GITHUB_HEAD_REF (Actions env).
+  // Used to scope T3 so a PR against aeg-coherence-v1 isn't blocked by legacy
+  // #TBD rows in vada-production-v1 or herald iterations.
+  const ciIterationSlug: string | null = (() => {
+    const branch = process.env.BRANCH ?? process.env.GITHUB_HEAD_REF ?? ''
+    const m = branch.match(/^task\/([^/]+)\//)
+    return m?.[1] ?? null
+  })()
+
+  // ---------- base entries (no forge facts yet) ----------
 
   const allEntries: TaskEntry[] = files.flatMap((f) =>
     f.iteration.tasks.map((t) => ({ iterationSlug: f.slug, archived: f.archived, task: t, facts: undefined }))
   )
 
-  results.push(checkT3(allEntries))
   results.push(checkL3(files))
 
   // ---------- forge-dependent checks ----------
@@ -649,6 +739,8 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
   const token = await resolveGithubToken()
 
   if (!token) {
+    // T3 without date-grandfather (no forge data), but still scope-limited.
+    results.push(checkT3(allEntries, ciIterationSlug, undefined))
     results.push({
       check: 'FORGE',
       status: 'fail',
@@ -660,6 +752,7 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
   }
 
   if (!repo) {
+    results.push(checkT3(allEntries, ciIterationSlug, undefined))
     results.push({
       check: 'FORGE',
       status: 'fail',
@@ -742,6 +835,9 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
 
   // T1 check (only when forge available)
   results.push(checkT1(availableEntries))
+
+  // T3 — post-forge so enrichedEntries can be used for pre-cutoff date proxy
+  results.push(checkT3(allEntries, ciIterationSlug, enrichedEntries))
 
   // T2 check
   const activeSlugs = files.filter((f) => !f.archived).map((f) => f.slug)
