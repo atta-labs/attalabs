@@ -29,13 +29,21 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | Vb | Studio "Check Coherence" panel (renders Va's oracle live) + **honest status badges** (`dropped`/`incoherent` from T6; the "stale render / force-dynamic" premise is disproven — see #230 re-scope) | #230  | aeg        | #229, #250        | —              |
 | 1  | Coherence seam: `aeg-root/doc-owners` file (code→doc bindings) + `verify-docs` C5 coverage gate + `Doc-ack`/`Doc-waiver` PR-body fields + D-062 full entry | #214  | aeg        | —                 | —              |
 | 2  | Enforcement hardening: decision-number integrity + manifest validity + completeness scoreboard (reserves D-063) **+ forge-lifecycle CI gates: `Closes #N` pre-merge + verify-coherence as blocking check (A1/A2/A3/L1/L2) + in-iteration back-pressure + `aeg:incoherent` (D-069 re-scope)** | #217  | aeg        | #214, #250        | #251, #252     |
-| 3  | Bind-all + staleness audit: drive linkage to 100%, emit fix punch-list — **Moved out → `aeg-governance-hardening` task 3 (D-070, 2026-07-01)** | #218  | aeg        | #217              | —              |
-| 4  | Planner §7 auto-derivation from `doc-owners` — **Moved out → `aeg-governance-hardening` task 4 (D-070, 2026-07-01)**                | #219  | aeg        | #218              | —              |
-| 5  | Coherence completeness verification (100% gate) — **Moved out → `aeg-consolidation` task 3, re-scoped (D-070, 2026-07-01)**         | #220  | aeg        | #219, #218, 10…n  | —              |
 | 6  | Honest terminal-status derivation + constitution charter: `deriveStatus` reads `stateReason`; add `dropped`/`incoherent` to `DerivedStatus`; create `aeg:incoherent`; §3/§14 + iterations/README §3 (carries D-069) | #250  | aeg        | —                 | —              |
-| 7  | Planner→Brief rationale-completeness gate (R1): assert every active task Issue carries all 8 rationale fields; define the canonical rationale grammar — **Moved out → `aeg-governance-hardening` task 1 (D-070, 2026-07-01)** | #251  | aeg        | #217              | #217, #252     |
-| 8  | Brief→Developer brief-validation gate: replace the `archivist.yml` stub; assert brief required sections + tagged Test Plan + `Closes #N` + lock-ack; define brief-section grammar — **Moved out → `aeg-governance-hardening` task 2 (D-070, 2026-07-01)** | #252  | aeg        | #217              | #217, #251     |
 | 9  | Agent git guardrails: `PreToolUse` merge-gate hook (deny `gh pr merge`/`gh api`/MCP merge unless `gh pr checks` green) + Husky main-commit block + worktree-first Step 0 in roles + `coordination.md` universal rule + lessons entry | #254  | aeg        | —                 | #217, #251, #252 |
+
+**All 6 tracked tasks above are merged.** This iteration carries no further live topology —
+tasks 3, 4, 5, 7, 8 were moved out entirely (not merely annotated) so the Studio's
+forge-derived status stops querying their still-open Issues under this iteration's name.
+Full move record:
+
+## Tasks moved out (D-070, 2026-07-01 — not live topology, historical record only)
+
+- **3** — Bind-all + staleness audit: drive linkage to 100%, emit fix punch-list → `aeg-governance-hardening` task 3 (#218)
+- **4** — Planner §7 auto-derivation from `doc-owners` → `aeg-governance-hardening` task 4 (#219)
+- **5** — Coherence completeness verification (100% gate) → `aeg-consolidation` task 3, re-scoped (#220)
+- **7** — Planner→Brief rationale-completeness gate (R1) → `aeg-governance-hardening` task 1 (#251)
+- **8** — Brief→Developer brief-validation gate → `aeg-governance-hardening` task 2 (#252)
 
 ## Backlog (this iteration, not yet dispatched)
 
