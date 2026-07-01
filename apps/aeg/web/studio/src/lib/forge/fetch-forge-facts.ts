@@ -179,6 +179,7 @@ function buildBatchQuery(iteration: string, tasks: Array<TaskRef & { issue: numb
     ${a}_issue: issue(number: ${task.issue}) {
       state
       stateReason
+      closedAt
       assignees(first: 1) { totalCount }
       labels(first: 50) { nodes { name } }
       timelineItems(first: 1, itemTypes: [CLOSED_EVENT]) {
@@ -188,6 +189,7 @@ function buildBatchQuery(iteration: string, tasks: Array<TaskRef & { issue: numb
               ... on PullRequest {
                 state
                 reviewDecision
+                mergedAt
               }
             }
           }
@@ -202,7 +204,7 @@ function buildBatchQuery(iteration: string, tasks: Array<TaskRef & { issue: numb
       headRefName: ${JSON.stringify(branch)},
       orderBy: { field: CREATED_AT, direction: DESC }
     ) {
-      nodes { state reviewDecision }
+      nodes { state reviewDecision mergedAt }
     }`
     })
     .join('')
@@ -224,12 +226,14 @@ function aliasFor(taskId: string): string {
 type PrCloserNode = {
   state: 'OPEN' | 'CLOSED' | 'MERGED'
   reviewDecision: 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | null
+  mergedAt: string | null
 } | null
 
 type IssueNode = {
   state: 'OPEN' | 'CLOSED'
   /** GitHub's native close reason. `null` while the issue is open. */
   stateReason: 'COMPLETED' | 'NOT_PLANNED' | 'REOPENED' | null
+  closedAt: string | null
   assignees: { totalCount: number }
   labels: { nodes: Array<{ name: string }> }
   /** First CLOSED_EVENT — the PR (or commit) that closed the issue, if any. */
@@ -244,6 +248,7 @@ type PrsNode = {
   nodes: Array<{
     state: 'OPEN' | 'CLOSED' | 'MERGED'
     reviewDecision: 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | null
+    mergedAt: string | null
   }>
 }
 
@@ -272,6 +277,7 @@ function extractRawFromResponse(repository: NonNullable<BatchResponse['repositor
       ? {
           state: issue.state,
           stateReason: issue.stateReason,
+          closedAt: issue.closedAt ?? null,
           assigneesCount: issue.assignees.totalCount,
           labels: issue.labels.nodes.map((n) => n.name)
         }

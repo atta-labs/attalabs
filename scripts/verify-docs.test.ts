@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'bun:test'
-import { deriveTierFromDiff, evaluateC5, globToRegex, parseDocOwners } from './verify-docs'
+import {
+  checkDecisionNumbers,
+  checkManifestValidity,
+  deriveTierFromDiff,
+  evaluateC5,
+  globToRegex,
+  parseDocOwners,
+  parseNoDocRules
+} from './verify-docs'
 
 describe('deriveTierFromDiff', () => {
   it('decision-log in diff → tier 3 (C0 error still emitted; explicit declaration required)', () => {
@@ -180,5 +188,129 @@ describe('evaluateC5 — six required paths', () => {
     )
     expect(r.errors.length).toBe(1)
     expect(r.errors[0]).toMatch(/aeg-root\/state-machine\.md/)
+  })
+})
+
+// ---- N1/N2: decision-number integrity ----------------------------------------
+
+describe('checkDecisionNumbers', () => {
+  const oneThrough5 = `
+## D-001 — First decision
+## D-002 — Second decision
+## D-003 — Third decision
+## D-004 — Fourth decision
+## D-005 — Fifth decision
+`.trim()
+
+  it('pass — sequential numbers, no duplicates, no gaps', () => {
+    const { n1Errors, n2Notes, numbers } = checkDecisionNumbers(oneThrough5, 'test.md')
+    expect(n1Errors).toHaveLength(0)
+    expect(n2Notes).toHaveLength(0)
+    expect(numbers).toEqual([1, 2, 3, 4, 5])
+  })
+
+  it('N1 fail — duplicate D-NNN within a log', () => {
+    const content = '## D-001 — first\n## D-002 — second\n## D-001 — duplicate!'
+    const { n1Errors } = checkDecisionNumbers(content, 'decisions.md')
+    expect(n1Errors).toHaveLength(1)
+    expect(n1Errors[0]).toMatch(/N1 decision-duplicate/)
+    expect(n1Errors[0]).toMatch(/D-001/)
+    expect(n1Errors[0]).toMatch(/2 times/)
+  })
+
+  it('N2 note — skipped number (advisory, not error)', () => {
+    const content = '## D-001 — first\n## D-003 — skipped 002'
+    const { n1Errors, n2Notes } = checkDecisionNumbers(content, 'decisions.md')
+    expect(n1Errors).toHaveLength(0)
+    expect(n2Notes).toHaveLength(1)
+    expect(n2Notes[0]).toMatch(/N2 decision-skip/)
+    expect(n2Notes[0]).toMatch(/D-002/)
+  })
+
+  it('empty log → no numbers, no errors', () => {
+    const { n1Errors, n2Notes, numbers } = checkDecisionNumbers('# just a comment\n', 'empty.md')
+    expect(n1Errors).toHaveLength(0)
+    expect(n2Notes).toHaveLength(0)
+    expect(numbers).toHaveLength(0)
+  })
+
+  it('ignores CONTRADICTION headings', () => {
+    const content = '## D-001 — ok\n## CONTRADICTION — some conflict\n## D-002 — also ok'
+    const { numbers } = checkDecisionNumbers(content, 'test.md')
+    expect(numbers).toEqual([1, 2])
+  })
+})
+
+// ---- parseNoDocRules --------------------------------------------------------
+
+describe('parseNoDocRules', () => {
+  it('parses em-dash separator', () => {
+    const rules = parseNoDocRules('# no-doc: apps/atta-ai/** — scaffold only\n')
+    expect(rules).toHaveLength(1)
+    expect(rules[0]).toEqual({ glob: 'apps/atta-ai/**', reason: 'scaffold only' })
+  })
+
+  it('parses ASCII hyphen separator', () => {
+    const rules = parseNoDocRules('# no-doc: packages/typescript-config/** - shared configs, no docs needed\n')
+    expect(rules).toHaveLength(1)
+    expect(rules[0]?.glob).toBe('packages/typescript-config/**')
+  })
+
+  it('ignores regular comment lines', () => {
+    const rules = parseNoDocRules('# This is a normal comment\n# no-doc: apps/foo/** — ok\n')
+    expect(rules).toHaveLength(1)
+  })
+
+  it('returns empty array when no no-doc lines exist', () => {
+    expect(parseNoDocRules('# only comments\nglob pointer\n')).toHaveLength(0)
+  })
+})
+
+// ---- M1/M2/M3: manifest validity -------------------------------------------
+
+describe('checkManifestValidity', () => {
+  const fileExists = (missing: string[]) => (p: string) => !missing.includes(p)
+
+  it('null content → all empty (dormant)', () => {
+    const r = checkManifestValidity(null)
+    expect(r.m1Errors).toHaveLength(0)
+    expect(r.m2Notes).toHaveLength(0)
+    expect(r.m3Errors).toHaveLength(0)
+    expect(r.noDocRules).toHaveLength(0)
+  })
+
+  it('M1 — dangling in-repo pointer is flagged', () => {
+    const content = 'scripts/foo.ts   docs/missing.md\n'
+    const r = checkManifestValidity(content, fileExists(['docs/missing.md']))
+    expect(r.m1Errors).toHaveLength(1)
+    expect(r.m1Errors[0]).toMatch(/M1 manifest-dangling/)
+    expect(r.m1Errors[0]).toMatch(/docs\/missing\.md/)
+  })
+
+  it('M1 — URL pointer is not checked for disk existence', () => {
+    const content = 'scripts/foo.ts   https://example.com/docs\n'
+    const r = checkManifestValidity(content, fileExists([]))
+    expect(r.m1Errors).toHaveLength(0)
+  })
+
+  it('M1 — existing pointer passes', () => {
+    const content = 'scripts/foo.ts   docs/exists.md\n'
+    const r = checkManifestValidity(content, fileExists([]))
+    expect(r.m1Errors).toHaveLength(0)
+  })
+
+  it('M3 — duplicate glob is flagged', () => {
+    const content = ['scripts/foo.ts   docs/a.md', 'scripts/foo.ts   docs/b.md'].join('\n')
+    const r = checkManifestValidity(content, fileExists([]))
+    expect(r.m3Errors).toHaveLength(1)
+    expect(r.m3Errors[0]).toMatch(/M3 manifest-duplicate-glob/)
+    expect(r.m3Errors[0]).toMatch(/scripts\/foo\.ts/)
+  })
+
+  it('no-doc rules are parsed from comment lines', () => {
+    const content = '# no-doc: apps/vitakka-ai/** — scaffold only\nscripts/x.ts   docs/x.md\n'
+    const r = checkManifestValidity(content, fileExists([]))
+    expect(r.noDocRules).toHaveLength(1)
+    expect(r.noDocRules[0]?.glob).toBe('apps/vitakka-ai/**')
   })
 })

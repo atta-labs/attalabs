@@ -1748,10 +1748,56 @@ Each pointer path is verified to exist; binding 4 is **self-referential** — th
 
 ## D-063 — Coherence completeness: no-doc allow-list + decision-number integrity
 
-**Status:** reserved
-**Type:** 1
+**Date:** 2026-07-01
+**Status:** ACTIVE
+**Type:** 1 (extends the coherence model — not in-place-revisable)
+**Lock:** YES
+**Authored by:** Developer (T2 #217, aeg-coherence-v1)
+**Ratified by:** Principal (in-session, via PR merge of aeg-coherence-v1 T2)
 
-Reserved by Planner for aeg-coherence-v1 task 2 (Principal-ratified in-session). Full entry lands in the T2 implementing PR per Tier-3 DoD.
+**Context:** D-067 introduced the plan↔forge coherence oracle (`verify-coherence.ts`), D-062 the code→doc coherence seam (doc-owners + C5). Both left two completeness gaps open: (a) no machine-verifiable sequencing within decision logs (D-NNN numbering relied solely on author discipline); (b) the doc-owners manifest had no validity checks — dangling pointers or duplicate globs were silent. D-069 chartered filling both gaps in T2 (#217). This decision defines the canonical behaviors.
+
+**Decision:**
+
+**1. Decision-number integrity within a log (N1/N2).**
+Each decision log (global `aeg-project/decisions.md` + per-product `*-decisions.md`) carries its own D-NNN sequence (cross-log collisions are expected — §6). The coherence oracle validates within-log sequencing on every CI run:
+- **N1 (hard fail):** Duplicate D-NNN within the same log. A number that appears twice is a copy-paste error or a merge collision; it cannot silently pass.
+- **N2 (advisory — never fail):** Skipped D-NNN (gap) within a log. Gaps occur legitimately when a reserved entry is cancelled or when the numbering drifts during offline drafting; they are surfaced as an informational note, not an error.
+- **`--next-decision` helper:** `bun scripts/verify-docs.ts --next-decision` reads the global `aeg-project/decisions.md`, finds the maximum D-NNN, and prints the next number to use. This is the canonical way to pick a decision number at brief-authoring time.
+
+**2. Manifest validity (M1/M2/M3).**
+`aeg-root/doc-owners` is a CODEOWNERS-shaped file. Bindings accumulate across iterations; stale entries should not survive silently. The oracle validates on every CI run:
+- **M1 (hard fail):** A binding's pointer is an in-repo path that does not exist on disk. A dangling pointer is a maintenance regression — either the doc moved and the manifest was not updated, or the pointer was mis-typed.
+- **M2 (advisory):** A binding's glob is syntactically invalid per the `globToRegex` grammar. Reported as a note; extremely rare in practice.
+- **M3 (hard fail):** Duplicate glob in the manifest. Two entries for the same path pattern produce ambiguous coverage and must be resolved.
+URL pointers (`https://…`) are never checked for disk existence — M1 does not apply to them; a `Doc-ack:` in the PR body satisfies their binding at C5 time.
+
+**3. No-doc allow-list convention.**
+The completeness scoreboard (advisory, run in `verify-docs --full`) lists `packages/*` and `apps/*` directories that have no doc-owners binding. Many surfaces legitimately need no bound doc (scaffolds, shared configs, stub products). The allow-list exempts them without suppressing the scoreboard for everything else:
+```
+# no-doc: <glob> — <reason>
+```
+These lines appear as comments in `aeg-root/doc-owners`. The `parseNoDocRules()` function reads them; the scoreboard skips any directory whose path matches a no-doc glob. They do NOT affect C5 (C5 only fires when a changed file matches a binding; no-doc lines create non-bindings, not exemptions from binding).
+
+**Boundaries:**
+- N2 and M2 are permanently advisory. Making N2 hard-fail would break every repo that retired a reserved decision number; making M2 hard-fail would require precise glob grammar documentation that isn't worth the noise for an extremely rare failure mode.
+- The completeness scoreboard is permanently advisory. Its job is to surface missing coverage; forcing every surface to have a binding would impose busywork on scaffolds and test harnesses.
+- N1/M1/M3 are permanently hard-fail. These represent data-integrity violations in the coherence substrate itself — there is no legitimate reason for a decision-number duplicate or a dangling manifest pointer.
+
+**Alternatives rejected:**
+- *Make N2 a hard fail* — gaps are common and legitimate (cancelled reservations, offline drafting). Advisory surfacing is the right signal.
+- *Skip M1 for absolute paths* — rejected. The manifest is a live contract; a dangling pointer is a regression, not a "someone will fix it later" item.
+- *Auto-remove dangling M1 entries* — rejected. The oracle detects and fails; a human decides whether the doc moved (update the pointer) or the binding is obsolete (remove it). Automatic mutation of the manifest would silently destroy intentional coverage.
+- *Inline no-doc rules into a separate file* — rejected. `aeg-root/doc-owners` is the single source of truth for the code→doc surface map; the no-doc allow-list belongs there as comment lines, not in a second file that can drift.
+
+**Consequences:**
+- `scripts/verify-docs.ts`: exports `checkDecisionNumbers`, `checkManifestValidity`, `parseNoDocRules`, `DOC_OWNERS_PATH`, type `NoDocRule`; adds `runCompletenessScoreboard`; adds `--next-decision` CLI flag.
+- `scripts/verify-coherence.ts`: replaces N/M stubs with real implementations that delegate to the new `verify-docs.ts` exports.
+- `aeg-root/doc-owners`: `# no-doc:` header convention documented; allow-list entries added for intentionally unbound surfaces.
+- `aeg-root/state-machine.md` §12: "D-### sequencing" stub entry promoted to "D-### sequencing and manifest integrity" (real, D-063/D-069).
+- `scripts/verify-docs.test.ts`: 17 new tests covering N1/N2/M1/M2/M3 + `parseNoDocRules` + `checkManifestValidity`.
+
+**Lock rationale:** `Lock: YES`. N1/M1/M3 hard-fail semantics and the `# no-doc:` grammar are load-bearing contracts for the coherence infrastructure. Future briefs changing these semantics (e.g. making N1 advisory, adding a new failure class to M-checks) MUST `Conforms to lock: D-063` or `Challenges lock: D-063 — <reason>`. N2/M2 advisory and scoreboard-advisory behaviors are also locked as permanently non-blocking — a brief that tries to make them hard-fail challenges this lock.
 
 ---
 

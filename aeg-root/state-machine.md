@@ -330,13 +330,15 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 
 - **Tier-appropriate documentation** — the `verify-docs` script checks the PR's tier has the corresponding artifact changes; fails CI if missing. **Real (D-027)**, not a stub. The blocking workflow is installed at `.github/workflows/verify-docs.yml`. The gate also runs locally (this repo: `bun run verify-docs --pr`). (In observe mode this runs report-only.)
 - **Coherence seam — code→doc coverage (C5)** — the same `verify-docs` script reads `aeg-root/doc-owners`, glob-matches changed code files, and fails CI if a matched binding's doc is not in the diff (or, for URL pointers, not acknowledged via `Doc-ack:` in the PR body). The escape hatch is per-binding (`Doc-waiver: <pointer> — <reason>` in the PR body — logged for audit). **Dormant when `aeg-root/doc-owners` is absent or no glob matches** — the gate has no opinion until the repo teaches it one. **Real (D-062)**, no stub period. Full seam defined in Section 15.
-- **Commit-message format** — `commitlint` (reusing the same `commitlint.config.js` Husky runs locally) runs against every commit in the PR range. Real (D-046), installed at `.github/workflows/conventions.yml::commit-lint`. Closes the gap where API/MCP writes, direct pushes, and hand-merges bypass Husky entirely (evidence: pre-D-046 main contains several non-conforming commit headers authored via the API). Until armed in branch protection the job runs but does not block — Principal action to arm.
-- **Biome lint/format** — `bun run format-and-lint` (i.e. `biome check .`) runs on every PR. Real (D-046), installed at `.github/workflows/conventions.yml::biome`. Same Biome config as lint-staged enforces locally — local and CI cannot diverge. Until armed in branch protection the job runs but does not block.
-- **Forbidden colors in UI** — `scripts/check-forbidden-colors.ts` (diff-scoped) runs on every PR. Real (D-046), installed at `.github/workflows/conventions.yml::no-hardcoded-colors`. Encodes the four pattern groups in `.claude/skills/ui-theme-tokens/SKILL.md`: Tailwind palette classes, arbitrary color brackets (`bg-[#…]`, `text-[oklch(…)]`), absolute colors (`text-white`, `bg-black`), and inline-style color literals. Scans only added lines, so it blocks new violations without forcing a "boil the ocean" legacy cleanup. Until armed in branch protection the job runs but does not block.
+- **Commit-message format** — `commitlint` (reusing the same `commitlint.config.js` Husky runs locally) runs against every commit in the PR range. Real (D-046), installed at `.github/workflows/conventions.yml::commit-lint`. Closes the gap where API/MCP writes, direct pushes, and hand-merges bypass Husky entirely (evidence: pre-D-046 main contains several non-conforming commit headers authored via the API). **Enforcement substrate (this repo — private/free plan, branch protection unavailable):** CI shows red/green; the T9 merge-gate hook (merged in #255) blocks agent merges of red-CI PRs; local Husky/commitlint hooks enforce for agent writes running locally.
+- **Biome lint/format** — `bun run format-and-lint` (i.e. `biome check .`) runs on every PR. Real (D-046), installed at `.github/workflows/conventions.yml::biome`. Same Biome config as lint-staged enforces locally — local and CI cannot diverge. Same enforcement substrate as above (CI red/green + T9 hook + local lint-staged).
+- **Forbidden colors in UI** — `scripts/check-forbidden-colors.ts` (diff-scoped) runs on every PR. Real (D-046), installed at `.github/workflows/conventions.yml::no-hardcoded-colors`. Encodes the four pattern groups in `.claude/skills/ui-theme-tokens/SKILL.md`: Tailwind palette classes, arbitrary color brackets (`bg-[#…]`, `text-[oklch(…)]`), absolute colors (`text-white`, `bg-black`), and inline-style color literals. Scans only added lines, so it blocks new violations without forcing a "boil the ocean" legacy cleanup. Same enforcement substrate as above (CI red/green + T9 hook + local hooks).
 - **Typecheck, tests** — standard CI gates; always blocking.
 - **Issue template / no forbidden fields** — a required Issue template + a CI check reject planning metadata (priority/estimates/points) on task Issues, keeping them execution-only.
 - **Brief validation** — Archivist Action checks brief structure; flags malformed briefs (`needs:brief-correction`). (Stub today; full implementation V0.7.)
-- **D-### sequencing** — post-merge Archivist validates within-log sequencing (cross-log collisions expected — Section 6). (Stub today; full V0.7.)
+- **D-### sequencing and manifest integrity** — `verify-docs --full` and the coherence oracle validate within-log D-NNN sequencing (N1: duplicates = error; N2: skips = advisory), manifest pointer existence (M1), glob syntax (M2 advisory), and duplicate globs (M3). Real (D-069 / T2 #217). Same enforcement substrate as above.
+- **Closes #N gate** — task-branch PRs must declare `Closes #<its-issue>` in the PR body; absence fails CI. Non-task branches bypass automatically. Real (D-069), installed at `.github/workflows/forge-lifecycle.yml::closes-n-gate`. Same enforcement substrate as above.
+- **Coherence oracle (A1/A2/A3/N1/M1/M3)** — `scripts/verify-coherence.ts` runs against every PR. Failures in A1 (closed-without-merge), A2 (archived-without-provenance), A3 (auto-close-misfire), N1 (decision-duplicate), M1 (manifest-dangling), and M3 (manifest-duplicate-glob) fail CI. L1/L2/N2/M2 are advisory (info-only). On A1 failures the relevant Issues receive the `aeg:incoherent` label (Section 14). Real (D-069), installed at `.github/workflows/forge-lifecycle.yml::coherence-gate`. Same enforcement substrate as above.
 
 ### Trusted (agent discipline — no CI enforcement in V0)
 
@@ -514,12 +516,27 @@ Sibling to `verify-docs.ts`. Runnable as CLI (`bun scripts/verify-coherence.ts`)
 
 **Output contract (locked — changes require a new D-entry):**
 ```json
-{ "check": "A3", "status": "fail", "failures": [{ "issue": 174, "iteration": "aeg-ui-v1", "task": "3", "reason": "..." }] }
+{ "check": "A3", "status": "fail", "failures": [{ "issue": 174, "iteration": "aeg-ui-v1", "task": "3", "reason": "...", "grandfathered": false }] }
 ```
-Exit non-zero on any `fail`. L3 and `info` checks do not affect exit code. `severity:infra` emitted when GITHUB_TOKEN is unavailable in CI.
+Exit non-zero on any `fail`. `info` and `pass` checks do not affect exit code. `severity:infra` emitted when GITHUB_TOKEN is unavailable in CI.
+
+**Grandfather cutoff — `COHERENCE_ENFORCED_FROM = '2026-07-01'`:**
+
+Legacy incoherences that predate the cutoff are emitted as `status: "info"` (visible in the report) rather than `"fail"` (which blocks CI). Rationale: branch protection is unavailable on the free plan; pre-existing repo-wide debt (legacy vada/herald/aeg-ui iterations) cannot be retro-fixed, so a hard gate on those findings would make every new PR un-mergeable.
+
+| Check | Terminal event date used for grandfather test |
+|---|---|
+| A1 (`closed-without-merge`) | Issue `closedAt` |
+| A2 (`archived-without-provenance`) | Closing PR `mergedAt` |
+| A3 (`auto-close-misfire`) | Closing PR `mergedAt` |
+| T3 (`tbd-in-active-iteration`) | Proxy: any task in the iteration with `closedAt`/`mergedAt` before cutoff |
+
+A finding is `grandfathered: true` when its terminal event is strictly before `COHERENCE_ENFORCED_FROM`. When ALL findings for a check are grandfathered the check status is `info`; if any finding is post-cutoff the status is `fail`.
+
+**T3 branch scoping:** When `BRANCH` or `GITHUB_HEAD_REF` env matches `task/<iter>/<n>`, T3 only checks tasks in `<iter>`. This prevents a PR against `aeg-coherence-v1` from being blocked by `#TBD` rows in other (vada, herald) iterations.
 
 ### What is explicitly out of scope for D-067
 
 - **Studio rendering** of oracle output (Vb #230 — depends on Va).
-- **N/M decision-number integrity** checks (T2 #217 — stubs in place).
-- **CI gate wiring** — the oracle runs as a CLI and is CI-runnable; adding a mandatory CI step is a separate decision.
+- **N/M decision-number integrity** checks — **completed (D-069 / T2 #217)**: `checkDecisionNumbers` + `checkManifestValidity` implemented in `verify-docs.ts`, wired into the coherence oracle. Was a stub under D-067.
+- **CI gate wiring** — **completed (D-069)**: `.github/workflows/forge-lifecycle.yml::coherence-gate` now wires the oracle as a blocking CI gate. Was explicitly deferred under D-067.

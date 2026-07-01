@@ -65,6 +65,8 @@ export type RawTaskFacts = {
      * to `null` — driving the honest terminal-status derivation (D-069).
      */
     stateReason: 'COMPLETED' | 'NOT_PLANNED' | 'REOPENED' | null
+    /** ISO 8601 datetime when the issue was closed, or null if still open. */
+    closedAt: string | null
     assigneesCount: number
     labels: string[]
   } | null
@@ -79,6 +81,8 @@ export type RawTaskFacts = {
      * `'none'` (same effective meaning for AEG).
      */
     reviewDecision: 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | null
+    /** ISO 8601 datetime when the PR was merged, or null. */
+    mergedAt: string | null
   } | null
 }
 

@@ -6,11 +6,12 @@
  * Per D-010, this is the HARD enforcement mechanism (the Archivist is advisory).
  * Per D-027, this is the first real implementation; it replaces the V0.7 stub.
  *
- * Two modes:
- *   --pr    Diff-based. Enforces that a PR carries the docs its impact tier requires.
- *           Used by the verify-docs CI workflow and by Developers locally.
- *   (full)  Repo-wide structural checks. Lighter; catches unstatused specs and
- *           malformed decision-log entries across the whole tree.
+ * Modes:
+ *   --pr              Diff-based. Enforces that a PR carries the docs its impact tier requires.
+ *                     Used by the verify-docs CI workflow and by Developers locally.
+ *   (full)            Repo-wide structural checks. Catches unstatused specs, malformed
+ *                     decision-log entries, manifest validity, and the completeness scoreboard.
+ *   --next-decision   Helper: print the next free D-NNN for aeg-project/decisions.md and exit.
  *
  * Runs in AUDIT mode (state-machine.md Section 4): it asks "is what shipped consistent
  * with what the docs say?", not "is the design good?".
@@ -25,9 +26,10 @@
  */
 
 import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
 const args = process.argv.slice(2)
+const isNextDecision = args.includes('--next-decision')
 const mode: 'pr' | 'full' = args.includes('--pr') ? 'pr' : 'full'
 
 const errors: string[] = []
@@ -140,7 +142,7 @@ function overrideActive(): boolean {
 
 // ---- C5 doc-coverage (doc-owners) -----------------------------------------
 
-const DOC_OWNERS_PATH = 'aeg-root/doc-owners'
+export const DOC_OWNERS_PATH = 'aeg-root/doc-owners'
 
 export type DocOwnersBinding = { glob: string; pointer: string; lineNum: number }
 
@@ -314,6 +316,132 @@ export function evaluateC5(
   return out
 }
 
+// ---- N1/N2: decision-number integrity (full mode, exported for verify-coherence) ----
+
+/**
+ * Extract and validate D-NNN numbers within a single decision log.
+ * N1 (hard-fail): duplicate numbers within the log.
+ * N2 (advisory): skipped numbers (gaps expected cross-log per state-machine §6).
+ * Exported so verify-coherence.ts can delegate N1/N2 without reimplementing.
+ */
+export function checkDecisionNumbers(
+  content: string,
+  logPath: string
+): { n1Errors: string[]; n2Notes: string[]; numbers: number[] } {
+  const raw: number[] = []
+  for (const m of content.matchAll(/^## D-(\d+)\b/gm)) {
+    raw.push(Number(m[1]))
+  }
+
+  const n1Errors: string[] = []
+  const n2Notes: string[] = []
+
+  const seen = new Map<number, number>()
+  for (const n of raw) seen.set(n, (seen.get(n) ?? 0) + 1)
+  for (const [n, count] of seen) {
+    if (count > 1) {
+      n1Errors.push(
+        `N1 decision-duplicate: ${logPath} — D-${String(n).padStart(3, '0')} appears ${count} times. Numbers must be unique within a log.`
+      )
+    }
+  }
+
+  const sorted = [...new Set(raw)].sort((a, b) => a - b)
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1] as number
+    const curr = sorted[i] as number
+    if (curr > prev + 1) {
+      const skipped = Array.from(
+        { length: curr - prev - 1 },
+        (_, k) => `D-${String(prev + 1 + k).padStart(3, '0')}`
+      ).join(', ')
+      n2Notes.push(
+        `N2 decision-skip: ${logPath} — gap after D-${String(prev).padStart(3, '0')}: ${skipped}. (Cross-log gaps are expected — state-machine §6.)`
+      )
+    }
+  }
+
+  return { n1Errors, n2Notes, numbers: sorted }
+}
+
+// ---- M1/M2/M3: manifest validity (full mode, exported for verify-coherence) ----
+
+export type NoDocRule = { glob: string; reason: string }
+
+/**
+ * Parse `# no-doc: <glob> — <reason>` allow-list lines from doc-owners content.
+ * These lines exempt a surface from the completeness scoreboard.
+ */
+export function parseNoDocRules(content: string): NoDocRule[] {
+  const rules: NoDocRule[] = []
+  for (const line of content.split('\n')) {
+    const m = line.match(/^#\s+no-doc:\s+(\S+)(?:\s+[—–]\s+|\s+-\s+)(.+)$/)
+    if (m) rules.push({ glob: (m[1] ?? '').trim(), reason: (m[2] ?? '').trim() })
+  }
+  return rules
+}
+
+/**
+ * Validate the doc-owners manifest file (all bindings, not just fired ones).
+ * M1 (hard-fail): in-repo pointer does not exist on disk.
+ * M2 (advisory): glob fails to produce a valid regex (extremely unlikely with our simple grammar).
+ * M3 (hard-fail): same glob appears more than once.
+ * Exported so verify-coherence.ts can delegate M1/M2/M3.
+ */
+export function checkManifestValidity(
+  content: string | null,
+  fileExists: (p: string) => boolean = existsSync
+): { m1Errors: string[]; m2Notes: string[]; m3Errors: string[]; noDocRules: NoDocRule[] } {
+  if (content === null) return { m1Errors: [], m2Notes: [], m3Errors: [], noDocRules: [] }
+
+  const { bindings, errors: parseErrors } = parseDocOwners(content)
+  const m1Errors: string[] = [...parseErrors]
+  const m2Notes: string[] = []
+  const m3Errors: string[] = []
+  const noDocRules = parseNoDocRules(content)
+
+  // M2: glob syntax (advisory — our grammar is permissive so failures are very rare)
+  for (const b of bindings) {
+    if (!b.glob) {
+      m2Notes.push(`M2 manifest-bad-glob: ${DOC_OWNERS_PATH}:${b.lineNum} — empty glob.`)
+      continue
+    }
+    try {
+      globToRegex(b.glob)
+    } catch (e) {
+      m2Notes.push(`M2 manifest-bad-glob: ${DOC_OWNERS_PATH}:${b.lineNum} — glob "${b.glob}" failed: ${e}`)
+    }
+  }
+
+  // M3: duplicate globs
+  const globLines = new Map<string, number[]>()
+  for (const b of bindings) {
+    const list = globLines.get(b.glob) ?? []
+    list.push(b.lineNum)
+    globLines.set(b.glob, list)
+  }
+  for (const [glob, lines] of globLines) {
+    if (lines.length > 1) {
+      m3Errors.push(
+        `M3 manifest-duplicate-glob: ${DOC_OWNERS_PATH} — glob "${glob}" appears ${lines.length} times (lines ${lines.join(', ')}).`
+      )
+    }
+  }
+
+  // M1: every in-repo pointer exists on disk (checks ALL bindings, not just fired ones)
+  for (const b of bindings) {
+    if (isUrlPointer(b.pointer)) continue
+    const pointerPath = pointerToPath(b.pointer)
+    if (!fileExists(pointerPath)) {
+      m1Errors.push(
+        `M1 manifest-dangling: ${DOC_OWNERS_PATH}:${b.lineNum} — pointer ${b.pointer} does not exist on disk.`
+      )
+    }
+  }
+
+  return { m1Errors, m2Notes, m3Errors, noDocRules }
+}
+
 function runC5(changed: string[]): void {
   const content = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
   const result = evaluateC5(changed, content, process.env.PR_BODY || '')
@@ -419,6 +547,13 @@ function runPrMode(): void {
 
 // ---- full mode -------------------------------------------------------------
 
+function findDecisionLogs(): string[] {
+  return sh("git ls-files 'aeg-project/decisions.md' 'apps/**/*-decisions.md'")
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
 function runFullMode(): void {
   // F1 — every spec carries a Status block.
   const specs = sh("git ls-files 'apps/**/specs/*.md'")
@@ -433,16 +568,67 @@ function runFullMode(): void {
   }
 
   // F2 — decision-log entries well-formed.
-  const logs = sh("git ls-files 'aeg-project/decisions.md' 'apps/**/*-decisions.md'")
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  for (const p of logs) {
+  const logPaths = findDecisionLogs()
+  for (const p of logPaths) {
     if (!existsSync(p)) continue
     const bad = malformedDecisionEntries(readFileSync(p, 'utf8'))
     if (bad.length) {
       errors.push(`F2 decision-shape: ${p} entries missing Status/Type: ${bad.join(', ')}.`)
     }
+  }
+
+  // N1/N2 — decision-number integrity within each log.
+  for (const p of logPaths) {
+    if (!existsSync(p)) continue
+    const { n1Errors, n2Notes } = checkDecisionNumbers(readFileSync(p, 'utf8'), p)
+    for (const e of n1Errors) errors.push(e)
+    for (const n of n2Notes) notes.push(n)
+  }
+
+  // M1/M2/M3 — doc-owners manifest validity.
+  const docOwnersContent = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
+  const { m1Errors, m2Notes, m3Errors, noDocRules } = checkManifestValidity(docOwnersContent)
+  for (const e of m1Errors) errors.push(e)
+  for (const n of m2Notes) notes.push(n)
+  for (const e of m3Errors) errors.push(e)
+
+  // Completeness scoreboard — advisory; report unbound surfaces not in the # no-doc: allow-list.
+  if (docOwnersContent !== null) {
+    const { bindings } = parseDocOwners(docOwnersContent)
+    runCompletenessScoreboard(bindings, noDocRules)
+  }
+}
+
+function runCompletenessScoreboard(bindings: DocOwnersBinding[], noDocRules: NoDocRule[]): void {
+  const noDocGlobs = noDocRules.map((r) => {
+    const pat = r.glob.endsWith('/**') ? r.glob : `${r.glob}/**`
+    return globToRegex(pat)
+  })
+
+  const isExempt = (dir: string) => noDocGlobs.some((re) => re.test(`${dir}/`))
+
+  const hasBound = (dir: string) => bindings.some((b) => b.glob.startsWith(`${dir}/`) || b.glob === `${dir}/**`)
+
+  const unbound: string[] = []
+
+  // Check top-level packages/* and apps/*
+  for (const root of ['packages', 'apps']) {
+    if (!existsSync(root)) continue
+    for (const name of readdirSync(root)) {
+      const dir = `${root}/${name}`
+      if (!existsSync(dir)) continue
+      if (hasBound(dir) || isExempt(dir)) continue
+      unbound.push(dir)
+    }
+  }
+
+  if (unbound.length > 0) {
+    notes.push(
+      `Completeness scoreboard (advisory): ${unbound.length} surface(s) with no doc-owners binding — add a binding or a \`# no-doc: <glob> — <reason>\` line to suppress:`
+    )
+    for (const d of unbound) notes.push(`  unbound: ${d}`)
+  } else {
+    notes.push('Completeness scoreboard: all top-level surfaces are bound or exempted.')
   }
 }
 
@@ -465,6 +651,19 @@ function finish(): void {
 // ---- run -------------------------------------------------------------------
 
 if (import.meta.main) {
+  if (isNextDecision) {
+    // --next-decision: print the next free D-NNN for aeg-project/decisions.md and exit.
+    const logPath = 'aeg-project/decisions.md'
+    if (!existsSync(logPath)) {
+      console.log(`${logPath} not found; next free number: D-001`)
+      process.exit(0)
+    }
+    const { numbers } = checkDecisionNumbers(readFileSync(logPath, 'utf8'), logPath)
+    const next = numbers.length === 0 ? 1 : ((numbers[numbers.length - 1] ?? 0) as number) + 1
+    console.log(`Next free D-number in ${logPath}: D-${String(next).padStart(3, '0')}`)
+    process.exit(0)
+  }
+
   if (mode === 'pr') runPrMode()
   else runFullMode()
 

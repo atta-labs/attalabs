@@ -108,6 +108,10 @@ export type ForgeFacts = {
    * (COMPLETED-but-unproven) — never the innocuous `todo`.
    */
   stateReason: 'completed' | 'not_planned' | null
+  /** ISO 8601 datetime when the Issue was closed, or `null` if still open. Used by the coherence oracle for grandfather cutoff logic. */
+  closedAt: string | null
+  /** ISO 8601 datetime when the closing PR was merged, or `null` if not yet merged. Used by the coherence oracle for grandfather cutoff logic. */
+  mergedAt: string | null
 }
 
 // ---------- Derivation output ----------
