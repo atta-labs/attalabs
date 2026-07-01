@@ -1,11 +1,14 @@
 # Iteration: aeg-consolidation — July 2026
 Lifecycle: active
 
-Goal: Home the AEG coherence-check engine (`scripts/verify-coherence.ts` +
+Goal: Home the AEG coherence-check engine (originally `scripts/verify-coherence.ts` +
 `scripts/verify-docs.ts`) in `@atta/aeg-core` as pure, exhaustively-tested functions;
 fix the CI≠local drift; re-arm the coherence gate as blocking; add the docs coherence
-gate. `scripts/*` become thin CLI shims over the tested core. Full task rationale lives
-on each Issue (Planner's rationale block); this file holds topology only.
+gate. The CLI shims themselves also moved, into `packages/aeg-core/bin/` — AEG is a
+black box to the host monorepo; the only sanctioned crossing point is
+`.github/workflows/*.yml` (a GitHub Actions platform requirement), never the
+monorepo's generic `scripts/` folder. Full task rationale lives on each Issue
+(Planner's rationale block); this file holds topology only.
 
 Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 
@@ -13,10 +16,10 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 
 | #  | Task                                                          | Issue | Project(s) | Depends-on | Conflicts-with |
 |----|----------------------------------------------------------------|-------|------------|------------|----------------|
-| 1  | Home verify-docs checks in `@atta/aeg-core`                    | #263  | aeg        | —          | —              |
-| 2  | Home verify-coherence checks in `@atta/aeg-core`                | #264  | aeg        | #263       | 4              |
-| 3  | Fix CI≠local drift, complete grandfather, re-arm coherence gate | #220  | aeg        | #264       | —              |
-| 4  | Docs coherence gate (surfaced-doc manifest)                    | #265  | aeg        | #263       | 2              |
+| 1  | Home verify-docs checks in `@atta/aeg-core`                    | #263  | aeg, aeg-core | —          | —              |
+| 2  | Home verify-coherence checks in `@atta/aeg-core`                | #264  | aeg, aeg-core | #263       | 4              |
+| 3  | Fix CI≠local drift, complete grandfather, re-arm coherence gate | #220  | aeg, aeg-core | #264       | —              |
+| 4  | Docs coherence gate (surfaced-doc manifest)                    | #265  | aeg, aeg-core | #263       | 2              |
 
 ## Cross-iteration dependencies
 

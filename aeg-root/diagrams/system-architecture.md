@@ -28,7 +28,7 @@ flowchart TB
             PMDocs[AEG docs + iteration files<br/>aeg-root/* + aeg-project/*]
             Code[Source code<br/>apps/*, packages/*]
             DecLogs[Decision logs<br/>per-project + global]
-            Scripts[CI scripts<br/>scripts/verify-docs.ts]
+            Scripts[CI scripts<br/>packages/aeg-core/bin/verify-docs.ts]
             Workflows[GitHub Actions<br/>.github/workflows/*.yml]
         end
         subgraph GitHub["Git forge — GitHub (execution state + audit)"]
@@ -342,8 +342,8 @@ flowchart TB
         Backlog[<project>-backlog.md — held/future, out of flow]
     end
 
-    subgraph Tooling["scripts/ + .github/workflows/"]
-        VerifyScript[scripts/verify-docs.ts]
+    subgraph Tooling["packages/aeg-core/bin/ + .github/workflows/"]
+        VerifyScript[packages/aeg-core/bin/verify-docs.ts]
         ArchivistFlow[.github/workflows/archivist.yml]
     end
 

@@ -52,7 +52,7 @@ export function CoherencePanel() {
         </Button>
         {state.kind === 'idle' && (
           <p className='font-sans text-xs text-muted-foreground'>
-            Runs <span className='font-mono'>scripts/verify-coherence.ts</span> against the live forge.
+            Runs <span className='font-mono'>packages/aeg-core/bin/verify-coherence.ts</span> against the live forge.
           </p>
         )}
       </div>

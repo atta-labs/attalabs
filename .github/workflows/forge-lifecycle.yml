@@ -41,7 +41,7 @@ jobs:
         env:
           BRANCH: ${{ github.head_ref }}
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: bun scripts/verify-coherence.ts --closes-n
+        run: bun packages/aeg-core/bin/verify-coherence.ts --closes-n
 
   coherence-gate:
     name: Coherence oracle (A1/A2/A3 blocking)
@@ -67,7 +67,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set +e
-          bun scripts/verify-coherence.ts --json > /tmp/coherence.json 2>&1
+          bun packages/aeg-core/bin/verify-coherence.ts --json > /tmp/coherence.json 2>&1
           echo "exit=$?" >> "$GITHUB_OUTPUT"
 
       - name: Apply aeg:incoherent label to A1 failures

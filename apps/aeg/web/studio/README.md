@@ -25,10 +25,10 @@ Live reads from disk + forge:
 
 ## Check Coherence
 
-Each iteration detail page carries a **Check Coherence** panel. Clicking the button calls `GET /api/coherence`, which spawns `scripts/verify-coherence.ts --json` as a Bun subprocess and returns the JSON report. The Studio renders:
+Each iteration detail page carries a **Check Coherence** panel. Clicking the button calls `GET /api/coherence`, which spawns `packages/aeg-core/bin/verify-coherence.ts --json` as a Bun subprocess and returns the JSON report. The Studio renders:
 
 - **Green "All checks pass"** when the oracle exits 0.
 - **Linked list of incoherences** when checks fail — each failure shows the iteration, task ID, a linked GitHub Issue number, and the failure reason so the reader can navigate directly to the affected item.
 - **Forge unavailable warning** when no `GITHUB_TOKEN` / `GH_TOKEN` / `gh auth token` is present (forge-dependent checks are skipped by the oracle; local checks still run).
 
-The Studio is a renderer only — no check logic lives in the panel or the route. `scripts/verify-coherence.ts` (Va / #229) is the single source of truth.
+The Studio is a renderer only — no check logic lives in the panel or the route. `packages/aeg-core/bin/verify-coherence.ts` (Va / #229) is the single source of truth.
