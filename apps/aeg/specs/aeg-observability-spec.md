@@ -78,3 +78,12 @@ The **debt** ("what's owed") is itself derived — it is the set of oracle incoh
 3. Extend the oracle's debt checks (merged-without-ledger-row) + adopt the draft-PR `active` convention across the Developer role. (collision domain: `verify-coherence`, `roles/developer.md`)
 
 Sizing/edges are the Planner's call when the iteration is cut; this section is an input, not a topology.
+
+## Deferred user-legibility stories (surfaced 2026-07-01, `aeg-self-enforcement` session)
+
+Live-fire finding: T6/Vb shipped honest `dropped`/`incoherent` badges to the Studio, and a Principal opening the board immediately hit two real gaps. Both belong to this iteration's legibility remit.
+
+- **Status glossary in-context (P1).** A user sees `incoherent` (red) with zero explanation. The definitions already exist (`iterations/README.md` §3, `state-machine.md` §14) but nothing surfaces them. Add a **tooltip + a `?` info-link on each status badge → the status glossary** (and a short glossary page/section the link targets). "Incoherent" must be self-explaining at the point of use, not jargon.
+- **A coherent way to resolve a legacy incoherence (P1).** `state-machine.md` §14 says clear `aeg:incoherent` by "link the merge, or re-close `NOT_PLANNED`." Neither fits a genuinely **done-but-unlinked** legacy item (e.g. vada #180/#182 — merged via #237/#246 but without `Closes #N`): you can't retro-link a merged PR, and they weren't abandoned. So there is currently **no honest resolution** — they stay red forever, or you lie. Need a **human-verified merge-link annotation** — e.g. a comment `### AEG merge-link: #237` that `derivePipeline`/the oracle accepts as proof the one-law was honored — so a human can *coherently* clear it. This is a governance + derivation change (define the annotation, teach the derivation and A1 to honor it); flag as depends-on the T7/T8 grammar work.
+
+These are the difference between a board that shows the truth and a board a non-terminal user can actually *act on*.
