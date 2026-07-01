@@ -28,4 +28,4 @@ jobs:
       - name: Run verify-test-plan
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: bun scripts/verify-test-plan.ts
+        run: bun packages/aeg-core/bin/verify-test-plan.ts

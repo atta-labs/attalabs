@@ -15,7 +15,7 @@
 #   in-repo path with anchor e.g. `aeg-root/state-machine.md#section-9`
 #   URL                      e.g. `https://example.com/docs/x`
 #
-# Coverage rule (enforced by C5 in `scripts/verify-docs.ts`):
+# Coverage rule (enforced by C5 in `packages/aeg-core/bin/verify-docs.ts`):
 #   When a code file in the PR matches a glob:
 #     - in-repo pointer  → that path must appear in the PR diff, else FAIL
 #     - URL pointer      → require a `Doc-ack: <pointer> — <note>` PR-body line
@@ -45,7 +45,7 @@
 packages/ui/topbar/**                            .claude/skills/ui-components/SKILL.md
 packages/ui/libraries/**                         .claude/skills/ui-library-system/SKILL.md
 apps/herald-ai/web/src/app/[username]/**         apps/herald-ai/specs/herald-app-architecture.md
-scripts/verify-docs.ts                           aeg-root/state-machine.md
-scripts/verify-coherence.ts                      aeg-root/state-machine.md
+packages/aeg-core/bin/verify-docs.ts             aeg-root/state-machine.md
+packages/aeg-core/bin/verify-coherence.ts        aeg-root/state-machine.md
 packages/agents/vada-deliberation/yamls/**       .claude/skills/atta-teams/SKILL.md
 packages/agents/**                               .claude/skills/vada-architecture/SKILL.md

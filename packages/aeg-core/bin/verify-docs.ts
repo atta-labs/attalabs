@@ -50,7 +50,7 @@ import {
   parseDocOwners,
   parseNoDocRules,
   readTierFromPrBody
-} from '@atta/aeg-core'
+} from '../src/index'
 
 const args = process.argv.slice(2)
 const isNextDecision = args.includes('--next-decision')

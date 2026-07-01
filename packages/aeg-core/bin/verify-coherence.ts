@@ -20,11 +20,11 @@
 import { graphql } from '@octokit/graphql'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { DOC_OWNERS_PATH, checkDecisionNumbers, checkManifestValidity, parseIteration } from '@atta/aeg-core'
-import type { ForgeFacts, Iteration, Task } from '@atta/aeg-core'
-import { fetchForgeFacts } from '../apps/aeg/web/studio/src/lib/forge/fetch-forge-facts'
-import { resolveGithubToken } from '../apps/aeg/web/studio/src/lib/forge/github-token'
-import { resolveRepo } from '../apps/aeg/web/studio/src/lib/forge/resolve-repo'
+import { DOC_OWNERS_PATH, checkDecisionNumbers, checkManifestValidity, parseIteration } from '../src/index'
+import type { ForgeFacts, Iteration, Task } from '../src/index'
+import { fetchForgeFacts } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-forge-facts'
+import { resolveGithubToken } from '../../../apps/aeg/web/studio/src/lib/forge/github-token'
+import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
 
 // ---------- grandfather cutoff -----------------------------------------------
 
@@ -687,7 +687,7 @@ export async function fetchOpenIssuesByLabel(
 
 // ---------- iteration file loader --------------------------------------------
 
-const REPO_ROOT = join(import.meta.dir, '..')
+const REPO_ROOT = join(import.meta.dir, '../../..')
 const AEG_ROOT = join(REPO_ROOT, 'aeg-root')
 const ITERATIONS_DIR = join(AEG_ROOT, 'iterations')
 const COMPLETED_DIR = join(ITERATIONS_DIR, 'completed')

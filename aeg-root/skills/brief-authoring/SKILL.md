@@ -290,7 +290,7 @@ What the executor opens/commits/creates at the end:
 - PR description sections required
 - What to report back and in what format
 
-**Pre-PR gate (inherited by every brief):** The Deliverable section must instruct the executor to run `bun scripts/verify-docs.ts --pr` locally with `PR_BODY` set to the intended PR body before opening — and fix any failure. Never dispatch a brief that would produce a red verify-docs build on open.
+**Pre-PR gate (inherited by every brief):** The Deliverable section must instruct the executor to run `bun packages/aeg-core/bin/verify-docs.ts --pr` locally with `PR_BODY` set to the intended PR body before opening — and fix any failure. Never dispatch a brief that would produce a red verify-docs build on open.
 
 **The PR is not "done" when opened — it is done when it has passed review AND verification.** After the PR opens (`process.md`): **Phase 10 — Review:** code-reviewer pass (independent, fresh context, `roles/reviewer.md`) → security pass (`roles/security.md`, runs the config-security scan if agent/MCP config changed) → Principal code review → TL spec review. **Phase 11 — Verification (`roles/verifier.md`):** the brief's §9 Test Plan is executed — the Developer-agent runs every `[agent]` item and posts the actual output as evidence; the Principal ticks every `[principal]` box in a real browser. **Phase 12 — Merge:** the Principal merges once both halves are ticked. The brief ends by telling the Developer to open the PR and stop — the review passes and the Verification phase are separate invocations; the Developer addresses REQUEST CHANGES / FAIL findings and re-runs `[agent]` items in follow-up commits on the same branch.
 

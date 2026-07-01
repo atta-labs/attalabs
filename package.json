@@ -34,7 +34,7 @@
     "check": "turbo typecheck && biome check . && turbo test --filter=@atta/cms",
     "test": "turbo test",
     "docs:index": "node scripts/generate-docs-index.mjs",
-    "verify-docs": "bun run scripts/verify-docs.ts",
+    "verify-docs": "bun run packages/aeg-core/bin/verify-docs.ts",
     "db": "bash scripts/db-studio.sh",
     "clean": "turbo clean",
     "prepare": "husky"

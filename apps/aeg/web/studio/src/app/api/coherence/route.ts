@@ -1,7 +1,7 @@
 /**
  * GET /api/coherence
  *
- * Calls the plan↔forge oracle (`scripts/verify-coherence.ts`) via a Bun
+ * Calls the plan↔forge oracle (`packages/aeg-core/bin/verify-coherence.ts`) via a Bun
  * subprocess and returns its JSON report. The Studio renders the output;
  * no check logic is re-implemented here.
  *
@@ -76,7 +76,7 @@ export async function GET(): Promise<NextResponse<CoherenceResponse>> {
   }
 
   const repoRoot = path.dirname(aegRoot)
-  const scriptPath = path.join(repoRoot, 'scripts', 'verify-coherence.ts')
+  const scriptPath = path.join(repoRoot, 'packages', 'aeg-core', 'bin', 'verify-coherence.ts')
   const env = buildEnv()
 
   let stdout: string

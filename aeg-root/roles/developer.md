@@ -156,7 +156,7 @@ All Tier 1 items, plus:
 
 **Hard rule:** If any tier-required item fails, the PR is not ready. Do not open it. Do not say "I'll fix the doc issues after merge." Fix them before.
 
-**Pre-PR gate (mandatory for every PR):** Before opening, run `bun scripts/verify-docs.ts --pr` locally with `PR_BODY` set to the intended PR body text — `PR_BODY="$(cat /tmp/pr-body.md)" bun scripts/verify-docs.ts --pr` — and fix any failure. Never open a PR that would fail the gate.
+**Pre-PR gate (mandatory for every PR):** Before opening, run `bun packages/aeg-core/bin/verify-docs.ts --pr` locally with `PR_BODY` set to the intended PR body text — `PR_BODY="$(cat /tmp/pr-body.md)" bun packages/aeg-core/bin/verify-docs.ts --pr` — and fix any failure. Never open a PR that would fail the gate.
 
 ---
 

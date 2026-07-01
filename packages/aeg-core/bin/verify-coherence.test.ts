@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import type { ForgeFacts } from '@atta/aeg-core'
+import type { ForgeFacts } from '../src/index'
 import {
   checkA1,
   checkA2,
@@ -18,7 +18,7 @@ import {
 
 // ---------- fixture helpers ---------------------------------------------------
 
-function makeTask(id: string, issue: number | null = null, dependsOn: string[] = []): import('@atta/aeg-core').Task {
+function makeTask(id: string, issue: number | null = null, dependsOn: string[] = []): import('../src/index').Task {
   return { id, title: `Task ${id}`, issue, projects: ['aeg'], dependsOn, conflictsWith: [], rationaleMarkdown: '' }
 }
 

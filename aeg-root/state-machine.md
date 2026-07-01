@@ -338,7 +338,7 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 - **Brief validation** — Archivist Action checks brief structure; flags malformed briefs (`needs:brief-correction`). (Stub today; full implementation V0.7.)
 - **D-### sequencing and manifest integrity** — `verify-docs --full` and the coherence oracle validate within-log D-NNN sequencing (N1: duplicates = error; N2: skips = advisory), manifest pointer existence (M1), glob syntax (M2 advisory), and duplicate globs (M3). Real (D-069 / T2 #217). Same enforcement substrate as above.
 - **Closes #N gate** — task-branch PRs must declare `Closes #<its-issue>` in the PR body; absence fails CI. Non-task branches bypass automatically. Real (D-069), installed at `.github/workflows/forge-lifecycle.yml::closes-n-gate`. Same enforcement substrate as above.
-- **Coherence oracle (A1/A2/A3/N1/M1/M3)** — `scripts/verify-coherence.ts` runs against every PR. Failures in A1 (closed-without-merge), A2 (archived-without-provenance), A3 (auto-close-misfire), N1 (decision-duplicate), M1 (manifest-dangling), and M3 (manifest-duplicate-glob) fail CI. L1/L2/N2/M2 are advisory (info-only) — `checkL2`/`checkL3` return `status: info`, so a premature-archive or lifecycle-hygiene finding is surfaced for a human to investigate but never fails CI. On A1 failures the relevant Issues receive the `aeg:incoherent` label (Section 14). Real (D-069), installed at `.github/workflows/forge-lifecycle.yml::coherence-gate`. Same enforcement substrate as above.
+- **Coherence oracle (A1/A2/A3/N1/M1/M3)** — `packages/aeg-core/bin/verify-coherence.ts` runs against every PR. Failures in A1 (closed-without-merge), A2 (archived-without-provenance), A3 (auto-close-misfire), N1 (decision-duplicate), M1 (manifest-dangling), and M3 (manifest-duplicate-glob) fail CI. L1/L2/N2/M2 are advisory (info-only) — `checkL2`/`checkL3` return `status: info`, so a premature-archive or lifecycle-hygiene finding is surfaced for a human to investigate but never fails CI. On A1 failures the relevant Issues receive the `aeg:incoherent` label (Section 14). Real (D-069), installed at `.github/workflows/forge-lifecycle.yml::coherence-gate`. Same enforcement substrate as above.
 
 ### Trusted (agent discipline — no CI enforcement in V0)
 
@@ -437,7 +437,7 @@ One CODEOWNERS-shaped file at the repo root of the AEG model:
 
 The file is a Class 1 artifact (repo file, git-tracked) and changes via the normal PR flow. Edits to `aeg-root/doc-owners` are themselves Tier 3 when they reshape the seam (e.g. broadening enforcement to a new package); routine additions of a single binding for an already-bound family follow the surrounding work's tier.
 
-### The bind-or-waive rule (enforced by C5 in `scripts/verify-docs.ts`)
+### The bind-or-waive rule (enforced by C5 in `packages/aeg-core/bin/verify-docs.ts`)
 
 For each changed code file in the PR, glob-match against every binding. Per **matched** binding, exactly one of these must be true at PR-open:
 
@@ -485,15 +485,15 @@ These are tracked on `aeg-root/iterations/aeg-coherence-v1.md`; this section gov
 
 ---
 
-## Section 15b: Coherence Seam — Plan↔Forge Coverage (`scripts/verify-coherence.ts`)
+## Section 15b: Coherence Seam — Plan↔Forge Coverage (`packages/aeg-core/bin/verify-coherence.ts`)
 
 The seam between **iteration topology files** (the plan — `aeg-root/iterations/*.md`) and **the forge** (GitHub Issue state / PR merge events). D-067 makes this seam deterministically verifiable: a stateless oracle that detects drift without LLM calls, runnable in CI.
 
-### The oracle: `scripts/verify-coherence.ts`
+### The oracle: `packages/aeg-core/bin/verify-coherence.ts`
 
-Sibling to `verify-docs.ts`. Runnable as CLI (`bun scripts/verify-coherence.ts`) and in CI (`GITHUB_TOKEN` required). Zero LLM calls; stateless — each run is a fresh read of forge + files.
+Sibling to `verify-docs.ts`, both in `packages/aeg-core/bin/`. Runnable as CLI (`bun packages/aeg-core/bin/verify-coherence.ts`) and in CI (`GITHUB_TOKEN` required). Zero LLM calls; stateless — each run is a fresh read of forge + files.
 
-**Check logic is homed in `@atta/aeg-core`, not the scripts (aeg-consolidation, 2026-07-01+).** `scripts/verify-docs.ts` and `scripts/verify-coherence.ts` are thin CLI shims: resolve args/env, read git diff/PR body/forge facts, call the pure, exhaustively-tested evaluators in `packages/aeg-core/src/` (`file-classify.ts`, `decision-log.ts`, `doc-owners.ts`, `manifest-validity.ts`, `pr-tier.ts`, and — once `aeg-consolidation` task 2 lands — the A/T/D/L coherence checks), then format output. This is the same pattern `parseIteration`/`deriveIteration` already established for the Studio. Behavior is unchanged by this move (golden-file verified); only the internal file organization changed, so this repo's `doc-owners` binding on the two scripts is satisfied by this note, not by a behavioral rewrite.
+**AEG's own CLI tools + check logic live entirely inside `packages/aeg-core` — never in the monorepo's generic `scripts/` folder (aeg-consolidation, 2026-07-01+).** `packages/aeg-core/bin/verify-docs.ts` and `verify-coherence.ts` are thin CLI shims: resolve args/env, read git diff/PR body/forge facts, call the pure, exhaustively-tested evaluators in `packages/aeg-core/src/` (`file-classify.ts`, `decision-log.ts`, `doc-owners.ts`, `manifest-validity.ts`, `pr-tier.ts`, and — once `aeg-consolidation` task 2 lands — the A/T/D/L coherence checks), then format output. The principle: AEG is a black box to the host monorepo — the only sanctioned crossing point is `.github/workflows/*.yml`, because that exact path is a GitHub Actions platform requirement, not an AEG choice. Every workflow step now reads `bun packages/aeg-core/bin/<script>.ts`, invoking AEG's self-contained tools from outside, never embedding AEG logic inside the monorepo's own `scripts/`. `scripts/` at repo-root holds only genuinely monorepo-generic tooling unrelated to AEG (docs-index generation, UI-convention checks). This is the same pattern `parseIteration`/`deriveIteration` already established for the Studio. Behavior is unchanged by either move (golden-file verified); only the internal file organization changed, so this repo's `doc-owners` binding on the two scripts is satisfied by this note, not by a behavioral rewrite.
 
 **Three inputs:**
 1. **Forge facts** — GitHub Issue state + PR merge events via `fetch-forge-facts.ts` (`@octokit/graphql` + `timelineItems(CLOSED_EVENT)`). Same adapter the Studio uses; not forked.
