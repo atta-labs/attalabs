@@ -493,6 +493,8 @@ The seam between **iteration topology files** (the plan — `aeg-root/iterations
 
 Sibling to `verify-docs.ts`. Runnable as CLI (`bun scripts/verify-coherence.ts`) and in CI (`GITHUB_TOKEN` required). Zero LLM calls; stateless — each run is a fresh read of forge + files.
 
+**Check logic is homed in `@atta/aeg-core`, not the scripts (aeg-consolidation, 2026-07-01+).** `scripts/verify-docs.ts` and `scripts/verify-coherence.ts` are thin CLI shims: resolve args/env, read git diff/PR body/forge facts, call the pure, exhaustively-tested evaluators in `packages/aeg-core/src/` (`file-classify.ts`, `decision-log.ts`, `doc-owners.ts`, `manifest-validity.ts`, `pr-tier.ts`, and — once `aeg-consolidation` task 2 lands — the A/T/D/L coherence checks), then format output. This is the same pattern `parseIteration`/`deriveIteration` already established for the Studio. Behavior is unchanged by this move (golden-file verified); only the internal file organization changed, so this repo's `doc-owners` binding on the two scripts is satisfied by this note, not by a behavioral rewrite.
+
 **Three inputs:**
 1. **Forge facts** — GitHub Issue state + PR merge events via `fetch-forge-facts.ts` (`@octokit/graphql` + `timelineItems(CLOSED_EVENT)`). Same adapter the Studio uses; not forked.
 2. **Iteration topology** — parsed from `aeg-root/iterations/*.md` via `parseIteration` from `@atta/aeg-core`. Same parser the Studio uses; not forked.
