@@ -13,6 +13,7 @@
  *   bun scripts/verify-coherence.ts                   # JSON + human output
  *   bun scripts/verify-coherence.ts --json            # JSON only
  *   bun scripts/verify-coherence.ts --human           # human-readable only
+ *   bun scripts/verify-coherence.ts --closes-n        # Closes #N gate (CI — reads BRANCH + PR_BODY env)
  *   GITHUB_TOKEN='' bun scripts/verify-coherence.ts   # test no-token path
  */
 
@@ -24,6 +25,7 @@ import type { ForgeFacts, Iteration, Task } from '@atta/aeg-core'
 import { fetchForgeFacts } from '../apps/aeg/web/studio/src/lib/forge/fetch-forge-facts'
 import { resolveGithubToken } from '../apps/aeg/web/studio/src/lib/forge/github-token'
 import { resolveRepo } from '../apps/aeg/web/studio/src/lib/forge/resolve-repo'
+import { DOC_OWNERS_PATH, checkDecisionNumbers, checkManifestValidity } from './verify-docs'
 
 // ---------- types -------------------------------------------------------------
 
@@ -314,16 +316,142 @@ export function checkL3(files: IterationFile[]): CheckResult {
 
 /**
  * N1/N2/M1/M2/M3: Decision-number integrity + manifest validity.
- * Delegated to T2 (#217) per D-067. Stub until T2 helpers exist.
+ * Implemented by T2 (#217) per D-067; delegates to verify-docs.ts helpers.
+ *
+ * N1 (hard-fail): duplicate D-NNN within a log.
+ * N2 (info/advisory): skipped D-NNN within a log (cross-log gaps expected — §6).
+ * M1 (hard-fail): dangling in-repo pointer in doc-owners.
+ * M2 (info/advisory): malformed glob syntax (extremely rare with our simple grammar).
+ * M3 (hard-fail): duplicate glob in doc-owners.
  */
 export function checkN1N2M1M2M3(): CheckResult[] {
-  const stub = (check: string): CheckResult => ({
-    check,
+  const results: CheckResult[] = []
+
+  // Find all decision log files
+  const logFiles: string[] = []
+  const globalLog = join(REPO_ROOT, 'aeg-project/decisions.md')
+  if (existsSync(globalLog)) logFiles.push('aeg-project/decisions.md')
+  const appsDir = join(REPO_ROOT, 'apps')
+  if (existsSync(appsDir)) {
+    for (const app of readdirSync(appsDir)) {
+      const specsDir = join(appsDir, app, 'specs')
+      if (!existsSync(specsDir)) continue
+      for (const file of readdirSync(specsDir)) {
+        if (file.endsWith('-decisions.md')) {
+          logFiles.push(join('apps', app, 'specs', file))
+        }
+      }
+    }
+  }
+
+  // N1 / N2 — decision-number integrity
+  const allN1Failures: CheckFailure[] = []
+  const allN2Notes: string[] = []
+  for (const p of logFiles) {
+    const abs = join(REPO_ROOT, p)
+    if (!existsSync(abs)) continue
+    const { n1Errors, n2Notes } = checkDecisionNumbers(readFileSync(abs, 'utf8'), p)
+    for (const reason of n1Errors) allN1Failures.push({ iteration: 'decisions', reason })
+    allN2Notes.push(...n2Notes)
+  }
+
+  results.push({
+    check: 'N1',
+    status: allN1Failures.length > 0 ? 'fail' : 'pass',
+    failures: allN1Failures
+  })
+  results.push({
+    check: 'N2',
     status: 'info',
     failures: [],
-    note: 'TODO: delegate to #217 (T2 — enforcement hardening). Not implemented until T2 helpers land.'
+    note: allN2Notes.length > 0 ? allN2Notes.join(' | ') : 'No skipped decision numbers detected within any log.'
   })
-  return ['N1', 'N2', 'M1', 'M2', 'M3'].map(stub)
+
+  // M1 / M2 / M3 — manifest validity
+  const docOwnersAbs = join(REPO_ROOT, DOC_OWNERS_PATH)
+  const docOwnersContent = existsSync(docOwnersAbs) ? readFileSync(docOwnersAbs, 'utf8') : null
+
+  const { m1Errors, m2Notes, m3Errors } = checkManifestValidity(docOwnersContent)
+
+  results.push({
+    check: 'M1',
+    status: m1Errors.length > 0 ? 'fail' : 'pass',
+    failures: m1Errors.map((reason) => ({ iteration: 'doc-owners', reason }))
+  })
+  results.push({
+    check: 'M2',
+    status: 'info',
+    failures: [],
+    note: m2Notes.length > 0 ? m2Notes.join(' | ') : 'All globs syntactically valid.'
+  })
+  results.push({
+    check: 'M3',
+    status: m3Errors.length > 0 ? 'fail' : 'pass',
+    failures: m3Errors.map((reason) => ({ iteration: 'doc-owners', reason }))
+  })
+
+  return results
+}
+
+/**
+ * Closes #N gate — Layer 1 of D-069's forge-lifecycle enforcement.
+ *
+ * A task PR (branch `task/<iter>/<n>`) must carry `Closes #<its-issue>` in
+ * the body. Non-task branches are silently bypassed (returns ok:true).
+ *
+ * Pure function; reads from injected parameters. The CLI entry-point wires
+ * in BRANCH + PR_BODY env vars.
+ */
+export function checkClosesN(
+  branch: string,
+  prBody: string,
+  iterationFiles: IterationFile[]
+): { ok: boolean; message?: string; expectedIssue?: number } {
+  const m = branch.match(/^task\/([^/]+)\/([^/]+)$/)
+  if (!m) return { ok: true } // non-task branch — bypass
+
+  const iterSlug = m[1] as string
+  const taskId = m[2] as string
+
+  const iterFile = iterationFiles.find((f) => f.slug === iterSlug)
+  if (!iterFile) {
+    return {
+      ok: false,
+      message: `closes-n: branch "${branch}" references iteration "${iterSlug}" but no topology file found at aeg-root/iterations/${iterSlug}.md. Ensure the iteration file exists before opening the PR.`
+    }
+  }
+
+  const task = iterFile.iteration.tasks.find((t) => t.id === taskId)
+  if (!task) {
+    return {
+      ok: false,
+      message: `closes-n: branch "${branch}" references task "${taskId}" not found in ${iterSlug} topology. Verify the task ID matches the iteration file.`
+    }
+  }
+
+  if (task.issue === null) {
+    return {
+      ok: false,
+      message: `closes-n: task "${taskId}" in "${iterSlug}" has no Issue number (#TBD). The Planner must cut the Issue before this PR can be validated.`
+    }
+  }
+
+  const expectedIssue = task.issue
+  const closesPattern = /(?:closes|close|fixes|fix|resolves|resolve)\s*:?\s*#(\d+)/gi
+  const referenced = new Set<number>()
+  for (const hit of prBody.matchAll(closesPattern)) {
+    referenced.add(Number(hit[1]))
+  }
+
+  if (!referenced.has(expectedIssue)) {
+    return {
+      ok: false,
+      expectedIssue,
+      message: `closes-n: PR body does not contain \`Closes #${expectedIssue}\` (required for task "${taskId}" in iteration "${iterSlug}"). Add it to the PR body Summary section.`
+    }
+  }
+
+  return { ok: true, expectedIssue }
 }
 
 // ---------- forge I/O helpers -------------------------------------------------
@@ -690,6 +818,27 @@ function printHuman(results: CheckResult[], forgeUnavailable: boolean): void {
 
 if (import.meta.main) {
   const args = process.argv.slice(2)
+
+  // --closes-n: Closes #N gate for task branches (CI Layer 1 — D-069).
+  // Reads BRANCH and PR_BODY from env. Exits 0 on pass/bypass, 1 on fail.
+  if (args.includes('--closes-n')) {
+    const branch = process.env.BRANCH ?? ''
+    const prBody = process.env.PR_BODY ?? ''
+    if (!branch) {
+      console.warn('closes-n: BRANCH env var not set — skipping (non-task context).')
+      process.exit(0)
+    }
+    const files = loadIterationFiles()
+    const result = checkClosesN(branch, prBody, files)
+    if (result.ok) {
+      const issueStr = result.expectedIssue ? ` (Closes #${result.expectedIssue} ✓)` : ''
+      console.log(`closes-n: branch "${branch}" passes${issueStr}.`)
+      process.exit(0)
+    }
+    console.error(`closes-n FAILED: ${result.message}`)
+    process.exit(1)
+  }
+
   const jsonOnly = args.includes('--json')
   const humanOnly = args.includes('--human')
 
