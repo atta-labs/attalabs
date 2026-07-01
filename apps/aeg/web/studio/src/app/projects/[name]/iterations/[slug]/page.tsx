@@ -8,6 +8,7 @@ import path from 'node:path'
 import { notFound } from 'next/navigation'
 import { findAegRoot, readIteration, readProject } from '@/lib/aeg-fs'
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
+import { CoherencePanel } from './_components/CoherencePanel'
 import { statusVisual } from './_lib/status-display'
 import { TaskTitleCell } from './_components/TaskTitleCell'
 
@@ -212,6 +213,11 @@ export default async function IterationPage({ params }: { params: Promise<Params
           </ul>
         </section>
       )}
+
+      <section className='space-y-3'>
+        <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Coherence</h2>
+        <CoherencePanel />
+      </section>
 
       <section className='space-y-3'>
         <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Token ledger</h2>
