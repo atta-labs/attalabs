@@ -359,8 +359,10 @@ export function checkL1(files: IterationFile[], entriesBySlug: Map<string, TaskE
 }
 
 /**
- * L2: Completed/ iteration with any open task-Issue → premature archive.
- * Fail class: `premature-archive`
+ * L2: Archived iteration with any open task-Issue → premature archive.
+ * **Advisory (info-only)** per `state-machine.md` §12 (L1/L2 are lifecycle-hygiene
+ * signals, not the done-lifecycle gate). Findings are surfaced for a human to
+ * investigate; they never fail CI. Only A1/A2/A3/N1/M1/M3 block.
  */
 export function checkL2(files: IterationFile[], entriesBySlug: Map<string, TaskEntry[]>): CheckResult {
   const failures: CheckFailure[] = []
@@ -379,7 +381,15 @@ export function checkL2(files: IterationFile[], entriesBySlug: Map<string, TaskE
       }
     }
   }
-  return { check: 'L2', status: failures.length > 0 ? 'fail' : 'pass', failures }
+  return {
+    check: 'L2',
+    status: 'info',
+    failures,
+    note:
+      failures.length > 0
+        ? `${failures.length} archived iteration(s) with an open task-Issue — investigate (advisory)`
+        : undefined
+  }
 }
 
 /**

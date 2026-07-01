@@ -460,27 +460,31 @@ describe('L1: stale-active-iteration', () => {
 
 // ---------- L2: premature-archive --------------------------------------------
 
-describe('L2: premature-archive', () => {
-  it('fail — archived iteration with open task issue', () => {
+describe('L2: premature-archive (advisory — info, never fail)', () => {
+  it('info + finding — archived iteration with open task issue', () => {
     const f = makeIterationFile('iter-arch', true)
     const entries = [makeEntry('iter-arch', '1', 101, makeFacts({ issueState: 'open' }), true)]
     const entriesBySlug = new Map([['iter-arch', entries]])
     const r = checkL2([f], entriesBySlug)
-    expect(r.status).toBe('fail')
+    expect(r.status).toBe('info')
     expect(r.failures[0].iteration).toBe('iter-arch')
     expect(r.failures[0].reason).toMatch(/premature archive/)
   })
 
-  it('pass — archived iteration with all issues closed', () => {
+  it('info + no findings — archived iteration with all issues closed', () => {
     const f = makeIterationFile('iter-arch', true)
     const entries = [makeEntry('iter-arch', '1', 101, makeFacts({ issueState: 'closed' }), true)]
-    passesWithNoFailures(checkL2([f], new Map([['iter-arch', entries]])))
+    const r = checkL2([f], new Map([['iter-arch', entries]]))
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(0)
   })
 
-  it('skip — active iteration is not an L2 concern', () => {
+  it('info + no findings — active iteration is not an L2 concern', () => {
     const f = makeIterationFile('iter-active', false)
     const entries = [makeEntry('iter-active', '1', 101, makeFacts({ issueState: 'open' }), false)]
-    passesWithNoFailures(checkL2([f], new Map([['iter-active', entries]])))
+    const r = checkL2([f], new Map([['iter-active', entries]]))
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(0)
   })
 })
 
