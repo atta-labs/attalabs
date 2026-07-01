@@ -27,10 +27,18 @@
  *
  * Escape hatch (state-machine.md Section 12): label `override:docs` on the PR, or set
  * env OVERRIDE_DOCS=1, skips the gate. Visible in the check log.
+ *
+ * CWD-independent by design: chdir's to the repo root immediately below. Every
+ * relative path here (DOC_OWNERS_PATH, git diff/ls-files, readdirSync walks)
+ * must resolve correctly regardless of the invoking process's own working
+ * directory — this script is a sibling of verify-coherence.ts, which is
+ * spawned as a subprocess without an explicit cwd (apps/aeg/web/studio's API
+ * routes).
  */
 
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   checkDecisionNumbers,
   checkManifestValidity,
@@ -51,6 +59,9 @@ import {
   parseNoDocRules,
   readTierFromPrBody
 } from '../src/index'
+
+const REPO_ROOT = join(import.meta.dir, '../../..')
+process.chdir(REPO_ROOT)
 
 const args = process.argv.slice(2)
 const isNextDecision = args.includes('--next-decision')
