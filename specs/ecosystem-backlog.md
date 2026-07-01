@@ -2,6 +2,15 @@
 
 **Out of the AEG flow.** Cross-cutting, infrastructure, and AEG-**model** items that don't belong to a single product. Reference the Planner reads when choosing the next iteration slice; the flow never operates on it.
 
+## AEG-model hardening — punch-list from the `aeg-self-enforcement` session (2026-07-01)
+
+Live-fire findings while dispatching D-069's own tasks. All touch `aeg-root/` (the model), so they live here, not in `apps/aeg`.
+
+- **Ledger-ownership fix (flagged 4× by reviewers).** Read-only / chat roles (Reviewer, Security, Planner, Brief Author) *cannot* self-append their token-ledger row — they don't edit files, and it's not their branch. Parallel Developer rows also collide on the shared `tokens.md` (hit concretely: #255↔#258). **Fix:** no role writes its own ledger row on a task branch; the **Archivist records all rows post-merge** at close-out (roles report tokens in their PR/report). Edit `roles/{reviewer,security,planner,archivist}.md`, `brief-authoring` skill, `iterations/README.md` §12.
+- **Reviewers must write nothing to disk (dirty-`main` incident).** A dispatched reviewer appended a ledger row to `aeg-coherence-v1.tokens.md` **in the main checkout** and left it uncommitted → a dirty `main` working tree a user could stumble on. Root causes: (1) the ledger bug above; (2) reviewers are meant to be read-only (verdicts = PR comments only) but this one edited a file; (3) the dispatched agent ran in the **main checkout, not an isolated worktree**. T9's guardrails block *committing* to main and *merging* red PRs but **not a dirty working tree**. **Fix:** reviewers write only PR comments; dispatched agents run only in an isolated worktree (never the main checkout); consider making a dirty `main` structurally impossible for a dispatched agent.
+- **Grandfather the lifecycle checks (L2/L3), not just A1/A2/A3.** `COHERENCE_ENFORCED_FROM=2026-07-01` grandfathers the dated A-checks but not L2 (`premature-archive`) — so the oracle still reds on legacy herald #103 (archived iteration with a stale open issue). Extend the cutoff to L2/L3 (skip pre-cutoff iterations) or resolve #103.
+- **`executor-protocol` should chain to `roles/developer.md`.** A dispatch that says "read executor-protocol" gives execution discipline but not the Developer role's entry gate / PR-canonical-form / contract — under-specifying the role (bit T9). One line: `executor-protocol` opens with "read `roles/developer.md` first."
+
 This is the **monorepo unit's** plan, the ecosystem-level counterpart to each project's `apps/<project>/specs/<project>-backlog.md`. Convention (D-037, D-041): a unit's *plan* lives in its `specs/`; a unit's *flow + governance* lives in the root `aeg-root/` (model, exists once); its *living state* lives in its `aeg-project/`. The root `specs/ecosystem-backlog.md` is the monorepo's plan; `aeg-root/` + `aeg-project/` (root) are the monorepo's AEG.
 
 Migrated from the retired global `roadmap.md` (June 3, 2026). Moved from `docs/ecosystem-backlog.md` to `specs/ecosystem-backlog.md` (June 10, 2026 — D-037).
