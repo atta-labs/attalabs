@@ -1,0 +1,5 @@
+## July 1, 2026 — AEG Coherence Vb: Studio honest status badges + Check Coherence panel
+
+### AEG Studio
+
+- **Vb (#230, PR pending)** — Finalizes `dropped`/`incoherent` badge treatment in `status-display.ts` (D-069): removes T6 placeholder markers, locks final visual — `dropped` = muted badge (clean terminal, legitimately abandoned, no action needed); `incoherent` = destructive/red badge (closed COMPLETED with no merged PR — governance signal broken, needs human investigation). Adds "Check Coherence" panel to the iteration detail page: button calls `GET /api/coherence`, which spawns `scripts/verify-coherence.ts --json` as a Bun subprocess and returns its JSON report; Studio renders green "All checks pass" on exit 0, linked failure list (iteration / task / GitHub issue anchors) when any checks fail, and a forge-unavailable degraded warning when no token is present. The route inherits GITHUB_TOKEN / GH_TOKEN / `gh auth token` from the server process and delegates all check logic to the oracle — no logic is re-implemented in the UI. Studio README updated with honest terminal statuses bullet and Check Coherence section. Tier 1. Conforms-to D-069. Closes #230.
