@@ -20,12 +20,11 @@
 import { graphql } from '@octokit/graphql'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { parseIteration } from '@atta/aeg-core'
+import { DOC_OWNERS_PATH, checkDecisionNumbers, checkManifestValidity, parseIteration } from '@atta/aeg-core'
 import type { ForgeFacts, Iteration, Task } from '@atta/aeg-core'
 import { fetchForgeFacts } from '../apps/aeg/web/studio/src/lib/forge/fetch-forge-facts'
 import { resolveGithubToken } from '../apps/aeg/web/studio/src/lib/forge/github-token'
 import { resolveRepo } from '../apps/aeg/web/studio/src/lib/forge/resolve-repo'
-import { DOC_OWNERS_PATH, checkDecisionNumbers, checkManifestValidity } from './verify-docs'
 
 // ---------- grandfather cutoff -----------------------------------------------
 
@@ -462,7 +461,7 @@ export function checkN1N2M1M2M3(): CheckResult[] {
   const docOwnersAbs = join(REPO_ROOT, DOC_OWNERS_PATH)
   const docOwnersContent = existsSync(docOwnersAbs) ? readFileSync(docOwnersAbs, 'utf8') : null
 
-  const { m1Errors, m2Notes, m3Errors } = checkManifestValidity(docOwnersContent)
+  const { m1Errors, m2Notes, m3Errors } = checkManifestValidity(docOwnersContent, existsSync)
 
   results.push({
     check: 'M1',

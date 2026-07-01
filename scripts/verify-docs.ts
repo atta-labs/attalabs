@@ -5,6 +5,10 @@
  *
  * Per D-010, this is the HARD enforcement mechanism (the Archivist is advisory).
  * Per D-027, this is the first real implementation; it replaces the V0.7 stub.
+ * Per aeg-consolidation task 1, the check logic below is a thin CLI shim: it
+ * resolves args/env, reads the filesystem/git, and calls the pure, tested
+ * functions homed in `@atta/aeg-core`. The checks themselves — including their
+ * exact wording — live there now, not here.
  *
  * Modes:
  *   --pr              Diff-based. Enforces that a PR carries the docs its impact tier requires.
@@ -27,6 +31,26 @@
 
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import {
+  checkDecisionNumbers,
+  checkManifestValidity,
+  DOC_OWNERS_PATH,
+  deriveTierFromDiff,
+  type DocOwnersBinding,
+  evaluateC5,
+  globToRegex,
+  hasStatusBlock,
+  isCodeFile,
+  isDecisionLog,
+  isDocFile,
+  isSpecFile,
+  malformedDecisionEntries,
+  type NoDocRule,
+  overrideActive,
+  parseDocOwners,
+  parseNoDocRules,
+  readTierFromPrBody
+} from '@atta/aeg-core'
 
 const args = process.argv.slice(2)
 const isNextDecision = args.includes('--next-decision')
@@ -35,7 +59,7 @@ const mode: 'pr' | 'full' = args.includes('--pr') ? 'pr' : 'full'
 const errors: string[] = []
 const notes: string[] = []
 
-// ---- helpers ---------------------------------------------------------------
+// ---- I/O helpers ------------------------------------------------------------
 
 function sh(cmd: string): string {
   try {
@@ -45,406 +69,9 @@ function sh(cmd: string): string {
   }
 }
 
-function isDocFile(p: string): boolean {
-  return (
-    (p.startsWith('aeg-root/') && p.endsWith('.md')) ||
-    (p.startsWith('aeg-project/') && p.endsWith('.md')) ||
-    (p.includes('/aeg-project/') && p.endsWith('.md')) ||
-    (p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md')) ||
-    (p.startsWith('.claude/skills/') && p.endsWith('.md')) ||
-    p === 'docs-index.md' ||
-    p === 'README.md' ||
-    p === 'CLAUDE.md'
-  )
-}
-
-function isCodeFile(p: string): boolean {
-  if (p.endsWith('.md')) return false
-  return /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|sql|css)$/.test(p)
-}
-
-function isSpecFile(p: string): boolean {
-  return p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md')
-}
-
-function isDecisionLog(p: string): boolean {
-  return p === 'aeg-project/decisions.md' || /-decisions\.md$/.test(p)
-}
-
-/**
- * Derive a tier from the changed-file list when no `Tier:` field is in the PR body.
- *
- * Rules (in priority order):
- *   1. Decision log in diff       → Tier 3  (caller must still emit C0 — explicit declaration required)
- *   2. Spec or doc file in diff   → Tier 1
- *   3. Otherwise (code/config…)   → Tier 0
- *
- * Exported for unit tests.
- */
-export function deriveTierFromDiff(changed: string[]): 0 | 1 | 3 {
-  if (changed.some(isDecisionLog)) return 3
-  if (changed.some((p) => isSpecFile(p) || isDocFile(p))) return 1
-  return 0
-}
-
-function hasStatusBlock(content: string): boolean {
-  return /(^|\n)\s*(\*\*)?Status:?(\*\*)?\s*:?\s*(draft|target|ratified|retired)/i.test(content)
-}
-
-/** Each `## D-NNN` heading must have a Status and Type field in its block. */
-function malformedDecisionEntries(content: string): string[] {
-  const bad: string[] = []
-  const blocks = content.split(/\n(?=## )/)
-  for (const block of blocks) {
-    const m = block.match(/^##\s+(D-\d+|CONTRADICTION)\b.*/m)
-    if (!m) continue
-    if (m[1].startsWith('CONTRADICTION')) continue
-    const hasStatus = /(^|\n)\*\*Status:\*\*/.test(block)
-    const hasType = /(^|\n)\*\*Type:\*\*/.test(block)
-    if (!hasStatus || !hasType) {
-      bad.push(m[1])
-    }
-  }
-  return bad
-}
-
-/**
- * Read the `Tier:` field from the PR body.
- *
- * Tolerates the three markdown shapes the field appears in:
- *   - plain:        `Tier: 3`
- *   - bold colon:   `**Tier:** 3`   (the `**` wraps `Tier:` including the colon)
- *   - bold label:   `**Tier**: 3`   (the `**` wraps only `Tier`)
- *
- * The field may appear inline in a metadata line (e.g.
- * `Iteration: x · Task: 1 · **Tier:** 3 · Project: y`), so it is NOT anchored
- * to line-start. Returns null when no Tier field is present at all — the caller
- * decides what a missing tier means (PR mode treats it as an explicit error,
- * NOT a silent default — see runPrMode).
- */
-function readTierFromPrBody(): 0 | 1 | 3 | null {
-  const body = process.env.PR_BODY || ''
-  // Match an optional bold-open, the word Tier, an optional bold-close, a colon,
-  // an optional bold-close (covers `**Tier:**`), optional space, then the digit.
-  const m = body.match(/(\*\*)?\s*Tier\s*(\*\*)?\s*:\s*(\*\*)?\s*([013])\b/i)
-  if (!m) return null
-  const t = Number(m[4])
-  return t === 0 || t === 1 || t === 3 ? (t as 0 | 1 | 3) : null
-}
-
-function overrideActive(): boolean {
-  if (process.env.OVERRIDE_DOCS === '1') return true
-  const labels = (process.env.PR_LABELS || '').split(',').map((s) => s.trim())
-  if (labels.includes('override:docs')) return true
-  if ((process.env.PR_BODY || '').includes('[override:docs]')) return true
-  return false
-}
-
-// ---- C5 doc-coverage (doc-owners) -----------------------------------------
-
-export const DOC_OWNERS_PATH = 'aeg-root/doc-owners'
-
-export type DocOwnersBinding = { glob: string; pointer: string; lineNum: number }
-
-export type C5Result = { errors: string[]; notes: string[] }
-
-/**
- * Parse the doc-owners file. Each non-blank, non-comment line is
- *   `<code-glob>  <doc-pointer>`
- *
- * Comments start with `#`. Pointer is in-repo path, path#anchor, or URL.
- * Returns the parsed bindings + any malformed-line errors.
- */
-export function parseDocOwners(content: string): { bindings: DocOwnersBinding[]; errors: string[] } {
-  const bindings: DocOwnersBinding[] = []
-  const errors: string[] = []
-  const lines = content.split('\n')
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i] ?? ''
-    const stripped = raw.replace(/#.*$/, '').trim()
-    if (!stripped) continue
-    const parts = stripped.split(/\s+/)
-    if (parts.length < 2) {
-      errors.push(
-        `C5 doc-owners-parse: ${DOC_OWNERS_PATH}:${i + 1} — malformed binding (expected "<glob>  <pointer>", got "${raw.trim()}").`
-      )
-      continue
-    }
-    const [glob, ...pointerParts] = parts
-    bindings.push({ glob: glob ?? '', pointer: pointerParts.join(' '), lineNum: i + 1 })
-  }
-  return { bindings, errors }
-}
-
-/**
- * Translate a doc-owners glob to a RegExp. Deliberately simple — only `*` and
- * `**` are special; every other character is literal so Next.js dynamic-route
- * segments like `[username]` match without escaping.
- */
-export function globToRegex(pat: string): RegExp {
-  let re = '^'
-  let i = 0
-  while (i < pat.length) {
-    const c = pat[i]
-    if (c === '*') {
-      if (pat[i + 1] === '*') {
-        re += '.*'
-        i += 2
-      } else {
-        re += '[^/]*'
-        i += 1
-      }
-    } else if (/[.+^$|(){}[\]\\?]/.test(c as string)) {
-      re += `\\${c}`
-      i += 1
-    } else {
-      re += c
-      i += 1
-    }
-  }
-  re += '$'
-  return new RegExp(re)
-}
-
-function isUrlPointer(p: string): boolean {
-  return /^https?:\/\//.test(p)
-}
-
-function pointerToPath(p: string): string {
-  const idx = p.indexOf('#')
-  return idx === -1 ? p : p.slice(0, idx)
-}
-
-type DocAck = { surface: string; note: string }
-type DocWaiver = { pointer: string; reason: string }
-
-// Separator between <pointer> and <note|reason>. Tolerates em-dash (—),
-// en-dash (–), or a plain ASCII hyphen-minus (-) with REQUIRED surrounding
-// whitespace. Required whitespace around `-` disambiguates the separator
-// from hyphens that legitimately appear inside pointers (e.g. `aeg-root`,
-// `.claude/skills/ui-components/SKILL.md`). Non-greedy `(.+?)` for the
-// pointer plus this anchored separator means the pointer naturally stops
-// at the first valid separator without literally excluding `-` from
-// the pointer character set.
-const SEPARATOR = /(?:[ \t]*[—–][ \t]*|[ \t]+-[ \t]+)/.source
-
-function readDocAcks(body: string): DocAck[] {
-  const acks: DocAck[] = []
-  const re = new RegExp(`^[ \\t]*Doc-ack[ \\t]*:[ \\t]*(.+?)${SEPARATOR}(.+?)[ \\t]*$`, 'gim')
-  for (const m of body.matchAll(re)) {
-    acks.push({ surface: m[1].trim(), note: m[2].trim() })
-  }
-  return acks
-}
-
-function readDocWaivers(body: string): DocWaiver[] {
-  const waivers: DocWaiver[] = []
-  const re = new RegExp(`^[ \\t]*Doc-waiver[ \\t]*:[ \\t]*(.+?)${SEPARATOR}(.+?)[ \\t]*$`, 'gim')
-  for (const m of body.matchAll(re)) {
-    waivers.push({ pointer: m[1].trim(), reason: m[2].trim() })
-  }
-  return waivers
-}
-
-/**
- * Pure evaluator for the C5 doc-coverage check. The runtime wrapper reads
- * `aeg-root/doc-owners` from disk and `PR_BODY` from env; this function takes
- * both as inputs and an injectable file-exists for unit tests.
- *
- * Dormancy: a null `docOwnersContent` (absent file) OR no glob matching any
- * changed code file produces an empty result — no errors, no notes.
- */
-export function evaluateC5(
-  changed: string[],
-  docOwnersContent: string | null,
-  prBody: string,
-  fileExists: (p: string) => boolean = existsSync
-): C5Result {
-  const out: C5Result = { errors: [], notes: [] }
-
-  if (docOwnersContent === null) return out
-
-  const { bindings, errors: parseErrors } = parseDocOwners(docOwnersContent)
-  for (const e of parseErrors) out.errors.push(e)
-  if (bindings.length === 0) return out
-
-  const codeFiles = changed.filter(isCodeFile)
-  const fired: DocOwnersBinding[] = []
-  for (const b of bindings) {
-    const re = globToRegex(b.glob)
-    if (codeFiles.some((f) => re.test(f))) fired.push(b)
-  }
-  if (fired.length === 0) return out
-
-  const waivers = readDocWaivers(prBody)
-  const acks = readDocAcks(prBody)
-
-  for (const b of fired) {
-    const waived = waivers.find((w) => w.pointer === b.pointer)
-    if (waived) {
-      out.notes.push(
-        `C5 doc-waiver active for ${b.pointer} (binding ${DOC_OWNERS_PATH}:${b.lineNum}): ${waived.reason}`
-      )
-      continue
-    }
-
-    if (isUrlPointer(b.pointer)) {
-      const acked = acks.some((a) => a.surface === b.pointer)
-      if (!acked) {
-        out.errors.push(
-          `C5 doc-coverage: code change matched ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\` → ${b.pointer}). External pointer requires \`Doc-ack: ${b.pointer} — <note>\` in the PR body, or \`Doc-waiver: ${b.pointer} — <reason>\` to skip.`
-        )
-      }
-      continue
-    }
-
-    const pointerPath = pointerToPath(b.pointer)
-    if (!fileExists(pointerPath)) {
-      out.errors.push(
-        `C5 doc-owners-dangling: ${DOC_OWNERS_PATH}:${b.lineNum} points to ${b.pointer}, which does not exist on disk. Fix the binding or add the doc.`
-      )
-      continue
-    }
-
-    if (!changed.includes(pointerPath)) {
-      out.errors.push(
-        `C5 doc-coverage: code change matched ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\` → ${b.pointer}), but ${pointerPath} is not in the PR diff. Update it, or add \`Doc-waiver: ${b.pointer} — <reason>\` to the PR body.`
-      )
-    }
-  }
-
-  return out
-}
-
-// ---- N1/N2: decision-number integrity (full mode, exported for verify-coherence) ----
-
-/**
- * Extract and validate D-NNN numbers within a single decision log.
- * N1 (hard-fail): duplicate numbers within the log.
- * N2 (advisory): skipped numbers (gaps expected cross-log per state-machine §6).
- * Exported so verify-coherence.ts can delegate N1/N2 without reimplementing.
- */
-export function checkDecisionNumbers(
-  content: string,
-  logPath: string
-): { n1Errors: string[]; n2Notes: string[]; numbers: number[] } {
-  const raw: number[] = []
-  for (const m of content.matchAll(/^## D-(\d+)\b/gm)) {
-    raw.push(Number(m[1]))
-  }
-
-  const n1Errors: string[] = []
-  const n2Notes: string[] = []
-
-  const seen = new Map<number, number>()
-  for (const n of raw) seen.set(n, (seen.get(n) ?? 0) + 1)
-  for (const [n, count] of seen) {
-    if (count > 1) {
-      n1Errors.push(
-        `N1 decision-duplicate: ${logPath} — D-${String(n).padStart(3, '0')} appears ${count} times. Numbers must be unique within a log.`
-      )
-    }
-  }
-
-  const sorted = [...new Set(raw)].sort((a, b) => a - b)
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = sorted[i - 1] as number
-    const curr = sorted[i] as number
-    if (curr > prev + 1) {
-      const skipped = Array.from(
-        { length: curr - prev - 1 },
-        (_, k) => `D-${String(prev + 1 + k).padStart(3, '0')}`
-      ).join(', ')
-      n2Notes.push(
-        `N2 decision-skip: ${logPath} — gap after D-${String(prev).padStart(3, '0')}: ${skipped}. (Cross-log gaps are expected — state-machine §6.)`
-      )
-    }
-  }
-
-  return { n1Errors, n2Notes, numbers: sorted }
-}
-
-// ---- M1/M2/M3: manifest validity (full mode, exported for verify-coherence) ----
-
-export type NoDocRule = { glob: string; reason: string }
-
-/**
- * Parse `# no-doc: <glob> — <reason>` allow-list lines from doc-owners content.
- * These lines exempt a surface from the completeness scoreboard.
- */
-export function parseNoDocRules(content: string): NoDocRule[] {
-  const rules: NoDocRule[] = []
-  for (const line of content.split('\n')) {
-    const m = line.match(/^#\s+no-doc:\s+(\S+)(?:\s+[—–]\s+|\s+-\s+)(.+)$/)
-    if (m) rules.push({ glob: (m[1] ?? '').trim(), reason: (m[2] ?? '').trim() })
-  }
-  return rules
-}
-
-/**
- * Validate the doc-owners manifest file (all bindings, not just fired ones).
- * M1 (hard-fail): in-repo pointer does not exist on disk.
- * M2 (advisory): glob fails to produce a valid regex (extremely unlikely with our simple grammar).
- * M3 (hard-fail): same glob appears more than once.
- * Exported so verify-coherence.ts can delegate M1/M2/M3.
- */
-export function checkManifestValidity(
-  content: string | null,
-  fileExists: (p: string) => boolean = existsSync
-): { m1Errors: string[]; m2Notes: string[]; m3Errors: string[]; noDocRules: NoDocRule[] } {
-  if (content === null) return { m1Errors: [], m2Notes: [], m3Errors: [], noDocRules: [] }
-
-  const { bindings, errors: parseErrors } = parseDocOwners(content)
-  const m1Errors: string[] = [...parseErrors]
-  const m2Notes: string[] = []
-  const m3Errors: string[] = []
-  const noDocRules = parseNoDocRules(content)
-
-  // M2: glob syntax (advisory — our grammar is permissive so failures are very rare)
-  for (const b of bindings) {
-    if (!b.glob) {
-      m2Notes.push(`M2 manifest-bad-glob: ${DOC_OWNERS_PATH}:${b.lineNum} — empty glob.`)
-      continue
-    }
-    try {
-      globToRegex(b.glob)
-    } catch (e) {
-      m2Notes.push(`M2 manifest-bad-glob: ${DOC_OWNERS_PATH}:${b.lineNum} — glob "${b.glob}" failed: ${e}`)
-    }
-  }
-
-  // M3: duplicate globs
-  const globLines = new Map<string, number[]>()
-  for (const b of bindings) {
-    const list = globLines.get(b.glob) ?? []
-    list.push(b.lineNum)
-    globLines.set(b.glob, list)
-  }
-  for (const [glob, lines] of globLines) {
-    if (lines.length > 1) {
-      m3Errors.push(
-        `M3 manifest-duplicate-glob: ${DOC_OWNERS_PATH} — glob "${glob}" appears ${lines.length} times (lines ${lines.join(', ')}).`
-      )
-    }
-  }
-
-  // M1: every in-repo pointer exists on disk (checks ALL bindings, not just fired ones)
-  for (const b of bindings) {
-    if (isUrlPointer(b.pointer)) continue
-    const pointerPath = pointerToPath(b.pointer)
-    if (!fileExists(pointerPath)) {
-      m1Errors.push(
-        `M1 manifest-dangling: ${DOC_OWNERS_PATH}:${b.lineNum} — pointer ${b.pointer} does not exist on disk.`
-      )
-    }
-  }
-
-  return { m1Errors, m2Notes, m3Errors, noDocRules }
-}
-
 function runC5(changed: string[]): void {
   const content = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
-  const result = evaluateC5(changed, content, process.env.PR_BODY || '')
+  const result = evaluateC5(changed, content, process.env.PR_BODY || '', existsSync)
   for (const e of result.errors) errors.push(e)
   for (const n of result.notes) notes.push(n)
 }
@@ -452,7 +79,13 @@ function runC5(changed: string[]): void {
 // ---- PR mode ---------------------------------------------------------------
 
 function runPrMode(): void {
-  if (overrideActive()) {
+  if (
+    overrideActive({
+      overrideDocsEnv: process.env.OVERRIDE_DOCS,
+      prLabels: process.env.PR_LABELS,
+      prBody: process.env.PR_BODY
+    })
+  ) {
     console.log('verify-docs: override:docs active — gate skipped (logged for audit).')
     return
   }
@@ -476,7 +109,7 @@ function runPrMode(): void {
     return
   }
 
-  const tierFromBody = readTierFromPrBody()
+  const tierFromBody = readTierFromPrBody(process.env.PR_BODY || '')
   let effectiveTier: 0 | 1 | 3
   if (tierFromBody !== null) {
     effectiveTier = tierFromBody
@@ -587,7 +220,7 @@ function runFullMode(): void {
 
   // M1/M2/M3 — doc-owners manifest validity.
   const docOwnersContent = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
-  const { m1Errors, m2Notes, m3Errors, noDocRules } = checkManifestValidity(docOwnersContent)
+  const { m1Errors, m2Notes, m3Errors, noDocRules } = checkManifestValidity(docOwnersContent, existsSync)
   for (const e of m1Errors) errors.push(e)
   for (const n of m2Notes) notes.push(n)
   for (const e of m3Errors) errors.push(e)
