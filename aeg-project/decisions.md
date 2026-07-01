@@ -2021,3 +2021,37 @@ In the per-slot model dropdown (ReviewerConfigModal / ModelPicker), filter out a
 - T9 (`#254`, harness guardrails) conflicts-with the §12/governance-doc cluster (T2/T7/T8) and serializes there; it is disjoint from T6 (aeg-core) and Vb (studio) and runs parallel to them.
 
 **Lock rationale:** `Lock: YES`. This is the foundational integrity charter for AEG-as-product; future briefs touching status derivation, the forge-lifecycle gates, or the role-seam contract gates MUST `Conforms to lock: D-069` or `Challenges lock: D-069 — <reason>`. Changing the law (close-iff-merged), the terminal-status vocabulary, or the flag-don't-auto-reopen stance is a new D-entry that supersedes this one, not an in-place edit.
+
+## D-070 — Planner owns iteration-refactor & cross-iteration task-movement; Archivist close-gate is "no open task work," not "all merged"
+
+**Date:** 2026-07-01
+**Status:** ACTIVE
+**Type:** 1 (irreversible — role-charter change; Principal ratified in-session)
+**Lock:** YES
+**Authored by:** TL (Strategist)
+**Ratified by:** Principal (in-session, 2026-07-01)
+
+**Context:** Closing `aeg-coherence-v1` required relocating 5 unbuilt tasks (#218/#219/#220/#251/#252) into its successor `aeg-consolidation` and then closing the source. The model had **no owner for "move a task between iterations"**: the Iteration Archivist is barred from editing topology or deciding scope (it only *flags* unbuilt tasks for Principal disposition — `roles/iteration-archivist.md` "What you do NOT do"), while the Planner's readiness gate item 8 demands the prior iteration be archived *before* planning — impossible when the new iteration **absorbs** the old one's tasks, since planning is what empties the source. The gap surfaced when the move was attempted ad-hoc, outside any role, with direct edits on the main checkout (captured in `lessons.md`).
+
+**Decision:** Cross-iteration task-movement is a Planner power; the Archivist close-gate accepts `moved` as a terminal disposition alongside `merged`/`dropped`.
+
+1. **Task-movement / iteration-refactor is a Planner power**, exercised at plan time. Moving a task from iteration A→B is a topology + scope decision; only the Planner may perform it. **Only `todo`/backlog tasks are movable** — a task with an open branch or PR (in-flight/in-review) must be finished or dropped first, never relocated mid-flight.
+2. **The Planner refactors the source iteration in the same act as planning the destination.** When a new iteration absorbs tasks from a still-active one, the Planner: (a) plans the destination (topology + rationale, D-055); (b) relabels each moved Issue `iteration:<src>` → `iteration:<dest>` + posts a provenance comment; (c) annotates the *source* iteration's topology with a `Moved out → <dest>` marker per moved task — while the source is still in `iterations/`, before archival (the archived file is frozen).
+3. **Movement provenance is recorded in four durable places:** the Issue (relabel + comment), the source iteration file (annotation), the destination iteration file (task row + refreshed rationale), the Archivist retrospective ("Tasks moved out").
+4. **The Iteration Archivist close-gate broadens** from "all tasks merged" to **"no open task work"**: an iteration is closable iff every task is `merged` (via `Closes #N`), `dropped` (`NOT_PLANNED`), or `moved` (relabeled away). Mechanically: `gh issue list --label "iteration:<name>" --state open` is empty **AND** no open `task/<name>/*` PRs. This conforms to D-069's one law — a task still reaches *done* only via a merged PR; **movement is a re-scope, not a done-path.**
+5. **Readiness-gate item 8 gains a supersession carve-out:** the "archive prior iteration first" rule does **not** apply to the iteration the current plan is superseding (absorbing tasks from). Canonical order becomes **Planner refactor-and-plan → then Archivist closes the source** — never archive-then-plan when the plan *is* the supersession. Item 8 still fully applies to every unrelated prior iteration.
+
+**Boundary (what this is NOT):** not a license to move in-flight/in-review tasks (todo/backlog only); not a bypass of D-069 (a moved task is neither done nor dropped in the source — it simply leaves the iteration); does not let the Archivist edit topology or decide scope (the broadened gate changes only what it *accepts as terminal*, not what it *does* — the move itself remains the Planner's); does not weaken item 8 for unrelated iterations.
+
+**Alternatives rejected:**
+- *Archivist executes the move* — violates its charter (no topology edits, no scope decisions), and it has no readiness-gate / deep-dig to size the destination.
+- *Force all tasks merged before any close* — would abandon legitimately-deferred work or ship throwaway just to fake a "merged" state.
+- *Keep archive-then-plan and forbid supersession* — makes cross-iteration refactor impossible and forces a dishonest "complete" on an iteration whose tail was relocated (violates D-069's honest-derivation ethos).
+
+**Consequences:**
+- `roles/planner.md` gains a "Iteration refactor & cross-iteration task-movement" section + a supersession carve-out clause on readiness-gate item 8.
+- `roles/iteration-archivist.md` entry-gate item 1 broadens ("all merged" → "no open task work: merged/dropped/moved"); the retrospective template gains a "Tasks moved out" field.
+- `contracts/iteration-archivist-planner.md` records the supersession ordering — changed **as a unit** with both role docs, per that contract's own "Changing this contract" rule.
+- The already-live `aeg-consolidation` relabels (#218/#219/#220/#251/#252) are retro-legitimized as step-2b of a Planner refactor still to be completed properly (source annotation + destination topology + refreshed rationale) in the forthcoming `aeg-consolidation` plan.
+
+**Lock rationale:** `Lock: YES`. Future briefs touching iteration-refactor, cross-iteration task-movement, or the iteration close-gate MUST `Conforms to lock: D-070` or `Challenges lock: D-070 — <reason>`. Changing the movability rule (todo-only), the four-place provenance, or the close-gate disposition set (`merged`/`dropped`/`moved`) is a new D-entry that supersedes this one, not an in-place edit.
