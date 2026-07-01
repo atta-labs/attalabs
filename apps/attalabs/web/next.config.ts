@@ -15,6 +15,7 @@ export default async function config(): Promise<NextConfig> {
     },
     transpilePackages: ['@atta/ui'],
     turbopack: {
+      root: resolve(__dirname, '../../..'),
       resolveAlias: {
         '@atta/ui/components': componentsRelPath
       }
