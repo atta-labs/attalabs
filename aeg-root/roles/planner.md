@@ -52,7 +52,7 @@ Before planning, you MUST verify every one of these and explicitly confirm them 
 5. **The relevant locked decisions are known.** You've read the decision log entries (`aeg-project/decisions.md`, `apps/*/specs/*-decisions.md`) that bear on this work, so you don't plan a task that violates a `Lock: YES` or re-litigates a settled call. If you can't find the decision history, STOP.
 6. **The registry resolves every project you'll assign** (`aeg-root/projects.md`) — see the entry gate.
 7. **Open ambiguities are surfaced, not assumed.** If, after the above, real decisions remain unmade (which DB owns this? is structured output required on all vendors?), collect them and put them to the Principal BEFORE planning — do not pick an answer and plan on top of a guess. A plan built on an unstated assumption is a plan that ships the wrong thing.
-8. **Previous iterations on each in-scope product are archived.** For every product in scope, confirm the previous iteration on that product is in `aeg-root/iterations/completed/`. If any prior iteration on an in-scope product exists in `aeg-root/iterations/` but NOT in `completed/`, the Iteration Archivist has not run — STOP: *"The previous iteration `<name>` on `<product>` has not been archived. Dispatch the Iteration Archivist for it before planning proceeds."* The contract governing this gate is `aeg-root/contracts/iteration-archivist-planner.md`.
+8. **Previous iterations on each in-scope product are archived.** For every product in scope, confirm the previous iteration on that product is in `aeg-root/iterations/completed/`. If any prior iteration on an in-scope product exists in `aeg-root/iterations/` but NOT in `completed/`, the Iteration Archivist has not run — STOP: *"The previous iteration `<name>` on `<product>` has not been archived. Dispatch the Iteration Archivist for it before planning proceeds."* The contract governing this gate is `aeg-root/contracts/iteration-archivist-planner.md`. **Supersession carve-out (D-070):** this gate does NOT apply to a prior iteration that *this* plan is superseding — i.e. absorbing `todo`/backlog tasks from. For that one source iteration you refactor it in-place during this plan (see "Iteration refactor & cross-iteration task-movement" below) and the Iteration Archivist archives it *after* the plan lands; the order is refactor-and-plan → then archive, never archive-then-plan. The gate still fully applies to every *unrelated* prior iteration.
 
 **State the readiness check explicitly at the top of your planning pass** — a short "Readiness: I have X, Y, Z; I verified I can read A, B; the following are unresolved and I need answers before I proceed: …". This makes it visible that the gate was run, not skipped. A plan emitted without a passed readiness check is malformed. (This is also conversational-protocol step 6 — announce the gate's result before moving on.)
 
@@ -187,6 +187,24 @@ When you raise a warning, state the specific signal, give your recommendation (u
 ## Naming the iteration
 
 Name the iteration's file (`aeg-root/iterations/<name>.md`) after its **center of gravity — the durable, highest-leverage work — not its narrowest downstream feature.** When an iteration onboards a project onto shared infrastructure (or grows that infra), name the onboarding/infra, not the feature riding on it. A name must not imply narrower scope than the `Project(s)` column reveals. (Full rule: `iterations/README.md` §4 "Naming an iteration.")
+
+---
+
+## Iteration refactor & cross-iteration task-movement (D-070)
+
+Moving a task from one iteration to another is a **Planner power** — it is a topology + scope decision, and topology is edited only by the Planner, at plan time. The Iteration Archivist cannot do it (it edits no topology and decides no scope; it only *flags* unbuilt tasks for the Principal). When a new iteration you are planning **absorbs** tasks from an existing, still-active iteration, you perform the refactor **as part of the same planning act** — not as a separate chore, and never by ad-hoc `gh issue edit` outside a plan.
+
+**Only `todo`/backlog tasks are movable.** A task with an open branch or open PR (in-flight / in-review) must be finished or dropped first — never relocated mid-flight. Verify with the forge before moving: no `task/<src>/<n>` branch, no open PR.
+
+**The refactor, step by step:**
+1. **Plan the destination** — cut/confirm the destination iteration's topology and each moved task's refreshed Planner's rationale (sizing may change once it lands on the new iteration's substrate; re-derive it, do not copy the stale one).
+2. **Relabel each moved Issue** `iteration:<src>` → `iteration:<dest>` and post a one-line provenance comment on it (from where, to where, why).
+3. **Annotate the source iteration's topology** with a `Moved out → <dest>` marker on each moved task's row — while the source is still in `aeg-root/iterations/` (before archival; once in `completed/` the file is frozen history the Archivist owns).
+4. **Leave the close to the Archivist.** After your plan lands, the source iteration has no open task work (every task merged, dropped, or now moved) and the Iteration Archivist can close it (D-070 close-gate). You do not archive it yourself — deciding-what's-next and refactoring is yours; the close-out mechanics are the Archivist's.
+
+**Movement provenance is recorded in four durable places** (all auditable): the Issue (relabel + comment), the source iteration file (annotation), the destination iteration file (task row + refreshed rationale), and the Archivist retrospective ("Tasks moved out"). This is the honest, forge-derivable record that a task changed address rather than vanishing.
+
+This conforms to `Lock: YES` **D-070** and to **D-069**'s one law: a moved task is neither *done* nor *dropped* in the source — movement is a re-scope that removes the task from the iteration entirely, not a path to *done* (which is still only a merged PR naming the Issue).
 
 ---
 

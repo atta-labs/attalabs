@@ -64,6 +64,19 @@ Every artifact the Iteration Archivist produces (left) has exactly one obligatio
 
 ---
 
+## Supersession — when the Planner's new plan absorbs the source iteration (D-070)
+
+The normal seam is **archive → then plan**: the Iteration Archivist closes iteration N, and only then does the Planner plan iteration N+1 (readiness gate item 8 enforces this). There is one exception, added by **D-070**.
+
+When the new iteration the Planner is cutting **supersedes** an existing, still-active iteration — absorbing its `todo`/backlog tasks — the ordering **inverts** for that one source iteration:
+
+1. **Planner refactor-and-plan first.** The Planner plans the destination, relabels the moved Issues (`iteration:<src>` → `iteration:<dest>` + provenance comment), and annotates the source topology (`Moved out → <dest>`) — all while the source is still in `aeg-root/iterations/`. Moving tasks is the Planner's power; the Archivist neither moves them nor decides the destination.
+2. **Then the Iteration Archivist closes the source.** By now the source has **no open task work** (entry-gate item 1: every task `merged`/`dropped`/`moved`), so the close-out proceeds normally and records the moved tasks under the retrospective's "Tasks moved out" field.
+
+The Planner's readiness-gate item 8 is **carved out** for this one superseded source (it would otherwise deadlock: item 8 wants it archived before planning, but planning is what empties it). Item 8 still fully applies to every *unrelated* prior iteration. This carve-out lives in `planner.md` item 8 and is mirrored here; the two must stay in sync.
+
+---
+
 ## Changing this contract
 
 A contract changes **as a unit**. You may not change what the Iteration Archivist produces without, in the same change, updating what the Planner consumes — because the property that makes the seam sound is that the producer's output side is *identical* to the consumer's input side. Concretely:
