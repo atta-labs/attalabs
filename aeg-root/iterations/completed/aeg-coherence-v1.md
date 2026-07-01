@@ -1,5 +1,5 @@
 # Iteration: aeg-coherence-v1 — June–July 2026
-Lifecycle: active
+Lifecycle: complete
 
 Goal: Make governance coherence machine-derived — code↔doc (doc-owners + verify-docs C5)
 and plan↔forge (verify-coherence oracle) — enforced deterministically, surfaced in Studio.

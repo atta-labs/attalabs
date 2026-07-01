@@ -284,3 +284,39 @@ None. All 10 tasks completed and merged.
 ### Unbuilt tasks
 
 None — all 8 tasks either have merged PRs or a Principal-authorized close (T6).
+
+## aeg-coherence-v1 — retrospective (June-July 2026)
+
+**Duration:** 2026-06-25 (PR #216) → 2026-07-01 (PR #258)
+**Tasks completed:** 6 of 9 planned (Va #236, 1 #216, 2 #258, 6 #256, 9 #255, Vb #257)
+**Tasks dropped/deferred:** none
+**Tasks moved out (D-070):** 3 (#218) → `aeg-governance-hardening` task 3; 4 (#219) → `aeg-governance-hardening` task 4; 5 (#220) → `aeg-consolidation` task 3, re-scoped; 7 (#251) → `aeg-governance-hardening` task 1; 8 (#252) → `aeg-governance-hardening` task 2. Reason: each was built on `scripts/verify-coherence.ts` / `verify-docs.ts`, which `aeg-consolidation` refactors into `@atta/aeg-core` — finishing them on the old scripts would have been throwaway work.
+
+### What went well
+
+- **Va (`verify-coherence.ts` oracle) dispatched ahead of T2–T5 per stated Principal priority** and shipped deterministic, zero-LLM-call coherence checking — the priority reordering worked as intended.
+- **T6 (honest terminal-status derivation, #250/PR #256) directly closed the "closed-without-merge silently reads `todo`" dishonesty** the D-069 charter exists to prevent — `dropped`/`incoherent` statuses now render correctly instead of masking as innocuous.
+- **T9 (agent git guardrails, #254/PR #255) turned a real incident into a structural fix.** A dispatched reviewer's uncommitted ledger-row edit on the main checkout became a harness-level `PreToolUse` merge-gate hook + main-commit block, not just a discipline reminder.
+- **D-069 was escalated and ratified in-session with the Principal present** — the `severity:product` escalation path worked as designed for a Type 1, `Lock: YES` charter decision.
+
+### What stalled or caused rework
+
+- **CI-vs-local drift on the coherence gate kept it advisory instead of blocking.** Root-caused during `aeg-consolidation` planning (task 3, #220), not fixed within this iteration: the `coherence-gate` CI step never passes `BRANCH`/`GITHUB_HEAD_REF`, so T3's branch-scoping proxy checks every active iteration instead of just the PR's target; and `isGrandfathered(null)` silently un-grandfathers legacy items whenever the forge fetch is unavailable in CI.
+- **The dirty-main incident that motivated T9 recurred in a milder form during this iteration's own close-out.** A Planner turn edited `aeg-coherence-v1.md` + `aeg-project/state.md` directly on the main checkout before the mistake was caught and relocated to a worktree. T9's hooks block *commits* and *merges* to main, not a stray *edit* before a commit is attempted — exactly the gap `specs/ecosystem-backlog.md`'s "consider making a dirty main structurally impossible" item already flags. This is now independent confirmation from a second occurrence, not a one-off.
+- **A topology-annotation mistake required a follow-up PR before archival.** D-070's "Moved out →" marker was written in-place inside a still-live table row instead of removing the row from the parsed table, so the Studio kept deriving a `Todo` status for 5 already-relocated tasks — making the iteration look unclosable when it was actually forge-empty. Fixed in PR #268.
+
+### Carry-forward lessons (add to lessons.md calibration section if not already there)
+
+- **A "moved" task must be removed from the source iteration's live-parsed topology table, not merely annotated in place.** `aeg-core`'s `readMarkdownTable` derives live status from whatever rows remain inside `## Tasks (topology)`; an in-place annotation on a row whose Issue is still open (just relabeled) still renders a misleading derived status. Record the move in a separate, non-table prose section instead.
+- **Hooks that block commit/merge to main do not block a stray edit before a commit is attempted.** Confirmed by two independent incidents (the T9-motivating reviewer edit, and the milder recurrence during this iteration's own close-out). The `ecosystem-backlog.md` model-hardening item calling for a structurally-dirty-main-impossible mechanism remains open and is bundled into `aeg-governance-hardening` task 5 (#266).
+- **A governance/topology PR (decision entries, iteration files) trips the same `Tier`/`C4`/commit-message CI gates as a code PR.** Budget for at least one extra round-trip fixing the PR-body `Tier:`/`Conforms-to: D-###` fields and the commit-message header-length limit on the first governance PR of a session — recurred across multiple PRs this session (#262, #267).
+
+### Decisions made this iteration (Type 1, ratified)
+
+- **D-069** (Type 1, Lock: YES, ACTIVE) — AEG enforces its own forge-lifecycle and role-seam contracts mechanically. Ratified in-session, 2026-06-30. This iteration's T6/T2/T7/T8/T9 scope derives from this charter.
+
+*(D-070 — Planner owns cross-iteration task-movement — was made during this iteration's close-out planning, not by one of its tasks. It enabled the close rather than being produced by it; logged separately, not counted as this iteration's decision output.)*
+
+### Unbuilt tasks
+
+None dropped or abandoned. The 5 tasks that didn't ship under this iteration (3, 4, 5, 7, 8 — Issues #218/#219/#220/#251/#252) were moved, not abandoned — see "Tasks moved out" above. They continue under `aeg-consolidation` and `aeg-governance-hardening`.
