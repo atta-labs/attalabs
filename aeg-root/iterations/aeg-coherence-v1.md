@@ -12,6 +12,13 @@ incrementally per task.
 **Va dispatches ahead of T2–T5** (Principal priority: plan↔forge oracle is the top
 development priority for this iteration).
 
+**Refactored 2026-07-01 (D-070, Planner):** tasks 3, 4, 5, 7, 8 moved out — see per-row
+markers below. Each was built on `scripts/verify-coherence.ts` / `verify-docs.ts`, which
+`aeg-consolidation` refactors into `@atta/aeg-core`; rebuilding them on the old scripts
+would be throwaway work. Tasks Va/Vb/1/2/6/9 shipped and stand as this iteration's
+delivered scope. No open task work remains in this iteration after the move; it is
+closable by the Iteration Archivist under the D-070 gate.
+
 Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 
 ## Tasks (topology)
@@ -22,17 +29,17 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | Vb | Studio "Check Coherence" panel (renders Va's oracle live) + **honest status badges** (`dropped`/`incoherent` from T6; the "stale render / force-dynamic" premise is disproven — see #230 re-scope) | #230  | aeg        | #229, #250        | —              |
 | 1  | Coherence seam: `aeg-root/doc-owners` file (code→doc bindings) + `verify-docs` C5 coverage gate + `Doc-ack`/`Doc-waiver` PR-body fields + D-062 full entry | #214  | aeg        | —                 | —              |
 | 2  | Enforcement hardening: decision-number integrity + manifest validity + completeness scoreboard (reserves D-063) **+ forge-lifecycle CI gates: `Closes #N` pre-merge + verify-coherence as blocking check (A1/A2/A3/L1/L2) + in-iteration back-pressure + `aeg:incoherent` (D-069 re-scope)** | #217  | aeg        | #214, #250        | #251, #252     |
-| 3  | Bind-all + staleness audit: drive linkage to 100%, emit fix punch-list                                                              | #218  | aeg        | #217              | —              |
-| 4  | Planner §7 auto-derivation from `doc-owners`                                                                                        | #219  | aeg        | #218              | —              |
-| 5  | Coherence completeness verification (100% gate)                                                                                     | #220  | aeg        | #219, #218, 10…n  | —              |
+| 3  | Bind-all + staleness audit: drive linkage to 100%, emit fix punch-list — **Moved out → `aeg-governance-hardening` task 3 (D-070, 2026-07-01)** | #218  | aeg        | #217              | —              |
+| 4  | Planner §7 auto-derivation from `doc-owners` — **Moved out → `aeg-governance-hardening` task 4 (D-070, 2026-07-01)**                | #219  | aeg        | #218              | —              |
+| 5  | Coherence completeness verification (100% gate) — **Moved out → `aeg-consolidation` task 3, re-scoped (D-070, 2026-07-01)**         | #220  | aeg        | #219, #218, 10…n  | —              |
 | 6  | Honest terminal-status derivation + constitution charter: `deriveStatus` reads `stateReason`; add `dropped`/`incoherent` to `DerivedStatus`; create `aeg:incoherent`; §3/§14 + iterations/README §3 (carries D-069) | #250  | aeg        | —                 | —              |
-| 7  | Planner→Brief rationale-completeness gate (R1): assert every active task Issue carries all 8 rationale fields; define the canonical rationale grammar | #251  | aeg        | #217              | #217, #252     |
-| 8  | Brief→Developer brief-validation gate: replace the `archivist.yml` stub; assert brief required sections + tagged Test Plan + `Closes #N` + lock-ack; define brief-section grammar | #252  | aeg        | #217              | #217, #251     |
+| 7  | Planner→Brief rationale-completeness gate (R1): assert every active task Issue carries all 8 rationale fields; define the canonical rationale grammar — **Moved out → `aeg-governance-hardening` task 1 (D-070, 2026-07-01)** | #251  | aeg        | #217              | #217, #252     |
+| 8  | Brief→Developer brief-validation gate: replace the `archivist.yml` stub; assert brief required sections + tagged Test Plan + `Closes #N` + lock-ack; define brief-section grammar — **Moved out → `aeg-governance-hardening` task 2 (D-070, 2026-07-01)** | #252  | aeg        | #217              | #217, #251     |
 | 9  | Agent git guardrails: `PreToolUse` merge-gate hook (deny `gh pr merge`/`gh api`/MCP merge unless `gh pr checks` green) + Husky main-commit block + worktree-first Step 0 in roles + `coordination.md` universal rule + lessons entry | #254  | aeg        | —                 | #217, #251, #252 |
 
 ## Backlog (this iteration, not yet dispatched)
 
-- **Fix punch-list (tasks 10…n) — spawned by task 3.** The staleness audit in task 3 (#218) emits one new Issue per contradiction it finds between a newly-bound doc and `D-001 … D-063`. Those Issues are the iteration's fix punch-list and must all close before task 5 (#220) can pass its 100%-coherence exit gate. Numbering is sequential from the next free integer at the time T4 runs (now 10+, since tasks 6–9 are the D-069 self-enforcement tasks); the set is cut from real audit findings, not pre-enumerated here.
+- **Fix punch-list (tasks 10…n) — spawned by task 3.** ~~The staleness audit in task 3 (#218) emits one new Issue per contradiction it finds between a newly-bound doc and `D-001 … D-063`. Those Issues are the iteration's fix punch-list and must all close before task 5 (#220) can pass its 100%-coherence exit gate.~~ **Superseded (D-070, 2026-07-01):** task 3 moved to `aeg-governance-hardening` task 3 (#218) before spawning any punch-list Issues; the punch-list (if any) will spawn under that iteration instead. Nothing was cut under this backlog lane.
 
 ## Cross-iteration dependencies
 
