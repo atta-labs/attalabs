@@ -21,6 +21,8 @@ The AEG UI (`apps/aeg/web` → `aeg.attalabs.dev`) is the designated first itera
 
 **Must render the plan as well as execution.** Retiring `roadmap.md` removed the single whole-plan view; the UI renders the backlogs (`specs/*-backlog.md`) alongside the iterations (OQ-cross-14). Single-tenant *usage* on a multi-repo, tag-grouped *architecture*.
 
+**Focused first slice — the contract-fulfillment pipeline** (`aeg-observability-spec.md`, drafted 2026-07-01). A live per-task pipeline (plan → brief → dev → code → security → verify → merge → close-out) **derived** from the forge — the Tier-1 observability of OQ-aeg-2, built by extending `deriveIteration` → `derivePipeline` and rendering it in the Studio. Anchor principle: legibility is *derived, never logged* (no stored run-log). **Depends on `aeg-coherence-v1` T7/T8** (the verdict/brief grammar the derivation parses). The **Planner cuts this into the `aeg-observability` iteration once `aeg-coherence-v1` closes** — it is not a task of that iteration (distinct goal, multi-task feature, gated on its tail).
+
 ---
 
 ## Open product-shape questions (unresolved — resolve by building, not by debating)
