@@ -1,6 +1,6 @@
 # Atta Ecosystem — Current State
 
-**Last updated:** June 30, 2026 (D-057: now.md retired; forge is the source of truth for active/blocked/next)
+**Last updated:** July 1, 2026 (aeg-coherence-v1 archived; aeg-consolidation + aeg-governance-hardening active)
 **Purpose:** Non-derivable operational facts across the AttaLabs ecosystem. For live execution state (active tasks, blocked, next), derive from the forge — see `coordination.md` "Session-start forge queries."
 
 This doc lives in the repo at `aeg-project/state.md`. For non-PM docs (skills, Vāda specs, legacy material), see `docs-index.md` for paths and read via GitHub MCP. See `coordination.md` for how the system works.
@@ -11,9 +11,9 @@ Vāda's own internal phase tracking lives in `apps/vada-ai/specs/vada-state.md`.
 
 ## Current focus
 
-**vada-production-v1** and **aeg-coherence-v1** are the active iterations. `vada-production-v1`'s deliberate-page slice (6a/6b/6c + UI-libraries restoration) shipped in PR #207 (merged June 28 — Council deliberations end-to-end); the iteration's back half remains open — Fusion (T4/T5 merged June 29), reviewers-prompt (T8), benchmark (T9–T11), Teams-page measured stats (T12), hardening (T13). The teams-as-a-product rethink (`apps/vada-ai/specs/vada-rethink.md`, draft June 28) gates T8/T11/T12 and is not yet a forge Issue. **herald-agents-v2 is complete** (8 tasks, June 18–29; iteration archived to `aeg-root/iterations/completed/herald-agents-v2.md`; #234 open bug — prod ANTHROPIC_API_KEY likely expired, Principal to disposition).
+**aeg-consolidation** and **aeg-governance-hardening** are the active iterations, both AEG-model work, prioritized ahead of `vada-production-v1` by explicit Principal decision (2026-07-01) — Vāda work resumes once the AEG refactor lands. `aeg-consolidation` (4 tasks: #263/#264/#220/#265) homes the coherence-check engine in `@atta/aeg-core`, fixes the CI≠local drift, re-arms the coherence gate. `aeg-governance-hardening` (5 tasks: #251/#252/#218/#219/#266) finishes D-069's role-seam gates, the doc-owners audit, and three model-hardening fixes. Neither has a dispatched task yet. **`aeg-coherence-v1` is complete** (6 of 9 tasks shipped June 25–July 1; archived to `aeg-root/iterations/completed/aeg-coherence-v1.md`; its 5 unbuilt tasks moved to the two iterations above via D-070, not abandoned — see the retrospective in `lessons.md`). **`vada-production-v1` is parked, not paused-and-forgotten** — 6 done / 15 open tasks, `Lifecycle: active`, untouched this session; two of its issues (#180, #182) read `Incoherent` (closed `COMPLETED` with no linked merged PR) and need a provenance fix or reopen — flagged, not yet actioned. **herald-agents-v2 is complete** (8 tasks, June 18–29; iteration archived to `aeg-root/iterations/completed/herald-agents-v2.md`; #234 open bug — prod ANTHROPIC_API_KEY likely expired, Principal to disposition).
 
-Check `gh issue list --label "iteration:vada-production-v1" --state open` and `gh issue list --label "iteration:aeg-coherence-v1" --state open` for live task status.
+Check `gh issue list --label "iteration:aeg-consolidation" --state open`, `gh issue list --label "iteration:aeg-governance-hardening" --state open`, and `gh issue list --label "iteration:vada-production-v1" --state open` for live task status.
 
 ---
 
@@ -487,7 +487,7 @@ This ecosystem uses the repo as the source of truth for project management. See 
 - Cetana F7 (`cetana status`) — ready to dispatch
 - Spec refresh-and-ratify pass (Vāda first) → Integrity Reviewer (spec-integrity chain, `specs/ecosystem-backlog.md`)
 
-**Active iterations:** herald-onto-engine: complete ✅ (June 16). aeg-ui-v1: complete ✅ (June 20). aeg-governance-ui-v2: complete ✅ (June 20). **herald-agents-v2: complete ✅ (June 29) — archived.** vada-production-v1 and aeg-coherence-v1: active (parallel execution). vada-production-v1's deliberate-page slice (6a/6b/6c) shipped PR #207 June 28; Fusion (T4/T5) merged June 29; back half (T8–T13) open. Studio: Active 3→2; Archived 4→5.
+**Active iterations:** herald-onto-engine: complete ✅ (June 16). aeg-ui-v1: complete ✅ (June 20). aeg-governance-ui-v2: complete ✅ (June 20). **herald-agents-v2: complete ✅ (June 29) — archived.** **aeg-coherence-v1: complete ✅ (July 1) — archived; 6/9 tasks shipped, 5 moved to aeg-consolidation + aeg-governance-hardening (D-070).** **aeg-consolidation** (4 tasks) and **aeg-governance-hardening** (5 tasks): active, not yet dispatched — prioritized ahead of Vāda by explicit Principal decision. vada-production-v1: active but parked (6/21 tasks done); deliberate-page slice (6a/6b/6c) shipped PR #207 June 28; Fusion (T4/T5) merged June 29; back half (T8–T16) open; #180/#182 read Incoherent, unresolved. Studio: Active 3→3; Archived 5→6.
 
 **Drafted briefs awaiting dispatch:** none.
 
