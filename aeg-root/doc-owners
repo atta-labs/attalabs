@@ -27,6 +27,20 @@
 # Dormancy:
 #   This file absent, OR no glob matches any changed code file → silent no-op.
 #   The gate has no opinion until you teach it one.
+#
+# ── No-doc allow-list (D-063) ───────────────────────────────────────────────
+# Surfaces that legitimately need no bound doc are listed below.  Format:
+#   # no-doc: <glob> — <reason>
+# These lines exempt the matching directory from the completeness scoreboard
+# (verify-docs --full advisory output).  They do NOT affect C5 enforcement —
+# if a binding exists for a surface, C5 still fires on changed files regardless
+# of any no-doc line.  Use no-doc for scaffold-only, config-only, or stub-only
+# surfaces where adding a doc-owners binding would be meaningless busywork.
+# To un-exempt a surface, remove its no-doc line and add a real binding.
+#
+# no-doc: packages/typescript-config/** — pure config package; no behavior docs needed
+# no-doc: apps/vitakka-ai/** — scaffold only (no implementation surface yet)
+# no-doc: apps/desktop/** — stub only (specs directory only; no implementation)
 
 packages/ui/topbar/**                            .claude/skills/ui-components/SKILL.md
 packages/ui/libraries/**                         .claude/skills/ui-library-system/SKILL.md
