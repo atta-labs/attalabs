@@ -20,6 +20,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 4  | Planner §7 auto-derivation from `doc-owners`                                   | #219  | aeg        | 3                      | —              |
 | 5  | Model hardening: ledger-ownership, reviewer isolation, executor-protocol chain | #266  | aeg        | —                      | —              |
 | 5a | Branch-ID verification: Step 0 must literal-match topology's # column          | #293  | aeg        | —                      | —              |
+| 5b | Forbid committed report/scratch files; findings live in PR/Issue only          | #297  | aeg        | —                      | —              |
 
 ## Backlog (this iteration, not yet dispatched)
 
