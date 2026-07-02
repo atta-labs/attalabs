@@ -1,5 +1,5 @@
 # Iteration: aeg-consolidation — July 2026
-Lifecycle: active
+Lifecycle: complete
 
 Goal: Home the AEG coherence-check engine (originally `scripts/verify-coherence.ts` +
 `scripts/verify-docs.ts`) in `@atta/aeg-core` as pure, exhaustively-tested functions;

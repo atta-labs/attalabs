@@ -322,3 +322,37 @@ None — all 8 tasks either have merged PRs or a Principal-authorized close (T6)
 ### Unbuilt tasks
 
 None dropped or abandoned. The 5 tasks that didn't ship under this iteration (3, 4, 5, 7, 8 — Issues #218/#219/#220/#251/#252) were moved, not abandoned — see "Tasks moved out" above. They continue under `aeg-consolidation` and `aeg-governance-hardening`.
+
+## aeg-consolidation — retrospective (July 2026)
+
+**Duration:** 2026-07-01 (PR #271) → 2026-07-02 (PR #315)
+**Tasks completed:** 4 of 4 planned (1 #263/PR #271, 2 #264/PR #277, 3 #220/PR #305, 4 #265/PR #315)
+**Tasks dropped/deferred:** none
+**Tasks moved out (D-070):** none — this iteration was itself the *destination* of task 3 (#220), absorbed from `aeg-coherence-v1`'s former task 5 (D-070 movement, 2026-07-01); see `aeg-root/iterations/aeg-coherence-v1.md` for the source-side annotation.
+
+### What went well
+
+- **Task 1 correctly enlarged its own scope mid-flight to enforce "AEG is a black box to the host monorepo."** Principal-driven review caught that the CLI shims (`verify-docs.ts`, `verify-coherence.ts`, `verify-test-plan.ts`) still sat in the monorepo's generic `scripts/` folder; task 1 relocated all three into `packages/aeg-core/bin/` in the same PR (#271), verified byte-identical via golden-file diff before/after.
+- **Task 2's intra-package extraction was mechanically proven behavior-preserving**, not just claimed: golden-run diffs (no-token and with-token paths) plus a synthetic `--closes-n` smoke test all came back byte-identical before/after the `bin/` → `src/` move (PR #277).
+- **Task 3 root-caused and fixed the CI≠local drift flagged as unresolved in the `aeg-coherence-v1` retrospective** (missing `BRANCH` env var in the `coherence-gate` CI step, and `isGrandfathered(null)` silently un-grandfathering legacy items on forge-fetch failure) and re-armed the gate as genuinely blocking — confirmed via a real CI run showing a non-zero job conclusion, not a step that merely printed a warning (PR #305).
+- **Task 4 built the surfaced-doc manifest as reusable exported data, not hardcoded exclusion logic**, explicitly to prevent the two-competing-definitions failure mode: both C6 (this task's own check) and `aeg-studio-cleanup`'s downstream docs-curation task (#292) consume the same `packages/aeg-core/src/docs/surfaced-manifest.ts` (PR #315, recorded as D-079).
+- **The pre-flight "must be green" gate was correctly reinterpreted as baseline-diff, not zero-findings.** Task 4 hit 44 pre-existing, unrelated findings on a clean `origin/main` checkout; the Principal's ruling captured verbatim in the PR body reframed the gate as "no new findings beyond the 44-count baseline," letting the task proceed without being blocked by or obligated to fix out-of-scope debt.
+
+### What stalled or caused rework
+
+- **The iteration's own `Project(s)` declaration under-scoped `aeg-core` on first pass** (`aeg` → `aeg, aeg-core`, all 4 tasks) — task 1's PR body notes this explicitly as a miss "already logged once as a lesson from `aeg-coherence-v1`'s T2/T6, caught a second time here." The blast-radius-check lesson from the prior iteration did not fully prevent recurrence.
+- **Task 2's Planner rationale (Issue #264) went stale before task 2 executed.** #264 described the file as living in `scripts/`, but task 1 (PR #271, merged first) had already relocated it into `packages/aeg-core/bin/` — task 2's Developer had to reconcile the Issue's stated premise against the actual on-disk state rather than the rationale matching current reality.
+
+### Carry-forward lessons (add to lessons.md calibration section if not already there)
+
+- **A pre-flight "must run green" gate means no new findings beyond a captured baseline, not zero findings.** When a clean checkout already carries unrelated pre-existing debt, the correct move is to capture the baseline count, require the diff to not grow, and record the disposition verbatim in the PR body — not to block the task on fixing out-of-scope files, and not to silently ignore the baseline either.
+- **A same-iteration prior task can make a later task's Issue rationale stale before the later task executes.** When task N's rationale describes a file's location or state, and task N-1 (merged first, same iteration) already changed that location or state, the Developer must reconcile against current reality rather than the Issue's original premise — this is a normal consequence of writing rationale at plan time for tasks that execute sequentially, not a planning defect.
+
+### Decisions made this iteration
+
+- **D-079** (Type 2, Lock: YES, ACTIVE) — surfaced-doc manifest: canonical taxonomy for what AEG surfaces as documentation. Authored by the Developer on task 4 (#265), ratified via task dispatch (no Principal ratification-window entry required — Type 2).
+- No Type 1 decisions were produced by this iteration's own tasks. (D-070 and D-072, both referenced in this iteration's PRs, were made during `aeg-coherence-v1`'s close-out and a separate `aeg-governance-hardening` review respectively — logged there, not here.)
+
+### Unbuilt tasks
+
+None. All 4 planned tasks merged.
