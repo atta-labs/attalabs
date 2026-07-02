@@ -45,7 +45,7 @@ Every PR, on open and every push:
 
 | CI check | Job | Re-runs which ring-0 code |
 |---|---|---|
-| Brief Validation | `archivist.yml::brief-validation` | `verify-brief.ts` → `checkBriefSections`, `checkPlanPrNoCloses` (non-task branches bypass) |
+| Brief Validation | `archivist.yml::brief-validation` | `verify-brief.ts` → title grammar (`checkForgeTitle`, all branches), `checkBriefSections`, `checkPlanPrNoCloses` (non-task branches bypass the section checks) |
 | Closes #N | `forge-lifecycle.yml::closes-n-gate` | `verify-coherence.ts --closes-n` |
 | Coherence oracle (blocking) | `forge-lifecycle.yml::coherence-gate` | A1/A2/A3, T1/T2/T3, D1, N1, M1, M3 fail classes (L1/L2/N2/M2 advisory) |
 | Tier-appropriate documentation | `verify-docs.yml` | `verify-docs.ts --pr` C0–C5 |

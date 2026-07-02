@@ -42,8 +42,8 @@ function currentBranch(): string {
   return execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim()
 }
 
-/** Extracts --body-file/-F or --body/-b from the passthrough args. */
-function extractBody(args: string[]): string {
+/** Extracts --body-file/-F or --body/-b from the passthrough args; null when absent. */
+function extractBodyOrNull(args: string[]): string | null {
   for (let i = 0; i < args.length; i++) {
     const a = args[i] as string
     if (a === '--body-file' || a === '-F') {
@@ -59,7 +59,7 @@ function extractBody(args: string[]): string {
     }
     if (a.startsWith('--body=')) return a.slice('--body='.length)
   }
-  fail('no `--body-file <path>` (or `--body`) argument found — the gate needs the PR body to validate it.')
+  return null
 }
 
 function runGate(label: string, script: string, scriptArgs: string[], env: Record<string, string>): void {
@@ -124,9 +124,16 @@ export function main(): void {
   const ghArgs = isEdit ? args.slice(1) : args
 
   const branch = process.env.BRANCH || currentBranch()
-  const body = extractBody(isEdit ? ghArgs.slice(1) : ghArgs)
-
+  const body = extractBodyOrNull(isEdit ? ghArgs.slice(1) : ghArgs)
   const title = extractTitle(isEdit ? ghArgs.slice(1) : ghArgs)
+
+  if (body === null && !isEdit) {
+    fail('no `--body-file <path>` (or `--body`) argument found — the gate needs the PR body to validate it.')
+  }
+  if (body === null && title === null) {
+    fail('edit mode with neither `--body-file`/`--body` nor `--title` — nothing to validate or change.')
+  }
+
   if (title !== null) {
     const t = checkForgeTitle(title)
     if (t.status === 'fail') fail(t.errors[0] as string)
@@ -134,13 +141,17 @@ export function main(): void {
 
   console.log(`[open-pr] validating against branch \`${branch}\`…`)
   checkDecisionNumbersFresh()
-  runGate('brief-validation', 'packages/aeg-core/bin/verify-brief.ts', [], { BRANCH: branch, PR_BODY: body })
-  runGate('verify-docs', 'packages/aeg-core/bin/verify-docs.ts', ['--pr'], { PR_BODY: body })
-  if (/^task\//.test(branch)) {
-    runGate('Closes #N', 'packages/aeg-core/bin/verify-coherence.ts', ['--closes-n'], {
-      BRANCH: branch,
-      PR_BODY: body
-    })
+  if (body !== null) {
+    runGate('brief-validation', 'packages/aeg-core/bin/verify-brief.ts', [], { BRANCH: branch, PR_BODY: body })
+    runGate('verify-docs', 'packages/aeg-core/bin/verify-docs.ts', ['--pr'], { PR_BODY: body })
+    if (/^task\//.test(branch)) {
+      runGate('Closes #N', 'packages/aeg-core/bin/verify-coherence.ts', ['--closes-n'], {
+        BRANCH: branch,
+        PR_BODY: body
+      })
+    }
+  } else {
+    console.log('[open-pr] title-only edit — body gates skipped (title grammar validated above).')
   }
 
   console.log('[open-pr] all contract gates PASS.')

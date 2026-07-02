@@ -49,10 +49,10 @@ fi
 
 # --- PR body edits ----------------------------------------------------------
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+pr[[:space:]]+edit\b' \
-  && printf '%s' "$command" | grep -qE '(--body|--body-file|[[:space:]]-b[[:space:]]|[[:space:]]-F[[:space:]])'; then
-  deny "Forge gate (D-078): raw \`gh pr edit\` with a body change is not allowed — the edited body must re-pass the contract gates. Use:
+  && printf '%s' "$command" | grep -qE '(--body|--body-file|--title|[[:space:]]-b[[:space:]]|[[:space:]]-F[[:space:]]|[[:space:]]-t[[:space:]])'; then
+  deny "Forge gate (D-078): raw \`gh pr edit\` with a body or title change is not allowed — edited bodies re-pass the contract gates and titles the title grammar. Use:
 
-  bun packages/aeg-core/bin/open-pr.ts edit <n> --body-file /path/to/body.md"
+  bun packages/aeg-core/bin/open-pr.ts edit <n> [--body-file /path/to/body.md] [--title \"...\"]"
 fi
 
 # --- Issue creation ---------------------------------------------------------
@@ -66,10 +66,10 @@ fi
 
 # --- Issue body edits -------------------------------------------------------
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+issue[[:space:]]+edit\b' \
-  && printf '%s' "$command" | grep -qE '(--body|--body-file|[[:space:]]-b[[:space:]]|[[:space:]]-F[[:space:]])'; then
-  deny "Forge gate (D-078): raw \`gh issue edit\` with a body change is not allowed — the edited body must re-pass the rationale gate. Use:
+  && printf '%s' "$command" | grep -qE '(--body|--body-file|--title|[[:space:]]-b[[:space:]]|[[:space:]]-F[[:space:]]|[[:space:]]-t[[:space:]])'; then
+  deny "Forge gate (D-078): raw \`gh issue edit\` with a body or title change is not allowed — edits re-pass the rationale/title gates. Use:
 
-  bun packages/aeg-core/bin/open-issue.ts edit <n> --body-file /path/to/body.md"
+  bun packages/aeg-core/bin/open-issue.ts edit <n> [--body-file /path/to/body.md] [--title \"...\"]"
 fi
 
 # --- gh api bypass attempts --------------------------------------------------

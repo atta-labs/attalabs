@@ -32,7 +32,13 @@
 
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
-import { checkBriefSections, checkPlanPrNoCloses, isDecisionLog, readTierFromPrBody } from '../src/index'
+import {
+  checkBriefSections,
+  checkForgeTitle,
+  checkPlanPrNoCloses,
+  isDecisionLog,
+  readTierFromPrBody
+} from '../src/index'
 
 const REPO_ROOT = join(import.meta.dir, '../../..')
 process.chdir(REPO_ROOT)
@@ -67,6 +73,19 @@ export function deriveTouchesLock(base: string): boolean {
 const TASK_BRANCH_PATTERN = /^task\/[^/]+\/[^/]+$/
 
 export function main(): void {
+  // Title grammar is universal (every PR title rides into merge commits and
+  // derived views), so it runs BEFORE the non-task-branch bypass — the ring-1
+  // backstop for checkForgeTitle, which otherwise lives only in the wrappers.
+  const prTitle = process.env.PR_TITLE ?? ''
+  if (prTitle) {
+    const t = checkForgeTitle(prTitle)
+    if (t.status === 'fail') {
+      console.error('\n[verify-brief] FAILED — title grammar:\n')
+      for (const e of t.errors) console.error(`  ✗ ${e}`)
+      process.exit(1)
+    }
+  }
+
   const branch = process.env.BRANCH ?? ''
   const prBody = process.env.PR_BODY ?? ''
 
