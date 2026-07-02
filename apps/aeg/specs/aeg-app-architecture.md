@@ -31,7 +31,7 @@ apps/aeg/web/
 
 ### V1 scope — `aeg-ui-v1` (AEG Studio, local-first)
 
-**In:** `@atta/aeg-core` (parse + `deriveIteration` + shared docs renderer); AEG Studio at `apps/aeg/web/studio` — top-bar + sidebar shell (modeled on Vāda's archived "science" doc layout), one root project, sidebar of projects → iterations (active/archived), iteration topology table, tasks as a **kanban** by derived status, **task detail** (brief read from the PR body), the **task-dependency-graph** view (`@atta/ui/engine-flow`), full **docs** section (the whole model — constitution, roles, flow, contracts, routes, meanings — via the shared renderer); **live per-task status read from GitHub with the operator's local token**; an **AEG icon** (find/design — placeholder "AEG" text until it exists).
+**In:** `@atta/aeg-core` (parse + `deriveIteration` + shared docs renderer); AEG Studio at `apps/aeg/web/studio` — top-bar + sidebar shell (modeled on Vāda's archived "science" doc layout), one root project, sidebar of projects → iterations (active/archived), iteration topology table, tasks as a **kanban** by derived status, **task detail** (brief read from the PR body), the **task-dependency-graph** view (`@atta/ui/engine-flow`) (removed, see #290), full **docs** section (the whole model — constitution, roles, flow, contracts, routes, meanings — via the shared renderer); **live per-task status read from GitHub with the operator's local token**; an **AEG icon** (find/design — placeholder "AEG" text until it exists).
 
 **Out (V1):** no auth / Clerk, no GitHub App, no encrypted token vault, no webhook cache, no hosting / SaaS, no multi-repo (this repo only), no write actions, no cost/token metrics, no `aeg.sh`, **no Portal**.
 
@@ -60,7 +60,7 @@ From those it renders: an **attention queue** (what needs a human now — defaul
 
 Mirror Vāda/Herald: a Next.js App Router app, flat routes under a signed-in `(app)` group (a route group adds no URL segment).
 
-> **§0 refinement — this section describes the *hosted* shape and is partially deferred.** Studio V1 has **no auth/sign-in**, so there is no signed-in `(app)` guard and no `/settings` connections page. Studio's V1 surfaces are the **sidebar-doc layout**: a root view, project pages, iteration pages (table → kanban → task detail), the task-dependency-graph view, and the docs section. The route list below is retained as the eventual/hosted target.
+> **§0 refinement — this section describes the *hosted* shape and is partially deferred.** Studio V1 has **no auth/sign-in**, so there is no signed-in `(app)` guard and no `/settings` connections page. Studio's V1 surfaces are the **sidebar-doc layout**: a root view, project pages, iteration pages (table → kanban → task detail), the task-dependency-graph view (removed, see #290), and the docs section. The route list below is retained as the eventual/hosted target.
 
 ```
 app/(app)/layout.tsx        shared signed-in layout: auth guard + shell + shared TopBar
@@ -72,7 +72,7 @@ app/(app)/settings/         /settings     connections (GitHub App), API keys, ac
 app/(marketing)/            marketing / landing + the AEG explainer
 ```
 
-- The DAG renders via `@atta/ui/engine-flow` (React Flow / `@xyflow/react`) — the same renderer Vāda uses. No new graph dependency. **In the UI it is labelled "task dependency graph," not "DAG"** (DAG stays in the model docs).
+- The DAG renders via `@atta/ui/engine-flow` (React Flow / `@xyflow/react`) — the same renderer Vāda uses. No new graph dependency. **In the UI it is labelled "task dependency graph," not "DAG"** (DAG stays in the model docs) (removed from Studio, see #290).
 
 ---
 

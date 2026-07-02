@@ -92,7 +92,6 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
   const brief = await loadBrief({ snapshot, slug, taskId })
   const visual = statusVisual(derived.status)
   const iterationHref = `/projects/${project.name}/iterations/${slug}`
-  const boardHref = `${iterationHref}/board`
   const issueUrl =
     taskRow.issue !== null && snapshot.repo
       ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${taskRow.issue}`
@@ -111,10 +110,6 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
         <span className='px-1.5 text-muted-foreground/60'>/</span>
         <NextLink variant='unstyled' href={iterationHref} className='hover:text-accent'>
           {iteration.name || slug}
-        </NextLink>
-        <span className='px-1.5 text-muted-foreground/60'>/</span>
-        <NextLink variant='unstyled' href={boardHref} className='hover:text-accent'>
-          board
         </NextLink>
         <span className='px-1.5 text-muted-foreground/60'>/</span>
         <span className='text-foreground/80'>{taskRow.id}</span>

@@ -1,7 +1,7 @@
 import { Badge, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { parseLedger, sumLedger, type DerivedStatus } from '@atta/aeg-core'
-import { AlertTriangle, GitBranch, LayoutGrid } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import type { Metadata } from 'next'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -105,28 +105,8 @@ export default async function IterationPage({ params }: { params: Promise<Params
       </header>
 
       <section className='space-y-3'>
-        <div className='flex flex-wrap items-center justify-between gap-3'>
+        <div className='flex items-center gap-3'>
           <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Tasks (topology)</h2>
-          {iteration.tasks.length > 0 ? (
-            <div className='flex flex-wrap items-center gap-2'>
-              <NextLink
-                variant='unstyled'
-                href={`/projects/${project.name}/iterations/${slug}/board`}
-                className='inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-accent hover:text-accent'
-              >
-                <LayoutGrid className='size-3.5' aria-hidden />
-                <span>View as board</span>
-              </NextLink>
-              <NextLink
-                variant='unstyled'
-                href={`/projects/${project.name}/iterations/${slug}/graph`}
-                className='inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-accent hover:text-accent'
-              >
-                <GitBranch className='size-3.5' aria-hidden />
-                <span>View as graph</span>
-              </NextLink>
-            </div>
-          ) : null}
         </div>
 
         {snapshot.unavailable ? (

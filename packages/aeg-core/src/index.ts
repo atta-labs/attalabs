@@ -17,9 +17,24 @@ export {
   readDocWaivers
 } from './doc-owners'
 export type { C5Result, DocAck, DocOwnersBinding, DocWaiver } from './doc-owners'
+export { deriveSection7, globsOverlap } from './derive-section7'
+export type { Section7Match } from './derive-section7'
 export { checkManifestValidity, parseNoDocRules } from './manifest-validity'
 export type { NoDocRule } from './manifest-validity'
 export { deriveTierFromDiff, overrideActive, readTierFromPrBody } from './pr-tier'
+export {
+  checkAutonomyClause,
+  checkBriefSections,
+  checkClosesN as checkBriefClosesN,
+  checkDocUpdateList,
+  checkLockAck,
+  checkStopConditions,
+  checkSurfaceMap,
+  checkTestPlan,
+  checkTierField,
+  checkWorktreeStep0
+} from './brief-validation'
+export type { BriefSectionResult } from './brief-validation'
 export {
   checkA1,
   checkA2,

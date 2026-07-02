@@ -22,10 +22,15 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 5a | Branch-ID verification: Step 0 must literal-match topology's # column          | #293  | aeg        | —                      | —              |
 | 5b | Forbid committed report/scratch files; findings live in PR/Issue only          | #297  | aeg        | —                      | —              |
 | 5c | Issue-existence precondition: "row absent" is its own hard-stop, not folded into #TBD | #300  | aeg        | —                      | —              |
+| 6  | Fix stale claim vs D-060 in ui-cms-theme skill                                | #278  | aeg        | —                      | —              |
+| 7  | Fix stale claim vs D-044/D-045 in ui-api-routes skill                         | #279  | aeg        | —                      | —              |
+| 8  | Fix stale claim vs D-025 in atta-ai/attalabs CLAUDE.md                        | #280  | aeg        | —                      | —              |
+| 9  | Fix stale claim vs D-050/D-052 in cetana-spec.md + cetana-coordinator skill   | #281  | aeg        | —                      | —              |
+| 10 | Fix stale claim vs D-044/D-045 in herald-engine skill                         | #282  | aeg        | —                      | —              |
 
 ## Backlog (this iteration, not yet dispatched)
 
-- **Fix punch-list (tasks 6…n) — spawned by task 3.** The staleness audit in task 3 (#218) emits one new Issue per contradiction it finds between a newly-bound doc and `D-001 … D-070`. Those Issues are this iteration's fix punch-list. Numbering is sequential from the next free integer at dispatch time; the set is cut from real audit findings, not pre-enumerated here. **5 real findings already filed** by #218's PR (#283, in review): #278, #279, #280, #281, #282 — expected to occupy 6–10 once promoted; task 5a deliberately uses a letter suffix (matching this repo's `3a`/`6a`-style convention) to avoid colliding with that reserved range.
+- **Fix punch-list — promoted.** The staleness audit in task 3 (#218) emitted 5 real findings (#278–282), filed by PR #283. All 5 are now promoted to tasks 6–10 above (topology rows added 2026-07-02, each carries its own Planner's rationale posted as an Issue comment). No further unpromoted punch-list items remain from task 3 at this time; task 5a's `5a` letter-suffix convention avoided colliding with this now-realized 6–10 range as designed.
 
 ## Cross-iteration dependencies
 
