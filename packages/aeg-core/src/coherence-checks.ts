@@ -224,11 +224,20 @@ export function checkT2(
  *   iteration predates `COHERENCE_ENFORCED_FROM` by proxy: if the iteration has
  *   any task whose `closedAt` or `mergedAt` is pre-cutoff, its #TBD rows are
  *   grandfathered as `info`.
+ *
+ * `forgeUnavailableSlugs`: iteration slugs whose forge snapshot fetch failed
+ *   entirely (the caller couldn't fetch `closedAt`/`mergedAt` for ANY task in
+ *   that iteration). A `#TBD` row in one of these iterations cannot be evaluated
+ *   against the grandfather proxy at all — treating it as `grandfathered: false`
+ *   would silently fail it purely because of a forge outage, not because it's
+ *   genuinely un-grandfathered. Such rows are reported `grandfathered: true`
+ *   with a distinct reason so they never produce a `fail`, but remain visible.
  */
 export function checkT3(
   entries: TaskEntry[],
   ciIterationSlug?: string | null,
-  enrichedEntries?: TaskEntry[]
+  enrichedEntries?: TaskEntry[],
+  forgeUnavailableSlugs?: Set<string>
 ): CheckResult {
   // Build set of iterations that are pre-enforcement (by proxy: any task with a pre-cutoff date).
   const preEnforcement = new Set<string>()
@@ -245,6 +254,18 @@ export function checkT3(
     if (!e.archived && e.task.issue === null) {
       // Branch-scope: in CI for a specific iteration, only check that iteration.
       if (ciIterationSlug && e.iterationSlug !== ciIterationSlug) continue
+
+      if (forgeUnavailableSlugs?.has(e.iterationSlug)) {
+        failures.push({
+          issue: null,
+          iteration: e.iterationSlug,
+          task: e.task.id,
+          reason: `Task ${e.task.id} in active iteration has no Issue ref (#TBD or empty), but forge data for iteration "${e.iterationSlug}" was unavailable — cannot evaluate grandfather status, not silently failed`,
+          grandfathered: true
+        })
+        continue
+      }
+
       failures.push({
         issue: null,
         iteration: e.iterationSlug,
