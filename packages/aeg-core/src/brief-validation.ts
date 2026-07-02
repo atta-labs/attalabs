@@ -136,6 +136,30 @@ export function checkLockAck(prBody: string, touchesLock: boolean): BriefSection
 }
 
 /**
+ * Plan-PR Closes guard (D-077) — a `plan/*` PR body must never carry a
+ * `Closes #N` reference. Three confirmed live incidents (#294→#293,
+ * #298→#297, #288→#287) show a plan PR's `Closes #N` prematurely closing
+ * the task Issue when the *plan* merged — before the task itself ever ran.
+ * `roles/planner.md`'s Plan-PR close-out section already forbids this in
+ * prose ("a plan PR creates Issues; it does not resolve one"); this is the
+ * mechanical gate. Separate from `checkBriefSections` (it needs the branch,
+ * not just the body, and it's a guard against a forbidden shape, not a
+ * presence check) — the shim runs it before the non-task-branch bypass, since
+ * a `plan/*` branch would otherwise never reach a brief-shape check at all.
+ * Plan branches without `Closes` continue to bypass, as today.
+ */
+export function checkPlanPrNoCloses(branch: string, prBody: string): BriefSectionResult {
+  if (!branch.startsWith('plan/')) return { status: 'pass', errors: [] }
+  if (!/\bcloses\s+#\d+/i.test(prBody)) return { status: 'pass', errors: [] }
+  return {
+    status: 'fail',
+    errors: [
+      'brief-validation plan-PR guard: a `plan/*` PR must not carry `Closes #N` — a plan PR creates Issues, it does not resolve one (roles/planner.md, D-077). Remove the `Closes #N` reference; the task Issue closes from the task PR that does the work.'
+    ]
+  }
+}
+
+/**
  * Aggregates every section detector into one combined result — one error
  * line per failing section, mirroring `doc-owners.ts`'s `parseDocOwners`
  * error-message style.

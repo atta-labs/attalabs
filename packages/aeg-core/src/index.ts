@@ -28,6 +28,7 @@ export {
   checkClosesN as checkBriefClosesN,
   checkDocUpdateList,
   checkLockAck,
+  checkPlanPrNoCloses,
   checkStopConditions,
   checkSurfaceMap,
   checkTestPlan,

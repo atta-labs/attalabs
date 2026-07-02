@@ -24,11 +24,15 @@
  * branch — is silently bypassed). Without this, every ordinary non-AEG-task
  * PR would fail for lacking the full brief grammar it was never meant to
  * carry. Reads `BRANCH` the same way `verify-coherence.ts --closes-n` does.
+ *
+ * Plan-PR Closes guard (D-077): runs BEFORE the non-task-branch bypass above,
+ * since a `plan/*` branch is itself non-task and would otherwise never reach
+ * a brief-shape check at all. See `checkPlanPrNoCloses` in `src/brief-validation.ts`.
  */
 
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
-import { checkBriefSections, isDecisionLog, readTierFromPrBody } from '../src/index'
+import { checkBriefSections, checkPlanPrNoCloses, isDecisionLog, readTierFromPrBody } from '../src/index'
 
 const REPO_ROOT = join(import.meta.dir, '../../..')
 process.chdir(REPO_ROOT)
@@ -64,13 +68,20 @@ const TASK_BRANCH_PATTERN = /^task\/[^/]+\/[^/]+$/
 
 export function main(): void {
   const branch = process.env.BRANCH ?? ''
+  const prBody = process.env.PR_BODY ?? ''
+
+  const planGuard = checkPlanPrNoCloses(branch, prBody)
+  if (planGuard.status === 'fail') {
+    console.error('\n[verify-brief] FAILED — plan-PR Closes guard violated:\n')
+    for (const e of planGuard.errors) console.error(`  ✗ ${e}`)
+    console.error('\n[verify-brief] Fix the PR body and push again.')
+    process.exit(1)
+  }
 
   if (branch && !TASK_BRANCH_PATTERN.test(branch)) {
     console.log(`[verify-brief] non-task branch (${branch}) — bypass.`)
     process.exit(0)
   }
-
-  const prBody = process.env.PR_BODY ?? ''
 
   if (!prBody) {
     console.log('[verify-brief] PR_BODY env var is empty; nothing to check.')
