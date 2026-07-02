@@ -5,8 +5,6 @@ description: Executor Protocol — patterns for executing dispatched tasks from 
 
 # Executor Protocol
 
-**Read `aeg-root/roles/developer.md` first** — this protocol is execution discipline on top of the Developer role's entry gate, PR canonical form, and contract; it does not replace them.
-
 You are executing a task dispatched by the Principal (Dani), via the Principal's main planning assistant. You are one of multiple executors — likely Sonnet or Haiku. The Principal's assistant drafts task prompts; you execute them.
 
 **Read this file before starting any dispatched task.** It captures patterns from prior sessions to prevent the failures that have cost us commit cycles.
