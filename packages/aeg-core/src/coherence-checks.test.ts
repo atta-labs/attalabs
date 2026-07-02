@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'bun:test'
-import type { ForgeFacts } from '../src/index'
+import { describe, expect, it } from 'vitest'
 import {
   checkA1,
   checkA2,
   checkA3,
+  checkClosesN,
   checkD1,
   checkL1,
   checkL2,
@@ -14,11 +14,12 @@ import {
   type CheckResult,
   type IterationFile,
   type TaskEntry
-} from './verify-coherence'
+} from './coherence-checks'
+import type { ForgeFacts, Task } from './types'
 
 // ---------- fixture helpers ---------------------------------------------------
 
-function makeTask(id: string, issue: number | null = null, dependsOn: string[] = []): import('../src/index').Task {
+function makeTask(id: string, issue: number | null = null, dependsOn: string[] = []): Task {
   return { id, title: `Task ${id}`, issue, projects: ['aeg'], dependsOn, conflictsWith: [], rationaleMarkdown: '' }
 }
 
@@ -72,6 +73,71 @@ function passesWithNoFailures(r: CheckResult) {
   expect(r.failures).toHaveLength(0)
 }
 
+// ---------- closes-N: Closes #N gate (D-069 Layer 1) -------------------------
+
+describe('checkClosesN', () => {
+  it('ok — non-task branch bypasses entirely', () => {
+    const r = checkClosesN('fix/something', '', [])
+    expect(r).toEqual({ ok: true })
+  })
+
+  it('ok — task branch with matching Closes #N in body', () => {
+    const files = [makeIterationFile('aeg-consolidation', false)]
+    files[0]!.iteration.tasks = [makeTask('2', 264)]
+    const r = checkClosesN('task/aeg-consolidation/2', 'Summary\n\nCloses #264\n', files)
+    expect(r.ok).toBe(true)
+    expect(r.expectedIssue).toBe(264)
+  })
+
+  it('fail — no topology file found for the branch iteration', () => {
+    const r = checkClosesN('task/unknown-iter/2', 'Closes #1', [])
+    expect(r.ok).toBe(false)
+    expect(r.message).toMatch(/no topology file found/)
+  })
+
+  it('fail — task id not found in topology', () => {
+    const files = [makeIterationFile('aeg-consolidation', false)]
+    files[0]!.iteration.tasks = [makeTask('1', 263)]
+    const r = checkClosesN('task/aeg-consolidation/99', 'Closes #1', files)
+    expect(r.ok).toBe(false)
+    expect(r.message).toMatch(/not found in aeg-consolidation topology/)
+  })
+
+  it('fail — task has no Issue number (#TBD)', () => {
+    const files = [makeIterationFile('aeg-consolidation', false)]
+    files[0]!.iteration.tasks = [makeTask('2', null)]
+    const r = checkClosesN('task/aeg-consolidation/2', 'Closes #1', files)
+    expect(r.ok).toBe(false)
+    expect(r.message).toMatch(/has no Issue number/)
+  })
+
+  it('fail — PR body does not reference the expected issue', () => {
+    const files = [makeIterationFile('aeg-consolidation', false)]
+    files[0]!.iteration.tasks = [makeTask('2', 264)]
+    const r = checkClosesN('task/aeg-consolidation/2', 'Summary\n\nCloses #999\n', files)
+    expect(r.ok).toBe(false)
+    expect(r.expectedIssue).toBe(264)
+    expect(r.message).toMatch(/does not contain `Closes #264`/)
+  })
+
+  it('ok — accepts fixes/resolves synonyms and is case-insensitive', () => {
+    const files = [makeIterationFile('aeg-consolidation', false)]
+    files[0]!.iteration.tasks = [makeTask('2', 264)]
+    for (const phrase of ['Fixes #264', 'RESOLVES #264', 'fix: #264', 'close #264']) {
+      const r = checkClosesN('task/aeg-consolidation/2', phrase, files)
+      expect(r.ok).toBe(true)
+    }
+  })
+
+  it('ok — branch with a suffixed task id (e.g. 7a)', () => {
+    const files = [makeIterationFile('aeg-consolidation', false)]
+    files[0]!.iteration.tasks = [makeTask('7a', 300)]
+    const r = checkClosesN('task/aeg-consolidation/7a', 'Closes #300', files)
+    expect(r.ok).toBe(true)
+    expect(r.expectedIssue).toBe(300)
+  })
+})
+
 // ---------- A1: closed-without-merge -----------------------------------------
 
 describe('A1: closed-without-merge', () => {
@@ -85,9 +151,9 @@ describe('A1: closed-without-merge', () => {
     const r = checkA1(entries)
     expect(r.status).toBe('fail')
     expect(r.failures).toHaveLength(1)
-    expect(r.failures[0].issue).toBe(101)
-    expect(r.failures[0].iteration).toBe('iter-1')
-    expect(r.failures[0].reason).toMatch(/prState: none/)
+    expect(r.failures[0]!.issue).toBe(101)
+    expect(r.failures[0]!.iteration).toBe('iter-1')
+    expect(r.failures[0]!.reason).toMatch(/prState: none/)
   })
 
   it('fail — closed issue with open PR (unusual but checkable)', () => {
@@ -116,7 +182,7 @@ describe('A1: closed-without-merge', () => {
     ]
     const r = checkA1(entries)
     expect(r.status).toBe('info')
-    expect(r.failures[0].grandfathered).toBe(true)
+    expect(r.failures[0]!.grandfathered).toBe(true)
   })
 
   it('fail — closed-without-merge on/after COHERENCE_ENFORCED_FROM is not grandfathered', () => {
@@ -130,7 +196,7 @@ describe('A1: closed-without-merge', () => {
     ]
     const r = checkA1(entries)
     expect(r.status).toBe('fail')
-    expect(r.failures[0].grandfathered).toBe(false)
+    expect(r.failures[0]!.grandfathered).toBe(false)
   })
 })
 
@@ -148,8 +214,8 @@ describe('A2: archived-without-provenance', () => {
     const map = new Map([['iter-1/1', false]])
     const r = checkA2(entries, map)
     expect(r.status).toBe('fail')
-    expect(r.failures[0].task).toBe('1')
-    expect(r.failures[0].reason).toMatch(/AEG provenance/)
+    expect(r.failures[0]!.task).toBe('1')
+    expect(r.failures[0]!.reason).toMatch(/AEG provenance/)
   })
 
   it('skip — open issue is not checked for provenance', () => {
@@ -177,7 +243,7 @@ describe('A2: archived-without-provenance', () => {
     const map = new Map([['iter-1/1', false]])
     const r = checkA2(entries, map)
     expect(r.status).toBe('info')
-    expect(r.failures[0].grandfathered).toBe(true)
+    expect(r.failures[0]!.grandfathered).toBe(true)
   })
 
   it('fail — missing provenance on/after COHERENCE_ENFORCED_FROM is not grandfathered', () => {
@@ -192,7 +258,7 @@ describe('A2: archived-without-provenance', () => {
     const map = new Map([['iter-1/1', false]])
     const r = checkA2(entries, map)
     expect(r.status).toBe('fail')
-    expect(r.failures[0].grandfathered).toBe(false)
+    expect(r.failures[0]!.grandfathered).toBe(false)
   })
 })
 
@@ -208,8 +274,8 @@ describe('A3: auto-close-misfire (headline check)', () => {
     const entries = [makeEntry('iter-1', '1', 101, makeFacts({ prState: 'merged', issueState: 'open' }))]
     const r = checkA3(entries)
     expect(r.status).toBe('fail')
-    expect(r.failures[0].issue).toBe(101)
-    expect(r.failures[0].reason).toMatch(/misfire/)
+    expect(r.failures[0]!.issue).toBe(101)
+    expect(r.failures[0]!.reason).toMatch(/misfire/)
   })
 
   it('pass — open PR does not trigger A3', () => {
@@ -232,7 +298,7 @@ describe('A3: auto-close-misfire (headline check)', () => {
     ]
     const r = checkA3(entries)
     expect(r.status).toBe('info')
-    expect(r.failures[0].grandfathered).toBe(true)
+    expect(r.failures[0]!.grandfathered).toBe(true)
   })
 
   it('fail — misfire on/after COHERENCE_ENFORCED_FROM is not grandfathered', () => {
@@ -246,7 +312,7 @@ describe('A3: auto-close-misfire (headline check)', () => {
     ]
     const r = checkA3(entries)
     expect(r.status).toBe('fail')
-    expect(r.failures[0].grandfathered).toBe(false)
+    expect(r.failures[0]!.grandfathered).toBe(false)
   })
 })
 
@@ -262,8 +328,8 @@ describe('T1: phantom-issue-ref', () => {
     const entries = [makeEntry('iter-1', '1', 999, undefined)]
     const r = checkT1(entries)
     expect(r.status).toBe('fail')
-    expect(r.failures[0].issue).toBe(999)
-    expect(r.failures[0].reason).toMatch(/does not resolve/)
+    expect(r.failures[0]!.issue).toBe(999)
+    expect(r.failures[0]!.reason).toMatch(/does not resolve/)
   })
 
   it('skip — task with null issue (TBD) is not a T1 concern', () => {
@@ -286,9 +352,9 @@ describe('T2: orphan-task', () => {
     const topology = new Map([['iter-1', new Set([101])]])
     const r = checkT2(openIssues, topology)
     expect(r.status).toBe('fail')
-    expect(r.failures[0].issue).toBe(999)
-    expect(r.failures[0].iteration).toBe('iter-1')
-    expect(r.failures[0].reason).toMatch(/does not appear in the topology/)
+    expect(r.failures[0]!.issue).toBe(999)
+    expect(r.failures[0]!.iteration).toBe('iter-1')
+    expect(r.failures[0]!.reason).toMatch(/does not appear in the topology/)
   })
 
   it('pass — empty open issues for an iteration', () => {
@@ -302,7 +368,7 @@ describe('T2: orphan-task', () => {
     const topology = new Map<string, Set<number>>() // no entry for iter-1
     const r = checkT2(openIssues, topology)
     expect(r.status).toBe('fail')
-    expect(r.failures[0].issue).toBe(101)
+    expect(r.failures[0]!.issue).toBe(101)
   })
 })
 
@@ -318,8 +384,8 @@ describe('T3: tbd-in-active-iteration', () => {
     const entries = [makeEntry('iter-1', '1', null, undefined, false)]
     const r = checkT3(entries)
     expect(r.status).toBe('fail')
-    expect(r.failures[0].task).toBe('1')
-    expect(r.failures[0].reason).toMatch(/TBD/)
+    expect(r.failures[0]!.task).toBe('1')
+    expect(r.failures[0]!.reason).toMatch(/TBD/)
   })
 
   it('pass — archived iteration with null issue is not a T3 concern', () => {
@@ -337,7 +403,7 @@ describe('T3: tbd-in-active-iteration', () => {
     const entries = [makeEntry('aeg-coherence-v1', '99', null, undefined, false)]
     const r = checkT3(entries, 'aeg-coherence-v1')
     expect(r.status).toBe('fail')
-    expect(r.failures[0].task).toBe('99')
+    expect(r.failures[0]!.task).toBe('99')
   })
 
   it('info — null issue in iteration whose tasks have pre-cutoff closedAt is grandfathered', () => {
@@ -351,7 +417,7 @@ describe('T3: tbd-in-active-iteration', () => {
     )
     const r = checkT3([tbdEntry], null, [tbdEntry, resolvedEntry])
     expect(r.status).toBe('info')
-    expect(r.failures[0].grandfathered).toBe(true)
+    expect(r.failures[0]!.grandfathered).toBe(true)
   })
 
   it('fail — null issue in iteration with no pre-cutoff dates is NOT grandfathered', () => {
@@ -366,7 +432,26 @@ describe('T3: tbd-in-active-iteration', () => {
     )
     const r = checkT3([tbdEntry], null, [tbdEntry, resolvedEntry])
     expect(r.status).toBe('fail')
-    expect(r.failures[0].grandfathered).toBe(false)
+    expect(r.failures[0]!.grandfathered).toBe(false)
+  })
+
+  it("BUG (preserved, not fixed): T3 grandfather proxy uses ANY task in the iteration, not the specific #TBD task's own history", () => {
+    // A #TBD task in an iteration is grandfathered as long as *some other task*
+    // in the same iteration has a pre-cutoff date — even if the #TBD task
+    // itself was added long after COHERENCE_ENFORCED_FROM. This is the
+    // "branch-scoping proxy" the brief calls out as a known bug to preserve,
+    // not fix (that's Task 3 / #220's job).
+    const freshTbd = makeEntry('mixed-iter', 'new-task', null, undefined, false)
+    const oldResolved = makeEntry(
+      'mixed-iter',
+      'old-task',
+      50,
+      makeFacts({ issueState: 'closed', closedAt: '2026-01-01T00:00:00Z' }),
+      false
+    )
+    const r = checkT3([freshTbd], null, [freshTbd, oldResolved])
+    expect(r.status).toBe('info')
+    expect(r.failures[0]!.grandfathered).toBe(true)
   })
 })
 
@@ -388,8 +473,8 @@ describe('D1: dispatched-on-unmet-deps', () => {
     const taskMap = new Map<string, TaskEntry>()
     const r = checkD1([main, dep], issueMap, taskMap)
     expect(r.status).toBe('fail')
-    expect(r.failures[0].task).toBe('2')
-    expect(r.failures[0].reason).toMatch(/open/)
+    expect(r.failures[0]!.task).toBe('2')
+    expect(r.failures[0]!.reason).toMatch(/open/)
   })
 
   it('pass — open PR task with all deps closed (by task ID ref in same iteration)', () => {
@@ -435,8 +520,8 @@ describe('L1: stale-active-iteration', () => {
     const entriesBySlug = new Map([['iter-1', entries]])
     const r = checkL1([f], entriesBySlug)
     expect(r.status).toBe('fail')
-    expect(r.failures[0].iteration).toBe('iter-1')
-    expect(r.failures[0].reason).toMatch(/consider archiving/)
+    expect(r.failures[0]!.iteration).toBe('iter-1')
+    expect(r.failures[0]!.reason).toMatch(/consider archiving/)
   })
 
   it('pass — active iteration with at least one open issue', () => {
@@ -467,8 +552,8 @@ describe('L2: premature-archive (advisory — info, never fail)', () => {
     const entriesBySlug = new Map([['iter-arch', entries]])
     const r = checkL2([f], entriesBySlug)
     expect(r.status).toBe('info')
-    expect(r.failures[0].iteration).toBe('iter-arch')
-    expect(r.failures[0].reason).toMatch(/premature archive/)
+    expect(r.failures[0]!.iteration).toBe('iter-arch')
+    expect(r.failures[0]!.reason).toMatch(/premature archive/)
   })
 
   it('info + no findings — archived iteration with all issues closed', () => {
