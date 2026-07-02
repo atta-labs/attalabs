@@ -23,15 +23,15 @@ The same `@atta/aeg-core` functions run at ring 0 and ring 1 — one implementat
 
 ## Ring 0 — Prevention (nothing invalid leaves the machine)
 
-| Agent action | Gate | What is enforced | Installed at |
-|---|---|---|---|
-| `Edit`/`Write` on governed paths | Skill-check hook | The owning skill must have been invoked this session | `.claude/hooks/check-skill.sh` |
-| `git commit` | pre-commit + commit-msg | Typecheck (all packages+apps), lint, format, cms+aeg-core tests, forbidden UI colors; commit-message grammar | `.husky/pre-commit` (`bun run check`), commitlint |
-| `git push` | pre-push | No direct push to `main`; a `task/<iter>/<id>` branch must literal-match a topology row (`#` column) in a real iteration file (D-073); **doc-owners coverage (C5) on the branch's cumulative diff** — bound code cannot be published without its bound doc (`verify-docs --push`; an open PR's body supplies Doc-waiver lines) | `.husky/pre-push` |
-| `gh pr create` / `gh pr edit --body*` | Forge-gate hook **denies** the raw command → forces `open-pr.ts` | Title grammar (`checkForgeTitle`); decision-number freshness (no `## D-NNN` ≤ origin/main's max); full brief contract via `checkBriefSections` — Tier, For, Project, tagged Test Plan, §4 surface map, §7 doc-update list, worktree Step 0, §10 stop conditions, §11 autonomy clause, `Closes #N`, lock-ack (task branches); plan-PR no-`Closes` guard (D-077); **Tier-appropriate docs via `verify-docs --pr` C0–C5 (all branches)**; branch↔topology↔Issue triple via `checkClosesN` (task branches) | `.claude/hooks/check-forge-gates.sh` → `packages/aeg-core/bin/open-pr.ts` |
-| `gh issue create` / `gh issue edit --body*` | Same hook → forces `open-issue.ts` | Title grammar; the full **eight-field Planner's rationale** (`checkIssueRationale`) on any `iteration:*`-labeled Issue (planner-brief contract, D-055). Non-task Issues pass through. | `.claude/hooks/check-forge-gates.sh` → `packages/aeg-core/bin/open-issue.ts` |
-| `gh api` POST/PATCH to `/pulls`, `/issues`; curl/wget writes to those endpoints | Forge-gate hook | Denied outright — no unvalidated path to PR/Issue creation or body edits | `.claude/hooks/check-forge-gates.sh` |
-| Merge (any tool) | T9 merge gate | `gh pr checks` must be all-green — red or pending is unmergeable | `.claude/hooks/check-pr-green.sh` |
+| Action | Gate | What is enforced |
+|---|---|---|
+| Editing a governed file | **Edit gate** (agent harness) | The owning skill/architecture doc must have been loaded this session |
+| `git commit` | **Git pre-commit hooks** (husky + commitlint) | Typecheck (all packages+apps), lint, format, cms+aeg-core tests, forbidden UI colors; commit-message grammar |
+| `git push` | **Git pre-push hook** (husky) | No direct push to `main`; a `task/<iter>/<id>` branch must literal-match a topology row (`#` column) in a real iteration file (D-073); **doc-owners coverage (C5) on the branch's cumulative diff** — bound code cannot be published without its bound doc (`verify-docs --push`; an open PR's body supplies Doc-waiver lines) |
+| PR create / PR body edit | **Forge command gate** — the raw command is denied; the validated `open-pr` wrapper is the only path | Title grammar (`checkForgeTitle`); decision-number freshness (no `## D-NNN` ≤ origin/main's max); full brief contract via `checkBriefSections` — Tier, For, Project, tagged Test Plan, §4 surface map, §7 doc-update list, worktree Step 0, §10 stop conditions, §11 autonomy clause, `Closes #N`, lock-ack (task branches); plan-PR no-`Closes` guard (D-077); **Tier-appropriate docs via `verify-docs --pr` C0–C5 (all branches)**; branch↔topology↔Issue triple via `checkClosesN` (task branches) |
+| Issue create / Issue body edit | **Forge command gate** → validated `open-issue` wrapper | Title grammar; the full **eight-field Planner's rationale** (`checkIssueRationale`) on any `iteration:*`-labeled Issue (planner-brief contract, D-055). Non-task Issues pass through. |
+| Raw API writes to PRs/Issues (`gh api`, curl, wget) | **Forge command gate** | Denied outright — no unvalidated path to PR/Issue creation or body edits |
+| Merge (any tool) | **Merge gate (T9)** | CI must be all-green — red or pending is unmergeable |
 
 **Docs coverage, specifically** (another historical pain point): C5 is enforced at *two* ring-0 chokepoints — at every `git push` on the branch's cumulative diff (`verify-docs --push`), and at PR create/edit inside `open-pr.ts` (`verify-docs --pr`, which adds the C0–C4 PR-body contracts). A change to bound code cannot be published, let alone PR'd, without its bound doc.
 
@@ -72,8 +72,27 @@ Red CI + the T9 hook = no agent can merge it. The Principal can always override 
 ## Known residuals (accepted, documented in D-078)
 
 1. **File-indirection / exotic clients** — a script wrapping a raw `gh` call, or a non-`gh`/`curl` API client, escapes command-string matching. Ring 1 catches the result. Future hardening if ever needed: a PATH-level `gh` shim.
-2. **Session-start window** — hooks load at session start. **Operational rule: restart running agent sessions after merging any change to `.claude/hooks/` or `.claude/settings.json`.**
+2. **Session-start window** — harness gates load at session start. **Operational rule: restart running agent sessions after merging any change to the gate glue or its wiring.**
 3. **The judgment layer** — every gate here is presence/shape-deterministic. Whether content is *true* (a surface map that matches reality, a Test Plan that tests the right thing) is irreducibly review work — Phase 10, not yet mechanically wired (claude-review runs but does not gate). This is the known next hardening frontier.
+
+---
+
+## Portability: the checks are harness-independent; only the trigger glue is not
+
+Every check in this map is a plain CLI binary in `@atta/aeg-core` (`verify-brief`, `verify-docs`, `verify-coherence`, `open-pr`, `open-issue`, `archive-task`) — runnable by any human, any harness, any CI, with no dependency on a specific coding agent. What *is* environment-specific is only the **trigger** — the thing that fires a check at its chokepoint:
+
+| Chokepoint | Trigger technology | Why |
+|---|---|---|
+| commit / push | Standard git hooks (husky) | Git-native events — portable everywhere |
+| PR/Issue commands | The coding-agent harness's command-interception point (~40 lines of deny-and-redirect glue; this repo wires it for its agent harness — see the Installation appendix) | **Git hooks cannot see these** — creating a PR is an API call, not a git operation. The only possible interceptors are the harness's tool layer or a PATH-level `gh` shim (the harness-independent equivalent, available as hardening for teams without an interceptable harness). |
+| Merge | Same harness interception (T9) | Same reason |
+| CI | GitHub Actions | Forge-native |
+
+A team adopting AEG without an interceptable agent harness loses only ring 0's forge-command rows — rings 1 and 2 (the same binaries in CI + audit) still hold every contract.
+
+## Installation appendix (this repo's concrete wiring)
+
+Git hooks: `.husky/pre-commit`, `.husky/pre-push`, commitlint. Forge command gate + edit gate + merge gate: the agent harness's pre-tool hooks under `.claude/hooks/` (`check-forge-gates.sh`, `check-skill.sh`, `check-pr-green.sh`), wired in `.claude/settings.json`. Wrappers and check binaries: `packages/aeg-core/bin/`. CI: `.github/workflows/` (`ci.yml`, `conventions.yml`, `verify-docs.yml`, `verify-test-plan.yml`, `forge-lifecycle.yml`, `archivist.yml`).
 
 ---
 
