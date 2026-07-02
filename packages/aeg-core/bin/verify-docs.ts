@@ -19,7 +19,10 @@
  *                     contracts and stay at the PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
  *   (full)            Repo-wide structural checks. Catches unstatused specs, malformed
- *                     decision-log entries, manifest validity, and the completeness scoreboard.
+ *                     decision-log entries, manifest validity, the completeness scoreboard,
+ *                     and the surfaced-doc manifest coherence check (C6 — state-machine.md
+ *                     Section 15c): every surfaced doc under `aeg-root/` must be reachable
+ *                     in the doc-nav tree, with no orphans and no dangling cross-references.
  *   --next-decision   Helper: print the next free D-NNN for aeg-project/decisions.md and exit.
  *
  * Runs in AUDIT mode (state-machine.md Section 4): it asks "is what shipped consistent
@@ -44,6 +47,7 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { type DocsCoherenceEntry, evaluateDocsCoherence, parseDocFrontmatter } from '../src/docs'
 import {
   checkDecisionNumbers,
   checkManifestValidity,
@@ -219,6 +223,30 @@ function findDecisionLogs(): string[] {
     .filter(Boolean)
 }
 
+const AEG_ROOT_PREFIX = 'aeg-root/'
+
+function runC6(): void {
+  const files = sh("git ls-files 'aeg-root/*.md'")
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+
+  const entries: DocsCoherenceEntry[] = files.map((filePath) => {
+    const raw = existsSync(filePath) ? readFileSync(filePath, 'utf8') : ''
+    const parsed = parseDocFrontmatter(raw)
+    return {
+      relPath: filePath.slice(AEG_ROOT_PREFIX.length),
+      frontmatter: parsed.frontmatter,
+      body: parsed.body,
+      firstH1: parsed.firstH1
+    }
+  })
+
+  const result = evaluateDocsCoherence(entries)
+  for (const e of result.errors) errors.push(e)
+  for (const n of result.notes) notes.push(n)
+}
+
 function runFullMode(): void {
   // F1 — every spec carries a Status block.
   const specs = sh("git ls-files 'apps/**/specs/*.md'")
@@ -262,6 +290,9 @@ function runFullMode(): void {
     const { bindings } = parseDocOwners(docOwnersContent)
     runCompletenessScoreboard(bindings, noDocRules)
   }
+
+  // C6 — surfaced-doc manifest coherence (state-machine.md Section 15c).
+  runC6()
 }
 
 function runCompletenessScoreboard(bindings: DocOwnersBinding[], noDocRules: NoDocRule[]): void {
