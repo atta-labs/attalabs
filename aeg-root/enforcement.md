@@ -3,7 +3,12 @@ sidebar_title: Enforcement Map
 ---
 # Enforcement Map — how the forge stays valid
 
-This is the single place that answers two questions: **what prevents an invalid artifact from ever being created**, and **what detects one if it slips through anyway**. Every mechanism below is real and installed — nothing aspirational is listed. Normative sources: `state-machine.md` §12 (the gate registry), D-069 (self-enforcement charter), D-073/D-074/D-075/D-077 (individual gates), D-078 (tool-layer prevention).
+This is the single place that answers two questions: **what prevents an invalid artifact from ever being created**, and **what detects one if it slips through anyway**. Every mechanism below is real and installed — nothing aspirational is listed.
+
+**How to read this page (notation used across AEG):**
+- **`D-###`** — an entry in the append-only architectural decision log (`aeg-project/decisions.md`). Each records one decision: its context, alternatives rejected, and whether it is locked against silent change. When this page cites `D-078`, that entry is where the full reasoning lives.
+- **`§N`** — a numbered section of `state-machine.md`, AEG's normative model document. `§12` is its registry of which rules are mechanically enforced vs. trusted.
+- **Check IDs** — deterministic checks are named by family: `C0–C5` (documentation coverage, in `verify-docs`), `A*` (archival), `T*` (topology), `D*` (dispatch), `N*` (numbering), `M*` (manifest), `L*` (lifecycle) — the last six all live in the coherence oracle (`verify-coherence`). The ID is stable so a failure message, this page, and the code always mean the same thing.
 
 **The founding observation (D-078):** agents obey checkers, not documents. A rule that exists only as prose will eventually be violated by an honest agent under context pressure — proven live when a PR satisfied exactly the sections the gate checked and dropped the two it didn't. So every contract rule must be a deterministic check, and every check must sit at the earliest chokepoint that can host it.
 
@@ -14,7 +19,7 @@ This is the single place that answers two questions: **what prevents an invalid 
 | Ring | Where | What happens on violation | Who pays |
 |---|---|---|---|
 | **0 — Prevention** | The agent's own machine (tool call, commit, push) | The action itself is **refused** — the invalid artifact never exists outside the agent's session. The exact errors feed back; the agent fixes and retries, in-session. | Nobody. Self-correcting. |
-| **1 — Detection** | The forge (CI on every PR) | The identical checks re-run; CI goes **red**; the T9 merge gate makes red unmergeable by agents. Covers writers the hooks can't reach (GitHub UI, humans, other tools). | Visible red — a human may look. Post-D-078, red on a gated rule means a *hook bug*, not an agent failure. |
+| **1 — Detection** | The forge (CI on every PR) | The identical checks re-run; CI goes **red**; the merge gate makes red unmergeable by agents. Covers writers the hooks can't reach (GitHub UI, humans, other tools). | Visible red — a human may look. Post-D-078, red on a gated rule means a *hook bug*, not an agent failure. |
 | **2 — Audit** | Post-merge and continuous, across the whole forge | Drift is surfaced as findings (coherence oracle fail-classes, provenance DANGLING markers) regardless of who or what wrote it, including history that predates the gates. | Scheduled clean-up, never a surprise mid-dispatch. |
 
 The same `@atta/aeg-core` functions run at ring 0 and ring 1 — one implementation, two enforcement points, drift between them structurally impossible.
@@ -31,7 +36,7 @@ The same `@atta/aeg-core` functions run at ring 0 and ring 1 — one implementat
 | PR create / PR body edit | **Forge command gate** — the raw command is denied; the validated `open-pr` wrapper is the only path | Title grammar (`checkForgeTitle`); decision-number freshness (no `## D-NNN` ≤ origin/main's max); full brief contract via `checkBriefSections` — Tier, For, Project, tagged Test Plan, §4 surface map, §7 doc-update list, worktree Step 0, §10 stop conditions, §11 autonomy clause, `Closes #N`, lock-ack (task branches); plan-PR no-`Closes` guard (D-077); **Tier-appropriate docs via `verify-docs --pr` C0–C5 (all branches)**; branch↔topology↔Issue triple via `checkClosesN` (task branches) |
 | Issue create / Issue body edit | **Forge command gate** → validated `open-issue` wrapper | Title grammar; the full **eight-field Planner's rationale** (`checkIssueRationale`) on any `iteration:*`-labeled Issue (planner-brief contract, D-055). Non-task Issues pass through. |
 | Raw API writes to PRs/Issues (`gh api`, curl, wget) | **Forge command gate** | Denied outright — no unvalidated path to PR/Issue creation or body edits |
-| Merge (any tool) | **Merge gate (T9)** | CI must be all-green — red or pending is unmergeable |
+| Merge (any tool) | **Merge gate** | CI must be all-green — red or pending is unmergeable |
 
 **Docs coverage, specifically** (another historical pain point): C5 is enforced at *two* ring-0 chokepoints — at every `git push` on the branch's cumulative diff (`verify-docs --push`), and at PR create/edit inside `open-pr.ts` (`verify-docs --pr`, which adds the C0–C4 PR-body contracts). A change to bound code cannot be published, let alone PR'd, without its bound doc.
 
@@ -54,7 +59,7 @@ Every PR, on open and every push:
 | Biome, commit-message format, forbidden colors | `conventions.yml` | Same toolchain as pre-commit |
 | claude-review | `claude-code-review.yml` | **Advisory** — posts a judgment review; its verdict does not yet gate (see Residuals) |
 
-Red CI + the T9 hook = no agent can merge it. The Principal can always override — that is a feature, not a hole.
+Red CI + the merge gate = no agent can merge it. The Principal can always override — that is a feature, not a hole.
 
 ---
 
@@ -77,18 +82,20 @@ Red CI + the T9 hook = no agent can merge it. The Principal can always override 
 
 ---
 
-## Portability: the checks are harness-independent; only the trigger glue is not
+## Portability: what you get on ANY coding agent (or none)
 
-Every check in this map is a plain CLI binary in `@atta/aeg-core` (`verify-brief`, `verify-docs`, `verify-coherence`, `open-pr`, `open-issue`, `archive-task`) — runnable by any human, any harness, any CI, with no dependency on a specific coding agent. What *is* environment-specific is only the **trigger** — the thing that fires a check at its chokepoint:
+Every check in this map is a plain CLI binary in `@atta/aeg-core` (`verify-brief`, `verify-docs`, `verify-coherence`, `open-pr`, `open-issue`, `archive-task`) — runnable by any human, any agent, any CI, with zero dependency on a specific vendor. The *triggers* differ by environment. Honest compatibility matrix:
 
-| Chokepoint | Trigger technology | Why |
+| Enforcement | Any team, any agent, today | Requires |
 |---|---|---|
-| commit / push | Standard git hooks (husky) | Git-native events — portable everywhere |
-| PR/Issue commands | The coding-agent harness's command-interception point (~40 lines of deny-and-redirect glue; this repo wires it for its agent harness — see the Installation appendix) | **Git hooks cannot see these** — creating a PR is an API call, not a git operation. The only possible interceptors are the harness's tool layer or a PATH-level `gh` shim (the harness-independent equivalent, available as hardening for teams without an interceptable harness). |
-| Merge | Same harness interception (T9) | Same reason |
-| CI | GitHub Actions | Forge-native |
+| Commit gates (typecheck, lint, tests, message grammar) | ✅ Full | git + husky — vendor-neutral |
+| Push gates (no-direct-main, branch↔topology, docs coverage) | ✅ Full | git + husky — vendor-neutral |
+| CI detection (every check, red = unmergeable-by-agents) | ✅ Full | GitHub Actions — vendor-neutral |
+| Post-merge audit (provenance, coherence oracle) | ✅ Full | GitHub Actions — vendor-neutral |
+| **Forge command gate** (PR/Issue creation refused before it executes) | ⚠️ **Not yet vendor-neutral** | Today: a coding-agent harness that exposes a pre-command hook (~40 lines of deny-and-redirect glue — this repo ships it for its own harness; any harness with an equivalent hook point can host the same glue). The **vendor-neutral form is a PATH-level `gh` shim** — a wrapper binary that intercepts the CLI itself, working identically for every agent and for humans. Planned as the canonical mechanism; until it ships, teams without an interceptable harness run prevention at commit/push and detection at CI. |
+| Edit gate (governed files require their architecture doc loaded) | ⚠️ Harness feature | Only meaningful on harnesses with a pre-edit hook; others rely on review + CI. |
 
-A team adopting AEG without an interceptable agent harness loses only ring 0's forge-command rows — rings 1 and 2 (the same binaries in CI + audit) still hold every contract.
+The design intent, stated plainly: **nothing in AEG's contracts assumes any particular coding agent.** Where this repo's concrete wiring uses its own harness's hook system, that is an implementation convenience of this repo — not a requirement of the model — and the matrix above is the honest statement of what a team on any other agent gets today.
 
 ## Installation appendix (this repo's concrete wiring)
 
