@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { listBenchmarkRuns, getBenchmarkStats } from '@/db/bench-queries'
 
-function VerdictBadge({ verdict }: { verdict: string }) {
+function VerdictBadge({ verdict }: { verdict: string | null }) {
   if (verdict === 'vada_wins')
     return (
       <Badge variant='outline' className='text-success border-success/40 font-mono text-xs'>
@@ -15,6 +15,12 @@ function VerdictBadge({ verdict }: { verdict: string }) {
         baseline wins
       </Badge>
     )
+  if (verdict === null)
+    return (
+      <Badge variant='outline' className='text-muted-foreground font-mono text-xs'>
+        unjudged
+      </Badge>
+    )
   return (
     <Badge variant='outline' className='text-muted-foreground font-mono text-xs'>
       tie
@@ -22,7 +28,8 @@ function VerdictBadge({ verdict }: { verdict: string }) {
   )
 }
 
-function ScoreBar({ score }: { score: number }) {
+function ScoreBar({ score }: { score: number | null }) {
+  if (score == null) return <span className='font-mono text-xs text-muted-foreground'>—</span>
   const pct = Math.min(100, Math.round((score / 50) * 100))
   return (
     <div className='flex items-center gap-2'>

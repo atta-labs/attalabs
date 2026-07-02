@@ -4,7 +4,7 @@ import { Badge, Separator } from '@atta/ui/components'
 import ReactMarkdown from 'react-markdown'
 import { getBenchmarkRun } from '@/db/bench-queries'
 
-function VerdictBadge({ verdict }: { verdict: string }) {
+function VerdictBadge({ verdict }: { verdict: string | null }) {
   if (verdict === 'vada_wins')
     return (
       <Badge variant='outline' className='text-success border-success/40 font-mono'>
@@ -15,6 +15,12 @@ function VerdictBadge({ verdict }: { verdict: string }) {
     return (
       <Badge variant='outline' className='text-destructive border-destructive/40 font-mono'>
         baseline wins
+      </Badge>
+    )
+  if (verdict === null)
+    return (
+      <Badge variant='outline' className='text-muted-foreground font-mono'>
+        unjudged
       </Badge>
     )
   return (
