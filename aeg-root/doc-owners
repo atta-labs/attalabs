@@ -41,6 +41,9 @@
 # no-doc: packages/typescript-config/** — pure config package; no behavior docs needed
 # no-doc: apps/vitakka-ai/** — scaffold only (no implementation surface yet)
 # no-doc: apps/desktop/** — stub only (specs directory only; no implementation)
+# no-doc: packages/instrumentation/** — dev-ergonomics utility (browser-extension error
+#   filter, ~85 lines); no product behavior to document. Flagged for Planner: no owning
+#   skill exists (aeg-governance-hardening task 3, 2026-07-02).
 
 packages/ui/topbar/**                            .claude/skills/ui-components/SKILL.md
 packages/ui/libraries/**                         .claude/skills/ui-library-system/SKILL.md
@@ -49,3 +52,45 @@ packages/aeg-core/bin/verify-docs.ts             aeg-root/state-machine.md
 packages/aeg-core/bin/verify-coherence.ts        aeg-root/state-machine.md
 packages/agents/vada-deliberation/yamls/**       .claude/skills/atta-teams/SKILL.md
 packages/agents/**                               .claude/skills/vada-architecture/SKILL.md
+
+# ── Bind-all pass (aeg-governance-hardening task 3, 2026-07-02) ────────────
+# Populates doc-owners to scoreboard completeness (D-069 conformance; backlog
+# T4 named in state-machine.md Section 15). See
+# aeg-root/iterations/aeg-governance-hardening.audit.md for the full audit
+# table and rationale per binding.
+
+packages/crypto/**                                   apps/vada-ai/specs/vada-byok-principles.md
+packages/identity/**                                 apps/vada-ai/specs/vada-byok-principles.md
+packages/auth/**                                      .claude/skills/auth/SKILL.md
+packages/atta-agents/**                               .claude/skills/atta-engine/SKILL.md
+packages/models/**                                    .claude/skills/model-picker/SKILL.md
+packages/storage/**                                   packages/storage/CLAUDE.md
+packages/cms/**                                       .claude/skills/ui-cms-theme/SKILL.md
+packages/cms/schemas/branding.ts                      .claude/skills/ui-branding/SKILL.md
+packages/cms/scripts/seed-branding.ts                 .claude/skills/ui-branding/SKILL.md
+packages/db/**                                        .claude/skills/database/SKILL.md
+packages/engine/**                                    .claude/skills/atta-engine/SKILL.md
+packages/adapter-langgraph/**                         .claude/skills/atta-adapter-langgraph/SKILL.md
+packages/ui/canvas/**                                 .claude/skills/ui-canvas-animation/SKILL.md
+packages/ui/styles/**                                 .claude/skills/ui-theme-tokens/SKILL.md
+
+apps/cetana-ai/coordinator/**                         .claude/skills/cetana-coordinator/SKILL.md
+apps/cetana-ai/**                                     apps/cetana-ai/specs/cetana-spec.md
+apps/atta-ai/**                                       apps/atta-ai/CLAUDE.md
+apps/attalabs/**                                      apps/attalabs/CLAUDE.md
+apps/aeg/**                                           apps/aeg/specs/aeg-app-architecture.md
+apps/vada-ai/mcp-server/**                            .claude/skills/vada-mcp-server/SKILL.md
+apps/vada-ai/mcp-server/src/spec-registry.ts          .claude/skills/vada-yaml-authoring/SKILL.md
+apps/vada-ai/web/src/app/(main)/components/home/**    .claude/skills/vada-home-sections/SKILL.md
+apps/vada-ai/**                                       .claude/skills/vada-architecture/SKILL.md
+apps/herald-ai/web/src/app/api/audit/**               .claude/skills/herald-engine/SKILL.md
+apps/*/web/src/app/api/**                             .claude/skills/ui-api-routes/SKILL.md
+
+# packages/atta-agents note: this is the physical home of the `@atta/agents`
+# package (Agent/CustomToolSpec primitives) per D-051 — distinct from
+# packages/agents/<name>/ (per-agent implementation packages, already bound
+# above). Bound to atta-engine's SKILL.md, which documents the Agent-type
+# contract in depth. CLAUDE.md's package table row ("@atta/agents |
+# packages/agents/") is stale against D-051 — see audit artifact; out of this
+# task's edit surface (root CLAUDE.md is not in the audited 23-skill +
+# 97-spec universe).
