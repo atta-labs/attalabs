@@ -76,13 +76,15 @@ honest — it names what the panel could NOT resolve, not just what it agreed on
 
 ## Three presets
 
-Same YAML, same routing flow. Preset is caller-level context (question framing).
+Same YAML, same routing flow. Preset is caller-level context (question framing) —
+the caller wraps the user's content in one of these before it reaches
+`{{question}}`; there are no separate agents or prompts per preset.
 
-| Preset | Question framing |
-|---|---|
-| `find-blind-spots` | "Here is my thinking about X. What load-bearing assumptions am I missing?" |
-| `critique-draft` | "Here is my draft proposal for X. What are its structural or factual weaknesses?" |
-| `pre-mortem` | "Assume this plan for X failed in 12 months. Reconstruct the failure." |
+| Preset | Question framing | Effect |
+|---|---|---|
+| `find-blind-spots` | "Here is my current thinking on this: X. I want to know what I'm not seeing. What load-bearing assumptions, risks, or blind spots am I missing?" | Open-ended — keeps the panel's four attack vectors on their natural default lens. |
+| `critique-draft` | "Here is my draft: X. Critique it as an adversarial reviewer would. What are its structural, factual, or logical weaknesses — the kind that would sink it in front of a skeptical stakeholder?" | Adversarial-audience framing — pushes toward weaknesses that surface under scrutiny, not just weaknesses in the abstract. |
+| `pre-mortem` | "It is 12 months from now. This plan failed: X. Write the retrospective. Reconstruct exactly how and why it failed, working backward from the failure to the decision points that caused it." | Committed-past-tense framing (prospective hindsight — Klein 1998): treating the failure as certain, not hypothetical, measurably increases the panel's ability to name specific causal chains. |
 
 ---
 
@@ -93,11 +95,15 @@ run before the map reaches the caller:
 
 | Auditor | Tools | Fault criterion |
 |---|---|---|
-| `BlindCritic` | None | Logical/structural defects, phantom consensus, unsupported leaps |
-| `FactChecker` | `web_search, web_fetch` | Factual errors in verifiable claims |
+| `BlindCritic` | None | Logical/structural defects, phantom consensus (`core_agreement` matching or exceeding a single panelist's own strongest claim), framing bias (map laundering a caller framing — e.g. pre-mortem's hypothetical — into stated fact), unsupported leaps |
+| `FactChecker` | `web_search, web_fetch` | Factual errors in verifiable claims, and map claims that cannot be traced back to anything a panelist actually said (ungrounded synthesis, flagged even when incidentally true) |
 
-FLAG from either auditor → synthesizer revises (max 1 revision). Terminal states
-`CLEAN` and `REVISED` are both valid delivery states.
+Both auditors receive the round-0 panel transcript alongside the question and
+map (not just the map) — `BlindCritic` to check the map's characterizations
+against what the panel actually said, `FactChecker` to verify claims both
+externally (web) and against the panel's own outputs. FLAG from either
+auditor → synthesizer revises (max 1 revision). Terminal states `CLEAN` and
+`REVISED` are both valid delivery states.
 
 ---
 
