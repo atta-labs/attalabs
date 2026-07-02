@@ -28,6 +28,7 @@ export {
   checkClosesN as checkBriefClosesN,
   checkDocUpdateList,
   checkForField,
+  checkForgeTitle,
   checkLockAck,
   checkPlanPrNoCloses,
   checkProjectField,

@@ -203,6 +203,27 @@ export function checkLockAck(prBody: string, touchesLock: boolean): BriefSection
 }
 
 /**
+ * Forge-title grammar (D-078) — the two title forms this repo actually uses:
+ *   1. Commit-style: `Type: description` or `Type(scope): description`, with
+ *      the commitlint type set plus `Plan` (plan PRs).
+ *   2. Task-style: `[iteration] id — description` (task Issues and task PRs).
+ * Anything else is refused: titles ride into merge commits and the forge's
+ * derived views, so they carry the same grammar obligation as commit messages
+ * (husky/commitlint parity, applied at the wrapper).
+ */
+export function checkForgeTitle(title: string): BriefSectionResult {
+  const commitStyle = /^(Build|Chore|Docs|Feat|Fix|Perf|Plan|Refactor|Revert|Style|Test)(\([a-z0-9-]+\))?: \S/
+  const taskStyle = /^\[[a-z0-9._-]+\] \S+ — \S/
+  if (commitStyle.test(title) || taskStyle.test(title)) return { status: 'pass', errors: [] }
+  return {
+    status: 'fail',
+    errors: [
+      `brief-validation title: "${title}" matches neither title grammar — expected \`Type: description\` / \`Type(scope): description\` (commitlint types + Plan) or \`[iteration] id — description\` (task form).`
+    ]
+  }
+}
+
+/**
  * Plan-PR Closes guard (D-077) — a `plan/*` PR body must never carry a
  * `Closes #N` reference. Three confirmed live incidents (#294→#293,
  * #298→#297, #288→#287) show a plan PR's `Closes #N` prematurely closing

@@ -82,4 +82,23 @@ if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+api\b' \
   deny "Forge gate (D-078): creating PRs/Issues via raw \`gh api\` bypasses the contract gates. Use the validated wrappers: packages/aeg-core/bin/open-pr.ts / open-issue.ts."
 fi
 
+# PATCH to .../pulls/N or .../issues/N (edit endpoints) — a body/title edit via
+# raw API bypasses the wrappers exactly like the create case. Sub-resources
+# (/comments, /labels) keep their trailing path segment and are not matched.
+if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+api\b' \
+  && printf '%s' "$command" | grep -qE '(-X[[:space:]]*PATCH|--method[[:space:]]*PATCH)' \
+  && printf '%s' "$command" | grep -qE '(/pulls|/issues)/[0-9]+(["'"'"'[:space:]]|$)'; then
+  deny "Forge gate (D-078): editing PRs/Issues via raw \`gh api -X PATCH\` bypasses the contract gates. Use the validated wrappers: packages/aeg-core/bin/open-pr.ts edit <n> / open-issue.ts edit <n>."
+fi
+
+# --- curl/wget bypass attempts ------------------------------------------------
+# Any write-method HTTP call straight at the GitHub API's pulls/issues
+# endpoints. Read (GET) calls are untouched.
+if printf '%s' "$command" | grep -qE '\b(curl|wget)\b' \
+  && printf '%s' "$command" | grep -qE 'api\.github\.com' \
+  && printf '%s' "$command" | grep -qE '(/pulls|/issues)' \
+  && printf '%s' "$command" | grep -qE '(-X[[:space:]]*(POST|PATCH|PUT)|--method[[:space:]]*(POST|PATCH|PUT)|--data\b|[[:space:]]-d[[:space:]]|--json\b|--post-data)'; then
+  deny "Forge gate (D-078): writing to PRs/Issues via raw curl/wget bypasses the contract gates. Use the validated wrappers: packages/aeg-core/bin/open-pr.ts / open-issue.ts."
+fi
+
 exit 0

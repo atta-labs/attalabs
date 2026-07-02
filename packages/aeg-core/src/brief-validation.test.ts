@@ -5,6 +5,7 @@ import {
   checkClosesN,
   checkDocUpdateList,
   checkForField,
+  checkForgeTitle,
   checkLockAck,
   checkPlanPrNoCloses,
   checkProjectField,
@@ -262,6 +263,26 @@ describe('checkBriefSections', () => {
     expect(errors).toHaveLength(2)
     expect(errors[0]).toMatch(/Project/)
     expect(errors[1]).toMatch(/For/)
+  })
+})
+
+describe('checkForgeTitle', () => {
+  it('passes commit-style titles with and without scope', () => {
+    expect(checkForgeTitle('Fix(aeg): Gate-contract parity for Project/For').status).toBe('pass')
+    expect(checkForgeTitle('Docs: Update the readme').status).toBe('pass')
+    expect(checkForgeTitle('Plan(aeg): Add task 5d — post-merge Archivist').status).toBe('pass')
+  })
+  it('passes task-style titles', () => {
+    expect(checkForgeTitle('[aeg-governance-hardening] 5d — Post-merge Archivist automation').status).toBe('pass')
+    expect(checkForgeTitle('[aeg-studio-cleanup] 2 — Remove dependency-graph + board view').status).toBe('pass')
+  })
+  it('fails freeform titles', () => {
+    expect(checkForgeTitle('fixed some stuff').status).toBe('fail')
+    expect(checkForgeTitle('WIP do not merge').status).toBe('fail')
+    expect(checkForgeTitle('feat: lowercase type').status).toBe('fail')
+  })
+  it('fails a bare type with no description', () => {
+    expect(checkForgeTitle('Fix: ').status).toBe('fail')
   })
 })
 

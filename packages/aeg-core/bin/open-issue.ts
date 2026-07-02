@@ -20,6 +20,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { checkForgeTitle } from '../src/brief-validation'
 import { checkIssueRationale, isTaskIssueLabelSet } from '../src/issue-validation'
 
 const REPO_ROOT = join(import.meta.dir, '../../..')
@@ -46,6 +47,16 @@ function extractBody(args: string[]): string | null {
       return v
     }
     if (a.startsWith('--body=')) return a.slice('--body='.length)
+  }
+  return null
+}
+
+/** Extracts --title/-t value from the passthrough args, if present. */
+function extractTitle(args: string[]): string | null {
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i] as string
+    if (a === '--title' || a === '-t') return args[i + 1] ?? null
+    if (a.startsWith('--title=')) return a.slice('--title='.length)
   }
   return null
 }
@@ -92,6 +103,11 @@ export function main(): void {
   const labels = extractLabels(isEdit ? ghArgs.slice(1) : ghArgs)
 
   if (isTaskIssueLabelSet(labels)) {
+    const title = extractTitle(isEdit ? ghArgs.slice(1) : ghArgs)
+    if (title !== null) {
+      const t = checkForgeTitle(title)
+      if (t.status === 'fail') fail(t.errors[0] as string)
+    }
     if (body === null) {
       fail('a task Issue (iteration:* label) requires a `--body-file <path>` so the rationale gate can validate it.')
     }
