@@ -3,14 +3,9 @@ sidebar_title: Enforcement Map
 ---
 # Enforcement Map — how the forge stays valid
 
-This is the single place that answers two questions: **what prevents an invalid artifact from ever being created**, and **what detects one if it slips through anyway**. Every mechanism below is real and installed — nothing aspirational is listed.
+This page answers two questions: **what prevents an invalid artifact from ever being created**, and **what detects one if it slips through anyway**. Every mechanism listed is real and installed — nothing aspirational. The full architectural reasoning behind each gate lives in the decision log (`aeg-project/decisions.md`); the normative registry of every gate lives in `state-machine.md`.
 
-**How to read this page (notation used across AEG):**
-- **`D-###`** — an entry in the append-only architectural decision log (`aeg-project/decisions.md`). Each records one decision: its context, alternatives rejected, and whether it is locked against silent change. When this page cites `D-078`, that entry is where the full reasoning lives.
-- **`§N`** — a numbered section of `state-machine.md`, AEG's normative model document. `§12` is its registry of which rules are mechanically enforced vs. trusted.
-- **Check IDs** — deterministic checks are named by family: `C0–C5` (documentation coverage, in `verify-docs`), `A*` (archival), `T*` (topology), `D*` (dispatch), `N*` (numbering), `M*` (manifest), `L*` (lifecycle) — the last six all live in the coherence oracle (`verify-coherence`). The ID is stable so a failure message, this page, and the code always mean the same thing.
-
-**The founding observation (D-078):** agents obey checkers, not documents. A rule that exists only as prose will eventually be violated by an honest agent under context pressure — proven live when a PR satisfied exactly the sections the gate checked and dropped the two it didn't. So every contract rule must be a deterministic check, and every check must sit at the earliest chokepoint that can host it.
+**The founding observation:** agents obey checkers, not documents. A rule that exists only as prose will eventually be violated by an honest agent under context pressure — proven live when a pull request satisfied exactly the sections the checker verified and dropped the two it didn't. So every contract rule must be a deterministic check, and every check must sit at the earliest chokepoint that can host it.
 
 ---
 
@@ -18,48 +13,48 @@ This is the single place that answers two questions: **what prevents an invalid 
 
 | Ring | Where | What happens on violation | Who pays |
 |---|---|---|---|
-| **0 — Prevention** | The agent's own machine (tool call, commit, push) | The action itself is **refused** — the invalid artifact never exists outside the agent's session. The exact errors feed back; the agent fixes and retries, in-session. | Nobody. Self-correcting. |
-| **1 — Detection** | The forge (CI on every PR) | The identical checks re-run; CI goes **red**; the merge gate makes red unmergeable by agents. Covers writers the hooks can't reach (GitHub UI, humans, other tools). | Visible red — a human may look. Post-D-078, red on a gated rule means a *hook bug*, not an agent failure. |
-| **2 — Audit** | Post-merge and continuous, across the whole forge | Drift is surfaced as findings (coherence oracle fail-classes, provenance DANGLING markers) regardless of who or what wrote it, including history that predates the gates. | Scheduled clean-up, never a surprise mid-dispatch. |
+| **0 — Prevention** | The agent's own machine (command, commit, push) | The action itself is **refused** — the invalid artifact never exists outside the agent's session. The exact errors feed back; the agent fixes and retries, in-session. | Nobody. Self-correcting. |
+| **1 — Detection** | The forge (CI on every pull request) | The identical checks re-run; CI goes **red**; the merge gate makes red unmergeable by agents. Covers writers the local gates can't reach (web UI, humans, other tools). | Visible red — a human may look. Red on a gated rule now means a *gate bug*, not an agent failure. |
+| **2 — Audit** | After merge, continuously, across the whole forge | Drift is surfaced as findings, regardless of who or what wrote it — including history that predates the gates. | Scheduled clean-up, never a surprise mid-dispatch. |
 
-The same `@atta/aeg-core` functions run at ring 0 and ring 1 — one implementation, two enforcement points, drift between them structurally impossible.
+The same check implementations run at ring 0 and ring 1 — one codebase, two enforcement points, so the local gates and CI can never disagree.
 
 ---
 
 ## Ring 0 — Prevention (nothing invalid leaves the machine)
 
-| Action | Gate | What is enforced |
+| Action | Gate | What must be true before the action is allowed |
 |---|---|---|
-| Editing a governed file | **Edit gate** (agent harness) | The owning skill/architecture doc must have been loaded this session |
-| `git commit` | **Git pre-commit hooks** (husky + commitlint) | Typecheck (all packages+apps), lint, format, cms+aeg-core tests, forbidden UI colors; commit-message grammar |
-| `git push` | **Git pre-push hook** (husky) | No direct push to `main`; a `task/<iter>/<id>` branch must literal-match a topology row (`#` column) in a real iteration file (D-073); **doc-owners coverage (C5) on the branch's cumulative diff** — bound code cannot be published without its bound doc (`verify-docs --push`; an open PR's body supplies Doc-waiver lines) |
-| PR create / PR body edit | **Forge command gate** — the raw command is denied; the validated `open-pr` wrapper is the only path | Title grammar (`checkForgeTitle`); decision-number freshness (no `## D-NNN` ≤ origin/main's max); full brief contract via `checkBriefSections` — Tier, For, Project, tagged Test Plan, §4 surface map, §7 doc-update list, worktree Step 0, §10 stop conditions, §11 autonomy clause, `Closes #N`, lock-ack (task branches); plan-PR no-`Closes` guard (D-077); **Tier-appropriate docs via `verify-docs --pr` C0–C5 (all branches)**; branch↔topology↔Issue triple via `checkClosesN` (task branches) |
-| Issue create / Issue body edit | **Forge command gate** → validated `open-issue` wrapper | Title grammar; the full **eight-field Planner's rationale** (`checkIssueRationale`) on any `iteration:*`-labeled Issue (planner-brief contract, D-055). Non-task Issues pass through. |
-| Raw API writes to PRs/Issues (`gh api`, curl, wget) | **Forge command gate** | Denied outright — no unvalidated path to PR/Issue creation or body edits |
-| Merge (any tool) | **Merge gate** | CI must be all-green — red or pending is unmergeable |
+| Editing a governed file | **Edit gate** | The architecture document that owns the file has been loaded in this session — no editing governed code from pattern-matching alone |
+| `git commit` | **Git pre-commit hooks** | The code compiles, passes lint and formatting, the unit tests pass, and the commit message follows the repo's message convention |
+| `git push` | **Git pre-push hook** | No pushing straight to `main`. A task branch's name must exactly match its planned task row in the iteration plan. Any changed code that has a designated owning document must have that document updated in the same branch (a waiver, with a stated reason, can be declared on the open pull request). |
+| Creating a pull request, or editing its title/description | **Forge command gate** — the raw command is refused; the validated wrapper is the only path | The title follows the naming convention. The description carries every required section of the task brief: the impact tier, the executing model, the project(s) touched, a tagged test plan, the file surface the task may touch, the documentation it must update, the isolated-worktree setup step, the stop conditions, the standing autonomy clause, the Issue this work closes, and an explicit acknowledgment whenever a locked decision is touched. A *plan* pull request must never close a task Issue. Any newly added decision-log entry must use the next free number (no collisions with what is already merged). The documentation required by the change's impact tier is present. The branch, its planned task row, and the Issue it closes all agree with each other. |
+| Creating a task Issue, or editing its title/description | **Forge command gate** → validated wrapper | The title follows the naming convention, and the Issue carries the complete planning rationale — what the task is and is not, its sizing, the projects and blast radius it touches, why its dependency edges exist, the known traps, the suggested agent class, the stop-and-escalate conditions, and the documents it must keep coherent. Issues outside the task system pass through untouched. |
+| Writing to pull requests or Issues through the raw API | **Forge command gate** | Refused outright — there is no unvalidated path |
+| Merging | **Merge gate** | Every CI check is green — red or pending cannot be merged by an agent |
 
-**Docs coverage, specifically** (another historical pain point): C5 is enforced at *two* ring-0 chokepoints — at every `git push` on the branch's cumulative diff (`verify-docs --push`), and at PR create/edit inside `open-pr.ts` (`verify-docs --pr`, which adds the C0–C4 PR-body contracts). A change to bound code cannot be published, let alone PR'd, without its bound doc.
+**Documentation coverage, specifically** (a historical pain point): the code→document ownership rule is enforced at *two* prevention chokepoints — at every push (over the branch's cumulative change set) and again at pull-request creation and editing. A change to owned code cannot be published, let alone turned into a pull request, without its owning document.
 
-**The Tier check, specifically** (a historical pain point): enforced twice at ring 0 — `checkTierField` requires the field's presence on task-branch bodies, and `verify-docs --pr`'s C0 requires an explicit `Tier: 3` whenever the diff touches a decision log, for **every** branch type. Both run inside `open-pr.ts` before `gh` executes.
+**The impact-tier rule, specifically** (another historical pain point): a change that touches the decision log must explicitly declare its impact tier, and the documentation that tier demands must be present — checked before the pull request can exist, for every branch type.
 
 ---
 
-## Ring 1 — Detection (what turns GitHub red)
+## Ring 1 — Detection (what turns the forge red)
 
-Every PR, on open and every push:
+Every pull request, on open and on every push, re-runs the same checks in CI:
 
-| CI check | Job | Re-runs which ring-0 code |
-|---|---|---|
-| Brief Validation | `archivist.yml::brief-validation` | `verify-brief.ts` → title grammar (`checkForgeTitle`, all branches), `checkBriefSections`, `checkPlanPrNoCloses` (non-task branches bypass the section checks) |
-| Closes #N | `forge-lifecycle.yml::closes-n-gate` | `verify-coherence.ts --closes-n` |
-| Coherence oracle (blocking) | `forge-lifecycle.yml::coherence-gate` | A1/A2/A3, T1/T2/T3, D1, N1, M1, M3 fail classes (L1/L2/N2/M2 advisory) |
-| Tier-appropriate documentation | `verify-docs.yml` | `verify-docs.ts --pr` C0–C5 |
-| Runtime Test Plan checkbox state | `verify-test-plan.yml` | Unticked Test Plan boxes gate merge readiness (D-049) |
-| Typecheck (shared packages) + unit tests (all suites; cetana-cli excluded — pre-existing failure, tracked) | `ci.yml` | Same toolchain as pre-commit; apps' typecheck is covered by Vercel builds |
-| Biome, commit-message format, forbidden colors | `conventions.yml` | Same toolchain as pre-commit |
-| claude-review | `claude-code-review.yml` | **Advisory** — posts a judgment review; its verdict does not yet gate (see Residuals) |
+| CI check | Re-verifies |
+|---|---|
+| Brief validation | Title convention (all branches) and every required brief section (task branches) |
+| Closes linkage | A task pull request names, and will close, exactly its planned Issue |
+| Coherence oracle | Plan↔forge consistency across the whole repository: tasks closed without a merge, archived without their audit record, orphaned Issues, phantom references, unplanned placeholders in active iterations, duplicate decision numbers, broken document manifests |
+| Documentation gate | Tier declaration and tier-appropriate documentation, including code→document ownership |
+| Test-plan state | Unticked test-plan boxes block merge readiness |
+| Typecheck + unit tests | The full shared-package toolchain (application builds are verified by the deployment pipeline) |
+| Conventions | Lint/format, commit-message grammar, no hardcoded UI colors |
+| AI review | **Advisory** — posts a judgment review of the change; its verdict does not yet block anything |
 
-Red CI + the merge gate = no agent can merge it. The Principal can always override — that is a feature, not a hole.
+Red CI plus the merge gate means no agent can merge the change. The Principal can always override — that is a feature, not a hole.
 
 ---
 
@@ -67,40 +62,36 @@ Red CI + the merge gate = no agent can merge it. The Principal can always overri
 
 | Mechanism | Runs | Catches |
 |---|---|---|
-| **Post-Merge Archivist** (D-078 task 5d) | Automatically on every merge to `main` | Task PRs get their provenance block + explicit Issue close (D-056) with `DANGLING` markers for any absent fact — the audit trail writes itself; missing review passes are flagged, not hidden |
-| **Coherence oracle, full-forge** | Every PR + on demand (`verify-coherence.ts`) | Plan↔forge drift regardless of author: closed-without-merge, archived-without-provenance, auto-close misfires, orphan Issues, phantom refs, `#TBD` in active iterations, decision-number duplicates, manifest breakage |
-| **Staleness audits** (#218 pattern) | Dispatched | Doc claims contradicting the decision log; emits the fix punch-list as Issues |
-| Daily drift check | Scheduled (stub today) | Spec↔code drift (V1) |
-
----
-
-## Known residuals (accepted, documented in D-078)
-
-1. **File-indirection / exotic clients** — a script wrapping a raw `gh` call, or a non-`gh`/`curl` API client, escapes command-string matching. Ring 1 catches the result. Future hardening if ever needed: a PATH-level `gh` shim.
-2. **Session-start window** — harness gates load at session start. **Operational rule: restart running agent sessions after merging any change to the gate glue or its wiring.**
-3. **The judgment layer** — every gate here is presence/shape-deterministic. Whether content is *true* (a surface map that matches reality, a Test Plan that tests the right thing) is irreducibly review work — Phase 10, not yet mechanically wired (claude-review runs but does not gate). This is the known next hardening frontier.
+| **Post-merge archivist** | Automatically on every merge to `main` | Every merged task gets its permanent audit record (what shipped, from what intent, checked by whom) and its Issue is closed and verified; any fact that cannot be sourced is flagged as missing, never invented |
+| **Coherence oracle, full sweep** | Every pull request, and on demand | The same plan↔forge drift classes as ring 1, but across all history — including violations that predate the gates |
+| **Staleness audits** | Dispatched periodically | Documentation whose claims contradict recorded decisions; each contradiction becomes a tracked fix Issue |
+| Daily drift check | Scheduled (stub today) | Specification↔code drift |
 
 ---
 
 ## Portability: what you get on ANY coding agent (or none)
 
-Every check in this map is a plain CLI binary in `@atta/aeg-core` (`verify-brief`, `verify-docs`, `verify-coherence`, `open-pr`, `open-issue`, `archive-task`) — runnable by any human, any agent, any CI, with zero dependency on a specific vendor. The *triggers* differ by environment. Honest compatibility matrix:
+Every check on this page is a plain command-line program — runnable by any human, any agent, any CI, with zero dependency on any vendor. The *triggers* differ by environment:
 
 | Enforcement | Any team, any agent, today | Requires |
 |---|---|---|
-| Commit gates (typecheck, lint, tests, message grammar) | ✅ Full | git + husky — vendor-neutral |
-| Push gates (no-direct-main, branch↔topology, docs coverage) | ✅ Full | git + husky — vendor-neutral |
-| CI detection (every check, red = unmergeable-by-agents) | ✅ Full | GitHub Actions — vendor-neutral |
-| Post-merge audit (provenance, coherence oracle) | ✅ Full | GitHub Actions — vendor-neutral |
-| **Forge command gate** (PR/Issue creation refused before it executes) | ⚠️ **Not yet vendor-neutral** | Today: a coding-agent harness that exposes a pre-command hook (~40 lines of deny-and-redirect glue — this repo ships it for its own harness; any harness with an equivalent hook point can host the same glue). The **vendor-neutral form is a PATH-level `gh` shim** — a wrapper binary that intercepts the CLI itself, working identically for every agent and for humans. Planned as the canonical mechanism; until it ships, teams without an interceptable harness run prevention at commit/push and detection at CI. |
-| Edit gate (governed files require their architecture doc loaded) | ⚠️ Harness feature | Only meaningful on harnesses with a pre-edit hook; others rely on review + CI. |
+| Commit gates | ✅ Full | git hooks — vendor-neutral |
+| Push gates | ✅ Full | git hooks — vendor-neutral |
+| CI detection | ✅ Full | The forge's CI — vendor-neutral |
+| Post-merge audit | ✅ Full | The forge's CI — vendor-neutral |
+| **Forge command gate** | ⚠️ **Not yet vendor-neutral** | Today it needs a coding-agent harness that can intercept commands before they run (~40 lines of refuse-and-redirect glue on any harness that has such a hook point). The **vendor-neutral form is a wrapper binary placed ahead of the real `gh` on the PATH** — it would work identically for every agent and for humans, and is the planned canonical mechanism. Until it ships, teams without an interceptable harness get prevention at commit/push and detection at CI. |
+| Edit gate | ⚠️ Harness feature | Only meaningful on harnesses with a pre-edit hook; others rely on review and CI |
 
-The design intent, stated plainly: **nothing in AEG's contracts assumes any particular coding agent.** Where this repo's concrete wiring uses its own harness's hook system, that is an implementation convenience of this repo — not a requirement of the model — and the matrix above is the honest statement of what a team on any other agent gets today.
-
-## Installation appendix (this repo's concrete wiring)
-
-Git hooks: `.husky/pre-commit`, `.husky/pre-push`, commitlint. Forge command gate + edit gate + merge gate: the agent harness's pre-tool hooks under `.claude/hooks/` (`check-forge-gates.sh`, `check-skill.sh`, `check-pr-green.sh`), wired in `.claude/settings.json`. Wrappers and check binaries: `packages/aeg-core/bin/`. CI: `.github/workflows/` (`ci.yml`, `conventions.yml`, `verify-docs.yml`, `verify-test-plan.yml`, `forge-lifecycle.yml`, `archivist.yml`).
+The design intent, stated plainly: **nothing in AEG's contracts assumes any particular coding agent.** Where a repository's concrete wiring uses one harness's hook system, that is an implementation convenience of that repository — never a requirement of the model. Concrete wiring locations for this repository are recorded in the decision log entries that installed each gate and in `state-machine.md`'s gate registry.
 
 ---
 
-*Change discipline: this map describes installed mechanisms only. A PR that adds, removes, or weakens a gate updates this file in the same diff (its code surfaces are bound here via `doc-owners`), and weakening any D-078 gate requires `Challenges lock: D-078`.*
+## Known residuals (accepted and recorded in the decision log)
+
+1. **Indirection** — a script file wrapping a raw command, or an exotic API client, escapes command interception. Ring 1 catches the result. The PATH-level wrapper binary above is the hardening if it is ever needed.
+2. **Session-start window** — local gates load when an agent session starts. **Operational rule: restart running agent sessions after merging any change to the gates or their wiring.**
+3. **The judgment layer** — every gate here is deterministic about presence and shape. Whether content is *true* (a file-surface list that matches reality, a test plan that tests the right thing) is irreducibly review work — not yet mechanically wired (the AI review runs but does not block). This is the known next hardening frontier.
+
+---
+
+*Change discipline: this map describes installed mechanisms only. A change that adds, removes, or weakens a gate must update this page in the same change set (the gate code is bound to this page by the document-ownership rule), and the tool-layer gates are a locked decision — weakening them requires a superseding decision-log entry, never a quiet edit.*
