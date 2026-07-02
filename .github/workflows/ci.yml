@@ -1,0 +1,48 @@
+# CI — typecheck + unit tests (D-078, ring 1).
+#
+# The ring-1 backstop for what pre-commit enforces at ring 0. Until this
+# workflow existed, no CI job ran typecheck or any unit tests — state-machine
+# §12's "Typecheck, tests — standard CI gates; always blocking" was
+# aspirational: a writer bypassing local hooks (--no-verify, GitHub UI, any
+# non-hooked tool) could merge untested code with only Vercel's app builds as
+# an indirect net. Notably, packages/aeg-core's test suite — the tests
+# guarding every enforcement gate — ran nowhere automatically.
+#
+# Scopes (deliberate, no silent caps — D-074 discipline):
+#   - Typecheck covers ./packages/* only. App typecheck requires the CMS
+#     `generate` step (Sanity tokens live in uncommitted .env files, absent in
+#     CI); apps are type-checked by their Vercel production builds (ring 1)
+#     and by the full `turbo typecheck` in pre-commit (ring 0).
+#   - Tests exclude @atta/cetana-cli: its `init abort path` test fails
+#     PRE-EXISTING on main (verified 2026-07-02, unrelated to any gate work).
+#     Tracked for a follow-up fix; un-exclude when repaired.
+#
+# Enforcement substrate as everywhere: CI red + the T9 merge-gate hook.
+
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  typecheck-and-tests:
+    name: Typecheck + unit tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck (all shared packages)
+        run: bunx turbo typecheck --filter='./packages/*'
+
+      - name: Unit tests (every package with a test script, except the pre-existing cetana-cli failure)
+        run: bunx turbo test --filter='!@atta/cetana-cli'

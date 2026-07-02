@@ -26,7 +26,7 @@ The same `@atta/aeg-core` functions run at ring 0 and ring 1 — one implementat
 | Agent action | Gate | What is enforced | Installed at |
 |---|---|---|---|
 | `Edit`/`Write` on governed paths | Skill-check hook | The owning skill must have been invoked this session | `.claude/hooks/check-skill.sh` |
-| `git commit` | pre-commit + commit-msg | Typecheck, lint, format, tests; commit-message grammar | `.husky/pre-commit`, commitlint |
+| `git commit` | pre-commit + commit-msg | Typecheck (all packages+apps), lint, format, cms+aeg-core tests, forbidden UI colors; commit-message grammar | `.husky/pre-commit` (`bun run check`), commitlint |
 | `git push` | pre-push | No direct push to `main`; a `task/<iter>/<id>` branch must literal-match a topology row (`#` column) in a real iteration file (D-073); **doc-owners coverage (C5) on the branch's cumulative diff** — bound code cannot be published without its bound doc (`verify-docs --push`; an open PR's body supplies Doc-waiver lines) | `.husky/pre-push` |
 | `gh pr create` / `gh pr edit --body*` | Forge-gate hook **denies** the raw command → forces `open-pr.ts` | Title grammar (`checkForgeTitle`); decision-number freshness (no `## D-NNN` ≤ origin/main's max); full brief contract via `checkBriefSections` — Tier, For, Project, tagged Test Plan, §4 surface map, §7 doc-update list, worktree Step 0, §10 stop conditions, §11 autonomy clause, `Closes #N`, lock-ack (task branches); plan-PR no-`Closes` guard (D-077); **Tier-appropriate docs via `verify-docs --pr` C0–C5 (all branches)**; branch↔topology↔Issue triple via `checkClosesN` (task branches) | `.claude/hooks/check-forge-gates.sh` → `packages/aeg-core/bin/open-pr.ts` |
 | `gh issue create` / `gh issue edit --body*` | Same hook → forces `open-issue.ts` | Title grammar; the full **eight-field Planner's rationale** (`checkIssueRationale`) on any `iteration:*`-labeled Issue (planner-brief contract, D-055). Non-task Issues pass through. | `.claude/hooks/check-forge-gates.sh` → `packages/aeg-core/bin/open-issue.ts` |
@@ -50,7 +50,8 @@ Every PR, on open and every push:
 | Coherence oracle (blocking) | `forge-lifecycle.yml::coherence-gate` | A1/A2/A3, T1/T2/T3, D1, N1, M1, M3 fail classes (L1/L2/N2/M2 advisory) |
 | Tier-appropriate documentation | `verify-docs.yml` | `verify-docs.ts --pr` C0–C5 |
 | Runtime Test Plan checkbox state | `verify-test-plan.yml` | Unticked Test Plan boxes gate merge readiness (D-049) |
-| Typecheck, tests, Biome, commit-message format, forbidden colors | `conventions.yml` + standard CI | Same toolchain as pre-commit |
+| Typecheck (shared packages) + unit tests (all suites; cetana-cli excluded — pre-existing failure, tracked) | `ci.yml` | Same toolchain as pre-commit; apps' typecheck is covered by Vercel builds |
+| Biome, commit-message format, forbidden colors | `conventions.yml` | Same toolchain as pre-commit |
 | claude-review | `claude-code-review.yml` | **Advisory** — posts a judgment review; its verdict does not yet gate (see Residuals) |
 
 Red CI + the T9 hook = no agent can merge it. The Principal can always override — that is a feature, not a hole.

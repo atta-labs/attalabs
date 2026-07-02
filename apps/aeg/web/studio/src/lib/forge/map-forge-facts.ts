@@ -41,7 +41,7 @@ export function mapForgeFacts(raw: RawTaskFacts): ForgeFacts | null {
     prState: mapPrState(raw.pullRequest?.state),
     reviewDecision: mapReviewDecision(raw.pullRequest?.reviewDecision),
     stateReason: mapStateReason(raw.issue.stateReason),
-    closedAt: raw.issue.closedAt,
+    closedAt: raw.issue.closedAt ?? null,
     mergedAt: raw.pullRequest?.mergedAt ?? null
   }
 }
