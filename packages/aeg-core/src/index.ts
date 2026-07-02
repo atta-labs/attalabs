@@ -27,13 +27,16 @@ export {
   checkBriefSections,
   checkClosesN as checkBriefClosesN,
   checkDocUpdateList,
+  checkForField,
   checkLockAck,
   checkPlanPrNoCloses,
+  checkProjectField,
   checkStopConditions,
   checkSurfaceMap,
   checkTestPlan,
   checkTierField,
-  checkWorktreeStep0
+  checkWorktreeStep0,
+  headerRegion
 } from './brief-validation'
 export type { BriefSectionResult } from './brief-validation'
 export {
@@ -54,3 +57,5 @@ export {
 export type { CheckFailure, CheckResult, IterationFile, TaskEntry } from './coherence-checks'
 export { buildProvenanceBlock, hasProvenance, taskRefFromBranch } from './archive-task'
 export type { MergedPrFacts } from './archive-task'
+export { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
+export type { IssueSectionResult } from './issue-validation'
