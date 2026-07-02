@@ -40,6 +40,7 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 | **Test Plan (§9)** tagged `[agent]` / `[principal]` | Runs `[agent]` items; leaves `[principal]` for Principal | The Developer runs every `[agent]` item and posts evidence. Does not tick `[principal]` boxes. |
 | **Stop conditions (§10)** | Halt triggers | The Developer stops and posts a blocker comment on the Issue when any condition is met. Never improvises past a stop condition. |
 | **Constraints (§11)** | Hard rules during execution | The Developer treats these as absolute — not "guidelines." A violated constraint is a PR that must not merge. |
+| **Lock acknowledgment** (when the brief touches a `decisions.md`/`*-decisions.md` entry marked `Lock: YES`) | PR body, as `**Conforms to lock:** D-### — <description>` or `**Challenges lock:** D-### — <description>` + `**Rationale:** <text>` | The Developer includes the acknowledgment block verbatim in the PR body. `brief-validation` (Brief→Developer gate, D-069) fails the PR if the diff touches a locked decision and neither form is present, or if the challenge form lacks a `Rationale:` field. |
 
 **Reading the table:** left is the producer obligation (Brief Author enforces it by refusing to dispatch a malformed brief), right is the consumer obligation (Developer role doc and executor protocol enforce it). The two role docs must not contradict this table.
 
