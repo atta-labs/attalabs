@@ -229,6 +229,7 @@ Every brief includes stop conditions. Honor them unconditionally. Common reasons
 - **Skip verification hooks** (e.g. `--no-verify`) unless the brief explicitly authorizes it with a reason.
 - **Skip permission prompts** (e.g. a "dangerously skip permissions" flag) unless the brief authorizes it.
 - **Modify another Developer's in-progress worktree.** Each task has its own worktree; cross-worktree changes create conflicts that are hard to untangle.
+- **Commit a new file whose sole purpose is a report, finding, or audit summary.** A one-off deliverable — a coverage report, an audit result, a findings writeup — goes in the PR body or an Issue/PR comment, never a new repo file. This has already broken AEG Studio once (a committed audit deliverable was silently parsed as a broken iteration by the Studio loader) — see `iterations/README.md` §9 rule 4, D-074.
 
 ---
 
