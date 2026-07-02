@@ -2128,3 +2128,56 @@ Anything that is not one of these five: move the knowledge to AEG's side (a role
 - `specs/ecosystem-backlog.md` gains a future-work line for the mechanical boundary check, and its #266 punch-list annotation is corrected to describe the reverted-then-fixed disposition.
 
 **Lock rationale:** `Lock: YES`. Future briefs touching the harness-view mechanism (`.claude/skills/`, `.claude/agents/`) or adding any monorepo→AEG reference must `Conforms to lock: D-072` or `Challenges lock: D-072 — <reason>`. Changing the sanctioned-crossings list, or the AEG-OWNED VIEW header convention, is a new D-entry that supersedes this one, not an in-place edit.
+
+---
+
+## D-073 — Branch-ID verification: Step 0 must literal-match the topology's `#` column, checked independently by both Brief Author and Developer
+
+**Date:** 2026-07-02
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry; enforcement is doc-discipline + an existing CI gate, not new tooling)
+**Lock:** YES
+**Authored by:** Developer (dispatched task, aeg-governance-hardening #293)
+**Ratified by:** Principal (via task dispatch)
+
+**Context:** Dispatching `vada-production-v1`'s benchmark-harness wave surfaced a confirmed, 100%-prevalence governance gap. The iteration topology file's `#` column is always a bare ID (`1`, `2`, `3a`, `7`, `8`, `9`, …) — confirmed by direct read of `aeg-root/iterations/vada-production-v1.md`. Every numbered task branch in that iteration instead used a `T`-prefix, going back to the first numbered task:
+
+| Task | Topology `#` | Branch used | PR | Merged | Pre/post D-069 |
+|---|---|---|---|---|---|
+| S0 | `S0` | `task/…/S0` | #154 (matches — `S0` has no ambiguity) | 2026-06-20 | pre |
+| 1 | `1` | `task/…/T1` | #192 | 2026-06-23 | pre |
+| 2 | `2` | `task/…/T2` | #202 | 2026-06-23 | pre |
+| 3 | `3` | `task/…/T3` | #194 | 2026-06-23 | pre |
+| 3a | `3a` | `task/…/T3a` | #205 | 2026-06-24 | pre |
+| 4 | `4` | `task/…/T4` | #233 | 2026-06-29 | pre |
+| 5 | `5` | `task/…/T5` | #237 | 2026-06-29 | pre |
+| 7 | `7` | `task/…/T7` | #246 | 2026-06-30 | pre |
+| 8 | `8` | `task/…/T8` | #289 (closed, unmerged — 2 "Closes" checks failed); corrected branch `task/vada-production-v1/8` now open as PR #295 | — | **post** |
+| 9 | `9` | `task/…/T9` | #284 (closed, unmerged — 2 "Closes" checks failed); corrected branch `task/vada-production-v1/9` now open as PR #286 | — | **post** |
+
+Re-verified against the live forge at dispatch time (`gh pr view <N> --json headRefName,state,mergedAt,statusCheckRollup`); all branch names, states, and dates above match. The CI check that would have caught this — `forge-lifecycle.yml`'s `closes-n-gate` (job name "Closes"), added 2026-07-01 as part of D-069 hardening (#258) — never evaluated tasks 1–7: those merged before the gate existed. Tasks 8 and 9 are the first two branches in this iteration's history ever evaluated by a live `Closes` gate, and both failed on first inspection. **This is not new breakage — it is a pre-existing, 100%-prevalence defect finally getting its first inspection.**
+
+Root cause: `aeg-root/skills/brief-authoring/SKILL.md` §5 and `aeg-root/roles/developer.md`'s entry gate both said to use the `task/<iteration>/<n>` branch name "exactly," but neither had a **named, checkable step** verifying `<n>` against the topology file's literal `#` column before the branch was created. Prose discipline was backing a now-mechanical CI gate, and the asymmetry — nothing upstream ever checked what the downstream gate now checks — is exactly how a defect can survive nine dispatches undetected. Every AEG iteration in every repo that adopts this model has the identical exposure; it is a hole in the model, not an incident specific to this iteration.
+
+**Decision:** Both role docs gain an explicit, STOP-language, mechanically-followable verification step, substance-identical in obligation and refusal condition:
+
+1. **Brief Author (authoring time, `aeg-root/skills/brief-authoring/SKILL.md` §5).** Before writing the Step 0 `git worktree add` command into a brief, read the task's row in `aeg-root/iterations/<name>.md` and confirm the branch-name suffix about to be written literal-matches the `#` column — character for character: no added prefix, no case change, no truncation. On mismatch: do not author the brief with the wrong branch name; use the topology's literal ID.
+2. **Developer (execution time, `aeg-root/roles/developer.md` entry gate item 6).** Before executing Step 0, independently re-read the same topology row and re-run the identical check against the Step 0 command just received — never trusting that the brief was authored correctly. On mismatch: STOP, do not create the worktree/branch, report the mismatch to the Brief Author/Principal rather than silently using either name.
+3. **Contract (`aeg-root/contracts/brief-developer.md`).** The "Worktree step 0" field-table row and the Producer/Consumer-obligations bullets are tightened to name this obligation explicitly, so the seam's single source of truth stays accurate — the two role-doc checks are not a new hand-off field (nothing new crosses the seam), but a shared precondition both sides independently verify against the same third source (the topology file), mirroring how the Issue-existence precondition (D-054) is already documented on both sides.
+
+**Boundary (what this is NOT):** not a retroactive fix of the 9 historical mismatched branches (`T1`–`T7` are merged, frozen history; `T8`/`T9` were already corrected live pre-dispatch, now `task/vada-production-v1/8` and `/9`, PRs #295 and #286); not a change to `packages/aeg-core/bin/verify-coherence.ts` or the `closes-n-gate` CI job, which are working exactly as designed — this decision fixes the upstream process that feeds that gate, not the gate itself; not a claim that the contract's field-by-field table needed a new row — the existing "Worktree step 0" row and Producer/Consumer bullets were tightened instead, since this is a shared independent-verification precondition, not a new field crossing the seam.
+
+**Alternatives rejected:**
+- *Rely on prose discipline alone ("use it exactly")* — this is the status quo that produced a 100%-prevalence, week-plus-undetected defect; prose without a named, checkable step is not a gate.
+- *Fix only the Developer's entry gate, not the Brief Author's pre-flight* — would leave briefs being authored with the wrong branch name, catching the defect one stage later than necessary and wasting a dispatch round-trip (the same reasoning that put the Issue-existence and prior-archival preconditions in both role docs).
+- *Add a new field-table row to the contract instead of tightening the existing one* — rejected; the branch-ID check is not a new field the Brief Author emits for the Developer to consume, it is an independent verification both sides run against a third source (the topology file) — tightening the existing "Worktree step 0" row and obligations bullets is the accurate shape, not a new row.
+- *Build a mechanical pre-dispatch/pre-worktree script instead of a doc-level check* — real future hardening, but out of scope for this task (pure-doc brief, no code surface); the two manual checks close the gap now without waiting on tooling.
+
+**Consequences:**
+- `aeg-root/skills/brief-authoring/SKILL.md` §5 — new "Branch-ID verification" paragraph after "Remaining pre-flight checks."
+- `aeg-root/roles/developer.md` — new entry-gate item 6; the post-checklist summary sentence updated to reference it.
+- `aeg-root/contracts/brief-developer.md` — "Worktree step 0" field-table row tightened; Producer-obligations worktree bullet tightened; new Consumer-obligations bullet added, mirroring the Issue-existence precondition's shape.
+- Every future AEG iteration in every adopting repo closes this exposure — the fix is in the model, not scoped to `vada-production-v1`.
+- No change to `packages/aeg-core/bin/verify-coherence.ts`, the `closes-n-gate` CI job, or any historical branch/PR.
+
+**Lock rationale:** `Lock: YES`. This is now a load-bearing dispatch-safety rule — every future brief authored and every future Step 0 executed depends on it. Changing or weakening the branch-ID verification obligation (removing either side's check, or making the refusal language advisory rather than a hard STOP) requires a superseding D-entry with `Challenges lock: D-073 — <reason>`, not a quiet edit to either role doc or the contract.
