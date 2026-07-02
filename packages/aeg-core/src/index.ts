@@ -23,6 +23,19 @@ export { checkManifestValidity, parseNoDocRules } from './manifest-validity'
 export type { NoDocRule } from './manifest-validity'
 export { deriveTierFromDiff, overrideActive, readTierFromPrBody } from './pr-tier'
 export {
+  checkAutonomyClause,
+  checkBriefSections,
+  checkClosesN as checkBriefClosesN,
+  checkDocUpdateList,
+  checkLockAck,
+  checkStopConditions,
+  checkSurfaceMap,
+  checkTestPlan,
+  checkTierField,
+  checkWorktreeStep0
+} from './brief-validation'
+export type { BriefSectionResult } from './brief-validation'
+export {
   checkA1,
   checkA2,
   checkA3,
