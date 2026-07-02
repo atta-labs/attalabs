@@ -2368,3 +2368,37 @@ Concretely:
 **Consequences:** `.claude/hooks/check-forge-gates.sh` (new), `.claude/settings.json` (hook wired), `packages/aeg-core/bin/open-pr.ts` + `bin/open-issue.ts` (new), `packages/aeg-core/src/issue-validation.ts` + tests (new), `checkForgeTitle` in `src/brief-validation.ts`, `.husky/pre-push` branch gate, `state-machine.md` §12 gains the tool-layer bullet. Known residual (accepted, CI-backstopped): file-indirection (`bash script.sh` wrapping a raw command) and non-`gh`/`curl` API clients cannot be caught by command-string matching — a PATH-level `gh` shim is the future hardening if the backstop ever fires. Every future agent session inherits the gates automatically via settings.json.
 
 **Lock rationale:** `Lock: YES`. This is the load-bearing "agents cannot fail" property — weakening it (removing a deny pattern, making a wrapper gate advisory, allowing raw forge writes) requires a superseding D-entry with `Challenges lock: D-078 — <reason>`, not a quiet edit to the hook or wrappers.
+
+---
+
+## D-079 — Surfaced-doc manifest: canonical taxonomy for what AEG surfaces as documentation
+
+**Date:** 2026-07-02
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry)
+**Lock:** YES
+**Authored by:** Developer (dispatched task, aeg-consolidation #265)
+**Ratified by:** Principal (via task dispatch)
+
+**Context:** `aeg-consolidation` task 4 needed a new check (C6) asserting every canonical AEG framework doc is reachable in the doc-nav tree the docs engine (`packages/aeg-core/src/docs/`) builds, with no orphans and no dangling cross-references. That check necessarily defines "what counts as a surfaced doc" — but a second, downstream consumer already exists: `aeg-studio-cleanup`'s docs-curation task will use the exact same definition to decide what Studio's live `/docs` page excludes (today it walks every `.md` file under `aeg-root/`, leaking iteration execution files into the nav via a hardcoded `iterations/ → "Iterations"` section mapping). Two independently-authored exclusion lists — one in this check, one in Studio's curation task — is the precise failure mode a single-source-of-truth manifest exists to prevent (the same principle behind D-062's `doc-owners` seam and D-076's `deriveSection7`).
+
+**Decision:** The Principal's criterion for "surfaced": the generic AEG framework docs — the same set a public AEG page would show. Anything encoding this repo's or a project's execution state or registry is excluded. Concretely, against today's `aeg-root/` tree: **excluded** — `iterations/*.md` except `iterations/README.md` (active topology files are execution state, and this exclusion transitively covers `iterations/completed/**`); any `*.tokens.md` ledger; `aeg-root/projects.md` (this repo's registry); `aeg-root/discovery/**` (dated session artifacts). **Surfaced** — everything else: `coordination.md`, `state-machine.md`, `aeg-manual-flow.md`, `process.md`, `enforcement.md`, `reviewer-prompt.md`, `iterations/README.md`, `contracts/**`, `roles/**`, `diagrams/**`, `skills/**`, and any new generic doc not matching an exclusion rule (default-surfaced, so a new doc cannot silently vanish from the manifest). The mechanism is **data, not hardcoded logic**: `packages/aeg-core/src/docs/surfaced-manifest.ts` exports the exclusion rules as an ordered list plus `isSurfacedDoc(relPath, frontmatter)`; a per-file `surfaced: true|false` frontmatter field overrides the path rules in either direction (an escape hatch for the enumerated exceptions, not a way to redefine the taxonomy per-file). C6 (`docs-coherence.ts`, `state-machine.md` §15c) and `aeg-studio-cleanup` #292 both consume this one definition.
+
+**Boundary (what this is NOT):** NOT a change to Studio — `apps/aeg/web/studio` is validated (typechecks against the additive `@atta/aeg-core/docs` export surface) but not edited; Studio's `load-aeg-docs.ts` curation is `aeg-studio-cleanup` #292's job, after this merges. NOT a general-purpose doc-classification system — the manifest only answers "is this `aeg-root/` doc generic-framework or execution-state," nothing more.
+
+**Alternatives rejected:**
+- *Let C6 and Studio's curation each maintain their own exclusion list* — the exact failure mode this decision exists to prevent: two competing definitions of "canonical doc" drift apart silently, and a fix to one doesn't propagate to the other.
+- *Hardcode the exclusion list inside the C6 check function* — fails the Principal's "one source of truth, nothing missed" requirement; data (importable, reusable by #292) beats logic embedded in a single check.
+- *No frontmatter override, path rules only* — too rigid for the enumerated exceptions (`iterations/README.md` already needs one); a boolean override is the minimal escape hatch without re-opening the taxonomy question per file.
+
+**Consequences:**
+- `packages/aeg-core/src/docs/surfaced-manifest.ts` + `.test.ts` (new) — the manifest: `SURFACED_EXCLUSION_RULES`, `isSurfacedDoc`, `surfacedDocs`.
+- `packages/aeg-core/src/docs/docs-coherence.ts` + `.test.ts` (new) — the C6 check, consuming the manifest; fixture-driven tests under `packages/aeg-core/src/fixtures/docs-coherence/`.
+- `packages/aeg-core/src/docs/parse-doc.ts` + `types.ts` — `DocFrontmatter` gains `surfaced?: boolean`, parsed from YAML frontmatter.
+- `packages/aeg-core/src/docs/index.ts` — exports the new modules from the `@atta/aeg-core/docs` subpath; `aeg-studio-cleanup` #292 imports the manifest from there.
+- `packages/aeg-core/bin/verify-docs.ts` — C6 wired into full mode, walking `aeg-root/*.md` via `git ls-files`.
+- `aeg-root/state-machine.md` §15c (new) — the check registry entry for C6.
+- `aeg-root/enforcement.md` — one additive Ring 2 (Audit) row for the docs coherence gate.
+- No change to `apps/aeg/web/studio` itself, `verify-coherence.ts`, or any existing C0–C5 check.
+
+**Lock rationale:** `Lock: YES`. This is the single source of truth two iterations depend on (this one's C6, and `aeg-studio-cleanup`'s Studio curation) — weakening it (reverting to hardcoded exclusion logic, or letting a second competing manifest exist) requires a superseding D-entry with `Challenges lock: D-079 — <reason>`, not a quiet edit to the check or to Studio's loader.

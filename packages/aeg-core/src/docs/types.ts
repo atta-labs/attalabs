@@ -5,6 +5,7 @@ export type DocFrontmatter = {
   section?: string
   order?: number
   parent?: string
+  surfaced?: boolean
 }
 
 export type Doc = {

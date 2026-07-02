@@ -24,6 +24,7 @@ export function parseDocFrontmatter(raw: string): ParsedDoc {
   if (typeof fm.section === 'string') frontmatter.section = fm.section
   if (typeof fm.order === 'number') frontmatter.order = fm.order
   if (typeof fm.parent === 'string') frontmatter.parent = fm.parent
+  if (typeof fm.surfaced === 'boolean') frontmatter.surfaced = fm.surfaced
 
   const h1Match = content.match(H1_PATTERN)
   const firstH1 = h1Match?.[1]?.trim()
