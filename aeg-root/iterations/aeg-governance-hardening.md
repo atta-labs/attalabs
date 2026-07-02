@@ -14,7 +14,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 
 | #  | Task                                                                          | Issue | Project(s) | Depends-on           | Conflicts-with |
 |----|--------------------------------------------------------------------------------|-------|------------|-----------------------|----------------|
-| 1  | Planner→Brief rationale-completeness gate (R1)                                 | #251  | aeg        | aeg-consolidation #264 | 2              |
+| 1  | Planner→Brief rationale-completeness gate (R1)                                 | #251  | aeg        | aeg-consolidation #264 | 2, 5d          |
 | 2  | Brief→Developer brief-validation gate                                          | #252  | aeg        | aeg-consolidation #263 | 1              |
 | 3  | Bind-all + staleness audit: drive linkage to 100%, emit fix punch-list          | #218  | aeg        | aeg-consolidation #263 | —              |
 | 4  | Planner §7 auto-derivation from `doc-owners`                                   | #219  | aeg        | 3                      | —              |
@@ -22,6 +22,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 5a | Branch-ID verification: Step 0 must literal-match topology's # column          | #293  | aeg        | —                      | —              |
 | 5b | Forbid committed report/scratch files; findings live in PR/Issue only          | #297  | aeg        | —                      | —              |
 | 5c | Issue-existence precondition: "row absent" is its own hard-stop, not folded into #TBD | #300  | aeg        | —                      | —              |
+| 5d | Post-merge Archivist automation + plan-PR Closes guard                        | #309  | aeg, aeg-core | —                   | 1              |
 | 6  | Fix stale claim vs D-060 in ui-cms-theme skill                                | #278  | aeg        | —                      | —              |
 | 7  | Fix stale claim vs D-044/D-045 in ui-api-routes skill                         | #279  | aeg        | —                      | —              |
 | 8  | Fix stale claim vs D-025 in atta-ai/attalabs CLAUDE.md                        | #280  | aeg        | —                      | —              |
