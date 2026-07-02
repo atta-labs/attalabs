@@ -64,6 +64,7 @@ Red CI plus the merge gate means no agent can merge the change. The Principal ca
 |---|---|---|
 | **Post-merge archivist** | Automatically on every merge to `main` | Every merged task gets its permanent audit record (what shipped, from what intent, checked by whom) and its Issue is closed and verified; any fact that cannot be sourced is flagged as missing, never invented |
 | **Coherence oracle, full sweep** | Every pull request, and on demand | The same plan↔forge drift classes as ring 1, but across all history — including violations that predate the gates |
+| **Docs coherence gate (C6)** | `verify-docs.ts` full mode, on demand (not yet CI-wired) | Every surfaced doc in the surfaced-doc manifest (`state-machine.md` §15c) is reachable in the doc-nav tree, with no orphans and no dangling cross-references |
 | **Staleness audits** | Dispatched periodically | Documentation whose claims contradict recorded decisions; each contradiction becomes a tracked fix Issue |
 | Daily drift check | Scheduled (stub today) | Specification↔code drift |
 

@@ -550,3 +550,28 @@ A finding is `grandfathered: true` when its terminal event is strictly before `C
 - **Studio rendering** of oracle output (Vb #230 — depends on Va).
 - **N/M decision-number integrity** checks — **completed (D-069 / T2 #217)**: `checkDecisionNumbers` + `checkManifestValidity` implemented in `verify-docs.ts`, wired into the coherence oracle. Was a stub under D-067.
 - **CI gate wiring** — **completed (D-069)**: `.github/workflows/forge-lifecycle.yml::coherence-gate` now wires the oracle as a blocking CI gate. Was explicitly deferred under D-067.
+
+---
+
+## Section 15c: Coherence Seam — Surfaced-Doc Manifest (`verify-docs.ts` full mode, check C6)
+
+The seam between **the surfaced-doc manifest** (which `aeg-root/` docs count as generic AEG framework documentation) and **the doc-nav tree** the docs engine (`packages/aeg-core/src/docs/`) builds from them. D-079 makes "what counts as a surfaced doc" a single, data-driven definition instead of two competing ones — this check (C6) and `aeg-studio-cleanup`'s Studio `/docs` curation both consume it.
+
+### The manifest: `packages/aeg-core/src/docs/surfaced-manifest.ts`
+
+Exported rule data, not hardcoded check logic: an ordered list of path-based exclusion rules — active iteration topology/execution files except `iterations/README.md`; `*.tokens.md` ledgers; `aeg-root/projects.md`; `aeg-root/discovery/**` — plus `isSurfacedDoc(relPath, frontmatter)`, where a per-file `surfaced: true|false` frontmatter flag overrides the path rules in either direction. Paths matching none of the exclusion rules default to **surfaced** — a new generic doc must not silently vanish from the manifest; only the enumerated execution-state/registry classes are excluded.
+
+### The check: `packages/aeg-core/src/docs/docs-coherence.ts`
+
+Pure, given the parsed file list under `aeg-root/`:
+- **Reachability** — every surfaced doc's slug is reachable in the nav tree the docs engine would build for the surfaced set. This mirrors the real parent/child resolution `apps/aeg/web/studio/src/lib/docs/nest-doc-children.ts` performs when building Studio's live `/docs` nav: a doc whose `parent:` frontmatter points at a nonexistent or excluded slug is silently dropped from that nav's flat list — reachable neither at the top level nor as anyone's child. That silent-drop is the exact defect this check exists to catch; Studio's file itself is read-only reference, never imported or edited by this check.
+- **Dangling parent** — the more specific diagnostic naming exactly which `parent:` reference is broken.
+- **Dangling link** — every relative `.md` link between two surfaced docs resolves to another surfaced doc.
+
+Wired into `verify-docs.ts` full mode. Full mode is a repo-wide structural sweep, not yet CI-gated (only `--pr` mode runs in `.github/workflows/verify-docs.yml` today) — it runs on demand and locally, per the advisory/enforced gradient in Section 12.
+
+### What is explicitly out of scope for C6
+
+- **Studio's actual `/docs` nav rendering** — validated by re-reading the same manifest, not modified. `aeg-studio-cleanup` (#292) is where Studio's `load-aeg-docs.ts` is updated to filter by this manifest.
+- **Content correctness of a doc** — the Reviewer's job, same boundary as every other mechanical gate in this file.
+- **CI wiring of full mode itself** — pre-existing full-mode scope (F1/F2/N/M/completeness scoreboard), unchanged by this addition.
