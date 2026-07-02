@@ -14,19 +14,24 @@ function facts(overrides: Partial<MergedPrFacts> = {}): MergedPrFacts {
   }
 }
 
+// Canonical PR-body form: metadata fields in the header block, before the
+// first h2 heading — where both the brief-validation gate and this module's
+// extraction read them (headerRegion parity).
 const FULL_BODY = `
-## Summary
-
-Ships the thing. Closes #309
-
-## Scope
-
 **Tier:** 3
-
+Closes #309
 Project: aeg, aeg-core
 For: a high-capability model (coding-agent CLI, dispatched session)
 Conforms-to: D-077
 Ticket: none
+
+## Summary
+
+Ships the thing.
+
+## Scope
+
+One paragraph of blast radius.
 `
 
 describe('taskRefFromBranch', () => {
@@ -123,6 +128,34 @@ describe('buildProvenanceBlock', () => {
     const { issue, dangling } = buildProvenanceBlock(facts({ body }))
     expect(issue).toBe(309)
     expect(dangling.some((d) => d.includes('additional Issues'))).toBe(false)
+  })
+
+  it('ignores a Closes # reference inside a code fence or inline code (#311 regression)', () => {
+    const body = `${FULL_BODY}\n\n## Test plan evidence\n\n\`\`\`\nBRANCH=plan/x PR_BODY="... Closes #123 ..." bun verify-brief.ts\n\`\`\`\n\nAnd inline: \`Closes #456\` as an example.`
+    const { issue, dangling } = buildProvenanceBlock(facts({ body }))
+    expect(issue).toBe(309)
+    expect(dangling.some((d) => d.includes('additional Issues'))).toBe(false)
+  })
+
+  it('still resolves a Closes #N placed outside the header block, with a flag (defensive fallback)', () => {
+    const body = '**Tier:** 3\nProject: aeg\nFor: Sonnet\n\n## Summary\n\nShips it. Closes #309'
+    const { issue, dangling } = buildProvenanceBlock(facts({ body }))
+    expect(issue).toBe(309)
+    expect(dangling.some((d) => d.includes('outside the PR body'))).toBe(true)
+  })
+
+  it('does not extract a field value from prose that merely mentions the field name (#311 regression)', () => {
+    const body = `${FULL_BODY.replace('Ticket: none\n', '')}\n\n## Decisions made\n\n- **\`Ticket:\` field.** Extracted via the same tolerant field-pattern as Project/For; absent means none.`
+    const { block } = buildProvenanceBlock(facts({ body }))
+    expect(block).toContain('- Ticket:       none')
+    expect(block).not.toContain('Extracted via')
+  })
+
+  it('flags a Project field that only appears after a heading as DANGLING (#311 regression)', () => {
+    const body = `${FULL_BODY.replace('Project: aeg, aeg-core\n', '')}\n\n## Notes\n\nThe Project: aeg field lives here, wrongly.`
+    const { block, dangling } = buildProvenanceBlock(facts({ body }))
+    expect(block).toContain('- Project(s):   DANGLING — no Project field in PR body')
+    expect(dangling).toContain('no `Project:` field found in PR body — Project(s) field is DANGLING')
   })
 
   it('flags a missing Tier field as DANGLING', () => {

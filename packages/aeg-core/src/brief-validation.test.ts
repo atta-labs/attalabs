@@ -4,17 +4,23 @@ import {
   checkBriefSections,
   checkClosesN,
   checkDocUpdateList,
+  checkForField,
   checkLockAck,
   checkPlanPrNoCloses,
+  checkProjectField,
   checkStopConditions,
   checkSurfaceMap,
   checkTestPlan,
   checkTierField,
-  checkWorktreeStep0
+  checkWorktreeStep0,
+  headerRegion
 } from './brief-validation'
 import { readTierFromPrBody } from './pr-tier'
 
 const WELL_FORMED = `
+**For:** Claude Sonnet (Claude Code CLI, dispatched non-interactive session)
+**Project:** aeg
+
 ## Summary
 
 Ships the brief-validation gate. Closes #252
@@ -147,6 +153,55 @@ describe('checkClosesN', () => {
   })
 })
 
+describe('headerRegion', () => {
+  it('returns everything before the first h2+ heading', () => {
+    expect(headerRegion('Tier: 3\nProject: aeg\n\n## Summary\n\nbody')).toBe('Tier: 3\nProject: aeg\n\n')
+  })
+  it('returns the whole body when no h2+ heading exists', () => {
+    expect(headerRegion('Tier: 3\nProject: aeg')).toBe('Tier: 3\nProject: aeg')
+  })
+  it('does not split on an h1 heading', () => {
+    const body = '# Task Brief\n\nProject: aeg\n\n## Context'
+    expect(headerRegion(body)).toBe('# Task Brief\n\nProject: aeg\n\n')
+  })
+})
+
+describe('checkProjectField', () => {
+  it('passes when a Project field is in the header block', () => {
+    expect(checkProjectField(WELL_FORMED).status).toBe('pass')
+  })
+  it('accepts the plain and Project(s) label forms', () => {
+    expect(checkProjectField('Project: aeg, aeg-core\n\n## Summary').status).toBe('pass')
+    expect(checkProjectField('**Project(s):** aeg\n\n## Summary').status).toBe('pass')
+  })
+  it('fails when absent entirely', () => {
+    const r = checkProjectField('Tier: 3\n\n## Summary\n\nno project field')
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/Project/)
+  })
+  it('fails when the field only appears in prose after a heading (#311 regression)', () => {
+    const body = 'Tier: 3\n\n## Decisions made\n\n- The `Project:` field was omitted because reasons.'
+    expect(checkProjectField(body).status).toBe('fail')
+  })
+})
+
+describe('checkForField', () => {
+  it('passes when a For field is in the header block', () => {
+    expect(checkForField(WELL_FORMED).status).toBe('pass')
+  })
+  it('accepts the plain form', () => {
+    expect(checkForField('For: Sonnet (dispatched)\n\n## Summary').status).toBe('pass')
+  })
+  it('fails when absent entirely', () => {
+    const r = checkForField('Tier: 3\n\n## Summary')
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/For/)
+  })
+  it('does not false-positive on a sentence starting with "For"', () => {
+    expect(checkForField('For example: this is prose, not a field\n\n## Summary').status).toBe('fail')
+  })
+})
+
 describe('checkLockAck', () => {
   it('passes trivially when the diff does not touch a lock', () => {
     expect(checkLockAck('no lock-ack anywhere', false).status).toBe('pass')
@@ -196,6 +251,17 @@ describe('checkBriefSections', () => {
     const withLockAck = `${WELL_FORMED}\n\n**Conforms to lock:** D-069 — implements the charter.`
     const { errors } = checkBriefSections(withLockAck, true, readTierFromPrBody)
     expect(errors).toEqual([])
+  })
+
+  it('fails Project and For when a body carries every gated section but drops the header fields (#311 regression)', () => {
+    // PR #311's exact failure shape: the Developer satisfied every section the
+    // gate checked and omitted the two it didn't. Gate-contract parity means
+    // this body must now fail on exactly those two.
+    const gamedBody = WELL_FORMED.replace(/\*\*For:\*\*[^\n]*\n/, '').replace(/\*\*Project:\*\*[^\n]*\n/, '')
+    const { errors } = checkBriefSections(gamedBody, false, readTierFromPrBody)
+    expect(errors).toHaveLength(2)
+    expect(errors[0]).toMatch(/Project/)
+    expect(errors[1]).toMatch(/For/)
   })
 })
 

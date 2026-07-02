@@ -1,7 +1,7 @@
 # Archivist
 #
 # brief-validation: Real, CI-enforced gate (D-069) — checks the PR body carries every
-#   required brief section (Tier, Test Plan, surface map, doc-update list, worktree
+#   required brief section (Tier, For, Project, Test Plan, surface map, doc-update list, worktree
 #   Step 0, stop conditions, autonomy clause, Closes #N, lock-ack). Blocks merge when
 #   validation fails and applies `needs:brief-correction`. See
 #   packages/aeg-core/src/brief-validation.ts.
