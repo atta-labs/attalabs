@@ -162,6 +162,8 @@ The brief is the task's full execution context. It has two homes:
 
 Retry reuses the same PR body; no rewrite.
 
+For who reads and who writes documentation at each seam of this flow (Planner's whole-iteration read, Brief Author's task-scoped re-read + §7, Developer's execution, Reviewer's dual check, Archivist's confirmation), see `documentation-coherence.md`.
+
 ---
 
 ## 8. The multi-developer safety mechanism
