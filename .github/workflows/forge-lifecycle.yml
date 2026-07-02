@@ -65,6 +65,7 @@ jobs:
         id: oracle
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.head_ref }}
         run: |
           set +e
           bun packages/aeg-core/bin/verify-coherence.ts --json > /tmp/coherence.json 2>&1
@@ -80,10 +81,13 @@ jobs:
             gh issue edit "$num" --add-label "aeg:incoherent" || true
           done
 
-      - name: Report oracle findings (advisory)
+      - name: Report oracle findings
         if: steps.oracle.outputs.exit != '0'
         run: |
-          echo "::warning::Coherence oracle reported findings — ADVISORY (non-blocking) until the engine is hardened. See apps/aeg/specs/aeg-consolidation-spec.md task 3 (fix CI-vs-local grandfather) before re-arming as blocking."
-          echo "=== Coherence findings (advisory) ==="
+          echo "=== Coherence findings ==="
           jq '.checks[] | select(.status == "fail")' /tmp/coherence.json 2>/dev/null || \
             cat /tmp/coherence.json
+
+      - name: Enforce coherence oracle result (blocking)
+        if: always()
+        run: exit ${{ steps.oracle.outputs.exit }}
