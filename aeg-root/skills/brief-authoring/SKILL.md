@@ -134,6 +134,8 @@ Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared
 **Goal:** [one sentence: what ships]
 ```
 
+**Role-chain preamble (mandatory, every brief):** every brief opens by naming the executor's role and its reading chain: *"You are the AEG Developer. Read `aeg-root/roles/developer.md` first"* — plus the host repo's own execution-discipline skill if one exists (this repo: `.claude/skills/executor-protocol/SKILL.md`). The chain lives **in the brief** (an AEG artifact) because the host repo must never point into AEG (D-072); a bare "read the repo's executor skill" dispatch without this preamble is malformed.
+
 ### 2. Context — read before doing anything
 
 Full background the executor needs:

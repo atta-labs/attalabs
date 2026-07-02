@@ -2055,3 +2055,76 @@ In the per-slot model dropdown (ReviewerConfigModal / ModelPicker), filter out a
 - The already-live `aeg-consolidation` relabels (#218/#219/#220/#251/#252) are retro-legitimized as step-2b of a Planner refactor still to be completed properly (source annotation + destination topology + refreshed rationale) in the forthcoming `aeg-consolidation` plan.
 
 **Lock rationale:** `Lock: YES`. Future briefs touching iteration-refactor, cross-iteration task-movement, or the iteration close-gate MUST `Conforms to lock: D-070` or `Challenges lock: D-070 — <reason>`. Changing the movability rule (todo-only), the four-place provenance, or the close-gate disposition set (`merged`/`dropped`/`moved`) is a new D-entry that supersedes this one, not an in-place edit.
+
+---
+
+## D-071 — Ledger ownership: Archivist records all token rows post-merge; roles report in PR/verdict
+
+**Date:** 2026-07-02
+**Status:** ACTIVE
+**Type:** 2 (reversible — a future decision may move capture into tooling)
+**Lock:** NO
+**Authored by:** Developer (dispatched task, aeg-governance-hardening #266)
+**Ratified by:** Principal (via task dispatch)
+
+**Context:** Live-fire dispatch of D-069's own tasks surfaced two collisions in the §12 token-ledger model (`aeg-root/iterations/README.md` §12). First, chat/read-only roles (Reviewer, Security, Planner, Brief Author) were told to "append one row" to `aeg-root/iterations/<name>.tokens.md` at turn-end, but structurally cannot: they don't hold a task branch, and several never touch the repo's filesystem at all. Second, parallel Developer sessions on different tasks collided writing to the same shared `tokens.md` file (concretely: tasks #255 and #258 raced on the same file). Both findings are recorded in `specs/ecosystem-backlog.md` ("AEG-model hardening" punch-list).
+
+**Decision:** No role appends its own ledger row on a task branch. Every role instead **reports** its token spend in the artifact its turn already produces — the Developer and Archivist (terminal roles) report exact `/cost` figures in the PR body under a "Token report" heading; the Reviewer and Security roles (chat roles) report in their verdict comment, numeric cells `—` where the claude.ai surface can't self-see its own count; the Planner reports in the plan PR body or planning report. The per-task **Archivist is the sole writer of `aeg-root/iterations/<name>.tokens.md`**: at close-out, it collects every role's token report for the merged task (PR-body "Token report" sections, verdict comments) and appends one row per role-turn — including its own turn — in a single close-out pass. Re-entry rows (a second Developer turn after `CHANGES_REQUESTED`, a re-review) are appended exactly as before; append-only, never-edit-a-row, derived-total, and `—`-for-unknown semantics are unchanged. The ledger's column format and the `@atta/aeg-core` parser are unchanged — only *who* writes a row and *when* changes.
+
+**Boundary (what this is NOT):** not a change to the ledger's format, columns, or parser contract (`packages/aeg-core`'s `parseLedger` is untouched); not a retro-edit of any existing `*.tokens.md` file — historical rows stand as written; not a resolution of how iteration-wide chat-role turns that have no task PR (Planner-mode planning sessions outside a plan PR, Brief-Author-mode sessions) get their reports recorded — that gap surfaced during this task and is deliberately left open, flagged in this PR for a follow-up task rather than solved ad hoc; not a hook-level or CI-level enforcement of "dirty main is impossible" — that remains a stretch goal, explicitly out of scope here.
+
+**Alternatives rejected:**
+- *Keep self-append, teach chat roles to write files* — chat-surface roles (claude.ai Reviewer/Security/Planner/Brief-Author) cannot reliably write to a specific task's worktree; several run with no filesystem access at all. Would not fix the read-only-role gap.
+- *Give every parallel Developer its own ledger file, merge at close-out* — adds a new artifact and a merge step for no benefit over having the Archivist, who already visits the merged PR at close-out, do the single write.
+- *Store an aggregate/queue of pending reports somewhere else* — reintroduces a stored-total-style artifact the append-only design was built to avoid (`iterations/README.md` §12 anti-regression, `state-machine.md` §13).
+
+**Consequences:**
+- `aeg-root/roles/{reviewer,security,planner,developer}.md` — turn-end sections changed from "append one row" to "report tokens in your PR body / verdict comment."
+- `aeg-root/roles/archivist.md` — close-out checklist extended: collect every role's token report for the task and append all rows (including its own) at close-out, one row per role-turn.
+- `aeg-root/iterations/README.md` §12 — append-rule and "two capture sources" passages rewritten for Archivist-recorded, post-merge appends; ledger format table (columns) unchanged.
+- `.claude/skills/executor-protocol/SKILL.md` — opens with a pointer to `aeg-root/roles/developer.md`, so a bare "read executor-protocol" dispatch still carries the Developer's entry gate and PR-canonical-form.
+- `specs/ecosystem-backlog.md` — the stale "grandfather L2/L3" punch-list line (superseded by merged #261) is pruned; the ledger/reviewer-isolation/executor-chain items are annotated as dispatched by this task.
+- Reviewer and Security "what you do NOT do" sections gain two separate rules: write nothing to disk (verdicts are PR comments only), and — when dispatched as an agent — run only in an isolated worktree, never the main checkout.
+- `aeg-root/aeg-manual-flow.md` and `aeg-root/state-machine.md` carry description-level references to the old self-append rule, updated to match; `aeg-root/roles/team-leader.md` (Planner-mode/Brief-Author-mode duplicate text) and `aeg-root/roles/iteration-archivist.md` (its own turn-end row) carry the same shape of instruction but are **not** changed here — see Boundary above.
+
+**Lock rationale:** `Lock: NO`. This is an operational-model correction, not an irreversible architectural commitment — a future task may move token capture into tooling (automatic `/cost` capture at dispatch-end) and supersede this decision's manual-report mechanism without needing to challenge a lock.
+
+---
+
+## D-072 — One-way knowledge law: the host monorepo never references AEG
+
+**Date:** 2026-07-02
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry; enforcement is doc-discipline today)
+**Lock:** YES
+**Authored by:** Developer (dispatched revision task, aeg-governance-hardening #266, PR #276 R1)
+**Ratified by:** Principal (in PR review of #276)
+
+**Context:** Principal review of PR #276 found that its "executor-protocol chain" deliverable — `.claude/skills/executor-protocol/SKILL.md` opening with "read `aeg-root/roles/developer.md` first" — inverts the constitution's stated knowledge direction: *"Knowledge flows one way — a tool may know AEG; AEG does not know the tool"* (`iterations/README.md` §"AEG is forge-native, orchestrator-independent") and *"AEG is a black box to the host monorepo"* (the `aeg-consolidation` goal, `state-machine.md`). The finding the original edit was solving — a bare "read executor-protocol" dispatch under-specifies the Developer role's entry gate and PR canonical form — was real; D-071's fix crossed the wall in the forbidden direction to solve it. This decision **overrules the original #266 Planner instruction** that ordered the chain line, and records the corrected disposition: the chain lives in the brief (an AEG artifact), never in a host-repo skill.
+
+**Decision:** No monorepo artifact outside AEG's own homes (`aeg-root/`, `aeg-project/`, `apps/aeg/`, `packages/aeg-core/`, `specs/aeg*`) may reference AEG artifacts or vocabulary by path. AEG referencing the repo is inherent — governance needs eyes on what it governs (briefs, `doc-owners`, `projects.md` all point at code). The reverse — a host-repo artifact pointing into AEG — is a defect.
+
+**Sanctioned crossings, exhaustively:**
+1. `.github/workflows/*.yml` — a GitHub Actions platform requirement to invoke AEG's CLI tools; pre-existing law (`state-machine.md`), not a new carve-out.
+2. **Cetana** — the orchestrator is a sanctioned knower of AEG, never the reverse (D-029/D-038).
+3. **AEG-owned views** projected into the harness (`.claude/skills/`, `.claude/agents/`) carrying an explicit CANONICAL SOURCE / AEG-OWNED VIEW header (the D-039 pattern) — the header marks the file as AEG's own projection, not an independent host-repo artifact that happens to know about AEG.
+4. **Historical records** (research logs, experiment logs, provenance citations) — history is not scrubbed to satisfy a grep.
+5. **Planning-seam backlogs** (D-037) — a backlog may name AEG work items, since the backlog is the upstream seam a human reads to compose an iteration; AEG never reads the backlog as part of the flow.
+
+Anything that is not one of these five: move the knowledge to AEG's side (a role doc, a contract, a spec under `aeg-root/`/`apps/aeg/`) or delete it. Enforcement is doc-discipline today, judged at review time by the code-reviewer / TL spec review; a mechanical `verify-docs` boundary check (grep the diff for monorepo→AEG references outside the sanctioned list) is backlogged (`specs/ecosystem-backlog.md`), not built.
+
+**Boundary (what this is NOT):** not a claim that AEG-owned views are forbidden — headered projections are the sanctioned mechanism for the harness to carry AEG's role specs; not a retroactive scrub of historical logs (`apps/desktop/specs/10-research-log.md`, the `cetana-reality-check.md` copies) — those stand as written; not a change to the planning-seam carve-out (D-037) that already lets backlogs name AEG items; not a change to Cetana's sanctioned-knower status (D-029/D-038); not a mechanical enforcement mechanism — that is future work, not shipped here.
+
+**Alternatives rejected:**
+- *Soften the chain line's wording instead of reverting it* — any monorepo-file reference to an `aeg-root/` path is the violation, regardless of phrasing; a softer sentence still crosses the wall.
+- *Leave the chain line and add an AEG-OWNED VIEW header to `executor-protocol/SKILL.md` itself* — rejected because `executor-protocol` is a genuine host-repo artifact (predates AEG, serves non-AEG dispatches too), not an AEG role-spec projection; headering it would be a category error, unlike the two review-agent files which *are* direct projections of `roles/reviewer.md`/`roles/security.md`.
+- *Do nothing (accept the crossing as a pragmatic exception)* — rejected because the whole value of "AEG is a black box to the host monorepo" is that AEG can be deleted or swapped without leaving stale references scattered through the repo; one exception invites more.
+
+**Consequences:**
+- `.claude/skills/executor-protocol/SKILL.md` reverts to zero AEG references (the chain line added by PR #276's first pass is removed).
+- `aeg-root/skills/brief-authoring/SKILL.md` gains a mandatory "Role-chain preamble" rule in its Header-block section: every brief must open by naming the executor's role, its AEG reading chain, and the host repo's own execution-discipline skill if one exists.
+- `.claude/agents/code-reviewer.md` and `.claude/agents/security-reviewer.md` gain an AEG-OWNED VIEW header, legitimizing their existing `aeg-root/roles/{reviewer,security}.md` references as sanctioned crossing #3.
+- `apps/herald-ai/specs/herald-backlog.md` loses its Archivist close-out note — AEG execution bookkeeping whose durable home is the provenance block on PR #123, not a product backlog.
+- `specs/ecosystem-backlog.md` gains a future-work line for the mechanical boundary check, and its #266 punch-list annotation is corrected to describe the reverted-then-fixed disposition.
+
+**Lock rationale:** `Lock: YES`. Future briefs touching the harness-view mechanism (`.claude/skills/`, `.claude/agents/`) or adding any monorepo→AEG reference must `Conforms to lock: D-072` or `Challenges lock: D-072 — <reason>`. Changing the sanctioned-crossings list, or the AEG-OWNED VIEW header convention, is a new D-entry that supersedes this one, not an in-place edit.

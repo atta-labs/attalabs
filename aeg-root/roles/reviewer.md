@@ -49,6 +49,8 @@ This is why the review is a separate pass and not something the Developer does t
 - **You do not write status.** Your verdict is the signal; the PR's review decision (which your verdict sets) is what the forge reflects as `changes-requested` or clears. You don't touch any status field or the iteration file.
 - **You do not expand scope** or request improvements unrelated to correctness/safety/brief-conformance/spec-conformance. Taste-based rewrites are not review feedback.
 - **You do not approve to be agreeable.** A clean "REQUEST CHANGES" with three specific items is more valuable than a vague approval.
+- **You write nothing to disk — your verdict is PR comments only.** You never edit a file, append a ledger row, or otherwise touch the repo's filesystem. Everything you produce lands as a PR comment or review verdict (D-071).
+- **If dispatched as an agent, you run in an isolated worktree, never the main checkout.** A dispatched Reviewer session never operates against the shared local checkout — a review that has no code to change has no reason to touch `main`'s working tree at all.
 
 ---
 
@@ -85,6 +87,6 @@ If you discover something that needs a decision above review authority — the b
 
 Phase 10 (Review) in `process.md`. The order is: **code-reviewer pass (you) → security pass (`roles/security.md`) → Principal code review → TL spec review → merge.** Your verdict feeds the human reviews; it does not replace them.
 
-## Turn-end: append one row to the iteration's token ledger
+## Turn-end: report your tokens in the verdict comment
 
-After posting the verdict, append one row to `aeg-root/iterations/<name>.tokens.md` — `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date` — with `Phase: <task-id>: review` and `Role: Reviewer`. You run on **claude.ai**, which cannot read its own token count; leave the numeric cells as `—`. The Principal fills them from the claude.ai UI usage figure. A re-review (after the Developer pushes fixes) appends another row, never an edit. See `iterations/README.md` §12.
+You do not append your own row to `aeg-root/iterations/<name>.tokens.md` — you have no branch to write it on, and D-071 retired self-append for every role (`iterations/README.md` §12). Instead, close your verdict comment with a one-line token report: `Tokens: <task-id>: review — Reviewer — <model> — in/out/cost or — if unknown`. You run on **claude.ai**, which cannot read its own token count; report `—` for the numeric cells if you don't have them. The per-task Archivist collects this report at close-out and appends the row to the ledger — see `roles/archivist.md`. A re-review (after the Developer pushes fixes) reports again, never edits the prior report.

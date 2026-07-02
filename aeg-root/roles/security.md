@@ -47,6 +47,8 @@ When the PR touches agent/skill/hook definitions, MCP configs, or anything under
 - Do not write status. Your verdict (PASS/FAIL) is the signal; you don't touch any status field or the iteration file.
 - Do not weaken a finding to be agreeable. A single real leaked key is a BLOCKER, full stop.
 - Do not paste a secret you found into your report in full — reference it by file and line and the first/last few characters only, so the report itself does not become a leak.
+- **You write nothing to disk — your verdict is PR comments only.** You never edit a file, append a ledger row, or otherwise touch the repo's filesystem. Everything you produce lands as a PR comment or review verdict (D-071).
+- **If dispatched as an agent, you run in an isolated worktree, never the main checkout.** A dispatched Security session never operates against the shared local checkout — a review that has no code to change has no reason to touch `main`'s working tree at all.
 
 ## Output format
 
@@ -75,6 +77,6 @@ A security finding that implies a product/architecture decision (e.g., "the whol
 
 Phase 10 (Review) in `process.md`: code-reviewer pass → **security pass (you)** → Principal code review → TL spec review → merge.
 
-## Turn-end: append one row to the iteration's token ledger
+## Turn-end: report your tokens in the verdict comment
 
-After posting the verdict, append one row to `aeg-root/iterations/<name>.tokens.md` — `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date` — with `Phase: <task-id>: security` and `Role: Security`. You run on **claude.ai**, which cannot read its own token count; leave the numeric cells as `—`. The Principal fills them from the claude.ai UI usage figure. A re-pass after the Developer's fixes appends another row. See `iterations/README.md` §12.
+You do not append your own row to `aeg-root/iterations/<name>.tokens.md` — you have no branch to write it on, and D-071 retired self-append for every role (`iterations/README.md` §12). Instead, close your verdict comment with a one-line token report: `Tokens: <task-id>: security — Security — <model> — in/out/cost or — if unknown`. You run on **claude.ai**, which cannot read its own token count; report `—` for the numeric cells if you don't have them. The per-task Archivist collects this report at close-out and appends the row to the ledger — see `roles/archivist.md`. A re-pass after the Developer's fixes reports again, never edits the prior report.

@@ -146,7 +146,7 @@ Before the Principal merges (Step 8), any Developer helping merge or pushing a "
 
 If any fails: post a comment listing the exact items missing. The Principal decides whether to proceed.
 
-> **At the end of every role's turn: append one row to the iteration's token/cost ledger** (`aeg-root/iterations/<name>.tokens.md`). Phase, Role, Agent/Model, Tokens in, Tokens out, Cost, Date — never edit a row; re-entry appends. Terminal roles (Developer in Claude Code; Archivist when automated) fill the numeric cells from `/cost`; claude.ai roles (Planner, Brief Author, Reviewer, Security) leave them as `—` and the Principal fills them later from the claude.ai UI usage figure. See `iterations/README.md` §12 for the canonical format and the rationale; the file is a §13 append-only artifact.
+> **At the end of every role's turn: report your tokens — you do not append your own row** to the iteration's token/cost ledger (`aeg-root/iterations/<name>.tokens.md`). No role writes its own row on a task branch (D-071): terminal roles (Developer; Archivist when automated) report exact figures from `/cost` in the PR body; chat roles (Planner, Brief Author, Reviewer, Security) report in their verdict comment or planning report, numeric cells `—` if unknown. The per-task **Archivist** collects every report and appends the rows — Phase, Role, Agent/Model, Tokens in, Tokens out, Cost, Date — post-merge at close-out; never edits a row; re-entry appends. See `iterations/README.md` §12 for the canonical format and the rationale; the file is a §13 append-only artifact.
 
 ---
 
