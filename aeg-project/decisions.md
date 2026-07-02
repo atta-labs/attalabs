@@ -2055,3 +2055,36 @@ In the per-slot model dropdown (ReviewerConfigModal / ModelPicker), filter out a
 - The already-live `aeg-consolidation` relabels (#218/#219/#220/#251/#252) are retro-legitimized as step-2b of a Planner refactor still to be completed properly (source annotation + destination topology + refreshed rationale) in the forthcoming `aeg-consolidation` plan.
 
 **Lock rationale:** `Lock: YES`. Future briefs touching iteration-refactor, cross-iteration task-movement, or the iteration close-gate MUST `Conforms to lock: D-070` or `Challenges lock: D-070 — <reason>`. Changing the movability rule (todo-only), the four-place provenance, or the close-gate disposition set (`merged`/`dropped`/`moved`) is a new D-entry that supersedes this one, not an in-place edit.
+
+---
+
+## D-071 — Ledger ownership: Archivist records all token rows post-merge; roles report in PR/verdict
+
+**Date:** 2026-07-02
+**Status:** ACTIVE
+**Type:** 2 (reversible — a future decision may move capture into tooling)
+**Lock:** NO
+**Authored by:** Developer (dispatched task, aeg-governance-hardening #266)
+**Ratified by:** Principal (via task dispatch)
+
+**Context:** Live-fire dispatch of D-069's own tasks surfaced two collisions in the §12 token-ledger model (`aeg-root/iterations/README.md` §12). First, chat/read-only roles (Reviewer, Security, Planner, Brief Author) were told to "append one row" to `aeg-root/iterations/<name>.tokens.md` at turn-end, but structurally cannot: they don't hold a task branch, and several never touch the repo's filesystem at all. Second, parallel Developer sessions on different tasks collided writing to the same shared `tokens.md` file (concretely: tasks #255 and #258 raced on the same file). Both findings are recorded in `specs/ecosystem-backlog.md` ("AEG-model hardening" punch-list).
+
+**Decision:** No role appends its own ledger row on a task branch. Every role instead **reports** its token spend in the artifact its turn already produces — the Developer and Archivist (terminal roles) report exact `/cost` figures in the PR body under a "Token report" heading; the Reviewer and Security roles (chat roles) report in their verdict comment, numeric cells `—` where the claude.ai surface can't self-see its own count; the Planner reports in the plan PR body or planning report. The per-task **Archivist is the sole writer of `aeg-root/iterations/<name>.tokens.md`**: at close-out, it collects every role's token report for the merged task (PR-body "Token report" sections, verdict comments) and appends one row per role-turn — including its own turn — in a single close-out pass. Re-entry rows (a second Developer turn after `CHANGES_REQUESTED`, a re-review) are appended exactly as before; append-only, never-edit-a-row, derived-total, and `—`-for-unknown semantics are unchanged. The ledger's column format and the `@atta/aeg-core` parser are unchanged — only *who* writes a row and *when* changes.
+
+**Boundary (what this is NOT):** not a change to the ledger's format, columns, or parser contract (`packages/aeg-core`'s `parseLedger` is untouched); not a retro-edit of any existing `*.tokens.md` file — historical rows stand as written; not a resolution of how iteration-wide chat-role turns that have no task PR (Planner-mode planning sessions outside a plan PR, Brief-Author-mode sessions) get their reports recorded — that gap surfaced during this task and is deliberately left open, flagged in this PR for a follow-up task rather than solved ad hoc; not a hook-level or CI-level enforcement of "dirty main is impossible" — that remains a stretch goal, explicitly out of scope here.
+
+**Alternatives rejected:**
+- *Keep self-append, teach chat roles to write files* — chat-surface roles (claude.ai Reviewer/Security/Planner/Brief-Author) cannot reliably write to a specific task's worktree; several run with no filesystem access at all. Would not fix the read-only-role gap.
+- *Give every parallel Developer its own ledger file, merge at close-out* — adds a new artifact and a merge step for no benefit over having the Archivist, who already visits the merged PR at close-out, do the single write.
+- *Store an aggregate/queue of pending reports somewhere else* — reintroduces a stored-total-style artifact the append-only design was built to avoid (`iterations/README.md` §12 anti-regression, `state-machine.md` §13).
+
+**Consequences:**
+- `aeg-root/roles/{reviewer,security,planner,developer}.md` — turn-end sections changed from "append one row" to "report tokens in your PR body / verdict comment."
+- `aeg-root/roles/archivist.md` — close-out checklist extended: collect every role's token report for the task and append all rows (including its own) at close-out, one row per role-turn.
+- `aeg-root/iterations/README.md` §12 — append-rule and "two capture sources" passages rewritten for Archivist-recorded, post-merge appends; ledger format table (columns) unchanged.
+- `.claude/skills/executor-protocol/SKILL.md` — opens with a pointer to `aeg-root/roles/developer.md`, so a bare "read executor-protocol" dispatch still carries the Developer's entry gate and PR-canonical-form.
+- `specs/ecosystem-backlog.md` — the stale "grandfather L2/L3" punch-list line (superseded by merged #261) is pruned; the ledger/reviewer-isolation/executor-chain items are annotated as dispatched by this task.
+- Reviewer and Security "what you do NOT do" sections gain two separate rules: write nothing to disk (verdicts are PR comments only), and — when dispatched as an agent — run only in an isolated worktree, never the main checkout.
+- `aeg-root/aeg-manual-flow.md` and `aeg-root/state-machine.md` carry description-level references to the old self-append rule, updated to match; `aeg-root/roles/team-leader.md` (Planner-mode/Brief-Author-mode duplicate text) and `aeg-root/roles/iteration-archivist.md` (its own turn-end row) carry the same shape of instruction but are **not** changed here — see Boundary above.
+
+**Lock rationale:** `Lock: NO`. This is an operational-model correction, not an irreversible architectural commitment — a future task may move token capture into tooling (automatic `/cost` capture at dispatch-end) and supersede this decision's manual-report mechanism without needing to challenge a lock.
