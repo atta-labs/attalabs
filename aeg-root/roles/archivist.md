@@ -29,7 +29,8 @@ Work through this checklist for the merged task. Confirm each against reality �
 4. **Docs updated.** The tier-required docs the brief listed actually moved. (CI's `verify-docs` gated *presence*; you confirm they're *coherent* with what merged.)
 5. **Per-project status updated — for every project the task listed.** Update each listed project's `state.md` if state changed (phase advance, resolved known issue, updated pending-manual-ops). A multi-project task updates *every* listed project's `aeg-project/`. This is the one place you write to per-project state — and note: this is project *status documentation*, not task status (task status stays derived from the forge). (`now.md` no longer exists — D-057.)
 6. **`docs-index.md`** updated if files were added, removed, or renamed.
-7. **Provenance block assembled** (see below) and posted to the merged PR record.
+7. **Token ledger rows recorded (D-071).** No role appends its own row on a task branch — you are the sole writer of `aeg-root/iterations/<name>.tokens.md` for this task. Collect every role's token report for the task: the Developer's "Token report" section in the PR body, any re-push reports, and the Reviewer's / Security's one-line `Tokens: …` report in their verdict comment(s). For each report found, append one row (`Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date`) — one row per role-turn, including re-entry rows (a second Developer turn, a re-review), and including your own turn (`Phase: <task-id>: archive`, `Role: Archivist`). Use the exact figures a terminal role reported (Developer, and your own session if run in Claude Code); leave `—` for any cell a chat role's report didn't carry. If a role's report is missing entirely (e.g. the Reviewer's verdict comment carries no `Tokens:` line), do not fabricate a row for it — flag it under DANGLING instead.
+8. **Provenance block assembled** (see below) and posted to the merged PR record.
 
 ## The provenance block (D-030)
 
@@ -79,6 +80,7 @@ DONE:
 - Issue #N closed
 - changelog appended
 - <project> state.md updated
+- token ledger rows appended (N roles: <list>)
 - provenance block posted to PR #M
 - ...
 
@@ -98,6 +100,6 @@ If a Tier 3 decision entry is missing, required docs didn't move, or a required 
 
 The last step of Phase 10 / the flow (`process.md`): code-reviewer pass → security pass → Principal code review → TL spec review → merge → **close-out (you)**. After you, the task is done, durable, and provenanced.
 
-## Turn-end: append one row to the iteration's token ledger
+## Turn-end: append the ledger rows for every role that turned on this task
 
-At close-out, append one row to `aeg-root/iterations/<name>.tokens.md` — `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date` — with `Phase: <task-id>: archive` and `Role: Archivist`. When you run as automation in Claude Code, you are a **terminal role**: fill the numeric cells with exact values from the session meter. When you run by hand as a conversational pass on claude.ai, leave them as `—` and the Principal fills them later. Drift cron: as part of the close-out checks, flag any merged task in this iteration that has **no Developer row** for `<task-id>: develop` (the role obligation was missed), and any inline `## Token ledger` section that violates the append-only rule (an existing row was edited rather than a new one appended). See `iterations/README.md` §12; `state-machine.md` §13.
+You are the **sole writer** of `aeg-root/iterations/<name>.tokens.md` for a task branch (D-071) — no other role appends its own row. At close-out, append one row per role-turn you collected in item 7 above (`Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date`), then append your own turn's row last (`Phase: <task-id>: archive`, `Role: Archivist`). When you run as automation in Claude Code, you are a **terminal role** for your own row: fill its numeric cells with exact values from the session meter. Every chat-role row you record (Reviewer, Security, Planner) carries whatever the role reported — `—` where the report itself had no numeric figure; you never estimate or fill in a chat role's cell yourself. Drift cron: as part of the close-out checks, flag any merged task in this iteration that has **no Developer row** for `<task-id>: develop` (the role obligation was missed), and any inline `## Token ledger` section that violates the append-only rule (an existing row was edited rather than a new one appended). See `iterations/README.md` §12; `state-machine.md` §13.

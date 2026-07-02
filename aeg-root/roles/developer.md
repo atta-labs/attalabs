@@ -61,7 +61,7 @@ Items 4 and 5 read live forge state. Item 3 reads the iteration topology file. Y
 
 **Opening the PR with a complete description.** The PR description must (1) **carry the full brief** — paste it into the PR body; it is the brief's permanent, durable home, and the Reviewer and Archivist read it there; (2) follow the canonical form in [§ PR body — canonical form](#pr-body--canonical-form) below — that section holds the verbatim copy-pasteable template, including the **exact `Tier:` field syntax** the `verify-docs` gate requires; (3) reference the task's Issue (`Closes #N`) so the merge auto-closes it. The description is not optional — the reviews depend on it. Opening the PR is itself the `in-flight → in-review` transition; you write no status field.
 
-**Appending one row to the iteration's token ledger at turn-end.** Before opening the PR (and again before each `changes-requested → in-review` re-push), append one row to `aeg-root/iterations/<name>.tokens.md`: `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date`. You are a **terminal role** — your session knows its own tokens (this repo's instance: `/cost` in Claude Code), so your row's numeric cells are exact, not `—`. Re-entry (a second turn after `CHANGES_REQUESTED`) appends a **new** row — never edits the first. See `iterations/README.md` §12 and `state-machine.md` §13.
+**Reporting exact tokens in the PR body at turn-end.** You do not append your own row to `aeg-root/iterations/<name>.tokens.md` — no role writes its own ledger row on a task branch (D-071), and parallel Developer sessions on different tasks have collided appending to the same shared file. Instead, before opening the PR (and again before each `changes-requested → in-review` re-push), report your exact tokens in the PR body under a **"Token report"** heading: `Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date` with `Phase: <task-id>: develop` and `Role: Developer`. You are a **terminal role** — your session knows its own tokens (this repo's instance: `/cost` in Claude Code), so report exact figures, not `—`. The per-task Archivist reads this report at close-out and appends the ledger row post-merge — see `roles/archivist.md`. Re-entry (a second turn after `CHANGES_REQUESTED`) adds a **new** "Token report" entry to the PR body — never edits the first. See `iterations/README.md` §12 and `state-machine.md` §13.
 
 ---
 
@@ -133,7 +133,7 @@ All of the following must pass before the PR is opened:
 - [ ] Code passes lint/format (this repo: `bun run format-and-lint`)
 - [ ] Tests pass if applicable (this repo: `bun test`)
 - [ ] PR description follows the template, carries the brief, and declares `Tier: 0`
-- [ ] One row appended to `aeg-root/iterations/<name>.tokens.md` with exact tokens from `/cost` (and again on each re-push after `CHANGES_REQUESTED`)
+- [ ] "Token report" section in the PR body with exact tokens from `/cost` (and again on each re-push after `CHANGES_REQUESTED`) — the Archivist appends the ledger row post-merge, you do not
 
 ### Tier 1 checklist
 
