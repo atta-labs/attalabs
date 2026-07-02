@@ -52,7 +52,6 @@ All items below merged as part of the herald-onto-engine AEG iteration.
 - **/ui editor library note** — the appearance editor previews the user's library in an iframe while the surrounding chrome stays on the build-time library (correct, per D-035). If confusing, a small "previewing — not saved" hint could be added. Nicety, not a bug.
 - **PRICING table missing the auditor's pinned model** — `claude-sonnet-4-20250514` is not in `@atta/adapter-langgraph`'s PRICING table (only `claude-sonnet-4-6` is listed), so every Herald audit reports `$0.00` estimated cost. Pre-existing; surfaced during task 1 smoke test. Fix: add the pinned model to the adapter PRICING table or update the YAML default to a priced model. Small, shared-package change — Vāda in blast radius.
 - **Report quality improvement** — the auditor's forensic output is solid but has room for improvement in signal weighting and gap specificity. Candidate for a dedicated iteration once agent migration (herald-agents-v2) is complete. Requires benchmark runs to measure before/after.
-- **Archivist close-out note** — herald-onto-engine iteration was closed retroactively by the Iteration Archivist (herald-agents-v2 task 1, June 2026). The token ledger file (`aeg-root/iterations/completed/herald-onto-engine.tokens.md`) was never created; this is noted in the provenance block on PR #123. A principal-filled ledger row can be added post-close.
 
 ---
 

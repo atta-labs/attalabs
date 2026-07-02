@@ -2088,3 +2088,43 @@ In the per-slot model dropdown (ReviewerConfigModal / ModelPicker), filter out a
 - `aeg-root/aeg-manual-flow.md` and `aeg-root/state-machine.md` carry description-level references to the old self-append rule, updated to match; `aeg-root/roles/team-leader.md` (Planner-mode/Brief-Author-mode duplicate text) and `aeg-root/roles/iteration-archivist.md` (its own turn-end row) carry the same shape of instruction but are **not** changed here — see Boundary above.
 
 **Lock rationale:** `Lock: NO`. This is an operational-model correction, not an irreversible architectural commitment — a future task may move token capture into tooling (automatic `/cost` capture at dispatch-end) and supersede this decision's manual-report mechanism without needing to challenge a lock.
+
+---
+
+## D-072 — One-way knowledge law: the host monorepo never references AEG
+
+**Date:** 2026-07-02
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry; enforcement is doc-discipline today)
+**Lock:** YES
+**Authored by:** Developer (dispatched revision task, aeg-governance-hardening #266, PR #276 R1)
+**Ratified by:** Principal (in PR review of #276)
+
+**Context:** Principal review of PR #276 found that its "executor-protocol chain" deliverable — `.claude/skills/executor-protocol/SKILL.md` opening with "read `aeg-root/roles/developer.md` first" — inverts the constitution's stated knowledge direction: *"Knowledge flows one way — a tool may know AEG; AEG does not know the tool"* (`iterations/README.md` §"AEG is forge-native, orchestrator-independent") and *"AEG is a black box to the host monorepo"* (the `aeg-consolidation` goal, `state-machine.md`). The finding the original edit was solving — a bare "read executor-protocol" dispatch under-specifies the Developer role's entry gate and PR canonical form — was real; D-071's fix crossed the wall in the forbidden direction to solve it. This decision **overrules the original #266 Planner instruction** that ordered the chain line, and records the corrected disposition: the chain lives in the brief (an AEG artifact), never in a host-repo skill.
+
+**Decision:** No monorepo artifact outside AEG's own homes (`aeg-root/`, `aeg-project/`, `apps/aeg/`, `packages/aeg-core/`, `specs/aeg*`) may reference AEG artifacts or vocabulary by path. AEG referencing the repo is inherent — governance needs eyes on what it governs (briefs, `doc-owners`, `projects.md` all point at code). The reverse — a host-repo artifact pointing into AEG — is a defect.
+
+**Sanctioned crossings, exhaustively:**
+1. `.github/workflows/*.yml` — a GitHub Actions platform requirement to invoke AEG's CLI tools; pre-existing law (`state-machine.md`), not a new carve-out.
+2. **Cetana** — the orchestrator is a sanctioned knower of AEG, never the reverse (D-029/D-038).
+3. **AEG-owned views** projected into the harness (`.claude/skills/`, `.claude/agents/`) carrying an explicit CANONICAL SOURCE / AEG-OWNED VIEW header (the D-039 pattern) — the header marks the file as AEG's own projection, not an independent host-repo artifact that happens to know about AEG.
+4. **Historical records** (research logs, experiment logs, provenance citations) — history is not scrubbed to satisfy a grep.
+5. **Planning-seam backlogs** (D-037) — a backlog may name AEG work items, since the backlog is the upstream seam a human reads to compose an iteration; AEG never reads the backlog as part of the flow.
+
+Anything that is not one of these five: move the knowledge to AEG's side (a role doc, a contract, a spec under `aeg-root/`/`apps/aeg/`) or delete it. Enforcement is doc-discipline today, judged at review time by the code-reviewer / TL spec review; a mechanical `verify-docs` boundary check (grep the diff for monorepo→AEG references outside the sanctioned list) is backlogged (`specs/ecosystem-backlog.md`), not built.
+
+**Boundary (what this is NOT):** not a claim that AEG-owned views are forbidden — headered projections are the sanctioned mechanism for the harness to carry AEG's role specs; not a retroactive scrub of historical logs (`apps/desktop/specs/10-research-log.md`, the `cetana-reality-check.md` copies) — those stand as written; not a change to the planning-seam carve-out (D-037) that already lets backlogs name AEG items; not a change to Cetana's sanctioned-knower status (D-029/D-038); not a mechanical enforcement mechanism — that is future work, not shipped here.
+
+**Alternatives rejected:**
+- *Soften the chain line's wording instead of reverting it* — any monorepo-file reference to an `aeg-root/` path is the violation, regardless of phrasing; a softer sentence still crosses the wall.
+- *Leave the chain line and add an AEG-OWNED VIEW header to `executor-protocol/SKILL.md` itself* — rejected because `executor-protocol` is a genuine host-repo artifact (predates AEG, serves non-AEG dispatches too), not an AEG role-spec projection; headering it would be a category error, unlike the two review-agent files which *are* direct projections of `roles/reviewer.md`/`roles/security.md`.
+- *Do nothing (accept the crossing as a pragmatic exception)* — rejected because the whole value of "AEG is a black box to the host monorepo" is that AEG can be deleted or swapped without leaving stale references scattered through the repo; one exception invites more.
+
+**Consequences:**
+- `.claude/skills/executor-protocol/SKILL.md` reverts to zero AEG references (the chain line added by PR #276's first pass is removed).
+- `aeg-root/skills/brief-authoring/SKILL.md` gains a mandatory "Role-chain preamble" rule in its Header-block section: every brief must open by naming the executor's role, its AEG reading chain, and the host repo's own execution-discipline skill if one exists.
+- `.claude/agents/code-reviewer.md` and `.claude/agents/security-reviewer.md` gain an AEG-OWNED VIEW header, legitimizing their existing `aeg-root/roles/{reviewer,security}.md` references as sanctioned crossing #3.
+- `apps/herald-ai/specs/herald-backlog.md` loses its Archivist close-out note — AEG execution bookkeeping whose durable home is the provenance block on PR #123, not a product backlog.
+- `specs/ecosystem-backlog.md` gains a future-work line for the mechanical boundary check, and its #266 punch-list annotation is corrected to describe the reverted-then-fixed disposition.
+
+**Lock rationale:** `Lock: YES`. Future briefs touching the harness-view mechanism (`.claude/skills/`, `.claude/agents/`) or adding any monorepo→AEG reference must `Conforms to lock: D-072` or `Challenges lock: D-072 — <reason>`. Changing the sanctioned-crossings list, or the AEG-OWNED VIEW header convention, is a new D-entry that supersedes this one, not an in-place edit.
