@@ -2264,3 +2264,36 @@ Concretely:
 - No change to `aeg-root/roles/planner.md`, `aeg-root/contracts/planner-brief.md`, `packages/aeg-core/bin/verify-coherence.ts`, `packages/aeg-core/bin/verify-docs.ts`, or any CI workflow.
 
 **Lock rationale:** `Lock: YES`. This becomes load-bearing dispatch-safety prose, mirroring D-054's and D-073's existing voice — a hard STOP, not a preference. Weakening this into "should" or "prefer" language, or removing either side's check, requires a superseding D-entry with `Challenges lock: D-075 — <reason>`, not a quiet edit to any of the three role/contract docs it touches.
+
+---
+
+## D-076 — Planner §7 doc-update list is mechanically derived from `doc-owners`, not hand-curated from memory
+
+**Date:** 2026-07-02
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry; enforcement is doc-discipline + a new pure helper, not a new CI gate)
+**Lock:** YES
+**Authored by:** Developer (dispatched task, aeg-governance-hardening #219)
+**Ratified by:** Principal (via task dispatch)
+
+**Context:** D-058 made the Planner's "Docs to keep coherent" rationale field and the Brief Author's §7 doc-update list a bidirectional obligation (read before planning, update as DoD) — but both were populated from memory/reading, not mechanically checked against anything. The original D-058 incident was exactly this shape: the Planner forgot to name a doc in §7, the Reviewer had no mechanical hook to catch it, and a Tier-3 PR shipped without doc coverage. `aeg-governance-hardening` task 3 (#218, PR #283, merged) drove `aeg-root/doc-owners` to full bind-all coverage — a complete, machine-readable map of code-surface → doc-pointer — which for the first time makes §7 **derivable**, not just rememberable: match a task's intended surface globs against `doc-owners` bindings, and the union of matched pointers becomes §7's floor.
+
+**Decision:** `packages/aeg-core` gains a pure helper, `deriveSection7(intendedSurfaces, docOwnersContent)`, built on the existing `parseDocOwners` (no second parser). It does segment-wise glob overlap (`globsOverlap`, also exported) between each intended surface and each binding's code glob — `**` absorbs the remainder of either side, `*` matches exactly one segment, literal segments require exact equality — and returns the deduped, first-seen-order union of matched doc pointers plus the underlying per-match detail. `aeg-root/roles/planner.md`'s "Docs to keep coherent" field description and `aeg-root/contracts/planner-brief.md`'s corresponding contract row are both updated to state the derivation rule: the Planner names intended surfaces (not resolved doc pointers — the manifest evolves between plan time and dispatch), the Brief Author invokes the derivation at brief-authoring time against the live manifest, and any override of the derived floor (an added doc, or a derived pointer marked "not in scope") must carry a one-line reason in the rationale/brief. Silent overrides are a regression.
+
+**Boundary (what this is NOT):** does NOT touch the C5 doc-coverage *enforcement* gate at PR time (`evaluateC5` in `packages/aeg-core/src/doc-owners.ts`, `packages/aeg-core/bin/verify-docs.ts`) — that gate already runs regardless of this decision; this decision makes §7 reproducible *upstream*, at plan/brief time, so the plan and the gate agree by construction, it does not change what the gate enforces. Does NOT remove Planner/Brief-Author judgment — the derived list is a floor, not a ceiling; cross-cutting docs the derivation can't see are still the Planner's/Brief Author's call, so long as overrides are reasoned, not silent. Does NOT wire the helper into any CI path — it is a Planner/Brief-Author aid, invoked manually during planning/briefing, never by `verify-docs` or any automated gate. Does NOT bake a resolved doc-pointer list into an Issue body at planning time — the derivation runs at brief-authoring time against the live manifest, since `doc-owners` evolves between when an iteration is planned and when each task is dispatched.
+
+**Alternatives rejected:**
+- *Wire the derivation into `verify-docs`/C5 as a new enforced check* — rejected per this task's brief; C5 already enforces code→doc coverage at PR time independently (D-062). Duplicating that enforcement one stage earlier, at plan/brief time, would create two enforcement points for the same obligation with different data (the manifest at plan time vs. at PR time), reintroducing the exact staleness problem D-058 was built to close.
+- *Resolve and freeze the doc-pointer list into the Issue body at planning time* — rejected; the manifest is live and evolves between iteration planning and task dispatch (new bindings can be added by intervening tasks). Freezing early risks a stale, wrong §7 that looks authoritative but isn't — the derivation must run at brief-authoring time against the current manifest.
+- *Build a second, parallel doc-owners parser inside the new helper* — rejected; `parseDocOwners` already exists, is tested, and is the single source of truth for the manifest's grammar (D-062). A second parser is exactly the kind of drift-prone duplication AEG's model exists to prevent.
+- *Make overrides of the derived list require a code-level tracking mechanism* — rejected as out of scope; this is a role-doc discipline rule (state the reason in the rationale/brief), not new tooling. A code-level override-audit trail is real future hardening but not required to close the D-058 gap this decision addresses.
+
+**Consequences:**
+- `packages/aeg-core/src/derive-section7.ts` (new) — `deriveSection7` + `globsOverlap`, exported from `packages/aeg-core/src/index.ts` alongside the other `doc-owners`-related exports.
+- `packages/aeg-core/src/derive-section7.test.ts` (new) — unit coverage: exact-glob match, `**`-vs-concrete-path overlap, no-overlap (disjoint dirs), a surface matching two bindings (dedup in `pointers`, both present in `matches`), and malformed-`doc-owners`-line error delegation from `parseDocOwners`.
+- `aeg-root/roles/planner.md` — "Docs to keep coherent" field description gains the derivation rule.
+- `aeg-root/contracts/planner-brief.md` — the "Docs to keep coherent" row's "What the consumption means" cell is tightened to state the mechanical floor and the override-with-reason rule (same field, no new row — mirrors D-073's precedent of tightening an existing row).
+- `aeg-root/state-machine.md` §15 — the "What is explicitly out of scope for D-062" list no longer names Planner §7 auto-derivation as backlog; a new note points at this decision and the helper.
+- No change to `packages/aeg-core/bin/verify-docs.ts`, `evaluateC5`, `aeg-root/doc-owners` itself, or `aeg-root/roles/team-leader.md` (confirmed it does not own §7 language — only a pointer to the brief-authoring skill).
+
+**Lock rationale:** `Lock: YES`. Recommended by the Developer executing this task, mirroring D-073 (the closest precedent — also a pure-doc, dispatch/briefing-safety process rule landed in this same iteration): this becomes a load-bearing briefing-time obligation every future Planner rationale and Brief Author §7 depends on. Weakening it (making the override-with-reason rule advisory, or reverting §7 to pure hand-curation) requires a superseding D-entry with `Challenges lock: D-076 — <reason>`, not a quiet edit to `planner.md` or `contracts/planner-brief.md`.

@@ -477,9 +477,10 @@ The Reviewer no longer carries the cognitive load of remembering *which* doc liv
 
 ### What is explicitly out of scope for D-062
 
-- **Planner §7 auto-derivation** from `doc-owners` — backlog T3. Until then the Planner still hand-curates the brief's §7 doc-update list per D-058.
 - **One-time staleness audit** of existing skills/specs to seed the initial bindings — backlog T4.
 - **Decision-number reservation** (the failure mode that caused the recent D-060→D-061 renumber) — backlog T2.
+
+**Planner §7 auto-derivation from `doc-owners` (D-076).** No longer out of scope — `packages/aeg-core`'s `deriveSection7` mechanically matches a task's intended surface globs against `doc-owners` bindings at brief-authoring time; the union of matched pointers is the floor for §7. This is a Planner/Brief-Author aid only, invoked upstream of this section's C5 gate — it does not change what C5 enforces at PR time. See `roles/planner.md`'s "Docs to keep coherent" field and `contracts/planner-brief.md`.
 
 These are tracked on `aeg-root/iterations/aeg-coherence-v1.md`; this section governs only the seam itself.
 
