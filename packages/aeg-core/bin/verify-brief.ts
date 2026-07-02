@@ -18,6 +18,12 @@
  * forgotten by whoever wires the CI step — the signal is derived from the diff
  * itself, the same way `verify-docs.ts` derives tier from the diff when no
  * `Tier:` field is present.
+ *
+ * Non-task-branch bypass: mirrors `checkClosesN`'s existing rule (a task PR is
+ * `task/<iter>/<n>`; anything else — a plain `fix/…`/`chore/…` engineering
+ * branch — is silently bypassed). Without this, every ordinary non-AEG-task
+ * PR would fail for lacking the full brief grammar it was never meant to
+ * carry. Reads `BRANCH` the same way `verify-coherence.ts --closes-n` does.
  */
 
 import { execSync } from 'node:child_process'
@@ -54,7 +60,16 @@ export function deriveTouchesLock(base: string): boolean {
   return decisionLogs.some((f) => diffAddsLockYes(base, f))
 }
 
+const TASK_BRANCH_PATTERN = /^task\/[^/]+\/[^/]+$/
+
 export function main(): void {
+  const branch = process.env.BRANCH ?? ''
+
+  if (branch && !TASK_BRANCH_PATTERN.test(branch)) {
+    console.log(`[verify-brief] non-task branch (${branch}) — bypass.`)
+    process.exit(0)
+  }
+
   const prBody = process.env.PR_BODY ?? ''
 
   if (!prBody) {
