@@ -53,14 +53,14 @@ const STATUS_VISUALS: Record<DerivedStatus, StatusVisual> = {
   },
   'in-flight': {
     label: 'In-flight',
-    badgeClass: 'bg-primary/10 text-primary border-primary/40',
-    accentClass: 'border-primary/40',
+    badgeClass: 'bg-primary/15 text-primary border-primary/50',
+    accentClass: 'border-primary/50',
     description: 'Branch open, no PR yet.'
   },
   'in-review': {
     label: 'In review',
-    badgeClass: 'bg-primary/10 text-primary border-primary/40',
-    accentClass: 'border-primary/40',
+    badgeClass: 'bg-primary/25 text-primary border-primary/70',
+    accentClass: 'border-primary/70',
     description: 'PR open, awaiting review.'
   },
   'changes-requested': {
