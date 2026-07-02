@@ -234,7 +234,7 @@ There is no single "current iteration." `aeg-root/iterations/` holds every activ
 
 ## 12. The per-iteration token/cost ledger — append-only, derived total
 
-Every role that runs in an iteration reports its **token spend and cost** by appending one row to a per-iteration ledger at the end of its turn. The ledger is the cost-legibility counterpart to derived task status: the forge tells you *what happened*, the ledger tells you *what it cost*. Per-phase agent spend is something neither raw GitHub nor most "agentic" tools surface; AEG does, by giving it the same shape as everything else here — append-only, immutable rows, no stored aggregate.
+Every role that runs in an iteration reports its **token spend and cost**; the per-task **Archivist** is the sole writer of the per-iteration ledger, appending one row per role-turn at task close-out (D-071). The ledger is the cost-legibility counterpart to derived task status: the forge tells you *what happened*, the ledger tells you *what it cost*. Per-phase agent spend is something neither raw GitHub nor most "agentic" tools surface; AEG does, by giving it the same shape as everything else here — append-only, immutable rows, no stored aggregate.
 
 ### Where it lives
 
@@ -268,19 +268,19 @@ Append-only. Each row records one role's turn at a phase. Re-entry appends a **n
 
 ### The append rule (read this exactly the way you read derived status)
 
-- At the end of a role's turn, **append one row**.
+- **No role appends its own row on a task branch (D-071).** Two live-fire incidents forced this: chat/read-only roles (Reviewer, Security, Planner, Brief Author) structurally cannot append — they hold no task branch, and some never touch the repo's filesystem at all; and parallel Developer sessions on different tasks collided appending to the same shared `tokens.md` file (concretely, tasks #255 and #258 raced on the same file). Instead, every role **reports** its token spend in the artifact its turn already produces — the PR body ("Token report" section) for terminal roles, the verdict comment for chat roles doing review, the plan PR or planning report for the Planner — and the per-task **Archivist appends every row at task close-out**, one row per role-turn, including its own.
 - **Never edit** an existing row. If you discover a mistake, append a new row that supersedes it in prose (or fix the source file in a separate, declared edit — same exception that `state-machine.md` §13 carves for forward-reference fields).
-- **Re-entry appends.** A Developer dispatched for `9: develop`, asked for changes, and re-running for `9: develop` again writes a **second** `9: develop` row — never a sum, never an overwrite. The two rows both count.
+- **Re-entry appends.** A Developer dispatched for `9: develop`, asked for changes, and re-running for `9: develop` again produces a **second** `9: develop` report, which the Archivist appends as a **second** row — never a sum, never an overwrite. The two rows both count.
 - The **iteration total is `sum(rows)`**, derived at read time, never stored. This is the same philosophy as forge-derived status (don't store the aggregate; sum the immutable entries) and the append-only decision log. A stored total reintroduces the merge-collision + stale-aggregate problem.
 
 ### Two capture sources (the design constraint, not a bug)
 
-Token reporting is asymmetric — and any honest design has to encode that, because the asymmetry is a property of the surfaces, not of AEG:
+Token reporting is asymmetric — and any honest design has to encode that, because the asymmetry is a property of the surfaces, not of AEG. The asymmetry now lives in *what a role reports*, not in *who writes the ledger file* — the Archivist writes every row, but the precision of the numbers it copies still depends on the reporting role's surface:
 
-- **Terminal roles run in Claude Code (Developer; Archivist when automated).** The session knows its tokens. The role appends the row itself, with exact numbers from `/cost`. Cetana (this repo's orchestrator) can capture this at dispatch-end automatically; in manual mode the Developer fills it before opening the PR.
-- **claude.ai roles run in chat (Planner; Brief Author; Reviewer; Security).** A claude.ai conversation **cannot read its own token count** via tool or API. The role still appends a row at turn-end — phase, role, model, date — but leaves the numeric cells as `—`. The **Principal** fills them later from the claude.ai UI usage figure (or leaves them approximate; the row is still load-bearing because tokens are still in the iteration's total even when one cell is unknown).
+- **Terminal roles run in Claude Code (Developer; Archivist when automated).** The session knows its tokens. The role reports exact numbers from `/cost` in its PR body. The Archivist copies these numbers verbatim into the row it appends at close-out.
+- **claude.ai roles run in chat (Planner; Brief Author; Reviewer; Security).** A claude.ai conversation **cannot read its own token count** via tool or API. The role still reports at turn-end — phase, role, model, date, in its verdict comment or planning report — but leaves the numeric cells as `—`. The Archivist copies the report as-is; the **Principal** may later supply the real figures from the claude.ai UI usage figure, filling a previously-`—` cell (the one narrow forward-reference exception `state-machine.md` §13 allows).
 
-V1 accepts the manual seam: chat turns are the cheap ones; coding (terminal) dominates spend and is captured exactly. Auto-capture for terminal roles is the obvious next layer; auto-capture for chat roles depends on the surface giving us a self-token API, which it does not today.
+V1 accepts the manual seam: chat turns are the cheap ones; coding (terminal) dominates spend and is captured exactly. Auto-capture for terminal roles is the obvious next layer; auto-capture for chat roles depends on the surface giving us a self-token API, which it does not today. **Known gap (flagged, not solved by D-071):** iteration-wide chat-role turns with no task PR to report into — a Planner session outside a plan PR, a Brief Author session — have no established recording path; see `roles/planner.md` "Plan-PR close-out."
 
 ### Anti-regression
 
