@@ -162,7 +162,9 @@ describe('mapForgeFacts', () => {
         branchExists: false,
         prState: 'none',
         reviewDecision: 'none',
-        stateReason: null
+        stateReason: null,
+        closedAt: null,
+        mergedAt: null
       })
     })
 

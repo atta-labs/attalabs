@@ -12,6 +12,7 @@
  * posted by hand on PRs #302/#305/#306.
  */
 
+import { headerRegion } from './brief-validation'
 import { readTierFromPrBody } from './pr-tier'
 
 export type MergedPrFacts = {
@@ -39,24 +40,49 @@ export function hasProvenance(comments: string[]): boolean {
   return comments.some((c) => c.includes(PROVENANCE_HEADING))
 }
 
-/** Tolerant field reader: accepts `Field:` and `**Field:**`, stops at line end or a `·` metadata separator. */
+/** Removes fenced code blocks and inline code spans, so example text (e.g. a Test Plan's `Closes #123` fixture) is never parsed as a real reference. Regression from #311's first live run. */
+function stripCode(body: string): string {
+  return body.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '')
+}
+
+/**
+ * Tolerant field reader: accepts `Field:` and `**Field:**`, line-anchored,
+ * searched ONLY in the header region (shared with `brief-validation.ts`'s
+ * gate — gate and archivist read the same region, so a body that passes the
+ * gate can't produce a DANGLING field here). Whole-body scanning is the
+ * regression from #311's first live run, where a prose sentence *about* the
+ * `Ticket:` field in a later section was extracted as the field's value.
+ */
 function extractField(body: string, labelPattern: string): string | null {
-  const re = new RegExp(`(?:\\*\\*)?\\s*${labelPattern}\\s*(?:\\*\\*)?\\s*:\\s*(?:\\*\\*)?\\s*([^\\n·]+)`, 'i')
-  const m = body.match(re)
+  const region = headerRegion(body)
+  const re = new RegExp(`^(?:\\*\\*)?\\s*${labelPattern}\\s*(?:\\*\\*)?\\s*:\\s*(?:\\*\\*)?\\s*([^\\n·]+)`, 'im')
+  const m = region.match(re)
   if (!m) return null
   const value = (m[1] as string).trim()
   return value.length > 0 ? value : null
 }
 
-function extractIssue(body: string): { issue: number | null; extraIssues: number[] } {
-  const matches = [...body.matchAll(/Closes #(\d+)/gi)]
-  const numbers = [...new Set(matches.map((m) => Number(m[1] as string)))]
-  if (numbers.length === 0) return { issue: null, extraIssues: [] }
-  return { issue: numbers[0] as number, extraIssues: numbers.slice(1) }
+function closesRefs(text: string): number[] {
+  return [...new Set([...text.matchAll(/Closes #(\d+)/gi)].map((m) => Number(m[1] as string)))]
+}
+
+/**
+ * Primary Issue = first `Closes #N` in the header block (canonical placement),
+ * falling back to the first anywhere in the body (flagged, not lost). Extras
+ * are scanned body-wide so a real second closing reference in prose is still
+ * flagged — but always fence-stripped, so example text like a Test Plan's
+ * `Closes #123` fixture never counts (#311 regression).
+ */
+function extractIssue(body: string): { issue: number | null; extraIssues: number[]; outsideHeader: boolean } {
+  const headerNums = closesRefs(stripCode(headerRegion(body)))
+  const bodyNums = closesRefs(stripCode(body))
+  if (bodyNums.length === 0) return { issue: null, extraIssues: [], outsideHeader: false }
+  const issue = headerNums.length > 0 ? (headerNums[0] as number) : (bodyNums[0] as number)
+  return { issue, extraIssues: bodyNums.filter((n) => n !== issue), outsideHeader: headerNums.length === 0 }
 }
 
 function extractDecision(body: string, tier: 0 | 1 | 3 | null): { decision: string; danglingNote: string | null } {
-  const m = body.match(/Conforms-to(?:-lock)?\s*:\s*(D-\d+)/i)
+  const m = stripCode(headerRegion(body)).match(/Conforms-to(?:-lock)?\s*:\s*(D-\d+)/i)
   if (m) return { decision: `${m[1]} (conforms to existing decision)`, danglingNote: null }
   if (tier === 3) {
     return {
@@ -101,9 +127,14 @@ export function buildProvenanceBlock(facts: MergedPrFacts): {
   const ref = taskRefFromBranch(facts.headRefName)
   const dangling: string[] = []
 
-  const { issue, extraIssues } = extractIssue(facts.body)
+  const { issue, extraIssues, outsideHeader } = extractIssue(facts.body)
   if (issue === null) {
     dangling.push('no `Closes #N` found in PR body — Issue field is DANGLING, no Issue will be closed')
+  }
+  if (outsideHeader) {
+    dangling.push(
+      `\`Closes #${issue}\` was found outside the PR body's header block — the canonical form places it before the first \`##\` heading`
+    )
   }
   if (extraIssues.length > 0) {
     dangling.push(

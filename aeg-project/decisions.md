@@ -2332,3 +2332,39 @@ Concretely:
 - No change to `roles/iteration-archivist.md`, `contracts/archivist-iteration-archivist.md`, token-ledger files, `verify-coherence.ts`, `coherence-checks.ts`, `verify-docs.ts`, or `forge-lifecycle.yml`.
 
 **Lock rationale:** `Lock: YES`. This is now load-bearing lifecycle mechanics: every future task PR's close-out and every future plan PR's Issue-safety depend on these two gates continuing to run as specified. Weakening either (making the post-merge job advisory, removing the plan-PR guard, or reverting to relying on native auto-close) requires a superseding D-entry with `Challenges lock: D-077 — <reason>`, not a quiet edit to the workflow or the validation script.
+
+---
+
+## D-078 — Tool-layer forge gates: nothing reaches the forge unless it deterministically fulfills the contract
+
+**Date:** 2026-07-02
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry)
+**Lock:** YES
+**Authored by:** Planner/Principal (direct fix, #312 — same-day escalation after PR #311's live-fire run)
+**Ratified by:** Principal (explicit instruction: "agents cannot fail — a PR/Issue can not be opened if it does not deterministically fulfill the contract, just like commits with husky and commitlint")
+
+**Context:** CI gates are detection, not prevention: a malformed artifact reaches the forge, sits red, and costs the Principal attention. PR #311 proved the failure mode the same day its gates shipped — the Developer produced a PR body satisfying exactly the sections Brief Validation checked and dropped the two it didn't (`Project:`, `For:`); the violation merged and surfaced only in the archivist's provenance DANGLING markers. Agents obey checkers, not documents (Goodhart) — so every checker must sit at the earliest possible chokepoint: the agent's own tool call, where a refusal feeds the exact errors back into the agent's session for an in-session self-fix, with zero forge artifact and zero human time. The repo already proves this mechanism twice: skill-check enforcement (blocks Edit/Write) and the T9 merge gate (blocks red merges), both PreToolUse hooks.
+
+**Decision:** Forge writes are gated at the tool layer, identically to how husky+commitlint gate commits:
+1. **`.claude/hooks/check-forge-gates.sh`** (PreToolUse on Bash, wired in `.claude/settings.json`) DENIES raw `gh pr create`, `gh pr edit --body*`, `gh issue create`, `gh issue edit --body*`, and `gh api` POSTs to `/pulls` / `/issues` creation endpoints. Read-only and append commands (view, list, comment, labels, close, merge, checks) are untouched.
+2. **`packages/aeg-core/bin/open-pr.ts`** — the only sanctioned PR path: runs verify-brief (branch-aware), verify-docs `--pr`, and the Closes #N gate locally against the intended body, and only calls `gh` on green.
+3. **`packages/aeg-core/bin/open-issue.ts`** — the only sanctioned Issue path: a task Issue (any `iteration:*` label) must carry the full eight-field Planner's rationale (`checkIssueRationale`, new `src/issue-validation.ts`) per the planner-brief contract and D-055; non-task Issues pass through unvalidated.
+4. **Title grammar** — PR titles and task-Issue titles must match one of the repo's two live forms (`Type(scope): description` with the commitlint types + `Plan`, or `[iteration] id — description`), enforced by `checkForgeTitle` inside both wrappers (husky/commitlint parity for titles).
+5. **Decision-number freshness** — `open-pr.ts` refuses a branch whose diff adds a `## D-NNN` heading at or below the highest number already on `origin/main` in that log (the parallel-dispatch collision that struck twice on 2026-07-02: two PRs claiming D-075; a brief pre-writing a taken D-074).
+6. **Pre-push branch gate** — `.husky/pre-push` refuses pushing any `task/<iteration>/<id>` branch whose `<id>` does not literal-match a row in that iteration's topology `#` column (D-073 made mechanical at the push chokepoint; also refuses task branches naming nonexistent iterations).
+7. **API-bypass denies** — the hook also denies `gh api` PATCH edits to `/pulls/N`//`/issues/N` and curl/wget write-methods against the GitHub API's pulls/issues endpoints.
+8. **CI keeps running the identical checks** (same aeg-core code) as a backstop for non-hook writers (GitHub UI edits, other tooling). A red CI on a gated rule now signals a hook bug, not an agent failure.
+
+**Operational rule (session-start window):** hooks load at session start — agent sessions already running when a gate change merges do not carry it until restarted. After merging any change to `.claude/hooks/` or `.claude/settings.json`, restart running agent sessions before dispatching further forge writes.
+
+**Boundary (what this is NOT):** not a change to what any contract requires — only to WHERE it is enforced (earliest chokepoint); not content/quality judgment — all gates remain presence/shape-deterministic (review stays judgment); not enforcement for humans outside the agent harness (the hook only intercepts agent tool calls; CI covers the rest); not the Planner→Brief R1 completeness gate in CI (#251 remains its own task — though `checkIssueRationale` now enforces the same eight fields at Issue-creation time, which substantially pre-empts it).
+
+**Alternatives rejected:**
+- *Parse the raw `gh` command in the hook and validate inline* — shell-quoting/heredoc parsing is fragile; deny-and-redirect to a wrapper that receives the body as a file is deterministic.
+- *Rely on briefs instructing agents to run the gates locally before opening* — that is prose discipline, the exact mechanism that failed all session.
+- *CI-only enforcement (status quo)* — detection, not prevention; the Principal pays for every red.
+
+**Consequences:** `.claude/hooks/check-forge-gates.sh` (new), `.claude/settings.json` (hook wired), `packages/aeg-core/bin/open-pr.ts` + `bin/open-issue.ts` (new), `packages/aeg-core/src/issue-validation.ts` + tests (new), `checkForgeTitle` in `src/brief-validation.ts`, `.husky/pre-push` branch gate, `state-machine.md` §12 gains the tool-layer bullet. Known residual (accepted, CI-backstopped): file-indirection (`bash script.sh` wrapping a raw command) and non-`gh`/`curl` API clients cannot be caught by command-string matching — a PATH-level `gh` shim is the future hardening if the backstop ever fires. Every future agent session inherits the gates automatically via settings.json.
+
+**Lock rationale:** `Lock: YES`. This is the load-bearing "agents cannot fail" property — weakening it (removing a deny pattern, making a wrapper gate advisory, allowing raw forge writes) requires a superseding D-entry with `Challenges lock: D-078 — <reason>`, not a quiet edit to the hook or wrappers.

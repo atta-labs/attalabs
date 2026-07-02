@@ -12,6 +12,11 @@
  *
  * Modes:
  *   --pr              Diff-based. Enforces that a PR carries the docs its impact tier requires.
+ *   --push            Diff-based, C5 only. Ring-0 gate for `.husky/pre-push` (D-078): the
+ *                     branch's cumulative diff vs origin/main must satisfy doc-owners
+ *                     coverage before it can be published. PR_BODY (when the branch already
+ *                     has an open PR) supplies Doc-ack/Doc-waiver lines; C0-C4 are PR-body
+ *                     contracts and stay at the PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
  *   (full)            Repo-wide structural checks. Catches unstatused specs, malformed
  *                     decision-log entries, manifest validity, and the completeness scoreboard.
@@ -65,7 +70,7 @@ process.chdir(REPO_ROOT)
 
 const args = process.argv.slice(2)
 const isNextDecision = args.includes('--next-decision')
-const mode: 'pr' | 'full' = args.includes('--pr') ? 'pr' : 'full'
+const mode: 'pr' | 'push' | 'full' = args.includes('--pr') ? 'pr' : args.includes('--push') ? 'push' : 'full'
 
 const errors: string[] = []
 const notes: string[] = []
@@ -189,6 +194,22 @@ function runPrMode(): void {
   runC5(changed)
 }
 
+// ---- push mode (C5 only — D-078 ring-0 pre-push gate) -----------------------
+
+function runPushMode(): void {
+  const base = process.env.BASE_SHA || 'origin/main'
+  const changed = sh(`git diff --name-only ${base}...HEAD`)
+    .split('\n')
+    .map((f) => f.trim())
+    .filter(Boolean)
+  if (changed.length === 0) {
+    console.log('verify-docs: no changed files vs base; nothing to check.')
+    return
+  }
+  runC5(changed)
+  finish()
+}
+
 // ---- full mode -------------------------------------------------------------
 
 function findDecisionLogs(): string[] {
@@ -309,6 +330,7 @@ if (import.meta.main) {
   }
 
   if (mode === 'pr') runPrMode()
+  else if (mode === 'push') runPushMode()
   else runFullMode()
 
   finish()

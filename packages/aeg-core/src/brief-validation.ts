@@ -14,6 +14,35 @@
 
 export type BriefSectionResult = { status: 'pass' | 'fail'; errors: string[] }
 
+/**
+ * The PR body's header block: everything before the first h2+ heading. The
+ * canonical PR-body form (`roles/developer.md`) puts the metadata fields
+ * (Tier, For, Project, Closes, lock-ack) at the top, before `## Summary`.
+ * Anchoring field extraction here — shared with `archive-task.ts` — is what
+ * stops prose in later sections that merely *mentions* a field name (e.g. a
+ * "Decisions made" paragraph discussing the `Ticket:` field) from being
+ * parsed as the field itself. Regression from #311's first live archivist
+ * run, where exactly that happened.
+ */
+export function headerRegion(prBody: string): string {
+  const m = prBody.match(/^##\s/m)
+  return m?.index !== undefined ? prBody.slice(0, m.index) : prBody
+}
+
+/**
+ * Tolerant header-field reader: accepts `Field: value` and `**Field:** value`,
+ * line-anchored, searched only in the header region. Stops at line end or a
+ * `·` metadata separator.
+ */
+function headerField(prBody: string, labelPattern: string): string | null {
+  const region = headerRegion(prBody)
+  const re = new RegExp(`^(?:\\*\\*)?\\s*${labelPattern}\\s*(?:\\*\\*)?\\s*:\\s*(?:\\*\\*)?\\s*([^\\n·]+)`, 'im')
+  const m = region.match(re)
+  if (!m) return null
+  const value = (m[1] as string).trim()
+  return value.length > 0 ? value : null
+}
+
 /** Strips markdown emphasis markers and collapses whitespace, for tolerant phrase matching. */
 function normalize(text: string): string {
   return text.replace(/[*_]/g, '').replace(/\s+/g, ' ')
@@ -93,6 +122,44 @@ export function checkAutonomyClause(prBody: string): BriefSectionResult {
   }
 }
 
+/**
+ * Project field — required in a multi-project repo (`brief-authoring` skill,
+ * `planner-brief` contract: the field routes the Developer to the right specs
+ * and tells the Reviewer whose behavior to verify). Must appear in the header
+ * block, where the Archivist's provenance assembly also reads it — gate and
+ * archivist share `headerRegion`, so a body that passes this gate can never
+ * produce a DANGLING Project field in provenance. Added after #311 merged
+ * without it: the Developer satisfied exactly the sections this gate checked
+ * and dropped everything it didn't — whatever the gate doesn't enforce, agents
+ * will eventually omit (contract-gate parity is the fix, not discipline).
+ */
+export function checkProjectField(prBody: string): BriefSectionResult {
+  if (headerField(prBody, 'Project(?:\\(s\\))?') !== null) return { status: 'pass', errors: [] }
+  return {
+    status: 'fail',
+    errors: [
+      'brief-validation Project: no `Project:` field found in the PR body header block (before the first `##` heading). Required per the brief-developer contract — expected `Project: <name>[, <name>]` or `**Project:** …`.'
+    ]
+  }
+}
+
+/**
+ * For/model field — the brief's mandatory `For:` header (`brief-authoring`
+ * skill: "the `For:` + `Reason:` lines are mandatory"). AEG forbids
+ * commit-trailer attribution, so this line is the provenance block's only
+ * source for Model/agent — same headerRegion parity rationale as
+ * `checkProjectField`.
+ */
+export function checkForField(prBody: string): BriefSectionResult {
+  if (headerField(prBody, 'For') !== null) return { status: 'pass', errors: [] }
+  return {
+    status: 'fail',
+    errors: [
+      'brief-validation For: no `For:` field found in the PR body header block (before the first `##` heading). Required per the brief-authoring skill — expected `For: <model + environment>` or `**For:** …`.'
+    ]
+  }
+}
+
 export function checkClosesN(prBody: string): BriefSectionResult {
   if (/(?:closes|close|fixes|fix|resolves|resolve)\s*:?\s*#\d+/i.test(prBody)) {
     return { status: 'pass', errors: [] }
@@ -131,6 +198,27 @@ export function checkLockAck(prBody: string, touchesLock: boolean): BriefSection
     status: 'fail',
     errors: [
       'brief-validation lock-ack: this PR touches a `Lock: YES` decision but has no `Conforms to lock: D-###` or `Challenges lock: D-###` field.'
+    ]
+  }
+}
+
+/**
+ * Forge-title grammar (D-078) — the two title forms this repo actually uses:
+ *   1. Commit-style: `Type: description` or `Type(scope): description`, with
+ *      the commitlint type set plus `Plan` (plan PRs).
+ *   2. Task-style: `[iteration] id — description` (task Issues and task PRs).
+ * Anything else is refused: titles ride into merge commits and the forge's
+ * derived views, so they carry the same grammar obligation as commit messages
+ * (husky/commitlint parity, applied at the wrapper).
+ */
+export function checkForgeTitle(title: string): BriefSectionResult {
+  const commitStyle = /^(Build|Chore|Docs|Feat|Fix|Perf|Plan|Refactor|Revert|Style|Test)(\([a-z0-9-]+\))?: \S/
+  const taskStyle = /^\[[a-z0-9._-]+\] \S+ — \S/
+  if (commitStyle.test(title) || taskStyle.test(title)) return { status: 'pass', errors: [] }
+  return {
+    status: 'fail',
+    errors: [
+      `brief-validation title: "${title}" matches neither title grammar — expected \`Type: description\` / \`Type(scope): description\` (commitlint types + Plan) or \`[iteration] id — description\` (task form).`
     ]
   }
 }
@@ -177,6 +265,8 @@ export function checkBriefSections(
     checkWorktreeStep0(prBody),
     checkStopConditions(prBody),
     checkAutonomyClause(prBody),
+    checkProjectField(prBody),
+    checkForField(prBody),
     checkClosesN(prBody),
     checkLockAck(prBody, touchesLock)
   ]

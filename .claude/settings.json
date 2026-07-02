@@ -24,6 +24,16 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-forge-gates.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "Bash|mcp__github__merge_pull_request|mcp__a4f816ff-2586-4ff8-9301-9f034a5e7e1e__merge_pull_request",
         "hooks": [
           {
