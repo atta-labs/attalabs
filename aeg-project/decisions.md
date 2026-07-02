@@ -2234,7 +2234,7 @@ Concretely:
 
 ---
 
-## D-075 — Planner §7 doc-update list is mechanically derived from `doc-owners`, not hand-curated from memory
+## D-076 — Planner §7 doc-update list is mechanically derived from `doc-owners`, not hand-curated from memory
 
 **Date:** 2026-07-02
 **Status:** ACTIVE
@@ -2263,4 +2263,4 @@ Concretely:
 - `aeg-root/state-machine.md` §15 — the "What is explicitly out of scope for D-062" list no longer names Planner §7 auto-derivation as backlog; a new note points at this decision and the helper.
 - No change to `packages/aeg-core/bin/verify-docs.ts`, `evaluateC5`, `aeg-root/doc-owners` itself, or `aeg-root/roles/team-leader.md` (confirmed it does not own §7 language — only a pointer to the brief-authoring skill).
 
-**Lock rationale:** `Lock: YES`. Recommended by the Developer executing this task, mirroring D-073 (the closest precedent — also a pure-doc, dispatch/briefing-safety process rule landed in this same iteration): this becomes a load-bearing briefing-time obligation every future Planner rationale and Brief Author §7 depends on. Weakening it (making the override-with-reason rule advisory, or reverting §7 to pure hand-curation) requires a superseding D-entry with `Challenges lock: D-075 — <reason>`, not a quiet edit to `planner.md` or `contracts/planner-brief.md`.
+**Lock rationale:** `Lock: YES`. Recommended by the Developer executing this task, mirroring D-073 (the closest precedent — also a pure-doc, dispatch/briefing-safety process rule landed in this same iteration): this becomes a load-bearing briefing-time obligation every future Planner rationale and Brief Author §7 depends on. Weakening it (making the override-with-reason rule advisory, or reverting §7 to pure hand-curation) requires a superseding D-entry with `Challenges lock: D-076 — <reason>`, not a quiet edit to `planner.md` or `contracts/planner-brief.md`.
