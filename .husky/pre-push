@@ -36,4 +36,18 @@ while read -r _localref _localsha remoteref _remotesha; do
       fi
       ;;
   esac
+
+  # D-078: doc-owners coverage (C5) on the branch's CUMULATIVE diff vs
+  # origin/main — bound code cannot be published without its bound doc in the
+  # same branch. Catches the follow-up-push window that the PR-creation gate
+  # (open-pr.ts) cannot see. If the branch already has an open PR, its body
+  # supplies Doc-ack/Doc-waiver lines; on the first push there is no PR yet
+  # and the check is strict (the wrapper re-validates at PR-open anyway).
+  pr_body=$(gh pr view "$branch" --json body -q .body 2>/dev/null || true)
+  if ! PR_BODY="$pr_body" bun packages/aeg-core/bin/verify-docs.ts --push; then
+    echo "✖ pre-push: doc-owners coverage failed for \`$branch\` (output above)." >&2
+    echo "  Bound code changed without its bound doc — update the doc (or add a" >&2
+    echo "  Doc-waiver line to the open PR's body) and push again (D-078)." >&2
+    exit 1
+  fi
 done
