@@ -337,8 +337,9 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
   const token = await resolveGithubToken()
 
   if (!token) {
-    // T3 without date-grandfather (no forge data), but still scope-limited.
-    results.push(checkT3(allEntries, ciIterationSlug, undefined))
+    // No forge fetch was attempted at all — every iteration is unavailable.
+    const allUnavailableSlugs = new Set(files.map((f) => f.slug))
+    results.push(checkT3(allEntries, ciIterationSlug, undefined, allUnavailableSlugs))
     results.push({
       check: 'FORGE',
       status: 'fail',
@@ -350,7 +351,9 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
   }
 
   if (!repo) {
-    results.push(checkT3(allEntries, ciIterationSlug, undefined))
+    // No forge fetch was attempted at all — every iteration is unavailable.
+    const allUnavailableSlugs = new Set(files.map((f) => f.slug))
+    results.push(checkT3(allEntries, ciIterationSlug, undefined, allUnavailableSlugs))
     results.push({
       check: 'FORGE',
       status: 'fail',
@@ -385,6 +388,11 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
       snapshotsBySlug.set(f.slug, snapshot.facts)
     }
   }
+
+  // Iterations whose forge snapshot fetch failed entirely — used by T3's
+  // forge-unavailable carve-out so a #TBD row isn't silently un-grandfathered
+  // just because its iteration's forge data never arrived.
+  const forgeUnavailableSlugs = new Set(files.map((f) => f.slug).filter((slug) => !snapshotsBySlug.has(slug)))
 
   // Build enriched entries with forge facts
   const enrichedEntries: TaskEntry[] = files.flatMap((f) => {
@@ -435,7 +443,7 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
   results.push(checkT1(availableEntries))
 
   // T3 — post-forge so enrichedEntries can be used for pre-cutoff date proxy
-  results.push(checkT3(allEntries, ciIterationSlug, enrichedEntries))
+  results.push(checkT3(allEntries, ciIterationSlug, enrichedEntries, forgeUnavailableSlugs))
 
   // T2 check
   const activeSlugs = files.filter((f) => !f.archived).map((f) => f.slug)

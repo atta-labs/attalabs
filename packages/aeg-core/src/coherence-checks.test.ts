@@ -435,6 +435,30 @@ describe('T3: tbd-in-active-iteration', () => {
     expect(r.failures[0]!.grandfathered).toBe(false)
   })
 
+  it('info (never fail) — #TBD in an iteration whose forge snapshot fetch failed entirely', () => {
+    // Simulates total forge failure: every entry in the iteration has facts: undefined,
+    // and the iteration's slug is in forgeUnavailableSlugs (snapshotsBySlug never had it).
+    const tbdEntry = makeEntry('down-iter', '1', null, undefined, false)
+    const otherEntry = makeEntry('down-iter', '2', 500, undefined, false)
+    const forgeUnavailableSlugs = new Set(['down-iter'])
+    const r = checkT3([tbdEntry], null, [tbdEntry, otherEntry], forgeUnavailableSlugs)
+    expect(r.status).toBe('info')
+    expect(r.failures[0]!.grandfathered).toBe(true)
+    expect(r.failures[0]!.reason).toMatch(/forge data.*unavailable/)
+  })
+
+  it('fail — #TBD in an iteration whose forge WAS available, with no pre-cutoff activity (regression guard)', () => {
+    // Same undefined-facts shape as the case above, but the iteration is NOT in
+    // forgeUnavailableSlugs (forge was available; there just happened to be no
+    // pre-cutoff activity). Must still fail — the carve-out must not leak here.
+    const tbdEntry = makeEntry('up-iter', '1', null, undefined, false)
+    const otherEntry = makeEntry('up-iter', '2', 500, undefined, false)
+    const forgeUnavailableSlugs = new Set<string>()
+    const r = checkT3([tbdEntry], null, [tbdEntry, otherEntry], forgeUnavailableSlugs)
+    expect(r.status).toBe('fail')
+    expect(r.failures[0]!.grandfathered).toBe(false)
+  })
+
   it("BUG (preserved, not fixed): T3 grandfather proxy uses ANY task in the iteration, not the specific #TBD task's own history", () => {
     // A #TBD task in an iteration is grandfathered as long as *some other task*
     // in the same iteration has a pre-cutoff date — even if the #TBD task
