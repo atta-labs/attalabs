@@ -21,6 +21,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 5  | Model hardening: ledger-ownership, reviewer isolation, executor-protocol chain | #266  | aeg        | —                      | —              |
 | 5a | Branch-ID verification: Step 0 must literal-match topology's # column          | #293  | aeg        | —                      | —              |
 | 5b | Forbid committed report/scratch files; findings live in PR/Issue only          | #297  | aeg        | —                      | —              |
+| 5c | Issue-existence precondition: "row absent" is its own hard-stop, not folded into #TBD | #300  | aeg        | —                      | —              |
 
 ## Backlog (this iteration, not yet dispatched)
 
