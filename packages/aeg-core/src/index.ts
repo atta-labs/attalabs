@@ -28,6 +28,7 @@ export {
   checkClosesN as checkBriefClosesN,
   checkDocUpdateList,
   checkLockAck,
+  checkPlanPrNoCloses,
   checkStopConditions,
   checkSurfaceMap,
   checkTestPlan,
@@ -51,3 +52,5 @@ export {
   isGrandfathered
 } from './coherence-checks'
 export type { CheckFailure, CheckResult, IterationFile, TaskEntry } from './coherence-checks'
+export { buildProvenanceBlock, hasProvenance, taskRefFromBranch } from './archive-task'
+export type { MergedPrFacts } from './archive-task'

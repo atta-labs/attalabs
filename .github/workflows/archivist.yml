@@ -6,8 +6,11 @@
 #   validation fails and applies `needs:brief-correction`. See
 #   packages/aeg-core/src/brief-validation.ts.
 #
-# post-merge: Triggered after merge to main. Syncs PM docs, appends decision log entries,
-#   labels Issues closed by the PR. V1 will diff spec changes and flag contradictions.
+# post-merge: Triggered after merge to main. Resolves the merge commit's PR, assembles
+#   and posts the per-task Archivist provenance block, and explicitly closes the task's
+#   Issue (D-056) — the mechanical close-out obligations from `roles/archivist.md` items
+#   1 and 8. Idempotent per PR (skips if a provenance comment already exists) and skips
+#   non-task branches. See packages/aeg-core/src/archive-task.ts.
 #
 # daily-drift: Runs on schedule. Checks for spec drift (spec references code paths that
 #   no longer exist; decision log entries reference PRs that were reverted). V1 will open
@@ -58,15 +61,30 @@ jobs:
         run: gh pr edit "${{ github.event.pull_request.number }}" --add-label "needs:brief-correction"
 
   post-merge:
-    name: Post-Merge Sync (stub)
+    name: Post-Merge Archivist
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     steps:
-      - name: Stub — exits 0
-        run: |
-          echo "post-merge V0.7 stub — all sync skipped"
-          echo "V1 will sync PM docs and label closed Issues"
-          exit 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run archive-task
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MERGE_SHA: ${{ github.sha }}
+        run: bun packages/aeg-core/bin/archive-task.ts
 
   daily-drift:
     name: Daily Drift Check (stub)

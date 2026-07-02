@@ -19,18 +19,51 @@ This is your only hard precondition, and it is forge-derived: you query the PR's
 
 ---
 
+## Automation status (D-077)
+
+Items 1 (Issue close) and 8 (provenance block) below now run **automatically,
+post-merge**, via `.github/workflows/archivist.yml::post-merge`
+(`packages/aeg-core/bin/archive-task.ts`) — triggered by the merge event
+itself, not by a dispatched Archivist turn. The job resolves the merged PR
+from the merge commit, skips non-task branches, and skips PRs that already
+carry a provenance comment (idempotent, scoped **per-PR** — an Issue can
+legitimately accrue multiple merged PRs over its life, e.g. rework after a
+reopen, and each merged PR gets its own provenance block; idempotency never
+spans PRs). It assembles the block purely from frozen PR facts — the
+cardinal ASSEMBLE-never-author constraint below applies identically to the
+automated job — and explicitly closes the Issue per D-056, confirming the
+closed state before exiting. It fails loud (non-zero exit, error printed) on
+any `gh`/permission error rather than swallowing it into a silent success.
+
+Items 2–7 remain judgment work the automated job does **not** perform:
+decision-log presence, docs coherence with what actually merged, per-project
+state, `docs-index.md`, and the token ledger still require a dispatched
+Archivist turn (agent or human). Where the automated job can't assemble a
+required field for items 1/8 (e.g. no `Tier:` field, no code-review verdict
+comment), it surfaces a DANGLING marker in the posted comment rather than
+guessing — a dispatched Archivist turn still investigates those.
+
+**D-050 boundary.** This automates only the **per-task** close-out mechanics
+above. The **Iteration** Archivist (`roles/iteration-archivist.md`, D-050) —
+the retrospective, archival, state-sync, and ratification sweep at the end of
+a full iteration — is untouched: it remains Principal-dispatched,
+forge-agnostic, and explicitly "no GitHub Actions required." Nothing here
+extends automation to iteration close-out.
+
+---
+
 ## What you do at close-out
 
 Work through this checklist for the merged task. Confirm each against reality — do not assume.
 
-1. **Issue closed — mandatory explicit step (D-056).** Close the task's Issue explicitly via `gh issue close <N>`. **Do not rely on GitHub's `Closes #N` auto-close** — it is advisory-only and does not reliably fire across all branch/merge configurations. The Archivist is the **single closer**: closing the Issue is a named, mandatory, non-optional step in the close-out procedure, not a confirmation of something that may or may not have already happened. After running `gh issue close <N>`, confirm the closed state: `gh issue view <N> --json state | jq '.state'` — must return `"CLOSED"`. If it does not, re-run and confirm before proceeding. Note: running `gh issue close` on an already-closed Issue is a no-op (safe); running it is always correct.
+1. **Issue closed — mandatory explicit step (D-056). Automated post-merge (D-077) — see "Automation status" above.** Close the task's Issue explicitly via `gh issue close <N>`. **Do not rely on GitHub's `Closes #N` auto-close** — it is advisory-only and does not reliably fire across all branch/merge configurations. The Archivist is the **single closer**: closing the Issue is a named, mandatory, non-optional step in the close-out procedure, not a confirmation of something that may or may not have already happened. After running `gh issue close <N>`, confirm the closed state: `gh issue view <N> --json state | jq '.state'` — must return `"CLOSED"`. If it does not, re-run and confirm before proceeding. Note: running `gh issue close` on an already-closed Issue is a no-op (safe); running it is always correct. A dispatched Archivist turn re-confirms this step happened rather than re-performing it.
 2. **Decision logged (Tier 3 only).** If the task was Tier 3, confirm a decision entry exists in the right log (`aeg-project/decisions.md` or the per-project decisions file) with status, type, rationale, alternatives, consequences. If it's missing, that's a close-out blocker — flag it; a Tier 3 change without a logged decision is not done.
 3. **Changelog appended.** `changelog.md` (global, or per-project if the change is project-scoped) records what shipped.
 4. **Docs updated.** The tier-required docs the brief listed actually moved. (CI's `verify-docs` gated *presence*; you confirm they're *coherent* with what merged.)
 5. **Per-project status updated — for every project the task listed.** Update each listed project's `state.md` if state changed (phase advance, resolved known issue, updated pending-manual-ops). A multi-project task updates *every* listed project's `aeg-project/`. This is the one place you write to per-project state — and note: this is project *status documentation*, not task status (task status stays derived from the forge). (`now.md` no longer exists — D-057.)
 6. **`docs-index.md`** updated if files were added, removed, or renamed.
 7. **Token ledger rows recorded (D-071).** No role appends its own row on a task branch — you are the sole writer of `aeg-root/iterations/<name>.tokens.md` for this task. Collect every role's token report for the task: the Developer's "Token report" section in the PR body, any re-push reports, and the Reviewer's / Security's one-line `Tokens: …` report in their verdict comment(s). For each report found, append one row (`Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date`) — one row per role-turn, including re-entry rows (a second Developer turn, a re-review), and including your own turn (`Phase: <task-id>: archive`, `Role: Archivist`). Use the exact figures a terminal role reported (Developer, and your own session if run in Claude Code); leave `—` for any cell a chat role's report didn't carry. If a role's report is missing entirely (e.g. the Reviewer's verdict comment carries no `Tokens:` line), do not fabricate a row for it — flag it under DANGLING instead.
-8. **Provenance block assembled** (see below) and posted to the merged PR record.
+8. **Provenance block assembled — automated post-merge (D-077), see "Automation status" above** (see below for the field shapes) and posted to the merged PR record. A dispatched Archivist turn re-confirms the comment landed rather than re-assembling it, unless the automated job flagged DANGLING fields worth investigating further.
 
 ## The provenance block (D-030)
 

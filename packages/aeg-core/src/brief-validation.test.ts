@@ -5,6 +5,7 @@ import {
   checkClosesN,
   checkDocUpdateList,
   checkLockAck,
+  checkPlanPrNoCloses,
   checkStopConditions,
   checkSurfaceMap,
   checkTestPlan,
@@ -195,5 +196,35 @@ describe('checkBriefSections', () => {
     const withLockAck = `${WELL_FORMED}\n\n**Conforms to lock:** D-069 — implements the charter.`
     const { errors } = checkBriefSections(withLockAck, true, readTierFromPrBody)
     expect(errors).toEqual([])
+  })
+})
+
+describe('checkPlanPrNoCloses', () => {
+  it('fails a plan/* branch whose body carries Closes #N', () => {
+    const result = checkPlanPrNoCloses('plan/aeg-consolidation', 'This plan adds tasks. Closes #123')
+    expect(result.status).toBe('fail')
+    expect(result.errors[0]).toMatch(/plan-PR guard/)
+  })
+
+  it('passes a plan/* branch whose body has no Closes reference', () => {
+    const result = checkPlanPrNoCloses('plan/aeg-consolidation', 'This plan adds tasks 1-5 to the topology.')
+    expect(result.status).toBe('pass')
+    expect(result.errors).toEqual([])
+  })
+
+  it('passes a task/* branch with Closes #N — unaffected by the guard', () => {
+    const result = checkPlanPrNoCloses('task/aeg-governance-hardening/5d', 'Ships the thing. Closes #309')
+    expect(result.status).toBe('pass')
+    expect(result.errors).toEqual([])
+  })
+
+  it('passes a non-plan, non-task branch regardless of body', () => {
+    const result = checkPlanPrNoCloses('fix/something', 'Fixes a bug. Closes #1')
+    expect(result.status).toBe('pass')
+  })
+
+  it('is case-insensitive on the Closes keyword', () => {
+    const result = checkPlanPrNoCloses('plan/x', 'this CLOSES #42 is bad')
+    expect(result.status).toBe('fail')
   })
 })
