@@ -2297,3 +2297,38 @@ Concretely:
 - No change to `packages/aeg-core/bin/verify-docs.ts`, `evaluateC5`, `aeg-root/doc-owners` itself, or `aeg-root/roles/team-leader.md` (confirmed it does not own §7 language — only a pointer to the brief-authoring skill).
 
 **Lock rationale:** `Lock: YES`. Recommended by the Developer executing this task, mirroring D-073 (the closest precedent — also a pure-doc, dispatch/briefing-safety process rule landed in this same iteration): this becomes a load-bearing briefing-time obligation every future Planner rationale and Brief Author §7 depends on. Weakening it (making the override-with-reason rule advisory, or reverting §7 to pure hand-curation) requires a superseding D-entry with `Challenges lock: D-076 — <reason>`, not a quiet edit to `planner.md` or `contracts/planner-brief.md`.
+
+---
+
+## D-077 — Post-merge Archivist automation + plan-PR Closes guard
+
+**Date:** 2026-07-02
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry; enforcement is a GitHub Actions job + an existing CI gate, not new infrastructure)
+**Lock:** YES
+**Authored by:** Developer (dispatched task, aeg-governance-hardening #309)
+**Ratified by:** Principal (via task dispatch)
+
+**Context:** This session's retrospective identified two root causes for most of its process overhead. First, the per-task Archivist specified in full by `roles/archivist.md` never runs — nothing triggers it, so it has been skipped on essentially every merged task PR in this repo's history; the debt is invisible at merge time and only surfaces weeks later when D-056 brief-authoring preconditions and the coherence oracle's A2 check fire against it, blocking unrelated work. In one dispatch session alone, 3 of 7 dispatched briefing agents hard-STOPped on exactly this, and 10 historical PRs needed manual provenance backfill. Second, plan PRs have auto-closed task Issues: three confirmed instances (#294→#293, #298→#297, #288→#287) where a `plan/*` PR's `Closes #N` closed the task Issue when the *plan* merged — before the task was ever executed; #287's task was silently marked done having never run. `roles/planner.md`'s own Plan-PR close-out section already forbids this in prose ("a plan PR creates Issues; it does not resolve one"), but nothing mechanical enforced it — the same prose-without-a-gate pattern D-073/D-074/D-075 each closed for other rules.
+
+**Decision:** Two deliverables. (1) `.github/workflows/archivist.yml::post-merge` runs `packages/aeg-core/bin/archive-task.ts` (built on the pure `buildProvenanceBlock`/`taskRefFromBranch`/`hasProvenance` in `packages/aeg-core/src/archive-task.ts`) on every push to `main`: it resolves the merge commit's PR via `gh api repos/{owner}/{repo}/commits/{sha}/pulls`, skips non-task branches and PRs that already carry a provenance comment (idempotent **per PR**, not per Issue — an Issue can legitimately accrue multiple merged PRs over its life), assembles the provenance block purely from frozen PR facts (a field whose source fact is absent becomes a DANGLING marker, never inferred), posts it as a PR comment, and explicitly closes the task's Issue per D-056, confirming the closed state before exiting. It fails loud (non-zero exit, error printed) on any `gh`/permission error. (2) `packages/aeg-core/src/brief-validation.ts` gains `checkPlanPrNoCloses(branch, prBody)`, wired into `bin/verify-brief.ts` ahead of the existing non-task-branch bypass: a `plan/*` branch whose PR body matches `/\bcloses\s+#\d+/i` fails CI naming the violated rule; plan branches without `Closes` continue to bypass as today.
+
+**Boundary (what this is NOT):** NOT the Iteration Archivist (`roles/iteration-archivist.md`, D-050) — that role remains untouched, Principal-dispatched, forge-agnostic, and explicitly not a GitHub Action; this decision automates only the per-task close-out mechanics (items 1 and 8 of `roles/archivist.md`'s close-out checklist). NOT ledger or changelog automation — items 2–7 of close-out (decision-log presence, docs coherence, per-project state, `docs-index.md`, token ledger rows) remain dispatched-Archivist judgment work; the automated job surfaces DANGLING markers, it does not perform judgment. NOT a change to Phase 10 review gating — code-review and security passes are unaffected; the provenance block simply records their absence as DANGLING when they didn't happen. NOT retroactive re-archival of the many historical PRs that were manually backfilled before this task — this decision governs future merges only.
+
+**Alternatives rejected:**
+- *Keep close-out manual, rely on discipline* — this is the status quo that produced weeks of invisible debt and repeated hard-STOPs in dispatched sessions; prose discipline without a triggering mechanism has already been shown (D-073/D-074/D-075) not to hold.
+- *Dispatch an LLM-agent Archivist in CI on every merge* — rejected as disproportionate: the provenance block is a pure projection of frozen facts (PR body, metadata, comments), not a judgment call: an agent invocation adds cost and nondeterminism to a task a handful of `gh`/regex operations do deterministically and for free.
+- *Rely on GitHub's native `Closes #N` auto-close alone, with no explicit Archivist step* — already ruled unreliable by D-056 ("advisory-only and does not reliably fire across all branch/merge configurations"); this decision's job explicitly closes and confirms the closed state rather than trusting the auto-close.
+
+**Consequences:**
+- `packages/aeg-core/src/archive-task.ts` (new) — `taskRefFromBranch`, `hasProvenance`, `buildProvenanceBlock`, exported from `packages/aeg-core/src/index.ts`.
+- `packages/aeg-core/src/archive-task.test.ts` (new) — unit coverage of the full field-extraction/DANGLING matrix.
+- `packages/aeg-core/bin/archive-task.ts` (new) — the I/O shim invoked by the workflow.
+- `packages/aeg-core/src/brief-validation.ts` — new `checkPlanPrNoCloses`, exported from `index.ts`.
+- `packages/aeg-core/bin/verify-brief.ts` — wires the guard ahead of the non-task-branch bypass.
+- `.github/workflows/archivist.yml` — the `post-merge` job replaces its stub, gains `issues: write` and `pull-requests: write` permissions.
+- `aeg-root/roles/archivist.md` — items 1/8 of close-out annotated as automated; D-050 boundary stated explicitly.
+- `aeg-root/state-machine.md` §12 — per-task archival (items 1/8) moves from Trusted to Enforced; the Brief Validation bullet documents the plan-PR Closes guard.
+- No change to `roles/iteration-archivist.md`, `contracts/archivist-iteration-archivist.md`, token-ledger files, `verify-coherence.ts`, `coherence-checks.ts`, `verify-docs.ts`, or `forge-lifecycle.yml`.
+
+**Lock rationale:** `Lock: YES`. This is now load-bearing lifecycle mechanics: every future task PR's close-out and every future plan PR's Issue-safety depend on these two gates continuing to run as specified. Weakening either (making the post-merge job advisory, removing the plan-PR guard, or reverting to relying on native auto-close) requires a superseding D-entry with `Challenges lock: D-077 — <reason>`, not a quiet edit to the workflow or the validation script.
