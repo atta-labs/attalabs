@@ -63,6 +63,14 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
  * open-issue cases (assigned or not — both are `todo` inside an iteration per
  * D-059), then the honest terminal cases for a closed-without-merge Issue.
  *
+ * Reopened-after-merge exception: a reopened Issue can carry a stale
+ * `prState: 'merged'` fact from a closing PR that predates the reopen —
+ * `issueState` and `prState` are independently sourced, and GitHub does not
+ * retract a PR's merge history just because the Issue reopened. Without this
+ * check, such a task would permanently display `merged` even though the work
+ * it names was never actually done. Checked before the `prState === 'merged'`
+ * branch below so a currently-open Issue always wins over a historical merge.
+ *
  * Honest terminal derivation (D-069): a closed Issue with no merged PR must
  * never resolve to `todo` (which would imply not-started — a lie). It reads
  * GitHub's native `stateReason`: closed `NOT_PLANNED` → `dropped` (legitimately
@@ -76,6 +84,9 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
 function deriveStatus(facts: ForgeFacts | undefined): DerivedStatus {
   if (!facts) return 'todo'
   if (facts.blockedLabel) return 'blocked'
+  if (facts.issueState === 'open' && facts.prState === 'merged') {
+    return facts.branchExists ? 'in-flight' : 'todo'
+  }
   if (facts.prState === 'merged') return 'merged'
   if (facts.prState === 'open') {
     return facts.reviewDecision === 'changes_requested' ? 'changes-requested' : 'in-review'

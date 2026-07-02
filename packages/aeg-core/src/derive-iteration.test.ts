@@ -92,6 +92,22 @@ describe('deriveIteration: §3 status table (each status)', () => {
     expect(d.tasks[0]?.status).toBe('merged')
   })
 
+  it('todo: issue reopened after its original closing PR merged (stale prState override)', () => {
+    const d = deriveIteration(
+      oneTask,
+      new Map([['1', facts({ issueState: 'open', branchExists: false, prState: 'merged' })]])
+    )
+    expect(d.tasks[0]?.status).toBe('todo')
+  })
+
+  it('in-flight: issue reopened after merge, and a new task branch already exists', () => {
+    const d = deriveIteration(
+      oneTask,
+      new Map([['1', facts({ issueState: 'open', branchExists: true, prState: 'merged' })]])
+    )
+    expect(d.tasks[0]?.status).toBe('in-flight')
+  })
+
   it('dropped: issue closed NOT_PLANNED, no merged PR (D-069)', () => {
     const d = deriveIteration(
       oneTask,
