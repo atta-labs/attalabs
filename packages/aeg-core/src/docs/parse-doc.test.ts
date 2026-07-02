@@ -48,6 +48,22 @@ describe('parseDocFrontmatter', () => {
     expect(out.frontmatter.description).toBe('A skill')
     expect(out.firstH1).toBe('AEG skill')
   })
+
+  it('extracts a boolean surfaced frontmatter override', () => {
+    const rawTrue = '---\nsurfaced: true\n---\n\n# Doc\n'
+    expect(parseDocFrontmatter(rawTrue).frontmatter.surfaced).toBe(true)
+
+    const rawFalse = '---\nsurfaced: false\n---\n\n# Doc\n'
+    expect(parseDocFrontmatter(rawFalse).frontmatter.surfaced).toBe(false)
+  })
+
+  it('leaves surfaced undefined when absent or non-boolean', () => {
+    const raw = '---\ntitle: Doc\n---\n\n# Doc\n'
+    expect(parseDocFrontmatter(raw).frontmatter.surfaced).toBeUndefined()
+
+    const rawBad = '---\nsurfaced: "yes"\n---\n\n# Doc\n'
+    expect(parseDocFrontmatter(rawBad).frontmatter.surfaced).toBeUndefined()
+  })
 })
 
 describe('deriveTitle', () => {
