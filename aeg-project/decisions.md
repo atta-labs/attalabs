@@ -2231,3 +2231,36 @@ Concretely:
 - `apps/aeg/web/studio/src/lib/aeg-fs/read-root.ts`'s loader hardening (e.g. requiring a `Lifecycle:` header before treating a `.md` file as an iteration) is flagged as a recommended follow-up for `aeg-studio-cleanup` — not built here; this decision is a role-doc/governance fix, not a Studio code change.
 
 **Lock rationale:** `Lock: YES`. This closes a structural gap that has now produced two confirmed incidents (a broken Studio card, and a stale brief masquerading as a durable artifact). Weakening this into an advisory "prefer" rather than a hard forbidden, or removing the Planner's hard gate, requires a superseding D-entry with `Challenges lock: D-074 — <reason>`, not a quiet edit to any of the five role/skill docs it touches.
+
+---
+
+## D-075 — Issue-existence precondition must cover "row absent" as its own hard-stop, distinct from `#TBD`/blank
+
+**Date:** 2026-07-02
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry)
+**Lock:** YES
+**Authored by:** Developer (dispatched task, aeg-governance-hardening #300)
+**Ratified by:** Principal (via task dispatch)
+
+**Context:** The Issue-existence precondition (D-054) currently reads, in both `aeg-root/roles/developer.md` (entry gate item 3) and `aeg-root/skills/brief-authoring/SKILL.md` (Dig-stage precondition check (a)): *"confirm the Issue column carries a real Issue number — not `#TBD`, not blank."* That wording implicitly assumes the task's row already exists in the topology table and only inspects its Issue-column value — it never names the more basic failure that **the row is not in the table at all**, because the plan PR that adds it has not merged to `origin/main` yet. This is not hypothetical: it is the exact condition that existed for this very task, #300, for part of the session that authored it — task 5c's own row was absent from `aeg-root/iterations/aeg-governance-hardening.md` on `origin/main` until plan PR #301 merged at `2026-07-02T10:52:46Z`. "The row isn't there" is a materially different, more urgent failure than "the row is there but its Issue column is blank" — there are no dependency edges, no `Project(s)` value, nothing at all to check yet — and today's wording did not say so explicitly. A worktree or local checkout cut before the plan PR merged will show the row absent even after the plan PR has since merged elsewhere; symmetrically, a stale checkout can show a row that has since moved or changed. Both new checks below must therefore require reading the topology file from a **freshly-fetched `origin/main`**, never a stale local checkout or memory.
+
+**Decision:** Give the Issue-existence precondition an explicit, named, STOP-language check for row-absence, prior to and distinct from the existing `#TBD`/blank check, on both sides of the seam:
+1. **`aeg-root/roles/developer.md`.** New entry-gate **item 7**, "Row-existence precondition (hard STOP before step 0, D-075)," appended after existing item 6 — instructing `git fetch origin main` then confirming the task's row exists in the topology file at all, before inspecting its Issue column. Items 1–6 are not renumbered; item 7 is append-only, preserving the numeric cross-references to entry-gate item 3 held by `aeg-root/roles/planner.md` and `aeg-root/contracts/planner-brief.md` (both out of this task's surface). The post-list summary sentence is updated to include item 7 in the topology-reading group.
+2. **`aeg-root/skills/brief-authoring/SKILL.md`.** The Dig-stage precondition-check list is relettered: a new **(a) Row-existence (D-054, D-075)** is inserted before the existing Issue-existence check, and the existing three items shift `(a)→(b)`, `(b)→(c)`, `(c)→(d)`. The header changes from "three checks" to "four checks." The Contract-conformance checklist's "Issue-existence precondition (D-054)" bullet is updated to also name the row-existence check, cite D-075, and reference Developer entry-gate items 3 and 7. This relettering is safe because the `(a)/(b)/(c)` list has exactly one cross-reference anywhere in the repo — `aeg-root/contracts/brief-developer.md`'s "Dig stage, item (b)" sentence (about D-056 prior-task coherence) — and that reference is inside this task's own surface, updated in the same change (§3 below).
+3. **`aeg-root/contracts/brief-developer.md`.** The "Dig stage, item (b)" cross-reference is updated to "item (c)," reflecting the relettering in (2). A new Consumer-obligations bullet, "Row-existence precondition (hard STOP before step 0, D-075)," is added immediately before the existing Issue-existence bullet, referencing `roles/developer.md` entry gate item 7.
+
+**Boundary (what this is NOT):** not a change to the branch-ID check (D-073), which is unaffected; not a change to the brief-validation gate (task 2, #252); not a change to `aeg-root/roles/planner.md`'s own Step 0 discipline — this is a downstream, defense-in-depth check that fires even when the upstream "merge the plan PR before dispatching" process is violated, not a substitute for it; not new tooling or a CI gate — this is a doc-discipline fix, mirroring D-073's own boundary.
+
+**Alternatives rejected:**
+- *Fold this into the existing `#TBD`/blank wording as a parenthetical aside* — rejected; row-absence and blank-Issue-on-an-existing-row are distinct failure modes with different remediation (dispatch is racing a merge vs. the Planner owes an Issue), and folding them together is exactly how the first became invisible in the existing prose.
+- *Rely on "the Planner should just always merge the plan PR before dispatching"* — necessary but not sufficient; the value of a downstream check is that it fires even when the upstream process is violated, the same reasoning that put independent D-073 checks on both the Brief Author and Developer sides rather than trusting one side to always get it right.
+- *Renumber `developer.md`'s entry gate to insert this check before item 3* — rejected; would break the numeric cross-references held by `aeg-root/roles/planner.md` and `aeg-root/contracts/planner-brief.md`, both out of this task's surface. Append-only as item 7 mirrors D-073's own item-6 append.
+
+**Consequences:**
+- `aeg-root/roles/developer.md` — new entry-gate item 7; post-list summary sentence updated.
+- `aeg-root/skills/brief-authoring/SKILL.md` — new Dig-stage precondition-check (a); existing (a)/(b)/(c) relettered to (b)/(c)/(d); header updated to "four checks"; Contract-conformance checklist's Issue-existence bullet updated.
+- `aeg-root/contracts/brief-developer.md` — "Dig stage, item (b)" cross-reference updated to "item (c)"; new Consumer-obligations bullet added.
+- No change to `aeg-root/roles/planner.md`, `aeg-root/contracts/planner-brief.md`, `packages/aeg-core/bin/verify-coherence.ts`, `packages/aeg-core/bin/verify-docs.ts`, or any CI workflow.
+
+**Lock rationale:** `Lock: YES`. This becomes load-bearing dispatch-safety prose, mirroring D-054's and D-073's existing voice — a hard STOP, not a preference. Weakening this into "should" or "prefer" language, or removing either side's check, requires a superseding D-entry with `Challenges lock: D-075 — <reason>`, not a quiet edit to any of the three role/contract docs it touches.
