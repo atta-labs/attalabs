@@ -372,6 +372,50 @@ describe('T2: orphan-task', () => {
     expect(r.status).toBe('fail')
     expect(r.failures[0]!.issue).toBe(101)
   })
+
+  it('backward compat — ciIterationSlug unset reports gaps across every iteration', () => {
+    const openIssues = new Map([
+      ['iter-1', [101]],
+      ['iter-2', [355]]
+    ])
+    const topology = new Map([
+      ['iter-1', new Set([101])],
+      ['iter-2', new Set<number>()]
+    ])
+    const r = checkT2(openIssues, topology)
+    expect(r.status).toBe('fail')
+    expect(r.failures.map((f) => f.iteration)).toEqual(['iter-2'])
+  })
+
+  it('pass — ciIterationSlug scopes check: gap in OTHER iteration is not reported', () => {
+    // Reproduces the #358/#359 incident: a PR against aeg-governance-hardening
+    // must not fail T2 because herald-hardening-v1 has an unrelated gap.
+    const openIssues = new Map([
+      ['aeg-governance-hardening', [19]],
+      ['herald-hardening-v1', [355, 356]]
+    ])
+    const topology = new Map([
+      ['aeg-governance-hardening', new Set([19])],
+      ['herald-hardening-v1', new Set<number>()] // genuine gap — not this PR's concern
+    ])
+    passesWithNoFailures(checkT2(openIssues, topology, 'aeg-governance-hardening'))
+  })
+
+  it('fail — ciIterationSlug scopes check: gap in SAME iteration still fails', () => {
+    const openIssues = new Map([
+      ['aeg-governance-hardening', [999]],
+      ['herald-hardening-v1', [355]]
+    ])
+    const topology = new Map([
+      ['aeg-governance-hardening', new Set<number>()], // genuine gap in the scoped iteration
+      ['herald-hardening-v1', new Set<number>()] // also a gap, but out of scope
+    ])
+    const r = checkT2(openIssues, topology, 'aeg-governance-hardening')
+    expect(r.status).toBe('fail')
+    expect(r.failures).toHaveLength(1)
+    expect(r.failures[0]!.iteration).toBe('aeg-governance-hardening')
+    expect(r.failures[0]!.issue).toBe(999)
+  })
 })
 
 // ---------- R1: missing-rationale-field (D-078 planner→brief gate) -----------

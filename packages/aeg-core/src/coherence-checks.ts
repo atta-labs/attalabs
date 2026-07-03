@@ -209,13 +209,22 @@ export function checkT1(entries: TaskEntry[]): CheckResult {
  * `openIssuesBySlug`: Map from active iteration slug → list of open issue
  * numbers fetched from the forge with that `iteration:` label.
  * `topologyIssuesBySlug`: Map from slug → Set of issue numbers in the topology.
+ *
+ * `ciIterationSlug`: when set (parsed from `BRANCH`/`GITHUB_HEAD_REF` env),
+ *   only the iteration matching that slug is checked — prevents a coherence
+ *   gap in one iteration's topology (e.g. a Planner plan-PR mid-flight) from
+ *   blocking CI on an unrelated PR against a different iteration. Mirrors
+ *   `checkT3`'s `ciIterationSlug` parameter exactly.
  */
 export function checkT2(
   openIssuesBySlug: Map<string, number[]>,
-  topologyIssuesBySlug: Map<string, Set<number>>
+  topologyIssuesBySlug: Map<string, Set<number>>,
+  ciIterationSlug?: string | null
 ): CheckResult {
   const failures: CheckFailure[] = []
   for (const [slug, openNums] of openIssuesBySlug) {
+    if (ciIterationSlug && slug !== ciIterationSlug) continue
+
     const topologySet = topologyIssuesBySlug.get(slug) ?? new Set<number>()
     for (const num of openNums) {
       if (!topologySet.has(num)) {
