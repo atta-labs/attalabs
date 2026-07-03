@@ -86,6 +86,8 @@ Keep it light — a sentence per seam. Terse remains the house style; this adds 
 
 Every task you author a brief for arrives with a **Planner's rationale** (in the Issue body and the iteration file — see `roles/planner.md`). You are the **consumer side** of the **`aeg-root/contracts/planner-brief.md`** contract — the single source of truth for what crosses the Planner→Brief Author seam. That contract maps every field the Planner emits to the exact brief section that consumes it. **Read the contract; consume every right-column mapping — drop no field.**
 
+The rationale arrives in the **D-078 grammar** (bold-inline `**<Field>** — …` or `### <Field>` heading) — the same format `verify-coherence`'s R1 check and the `bin/open-issue.ts` creation gate parse. You don't need to parse it yourself; by the time a task reaches you it has already passed the gate. See the contract's "Rationale grammar (D-078)" section if a field is ambiguous.
+
 The contract's field-by-field mapping (authoritative version lives in the contract; reproduced here for convenience — if they ever differ, the contract wins):
 
 | Planner emits (rationale) | You consume it in |

@@ -6,6 +6,7 @@
  * topology are injected by the caller (`bin/verify-coherence.ts`, the I/O shim).
  */
 
+import { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 import type { ForgeFacts, Iteration, Task } from './types'
 
 // ---------- grandfather cutoff -----------------------------------------------
@@ -26,6 +27,25 @@ export function isGrandfathered(isoDate: string | null | undefined): boolean {
   if (!isoDate) return false
   return isoDate.slice(0, 10) < COHERENCE_ENFORCED_FROM
 }
+
+/**
+ * R1 grandfather — explicit, data-declared Issue numbers whose body predates
+ * the D-078 rationale grammar (or predates R1 enforcement) and is therefore
+ * exempted from blocking. Unlike A1/A2/A3/T3's date-based cutoff, an Issue
+ * body carries no reliable "authored under which grammar" timestamp, so this
+ * is an explicit number set rather than a date proxy — populated once, at
+ * `aeg-governance-hardening` task 1 implementation time, with exactly the
+ * active-iteration task Issues that failed `checkIssueRationale` against the
+ * live forge (see the task's PR body for the list + counts).
+ *
+ * New/edited task Issues are already gated at ring 0 (`bin/open-issue.ts`,
+ * D-078) — this list is visible debt for the pre-gate stock, not a standing
+ * exemption mechanism. Do not add to it going forward; fix the Issue body
+ * instead (D-055's rationale contract).
+ */
+export const R1_GRANDFATHERED_ISSUES: ReadonlySet<number> = new Set([
+  183, 184, 185, 186, 187, 188, 240, 241, 244, 279, 280, 281, 282
+])
 
 // ---------- types -------------------------------------------------------------
 
@@ -333,6 +353,56 @@ function resolveDepEntry(
   if (issueMatch?.[1]) return issueToEntry.get(Number(issueMatch[1]))
   // Task-ID style — resolve within same iteration first, then globally
   return taskToEntry.get(`${iterationSlug}/${dep}`) ?? taskToEntry.get(dep)
+}
+
+/** An open Issue's forge-fetched body + labels, as returned by the batched label query. */
+export type ForgeIssue = { number: number; body: string; labels: string[] }
+
+/**
+ * R1: Every active-iteration task Issue's body carries the full eight-field
+ * Planner's rationale (D-078, `aeg-root/contracts/planner-brief.md`).
+ * Fail class: `missing-rationale-field`
+ *
+ * Presence-only — delegates entirely to `checkIssueRationale` (the same
+ * grammar/parser `bin/open-issue.ts` enforces at ring 0 on new/edited
+ * Issues). This is the ring-1/2 half: continuous re-checking of the stock.
+ * One grammar, one parser (D-078) — this function does not re-implement it.
+ *
+ * `issuesBySlug`: open Issues per active iteration slug, from the same
+ * batched label-scoped query T2 uses (`fetchOpenIssuesByLabel`), extended to
+ * carry `body` + `labels`.
+ * `grandfatheredIssues`: `R1_GRANDFATHERED_ISSUES` — pre-D-078 stock,
+ * reported as `info`, never `fail`.
+ */
+export function checkR1(
+  issuesBySlug: Map<string, ForgeIssue[]>,
+  grandfatheredIssues: ReadonlySet<number>
+): CheckResult {
+  const failures: CheckFailure[] = []
+  for (const [slug, issues] of issuesBySlug) {
+    for (const issue of issues) {
+      if (!isTaskIssueLabelSet(issue.labels)) continue
+      const { status, errors } = checkIssueRationale(issue.body)
+      if (status !== 'fail') continue
+      failures.push({
+        issue: issue.number,
+        iteration: slug,
+        reason: `Issue #${issue.number} fails the D-078 rationale gate: ${errors.join(' | ')}`,
+        grandfathered: grandfatheredIssues.has(issue.number)
+      })
+    }
+  }
+  const activeFails = failures.filter((f) => !f.grandfathered)
+  const status = activeFails.length > 0 ? 'fail' : failures.length > 0 ? 'info' : 'pass'
+  return {
+    check: 'R1',
+    status,
+    failures,
+    note:
+      status === 'info'
+        ? `${failures.length} grandfathered task Issue(s) predate the D-078 rationale grammar`
+        : undefined
+  }
 }
 
 /**
