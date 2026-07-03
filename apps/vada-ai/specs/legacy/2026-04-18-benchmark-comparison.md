@@ -1,5 +1,7 @@
 # Benchmark Comparison Implementation Plan
 
+Status: retired
+
 > **For agentic workers:** This plan is executed inline in the same session. Each phase is one commit.
 >
 > **Commit policy:** Ship after each phase is green (typecheck + working tree), per user's explicit "do all today" directive.

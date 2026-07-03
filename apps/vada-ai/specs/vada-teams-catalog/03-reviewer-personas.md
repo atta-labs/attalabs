@@ -1,5 +1,7 @@
 # 03 — Reviewer Personas
 
+Status: draft
+
 Each reviewer is an orthogonal cognitive compression function. Same brief, different lens. The personas below are derived from the four rounds of reviewer deliberation; each system prompt incorporates the failure modes reviewers identified in themselves.
 
 **Common principles across all personas:**

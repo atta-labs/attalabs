@@ -1,5 +1,7 @@
 # Phase 6 Prompt Validation — Brokered Mode
 
+Status: retired
+
 **Date:** 2026-04-25  
 **Model:** `claude-haiku-4-5-20251001` (fast, cheap; production will use Sonnet)  
 **Reviewers tested:** Strategist, Critic, Devil's Advocate  

@@ -1,5 +1,7 @@
 # Atta — Market Research
 
+Status: draft
+
 **Date:** May 3, 2026
 **Status:** Snapshot of the competitive landscape across four rounds of research and review. Use this when returning to think about competition, when sequencing features, or when pitching what makes Atta different.
 

@@ -1,5 +1,7 @@
 # Atta Naming Decision
 
+Status: ratified
+
 **Date:** April 26, 2026 (original) — May 3, 2026 (lab vs product distinction added) — May 12, 2026 (two-ecosystem clarification, AI-suffix decision, naming rule demoted)
 **Status:** Locked. AttaLabs domain owned. Atta product domain TBD (atta.ai preferred, not owned).
 

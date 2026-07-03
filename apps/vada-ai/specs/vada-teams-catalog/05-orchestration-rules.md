@@ -1,5 +1,7 @@
 # 05 — Orchestration Rules
 
+Status: draft
+
 This document defines when the Caller Claude should run more deliberation rounds, when it should escalate to the Principal (user), and when it should stop. These rules are derived from reviewer introspection in Round 3.
 
 ---

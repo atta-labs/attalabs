@@ -1,5 +1,7 @@
 # Vāda · The Science of Deliberation
 
+Status: draft
+
 **Theoretical Foundations, Implementation Discoveries, and Current Evidence**
 Version 3 — April 2026
 

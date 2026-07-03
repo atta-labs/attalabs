@@ -1,5 +1,7 @@
 # Attā Fine-Tuning Research — Forward Planning
 
+Status: draft
+
 Written: April 20, 2026
 Context: Captured mid-migration for later reference. Not a decision document — a starting point for when Attā v2 model strategy becomes active work.
 

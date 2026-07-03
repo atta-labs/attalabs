@@ -1,5 +1,7 @@
 # Mastra Usage Audit — Phase 2 Task 1
 
+Status: retired
+
 **Date:** April 22, 2026
 **Purpose:** Inventory what Mastra features the current Vāda code uses to inform the LangGraph adapter implementation in Phase 2 Task 2.
 

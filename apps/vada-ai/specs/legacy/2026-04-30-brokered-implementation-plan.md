@@ -2,6 +2,8 @@
 
 # 06 — Implementation Plan (V1 Status + Remaining Work)
 
+Status: retired
+
 ## What this document is
 
 A status report on Brokered V1 implementation plus the remaining work required before Brokered can ship as a polished product.

@@ -1,5 +1,7 @@
 # Round Strip UI Implementation Plan
 
+Status: retired
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
 > **Commit policy (project rule):** Never `git commit` without explicit per-message approval from the user. Each task ends at "ready to commit"; show the diff and wait. See root `CLAUDE.md`.

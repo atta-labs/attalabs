@@ -1,5 +1,7 @@
 # Vāda Product Thesis
 
+Status: retired
+
 Written: April 21, 2026
 Status: Supersedes all previous V2 strategy documents.
 

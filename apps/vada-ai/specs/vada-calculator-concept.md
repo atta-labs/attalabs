@@ -1,5 +1,7 @@
 # Vāda YAML Cost Calculator — Concept Document
 
+Status: draft
+
 **Status:** Concept / future work
 **Date captured:** April 25, 2026
 **Context:** Emerged from realization that Vāda is a YAML-driven deliberation runtime, not a closed app

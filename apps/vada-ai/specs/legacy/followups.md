@@ -1,5 +1,7 @@
 # Followups
 
+Status: draft
+
 Deferred items. Add when decided-but-not-yet-done. Remove when done.
 
 ---

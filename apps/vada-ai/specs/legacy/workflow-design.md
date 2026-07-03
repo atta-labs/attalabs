@@ -1,5 +1,7 @@
 # Vāda Workflow Design — Implementation Notes
 
+Status: retired
+
 **Historical record of the Step 5 Mastra migration design phase.**
 Design document written before implementation; implementation shipped April 2026.
 *This doc is preserved as an engineering record, not a living spec. For current architecture, see `vada-v1-tech-spec.md`.*

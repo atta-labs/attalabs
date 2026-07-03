@@ -1,5 +1,7 @@
 # V2 Step 2 Analysis — A0 vs B0 Orchestration-Alone on Haiku 4.5
 
+Status: draft
+
 Generated: 2026-04-21
 
 ---

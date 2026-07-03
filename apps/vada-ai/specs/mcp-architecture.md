@@ -1,5 +1,7 @@
 # Vāda MCP Architecture — Hosted Target
 
+Status: ratified
+
 **Status:** Shipped (May 4, 2026 — PRs #9 + #10). Phase 5 (stdio session URL fix) and Phase 6 (rate limiting, audit log retention, hardening) remain as future work.
 **Owner:** Vāda
 **Last updated:** May 8, 2026

@@ -1,5 +1,7 @@
 # Cetana — Experiment Log
 
+Status: draft
+
 **Purpose:** Full journey of how Cetana came to be and what was learned. Future Claude reads this to understand WHY the architecture is what it is, without re-litigating decisions.
 
 ---

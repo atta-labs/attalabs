@@ -1,5 +1,7 @@
 # `karpathy/llm-council` and `Lykhoyda/ask-llm` — Technical Deep Dive
 
+Status: draft
+
 **Author:** Claude (Atta ecosystem — Critic role)
 **Date:** April 28, 2026
 **Audience:** Reviewers (LLMs and humans) pressure-testing the Vāda Reviewers spec. This document supports the spec by giving full technical context on the two prior-art projects we are learning from.

@@ -1,5 +1,7 @@
 # Vāda
 
+Status: draft
+
 **vada.ai**
 *From the Pali: the act of deliberating toward a conclusion.*
 
