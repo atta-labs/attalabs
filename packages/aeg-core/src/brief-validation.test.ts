@@ -8,6 +8,7 @@ import {
   checkForgeTitle,
   checkLockAck,
   checkPlanPrNoCloses,
+  checkPremiseCoverage,
   checkProjectField,
   checkStopConditions,
   checkSurfaceMap,
@@ -312,6 +313,35 @@ describe('checkPlanPrNoCloses', () => {
 
   it('is case-insensitive on the Closes keyword', () => {
     const result = checkPlanPrNoCloses('plan/x', 'this CLOSES #42 is bad')
+    expect(result.status).toBe('fail')
+  })
+})
+
+describe('checkPremiseCoverage', () => {
+  it('passes trivially when surfaceFiles is empty (no code surface to pin)', () => {
+    const result = checkPremiseCoverage('no premise section at all', [])
+    expect(result.status).toBe('pass')
+  })
+
+  it('passes when a Premise assertion path matches a surface file', () => {
+    const body = `**Premise:**
+- src/dispatch-gate.ts contains: export function checkDispatchReadiness
+`
+    const result = checkPremiseCoverage(body, ['src/dispatch-gate.ts', 'src/dispatch-gate.test.ts'])
+    expect(result.status).toBe('pass')
+  })
+
+  it('fails when there is a code surface but no matching Premise assertion', () => {
+    const result = checkPremiseCoverage('no premise section at all', ['src/dispatch-gate.ts'])
+    expect(result.status).toBe('fail')
+    expect(result.errors[0]).toContain('Premise')
+  })
+
+  it('fails when a Premise assertion exists but pins an unrelated path', () => {
+    const body = `**Premise:**
+- src/unrelated.ts contains: something
+`
+    const result = checkPremiseCoverage(body, ['src/dispatch-gate.ts'])
     expect(result.status).toBe('fail')
   })
 })

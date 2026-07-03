@@ -42,6 +42,8 @@ Every field the Planner emits in the rationale (left) has exactly one named home
 
 **Reading the table:** left is the producer obligation (Planner role doc enforces it), right is the consumer obligation (brief-authoring skill enforces it). The two role docs must not contradict this table; if either needs to change what it emits or consumes, it changes *here*, and both sides update together.
 
+**Premise pinning (D-081) is deliberately NOT a field in this table.** `verify-dispatch`/`verify-task`'s `Premise:` block (`skills/brief-authoring/SKILL.md` § Premise pins) is file-content-level, perishable detail — current signatures, current constants — squarely inside the Brief Author's half of the division of labor this contract already describes, not a durable conclusion the Planner should seed as a rationale field. It is governed entirely by the Brief Author → Developer seam (`contracts/brief-developer.md`), not this one.
+
 ---
 
 ## Rationale grammar (D-078)

@@ -19,8 +19,14 @@
  *                     (no PR yet), the hook instead passes this branch's own commit-message
  *                     trailers as PR_BODY (D-080) — evaluateC5 parses the identical
  *                     `Doc-ack:`/`Doc-waiver:` grammar regardless of source, so a developer
- *                     can self-serve a waiver before any PR exists. C0-C4 are PR-body
- *                     contracts and stay at the PR gates.
+ *                     can self-serve a waiver before any PR exists. For a pre-authoring dry
+ *                     run via `verify-dispatch --simulate`, before any commit exists at all,
+ *                     PR_BODY_FILE — a local path to a drafted-but-not-yet-committed PR body —
+ *                     is an equally valid source for the same lines (D-081). `override:docs`/
+ *                     `OVERRIDE_DOCS=1` is honored here identically to `--pr` mode (previously
+ *                     dead code in push mode — the documented escape hatch didn't actually
+ *                     apply on first push, D-081). C0-C4 are PR-body contracts and stay at the
+ *                     PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
  *   (full)            Repo-wide structural checks. Catches unstatused specs, malformed
  *                     decision-log entries, manifest validity, the completeness scoreboard,
@@ -69,7 +75,6 @@ import {
   type NoDocRule,
   overrideActive,
   parseDocOwners,
-  parseNoDocRules,
   readTierFromPrBody
 } from '../src/index'
 
@@ -93,9 +98,27 @@ function sh(cmd: string): string {
   }
 }
 
+/**
+ * PR_BODY takes precedence when set (the PR-mode caller always sets it).
+ * PR_BODY_FILE is the push-mode fallback for a branch with no PR yet — a
+ * local path to the drafted PR body, so Doc-ack/Doc-waiver lines are
+ * available deterministically before the PR exists (D-324/task 11).
+ */
+function resolvePrBody(): string {
+  if (process.env.PR_BODY) return process.env.PR_BODY
+  if (process.env.PR_BODY_FILE) {
+    try {
+      return readFileSync(process.env.PR_BODY_FILE, 'utf8')
+    } catch {
+      return ''
+    }
+  }
+  return ''
+}
+
 function runC5(changed: string[]): void {
   const content = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
-  const result = evaluateC5(changed, content, process.env.PR_BODY || '', existsSync)
+  const result = evaluateC5(changed, content, resolvePrBody(), existsSync)
   for (const e of result.errors) errors.push(e)
   for (const n of result.notes) notes.push(n)
 }
@@ -205,6 +228,17 @@ function runPrMode(): void {
 // ---- push mode (C5 only — D-078 ring-0 pre-push gate) -----------------------
 
 function runPushMode(): void {
+  if (
+    overrideActive({
+      overrideDocsEnv: process.env.OVERRIDE_DOCS,
+      prLabels: process.env.PR_LABELS,
+      prBody: resolvePrBody()
+    })
+  ) {
+    console.log('verify-docs: override:docs active — gate skipped (logged for audit).')
+    return
+  }
+
   const base = process.env.BASE_SHA || 'origin/main'
   const changed = sh(`git diff --name-only ${base}...HEAD`)
     .split('\n')
