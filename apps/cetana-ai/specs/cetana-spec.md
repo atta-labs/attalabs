@@ -11,12 +11,12 @@
 
 Cetana is the Atta ecosystem's local Mac orchestration coordinator. Its name comes from Pāli (cetanā — volition, intention), following the ecosystem's naming convention: Pāli name = built by Atta.
 
-Cetana is internal tooling. It lets Claude Desktop (the Team Leader, Strategist mode) dispatch Claude Code agents (Developers/Executors) into the Atta monorepo, watch them work, and unblock them when they hit decision points — all over MCP. It is the dispatch and escalation layer of the v3 operational model: Principal → Team Leader → Developer → Archivist.
+Cetana is internal tooling. It lets Claude Desktop (the Team Leader, Strategist mode) dispatch Claude Code agents (Developers/Executors) into the Atta monorepo, watch them work, and unblock them when they hit decision points — all over MCP. It is the dispatch and escalation layer of the v3 operational model: Principal → Team Leader → Developer → Reviewer → Archivist.
 
 Cetana's role in the v3 model:
 - **Team Leader** uses Cetana's Strategist tools (`cetana.dispatch_task`, `cetana.list_active_tasks`, `cetana.reply_to_blocked_task`) to orchestrate Developers
 - **Developer** uses Cetana's Executor tool (`cetana_request_input`) to escalate blocked decisions
-- **Archivist** (future, V0.7+) is a GitHub Action triggered by PR events — not a Cetana component
+- **Archivist** is not a Cetana component. The per-task Archivist (`aeg-root/roles/archivist.md`) now runs automated post-merge via `.github/workflows/archivist.yml` (D-077); the Iteration Archivist (`aeg-root/roles/iteration-archivist.md`) remains manual, Principal-dispatched (D-050/D-052)
 
 For the full authority model and escalation routing, see `aeg-root/state-machine.md`.
 
