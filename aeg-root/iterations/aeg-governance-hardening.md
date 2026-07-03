@@ -38,10 +38,12 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 18 | Pre-push guard: refuse pushes to a branch whose PR is merged/closed           | #335  | aeg        | —                      | 11             |
 | 19 | End the plan-PR race: CI-scope T2 + single-plan-PR guard                      | #336  | aeg        | —                      | 11, 18         |
 | 20 | Coherence oracle A2 false positive: provenance exists but undetected (#287)   | #340  | aeg        | —                      | —              |
+| 22 | turbo-ignore builds unconditionally on a branch's first deploy (no --fallback) | #353  | vada, herald, atta, attalabs | — | —      |
 
 ## Backlog (this iteration, not yet dispatched)
 
 - **Fix punch-list — promoted.** The staleness audit in task 3 (#218) emitted 5 real findings (#278–282), filed by PR #283. All 5 are now promoted to tasks 6–10 above (topology rows added 2026-07-02, each carries its own Planner's rationale posted as an Issue comment). No further unpromoted punch-list items remain from task 3 at this time; task 5a's `5a` letter-suffix convention avoided colliding with this now-realized 6–10 range as designed.
+- **Task 22 (#353) — stacked on top of the still-open task 21 plan PR (#352).** This branch was cut from `origin/main` before #352 merged, so task 21's topology row is not present in this file's view — task 22's row is appended directly after task 20's. **Merge order note for the Principal:** merging #352 first, then this PR, will produce a trivial one-line table conflict (both insert a row at the same point) — resolve by keeping both rows (21 then 22, in that order). If this PR is reviewed first, no conflict occurs and #352 absorbs the reorder instead.
 
 ## Cross-iteration dependencies
 
