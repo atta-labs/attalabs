@@ -2402,3 +2402,29 @@ Concretely:
 - No change to `apps/aeg/web/studio` itself, `verify-coherence.ts`, or any existing C0–C5 check.
 
 **Lock rationale:** `Lock: YES`. This is the single source of truth two iterations depend on (this one's C6, and `aeg-studio-cleanup`'s Studio curation) — weakening it (reverting to hardcoded exclusion logic, or letting a second competing manifest exist) requires a superseding D-entry with `Challenges lock: D-079 — <reason>`, not a quiet edit to the check or to Studio's loader.
+
+---
+
+## D-080 — First-push C5 doc-coverage failures self-serve via commit-message Doc-waiver trailers
+
+**Date:** 2026-07-03
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry)
+**Lock:** NO
+**Authored by:** Principal's planning assistant (direct fix, live incident during `aeg-studio-cleanup` task 5 / `aeg-governance-hardening`)
+**Ratified by:** Principal (explicit instruction: fix the process so this stops costing Principal attention on every occurrence)
+
+**Context:** `roles/developer.md` §127 already authorizes a Developer to self-serve a `Doc-waiver: <pointer> — <reason>` line when a bound doc genuinely does not need updating — no Principal involvement, Reviewer judges it later. But `.husky/pre-push`'s C5 gate (D-078) fetches `PR_BODY` via `gh pr view`, which returns nothing before a PR exists — so on every branch's first push, the developer-authorized self-service path was structurally unreachable, and the only remaining path was `override:docs`, which is Principal-only (`state-machine.md` §14/§400). Task 5 of `aeg-studio-cleanup` (#331) hit exactly this: a one-line dead-link removal under `apps/aeg/**` (bound to `apps/aeg/specs/aeg-app-architecture.md`), doc confirmed not stale, correctly stopped rather than self-granting a Principal-only override — but the resulting escalation consumed a disproportionate amount of Principal time re-deriving that the situation was routine and expected, not novel. `verify-docs.ts`'s own header comment already acknowledged the gap ("on the first push there is no PR yet and the check is strict") without closing it.
+
+**Decision:** `evaluateC5` (`packages/aeg-core/src/doc-owners.ts`) already parses `Doc-ack:`/`Doc-waiver:` lines out of whatever text blob it is given via regex — it has no dependency on that text being an actual PR body. `.husky/pre-push` now exploits this: when `gh pr view` returns an empty body (no PR yet), it instead passes `git log origin/main..HEAD --format=%B` (this branch's own commit messages) as `PR_BODY` to `verify-docs.ts --push`. A developer who judges a bound doc does not need updating adds `Doc-waiver: <pointer> — <reason>` as a trailer to their last commit and pushes again — no Principal step required. The same line must still be carried into the PR body at open time, where `open-pr.ts`'s `--pr` check re-validates it independently (Reviewer-visible, audit-logged, per §127). The pre-push failure message was rewritten to state this path explicitly instead of leaving the agent to infer it or escalate by default. `roles/developer.md`'s "When to escalate" table gained an explicit row naming this as NOT a Principal-only case.
+
+**Boundary (what this is NOT):** does NOT touch `override:docs`/`OVERRIDE_DOCS=1`, which remains Principal-only for cases where a waiver itself is in question, not merely unreachable due to sequencing. Does NOT weaken D-078's "nothing reaches the forge unless it deterministically fulfills the contract" — no deny pattern is removed and no gate becomes advisory; the same Doc-waiver mechanism D-078/§127 already sanctions is simply made reachable at the chokepoint where it was previously blocked by an accident of git/GitHub sequencing (a PR cannot exist before its branch is pushed). Does NOT change C0–C4 (PR-body-only contracts) or any check other than C5's push-mode text source.
+
+**Alternatives rejected:**
+- *Relax C5 to a no-op on first push, rely on `open-pr.ts --pr` to catch it at PR-open* — reopens the exact "follow-up-push window" gap D-078's push gate exists to close (a branch could sit pushed-but-no-PR indefinitely with undocumented bound-code changes visible to anyone who fetches it).
+- *Require Principal to grant `override:docs` for every first-push doc-coverage failure* — the status quo this decision replaces; correct in intent (a human backstop exists) but disproportionate for the common case where the developer's own judgment (already trusted for in-PR waivers) is sufficient.
+- *Have the developer open a draft PR first, purely to get a `PR_BODY` for the hook to read, then push* — extra forge write cycles and a race (the hook still runs before the draft PR's body is guaranteed queryable); commit trailers are already local and travel with the push atomically.
+
+**Consequences:** `.husky/pre-push` (C5 branch: falls back to commit-message text as `PR_BODY` when no PR exists; failure message rewritten). `packages/aeg-core/bin/verify-docs.ts` (header comment updated). `aeg-root/roles/developer.md` (`## When to escalate` table gains one row). No change to `evaluateC5`/`doc-owners.ts` itself — the existing regex-based parsing already supported this; only the caller's text source changed.
+
+**Lock rationale:** `Lock: NO`. This is a process-ergonomics fix within an existing, locked mechanism (D-078) — not a new invariant other work depends on. If a future incident shows commit-trailer waivers are being abused (waivers added without genuine justification, e.g. to route around Reviewer scrutiny since the Reviewer only sees them once copied to the PR body), tightening this does not require a superseding entry — a direct fix suffices, same as this one was.

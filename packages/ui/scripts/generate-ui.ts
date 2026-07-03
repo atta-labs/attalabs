@@ -4,10 +4,25 @@ import { cmsClient, cmsConfig, getAttaConfig, getHeraldConfig, getVadaConfig, ge
 
 const _cache = new Map<string, UILibrary>()
 
-// When called from next.config.ts, process.cwd() is the app directory (apps/{app}/web/).
-// packages/ui/generated/ is always three levels up from the app's web dir.
+// When called from next.config.ts or an app's `generate` script, process.cwd() is the
+// app's own directory. Apps nest at different depths under the monorepo root
+// (apps/{app}/web/ for most, apps/aeg/web/studio/ for AEG Studio), so a fixed
+// "N levels up" offset is wrong for at least one caller. Walk up from cwd to the
+// monorepo root (marked by turbo.json) instead, then descend into packages/ui/generated.
+function findRepoRoot(startDir: string): string {
+  let dir = startDir
+  while (true) {
+    if (fs.existsSync(path.join(dir, 'turbo.json'))) return dir
+    const parent = path.dirname(dir)
+    if (parent === dir) {
+      throw new Error(`generate-ui: could not locate monorepo root (no turbo.json) walking up from ${startDir}`)
+    }
+    dir = parent
+  }
+}
+
 function getGeneratedDir(): string {
-  return path.resolve(process.cwd(), '../../../packages/ui/generated')
+  return path.join(findRepoRoot(process.cwd()), 'packages/ui/generated')
 }
 
 type UILibrary = 'basic' | 'animate' | 'retro' | 'brutal'

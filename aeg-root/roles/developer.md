@@ -276,6 +276,7 @@ After every commit: `git log --oneline -3` to confirm the new commit is a direct
 | Test fails after three genuine diagnosis attempts | STOP — report what you tried and what the failure is |
 | Type 1 decision discovered during execution | Escalate, severity: product |
 | A dispatch gate isn't satisfied | STOP — the task serializes behind its dependency/conflict |
+| `pre-push` fails C5 doc-owners coverage on a branch's **first** push (no PR open yet) | NOT a Principal-only escalation. If the bound doc genuinely does not need updating, add `Doc-waiver: <pointer> — <reason>` as a trailer in your last commit message and push again (D-080) — the same self-service `roles/developer.md` §127 already grants you in a PR body, just made reachable before a PR exists. Carry the identical line into the PR body when you open it. Only escalate to the Principal if you are not sure the waiver is justified, or if the bound doc actually is stale (then update it, don't waiver it). |
 
 ---
 
