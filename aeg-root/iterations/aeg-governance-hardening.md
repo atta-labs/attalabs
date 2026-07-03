@@ -37,6 +37,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 17 | Forge wrappers ship empty bodies on stream body-file input                    | #333  | aeg        | —                      | —              |
 | 18 | Pre-push guard: refuse pushes to a branch whose PR is merged/closed           | #335  | aeg        | —                      | 11             |
 | 19 | End the plan-PR race: CI-scope T2 + single-plan-PR guard                      | #336  | aeg        | —                      | 11, 18         |
+| 20 | Coherence oracle A2 false positive: provenance exists but undetected (#287)   | #340  | aeg        | —                      | —              |
 
 ## Backlog (this iteration, not yet dispatched)
 

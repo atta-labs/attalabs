@@ -124,6 +124,12 @@ The shared docs renderer in `@atta/aeg-core` renders the `aeg-root/` model docs 
 
 The docs nav is **manifest-driven, not hardcoded** (D-079). Studio's loader (`apps/aeg/web/studio/src/lib/docs/load-aeg-docs.ts`) filters every parsed doc through `isSurfacedDoc` from `@atta/aeg-core/docs` — the same "surfaced doc" manifest (`packages/aeg-core/src/docs/surfaced-manifest.ts`) that backs the `verify-docs` C6 coherence gate. There is **no "Iterations" nav section**: active iteration topology files, `.tokens.md` ledgers, `projects.md`, and `discovery/` artifacts are this repo's execution state, not model documentation, and are excluded by the manifest. `iterations/README.md` — the generic explainer of the iterations mechanism itself — is the one exception the manifest carves out; it renders under **Overview** via `section: Overview` frontmatter, not a dedicated section.
 
+### 3.5 Studio's UI-generate wiring (fresh-worktree bootstrap, aeg-governance-hardening #330)
+
+Studio consumes `@atta/ui`'s "atta" library the same way `apps/atta-ai/web` does, but nests one level deeper (`apps/aeg/web/studio` vs. `apps/{app}/web`). It needs the identical generate pipeline: a `generate` script (`bun scripts/generate-ui.ts` → `generateUIIndex('atta')`) that `turbo.json`'s `dev` task now depends on, plus a `next.config.ts` self-heal call and `webpack`/`turbopack` aliasing of `@atta/ui/components` to the generated file — otherwise a fresh worktree's `packages/ui/generated/` is absent and Studio 500s with "Module not found: Can't resolve '@atta/ui/components'" the moment a route imports it (e.g. `/projects`).
+
+Studio's extra nesting also exposed a latent bug in the shared `getGeneratedDir()` in `packages/ui/scripts/generate-ui.ts`: it resolved the output directory as a fixed "3 levels up from `process.cwd()`", which is correct for `apps/{app}/web` callers but silently wrote Studio's generated files to `apps/packages/ui/generated/` instead of the real `packages/ui/generated/` at the repo root — an easy-to-miss failure since typecheck and the webpack/turbopack alias configs point at the *expected* location regardless of where generation actually wrote. The fix walks up from `process.cwd()` to the directory containing `turbo.json` (the monorepo root) instead of hardcoding a depth, so it is correct for every app regardless of nesting depth.
+
 ---
 
 ## 4. `aeg.sh` — the adoption scaffolder
