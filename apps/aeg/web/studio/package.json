@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack --port 3005",
     "build": "next build",
     "start": "next start",
+    "generate": "bun scripts/generate-ui.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "smoke:forge": "bun run scripts/smoke-forge.ts"

@@ -24,7 +24,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const links = [
     { label: 'Projects', href: '/projects' },
     { label: 'Iterations', href: '/iterations' },
-    { label: 'Dependency graph', href: '/graph' },
     { label: 'Docs', href: '/docs' }
   ]
 

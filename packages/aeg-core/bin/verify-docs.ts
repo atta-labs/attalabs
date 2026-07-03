@@ -15,15 +15,18 @@
  *   --push            Diff-based, C5 only. Ring-0 gate for `.husky/pre-push` (D-078): the
  *                     branch's cumulative diff vs origin/main must satisfy doc-owners
  *                     coverage before it can be published. PR_BODY (when the branch already
- *                     has an open PR) supplies Doc-ack/Doc-waiver lines; when no PR exists yet
- *                     (first push), PR_BODY_FILE — a local path to the drafted PR body — is an
- *                     equally valid source, so Doc-waiver/Doc-ack lines can be supplied
- *                     deterministically before a PR ever exists (aeg-governance-hardening task
- *                     11, #324 — closes the live-fire gap where a first push had no PR body to
- *                     read from at all). `override:docs`/`OVERRIDE_DOCS=1` is honored here
- *                     identically to `--pr` mode (previously dead code in push mode — the
- *                     documented escape hatch didn't actually apply on first push). C0-C4 are
- *                     PR-body contracts and stay at the PR gates.
+ *                     has an open PR) supplies Doc-ack/Doc-waiver lines; on a first push
+ *                     (no PR yet), the hook instead passes this branch's own commit-message
+ *                     trailers as PR_BODY (D-080) — evaluateC5 parses the identical
+ *                     `Doc-ack:`/`Doc-waiver:` grammar regardless of source, so a developer
+ *                     can self-serve a waiver before any PR exists. For a pre-authoring dry
+ *                     run via `verify-dispatch --simulate`, before any commit exists at all,
+ *                     PR_BODY_FILE — a local path to a drafted-but-not-yet-committed PR body —
+ *                     is an equally valid source for the same lines (D-081). `override:docs`/
+ *                     `OVERRIDE_DOCS=1` is honored here identically to `--pr` mode (previously
+ *                     dead code in push mode — the documented escape hatch didn't actually
+ *                     apply on first push, D-081). C0-C4 are PR-body contracts and stay at the
+ *                     PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
  *   (full)            Repo-wide structural checks. Catches unstatused specs, malformed
  *                     decision-log entries, manifest validity, the completeness scoreboard,
