@@ -65,7 +65,6 @@ import {
   type NoDocRule,
   overrideActive,
   parseDocOwners,
-  parseNoDocRules,
   readTierFromPrBody
 } from '../src/index'
 
