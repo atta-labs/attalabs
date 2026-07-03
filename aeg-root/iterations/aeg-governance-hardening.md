@@ -35,6 +35,8 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 15 | Clear the 44 pre-existing F1/F2 full-mode findings                            | #329  | aeg        | —                      | 11             |
 | 16 | Fresh-worktree bootstrap: wire UI generate into dev task                      | #330  | aeg        | —                      | —              |
 | 17 | Forge wrappers ship empty bodies on stream body-file input                    | #333  | aeg        | —                      | —              |
+| 18 | Pre-push guard: refuse pushes to a branch whose PR is merged/closed           | #335  | aeg        | —                      | 11             |
+| 19 | End the plan-PR race: CI-scope T2 + single-plan-PR guard                      | #336  | aeg        | —                      | 11, 18         |
 
 ## Backlog (this iteration, not yet dispatched)
 
