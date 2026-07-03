@@ -67,6 +67,13 @@ export { checkPremises, parsePremiseBlock } from './premise-check'
 export type { PremiseAssertion, PremiseCheckResult } from './premise-check'
 export { classifyLeftover } from './leftover-detection'
 export type { LeftoverInput, LeftoverResult, LeftoverVerdict } from './leftover-detection'
+export { checkDeadBranchPush } from './dead-branch-push-guard'
+export type {
+  DeadBranchPushInput,
+  DeadBranchPushResult,
+  DeadBranchPushVerdict,
+  PrStateFact
+} from './dead-branch-push-guard'
 export { captureBaseline, compareToBaseline } from './baseline-capture'
 export type { BaselineComparison, BaselineEntry, BaselineToolComparison } from './baseline-capture'
 export { checkDispatchReadiness } from './dispatch-gate'
