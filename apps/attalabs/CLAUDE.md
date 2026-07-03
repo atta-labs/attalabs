@@ -1,6 +1,6 @@
-# Atta AI — Product Overview
+# AttaLabs — Hub Overview
 
-Atta AI is the organization's own page and hub for the Atta AI ecosystem.
+This app is the AttaLabs hub, serving `attalabs.dev` for the AttaLabs dev/lab ecosystem. It is distinct from Atta, the deep-thinking AI consumer product composed of Vāda + Vitakka + Sati — Atta's own consumer surface (target domain `atta.ai`) has not yet been deployed. See the root CLAUDE.md products table for the full picture.
 
 **Domain:** atta.ai
 
@@ -17,10 +17,17 @@ Atta AI is the organization's own page and hub for the Atta AI ecosystem.
 
 ## Specifications
 
-No specs yet. When created, they live in `specs/` at this level (`apps/atta-ai/specs/`).
+Specs live in `specs/` at this level (`apps/atta-ai/specs/`):
+
+- `atta-build-strategy.md`
+- `atta-ecosystem-vision.md`
+- `atta-finetuning-research.md`
+- `atta-market-research.md`
+- `atta-naming-decision.md`
+- `cetana-reality-check.md`
 
 ---
 
 ## Related
 
-- [Root CLAUDE.md](../../CLAUDE.md) — Atta AI monorepo routing index
+- [Root CLAUDE.md](../../CLAUDE.md) — AttaLabs monorepo routing index
