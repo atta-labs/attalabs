@@ -37,6 +37,27 @@ while read -r _localref _localsha remoteref _remotesha; do
       ;;
   esac
 
+  # D-069 (task 18/#335): refuse a push to a `task/*/*` branch whose most
+  # recent PR is already MERGED or CLOSED. Closes a live-fire incident class
+  # (2026-07-03): six topology rows landed on plan PR #325's branch AFTER
+  # that PR merged, silently accepted by git/GitHub with no push-time
+  # signal, orphaning invisibly until AEG Studio and the coherence oracle
+  # disagreed about the iteration's state. One batched `gh pr list` call;
+  # fails OPEN (allows the push) when the forge is unreachable — a network
+  # flake must never block all pushes (deliberate choice, see
+  # aeg-root/enforcement.md). Placed before the C5 check below: no point
+  # spending a doc-coverage pass on a branch whose target PR is already dead.
+  case "$branch" in
+    task/*/*)
+      if ! push_target_output=$(bun packages/aeg-core/bin/check-push-target.ts "$branch" 2>&1); then
+        echo "✖ pre-push: \`$branch\` refused — its most recent PR is already resolved." >&2
+        echo "  $push_target_output" >&2
+        echo "  This branch's work is done; push a new task branch instead." >&2
+        exit 1
+      fi
+      ;;
+  esac
+
   # D-078/D-080: doc-owners coverage (C5) on the branch's CUMULATIVE diff vs
   # origin/main — bound code cannot be published without its bound doc in the
   # same branch. Catches the follow-up-push window that the PR-creation gate
