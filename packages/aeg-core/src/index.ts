@@ -69,3 +69,14 @@ export { classifyLeftover } from './leftover-detection'
 export type { LeftoverInput, LeftoverResult, LeftoverVerdict } from './leftover-detection'
 export { captureBaseline, compareToBaseline } from './baseline-capture'
 export type { BaselineComparison, BaselineEntry, BaselineToolComparison } from './baseline-capture'
+export { checkDispatchReadiness } from './dispatch-gate'
+export type {
+  DispatchConflictsWithFact,
+  DispatchDependsOnFact,
+  DispatchEdgeFact,
+  DispatchGateInput,
+  DispatchIssueFact,
+  DispatchPriorIterationFact,
+  DispatchPriorTaskFact,
+  DispatchResult
+} from './dispatch-gate'
