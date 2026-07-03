@@ -302,15 +302,21 @@ bun run studio:deploy:vitakka   # Deploy Vitakka studio
 bun run studio:deploy:all       # Deploy all four (sequential, prompts y/n)
 ```
 
-### What You Configure in Each Studio
+### What You Configure Where
 
-| Document Type | Purpose |
-|--------------|---------|
-| `{product}Config` | Per-product UI config singleton — sets active theme + library + color scheme |
-| `uiTheme` | Theme documents — color tokens (light/dark), typography, spacing, shadows |
-| `uiLibrary` | Library documents — maps `id` to `basic` / `retro` / `animate` / `brutal` |
+Per **D-060** (Cross-Product Theme Centralization under Attalabs, 2026-06-25, `Lock: YES`), theme and library *documents* are no longer per-product. They are stored and managed exclusively in the central Attalabs Sanity project, and the Themes/Libraries sections are hidden from the other product studios' sidebars (Vāda, Vitakka, Herald, Attā).
 
-**To change a product's theme:** Open the relevant studio → find the `{product}Config` singleton → change the linked theme or library → publish. The change takes effect on the next server render (or after revalidation).
+| Document Type | Where it's edited | Purpose |
+|--------------|--------------------|---------|
+| `{product}Config` | Per-product studio (Vāda, Vitakka, Herald, Attā) | Config singleton — the *selection*: which theme/library ID the product points to, plus color scheme. Still per-product. |
+| `uiTheme` | Central Attalabs studio only (`attalabs.sanity.studio`, project `l5n0n8nn`) | Theme documents — color tokens (light/dark), typography, spacing, shadows |
+| `library` | Central Attalabs studio only (`attalabs.sanity.studio`, project `l5n0n8nn`) | Library documents — maps `id` to `basic` / `retro` / `animate` / `brutal` |
+
+At read time, `getProductUiConfig` (`packages/cms/src/queries/product-ui-config.ts`) resolves this across the two projects: it fetches the `{product}Config` singleton from the product's own project, then resolves the referenced `uiTheme`/`library` IDs against the central `attalabs` project client (`createProductClient('attalabs', ...)`).
+
+**To change a product's theme or library document (colors, typography, etc.):** Open the **central Attalabs studio** (`attalabs.sanity.studio`, project `l5n0n8nn`) → find the `uiTheme` or `library` document → edit it → publish. These sections are hidden in the per-product studios per D-060 — they are not edited there.
+
+**To point a product at a different (existing) theme or library:** Open the **relevant product studio** → find the `{product}Config` singleton → change the linked theme or library reference → publish. The change takes effect on the next server render (or after revalidation).
 
 ---
 
