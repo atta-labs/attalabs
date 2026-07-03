@@ -329,7 +329,7 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 ### Enforced (CI blocks merge)
 
 - **Tier-appropriate documentation** — the `verify-docs` script checks the PR's tier has the corresponding artifact changes; fails CI if missing. **Real (D-027)**, not a stub. The blocking workflow is installed at `.github/workflows/verify-docs.yml`. The gate also runs locally (this repo: `bun run verify-docs --pr`). (In observe mode this runs report-only.)
-- **Coherence seam — code→doc coverage (C5)** — the same `verify-docs` script reads `aeg-root/doc-owners`, glob-matches changed code files, and fails CI if a matched binding's doc is not in the diff (or, for URL pointers, not acknowledged via `Doc-ack:` in the PR body). The escape hatch is per-binding (`Doc-waiver: <pointer> — <reason>` in the PR body — logged for audit). **Dormant when `aeg-root/doc-owners` is absent or no glob matches** — the gate has no opinion until the repo teaches it one. **Real (D-062)**, no stub period. Full seam defined in Section 15.
+- **Coherence seam — code→doc coverage (C5)** — the same `verify-docs` script reads `aeg-root/doc-owners`, glob-matches changed code files, and fails CI if a matched binding's doc is not in the diff (or, for URL pointers, not acknowledged via `Doc-ack:` in the PR body). The escape hatch is per-binding (`Doc-waiver: <pointer> — <reason>` in the PR body — logged for audit). On a first push (no PR exists yet), `verify-docs --push` accepts a `PR_BODY_FILE` env var — a local path to the drafted PR body — as an equally valid source for `Doc-waiver:`/`Doc-ack:` lines, so the escape hatch is available deterministically before a PR exists (D-080). **Dormant when `aeg-root/doc-owners` is absent or no glob matches** — the gate has no opinion until the repo teaches it one. **Real (D-062)**, no stub period. Full seam defined in Section 15.
 - **Commit-message format** — `commitlint` (reusing the same `commitlint.config.js` Husky runs locally) runs against every commit in the PR range. Real (D-046), installed at `.github/workflows/conventions.yml::commit-lint`. Closes the gap where API/MCP writes, direct pushes, and hand-merges bypass Husky entirely (evidence: pre-D-046 main contains several non-conforming commit headers authored via the API). **Enforcement substrate (this repo — private/free plan, branch protection unavailable):** CI shows red/green; the T9 merge-gate hook (merged in #255) blocks agent merges of red-CI PRs; local Husky/commitlint hooks enforce for agent writes running locally.
 - **Biome lint/format** — `bun run format-and-lint` (i.e. `biome check .`) runs on every PR. Real (D-046), installed at `.github/workflows/conventions.yml::biome`. Same Biome config as lint-staged enforces locally — local and CI cannot diverge. Same enforcement substrate as above (CI red/green + T9 hook + local lint-staged).
 - **Forbidden colors in UI** — `scripts/check-forbidden-colors.ts` (diff-scoped) runs on every PR. Real (D-046), installed at `.github/workflows/conventions.yml::no-hardcoded-colors`. Encodes the four pattern groups in `.claude/skills/ui-theme-tokens/SKILL.md`: Tailwind palette classes, arbitrary color brackets (`bg-[#…]`, `text-[oklch(…)]`), absolute colors (`text-white`, `bg-black`), and inline-style color literals. Scans only added lines, so it blocks new violations without forcing a "boil the ocean" legacy cleanup. Same enforcement substrate as above (CI red/green + T9 hook + local hooks).
@@ -363,6 +363,8 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 - Author should be the Principal (verified by the forge commit author field).
 
 Every override is logged (verify-docs prints that the override was active; the Archivist records it). This is an audit mechanism, not a security one — the Principal can always override; the log keeps it visible.
+
+**Override truthfulness across modes (D-080).** The override applies identically in `verify-docs --pr` and `verify-docs --push` — before D-080, `runPushMode()` never called the override-check function, so `OVERRIDE_DOCS=1`/`override:docs` was silently dead code on a first push (no PR yet to carry the label/body). Confirmed live on task PR #314. Fixed by having `runPushMode()` call the identical override check `runPrMode()` already used; no gate was weakened — the escape hatch now honors what this section already documented, in the mode where it previously didn't.
 
 ---
 
@@ -411,7 +413,7 @@ No label outside this table may be applied to a task Issue or its PR. (The Archi
 | `needs:strategy-input` | Issue | Routes to the **TL (Strategist mode)**. | Developer at escalation; removed when answered. | Conditional-mandatory |
 | `needs:principal-input` | Issue | Routes to the **Principal** — the surface the Principal scans to see what is waiting on them. | Developer at escalation; removed when answered. | Conditional-mandatory |
 | `needs:brief-correction` | Issue/PR | The Archivist's "this brief is malformed" flag (§3, §12). | Archivist (automation); removed when the brief is fixed. | Conditional-mandatory |
-| `override:docs` | PR | Suppresses the verify-docs gate for one PR (§12). | **Principal only**, deliberately. | **Optional** (escape hatch) |
+| `override:docs` | PR | Suppresses the verify-docs gate for one PR (§12) — honored identically in `--pr` and `--push` mode (D-080; previously dead code in push mode). | **Principal only**, deliberately. | **Optional** (escape hatch) |
 
 ### Two rules that are easy to get wrong
 
@@ -579,3 +581,51 @@ Wired into `verify-docs.ts` full mode. Full mode is a repo-wide structural sweep
 - **Studio's actual `/docs` nav rendering** — validated by re-reading the same manifest, not modified. `aeg-studio-cleanup` (#292) is where Studio's `load-aeg-docs.ts` is updated to filter by this manifest.
 - **Content correctness of a doc** — the Reviewer's job, same boundary as every other mechanical gate in this file.
 - **CI wiring of full mode itself** — pre-existing full-mode scope (F1/F2/N/M/completeness scoreboard), unchanged by this addition.
+
+---
+
+## Section 15d: Coherence Seam — Dispatch Readiness (`verify-dispatch`)
+
+The seam between **a task's dispatch preconditions** (row-existence, Issue-existence, dependency/conflict forge state, prior-task and prior-iteration archival) and **the prose entry-gate items** `roles/developer.md` and `contracts/brief-developer.md` currently ask every Developer (and, upstream, the Brief Author) to re-derive by hand. D-080 makes these preconditions mechanically re-checkable in one command, applying the same founding principle as Sections 15/15b/15c: *any fact that is knowable by querying git/the forge/the filesystem in seconds must never be asserted as prose an agent has to remember or re-derive.*
+
+### The composed gate: `packages/aeg-core/bin/verify-dispatch.ts`
+
+Sibling to `verify-docs.ts`/`verify-coherence.ts`, same thin-CLI-shim discipline: resolves args, fetches git/forge state, and calls the pure evaluators in `packages/aeg-core/src/` (`dispatch-gate.ts`, `leftover-detection.ts`, `baseline-capture.ts`, `premise-check.ts`). No check logic lives in the `bin/` file.
+
+**Usage:**
+```
+bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n>
+bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --premise <body-file>
+bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --simulate <body-file>
+bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --check-baseline <file>
+```
+
+**Default mode composes three checks, all against a freshly-fetched `origin/main`:**
+
+1. **`checkDispatchReadiness` (`src/dispatch-gate.ts`)** — one `{ ready, blockers }` verdict from: Issue-existence (D-054) + phantom-reference detection; the D-078 Planner-rationale gate (`checkIssueRationale`, reused, not re-implemented); every `depends-on` edge's PR-merged state; every `conflicts-with` edge's open/in-flight state; the immediately-prior task's full three-predicate archival bar (Issue closed, PR merged, provenance block present — reusing `hasProvenance`/`taskRefFromBranch`/`fetchProvenance`); and, per project named in the task's `Project(s)`, whether a prior active (non-`completed/`) iteration for that project is fully closed but unarchived.
+2. **`classifyLeftover` (`src/leftover-detection.ts`)** — `clean | resume | stop` from the task branch's remote existence, local worktree existence, and commits already ahead of `origin/main`. `stop` blocks dispatch — Step 0 never creates a commit, so any commit ahead of main is real prior work that re-running Step 0 would orphan.
+3. **`captureBaseline`/`compareToBaseline` (`src/baseline-capture.ts`)** — the current `verify-docs --full` and `verify-coherence` finding counts, printed as an **informational** capture, never a blocking "must be green" bar (D-074; live-fire: a brief once asserted "verify-docs full mode must be green" as a pre-flight condition without ever running it — full mode carried 44 pre-existing, unrelated findings and had never been green). The standing contract this seam establishes is **"no worse than the captured baseline,"** re-checkable later via `--check-baseline <file>`.
+
+Exit 0 iff `checkDispatchReadiness` reports `ready: true` AND the leftover verdict is not `stop`; exit 1 otherwise, printing every failing predicate by name — mirroring the message family of `coherence-checks.ts`'s A1/A2/T2/etc.
+
+**`--premise <body-file>`** re-asserts every `Premise:` pin in the given body file (`parsePremiseBlock` + `checkPremises`, `src/premise-check.ts`) against the current on-disk state — the Developer's mechanized re-check of `contracts/brief-developer.md`'s premise obligation, immediately before Step 0. A failed premise means the surface moved since the brief was authored; the Developer stops and re-digs rather than executing against a stale mental model.
+
+**`--simulate <body-file>`** dry-runs the exit gates *before* work starts — `verify-brief`, `verify-docs --pr`, and push-mode C5 (via `PR_BODY_FILE`), all against the intended body file. Because no diff exists yet at this point, premise **coverage** (which needs the real changed-file list) is not evaluated here — only that the `Premise:` block parses to at least one assertion. Full premise-coverage enforcement happens post-diff, in `verify-task.ts` (below) and, in the future, `verify-docs --pr` itself.
+
+**`--check-baseline <file>`** compares current finding counts against a previously captured baseline file, failing if any tool's count regressed past its baseline entry.
+
+### `verify-task.ts` — the Developer's exit composite
+
+`packages/aeg-core/bin/verify-task.ts` wraps the Developer's own pre-PR verification list (`roles/developer.md` § Verification before reporting done) into one command and one summary: typecheck, lint, tests, build (all scoped to `@atta/aeg-core` — a full monorepo application build is the deployment pipeline's job, per `enforcement.md` Ring 1), `verify-docs --pr`, and — against the PR's actual diff — both `checkPremiseCoverage` (a real code surface with zero premise coverage fails) and a premise re-check. No check here is a second implementation; every step shells out to the same command CI runs, or calls the same pure `@atta/aeg-core` evaluator directly.
+
+### Known limitations (accepted, non-blocking for this seam)
+
+- **Cross-iteration `depends-on`/`conflicts-with` edges** (e.g. a topology cell reading `other-iteration #264` rather than a bare same-iteration task id) resolve via a direct `#NNN` extraction when present; an edge that resolves to neither a same-iteration task id nor an embedded `#NNN` is treated conservatively — unresolved `depends-on` blocks dispatch (safer default: don't silently proceed), unresolved `conflicts-with` does not block (a conflict only matters if a PR is known to exist and be open). Both are visible, documented defaults, not silent gaps.
+- **Prior-iteration archival** resolves "the previous iteration for project P" as any other active (non-`completed/`) iteration file whose topology touches P and currently has zero open task Issues (an `iteration:<slug>` label scan, one batched call per candidate file) — the same criterion Section 15b's L1 check uses, applied per-project rather than per-iteration-file.
+- **Forge calls are per-task-bounded, not repo-wide-batched** — `verify-dispatch` evaluates one task's dependency/conflict/prior-task set (typically under ten Issues/PRs), a fundamentally different scale than the coherence oracle's whole-iteration sweep (Section 15b), so individual `gh` CLI calls are used rather than a GraphQL batch — the §11 "batched forge calls only" constraint targets N+1 patterns over many issues, not a single task's small, bounded fact set.
+
+### What is explicitly out of scope for D-080
+
+- **Automatic dispatch** — `verify-dispatch` reports readiness; it does not open worktrees, branches, or PRs. A human or automation layer still decides when to dispatch.
+- **Wiring `checkPremiseCoverage` into the already-CI-wired `verify-brief.ts`/`checkBriefSections` aggregate** — that gate runs at PR-open time against a body with no guaranteed diff-derived surface-file list yet in every calling context; retrofitting a new blocking requirement into an existing CI-enforced gate, repo-wide, is a bigger decision than this seam's stated surface. `checkPremiseCoverage` is exported and enforced via `verify-task.ts` instead, which always has a real diff to check coverage against.
+- **A `Tokens:` field gate** — `Tokens:` is not currently gated anywhere in `brief-validation.ts`; this task does not invent new gating scope for it (see the honest-conformance-sentinel note in this task's PR body).

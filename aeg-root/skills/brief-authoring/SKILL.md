@@ -30,6 +30,8 @@ The Brief Author's stages — name them, and say which you're in:
 
 2. **Dig** — the deep pass for the *perishable* detail (current signatures, exact file list, final model pick). Narrate the load-bearing reads: *"Reading `llm.ts` now to get the current vendor-branch shape for the surface map."* If the dig **contradicts** the rationale (boundary moved, sizing broke), STOP and say so — that's a `severity:strategy` escalation back to the Planner, announced, not a silent fix.
 
+   **Mechanized pre-authoring gate (D-080).** Before beginning the rest of the Dig, run `bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n>`. It mechanically re-derives the four precondition checks below — row-existence, Issue-existence, prior-task archival, prior-iteration archival — directly from a freshly-fetched `origin/main` and the live forge, and prints the exact failing predicate by name (plus a leftover-branch verdict and an informational finding-count baseline). A `NOT READY` result is the same STOP this section describes below — read the printed blocker and act on it; do not re-derive the fact by hand. The manual `gh`/`jq` procedures that follow remain as the **why** (what each precondition means, and how to verify it by hand if `verify-dispatch` is ever unavailable) — they are no longer the primary workflow. This exists because four Developer agents independently re-derived, and stopped on, the exact same archival fact from scratch during the 2026-07-02/03 dispatch wave, at real token cost, hours after it first became true — a fact any of these checks answers deterministically in seconds.
+
    **Read obligation (D-058) — complete during Dig, before Draft:** As part of the Dig, identify any specs/skills/docs relevant to this task's code surface and read them. This obligation is conditional — if no docs exist for this surface, it is trivially satisfied. The Planner's "Docs to keep coherent" rationale field is the starting point; your own reading may surface additional docs the Planner missed. Then:
    - (a) Surface in **Context (§2)** what the Developer must know from those docs — explicitly, not by reference ("read X for context" is not surfacing knowledge).
    - (b) Populate **§7 doc-update list** from this reading — name every doc this task will make incoherent. The §7 list is the DoD obligation (parallel to tests); a §7 populated from memory rather than reading is the failure D-058 exists to close. If genuinely no documented surface is touched, state "No doc updates required (Tier 0)" in §7 explicitly.
@@ -179,6 +181,26 @@ Before the brief instructs the executor to **delete, rename, or change the signa
 - **Any importer out-of-surface** → the instruction contradicts the out-of-surface boundary: "delete X" breaks the typecheck of a file the brief also says "do not touch." **Do not write the contradiction.** Instead, **defer the deletion to the task that owns the out-of-surface importer**, and say so explicitly in the brief (e.g. *"keep `SYMBOL` for now — `/api/other` still imports it; task N deletes it when it migrates that importer; until then the old and new definitions are kept in lockstep"*).
 
 A brief that says "delete a shared symbol" **and** "don't touch one of its importers" is **malformed** — it forces the executor to either break out-of-surface code or violate the delete instruction. The importer check is what stops the Brief Author writing two individually-sensible instructions that are jointly impossible. (This is the brief-time analogue of the dig discipline: verify the actual importer set against the codebase before asserting a delete is safe, rather than assuming the symbol is used only where you expect.)
+
+#### Premise pins (mandatory when §4 names a real code surface, D-080)
+
+Every brief whose Technical Surface Map (§4) includes a real code file carries a **`Premise:`** block — one or more pinned, checkable facts about that surface as it stood at authoring time:
+
+```
+**Premise:**
+- packages/aeg-core/src/docs/surfaced-manifest.ts contains: export function isSurfacedDoc
+- apps/herald-ai/web/src/lib/prompts.ts absent: SKEPTICAL_AUDITOR_PROMPT
+```
+
+Exactly three assertion kinds — `contains:<literal-substring>`, `absent:<literal-substring>`, `sha256:<hex>` (whole-file hash). This is a pin format, not a DSL; do not invent additional kinds. `verify-dispatch --premise <body-file>` re-asserts every pin immediately before the Developer's Step 0 — a failed premise means the surface moved between authoring and dispatch (the live-fire failure this closes: two briefs described a target architecture a later, uncited migration had already superseded), and is a stop condition, not a silent re-guess.
+
+**Authoring rules:**
+
+- **At least one assertion's path must fall inside the §4 surface map** — `checkPremiseCoverage` (Brief Validation) fails a brief with a real code surface and zero premise coverage.
+- **Pin the fact your brief's reasoning most depends on** — usually "the function/export this brief says exists, still exists" or "the constant this brief says is absent, is still absent." A premise pinning something trivial and unrelated to the brief's actual reasoning defeats the point.
+- **A Tier 0 brief with zero runtime/code surface has nothing to pin** — omit the `Premise:` block entirely (mirrors the Test Plan's `unit-tests-only` exemption, §9).
+- **Do not pin more than a handful of facts** — this is a targeted stale-premise detector, not a full pre-flight snapshot of the surface.
+- **This is a Brief-Author-only field — the Planner does not emit a premise-candidate field in the rationale.** Premises are perishable, file-content-level detail (current signatures, current constants), squarely the Brief Author's half of the Planner/Brief Author division of labor (see "Start from the Planner's rationale" above) — not a durable conclusion the Planner should be pinning at plan time, when the file content is more likely to have moved by dispatch.
 
 ### 5. Pre-flight checks
 
@@ -471,6 +493,7 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 - ❌ Closing out without signaling completion + whose move is next — the Principal is left unsure whether the brief is dispatchable
 - ❌ **Authoring a brief for a task whose Issue column is `#TBD` or blank** — the task is backlog, not dispatchable; there is no `#N` for `Closes #N`; the Developer's D-054 gate (entry gate item 3) will refuse it at execution. Catch it during Dig and surface the owed Planner action (cut the Issue) rather than handing the Principal a brief the Developer will immediately refuse.
 - ❌ **Authoring a brief for a task whose prior task doesn't pass the coherence gate** — the bar is all three: Issue closed, PR merged to main, provenance block present. "PR merged" alone is not sufficient. An accepted historical provenance backlog on already-closed iterations does not bypass this gate for new work on active priors. Catch the gap during Dig and surface what is owed — don't hand the Principal a brief the Developer will immediately refuse (D-052, D-056)
+- ❌ **A brief with a real §4 code surface and no `Premise:` block, or a `Premise:` block whose assertions all pin unrelated paths** — `checkPremiseCoverage` rejects it; the whole point of the pin is that it covers the surface the brief's reasoning depends on (D-080)
 - ❌ **Instructing the executor (or a §7 doc-update list) to commit a new file for a one-off report, audit finding, coverage summary, or working brief** — that content's permanent home is the PR body or an Issue/PR comment, never a new repo file (D-074, `iterations/README.md` §9 rule 4). A brief that tells the Developer "write your findings to `aeg-root/iterations/<name>-audit.md`" is malformed in exactly the way a brief that puts itself in the Issue instead of the PR body is malformed — it invents an unsanctioned new home for content the model already gave a home to (PR body, or an Issue/PR comment).
 
 ---

@@ -2402,3 +2402,53 @@ Concretely:
 - No change to `apps/aeg/web/studio` itself, `verify-coherence.ts`, or any existing C0–C5 check.
 
 **Lock rationale:** `Lock: YES`. This is the single source of truth two iterations depend on (this one's C6, and `aeg-studio-cleanup`'s Studio curation) — weakening it (reverting to hardcoded exclusion logic, or letting a second competing manifest exist) requires a superseding D-entry with `Challenges lock: D-079 — <reason>`, not a quiet edit to the check or to Studio's loader.
+
+---
+
+## D-080 — Deterministic dispatch-and-exit gates: no fact an agent needs may live only in prose
+
+**Date:** 2026-07-03
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry)
+**Lock:** NO
+**Authored by:** Developer (dispatched task, aeg-governance-hardening #324, task 11)
+**Ratified by:** Principal (via task dispatch)
+
+**Context:** The 2026-07-02/03 dispatch wave proved, live, six distinct instances of the same underlying failure — a deterministic fact (forge state, leftover-branch state, a doc-coherence baseline, a code premise) reaching a Developer agent as **prose it had to re-derive from scratch**, rather than as a **check it could run**: (1) four Developer agents independently stopped mid-dispatch on the identical fact — "the prior iteration (`aeg-consolidation`) is complete but not archived" — re-derived from scratch by each, at real token cost, hours after the fact first became true; (2) a brief asserted "`verify-docs` full mode must be green" as a pre-flight condition without ever running it — it carried 44 pre-existing unrelated findings and had never been green; (3) two briefs (herald-engine skill, ui-api-routes skill) described a target architecture a later, uncited migration had already superseded, discovered only mid-dig; (4) a finished task hit a genuine push-time dead end: the pre-push hook's C5 doc-coverage check cannot see a `Doc-waiver:` line before a PR exists (no PR body to read on first push), and the documented escape hatch (`OVERRIDE_DOCS=1`) turned out to be dead code in push mode (`runPushMode()` never called `overrideActive()`); (5) two Brief-Author-authored artifacts shipped with empty bodies from a stream body-file bug (task 17/#333's surface, not re-fixed here); (6) two concurrently-open plan PRs mutually red-flagged each other's Issues in the repo-wide coherence oracle's T2 check, because T2 runs unscoped in CI (task 19/#336's surface, not re-fixed here). Items 1–4 are this task's surface; items 5–6 are declared collisions with concurrently-dispatched tasks, deliberately not absorbed.
+
+**Decision:** Build the deterministic pre-work and exit-gate layer entirely in `@atta/aeg-core`, entirely pure functions with fixture tests behind thin CLI shims — composing existing checks, never re-implementing forge-fetching, provenance detection, rationale-checking, or doc-coverage evaluation:
+
+1. **`src/premise-check.ts`** — a `Premise:` block grammar (`parsePremiseBlock`, `checkPremises`): exactly three assertion kinds, `contains:<literal>` / `absent:<literal>` / `sha256:<hex>` — a pin format, not a DSL. `src/brief-validation.ts` gains `checkPremiseCoverage`: a brief with a real §4 code surface and zero premise coverage is malformed.
+2. **`src/leftover-detection.ts`** — `classifyLeftover`: `clean | resume | stop` from branch/worktree existence + commits ahead of main. Step 0 never creates a commit, so any commit already ahead of main is real prior work; `stop` prevents Step 0 from silently re-branching over it.
+3. **`src/baseline-capture.ts`** — `captureBaseline`/`compareToBaseline`: current `verify-docs --full`/`verify-coherence` finding counts, captured at run (never a committed file, D-074), compared per-tool against a prior capture. The standing contract becomes **"no worse than the captured baseline,"** never "must be green" — directly closing live-fire #2.
+4. **`src/dispatch-gate.ts`** — `checkDispatchReadiness`: composes `parseIteration`, `checkIssueRationale`, `hasProvenance`/`taskRefFromBranch`, and `fetchProvenance` (reused from `verify-coherence.ts`, not re-implemented) into one `{ ready, blockers }` verdict over Issue-existence, D-078 rationale, depends-on/conflicts-with forge state, prior-task archival, and prior-iteration archival — directly closing live-fire #1.
+5. **`bin/verify-dispatch.ts`** — the composed CLI: `<iteration> <n> [--premise <file>] [--simulate <file>] [--check-baseline <file>]`, on a freshly-fetched `origin/main`.
+6. **`bin/verify-task.ts`** — the Developer's exit composite: typecheck + lint + tests + build (scoped to `@atta/aeg-core`; a full monorepo application build remains the deployment pipeline's job) + `verify-docs --pr` + premise coverage/recheck, one summary, same commands CI runs.
+7. **`verify-docs.ts` push-mode fixes** — `runPushMode()` now accepts `PR_BODY_FILE` (a local path to the drafted PR body before a PR exists) as an equally valid source for `Doc-waiver:`/`Doc-ack:` lines, and now calls `overrideActive()` identically to `runPrMode()` — directly closing both halves of live-fire #4, additively (no existing gate weakened).
+8. **Prose-gate sweep** — `roles/developer.md`'s entry-gate items 3/4/5/7 and `skills/brief-authoring/SKILL.md`'s Dig-stage preconditions now point at `verify-dispatch` as the mechanized "how," keeping the existing prose as the "why" and the manual `gh`/`jq` fallback; `skills/brief-authoring/SKILL.md` gains the `Premise:` field with its own authoring rules; `contracts/brief-developer.md` gains the Developer-side premise-recheck obligation; `contracts/planner-brief.md` gains a one-line note that premise pinning is deliberately outside its field table (see below); `state-machine.md` gains §15d plus the §12/§14 override cross-mode-consistency notes; `enforcement.md` gains three new Ring 0 rows plus the corrected `git push` row.
+9. **Stash-in-shared-worktree rule** — `roles/developer.md`'s worktree-discipline section now states: stash is off-limits in a `.worktrees/` shared-repo checkout (stash refs are global across worktrees; a stray `stash pop` in one worktree can pop another task's in-progress stash — a near-miss on task 8's PR #320); use a WIP commit on your own branch instead.
+
+**Premise pinning is a Brief-Author-only field — not a Planner-rationale field.** Premises are perishable, file-content-level detail (current signatures, current constants) — squarely the Brief Author's half of the Planner/Brief Author division of labor `contracts/planner-brief.md` already describes, not a durable conclusion the Planner should seed. `contracts/planner-brief.md`'s field-by-field table is therefore unchanged (no new row); a one-line note records why. `contracts/brief-developer.md` gains the field, since premise pins do cross the Brief Author → Developer seam.
+
+**Two location corrections found during pre-flight, not brief errors requiring a stop:** `evaluateC5` and `parseDocOwners` (named in the dispatching brief as living in `pr-tier.ts`/`file-classify.ts`) actually live in `src/doc-owners.ts` — the functions exist and are correctly reused from there; only the brief's file-path description was stale.
+
+**Boundary (what this is NOT):**
+- **Not** a fix for task 17/#333's stream-body-file bug (empty PR/Issue bodies) — declared, non-conflicting, separate surface.
+- **Not** a fix for task 19/#336's T2-scoping / single-plan-PR-guard work — declared conflict, serialize after.
+- **Not** automatic dispatch — `verify-dispatch` reports readiness; nothing opens a worktree/branch/PR on its behalf.
+- **Not** a change to what any existing check (A1–A3, T1–T3, D1, L1–L3, C0–C6, R1) asserts — every one is reused as-is.
+- **Not** a `Tokens:` field gate — `Tokens:` is not currently gated anywhere in `brief-validation.ts`; this task does not invent new gating scope for a field with no existing gate (the honest-conformance-sentinel item collapsed to this finding, not new code).
+- **Not** an edit to `aeg-root/doc-owners` — explicitly out of this task's surface (D-079's seam); `verify-dispatch.ts`/`verify-task.ts` remain unbound in the manifest, which is dormancy, not failure.
+
+**Alternatives rejected:**
+- *A fourth assertion kind for the Premise grammar (e.g. regex match)* — rejected; the grammar is deliberately minimal, a pin format not a DSL, per the dispatching brief's own constraint.
+- *Wiring `checkPremiseCoverage` directly into the already-CI-wired `checkBriefSections`/`verify-brief.ts` aggregate* — rejected; that gate runs at PR-open time with no guaranteed diff-derived file list in every calling context, and retrofitting a new blocking requirement into an existing CI-enforced gate, repo-wide, is a bigger decision than this seam's stated surface. `checkPremiseCoverage` is exported and enforced via `verify-task.ts` instead, against the real diff.
+- *Batched GraphQL for `verify-dispatch`'s per-task forge lookups* — rejected in favor of individual `gh` CLI calls; the tool evaluates one task's small, bounded dependency/conflict/prior-task set (typically under ten Issues/PRs), a different scale than the coherence oracle's whole-iteration sweep that batching exists to protect.
+
+**Consequences:**
+- New: `packages/aeg-core/src/{premise-check,leftover-detection,baseline-capture,dispatch-gate}.ts` + `.test.ts`; `packages/aeg-core/bin/{verify-dispatch,verify-task}.ts`.
+- Modified: `packages/aeg-core/src/brief-validation.ts` (`checkPremiseCoverage`); `packages/aeg-core/src/index.ts` (new exports); `packages/aeg-core/bin/verify-docs.ts` (`PR_BODY_FILE` + `overrideActive` in push mode).
+- Docs: `aeg-root/state-machine.md` (§15d, §12/§14), `aeg-root/enforcement.md` (Ring 0 rows + `git push` row), `aeg-root/skills/brief-authoring/SKILL.md` (pre-authoring gate pointer + Premise pins section), `aeg-root/contracts/planner-brief.md` (premise-field note), `aeg-root/contracts/brief-developer.md` (premise field + row), `aeg-root/roles/developer.md` (mechanized precondition pointer + stash rule).
+- No change to any existing check's logic, `.husky/pre-push`'s existing job (dispatch-readiness checking lives in the new `verify-dispatch.ts`, invoked explicitly, not silently injected into every push), or `apps/aeg/web/studio` (no consumer there for this task's output).
+
+**Lock rationale:** `Lock: NO`. This is a new, additive gate layer with no locked irreversible branch — a future task may reshape `verify-dispatch`'s composition (e.g. batching its forge calls, or resolving cross-iteration edges more precisely) via an ordinary superseding or amending decision, not a lock challenge.
