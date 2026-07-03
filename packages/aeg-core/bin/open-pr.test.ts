@@ -1,11 +1,8 @@
-import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { locateBody, resolveShippableArgs } from './open-pr'
-
-const MODULE_PATH = join(import.meta.dirname, 'open-pr.ts')
 
 describe('locateBody', () => {
   it('reads --body-file <path> and records the file source with its arg index', () => {
@@ -101,62 +98,47 @@ describe('resolveShippableArgs', () => {
 })
 
 describe('stream body-file input (the live-fire bug: Issues #329/#330/#331, PRs #325/#332)', () => {
-  it('ships the same bytes gh will re-read, even though the original stream path cannot be safely re-read', () => {
-    // Reproduces the exact failure mode: a non-seekable --body-file source
-    // (/dev/stdin) is fully consumed by the FIRST read (this process's own
-    // validation read). Before the fix, gh's own SEPARATE read of that same
-    // path is what shipped empty. This fixture proves the shipped path
-    // (finalArgs) carries the buffered bytes, and is unaffected by whatever
-    // happens to the original stream on a second access.
-    const fixtureDir = mkdtempSync(join(tmpdir(), 'open-pr-stream-fixture-'))
-    const fixturePath = join(fixtureDir, 'repro.ts')
-    writeFileSync(
-      fixturePath,
-      `
-import { readFileSync } from 'node:fs'
-const { locateBody, resolveShippableArgs } = await import(${JSON.stringify(MODULE_PATH)})
-const bodyResult = locateBody(['--body-file', '/dev/stdin'])
-const { finalArgs, cleanup } = resolveShippableArgs(['--body-file', '/dev/stdin'], bodyResult)
-const shipPath = finalArgs[1]
-const firstReadOfShipped = readFileSync(shipPath, 'utf8')
-const secondReadOfShipped = readFileSync(shipPath, 'utf8')
-let secondReadOfOriginalStream
-try {
-  secondReadOfOriginalStream = readFileSync('/dev/stdin', 'utf8')
-} catch (e) {
-  secondReadOfOriginalStream = '<threw: ' + e.message + '>'
-}
-console.log(JSON.stringify({
-  bodyFromLocate: bodyResult ? bodyResult.body : null,
-  firstReadOfShipped,
-  secondReadOfShipped,
-  secondReadOfOriginalStream
-}))
-cleanup()
-`,
-      'utf8'
-    )
+  it('ships the same bytes gh will re-read, even though the original source is gone by the time gh would re-read it', () => {
+    // A real /dev/stdin subprocess reproduction is not portable across OSes
+    // (confirmed: it throws ENXIO on Linux CI while working fine on macOS —
+    // a platform difference in how a piped child stdin resolves that path,
+    // not a Bun/Node difference this fix controls). Deleting the source file
+    // immediately after the one validation read is a deterministic,
+    // OS-independent stand-in for "this path is unreadable a second time" —
+    // exactly the property a stream has (drained/EOF) that a regular file
+    // does not. It proves the same invariant the bug report cares about:
+    // the SHIPPED path must not depend on the original path still being
+    // readable later, because for a stream it never is.
+    const dir = mkdtempSync(join(tmpdir(), 'open-pr-stream-sim-'))
+    const p = join(dir, 'body.md')
+    const streamContent = 'this PR body came from a one-shot source, not a regular file\n'
+    writeFileSync(p, streamContent, 'utf8')
 
-    const streamContent = 'this PR body came from a stream, not a regular file\n'
-    const out = execFileSync('bun', [fixturePath], { input: streamContent, encoding: 'utf8' })
-    const result = JSON.parse(out.trim())
+    const bodyResult = locateBody(['--body-file', p])
+    expect(bodyResult?.body).toBe(streamContent)
 
-    // The validated content (what verify-brief/verify-docs saw via PR_BODY)
-    // is exactly the stream's content — the one and only read of the
-    // original path.
-    expect(result.bodyFromLocate).toBe(streamContent)
-    // gh's own read of the SHIPPED path (finalArgs) gets the full content,
-    // and re-reading it again (idempotency check) still returns the same
-    // content — it's a regular file now, not a one-shot stream.
-    expect(result.firstReadOfShipped).toBe(streamContent)
-    expect(result.secondReadOfShipped).toBe(streamContent)
-    // A second, independent read of the ORIGINAL stream path does NOT
-    // reliably return the validated content (empty string or a read error,
-    // depending on environment) — this is the mechanism of the reported bug,
-    // and proves the fix does not depend on the original path being re-readable.
-    expect(result.secondReadOfOriginalStream).not.toBe(streamContent)
+    const { finalArgs, cleanup } = resolveShippableArgs(['--body-file', p], bodyResult)
+    const shipPath = finalArgs[1] as string
 
-    rmSync(fixtureDir, { recursive: true, force: true })
+    // Simulate the stream being drained/gone: delete the original source
+    // right after the one read that captured it, before gh would ever get
+    // to re-read it.
+    unlinkSync(p)
+
+    // gh's own read of the SHIPPED path gets the full content, and
+    // re-reading it again (idempotency check) still returns the same
+    // content — it's a real, independent file now, not tied to the
+    // original one-shot source.
+    expect(readFileSync(shipPath, 'utf8')).toBe(streamContent)
+    expect(readFileSync(shipPath, 'utf8')).toBe(streamContent)
+    // The original path is genuinely gone — proving the fix does not
+    // depend on it being re-readable (which is exactly what breaks for a
+    // real stream, just via a different underlying mechanism: EOF instead
+    // of ENOENT).
+    expect(() => readFileSync(p, 'utf8')).toThrow()
+
+    cleanup()
+    rmSync(dir, { recursive: true, force: true })
   })
 })
 
