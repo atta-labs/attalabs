@@ -39,11 +39,13 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 19 | End the plan-PR race: CI-scope T2 + single-plan-PR guard                      | #336  | aeg        | —                      | 11, 18         |
 | 20 | Coherence oracle A2 false positive: provenance exists but undetected (#287)   | #340  | aeg        | —                      | —              |
 | 21 | verify-dispatch baseline capture silently reports 0 findings on tool failure | #351  | aeg-core   | —                      | —              |
+| 22 | turbo-ignore builds unconditionally on a branch's first deploy (no --fallback) | #353  | vada, herald, atta, attalabs | — | —      |
 
 ## Backlog (this iteration, not yet dispatched)
 
 - **Fix punch-list — promoted.** The staleness audit in task 3 (#218) emitted 5 real findings (#278–282), filed by PR #283. All 5 are now promoted to tasks 6–10 above (topology rows added 2026-07-02, each carries its own Planner's rationale posted as an Issue comment). No further unpromoted punch-list items remain from task 3 at this time; task 5a's `5a` letter-suffix convention avoided colliding with this now-realized 6–10 range as designed.
 - **Task 21 (#351) — found live, promoted directly.** A Brief Author's dig on task 15 (2026-07-03) found `verify-dispatch.ts`'s informational baseline-capture path (`currentFindingCounts()`/`sh()`) silently reports 0 findings whenever the wrapped `verify-docs.ts --full` command exits non-zero — its `catch` block discards stderr and returns `''` unconditionally. Not gating (does not affect `checkDispatchReadiness`'s READY/NOT READY verdict), but the baseline print it feeds is misleading exactly when a task needs it most. Filed straight to a topology row (no separate punch-list PR) since it's a single, already-fully-scoped finding, `Project: aeg-core`, Tier 0.
+- **Task 22 (#353) — merged forward from PR #352 (2026-07-03).** This branch (PR #354) was cut from `origin/main` before #352 merged, so its topology omitted task 21's row and CI's `T2` coherence check correctly failed (Issue #351 was open and iteration-labeled but absent from this branch's topology). Resolved by merging `main` into this branch once #352 landed — both rows now present, in numeric order. Carry-forward lesson: register concurrent Planner tasks in one shared plan branch/PR (as tasks 6–10 and 5a–5d were) rather than parallel plan branches, to avoid this class of forge/branch-state race entirely.
 
 ## Cross-iteration dependencies
 

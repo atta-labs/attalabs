@@ -27,6 +27,9 @@ The folder is simply **the home for that project's specs and status** (`<path>/s
 | aeg-core | `packages/aeg-core`   | `packages/aeg-core/specs/`  | (state tracked globally for now)     |
 | atta     | `apps/atta-ai`        | `apps/atta-ai/specs/`       | (state tracked globally for now)     |
 | desktop  | `apps/desktop`        | `apps/desktop/specs/`       | (state tracked globally for now)     |
+| attalabs | `apps/attalabs`       | `apps/attalabs/specs/`      | (state tracked globally for now)     |
+
+> **attalabs** — The AttaLabs ecosystem hub app (`@atta/attalabs-web`/`-mobile`/`-mcp-server`, serving `attalabs.dev`), distinct from **atta** (`apps/atta-ai`, the Atta *product* — Vāda+Vitakka+Sati). Registered here because it has real code and its own `apps/attalabs/specs/`, but had no registry row until `aeg-governance-hardening` task 22 added it (found while sizing that task's `Project(s)` field). `apps/attalabs` carries no `-ai` suffix (meta/infra-app convention, like `apps/aeg`, `apps/desktop`).
 
 > **aeg** — AEG **the product**: a read-only web UI (`apps/aeg/web` → `aeg.attalabs.dev`) that visualizes a repo's AEG execution (iteration DAGs + forge-derived status + backlogs, attention-queue default view), plus `aeg.sh`, a neutral scaffolder that lets any repo adopt the AEG structure. Distinct from AEG **the model** (the governance constitution at repo-root `aeg-root/`). Spec-only scaffold today, no `apps/aeg/web` code yet; it is the designated first real iteration. **Orchestrator-independent: AEG does not know Cetana** — Cetana (the optional orchestrator, `apps/cetana-ai`) knows AEG, not the reverse; it is a sibling, never contained here (D-029, D-038). `apps/aeg` carries no `-ai` suffix (meta/infra-app convention, like `apps/attalabs`, `apps/desktop`).
 
