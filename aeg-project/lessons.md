@@ -356,3 +356,36 @@ None dropped or abandoned. The 5 tasks that didn't ship under this iteration (3,
 ### Unbuilt tasks
 
 None. All 4 planned tasks merged.
+
+## aeg-studio-cleanup — retrospective (July 2026)
+
+**Duration:** 2026-07-02 (PR #304) → 2026-07-03 (PR #346)
+**Tasks completed:** 5 of 5 planned (1 #287/PR #313, 2 #290/PR #304, 3 #291/PR #314, 4 #292/PR #322, 5 #331/PR #346)
+**Tasks dropped/deferred:** none
+**Tasks moved out (D-070):** none
+
+### What went well
+
+- **Task 4 consumed the `aeg-consolidation`-shipped surfaced-doc manifest (D-079) exactly as designed, with zero second exclusion rule.** `load-aeg-docs.ts` was wired to `isSurfacedDoc` from `@atta/aeg-core/docs`; the completeness sweep confirmed all 28 surfaced docs render in the nav (`Surfaced N = Nav N = 28`) and the hardcoded `Iterations` section was removed outright rather than special-cased — the single-source-of-truth intent behind D-079 held up under its first real downstream consumer.
+- **Task 3 correctly absorbed a Principal course-correction between dispatches.** An earlier attempt had proposed a new `--info` semantic token; the Principal rejected it (existing tokens only) and the task was re-dispatched against that constraint. The replacement brief shipped a token-doctrine-compliant fix (opacity/weight steps within `primary`) with the supersession explicitly documented in the PR body, rather than quietly re-trying the rejected approach.
+- **Task 2's dependency cleanup was conservative and correctly scoped.** Removing the board/graph views left `@xyflow/react` and `@dagrejs/dagre` as unused `package.json` entries; rather than pruning them unprompted, the task flagged them for a follow-up since `package.json` wasn't named in the brief's surface map — task 5 (a later, separate dispatch) then removed the one remaining dead surface (the topbar link), keeping each task's diff traceable to its own brief.
+- **Task 1 verified its own content against live sources before publishing rather than trusting the brief's summary.** The brief's §10 stop condition required re-checking the role table against current `aeg-root/roles/*.md` and contracts; the Developer did this and found no drift, but the discipline of checking rather than assuming is the kind of habit that prevents a synthesized doc from going stale at the moment it's created.
+
+### What stalled or caused rework
+
+- **Task 5 (#331) hit the exact first-push doc-coverage gap its own iteration's task 3 had worked around days earlier.** `.husky/pre-push`'s C5 check reads the PR body via `gh pr view`, which returns nothing before a PR exists — so a `Doc-waiver:` line in the intended PR body is invisible on the first push, and the documented `OVERRIDE_DOCS=1` escape hatch didn't reach `verify-docs.ts`'s push-mode path either (a separate, only-partially-fixed gap). Task 3 worked around this with a one-time Principal-authorized `--no-verify` push; task 5 hit it again, and this time it was root-caused and closed for good by D-080 (PR #345, merged separately): the pre-push hook now falls back to reading `Doc-ack:`/`Doc-waiver:` trailers from the branch's own commit messages when no PR yet exists. Task 5 explicitly confirmed the D-080 fix unblocked it before completing.
+- **A structural workaround (`--no-verify`) shipped once before the root cause (D-080) was fixed**, meaning the same friction was paid twice — once as a manual escalation absorbing disproportionate Principal time (task 3, 2026-07-02) and again as a routine, self-served block (task 5, 2026-07-03) before the fix landed. The gap between "hit once" and "fixed for the class of problem" spanned roughly a day and two separate task dispatches within the same iteration.
+- **Task 2's environment setup gap (missing `packages/ui/generated/` in a fresh worktree) recurred on task 4's dispatch**, both requiring an ad hoc `bunx turbo run generate` before the Studio dev server would boot cleanly — a real gap in the AEG-wide worktree-bootstrap Step 0 (which runs `bun install` but not the `generate` turbo task), flagged by both tasks independently rather than fixed once at the bootstrap level.
+
+### Carry-forward lessons (add to lessons.md calibration section if not already there)
+
+- **A pre-push doc-coverage gate that reads the PR body cannot see that body before a PR exists.** Any C5-style gate keyed off `gh pr view` on a branch's first push will structurally fail even when the correct waiver is already written into the intended PR body. The fix (D-080) is a commit-trailer fallback (`Doc-ack:`/`Doc-waiver:` read from the branch's own commits) — any future forge-derived pre-push check needs the same escape valve, not just a documented override flag that only reaches one of its two run modes.
+- **A worktree Step 0 that runs `bun install` but not the per-app `generate` turbo task will 500 on first dev-server boot for any app depending on `packages/ui/generated/`.** Confirmed independently by two tasks in this iteration (task 2, task 4) against AEG Studio specifically. Worth fixing once in the shared worktree-bootstrap instructions rather than leaving each task to rediscover and route around it.
+
+### Decisions made this iteration (Type 1, ratified)
+
+- None produced by this iteration's own tasks (all Tier 0/1; no Tier 3 work). D-079 and D-080, both referenced in this iteration's PR bodies as context, were made elsewhere: D-079 by `aeg-consolidation` task 4 (#265, PR #315); D-080 by a separate direct fix (PR #345) triggered by, but not itself one of, this iteration's tasks.
+
+### Unbuilt tasks
+
+None. All 5 planned tasks merged.
