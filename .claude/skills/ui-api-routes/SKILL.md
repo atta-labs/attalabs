@@ -64,9 +64,9 @@ const signals = await Promise.race([
   new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000))
 ])
 
-// LLM (critical path)
+// LLM (critical path) — see LLM Integration below for what runs here
 const result = await Promise.race([
-  generateText({ model, system, prompt }),
+  run({ profile: userPrompt, modelId, vendor, apiKey, schema }),
   new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error('LLM timeout')), 25000)
   )
@@ -74,20 +74,43 @@ const result = await Promise.race([
 ```
 
 ### LLM Integration
+
+**MUST NOT** call `generateText()` or a raw provider SDK directly in a route handler. Every LLM call runs through `@atta/engine` (`loadFlow` / `loadYamlFromCatalog` → `compileFlow` → `LangGraphAdapter.execute`) — never a bespoke per-route call. This is D-044/D-045: Herald's original `/api/match` called `generateText()` directly, and was migrated onto the engine specifically so Herald inherits the cognitive router, multi-vendor failover, transcript tracing, and cost tracking that a direct SDK call can never get. Direct `generateText`/SDK calls in a route are a rejected pattern, not a convenience shortcut.
+
+Two sanctioned shapes, chosen by whether the agent is reused across routes:
+
+**(a) Packaged agent — preferred for reusable product intelligence.** The engine chain lives inside a self-contained package at `packages/agents/<name>/` (D-051), which exports a `run()`. The route just calls it:
+
 ```ts
-import { createAnthropic } from '@ai-sdk/anthropic'
-import { generateText } from 'ai'
+// apps/herald-ai/web/src/app/api/audit/route.ts
+import { run } from '@atta/forensic-hiring-auditor'
 
-const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
-
-const { text } = await generateText({
-  model: anthropic('claude-sonnet-4-20250514'),
-  system: SYSTEM_PROMPT,
-  prompt: userPrompt,
-  maxOutputTokens: 2000,
-  temperature: 0.3
+const report = await run({
+  profile: userPrompt,
+  modelId: creds.modelId,
+  vendor: creds.vendor,
+  apiKey: creds.apiKey,
+  schema: MATCH_REPORT_SCHEMA,
+  candidateInfo: { name: profile.name, title: profile.title, github: profile.github }
 })
 ```
+
+Inside `packages/agents/forensic-hiring-auditor/src/index.ts`, `run()` does the actual `loadFlow(yaml) → compileFlow(flow, prompt, modelId, { schema }) → new LangGraphAdapter({ providerKeys, customTools }).execute({ plan })`. The package owns the YAML, the schema/parse contract, and any custom tools; the route owns request validation, auth/key resolution, caching, and retry/timeout.
+
+**(b) Direct engine execution in the route — no package exists yet.** For a route-specific flow not (yet) reused elsewhere, call the engine chain directly in the handler:
+
+```ts
+// apps/vada-ai/web/src/app/api/deliberation/[id]/workflow/run/route.ts
+import { compileFlow, loadYamlFromCatalog } from '@atta/engine'
+import { LangGraphAdapter } from '@atta/adapter-langgraph'
+
+const flow = loadYamlFromCatalog(session.specId)
+const plan = compileFlow(flow, session.question, session.modelId ?? 'claude-sonnet-4-6')
+const adapter = new LangGraphAdapter({ providerKeys, customTools: VADA_TOOL_HANDLERS })
+const conclusion = await adapter.execute({ plan })
+```
+
+Once an agent's logic is reused by more than one route, promote it to a `packages/agents/<name>/` package (shape a) instead of duplicating the chain.
 
 ### Response Shape
 - **MUST** be consistent — same shape on success and fallback
@@ -108,7 +131,7 @@ return NextResponse.json({ error: 'failed' })    // different shape on error
 
 ```
 src/app/api/
-├── match/route.ts              # POST — main feature endpoint
+├── audit/route.ts              # POST — main feature endpoint (engine-backed, see LLM Integration)
 ├── admin/
 │   └── onboarding-chat/route.ts
 └── mcp/
