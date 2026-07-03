@@ -12,6 +12,8 @@
  * `brief-authoring` skill and `brief-developer` contract define.
  */
 
+import { parsePremiseBlock } from './premise-check'
+
 export type BriefSectionResult = { status: 'pass' | 'fail'; errors: string[] }
 
 /**
@@ -81,6 +83,28 @@ export function checkTestPlan(prBody: string): BriefSectionResult {
     status: 'fail',
     errors: [
       'brief-validation Test Plan: no Test Plan section found — expected `Test Plan: unit-tests-only`, or at least one `**[agent]**`/`**[principal]**`-tagged checklist item.'
+    ]
+  }
+}
+
+/**
+ * Premise coverage (this task, aeg-governance-hardening 11, #324) — pass iff
+ * either (a) at least one `Premise:` assertion's path matches a file in
+ * `surfaceFiles` (the §4 surface map's file list — in practice, the PR's
+ * actual changed-file list, the same diff-derived-truth philosophy
+ * `deriveTierFromDiff` already uses), or (b) `surfaceFiles` is empty (a
+ * Tier 0 brief with zero runtime/code surface has nothing to pin — mirrors
+ * `checkTestPlan`'s `unit-tests-only` exemption). Presence-only: does not
+ * judge whether the pinned premise is the *right* one to have pinned.
+ */
+export function checkPremiseCoverage(prBody: string, surfaceFiles: string[]): BriefSectionResult {
+  if (surfaceFiles.length === 0) return { status: 'pass', errors: [] }
+  const assertions = parsePremiseBlock(prBody)
+  if (assertions.some((a) => surfaceFiles.includes(a.path))) return { status: 'pass', errors: [] }
+  return {
+    status: 'fail',
+    errors: [
+      'brief-validation Premise: no `Premise:` assertion found whose path matches a file in the surface map — a brief with a real code surface must pin at least one premise (aeg-governance-hardening task 11).'
     ]
   }
 }

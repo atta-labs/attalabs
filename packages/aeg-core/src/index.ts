@@ -31,6 +31,7 @@ export {
   checkForgeTitle,
   checkLockAck,
   checkPlanPrNoCloses,
+  checkPremiseCoverage,
   checkProjectField,
   checkStopConditions,
   checkSurfaceMap,
@@ -62,3 +63,5 @@ export { buildProvenanceBlock, hasProvenance, taskRefFromBranch } from './archiv
 export type { MergedPrFacts } from './archive-task'
 export { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 export type { IssueSectionResult } from './issue-validation'
+export { checkPremises, parsePremiseBlock } from './premise-check'
+export type { PremiseAssertion, PremiseCheckResult } from './premise-check'
