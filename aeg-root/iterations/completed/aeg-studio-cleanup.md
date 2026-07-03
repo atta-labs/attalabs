@@ -1,5 +1,5 @@
 # Iteration: aeg-studio-cleanup — July 2026
-Lifecycle: active
+Lifecycle: complete
 
 Goal (execution, not roadmap-why): curate AEG Studio's UI surface — add missing
 canonical reference content, remove unwanted iteration-view surfaces (dependency
