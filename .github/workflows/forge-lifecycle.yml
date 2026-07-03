@@ -6,8 +6,19 @@ name: Forge Lifecycle
 #                    Non-task branches bypass automatically.
 #
 #  coherence-gate  — stateless coherence oracle (verify-coherence.ts).
-#                    A1/A2/A3/N1/M1/M3 failures → CI red.
-#                    L1/L2/N2/M2 are info-only (never exit-1).
+#                    A1/A2/A3/T1/T2/T3/D1/R1/N1/M1/M3 failures → CI red (the
+#                    CLI's exit code is non-zero on ANY check with
+#                    status:'fail' — see coherence-checks.ts for each check's
+#                    exact fail/info semantics; several grandfather via
+#                    COHERENCE_ENFORCED_FROM / R1_GRANDFATHERED_ISSUES).
+#                    T2/T3 are scoped to the PR's own iteration in CI (via
+#                    BRANCH below) — an unrelated iteration's topology gap
+#                    never blocks this PR (aeg-governance-hardening task 19).
+#                    L2/L3/N2/M2 are always info-only (never exit-1). NOTE:
+#                    L1 is documented elsewhere as advisory but its current
+#                    implementation returns status:'fail' like the checks
+#                    above — a known pre-existing doc/code mismatch, not
+#                    addressed by task 19 (see its PR body).
 #                    On A1 failures the script's issue numbers receive
 #                    the `aeg:incoherent` label via `gh issue edit`.
 #

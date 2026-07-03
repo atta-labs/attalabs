@@ -229,6 +229,8 @@ git worktree add .worktrees/plan/<iteration> -b plan/<iteration> origin/main && 
 
 Then commit the topology + decision entry on that branch and open the plan PR. The `.husky/pre-commit` / `pre-push` guards refuse a direct commit or push to `main`, and the merge-gate hook (`.claude/hooks/check-pr-green.sh`) refuses a red merge — so this is enforced, not merely asked. Cutting forge Issues is a forge action (not a repo commit) and does not need the worktree; the worktree is for the *file* artifacts.
 
+**Only one open plan PR per iteration, at a time — mechanically enforced (D-069 task 19).** Two concurrent plan PRs for the same iteration, each cut from `origin/main` before the other merged, each unaware of the other's newly-added Issue, is exactly the race that produced two competing plan PRs for `aeg-governance-hardening` itself (#352/#354) — the coherence oracle's T2 check correctly flagged the resulting inconsistency, but by then both PRs already existed. This is no longer just a planning discipline: `packages/aeg-core/bin/open-pr.ts`'s single-plan-PR guard (`checkSinglePlanPr`) refuses outright to open or edit a plan PR whose diff touches an iteration's topology file while another OPEN PR's diff already touches that same iteration's topology file, naming the conflicting PR. If you hit this refusal, wait for the existing plan PR to merge or close before opening another for the same iteration — do not work around it by targeting a different branch or bypassing `open-pr.ts`.
+
 ---
 
 ## Plan-PR close-out — the Planner's own merge has a close-out too

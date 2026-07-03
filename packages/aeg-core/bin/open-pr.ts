@@ -15,6 +15,13 @@
  *   bun packages/aeg-core/bin/open-pr.ts --validate-only --body-file <path>
  *
  * Gates (all must pass, in order):
+ *   0. decision-numbers — every `## D-NNN` this branch adds must exceed the
+ *                       highest number already on `origin/main` in that log.
+ *   0b. single-plan-pr — plan branches only: refuses a diff that touches an
+ *                       iteration's topology file when another OPEN PR's
+ *                       diff already touches that SAME iteration's topology
+ *                       file (D-069 task 19 / #336). Ordinary task-branch
+ *                       PRs touch no topology file, so this passes trivially.
  *   1. verify-brief   — brief-section grammar vs the current branch (task
  *                       branches: full contract; plan branches: no-Closes
  *                       guard; other branches: bypass).
@@ -102,6 +109,89 @@ export function resolveShippableArgs(
   return { finalArgs, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
+/**
+ * Parses an iteration slug from a touched file path, when that path is an
+ * active (non-`completed/`) iteration topology file. Returns `null` for
+ * everything else — including `README.md` and `*.tokens.md`, neither of
+ * which is a topology file the single-plan-PR guard (below) cares about.
+ */
+export function iterationSlugFromTopologyPath(path: string): string | null {
+  const m = path.match(/^aeg-root\/iterations\/([^/]+)\.md$/)
+  if (!m) return null
+  const slug = m[1] as string
+  if (slug === 'README' || slug.endsWith('.tokens')) return null
+  return slug
+}
+
+export type OpenPrFiles = { number: number; files: string[] }
+
+/**
+ * Single-plan-PR guard (D-069 task 19 / #336): refuses a plan-branch diff
+ * that touches an iteration's topology file when another OPEN PR's diff
+ * already touches that SAME iteration's topology file. Ends the plan-PR
+ * race that produced two concurrent plan PRs for `aeg-governance-hardening`
+ * itself (#352/#354) — each cut from `origin/main` unaware of the other's
+ * newly-cut Issue.
+ *
+ * Pure — no `gh`/`git` I/O. `branchFiles` is this branch's diff vs
+ * `origin/main` (`git diff --name-only`); `otherOpenPrs` is every other
+ * currently-open PR's touched files (the caller excludes this PR's own
+ * number when editing). An ordinary task-branch PR touches no topology
+ * file at all, so `branchFiles` yields no slugs and this passes trivially
+ * without even needing `otherOpenPrs`.
+ */
+export function checkSinglePlanPr(
+  branchFiles: string[],
+  otherOpenPrs: OpenPrFiles[]
+): { ok: boolean; message?: string } {
+  const touchedSlugs = new Set(branchFiles.map(iterationSlugFromTopologyPath).filter((s): s is string => s !== null))
+  if (touchedSlugs.size === 0) return { ok: true }
+
+  for (const pr of otherOpenPrs) {
+    const otherSlugs = new Set(pr.files.map(iterationSlugFromTopologyPath).filter((s): s is string => s !== null))
+    for (const slug of touchedSlugs) {
+      if (otherSlugs.has(slug)) {
+        return {
+          ok: false,
+          message: `single-plan-pr: another open PR (#${pr.number}) already touches iteration "${slug}"'s topology file. Only one open plan PR per iteration is allowed at a time — wait for #${pr.number} to merge or close, or coordinate with its author.`
+        }
+      }
+    }
+  }
+  return { ok: true }
+}
+
+function currentBranchTouchedFiles(): string[] {
+  return execSync('git diff --name-only origin/main...HEAD', { encoding: 'utf8' })
+    .split('\n')
+    .map((f) => f.trim())
+    .filter(Boolean)
+}
+
+function fetchOtherOpenPrFiles(excludePrNumber: number | null): OpenPrFiles[] {
+  const out = execSync('gh pr list --state open --json number,files', { encoding: 'utf8' })
+  const all: Array<{ number: number; files: Array<{ path: string }> }> = JSON.parse(out)
+  return all
+    .filter((pr) => pr.number !== excludePrNumber)
+    .map((pr) => ({ number: pr.number, files: pr.files.map((f) => f.path) }))
+}
+
+/** Wires the pure `checkSinglePlanPr` check to live `git`/`gh` state. Skips the `gh` call entirely for ordinary task PRs (no topology file touched). */
+function checkSinglePlanPrGate(editPrNumber: number | null): void {
+  const branchFiles = currentBranchTouchedFiles()
+  const touchesTopology = branchFiles.some((f) => iterationSlugFromTopologyPath(f) !== null)
+  if (!touchesTopology) return
+
+  let otherPrs: OpenPrFiles[]
+  try {
+    otherPrs = fetchOtherOpenPrFiles(editPrNumber)
+  } catch {
+    fail('single-plan-pr gate: could not query open PRs via `gh pr list` — check gh auth and retry.')
+  }
+  const result = checkSinglePlanPr(branchFiles, otherPrs)
+  if (!result.ok) fail(result.message as string)
+}
+
 function runGate(label: string, script: string, scriptArgs: string[], env: Record<string, string>): void {
   try {
     execFileSync('bun', [script, ...scriptArgs], {
@@ -163,6 +253,7 @@ export function main(): void {
   const isEdit = args[0] === 'edit'
   const ghArgs = isEdit ? args.slice(1) : args
   const bodyArgs = isEdit ? ghArgs.slice(1) : ghArgs
+  const editPrNumber = isEdit && ghArgs[0] && /^\d+$/.test(ghArgs[0]) ? Number(ghArgs[0]) : null
 
   const branch = process.env.BRANCH || currentBranch()
   const bodyResult = locateBody(bodyArgs)
@@ -183,6 +274,7 @@ export function main(): void {
 
   console.log(`[open-pr] validating against branch \`${branch}\`…`)
   checkDecisionNumbersFresh()
+  checkSinglePlanPrGate(editPrNumber)
   if (body !== null) {
     runGate('brief-validation', 'packages/aeg-core/bin/verify-brief.ts', [], { BRANCH: branch, PR_BODY: body })
     runGate('verify-docs', 'packages/aeg-core/bin/verify-docs.ts', ['--pr'], { PR_BODY: body })

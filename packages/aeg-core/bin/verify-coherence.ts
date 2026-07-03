@@ -461,7 +461,10 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
   // T3 — post-forge so enrichedEntries can be used for pre-cutoff date proxy
   results.push(checkT3(allEntries, ciIterationSlug, enrichedEntries, forgeUnavailableSlugs))
 
-  // T2 / R1 checks — share one batched label-scoped Issue fetch (number + body + labels)
+  // T2 / R1 checks — share one batched label-scoped Issue fetch (number + body + labels).
+  // The fetch itself stays repo-wide (all active slugs) so --json/audit mode
+  // keeps full coverage; only checkT2's own failure computation is scoped by
+  // ciIterationSlug, mirroring T3.
   const activeSlugs = files.filter((f) => !f.archived).map((f) => f.slug)
   const issuesBySlug = await fetchOpenIssuesByLabel(activeSlugs, owner, repoName, token)
 
@@ -478,7 +481,7 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
     }
     topologyIssuesBySlug.set(f.slug, nums)
   }
-  results.push(checkT2(openIssueNumsBySlug, topologyIssuesBySlug))
+  results.push(checkT2(openIssueNumsBySlug, topologyIssuesBySlug, ciIterationSlug))
   results.push(checkR1(issuesBySlug, R1_GRANDFATHERED_ISSUES))
 
   // D1 check
