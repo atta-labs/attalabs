@@ -1,5 +1,5 @@
 # Iteration: aeg-studio-cleanup — July 2026
-Lifecycle: planned
+Lifecycle: active
 
 Goal (execution, not roadmap-why): curate AEG Studio's UI surface — add missing
 canonical reference content, remove unwanted iteration-view surfaces (dependency
@@ -18,6 +18,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 2 | Remove dependency-graph + board view, table-only task list     | #290  | aeg           | —          | —              |
 | 3 | Status badge colors: in-flight/in-review toward cyan/blue      | #291  | aeg           | —          | —              |
 | 4 | Exclude iteration execution files from docs nav                | #292  | aeg, aeg-core | aeg-consolidation #265 | —  |
+| 5 | Remove dead "Dependency graph" topbar link (`/graph` has no page) | #331  | aeg           | —          | —              |
 
 ## Cross-iteration dependencies
 

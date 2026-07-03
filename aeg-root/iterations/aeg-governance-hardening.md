@@ -28,7 +28,15 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 8  | Fix stale claim vs D-025 in atta-ai/attalabs CLAUDE.md                        | #280  | aeg        | —                      | —              |
 | 9  | Fix stale claim vs D-050/D-052 in cetana-spec.md + cetana-coordinator skill   | #281  | aeg        | —                      | —              |
 | 10 | Fix stale claim vs D-044/D-045 in herald-engine skill                         | #282  | aeg        | —                      | —              |
-| 11 | Deterministic dispatch gate: verify-dispatch, premise pinning, verify-task    | #324  | aeg, aeg-core | —                   | 1              |
+| 11 | Deterministic dispatch gate: verify-dispatch, premise pinning, verify-task    | #324  | aeg, aeg-core | —                   | 1, 15          |
+| 12 | Fix stale claims vs D-045/D-051 in herald web CLAUDE.md                       | #326  | aeg        | —                      | —              |
+| 13 | Fix herald web tests: deleted YAML path (ENOENT); CI-filter report            | #327  | herald     | —                      | —              |
+| 14 | Align commit-format docs with enforced commitlint grammar                     | #328  | aeg        | —                      | —              |
+| 15 | Clear the 44 pre-existing F1/F2 full-mode findings                            | #329  | aeg        | —                      | 11             |
+| 16 | Fresh-worktree bootstrap: wire UI generate into dev task                      | #330  | aeg        | —                      | —              |
+| 17 | Forge wrappers ship empty bodies on stream body-file input                    | #333  | aeg        | —                      | —              |
+| 18 | Pre-push guard: refuse pushes to a branch whose PR is merged/closed           | #335  | aeg        | —                      | 11             |
+| 19 | End the plan-PR race: CI-scope T2 + single-plan-PR guard                      | #336  | aeg        | —                      | 11, 18         |
 
 ## Backlog (this iteration, not yet dispatched)
 
