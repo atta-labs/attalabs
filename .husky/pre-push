@@ -37,17 +37,34 @@ while read -r _localref _localsha remoteref _remotesha; do
       ;;
   esac
 
-  # D-078: doc-owners coverage (C5) on the branch's CUMULATIVE diff vs
+  # D-078/D-080: doc-owners coverage (C5) on the branch's CUMULATIVE diff vs
   # origin/main — bound code cannot be published without its bound doc in the
   # same branch. Catches the follow-up-push window that the PR-creation gate
   # (open-pr.ts) cannot see. If the branch already has an open PR, its body
-  # supplies Doc-ack/Doc-waiver lines; on the first push there is no PR yet
-  # and the check is strict (the wrapper re-validates at PR-open anyway).
+  # supplies Doc-ack/Doc-waiver lines. On the FIRST push there is no PR yet,
+  # so evaluateC5 falls back to scanning this branch's own commit messages
+  # for the identical `Doc-ack:`/`Doc-waiver:` trailer grammar (D-080) — a
+  # developer is already authorized (roles/developer.md §127) to self-serve
+  # a Doc-waiver with a stated reason, Reviewer-judged later; this only
+  # closes the sequencing gap that made that self-service impossible before
+  # a PR existed. The same waiver line must still be copied into the PR body
+  # when opened — open-pr.ts's `--pr` check re-validates independently.
   pr_body=$(gh pr view "$branch" --json body -q .body 2>/dev/null || true)
-  if ! PR_BODY="$pr_body" bun packages/aeg-core/bin/verify-docs.ts --push; then
+  if [ -z "$pr_body" ]; then
+    commit_trailers=$(git log "origin/main..HEAD" --format=%B -- 2>/dev/null || true)
+  else
+    commit_trailers=""
+  fi
+  if ! PR_BODY="${pr_body}${commit_trailers}" bun packages/aeg-core/bin/verify-docs.ts --push; then
     echo "✖ pre-push: doc-owners coverage failed for \`$branch\` (output above)." >&2
-    echo "  Bound code changed without its bound doc — update the doc (or add a" >&2
-    echo "  Doc-waiver line to the open PR's body) and push again (D-078)." >&2
+    echo "  Bound code changed without its bound doc. Do exactly one of:" >&2
+    echo "    (a) update the bound doc in this branch and push again;" >&2
+    echo "    (b) if the doc genuinely does not need updating, add a" >&2
+    echo "        \`Doc-waiver: <pointer> — <reason>\` line to your last commit" >&2
+    echo "        message (amend or add a commit) and push again — this is a" >&2
+    echo "        normal developer self-service, NOT a Principal-only escalation" >&2
+    echo "        (D-080); carry the same line into the PR body when you open it." >&2
+    echo "  Only escalate to the Principal if you are unsure a waiver is justified." >&2
     exit 1
   fi
 done

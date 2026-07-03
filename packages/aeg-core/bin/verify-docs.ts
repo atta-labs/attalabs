@@ -15,7 +15,11 @@
  *   --push            Diff-based, C5 only. Ring-0 gate for `.husky/pre-push` (D-078): the
  *                     branch's cumulative diff vs origin/main must satisfy doc-owners
  *                     coverage before it can be published. PR_BODY (when the branch already
- *                     has an open PR) supplies Doc-ack/Doc-waiver lines; C0-C4 are PR-body
+ *                     has an open PR) supplies Doc-ack/Doc-waiver lines; on a first push
+ *                     (no PR yet), the hook instead passes this branch's own commit-message
+ *                     trailers as PR_BODY (D-080) — evaluateC5 parses the identical
+ *                     `Doc-ack:`/`Doc-waiver:` grammar regardless of source, so a developer
+ *                     can self-serve a waiver before any PR exists. C0-C4 are PR-body
  *                     contracts and stay at the PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
  *   (full)            Repo-wide structural checks. Catches unstatused specs, malformed
