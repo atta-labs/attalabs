@@ -19,7 +19,7 @@ Do NOT load for:
 - "How does Cetana work overall?" → read `apps/cetana-ai/README.md` and the spec
 - v3 operational model questions (roles, authority, tiers) → read `aeg-root/state-machine.md`
 
-**v3 model context:** Cetana is the dispatch + escalation layer of the v3 operational model. The Team Leader (Strategist mode) uses Cetana to dispatch Developer agents. The Developer uses `cetana_request_input` to escalate. The Archivist is a separate GitHub Action — it does not live in `apps/cetana-ai/coordinator/`.
+**v3 model context:** Cetana is the dispatch + escalation layer of the v3 operational model. The Team Leader (Strategist mode) uses Cetana to dispatch Developer agents. The Developer uses `cetana_request_input` to escalate. Neither Archivist variant lives in `apps/cetana-ai/coordinator/`: the per-task Archivist (`aeg-root/roles/archivist.md`) now runs automated post-merge via `.github/workflows/archivist.yml` (D-077); the Iteration Archivist (`aeg-root/roles/iteration-archivist.md`) remains manual, Principal-dispatched (D-050/D-052).
 
 ---
 
@@ -240,7 +240,7 @@ stdout/stderr are both streamed as `task.progress` events (claude uses stderr fo
 - **Do not auto-remove worktrees.** Manual cleanup only in V0. Removing a worktree mid-PR-review destroys uncommitted state.
 - **Use `--include-partial-messages` and `--verbose`.** Slice -1 used these; they ensure all output is captured in stream-json.
 - **The strategist and executor servers append `task.unblocked` independently.** Both the reply-to-blocked-task handler (strategist) and the request-input poller (executor) append `task.unblocked`. This means two `task.unblocked` events appear in the JSONL per escalation — that is expected and intentional. `StateManager.applyEvent` handles it idempotently.
-- **Archivist logic does not go in the coordinator.** The Archivist is a GitHub Action, not a Cetana component. If you're adding post-merge or drift-detection logic, it goes in `.github/workflows/archivist.yml` — not in `mcp-server-strategist.ts` or a new MCP tool. See D-019.
+- **Archivist logic does not go in the coordinator.** Neither Archivist variant is a Cetana component. The per-task Archivist's post-merge provenance/close-out is automated in CI (`.github/workflows/archivist.yml`, `packages/aeg-core/src/archive-task.ts`, D-077); the Iteration Archivist remains manual and Principal-dispatched (`aeg-root/roles/iteration-archivist.md`, D-050/D-052). If you're adding drift-detection or other Archivist-adjacent logic, it goes in one of those places — not in `mcp-server-strategist.ts` or a new MCP tool.
 - **The spec filename is `cetana-spec.md`, not `cetana-v0-spec.md`.** D-018 renamed the file and locked the naming convention. Any link or reference to `cetana-v0-spec.md` is stale and should be updated.
 
 ---
