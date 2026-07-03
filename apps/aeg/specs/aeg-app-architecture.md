@@ -122,6 +122,8 @@ A webhook-fed cache stores **forge facts** (Issue state, branch existence, PR st
 
 The shared docs renderer in `@atta/aeg-core` renders the `aeg-root/` model docs (constitution, roles, flow, contracts, routes & meanings) following **Vāda's local-markdown content pattern** (local `.md` under a content dir → a reader component; see `apps/vada-ai/web/content/` + the archived "science" doc layout). **Studio V1 uses it** for its docs section; **the future Portal reuses the same renderer** as its public documentation — which is why it is shared, not buried in Studio (the F5 lesson, global D-042).
 
+The docs nav is **manifest-driven, not hardcoded** (D-079). Studio's loader (`apps/aeg/web/studio/src/lib/docs/load-aeg-docs.ts`) filters every parsed doc through `isSurfacedDoc` from `@atta/aeg-core/docs` — the same "surfaced doc" manifest (`packages/aeg-core/src/docs/surfaced-manifest.ts`) that backs the `verify-docs` C6 coherence gate. There is **no "Iterations" nav section**: active iteration topology files, `.tokens.md` ledgers, `projects.md`, and `discovery/` artifacts are this repo's execution state, not model documentation, and are excluded by the manifest. `iterations/README.md` — the generic explainer of the iterations mechanism itself — is the one exception the manifest carves out; it renders under **Overview** via `section: Overview` frontmatter, not a dedicated section.
+
 ---
 
 ## 4. `aeg.sh` — the adoption scaffolder
