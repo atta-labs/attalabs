@@ -14,6 +14,11 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 |---|------------------------------------------------------------------------------------------------|-------|-----------------|------------|----------------|
 | 1 | Housekeeping — fix stale `herald-backlog.md` + `aeg-project/state.md`                          | #347  | herald          | —          | —              |
 | 2 | Production audit engine returning partial fallback (YAML tracing bug), carried from herald-agents-v2 T7 | #234  | herald          | —          | —              |
+| 4 | Footer: strip cross-product nav + per-product links, inline mark+name                          | #355  | herald, atta, vada, vitakka, attalabs | — | — |
+| 5 | Topbar buttons: Sign-out + Settings drifted from D-061's outline spec                           | #356  | herald          | —          | —              |
+
+**Note:** task 3 is intentionally absent — its Issue (#348, pricing-table gap) was dropped before
+promotion to this table (see "Dropped during planning" below); the number is retired, not reused.
 
 ## Dropped during planning
 
@@ -38,6 +43,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 
 ## Cross-iteration dependencies
 
-None. All three tasks are herald-project-local or additive-only to the shared `@atta/adapter-langgraph`
-package (T3); no other in-flight iteration touches `next.config.ts`, the two doc files, or the
-`PRICING` table.
+None. Tasks 1, 2, and 5 are herald-project-local. Task 4 touches the shared `packages/ui/footer`
+component (blast radius: herald, atta, vada, vitakka, attalabs) — checked `vada-production-v1.md`,
+`aeg-studio-cleanup.md`, and `aeg-governance-hardening.md` directly plus all open PRs for overlap
+on `packages/ui/footer` or `packages/ui/topbar`: none found.
