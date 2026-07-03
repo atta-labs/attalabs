@@ -142,8 +142,9 @@ bun run check             # Typecheck + lint + format
 
 ## Git Conventions
 
-Commit format: `Type: Brief description`
-Types: `Feat`, `Fix`, `Refactor`, `Style`, `Docs`, `Chore`
+Commit format: `Type: Brief description` (scope optional: `Type(scope): Brief description`, scope lower-case)
+Types: `Build`, `Docs`, `Feat`, `Chore`, `Fix`, `Perf`, `Refactor`, `Revert`, `Style`, `Test`
+Header line (type + scope + description) must be ≤72 characters.
 
 NEVER include `Generated with [Claude Code]` or `Co-Authored-By: Claude` attribution.
 
