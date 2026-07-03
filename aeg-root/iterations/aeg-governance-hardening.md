@@ -28,6 +28,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 8  | Fix stale claim vs D-025 in atta-ai/attalabs CLAUDE.md                        | #280  | aeg        | —                      | —              |
 | 9  | Fix stale claim vs D-050/D-052 in cetana-spec.md + cetana-coordinator skill   | #281  | aeg        | —                      | —              |
 | 10 | Fix stale claim vs D-044/D-045 in herald-engine skill                         | #282  | aeg        | —                      | —              |
+| 11 | Deterministic dispatch gate: verify-dispatch, premise pinning, verify-task    | #324  | aeg, aeg-core | —                   | 1              |
 
 ## Backlog (this iteration, not yet dispatched)
 
