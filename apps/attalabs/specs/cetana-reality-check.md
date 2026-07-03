@@ -16,6 +16,8 @@
 
 # Cetanā (Architect Layer) — Capability Reality Check
 
+Status: retired
+
 Written: April 20, 2026, late in a 10-hour Mastra migration session.
 Updated: April 27, 2026 — added V0 path section.
 Context: Captured after Dani asked "Is the Architect Agent really doable?" following multiple hours of AI-assisted debugging that required substantial human judgment to keep on track.

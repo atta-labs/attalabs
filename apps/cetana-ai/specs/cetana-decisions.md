@@ -1,5 +1,7 @@
 # Cetana — Decision Log
 
+Status: draft
+
 Architectural decisions for Cetana V0. Each decision records context, what was decided, alternatives considered, and consequences. Format matches `apps/vada-ai/specs/vada-decisions.md`.
 
 ---
@@ -8,6 +10,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 1
 
 **Context:** Need to choose the Strategist surface — the interface through which the Principal dispatches tasks and manages running agents.
 
@@ -25,6 +28,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 2
 
 **Context:** Strategist needs tools like `cetana.dispatch_task`; Executor needs `cetana_request_input`. These are different tool surfaces. How to organize them?
 
@@ -42,6 +46,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 2
 
 **Context:** Need a roadmap/task backing system. Options: GitHub Issues, GitHub Projects V2, Linear, plain text files.
 
@@ -60,6 +65,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 2
 
 **Context:** Need runtime state persistence for active tasks. Options: JSONL, SQLite, Postgres, plain JSON.
 
@@ -78,6 +84,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 1
 
 **Context:** Executor agents need isolated working environments. Multiple parallel executors cannot share the main working tree.
 
@@ -96,6 +103,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 2
 
 **Context:** Cetana is a coordination tool. A dashboard showing running tasks, agent output, and pending questions would be useful. Is it in V0?
 
@@ -113,6 +121,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 2
 
 **Context:** Where does Cetana V0 code live? Options: Atta monorepo, separate repo.
 
@@ -129,6 +138,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 1
 
 **Context:** The strategist MCP server and executor MCP server are separate processes. When the executor is blocked (waiting for Principal reply), how do the two servers communicate?
 
@@ -148,6 +158,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 2
 
 **Context:** Cetana's entire value proposition depends on one technical mechanism: Claude Code calling a custom MCP tool that blocks until an external process writes a reply. Before building V0, was this mechanism validated?
 
@@ -161,6 +172,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 2
 
 **Context:** After a task completes and its PR is merged, should the worktree be automatically removed?
 
@@ -178,6 +190,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 2
 
 **Context:** What tools does V0 expose?
 
@@ -191,6 +204,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 2
 
 **Context:** `coordination.md`, `state.md`, `plan.md`, `brief-authoring-rules.md` lived in Claude.ai project knowledge. Manual upload required for every update. Cetana V0 needs to read/write these files programmatically.
 
@@ -204,6 +218,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-09
 **Status:** Locked
+**Type:** 2
 
 **Context:** The Slice -1 prototype at `~/code/cetana-prototype/` served its purpose (validating the blocking MCP tool mechanism). Should it persist?
 
@@ -217,6 +232,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-10
 **Status:** Locked
+**Type:** 2
 
 **Context:** MCP tool handlers need access to the shared `StateManager` and `CetanaConfig`. How should this be threaded through?
 
@@ -234,6 +250,7 @@ Architectural decisions for Cetana V0. Each decision records context, what was d
 
 **Date:** 2026-05-10
 **Status:** Locked
+**Type:** 2
 
 **Context:** The MCP SDK provides both `McpServer` (high-level, Zod-integrated) and `Server` (low-level, plain JSON Schema). Which to use?
 

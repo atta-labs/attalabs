@@ -1,5 +1,7 @@
 # Legacy specs
 
+Status: draft
+
 This folder preserves historical product and architecture documents
 that have been superseded by current docs. They remain as
 provenance — readers can see how Vāda's thinking evolved.

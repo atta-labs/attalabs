@@ -1,5 +1,7 @@
 # Atta — Build Strategy
 
+Status: draft
+
 **Date:** May 3, 2026
 **Location:** `apps/atta-ai/specs/atta-build-strategy.md`
 **Purpose:** How Atta gets built. Sequencing, discipline, and first-user tests for each layer.

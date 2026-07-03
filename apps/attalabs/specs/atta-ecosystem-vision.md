@@ -1,5 +1,7 @@
 # Atta Ecosystem — Vision
 
+Status: draft
+
 **Last updated:** May 12, 2026 (post v2 naming clarification)
 **Originally:** May 3, 2026 (post round-4 deliberation)
 **Status:** Strategic direction document. Not a build specification. The canonical vision for Atta-the-product.

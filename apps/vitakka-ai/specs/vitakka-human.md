@@ -1,5 +1,7 @@
 # Vitakka
 
+Status: draft
+
 **Pāli: vitakka — directed thought, applied thought.**
 
 *An Atta product.*

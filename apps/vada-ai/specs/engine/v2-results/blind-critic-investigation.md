@@ -1,4 +1,6 @@
 # Blind Critic Investigation — Step 2 REVISED Rate
+
+Status: draft
 Generated: 2026-04-21
 
 ---

@@ -1,5 +1,7 @@
 # Vāda · V1 Technical Specification
 
+Status: retired
+
 **vada.ai**
 *From the Pali: the act of deliberating toward a conclusion.*
 

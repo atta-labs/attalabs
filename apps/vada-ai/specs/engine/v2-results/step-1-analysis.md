@@ -1,5 +1,7 @@
 # V2 Step 1 Analysis — A0 vs A1 Baseline Ceiling on Haiku 4.5
 
+Status: draft
+
 Generated: 2026-04-21
 
 ---

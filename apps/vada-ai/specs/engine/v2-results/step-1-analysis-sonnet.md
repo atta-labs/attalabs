@@ -1,5 +1,7 @@
 # V2 Step 3.5 Part 1 Analysis — A0S vs A1S Baseline Ceiling on Sonnet 4.6
 
+Status: draft
+
 Generated: 2026-04-22
 
 ---

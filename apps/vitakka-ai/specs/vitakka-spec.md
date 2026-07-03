@@ -1,5 +1,7 @@
 # Vitakka — Technical Specification
 
+Status: draft
+
 **Pāli: vitakka — directed thought, applied thought.**
 **Version:** 1.0 · May 2026
 **Status:** Specification ready for Phase 0. Build begins after Vāda V1 validates publicly.

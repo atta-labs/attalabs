@@ -1,5 +1,7 @@
 # AEG (product) — Decision Log
 
+Status: draft
+
 Product-local decisions for AEG **the product** (the UI + `aeg.sh` scaffolder). Model-level / cross-product decisions live in the global log (`aeg-project/decisions.md`) — notably D-029 (the AEG model) and D-030 (provenance / spec-conformance / observe mode).
 
 **Schema:** see `state-machine.md` Section 6. Append-only — never edit existing entries.

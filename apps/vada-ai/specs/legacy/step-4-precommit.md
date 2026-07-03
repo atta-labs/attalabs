@@ -1,5 +1,7 @@
 # Step 4 Pre-Commitment — The Existential Test
 
+Status: retired
+
 **Commit to repo as `apps/vada-ai/specs/step-4-precommit.md` BEFORE running Task 6. Once committed, cannot be modified.**
 
 Purpose: lock interpretation criteria before seeing results. Prevents post-hoc narrative rescue.

@@ -1,5 +1,7 @@
 # Vāda V2 — Experiment Plan (Execution)
 
+Status: retired
+
 **Status:** Ready for execution · April 21, 2026
 **Companion to:** `vada-v2-specification.md`
 **Test model:** Claude Haiku 4.5 (see spec §1.6 for rationale)

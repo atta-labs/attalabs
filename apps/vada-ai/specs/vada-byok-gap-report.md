@@ -1,5 +1,7 @@
 # Vāda · BYOK Gap Report
 
+Status: retired
+
 **Status:** Historical (April 30, 2026 framework, mostly superseded May 4, 2026).
 **Resolution:** All four gaps have been addressed, though not all on the paths originally proposed. See "Resolution status" block immediately below. Document retained for historical record; current architecture is described in `vada-byok-principles.md`.
 **Original purpose:** Catalog the gap between the original BYOK promise and the April 30 implementation. Sequence the work needed to close it.

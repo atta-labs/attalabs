@@ -1,4 +1,6 @@
 # V2 Task 3.5 Analysis — Sonnet 4.6 Replication
+
+Status: draft
 Generated: 2026-04-22
 
 ---
