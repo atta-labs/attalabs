@@ -18,12 +18,13 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { checkForgeTitle } from '../src/brief-validation'
 import { checkIssueRationale, isTaskIssueLabelSet } from '../src/issue-validation'
 
-const REPO_ROOT = join(import.meta.dir, '../../..')
+const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
 
 function fail(msg: string): never {
@@ -32,23 +33,63 @@ function fail(msg: string): never {
   process.exit(1)
 }
 
-function extractBody(args: string[]): string | null {
+/** Where a validated body's bytes came from — a file/stream path, or an inline arg value. */
+export type BodySource = { kind: 'file'; argIndex: number; inlineForm: boolean } | { kind: 'inline' }
+
+export interface BodyResult {
+  body: string
+  source: BodySource
+}
+
+/**
+ * Reads the body exactly once and records where it came from. `argIndex` +
+ * `inlineForm` let `resolveShippableArgs` find and replace the same slot
+ * later — the read here and the value shipped to `gh` must be the same
+ * buffered string, not two independent reads of the same path.
+ */
+export function locateBody(args: string[]): BodyResult | null {
   for (let i = 0; i < args.length; i++) {
     const a = args[i] as string
     if (a === '--body-file' || a === '-F') {
       const p = args[i + 1]
       if (!p) fail('`--body-file` given with no path.')
-      return readFileSync(p, 'utf8')
+      return { body: readFileSync(p, 'utf8'), source: { kind: 'file', argIndex: i + 1, inlineForm: false } }
     }
-    if (a.startsWith('--body-file=')) return readFileSync(a.slice('--body-file='.length), 'utf8')
+    if (a.startsWith('--body-file=')) {
+      const p = a.slice('--body-file='.length)
+      return { body: readFileSync(p, 'utf8'), source: { kind: 'file', argIndex: i, inlineForm: true } }
+    }
     if (a === '--body' || a === '-b') {
       const v = args[i + 1]
       if (v === undefined) fail('`--body` given with no value.')
-      return v
+      return { body: v, source: { kind: 'inline' } }
     }
-    if (a.startsWith('--body=')) return a.slice('--body='.length)
+    if (a.startsWith('--body=')) return { body: a.slice('--body='.length), source: { kind: 'inline' } }
   }
   return null
+}
+
+/**
+ * Materializes an already-buffered body into a fresh temp file and rewrites
+ * the `--body-file`/`-F` slot to point at it, so `gh`'s own read sees the
+ * SAME bytes this process validated — never a second read of the original
+ * path (which is empty for a stream by the time `gh` opens it). Inline
+ * `--body`/`-b` args are untouched: no file, no second read, no risk.
+ */
+export function resolveShippableArgs(
+  args: string[],
+  bodyResult: BodyResult | null
+): { finalArgs: string[]; cleanup: () => void } {
+  if (bodyResult?.source.kind !== 'file') {
+    return { finalArgs: args, cleanup: () => {} }
+  }
+  const dir = mkdtempSync(join(tmpdir(), 'aeg-open-issue-body-'))
+  const tempPath = join(dir, 'body.md')
+  writeFileSync(tempPath, bodyResult.body, 'utf8')
+  const finalArgs = [...args]
+  const { argIndex, inlineForm } = bodyResult.source
+  finalArgs[argIndex] = inlineForm ? `--body-file=${tempPath}` : tempPath
+  return { finalArgs, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
 /** Extracts --title/-t value from the passthrough args, if present. */
@@ -98,12 +139,14 @@ export function main(): void {
 
   const isEdit = args[0] === 'edit'
   const ghArgs = isEdit ? args.slice(1) : args
+  const bodyArgs = isEdit ? ghArgs.slice(1) : ghArgs
 
-  const body = extractBody(isEdit ? ghArgs.slice(1) : ghArgs)
-  const labels = extractLabels(isEdit ? ghArgs.slice(1) : ghArgs)
+  const bodyResult = locateBody(bodyArgs)
+  const body = bodyResult?.body ?? null
+  const labels = extractLabels(bodyArgs)
 
   if (isTaskIssueLabelSet(labels)) {
-    const title = extractTitle(isEdit ? ghArgs.slice(1) : ghArgs)
+    const title = extractTitle(bodyArgs)
     if (title !== null) {
       const t = checkForgeTitle(title)
       if (t.status === 'fail') fail(t.errors[0] as string)
@@ -128,9 +171,15 @@ export function main(): void {
     process.exit(0)
   }
 
-  const ghCmd = isEdit ? ['issue', 'edit', ...ghArgs.slice(0, 1), ...ghArgs.slice(1)] : ['issue', 'create', ...ghArgs]
-  const out = execFileSync('gh', ghCmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] })
-  console.log(out.trim())
+  const { finalArgs, cleanup } = resolveShippableArgs(bodyArgs, bodyResult)
+  try {
+    const finalGhArgs = isEdit ? [ghArgs[0] as string, ...finalArgs] : finalArgs
+    const ghCmd = isEdit ? ['issue', 'edit', ...finalGhArgs] : ['issue', 'create', ...finalGhArgs]
+    const out = execFileSync('gh', ghCmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] })
+    console.log(out.trim())
+  } finally {
+    cleanup()
+  }
 }
 
 if (import.meta.main) {
