@@ -33,7 +33,7 @@ apps/herald-ai/web/
 │   │   ├── sign-up/                # Clerk sign-up page
 │   │   ├── not-found.tsx           # Custom 404 page
 │   │   ├── api/
-│   │   │   ├── match/                 # POST /api/match — forensic audit
+│   │   │   ├── audit/                 # POST /api/audit — forensic audit (single + batch)
 │   │   │   │   └── route.ts
 │   │   │   ├── mcp/signals/           # GET /api/mcp/signals — GitHub signal detection
 │   │   │   │   └── route.ts
@@ -69,8 +69,7 @@ apps/herald-ai/web/
 │   │   └── index.ts               # Neon DB client
 │   ├── lib/
 │   │   ├── profile.ts             # Hardcoded DANI_PROFILE (legacy, DB is primary now)
-│   │   ├── prompts.ts             # Skeptical Auditor system prompt
-│   │   ├── signals.ts             # GitHub signal extraction
+│   │   ├── prompts.ts             # MATCH_REPORT_SCHEMA — parser contract for auditor output
 │   │   ├── types.ts               # MatchReport type
 │   │   └── sample-report.ts       # Hardcoded sample report (legacy)
 │   └── proxy.ts                   # Clerk middleware (protects /admin)
@@ -125,7 +124,7 @@ Theme tokens as CSS variables in `globals.css`. No hardcoded hex values in compo
 
 | Route | Method | Purpose |
 |-------|--------|---------|
-| `/api/match` | POST | Forensic audit — JD + profile → MatchReport via Claude |
+| `/api/audit` | POST | Forensic audit — JD + profile → MatchReport (single or batch, dispatched on payload shape) |
 | `/api/mcp/signals` | GET | GitHub signal detection for a username |
 | `/api/admin/onboarding-chat` | POST | AI onboarding conversation (streaming) |
 | `/api/admin/onboarding` | POST | Save onboarded profile to DB |
@@ -198,21 +197,20 @@ GITHUB_TOKEN=                # Higher GitHub API rate limits
 
 ### The Skeptical Auditor
 
-- The system prompt in `src/lib/prompts.ts` is **verbatim** from BUILD-SPEC.md Section 08
-- Do NOT modify it without explicit instruction from the user
+- The auditor's system prompt lives in `packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml` (D-051) — not in this app. `src/lib/prompts.ts` holds only `MATCH_REPORT_SCHEMA`, the parser contract injected into the YAML's `{{schema}}` template var at compile time
+- Do NOT modify the YAML without explicit instruction from the user
 - Zero marketing language in any AI output
 - Every claim must reference a detectable signal
 - Gaps are always honest, always paired with mitigation
 
-### Match API (`POST /api/match`)
+### Audit API (`POST /api/audit`)
 
-- Input: `{ job_description: string }` — frontend sends ONLY the JD
-- Server-side: fetches GitHub signals, merges with profile, calls Claude
-- Model: Claude Sonnet via Vercel AI SDK (`@ai-sdk/anthropic`)
-- LLM timeout: 25s with partial report fallback
-- Signal fetch: 3s timeout, degrades gracefully to empty signals
-- Caching: hash(JD + profile) → in-memory 24h
-- Parse + retry once on malformed JSON response
+- Single shape: `{ job_description, username? }` → `MatchReport` (no `username` → falls back to the hardcoded `DANI_PROFILE` on the server's `ANTHROPIC_API_KEY`). Batch shape: `{ jd, candidates: [...] }` → `{ results: [...] }`. Dispatched on presence of `candidates` (D-045)
+- Both shapes call the shared engine-backed cell `runSingleMatch`, which calls `run()` from `@atta/forensic-hiring-auditor` (`loadFlow` → `compileFlow` → `LangGraphAdapter.execute` against `packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml`, D-051) — no direct SDK call in this app
+- GitHub signal fetching is a model-invoked custom tool (`fetch_github_signals`, D-047), not a Herald pre-fetch — 3s timeout, degrades to no signals
+- LLM timeout: `AUDIT_LLM_TIMEOUT_MS` = 90s per attempt, 2 attempts, then falls back to a partial report
+- Batch requires Clerk auth and runs on the logged-in user's stored BYOK key (402 if missing); 1–10 candidates per call
+- Caching: hash(JD + profile + vendor + model) → in-memory 24h
 - Never show a spinner of death — always degrade gracefully
 
 ### Signal API (`GET /api/mcp/signals?username=[handle]`)
