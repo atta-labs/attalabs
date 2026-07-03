@@ -2,18 +2,17 @@ import 'server-only'
 import { existsSync } from 'node:fs'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import { buildDocNav, deriveTitle, parseDocFrontmatter } from '@atta/aeg-core/docs'
+import { buildDocNav, deriveTitle, isSurfacedDoc, parseDocFrontmatter } from '@atta/aeg-core/docs'
 import type { Doc, DocNav } from '@atta/aeg-core/docs'
 import { nestDocChildren } from './nest-doc-children'
 
-const SECTION_ORDER = ['Overview', 'Contracts', 'Roles', 'Diagrams', 'Iterations', 'Skills']
+const SECTION_ORDER = ['Overview', 'Contracts', 'Roles', 'Diagrams', 'Skills']
 const DOCS_BASE_PATH = '/docs'
 
 const SECTION_BY_DIR: Record<string, string> = {
   contracts: 'Contracts',
   roles: 'Roles',
   diagrams: 'Diagrams',
-  iterations: 'Iterations',
   skills: 'Skills'
 }
 
@@ -82,6 +81,7 @@ export async function loadAegDocs(): Promise<LoadedDocs> {
     const raw = await fs.readFile(filePath, 'utf8')
     const parsed = parseDocFrontmatter(raw)
     const slug = slugFromFile(filePath, root)
+    if (!isSurfacedDoc(`${slug}.md`, parsed.frontmatter)) continue
     const fallback = fallbackTitleFromSlug(slug)
     const title = deriveTitle(parsed, fallback)
     const section = parsed.frontmatter.section ?? defaultSectionFor(slug)
