@@ -8,10 +8,12 @@ import {
   checkL1,
   checkL2,
   checkL3,
+  checkR1,
   checkT1,
   checkT2,
   checkT3,
   type CheckResult,
+  type ForgeIssue,
   type IterationFile,
   type TaskEntry
 } from './coherence-checks'
@@ -369,6 +371,62 @@ describe('T2: orphan-task', () => {
     const r = checkT2(openIssues, topology)
     expect(r.status).toBe('fail')
     expect(r.failures[0]!.issue).toBe(101)
+  })
+})
+
+// ---------- R1: missing-rationale-field (D-078 planner→brief gate) -----------
+
+const FULL_RATIONALE_BODY = `
+**Boundary** — test boundary
+**Sizing** — test sizing
+**Project(s) + blast radius** — aeg
+**Dependency rationale** — none
+**Traps to avoid** — none
+**Suggested agent-class** — high
+**Stop-and-escalate** — none
+**Docs to keep coherent** — none
+`
+
+const MISSING_TRAPS_BODY = `
+**Boundary** — test boundary
+**Sizing** — test sizing
+**Project(s) + blast radius** — aeg
+**Dependency rationale** — none
+**Suggested agent-class** — high
+**Stop-and-escalate** — none
+**Docs to keep coherent** — none
+`
+
+function makeForgeIssue(number: number, body: string, labels: string[] = ['iteration:iter-1']): ForgeIssue {
+  return { number, body, labels }
+}
+
+describe('R1: missing-rationale-field', () => {
+  it('pass — complete rationale Issue passes', () => {
+    const issuesBySlug = new Map([['iter-1', [makeForgeIssue(101, FULL_RATIONALE_BODY)]]])
+    passesWithNoFailures(checkR1(issuesBySlug, new Set()))
+  })
+
+  it('fail — Issue missing a field is named in the message', () => {
+    const issuesBySlug = new Map([['iter-1', [makeForgeIssue(102, MISSING_TRAPS_BODY)]]])
+    const r = checkR1(issuesBySlug, new Set())
+    expect(r.status).toBe('fail')
+    expect(r.failures[0]!.issue).toBe(102)
+    expect(r.failures[0]!.iteration).toBe('iter-1')
+    expect(r.failures[0]!.reason).toMatch(/Traps to avoid/)
+  })
+
+  it('grandfathered failure → info note, not a blocking fail', () => {
+    const issuesBySlug = new Map([['iter-1', [makeForgeIssue(103, MISSING_TRAPS_BODY)]]])
+    const r = checkR1(issuesBySlug, new Set([103]))
+    expect(r.status).toBe('info')
+    expect(r.failures[0]!.grandfathered).toBe(true)
+    expect(r.note).toMatch(/grandfathered/)
+  })
+
+  it('non-task Issue (no iteration: label) is ignored', () => {
+    const issuesBySlug = new Map([['iter-1', [makeForgeIssue(104, MISSING_TRAPS_BODY, ['bug'])]]])
+    passesWithNoFailures(checkR1(issuesBySlug, new Set()))
   })
 })
 

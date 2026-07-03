@@ -47,7 +47,7 @@ Every pull request, on open and on every push, re-runs the same checks in CI:
 |---|---|
 | Brief validation | Title convention (all branches) and every required brief section (task branches) |
 | Closes linkage | A task pull request names, and will close, exactly its planned Issue |
-| Coherence oracle | Plan↔forge consistency across the whole repository: tasks closed without a merge, archived without their audit record, orphaned Issues, phantom references, unplanned placeholders in active iterations, duplicate decision numbers, broken document manifests |
+| Coherence oracle | Plan↔forge consistency across the whole repository: tasks closed without a merge, archived without their audit record, orphaned Issues, phantom references, unplanned placeholders in active iterations, duplicate decision numbers, broken document manifests, open task Issues missing a planner-rationale field (R1, D-078 — the same grammar the ring-0 Issue gate above enforces at creation) |
 | Documentation gate | Tier declaration and tier-appropriate documentation, including code→document ownership |
 | Test-plan state | Unticked test-plan boxes block merge readiness |
 | Typecheck + unit tests | The full shared-package toolchain (application builds are verified by the deployment pipeline) |

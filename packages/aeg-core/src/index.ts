@@ -49,13 +49,15 @@ export {
   checkL1,
   checkL2,
   checkL3,
+  checkR1,
   checkT1,
   checkT2,
   checkT3,
   COHERENCE_ENFORCED_FROM,
-  isGrandfathered
+  isGrandfathered,
+  R1_GRANDFATHERED_ISSUES
 } from './coherence-checks'
-export type { CheckFailure, CheckResult, IterationFile, TaskEntry } from './coherence-checks'
+export type { CheckFailure, CheckResult, ForgeIssue, IterationFile, TaskEntry } from './coherence-checks'
 export { buildProvenanceBlock, hasProvenance, taskRefFromBranch } from './archive-task'
 export type { MergedPrFacts } from './archive-task'
 export { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'

@@ -41,13 +41,15 @@ import {
   checkL2,
   checkL3,
   checkManifestValidity,
+  checkR1,
   checkT1,
   checkT2,
   checkT3,
   DOC_OWNERS_PATH,
-  parseIteration
+  parseIteration,
+  R1_GRANDFATHERED_ISSUES
 } from '../src/index'
-import type { CheckResult, ForgeFacts, IterationFile, TaskEntry } from '../src/index'
+import type { CheckResult, ForgeFacts, ForgeIssue, IterationFile, TaskEntry } from '../src/index'
 import { fetchForgeFacts } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-forge-facts'
 import { resolveGithubToken } from '../../../apps/aeg/web/studio/src/lib/forge/github-token'
 import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
@@ -223,20 +225,28 @@ export async function fetchProvenance(
 }
 
 type LabeledIssuesResponse = {
-  repository: Record<string, { nodes: Array<{ number: number }> } | null> | null
+  repository: Record<
+    string,
+    { nodes: Array<{ number: number; body: string; labels: { nodes: Array<{ name: string }> } }> } | null
+  > | null
 }
 
 /**
- * Fetch open issue numbers for each active iteration slug in one batched query.
- * Returns a Map from slug → number[].
+ * Fetch open issues (number + body + labels) for each active iteration slug
+ * in one batched query. Returns a Map from slug → ForgeIssue[].
+ *
+ * Extended for R1 (D-078 rationale-completeness gate — aeg-governance-hardening
+ * task 1) to carry `body`/`labels` alongside `number`; T2 (orphan-task) only
+ * needs the number, R1 needs the body to run `checkIssueRationale` against.
+ * One batched query, no per-issue round-trips, for both checks.
  */
 export async function fetchOpenIssuesByLabel(
   slugs: string[],
   owner: string,
   repo: string,
   token: string
-): Promise<Map<string, number[]>> {
-  const result = new Map<string, number[]>()
+): Promise<Map<string, ForgeIssue[]>> {
+  const result = new Map<string, ForgeIssue[]>()
   if (slugs.length === 0) return result
 
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
@@ -248,7 +258,7 @@ export async function fetchOpenIssuesByLabel(
     .map(
       (slug) => `
     ${toAlias(slug)}: issues(states: [OPEN], labels: [${JSON.stringify(`iteration:${slug}`)}], first: 100) {
-      nodes { number }
+      nodes { number body labels(first: 20) { nodes { name } } }
     }`
     )
     .join('')
@@ -269,7 +279,13 @@ export async function fetchOpenIssuesByLabel(
 
   for (const slug of slugs) {
     const conn = response.repository[toAlias(slug)]
-    result.set(slug, conn?.nodes?.map((n) => n.number) ?? [])
+    const issues: ForgeIssue[] =
+      conn?.nodes?.map((n) => ({
+        number: n.number,
+        body: n.body ?? '',
+        labels: n.labels?.nodes?.map((l) => l.name) ?? []
+      })) ?? []
+    result.set(slug, issues)
   }
 
   return result
@@ -445,9 +461,13 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
   // T3 — post-forge so enrichedEntries can be used for pre-cutoff date proxy
   results.push(checkT3(allEntries, ciIterationSlug, enrichedEntries, forgeUnavailableSlugs))
 
-  // T2 check
+  // T2 / R1 checks — share one batched label-scoped Issue fetch (number + body + labels)
   const activeSlugs = files.filter((f) => !f.archived).map((f) => f.slug)
-  const openIssuesBySlug = await fetchOpenIssuesByLabel(activeSlugs, owner, repoName, token)
+  const issuesBySlug = await fetchOpenIssuesByLabel(activeSlugs, owner, repoName, token)
+
+  const openIssueNumsBySlug = new Map<string, number[]>(
+    [...issuesBySlug].map(([slug, issues]) => [slug, issues.map((i) => i.number)])
+  )
 
   const topologyIssuesBySlug = new Map<string, Set<number>>()
   for (const f of files) {
@@ -458,7 +478,8 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
     }
     topologyIssuesBySlug.set(f.slug, nums)
   }
-  results.push(checkT2(openIssuesBySlug, topologyIssuesBySlug))
+  results.push(checkT2(openIssueNumsBySlug, topologyIssuesBySlug))
+  results.push(checkR1(issuesBySlug, R1_GRANDFATHERED_ISSUES))
 
   // D1 check
   results.push(checkD1(availableEntries, issueToEntry, taskToEntry))

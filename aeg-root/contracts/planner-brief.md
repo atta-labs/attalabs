@@ -44,6 +44,24 @@ Every field the Planner emits in the rationale (left) has exactly one named home
 
 ---
 
+## Rationale grammar (D-078)
+
+The eight left-column fields above are the rationale's **content**; this section defines its **format** — how a field must be written in the Issue body for it to be machine-detectable. Before D-078 the rationale was prose with no defined grammar; a check cannot parse what has no format.
+
+Two serializations are accepted, case-insensitive, matched by field name (or an established synonym — e.g. `Depends-on` for **Dependency rationale**, `§7` for **Docs to keep coherent**):
+
+- **Bold-inline:** `**<Field>** — <content>` (e.g. `**Boundary** — …`)
+- **Heading:** `### <Field>` followed by the content on subsequent lines (e.g. `### Traps to avoid`)
+
+A task Issue's body must carry all eight fields in one of these two forms. **Canonical implementation:** `packages/aeg-core/src/issue-validation.ts` (`checkIssueRationale`, `isTaskIssueLabelSet`) — the single grammar/parser, consumed at two enforcement points per `aeg-root/enforcement.md`'s ring model:
+
+- **Ring 0 (creation gate):** `packages/aeg-core/bin/open-issue.ts` refuses to create or edit a task Issue (any Issue labeled `iteration:<slug>`) whose body fails `checkIssueRationale`.
+- **Ring 1/2 (continuous oracle):** `verify-coherence`'s **R1** check re-runs the same function against the live stock of open task Issues, catching bodies edited by ungated writers or predating the gate. Pre-D-078 Issues are grandfathered by explicit Issue number (`R1_GRANDFATHERED_ISSUES` in `packages/aeg-core/src/coherence-checks.ts`) — visible as `info`, never blocking.
+
+R1 checks **presence/structure only**; whether the content is correct (sizing actually right, traps actually real) stays the Reviewer's judgment, never CI's.
+
+---
+
 ## Producer obligations (the Planner)
 
 - **Cut a real forge Issue for every task before dispatch.** Before the Brief Author can author a brief, the Planner must have replaced any `#TBD` in the topology table's Issue column with a real GitHub Issue number. A `#TBD` entry means the task has no forge Issue — it is neither briefable nor executable regardless of its derived status. The Brief Author hard-STOPs on `#TBD` during Dig (D-054); the Developer hard-STOPs at entry gate item 3 (D-054). Cutting the Issue makes the task forge-addressable and dispatchable (D-054, D-059); it is a Planner-only act.
