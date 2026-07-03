@@ -34,6 +34,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 14 | Align commit-format docs with enforced commitlint grammar                     | #328  | aeg        | —                      | —              |
 | 15 | Clear the 44 pre-existing F1/F2 full-mode findings                            | #329  | aeg        | —                      | 11             |
 | 16 | Fresh-worktree bootstrap: wire UI generate into dev task                      | #330  | aeg        | —                      | —              |
+| 17 | Forge wrappers ship empty bodies on stream body-file input                    | #333  | aeg        | —                      | —              |
 
 ## Backlog (this iteration, not yet dispatched)
 
