@@ -441,7 +441,13 @@ export type PrReadContext = { prHeadSha: string; touchedFiles: Set<string> } | n
 
 function gitFetchMainQuiet(): void {
   try {
-    execSync('git fetch origin main --quiet')
+    // stdio: 'ignore' — this process's own stdout is the JSON report (in
+    // --json mode); nothing this shells out to may write to it. `execSync`
+    // without an explicit `stdio` already pipes the child's streams into
+    // Node/Bun-internal buffers rather than the parent's real fds (verified:
+    // this alone doesn't leak), but 'ignore' makes the "never touches our
+    // stdout" invariant explicit rather than incidental.
+    execSync('git fetch origin main --quiet', { stdio: 'ignore' })
   } catch {
     // best-effort — a fetch failure leaves origin/main at whatever the local
     // checkout already has; downstream reads simply fall back to that state.

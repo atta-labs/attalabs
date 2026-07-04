@@ -80,6 +80,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -135,13 +136,18 @@ jobs:
 
       - name: Enforce coherence oracle result (blocking)
         if: always()
-        run: exit ${{ steps.oracle.outputs.exit }}
+        # Fails closed: if the oracle step never ran or never set its output
+        # (e.g. an earlier step failed), `steps.oracle.outputs.exit` is empty
+        # and a bare `exit` would silently succeed on this step's own $?
+        # instead of reflecting the real failure. Default to 1.
+        run: exit "${{ steps.oracle.outputs.exit || '1' }}"
 
   single-plan-pr-gate:
     name: Single-plan-PR guard (ring-1 backstop)
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
