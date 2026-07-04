@@ -9,6 +9,14 @@
 
 ---
 
+## July 4, 2026 — Task 22: turbo-ignore fallback + attalabs prefix fix
+
+### AEG
+
+- **Task 22 (#353)** — Added `--fallback=main` to `turbo-ignore` in all four `vercel.json` files (herald-ai, vada-ai, atta-ai, attalabs) so a branch's first deploy (no prior successful SHA to diff against) compares against `main` instead of silently building everything. Also added the `cd ../../.. &&` prefix to `apps/attalabs/web/vercel.json`, closing the gap the 2026-06-17 fix (`changelog/2026-06-17-fix-vercel-ignore.md`) left open for that app. Tier 0. Closes #353.
+
+---
+
 ## June 30, 2026 — herald-agents-v2 iteration close-out
 
 ### Herald / AEG
