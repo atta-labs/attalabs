@@ -38,6 +38,20 @@
  * swallow, documented in that file) and is out of this task's surface to
  * fix — see `roles/developer.md` §4 "Out of surface".
  *
+ * Readiness is read from the `dispatch-readiness: READY|NOT READY` line
+ * specifically, NOT verify-dispatch's combined exit code / final summary
+ * line. Discovered live on this task's own second pre-PR push: verify-
+ * dispatch's overall exit code also folds in `leftover-detection` — a
+ * pre-Step-0 "is it safe to branch fresh" advisory that reports `stop` on
+ * ANY branch with commits already ahead of origin/main. That is correct for
+ * its original purpose (deciding whether to run Step 0) but produces a false
+ * refusal here: a task legitimately mid-flight across multiple pre-PR pushes
+ * always has commits ahead of main, so the combined exit code would block
+ * every push after the first. The dispatch-readiness predicates (Issue-
+ * existence, depends-on, prior-archival, etc. — the actual entry-gate items
+ * this task mechanizes) are unaffected by leftover-detection and are what
+ * this gate cares about.
+ *
  * Usage: bun packages/aeg-core/bin/check-first-push-dispatch.ts <branch> <pr-exists:0|1>
  * Exit code: 0 = allow (push proceeds), 1 = refuse.
  */
@@ -48,6 +62,7 @@ import { checkFirstPushDispatchGate, type DispatchReadinessFact, parseTaskBranch
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 const INFRA_MARKER = 'severity:infra'
+const READINESS_LINE_RE = /^dispatch-readiness: (READY|NOT READY)$/m
 
 function ghReachable(): boolean {
   try {
@@ -59,18 +74,23 @@ function ghReachable(): boolean {
 }
 
 function runVerifyDispatch(iteration: string, taskId: string): { readiness: DispatchReadinessFact; output: string } {
+  let output: string
   try {
-    const output = execSync(`bun packages/aeg-core/bin/verify-dispatch.ts ${iteration} ${taskId}`, {
+    output = execSync(`bun packages/aeg-core/bin/verify-dispatch.ts ${iteration} ${taskId}`, {
       cwd: REPO_ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe']
     })
-    return { readiness: 'READY', output }
   } catch (e) {
     const err = e as { stdout?: string; stderr?: string }
-    const output = [err.stdout, err.stderr].filter(Boolean).join('\n')
-    return { readiness: output.includes(INFRA_MARKER) ? 'UNKNOWN' : 'NOT_READY', output }
+    output = [err.stdout, err.stderr].filter(Boolean).join('\n')
   }
+
+  if (output.includes(INFRA_MARKER)) return { readiness: 'UNKNOWN', output }
+
+  const match = READINESS_LINE_RE.exec(output)
+  if (!match) return { readiness: 'NOT_READY', output } // unparseable output — fail loud, never silently allow
+  return { readiness: match[1] === 'READY' ? 'READY' : 'NOT_READY', output }
 }
 
 if (import.meta.main) {
