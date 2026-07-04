@@ -9,10 +9,12 @@ import {
   checkLockAck,
   checkPlanPrNoCloses,
   checkPremiseCoverage,
+  checkPrincipalPlaceholder,
   checkProjectField,
   checkStopConditions,
   checkSurfaceMap,
   checkTestPlan,
+  checkTestPlanExclusivity,
   checkTierField,
   checkWorktreeStep0,
   headerRegion
@@ -94,6 +96,56 @@ describe('checkTestPlan', () => {
     // not something checkTestPlan catches.
     const body = 'Test Plan: unit-tests-only\n\n### 4. Technical surface map\n- apps/x/api/route.ts'
     expect(checkTestPlan(body).status).toBe('pass')
+  })
+})
+
+describe('checkTestPlanExclusivity', () => {
+  it('passes a legitimate unit-tests-only declaration with no checkbox items', () => {
+    const body = 'Test Plan: unit-tests-only — pure parser, no runtime surface.'
+    expect(checkTestPlanExclusivity(body).status).toBe('pass')
+  })
+
+  it('passes a legitimate mixed [agent]/[principal] plan with no unit-tests-only declaration', () => {
+    const body = '## Test plan\n\n- [ ] **[agent]** run the tests\n- [ ] **[principal]** eyeball it in browser'
+    expect(checkTestPlanExclusivity(body).status).toBe('pass')
+  })
+
+  it('fails when unit-tests-only is declared alongside a tagged checkbox item (PR #363 regression)', () => {
+    const body =
+      'Test Plan: unit-tests-only — fetchProvenance is pure-enough.\n\n' +
+      '- [x] **[agent]** New regression tests for both root causes pass.'
+    const r = checkTestPlanExclusivity(body)
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/mutually exclusive/)
+  })
+
+  it('fails regardless of checkbox ticked state', () => {
+    const body = 'Test Plan: unit-tests-only\n\n- [ ] **[principal]** None'
+    expect(checkTestPlanExclusivity(body).status).toBe('fail')
+  })
+})
+
+describe('checkPrincipalPlaceholder', () => {
+  it('passes when no [principal] item exists at all', () => {
+    expect(checkPrincipalPlaceholder('- [ ] **[agent]** run the tests').status).toBe('pass')
+  })
+
+  it('passes a legitimate [principal] item with real content', () => {
+    const body = '- [ ] **[principal]** Sign in → upload a CV → CLEAN report with grade A/B/C/D'
+    expect(checkPrincipalPlaceholder(body).status).toBe('pass')
+  })
+
+  it('fails a [principal] item whose content is a None placeholder (PR #363 regression)', () => {
+    const body =
+      '- [ ] **[principal]** None — this is a pure forge-query/detection-logic fix with no runtime/UI/auth surface.'
+    const r = checkPrincipalPlaceholder(body)
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/None.*placeholder/)
+  })
+
+  it('is case-insensitive on the None placeholder', () => {
+    const body = '- [x] **[principal]** none — nothing to verify here'
+    expect(checkPrincipalPlaceholder(body).status).toBe('fail')
   })
 })
 

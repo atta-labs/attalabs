@@ -32,10 +32,12 @@ export {
   checkLockAck,
   checkPlanPrNoCloses,
   checkPremiseCoverage,
+  checkPrincipalPlaceholder,
   checkProjectField,
   checkStopConditions,
   checkSurfaceMap,
   checkTestPlan,
+  checkTestPlanExclusivity,
   checkTierField,
   checkWorktreeStep0,
   headerRegion

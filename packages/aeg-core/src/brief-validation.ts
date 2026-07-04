@@ -88,6 +88,54 @@ export function checkTestPlan(prBody: string): BriefSectionResult {
 }
 
 /**
+ * Test Plan shape guard (aeg-governance-hardening task 20 follow-up, #340) —
+ * `Test Plan: unit-tests-only` and a tagged checkbox item are mutually
+ * exclusive per brief-authoring §9 ("The two fields are coupled; Brief
+ * Validation cross-checks them"): `unit-tests-only` declares there is no
+ * checklist because there is nothing runtime to check off, so a body
+ * carrying both is self-contradictory. Regression source: PR #363's own
+ * original brief declared `unit-tests-only` while its Test Plan also listed
+ * `- [x]`/`- [ ]` `[agent]`/`[principal]` items — a combination this gate
+ * previously let through.
+ */
+export function checkTestPlanExclusivity(prBody: string): BriefSectionResult {
+  if (!/Test Plan\s*:\s*unit-tests-only/i.test(prBody)) return { status: 'pass', errors: [] }
+  if (/^-\s*\[[ xX]\]\s*\*{2}\[(?:agent|principal)\]\*{2}/im.test(prBody)) {
+    return {
+      status: 'fail',
+      errors: [
+        'brief-validation Test Plan shape: `Test Plan: unit-tests-only` and a `- [ ]`/`- [x]` tagged checkbox item are mutually exclusive (brief-authoring §9) — declare one form, not both.'
+      ]
+    }
+  }
+  return { status: 'pass', errors: [] }
+}
+
+/**
+ * Principal-placeholder guard (aeg-governance-hardening task 20 follow-up,
+ * #340) — a `**[principal]**` checkbox item whose content is a
+ * none-placeholder ("None — …") is untickable by construction: nobody can
+ * check a box asserting there is nothing to verify, so it blocks the merge
+ * gate forever. If a brief genuinely has no principal-runnable surface, the
+ * item must be omitted entirely, not declared and left permanently unticked.
+ */
+export function checkPrincipalPlaceholder(prBody: string): BriefSectionResult {
+  const lineRe = /^-\s*\[[ xX]\]\s*\*{2}\[principal\]\*{2}(.*)$/gim
+  for (const m of prBody.matchAll(lineRe)) {
+    const content = m[1] ?? ''
+    if (/^\s*None\b/i.test(content)) {
+      return {
+        status: 'fail',
+        errors: [
+          'brief-validation Test Plan shape: a `**[principal]**` checkbox item is a "None" placeholder — if there is no principal-runnable surface, omit the item entirely; an untickable placeholder box blocks the merge gate forever.'
+        ]
+      }
+    }
+  }
+  return { status: 'pass', errors: [] }
+}
+
+/**
  * Premise coverage (this task, aeg-governance-hardening 11, #324) — pass iff
  * either (a) at least one `Premise:` assertion's path matches a file in
  * `surfaceFiles` (the §4 surface map's file list — in practice, the PR's
@@ -284,6 +332,8 @@ export function checkBriefSections(
   const results = [
     checkTierField(prBody, readTier),
     checkTestPlan(prBody),
+    checkTestPlanExclusivity(prBody),
+    checkPrincipalPlaceholder(prBody),
     checkSurfaceMap(prBody),
     checkDocUpdateList(prBody),
     checkWorktreeStep0(prBody),

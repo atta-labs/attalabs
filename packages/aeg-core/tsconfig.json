@@ -6,6 +6,6 @@
       "@atta/ui/components": ["../ui/libraries/basic/components/index.ts"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vitest.config.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "bin/**/*.ts", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]
 }
