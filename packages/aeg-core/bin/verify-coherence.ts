@@ -329,12 +329,13 @@ export async function fetchProvenance(
       continue
     }
     const closer = raw.timelineItems?.nodes?.[0]?.closer
-    if (!isPrCloser(closer ?? null)) {
+    const c = closer ?? null
+    if (!isPrCloser(c)) {
       needsFallback.push(n)
       continue
     }
-    const bodyHas = PROVENANCE_PATTERN.test(closer.body ?? '')
-    const commentHas = closer.comments.nodes.some((c) => PROVENANCE_PATTERN.test(c.body))
+    const bodyHas = PROVENANCE_PATTERN.test(c.body ?? '')
+    const commentHas = c.comments.nodes.some((x) => PROVENANCE_PATTERN.test(x.body))
     result.set(n, bodyHas || commentHas)
   }
 
