@@ -12,9 +12,12 @@
 #   1 and 8. Idempotent per PR (skips if a provenance comment already exists) and skips
 #   non-task branches. See packages/aeg-core/src/archive-task.ts.
 #
-# daily-drift: Runs on schedule. Checks for spec drift (spec references code paths that
-#   no longer exist; decision log entries reference PRs that were reverted). V1 will open
-#   Issues for contradictions that block Tier 3 work.
+# daily-drift: Runs on schedule (or manually via workflow_dispatch). Flags stuck
+#   row-adjacent blockers: a task whose Issue has been open past a threshold while
+#   a later topology row in the same iteration has not started. Never fails red —
+#   a notification channel (label + idempotent tracking comment on the stuck
+#   Issue), not a merge gate. Broader spec/code-divergence detection is a future
+#   scope, not implemented here. See packages/aeg-core/src/stale-blocker.ts.
 
 name: Archivist
 
@@ -25,6 +28,7 @@ on:
     branches: [main]
   schedule:
     - cron: "0 2 * * *"  # daily at 02:00 UTC
+  workflow_dispatch:
 
 jobs:
   brief-validation:
@@ -88,12 +92,26 @@ jobs:
         run: bun packages/aeg-core/bin/archive-task.ts
 
   daily-drift:
-    name: Daily Drift Check (stub)
-    if: github.event_name == 'schedule'
+    name: Daily Drift Check (stuck row-adjacent blockers)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
-      - name: Stub — exits 0
-        run: |
-          echo "daily-drift V0.7 stub — drift check skipped"
-          echo "V1 will detect spec/code divergence and open contradiction Issues"
-          exit 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run stale-blocker
+        continue-on-error: true # never-red — this job is a notification channel, not a gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun packages/aeg-core/bin/stale-blocker.ts
