@@ -59,7 +59,7 @@ import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { resolveGithubToken } from '../../../apps/aeg/web/studio/src/lib/forge/github-token'
-import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
+import { resolveRepo, type RepoRef } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
 import {
   type BaselineEntry,
   captureBaseline,
@@ -105,9 +105,9 @@ type IssueJson = { number: number; state: 'OPEN' | 'CLOSED'; body: string; label
 
 const issueCache = new Map<number, IssueJson | null>()
 
-function ghIssueView(num: number): IssueJson | null {
+function ghIssueView(num: number, repo: RepoRef): IssueJson | null {
   if (issueCache.has(num)) return issueCache.get(num) ?? null
-  const result = shJson<IssueJson>(`gh issue view ${num} --json number,state,body,labels`)
+  const result = shJson<IssueJson>(`gh issue view ${num} -R ${repo.owner}/${repo.repo} --json number,state,body,labels`)
   issueCache.set(num, result)
   return result
 }
@@ -115,8 +115,11 @@ function ghIssueView(num: number): IssueJson | null {
 type PrListEntry = { number: number; headRefName: string; state: 'OPEN' | 'CLOSED' | 'MERGED'; mergedAt: string | null }
 
 /** One batched fetch of every PR (any state) whose head branch belongs to this iteration. */
-function fetchIterationBranchPrs(iterationSlug: string): Map<string, PrListEntry> {
-  const all = shJson<PrListEntry[]>('gh pr list --state all --json number,headRefName,state,mergedAt --limit 300') ?? []
+function fetchIterationBranchPrs(iterationSlug: string, repo: RepoRef): Map<string, PrListEntry> {
+  const all =
+    shJson<PrListEntry[]>(
+      `gh pr list -R ${repo.owner}/${repo.repo} --state all --json number,headRefName,state,mergedAt --limit 300`
+    ) ?? []
   const prefix = `task/${iterationSlug}/`
   const map = new Map<string, PrListEntry>()
   for (const pr of all) {
@@ -154,7 +157,8 @@ function resolveSameIterationTask(edge: string, iteration: Iteration): Task | un
 function resolveDependsOn(
   edges: string[],
   iteration: Iteration,
-  branchPrs: Map<string, PrListEntry>
+  branchPrs: Map<string, PrListEntry>,
+  repo: RepoRef
 ): DispatchDependsOnFact[] {
   return edges.map((edge) => {
     const sameTask = resolveSameIterationTask(edge, iteration)
@@ -162,14 +166,14 @@ function resolveDependsOn(
       const pr = branchPrs.get(sameTask.id)
       if (pr) return { id: edge, issue: sameTask.issue, merged: pr.state === 'MERGED' }
       if (sameTask.issue !== null) {
-        const issueJson = ghIssueView(sameTask.issue)
+        const issueJson = ghIssueView(sameTask.issue, repo)
         return { id: edge, issue: sameTask.issue, merged: issueJson?.state === 'CLOSED' }
       }
       return { id: edge, issue: null, merged: false }
     }
     const directIssue = directIssueNumFromEdge(edge)
     if (directIssue !== null) {
-      const issueJson = ghIssueView(directIssue)
+      const issueJson = ghIssueView(directIssue, repo)
       return { id: edge, issue: directIssue, merged: issueJson?.state === 'CLOSED' }
     }
     // Unresolvable edge (neither a same-iteration task id nor a #NNN ref) —
@@ -202,13 +206,14 @@ function resolvePriorTask(
   iteration: Iteration,
   taskId: string,
   branchPrs: Map<string, PrListEntry>,
-  provenanceByIssue: Map<number, boolean>
+  provenanceByIssue: Map<number, boolean>,
+  repo: RepoRef
 ): DispatchPriorTaskFact | null {
   const idx = iteration.tasks.findIndex((t) => t.id === taskId)
   if (idx <= 0) return null
   const prior = iteration.tasks[idx - 1] as Task
   const pr = branchPrs.get(prior.id)
-  const issueJson = prior.issue !== null ? ghIssueView(prior.issue) : null
+  const issueJson = prior.issue !== null ? ghIssueView(prior.issue, repo) : null
   return {
     id: prior.id,
     issue: prior.issue,
@@ -230,7 +235,11 @@ function otherActiveIterationSlugs(excludeSlug: string): string[] {
 }
 
 /** One entry per project named in `projects`: the first active, all-Issues-closed prior iteration found, or a null-slug pass-through when none is found. */
-function resolvePriorIterationArchival(projects: string[], excludeSlug: string): DispatchPriorIterationFact[] {
+function resolvePriorIterationArchival(
+  projects: string[],
+  excludeSlug: string,
+  repo: RepoRef
+): DispatchPriorIterationFact[] {
   const candidates = otherActiveIterationSlugs(excludeSlug)
   const facts: DispatchPriorIterationFact[] = []
 
@@ -245,7 +254,7 @@ function resolvePriorIterationArchival(projects: string[], excludeSlug: string):
 
       const openIssues =
         shJson<Array<{ number: number }>>(
-          `gh issue list --label "iteration:${slug}" --state open --json number --limit 100`
+          `gh issue list -R ${repo.owner}/${repo.repo} --label "iteration:${slug}" --state open --json number --limit 100`
         ) ?? []
       if (openIssues.length === 0) {
         found = { project, priorIterationSlug: slug, archived: false }
@@ -476,11 +485,11 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
     process.exit(1)
   }
 
-  const issueJson = task.issue !== null ? ghIssueView(task.issue) : null
+  const issueJson = task.issue !== null ? ghIssueView(task.issue, repo) : null
   const issueRationalePass = issueJson ? checkIssueRationale(issueJson.body).status === 'pass' : true
 
-  const branchPrs = fetchIterationBranchPrs(iterationSlug)
-  const dependsOn = resolveDependsOn(task.dependsOn, iteration as Iteration, branchPrs)
+  const branchPrs = fetchIterationBranchPrs(iterationSlug, repo)
+  const dependsOn = resolveDependsOn(task.dependsOn, iteration as Iteration, branchPrs, repo)
   const conflictsWith = resolveConflictsWith(task.conflictsWith, iteration as Iteration, branchPrs)
 
   const priorTaskRaw = resolvePriorTaskRaw(iteration as Iteration, taskId)
@@ -488,9 +497,9 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
   if (priorTaskRaw?.issue !== null && priorTaskRaw !== null) {
     provenanceByIssue = await fetchProvenance([priorTaskRaw.issue as number], repo.owner, repo.repo, token)
   }
-  const priorTask = resolvePriorTask(iteration as Iteration, taskId, branchPrs, provenanceByIssue)
+  const priorTask = resolvePriorTask(iteration as Iteration, taskId, branchPrs, provenanceByIssue, repo)
 
-  const priorIterationArchival = resolvePriorIterationArchival(task.projects, iterationSlug)
+  const priorIterationArchival = resolvePriorIterationArchival(task.projects, iterationSlug, repo)
 
   const gateResult = checkDispatchReadiness({
     iterationSlug,
