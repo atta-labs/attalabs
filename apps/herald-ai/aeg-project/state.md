@@ -1,7 +1,8 @@
 # Herald — Current State
 
-**Last updated:** June 22, 2026
+**Last updated:** July 4, 2026
 **Purpose:** Per-product snapshot for Herald. Agents working in `apps/herald-ai/` read this before starting any task.
+**Current iteration:** `herald-hardening-v1` (July 2026) — closing out items left dangling after herald-agents-v2's close, including this file's own housekeeping.
 
 ---
 
@@ -17,8 +18,6 @@ A candidate creates an **Envoy**: a public profile page at `herald.attalabs.dev/
 
 - **Provision fresh Upstash Redis creds** — per-key rate limiting degrades gracefully but is inactive. Provision at upstash.com, update `.env.local` + Vercel env vars for `herald.attalabs.dev`.
 - **`MASTER_ENCRYPTION_KEY`** must be present in Herald's Vercel env for BYOK decrypt path to work.
-- **Dispatch task 6 (#172)** — per-owner per-day rate limit on public profile audits. Depends on task 2 (#168, merged).
-- **Dispatch task 7 (#173)** — deploy verification: `herald.attalabs.dev` Phase 2 flows (avatar, CV upload, bio save, onboarding, Bulk Audit with real BYOK). Depends on task 2 (#168, merged).
 
 ---
 
@@ -48,11 +47,13 @@ Herald's AI call migrated onto `@atta/engine` + `@atta/adapter-langgraph` as a Y
 
 **Key decisions:** D-044 (engine migration), D-045 (endpoint unification), D-047 (custom client-side tool execution in shared engine).
 
-### Phase 4 — Agent migration + UX overhaul ← ACTIVE (herald-agents-v2 iteration)
+### Phase 4 — Agent migration + UX overhaul ✅ (herald-agents-v2 iteration, complete — closed 2026-06-30)
 
-Herald's auditor migrated into `packages/agents/forensic-hiring-auditor/` (D-046/D-051, task 2 — PR #150). MCP surface exposed at `/api/mcp` as `herald__audit` (task 3 — PR #156). Bulk Audit result surface overhauled (task 4): matrix now has row/column headers, compact result cards (grade + confidence badge + hard-req ratio + signal count + recommendation excerpt), and inline expandable full report via Collapsible. Owner appearance editor and Settings hub relocated from `(app)/{ui,settings}` to `/[username]/(owner)/{ui,settings}` via sibling route-group split (D-061, task 8 — PR #213); D-035 (Lock: YES) preserved by construction. Topbar gained right-cluster icon+label buttons (Settings on `HeraldTopBar`, Theme on `envoy-shell`) and a mobile collapse (logo · color-scheme · hamburger).
+Herald's auditor migrated into `packages/agents/forensic-hiring-auditor/` (D-046/D-051, task 2 — PR #150). MCP surface exposed at `/api/mcp` as `herald__audit` (task 3 — PR #156). Bulk Audit result surface overhauled (task 4 — PR #191): matrix now has row/column headers, compact result cards (grade + confidence badge + hard-req ratio + signal count + recommendation excerpt), and inline expandable full report via Collapsible. Report quality improved (task 5 — PR #193): evidence-tiered prompt (High/Medium/Low signal classification, recency weighting, quantitative grade thresholds, interview hook rules) with fixture-based before/after regression tests. Owner appearance editor and Settings hub relocated from `(app)/{ui,settings}` to `/[username]/(owner)/{ui,settings}` via sibling route-group split (D-061, task 8 — PR #213); D-035 (Lock: YES) preserved by construction. Topbar gained right-cluster icon+label buttons (Settings on `HeraldTopBar`, Theme on `envoy-shell`) and a mobile collapse (logo · color-scheme · hamburger).
 
-In progress: tasks 6–7 (per-owner rate limit, deploy verification). Tasks 5 (report quality) and 8 (route relocation) merged.
+Task 6 (per-owner per-day rate limit, #172) — verified already-implemented during task 7's deploy verification; closed by Principal, no PR (AEG no-PR-backing close rule). Task 7 (deploy verification, #173 — PR #235) confirmed Phase 2 flows and Bulk Audit code paths in production; surfaced open bug #234 (prod `ANTHROPIC_API_KEY` likely expired, causing partial-fallback audits — tracked separately, see `herald-hardening-v1` task 2) and a Drizzle unique-constraint naming fix.
+
+All 8 herald-agents-v2 tasks merged or closed as of 2026-06-30; iteration archived to `aeg-root/iterations/completed/herald-agents-v2.md` (close-out: `aeg-project/changelog/2026-06-30-herald-agents-v2-close.md`). Current iteration is `herald-hardening-v1` (see header) — closing #234 and this file's own bookkeeping.
 
 ### Phase 5 — Recruiter as distinct product surface (future)
 Separate onboarding, pricing tier, team invite. B2B. Do not spec until Phase 4 validated.
@@ -75,7 +76,6 @@ Separate onboarding, pricing tier, team invite. B2B. Do not spec until Phase 4 v
 
 **Known issues:**
 - Upstash Redis creds expired — per-key rate limit wired at `/api/audit` middleware but not enforced (graceful degradation). Provision fresh creds at upstash.com.
-- PRICING table missing `claude-sonnet-4-20250514` — every Herald audit reports `$0.00` estimated cost. Pre-existing; not caused by the herald-onto-engine iteration. Fix: add pinned model to adapter PRICING table (shared-package change, Vāda in blast radius).
 - `MASTER_ENCRYPTION_KEY` must be present in Herald's Vercel env for the BYOK decrypt path to work (audit calls with a stored provider key will fail without it).
 - Drizzle constraint naming mismatch: `herald_profiles_username_key` vs `herald_profiles_username_unique` — prompts on every `drizzle-kit push`. Cosmetic.
 
