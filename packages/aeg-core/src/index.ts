@@ -98,3 +98,14 @@ export { checkDirectMainPush } from './direct-main-push'
 export type { DirectMainPushFact, DirectMainPushResult } from './direct-main-push'
 export { findDeadBranchPushes } from './dead-branch-push-audit'
 export type { DeadBranchFact, DeadBranchPush } from './dead-branch-push-audit'
+export { checkFirstPushDispatchGate, parseTaskBranch } from './first-push-dispatch-gate'
+export type {
+  DispatchReadinessFact,
+  FirstPushDispatchGateInput,
+  FirstPushDispatchGateResult,
+  FirstPushDispatchGateVerdict
+} from './first-push-dispatch-gate'
+export { locateTestPlanSection } from './test-plan-section'
+export type { TestPlanSection } from './test-plan-section'
+export { evaluateTestPlanGate } from './test-plan-gate'
+export type { TestPlanGateResult, TestPlanGateVerdict } from './test-plan-gate'

@@ -29,6 +29,17 @@
  *   3. closes-n       — task branches only: the branch must resolve to a real
  *                       topology row and the body's Closes #N must name that
  *                       row's Issue (D-073/D-069).
+ *   4. verify-task    — task branches only (aeg-governance-hardening task 25,
+ *                       #365): the Developer's full exit composite
+ *                       (typecheck/lint/test/build/verify-docs --pr/premise
+ *                       checks — `bin/verify-task.ts`, unchanged, invoked
+ *                       wholesale). `verify-docs --pr` therefore runs twice
+ *                       on a task-branch PR-open (once at gate 2, once
+ *                       inside this composite) — a deliberate, measured
+ *                       overlap (~4s at gate 4, warm turbo cache) accepted
+ *                       over building a members-only variant that would
+ *                       duplicate verify-task.ts's own step list. Non-task
+ *                       branches never run this gate — zero added latency.
  */
 
 import { execFileSync, execSync } from 'node:child_process'
@@ -152,6 +163,21 @@ function runGate(label: string, script: string, scriptArgs: string[], env: Recor
   }
 }
 
+export type GateStep = 'verify-brief' | 'verify-docs' | 'closes-n' | 'verify-task'
+
+/**
+ * Pure gate-selection plan (aeg-governance-hardening task 25, #365) — decides
+ * WHICH gates run for a given branch, so the non-task-branch gate set stays
+ * byte-identical and is independently fixture-tested without mocking `gh`/
+ * `bun` subprocess calls. `main()` below is the only thing that turns this
+ * plan into actual `runGate` invocations.
+ */
+export function gatePlanForBranch(branch: string): GateStep[] {
+  const plan: GateStep[] = ['verify-brief', 'verify-docs']
+  if (/^task\//.test(branch)) plan.push('closes-n', 'verify-task')
+  return plan
+}
+
 /** Extracts --title/-t value from the passthrough args, if present. */
 function extractTitle(args: string[]): string | null {
   for (let i = 0; i < args.length; i++) {
@@ -225,13 +251,19 @@ export function main(): void {
   checkDecisionNumbersFresh()
   checkSinglePlanPrGate(editPrNumber)
   if (body !== null) {
-    runGate('brief-validation', 'packages/aeg-core/bin/verify-brief.ts', [], { BRANCH: branch, PR_BODY: body })
-    runGate('verify-docs', 'packages/aeg-core/bin/verify-docs.ts', ['--pr'], { PR_BODY: body })
-    if (/^task\//.test(branch)) {
-      runGate('Closes #N', 'packages/aeg-core/bin/verify-coherence.ts', ['--closes-n'], {
-        BRANCH: branch,
-        PR_BODY: body
-      })
+    for (const step of gatePlanForBranch(branch)) {
+      if (step === 'verify-brief') {
+        runGate('brief-validation', 'packages/aeg-core/bin/verify-brief.ts', [], { BRANCH: branch, PR_BODY: body })
+      } else if (step === 'verify-docs') {
+        runGate('verify-docs', 'packages/aeg-core/bin/verify-docs.ts', ['--pr'], { PR_BODY: body })
+      } else if (step === 'closes-n') {
+        runGate('Closes #N', 'packages/aeg-core/bin/verify-coherence.ts', ['--closes-n'], {
+          BRANCH: branch,
+          PR_BODY: body
+        })
+      } else if (step === 'verify-task') {
+        runGate('verify-task', 'packages/aeg-core/bin/verify-task.ts', [], { PR_BODY: body })
+      }
     }
   } else {
     console.log('[open-pr] title-only edit — body gates skipped (title grammar validated above).')

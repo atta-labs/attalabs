@@ -9,6 +9,12 @@ name: Verify Test Plan
 # empty commit. The job runs but does not block merge until the Principal arms
 # it in branch protection — same convention the Conventions and verify-docs
 # workflows follow (state-machine.md §12 advisory → enforced gradient).
+#
+# BRANCH is required (aeg-governance-hardening task 25, #365): without it, a
+# task-branch PR with no Test Plan section at all silently advisory-PASSES
+# instead of the loud FAIL D-049 requires — the exact gap that let PR #377's
+# body slip through undetected before its heading-form section was even
+# parseable.
 
 on:
   pull_request:
@@ -28,4 +34,5 @@ jobs:
       - name: Run verify-test-plan
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
+          BRANCH: ${{ github.head_ref }}
         run: bun packages/aeg-core/bin/verify-test-plan.ts

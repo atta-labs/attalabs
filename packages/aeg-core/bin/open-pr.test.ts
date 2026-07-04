@@ -2,7 +2,30 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSyn
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { locateBody, resolveShippableArgs } from './open-pr'
+import { gatePlanForBranch, locateBody, resolveShippableArgs } from './open-pr'
+
+describe('gatePlanForBranch (aeg-governance-hardening task 25, #365)', () => {
+  it('runs the original two-gate set for a non-task branch — byte-identical to before verify-task was wired in', () => {
+    expect(gatePlanForBranch('fix/some-bug')).toEqual(['verify-brief', 'verify-docs'])
+  })
+
+  it('runs the original two-gate set for a plan branch', () => {
+    expect(gatePlanForBranch('plan/aeg-governance-hardening')).toEqual(['verify-brief', 'verify-docs'])
+  })
+
+  it('runs the original two-gate set for an archive branch', () => {
+    expect(gatePlanForBranch('archive/aeg-governance-hardening')).toEqual(['verify-brief', 'verify-docs'])
+  })
+
+  it('adds closes-n and verify-task for a task branch', () => {
+    expect(gatePlanForBranch('task/aeg-governance-hardening/25')).toEqual([
+      'verify-brief',
+      'verify-docs',
+      'closes-n',
+      'verify-task'
+    ])
+  })
+})
 
 describe('locateBody', () => {
   it('reads --body-file <path> and records the file source with its arg index', () => {
