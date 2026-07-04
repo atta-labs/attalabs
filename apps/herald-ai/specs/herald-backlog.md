@@ -16,14 +16,6 @@ The auditor runs as a YAML-declared agent on `@atta/engine` + `@atta/adapter-lan
 
 ---
 
-## Next major work
-
-### Agent migration — herald-agents-v2 task 2 (D-051)
-
-Move Herald's auditor into a self-contained `packages/agents/forensic-hiring-auditor/` package: YAML + tools + schema + gates + `run()` export. This is the first instance of the D-051 agent package pattern (workspace glob extension to `packages/*/*` is part of this task). The goal: the Herald web app imports and calls `forensic-hiring-auditor` the same way any other consumer would — no Herald-specific orchestration knowledge inside the package.
-
----
-
 ## What shipped in herald-onto-engine (complete ✅, June 2026)
 
 All items below merged as part of the herald-onto-engine AEG iteration.
@@ -44,14 +36,18 @@ All items below merged as part of the herald-onto-engine AEG iteration.
 
 ## Smaller / open
 
+- **Profile-audit abuse cap (D-033)** — per-key rate limit shipped (task 6 / #93), but enforcement depends on fresh Upstash Redis creds (see Parked / pending manual ops below). Once creds are fresh, enforcement is active with no code change needed.
+- **/ui editor library note** — the appearance editor previews the user's library in an iframe while the surrounding chrome stays on the build-time library (correct, per D-035). If confusing, a small "previewing — not saved" hint could be added. Nicety, not a bug.
+
+---
+
+## Parked / pending manual ops
+
+Real pending items — not tasks, not deleted. Manual/operational actions outside the AEG flow.
+
 - **Logo** — direction is herald trumpet/horn with AI signal arcs; not yet locked.
 - **Upstash Redis credentials** — `.env.local` creds expired; per-key rate limiting is wired at `/api/audit` middleware but not enforced. Provision at upstash.com, update `.env.local` + Vercel env for `herald.attalabs.dev`. (Operational, not a code task.)
 - **`MASTER_ENCRYPTION_KEY`** must be present in Herald's Vercel env for BYOK decrypt path to work.
-- **Profile-audit abuse cap (D-033)** — per-key rate limit shipped (task 6 / #93), but enforcement depends on fresh Upstash Redis creds (above). Once creds are fresh, enforcement is active with no code change needed.
-- **Deploy verification** — confirm `herald.attalabs.dev` works end-to-end post herald-onto-engine: admin routes (`/admin`, `/admin/ui`), Bulk Audit N×M grid, polymorphic inputs (URL fetch, PDF parse, Herald profile as CV), per-audit model selection.
-- **/ui editor library note** — the appearance editor previews the user's library in an iframe while the surrounding chrome stays on the build-time library (correct, per D-035). If confusing, a small "previewing — not saved" hint could be added. Nicety, not a bug.
-- **PRICING table missing the auditor's pinned model** — `claude-sonnet-4-20250514` is not in `@atta/adapter-langgraph`'s PRICING table (only `claude-sonnet-4-6` is listed), so every Herald audit reports `$0.00` estimated cost. Pre-existing; surfaced during task 1 smoke test. Fix: add the pinned model to the adapter PRICING table or update the YAML default to a priced model. Small, shared-package change — Vāda in blast radius.
-- **Report quality improvement** — the auditor's forensic output is solid but has room for improvement in signal weighting and gap specificity. Candidate for a dedicated iteration once agent migration (herald-agents-v2) is complete. Requires benchmark runs to measure before/after.
 
 ---
 
