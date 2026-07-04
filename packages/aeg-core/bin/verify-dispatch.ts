@@ -202,6 +202,16 @@ function resolveConflictsWith(
   })
 }
 
+/**
+ * "The prior task" means the immediately preceding TABLE ROW (`idx - 1`),
+ * not the `Depends-on` column — intentional (D-081), not a bug. Every
+ * earlier row's full archival (Issue closed, PR merged, provenance posted)
+ * is the freshness guarantee for THIS task's premises, regardless of
+ * whether that row is a declared dependency. A prior agent read the
+ * `Depends-on`-based prose in `contracts/brief-developer.md`, saw this
+ * row-position code, concluded "bug," and nearly bypassed a genuinely
+ * correct block (live misdiagnosis, 2026-07-03) — do not repeat that.
+ */
 function resolvePriorTask(
   iteration: Iteration,
   taskId: string,

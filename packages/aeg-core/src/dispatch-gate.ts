@@ -112,6 +112,10 @@ export function checkDispatchReadiness(input: DispatchGateInput): DispatchResult
   }
 
   // Prior-task archival — all three predicates (Issue closed, PR merged, provenance present).
+  // `input.priorTask` is the immediately preceding TABLE ROW, not a `Depends-on`
+  // edge — intentional (D-081). Every earlier row's full archival is the
+  // freshness guarantee for this task's premises, independent of whether that
+  // row is a declared dependency. See `resolvePriorTask` in bin/verify-dispatch.ts.
   if (input.priorTask) {
     const p = input.priorTask
     const owed: string[] = []
@@ -121,7 +125,7 @@ export function checkDispatchReadiness(input: DispatchGateInput): DispatchResult
     if (owed.length > 0) {
       const issueStr = p.issue !== null ? ` (#${p.issue})` : ''
       blockers.push(
-        `dispatch-gate prior-archival: prior task ${p.id}${issueStr} in iteration ${iterationSlug} does not pass the coherence gate: ${owed.join(', ')} — the Archivist must fully close it out before ${taskLabel} can proceed.`
+        `dispatch-gate prior-archival: prior task ${p.id}${issueStr} in iteration ${iterationSlug} does not pass the coherence gate: ${owed.join(', ')} — the Archivist must fully close it out before ${taskLabel} can proceed. (row-adjacency is by design — the gate checks the preceding table row, not the Depends-on column; see D-081)`
       )
     }
   }
