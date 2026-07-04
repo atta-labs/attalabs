@@ -1,3 +1,5 @@
+import { execFileSync } from 'node:child_process'
+import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchProvenance } from './verify-coherence'
 
@@ -149,4 +151,35 @@ describe('fetchProvenance — Part 2: null-closer fallback', () => {
     expect(result.get(167)).toBe(true)
     expect(result.get(900)).toBe(false)
   })
+})
+
+/**
+ * Regression coverage for the PR #378 review (aeg-governance-hardening task
+ * 24, #364): `--json` mode's stdout must be pure, parseable JSON — nothing
+ * else (a stray `console.log`/`console.warn`, or noise leaking from a
+ * shelled-out command like the item-5 `git fetch origin main`) may write to
+ * it, because the `coherence-gate` CI job captures stdout+stderr combined
+ * into one file and feeds it straight to `jq`. Spawns the real CLI as a
+ * subprocess (not the in-process `runCoherenceChecks`) so this actually
+ * exercises the same stdio path CI does, including the real `git fetch`
+ * this file's `loadIterationFiles` now performs.
+ */
+describe('CLI --json mode produces pure JSON on stdout (PR #378 review)', () => {
+  it('parses as JSON with no leading/trailing noise, regardless of exit code', () => {
+    const scriptPath = join(import.meta.dirname, 'verify-coherence.ts')
+    // Exit code is 1 when the oracle finds a real `fail` — not a script
+    // error. Read stdout from the thrown error in that case too (mirrors
+    // `verify-dispatch.ts`'s `captureCombinedOutput`), so this test asserts
+    // JSON purity independent of the repo's current coherence state.
+    let out: string
+    try {
+      out = execFileSync('bun', [scriptPath, '--json'], { encoding: 'utf8', timeout: 30_000 })
+    } catch (err) {
+      out = (err as { stdout?: string }).stdout ?? ''
+    }
+    expect(() => JSON.parse(out)).not.toThrow()
+    const parsed = JSON.parse(out)
+    expect(parsed).toHaveProperty('summary')
+    expect(parsed).toHaveProperty('checks')
+  }, 30_000)
 })

@@ -58,7 +58,8 @@ export {
   checkT3,
   COHERENCE_ENFORCED_FROM,
   isGrandfathered,
-  R1_GRANDFATHERED_ISSUES
+  R1_GRANDFATHERED_ISSUES,
+  scopeT2ToPlanPr
 } from './coherence-checks'
 export type { CheckFailure, CheckResult, ForgeIssue, IterationFile, TaskEntry } from './coherence-checks'
 export { buildProvenanceBlock, hasProvenance, taskRefFromBranch } from './archive-task'
@@ -91,3 +92,9 @@ export type {
 } from './dispatch-gate'
 export { findStaleBlockers } from './stale-blocker'
 export type { StaleBlocker, StaleBlockerIterationFact, StaleBlockerTaskFact } from './stale-blocker'
+export { checkSinglePlanPr, iterationSlugFromTopologyPath, touchesAnyTopology } from './single-plan-pr'
+export type { OpenPrFiles } from './single-plan-pr'
+export { checkDirectMainPush } from './direct-main-push'
+export type { DirectMainPushFact, DirectMainPushResult } from './direct-main-push'
+export { findDeadBranchPushes } from './dead-branch-push-audit'
+export type { DeadBranchFact, DeadBranchPush } from './dead-branch-push-audit'

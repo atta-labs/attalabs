@@ -18,6 +18,22 @@
 #   a notification channel (label + idempotent tracking comment on the stuck
 #   Issue), not a merge gate. Broader spec/code-divergence detection is a future
 #   scope, not implemented here. See packages/aeg-core/src/stale-blocker.ts.
+#   Also runs the dead-branch-push audit (aeg-governance-hardening task 24,
+#   #364, Part 4 — item 2): flags any remote `task/*` branch whose tip commit
+#   lands after its own PR already resolved (merged/closed) — the "six
+#   topology rows landed on a merged plan PR's branch" incident class
+#   (2026-07-03), caught within a day instead of never. Same never-red,
+#   label/idempotent-comment semantics as the stuck-blocker check above. See
+#   packages/aeg-core/src/dead-branch-push-audit.ts.
+#
+# direct-main-push-detection: Runs on every push to `main` (aeg-governance-hardening
+#   task 24, #364, Part 3 — item 1). Branch protection is unavailable on this
+#   private, free-plan repo, so prevention stays in `.husky/pre-push` — this job
+#   is the ring-2 backstop that DETECTS a direct push after the fact via the
+#   commits→pulls association API and fails the run loudly. Detection only,
+#   never mutation — no revert, no force-push. Permissions are deliberately
+#   `contents: read` + `issues: write` only. See
+#   packages/aeg-core/src/direct-main-push.ts.
 
 name: Archivist
 
@@ -98,6 +114,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -115,3 +132,34 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bun packages/aeg-core/bin/stale-blocker.ts
+
+      - name: Run dead-branch-audit
+        continue-on-error: true # never-red — this job is a notification channel, not a gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun packages/aeg-core/bin/dead-branch-audit.ts
+
+  direct-main-push-detection:
+    name: Direct-Main-Push Detection
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check commit is introduced by a merged PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: bun packages/aeg-core/bin/check-direct-main-push.ts
