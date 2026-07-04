@@ -28,6 +28,9 @@ The folder is simply **the home for that project's specs and status** (`<path>/s
 | atta     | `apps/atta-ai`        | `apps/atta-ai/specs/`       | (state tracked globally for now)     |
 | desktop  | `apps/desktop`        | `apps/desktop/specs/`       | (state tracked globally for now)     |
 | attalabs | `apps/attalabs`       | `apps/attalabs/specs/`      | (state tracked globally for now)     |
+| vinaya   | `apps/vinaya`         | `apps/vinaya/specs/`        | `apps/vinaya/aeg-project/`    |
+
+> **vinaya** — Vinaya: the npm-distributed reference implementation of AEG (D-083–D-109, PENDING), installed into any GitHub repository. One app folder, three workspaces: `apps/vinaya/cli` (the `vinaya` command — init/check/pr/issue/doctor/upgrade/eject/demo/waiver), `apps/vinaya/web` (**Vinaya Studio**, copied from `apps/aeg/web`), and `apps/vinaya/sources` (the StateSource adapters — forge-backed primary, file-backed transitional). Imports `@atta/aeg-core` unchanged; the vinaya-namespace migration of shared code rides the later npm extraction, never a standalone rename (D-085). Folders are created by `vinaya-cli-v1` task 1 and `vinaya-studio-v1` task 1 — the registry row deliberately precedes the code. "Vinaya is the reference implementation of AEG": AEG stays the model's name (`aeg-root/` is untouched); Vinaya is the tool. Pāli name by elective aesthetic (consistent with D-025). `apps/vinaya` carries no `-ai` suffix (meta/infra convention).
 
 > **attalabs** — The AttaLabs ecosystem hub app (`@atta/attalabs-web`/`-mobile`/`-mcp-server`, serving `attalabs.dev`), distinct from **atta** (`apps/atta-ai`, the Atta *product* — Vāda+Vitakka+Sati). Registered here because it has real code and its own `apps/attalabs/specs/`, but had no registry row until `aeg-governance-hardening` task 22 added it (found while sizing that task's `Project(s)` field). `apps/attalabs` carries no `-ai` suffix (meta/infra-app convention, like `apps/aeg`, `apps/desktop`).
 
