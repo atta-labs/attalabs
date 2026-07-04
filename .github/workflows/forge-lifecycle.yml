@@ -22,6 +22,18 @@ name: Forge Lifecycle
 #                    On A1 failures the script's issue numbers receive
 #                    the `aeg:incoherent` label via `gh issue edit`.
 #
+#  single-plan-pr-gate — ring-1 backstop for the single-plan-PR guard
+#                    (aeg-governance-hardening task 24, #364, Part 1).
+#                    `open-pr.ts`'s `checkSinglePlanPrGate` is ring-0
+#                    prevention but only runs for PRs opened through that
+#                    wrapper — a web-UI-opened PR bypasses it. This job
+#                    re-runs the IDENTICAL predicate (`checkSinglePlanPr`,
+#                    `@atta/aeg-core/src/single-plan-pr.ts`) forge-side. A
+#                    no-op (exit 0) for any PR whose diff doesn't touch an
+#                    iteration topology file — ordinary task-branch PRs never
+#                    do, so this never fires for them (asserted in
+#                    `verify-single-plan-pr.test.ts`).
+#
 # Real substrate (private repo — branch protection unavailable on free plan):
 #   CI turns red/green.  The T9 merge-gate hook (merged in #255) denies agent
 #   merges of red-CI PRs.  Local hooks enforce the same rules for every writer.
@@ -102,3 +114,26 @@ jobs:
       - name: Enforce coherence oracle result (blocking)
         if: always()
         run: exit ${{ steps.oracle.outputs.exit }}
+
+  single-plan-pr-gate:
+    name: Single-plan-PR guard (ring-1 backstop)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run single-plan-PR guard
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bun packages/aeg-core/bin/verify-single-plan-pr.ts

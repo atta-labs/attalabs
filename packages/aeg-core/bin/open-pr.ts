@@ -36,6 +36,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { checkForgeTitle } from '../src/brief-validation'
+import { checkSinglePlanPr, iterationSlugFromTopologyPath, type OpenPrFiles } from '../src/single-plan-pr'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
@@ -107,58 +108,6 @@ export function resolveShippableArgs(
   const { argIndex, inlineForm } = bodyResult.source
   finalArgs[argIndex] = inlineForm ? `--body-file=${tempPath}` : tempPath
   return { finalArgs, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
-}
-
-/**
- * Parses an iteration slug from a touched file path, when that path is an
- * active (non-`completed/`) iteration topology file. Returns `null` for
- * everything else — including `README.md` and `*.tokens.md`, neither of
- * which is a topology file the single-plan-PR guard (below) cares about.
- */
-export function iterationSlugFromTopologyPath(path: string): string | null {
-  const m = path.match(/^aeg-root\/iterations\/([^/]+)\.md$/)
-  if (!m) return null
-  const slug = m[1] as string
-  if (slug === 'README' || slug.endsWith('.tokens')) return null
-  return slug
-}
-
-export type OpenPrFiles = { number: number; files: string[] }
-
-/**
- * Single-plan-PR guard (D-069 task 19 / #336): refuses a plan-branch diff
- * that touches an iteration's topology file when another OPEN PR's diff
- * already touches that SAME iteration's topology file. Ends the plan-PR
- * race that produced two concurrent plan PRs for `aeg-governance-hardening`
- * itself (#352/#354) — each cut from `origin/main` unaware of the other's
- * newly-cut Issue.
- *
- * Pure — no `gh`/`git` I/O. `branchFiles` is this branch's diff vs
- * `origin/main` (`git diff --name-only`); `otherOpenPrs` is every other
- * currently-open PR's touched files (the caller excludes this PR's own
- * number when editing). An ordinary task-branch PR touches no topology
- * file at all, so `branchFiles` yields no slugs and this passes trivially
- * without even needing `otherOpenPrs`.
- */
-export function checkSinglePlanPr(
-  branchFiles: string[],
-  otherOpenPrs: OpenPrFiles[]
-): { ok: boolean; message?: string } {
-  const touchedSlugs = new Set(branchFiles.map(iterationSlugFromTopologyPath).filter((s): s is string => s !== null))
-  if (touchedSlugs.size === 0) return { ok: true }
-
-  for (const pr of otherOpenPrs) {
-    const otherSlugs = new Set(pr.files.map(iterationSlugFromTopologyPath).filter((s): s is string => s !== null))
-    for (const slug of touchedSlugs) {
-      if (otherSlugs.has(slug)) {
-        return {
-          ok: false,
-          message: `single-plan-pr: another open PR (#${pr.number}) already touches iteration "${slug}"'s topology file. Only one open plan PR per iteration is allowed at a time — wait for #${pr.number} to merge or close, or coordinate with its author.`
-        }
-      }
-    }
-  }
-  return { ok: true }
 }
 
 function currentBranchTouchedFiles(): string[] {
