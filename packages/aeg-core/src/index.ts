@@ -96,3 +96,5 @@ export { checkSinglePlanPr, iterationSlugFromTopologyPath, touchesAnyTopology } 
 export type { OpenPrFiles } from './single-plan-pr'
 export { checkDirectMainPush } from './direct-main-push'
 export type { DirectMainPushFact, DirectMainPushResult } from './direct-main-push'
+export { findDeadBranchPushes } from './dead-branch-push-audit'
+export type { DeadBranchFact, DeadBranchPush } from './dead-branch-push-audit'
