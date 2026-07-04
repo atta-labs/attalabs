@@ -44,6 +44,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 24 | CI backstops for local-only gates + enforcement pairing matrix               | #364  | aeg, aeg-core | —                 | 23, 25         |
 | 25 | Mechanize verify-dispatch + verify-task: gates agents cannot skip            | #365  | aeg, aeg-core | 23                | 24             |
 | 26 | Studio: render Issue assignment as display-only chip on Todo tasks           | #368  | aeg        | —                      | —              |
+| 27 | Scope CI to the diff: affected-only typecheck/tests + turbo cache            | #370  | aeg        | —                      | —              |
 
 ## Backlog (this iteration, not yet dispatched)
 
