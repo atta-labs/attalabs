@@ -43,7 +43,10 @@
  *   --check-baseline <file>  Compare current verify-docs/verify-coherence
  *                      finding counts against a previously captured baseline
  *                      file (JSON array of `BaselineEntry`). Fails if any
- *                      tool regressed past its baseline.
+ *                      tool regressed past its baseline. A tool that could
+ *                      not run at all (crash, unparseable output) is never
+ *                      compared as if it scored 0 — it fails the check
+ *                      outright (fail-closed: no signal means no pass).
  *
  * Exit code: 0 when ready (and, in --premise/--simulate/--check-baseline
  * mode, when that mode's check passes); 1 otherwise, with every failing
@@ -75,7 +78,7 @@ import {
 import type { Iteration, Task } from '../src/types'
 import { fetchProvenance } from './verify-coherence'
 
-const REPO_ROOT = join(import.meta.dir, '../../..')
+const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
 
 // ---- I/O helpers -------------------------------------------------------------
@@ -278,12 +281,68 @@ function computeLeftover(iterationSlug: string, taskId: string) {
 
 // ---- baseline capture ----------------------------------------------------------
 
-function currentFindingCounts(): Array<{ tool: string; findingCount: number }> {
-  const docsFullErrors = countErrorLines(sh('bun packages/aeg-core/bin/verify-docs.ts'))
-  const coherenceOut = shJson<{ summary: { failed: number } }>('bun packages/aeg-core/bin/verify-coherence.ts --json')
+type CaptureResult = { output: string; exitCode: number; ranAtAll: boolean }
+
+/**
+ * Non-throwing combined stdout+stderr capture, used ONLY by
+ * `currentFindingCounts()`. `sh()`/`shJson()` above deliberately swallow any
+ * non-zero exit to `''` — every other call site of theirs relies on that
+ * ("not found / not applicable"). Finding counts need the opposite: a
+ * non-zero exit from `verify-docs`/`verify-coherence` means "here are the
+ * findings," not "nothing to report," so this helper harvests output
+ * regardless of exit code instead of throwing it away. `2>&1` merges stderr
+ * into the captured stream — both tools' finding output lands there, and
+ * neither tool writes anything to stderr on its clean/`--json` path, so nothing
+ * gets corrupted by the merge.
+ */
+function captureCombinedOutput(cmd: string): CaptureResult {
+  try {
+    const output = execSync(`${cmd} 2>&1`, { encoding: 'utf8' })
+    return { output, exitCode: 0, ranAtAll: true }
+  } catch (err) {
+    const e = err as { stdout?: unknown; status?: number | null }
+    if (typeof e.stdout === 'string') {
+      return { output: e.stdout, exitCode: typeof e.status === 'number' ? e.status : 1, ranAtAll: true }
+    }
+    // No captured stdout at all (e.g. spawn failure) — the process never produced output to count.
+    return { output: '', exitCode: -1, ranAtAll: false }
+  }
+}
+
+function parseJsonSafe<T>(text: string): T | null {
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    return null
+  }
+}
+
+type FindingCount = { tool: string; findingCount: number; unavailable: boolean }
+
+/**
+ * Counts findings regardless of exit code — `verify-docs` and
+ * `verify-coherence --json` both exit non-zero exactly when findings exist
+ * (a normal, parseable run), which is the case that was previously
+ * misreported as 0 (see module docstring). "Unavailable" (tool crashed /
+ * produced no parseable output) is reported explicitly and is never folded
+ * into the numeric count — see `docsUnavailable`/`coherenceUnavailable` below.
+ */
+export function currentFindingCounts(): FindingCount[] {
+  const docs = captureCombinedOutput('bun packages/aeg-core/bin/verify-docs.ts')
+  const docsFindingCount = docs.ranAtAll ? countErrorLines(docs.output) : 0
+  // verify-docs's own contract: exit 1 iff errors.length > 0 (bin/verify-docs.ts).
+  // A non-zero exit with zero ✗ lines means it crashed before reaching that
+  // contract, not that it ran and found nothing.
+  const docsUnavailable = !docs.ranAtAll || (docs.exitCode !== 0 && docsFindingCount === 0)
+
+  const coherence = captureCombinedOutput('bun packages/aeg-core/bin/verify-coherence.ts --json')
+  const coherenceParsed = coherence.ranAtAll ? parseJsonSafe<{ summary: { failed: number } }>(coherence.output) : null
+  const coherenceUnavailable = !coherence.ranAtAll || coherenceParsed === null
+  const coherenceFindingCount = coherenceParsed?.summary.failed ?? 0
+
   return [
-    { tool: 'verify-docs-full', findingCount: docsFullErrors },
-    { tool: 'verify-coherence', findingCount: coherenceOut?.summary.failed ?? 0 }
+    { tool: 'verify-docs-full', findingCount: docsFindingCount, unavailable: docsUnavailable },
+    { tool: 'verify-coherence', findingCount: coherenceFindingCount, unavailable: coherenceUnavailable }
   ]
 }
 
@@ -364,7 +423,24 @@ function runSimulateMode(iterationSlug: string, taskId: string, bodyFile: string
 function runCheckBaselineMode(baselineFile: string): void {
   const baseline = JSON.parse(readFileSync(baselineFile, 'utf8')) as BaselineEntry[]
   const current = currentFindingCounts()
-  const comparison = compareToBaseline(current, baseline)
+
+  // Fail-closed: an unavailable tool carries no honest count, so it is never
+  // fed into compareToBaseline's numeric comparison as if it scored 0 — that
+  // would silently pass a regression the tool simply failed to observe.
+  const unavailable = current.filter((c) => c.unavailable)
+  if (unavailable.length > 0) {
+    console.error('\nverify-dispatch --check-baseline FAILED — tool(s) produced no honest count to compare:')
+    for (const u of unavailable) console.error(`  ✗ ${u.tool}: UNAVAILABLE (tool failed to run)`)
+    console.error(
+      '\nAn unavailable tool is never compared as if it scored 0. Fix the tool, then re-run --check-baseline.'
+    )
+    process.exit(1)
+  }
+
+  const comparison = compareToBaseline(
+    current.map(({ tool, findingCount }) => ({ tool, findingCount })),
+    baseline
+  )
   console.log(JSON.stringify(comparison, null, 2))
   if (!comparison.withinBudget) {
     console.error('\nverify-dispatch --check-baseline FAILED — one or more tools regressed past their baseline.')
@@ -432,9 +508,12 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
 
   const leftover = computeLeftover(iterationSlug, taskId)
 
-  const baseline = currentFindingCounts()
+  const rawCounts = currentFindingCounts()
   const nowIso = sh('git log -1 --format=%cI') || new Date(0).toISOString()
-  const capturedBaseline = captureBaseline(baseline, nowIso)
+  const capturedBaseline = captureBaseline(
+    rawCounts.map(({ tool, findingCount }) => ({ tool, findingCount })),
+    nowIso
+  )
 
   console.log(`\nverify-dispatch: ${iterationSlug} task ${taskId}\n`)
   console.log(`dispatch-readiness: ${gateResult.ready ? 'READY' : 'NOT READY'}`)
@@ -444,7 +523,15 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
   console.log(`  ${leftover.reason}`)
 
   console.log('\nbaseline (informational — captured this run, not a committed file):')
-  for (const b of capturedBaseline) console.log(`  ${b.tool}: ${b.findingCount} finding(s) at ${b.capturedAt}`)
+  for (const raw of rawCounts) {
+    const captured = capturedBaseline.find((b) => b.tool === raw.tool)
+    const capturedAt = captured?.capturedAt ?? nowIso
+    console.log(
+      raw.unavailable
+        ? `  ${raw.tool}: UNAVAILABLE (tool failed to run) at ${capturedAt}`
+        : `  ${raw.tool}: ${raw.findingCount} finding(s) at ${capturedAt}`
+    )
+  }
 
   const overallReady = gateResult.ready && leftover.verdict !== 'stop'
   console.log(`\nverify-dispatch: ${overallReady ? 'READY TO DISPATCH' : 'NOT READY'}`)
