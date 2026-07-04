@@ -105,3 +105,7 @@ export type {
   FirstPushDispatchGateResult,
   FirstPushDispatchGateVerdict
 } from './first-push-dispatch-gate'
+export { locateTestPlanSection } from './test-plan-section'
+export type { TestPlanSection } from './test-plan-section'
+export { evaluateTestPlanGate } from './test-plan-gate'
+export type { TestPlanGateResult, TestPlanGateVerdict } from './test-plan-gate'
