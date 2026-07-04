@@ -135,7 +135,7 @@ describe('(d) sh()/shJson() other call sites are untouched', () => {
       'git rev-list --count origin/main',
       'git log -1 --format=%cI',
       'gh issue view',
-      'gh pr list --state all'
+      'gh pr list -R ${repo.owner}/${repo.repo} --state all'
     ]) {
       expect(src).toContain(needle)
     }
@@ -143,5 +143,37 @@ describe('(d) sh()/shJson() other call sites are untouched', () => {
     // invocations only — defined once, called exactly twice.
     const occurrences = src.split('captureCombinedOutput(').length - 1
     expect(occurrences).toBe(3)
+  })
+})
+
+/**
+ * aeg-governance-hardening task 23 (#360) — `resolvePriorIterationArchival`'s
+ * `gh issue list` called with no explicit repo target, which silently returns
+ * `[]` from a linked worktree checkout (the only environment this script runs
+ * in during real dispatch) even when real open Issues exist. Reproduced live
+ * 2026-07-04: `[]` vs 4 real Issues, same worktree, same instant. Every other
+ * `gh` call in the file (`ghIssueView`, `fetchIterationBranchPrs`) had the
+ * identical gap. This is a structural, source-scanning test (not a live `gh`
+ * mock) because live `gh` is unmockable cheaply — same style as the `(d)`
+ * suite above and task 21's `sh()`/`shJson()` call-site assertions.
+ */
+describe('(e) every gh invocation carries an explicit repo target (Part 1, task 23, #360)', () => {
+  const src = readFileSync(join(import.meta.dirname, 'verify-dispatch.ts'), 'utf8')
+
+  it('every `gh ...` command string passed to sh()/shJson() contains -R <owner>/<repo>', () => {
+    const callPattern = /\b(?:sh|shJson(?:<[^(]*>)?)\(\s*`([^`]*)`/g
+    const ghCommands: string[] = []
+    let match: RegExpExecArray | null
+    // biome-ignore lint/suspicious/noAssignInExpressions: standard exec-loop idiom
+    while ((match = callPattern.exec(src)) !== null) {
+      const cmd = match[1] as string
+      if (cmd.trimStart().startsWith('gh ')) ghCommands.push(cmd)
+    }
+    // Fails loud if the gh calls this test targets ever get refactored away
+    // from sh()/shJson() (e.g. to execSync directly) without updating this scan.
+    expect(ghCommands.length).toBe(3)
+    for (const cmd of ghCommands) {
+      expect(cmd).toMatch(/-R \$\{repo\.owner\}\/\$\{repo\.repo\}/)
+    }
   })
 })

@@ -89,3 +89,5 @@ export type {
   DispatchPriorTaskFact,
   DispatchResult
 } from './dispatch-gate'
+export { findStaleBlockers } from './stale-blocker'
+export type { StaleBlocker, StaleBlockerIterationFact, StaleBlockerTaskFact } from './stale-blocker'
