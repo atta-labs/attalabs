@@ -15,6 +15,7 @@ import {
   type CheckResult,
   type ForgeIssue,
   type IterationFile,
+  scopeT2ToPlanPr,
   type TaskEntry
 } from './coherence-checks'
 import type { ForgeFacts, Task } from './types'
@@ -415,6 +416,42 @@ describe('T2: orphan-task', () => {
     expect(r.failures).toHaveLength(1)
     expect(r.failures[0]!.iteration).toBe('aeg-governance-hardening')
     expect(r.failures[0]!.issue).toBe(999)
+  })
+})
+
+// ---------- T2 point-of-power relocation (task 24, D-082) --------------------
+
+describe('scopeT2ToPlanPr — T2 relocation (aeg-governance-hardening task 24, D-082)', () => {
+  it('reproduces the #363 incident, then shows the fix: a failing T2 is demoted to info for a non-plan (task) PR', () => {
+    const openIssues = new Map([['aeg-governance-hardening', [364, 365]]])
+    const topology = new Map([['aeg-governance-hardening', new Set([19])]]) // #364/#365 not yet in topology
+    const raw = checkT2(openIssues, topology, 'aeg-governance-hardening')
+    expect(raw.status).toBe('fail') // checkT2 itself is untouched — still detects the gap
+
+    const scoped = scopeT2ToPlanPr(raw, false) // task PR — cannot cause or cure this gap
+    expect(scoped.status).toBe('info')
+    expect(scoped.failures).toEqual(raw.failures) // findings stay visible, never omitted
+    expect(scoped.note).toMatch(/D-082/)
+  })
+
+  it('leaves a failing T2 blocking for a plan PR (the only PR kind that can fix the gap)', () => {
+    const openIssues = new Map([['aeg-governance-hardening', [364]]])
+    const topology = new Map([['aeg-governance-hardening', new Set<number>()]])
+    const raw = checkT2(openIssues, topology, 'aeg-governance-hardening')
+    expect(raw.status).toBe('fail')
+
+    const scoped = scopeT2ToPlanPr(raw, true)
+    expect(scoped).toEqual(raw)
+  })
+
+  it('leaves a passing T2 untouched regardless of PR kind', () => {
+    const openIssues = new Map([['aeg-governance-hardening', [19]]])
+    const topology = new Map([['aeg-governance-hardening', new Set([19])]])
+    const raw = checkT2(openIssues, topology, 'aeg-governance-hardening')
+    expect(raw.status).toBe('pass')
+
+    expect(scopeT2ToPlanPr(raw, false)).toEqual(raw)
+    expect(scopeT2ToPlanPr(raw, true)).toEqual(raw)
   })
 })
 

@@ -21,6 +21,14 @@ name: Forge Lifecycle
 #                    addressed by task 19 (see its PR body).
 #                    On A1 failures the script's issue numbers receive
 #                    the `aeg:incoherent` label via `gh issue edit`.
+#                    T2 relocation (task 24, #364, Part 2 — D-082): T2 only
+#                    blocks when PR_TOUCHED_FILES shows this PR's own diff
+#                    touches a topology file (a plan PR) — otherwise T2's
+#                    findings are demoted to info (never block a task PR).
+#                    Repo-state reads (topology files, iteration list) come
+#                    from a freshly-fetched origin/main via PR_HEAD_SHA/
+#                    PR_TOUCHED_FILES, not the checkout's merge-ref, which
+#                    GitHub materializes lazily and can lag behind main.
 #
 #  single-plan-pr-gate — ring-1 backstop for the single-plan-PR guard
 #                    (aeg-governance-hardening task 24, #364, Part 1).
@@ -84,11 +92,25 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Resolve this PR's touched files (item 5/T2 relocation — D-082)
+        id: pr_files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          files=$(gh pr view "${{ github.event.pull_request.number }}" --json files -q '.files[].path')
+          {
+            echo "files<<PR_FILES_EOF"
+            echo "$files"
+            echo "PR_FILES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Run coherence oracle (JSON mode)
         id: oracle
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.head_ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_TOUCHED_FILES: ${{ steps.pr_files.outputs.files }}
         run: |
           set +e
           bun packages/aeg-core/bin/verify-coherence.ts --json > /tmp/coherence.json 2>&1

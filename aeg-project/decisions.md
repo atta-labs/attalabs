@@ -2480,3 +2480,34 @@ Concretely:
 - No change to any existing check's logic, `.husky/pre-push`'s existing job (dispatch-readiness checking lives in the new `verify-dispatch.ts`, invoked explicitly, not silently injected into every push), or `apps/aeg/web/studio` (no consumer there for this task's output).
 
 **Lock rationale:** `Lock: NO`. This is a new, additive gate layer with no locked irreversible branch — a future task may reshape `verify-dispatch`'s composition (e.g. batching its forge calls, or resolving cross-iteration edges more precisely) via an ordinary superseding or amending decision, not a lock challenge.
+
+---
+
+## D-082 — T2 (orphan-task) relocated out of task-PR CI: point-of-power principle
+
+**Date:** 2026-07-04
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry)
+**Lock:** NO
+**Authored by:** Developer (dispatched task, aeg-governance-hardening #364, task 24, Part 2)
+**Ratified by:** Principal (2026-07-04 amendment to #364, directing this supersession explicitly)
+
+**Context:** D-069/task 19 (#336) scoped T2 (open Issue labeled `iteration:X` missing from X's topology file) to the PR's own iteration in CI, closing the #358/#359 incident where an unrelated iteration's gap blocked an unrelated PR. That scoping was necessary but not sufficient: it still let T2 block *any* PR — task or plan — within the same iteration as the gap. Live incident #363 (2026-07-04) proved this the wrong boundary: registering Issues #364/#365 into `aeg-governance-hardening` correctly created a topology gap (the rows hadn't merged yet) and correctly reddened T2 in CI — but the PR it reddened was #363, an in-flight **task** PR that could neither have caused the gap (it never touched the topology file) nor cure it (only a plan PR editing `aeg-root/iterations/aeg-governance-hardening.md` can add the missing row). The gate was structurally incapable of being satisfied by the PR it was blocking — the definition of a misplaced chokepoint.
+
+**Decision:** A gate may only red a PR that could cause or cure the violation it reports (the **point-of-power principle**). Applied to T2: it now blocks CI **only** for a plan PR — one whose own diff touches an active iteration's topology file (`aeg-root/iterations/*.md`, excluding `completed/`), reusing the exact `iterationSlugFromTopologyPath`/`touchesAnyTopology` predicate task 24 Part 1 extracted to `src/single-plan-pr.ts` (one implementation per fact — no second "is this a plan PR" check). Everywhere else — every task-PR CI run, `--json`/audit mode, and the `daily-drift` scheduled job — T2's findings are demoted from `status: 'fail'` to `status: 'info'` via the new pure function `scopeT2ToPlanPr` (`packages/aeg-core/src/coherence-checks.ts`), never omitted, so the repo-wide picture stays visible for audit. `checkT2`'s own assertion logic (what counts as an orphan Issue) is completely untouched — this is a CI-wiring relocation, not a change to what T2 asserts.
+
+**This explicitly supersedes half of D-069/task 19's shipped placement** — the part of task 19 that scoped T2 to the PR's iteration but still let it block every PR type within that iteration. Task 19's scoping-by-iteration remains in force (still passed as `ciIterationSlug` into `checkT2`); only the "which PR kinds can T2 red" boundary changes. This is a recorded supersession, not a quiet edit — task 19's PR and this entry both remain in the log; a future reader tracing T2's CI behavior must read both.
+
+**Boundary (what this is NOT):**
+- **Not** a change to `checkT2`'s detection logic — the same `openIssuesBySlug`/`topologyIssuesBySlug` comparison, same failure reasons.
+- **Not** a weakening of the gate for plan PRs — a plan PR that introduces or fails to close a topology gap is still blocked exactly as before.
+- **Not** a merge-ref/repo-state fix — that is this same task's item 5 (see the PR body), applied to `loadIterationFiles`/`runCoherenceChecks`, independent of this relocation.
+
+**Alternatives rejected:**
+- *Widen T2's `ciIterationSlug` scoping further (e.g. exclude same-day-registered Issues)* — a time-based heuristic that would still block task PRs on genuine, older gaps; doesn't address the structural mismatch (task PRs can never fix a topology gap, regardless of the gap's age).
+- *Turn T2 permanently info-only, everywhere, relying solely on `daily-drift` for enforcement* — loses the one place T2 SHOULD block (a plan PR that itself creates or fails to close the gap it's introducing); the point-of-power principle says demote where a PR is powerless, not everywhere.
+- *Block on `BRANCH` prefix (`plan/` vs `task/`) instead of the diff-based predicate* — rejected in favor of the diff-based `touchesAnyTopology` check already extracted in Part 1: branch-name conventions are not enforced anywhere and a mis-named branch would silently escape the correct gate; the diff-based check is the same ground truth the single-plan-PR guard already trusts.
+
+**Consequences:** `packages/aeg-core/src/coherence-checks.ts` (`scopeT2ToPlanPr`, new, exported via `src/index.ts`); `packages/aeg-core/bin/verify-coherence.ts` (`runCoherenceChecks` accepts `isPlanPr`, computed from `PR_TOUCHED_FILES` in CI, defaulting to `false` — never-blocking — everywhere else); `.github/workflows/forge-lifecycle.yml` (`coherence-gate` job resolves and passes `PR_TOUCHED_FILES`/`PR_HEAD_SHA`); `aeg-root/enforcement.md` (Ring 1 T2 row updated); `aeg-root/state-machine.md` (T2's gate-registry placement updated). No change to `daily-drift`'s own job (task 23) — T2 was never wired into it; the repo-wide `--json` picture it could consume already reports T2 as info via this same relocation.
+
+**Lock rationale:** `Lock: NO`. A CI-wiring placement, not an irreversible architectural commitment — a future incident could motivate a different point-of-power boundary (e.g. also blocking on a task PR that itself deletes the Issue's topology row) via an ordinary superseding entry.

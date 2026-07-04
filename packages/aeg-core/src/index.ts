@@ -58,7 +58,8 @@ export {
   checkT3,
   COHERENCE_ENFORCED_FROM,
   isGrandfathered,
-  R1_GRANDFATHERED_ISSUES
+  R1_GRANDFATHERED_ISSUES,
+  scopeT2ToPlanPr
 } from './coherence-checks'
 export type { CheckFailure, CheckResult, ForgeIssue, IterationFile, TaskEntry } from './coherence-checks'
 export { buildProvenanceBlock, hasProvenance, taskRefFromBranch } from './archive-task'

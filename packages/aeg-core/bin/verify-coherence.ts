@@ -28,6 +28,7 @@
  */
 
 import { graphql } from '@octokit/graphql'
+import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
@@ -47,7 +48,9 @@ import {
   checkT3,
   DOC_OWNERS_PATH,
   parseIteration,
-  R1_GRANDFATHERED_ISSUES
+  R1_GRANDFATHERED_ISSUES,
+  scopeT2ToPlanPr,
+  touchesAnyTopology
 } from '../src/index'
 import type { CheckResult, ForgeFacts, ForgeIssue, IterationFile, TaskEntry } from '../src/index'
 import { fetchForgeFacts } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-forge-facts'
@@ -416,40 +419,98 @@ export async function fetchOpenIssuesByLabel(
 
 // ---------- iteration file loader --------------------------------------------
 
-const AEG_ROOT = join(REPO_ROOT, 'aeg-root')
-const ITERATIONS_DIR = join(AEG_ROOT, 'iterations')
-const COMPLETED_DIR = join(ITERATIONS_DIR, 'completed')
+const ITERATIONS_RELDIR = 'aeg-root/iterations'
+const COMPLETED_RELDIR = 'aeg-root/iterations/completed'
 
 function isIterationFile(name: string): boolean {
   return name.endsWith('.md') && name !== 'README.md' && !name.endsWith('.tokens.md')
 }
 
-export function loadIterationFiles(): IterationFile[] {
+/**
+ * PR context for item 5 (aeg-governance-hardening task 24, #364, Part 2;
+ * D-082): when set, iteration files THIS PR's own diff touches are read
+ * from the PR's head ref (its own proposed content, e.g. a plan PR adding a
+ * topology row); every other iteration file — the "repo state" side of
+ * every coherence comparison — is read from a freshly-fetched
+ * `origin/main`, never from the local checkout's `refs/pull/N/merge`, which
+ * GitHub materializes lazily and can lag behind main (confirmed 5+ false-red
+ * CI cycles, 2026-07-03/04). `null` (local dev, `--json` audit mode,
+ * daily-drift): every file reads from `origin/main`.
+ */
+export type PrReadContext = { prHeadSha: string; touchedFiles: Set<string> } | null
+
+function gitFetchMainQuiet(): void {
+  try {
+    execSync('git fetch origin main --quiet')
+  } catch {
+    // best-effort — a fetch failure leaves origin/main at whatever the local
+    // checkout already has; downstream reads simply fall back to that state.
+  }
+}
+
+function listDirAtRef(ref: string, relDir: string): string[] {
+  try {
+    return execSync(`git ls-tree --name-only ${ref}:${relDir}`, { encoding: 'utf8' })
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
+function readFileAtRef(ref: string, relPath: string): string | null {
+  try {
+    return execSync(`git show ${ref}:${relPath}`, { encoding: 'utf8' })
+  } catch {
+    return null
+  }
+}
+
+export function loadIterationFiles(prContext: PrReadContext = null): IterationFile[] {
+  gitFetchMainQuiet()
   const files: IterationFile[] = []
 
-  if (existsSync(ITERATIONS_DIR)) {
-    for (const name of readdirSync(ITERATIONS_DIR)) {
+  const loadDir = (relDir: string, archived: boolean): void => {
+    const mainNames = new Set(listDirAtRef('origin/main', relDir))
+    const prNames = prContext ? new Set(listDirAtRef(prContext.prHeadSha, relDir)) : new Set<string>()
+
+    for (const name of new Set([...mainNames, ...prNames])) {
       if (!isIterationFile(name)) continue
-      const raw = readFileSync(join(ITERATIONS_DIR, name), 'utf8')
-      files.push({ slug: name.replace(/\.md$/, ''), archived: false, iteration: parseIteration(raw) })
+      const relPath = `${relDir}/${name}`
+      const readFromHead = prContext !== null && prContext.touchedFiles.has(relPath)
+      const raw = readFromHead ? readFileAtRef(prContext!.prHeadSha, relPath) : readFileAtRef('origin/main', relPath)
+      if (raw === null) continue
+      files.push({ slug: name.replace(/\.md$/, ''), archived, iteration: parseIteration(raw) })
     }
   }
 
-  if (existsSync(COMPLETED_DIR)) {
-    for (const name of readdirSync(COMPLETED_DIR)) {
-      if (!isIterationFile(name)) continue
-      const raw = readFileSync(join(COMPLETED_DIR, name), 'utf8')
-      files.push({ slug: name.replace(/\.md$/, ''), archived: true, iteration: parseIteration(raw) })
-    }
-  }
+  loadDir(ITERATIONS_RELDIR, false)
+  loadDir(COMPLETED_RELDIR, true)
 
   return files
 }
 
 // ---------- main orchestrator ------------------------------------------------
 
-export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; forgeUnavailable: boolean }> {
-  const files = loadIterationFiles()
+export type RunCoherenceChecksOptions = {
+  /** See `PrReadContext` — repo-state reads move to fetched origin/main; the PR's own topology diff still reads from its head ref. */
+  prContext?: PrReadContext
+  /**
+   * T2 relocation (D-082): `true` ONLY for a CI run against a plan PR whose
+   * own diff touches an iteration topology file — the only PR kind that can
+   * cause or cure a T2 gap. Defaults to `false` (info-only, never blocking)
+   * for every other context: task-PR CI, local dev, `--json` audit mode,
+   * daily-drift — matching the brief's "surfaced never blocking" rule.
+   */
+  isPlanPr?: boolean
+}
+
+export async function runCoherenceChecks(
+  options: RunCoherenceChecksOptions = {}
+): Promise<{ results: CheckResult[]; forgeUnavailable: boolean }> {
+  const { prContext = null, isPlanPr = false } = options
+  const files = loadIterationFiles(prContext)
   const results: CheckResult[] = []
 
   // ---------- CI scope detection ----------
@@ -604,7 +665,7 @@ export async function runCoherenceChecks(): Promise<{ results: CheckResult[]; fo
     }
     topologyIssuesBySlug.set(f.slug, nums)
   }
-  results.push(checkT2(openIssueNumsBySlug, topologyIssuesBySlug, ciIterationSlug))
+  results.push(scopeT2ToPlanPr(checkT2(openIssueNumsBySlug, topologyIssuesBySlug, ciIterationSlug), isPlanPr))
   results.push(checkR1(issuesBySlug, R1_GRANDFATHERED_ISSUES))
 
   // D1 check
@@ -691,7 +752,22 @@ if (import.meta.main) {
   const jsonOnly = args.includes('--json')
   const humanOnly = args.includes('--human')
 
-  const { results, forgeUnavailable } = await runCoherenceChecks()
+  // PR context for item 5/T2-relocation (D-082) — set only by the
+  // coherence-gate CI job (forge-lifecycle.yml). Absent everywhere else
+  // (local dev, daily-drift, manual --json audit runs): every iteration
+  // file reads from origin/main and T2 stays info-only (never blocking).
+  const prHeadSha = process.env.PR_HEAD_SHA || null
+  const touchedFilesRaw = process.env.PR_TOUCHED_FILES ?? ''
+  const touchedFiles = new Set(
+    touchedFilesRaw
+      .split('\n')
+      .map((f) => f.trim())
+      .filter(Boolean)
+  )
+  const prContext = prHeadSha ? { prHeadSha, touchedFiles } : null
+  const isPlanPr = touchesAnyTopology([...touchedFiles])
+
+  const { results, forgeUnavailable } = await runCoherenceChecks({ prContext, isPlanPr })
 
   const failed = results.filter((r) => r.status === 'fail')
   const passed = results.filter((r) => r.status === 'pass')

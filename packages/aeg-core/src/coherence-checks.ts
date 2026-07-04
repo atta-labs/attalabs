@@ -240,6 +240,30 @@ export function checkT2(
 }
 
 /**
+ * T2 point-of-power relocation (aeg-governance-hardening task 24, #364,
+ * Part 2 — D-082; supersedes half of task 19's T2-in-task-PR-CI placement).
+ * A gate may only red a PR that could cause or cure the violation it
+ * reports — live incident #363 (2026-07-04): registering Issues #364/#365
+ * correctly reddened same-iteration task PR #363's CI, which could neither
+ * have caused nor fixed the topology gap. `checkT2`'s own assertion logic
+ * (above) is untouched; this only demotes its CI-blocking status when the
+ * current PR is NOT a plan PR (i.e. its diff doesn't touch an iteration
+ * topology file) — the only PR kind that can actually close a T2 gap. The
+ * underlying findings stay visible (`status: 'info'`, never omitted) for
+ * every other context: task-PR CI, `--json`/audit mode, and daily-drift.
+ */
+export function scopeT2ToPlanPr(result: CheckResult, isPlanPr: boolean): CheckResult {
+  if (isPlanPr || result.status !== 'fail') return result
+  return {
+    ...result,
+    status: 'info',
+    note:
+      result.note ??
+      'T2 findings are non-blocking outside plan PRs (D-082, point-of-power principle) — see aeg-root/enforcement.md.'
+  }
+}
+
+/**
  * T3: No `#TBD` rows in an active iteration.
  * Fail class: `tbd-in-active-iteration`
  *
