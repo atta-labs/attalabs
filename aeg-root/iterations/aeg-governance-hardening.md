@@ -45,6 +45,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 25 | Mechanize verify-dispatch + verify-task: gates agents cannot skip            | #365  | aeg, aeg-core | 23                | 24             |
 | 26 | Studio: render Issue assignment as display-only chip on Todo tasks           | #368  | aeg        | —                      | —              |
 | 27 | Scope CI to the diff: affected-only typecheck/tests + turbo cache            | #370  | aeg        | —                      | —              |
+| 28 | Purify aeg-core: move docs UI to Studio, zero react/next/UI dependencies     | #372  | aeg, aeg-core | —                 | —              |
 
 ## Backlog (this iteration, not yet dispatched)
 
