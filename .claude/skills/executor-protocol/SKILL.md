@@ -84,6 +84,22 @@ Root cause from Task 2 recovery: mixed reset moved HEAD back to Task 1's commit;
 
 Check: `git show HEAD:some-file-from-last-commit` — if it fails with "exists on disk, but not in HEAD", ancestry is broken. Fix with `git cherry-pick <orphaned-hash>` before proceeding.
 
+### Rule 9: Scope checks to the package you're touching while iterating
+
+Run a scoped typecheck/lint against the package(s) your diff actually touches while you work. Reserve an unscoped, full-repo check for the final pre-completion gate. Running the full-repo check on every intermediate step is slow, and its failures are often pre-existing/unrelated noise, not signal about your change.
+
+### Rule 10: UI-touching tasks require real rendered evidence, not just a passing typecheck
+
+If a task changes anything visual (a component, a style, an animation), a passing typecheck and "the diff looks right" are not verification. Start the app, capture actual rendered evidence — a screenshot, or an explicit pasted rendered-output/class-list check — and include it in your report before claiming the visual behavior works.
+
+### Rule 11: On an unrecoverable blocker, report it loudly — never exit silently
+
+If you hit something you cannot resolve (a missing credential, a conflicting instruction, an environment limitation), don't exit quietly and let the session just end. State the blocker plainly in your report (or wherever the task told you to report progress) before stopping, so a retry or re-dispatch is a deliberate decision, not a guess at why nothing happened.
+
+### Rule 12: Poll long-running work with a background process, not a sleep loop
+
+When waiting on something slow and external (a build, a deployment, a CI run), run it in the background and check back periodically rather than blocking the whole session on repeated `sleep`-and-recheck loops.
+
 ---
 
 ## What a good task report looks like
