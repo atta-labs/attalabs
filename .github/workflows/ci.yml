@@ -9,13 +9,33 @@
 # guarding every enforcement gate — ran nowhere automatically.
 #
 # Scopes (deliberate, no silent caps — D-074 discipline):
-#   - Typecheck covers ./packages/* only. App typecheck requires the CMS
-#     `generate` step (Sanity tokens live in uncommitted .env files, absent in
-#     CI); apps are type-checked by their Vercel production builds (ring 1)
-#     and by the full `turbo typecheck` in pre-commit (ring 0).
+#   - Both steps use `turbo --affected`, which scopes to packages changed
+#     between this branch and `main` PLUS every transitive dependent (turbo
+#     computes the dependency graph, not just changed files) — so a change to
+#     a shared package (e.g. @atta/engine) still tests every package that
+#     depends on it, directly or indirectly. Same gates, same strictness;
+#     scoping only decides how much runs, never what counts as passing.
+#   - A doc/workflow-only PR (nothing under any package) now runs 0 packages
+#     and completes near-instantly. This is sound, not a gap: repo-file gates
+#     (verify-docs, coherence, etc.) run in their own separate CI jobs
+#     regardless of what this job decides to test.
+#   - Typecheck additionally scopes to ./packages/* only. App typecheck
+#     requires the CMS `generate` step (Sanity tokens live in uncommitted
+#     .env files, absent in CI); apps are type-checked by their Vercel
+#     production builds (ring 1) and by the full `turbo typecheck` in
+#     pre-commit (ring 0).
 #   - Tests exclude @atta/cetana-cli: its `init abort path` test fails
 #     PRE-EXISTING on main (verified 2026-07-02, unrelated to any gate work).
 #     Tracked for a follow-up fix; un-exclude when repaired.
+#   - Checkout uses fetch-depth: 0 (full history) so `--affected` can resolve
+#     a merge-base against `main` — a shallow clone breaks that ref
+#     resolution. `.turbo` and `~/.bun/install/cache` are cached between runs,
+#     keyed on bun.lock's hash.
+#   - TURBO_SCM_BASE=origin/main is required alongside fetch-depth: 0, not
+#     instead of it: a GitHub Actions checkout has full history but no local
+#     branch literally named `main`, only `origin/main` — confirmed failing
+#     in real CI without this (`ambiguous argument 'main'`, silently falling
+#     back to testing every package, task 27's own PR #397).
 #
 # Enforcement substrate as everywhere: CI red + the T9 merge-gate hook.
 
@@ -31,18 +51,44 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      # A GitHub Actions checkout has no local branch literally named
+      # `main` — only `origin/main` — so `--affected` can't resolve `main`
+      # on its own (confirmed failing in real CI: "ambiguous argument
+      # 'main'", silently falling back to "assume everything changed").
+      # This is turbo's own documented env var for pointing it at the
+      # right ref.
+      TURBO_SCM_BASE: origin/main
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Typecheck (all shared packages)
-        run: bunx turbo typecheck --filter='./packages/*'
+      - name: Typecheck (packages affected by this PR's diff)
+        run: bunx turbo typecheck --affected --filter='./packages/*'
 
-      - name: Unit tests (every package with a test script, except the pre-existing cetana-cli failure)
-        run: bunx turbo test --filter='!@atta/cetana-cli'
+      - name: Unit tests (affected packages, except the pre-existing cetana-cli failure)
+        run: bunx turbo test --affected --filter='!@atta/cetana-cli'
