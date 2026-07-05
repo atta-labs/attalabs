@@ -1,61 +1,66 @@
-name: Forge Lifecycle
+name: AEG Gate Suite
 
-# Two CI gates required by D-069:
+# ONE consolidated PR-gate job (aeg-governance-hardening task 31, #395, item 3).
 #
-#  closes-n-gate   — task-branch PRs must declare `Closes #N` in the body.
-#                    Non-task branches bypass automatically.
+# This repo hit GitHub's free-tier 2,000 Actions-minutes/month cap in 5 days:
+# 9 of the 11 jobs run per push each did well under 30s of real work but cost
+# a full billed minute (GitHub bills per-job, rounded up) — ~9 billed minutes
+# of pure per-job checkout/setup overhead per push, spread across 5 workflow
+# files. The 9 checks below now run as SEQUENTIAL STEPS of one job — one
+# checkout, one bun setup, one dependency install — same gates, same
+# strictness, ~1-2 billed minutes instead of ~9-10.
 #
-#  coherence-gate  — stateless coherence oracle (verify-coherence.ts).
-#                    A1/A2/A3/T1/T2/T3/D1/R1/N1/M1/M3 failures → CI red (the
-#                    CLI's exit code is non-zero on ANY check with
-#                    status:'fail' — see coherence-checks.ts for each check's
-#                    exact fail/info semantics; several grandfather via
-#                    COHERENCE_ENFORCED_FROM / R1_GRANDFATHERED_ISSUES).
-#                    T2/T3 are scoped to the PR's own iteration in CI (via
-#                    BRANCH below) — an unrelated iteration's topology gap
-#                    never blocks this PR (aeg-governance-hardening task 19).
-#                    L2/L3/N2/M2 are always info-only (never exit-1). NOTE:
-#                    L1 is documented elsewhere as advisory but its current
-#                    implementation returns status:'fail' like the checks
-#                    above — a known pre-existing doc/code mismatch, not
-#                    addressed by task 19 (see its PR body).
-#                    On A1 failures the script's issue numbers receive
-#                    the `aeg:incoherent` label via `gh issue edit`.
-#                    T2 relocation (task 24, #364, Part 2 — D-082): T2 only
-#                    blocks when PR_TOUCHED_FILES shows this PR's own diff
-#                    touches a topology file (a plan PR) — otherwise T2's
-#                    findings are demoted to info (never block a task PR).
-#                    Repo-state reads (topology files, iteration list) come
-#                    from a freshly-fetched origin/main via PR_HEAD_SHA/
-#                    PR_TOUCHED_FILES, not the checkout's merge-ref, which
-#                    GitHub materializes lazily and can lag behind main.
+# Consolidated here (formerly): forge-lifecycle.yml's closes-n-gate /
+# coherence-gate / single-plan-pr-gate, verify-test-plan.yml (deleted),
+# verify-docs.yml (deleted), conventions.yml's commit-lint / biome /
+# no-hardcoded-colors (deleted), archivist.yml's brief-validation (removed
+# there). Explicitly NOT consolidated: ci.yml's typecheck-and-tests (real
+# work-time dominates overhead; diff-scoped + cached by task 27) and
+# claude-code-review.yml (different cost/latency class, LLM-based).
 #
-#  single-plan-pr-gate — ring-1 backstop for the single-plan-PR guard
-#                    (aeg-governance-hardening task 24, #364, Part 1).
-#                    `open-pr.ts`'s `checkSinglePlanPrGate` is ring-0
-#                    prevention but only runs for PRs opened through that
-#                    wrapper — a web-UI-opened PR bypasses it. This job
-#                    re-runs the IDENTICAL predicate (`checkSinglePlanPr`,
-#                    `@atta/aeg-core/src/single-plan-pr.ts`) forge-side. A
-#                    no-op (exit 0) for any PR whose diff doesn't touch an
-#                    iteration topology file — ordinary task-branch PRs never
-#                    do, so this never fires for them (asserted in
-#                    `verify-single-plan-pr.test.ts`).
+# Independent failure visibility is preserved by construction:
+#   - every gate step is guarded by `!cancelled()` — an earlier step's failure
+#     NEVER skips a later gate step; all 9 verdicts are always produced
+#     (within a step's own event scope, see below);
+#   - no `continue-on-error` — a failing gate step shows its own red X in the
+#     step list and fails the job (there is no fail-fast hiding: fail-fast is
+#     a matrix/job concept; steps here keep running via `!cancelled()`).
+#
+# Event scoping preserves each check's original trigger set exactly. The
+# workflow trigger is the UNION of the three old sets; per-step `if:` guards
+# narrow back down:
+#   - 7 checks ran on [opened, synchronize, reopened] — guarded to those;
+#   - Runtime Test Plan also ran on `edited` (PR-body checkbox ticks must
+#     re-evaluate the gate without an empty commit — D-049);
+#   - verify-docs also ran on `labeled`/`unlabeled` (PR_LABELS feeds the
+#     tier derivation).
+# On `edited` the dependency install is skipped too — verify-test-plan.ts is
+# dependency-free and its old workflow never installed.
+#
+# Permissions are the union of what the 9 jobs individually held:
+#   contents: read (all), issues: write (coherence A1 labeling),
+#   pull-requests: write (brief-validation's needs:brief-correction label;
+#   covers the coherence/single-plan-PR `gh pr view` reads).
+#
+# Original per-check rationale (D-069 forge-lifecycle gates, D-049 test-plan
+# gate, conventions mirroring, brief validation) lives with each step below.
 #
 # Real substrate (private repo — branch protection unavailable on free plan):
-#   CI turns red/green.  The T9 merge-gate hook (merged in #255) denies agent
-#   merges of red-CI PRs.  Local hooks enforce the same rules for every writer.
+#   CI turns red/green. The T9 merge-gate hook (merged in #255) denies agent
+#   merges of red-CI PRs. Local hooks enforce the same rules for every writer.
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
 
 jobs:
-  closes-n-gate:
-    name: Closes #N (task-branch PRs)
+  aeg-gate-suite:
+    name: AEG gate suite
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,36 +70,39 @@ jobs:
         with:
           bun-version: latest
 
+      # Skipped on `edited`: only the dependency-free Test Plan gate runs
+      # there (its pre-consolidation workflow never installed dependencies).
       - name: Install dependencies
+        if: ${{ github.event.action != 'edited' }}
         run: bun install --frozen-lockfile
 
-      - name: Check Closes #N
+      # ── 1/9 · Closes #N ─────────────────────────────────────────────────
+      # Task-branch PRs must declare `Closes #N` in the body (D-069).
+      # Non-task branches bypass automatically.
+      - name: "Closes #N (task-branch PRs)"
+        if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
         env:
           BRANCH: ${{ github.head_ref }}
           PR_BODY: ${{ github.event.pull_request.body }}
         run: bun packages/aeg-core/bin/verify-coherence.ts --closes-n
 
-  coherence-gate:
-    name: Coherence oracle (A1/A2/A3 blocking)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
+      # ── 2/9 · Coherence oracle ──────────────────────────────────────────
+      # Stateless coherence oracle (verify-coherence.ts). A1/A2/A3/T1/T2/T3/
+      # D1/R1/N1/M1/M3 failures → red (the CLI exits non-zero on ANY check
+      # with status:'fail' — see coherence-checks.ts for each check's exact
+      # fail/info semantics; several grandfather via COHERENCE_ENFORCED_FROM /
+      # R1_GRANDFATHERED_ISSUES). T2/T3 are scoped to the PR's own iteration
+      # (via BRANCH) — an unrelated iteration's topology gap never blocks this
+      # PR (task 19). T2 relocation (task 24, #364, Part 2 — D-082): T2 only
+      # blocks when PR_TOUCHED_FILES shows this PR's own diff touches a
+      # topology file (a plan PR). Repo-state reads (topology files, iteration
+      # list) come from a freshly-fetched origin/main via PR_HEAD_SHA/
+      # PR_TOUCHED_FILES, not the checkout's merge-ref, which GitHub
+      # materializes lazily and can lag behind main. On A1 failures the
+      # script's issue numbers receive the `aeg:incoherent` label.
       - name: Resolve this PR's touched files (item 5/T2 relocation — D-082)
         id: pr_files
+        if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -107,6 +115,7 @@ jobs:
 
       - name: Run coherence oracle (JSON mode)
         id: oracle
+        if: ${{ !cancelled() && steps.pr_files.outcome == 'success' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.head_ref }}
@@ -118,7 +127,7 @@ jobs:
           echo "exit=$?" >> "$GITHUB_OUTPUT"
 
       - name: Apply aeg:incoherent label to A1 failures
-        if: always()
+        if: ${{ !cancelled() && steps.oracle.outcome == 'success' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -128,40 +137,111 @@ jobs:
           done
 
       - name: Report oracle findings
-        if: steps.oracle.outputs.exit != '0'
+        if: ${{ !cancelled() && steps.oracle.outcome == 'success' && steps.oracle.outputs.exit != '0' }}
         run: |
           echo "=== Coherence findings ==="
           jq '.checks[] | select(.status == "fail")' /tmp/coherence.json 2>/dev/null || \
             cat /tmp/coherence.json
 
-      - name: Enforce coherence oracle result (blocking)
-        if: always()
+      - name: Coherence oracle (A1/A2/A3 blocking)
+        if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
         # Fails closed: if the oracle step never ran or never set its output
-        # (e.g. an earlier step failed), `steps.oracle.outputs.exit` is empty
-        # and a bare `exit` would silently succeed on this step's own $?
-        # instead of reflecting the real failure. Default to 1.
+        # (e.g. the pr_files step failed), `steps.oracle.outputs.exit` is
+        # empty and a bare `exit` would silently succeed on this step's own
+        # $? instead of reflecting the real failure. Default to 1.
         run: exit "${{ steps.oracle.outputs.exit || '1' }}"
 
-  single-plan-pr-gate:
-    name: Single-plan-PR guard (ring-1 backstop)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Run single-plan-PR guard
+      # ── 3/9 · Single-plan-PR guard ──────────────────────────────────────
+      # Ring-1 backstop (task 24, #364, Part 1). `open-pr.ts`'s
+      # `checkSinglePlanPrGate` is ring-0 prevention but only runs for PRs
+      # opened through that wrapper — a web-UI-opened PR bypasses it. This
+      # step re-runs the IDENTICAL predicate (`checkSinglePlanPr`,
+      # `@atta/aeg-core/src/single-plan-pr.ts`) forge-side. A no-op (exit 0)
+      # for any PR whose diff doesn't touch an iteration topology file —
+      # ordinary task-branch PRs never do (asserted in
+      # `verify-single-plan-pr.test.ts`).
+      - name: Single-plan-PR guard (ring-1 backstop)
+        if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: bun packages/aeg-core/bin/verify-single-plan-pr.ts
+
+      # ── 4/9 · Runtime Test Plan checkbox state ──────────────────────────
+      # D-049 gate: a PR is not mergeable while any `- [ ]` box in the
+      # brief's Test Plan section is unticked. `Test Plan: unit-tests-only`
+      # (first-class allowed value) passes by default. Runs on `edited` too
+      # so PR-body ticks update the gate without forcing an empty commit.
+      # BRANCH is required (task 25, #365): without it, a task-branch PR with
+      # no Test Plan section at all silently advisory-PASSES instead of the
+      # loud FAIL D-049 requires (the #377 live-fire gap).
+      - name: Runtime Test Plan checkbox state
+        if: ${{ !cancelled() && github.event.action != 'labeled' && github.event.action != 'unlabeled' }}
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BRANCH: ${{ github.head_ref }}
+        run: bun packages/aeg-core/bin/verify-test-plan.ts
+
+      # ── 5/9 · Tier-appropriate documentation gate ───────────────────────
+      # verify-docs --pr (C0–C5). Runs on `labeled`/`unlabeled` too because
+      # PR_LABELS feeds the tier derivation.
+      - name: Tier-appropriate documentation gate
+        if: ${{ !cancelled() && github.event.action != 'edited' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: bun packages/aeg-core/bin/verify-docs.ts --pr
+
+      # ── 6/9 · Biome lint/format ─────────────────────────────────────────
+      # Mirrors the local lint-staged/Husky enforcement into CI so it binds
+      # every writer (GitHub API/MCP writes, direct pushes, hand-merges) —
+      # same Biome config, identical gate.
+      - name: Biome lint/format
+        if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
+        run: bun run format-and-lint
+
+      # ── 7/9 · Commit-message format ─────────────────────────────────────
+      # Reuses commitlint.config.js — the same rules Husky enforces locally,
+      # so local and CI cannot diverge on commit format.
+      - name: Commit-message format
+        if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bunx commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+
+      # ── 8/9 · Forbidden colors (UI) ─────────────────────────────────────
+      # Diff-scoped: scans only the added lines in changed UI files. Encodes
+      # the patterns documented in .claude/skills/ui-theme-tokens/SKILL.md.
+      # Designed to under-match rather than over-match — pre-existing
+      # violations elsewhere are intentionally not flagged.
+      - name: Forbidden colors (UI)
+        if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bun scripts/check-forbidden-colors.ts --pr
+
+      # ── 9/9 · Brief Validation ──────────────────────────────────────────
+      # Real, CI-enforced gate (D-069) — checks the PR body carries every
+      # required brief section (Tier, For, Project, Test Plan, surface map,
+      # doc-update list, worktree Step 0, stop conditions, autonomy clause,
+      # Closes #N, lock-ack). Applies `needs:brief-correction` on failure.
+      # See packages/aeg-core/src/brief-validation.ts.
+      - name: Brief Validation
+        id: verify_brief
+        if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BRANCH: ${{ github.head_ref }}
+        run: bun packages/aeg-core/bin/verify-brief.ts
+
+      - name: Apply needs:brief-correction label on failure
+        if: ${{ !cancelled() && steps.verify_brief.outcome == 'failure' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr edit "${{ github.event.pull_request.number }}" --add-label "needs:brief-correction"

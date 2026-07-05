@@ -1,10 +1,10 @@
 # Archivist
 #
-# brief-validation: Real, CI-enforced gate (D-069) — checks the PR body carries every
-#   required brief section (Tier, For, Project, Test Plan, surface map, doc-update list, worktree
-#   Step 0, stop conditions, autonomy clause, Closes #N, lock-ack). Blocks merge when
-#   validation fails and applies `needs:brief-correction`. See
-#   packages/aeg-core/src/brief-validation.ts.
+# brief-validation moved: the Brief Validation PR gate now runs as step 9/9 of
+#   the consolidated "AEG gate suite" job in forge-lifecycle.yml
+#   (aeg-governance-hardening task 31, #395, item 3 — per-job billing overhead).
+#   Same gate, same strictness, different packaging. This workflow no longer
+#   triggers on pull_request at all.
 #
 # post-merge: Triggered after merge to main. Resolves the merge commit's PR, assembles
 #   and posts the per-task Archivist provenance block, and explicitly closes the task's
@@ -32,14 +32,17 @@
 #   is the ring-2 backstop that DETECTS a direct push after the fact via the
 #   commits→pulls association API and fails the run loudly. Detection only,
 #   never mutation — no revert, no force-push. Permissions are deliberately
-#   `contents: read` + `issues: write` only. See
-#   packages/aeg-core/src/direct-main-push.ts.
+#   read-only plus `issues: write`: `pull-requests: read` is REQUIRED for the
+#   commits→pulls association API the check calls — without it the job 403s
+#   ("Resource not accessible by integration") on every real main push
+#   (aeg-governance-hardening task 31, #395, item 2). Also runs on
+#   workflow_dispatch so the check is triggerable on demand for verification
+#   (github.sha is then the selected branch's tip — a PR merge commit on main
+#   yields a green run). See packages/aeg-core/src/direct-main-push.ts.
 
 name: Archivist
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
   push:
     branches: [main]
   schedule:
@@ -47,40 +50,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  brief-validation:
-    name: Brief Validation
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Run verify-brief
-        id: verify_brief
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_BODY: ${{ github.event.pull_request.body }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          BRANCH: ${{ github.head_ref }}
-        run: bun packages/aeg-core/bin/verify-brief.ts
-
-      - name: Apply needs:brief-correction label on failure
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr edit "${{ github.event.pull_request.number }}" --add-label "needs:brief-correction"
-
   post-merge:
     name: Post-Merge Archivist
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -141,11 +110,12 @@ jobs:
 
   direct-main-push-detection:
     name: Direct-Main-Push Detection
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
