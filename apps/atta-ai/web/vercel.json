@@ -1,4 +1,4 @@
 {
   "buildCommand": "bun turbo run build --filter=@atta/atta-ai-web",
-  "ignoreCommand": "cd ../../.. && npx turbo-ignore @atta/atta-ai-web --fallback=main"
+  "ignoreCommand": "cd ../../.. && (git fetch --deepen=100 origin || true) && (git fetch --depth=100 origin main:main || true) && npx turbo-ignore @atta/atta-ai-web --fallback=main"
 }
