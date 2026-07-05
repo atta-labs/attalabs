@@ -141,9 +141,15 @@ export default async function IterationPage({ params }: { params: Promise<Params
             No tasks declared in this iteration's topology table.
           </p>
         ) : (
-          <div className='rounded-lg border border-border bg-card'>
+          // `[&>div]:overflow-visible` neutralizes the Table's own overflow-x-auto
+          // container — with it in place the sticky header would stick to that
+          // wrapper instead of the page scrollport. Safe: table-fixed + w-full
+          // cannot overflow horizontally. Sticky lives on the th cells (not
+          // thead) for cross-browser reliability; th carries its own bg and
+          // border because row borders don't travel with sticky cells.
+          <div className='rounded-lg border border-border bg-card [&>div]:overflow-visible'>
             <Table className='table-fixed'>
-              <TableHeader>
+              <TableHeader className='[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-card [&_th]:border-b [&_th]:border-border'>
                 <TableRow>
                   <TableHead className='w-[4%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>Task</TableHead>
