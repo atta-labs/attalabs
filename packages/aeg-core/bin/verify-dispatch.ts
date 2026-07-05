@@ -76,7 +76,7 @@ import {
   parsePremiseBlock
 } from '../src/index'
 import type { Iteration, Task } from '../src/types'
-import { fetchProvenance } from './verify-coherence'
+import { fetchProvenance } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-provenance'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
