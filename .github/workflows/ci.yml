@@ -31,6 +31,11 @@
 #     a merge-base against `main` — a shallow clone breaks that ref
 #     resolution. `.turbo` and `~/.bun/install/cache` are cached between runs,
 #     keyed on bun.lock's hash.
+#   - TURBO_SCM_BASE=origin/main is required alongside fetch-depth: 0, not
+#     instead of it: a GitHub Actions checkout has full history but no local
+#     branch literally named `main`, only `origin/main` — confirmed failing
+#     in real CI without this (`ambiguous argument 'main'`, silently falling
+#     back to testing every package, task 27's own PR #397).
 #
 # Enforcement substrate as everywhere: CI red + the T9 merge-gate hook.
 
@@ -46,6 +51,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      # A GitHub Actions checkout has no local branch literally named
+      # `main` — only `origin/main` — so `--affected` can't resolve `main`
+      # on its own (confirmed failing in real CI: "ambiguous argument
+      # 'main'", silently falling back to "assume everything changed").
+      # This is turbo's own documented env var for pointing it at the
+      # right ref.
+      TURBO_SCM_BASE: origin/main
     steps:
       - uses: actions/checkout@v4
         with:
