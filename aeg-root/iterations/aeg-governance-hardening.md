@@ -48,6 +48,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 28 | Purify aeg-core: move docs UI to Studio, zero react/next/UI dependencies     | #372  | aeg, aeg-core | —                 | —              |
 | 29 | Waiver authentication: actor-verified label supersedes Doc-waiver grammar    | #380  | aeg, aeg-core | —                 | 25             |
 | 30 | Structured templates for every agent-authored artifact (Issue/brief/PR report) | #393  | aeg        | —                      | —              |
+| 31 | Vercel shallow-clone fallback failure + direct-main-push permission gap      | #395  | aeg, vada, herald, atta, attalabs | — | —      |
 
 ## Backlog (this iteration, not yet dispatched)
 
