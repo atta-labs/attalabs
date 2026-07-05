@@ -8,5 +8,3 @@ export { isSurfacedDoc, surfacedDocs, SURFACED_EXCLUSION_RULES } from './surface
 export type { SurfacedManifestEntry, SurfacedRule } from './surfaced-manifest'
 export { evaluateDocsCoherence } from './docs-coherence'
 export type { DocsCoherenceEntry, DocsCoherenceResult } from './docs-coherence'
-export { DocPage, DocSidebar, StickyDocHeader } from './components'
-export type { DocPageProps, DocSidebarProps, StickyDocHeaderProps } from './components'

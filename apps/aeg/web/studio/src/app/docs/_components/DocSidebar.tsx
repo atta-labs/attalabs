@@ -18,7 +18,7 @@ import {
 } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ChevronDown } from 'lucide-react'
-import type { Doc, DocNav } from '../types'
+import type { Doc, DocNav } from '@atta/aeg-core/docs'
 
 export type DocSidebarProps = { nav: DocNav; pathname: string }
 

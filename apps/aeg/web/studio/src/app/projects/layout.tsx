@@ -8,8 +8,12 @@ export default async function ProjectsLayout({ children }: { children: ReactNode
   return (
     <Flex direction='column' className='h-full overflow-hidden'>
       <ProjectsSubBar projects={projects} />
-      <div className='flex-1 overflow-y-auto px-8 py-8'>
-        <div className='mx-auto max-w-4xl'>{children}</div>
+      {/* Padding lives on the inner wrapper, NOT the scroll container — sticky
+          descendants (the tasks-table header) pin to the scrollport edge, and
+          scrollport padding offsets them below the visible top with rows
+          bleeding through the gap. */}
+      <div className='flex-1 overflow-y-auto'>
+        <div className='mx-auto max-w-4xl px-8 py-8'>{children}</div>
       </div>
     </Flex>
   )

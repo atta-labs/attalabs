@@ -2,8 +2,8 @@ import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
-import { stripLeadingH1 } from '../parse-doc'
-import type { Doc } from '../types'
+import { stripLeadingH1 } from '@atta/aeg-core/docs'
+import type { Doc } from '@atta/aeg-core/docs'
 
 import { StickyDocHeader } from './StickyDocHeader'
 

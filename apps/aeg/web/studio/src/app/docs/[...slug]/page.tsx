@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { DocPage, findDoc, getNextDoc, getPrevDoc } from '@atta/aeg-core/docs'
+import { findDoc, getNextDoc, getPrevDoc } from '@atta/aeg-core/docs'
 import { loadAegDocs } from '@/lib/docs/load-aeg-docs'
+import { DocPage } from '../_components/DocPage'
 
 type Params = { slug: string[] }
 

@@ -16,16 +16,17 @@ What was originally written as "the AEG product" (one hosted SaaS app) is actual
 
 ```
 packages/aeg-core/            @atta/aeg-core — SHARED. Parse AEG artifacts → typed model;
-                              deriveIteration(file, forgeFacts) (pure); the docs renderer.
-                              Both products consume it.
+                              deriveIteration(file, forgeFacts) (pure); the docs logic
+                              (frontmatter, nav, surfaced manifest, coherence). Pure —
+                              zero framework deps. Both products consume it.
 apps/aeg/web/
   studio/                     AEG Studio — the LOCAL repo-reading tool.   ← V1 (aeg-ui-v1)
   portal/                     AEG Portal — the PUBLIC deployed site.       ← FUTURE iteration
 ```
 
 - **AEG Studio (local).** Launched at a repo root, **no auth**. Reads *this repo's* AEG artifacts off disk + reads **GitHub locally** (the operator's own already-authenticated token / `gh`) for live per-task status. Renders this repo's governance. The first iteration builds this.
-- **AEG Portal (public, future).** Deployed at `aeg.attalabs.dev`. Explains AEG to the world — the full documentation via the shared docs renderer — plus the `aeg.sh` download and marketing. Renders *the model itself*, not anyone's repo data. **Not built in V1.**
-- **`@atta/aeg-core` (shared).** The parser + `deriveIteration` + the docs renderer. Built in V1 (Studio needs it); the Portal inherits the docs renderer for free (the F5 lesson — build the shared thing shared the first time, global D-042).
+- **AEG Portal (public, future).** Deployed at `aeg.attalabs.dev`. Explains AEG to the world — the full documentation via the shared docs logic — plus the `aeg.sh` download and marketing. Renders *the model itself*, not anyone's repo data. **Not built in V1.**
+- **`@atta/aeg-core` (shared).** The parser + `deriveIteration` + the docs logic. Built in V1 (Studio needs it); the Portal inherits the docs logic for free (the F5 lesson — build the shared thing shared the first time, global D-042). The package is **pure** — no react/next/UI dependencies (task 28, #372); presentation components live in the consuming app.
 
 **OQ-aeg-3 is resolved local-first by D-001.** The hosted apparatus (GitHub App, encrypted token vault, webhook cache, multi-tenant Clerk, billing) is *not* how Studio works and is *not* in either V1 product. A hosted multi-tenant Studio is a later, separate deployment decision, never a blocker for the local tool.
 
@@ -118,9 +119,9 @@ Implementation contract:
 
 A webhook-fed cache stores **forge facts** (Issue state, branch existence, PR state, review decision, merge) — never authored status. The cache is a performance projection of the forge, not a second source of truth; on conflict the forge wins. `deriveIteration` runs against the cache.
 
-### 3.4 The docs renderer (shared) — V1
+### 3.4 The docs pipeline (shared logic, app-local presentation) — V1
 
-The shared docs renderer in `@atta/aeg-core` renders the `aeg-root/` model docs (constitution, roles, flow, contracts, routes & meanings) following **Vāda's local-markdown content pattern** (local `.md` under a content dir → a reader component; see `apps/vada-ai/web/content/` + the archived "science" doc layout). **Studio V1 uses it** for its docs section; **the future Portal reuses the same renderer** as its public documentation — which is why it is shared, not buried in Studio (the F5 lesson, global D-042).
+The shared docs **logic** in `@atta/aeg-core` (frontmatter parsing, nav building, the surfaced manifest, coherence evaluation — all pure, zero framework deps) processes the `aeg-root/` model docs (constitution, roles, flow, contracts, routes & meanings) following **Vāda's local-markdown content pattern** (local `.md` under a content dir → a reader component; see `apps/vada-ai/web/content/` + the archived "science" doc layout). The React **presentation components** (`DocPage`, `DocSidebar`, `StickyDocHeader`) live in Studio at `apps/aeg/web/studio/src/app/docs/_components/` — moved out of aeg-core by task 28 (#372) so the shared package stays framework-free. **Studio V1 uses both** for its docs section; **the future Portal reuses the same shared logic** for its public documentation (the F5 lesson, global D-042) and brings its own presentation layer (or a then-shared UI package, decided when the Portal is built).
 
 The docs nav is **manifest-driven, not hardcoded** (D-079). Studio's loader (`apps/aeg/web/studio/src/lib/docs/load-aeg-docs.ts`) filters every parsed doc through `isSurfacedDoc` from `@atta/aeg-core/docs` — the same "surfaced doc" manifest (`packages/aeg-core/src/docs/surfaced-manifest.ts`) that backs the `verify-docs` C6 coherence gate. There is **no "Iterations" nav section**: active iteration topology files, `.tokens.md` ledgers, `projects.md`, and `discovery/` artifacts are this repo's execution state, not model documentation, and are excluded by the manifest. `iterations/README.md` — the generic explainer of the iterations mechanism itself — is the one exception the manifest carves out; it renders under **Overview** via `section: Overview` frontmatter, not a dedicated section.
 
