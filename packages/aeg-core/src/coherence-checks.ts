@@ -6,6 +6,7 @@
  * topology are injected by the caller (`bin/verify-coherence.ts`, the I/O shim).
  */
 
+import { anchoredRegion } from './anchored-region'
 import { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 import type { ForgeFacts, Iteration, Task } from './types'
 
@@ -555,8 +556,12 @@ export function checkClosesN(
 
   const expectedIssue = task.issue
   const closesPattern = /(?:closes|close|fixes|fix|resolves|resolve)\s*:?\s*#(\d+)/gi
+  // When the body carries an AEG:CLOSES anchor pair (anchored-region.ts,
+  // task 30), only references inside the pair count — a Closes-shaped line in
+  // a pasted reference brief is ignored. No pair → whole body, as before.
+  const searchIn = anchoredRegion(prBody, 'CLOSES') ?? prBody
   const referenced = new Set<number>()
-  for (const hit of prBody.matchAll(closesPattern)) {
+  for (const hit of searchIn.matchAll(closesPattern)) {
     referenced.add(Number(hit[1]))
   }
 

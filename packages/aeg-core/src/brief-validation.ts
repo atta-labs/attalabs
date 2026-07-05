@@ -12,6 +12,7 @@
  * `brief-authoring` skill and `brief-developer` contract define.
  */
 
+import { type AnchorField, anchoredRegion } from './anchored-region'
 import { parsePremiseBlock } from './premise-check'
 
 export type BriefSectionResult = { status: 'pass' | 'fail'; errors: string[] }
@@ -35,9 +36,15 @@ export function headerRegion(prBody: string): string {
  * Tolerant header-field reader: accepts `Field: value` and `**Field:** value`,
  * line-anchored, searched only in the header region. Stops at line end or a
  * `·` metadata separator.
+ *
+ * When `anchor` is given and the body carries that anchor pair
+ * (`anchored-region.ts`, task 30), the pair replaces the header region as the
+ * one place the field is read from — a field-shaped line anywhere else in the
+ * body is ignored. Bodies without the pair parse exactly as before.
  */
-function headerField(prBody: string, labelPattern: string): string | null {
-  const region = headerRegion(prBody)
+function headerField(prBody: string, labelPattern: string, anchor?: AnchorField): string | null {
+  const anchored = anchor !== undefined ? anchoredRegion(prBody, anchor) : null
+  const region = anchored ?? headerRegion(prBody)
   const re = new RegExp(`^(?:\\*\\*)?\\s*${labelPattern}\\s*(?:\\*\\*)?\\s*:\\s*(?:\\*\\*)?\\s*([^\\n·]+)`, 'im')
   const m = region.match(re)
   if (!m) return null
@@ -206,7 +213,7 @@ export function checkAutonomyClause(prBody: string): BriefSectionResult {
  * will eventually omit (contract-gate parity is the fix, not discipline).
  */
 export function checkProjectField(prBody: string): BriefSectionResult {
-  if (headerField(prBody, 'Project(?:\\(s\\))?') !== null) return { status: 'pass', errors: [] }
+  if (headerField(prBody, 'Project(?:\\(s\\))?', 'PROJECT') !== null) return { status: 'pass', errors: [] }
   return {
     status: 'fail',
     errors: [

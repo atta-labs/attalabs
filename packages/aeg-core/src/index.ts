@@ -1,4 +1,6 @@
 export * from './types'
+export { ANCHOR_FIELDS, anchoredRegion } from './anchored-region'
+export type { AnchorField } from './anchored-region'
 export { parseRegistry } from './parse-registry'
 export { parseIteration } from './parse-iteration'
 export { deriveIteration } from './derive-iteration'

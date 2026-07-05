@@ -12,6 +12,7 @@
  * posted by hand on PRs #302/#305/#306.
  */
 
+import { type AnchorField, anchoredRegion } from './anchored-region'
 import { headerRegion } from './brief-validation'
 import { readTierFromPrBody } from './pr-tier'
 
@@ -52,9 +53,15 @@ function stripCode(body: string): string {
  * gate can't produce a DANGLING field here). Whole-body scanning is the
  * regression from #311's first live run, where a prose sentence *about* the
  * `Ticket:` field in a later section was extracted as the field's value.
+ *
+ * When `anchor` is given and the body carries that anchor pair
+ * (`anchored-region.ts`, task 30), the pair replaces the header region as the
+ * one place the field is read from — same recognition the gate side
+ * (`checkProjectField`) uses, preserving gate/archivist parity.
  */
-function extractField(body: string, labelPattern: string): string | null {
-  const region = headerRegion(body)
+function extractField(body: string, labelPattern: string, anchor?: AnchorField): string | null {
+  const anchored = anchor !== undefined ? anchoredRegion(body, anchor) : null
+  const region = anchored ?? headerRegion(body)
   const re = new RegExp(`^(?:\\*\\*)?\\s*${labelPattern}\\s*(?:\\*\\*)?\\s*:\\s*(?:\\*\\*)?\\s*([^\\n·]+)`, 'im')
   const m = region.match(re)
   if (!m) return null
@@ -72,10 +79,24 @@ function closesRefs(text: string): number[] {
  * are scanned body-wide so a real second closing reference in prose is still
  * flagged — but always fence-stripped, so example text like a Test Plan's
  * `Closes #123` fixture never counts (#311 regression).
+ *
+ * When the body carries an `AEG:CLOSES` anchor pair (`anchored-region.ts`,
+ * task 30), the pair replaces the header block as the canonical placement:
+ * the primary Issue is the first `Closes #N` inside the pair (never flagged
+ * `outsideHeader` — anchored IS canonical), and extras are still scanned
+ * body-wide so stray closing references stay flagged. Bodies without the
+ * pair parse exactly as before.
  */
 function extractIssue(body: string): { issue: number | null; extraIssues: number[]; outsideHeader: boolean } {
-  const headerNums = closesRefs(stripCode(headerRegion(body)))
   const bodyNums = closesRefs(stripCode(body))
+  const anchored = anchoredRegion(body, 'CLOSES')
+  if (anchored !== null) {
+    const anchorNums = closesRefs(stripCode(anchored))
+    if (anchorNums.length === 0) return { issue: null, extraIssues: bodyNums, outsideHeader: false }
+    const issue = anchorNums[0] as number
+    return { issue, extraIssues: bodyNums.filter((n) => n !== issue), outsideHeader: false }
+  }
+  const headerNums = closesRefs(stripCode(headerRegion(body)))
   if (bodyNums.length === 0) return { issue: null, extraIssues: [], outsideHeader: false }
   const issue = headerNums.length > 0 ? (headerNums[0] as number) : (bodyNums[0] as number)
   return { issue, extraIssues: bodyNums.filter((n) => n !== issue), outsideHeader: headerNums.length === 0 }
@@ -145,7 +166,7 @@ export function buildProvenanceBlock(facts: MergedPrFacts): {
   const tier = readTierFromPrBody(facts.body)
   if (tier === null) dangling.push('no `Tier:` field found in PR body — Tier field is DANGLING')
 
-  const project = extractField(facts.body, 'Project(?:\\(s\\))?')
+  const project = extractField(facts.body, 'Project(?:\\(s\\))?', 'PROJECT')
   if (!project) dangling.push('no `Project:` field found in PR body — Project(s) field is DANGLING')
 
   const forField = extractField(facts.body, 'For')
