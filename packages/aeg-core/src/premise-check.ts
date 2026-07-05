@@ -18,6 +18,7 @@
  */
 
 import { createHash } from 'node:crypto'
+import { anchoredRegion } from './anchored-region'
 
 export type PremiseAssertion =
   | { kind: 'contains'; path: string; value: string }
@@ -48,9 +49,16 @@ const PREMISE_LINE = /^[-*]\s*(\S+)\s+(contains|absent|sha256)\s*:\s*(.+)$/i
  * the caller decides whether zero assertions is itself a failure
  * (`checkPremiseCoverage`). Stops the block at the first blank line or the
  * first non-bullet line after the header.
+ *
+ * When the body carries an `AEG:PREMISE` anchor pair (`anchored-region.ts`,
+ * task 30), the block is parsed exclusively inside that pair — the pair must
+ * contain the `**Premise:**` header line and its bullets; a premise-shaped
+ * block anywhere else in the body is ignored. Bodies without the pair parse
+ * exactly as before.
  */
 export function parsePremiseBlock(prBody: string): PremiseAssertion[] {
-  const lines = prBody.split(/\r?\n/)
+  const searchIn = anchoredRegion(prBody, 'PREMISE') ?? prBody
+  const lines = searchIn.split(/\r?\n/)
   const assertions: PremiseAssertion[] = []
   let inBlock = false
 

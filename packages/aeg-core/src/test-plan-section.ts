@@ -25,6 +25,8 @@
  * decision record.
  */
 
+import { anchoredRegion } from './anchored-region'
+
 export type TestPlanSection = { found: true; section: string } | { found: false }
 
 const HEADING_FORM_RE = /^#{1,4}[ \t]*(?:\d+[a-z]?\.[ \t]*)?\*{0,2}Test Plan\*{0,2}[ \t]*$/im
@@ -36,8 +38,19 @@ const NEXT_SECTION_RE = /\n(?:#{1,3}[ \t]|\*\*[A-Z][^*\n]*:\*\*)/
  * inline marker form) and slices it out up to — but not including — the next
  * heading or `**Field:**`-style section boundary. Returns `{ found: false }`
  * when neither form is present anywhere in the body.
+ *
+ * When the body carries an `AEG:TEST-PLAN` anchor pair (`anchored-region.ts`,
+ * task 30), the pair IS the section: its whole content is returned verbatim,
+ * with no heading/inline marker required inside it — requiring a second,
+ * redundant in-region marker would reintroduce the unrecognized-heading
+ * failure class (#377) the anchors exist to close. Identical-looking Test
+ * Plan text elsewhere in the body (a pasted reference brief's own §9, the
+ * PR #392 shape) is ignored. Bodies without the pair parse exactly as before.
  */
 export function locateTestPlanSection(body: string): TestPlanSection {
+  const region = anchoredRegion(body, 'TEST-PLAN')
+  if (region !== null) return { found: true, section: region }
+
   const headingMatch = HEADING_FORM_RE.exec(body)
   const match = headingMatch ?? INLINE_FORM_RE.exec(body)
   if (!match || match.index === undefined) return { found: false }

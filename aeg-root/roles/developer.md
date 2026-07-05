@@ -77,6 +77,8 @@ This is the verbatim PR-body template every Developer pastes when opening a PR. 
 
 This form is **forge-agnostic.** It depends on no GitHub feature, no `.github/PULL_REQUEST_TEMPLATE.md`, no agent-specific skill. It is the source of truth that travels with the methodology.
 
+**Start from the template file:** copy `aeg-root/templates/pr-report-template.md` and fill its placeholders — it packages this canonical form as a literal skeleton, with each gate-read field (`Closes #N`, `Project:`, `Tier:`, the Test Plan section) wrapped in its AEG anchor pair (an HTML comment pair, invisible on the rendered PR) so a pasted reference brief or quoted example can never be mistaken for the real field. Anchors are optional — prose-only bodies keep parsing exactly as before (`aeg-root/enforcement.md`) — but the template seeds them by default; keep them. The reference copy of the brief goes below the report inside a collapsed `<details>` block (`skills/brief-authoring/SKILL.md` §12).
+
 ```markdown
 ## Summary
 
