@@ -55,6 +55,8 @@ Two serializations are accepted, case-insensitive, matched by field name (or an 
 - **Bold-inline:** `**<Field>** — <content>` (e.g. `**Boundary** — …`)
 - **Heading:** `### <Field>` followed by the content on subsequent lines (e.g. `### Traps to avoid`)
 
+A ready-to-fill skeleton of the full eight-field rationale lives at `aeg-root/templates/issue-rationale-template.md` — copy it rather than reconstructing the shape from this section's prose; this section remains the grammar's definition.
+
 A task Issue's body must carry all eight fields in one of these two forms. **Canonical implementation:** `packages/aeg-core/src/issue-validation.ts` (`checkIssueRationale`, `isTaskIssueLabelSet`) — the single grammar/parser, consumed at two enforcement points per `aeg-root/enforcement.md`'s ring model:
 
 - **Ring 0 (creation gate):** `packages/aeg-core/bin/open-issue.ts` refuses to create or edit a task Issue (any Issue labeled `iteration:<slug>`) whose body fails `checkIssueRationale`.

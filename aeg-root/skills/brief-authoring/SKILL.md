@@ -131,6 +131,8 @@ Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared
 
 ## Required sections (in order)
 
+**Start from the template file:** copy `aeg-root/templates/brief-template.md` and fill its placeholders — it packages the 12-section shape below as a literal skeleton, so you never reconstruct the container from prose. The sections below remain the source of truth for what each one must *contain*; the template changes where you start, not what is required.
+
 ### 1. Header block
 
 ```
@@ -318,6 +320,7 @@ This clause is what makes a dispatched agent run to completion unattended instea
 What the executor opens/commits/creates at the end:
 - PR title (exact format)
 - **The brief pasted into the PR body** — plus the `Tier:` declaration (`Tier: 0|1|3`) and the `Closes #N` reference to the task's Issue (so the merge auto-closes it). The `Ticket:`/`Project:` lines (if present) ride into the PR body too.
+- **The reference copy is wrapped in a collapsed `<details>` block — standing convention (task 30, #393; first hand-applied on PR #392).** The PR body's *report half* (start from `aeg-root/templates/pr-report-template.md`) carries the real gate-read fields in their anchored homes; the brief rides below it inside `<details><summary>…</summary>…</details>`, collapsed by default, so the brief's own `Tier:` / Test Plan / `Closes` text can never be mistaken — visually or mechanically — for the PR's real fields. A `<details>` block hides nothing from the raw body, so provenance/archival tooling that greps the full PR body still finds the complete brief text.
 - Files modified (`git diff main --stat`)
 - PR description sections required
 - What to report back and in what format
