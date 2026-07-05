@@ -29,7 +29,7 @@ describe('todoDispatchVisual', () => {
     const v = todoDispatchVisual({ ready: false, blockers })
     expect(v.label).toBe('Blocked · needs #372')
     expect(v.title).toBe(blockers[0])
-    expect(v.badgeClass).toContain('warning')
+    expect(v.badgeClass).toContain('destructive')
   })
 
   it('falls back to plain Blocked when no ref is extractable', () => {
