@@ -4,5 +4,5 @@
   "buildCommand": "cd ../../.. && bun turbo run build --filter=@atta/vada-ai-web",
   "installCommand": "cd ../../.. && bun install --frozen-lockfile",
   "outputDirectory": ".next",
-  "ignoreCommand": "cd ../../.. && (git fetch --deepen=100 origin || true) && (git fetch --depth=100 origin main:main || true) && npx turbo-ignore @atta/vada-ai-web --fallback=main"
+  "ignoreCommand": "cd ../../.. && bash scripts/vercel-ignore-build.sh @atta/vada-ai-web"
 }
