@@ -103,29 +103,11 @@ Workspaces defined in root `package.json`:
 "workspaces": ["apps/*/*", "packages/*"]
 ```
 
-### Turbo Tasks
+### Turbo Tasks & Biome
 
-```bash
-bun run dev              # Start all dev servers
-bun run dev:herald       # Start Herald only
-bun run dev:vitakka      # Start Vitakka only
-bun run dev:vada         # Start Vāda only
-bun run dev:atta         # Start Atta hub (currently serves attalabs.dev)
-bun run build            # Production build (all)
-bun run build:herald     # Build Herald only
-bun run typecheck        # TypeScript check across all packages
-bun run check            # Typecheck + lint + format
-bun run clean            # Clean build artifacts
-```
+`bun run dev[:herald|:vitakka|:vada|:atta]`, `build[:herald]`, `clean` — see root `package.json` `scripts` for the full, current list rather than duplicating it here.
 
-### Biome
-
-```bash
-bun run lint              # Lint only
-bun run format            # Format only
-bun run format-and-lint   # Both
-bun run check             # Typecheck + lint + format
-```
+**Prefer scoped checks while iterating** — `bun run typecheck --filter=<pkg>` / `bun run lint --filter=<pkg>` against the package you're touching. Reserve unscoped `bun run check` (typecheck + lint + format across everything) for the final pre-PR gate — a full-repo run on every iteration is slow and burns tool-call budget for no signal beyond what the scoped run already gave you.
 
 ---
 
@@ -147,6 +129,12 @@ Types: `Build`, `Docs`, `Feat`, `Chore`, `Fix`, `Perf`, `Refactor`, `Revert`, `S
 Header line (type + scope + description) must be ≤72 characters.
 
 NEVER include `Generated with [Claude Code]` or `Co-Authored-By: Claude` attribution.
+
+---
+
+## Principal Session Hygiene
+
+Long-running Principal/orchestration sessions (Planner, Brief Author, multi-task oversight) accumulate context fast — every turn replays the whole window. Keep one iteration-scope per session: when a task's PR merges and you're moving to a genuinely separate concern, start a fresh session rather than continuing in the same one. Briefs and AEG's own docs (Issues, topology files, decision log) are the durable state — a new session loses no context that matters, since none of it lives in the chat itself. Push exploratory digging into subagents/dispatched sessions rather than doing it inline in a Principal session that's already carrying a lot of history.
 
 ---
 
@@ -187,7 +175,7 @@ In-depth guides for specific domains. Reference when working in that area.
 | Cetana Coordinator | [.claude/skills/cetana-coordinator/SKILL.md](.claude/skills/cetana-coordinator/SKILL.md) | MCP servers, worktree manager, JSONL events |
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, AttaLabs-wide SSO |
 | Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |
-| Brief Authoring | [.claude/skills/brief-authoring/SKILL.md](.claude/skills/brief-authoring/SKILL.md) | Task briefs for Developer agents — v3 model integration |
+| Brief Authoring | [aeg-root/skills/brief-authoring/SKILL.md](aeg-root/skills/brief-authoring/SKILL.md) | Task briefs for Developer agents — v3 model integration |
 | Executor Protocol | [.claude/skills/executor-protocol/SKILL.md](.claude/skills/executor-protocol/SKILL.md) | Patterns for executing dispatched tasks |
 | Code Style | [.claude/skills/code-style/SKILL.md](.claude/skills/code-style/SKILL.md) | TypeScript, exports, Biome rules |
 
