@@ -32,8 +32,13 @@
 #   is the ring-2 backstop that DETECTS a direct push after the fact via the
 #   commits→pulls association API and fails the run loudly. Detection only,
 #   never mutation — no revert, no force-push. Permissions are deliberately
-#   `contents: read` + `issues: write` only. See
-#   packages/aeg-core/src/direct-main-push.ts.
+#   read-only plus `issues: write`: `pull-requests: read` is REQUIRED for the
+#   commits→pulls association API the check calls — without it the job 403s
+#   ("Resource not accessible by integration") on every real main push
+#   (aeg-governance-hardening task 31, #395, item 2). Also runs on
+#   workflow_dispatch so the check is triggerable on demand for verification
+#   (github.sha is then the selected branch's tip — a PR merge commit on main
+#   yields a green run). See packages/aeg-core/src/direct-main-push.ts.
 
 name: Archivist
 
@@ -141,11 +146,12 @@ jobs:
 
   direct-main-push-detection:
     name: Direct-Main-Push Detection
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
