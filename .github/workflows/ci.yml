@@ -43,8 +43,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Typecheck (all shared packages)
-        run: bunx turbo typecheck --filter='./packages/*'
+      - name: Typecheck (packages affected by this PR's diff)
+        run: bunx turbo typecheck --affected --filter='./packages/*'
 
-      - name: Unit tests (every package with a test script, except the pre-existing cetana-cli failure)
-        run: bunx turbo test --filter='!@atta/cetana-cli'
+      - name: Unit tests (affected packages, except the pre-existing cetana-cli failure)
+        run: bunx turbo test --affected --filter='!@atta/cetana-cli'
