@@ -1,7 +1,7 @@
 import { Badge, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { parseLedger, sumLedger, type DerivedStatus } from '@atta/aeg-core'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, UserRound } from 'lucide-react'
 import type { Metadata } from 'next'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -55,6 +55,14 @@ export default async function IterationPage({ params }: { params: Promise<Params
   const taskStatusMap = new Map<string, DerivedStatus>()
   for (const dt of snapshot.derived.tasks) {
     taskStatusMap.set(dt.task.id, dt.status)
+  }
+
+  // Dispatch-visibility signal only — `assigned` is not part of `DerivedStatus`
+  // (D-059 excludes it from derivation). Rendered as a subordinate chip on
+  // `todo` rows so a dispatched-but-not-yet-pushed task is visibly distinct.
+  const taskAssignedMap = new Map<string, boolean>()
+  for (const [taskId, facts] of snapshot.facts) {
+    taskAssignedMap.set(taskId, facts.assigned)
   }
 
   // Map task id → issue number for resolving depends-on / conflicts-with
@@ -141,6 +149,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
                 {iteration.tasks.map((task) => {
                   const status = taskStatusMap.get(String(task.id))
                   const visual = status ? statusVisual(status) : null
+                  const showAssignedChip = status === 'todo' && taskAssignedMap.get(String(task.id)) === true
                   return (
                     <TableRow key={task.id}>
                       <TableCell className='align-top font-mono text-sm font-semibold text-foreground'>
@@ -158,6 +167,17 @@ export default async function IterationPage({ params }: { params: Promise<Params
                             <div>
                               <Badge variant='outline' className={`${visual.badgeClass} font-mono p-1 text-[0.6rem]`}>
                                 {visual.label}
+                              </Badge>
+                            </div>
+                          )}
+                          {showAssignedChip && (
+                            <div>
+                              <Badge
+                                variant='outline'
+                                className='gap-1 border-muted-foreground/40 p-1 font-mono text-[0.6rem] text-muted-foreground'
+                              >
+                                <UserRound className='size-2.5' aria-hidden />
+                                Assigned
                               </Badge>
                             </div>
                           )}
