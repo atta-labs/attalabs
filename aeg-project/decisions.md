@@ -2511,3 +2511,275 @@ Concretely:
 **Consequences:** `packages/aeg-core/src/coherence-checks.ts` (`scopeT2ToPlanPr`, new, exported via `src/index.ts`); `packages/aeg-core/bin/verify-coherence.ts` (`runCoherenceChecks` accepts `isPlanPr`, computed from `PR_TOUCHED_FILES` in CI, defaulting to `false` — never-blocking — everywhere else); `.github/workflows/forge-lifecycle.yml` (`coherence-gate` job resolves and passes `PR_TOUCHED_FILES`/`PR_HEAD_SHA`); `aeg-root/enforcement.md` (Ring 1 T2 row updated); `aeg-root/state-machine.md` (T2's gate-registry placement updated). No change to `daily-drift`'s own job (task 23) — T2 was never wired into it; the repo-wide `--json` picture it could consume already reports T2 as info via this same relocation.
 
 **Lock rationale:** `Lock: NO`. A CI-wiring placement, not an irreversible architectural commitment — a future incident could motivate a different point-of-power boundary (e.g. also blocking on a task PR that itself deletes the Issue's topology row) via an ordinary superseding entry.
+
+## D-083 — Vinaya: derived status / forge-native state is the product's core doctrine
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (Planner mode; Vinaya review program R-1)
+**Context:** The Vinaya review program (4 adversarial rounds, 16 vendor-diverse reviews, unanimous round-4 approve) ratified a decision register; R-numbers map to D-083–D-109, all PENDING until the Principal's window.
+**Decision:** Vinaya reads all work state from the forge (Issues, PRs, CI, labels) and never writes parallel status documents. The file-backed StateSource adapter exists solely as this repo's transitional shim and is deleted by the migration iteration.
+**Alternatives rejected:** Status files (drift; the disease AEG's D-029 eliminated).
+**Consequences:** Every check and Studio render is a stateless projection of forge facts; adopters are forge-native from day one.
+
+## D-084 — Vinaya is an OSS adoption product, not SaaS
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (R-2)
+**Context:** Positioning decision from the review program.
+**Decision:** Vinaya ships as a free npm package (`vinaya`, name verified free); adoption is the goal, not revenue. Target adopter: solo/small AI-native teams. The package stays surgically small (CI runs it on every PR — size is fleet tax); no postinstall — nothing executes on install.
+**Alternatives rejected:** SaaS/hosted product (kills the not-a-SaaS trust posture); editor extension distribution.
+**Consequences:** Trust surface (D-089) and reversibility are product features, not conveniences.
+
+## D-085 — Two names: AEG is the model, Vinaya is the tool
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 1
+**Lock:** YES
+**Authored by:** TL (R-3)
+**Context:** The methodology and its reference implementation need separable identities so the methodology survives tooling churn.
+**Decision:** AEG = the governance model (first-class, citable, forge-agnostic in principle). Vinaya = the reference implementation (GitHub-first in practice; Pāli: the code of discipline). Stated everywhere: "Vinaya is the reference implementation of AEG." Repo rule: protocol-instance artifacts keep AEG names (`aeg-root/`, `aeg-project/` — renaming breaks gate plumbing for zero gain); product code migrates into a vinaya namespace only DURING the npm extraction, never as a standalone rename. Machine-generated artifacts in adopter repos carry a `vinaya-` prefix. Pāli naming is elective aesthetic, consistent with D-025.
+**Alternatives rejected:** One name for both (platform absorption would orphan the methodology); renaming aeg-root/ now.
+**Consequences:** Surfaces: npm `vinaya`, Vinaya Studio, vinaya.attalabs.dev (landing + /docs + /aeg + Known Limits).
+
+## D-086 — Vinaya surfaces: npx init + site; no editor extension; GitHub App deferred
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (R-4)
+**Decision:** Entry point is `npx vinaya init`; the site is `vinaya.attalabs.dev`. No editor extension. A GitHub App (for deployed Studio / org installs) is deferred, architecture pre-paid in D-087/D-098.
+**Alternatives rejected:** Editor-extension-first (harness-bound, per-vendor); GitHub App at v1 (install friction before trust exists).
+**Consequences:** v1.0 scope is CLI + local Studio (D-104).
+
+## D-087 — Vinaya Studio: proof not hook; one derivation library; Studio is a pure renderer
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** YES
+**Authored by:** TL (R-5)
+**Decision:** Studio (renamed **Vinaya Studio**) is the visual proof of derived status, not the acquisition hook. Locked architecture: ONE derivation library with N consumers (CLI gates, local Studio, future deployed Studio); Studio renders `check --json` / forge-facts output and NEVER re-implements governance logic; no database — it stores nothing, so it cannot lie.
+**Alternatives rejected:** Studio-led acquisition; renderer-side logic (if Studio and gates could disagree about truth, the design has failed).
+**Consequences:** vinaya-studio-v1 task 2 enforces the renderer contract; deployment phases in D-101.
+
+## D-088 — Landing positioning copy (headline / subhead / clarifier / genre anchor)
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-6)
+**Decision:** Headline "Agents obey checkers, not documents." Subhead: install Vinaya and every coding agent must satisfy the same deterministic rules before merge. Clarifier: "We don't block agents — we redirect them into a governed flow, so you review judgment, not compliance." Genre anchor: "Branch protection for the AI era." Boundary statement: sits underneath Cursor/Claude Code/Codex/Gemini CLI/GitHub, replaces none of them. One CTA: `npx vinaya init`.
+**Consequences:** Launch-iteration site content; wording refinements stay Principal-owned (D-108).
+
+## D-089 — The trust surface: non-destructive init, demo break, eject, doctor-as-product
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-7)
+**Decision:** Trust is engineered: `init` is non-destructive by contract (full diff → confirm → install; --dry-run); `demo break` is the productized belief moment (refusal → self-correction → pass); `eject` restores stock in one command (reversibility as prerequisite); `doctor` is treated as a product (diagnoses everything, mutates nothing; every support interaction starts with its output).
+**Consequences:** vinaya-cli-v1 tasks 4, 6, 7.
+
+## D-090 — Enforcement hierarchy inverted: interception is an opt-in accelerator, never load-bearing
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** YES
+**Authored by:** TL (R-8)
+**Decision:** The hierarchy: deterministic checks → CI + branch protection (THE guarantee) → git hooks (universal ring 0) → forge-write interception as opt-in accelerator only. The model must survive interception disappearing tomorrow. Honest threat boundary stated publicly: ring 0 guards honest-but-fallible agents; ring 1 + branch protection is the boundary against everything else.
+**Alternatives rejected:** Interception-load-bearing designs (earlier drafts) — fragile, harness-bound.
+**Consequences:** The gh shim is fast-follow, out of v1.0 (D-104); Known Limits page states the boundary.
+
+## D-091 — Substrate: Issues + labels are machine truth; Projects v2 a generated view; branch protection never auto-applied
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-9)
+**Decision:** Vinaya's machine substrate is Issues + labels (REST, stable, audit-trailed). GitHub Projects v2 is an optional generated human view, never a source of truth. `init` prints the recommended branch-protection command and never applies it.
+**Consequences:** Scaffolding (D-104 task set) writes labels/templates only; no GraphQL dependency at v1 core.
+
+## D-092 — Custom checks are executables honoring the error contract; config never grows conditionals
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** YES
+**Authored by:** TL (R-10)
+**Decision:** A custom check is any executable honoring the §5 error contract, registered in `vinaya.config.json` (repo-local overrides `~/.vinaya/config.json`). Core gates are expressed through the SAME interface — no privileged API. Config never grows conditionals: glob scoping per gate is permitted (D-109); if/unless/except are forbidden — complexity escapes to executables.
+**Alternatives rejected:** A plugin SDK (barrier to entry); config DSL (the complexity trap every CI config falls into).
+
+## D-093 — Version skew handled by compatible schema ranges
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-11)
+**Decision:** The generated workflow validates compatible schema RANGES, not exact pins; mismatch fails with a self-explaining message ("run `vinaya upgrade`"). The CLI ignores unknown config fields (forward-compat) and validates schema-range membership (backward-compat).
+**Consequences:** `vinaya upgrade` is the only sanctioned migration path (D-089).
+
+## D-094 — Sandbox cut; dogfood-as-demo is its successor
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-13)
+**Decision:** No sandbox/playground surface. Its job (belief before install) is done by `vinaya demo break` locally and, later, one hosted read-only Studio instance pointed at Vinaya's own public repo — a real governed repository under glass (D-101). The site's second link, never the first touch.
+
+## D-095 — Cetana is retired; harvest from living code; deletion deferred until Vinaya works
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (R-14; amended sequencing, Principal 2026-07-04)
+**Context:** Cetana's founding problem (Desktop↔Code copy-paste friction) dissolved with harness maturity; its governance embryo grew into AEG itself; its coordination mechanism (~/.cetana JSONL, filesystem IPC, blocking MCP) is local parallel state — the disease derived-status doctrine eliminates. Principal confirms zero usage.
+**Decision:** Cetana is retired as a product decision NOW; execution is deferred: `vinaya-cli-v1` harvests directly from Cetana's living code (init interactive skeleton + abort-path regression tests; hierarchical config pattern; the escalation severity taxonomy already lives on as AEG's `needs:*-input` labels). Deletion of `apps/cetana-ai`, spec archival, skill removal, the repo-wide mention sweep, and Issue close-outs (#30) ride a later retirement iteration, gated on "Vinaya CLI + Studio work 100%." Explicitly NOT harvested: JSONL state logs, filesystem IPC, coordination servers. The Slice-1 cognitive-continuity finding stays durably recorded in `apps/cetana-ai/specs/cetana-experiment-log.md` until that iteration re-homes it.
+**Alternatives rejected:** Retire-first (original §11 sequencing — dissolved: the salvage-audit-as-planning-input is unnecessary when the CLI harvests from living code); keeping Cetana as the orchestrator (unused).
+**Consequences:** Cetana's own decision log (D-001–D-026, five locks) is formally superseded by the retirement iteration's per-log entry, not now. `executor-protocol` keeps referencing a dormant tool until that sweep (verified: it carries no Cetana escalation mechanics today).
+
+## D-096 — State placement law: process state → forge; contracts → repo files; nothing lives only on a machine
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-15)
+**Decision:** Work/process state lives on the forge; rulebook artifacts (roles, contracts, skills, doc-owners) live as repo files; nothing canonical lives only on a local machine. This is the product generalization of D-029/D-057, and the design brief for the later `aeg-forge-state-v1` migration (51 state files audited: ~24 deletable, ~25 forge-movable, ~2 keep).
+
+## D-097 — Waiver authentication: forge-authenticated human acts only; supersedes D-080
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Supersedes:** D-080
+**Lock:** NO
+**Authored by:** TL (R-16)
+**Context:** The founding law applied to the escape hatch: the current `Doc-waiver:` PR-body/commit-trailer grammar (D-080, PR #345) is an agent-emittable string — forgeable by the honest-but-fallible agents the gates exist to redirect.
+**Decision:** A waiver is valid ONLY as a forge-authenticated human act, never a parseable string. Three parts: (1) ring 1 honors a `waiver:docs` PR label only when the ACTOR of the labeling timeline event is in a configured principal allowlist (here `daniboomerang`) — label presence alone is never sufficient; the `Doc-waiver:` grammar is removed from CI-accepted inputs in the same change (`Doc-ack:` unchanged). (2) The tool-layer forge gate denies waiver-label mutation commands in agent sessions (shared-credential hole: local agents act with the Principal's PAT). (3) Ring 0 (pre-push, no PR yet) downgrades an owned-doc violation to warn-with-declared-intent — ring 0 informs, ring 1 guarantees. Implemented by aeg-governance-hardening task 29 (#380); productized by vinaya-cli-v1 #387, which depends on it.
+**Alternatives rejected:** Keeping the trailer grammar (agent-forgeable); PR-author verification (the author isn't the waiver authority); hard-blocking ring 0 (would resurrect `--no-verify` muscle memory).
+**Consequences:** On ratification, D-080 flips to SUPERSEDED. Time-sensitive: lands before any Vinaya code ships the mechanism to strangers. Long-term clean fix (separate machine identity for agents) is a backlog note, out of scope.
+
+## D-098 — @vinaya/studio ships as a separate optional npm package
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (R-17; supersedes register item R-12)
+**Decision:** Vinaya Studio ships as a separate optional npm package `@vinaya/studio`; `vinaya studio` detects it and serves on localhost via the user's `gh` token (on-demand reads, ETag caching, incremental loading from day one). This supersedes fetch-on-first-run (register R-12): runtime fetch-and-execute is the EDR-trojan pattern and gets tools banned in org environments; a separate package passes normal supply-chain audit and keeps core small.
+**Consequences:** Publish-time shape only — in-repo, Studio is `apps/vinaya/web` and the split stays mechanical via the one-way import rule (D-087). npm org-scope availability verified at launch (Principal open call).
+
+## D-099 — Check performance architecture: diff-scope default, nightly full sweep, parallel, cache
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-18)
+**Decision:** Checks declare their scope (diff vs full) in their contract; ring 1 defaults to diff-scoped per PR with a scheduled nightly full sweep; execution is parallel with a concurrency cap; caching applies where checks declare cacheable inputs.
+
+## D-100 — agent_recovery_prompt in the error schema; the schema is a versioned public surface
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-19)
+**Decision:** Every check error (core and custom) carries `agent_recovery_prompt` — the exact corrective instruction surfaced to the executing model, not a restated diagnosis. Refusals are prompts: this engineers the ring-0 self-correction loop. The check contract + error schema (JSON lines on stderr, exit 0/1, per-check timeout, no-network default) are a versioned public surface with declared stability guarantees.
+**Consequences:** All machine output versioned from day one (vinaya-cli-v1 task 1); ecosystem governance chapter before plugins are encouraged (D-103).
+
+## D-101 — Studio deployment roadmap; dogfood-as-demo endorsed
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-20; roadmap from the review program §7)
+**Decision:** Phase 1 (v1.0): local Studio only — the post-install reward. Phase 2: the generated Projects view as the non-developer window. Phase 3 (deferred decision, architecture pre-paid): deployed self-hosted stateless read-only Studio on a GitHub App installation token, viewer auth = repo/org membership, no database. Phase 3½: dogfood-as-demo — one hosted instance over Vinaya's own public repo.
+
+## D-102 — /aeg publishes the model as a first-class standalone methodology
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (R-21)
+**Decision:** The AEG model is published at `/aeg` with its own navigation — citable, versioned, tool-independent ("the methodology is the moat"). States explicitly: AEG forge-agnostic in principle, Vinaya GitHub-first in practice. /docs (the tool) links to /aeg; never the reverse.
+
+## D-103 — Plugin/schema stability is governed; ecosystem chapter is fast-follow
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-22)
+**Decision:** The check contract and error schema carry declared stability guarantees; an ecosystem-governance chapter (how the contract evolves, deprecation policy) ships fast-follow BEFORE third-party plugins are encouraged.
+
+## D-104 — v1.0 scope: the §5 IN list; ship without the shim; worktree cut
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 1
+**Lock:** NO
+**Authored by:** TL (R-23)
+**Decision:** v1.0 IN: `init`, `init product`, `demo break`, `doctor`, `upgrade`, `eject`, `check` (--json/--diff-only/--parallel), `pr create/edit`, `issue create/edit`, `waiver`, `new check`, `studio` (launcher). OUT: the gh shim (fast-follow, opt-in accelerator per D-090), `vinaya worktree` (cut — orchestration smell; a documented recipe suffices; cheap Principal veto available). TypeScript, Node ≥ 20, macOS + Linux; Windows deferred and documented; tarball fallback documented, not primary.
+
+## D-105 — The starter ruleset ships inside init
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-24)
+**Decision:** `vinaya init` seeds `vinaya.config.json` with battle-tested defaults extracted from THIS repo: tier definitions, example doc-ownership bindings, brief-schema defaults, 2–3 real custom-check examples. Kills blank-config paralysis.
+
+## D-106 — The adopter decision-log scaffold ships inside init
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-25)
+**Decision:** `init` scaffolds an adopter decision log (numbered entries: number, date, decision, rationale, locked gates affected) — the decision-number-integrity gate has something real to validate from day one.
+
+## D-107 — The proof task: publish the n=1 case study with numbers
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-26)
+**Decision:** Mine this repo's ring-2 audit records + ledgers for the empirical case study (ring-0 refusals/week, doc-omission rate before/after gating, blocked-then-self-corrected PRs) and publish it at launch. Numbers convert "interesting methodology" into "empirically grounded methodology." Review-program provenance may enter the repo at that point as owned site content through the launch task's PR (not a D-074 collision); until then, raw reviews stay outside the repo.
+
+## D-108 — The value-sentence slot + the relief-before-doctrine sequencing law
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-27)
+**Decision:** The positioning slot is ratified: "Vinaya lets you trust AI agents to work inside your engineering process without becoming their compliance officer" (final wording Principal-owned). Sequencing law for ALL public writing: pain and refusal first, principles second — the first five minutes must feel like relief, not doctrine.
+
+## D-109 — Glob scoping allowed in config; conditional logic banned
+
+**Date:** 2026-07-04
+**Status:** PENDING
+**Type:** 2
+**Lock:** NO
+**Authored by:** TL (R-28)
+**Decision:** Per-gate glob SCOPING is permitted in `vinaya.config.json` (consistent with doc-owners bindings); conditional logic (if/unless/except) is forbidden — complexity escapes to executables (companion to D-092's lock).

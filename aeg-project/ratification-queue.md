@@ -40,6 +40,14 @@ When resolved, add below the entry:
 
 ---
 
+### D-083–D-109 — the Vinaya program: build Vinaya (CLI + Studio), retire Cetana, waiver authentication
+
+- Type: mixed (Type 1: D-084, D-085, D-086, D-095, D-098, D-102, D-104; rest Type 2) | Tier: 3 | Authored: 2026-07-04
+- Decision log: decisions.md D-083…D-109 (27 entries, all PENDING; maps the review program's R-1…R-28, R-12 folded into D-098)
+- Why it needs ratification: founds a new public product (Vinaya, npm reference implementation of AEG), retires Cetana (execution deferred), and D-097 supersedes D-080 (waiver authentication — the live Doc-waiver grammar is agent-forgeable).
+- Deadline context: D-097/task 29 (#380) is time-sensitive (patches the live escape hatch; vinaya-cli-v1 #387 depends on it). The plan PR registering iterations vinaya-cli-v1 (#381–387) + vinaya-studio-v1 (#388–390) is itself a Tier 3 merge for a window. Nothing dispatches until aeg-governance-hardening archives and the Principal triggers.
+- Status: PENDING
+
 ## Resolved items archive
 
 None yet.

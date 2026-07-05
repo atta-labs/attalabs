@@ -11,7 +11,7 @@
 - [Drizzle ORM patterns for Neon Postgres — schema, queries, JSON fields, migrations across Atta AI apps](./.claude/skills/database/SKILL.md)
 - [Executor Protocol — patterns for executing dispatched tasks from the Principal](./.claude/skills/executor-protocol/SKILL.md)
 - [Git commit format and rules for the Atta AI monorepo — enforced by commitlint + husky](./.claude/skills/git-commits/SKILL.md)
-- [Herald AI forensic match engine — Skeptical Auditor prompt rules, match API behavior, signal detection, caching, timeout, and fallback](./.claude/skills/herald-engine/SKILL.md)
+- [Herald AI forensic match engine — Skeptical Auditor YAML rules, audit API behavior, GitHub signal tool, caching, timeout, and fallback](./.claude/skills/herald-engine/SKILL.md)
 - [Shared searchable AI-model picker for all Atta AI products — ModelPicker component, dynamic catalog from models.dev, overlay curation, CatalogProvider SSR pattern](./.claude/skills/model-picker/SKILL.md)
 - [Turborepo monorepo structure, workspace conventions, package imports, and task commands for the Atta ecosystem](./.claude/skills/monorepo-structure/SKILL.md)
 - [Patterns for Next.js App Router API routes in the Atta AI monorepo — validation, errors, timeouts, LLM calls](./.claude/skills/ui-api-routes/SKILL.md)
@@ -32,7 +32,9 @@
 
 - [AEG — app architecture](./apps/aeg/specs/aeg-app-architecture.md)
 - [AEG — product backlog](./apps/aeg/specs/aeg-backlog.md)
+- [AEG Consolidation — the next iteration (spec)](./apps/aeg/specs/aeg-consolidation-spec.md)
 - [AEG (product) — Decision Log](./apps/aeg/specs/aeg-decisions.md)
+- [AEG Observability — spec](./apps/aeg/specs/aeg-observability-spec.md)
 
 ### atta-ai
 
@@ -80,6 +82,7 @@
 
 - [Herald — app architecture](./apps/herald-ai/specs/herald-app-architecture.md)
 - [Herald — product backlog](./apps/herald-ai/specs/herald-backlog.md)
+- [Herald Decisions](./apps/herald-ai/specs/herald-decisions.md)
 
 ### vada-ai
 
@@ -91,8 +94,10 @@
 - [V2 Step 3.5 Part 2 Analysis — A0S vs B0S Orchestration-Alone on Sonnet 4.6](./apps/vada-ai/specs/engine/v2-results/step-2-analysis-sonnet.md)
 - [V2 Step 2 Analysis — A0 vs B0 Orchestration-Alone on Haiku 4.5](./apps/vada-ai/specs/engine/v2-results/step-2-analysis.md)
 - [V2 Task 3.5 Analysis — Sonnet 4.6 Replication](./apps/vada-ai/specs/engine/v2-results/step-3-5-sonnet-replication.md)
+- [Spike: Can Fusion Ship as a Team Within MOAT-A?](./apps/vada-ai/specs/fusion-as-team-spike.md)
 - [Generic Flow Refactor — Design](./apps/vada-ai/specs/generic-flow-refactor.md)
 - [Vāda MCP Architecture — Hosted Target](./apps/vada-ai/specs/mcp-architecture.md)
+- [Tools / MCP Capability Spike — S0 Findings](./apps/vada-ai/specs/tools-capability-spike.md)
 - [Vāda — product backlog](./apps/vada-ai/specs/vada-backlog.md)
 - [Vāda · BYOK Gap Report](./apps/vada-ai/specs/vada-byok-gap-report.md)
 - [Vāda · BYOK Architecture (Current State)](./apps/vada-ai/specs/vada-byok-principles.md)
@@ -101,6 +106,8 @@
 - [Vāda](./apps/vada-ai/specs/vada-human.md)
 - [Vāda — Product Recognitions](./apps/vada-ai/specs/vada-product-recognitions.md)
 - [Vāda — Product Specification](./apps/vada-ai/specs/vada-product-spec.md)
+- [Vāda V1 — Belief-Revision Decision Record](./apps/vada-ai/specs/vada-rethink-v1-decision.md)
+- [Vāda — rethink: positioning, teams, model sources, frontier findings](./apps/vada-ai/specs/vada-rethink.md)
 - [Vāda Reviewers — Product Specification (v1, revision 5)](./apps/vada-ai/specs/vada-reviewers-spec.md)
 - [`karpathy/llm-council` and `Lykhoyda/ask-llm` — Technical Deep Dive](./apps/vada-ai/specs/vada-reviewers-tech-deep-dive.md)
 - [Vāda · The Science of Deliberation](./apps/vada-ai/specs/vada-science-of-deliberation.md)
@@ -111,6 +118,7 @@
 - [03 — Reviewer Personas](./apps/vada-ai/specs/vada-teams-catalog/03-reviewer-personas.md)
 - [04 — Caller Claude Protocol](./apps/vada-ai/specs/vada-teams-catalog/04-caller-claude-protocol.md)
 - [05 — Orchestration Rules](./apps/vada-ai/specs/vada-teams-catalog/05-orchestration-rules.md)
+- [Outside Read — vada-fusion-native](./apps/vada-ai/specs/vada-teams-catalog/06-outside-read.md)
 - [Vāda Web Restructure — Plan](./apps/vada-ai/specs/vada-web-restructure-plan.md)
 - [Vāda — YAML Immutability Principle](./apps/vada-ai/specs/vada-yaml-immutability-principle.md)
 - [YAML Deliberation Spec — Schema Reference](./apps/vada-ai/specs/yaml-schema-reference.md)
