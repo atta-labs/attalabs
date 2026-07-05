@@ -1,15 +1,16 @@
 import { Badge, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { parseLedger, sumLedger, type DerivedStatus } from '@atta/aeg-core'
+import { parseLedger, sumLedger, type DerivedStatus, type DispatchResult } from '@atta/aeg-core'
 import { AlertTriangle, UserRound } from 'lucide-react'
 import type { Metadata } from 'next'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { notFound } from 'next/navigation'
 import { findAegRoot, readIteration, readProject } from '@/lib/aeg-fs'
+import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
 import { CoherencePanel } from './_components/CoherencePanel'
-import { statusVisual } from './_lib/status-display'
+import { statusVisual, todoDispatchVisual } from './_lib/status-display'
 import { TaskTitleCell } from './_components/TaskTitleCell'
 
 // Forge reads derive live Issue/PR state from GitHub — never serve from cache.
@@ -56,6 +57,13 @@ export default async function IterationPage({ params }: { params: Promise<Params
   for (const dt of snapshot.derived.tasks) {
     taskStatusMap.set(dt.task.id, dt.status)
   }
+
+  // Dispatch-readiness sub-state for `todo` rows (#372 bundled finding):
+  // `checkDispatchReadiness` computed server-side, display-only — DerivedStatus
+  // is untouched. Archived iterations have no dispatchable work; skip.
+  const readinessMap = archived
+    ? new Map<string, DispatchResult>()
+    : await loadDispatchReadiness(iteration, slug, snapshot)
 
   // Dispatch-visibility signal only — `assigned` is not part of `DerivedStatus`
   // (D-059 excludes it from derivation). Rendered as a subordinate chip on
@@ -149,6 +157,8 @@ export default async function IterationPage({ params }: { params: Promise<Params
                 {iteration.tasks.map((task) => {
                   const status = taskStatusMap.get(String(task.id))
                   const visual = status ? statusVisual(status) : null
+                  const readiness = status === 'todo' ? readinessMap.get(String(task.id)) : undefined
+                  const todoVisual = readiness ? todoDispatchVisual(readiness) : null
                   const showAssignedChip = status === 'todo' && taskAssignedMap.get(String(task.id)) === true
                   return (
                     <TableRow key={task.id}>
@@ -165,8 +175,12 @@ export default async function IterationPage({ params }: { params: Promise<Params
                           </p>
                           {visual && (
                             <div>
-                              <Badge variant='outline' className={`${visual.badgeClass} font-mono p-1 text-[0.6rem]`}>
-                                {visual.label}
+                              <Badge
+                                variant='outline'
+                                className={`${(todoVisual ?? visual).badgeClass} font-mono p-1 text-[0.6rem]`}
+                                title={todoVisual?.title}
+                              >
+                                {todoVisual?.label ?? visual.label}
                               </Badge>
                             </div>
                           )}
