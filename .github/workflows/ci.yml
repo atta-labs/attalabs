@@ -9,13 +9,28 @@
 # guarding every enforcement gate — ran nowhere automatically.
 #
 # Scopes (deliberate, no silent caps — D-074 discipline):
-#   - Typecheck covers ./packages/* only. App typecheck requires the CMS
-#     `generate` step (Sanity tokens live in uncommitted .env files, absent in
-#     CI); apps are type-checked by their Vercel production builds (ring 1)
-#     and by the full `turbo typecheck` in pre-commit (ring 0).
+#   - Both steps use `turbo --affected`, which scopes to packages changed
+#     between this branch and `main` PLUS every transitive dependent (turbo
+#     computes the dependency graph, not just changed files) — so a change to
+#     a shared package (e.g. @atta/engine) still tests every package that
+#     depends on it, directly or indirectly. Same gates, same strictness;
+#     scoping only decides how much runs, never what counts as passing.
+#   - A doc/workflow-only PR (nothing under any package) now runs 0 packages
+#     and completes near-instantly. This is sound, not a gap: repo-file gates
+#     (verify-docs, coherence, etc.) run in their own separate CI jobs
+#     regardless of what this job decides to test.
+#   - Typecheck additionally scopes to ./packages/* only. App typecheck
+#     requires the CMS `generate` step (Sanity tokens live in uncommitted
+#     .env files, absent in CI); apps are type-checked by their Vercel
+#     production builds (ring 1) and by the full `turbo typecheck` in
+#     pre-commit (ring 0).
 #   - Tests exclude @atta/cetana-cli: its `init abort path` test fails
 #     PRE-EXISTING on main (verified 2026-07-02, unrelated to any gate work).
 #     Tracked for a follow-up fix; un-exclude when repaired.
+#   - Checkout uses fetch-depth: 0 (full history) so `--affected` can resolve
+#     a merge-base against `main` — a shallow clone breaks that ref
+#     resolution. `.turbo` and `~/.bun/install/cache` are cached between runs,
+#     keyed on bun.lock's hash.
 #
 # Enforcement substrate as everywhere: CI red + the T9 merge-gate hook.
 
