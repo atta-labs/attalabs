@@ -40,6 +40,8 @@ The same check implementations run at ring 0 and ring 1 — one codebase, two en
 
 **The impact-tier rule, specifically** (another historical pain point): a change that touches the decision log must explicitly declare its impact tier, and the documentation that tier demands must be present — checked before the pull request can exist, for every branch type.
 
+**Gate-read field recognition, specifically** (task 30, #393): every gate-read PR-body field (`Tier:`, `Project:`, `Closes #N`, the `Premise:` block, the Test Plan section) is anchor-recognized where present — an `AEG:<FIELD>` HTML-comment pair (`packages/aeg-core/src/anchored-region.ts`) is read exclusively when it exists, so identical-looking text elsewhere in the body (a pasted reference brief, a quoted example) can never masquerade as the field — with the original prose/heading recognition as the compatibility fallback for every body that carries no anchors.
+
 ---
 
 ## Ring 1 — Detection (what turns the forge red)
