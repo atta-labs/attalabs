@@ -21,7 +21,7 @@ import { graphql } from '@octokit/graphql'
 import type { ForgeFacts } from '@atta/aeg-core'
 import { resolveGithubToken } from './github-token'
 import { mapForgeFacts } from './map-forge-facts'
-import type { FetchForgeFactsInput, ForgeFactsSnapshot, RawTaskFacts, TaskRef } from './types'
+import type { FetchForgeFactsInput, ForgeFactsSnapshot, PrRef, RawTaskFacts, TaskRef } from './types'
 
 /** Branch ref convention: `task/<iteration>/<id>` (iterations/README.md). */
 export function buildBranchName(iteration: string, taskId: string): string {
@@ -109,6 +109,7 @@ export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<Forg
   if (!token) {
     return {
       facts: new Map(),
+      prRefs: new Map(),
       unavailable: true,
       reason: 'No GitHub token available (set GITHUB_TOKEN/GH_TOKEN or `gh auth login`).'
     }
@@ -116,7 +117,7 @@ export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<Forg
 
   const queriedTasks = input.tasks.filter((t): t is TaskRef & { issue: number } => t.issue !== null)
   if (queriedTasks.length === 0) {
-    return { facts: new Map(), unavailable: false }
+    return { facts: new Map(), prRefs: new Map(), unavailable: false }
   }
 
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
@@ -128,15 +129,18 @@ export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<Forg
   } catch (err) {
     return {
       facts: new Map(),
+      prRefs: new Map(),
       unavailable: true,
       reason: `GitHub query failed: ${describeError(err)}`
     }
   }
 
   const facts = new Map<string, ForgeFacts>()
+  const prRefs = new Map<string, PrRef>()
   if (!response.repository) {
     return {
       facts,
+      prRefs,
       unavailable: true,
       reason: `Repository ${input.owner}/${input.repo} not visible to this token.`
     }
@@ -147,9 +151,15 @@ export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<Forg
     const raw = extractRawFromResponse(response.repository, alias)
     const mapped = mapForgeFacts(raw)
     if (mapped) facts.set(task.id, mapped)
+    // A ClosedEvent closer can be a Commit, in which case the `... on
+    // PullRequest` fragment yields an empty object — guard on `number`.
+    const pr = raw.pullRequest
+    if (pr && typeof pr.number === 'number' && typeof pr.url === 'string') {
+      prRefs.set(task.id, { number: pr.number, url: pr.url, state: pr.state })
+    }
   }
 
-  return { facts, unavailable: false }
+  return { facts, prRefs, unavailable: false }
 }
 
 // ---------- internal: GraphQL query construction ----------------------------
@@ -187,6 +197,8 @@ function buildBatchQuery(iteration: string, tasks: Array<TaskRef & { issue: numb
           ... on ClosedEvent {
             closer {
               ... on PullRequest {
+                number
+                url
                 state
                 reviewDecision
                 mergedAt
@@ -204,7 +216,7 @@ function buildBatchQuery(iteration: string, tasks: Array<TaskRef & { issue: numb
       headRefName: ${JSON.stringify(branch)},
       orderBy: { field: CREATED_AT, direction: DESC }
     ) {
-      nodes { state reviewDecision mergedAt }
+      nodes { number url state reviewDecision mergedAt }
     }`
     })
     .join('')
@@ -224,6 +236,8 @@ function aliasFor(taskId: string): string {
 }
 
 type PrCloserNode = {
+  number: number
+  url: string
   state: 'OPEN' | 'CLOSED' | 'MERGED'
   reviewDecision: 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | null
   mergedAt: string | null
@@ -246,6 +260,8 @@ type RefNode = { name: string } | null
 
 type PrsNode = {
   nodes: Array<{
+    number: number
+    url: string
     state: 'OPEN' | 'CLOSED' | 'MERGED'
     reviewDecision: 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | null
     mergedAt: string | null
