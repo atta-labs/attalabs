@@ -49,6 +49,14 @@ When resolved, add below the entry:
 - **Window note (appended 2026-07-05, Planner):** ratify D-085 WITH its repo-rule clause reconciled, not as written. Its "renaming breaks gate plumbing for zero gain" line is partially invalidated by the governance-layout finding (`vinaya-finding-aeg-root-into-aeg-core`, 2026-07-05): `aeg-root/` sitting outside every workspace package defeats workspace-aware deploy-skip logic (confirmed live — docs-only plan PR #391 triggered 3 Vercel builds, 2 rate-limited), so a relocation into a data-only workspace package has real gain. The layout question itself is a separate decision (Strategist mode + Principal; constraint comments on #384/#382 hard-stop briefing until it exists); this note only prevents ratifying a clause the same window's own inputs contradict.
 - Status: PENDING
 
+### D-110 / D-111 — Governance-state disposition + protocol/doctrine distribution
+
+- Type: 1 (both) | Tier: 3 | Authored: 2026-07-06
+- Decision log: decisions.md D-110, D-111 (2 entries, PENDING)
+- Why it needs ratification: D-110 resolves the governance-layout hard-stop that has blocked `vinaya-cli-v1` task 4 (#384) since 2026-07-05 — the decision that decides where per-adopter governance instance-data lives (delete/move-to-forge/keep-as-file-in-a-package) and reconciles the D-085 clause tension this window's own note above already flags. D-111 decides where universal AEG doctrine ships (bundled in the npm package + a scaffolded adopter-repo pointer) — resolved only after confirming npm provides no copy-protection and hiding the doctrine would contradict D-084/D-102.
+- Deadline context: `Lock: YES` on D-110 (Tier 3, foundational to the installer's design and this repo's own future migration). Ratifying this batch together with D-083–109 lets `vinaya-cli-v1` task 4 proceed to briefing without a second window. `vinaya-cli-v1` task 2 (#382) already carries the concrete GitHub-object mapping this decision specifies, folded in as a Planner amendment ahead of ratification — the amendment is provisional pending this entry's ratification, same convention as every other PENDING-Type-1-referencing amendment this iteration.
+- Status: PENDING
+
 ## Resolved items archive
 
 None yet.
