@@ -1,9 +1,9 @@
-import type { Iteration } from '@atta/aeg-core'
+import type { Iteration } from '@atta/aeg-types'
 import { findMilestoneForSlug } from './fetch-milestone'
 import { listTasksForSlug } from './list-tasks'
 
 /**
- * Derives an `@atta/aeg-core` `Iteration` purely from forge objects:
+ * Derives an `@atta/aeg-types` `Iteration` purely from forge objects:
  *   - a Milestone titled exactly `slug` → `goal` + `lifecycle` (absent when no
  *     Milestone exists yet for this iteration — a real transitional state,
  *     not an error; `goal`/`lifecycle` then degrade to `''`/`'active'`,

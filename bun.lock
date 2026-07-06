@@ -372,6 +372,8 @@
       "name": "@atta/aeg-core",
       "version": "0.0.1",
       "dependencies": {
+        "@atta/aeg-forge-state": "workspace:*",
+        "@atta/aeg-types": "workspace:*",
         "@octokit/graphql": "^8.1.1",
         "gray-matter": "^4.0.3",
       },
@@ -385,12 +387,20 @@
       "name": "@atta/aeg-forge-state",
       "version": "0.0.1",
       "dependencies": {
-        "@atta/aeg-core": "workspace:*",
+        "@atta/aeg-types": "workspace:*",
       },
       "devDependencies": {
         "@atta/typescript-config": "workspace:*",
         "typescript": "^5.7.0",
         "vitest": "^2.1.0",
+      },
+    },
+    "packages/aeg-types": {
+      "name": "@atta/aeg-types",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "typescript": "^5.7.0",
       },
     },
     "packages/agents/forensic-hiring-auditor": {
@@ -757,6 +767,8 @@
     "@atta/aeg-forge-state": ["@atta/aeg-forge-state@workspace:packages/aeg-forge-state"],
 
     "@atta/aeg-studio": ["@atta/aeg-studio@workspace:apps/aeg/web/studio"],
+
+    "@atta/aeg-types": ["@atta/aeg-types@workspace:packages/aeg-types"],
 
     "@atta/agents": ["@atta/agents@workspace:packages/atta-agents"],
 

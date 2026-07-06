@@ -1,5 +1,5 @@
 {
-  "name": "@atta/aeg-forge-state",
+  "name": "@atta/aeg-types",
   "version": "0.0.1",
   "private": true,
   "main": "./src/index.ts",
@@ -9,16 +9,11 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
     "clean": "rm -rf dist .turbo"
   },
-  "dependencies": {
-    "@atta/aeg-types": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@atta/typescript-config": "workspace:*",
-    "typescript": "^5.7.0",
-    "vitest": "^2.1.0"
+    "typescript": "^5.7.0"
   }
 }

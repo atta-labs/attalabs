@@ -15,6 +15,8 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
+    "@atta/aeg-forge-state": "workspace:*",
+    "@atta/aeg-types": "workspace:*",
     "@octokit/graphql": "^8.1.1",
     "gray-matter": "^4.0.3"
   },

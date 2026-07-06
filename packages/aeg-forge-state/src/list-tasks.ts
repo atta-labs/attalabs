@@ -1,4 +1,4 @@
-import type { Task } from '@atta/aeg-core'
+import type { Task } from '@atta/aeg-types'
 import { type GhIssue, ghIssueListByLabel } from './gh'
 import { parseRationaleDeps } from './parse-rationale-deps'
 
