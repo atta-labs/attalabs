@@ -46,6 +46,7 @@ When resolved, add below the entry:
 - Decision log: decisions.md D-083…D-109 (27 entries, all PENDING; maps the review program's R-1…R-28, R-12 folded into D-098)
 - Why it needs ratification: founds a new public product (Vinaya, npm reference implementation of AEG), retires Cetana (execution deferred), and D-097 supersedes D-080 (waiver authentication — the live Doc-waiver grammar is agent-forgeable).
 - Deadline context: D-097/task 29 (#380) is time-sensitive (patches the live escape hatch; vinaya-cli-v1 #387 depends on it). The plan PR registering iterations vinaya-cli-v1 (#381–387) + vinaya-studio-v1 (#388–390) is itself a Tier 3 merge for a window. Nothing dispatches until aeg-governance-hardening archives and the Principal triggers.
+- **Window note (appended 2026-07-05, Planner):** ratify D-085 WITH its repo-rule clause reconciled, not as written. Its "renaming breaks gate plumbing for zero gain" line is partially invalidated by the governance-layout finding (`vinaya-finding-aeg-root-into-aeg-core`, 2026-07-05): `aeg-root/` sitting outside every workspace package defeats workspace-aware deploy-skip logic (confirmed live — docs-only plan PR #391 triggered 3 Vercel builds, 2 rate-limited), so a relocation into a data-only workspace package has real gain. The layout question itself is a separate decision (Strategist mode + Principal; constraint comments on #384/#382 hard-stop briefing until it exists); this note only prevents ratifying a clause the same window's own inputs contradict.
 - Status: PENDING
 
 ## Resolved items archive
