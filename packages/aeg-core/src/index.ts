@@ -109,6 +109,8 @@ export type {
   FirstPushDispatchGateResult,
   FirstPushDispatchGateVerdict
 } from './first-push-dispatch-gate'
+export { decideIssueAssignment } from './issue-assignment'
+export type { IssueAssignmentDecision, IssueAssignmentInput } from './issue-assignment'
 export { locateTestPlanSection } from './test-plan-section'
 export type { TestPlanSection } from './test-plan-section'
 export { evaluateTestPlanGate } from './test-plan-gate'
