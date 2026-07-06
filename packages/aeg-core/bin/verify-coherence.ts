@@ -207,33 +207,79 @@ function readFileAtRef(ref: string, relPath: string): string | null {
 }
 
 /**
- * Reads one non-PR-touched iteration file's content: forge-derived
- * (`@atta/aeg-forge-state`'s `deriveIterationFromForge`, task aeg-forge-state-v1
- * 3b, #437) when a repo resolves and the forge call succeeds, falling back to
- * the `origin/main` file read (the pre-3b mechanism) otherwise — mirrors this
- * file's own "never let one signal's unavailability crash the whole oracle"
+ * Reads one non-PR-touched iteration file's content: `id`/`issue` come from
+ * the forge (`@atta/aeg-forge-state`'s `deriveIterationFromForge`, task
+ * aeg-forge-state-v1 3b, #437) when a repo resolves and the forge call
+ * succeeds — the golden comparison (Issue #437) confirmed these two fields
+ * match the file-parsed topology table exactly for every task that HAS a
+ * forge Issue. `dependsOn`/`conflictsWith` are read from the topology table
+ * itself (`parseIteration`) and merged in, NOT forge-derived — a deliberate,
+ * TEMPORARY narrowing (Planner triage, Issue #437) of the original swap: at
+ * least 9 grandfathered `vada-production-v1` Issues (#183 #184 #185 #186
+ * #187 #188 #240 #241 #244) predate the D-078 "Dependency rationale" grammar
+ * and carry no forge-parseable dependency data at all, and
+ * `parse-rationale-deps.ts`'s cross-iteration-qualified-ref handling has its
+ * own real gaps independent of that (fixed one instance on Issue #388, but
+ * others may remain). Backfilling/auditing the rest is its own follow-up
+ * task, not a blocker for this cutover.
+ *
+ * A `#TBD` topology row (no Issue cut yet, `issue: null`) has no forge
+ * representation at all — `deriveIterationFromForge` can only ever list
+ * tasks it finds via a labeled Issue, so a row with no Issue is structurally
+ * invisible to it. T3 (`tbd-in-active-iteration`) exists specifically to
+ * catch these — silently dropping them here would blind the one check whose
+ * entire job is to see them (confirmed live: `vada-production-v1`'s 6a/6b/6c
+ * rows, real `#TBD` entries, vanish from the forge-derived list entirely).
+ * So any file task with no forge counterpart is appended as-is, fully
+ * file-derived, not merged.
+ *
+ * Falls back to the file entirely (dependsOn/conflictsWith included, #TBD
+ * rows included) when forge derivation itself fails — mirrors this file's
+ * own "never let one signal's unavailability crash the whole oracle"
  * discipline, already applied to every forge-dependent check below. This is
- * the ONLY place that fallback applies — the PR-head-SHA path (D-082's
- * plan-PR scoping, below) always reads the PR's own uncommitted diff via
- * `readFileAtRef` + `parseIteration`, never the forge, since a plan PR's own
- * in-progress topology edit has no forge equivalent to derive from.
+ * the ONLY place either fallback/merge applies — the PR-head-SHA path
+ * (D-082's plan-PR scoping, below) always reads the PR's own uncommitted
+ * diff via `readFileAtRef` + `parseIteration`, never the forge, since a plan
+ * PR's own in-progress topology edit has no forge equivalent to derive from.
  */
 async function deriveOrFallback(
   repo: { owner: string; repo: string } | null,
   slug: string,
   relPath: string
 ): Promise<Iteration | null> {
-  if (repo) {
-    try {
-      return await deriveIterationFromForge(repo.owner, repo.repo, slug)
-    } catch (err) {
-      console.warn(
-        `[verify-coherence] forge derivation failed for iteration "${slug}" — falling back to file read: ${(err as Error).message}`
-      )
-    }
-  }
   const raw = readFileAtRef('origin/main', relPath)
-  return raw === null ? null : parseIteration(raw)
+  const fileIteration = raw === null ? null : parseIteration(raw)
+
+  if (!repo) return fileIteration
+
+  let forgeIteration: Iteration
+  try {
+    forgeIteration = await deriveIterationFromForge(repo.owner, repo.repo, slug)
+  } catch (err) {
+    console.warn(
+      `[verify-coherence] forge derivation failed for iteration "${slug}" — falling back to file read: ${(err as Error).message}`
+    )
+    return fileIteration
+  }
+
+  if (fileIteration === null) return forgeIteration
+
+  const forgeTaskIds = new Set(forgeIteration.tasks.map((t) => t.id))
+  const fileTaskById = new Map(fileIteration.tasks.map((t) => [t.id, t]))
+
+  const mergedTasks = forgeIteration.tasks.map((t) => {
+    const fileTask = fileTaskById.get(t.id)
+    // No file-side counterpart (shouldn't normally happen — forge/file ids
+    // matched exactly for every real task in the golden comparison) —
+    // keep forge's own dependsOn/conflictsWith rather than dropping them.
+    if (!fileTask) return t
+    return { ...t, dependsOn: fileTask.dependsOn, conflictsWith: fileTask.conflictsWith }
+  })
+
+  // File-only tasks (#TBD rows, no Issue to derive from) — appended as-is.
+  const fileOnlyTasks = fileIteration.tasks.filter((t) => !forgeTaskIds.has(t.id))
+
+  return { ...forgeIteration, tasks: [...mergedTasks, ...fileOnlyTasks] }
 }
 
 /**
