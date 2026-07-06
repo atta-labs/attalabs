@@ -15,16 +15,5 @@ export function RouteAwareFooter() {
   const pathname = usePathname() ?? ''
   const suppressed = FOOTER_SUPPRESSED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p))
   if (suppressed) return null
-  return (
-    <Footer
-      product='vada'
-      tagline='Multi-agent deliberation'
-      links={[
-        { label: 'Trust', href: '/trust' },
-        { label: 'MCP', href: '/mcp' },
-        { label: 'Teams', href: '/teams' }
-      ]}
-      showProductNav={true}
-    />
-  )
+  return <Footer product='vada' tagline='Multi-agent deliberation' links={[]} />
 }

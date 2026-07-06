@@ -21,7 +21,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <NextWebShell config={config} styleId='vitakka-theme' cookieName='vitakka-color-scheme'>
       <main className='flex flex-col min-h-screen'>{children}</main>
-      <Footer product='vitakka' tagline='Directed thought' links={[]} showProductNav={true} />
+      <Footer product='vitakka' tagline='Directed thought' links={[]} />
     </NextWebShell>
   )
 }
