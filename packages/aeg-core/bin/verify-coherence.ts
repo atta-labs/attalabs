@@ -30,6 +30,8 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { deriveIterationFromForge } from '@atta/aeg-forge-state'
+import type { Iteration } from '@atta/aeg-types'
 import {
   checkA1,
   checkA2,
@@ -204,26 +206,77 @@ function readFileAtRef(ref: string, relPath: string): string | null {
   }
 }
 
-export function loadIterationFiles(prContext: PrReadContext = null): IterationFile[] {
+/**
+ * Reads one non-PR-touched iteration file's content: forge-derived
+ * (`@atta/aeg-forge-state`'s `deriveIterationFromForge`, task aeg-forge-state-v1
+ * 3b, #437) when a repo resolves and the forge call succeeds, falling back to
+ * the `origin/main` file read (the pre-3b mechanism) otherwise — mirrors this
+ * file's own "never let one signal's unavailability crash the whole oracle"
+ * discipline, already applied to every forge-dependent check below. This is
+ * the ONLY place that fallback applies — the PR-head-SHA path (D-082's
+ * plan-PR scoping, below) always reads the PR's own uncommitted diff via
+ * `readFileAtRef` + `parseIteration`, never the forge, since a plan PR's own
+ * in-progress topology edit has no forge equivalent to derive from.
+ */
+async function deriveOrFallback(
+  repo: { owner: string; repo: string } | null,
+  slug: string,
+  relPath: string
+): Promise<Iteration | null> {
+  if (repo) {
+    try {
+      return await deriveIterationFromForge(repo.owner, repo.repo, slug)
+    } catch (err) {
+      console.warn(
+        `[verify-coherence] forge derivation failed for iteration "${slug}" — falling back to file read: ${(err as Error).message}`
+      )
+    }
+  }
+  const raw = readFileAtRef('origin/main', relPath)
+  return raw === null ? null : parseIteration(raw)
+}
+
+/**
+ * `onlySlug`: skip every iteration but this one during the forge-derive
+ * sweep below. The forge swap makes the general (unscoped) sweep meaningfully
+ * slower than the old local-file read (one `gh` round trip per iteration per
+ * lookup, sequential — ~1.5s/iteration observed across a real ~20-iteration
+ * repo, vs near-instant `git show`), so a caller that only ever needs ONE
+ * iteration's data (`--closes-n`, below) must opt out of paying for the rest.
+ * `runCoherenceChecks` never passes this — its checks are genuinely
+ * repo-wide and need every iteration.
+ */
+export async function loadIterationFiles(prContext: PrReadContext = null, onlySlug?: string): Promise<IterationFile[]> {
   gitFetchMainQuiet()
   const files: IterationFile[] = []
+  const repo = await resolveRepo()
 
-  const loadDir = (relDir: string, archived: boolean): void => {
+  const loadDir = async (relDir: string, archived: boolean): Promise<void> => {
     const mainNames = new Set(listDirAtRef('origin/main', relDir))
     const prNames = prContext ? new Set(listDirAtRef(prContext.prHeadSha, relDir)) : new Set<string>()
 
     for (const name of new Set([...mainNames, ...prNames])) {
       if (!isIterationFile(name)) continue
+      const slug = name.replace(/\.md$/, '')
+      if (onlySlug && slug !== onlySlug) continue
       const relPath = `${relDir}/${name}`
       const readFromHead = prContext !== null && prContext.touchedFiles.has(relPath)
-      const raw = readFromHead ? readFileAtRef(prContext!.prHeadSha, relPath) : readFileAtRef('origin/main', relPath)
-      if (raw === null) continue
-      files.push({ slug: name.replace(/\.md$/, ''), archived, iteration: parseIteration(raw) })
+
+      if (readFromHead) {
+        const raw = readFileAtRef(prContext!.prHeadSha, relPath)
+        if (raw === null) continue
+        files.push({ slug, archived, iteration: parseIteration(raw) })
+        continue
+      }
+
+      const iteration = await deriveOrFallback(repo, slug, relPath)
+      if (iteration === null) continue
+      files.push({ slug, archived, iteration })
     }
   }
 
-  loadDir(ITERATIONS_RELDIR, false)
-  loadDir(COMPLETED_RELDIR, true)
+  await loadDir(ITERATIONS_RELDIR, false)
+  await loadDir(COMPLETED_RELDIR, true)
 
   return files
 }
@@ -247,7 +300,7 @@ export async function runCoherenceChecks(
   options: RunCoherenceChecksOptions = {}
 ): Promise<{ results: CheckResult[]; forgeUnavailable: boolean }> {
   const { prContext = null, isPlanPr = false } = options
-  const files = loadIterationFiles(prContext)
+  const files = await loadIterationFiles(prContext)
   const results: CheckResult[] = []
 
   // ---------- CI scope detection ----------
@@ -475,7 +528,11 @@ if (import.meta.main) {
       console.warn('closes-n: BRANCH env var not set — skipping (non-task context).')
       process.exit(0)
     }
-    const files = loadIterationFiles()
+    // Scoped load: checkClosesN only ever reads the ONE iteration named in
+    // the branch — deriving every other iteration from the forge here would
+    // pay the full repo-wide sweep's latency for data this gate never uses.
+    const branchIterSlug = branch.match(/^task\/([^/]+)\//)?.[1]
+    const files = await loadIterationFiles(null, branchIterSlug)
     const result = checkClosesN(branch, prBody, files)
     if (result.ok) {
       const issueStr = result.expectedIssue ? ` (Closes #${result.expectedIssue} ✓)` : ''
