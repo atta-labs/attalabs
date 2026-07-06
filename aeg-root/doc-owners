@@ -20,9 +20,11 @@
 #     - in-repo pointer  → that path must appear in the PR diff, else FAIL
 #     - URL pointer      → require a `Doc-ack: <pointer> — <note>` PR-body line
 #     - dangling pointer → in-repo pointer that does not exist on disk: FAIL
-#   Escape:
-#     `Doc-waiver: <pointer> — <reason>` in the PR body suppresses one binding
-#     for one PR (logged for audit).
+#   Escape (D-097):
+#     A PR-wide `waiver:docs` label whose labeling timeline event's actor is a
+#     configured principal suppresses every fired binding for that PR — a
+#     forge-authenticated human act, never a parseable string. There is no
+#     PR-body waiver field; label presence alone is never sufficient.
 #
 # Dormancy:
 #   This file absent, OR no glob matches any changed code file → silent no-op.
@@ -57,6 +59,7 @@ packages/aeg-core/bin/archive-task.ts            aeg-root/enforcement.md
 .claude/hooks/check-forge-gates.sh               aeg-root/enforcement.md
 .claude/hooks/check-pr-green.sh                  aeg-root/enforcement.md
 .husky/pre-push                                  aeg-root/enforcement.md
+packages/aeg-core/src/waiver-label.ts            aeg-root/state-machine.md
 packages/agents/vada-deliberation/yamls/**       .claude/skills/atta-teams/SKILL.md
 packages/agents/**                               .claude/skills/vada-architecture/SKILL.md
 

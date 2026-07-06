@@ -83,20 +83,32 @@ fi
 # OTHER label mutation stays covered by the general exemption noted above.
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+(pr|issue)[[:space:]]+edit\b' \
   && printf '%s' "$command" | grep -qE '(--add-label|--remove-label)\b' \
-  && printf '%s' "$command" | grep -q 'waiver:docs'; then
+  && printf '%s' "$command" | grep -qi 'waiver:docs'; then
   deny "Forge gate (D-097): mutating the \`waiver:docs\` label is not allowed from an agent session — a doc-coverage waiver is a forge-authenticated human act, and a local agent acts with the Principal's own \`gh\` credential, so actor verification alone would be spoofable here. Only the Principal, outside an agent session, may apply or remove this label. Every other label is unaffected by this gate."
 fi
 
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+api\b' \
   && printf '%s' "$command" | grep -qE '/(issues|pulls)/[0-9]+/labels' \
-  && printf '%s' "$command" | grep -qE 'waiver:docs|waiver%3Adocs'; then
+  && printf '%s' "$command" | grep -qiE 'waiver:docs|waiver%3Adocs'; then
   deny "Forge gate (D-097): mutating the \`waiver:docs\` label via raw \`gh api\` is not allowed from an agent session — see the \`gh pr/issue edit\` deny message above for why. Only the Principal, outside an agent session, may apply or remove this label."
 fi
 
+# GraphQL label mutations (`addLabelsToLabelable`/`removeLabelsFromLabelable`)
+# take an opaque label NODE ID, not a name — a two-step bypass (read-call
+# resolves `waiver:docs`'s node ID via a `label(name: ...)` lookup, a second
+# call mutates by that ID alone) would never contain the literal string
+# `waiver:docs` in the mutating command, so a text-scoped match on that
+# string is not a reliable gate here the way it is for `gh pr/issue edit`
+# (label names) and the REST endpoint above (also label names). Denied
+# UNCONDITIONALLY instead — every raw GraphQL label mutation, regardless of
+# which label — since a static single-command grep cannot distinguish a
+# `waiver:docs` node ID from any other. The sanctioned path for every OTHER
+# label stays `gh pr/issue edit --add-label`/`--remove-label` (name-based,
+# untouched above), so this does not remove any legitimate path — raw
+# GraphQL label mutations were never the sanctioned mechanism for anything.
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+api[[:space:]]+graphql\b' \
-  && printf '%s' "$command" | grep -qE '(addLabelsToLabelable|removeLabelsFromLabelable)' \
-  && printf '%s' "$command" | grep -q 'waiver:docs'; then
-  deny "Forge gate (D-097): mutating the \`waiver:docs\` label via a raw GraphQL label mutation is not allowed from an agent session — see the \`gh pr/issue edit\` deny message above for why. Only the Principal, outside an agent session, may apply or remove this label."
+  && printf '%s' "$command" | grep -qE '(addLabelsToLabelable|removeLabelsFromLabelable)'; then
+  deny "Forge gate (D-097): mutating labels via a raw GraphQL label mutation is not allowed from an agent session — these mutations resolve labels by opaque node ID, so a static command-text check cannot reliably tell a \`waiver:docs\` mutation apart from any other (a two-step 'look up the ID, then mutate by ID' pattern would otherwise bypass a text-based check entirely). Use \`gh pr edit --add-label <name>\` / \`gh issue edit --add-label <name>\` instead — denied separately, only when the label is \`waiver:docs\`."
 fi
 
 # --- gh api bypass attempts --------------------------------------------------
