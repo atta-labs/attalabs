@@ -14,7 +14,7 @@
  * `classifyLeftover`, `captureBaseline`/`compareToBaseline`,
  * `parsePremiseBlock`/`checkPremises`). No check logic lives here.
  *
- * One implementation per fact (§11 constraint) — reuses `parseIteration`,
+ * One implementation per fact (§11 constraint) — reuses `deriveIterationFromForge`,
  * `hasProvenance`, `taskRefFromBranch`, `checkIssueRationale`, and
  * `fetchProvenance` (imported from `verify-coherence.ts`, where it is already
  * exported — not re-implemented here).
@@ -24,6 +24,7 @@
  *   bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --premise <body-file>
  *   bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --simulate <body-file>
  *   bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --check-baseline <file>
+ *   bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --surfaces <glob1,glob2,...>
  *
  * Modes:
  *   (default)         Forge dispatch-readiness gate + leftover-branch
@@ -47,6 +48,16 @@
  *                      not run at all (crash, unparseable output) is never
  *                      compared as if it scored 0 — it fails the check
  *                      outright (fail-closed: no signal means no pass).
+ *   --surfaces <globs>  Mechanically derive the §7 doc-update-list floor
+ *                      (D-076) for a comma-separated list of intended surface
+ *                      globs, by matching them against
+ *                      `packages/governance/doc-owners`. Prints every fired
+ *                      binding so a Planner/Brief Author sees, DURING Dig,
+ *                      which doc pointers this task's surface will require at
+ *                      PR-open (C5) — instead of discovering it for the first
+ *                      time when `open-pr.ts` refuses. Read-only; makes no
+ *                      forge calls. (`deriveSection7`, previously a
+ *                      Planner/Brief-Author aid with no CLI entry point.)
  *
  * Exit code: 0 when ready (and, in --premise/--simulate/--check-baseline
  * mode, when that mode's check passes); 1 otherwise, with every failing
@@ -73,6 +84,8 @@ import {
   type DispatchDependsOnFact,
   type DispatchPriorIterationFact,
   type DispatchPriorTaskFact,
+  deriveSection7,
+  DOC_OWNERS_PATH,
   parsePremiseBlock
 } from '../src/index'
 import type { Iteration, Task } from '../src/types'
@@ -449,6 +462,45 @@ function runSimulateMode(iterationSlug: string, taskId: string, bodyFile: string
   process.exit(failed ? 1 : 0)
 }
 
+function runSurfacesMode(surfacesArg: string): void {
+  const surfaces = surfacesArg
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (surfaces.length === 0) {
+    console.log('verify-dispatch --surfaces: no surface globs given — nothing to check.')
+    process.exit(0)
+  }
+
+  const docOwnersContent = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
+  if (docOwnersContent === null) {
+    console.log(`verify-dispatch --surfaces: ${DOC_OWNERS_PATH} not found — dormant, no bindings to check.`)
+    process.exit(0)
+  }
+
+  const { pointers, matches, errors } = deriveSection7(surfaces, docOwnersContent)
+  if (errors.length > 0) {
+    console.error(`verify-dispatch --surfaces: ${DOC_OWNERS_PATH} parse error(s):`)
+    for (const e of errors) console.error(`  ✗ ${e}`)
+    process.exit(1)
+  }
+
+  if (pointers.length === 0) {
+    console.log(
+      'verify-dispatch --surfaces: 0 doc-owners binding(s) match the given surface(s) — §7 has no mechanical floor.'
+    )
+    process.exit(0)
+  }
+
+  console.log(
+    `verify-dispatch --surfaces: ${pointers.length} doc-owners binding(s) will fire for this surface at PR-open (C5) — plan §7 (or a waiver:docs/override:docs) for these now:\n`
+  )
+  for (const m of matches) {
+    console.log(`  ${m.surface} matches ${DOC_OWNERS_PATH}:${m.lineNum} (glob \`${m.glob}\`) → ${m.pointer}`)
+  }
+  process.exit(0)
+}
+
 function runCheckBaselineMode(baselineFile: string): void {
   const baseline = JSON.parse(readFileSync(baselineFile, 'utf8')) as BaselineEntry[]
   const current = currentFindingCounts()
@@ -589,7 +641,7 @@ if (import.meta.main) {
 
   if (!iterationSlug || !taskId || iterationSlug.startsWith('--')) {
     console.error(
-      'Usage: verify-dispatch <iteration> <n> [--premise <file>] [--simulate <file>] [--check-baseline <file>]'
+      'Usage: verify-dispatch <iteration> <n> [--premise <file>] [--simulate <file>] [--check-baseline <file>] [--surfaces <glob1,glob2,...>]'
     )
     process.exit(1)
   }
@@ -597,8 +649,16 @@ if (import.meta.main) {
   const premiseIdx = argv.indexOf('--premise')
   const simulateIdx = argv.indexOf('--simulate')
   const checkBaselineIdx = argv.indexOf('--check-baseline')
+  const surfacesIdx = argv.indexOf('--surfaces')
 
-  if (premiseIdx !== -1) {
+  if (surfacesIdx !== -1) {
+    const globs = argv[surfacesIdx + 1]
+    if (!globs) {
+      console.error('--surfaces requires a comma-separated list of globs.')
+      process.exit(1)
+    }
+    runSurfacesMode(globs)
+  } else if (premiseIdx !== -1) {
     const file = argv[premiseIdx + 1]
     if (!file) {
       console.error('--premise requires a body-file path.')

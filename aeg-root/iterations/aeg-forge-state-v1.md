@@ -20,7 +20,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 |---|--------------------------------------------------------------------------|-------|-----------------|------------|----------------|
 | 1  | Generic forge-reading adapter (packages/forge-state)                   | #425  | aeg-core        | —          | —              |
 | 2  | Relocate decisions/projects/doc-owners to packages/governance          | #426  | aeg, aeg-core   | —          | —              |
-| 3a | Cut per-task gates over to the forge adapter (verify-dispatch, assign-task-issue, stale-blocker, check-branch-topology) | #427  | aeg, aeg-core   | 1          | —              |
+| 3a | Cut per-task gates over to the forge adapter                          | #427  | aeg, aeg-core   | 1          | —              |
 | 3b | Cut verify-coherence.ts's repo-wide sweep over to the forge adapter    | #437  | aeg, aeg-core   | 1          | —              |
 | 4  | Migrate token ledgers, lessons, per-project state to forge objects     | #428  | aeg, aeg-core   | —          | —              |
 | 5  | Update AEG Studio to render from forge-native sources                  | #429  | aeg             | 1, 3a, 3b  | —              |
