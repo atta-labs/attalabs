@@ -58,6 +58,7 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { deriveIterationFromForge } from '@atta/aeg-forge-state'
 import { resolveGithubToken } from '../../../apps/aeg/web/studio/src/lib/forge/github-token'
 import { resolveRepo, type RepoRef } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
 import {
@@ -72,7 +73,6 @@ import {
   type DispatchDependsOnFact,
   type DispatchPriorIterationFact,
   type DispatchPriorTaskFact,
-  parseIteration,
   parsePremiseBlock
 } from '../src/index'
 import type { Iteration, Task } from '../src/types'
@@ -132,16 +132,20 @@ function fetchIterationBranchPrs(iterationSlug: string, repo: RepoRef): Map<stri
 
 // ---- iteration / task resolution ---------------------------------------------
 
-function readIterationFromOrigin(iterationSlug: string): Iteration | null {
-  sh('git fetch origin main --quiet')
-  const path = `aeg-root/iterations/${iterationSlug}.md`
-  let md: string
+/**
+ * Forge-derived (task aeg-forge-state-v1 3a) — no longer reads
+ * `aeg-root/iterations/<slug>.md` off `origin/main`; the forge (Milestone +
+ * `iteration:<slug>`-labeled Issues) is inherently live, so there is no
+ * separate "freshly-fetched" version to read. `null` now means the forge
+ * call itself failed (network/gh unreachable), not "file absent" — a real,
+ * distinct failure mode this bin didn't have before the cutover.
+ */
+async function readIterationFromOrigin(iterationSlug: string, repo: RepoRef): Promise<Iteration | null> {
   try {
-    md = execSync(`git show origin/main:${path}`, { encoding: 'utf8' })
+    return await deriveIterationFromForge(repo.owner, repo.repo, iterationSlug)
   } catch {
     return null
   }
-  return parseIteration(md)
 }
 
 /** `#NNN` or a prose cell containing `#NNN` (e.g. cross-iteration "other-iter #264"). */
@@ -244,21 +248,27 @@ function otherActiveIterationSlugs(excludeSlug: string): string[] {
     .map((s) => s.replace(/\.md$/, ''))
 }
 
-/** One entry per project named in `projects`: the first active, all-Issues-closed prior iteration found, or a null-slug pass-through when none is found. */
-function resolvePriorIterationArchival(
+/**
+ * One entry per project named in `projects`: the first active, all-Issues-closed
+ * prior iteration found, or a null-slug pass-through when none is found.
+ * Forge-derived (task aeg-forge-state-v1 3a) — `otherActiveIterationSlugs`
+ * still lists CANDIDATE SLUGS from the iteration-file directory listing
+ * (a separate, file-existence concern, out of this task's scope per the
+ * birth-rule migration); only each candidate's task/project content now
+ * comes from the forge instead of parsing its file.
+ */
+async function resolvePriorIterationArchival(
   projects: string[],
   excludeSlug: string,
   repo: RepoRef
-): DispatchPriorIterationFact[] {
+): Promise<DispatchPriorIterationFact[]> {
   const candidates = otherActiveIterationSlugs(excludeSlug)
   const facts: DispatchPriorIterationFact[] = []
 
   for (const project of projects) {
     let found: DispatchPriorIterationFact | null = null
     for (const slug of candidates) {
-      const path = join(ITERATIONS_DIR, `${slug}.md`)
-      if (!existsSync(path)) continue
-      const candidateIteration = parseIteration(readFileSync(path, 'utf8'))
+      const candidateIteration = await deriveIterationFromForge(repo.owner, repo.repo, slug)
       const touchesProject = candidateIteration.tasks.some((t) => t.projects.includes(project))
       if (!touchesProject) continue
 
@@ -470,10 +480,25 @@ function runCheckBaselineMode(baselineFile: string): void {
 }
 
 async function runGateMode(iterationSlug: string, taskId: string): Promise<void> {
-  const iteration = readIterationFromOrigin(iterationSlug)
+  // Still needed here: computeLeftover() below compares against the local
+  // origin/main ref (git rev-list origin/main..origin/<branch>) — freshness
+  // that used to be a side effect of the file-based iteration read above,
+  // now made explicit since the forge read no longer needs it.
+  sh('git fetch origin main --quiet')
+
+  const repo = await resolveRepo()
+  const token = await resolveGithubToken()
+  if (!repo || !token) {
+    console.error(
+      'verify-dispatch severity:infra — could not resolve a GitHub repo/token (set AEG_REPO / GITHUB_TOKEN, or `gh auth login`). Cannot evaluate forge-dependent predicates.'
+    )
+    process.exit(1)
+  }
+
+  const iteration = await readIterationFromOrigin(iterationSlug, repo)
   if (!iteration) {
     console.error(
-      `verify-dispatch row-existence: aeg-root/iterations/${iterationSlug}.md not found on a freshly-fetched origin/main.`
+      `verify-dispatch row-existence: could not derive iteration \`${iterationSlug}\` from the forge (no reachable Milestone/Issues, or the forge call failed).`
     )
     process.exit(1)
   }
@@ -481,16 +506,7 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
   const task = (iteration as Iteration).tasks.find((t) => t.id === taskId)
   if (!task) {
     console.error(
-      `verify-dispatch row-existence: task "${taskId}" is not present in aeg-root/iterations/${iterationSlug}.md on a freshly-fetched origin/main — the plan PR that adds it has not merged. Not dispatchable until it does.`
-    )
-    process.exit(1)
-  }
-
-  const repo = await resolveRepo()
-  const token = await resolveGithubToken()
-  if (!repo || !token) {
-    console.error(
-      'verify-dispatch severity:infra — could not resolve a GitHub repo/token (set AEG_REPO / GITHUB_TOKEN, or `gh auth login`). Cannot evaluate forge-dependent predicates.'
+      `verify-dispatch row-existence: task "${taskId}" is not present in iteration \`${iterationSlug}\`'s forge-derived task list (no \`iteration:${iterationSlug}\`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not dispatchable until it does.`
     )
     process.exit(1)
   }
@@ -509,7 +525,7 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
   }
   const priorTask = resolvePriorTask(iteration as Iteration, taskId, branchPrs, provenanceByIssue, repo)
 
-  const priorIterationArchival = resolvePriorIterationArchival(task.projects, iterationSlug, repo)
+  const priorIterationArchival = await resolvePriorIterationArchival(task.projects, iterationSlug, repo)
 
   const gateResult = checkDispatchReadiness({
     iterationSlug,
