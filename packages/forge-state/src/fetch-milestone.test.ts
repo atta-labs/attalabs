@@ -1,62 +1,52 @@
-import { execFileSync } from 'node:child_process'
-import { afterEach, describe, expect, it } from 'vitest'
-import { findMilestoneForSlug } from './fetch-milestone'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('./gh', () => ({
+  ghApiGet: vi.fn()
+}))
+
+const { ghApiGet } = await import('./gh')
+const { findMilestoneForSlug } = await import('./fetch-milestone')
 
 const OWNER = 'daniboomerang'
 const REPO = 'attalabs'
-
-function createThrowawayMilestone(title: string, description: string, state: 'open' | 'closed'): number {
-  const out = execFileSync(
-    'gh',
-    [
-      'api',
-      `repos/${OWNER}/${REPO}/milestones`,
-      '-f',
-      `title=${title}`,
-      '-f',
-      `description=${description}`,
-      '-f',
-      `state=${state}`
-    ],
-    { encoding: 'utf8' }
-  )
-  return (JSON.parse(out) as { number: number }).number
-}
-
-function deleteMilestone(number: number): void {
-  execFileSync('gh', ['api', `repos/${OWNER}/${REPO}/milestones/${number}`, '-X', 'DELETE'])
-}
+const FIXTURES = join(__dirname, 'fixtures')
+/** Captured live 2026-07-06 via `gh api repos/daniboomerang/attalabs/milestones?state=all` —
+ * the real, current state: no Milestone exists yet for any active iteration. */
+const emptyMilestones = JSON.parse(readFileSync(join(FIXTURES, 'milestones-empty.json'), 'utf8'))
 
 describe('findMilestoneForSlug', () => {
-  let createdNumber: number | null = null
+  it('returns goal + active lifecycle for an open milestone matching the slug exactly', () => {
+    vi.mocked(ghApiGet).mockReturnValue([
+      { title: 'some-unrelated-slug', description: 'not this one', state: 'open' },
+      { title: 'aeg-forge-state-v1', description: 'Migrate this repo governance state.', state: 'open' }
+    ])
 
-  afterEach(() => {
-    if (createdNumber !== null) {
-      deleteMilestone(createdNumber)
-      createdNumber = null
-    }
+    expect(findMilestoneForSlug(OWNER, REPO, 'aeg-forge-state-v1')).toEqual({
+      goal: 'Migrate this repo governance state.',
+      lifecycle: 'active'
+    })
   })
 
-  it('round-trips goal + active lifecycle for an open milestone', () => {
-    const slug = `forge-state-test-open-${Date.now()}`
-    const goal = 'Throwaway spike milestone created by packages/forge-state tests.'
-    createdNumber = createThrowawayMilestone(slug, goal, 'open')
+  it('returns goal + complete lifecycle for a closed milestone', () => {
+    vi.mocked(ghApiGet).mockReturnValue([{ title: 'vinaya-cli-v1', description: 'Ship the CLI.', state: 'closed' }])
 
-    const facts = findMilestoneForSlug(OWNER, REPO, slug)
-    expect(facts).toEqual({ goal, lifecycle: 'active' })
+    expect(findMilestoneForSlug(OWNER, REPO, 'vinaya-cli-v1')).toEqual({
+      goal: 'Ship the CLI.',
+      lifecycle: 'complete'
+    })
   })
 
-  it('round-trips goal + complete lifecycle for a closed milestone', () => {
-    const slug = `forge-state-test-closed-${Date.now()}`
-    const goal = 'Throwaway closed milestone created by packages/forge-state tests.'
-    createdNumber = createThrowawayMilestone(slug, goal, 'closed')
+  it('treats a missing description as an empty goal', () => {
+    vi.mocked(ghApiGet).mockReturnValue([{ title: 'aeg-forge-state-v1', description: null, state: 'open' }])
 
-    const facts = findMilestoneForSlug(OWNER, REPO, slug)
-    expect(facts).toEqual({ goal, lifecycle: 'complete' })
+    expect(findMilestoneForSlug(OWNER, REPO, 'aeg-forge-state-v1')).toEqual({ goal: '', lifecycle: 'active' })
   })
 
-  it('returns null when no milestone exists yet for the slug (transitional state)', () => {
-    const facts = findMilestoneForSlug(OWNER, REPO, `forge-state-nonexistent-${Date.now()}`)
-    expect(facts).toBeNull()
+  it('returns null when no milestone matches the slug (the real, current fixture — no Milestone exists yet for any active iteration)', () => {
+    vi.mocked(ghApiGet).mockReturnValue(emptyMilestones)
+
+    expect(findMilestoneForSlug(OWNER, REPO, 'aeg-forge-state-v1')).toBeNull()
   })
 })

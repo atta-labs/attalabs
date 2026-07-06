@@ -1,13 +1,40 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { type Iteration, parseIteration } from '@atta/aeg-core'
-import { describe, expect, it } from 'vitest'
-import { deriveIterationFromForge } from './derive-from-forge'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('./gh', () => ({
+  ghApiGet: vi.fn(),
+  ghIssueListByLabel: vi.fn()
+}))
+
+const { ghApiGet, ghIssueListByLabel } = await import('./gh')
+const { deriveIterationFromForge } = await import('./derive-from-forge')
+
+const FIXTURES = join(import.meta.dirname, 'fixtures')
+/** All four fixtures below were captured live via `gh` on 2026-07-06 — the
+ * exact real data this golden comparison was validated against when the
+ * adapter was first built (see PR #435's evidence). Frozen here as static
+ * JSON so `bun test` makes zero live network/gh-process calls (CI has no
+ * `GH_TOKEN` wired for this job) — the comparison still proves forge-derived
+ * state matches file-derived state; only the INPUT is now frozen, not the
+ * check. */
+const emptyMilestones = JSON.parse(readFileSync(join(FIXTURES, 'milestones-empty.json'), 'utf8'))
+const aegForgeStateIssues = JSON.parse(readFileSync(join(FIXTURES, 'aeg-forge-state-v1-issues.json'), 'utf8'))
+const vinayaCliIssues = JSON.parse(readFileSync(join(FIXTURES, 'vinaya-cli-v1-issues.json'), 'utf8'))
+
+vi.mocked(ghApiGet).mockReturnValue(emptyMilestones)
+vi.mocked(ghIssueListByLabel).mockImplementation((_owner: string, _repo: string, label: string) => {
+  if (label === 'iteration:aeg-forge-state-v1') return aegForgeStateIssues
+  if (label === 'iteration:vinaya-cli-v1') return vinayaCliIssues
+  return []
+})
 
 /**
  * Golden comparison (brief §9, Part 4): the forge-derived `Iteration` must
  * match `parseIteration(topology-file)` field-for-field, against every
- * currently-active iteration's REAL data — not a fixture.
+ * currently-active iteration's REAL data (frozen as fixtures above, captured
+ * live on 2026-07-06 — not invented examples).
  *
  * Three documented, expected divergence categories (never silently
  * reconciled — see PR body for full evidence):

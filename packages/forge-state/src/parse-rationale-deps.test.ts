@@ -1,16 +1,15 @@
-import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseRationaleDeps } from './parse-rationale-deps'
 
-function fetchIssueBody(number: number): string {
-  const out = execFileSync(
-    'gh',
-    ['issue', 'view', String(number), '--repo', 'daniboomerang/attalabs', '--json', 'body'],
-    {
-      encoding: 'utf8'
-    }
-  )
-  return (JSON.parse(out) as { body: string }).body
+const FIXTURES = join(__dirname, 'fixtures')
+/** Captured verbatim via `gh issue view <n> --json body` on 2026-07-06 — the
+ * real bodies the 2026-07-06 spike and this task's own golden comparison
+ * were validated against. Static fixtures, not live calls: `bun test` must
+ * not depend on network/gh access (CI has no `GH_TOKEN` wired for this job). */
+function readIssueBodyFixture(number: 383 | 384): string {
+  return readFileSync(join(FIXTURES, `issue-${number}-body.md`), 'utf8')
 }
 
 describe('parseRationaleDeps', () => {
@@ -35,7 +34,7 @@ describe('parseRationaleDeps', () => {
   })
 
   it("parses Issue #383's real body — two separate backtick spans, `1` then `2`", () => {
-    const body = fetchIssueBody(383)
+    const body = readIssueBodyFixture(383)
     const result = parseRationaleDeps(body)
     expect(result.dependsOn).toContain('1')
     expect(result.dependsOn).toContain('2')
@@ -43,7 +42,7 @@ describe('parseRationaleDeps', () => {
   })
 
   it("ignores an unrelated backtick span in the same paragraph (Issue #384's `vinaya check` mention)", () => {
-    const body = fetchIssueBody(384)
+    const body = readIssueBodyFixture(384)
     expect(parseRationaleDeps(body)).toEqual({ dependsOn: ['3'], conflictsWith: [] })
   })
 
