@@ -43,11 +43,12 @@ When resolved, add below the entry:
 ### D-083–D-109 — the Vinaya program: build Vinaya (CLI + Studio), retire Cetana, waiver authentication
 
 - Type: mixed (Type 1: D-084, D-085, D-086, D-095, D-098, D-102, D-104; rest Type 2) | Tier: 3 | Authored: 2026-07-04
-- Decision log: decisions.md D-083…D-109 (27 entries, all PENDING; maps the review program's R-1…R-28, R-12 folded into D-098)
+- Decision log: decisions.md D-083…D-109 (27 entries; D-097 carved out and ratified separately below — remaining 26 all PENDING; maps the review program's R-1…R-28, R-12 folded into D-098)
 - Why it needs ratification: founds a new public product (Vinaya, npm reference implementation of AEG), retires Cetana (execution deferred), and D-097 supersedes D-080 (waiver authentication — the live Doc-waiver grammar is agent-forgeable).
 - Deadline context: D-097/task 29 (#380) is time-sensitive (patches the live escape hatch; vinaya-cli-v1 #387 depends on it). The plan PR registering iterations vinaya-cli-v1 (#381–387) + vinaya-studio-v1 (#388–390) is itself a Tier 3 merge for a window. Nothing dispatches until aeg-governance-hardening archives and the Principal triggers.
 - **Window note (appended 2026-07-05, Planner):** ratify D-085 WITH its repo-rule clause reconciled, not as written. Its "renaming breaks gate plumbing for zero gain" line is partially invalidated by the governance-layout finding (`vinaya-finding-aeg-root-into-aeg-core`, 2026-07-05): `aeg-root/` sitting outside every workspace package defeats workspace-aware deploy-skip logic (confirmed live — docs-only plan PR #391 triggered 3 Vercel builds, 2 rate-limited), so a relocation into a data-only workspace package has real gain. The layout question itself is a separate decision (Strategist mode + Principal; constraint comments on #384/#382 hard-stop briefing until it exists); this note only prevents ratifying a clause the same window's own inputs contradict.
-- Status: PENDING
+- **D-097 carve-out (2026-07-06):** ratified out-of-band, ahead of the rest of this batch — it is the live-gate fix blocking `aeg-governance-hardening` task 29/#380 (the iteration's last task), independent of the wider Vinaya-founding decisions (the remaining D-084…D-109 minus D-097), which stay gated on the Strategist-mode layout decision above. D-080 flips to SUPERSEDED per D-097's own consequences clause. See decisions.md D-097 for the ratification note.
+- Status: PENDING (26 of 27 entries; D-097 RESOLVED — see carve-out note above)
 
 ## Resolved items archive
 

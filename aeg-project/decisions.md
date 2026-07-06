@@ -2408,8 +2408,9 @@ Concretely:
 ## D-080 — First-push C5 doc-coverage failures self-serve via commit-message Doc-waiver trailers
 
 **Date:** 2026-07-03
-**Status:** ACTIVE
+**Status:** SUPERSEDED
 **Type:** 2 (reversible via a superseding D-entry)
+**Superseded by:** D-097
 **Lock:** NO
 **Authored by:** Principal's planning assistant (direct fix, live incident during `aeg-studio-cleanup` task 5 / `aeg-governance-hardening`)
 **Ratified by:** Principal (explicit instruction: fix the process so this stops costing Principal attention on every occurrence)
@@ -2664,11 +2665,12 @@ Concretely:
 ## D-097 — Waiver authentication: forge-authenticated human acts only; supersedes D-080
 
 **Date:** 2026-07-04
-**Status:** PENDING
+**Status:** ACTIVE
 **Type:** 2
 **Supersedes:** D-080
 **Lock:** NO
 **Authored by:** TL (R-16)
+**Ratified by:** Principal (2026-07-06, ratified ahead of the rest of the D-083–D-109 batch — carved out because it is the live-gate fix blocking `aeg-governance-hardening` task 29/#380, the iteration's last task; the remainder of the Vinaya-program batch remains PENDING in `ratification-queue.md`)
 **Context:** The founding law applied to the escape hatch: the current `Doc-waiver:` PR-body/commit-trailer grammar (D-080, PR #345) is an agent-emittable string — forgeable by the honest-but-fallible agents the gates exist to redirect.
 **Decision:** A waiver is valid ONLY as a forge-authenticated human act, never a parseable string. Three parts: (1) ring 1 honors a `waiver:docs` PR label only when the ACTOR of the labeling timeline event is in a configured principal allowlist (here `daniboomerang`) — label presence alone is never sufficient; the `Doc-waiver:` grammar is removed from CI-accepted inputs in the same change (`Doc-ack:` unchanged). (2) The tool-layer forge gate denies waiver-label mutation commands in agent sessions (shared-credential hole: local agents act with the Principal's PAT). (3) Ring 0 (pre-push, no PR yet) downgrades an owned-doc violation to warn-with-declared-intent — ring 0 informs, ring 1 guarantees. Implemented by aeg-governance-hardening task 29 (#380); productized by vinaya-cli-v1 #387, which depends on it.
 **Alternatives rejected:** Keeping the trailer grammar (agent-forgeable); PR-author verification (the author isn't the waiver authority); hard-blocking ring 0 (would resurrect `--no-verify` muscle memory).
