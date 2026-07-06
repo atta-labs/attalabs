@@ -200,6 +200,8 @@ Reviewer responses: `apps/vada-ai/specs/engine/v2-results/`.
 - ❌ A chain-of-thought tool (distinct from sequential-thinking MCP)
 - ❌ Atta-the-product. Vāda is one product in AttaLabs and a deliberation layer inside Atta; it is not "Atta itself."
 
+Global chrome (topbar, footer) is shared cross-product `@atta/ui` — see [.claude/skills/ui-components/SKILL.md](../ui-components/SKILL.md), not this file, for footer/topbar content and layout.
+
 ---
 
 ## Full docs

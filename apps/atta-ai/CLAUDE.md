@@ -28,6 +28,12 @@ Specs live in `specs/` at this level (`apps/atta-ai/specs/`):
 
 ---
 
+## Shared chrome
+
+The root layout renders the shared `@atta/ui/footer` `Footer` component — no product-specific footer content beyond `product`/`tagline` props. See `.claude/skills/ui-components/SKILL.md` for the component itself.
+
+---
+
 ## Related
 
 - [Root CLAUDE.md](../../CLAUDE.md) — AttaLabs monorepo routing index
