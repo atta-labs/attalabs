@@ -53,10 +53,20 @@ function buildSyntheticPrHeadCommit(slug: string, taskId: string, taskTitle: str
   })
 
   const treeSha = execFileSync('git', ['write-tree'], { env, encoding: 'utf8' }).trim()
+  // A fresh CI runner has no configured git identity — `commit-tree` refuses
+  // ("Author identity unknown") without one. Explicit author/committer env
+  // vars avoid depending on any ambient `git config`, local or CI.
+  const commitEnv = {
+    ...process.env,
+    GIT_AUTHOR_NAME: 'AEG test fixture',
+    GIT_AUTHOR_EMAIL: 'aeg-test-fixture@localhost',
+    GIT_COMMITTER_NAME: 'AEG test fixture',
+    GIT_COMMITTER_EMAIL: 'aeg-test-fixture@localhost'
+  }
   const commitSha = execFileSync(
     'git',
     ['commit-tree', treeSha, '-p', 'origin/main', '-m', 'test fixture: synthetic PR-head commit'],
-    { encoding: 'utf8' }
+    { encoding: 'utf8', env: commitEnv }
   ).trim()
 
   execFileSync('rm', ['-f', indexFile])
