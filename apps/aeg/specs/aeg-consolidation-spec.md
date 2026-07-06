@@ -21,7 +21,7 @@ The enforcement engine (`scripts/verify-coherence.ts`, `verify-docs.ts`) grew or
 ## Inputs the Planner must read
 - `apps/aeg/specs/aeg-observability-spec.md` (the derived-pipeline + legibility stories).
 - `specs/ecosystem-backlog.md` → "AEG-model hardening" punch-list.
-- `aeg-project/decisions.md` → **D-069** (Lock: YES — the self-enforcement charter; this iteration conforms to it).
+- `packages/governance/decisions.md` → **D-069** (Lock: YES — the self-enforcement charter; this iteration conforms to it).
 - The `aeg-self-enforcement` session handoff (below).
 
 ## Session handoff (state at context-death, 2026-07-01)

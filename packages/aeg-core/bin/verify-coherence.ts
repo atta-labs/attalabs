@@ -76,8 +76,8 @@ function checkN1N2M1M2M3(): CheckResult[] {
 
   // Find all decision log files
   const logFiles: string[] = []
-  const globalLog = join(REPO_ROOT, 'aeg-project/decisions.md')
-  if (existsSync(globalLog)) logFiles.push('aeg-project/decisions.md')
+  const globalLog = join(REPO_ROOT, 'packages/governance/decisions.md')
+  if (existsSync(globalLog)) logFiles.push('packages/governance/decisions.md')
   const appsDir = join(REPO_ROOT, 'apps')
   if (existsSync(appsDir)) {
     for (const app of readdirSync(appsDir)) {

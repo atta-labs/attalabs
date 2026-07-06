@@ -530,6 +530,10 @@
         "vitest": "^2.1.0",
       },
     },
+    "packages/governance": {
+      "name": "@atta/governance",
+      "version": "0.0.0",
+    },
     "packages/identity": {
       "name": "@atta/identity",
       "version": "0.1.0",
@@ -783,6 +787,8 @@
     "@atta/engine": ["@atta/engine@workspace:packages/engine"],
 
     "@atta/forensic-hiring-auditor": ["@atta/forensic-hiring-auditor@workspace:packages/agents/forensic-hiring-auditor"],
+
+    "@atta/governance": ["@atta/governance@workspace:packages/governance"],
 
     "@atta/herald-ai-mcp": ["@atta/herald-ai-mcp@workspace:apps/herald-ai/mcp"],
 

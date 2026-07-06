@@ -58,14 +58,14 @@ These require Principal action and are not trackable as forge Issues:
 - `aeg-root/aeg-manual-flow.md` — running the flow by hand (the operator's guide)
 - `aeg-root/process.md` — the eleven-phase walkthrough
 - `aeg-root/iterations/README.md` — the iteration model (the only file in `iterations/` until the first real iteration starts)
-- `aeg-root/projects.md` — project registry (name → folder), for multi-project repos
+- `packages/governance/projects.md` — project registry (name → folder), for multi-project repos
 - `aeg-root/roles/` — `principal.md`, `team-leader.md` (Strategist/Planner/Brief Author), `developer.md`, `reviewer.md`, `security.md`, `archivist.md`
 - `aeg-root/skills/` — canonical AEG skills (`aeg`, `aeg-roles`, `brief-authoring`); the `.claude/skills/` copies are a generated view (D-039)
 - `aeg-root/diagrams/` — `process-flow.md` (the AEG process), `system-architecture.md` (the optional Cetana tool + the AEG file/enforcement layout)
 - `aeg-root/reviewer-prompt.md` — template for adversarial multi-AI reviewer rounds
 
 **Living state (in `aeg-project/`, one at root + one per project):**
-- `aeg-project/decisions.md` — global cross-project decision log, **D-001 to D-057**
+- `packages/governance/decisions.md` — global cross-project decision log, **D-001 to D-057**
 - `aeg-project/ratification-queue.md` — append-only queue for decisions awaiting Principal ratification
 - `aeg-project/state.md` / `changelog.md` / `lessons.md` — current state / shipped log / calibration (active-work state is derived from the forge — D-057)
 

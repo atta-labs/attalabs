@@ -1,4 +1,4 @@
-# aeg-root/doc-owners — code → doc bindings for the coherence seam (D-062).
+# packages/governance/doc-owners — code → doc bindings for the coherence seam (D-062).
 #
 # Format: one binding per line, CODEOWNERS-shaped.
 #     <code-glob>  <doc-pointer>

@@ -3,7 +3,7 @@ sidebar_title: Enforcement Map
 ---
 # Enforcement Map — how the forge stays valid
 
-This page answers two questions: **what prevents an invalid artifact from ever being created**, and **what detects one if it slips through anyway**. Every mechanism listed is real and installed — nothing aspirational. The full architectural reasoning behind each gate lives in the decision log (`aeg-project/decisions.md`); the normative registry of every gate lives in `state-machine.md`.
+This page answers two questions: **what prevents an invalid artifact from ever being created**, and **what detects one if it slips through anyway**. Every mechanism listed is real and installed — nothing aspirational. The full architectural reasoning behind each gate lives in the decision log (`packages/governance/decisions.md`); the normative registry of every gate lives in `state-machine.md`.
 
 **The founding observation:** agents obey checkers, not documents. A rule that exists only as prose will eventually be violated by an honest agent under context pressure — proven live when a pull request satisfied exactly the sections the checker verified and dropped the two it didn't. So every contract rule must be a deterministic check, and every check must sit at the earliest chokepoint that can host it.
 

@@ -82,4 +82,4 @@ Now reflected in `planner.md` (the rationale is the hand-off) and to be complete
 
 - **F3** — write the tech-dependency + tech-surface + agent-selection-with-reasoning required sections into `aeg-root/skills/brief-authoring/SKILL.md`, inheriting from the Planner's rationale. (The brief-time half of F4 folds in here.)
 - **F1 mirrors** — add the rationale to the task/Issue shape in `iterations/README.md` §4, and the "brief inherits the rationale" line in `brief-authoring`.
-- Optional: a consolidated `D-###` in `aeg-project/decisions.md` recording the planner-discipline upgrade (F1/F2/F4/F5/F6) for ratification-trail completeness.
+- Optional: a consolidated `D-###` in `packages/governance/decisions.md` recording the planner-discipline upgrade (F1/F2/F4/F5/F6) for ratification-trail completeness.

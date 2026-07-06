@@ -36,7 +36,7 @@ The AEG model front door is the **`aeg`** skill (the model in one read) → the 
 
 There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, the active iteration, and the decision log there. It never expects a per-project copy of the model.
 
-Living **state** is held in `aeg-project/` folders: one at the repo root (for monorepo-level tasks) and one per project (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). A task updates the root `aeg-project/decisions.md` + `changelog.md` (governance is global) **plus** the `aeg-project/` slice of each project it touches (one for a single-project task, several for a cross-project task — resolve which via `aeg-root/projects.md`). An `aeg-project/` folder holds state only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (D-041.)
+Living **state** is held in `aeg-project/` folders: one at the repo root (for monorepo-level tasks) and one per project (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). A task updates the root `packages/governance/decisions.md` + `changelog.md` (governance is global) **plus** the `aeg-project/` slice of each project it touches (one for a single-project task, several for a cross-project task — resolve which via `packages/governance/projects.md`). An `aeg-project/` folder holds state only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (D-041.)
 
 For deeper context on the operational model design:
 - `aeg-root/aeg-manual-flow.md` — running the flow by hand (the operator's guide)
@@ -94,7 +94,7 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 | `aeg-root/iterations/<name>.md` | The current iteration's task topology (edges, grouping). Plan only — no status. | At plan time (Planner) |
 | `aeg-project/changelog.md` | Append-only completed work log. | Per PR (append only) |
 | `aeg-project/lessons.md` | Calibration lessons + anti-patterns. | Monthly review |
-| `aeg-project/decisions.md` | Global cross-project decision log. | When decisions are made |
+| `packages/governance/decisions.md` | Global cross-project decision log. | When decisions are made |
 | `docs-index.md` | Discovery map of repo content. Auto-generated. | When repo files added/removed/renamed |
 
 > **`now.md` is retired (D-057).** Active work, blocked tasks, and next candidates are derived from the forge (see "Session-start forge queries" above). The forge is the single source of truth for what is happening; `state.md` holds what the forge cannot derive.
@@ -268,7 +268,7 @@ Log to `decisions.md` (global) or the per-project log during the conversation. A
 |----------------------|-------|
 | A skill / agent definition | Repo only (skills: canonical in `aeg-root/skills/`, generated view in `.claude/skills/` — D-039) |
 | A project spec, ecosystem vision, naming decision | Repo only |
-| Global decision log | `aeg-project/decisions.md` |
+| Global decision log | `packages/governance/decisions.md` |
 | Per-project decision log | `apps/{project}/specs/{project}-decisions.md` |
 | Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | `aeg-project/state.md` |
 | The execution plan (task topology, edges) | `aeg-root/iterations/<name>.md` |

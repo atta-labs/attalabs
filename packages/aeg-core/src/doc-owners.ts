@@ -1,13 +1,13 @@
 /**
- * The `aeg-root/doc-owners` manifest parser and the C5 code→doc coverage
- * evaluator (state-machine.md Section 15). Pure — I/O (reading the manifest
- * off disk, checking pointer existence) is injected by the caller.
+ * The `packages/governance/doc-owners` manifest parser and the C5 code→doc
+ * coverage evaluator (state-machine.md Section 15). Pure — I/O (reading the
+ * manifest off disk, checking pointer existence) is injected by the caller.
  */
 
 import { isCodeFile } from './file-classify'
 import { WAIVER_LABEL } from './waiver-label'
 
-export const DOC_OWNERS_PATH = 'aeg-root/doc-owners'
+export const DOC_OWNERS_PATH = 'packages/governance/doc-owners'
 
 export type DocOwnersBinding = { glob: string; pointer: string; lineNum: number }
 
@@ -103,8 +103,8 @@ export function readDocAcks(body: string): DocAck[] {
 
 /**
  * Pure evaluator for the C5 doc-coverage check. The runtime wrapper reads
- * `aeg-root/doc-owners` from disk and `PR_BODY` from env; this function takes
- * both as inputs and an injectable file-exists for unit tests.
+ * `packages/governance/doc-owners` from disk and `PR_BODY` from env; this
+ * function takes both as inputs and an injectable file-exists for unit tests.
  *
  * Dormancy: a null `docOwnersContent` (absent file) OR no glob matching any
  * changed code file produces an empty result — no errors, no notes.

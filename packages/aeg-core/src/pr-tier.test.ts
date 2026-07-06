@@ -3,10 +3,10 @@ import { deriveTierFromDiff, overrideActive, readTierFromPrBody } from './pr-tie
 
 describe('deriveTierFromDiff', () => {
   it('decision-log in diff → tier 3 (C0 error still emitted; explicit declaration required)', () => {
-    expect(deriveTierFromDiff(['aeg-project/decisions.md'])).toBe(3)
+    expect(deriveTierFromDiff(['packages/governance/decisions.md'])).toBe(3)
     expect(deriveTierFromDiff(['apps/herald-ai/specs/herald-decisions.md'])).toBe(3)
     // decision log wins over any other file in the same diff
-    expect(deriveTierFromDiff(['apps/foo/web/src/lib/foo.ts', 'aeg-project/decisions.md'])).toBe(3)
+    expect(deriveTierFromDiff(['apps/foo/web/src/lib/foo.ts', 'packages/governance/decisions.md'])).toBe(3)
   })
 
   it('code-only diff → tier 0 (passes without Tier: field in PR body)', () => {
