@@ -79,3 +79,58 @@ A naive relocation — making `/ui` and `/settings` plain children of `app/[user
 - Identity perimeter (D-031) and library resolution (D-035) are unchanged; D-061 is a routing + nav refactor that preserves both. The central-CMS library resolution introduced by D-060 supplies the build-time `library.id` consumed by both `(app)/layout.tsx` and `(owner)/layout.tsx`.
 - Mobile / desktop hamburger behavior is **updated** by part (3) above: at `md+` the right cluster keeps `ColorSchemeToggle · extraActions · accountMenu`; below `md` the row collapses to `ColorSchemeToggle · hamburger` and the sheet hosts `extraActions` + `accountMenu` after the nav links. This affects every consumer of the shared `TopBar`.
 - The `[username]` URL space now reserves the `/ui` and `/settings` subpaths under every username. Existing usernames must not be `ui` or `settings` (the static route group wins, but the username would shadow itself); the audit team will add a username block-list entry as a small follow-up to onboarding. Not a blocker — neither word is a plausible vanity URL.
+
+---
+
+## D-113 — Public-profile owner topbar also gets a Settings button, reversing D-061's "single Settings entry point"
+
+**Date:** 2026-07-06
+**Status:** ACTIVE
+**Type:** 2
+**Tier:** 1
+**Lock:** NO
+**Authored by:** Principal (in-session, direct UI request)
+**Ratified by:** Principal
+
+**Context:** D-061 deliberately rejected duplicating a Settings gear on the public-profile topbar (`envoy-shell.tsx`), reasoning that the main `HeraldTopBar` (visible on every other authenticated route) was a sufficient single entry point, and that "signed-in visitors of someone else's profile rarely need a one-click route to their own Settings from that context." D-061 explicitly flagged the reversal as cheap: *"If the need surfaces, adding the gear to the profile topbar is a one-line extension."* In practice, an owner viewing their own public profile (the most common context for using the Theme button next to it) had no way to reach Settings without navigating away first — the Principal judged this friction real enough to reverse the decision.
+
+**Decision:** `envoy-shell.tsx`'s owner-only `extraActions` cluster now renders both the existing Theme button (Palette icon → `/{username}/ui`) and a new Settings button (gear icon → `/{username}/settings`), matching the outline icon+label style (`h-8 gap-2 px-2.5 text-xs md:px-3`) already shared by Theme/Settings/Sign-out. Both buttons are wrapped in Herald's own `flex items-center gap-2` container (not a shared-`@atta/ui/topbar` change) so they space correctly in both the desktop row and the mobile hamburger sheet, which only wraps the whole `extraActions` slot in a bare flex row with no `gap`. No change to `@atta/ui/topbar`'s prop surface or rendering.
+
+**Supersedes:** D-061's "Settings gear is not duplicated on the profile topbar" clause (part 2, and the rejected-alternative "Add a Settings gear to the public-profile topbar too, duplicating the main `HeraldTopBar`'s gear"). The rest of D-061 (route-group split, `context` prop, responsive collapse, D-035 preservation) is unaffected and stays in force.
+
+**Alternatives rejected:**
+- *Leave Settings reachable only via the main `HeraldTopBar`.* Rejected — this is the status quo D-061 shipped, and it is the friction this decision closes.
+- *Replace the Theme button with a combined menu (Theme + Settings under one dropdown).* Rejected — no dropdown affordance exists elsewhere in Herald's topbar chrome (D-036 explicitly avoided a dropdown account menu); two equally-weighted labelled buttons match the existing Settings/Theme/Sign-out visual language instead of introducing a new interaction pattern for one extra link.
+
+**Consequences:**
+- Modified: `apps/herald-ai/web/src/app/[username]/envoy-shell.tsx` (Settings button added to owner `extraActions`, wrapped in a local gap container).
+- Docs: `apps/herald-ai/specs/herald-app-architecture.md` §"Public profile topbar" updated to describe both buttons; the "single Settings entry point" phrasing there is retired.
+- No shared-package (`packages/ui/topbar`) change — blast radius is Herald-only.
+
+---
+
+## D-114 — Per-user profile theme lookup restored to D-060's central-CMS resolution (bug fix, not a new decision)
+
+**Date:** 2026-07-06
+**Status:** ACTIVE
+**Type:** 2
+**Tier:** 1
+**Lock:** NO
+**Conforms-to-lock:** D-060 — this entry does not challenge D-060's central-CMS architecture; it corrects a call site that violated it
+**Authored by:** Principal (in-session bug report) + Developer (diagnosis and fix, same session)
+**Ratified by:** Principal
+
+**Context:** User reported: selected a custom public-profile theme ("Matrix Light") via `/[username]/ui`, saved it, then visited their own public profile and refreshed — the theme never applied. This is a `state-machine.md` §11 contradiction in substance (shipped code disagreeing with an ACTIVE, Lock: YES decision) caught and fixed in the same session rather than by the async Archivist drift cron, so it's logged directly rather than opened as an unresolved CONTRADICTION entry.
+
+Root cause: `app/[username]/(profile)/page.tsx` resolved the user's saved `themeId` via `getThemeById(cmsClient, user.themeId)`. `cmsClient` (`@atta/cms`) is scoped to Herald's own per-product Sanity project (`e9gbd2d1`). D-060 moved all `uiTheme` documents out of every per-product project into the central `attalabs` project (`l5n0n8nn`) and hid Themes/Libraries from the per-product studio sidebars. `getThemeById` takes a generic `SanityClient` and does no redirection itself (unlike `getProductUiConfig`, which D-060 did update) — so this call always returned `null`, and the theme CSS was silently never injected, on every request (route is `force-dynamic`; not a cache-staleness bug). The write path was unaffected: `herald_profiles.theme_id` was written correctly by `POST /api/admin/profile`, and `revalidatePath` fired correctly on save. The `/ui` editor's own live preview masked the bug during editing because it applies the theme object already held in memory (fetched from the central project for the picker list) via `postMessage`, never calling `getThemeById`.
+
+This was a leftover of the D-060 migration: the `/ui` editor's theme-*list* fetch was correctly pointed at `createProductClient('attalabs')`, but the profile page's theme-*resolution* (by the saved ID) was never revisited. Confirmed against production data: `theme-matrix` returns `null` from Herald's project and a real document (`{"_id":"theme-matrix","name":"Matrix"}`) from the `attalabs` project.
+
+**Decision:** `app/[username]/(profile)/page.tsx` now calls `getThemeById(createProductClient('attalabs'), user.themeId)` instead of `getThemeById(cmsClient, user.themeId)`. Verified against the reporting user's own account (`theme_id: 'theme-matrix'`, `font_sans: 'Poppins'`): re-fetched `/pepito` post-fix and confirmed the theme's color tokens and chosen font are now actually injected into the rendered page.
+
+**Alternatives rejected:** None — this is a single-line correction restoring already-decided (D-060) behavior; there was no design choice to make.
+
+**Consequences:**
+- Modified: `apps/herald-ai/web/src/app/[username]/(profile)/page.tsx` (theme lookup now targets the central project).
+- Docs: `apps/herald-ai/specs/herald-app-architecture.md` §4 gets a new "Per-user profile theme" subsection documenting the resolution path and this bug. `.claude/skills/ui-cms-theme/SKILL.md` gets a new rule + anti-pattern + worked example so any future per-user/per-entity theme feature (in any product) doesn't repeat this exact mistake — `getThemeById`/`getThemeByName`/`getThemes`/`getLibraries` must always be called with `createProductClient('attalabs')`, never a product's own `cmsClient`.
+- No schema/DB change, no shared-package (`packages/ui/topbar`, `packages/cms` public API) change — the fix is a one-line client swap at a single call site.
