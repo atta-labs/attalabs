@@ -57,6 +57,13 @@ vi.mocked(ghIssueListByLabel).mockImplementation((_owner: string, _repo: string,
  *      reads "...installer, ruleset"; the Issue's actual title reads
  *      "...installer, starter ruleset". One-word wording drift between the
  *      table and the Issue at authoring time, unrelated to any parsing.
+ *   5. `dependsOn` on `aeg-forge-state-v1` tasks 5 (#429) and 7 (#431) only —
+ *      same shape as category 3. Task 3 split into 3a/3b (2026-07-06); both
+ *      Issues carry a free-prose "Amendment" updating their dependency to
+ *      include `3a, 3b` in place of the original single `3`, but neither
+ *      Issue's structured `Dependency rationale` field was rewritten. The
+ *      adapter correctly parses each Issue's original structured field; the
+ *      drift is between the table and the Issue, not a parser defect.
  */
 const OWNER = 'daniboomerang'
 const REPO = 'attalabs'
@@ -101,7 +108,19 @@ describe('golden comparison: aeg-forge-state-v1', () => {
     expect(forgeIteration.goal).toBe('')
     expect(forgeIteration.backlog).toEqual(fileIteration.backlog)
 
-    expectTaskFieldsMatch(fileIteration, forgeIteration)
+    expectTaskFieldsMatch(fileIteration, forgeIteration, {
+      skipEdgeCheckForIds: new Set(['5', '7'])
+    })
+
+    // Divergence category 5 — tasks 5 (#429) and 7 (#431): the adapter
+    // correctly parses each Issue's ORIGINAL structured `Dependency
+    // rationale` field. The topology table's cells have since drifted ahead
+    // via unstructured prose amendments appended below that field (never
+    // rewritten into it).
+    const task5 = forgeIteration.tasks.find((t) => t.id === '5')
+    expect(task5?.dependsOn).toEqual(['1', '3'])
+    const task7 = forgeIteration.tasks.find((t) => t.id === '7')
+    expect(task7?.dependsOn).toEqual(['3', '4', '5'])
   })
 })
 
