@@ -18,7 +18,7 @@ const nextConfig = async (): Promise<NextConfig> => {
       '@atta/adapter-langgraph'
     ],
     outputFileTracingIncludes: {
-      '/**': ['./yamls/**']
+      '/api/audit': ['../../../packages/agents/forensic-hiring-auditor/yamls/**']
     },
     webpack: (config) => {
       config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
