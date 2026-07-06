@@ -24,11 +24,30 @@ describe('parseRationaleDeps', () => {
     expect(parseRationaleDeps(body)).toEqual({ dependsOn: ['1', '2'], conflictsWith: ['3'] })
   })
 
-  it('parses multiple separate backtick spans with prose between them (cross-iteration form)', () => {
+  it('parses multiple separate backtick spans with prose between them (cross-iteration form), inheriting the slug qualifier onto the bare continuation', () => {
+    // Regression for Issue #388's real body (aeg-forge-state-v1 3b, #437):
+    // the bare continuation span `#372` is ALSO an aeg-governance-hardening
+    // reference — it must inherit that slug, not resolve as this
+    // iteration's own #372.
     const body =
       '**Dependency rationale** — `Depends-on: aeg-governance-hardening #368` (task 26) and `#372` (task 28): both reshape the surface.\n\n**Traps to avoid** — none.'
     expect(parseRationaleDeps(body)).toEqual({
-      dependsOn: ['aeg-governance-hardening #368', '#372'],
+      dependsOn: ['aeg-governance-hardening #368', 'aeg-governance-hardening #372'],
+      conflictsWith: []
+    })
+  })
+
+  it('does NOT attach a spurious slug to a same-iteration bare-then-bare sequence', () => {
+    const body =
+      '**Dependency rationale** — `Depends-on: 1` (rationale prose) and `2` (more prose): both same-iteration tasks.\n\n**Traps to avoid** — none.'
+    expect(parseRationaleDeps(body)).toEqual({ dependsOn: ['1', '2'], conflictsWith: [] })
+  })
+
+  it('resets slug inheritance after one bare span, so a THIRD span does not inherit a stale qualifier', () => {
+    const body =
+      "**Dependency rationale** — `Depends-on: aeg-governance-hardening #368` (task 26), `#372` (task 28, inherits), and `5` (this iteration's own task, must NOT inherit).\n\n**Traps to avoid** — none."
+    expect(parseRationaleDeps(body)).toEqual({
+      dependsOn: ['aeg-governance-hardening #368', 'aeg-governance-hardening #372', '5'],
       conflictsWith: []
     })
   })
