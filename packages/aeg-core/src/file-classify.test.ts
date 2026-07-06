@@ -6,6 +6,7 @@ describe('isDocFile', () => {
     expect(isDocFile('aeg-root/roles/developer.md')).toBe(true)
     expect(isDocFile('aeg-project/state.md')).toBe(true)
     expect(isDocFile('apps/herald-ai/aeg-project/state.md')).toBe(true)
+    expect(isDocFile('packages/governance/projects.md')).toBe(true)
     expect(isDocFile('apps/herald-ai/specs/herald-spec.md')).toBe(true)
     expect(isDocFile('.claude/skills/brief-authoring/SKILL.md')).toBe(true)
     expect(isDocFile('docs-index.md')).toBe(true)
@@ -49,7 +50,7 @@ describe('isSpecFile', () => {
 
 describe('isDecisionLog', () => {
   it('matches the global log and per-project *-decisions.md', () => {
-    expect(isDecisionLog('aeg-project/decisions.md')).toBe(true)
+    expect(isDecisionLog('packages/governance/decisions.md')).toBe(true)
     expect(isDecisionLog('apps/vada-ai/specs/vada-decisions.md')).toBe(true)
   })
 

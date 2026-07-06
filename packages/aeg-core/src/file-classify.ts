@@ -8,6 +8,7 @@ export function isDocFile(p: string): boolean {
     (p.startsWith('aeg-root/') && p.endsWith('.md')) ||
     (p.startsWith('aeg-project/') && p.endsWith('.md')) ||
     (p.includes('/aeg-project/') && p.endsWith('.md')) ||
+    (p.startsWith('packages/governance/') && p.endsWith('.md')) ||
     (p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md')) ||
     (p.startsWith('.claude/skills/') && p.endsWith('.md')) ||
     p === 'docs-index.md' ||
@@ -26,5 +27,5 @@ export function isSpecFile(p: string): boolean {
 }
 
 export function isDecisionLog(p: string): boolean {
-  return p === 'aeg-project/decisions.md' || /-decisions\.md$/.test(p)
+  return p === 'packages/governance/decisions.md' || /-decisions\.md$/.test(p)
 }

@@ -2,9 +2,12 @@
  * Server-only reads of the repo's `aeg-root/` artifacts.
  *
  * The Studio runs from `apps/aeg/web/studio`; `aeg-root/` lives at the repo
- * root. `findAegRoot` walks up from `process.cwd()` until it finds a directory
- * containing `aeg-root/projects.md`. Worktrees work the same way — each
- * worktree carries its own checkout of `aeg-root/`.
+ * root. `findAegRoot` walks up from `process.cwd()` until it finds a
+ * directory containing `packages/governance/projects.md` (the project
+ * registry — relocated from `aeg-root/projects.md`, `aeg-forge-state-v1`
+ * task 2), then returns that directory's `aeg-root/`. Worktrees work the
+ * same way — each worktree carries its own checkout of `aeg-root/` and
+ * `packages/governance/`.
  *
  * Reads are confined to this module. Parsing is delegated to
  * `@atta/aeg-core` (pure, no I/O). Consumers receive typed model objects.
@@ -32,6 +35,7 @@ import { loadIterationProgress } from '@/lib/forge/load-snapshot'
 const ITERATIONS_DIR = 'iterations'
 const COMPLETED_DIR = 'completed'
 const REGISTRY_FILE = 'projects.md'
+const GOVERNANCE_DIR = 'packages/governance'
 
 export type IterationSummary = {
   /** Slug from the iteration file's H1 (e.g. `aeg-ui-v1`). */
@@ -68,7 +72,7 @@ export function findAegRoot(): string {
   if (cachedRoot) return cachedRoot
   let dir = process.cwd()
   for (let i = 0; i < 8; i++) {
-    const candidate = path.join(dir, 'aeg-root', REGISTRY_FILE)
+    const candidate = path.join(dir, GOVERNANCE_DIR, REGISTRY_FILE)
     if (existsSync(candidate)) {
       cachedRoot = path.join(dir, 'aeg-root')
       return cachedRoot
@@ -82,7 +86,8 @@ export function findAegRoot(): string {
 
 export async function readRegistry(): Promise<Registry> {
   const root = findAegRoot()
-  const raw = await fs.readFile(path.join(root, REGISTRY_FILE), 'utf8')
+  const repoRoot = path.dirname(root)
+  const raw = await fs.readFile(path.join(repoRoot, GOVERNANCE_DIR, REGISTRY_FILE), 'utf8')
   return parseRegistry(raw)
 }
 

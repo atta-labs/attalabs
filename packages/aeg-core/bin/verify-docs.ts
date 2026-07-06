@@ -45,7 +45,7 @@
  *                     and the surfaced-doc manifest coherence check (C6 — state-machine.md
  *                     Section 15c): every surfaced doc under `aeg-root/` must be reachable
  *                     in the doc-nav tree, with no orphans and no dangling cross-references.
- *   --next-decision   Helper: print the next free D-NNN for aeg-project/decisions.md and exit.
+ *   --next-decision   Helper: print the next free D-NNN for packages/governance/decisions.md and exit.
  *
  * Runs in AUDIT mode (state-machine.md Section 4): it asks "is what shipped consistent
  * with what the docs say?", not "is the design good?".
@@ -255,7 +255,7 @@ function runPrMode(): void {
     )
   }
 
-  // C5 — code→doc coverage via aeg-root/doc-owners (dormant when absent).
+  // C5 — code→doc coverage via packages/governance/doc-owners (dormant when absent).
   runC5(changed)
 }
 
@@ -302,7 +302,7 @@ function runPushMode(): void {
 // ---- full mode -------------------------------------------------------------
 
 function findDecisionLogs(): string[] {
-  return sh("git ls-files 'aeg-project/decisions.md' 'apps/**/*-decisions.md'")
+  return sh("git ls-files 'packages/governance/decisions.md' 'apps/**/*-decisions.md'")
     .split('\n')
     .map((s) => s.trim())
     .filter(Boolean)
@@ -433,8 +433,8 @@ function finish(): void {
 
 if (import.meta.main) {
   if (isNextDecision) {
-    // --next-decision: print the next free D-NNN for aeg-project/decisions.md and exit.
-    const logPath = 'aeg-project/decisions.md'
+    // --next-decision: print the next free D-NNN for packages/governance/decisions.md and exit.
+    const logPath = 'packages/governance/decisions.md'
     if (!existsSync(logPath)) {
       console.log(`${logPath} not found; next free number: D-001`)
       process.exit(0)

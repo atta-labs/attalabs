@@ -1,13 +1,13 @@
 /**
- * The `aeg-root/doc-owners` manifest parser and the C5 code→doc coverage
- * evaluator (state-machine.md Section 15). Pure — I/O (reading the manifest
- * off disk, checking pointer existence) is injected by the caller.
+ * The `packages/governance/doc-owners` manifest parser and the C5 code→doc
+ * coverage evaluator (state-machine.md Section 15). Pure — I/O (reading the
+ * manifest off disk, checking pointer existence) is injected by the caller.
  */
 
 import { isCodeFile } from './file-classify'
 import { WAIVER_LABEL } from './waiver-label'
 
-export const DOC_OWNERS_PATH = 'aeg-root/doc-owners'
+export const DOC_OWNERS_PATH = 'packages/governance/doc-owners'
 
 export type DocOwnersBinding = { glob: string; pointer: string; lineNum: number }
 
