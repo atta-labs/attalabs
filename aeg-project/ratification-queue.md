@@ -50,6 +50,14 @@ When resolved, add below the entry:
 - **D-097 carve-out (2026-07-06):** ratified out-of-band, ahead of the rest of this batch — it is the live-gate fix blocking `aeg-governance-hardening` task 29/#380 (the iteration's last task), independent of the wider Vinaya-founding decisions (the remaining D-084…D-109 minus D-097), which stay gated on the Strategist-mode layout decision above. D-080 flips to SUPERSEDED per D-097's own consequences clause. See decisions.md D-097 for the ratification note.
 - Status: PENDING (26 of 27 entries; D-097 RESOLVED — see carve-out note above)
 
+### D-110 / D-111 — Governance-state disposition + protocol/doctrine distribution
+
+- Type: 1 (both) | Tier: 3 | Authored: 2026-07-06
+- Decision log: decisions.md D-110, D-111 (2 entries, PENDING)
+- Why it needs ratification: D-110 resolves the governance-layout hard-stop that has blocked `vinaya-cli-v1` task 4 (#384) since 2026-07-05 — the decision that decides where per-adopter governance instance-data lives (delete/move-to-forge/keep-as-file-in-a-package) and reconciles the D-085 clause tension this window's own note above already flags. D-111 decides where universal AEG doctrine ships (bundled in the npm package + a scaffolded adopter-repo pointer) — resolved only after confirming npm provides no copy-protection and hiding the doctrine would contradict D-084/D-102.
+- Deadline context: `Lock: YES` on D-110 (Tier 3, foundational to the installer's design and this repo's own future migration). Ratifying this batch together with D-083–109 lets `vinaya-cli-v1` task 4 proceed to briefing without a second window. `vinaya-cli-v1` task 2 (#382) already carries the concrete GitHub-object mapping this decision specifies, folded in as a Planner amendment ahead of ratification — the amendment is provisional pending this entry's ratification, same convention as every other PENDING-Type-1-referencing amendment this iteration.
+- Status: PENDING
+
 ## Resolved items archive
 
 None yet.
