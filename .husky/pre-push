@@ -17,21 +17,14 @@ while read -r _localref _localsha remoteref _remotesha; do
   # <id> literal-matches a row in aeg-root/iterations/<iteration>.md's `#`
   # column. Catches wrong-branch-name pushes (the T-prefix epidemic) at the
   # earliest possible moment instead of leaving them to die at PR-open.
+  # Delegates to `parseIteration` via check-branch-topology.ts (task 32,
+  # #399) — the same authoritative parser Studio and verify-dispatch use —
+  # instead of the hand-rolled grep this section used to fork. Refusal
+  # messages are printed by the bin, byte-identical to the old inline ones.
   branch="${remoteref#refs/heads/}"
   case "$branch" in
     task/*/*)
-      iter=$(printf '%s' "$branch" | cut -d/ -f2)
-      id=$(printf '%s' "$branch" | cut -d/ -f3)
-      topo="aeg-root/iterations/${iter}.md"
-      if [ ! -f "$topo" ]; then
-        echo "✖ pre-push: branch \`$branch\` names iteration \`$iter\`, but $topo does not exist." >&2
-        echo "  A task branch must belong to a real iteration (D-073/D-075)." >&2
-        exit 1
-      fi
-      if ! grep -qE "^\|[[:space:]]*${id}[[:space:]]*\|" "$topo"; then
-        echo "✖ pre-push: branch \`$branch\` — no row with \`#\` = \`${id}\` in $topo." >&2
-        echo "  The branch suffix must literal-match the topology's # column (D-073)." >&2
-        echo "  If the plan PR adding this row hasn't merged yet, merge it first (D-075)." >&2
+      if ! bun packages/aeg-core/bin/check-branch-topology.ts "$branch"; then
         exit 1
       fi
       ;;
