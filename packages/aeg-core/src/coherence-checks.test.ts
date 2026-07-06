@@ -674,35 +674,39 @@ describe('D1: dispatched-on-unmet-deps', () => {
 
 // ---------- L1: stale-active-iteration ---------------------------------------
 
-describe('L1: stale-active-iteration', () => {
-  it('flag — active iteration with all issues closed', () => {
+describe('L1: stale-active-iteration (advisory — info, never fail)', () => {
+  it('info + finding — active iteration with all issues closed', () => {
     const f = makeIterationFile('iter-1', false)
     const entries = f.iteration.tasks.map((t) =>
       makeEntry('iter-1', t.id, t.issue, makeFacts({ issueState: 'closed' }), false)
     )
     const entriesBySlug = new Map([['iter-1', entries]])
     const r = checkL1([f], entriesBySlug)
-    expect(r.status).toBe('fail')
+    expect(r.status).toBe('info')
     expect(r.failures[0]!.iteration).toBe('iter-1')
     expect(r.failures[0]!.reason).toMatch(/consider archiving/)
   })
 
-  it('pass — active iteration with at least one open issue', () => {
+  it('info + no findings — active iteration with at least one open issue', () => {
     const f = makeIterationFile('iter-1', false)
     const entries = [
       makeEntry('iter-1', '1', 101, makeFacts({ issueState: 'closed' })),
       makeEntry('iter-1', '2', 102, makeFacts({ issueState: 'open' }))
     ]
     const entriesBySlug = new Map([['iter-1', entries]])
-    passesWithNoFailures(checkL1([f], entriesBySlug))
+    const r = checkL1([f], entriesBySlug)
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(0)
   })
 
-  it('skip — archived iteration is not an L1 concern', () => {
+  it('info + no findings — archived iteration is not an L1 concern', () => {
     const f = makeIterationFile('iter-arch', true)
     const entries = f.iteration.tasks.map((t) =>
       makeEntry('iter-arch', t.id, t.issue, makeFacts({ issueState: 'closed' }), true)
     )
-    passesWithNoFailures(checkL1([f], new Map([['iter-arch', entries]])))
+    const r = checkL1([f], new Map([['iter-arch', entries]]))
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(0)
   })
 })
 
