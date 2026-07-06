@@ -42,6 +42,11 @@ describe('parseRationaleDeps', () => {
     expect(result.dependsOn).toEqual(['1', '2'])
   })
 
+  it("ignores an unrelated backtick span in the same paragraph (Issue #384's `vinaya check` mention)", () => {
+    const body = fetchIssueBody(384)
+    expect(parseRationaleDeps(body)).toEqual({ dependsOn: ['3'], conflictsWith: [] })
+  })
+
   it('returns empty edges when the body has no Dependency rationale section', () => {
     expect(parseRationaleDeps('**Boundary** — some text with `a backtick span` in it.')).toEqual({
       dependsOn: [],

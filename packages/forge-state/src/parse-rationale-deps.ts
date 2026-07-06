@@ -7,6 +7,13 @@ const SECTION_HEADER = /\*\*Dependency rationale\*\*/i
 const NEXT_HEADER = /\*\*[A-Z][^*]*\*\*/
 const FIELD_LABEL = /^(Depends-on|Conflicts-with)\s*:\s*(.*)$/i
 
+/** A valid edge id: a bare task id (`1`, `7a`), a bare Issue ref (`#372`), or
+ * a cross-iteration reference (`<slug> #372` / `<slug> 25`). Rejects plain
+ * prose that happens to share a backtick span with a labeled field — e.g. a
+ * `` `vinaya check` `` command-name mention inside the same "Dependency
+ * rationale" paragraph (found in Issue #384's real body). */
+const ID_TOKEN = /^(?:[\w.-]+\s+)?#?\d+[a-z]?$/i
+
 function isEmptyMarker(s: string): boolean {
   const t = s.trim()
   return t === '' || t === '—' || t === '-' || t === '–'
@@ -17,7 +24,7 @@ function splitIds(raw: string): string[] {
   return raw
     .split(',')
     .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !isEmptyMarker(s))
+    .filter((s) => s.length > 0 && !isEmptyMarker(s) && ID_TOKEN.test(s))
 }
 
 /** Slices the "Dependency rationale" paragraph out of a full Issue body — up
