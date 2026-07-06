@@ -29,7 +29,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <NextWebShell config={config} branding={branding} styleId='atta-theme' cookieName='atta-color-scheme'>
       <PreviewThemeListener />
       <IdentityProvider>{children}</IdentityProvider>
-      <Footer product='atta' tagline='Deep-thinking AI' links={[]} showProductNav={true} />
+      <Footer product='atta' tagline='Deep-thinking AI' links={[]} />
     </NextWebShell>
   )
 }

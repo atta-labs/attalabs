@@ -29,15 +29,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <NextWebShell config={config} branding={branding} styleId='atta-theme' cookieName='atta-color-scheme'>
       <PreviewThemeListener />
       <IdentityProvider>{children}</IdentityProvider>
-      <Footer
-        product='attalabs'
-        tagline='A lab building thinking tools.'
-        links={[
-          { label: 'About', href: '/' },
-          { label: 'GitHub', href: 'https://github.com/daniboomerang/atta.ai', external: true }
-        ]}
-        showProductNav={true}
-      />
+      <Footer product='attalabs' tagline='A lab building thinking tools.' links={[]} />
     </NextWebShell>
   )
 }
