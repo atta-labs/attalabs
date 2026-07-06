@@ -1,5 +1,5 @@
 # Iteration: aeg-governance-hardening — July 2026
-Lifecycle: active
+Lifecycle: complete
 
 Goal: Finish D-069's role-seam contract gates (planner→brief, brief→developer) natively
 on the `@atta/aeg-core` engine `aeg-consolidation` builds; drive code→doc linkage to

@@ -389,3 +389,53 @@ None. All 4 planned tasks merged.
 ### Unbuilt tasks
 
 None. All 5 planned tasks merged.
+
+## aeg-governance-hardening — retrospective (July 2026)
+
+**Duration:** 2026-07-02 (PR #276) → 2026-07-06 (PR #424)
+**Tasks completed:** 39 of 40 planned (topology rows 1–33, 35, 36, plus sub-rows 5a–5d)
+**Tasks dropped/deferred:** Task 34 (#404, consolidating 9 cheap PR-gate jobs into one) — consolidated into task 31 (#395) as its item 3 before either dispatched, once `verify-dispatch`'s branch-name-based gate was confirmed not to support two pre-registered task rows sharing one PR. Issue #404 closed as superseded; content preserved verbatim on #395. Not a gap — a correct mid-planning merge.
+**Tasks moved out (D-070):** none. (This iteration absorbed the unbuilt tail of `aeg-coherence-v1` — tasks 1–4 — inbound at plan time; nothing moved out of it.)
+
+### What went well
+
+- **Mechanizing the two highest-value manual gates closed the iteration's own founding failure mode.** `enforcement.md`'s audit named "agents obey checkers, not documents" as the systemic gap; task 25 (#365) wired `verify-dispatch` and `verify-task` directly into `.husky/pre-push`/`open-pr.ts` so an agent can no longer simply skip invoking them — closing a class of failure the iteration itself was founded to fix, not just documenting it further.
+- **Structured templates (task 30, #393) traced every malformed-artifact incident this iteration to one root cause and fixed it once.** Four separate incidents (task 21, #363, #377, #392) all came from gates reverse-engineering structure from freehand prose; replacing prose-described shapes with literal template files plus `AEG:<FIELD>` anchors removed the ambiguity at the source instead of patching each incident's symptom.
+- **CI cost was treated as a first-class engineering problem, not an afterthought.** Task 27 (#370) scoped CI to the diff; task 31/34's consolidation of 9 per-push jobs into one job cut billed Actions minutes roughly in half — both grounded in measured per-job durations (PR #400), not guesses, after this repo hit its free-tier 2,000-minutes/month cap in 5 days.
+- **Five stale-doc findings from task 3's audit (#278–282) were promoted to independently dispatchable tasks (6–10) and shipped in parallel same-day** (PRs #317–321) — brief-level isolation let unrelated doc fixes ship without contending for the same files or review attention.
+- **A blocked task's own stop was treated as proof the gate worked, not a problem to route around.** Task 29 (#380) hit its dispatched brief's own §10 stop condition (D-097 unratified) and correctly halted before Step 0 — zero-cost, no worktree, no commits — exactly the discipline `verify-task`/`verify-dispatch` were built this iteration to enforce.
+
+### What stalled or caused rework
+
+- **Task 31's Vercel shallow-clone fix shipped merged and green, but didn't actually work in production** — its `turbo-ignore` fallback assumed a remote named `origin` that Vercel's own checkout never configures, so every push kept triggering full, unnecessary builds until task 35 (#409) was filed as an urgent hotfix days later. CI passing on a fix for a CI/deploy-infra problem did not prove the fix worked against the actual third-party environment it targeted.
+- **Task 29 (#380) needed two full review-and-fix rounds after its Developer's own PR before it was mergeable** — a code-reviewer BLOCKER (the Developer re-anchored the PR body's `Premise:` block to describe its own finished work instead of the brief's pre-work pins, defeating the premise-recheck by construction) and a security FAIL (two real bypasses of the new tool-layer gate: case-sensitive label matching, and a GraphQL node-ID mutation path that never referenced the label by name string). Both were real, exploitable gaps in a security-adjacent enforcement mechanism, not nitpicks — Tier-3 tasks that touch the tool-layer forge gate or add a new authentication mechanism need a security pass built into the plan, not treated as a formality after a clean-looking diff.
+- **Task 29 was also blocked for roughly two days on D-097 sitting `PENDING`** — the Planner deferred it once (2026-07-05) rather than force a ratification decision, then it was ratified out-of-band ahead of the rest of a much larger 27-decision Vinaya batch specifically to unblock this iteration's last task. A single task depending on one decision buried inside an unrelated, much larger pending batch is a real dispatch-ordering risk — carving out the one decision that's actually load-bearing for the task at hand, rather than waiting on the whole batch, resolved it cleanly here but is worth naming as a pattern.
+- **Row-adjacency dispatch ordering caused a live deadlock between tasks 22 and 23** — 22 needed 23's repo-resolution fix to pass its own gates honestly; 23 sat behind 22 by row position alone. Required a live Planner reorder (23 before 22) rather than being caught at plan time.
+
+### Carry-forward lessons (add to lessons.md calibration section if not already there)
+
+- **A gate's own `Premise:`/pinned-fact block must never be authored by the same task that would otherwise fail it.** If a task's deliverable is exactly what invalidates its own pre-work premise pins, the correct outcome is for the premise-recheck to fail post-merge — informative, not a bug — not for the Developer to re-anchor the pinned block to describe its own finished state, which turns a recheck into a tautology. This needs a named, sanctioned handling path (a Principal-accepted-failure note) rather than leaving each Developer to invent one under pressure.
+- **A new tool-layer deny gate keyed on a literal string match needs its bypasses enumerated as part of authoring it, not found later by security review** — specifically: case-insensitivity (label/identifier matching is case-insensitive at the forge even when the gate's `grep` is case-sensitive) and ID-based mutation paths (GraphQL mutations that reference a resource by opaque node ID rather than by the name a text-scoped check is watching for).
+- **A CI-green fix for a third-party deploy/infra behavior (Vercel, GitHub Actions runners, etc.) is not verified until it's observed working against that actual third-party system** — unit/typecheck/lint passing proves the code is well-formed, not that the assumption about the external environment (e.g. "a remote named `origin` exists in this checkout") holds.
+- **When one task's dispatch depends on a single decision that's logged inside a much larger pending batch, carve that one decision out for ratification rather than waiting on or forcing the whole batch through.** The batch's other decisions may need genuinely separate scrutiny (here: a Strategist-mode layout question) that shouldn't gate an unrelated, already-ready task.
+
+### Decisions made this iteration
+
+- **D-070** (Type 1, Lock: YES, ACTIVE) — Planner owns iteration-refactor & cross-iteration task movement; Archivist close-gate is "no open task work," not "all merged." Ratified by Principal in-session, 2026-07-01.
+- **D-071** (Type 2, Lock: NO, ACTIVE) — Ledger ownership: Archivist records all token rows post-merge. Task 5 (#266).
+- **D-072** (Type 2, Lock: YES, ACTIVE) — One-way knowledge law: the host monorepo never references AEG. Task 5 (#266).
+- **D-073** (Type 2, Lock: YES, ACTIVE) — Branch-ID verification: Step 0 must literal-match the topology's `#` column. Task 5a (#293).
+- **D-074** (Type 2, Lock: YES, ACTIVE) — Forbid committed report/scratch files. Task 5b (#297).
+- **D-075** (Type 2, Lock: YES, ACTIVE) — Issue-existence precondition covers "row absent" as its own hard-stop. Task 5c (#300).
+- **D-076** (Type 2, Lock: YES, ACTIVE) — Planner §7 doc-update list mechanically derived from `doc-owners`. Task 4 (#219).
+- **D-077** (Type 2, Lock: YES, ACTIVE) — Post-merge Archivist automation + plan-PR Closes guard. Task 5d (#309).
+- **D-078** (Type 2, Lock: YES, ACTIVE) — Tool-layer forge gates: nothing reaches the forge unless it deterministically fulfills the contract. Direct fix (#312), same-day escalation after PR #311's live-fire run.
+- **D-081** (Type 2, Lock: NO, ACTIVE) — Deterministic dispatch-and-exit gates: no fact an agent needs may live only in prose. Task 11 (#324).
+- **D-082** (Type 2, Lock: NO, ACTIVE) — T2 (orphan-task) relocated out of task-PR CI: point-of-power principle. Task 24 (#364), Part 2.
+- **D-097** (Type 2, Lock: NO, ACTIVE) — Waiver authentication: forge-authenticated human acts only; supersedes D-080 (now `SUPERSEDED`). Task 29 (#380). Ratified by Principal 2026-07-06 (PR #422), carved out ahead of the wider D-083–D-109 Vinaya batch specifically to unblock this task — see "What stalled" above.
+- No Type 1 decisions besides D-070 (a role-charter change ratified at plan-adjacent time, not produced by a numbered task) were produced by this iteration's own tasks.
+
+### Unbuilt tasks
+
+None beyond task 34 (see "Tasks dropped/deferred" above — consolidated into task 31, not abandoned).
+
