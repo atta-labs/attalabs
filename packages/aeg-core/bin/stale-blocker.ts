@@ -21,10 +21,11 @@
  */
 
 import { execSync } from 'node:child_process'
-import { readFileSync, readdirSync } from 'node:fs'
+import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { deriveIterationFromForge } from '@atta/aeg-forge-state'
 import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
-import { findStaleBlockers, parseIteration } from '../src/index'
+import { findStaleBlockers } from '../src/index'
 import type { StaleBlocker, StaleBlockerIterationFact, StaleBlockerTaskFact } from '../src/index'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
@@ -86,9 +87,12 @@ function branchExists(iterationSlug: string, taskId: string): boolean {
   return sh(`git ls-remote --heads origin task/${iterationSlug}/${taskId}`).length > 0
 }
 
-function gatherIterationFacts(fileName: string, repo: { owner: string; repo: string }): StaleBlockerIterationFact {
-  const md = readFileSync(join(ITERATIONS_DIR, fileName), 'utf8')
-  const iteration = parseIteration(md)
+async function gatherIterationFacts(
+  fileName: string,
+  repo: { owner: string; repo: string }
+): Promise<StaleBlockerIterationFact> {
+  const slug = fileName.replace(/\.md$/, '')
+  const iteration = await deriveIterationFromForge(repo.owner, repo.repo, slug)
 
   const tasks: StaleBlockerTaskFact[] = iteration.tasks.map((task) => {
     if (task.issue === null) {
@@ -172,7 +176,7 @@ async function main(): Promise<void> {
   }
 
   try {
-    const iterationFacts = activeIterationFiles().map((f) => gatherIterationFacts(f, repo))
+    const iterationFacts = await Promise.all(activeIterationFiles().map((f) => gatherIterationFacts(f, repo)))
     const blockers = findStaleBlockers(iterationFacts, nowIso, thresholdDays)
 
     console.log(`[stale-blocker] threshold: ${thresholdDays} day(s); now: ${nowIso}`)

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import { checkBranchTopology, taskBranchTopologyFields } from './branch-topology-gate'
+import { parseIteration } from './parse-iteration'
 
 /**
  * Parity oracle: the EXACT grep invocation `.husky/pre-push` ran before
@@ -53,7 +54,7 @@ function evaluatorAccepts(id: string, md: string | null = TOPOLOGY_MD): boolean 
     iteration: 'parity-fixture',
     taskId: id,
     topoPath: 'aeg-root/iterations/parity-fixture.md',
-    topoMarkdown: md
+    topology: md === null ? null : parseIteration(md)
   })
   return result.verdict === 'allow'
 }
@@ -84,7 +85,7 @@ describe('checkBranchTopology refusal messages are byte-identical to the old hoo
       iteration: 'ghost-iter',
       taskId: '5',
       topoPath: 'aeg-root/iterations/ghost-iter.md',
-      topoMarkdown: null
+      topology: null
     })
     expect(result.verdict).toBe('refuse')
     expect(result.reason).toBe(
@@ -99,7 +100,7 @@ describe('checkBranchTopology refusal messages are byte-identical to the old hoo
       iteration: 'parity-fixture',
       taskId: '999',
       topoPath: 'aeg-root/iterations/parity-fixture.md',
-      topoMarkdown: TOPOLOGY_MD
+      topology: parseIteration(TOPOLOGY_MD)
     })
     expect(result.verdict).toBe('refuse')
     expect(result.reason).toBe(
@@ -115,7 +116,7 @@ describe('checkBranchTopology refusal messages are byte-identical to the old hoo
       iteration: 'parity-fixture',
       taskId: '7a',
       topoPath: 'aeg-root/iterations/parity-fixture.md',
-      topoMarkdown: TOPOLOGY_MD
+      topology: parseIteration(TOPOLOGY_MD)
     })
     expect(result.verdict).toBe('allow')
   })

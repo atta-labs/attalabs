@@ -1,18 +1,19 @@
-import { parseIteration } from './parse-iteration'
+import type { Iteration } from './types'
 
 /**
  * Branch↔topology gate (aeg-governance-hardening task 32, #399). Pure — no
- * `fs`, no shell-outs. The CLI shim (`bin/check-branch-topology.ts`) reads
- * `aeg-root/iterations/<iteration>.md` and passes its content (or `null`
- * when the file is absent) in here.
+ * `fs`, no shell-outs. The CLI shim (`bin/check-branch-topology.ts`) derives
+ * the iteration from the forge (`@atta/aeg-forge-state`, task
+ * aeg-forge-state-v1 3a) and passes the result (or `null` when no iteration
+ * data could be derived) in here.
  *
  * Closes the D-073 logic fork: `.husky/pre-push` used to answer "does this
  * branch's task-id suffix have a topology row?" with a hand-rolled
  * `grep -qE "^\|[[:space:]]*${id}[[:space:]]*\|"` against the iteration
  * file — a bash reimplementation of the table-parsing that `parseIteration`
- * already does authoritatively for Studio and `verify-dispatch`. Row
- * membership is now `parseIteration(md).tasks`, and the refusal messages
- * are byte-identical to the inline ones the hook printed before.
+ * used to do here, and that forge-derivation now does instead. Row
+ * membership is `topology.tasks`, and the refusal messages are byte-identical
+ * to the inline ones the hook printed before.
  */
 
 export type BranchTopologyInput = {
@@ -24,8 +25,8 @@ export type BranchTopologyInput = {
   taskId: string
   /** Repo-relative topology path — used verbatim in refusal messages. */
   topoPath: string
-  /** Topology file content, or `null` when the file does not exist. */
-  topoMarkdown: string | null
+  /** Forge-derived iteration data, or `null` when none could be derived. */
+  topology: Iteration | null
 }
 
 export type BranchTopologyVerdict = 'allow' | 'refuse'
@@ -55,9 +56,9 @@ export function taskBranchTopologyFields(branch: string): { iteration: string; t
  *            inline messages, so a refused push reads exactly as before.
  */
 export function checkBranchTopology(input: BranchTopologyInput): BranchTopologyResult {
-  const { branch, iteration, taskId, topoPath, topoMarkdown } = input
+  const { branch, iteration, taskId, topoPath, topology } = input
 
-  if (topoMarkdown === null) {
+  if (topology === null) {
     return {
       verdict: 'refuse',
       reason:
@@ -66,7 +67,7 @@ export function checkBranchTopology(input: BranchTopologyInput): BranchTopologyR
     }
   }
 
-  const hasRow = parseIteration(topoMarkdown).tasks.some((t) => t.id === taskId)
+  const hasRow = topology?.tasks.some((t) => t.id === taskId) ?? false
   if (!hasRow) {
     return {
       verdict: 'refuse',

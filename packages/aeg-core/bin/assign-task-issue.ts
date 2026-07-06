@@ -28,10 +28,10 @@
  */
 
 import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { deriveIterationFromForge } from '@atta/aeg-forge-state'
 import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
-import { decideIssueAssignment, parseIteration, parseTaskBranch } from '../src/index'
+import { decideIssueAssignment, parseTaskBranch } from '../src/index'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 const PREFIX = '[assign-task-issue]'
@@ -44,11 +44,15 @@ function sh(cmd: string): string | null {
   }
 }
 
-function resolveIssue(iteration: string, taskId: string): number | null {
-  const abs = join(REPO_ROOT, `aeg-root/iterations/${iteration}.md`)
-  if (!existsSync(abs)) return null
-  const task = parseIteration(readFileSync(abs, 'utf8')).tasks.find((t) => t.id === taskId)
-  return task?.issue ?? null
+/** Fail-open: any forge failure degrades to `null` (the evaluator maps that
+ * to a skip), same discipline as `sh()` above — this bin never throws. */
+async function resolveIssue(owner: string, repo: string, iteration: string, taskId: string): Promise<number | null> {
+  try {
+    const derived = await deriveIterationFromForge(owner, repo, iteration)
+    return derived.tasks.find((t) => t.id === taskId)?.issue ?? null
+  } catch {
+    return null
+  }
 }
 
 function fetchAssignees(issue: number, repo: string): string[] | null {
@@ -87,9 +91,11 @@ if (import.meta.main) {
   let repo: string | null = null
 
   if (parsed && !remoteRefExists) {
-    issue = resolveIssue(parsed.iteration, parsed.taskId)
     const repoRef = await resolveRepo()
     repo = repoRef ? `${repoRef.owner}/${repoRef.repo}` : null
+    if (repoRef !== null) {
+      issue = await resolveIssue(repoRef.owner, repoRef.repo, parsed.iteration, parsed.taskId)
+    }
     if (issue !== null && repo !== null) {
       assignees = fetchAssignees(issue, repo)
       login = fetchLogin()
