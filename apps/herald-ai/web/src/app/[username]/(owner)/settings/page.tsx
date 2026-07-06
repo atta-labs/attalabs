@@ -6,7 +6,7 @@ import { PublishToggle } from '@/components/portal/PublishToggle'
 import { getUserByClerkId } from '@/db/queries'
 import { loadDecryptedKeys, resolveAuditSelection } from '@/lib/audit-key'
 
-const VALID_TABS = ['profile', 'experience', 'connections', 'api-keys', 'account'] as const
+const VALID_TABS = ['profile', 'experience', 'connections', 'api-keys', 'herald-model', 'account'] as const
 type ValidTab = (typeof VALID_TABS)[number]
 
 export default async function CandidateSettingsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {

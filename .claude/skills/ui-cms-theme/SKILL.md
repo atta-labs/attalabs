@@ -267,6 +267,7 @@ In components, use `--agent-color` via the `data-agent` attribute — never hard
 
 - **MUST** use `NextWebShell` at every product's root layout — never replicate it manually
 - **MUST** use `get{Product}Config` from `@atta/cms` — never call the Sanity client directly in app code
+- **MUST** call `getThemeById`/`getThemeByName`/`getThemes`/`getLibraries` (or any other by-ID/by-name `uiTheme`/`library` lookup) with `createProductClient('attalabs')`, never a product's own `cmsClient` (D-114 — see "Any by-ID/by-name theme lookup must target the central project" below)
 - **MUST** inject font URLs from `getGoogleFontsUrl` — never hardcode Google Fonts URLs
 - **MUST NOT** add product-specific CSS variable definitions outside `globals.css` or the CMS theme system
 - **MUST NOT** override `--font-sans`, `--font-serif`, `--font-mono` in component CSS — let the theme own fonts
@@ -318,6 +319,22 @@ At read time, `getProductUiConfig` (`packages/cms/src/queries/product-ui-config.
 
 **To point a product at a different (existing) theme or library:** Open the **relevant product studio** → find the `{product}Config` singleton → change the linked theme or library reference → publish. The change takes effect on the next server render (or after revalidation).
 
+### Any by-ID/by-name theme lookup must target the central project (D-114)
+
+`getProductUiConfig` is not the only place that fetches a `uiTheme`/`library` document — anything that looks one up **by ID or by name**, such as a per-user custom-theme feature (e.g. Herald's public-profile theme picker, `packages/cms/src/queries/theme.ts`'s `getThemeById`/`getThemeByName`/`getThemes`), must do the same central-project redirection. These lower-level query functions take a generic `SanityClient` parameter and perform **no redirection themselves** — passing them a product's own `cmsClient` will silently find nothing and return `null` post-D-060, since `uiTheme`/`library` documents no longer exist in any per-product project.
+
+```ts
+import { createProductClient, getThemeById } from '@atta/cms'
+
+// ✅ Correct — central project, matches where uiTheme documents actually live
+const theme = await getThemeById(createProductClient('attalabs'), themeId)
+
+// ❌ Wrong — silently returns null for any themeId created after D-060
+const theme = await getThemeById(cmsClient, themeId)
+```
+
+This exact mistake shipped in Herald (D-114): a per-user profile theme was saved correctly but the public-page render resolved it against Herald's own project and always got `null`, so the saved theme silently never appeared. The write path, the DB column, and cache revalidation were all correct — only this one client was wrong. If you add per-user or per-entity theme customization to any other product, use `createProductClient('attalabs')` for every `uiTheme`/`library` lookup, not just the product-config resolver.
+
 ---
 
 ## Adding a New Product Theme
@@ -339,4 +356,5 @@ At read time, `getProductUiConfig` (`packages/cms/src/queries/product-ui-config.
 - ❌ Calling `generateThemeCSS` (or `generateThemeCSSForScheme`) inside a component — theme CSS is injected once at root layout by `NextWebShell`
 - ❌ Duplicating `AuthProvider` or `LibraryProvider` inside `NextWebShell` children
 - ❌ Hand-rolling a color-scheme toggle — use `<ColorSchemeToggle />` from `@atta/ui/lib/color-scheme-toggle`
+- ❌ Passing a product's own `cmsClient` to `getThemeById`/`getThemeByName`/`getThemes`/`getLibraries` — these take a generic `SanityClient` and do no central-project redirection themselves; always pass `createProductClient('attalabs')` (D-114)
 - ❌ Reading the `atta-color-scheme` cookie directly anywhere except `NextWebShell` — keep the SSR resolution single-source

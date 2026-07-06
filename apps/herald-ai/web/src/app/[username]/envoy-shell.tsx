@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Download, ExternalLink, Palette } from 'lucide-react'
+import { Download, ExternalLink, Palette, Settings as SettingsIcon } from 'lucide-react'
 import { useUser } from '@atta/auth'
 import { HeraldAccountMenu } from '@/components/HeraldAccountMenu'
 import { Button as BasicButton } from '@atta/ui/components/button'
@@ -79,9 +79,10 @@ function EnvoyNavContent({
     <>
       {/* Row 1 — standard app topbar (shared TopBar). In-flow at top of the page — public profile only.
           Scrolls away with the page; Row 2 (fixed) takes over once the hero is collapsed.
-          D-060: Bulk Audit / UI / Settings nav links are gone from the profile topbar; the owner-only
-          Palette icon button below opens the appearance editor at /{username}/ui. The main app gear
-          (→ /{me}/settings) lives on HeraldTopBar — the profile topbar deliberately does not duplicate it. */}
+          D-060: Bulk Audit / UI nav links are gone from the profile topbar; the owner-only Palette icon
+          button below opens the appearance editor at /{username}/ui. D-113 reverses D-061's "single
+          Settings entry point": the owner also gets a Settings gear here (→ /{username}/settings) so
+          Settings is reachable without navigating off the public profile first. */}
       <div className='bg-background'>
         <TopBar
           logoText='Herald'
@@ -91,18 +92,32 @@ function EnvoyNavContent({
           signedInLinks={[]}
           extraActions={
             isOwner ? (
-              <Button
-                asChild
-                variant='outline'
-                aria-label='Theme'
-                title='Theme'
-                className='h-8 gap-2 px-2.5 text-xs md:px-3'
-              >
-                <Link href={`/${username}/ui`}>
-                  <Palette className='h-4 w-4' />
-                  <span>Theme</span>
-                </Link>
-              </Button>
+              <div className='flex items-center gap-2'>
+                <Button
+                  asChild
+                  variant='outline'
+                  aria-label='Theme'
+                  title='Theme'
+                  className='h-8 gap-2 px-2.5 text-xs md:px-3'
+                >
+                  <Link href={`/${username}/ui`}>
+                    <Palette className='h-4 w-4' />
+                    <span>Theme</span>
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant='outline'
+                  aria-label='Settings'
+                  title='Settings'
+                  className='h-8 gap-2 px-2.5 text-xs md:px-3'
+                >
+                  <Link href={`/${username}/settings`}>
+                    <SettingsIcon className='h-4 w-4' />
+                    <span>Settings</span>
+                  </Link>
+                </Button>
+              </div>
             ) : undefined
           }
           accountMenu={<HeraldAccountMenu />}
