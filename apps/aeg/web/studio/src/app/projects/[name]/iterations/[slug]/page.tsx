@@ -85,6 +85,12 @@ export default async function IterationPage({ params }: { params: Promise<Params
     return issue !== null ? `#${issue}` : id
   }
 
+  // Forge Issue links ride the snapshot's already-resolved repo — when absent
+  // (no remote, AEG_REPO unset) the numbers render as plain text, the same
+  // graceful-degrade contract as the rest of the forge adapter.
+  const issueUrl = (n: number): string | null =>
+    snapshot.repo ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${n}` : null
+
   const ledgerMd = readLedgerFile(slug)
   const ledgerRows = ledgerMd !== null ? parseLedger(ledgerMd) : null
   const ledgerTotals = ledgerRows !== null ? sumLedger(ledgerRows) : null
@@ -109,7 +115,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
           {archived ? (
             <Badge className='bg-muted/40 text-muted-foreground border-border'>Archived</Badge>
           ) : (
-            <Badge className='bg-primary/10 text-primary border-primary/40'>Active</Badge>
+            <Badge className='bg-success/10 text-success border-success/40'>Active</Badge>
           )}
         </div>
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>{iteration.name || slug}</h1>
@@ -153,7 +159,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
                 <TableRow>
                   <TableHead className='w-[4%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>Task</TableHead>
-                  <TableHead className='w-[10%] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
+                  <TableHead className='w-[14%] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
                   <TableHead className='w-[15%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
                   <TableHead className='w-[10%] font-sans text-xs uppercase tracking-wider'>Deps</TableHead>
                   <TableHead className='w-[12%] font-sans text-xs uppercase tracking-wider'>Conflicts</TableHead>
@@ -165,6 +171,14 @@ export default async function IterationPage({ params }: { params: Promise<Params
                   const visual = status ? statusVisual(status) : null
                   const readiness = status === 'todo' ? readinessMap.get(String(task.id)) : undefined
                   const todoVisual = readiness ? todoDispatchVisual(readiness) : null
+                  // The blocked detail ('Blocked · needs #N') renders under the
+                  // title — the wide Task column keeps it on one line, where the
+                  // narrow Issue column wrapped it over three. The Issue column
+                  // falls back to the plain status badge for blocked rows.
+                  const blockedVisual = readiness && !readiness.ready ? todoVisual : null
+                  const issueVisual = blockedVisual ? visual : (todoVisual ?? visual)
+                  // In-review rows link their badge to the PR under review.
+                  const reviewPr = status === 'in-review' ? snapshot.prRefs.get(String(task.id)) : undefined
                   const showAssignedChip = status === 'todo' && taskAssignedMap.get(String(task.id)) === true
                   return (
                     <TableRow key={task.id}>
@@ -172,22 +186,69 @@ export default async function IterationPage({ params }: { params: Promise<Params
                         {task.id}
                       </TableCell>
                       <TableCell className='align-top'>
-                        <TaskTitleCell title={task.title} />
+                        <div className='space-y-1'>
+                          <TaskTitleCell title={task.title} />
+                          {blockedVisual && (
+                            <div>
+                              <Badge
+                                variant='outline'
+                                className={`${blockedVisual.badgeClass} whitespace-nowrap font-mono p-1 text-[0.6rem]`}
+                                title={blockedVisual.title}
+                              >
+                                {blockedVisual.label}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className='align-top'>
                         <div className='space-y-1'>
                           <p className='font-mono text-xs text-muted-foreground'>
-                            {task.issue !== null ? `#${task.issue}` : '—'}
-                          </p>
-                          {visual && (
-                            <div>
-                              <Badge
-                                variant='outline'
-                                className={`${(todoVisual ?? visual).badgeClass} font-mono p-1 text-[0.6rem]`}
-                                title={todoVisual?.title}
+                            {task.issue === null ? (
+                              '—'
+                            ) : issueUrl(task.issue) ? (
+                              <a
+                                href={issueUrl(task.issue) as string}
+                                target='_blank'
+                                rel='noreferrer'
+                                className='hover:text-accent hover:underline'
                               >
-                                {todoVisual?.label ?? visual.label}
-                              </Badge>
+                                #{task.issue}
+                              </a>
+                            ) : (
+                              `#${task.issue}`
+                            )}
+                          </p>
+                          {issueVisual && (
+                            <div>
+                              {reviewPr ? (
+                                <div className='space-y-1'>
+                                  <div>
+                                    <Badge
+                                      variant='outline'
+                                      className={`${issueVisual.badgeClass} whitespace-nowrap font-mono p-1 text-[0.6rem]`}
+                                    >
+                                      Review
+                                    </Badge>
+                                  </div>
+                                  <a
+                                    href={reviewPr.url}
+                                    target='_blank'
+                                    rel='noreferrer'
+                                    className='block font-mono text-xs text-muted-foreground hover:text-accent hover:underline'
+                                  >
+                                    PR #{reviewPr.number}
+                                  </a>
+                                </div>
+                              ) : (
+                                <Badge
+                                  variant='outline'
+                                  className={`${issueVisual.badgeClass} font-mono p-1 text-[0.6rem]`}
+                                  title={blockedVisual ? undefined : todoVisual?.title}
+                                >
+                                  {issueVisual.label}
+                                </Badge>
+                              )}
                             </div>
                           )}
                           {showAssignedChip && (

@@ -26,6 +26,7 @@ import 'server-only'
 import { deriveIteration, type DerivedIteration, type ForgeFacts, type Iteration } from '@atta/aeg-core'
 import { fetchForgeFacts, fetchForgeTasksByLabel } from './fetch-forge-facts'
 import { resolveRepo, type RepoRef } from './resolve-repo'
+import type { PrRef } from './types'
 
 export type IterationSnapshot = {
   derived: DerivedIteration
@@ -37,6 +38,12 @@ export type IterationSnapshot = {
    * `assigned`, which D-059 deliberately excludes from status derivation).
    */
   facts: Map<string, ForgeFacts>
+  /**
+   * Forge identity (number + URL + state) of the PR each task's facts resolved
+   * to, keyed by task id — display-only (e.g. linking an in-review badge to
+   * its PR). Empty when unavailable.
+   */
+  prRefs: Map<string, PrRef>
   /** True when forge facts could not be loaded (no token, no remote, network). */
   unavailable: boolean
   /** Diagnostic; logged not surfaced verbatim. */
@@ -66,6 +73,7 @@ export async function loadIterationSnapshot(iteration: Iteration, slug: string):
       derived: deriveIteration(iteration, new Map()),
       repo: null,
       facts: new Map(),
+      prRefs: new Map(),
       unavailable: true,
       reason: 'Could not resolve repository (no git remote found and AEG_REPO unset).'
     }
@@ -83,6 +91,7 @@ export async function loadIterationSnapshot(iteration: Iteration, slug: string):
     derived: deriveIteration(iteration, snapshot.facts),
     repo,
     facts: snapshot.facts,
+    prRefs: snapshot.prRefs,
     unavailable: snapshot.unavailable,
     reason: snapshot.reason
   }

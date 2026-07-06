@@ -11,6 +11,14 @@
  * reaches the forge. Non-task Issues (no iteration label) pass through
  * unvalidated: the rationale contract does not apply to them.
  *
+ * Label detection is per-path: on `create`, labels come from this command's
+ * own argv (`--label` flags are naturally present there). On `edit`, argv is
+ * silent — nobody re-passes `--label` when changing a body — so the target
+ * Issue's ACTUAL current labels are fetched from the forge
+ * (`gh issue view <n> --json labels`) and unioned with any argv labels. A
+ * failed forge fetch is a hard refusal, never treated as "no iteration
+ * label" (#417).
+ *
  * Usage:
  *   bun packages/aeg-core/bin/open-issue.ts --title t --body-file <path> --label iteration:x [gh args...]
  *   bun packages/aeg-core/bin/open-issue.ts edit <n> --body-file <path> [gh args...]
@@ -132,6 +140,36 @@ function extractLabels(args: string[]): string[] {
   return labels
 }
 
+/**
+ * Fetches the target Issue's actual current labels from the forge. Edit
+ * invocations don't normally re-pass `--label` flags, so argv says nothing
+ * about whether the target is a task Issue — the forge is the only truthful
+ * source (#417). Fails loud/closed: a failed fetch is never treated as "no
+ * iteration label", which would silently re-open the exact bypass this
+ * function exists to close.
+ */
+function fetchForgeLabels(issueRef: string): string[] {
+  let out: string
+  try {
+    out = execFileSync('gh', ['issue', 'view', issueRef, '--json', 'labels'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+  } catch {
+    fail(
+      `could not fetch Issue ${issueRef}'s labels from the forge (\`gh issue view\`) — the rationale gate cannot decide whether it applies. Check gh auth/network and retry; refusing to pass the edit through unvalidated.`
+    )
+  }
+  try {
+    const parsed = JSON.parse(out) as { labels: Array<{ name: string }> }
+    return parsed.labels.map((l) => l.name)
+  } catch {
+    fail(
+      `could not parse \`gh issue view ${issueRef} --json labels\` output — refusing to pass the edit through unvalidated.`
+    )
+  }
+}
+
 export function main(): void {
   const argv = process.argv.slice(2)
   const validateOnly = argv.includes('--validate-only')
@@ -143,7 +181,16 @@ export function main(): void {
 
   const bodyResult = locateBody(bodyArgs)
   const body = bodyResult?.body ?? null
-  const labels = extractLabels(bodyArgs)
+  let labels = extractLabels(bodyArgs)
+  if (isEdit) {
+    const issueRef = ghArgs[0]
+    if (!issueRef || issueRef.startsWith('-')) {
+      fail('edit mode requires the target Issue number/URL as the first argument after `edit`.')
+    }
+    const forgeLabels = fetchForgeLabels(issueRef)
+    console.log(`[open-issue] edit — Issue ${issueRef} carries ${forgeLabels.length} label(s) on the forge.`)
+    labels = [...new Set([...forgeLabels, ...labels])]
+  }
 
   if (isTaskIssueLabelSet(labels)) {
     const title = extractTitle(bodyArgs)

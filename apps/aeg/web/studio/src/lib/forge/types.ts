@@ -41,6 +41,13 @@ export type FetchForgeFactsInput = {
 export type ForgeFactsSnapshot = {
   facts: Map<string, ForgeFacts>
   /**
+   * Forge identity (number + URL + state) of the PR each task's facts resolved
+   * to, keyed by task id. Display-only — `ForgeFacts` (owned by
+   * `@atta/aeg-core`) deliberately carries no forge identity, so surfaces that
+   * link to the PR read it from here instead. Empty when `unavailable`.
+   */
+  prRefs: Map<string, PrRef>
+  /**
    * `true` when GitHub was unreachable or no token was available. The facts
    * map will be empty in this case; `deriveIteration` then treats every task
    * as `todo` — iteration tasks are committed work, minimum `todo` (D-059).
@@ -48,6 +55,13 @@ export type ForgeFactsSnapshot = {
   unavailable: boolean
   /** Diagnostic — logged, not user-facing. Empty when `unavailable` is false. */
   reason?: string
+}
+
+/** Forge identity of the PR a task's facts resolved to. Display-only. */
+export type PrRef = {
+  number: number
+  url: string
+  state: 'OPEN' | 'CLOSED' | 'MERGED'
 }
 
 /**
@@ -74,6 +88,9 @@ export type RawTaskFacts = {
   refExists: boolean
   /** Most recent PR (any state) whose head branch matches the task ref. */
   pullRequest: {
+    number: number
+    /** Forge web URL of the PR. */
+    url: string
     state: 'OPEN' | 'CLOSED' | 'MERGED'
     /**
      * `null` covers "no review yet". `'REVIEW_REQUIRED'` is GitHub's value for

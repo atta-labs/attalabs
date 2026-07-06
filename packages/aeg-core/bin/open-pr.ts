@@ -14,6 +14,15 @@
  *   bun packages/aeg-core/bin/open-pr.ts edit <n> --body-file <path> [gh pr edit args...]
  *   bun packages/aeg-core/bin/open-pr.ts --validate-only --body-file <path>
  *
+ * Gate-set selection is per-path: on `create`, the branch being opened comes
+ * from the local checkout (`BRANCH` env or `git rev-parse`), which IS the
+ * truthful source there. On `edit <n>`, the target PR's ACTUAL head branch is
+ * fetched from the forge (`gh pr view <n> --json headRefName`) — the local
+ * checkout/env says nothing about PR #n, and deriving gates from it let task-PR
+ * body edits from a `main` checkout silently skip `closes-n`/`verify-task`
+ * (#417, bundled finding). A failed forge fetch is a hard refusal, never a
+ * fallback to the local branch.
+ *
  * Gates (all must pass, in order):
  *   0. decision-numbers — every `## D-NNN` this branch adds must exceed the
  *                       highest number already on `origin/main` in that log.
@@ -60,6 +69,38 @@ function fail(msg: string): never {
 
 function currentBranch(): string {
   return execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim()
+}
+
+/**
+ * Fetches the target PR's real head branch from the forge. Edit invocations
+ * can run from any checkout (a Principal session on `main`, most commonly),
+ * so the local branch/`BRANCH` env says nothing about which gate set applies
+ * to the PR being edited — the forge is the only truthful source (#417,
+ * bundled finding). Fails loud/closed: a failed fetch is never silently
+ * replaced with `currentBranch()`, which would reopen the exact gate bypass
+ * this function exists to close.
+ */
+function fetchPrHeadBranch(prRef: string): string {
+  let out: string
+  try {
+    out = execFileSync('gh', ['pr', 'view', prRef, '--json', 'headRefName'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+  } catch {
+    fail(
+      `could not fetch PR ${prRef}'s head branch from the forge (\`gh pr view\`) — the contract gates cannot decide which gate set applies. Check gh auth/network and retry; refusing to fall back to the local checkout's branch.`
+    )
+  }
+  try {
+    const parsed = JSON.parse(out) as { headRefName: string }
+    if (!parsed.headRefName) throw new Error('empty headRefName')
+    return parsed.headRefName
+  } catch {
+    fail(
+      `could not parse \`gh pr view ${prRef} --json headRefName\` output — refusing to fall back to the local checkout's branch.`
+    )
+  }
 }
 
 /** Where a validated body's bytes came from — a file/stream path, or an inline arg value. */
@@ -230,7 +271,21 @@ export function main(): void {
   const bodyArgs = isEdit ? ghArgs.slice(1) : ghArgs
   const editPrNumber = isEdit && ghArgs[0] && /^\d+$/.test(ghArgs[0]) ? Number(ghArgs[0]) : null
 
-  const branch = process.env.BRANCH || currentBranch()
+  // Edit mode: which gate set applies is a property of the TARGET PR, not of
+  // whatever checkout/env this command happens to run from — resolve it from
+  // the PR's real head branch on the forge (#417, bundled finding). Create
+  // mode is unchanged: the PR doesn't exist yet, the local branch IS the
+  // truthful source there.
+  let branch: string
+  if (isEdit) {
+    const prRef = ghArgs[0]
+    if (!prRef || prRef.startsWith('-')) {
+      fail('edit mode requires the target PR number/URL/branch as the first argument after `edit`.')
+    }
+    branch = fetchPrHeadBranch(prRef)
+  } else {
+    branch = process.env.BRANCH || currentBranch()
+  }
   const bodyResult = locateBody(bodyArgs)
   const body = bodyResult?.body ?? null
   const title = extractTitle(bodyArgs)
