@@ -231,7 +231,7 @@ interface ProfileData {
   auditSelection: { vendor: VendorId; modelId: string } | null
 }
 
-const PROFILE_TABS = ['profile', 'experience', 'connections', 'api-keys', 'account'] as const
+const PROFILE_TABS = ['profile', 'experience', 'connections', 'api-keys', 'herald-model', 'account'] as const
 type ProfileTab = (typeof PROFILE_TABS)[number]
 
 export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: ProfileData; defaultTab?: ProfileTab }) {
@@ -420,6 +420,9 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
           </TabsTrigger>
           <TabsTrigger value='api-keys' className='shrink-0'>
             API Keys
+          </TabsTrigger>
+          <TabsTrigger value='herald-model' className='shrink-0'>
+            Herald Model
           </TabsTrigger>
           <TabsTrigger value='account' className='shrink-0'>
             Account
@@ -802,6 +805,12 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
         <TabsContent value='api-keys'>
           <div className='space-y-8'>
             <ProviderKeysSection />
+          </div>
+        </TabsContent>
+
+        {/* ── Herald Model ─────────────────────────────────────── */}
+        <TabsContent value='herald-model'>
+          <div className='space-y-8'>
             <AuditModelSection
               configuredVendors={profile.configuredVendors}
               initialSelection={profile.auditSelection}
