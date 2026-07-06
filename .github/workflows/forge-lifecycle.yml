@@ -182,9 +182,44 @@ jobs:
           BRANCH: ${{ github.head_ref }}
         run: bun packages/aeg-core/bin/verify-test-plan.ts
 
+      # ── waiver-label actor (D-097) ───────────────────────────────────────
+      # A doc-coverage waiver is honored only when the `waiver:docs` label's
+      # OWN labeling timeline event was actored by a configured principal —
+      # label presence alone (checked via PR_LABELS below) is never
+      # sufficient. Resolves the actor of the most recent LABELED_EVENT
+      # naming `waiver:docs`, if any. Empty output when none exists — an
+      # empty/unset actor never verifies (isWaiverLabelActorVerified, task 29
+      # #380, D-097). Same shape as "Resolve this PR's touched files" above:
+      # structured output via $GITHUB_OUTPUT, guarded by !cancelled().
+      - name: Resolve waiver-label actor (D-097)
+        id: waiver_actor
+        if: ${{ !cancelled() && github.event.action != 'edited' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          actor=$(gh api graphql -f query='
+            query($owner: String!, $repo: String!, $number: Int!) {
+              repository(owner: $owner, name: $repo) {
+                pullRequest(number: $number) {
+                  timelineItems(last: 100, itemTypes: [LABELED_EVENT]) {
+                    nodes {
+                      ... on LabeledEvent {
+                        actor { login }
+                        label { name }
+                      }
+                    }
+                  }
+                }
+              }
+            }' -f owner="${{ github.repository_owner }}" -f repo="${{ github.event.repository.name }}" \
+              -F number="${{ github.event.pull_request.number }}" \
+            | jq -r '[.data.repository.pullRequest.timelineItems.nodes[] | select(.label.name == "waiver:docs")] | last | .actor.login // ""')
+          echo "actor=$actor" >> "$GITHUB_OUTPUT"
+
       # ── 5/9 · Tier-appropriate documentation gate ───────────────────────
       # verify-docs --pr (C0–C5). Runs on `labeled`/`unlabeled` too because
-      # PR_LABELS feeds the tier derivation.
+      # PR_LABELS feeds the tier derivation. WAIVER_LABEL_ACTOR (D-097) feeds
+      # the actor-verified waiver check — label presence alone never suffices.
       - name: Tier-appropriate documentation gate
         if: ${{ !cancelled() && github.event.action != 'edited' }}
         env:
@@ -192,6 +227,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          WAIVER_LABEL_ACTOR: ${{ steps.waiver_actor.outputs.actor }}
         run: bun packages/aeg-core/bin/verify-docs.ts --pr
 
       # ── 6/9 · Biome lint/format ─────────────────────────────────────────

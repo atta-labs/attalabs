@@ -12,21 +12,33 @@
  *
  * Modes:
  *   --pr              Diff-based. Enforces that a PR carries the docs its impact tier requires.
+ *                     C5's waiver is, since D-097, a PR-wide `waiver:docs` label whose labeling
+ *                     timeline event's actor is a configured principal — never a parseable
+ *                     string. Label presence alone is never sufficient. CI resolves the actor
+ *                     via GraphQL into WAIVER_LABEL_ACTOR; `runC5` verifies it with
+ *                     `isWaiverLabelActorVerified` before calling `evaluateC5`. The prior
+ *                     `Doc-waiver:` PR-body/commit-trailer grammar (D-080) is gone — it is no
+ *                     longer parsed anywhere. `Doc-ack:` (URL-pointer acknowledgment) is
+ *                     unaffected by D-097 — still a PR-body field, still an acknowledgment, not
+ *                     a bypass.
  *   --push            Diff-based, C5 only. Ring-0 gate for `.husky/pre-push` (D-078): the
- *                     branch's cumulative diff vs origin/main must satisfy doc-owners
- *                     coverage before it can be published. PR_BODY (when the branch already
- *                     has an open PR) supplies Doc-ack/Doc-waiver lines; on a first push
- *                     (no PR yet), the hook instead passes this branch's own commit-message
- *                     trailers as PR_BODY (D-080) — evaluateC5 parses the identical
- *                     `Doc-ack:`/`Doc-waiver:` grammar regardless of source, so a developer
- *                     can self-serve a waiver before any PR exists. For a pre-authoring dry
- *                     run via `verify-dispatch --simulate`, before any commit exists at all,
+ *                     branch's cumulative diff vs origin/main is checked against doc-owners
+ *                     coverage. Since D-097, an owned-doc violation on push is
+ *                     warn-with-declared-intent, not a hard block: the push is always allowed,
+ *                     and the printed message states plainly that ring 1 (the PR, once opened)
+ *                     stays red until a principal applies the `waiver:docs` label or the bound
+ *                     doc is updated. This replaces D-080's first-push commit-trailer
+ *                     self-service — there is no first-push waiver self-service anymore, only an
+ *                     informative warning; ring 1 is where the waiver is actually granted.
+ *                     PR_BODY (when the branch already has an open PR) still supplies `Doc-ack:`
+ *                     lines; on a first push (no PR yet), the hook still falls back to this
+ *                     branch's own commit-message trailers as PR_BODY, since `Doc-ack:` (D-097
+ *                     does not touch it) still needs that source. For a pre-authoring dry run
+ *                     via `verify-dispatch --simulate`, before any commit exists at all,
  *                     PR_BODY_FILE — a local path to a drafted-but-not-yet-committed PR body —
- *                     is an equally valid source for the same lines (D-081). `override:docs`/
- *                     `OVERRIDE_DOCS=1` is honored here identically to `--pr` mode (previously
- *                     dead code in push mode — the documented escape hatch didn't actually
- *                     apply on first push, D-081). C0-C4 are PR-body contracts and stay at the
- *                     PR gates.
+ *                     is an equally valid source for the same `Doc-ack:` lines (D-081).
+ *                     `override:docs`/`OVERRIDE_DOCS=1` is honored here identically to `--pr`
+ *                     mode. C0-C4 are PR-body contracts and stay at the PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
  *   (full)            Repo-wide structural checks. Catches unstatused specs, malformed
  *                     decision-log entries, manifest validity, the completeness scoreboard,
@@ -71,11 +83,14 @@ import {
   isDecisionLog,
   isDocFile,
   isSpecFile,
+  isWaiverLabelActorVerified,
   malformedDecisionEntries,
   type NoDocRule,
   overrideActive,
   parseDocOwners,
-  readTierFromPrBody
+  PRINCIPAL_ALLOWLIST,
+  readTierFromPrBody,
+  WAIVER_LABEL
 } from '../src/index'
 
 const REPO_ROOT = join(import.meta.dir, '../../..')
@@ -101,8 +116,9 @@ function sh(cmd: string): string {
 /**
  * PR_BODY takes precedence when set (the PR-mode caller always sets it).
  * PR_BODY_FILE is the push-mode fallback for a branch with no PR yet — a
- * local path to the drafted PR body, so Doc-ack/Doc-waiver lines are
- * available deterministically before the PR exists (D-324/task 11).
+ * local path to the drafted PR body, so `Doc-ack:` lines (D-097 does not
+ * touch that grammar) are available deterministically before the PR exists
+ * (D-324/task 11).
  */
 function resolvePrBody(): string {
   if (process.env.PR_BODY) return process.env.PR_BODY
@@ -116,9 +132,27 @@ function resolvePrBody(): string {
   return ''
 }
 
+/**
+ * D-097: a waiver is honored only when the `waiver:docs` label is present AND
+ * the actor of its labeling timeline event is a configured principal.
+ * WAIVER_LABEL_ACTOR is resolved by CI (the GraphQL step ahead of this gate)
+ * or is empty/unset locally — an empty/unset actor never verifies.
+ */
+function waiverActiveFromEnv(): boolean {
+  const labels = (process.env.PR_LABELS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  return isWaiverLabelActorVerified({
+    labels,
+    labelActor: process.env.WAIVER_LABEL_ACTOR || null,
+    principalAllowlist: PRINCIPAL_ALLOWLIST
+  })
+}
+
 function runC5(changed: string[]): void {
   const content = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
-  const result = evaluateC5(changed, content, resolvePrBody(), existsSync)
+  const result = evaluateC5(changed, content, resolvePrBody(), existsSync, waiverActiveFromEnv())
   for (const e of result.errors) errors.push(e)
   for (const n of result.notes) notes.push(n)
 }
@@ -249,7 +283,20 @@ function runPushMode(): void {
     return
   }
   runC5(changed)
-  finish()
+
+  for (const n of notes) console.log(`verify-docs note: ${n}`)
+
+  // D-097 ring 0: warn-with-declared-intent, never a hard block. The push always
+  // succeeds; ring 1 (the PR, once opened) is where a waiver is actually granted.
+  if (errors.length) {
+    console.error(
+      `\nverify-docs (push mode) — push allowed, but ${errors.length} owned-doc binding(s) are unsatisfied. Ring 1 stays red until a principal applies the \`${WAIVER_LABEL}\` label to this branch's PR, or the bound doc is updated:\n`
+    )
+    for (const e of errors) console.error(`  ⚠ ${e}`)
+  } else {
+    console.log('verify-docs passed (push mode).')
+  }
+  process.exit(0)
 }
 
 // ---- full mode -------------------------------------------------------------
