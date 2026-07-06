@@ -116,8 +116,9 @@ function sh(cmd: string): string {
 /**
  * PR_BODY takes precedence when set (the PR-mode caller always sets it).
  * PR_BODY_FILE is the push-mode fallback for a branch with no PR yet — a
- * local path to the drafted PR body, so Doc-ack/Doc-waiver lines are
- * available deterministically before the PR exists (D-324/task 11).
+ * local path to the drafted PR body, so `Doc-ack:` lines (D-097 does not
+ * touch that grammar) are available deterministically before the PR exists
+ * (D-324/task 11).
  */
 function resolvePrBody(): string {
   if (process.env.PR_BODY) return process.env.PR_BODY
