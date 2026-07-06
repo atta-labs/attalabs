@@ -15,7 +15,7 @@ sidebar_title: "Template: Issue rationale"
 
 **Sizing** — [SIZING — state that the task passed the four "too big?" tests (one verification story; one agent can hold it; bounded file surface; single failure mode) — or how a larger candidate was split when it failed one. Name the single verification story.]
 
-**Project(s) + blast radius** — [PROJECTS + BLAST RADIUS — every project touched, resolving against `aeg-root/projects.md`. For shared-package changes: which consumers are in the blast radius, and whether each needs re-verification only or actual edits.]
+**Project(s) + blast radius** — [PROJECTS + BLAST RADIUS — every project touched, resolving against `packages/governance/projects.md`. For shared-package changes: which consumers are in the blast radius, and whether each needs re-verification only or actual edits.]
 
 **Dependency rationale** — [DEPENDENCY RATIONALE — *why* each `depends-on` / `conflicts-with` edge exists, not just that it does. "No `depends-on`; no `conflicts-with`" is a valid value — state it explicitly, with the check that established it.]
 

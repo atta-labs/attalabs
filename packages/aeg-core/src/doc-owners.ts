@@ -103,8 +103,8 @@ export function readDocAcks(body: string): DocAck[] {
 
 /**
  * Pure evaluator for the C5 doc-coverage check. The runtime wrapper reads
- * `aeg-root/doc-owners` from disk and `PR_BODY` from env; this function takes
- * both as inputs and an injectable file-exists for unit tests.
+ * `packages/governance/doc-owners` from disk and `PR_BODY` from env; this
+ * function takes both as inputs and an injectable file-exists for unit tests.
  *
  * Dormancy: a null `docOwnersContent` (absent file) OR no glob matching any
  * changed code file produces an empty result — no errors, no notes.

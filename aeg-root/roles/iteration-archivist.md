@@ -66,7 +66,7 @@ Append a new section to `aeg-project/lessons.md`. Structure (preserve markdown; 
 - Tasks completed: count merged PRs matching `task/<iteration>/*`
 - Dropped/deferred: from the iteration topology file (`iterations/<name>.md`) — check which tasks have no merged PR
 - What went well / What stalled: from merged PR summaries (briefs in PR bodies), the merged code's patterns, and calibration entries in `lessons.md`. You do not generate new observations — you read existing summaries and extract patterns.
-- Decisions: query `aeg-project/decisions.md` (and per-project decision files if relevant) for entries created during this iteration
+- Decisions: query `packages/governance/decisions.md` (and per-project decision files if relevant) for entries created during this iteration
 - Unbuilt tasks: topology entries with no PR
 
 If you don't have the information to fill a field, write "unknown — Principal to fill" and move on. The retrospective is a structured *assembly* of facts, not a generated essay.
@@ -89,7 +89,7 @@ If you don't have the information to fill a field, write "unknown — Principal 
 
 ### 6. Ratify pending Type 1 decisions
 
-Query `aeg-project/decisions.md` (and per-project decision files if relevant) for entries from this iteration with `Status: PENDING`.
+Query `packages/governance/decisions.md` (and per-project decision files if relevant) for entries from this iteration with `Status: PENDING`.
 
 For each: list it explicitly in your output as `PENDING RATIFICATION — requires Principal action at next ratification window.` Do NOT mark them ratified yourself — ratification is a Principal act. You surface; they decide.
 

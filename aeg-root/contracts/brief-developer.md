@@ -31,7 +31,7 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 |---|---|---|
 | **Worktree step 0** (verbatim `git worktree add` command) | First action before any other command | The Developer must execute this exact command first. No exceptions. Never assume the right branch exists. Before executing it, the Developer independently re-verifies the branch-name suffix literal-matches the topology's `#` column (D-073) — the same check the Brief Author already ran before writing the command. |
 | **Tier:** field | PR-open checklist + `tier:*` label | The Developer sets the matching `tier:*` label on the Issue at PR open. The field is binding; the label is the scannable projection. |
-| **Project:** field | PR description + `verify-docs` | The Developer confirms the project resolves against `aeg-root/projects.md`. |
+| **Project:** field | PR description + `verify-docs` | The Developer confirms the project resolves against `packages/governance/projects.md`. |
 | **Context (§2)** including boundary + traps | Mental model before any code | The Developer reads the boundary ("what this task is NOT") to know what to refuse to build, and the traps to know what not to do. |
 | **Technical Dependencies (§3)** | Verify all depends-on are merged | The Developer confirms every named dependency is on `main` before starting. A depends-on not yet merged is a hard stop. |
 | **Technical Surface Map (§4)** | Bounds the diff | The Developer touches only files in the surface map. Files outside it are a stop-and-escalate. |

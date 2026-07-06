@@ -13,7 +13,7 @@ The brief itself carries no anchor comments: it rides into the PR body as the *r
 **Reason:** [why this capability level fits this task — real reasoning against the task, not "because it's good"]
 **Owner:** [who owns the task — the Principal, by default]
 **Goal:** [one sentence: what ships]
-**Project:** [project(s), comma-separated, resolving against `aeg-root/projects.md` — required in a multi-project repo]
+**Project:** [project(s), comma-separated, resolving against `packages/governance/projects.md` — required in a multi-project repo]
 **Tier:** [0 | 1 | 3 — declare last, after §4 is complete]
 
 You are the AEG Developer. Read `aeg-root/roles/developer.md` first[, then the host repo's own execution-discipline skill, e.g. `.claude/skills/executor-protocol/SKILL.md`]. Both mandatory.

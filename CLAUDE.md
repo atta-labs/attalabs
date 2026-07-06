@@ -72,6 +72,7 @@ Not every product needs every surface. Cetana is CLI + coordinator only. Vāda i
 | @atta/storage | [packages/storage/](packages/storage/) | Cloudflare R2 storage client + image transforms |
 | @atta/typescript-config | [packages/typescript-config/](packages/typescript-config/) | Shared TypeScript configs |
 | @atta/aeg-forge-state | [packages/aeg-forge-state/](packages/aeg-forge-state/) | Derives an `Iteration` purely from forge objects (Milestone + labeled Issues) — repo/owner-parameterized, consumed by this repo's own migration and by `vinaya-cli-v1`'s CLI |
+| @atta/governance | [packages/governance/](packages/governance/) | `decisions.md`, `projects.md`, `doc-owners` — repo governance state kept as files (D-110), package-wrapped so deploy-skip tooling attributes it correctly. Zero code. |
 
 The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLabs product can live under it without implying ownership by Atta-the-product.
 

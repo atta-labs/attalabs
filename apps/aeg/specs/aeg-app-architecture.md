@@ -85,6 +85,8 @@ The product decomposes into three clean layers, in dependency order.
 
 A pure function: given a parsed iteration topology file + a snapshot of forge facts (Issues, branches, PRs, reviews, merges), return the iteration's derived state — each task's status (in-flight / in-review / changes-requested / merged / blocked), the DAG with edges, and which tasks are dispatch-eligible (depends-on merged, no conflicting sibling PR open). **No network, no storage, no GitHub client.** This is the heart of the product and the easiest thing to test exhaustively, so it is built and tested first, in isolation. **Lives in `@atta/aeg-core` (§0).**
 
+The topology file and the project registry it references are read from disk by `apps/aeg/web/studio/src/lib/aeg-fs/read-root.ts`. `findAegRoot()` walks up from `process.cwd()` looking for `packages/governance/projects.md` (the project registry — relocated from `aeg-root/projects.md`, `aeg-forge-state-v1` task 2) to confirm it has found the repo root, then returns that directory's `aeg-root/`; `readRegistry()` reads the registry itself from the same relocated path.
+
 ### 3.2 GitHub read path — local adapter (V1) vs. hosted GitHub App (deferred)
 
 > **§0 refinement — Studio V1 ships the local read adapter; the hosted GitHub App + encrypted token store stay deferred.**

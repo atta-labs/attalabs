@@ -217,4 +217,4 @@ Ecosystem-level (for the wider AttaLabs framing):
 - `apps/atta-ai/specs/atta-naming-decision.md` — v2 brand architecture
 - `apps/atta-ai/specs/atta-ecosystem-vision.md` — strategic positioning
 - `aeg-project/state.md` — cross-project current state
-- `aeg-project/decisions.md` — global decision log
+- `packages/governance/decisions.md` — global decision log
