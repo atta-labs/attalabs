@@ -518,6 +518,18 @@
         "vitest": "^2.1.0",
       },
     },
+    "packages/forge-state": {
+      "name": "@atta/forge-state",
+      "version": "0.0.1",
+      "dependencies": {
+        "@atta/aeg-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "typescript": "^5.7.0",
+        "vitest": "^2.1.0",
+      },
+    },
     "packages/identity": {
       "name": "@atta/identity",
       "version": "0.1.0",
@@ -769,6 +781,8 @@
     "@atta/engine": ["@atta/engine@workspace:packages/engine"],
 
     "@atta/forensic-hiring-auditor": ["@atta/forensic-hiring-auditor@workspace:packages/agents/forensic-hiring-auditor"],
+
+    "@atta/forge-state": ["@atta/forge-state@workspace:packages/forge-state"],
 
     "@atta/herald-ai-mcp": ["@atta/herald-ai-mcp@workspace:apps/herald-ai/mcp"],
 
