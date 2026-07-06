@@ -1,4 +1,4 @@
-# @atta/forge-state
+# @atta/aeg-forge-state
 
 A generic, repo-parameterized adapter that derives an `@atta/aeg-core` `Iteration`
 purely from GitHub forge objects — no topology file required:

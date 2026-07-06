@@ -1,5 +1,5 @@
 {
-  "name": "@atta/forge-state",
+  "name": "@atta/aeg-forge-state",
   "version": "0.0.1",
   "private": true,
   "main": "./src/index.ts",
