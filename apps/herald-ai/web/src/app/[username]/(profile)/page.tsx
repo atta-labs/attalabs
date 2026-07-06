@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { auth } from '@clerk/nextjs/server'
-import { cmsClient, generateThemeCSS, getThemeById } from '@atta/cms'
+import { createProductClient, generateThemeCSS, getThemeById } from '@atta/cms'
 import { notFound } from 'next/navigation'
 import { EnvoyFlow } from '@/components/envoy/EnvoyFlow'
 import { getUserByUsername } from '@/db/queries'
@@ -56,11 +56,15 @@ export default async function EnvoyPage({
     cvUrl: user.cvUrl ?? undefined
   }
 
-  // Fetch theme from Sanity if user has one selected
+  // Fetch theme from Sanity if user has one selected. D-060 moved uiTheme
+  // documents out of Herald's own project into the central Attalabs project
+  // — must resolve against createProductClient('attalabs'), not Herald's
+  // own cmsClient (which no longer has any uiTheme docs to find).
   let themeCSS: string | null = null
   let fontsUrl: string | null = null
   if (user.themeId) {
-    const theme = await getThemeById(cmsClient, user.themeId)
+    const attalabsClient = createProductClient('attalabs')
+    const theme = await getThemeById(attalabsClient, user.themeId)
     if (theme) {
       const themeWithOverrides = {
         ...theme,
