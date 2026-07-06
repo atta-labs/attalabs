@@ -5,7 +5,7 @@
 # legitimate push of a task branch to origin must always pass.
 #
 # git feeds pre-push one line per ref on stdin: `<localref> <localsha> <remoteref> <remotesha>`.
-while read -r _localref _localsha remoteref _remotesha; do
+while read -r _localref _localsha remoteref remotesha; do
   if [ "$remoteref" = "refs/heads/main" ]; then
     echo "✖ pre-push: direct pushes to main are forbidden." >&2
     echo "  AEG routes every change to main through a worktree branch + PR + green merge." >&2
@@ -108,4 +108,25 @@ while read -r _localref _localsha remoteref _remotesha; do
     echo "  Only escalate to the Principal if you are unsure a waiver is justified." >&2
     exit 1
   fi
+
+  # Task 33 (#401): on a task branch's GENUINELY first push (the remote ref
+  # is being created — its pre-push remote-sha is all zeros), self-assign the
+  # task's Issue to the authenticated pusher, so Studio's dispatch-visibility
+  # chip (task 26/#368, D-059) always has a real signal to render instead of
+  # depending on the Principal remembering to assign by hand. A force-push to
+  # an existing branch keeps a non-zero remote-sha and never re-triggers;
+  # branch deletion + recreation re-presents a zero sha, which the bin's own
+  # already-assigned check absorbs as a no-op. NOT a gate — placed last, after
+  # every blocking check above, so an aborted push never marks a task as
+  # in-flight; fail-open by contract (the bin warns and exits 0 on any API
+  # failure) and `|| true` guarantees the hook never blocks on it regardless.
+  case "$branch" in
+    task/*/*)
+      case "$remotesha" in
+        *[!0]*) remote_ref_exists=1 ;;
+        *) remote_ref_exists=0 ;;
+      esac
+      bun packages/aeg-core/bin/assign-task-issue.ts "$branch" "$remote_ref_exists" || true
+      ;;
+  esac
 done
