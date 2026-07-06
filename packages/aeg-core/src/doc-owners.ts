@@ -5,6 +5,7 @@
  */
 
 import { isCodeFile } from './file-classify'
+import { WAIVER_LABEL } from './waiver-label'
 
 export const DOC_OWNERS_PATH = 'aeg-root/doc-owners'
 
@@ -80,9 +81,8 @@ export function pointerToPath(p: string): string {
 }
 
 export type DocAck = { surface: string; note: string }
-export type DocWaiver = { pointer: string; reason: string }
 
-// Separator between <pointer> and <note|reason>. Tolerates em-dash (—),
+// Separator between <pointer> and <note>. Tolerates em-dash (—),
 // en-dash (–), or a plain ASCII hyphen-minus (-) with REQUIRED surrounding
 // whitespace. Required whitespace around `-` disambiguates the separator
 // from hyphens that legitimately appear inside pointers (e.g. `aeg-root`,
@@ -101,15 +101,6 @@ export function readDocAcks(body: string): DocAck[] {
   return acks
 }
 
-export function readDocWaivers(body: string): DocWaiver[] {
-  const waivers: DocWaiver[] = []
-  const re = new RegExp(`^[ \\t]*Doc-waiver[ \\t]*:[ \\t]*(.+?)${SEPARATOR}(.+?)[ \\t]*$`, 'gim')
-  for (const m of body.matchAll(re)) {
-    waivers.push({ pointer: (m[1] ?? '').trim(), reason: (m[2] ?? '').trim() })
-  }
-  return waivers
-}
-
 /**
  * Pure evaluator for the C5 doc-coverage check. The runtime wrapper reads
  * `aeg-root/doc-owners` from disk and `PR_BODY` from env; this function takes
@@ -117,12 +108,19 @@ export function readDocWaivers(body: string): DocWaiver[] {
  *
  * Dormancy: a null `docOwnersContent` (absent file) OR no glob matching any
  * changed code file produces an empty result — no errors, no notes.
+ *
+ * `waiverActive` (D-097) is a single PR-wide boolean, not a per-binding
+ * pointer/reason lookup — it's the caller-resolved result of
+ * `isWaiverLabelActorVerified`, itself a mechanized read of a forge fact.
+ * There is no agent-emittable `Doc-waiver:` string anymore; a waiver is
+ * either verified true PR-wide, or not.
  */
 export function evaluateC5(
   changed: string[],
   docOwnersContent: string | null,
   prBody: string,
-  fileExists: (p: string) => boolean
+  fileExists: (p: string) => boolean,
+  waiverActive: boolean
 ): C5Result {
   const out: C5Result = { errors: [], notes: [] }
 
@@ -140,15 +138,11 @@ export function evaluateC5(
   }
   if (fired.length === 0) return out
 
-  const waivers = readDocWaivers(prBody)
   const acks = readDocAcks(prBody)
 
   for (const b of fired) {
-    const waived = waivers.find((w) => w.pointer === b.pointer)
-    if (waived) {
-      out.notes.push(
-        `C5 doc-waiver active for ${b.pointer} (binding ${DOC_OWNERS_PATH}:${b.lineNum}): ${waived.reason}`
-      )
+    if (waiverActive) {
+      out.notes.push(`C5 doc-waiver active for ${b.pointer} (binding ${DOC_OWNERS_PATH}:${b.lineNum})`)
       continue
     }
 
@@ -156,7 +150,7 @@ export function evaluateC5(
       const acked = acks.some((a) => a.surface === b.pointer)
       if (!acked) {
         out.errors.push(
-          `C5 doc-coverage: code change matched ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\` → ${b.pointer}). External pointer requires \`Doc-ack: ${b.pointer} — <note>\` in the PR body, or \`Doc-waiver: ${b.pointer} — <reason>\` to skip.`
+          `C5 doc-coverage: code change matched ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\` → ${b.pointer}). External pointer requires \`Doc-ack: ${b.pointer} — <note>\` in the PR body, or an actor-verified \`${WAIVER_LABEL}\` label to skip.`
         )
       }
       continue
@@ -172,7 +166,7 @@ export function evaluateC5(
 
     if (!changed.includes(pointerPath)) {
       out.errors.push(
-        `C5 doc-coverage: code change matched ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\` → ${b.pointer}), but ${pointerPath} is not in the PR diff. Update it, or add \`Doc-waiver: ${b.pointer} — <reason>\` to the PR body.`
+        `C5 doc-coverage: code change matched ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\` → ${b.pointer}), but ${pointerPath} is not in the PR diff. Update it, or have a principal apply the \`${WAIVER_LABEL}\` label.`
       )
     }
   }

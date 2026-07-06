@@ -75,13 +75,13 @@ describe('evaluateC5 — six required paths', () => {
   const fileExists = (missing: string[]) => (p: string) => !missing.includes(p)
 
   it('dormant — doc-owners absent → empty result', () => {
-    const r = evaluateC5(['packages/ui/topbar/index.tsx'], null, '', fileExists([]))
+    const r = evaluateC5(['packages/ui/topbar/index.tsx'], null, '', fileExists([]), false)
     expect(r.errors).toEqual([])
     expect(r.notes).toEqual([])
   })
 
   it('dormant — doc-owners present but no glob fires → empty result', () => {
-    const r = evaluateC5(['packages/unrelated/x.ts'], OWNERS, '', fileExists([]))
+    const r = evaluateC5(['packages/unrelated/x.ts'], OWNERS, '', fileExists([]), false)
     expect(r.errors).toEqual([])
     expect(r.notes).toEqual([])
   })
@@ -91,13 +91,14 @@ describe('evaluateC5 — six required paths', () => {
       ['packages/ui/topbar/index.tsx', '.claude/skills/ui-components/SKILL.md'],
       OWNERS,
       '',
-      fileExists([])
+      fileExists([]),
+      false
     )
     expect(r.errors).toEqual([])
   })
 
   it('strong-fail — code change but matching doc absent from diff → error names the doc', () => {
-    const r = evaluateC5(['packages/ui/topbar/index.tsx'], OWNERS, '', fileExists([]))
+    const r = evaluateC5(['packages/ui/topbar/index.tsx'], OWNERS, '', fileExists([]), false)
     expect(r.errors.length).toBe(1)
     expect(r.errors[0]).toMatch(/C5 doc-coverage/)
     expect(r.errors[0]).toMatch(/\.claude\/skills\/ui-components\/SKILL\.md/)
@@ -105,50 +106,43 @@ describe('evaluateC5 — six required paths', () => {
 
   it('url-ack — URL binding satisfied by a matching Doc-ack line in the PR body', () => {
     const body = 'Doc-ack: https://example.com/foo-docs — confirmed, no change needed'
-    const r = evaluateC5(['packages/foo/index.ts'], OWNERS, body, fileExists([]))
+    const r = evaluateC5(['packages/foo/index.ts'], OWNERS, body, fileExists([]), false)
     expect(r.errors).toEqual([])
   })
 
   it('url-ack-missing — URL binding without Doc-ack → error names the URL', () => {
-    const r = evaluateC5(['packages/foo/index.ts'], OWNERS, '', fileExists([]))
+    const r = evaluateC5(['packages/foo/index.ts'], OWNERS, '', fileExists([]), false)
     expect(r.errors.length).toBe(1)
     expect(r.errors[0]).toMatch(/External pointer requires `Doc-ack: https:\/\/example\.com\/foo-docs/)
   })
 
   it('dangling — in-repo pointer that does not exist → distinct dangling error', () => {
-    const r = evaluateC5(['packages/dangling/x.ts'], OWNERS, '', fileExists(['docs/does-not-exist.md']))
+    const r = evaluateC5(['packages/dangling/x.ts'], OWNERS, '', fileExists(['docs/does-not-exist.md']), false)
     expect(r.errors.length).toBe(1)
     expect(r.errors[0]).toMatch(/C5 doc-owners-dangling/)
     expect(r.errors[0]).toMatch(/docs\/does-not-exist\.md/)
   })
 
-  it('waiver — Doc-waiver suppresses a missing-doc error and logs a note', () => {
-    const body = 'Doc-waiver: .claude/skills/ui-components/SKILL.md — out of scope this PR; tracked in #999'
-    const r = evaluateC5(['packages/ui/topbar/index.tsx'], OWNERS, body, fileExists([]))
+  it('waiver active — suppresses a missing-doc error and logs a note instead', () => {
+    const r = evaluateC5(['packages/ui/topbar/index.tsx'], OWNERS, '', fileExists([]), true)
     expect(r.errors).toEqual([])
     expect(r.notes.length).toBe(1)
     expect(r.notes[0]).toMatch(/C5 doc-waiver active/)
-    expect(r.notes[0]).toMatch(/out of scope/)
+    expect(r.notes[0]).toMatch(/\.claude\/skills\/ui-components\/SKILL\.md/)
   })
 
-  it('separator tolerance — Doc-waiver with a plain hyphen separator suppresses the binding', () => {
-    // Same as the em-dash waiver test above, but the pointer↔reason separator
-    // is " - " (whitespace + ASCII hyphen + whitespace) rather than " — ". Both
-    // forms must work so a human typing on a US keyboard gets the same result
-    // as one pasting the canonical em-dash form. Pointer contains hyphens
-    // (`ui-components`, `SKILL.md`) which must NOT be mistaken for the separator.
-    const body = 'Doc-waiver: .claude/skills/ui-components/SKILL.md - out of scope this PR; tracked in #999'
-    const r = evaluateC5(['packages/ui/topbar/index.tsx'], OWNERS, body, fileExists([]))
+  it('waiver active — also suppresses a URL-ack-missing error PR-wide', () => {
+    const r = evaluateC5(['packages/foo/index.ts'], OWNERS, '', fileExists([]), true)
     expect(r.errors).toEqual([])
     expect(r.notes.length).toBe(1)
     expect(r.notes[0]).toMatch(/C5 doc-waiver active/)
-    expect(r.notes[0]).toMatch(/out of scope/)
+    expect(r.notes[0]).toMatch(/https:\/\/example\.com\/foo-docs/)
   })
 
   it('separator tolerance — Doc-ack with a plain hyphen separator satisfies a URL binding', () => {
     // Mirror of the em-dash url-ack test, with the separator typed as " - ".
     const body = 'Doc-ack: https://example.com/foo-docs - confirmed, no change needed'
-    const r = evaluateC5(['packages/foo/index.ts'], OWNERS, body, fileExists([]))
+    const r = evaluateC5(['packages/foo/index.ts'], OWNERS, body, fileExists([]), false)
     expect(r.errors).toEqual([])
   })
 
@@ -158,7 +152,8 @@ describe('evaluateC5 — six required paths', () => {
       ['packages/ui/topbar/index.tsx', '.claude/skills/ui-components/SKILL.md', 'scripts/verify-docs.ts'],
       OWNERS,
       '',
-      fileExists([])
+      fileExists([]),
+      false
     )
     expect(r.errors.length).toBe(1)
     expect(r.errors[0]).toMatch(/aeg-root\/state-machine\.md/)

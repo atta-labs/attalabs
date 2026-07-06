@@ -15,10 +15,10 @@ export {
   isUrlPointer,
   parseDocOwners,
   pointerToPath,
-  readDocAcks,
-  readDocWaivers
+  readDocAcks
 } from './doc-owners'
-export type { C5Result, DocAck, DocOwnersBinding, DocWaiver } from './doc-owners'
+export type { C5Result, DocAck, DocOwnersBinding } from './doc-owners'
+export { isWaiverLabelActorVerified, PRINCIPAL_ALLOWLIST, WAIVER_LABEL } from './waiver-label'
 export { deriveSection7, globsOverlap } from './derive-section7'
 export type { Section7Match } from './derive-section7'
 export { checkManifestValidity, parseNoDocRules } from './manifest-validity'
