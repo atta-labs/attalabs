@@ -381,6 +381,18 @@
         "vitest": "^2.1.0",
       },
     },
+    "packages/aeg-forge-state": {
+      "name": "@atta/aeg-forge-state",
+      "version": "0.0.1",
+      "dependencies": {
+        "@atta/aeg-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "typescript": "^5.7.0",
+        "vitest": "^2.1.0",
+      },
+    },
     "packages/agents/forensic-hiring-auditor": {
       "name": "@atta/forensic-hiring-auditor",
       "version": "0.1.0",
@@ -737,6 +749,8 @@
     "@atta/admin": ["@atta/admin@workspace:tools/admin"],
 
     "@atta/aeg-core": ["@atta/aeg-core@workspace:packages/aeg-core"],
+
+    "@atta/aeg-forge-state": ["@atta/aeg-forge-state@workspace:packages/aeg-forge-state"],
 
     "@atta/aeg-studio": ["@atta/aeg-studio@workspace:apps/aeg/web/studio"],
 
