@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
-import { run } from '@atta/forensic-hiring-auditor'
+import { run, type RunAuditFailure } from '@atta/forensic-hiring-auditor'
 
 import { getUserByUsername } from '@/db/queries'
 import { resolveAuditCredentials, type ResolvedAuditCredentials } from '@/lib/audit-key'
@@ -30,7 +30,42 @@ function getCached(key: string): MatchReport | null {
   return entry.report
 }
 
-function buildPartialReport(name: string, title: string, github: string): MatchReport {
+function isRunAuditFailure(x: unknown): x is RunAuditFailure {
+  return typeof x === 'object' && x !== null && 'failed' in x && (x as RunAuditFailure).failed === true
+}
+
+type AuditFailureCategory = 'quota' | 'timeout' | 'auth' | 'unknown'
+
+// Simple string-matching over the real error message. Good enough for the
+// major vendor failure modes; falls back to 'unknown' rather than guessing.
+function categorizeFailure(reason: string | null): AuditFailureCategory {
+  if (!reason) return 'unknown'
+  const lower = reason.toLowerCase()
+  if (
+    lower.includes('429') ||
+    lower.includes('quota') ||
+    lower.includes('rate limit') ||
+    lower.includes('rate-limit')
+  ) {
+    return 'quota'
+  }
+  if (lower.includes('timeout') || lower.includes('timed out')) {
+    return 'timeout'
+  }
+  if (
+    lower.includes('401') ||
+    lower.includes('403') ||
+    lower.includes('unauthorized') ||
+    lower.includes('forbidden') ||
+    lower.includes('invalid api key') ||
+    lower.includes('authentication')
+  ) {
+    return 'auth'
+  }
+  return 'unknown'
+}
+
+function buildPartialReport(name: string, title: string, github: string, failureReason: string | null): MatchReport {
   return {
     candidate: { name, title, github },
     hard_requirements: [],
@@ -42,7 +77,11 @@ function buildPartialReport(name: string, title: string, github: string): MatchR
     ],
     signal: [],
     gaps: [{ gap: 'Incomplete analysis', severity: 'minor', mitigation: 'Re-run the audit for a complete assessment' }],
-    interview_hooks: []
+    interview_hooks: [],
+    auditFailed: {
+      reason: failureReason ?? 'Audit execution failed for an unknown reason',
+      category: categorizeFailure(failureReason)
+    }
   }
 }
 
@@ -95,6 +134,7 @@ JOB DESCRIPTION:
 ${jd.trim()}`
 
   let report: MatchReport | null = null
+  let failureReason: string | null = null
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -115,16 +155,24 @@ ${jd.trim()}`
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('LLM timeout')), AUDIT_LLM_TIMEOUT_MS))
       ])
 
+      if (isRunAuditFailure(result)) {
+        console.warn(`[Herald] run() reported execution failure (attempt ${attempt + 1}): ${result.reason}`)
+        failureReason = result.reason
+        continue
+      }
+
       if (!result) {
         console.warn(`[Herald] run() returned null (attempt ${attempt + 1}), retrying...`)
         continue
       }
 
       report = result
+      failureReason = null
       break
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
       console.error(`[Herald] LLM call failed (attempt ${attempt + 1}):`, message)
+      failureReason = message
       if (message === 'LLM timeout') break
     }
   }
@@ -133,7 +181,7 @@ ${jd.trim()}`
   let isPartial = false
   if (!report) {
     console.warn('[Herald] Returning partial report after failed attempts')
-    report = buildPartialReport(profile.name, profile.title, profile.github)
+    report = buildPartialReport(profile.name, profile.title, profile.github, failureReason)
     isPartial = true
   }
 
@@ -385,6 +433,7 @@ export async function POST(request: Request) {
     if (isBatch) {
       return NextResponse.json({ error: 'Batch audit failed' }, { status: 500 })
     }
-    return NextResponse.json(buildPartialReport(DANI_PROFILE.name, DANI_PROFILE.title, DANI_PROFILE.github))
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json(buildPartialReport(DANI_PROFILE.name, DANI_PROFILE.title, DANI_PROFILE.github, message))
   }
 }
