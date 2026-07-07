@@ -16,9 +16,22 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 2 | Production audit engine returning partial fallback (YAML tracing bug), carried from herald-agents-v2 T7 | #234  | herald          | —          | —              |
 | 4 | Footer: strip cross-product nav + per-product links, inline mark+name                          | #355  | herald, atta, vada, vitakka, attalabs | — | — |
 | 5 | Topbar buttons: Sign-out + Settings drifted from D-061's outline spec                           | #356  | herald          | —          | —              |
+| 6 | SmartPromptInput attachment tiles wrap instead of scrolling horizontally                        | #455  | herald, vada    | —          | —              |
+| 7 | JD file-upload resolution (pdf + markdown)                                                      | #456  | herald          | —          | —              |
+| 8 | Export an input-cost estimation utility from adapter-langgraph                                  | #457  | herald, vada    | —          | —              |
+| 9 | New shared tile-collection primitive (DocCollector)                                             | #458  | herald          | —          | —              |
+| 10 | Bulk Audit input redesign: two-surface layout, live N×M + cost estimate                        | #459  | herald          | 7, 8, 9    | —              |
 
 **Note:** task 3 is intentionally absent — its Issue (#348, pricing-table gap) was dropped before
 promotion to this table (see "Dropped during planning" below); the number is retired, not reused.
+
+## Bulk Audit redesign (Planner act, 2026-07-07)
+
+Tasks 6-10 add the Herald Bulk Audit input redesign, planned in a multi-turn design session with the Principal — iterated through interactive mockups, then refined via a "Claude Design" handoff bundle, then extended with a live model-selection label and a token/cost estimate. Split by verification-coupling, not by file: 6 (shared CSS bug, found along the way), 7 (JD file upload), 8 (cost-estimation utility), and 9 (the new `DocCollector` primitive) are each independently verifiable and carry no edges between them; 10 is the integration task and `depends-on` all three of 7/8/9, since the redesigned page can't be verified until they exist. `.docx` support was explicitly deferred (Principal, 2026-07-07) — task 7 covers pdf + markdown only. Task 8 was revised in-session before any brief was written against it: originally scoped as "export the raw pricing table," corrected to "export the estimation function itself," so the chars-to-tokens math lives at the engine/adapter layer and Herald only calls it, rather than duplicating logic in a product app.
+
+**Cap decision:** `MAX_JDS` rises from 5 to 10 (task 10) to match the design's uniform 10-per-side cap — an explicit Principal decision (2026-07-07) resolving a real asymmetry between existing code and the new design, not a silent pick.
+
+Task 8's `estimateInputCost` is related to, but does NOT close, the residual PRICING-vs-catalog gap already flagged below (an off-allowlist BYOK selection still nets no cost estimate — `costUsd: null` — after task 8 lands). That broader gap remains out of scope for this iteration.
 
 ## Dropped during planning
 
@@ -47,3 +60,8 @@ None. Tasks 1, 2, and 5 are herald-project-local. Task 4 touches the shared `pac
 component (blast radius: herald, atta, vada, vitakka, attalabs) — checked `vada-production-v1.md`,
 `aeg-studio-cleanup.md`, and `aeg-governance-hardening.md` directly plus all open PRs for overlap
 on `packages/ui/footer` or `packages/ui/topbar`: none found.
+
+Tasks 6 and 8 touch shared packages (`packages/ui/smart-prompt-input`, `packages/adapter-langgraph`)
+with blast radius into `vada` — checked all open PRs (#295, #286, both `vada-production-v1`) directly
+for file overlap with `smart-prompt-input.tsx`, `adapter-langgraph`, `audit-input/`, or `BulkAudit.tsx`:
+none found.
