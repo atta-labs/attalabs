@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
 import { resolveCvInput, resolveJdInput } from '@/lib/audit-input/resolve'
-import type { CvInput, JdInput, ResolvedCv } from '@/lib/audit-input/types'
+import type { CvInput, JdInput, ResolvedCv, ResolvedJd } from '@/lib/audit-input/types'
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024
 const MIN_CV_LENGTH = 50
@@ -53,6 +53,7 @@ async function handleFileUpload(request: Request): Promise<NextResponse> {
   const form = await request.formData()
   const file = form.get('file')
   const kind = form.get('kind')
+  const role = form.get('role') === 'jd' ? 'jd' : 'cv'
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -80,6 +81,16 @@ async function handleFileUpload(request: Request): Promise<NextResponse> {
   text = text.trim()
   if (text.length < MIN_CV_LENGTH) {
     return NextResponse.json({ error: 'File content is too short or could not be extracted' }, { status: 400 })
+  }
+
+  if (role === 'jd') {
+    const baseLabel = file.name || (kind === 'pdf' ? 'JD.pdf' : 'JD.md')
+    const resolved: ResolvedJd = {
+      kind,
+      text,
+      sourceLabel: kind === 'pdf' ? `${baseLabel} (PDF)` : `${baseLabel} (markdown)`
+    }
+    return NextResponse.json({ resolved })
   }
 
   const baseLabel = file.name || (kind === 'pdf' ? 'CV.pdf' : 'CV.md')
