@@ -5,6 +5,7 @@ export {
   listIterations,
   iterationsForProject,
   readIteration,
+  loadActiveIterations,
   type IterationDetail,
   type IterationLists,
   type IterationSummary

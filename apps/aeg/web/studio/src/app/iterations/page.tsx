@@ -17,7 +17,8 @@ export default async function IterationsPage() {
       <header className='space-y-2'>
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>Iterations</h1>
         <p className='font-sans text-sm text-muted-foreground'>
-          All iterations across every project, from <span className='font-mono'>aeg-root/iterations/</span>.
+          All iterations across every project — active from GitHub Milestones, archived from{' '}
+          <span className='font-mono'>aeg-root/iterations/completed/</span>.
         </p>
       </header>
 

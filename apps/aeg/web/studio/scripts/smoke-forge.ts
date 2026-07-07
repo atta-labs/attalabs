@@ -3,37 +3,72 @@
 /**
  * smoke-forge — bun-runnable verification harness for the local read adapter.
  *
- * Reads `aeg-root/iterations/<iteration>.md`, parses it with @atta/aeg-core,
- * runs `fetchForgeFacts` against this repo for the parsed tasks, prints the
+ * Resolves one iteration's tasks — via a forge Milestone when the slug is
+ * currently active (`@atta/aeg-forge-state`'s `deriveIterationFromForge`,
+ * `aeg-forge-state-v1` task 5, #429), falling back to
+ * `aeg-root/iterations/<slug>.md` when the forge is unreachable, or to
+ * `aeg-root/iterations/completed/<slug>.md` for archived iterations — then
+ * runs `fetchForgeFacts` against this repo for the resolved tasks, prints the
  * snapshot, and additionally runs the snapshot through `deriveIteration` so
  * we can spot-check derived status for known-merged tasks (1 and 2 should be
  * `merged`, etc.).
  *
+ * Imports `fetchForgeFacts` directly from its own module, not the `lib/forge`
+ * barrel — the barrel re-exports `load-snapshot.ts`, which is guarded by the
+ * `server-only` marker package (throws when imported outside a Next.js
+ * Server Component bundle). This script runs as a plain `bun` process, so it
+ * must stay off anything carrying that guard — same reason it calls
+ * `@atta/aeg-forge-state` directly instead of importing `@/lib/aeg-fs`
+ * (which carries the same guard for the same reason).
+ *
  * Read-only. No writes of any kind.
  *
  * Usage:
- *   bun run scripts/smoke-forge.ts                    # iteration = aeg-ui-v1
+ *   bun run scripts/smoke-forge.ts                    # iteration = aeg-forge-state-v1
  *   bun run scripts/smoke-forge.ts <iteration-slug>
  *   GITHUB_TOKEN='' bun run scripts/smoke-forge.ts    # force no-token path
  */
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { deriveIteration, parseIteration } from '@atta/aeg-core'
-import { fetchForgeFacts } from '../src/lib/forge'
+import { deriveIteration, parseIteration, type Iteration } from '@atta/aeg-core'
+import { deriveIterationFromForge, findMilestoneForSlug } from '@atta/aeg-forge-state'
+import { fetchForgeFacts } from '../src/lib/forge/fetch-forge-facts'
 
 const REPO_ROOT = join(import.meta.dir, '../../../../..')
-const DEFAULT_ITERATION = 'aeg-ui-v1'
+const DEFAULT_ITERATION = 'aeg-forge-state-v1'
 const OWNER = 'daniboomerang'
 const REPO = 'attalabs'
 
+function readFileIfExists(path: string): string | null {
+  return existsSync(path) ? readFileSync(path, 'utf8') : null
+}
+
+async function resolveIteration(slug: string): Promise<{ iteration: Iteration; source: string }> {
+  try {
+    const milestone = findMilestoneForSlug(OWNER, REPO, slug)
+    if (milestone && milestone.lifecycle === 'active') {
+      return { iteration: await deriveIterationFromForge(OWNER, REPO, slug), source: 'forge (active Milestone)' }
+    }
+  } catch (err) {
+    console.info(`[forge derivation failed, falling back to file] ${(err as Error).message}`)
+  }
+
+  const activeRaw = readFileIfExists(join(REPO_ROOT, 'aeg-root', 'iterations', `${slug}.md`))
+  if (activeRaw !== null) return { iteration: parseIteration(activeRaw), source: 'file (active, forge fallback)' }
+
+  const archivedRaw = readFileIfExists(join(REPO_ROOT, 'aeg-root', 'iterations', 'completed', `${slug}.md`))
+  if (archivedRaw !== null) return { iteration: parseIteration(archivedRaw), source: 'file (archived)' }
+
+  throw new Error(`No Milestone, active file, or archived file found for iteration "${slug}"`)
+}
+
 async function main() {
-  const iteration = process.argv[2] ?? DEFAULT_ITERATION
-  const iterationPath = join(REPO_ROOT, 'aeg-root', 'iterations', `${iteration}.md`)
-  const fileText = readFileSync(iterationPath, 'utf8')
-  const parsed = parseIteration(fileText)
+  const slug = process.argv[2] ?? DEFAULT_ITERATION
+  const { iteration: parsed, source } = await resolveIteration(slug)
 
   console.info(`Iteration: ${parsed.name} (${parsed.lifecycle})`)
+  console.info(`Source:    ${source}`)
   console.info(`Repo:      ${OWNER}/${REPO}`)
   console.info(`Tasks:     ${parsed.tasks.length}\n`)
 
