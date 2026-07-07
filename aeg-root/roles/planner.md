@@ -219,7 +219,7 @@ Once an Issue is assigned (`todo`), a Developer picks it up: reads the rationale
 
 ## Step 0 — commit plan artifacts via a worktree + PR, never directly to `main`
 
-**Your plan artifacts (the thin iteration file, the decision-log entry, any topology edit) are repo files, and every repo-file change reaches `main` the same way a Developer's does: through a worktree branch + PR + green merge — never a direct commit to `main`.** The Planner is not exempt because it writes docs instead of code; "I only edited the iteration file" is exactly the drift this rule closes (see `aeg-project/lessons.md` L‑006). The universal rule lives in `coordination.md` § "Every repo-file change goes through a worktree + PR"; this is its Planner-specific Step 0.
+**Your plan artifacts (the thin iteration file, the decision-log entry, any topology edit) are repo files, and every repo-file change reaches `main` the same way a Developer's does: through a worktree branch + PR + green merge — never a direct commit to `main`.** The Planner is not exempt because it writes docs instead of code; "I only edited the iteration file" is exactly the drift this rule closes (see the pinned lessons Issue #453, entry L‑006). The universal rule lives in `coordination.md` § "Every repo-file change goes through a worktree + PR"; this is its Planner-specific Step 0.
 
 Before committing any plan artifact, create a worktree off `origin/main` and work there:
 

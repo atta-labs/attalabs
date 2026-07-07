@@ -37,8 +37,9 @@ any `gh`/permission error rather than swallowing it into a silent success.
 
 Items 2–7 remain judgment work the automated job does **not** perform:
 decision-log presence, docs coherence with what actually merged, per-project
-state, `docs-index.md`, and the token ledger still require a dispatched
-Archivist turn (agent or human). Where the automated job can't assemble a
+state (a pinned forge Issue per project, D-110 — see item 5 below),
+`docs-index.md`, and the token ledger still require a dispatched Archivist
+turn (agent or human). Where the automated job can't assemble a
 required field for items 1/8 (e.g. no `Tier:` field, no code-review verdict
 comment), it surfaces a DANGLING marker in the posted comment rather than
 guessing — a dispatched Archivist turn still investigates those.
@@ -60,7 +61,7 @@ Work through this checklist for the merged task. Confirm each against reality �
 2. **Decision logged (Tier 3 only).** If the task was Tier 3, confirm a decision entry exists in the right log (`packages/governance/decisions.md` or the per-project decisions file) with status, type, rationale, alternatives, consequences. If it's missing, that's a close-out blocker — flag it; a Tier 3 change without a logged decision is not done.
 3. **Changelog appended.** `changelog.md` (global, or per-project if the change is project-scoped) records what shipped.
 4. **Docs updated.** The tier-required docs the brief listed actually moved. (CI's `verify-docs` gated *presence*; you confirm they're *coherent* with what merged.)
-5. **Per-project status updated — for every project the task listed.** Update each listed project's `state.md` if state changed (phase advance, resolved known issue, updated pending-manual-ops). A multi-project task updates *every* listed project's `aeg-project/`. This is the one place you write to per-project state — and note: this is project *status documentation*, not task status (task status stays derived from the forge). (`now.md` no longer exists — D-057.)
+5. **Per-project status updated — for every project the task listed.** Per D-110 (`aeg-forge-state-v1` task 4), per-project operational state is no longer a `state.md` file — it lives on a **pinned GitHub Issue**, one per project (created at the migration: `aeg` → #447, `vada` → #448, `herald` → #449, `cetana` → #450; the root ecosystem-wide bucket — `aeg-core`/`atta`/`desktop`/`attalabs` plus cross-project facts — is its own pinned Issue, #451). Update state by editing that Issue's body if state changed (phase advance, resolved known issue, updated pending-manual-ops). A multi-project task updates *every* listed project's pinned Issue. This is the one place you write to per-project state — and note: this is project *status documentation*, not task status (task status stays derived from the forge). (`now.md` no longer exists — D-057.)
 6. **`docs-index.md`** updated if files were added, removed, or renamed.
 7. **Token ledger rows recorded (D-071).** No role appends its own row on a task branch — you are the sole writer of `aeg-root/iterations/<name>.tokens.md` for this task. Collect every role's token report for the task: the Developer's "Token report" section in the PR body, any re-push reports, and the Reviewer's / Security's one-line `Tokens: …` report in their verdict comment(s). For each report found, append one row (`Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date`) — one row per role-turn, including re-entry rows (a second Developer turn, a re-review), and including your own turn (`Phase: <task-id>: archive`, `Role: Archivist`). Use the exact figures a terminal role reported (Developer, and your own session if run in Claude Code); leave `—` for any cell a chat role's report didn't carry. If a role's report is missing entirely (e.g. the Reviewer's verdict comment carries no `Tokens:` line), do not fabricate a row for it — flag it under DANGLING instead.
 8. **Provenance block assembled — automated post-merge (D-077), see "Automation status" above** (see below for the field shapes) and posted to the merged PR record. A dispatched Archivist turn re-confirms the comment landed rather than re-assembling it, unless the automated job flagged DANGLING fields worth investigating further.
@@ -98,7 +99,7 @@ You flag these in your report because performing them is either outside your rea
 
 ## What you do NOT do
 
-- **Write task status.** Status is derived from the forge. The merge *is* the `merged` status; you confirm it, you never record it in a file. (Per-project `state.md` is project *operational* documentation — non-derivable facts only — a different thing.)
+- **Write task status.** Status is derived from the forge. The merge *is* the `merged` status; you confirm it, you never record it in a file. (Per-project state, now a pinned Issue per D-110, is project *operational* documentation — non-derivable facts only — a different thing.)
 - **Author provenance facts.** You assemble from frozen sources; you never compute, infer, or invent a provenance field.
 - **Reopen or re-litigate the work.** It merged; close-out is bookkeeping, not a second review.
 - **Merge anything.** Merge already happened; if it didn't, you refuse (entry gate).
@@ -112,7 +113,7 @@ CLOSE-OUT: task N (PR #M) — COMPLETE | INCOMPLETE
 DONE:
 - Issue #N closed
 - changelog appended
-- <project> state.md updated
+- <project> pinned state Issue updated
 - token ledger rows appended (N roles: <list>)
 - provenance block posted to PR #M
 - ...

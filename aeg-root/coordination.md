@@ -24,11 +24,11 @@ If you are starting a fresh session and need to orient:
 2. `aeg-root/state-machine.md` — the constitution; artifact states, roles, permissions, decision schema
 3. `aeg-root/roles/{your-role}.md` — Team Leader (incl. Planner & Brief Author modes), Developer, Principal, Reviewer, Security, or Archivist
 4. `aeg-root/iterations/README.md` — the iteration model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
-5. `aeg-project/state.md` — what is true right now across the ecosystem (non-derivable operational facts; current focus pointer)
+5. **Per-project state (pinned Issues, D-110)** — what is true right now, per project (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450) plus the ecosystem-wide bucket (`aeg-core`/`atta`/`desktop`/`attalabs` + cross-project facts, #451). Non-derivable operational facts; current focus pointer.
 6. **Derive current execution state from the forge** — see the "Session-start forge queries" section below
 7. `aeg-root/iterations/<name>.md` — the current iteration's task topology (the plan); live status is queried from the forge, not read here
 8. `aeg-project/changelog.md` — what shipped (skim headers; read entries when context needed)
-9. `aeg-project/lessons.md` — calibration lessons + anti-patterns (read when authoring briefs or post-mortems)
+9. **Lessons log (pinned Issue #453, D-110)** — calibration lessons + anti-patterns, one comment per lesson (read when authoring briefs or post-mortems)
 
 The AEG model front door is the **`aeg`** skill (the model in one read) → the **`aeg-roles`** skill (routes you to your role doc). Load those first; this file is the repo-specific companion.
 
@@ -36,7 +36,7 @@ The AEG model front door is the **`aeg`** skill (the model in one read) → the 
 
 There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, the active iteration, and the decision log there. It never expects a per-project copy of the model.
 
-Living **state** is held in `aeg-project/` folders: one at the repo root (for monorepo-level tasks) and one per project (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). A task updates the root `packages/governance/decisions.md` + `changelog.md` (governance is global) **plus** the `aeg-project/` slice of each project it touches (one for a single-project task, several for a cross-project task — resolve which via `packages/governance/projects.md`). An `aeg-project/` folder holds state only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (D-041.)
+Living **state** is split between `aeg-project/` folders (decisions, changelog — files) and pinned forge Issues (lessons, per-project operational state — D-110, since `aeg-forge-state-v1` task 4): one root ecosystem-wide pinned Issue (#451, covering `aeg-core`/`atta`/`desktop`/`attalabs` — projects with no dedicated folder — plus cross-project facts) and one pinned Issue per project with its own folder (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450). A task updates the root `packages/governance/decisions.md` + `changelog.md` (governance is global) **plus** the pinned state Issue of each project it touches (one for a single-project task, several for a cross-project task — resolve which project via `packages/governance/projects.md`, then which Issue via this list or `gh issue search`). This state layer holds facts only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (D-041, D-110.)
 
 For deeper context on the operational model design:
 - `aeg-root/aeg-manual-flow.md` — running the flow by hand (the operator's guide)
@@ -66,7 +66,7 @@ gh issue list --label "iteration:<slug>" --state open --assignee ""
 gh issue list --label "aeg:blocked" --state open
 ```
 
-**"What's the current focus?"** — read `aeg-project/state.md` (the "Current focus" one-liner at the top) and the active iteration file at `aeg-root/iterations/<name>.md`.
+**"What's the current focus?"** — read the ecosystem pinned state Issue (#451, "Current focus" section) and the active iteration file at `aeg-root/iterations/<name>.md`.
 
 **"What merged recently?"** — `gh pr list --state merged --limit 20`
 
@@ -90,14 +90,14 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 | File | Purpose | Update cadence |
 |------|---------|----------------|
 | `aeg-root/coordination.md` | This file. Rules, names, how to work. | Rare (system changes only) |
-| `aeg-project/state.md` | Non-derivable operational facts: known production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer. | Whenever state changes |
+| Per-project state (pinned Issue, D-110) | Non-derivable operational facts: known production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer. | Whenever state changes |
 | `aeg-root/iterations/<name>.md` | The current iteration's task topology (edges, grouping). Plan only — no status. | At plan time (Planner) |
 | `aeg-project/changelog.md` | Append-only completed work log. | Per PR (append only) |
-| `aeg-project/lessons.md` | Calibration lessons + anti-patterns. | Monthly review |
+| Lessons log (pinned Issue #453, D-110) | Calibration lessons + anti-patterns. One new comment per lesson. | Monthly review |
 | `packages/governance/decisions.md` | Global cross-project decision log. | When decisions are made |
 | `docs-index.md` | Discovery map of repo content. Auto-generated. | When repo files added/removed/renamed |
 
-> **`now.md` is retired (D-057).** Active work, blocked tasks, and next candidates are derived from the forge (see "Session-start forge queries" above). The forge is the single source of truth for what is happening; `state.md` holds what the forge cannot derive.
+> **`now.md` is retired (D-057).** Active work, blocked tasks, and next candidates are derived from the forge (see "Session-start forge queries" above). The forge is the single source of truth for what is happening; the per-project pinned state Issue holds what the forge cannot derive.
 
 The roadmap is **not** an AEG file — it lives in the company's tool (or, for solo AttaLabs work, in the backlogs `apps/<project>/specs/<project>-backlog.md` per project and `specs/ecosystem-backlog.md` for the monorepo, which are reference docs out of the flow). The old global `roadmap.md` is retired. **Backlog convention (D-037, D-041):** a unit's *plan* lives in its `specs/` (`specs/ecosystem-backlog.md` for the monorepo; `apps/<project>/specs/<project>-backlog.md` per project); a unit's *flow + governance* lives in the root `aeg-root/` (model, exists once); its *living state* lives in its `aeg-project/` (one at the root for monorepo-level work, one per project).
 
@@ -155,9 +155,9 @@ Role is determined by environment and context — not by which agent you are. Re
 
 1. **Read `state-machine.md`** — confirm the authority matrix and decision schema.
 2. **Read `roles/team-leader.md`** — confirm which mode you're in (Strategist / Planner / Brief Author). If planning an iteration, also read `roles/planner.md`.
-3. **Read `state.md`** — orient on current ecosystem state, known production issues, and pending manual ops. Read the current `iterations/<name>.md` for in-flight task topology.
+3. **Read the ecosystem pinned state Issue (#451)** — orient on current ecosystem state, known production issues, and pending manual ops; read the relevant per-project pinned Issue too if scoped to one project. Read the current `iterations/<name>.md` for in-flight task topology.
 4. **Derive live execution state from the forge** — run the session-start forge queries above: open Issues by `iteration:<slug>`, open PRs, `aeg:blocked` labels.
-5. **Check `decisions.md` and `ratification-queue.md`** — any PENDING items for today's window?
+5. **Check `decisions.md` and the `needs:principal-input` label** — any PENDING decisions or labeled Issues/PRs for today's window? (`gh issue list --label needs:principal-input --state open`, `gh pr list --label needs:principal-input --state open`; D-110 retired the `ratification-queue.md` file in favor of this label query — historical entries preserved on pinned Issue #452.)
 6. **Determine the project in scope** — apply the spec-check gate (below) before anything substantive.
 
 ### If you are the Developer (a coding-agent surface, executing a brief)
@@ -188,7 +188,7 @@ You were invoked specifically to review a PR. You run with fresh context on purp
 
 1. **Confirm the PR is merged** — your only hard precondition (forge-derived). If not merged, refuse.
 2. **Read `roles/archivist.md`** — the close-out checklist.
-3. **Work the checklist** — Issue closed, decision logged if Tier 3, changelog appended, docs coherent, per-project `state.md` updated for every project the task listed (remove stale operational notes; `now.md` no longer exists — D-057), provenance block posted to the merged PR. Flag (don't perform) orphaned branches and worktree removal. Write no task status — the merge is the status.
+3. **Work the checklist** — Issue closed, decision logged if Tier 3, changelog appended, docs coherent, per-project pinned state Issue updated for every project the task listed (D-110; remove stale operational notes; `now.md` no longer exists — D-057), provenance block posted to the merged PR. Flag (don't perform) orphaned branches and worktree removal. Write no task status — the merge is the status.
 
 ### Mandatory forge check (before any brief, audit, or recommendation)
 
@@ -209,7 +209,7 @@ If Dani asks a strategic, architectural, or product-shape question about a named
 
 ## Ratification windows
 
-1-2 daily sessions where the Principal resolves items requiring his final authority. The TL maintains `ratification-queue.md` and batches items before each window.
+1-2 daily sessions where the Principal resolves items requiring his final authority. Per D-110, there is no queue file — the TL applies the `needs:principal-input` label to whichever Issue/PR needs ratification and batches the labeled set (`gh issue list --label needs:principal-input`, `gh pr list --label needs:principal-input`) before each window. Historical entries predating this mechanism are preserved on pinned Issue #452.
 
 **Batches at windows:** Type 1 decisions (irreversible; PENDING until window); Tier 3 PR merges; lock approvals; `severity: product` escalations; PENDING Type 2 decisions.
 
@@ -229,7 +229,7 @@ Locked (D-013). Spec filenames are `{product}-spec.md` or `{component}-spec.md` 
 
 ### Every repo-file change goes through a worktree + PR — no direct commits to `main`
 
-**Universal rule, every role.** Any change to a repo-tracked file — code, specs, skills, role docs, the iteration topology, decision logs, changelog, lessons — reaches `main` through a worktree branch + PR + green merge. **No role commits or pushes directly to `main`.** This applies to the Planner editing the iteration file just as much as the Developer editing code: "I only touched a doc" is not an exemption. The drift that produced this rule was a plan commit landing on `main` with no worktree and nothing stopping it (`aeg-project/lessons.md` L‑006).
+**Universal rule, every role.** Any change to a repo-tracked file — code, specs, skills, role docs, the iteration topology, decision logs, changelog — reaches `main` through a worktree branch + PR + green merge. **No role commits or pushes directly to `main`.** This applies to the Planner editing the iteration file just as much as the Developer editing code: "I only touched a doc" is not an exemption. The drift that produced this rule was a plan commit landing on `main` with no worktree and nothing stopping it (lessons log, pinned Issue #453, entry L‑006).
 
 This is **mechanically enforced**, not merely asked:
 - `.husky/pre-commit` refuses a commit while the current branch is `main`; `.husky/pre-push` refuses any push whose target is `refs/heads/main`. (Husky activates per-worktree via the post-checkout hook, so the guards fire in every worktree.)
@@ -239,9 +239,9 @@ Branch protection is unavailable on this private+free repo (classic protection a
 
 The only thing a non-Developer role does *not* route through a worktree is a pure forge action (cutting an Issue, posting a comment, merging via the gate) — those touch the forge, not repo files. Every repo *file* edit goes through the worktree + PR.
 
-### When state changes, update `state.md`
+### When state changes, update the pinned state Issue
 
-State changes: a project phase advances, an app ships/scaffolds, auth/DNS config changes, a known production issue is resolved, a pending manual op is completed. The TL updates `state.md` (commit or PR) before the session ends. For Tier 3 work, the state update goes in the same PR.
+State changes: a project phase advances, an app ships/scaffolds, auth/DNS config changes, a known production issue is resolved, a pending manual op is completed. The TL updates the relevant project's pinned state Issue (D-110 — `aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide #451) directly (editing an Issue body is a forge action, not a repo-file change — it does not go through a worktree/PR). For Tier 3 work affecting the state Issue, note it in the code PR's body too.
 
 Active work, next candidates, and blocked tasks are **derived from the forge** — they are never written to a file. (D-057 — `now.md` is retired.)
 
@@ -250,7 +250,7 @@ Active work, next candidates, and blocked tasks are **derived from the forge** �
 - **The execution plan changes** (a task's edges, a new task, iteration scope) → the current `iterations/<name>.md` (Planner, at plan time). Live task *status* is never written — it's derived from the forge.
 - **Held/future project items change** → the relevant per-project backlog (`apps/<project>/specs/<project>-backlog.md`) or the ecosystem backlog (`specs/ecosystem-backlog.md`) — out of the flow.
 - **Work completes and ships** (PR merged) → append to `changelog.md` (most recent first; never edit existing entries)
-- **Lesson learned / anti-pattern** → append to `lessons.md`
+- **Lesson learned / anti-pattern** → post a new comment on the pinned lessons Issue (#453, D-110) — never edit an existing comment
 
 ### When repo structure changes, regenerate `docs-index.md`
 
@@ -270,12 +270,12 @@ Log to `decisions.md` (global) or the per-project log during the conversation. A
 | A project spec, ecosystem vision, naming decision | Repo only |
 | Global decision log | `packages/governance/decisions.md` |
 | Per-project decision log | `apps/{project}/specs/{project}-decisions.md` |
-| Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | `aeg-project/state.md` |
+| Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | Per-project pinned Issue (D-110): `aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide `aeg-core`/`atta`/`desktop`/`attalabs` #451 |
 | The execution plan (task topology, edges) | `aeg-root/iterations/<name>.md` |
 | Held / future project items | `apps/{project}/specs/{project}-backlog.md` (per project) or `specs/ecosystem-backlog.md` (monorepo) |
 | Completed work log (append only) | `aeg-project/changelog.md` |
-| Calibration lessons + anti-patterns | `aeg-project/lessons.md` |
-| Items awaiting Principal ratification | `aeg-project/ratification-queue.md` |
+| Calibration lessons + anti-patterns | Pinned Issue #453, one new comment per lesson (D-110) |
+| Items awaiting Principal ratification | `needs:principal-input` label on the relevant Issue/PR (D-110); historical record on pinned Issue #452 |
 | Live task status (what's active, blocked, next) | **Nowhere — derived from the forge** (`gh issue list --label "iteration:<slug>"`, `gh pr list`, Issues view) |
 | Adding/removing/renaming a repo file | Repo + `bun docs:index` |
 | Fundamental coordination rules | This file |
