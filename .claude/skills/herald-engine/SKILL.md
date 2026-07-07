@@ -75,7 +75,9 @@ When both LLM attempts fail, `buildPartialReport()` returns a valid `MatchReport
 - Empty signals and interview hooks
 - A single gap (`severity: 'minor'`) explaining the incomplete analysis
 
-This ensures the UI never crashes. **The shape must match `MatchReport` exactly.**
+This ensures the UI never crashes and every consumer that reads `grade`/`recommendation`/`confidence_reasoning` blindly keeps working. **The shape must match `MatchReport` exactly.**
+
+The placeholder grade/recommendation text above is defensive only — it is never the authoritative signal that an audit failed. `MatchReport.auditFailed` is: an additive, optional field (`{ reason: string; category: 'quota' | 'timeout' | 'auth' | 'unknown' }`) that `run()` (`packages/agents/forensic-hiring-auditor/src/index.ts`) sets whenever the underlying execution's `terminalState === 'FAILED'` — returning `{ failed: true, reason }` instead of a bare `null`, so a real execution failure (rate-limit, timeout, auth, or unrecognized) is structurally distinguishable from a parse failure (which still returns `null`, unchanged). `route.ts`'s `runSingleMatch` categorizes the real reason via simple string-matching (`categorizeFailure`) and sets `auditFailed` on the report it builds. Both rendering surfaces (`ReportView.tsx`, `BulkAudit.tsx`'s `AuditCell`) check `report.auditFailed` FIRST and render an honest error state instead of the grade layout; `EnvoyFlow.tsx` additionally fires a toast so the failure isn't easy to miss. Never remove the placeholder fields — they exist so a consumer that doesn't yet check `auditFailed` degrades gracefully rather than breaking.
 
 ---
 
