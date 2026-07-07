@@ -36,6 +36,8 @@ apps/aeg/web/
 
 **Out (V1):** no auth / Clerk, no GitHub App, no encrypted token vault, no webhook cache, no hosting / SaaS, no multi-repo (this repo only), no write actions, no cost/token metrics, no `aeg.sh`, **no Portal**.
 
+> **§0 refinement — cost/token metrics shipped post-V1, not deferred to hosted.** A later iteration added a per-iteration token/cost ledger view to Studio (`Feat(aeg): Token ledger display on iteration view`, #153) — initially reading `aeg-root/iterations/<name>.tokens.md` off disk. `aeg-forge-state-v1` task 4b (#445) repointed it to a live read: Studio now fetches every merged PR on a task's own branch and re-derives Developer "Token report" / Reviewer-Security `Tokens:` rows directly from the forge (`apps/aeg/web/studio/src/lib/forge/fetch-token-ledger.ts`), same local-token adapter as live per-task status — not the hosted GitHub App path §3.2–§3.3 describes. `.tokens.md` itself is retained as the durable record of rows the live read cannot recover (the Archivist's own turn, the Planner's report) until a later task addresses that gap.
+
 ---
 
 ## 1. Product shape

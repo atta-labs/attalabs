@@ -286,6 +286,12 @@ Token reporting is asymmetric — and any honest design has to encode that, beca
 
 V1 accepts the manual seam: chat turns are the cheap ones; coding (terminal) dominates spend and is captured exactly. Auto-capture for terminal roles is the obvious next layer; auto-capture for chat roles depends on the surface giving us a self-token API, which it does not today. **Known gap (flagged, not solved by D-071):** iteration-wide chat-role turns with no task PR to report into — a Planner session outside a plan PR, a Brief Author session — have no established recording path; see `roles/planner.md` "Plan-PR close-out."
 
+### Live reads (Studio) — a second, narrower read path (`aeg-forge-state-v1` task 4b, #445)
+
+AEG Studio's iteration page no longer reads `<name>.tokens.md` off disk to render token totals — it re-derives the same row shape live off the forge: every MERGED PR on a task's own branch (`task/<iteration>/<id>`), parsing the Developer's "Token report" entries from the PR body (every one, including re-push entries) and the Reviewer's/Security's `Tokens: …` lines from that PR's comments (`packages/aeg-core/src/parse-token-report.ts`'s `aggregateTaskTokenRows`, fetched by `apps/aeg/web/studio/src/lib/forge/fetch-token-ledger.ts`). Same row shape, same `sumLedger` totals math (`parse-ledger.ts`) — different source.
+
+This is deliberately **narrower** than what the Archivist collects into the file: it cannot recover the Archivist's own `<task-id>: archive` row (no PR carries it — the file itself is that row's only record) or the Planner's `Tokens: planning …` report (no reliable way to attribute a plan PR to one task from the forge alone without false-positive cross-task matches, confirmed live during 4b's build — a task Issue's cross-reference timeline picks up ANY PR that merely mentions its number in passing prose, not just its own plan PR). Both remain recoverable only from `.tokens.md`, which is why the file is not deleted here (task 7's job, once the live mechanism is proven in wider use). A task's report that's missing or malformed (e.g. a "Token report" heading with no table and no parseable text after it) yields no row for that report, never a fabricated one — same discipline as the Archivist's own DANGLING convention.
+
 ### Anti-regression
 
 The ledger is a Section-13 append-only artifact. The familiar forbidden moves apply:

@@ -20,24 +20,36 @@ export function parseLedger(md: string): LedgerRow[] {
   const rows = readMarkdownTable(md, /^#{1,6}\s+Token\s+ledger\b/i)
   const out: LedgerRow[] = []
   for (const row of rows) {
-    // Expected 7 columns: Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date.
-    if (row.length < 7) continue
-    const phase = (row[0] ?? '').trim()
-    const role = (row[1] ?? '').trim()
-    // Phase is the row's identity — every other cell may be unknown, but a
-    // row without a phase is unusable (it can't be located on a re-pivot).
-    if (!phase) continue
-    out.push({
-      phase,
-      role,
-      agentModel: (row[2] ?? '').trim(),
-      tokensIn: parseIntCell(row[3] ?? ''),
-      tokensOut: parseIntCell(row[4] ?? ''),
-      cost: parseCostCell(row[5] ?? ''),
-      date: (row[6] ?? '').trim()
-    })
+    const parsed = rowFromCells(row)
+    if (parsed) out.push(parsed)
   }
   return out
+}
+
+/**
+ * Turn one 7-cell row (`Phase | Role | Agent/Model | Tokens in | Tokens out |
+ * Cost | Date`) into a `LedgerRow`, or `null` when the row is unusable.
+ * Exported so other sources that produce the same row-shape from a different
+ * layout (e.g. `parse-token-report.ts`'s PR-body/verdict-comment sources)
+ * reuse this exact cell-parsing/null-tolerance semantics rather than
+ * re-implementing it — see that file's module docstring.
+ */
+export function rowFromCells(cells: string[]): LedgerRow | null {
+  // Expected 7 columns: Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date.
+  if (cells.length < 7) return null
+  const phase = (cells[0] ?? '').trim()
+  // Phase is the row's identity — every other cell may be unknown, but a
+  // row without a phase is unusable (it can't be located on a re-pivot).
+  if (!phase) return null
+  return {
+    phase,
+    role: (cells[1] ?? '').trim(),
+    agentModel: (cells[2] ?? '').trim(),
+    tokensIn: parseIntCell(cells[3] ?? ''),
+    tokensOut: parseIntCell(cells[4] ?? ''),
+    cost: parseCostCell(cells[5] ?? ''),
+    date: (cells[6] ?? '').trim()
+  }
 }
 
 function parseIntCell(cell: string): number | null {

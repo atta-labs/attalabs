@@ -1,13 +1,12 @@
 import { Badge, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { parseLedger, sumLedger, type DerivedStatus, type DispatchResult } from '@atta/aeg-core'
+import { sumLedger, type DerivedStatus, type DispatchResult, type LedgerRow } from '@atta/aeg-core'
 import { AlertTriangle, UserRound } from 'lucide-react'
 import type { Metadata } from 'next'
-import { existsSync, readFileSync } from 'node:fs'
-import path from 'node:path'
 import { notFound } from 'next/navigation'
-import { findAegRoot, readIteration, readProject } from '@/lib/aeg-fs'
+import { readIteration, readProject } from '@/lib/aeg-fs'
 import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
+import { fetchIterationTokenLedger } from '@/lib/forge/fetch-token-ledger'
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
 import { CoherencePanel } from './_components/CoherencePanel'
 import { statusVisual, todoDispatchVisual } from './_lib/status-display'
@@ -21,17 +20,6 @@ type Params = { name: string; slug: string }
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { name, slug } = await params
   return { title: `${slug} · ${name} · AEG Studio` }
-}
-
-function readLedgerFile(slug: string): string | null {
-  try {
-    const root = findAegRoot()
-    const ledgerPath = path.join(root, 'iterations', `${slug}.tokens.md`)
-    if (!existsSync(ledgerPath)) return null
-    return readFileSync(ledgerPath, 'utf8')
-  } catch {
-    return null
-  }
 }
 
 function formatTokens(n: number | null): string {
@@ -91,9 +79,23 @@ export default async function IterationPage({ params }: { params: Promise<Params
   const issueUrl = (n: number): string | null =>
     snapshot.repo ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${n}` : null
 
-  const ledgerMd = readLedgerFile(slug)
-  const ledgerRows = ledgerMd !== null ? parseLedger(ledgerMd) : null
-  const ledgerTotals = ledgerRows !== null ? sumLedger(ledgerRows) : null
+  // Live-fetched off merged PRs + verdict comments (D-071 / task 4b, #445) —
+  // no longer the `<slug>.tokens.md` file read. `.tokens.md` itself is not
+  // deleted here (task 7's job, once this is proven).
+  const tokenLedger = snapshot.repo
+    ? await fetchIterationTokenLedger({
+        owner: snapshot.repo.owner,
+        repo: snapshot.repo.repo,
+        iteration: slug,
+        tasks: iteration.tasks.map((task) => ({ id: String(task.id), issue: task.issue }))
+      })
+    : {
+        ledgers: new Map<string, LedgerRow[]>(),
+        unavailable: true,
+        reason: 'Could not resolve repository (no git remote found and AEG_REPO unset).'
+      }
+  const ledgerRows = Array.from(tokenLedger.ledgers.values()).flat()
+  const ledgerTotals = ledgerRows.length > 0 ? sumLedger(ledgerRows) : null
 
   return (
     <div className='space-y-8'>
@@ -302,8 +304,15 @@ export default async function IterationPage({ params }: { params: Promise<Params
 
       <section className='space-y-3'>
         <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Token ledger</h2>
-        {ledgerRows === null ? (
-          <p className='font-sans text-sm text-muted-foreground/70'>No ledger data yet.</p>
+        {tokenLedger.unavailable ? (
+          <div className='flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-warning'>
+            <AlertTriangle className='size-4 shrink-0 translate-y-0.5' aria-hidden />
+            <p className='font-sans text-xs leading-relaxed'>
+              Live token ledger unavailable — set <span className='font-mono'>GITHUB_TOKEN</span>, run{' '}
+              <span className='font-mono'>gh auth login</span>, or set <span className='font-mono'>AEG_REPO</span> to
+              enable it.
+            </p>
+          </div>
         ) : ledgerRows.length === 0 ? (
           <p className='font-sans text-sm text-muted-foreground/70'>No ledger data yet.</p>
         ) : (
