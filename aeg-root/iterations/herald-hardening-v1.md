@@ -18,9 +18,10 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 5 | Topbar buttons: Sign-out + Settings drifted from D-061's outline spec                           | #356  | herald          | —          | —              |
 | 6 | SmartPromptInput attachment tiles wrap instead of scrolling horizontally                        | #455  | herald, vada    | —          | —              |
 | 7 | JD file-upload resolution (pdf + markdown)                                                      | #456  | herald          | —          | —              |
-| 8 | Export an input-cost estimation utility from adapter-langgraph                                  | #457  | herald, vada    | —          | —              |
+| 8 | Export an input-cost estimation utility from adapter-langgraph                                  | #457  | herald, vada    | —          | 11             |
 | 9 | New shared tile-collection primitive (DocCollector)                                             | #458  | herald          | —          | —              |
 | 10 | Bulk Audit input redesign: two-surface layout, live N×M + cost estimate                        | #459  | herald          | 7, 8, 9    | —              |
+| 11 | Single-audit UX: simulated progress, cost display, topbar scroll fix                           | #465  | herald, vada    | —          | 8              |
 
 **Note:** task 3 is intentionally absent — its Issue (#348, pricing-table gap) was dropped before
 promotion to this table (see "Dropped during planning" below); the number is retired, not reused.
@@ -32,6 +33,14 @@ Tasks 6-10 add the Herald Bulk Audit input redesign, planned in a multi-turn des
 **Cap decision:** `MAX_JDS` rises from 5 to 10 (task 10) to match the design's uniform 10-per-side cap — an explicit Principal decision (2026-07-07) resolving a real asymmetry between existing code and the new design, not a silent pick.
 
 Task 8's `estimateInputCost` is related to, but does NOT close, the residual PRICING-vs-catalog gap already flagged below (an off-allowlist BYOK selection still nets no cost estimate — `costUsd: null` — after task 8 lands). That broader gap remains out of scope for this iteration.
+
+## Single-audit UX (Planner act, 2026-07-07)
+
+Task 11 was found live by the Principal during a real, successful single-profile audit run (not from code reading) — the report took ~74s with no progress feedback, the already-computed `estimatedCostUsd` (visible in server logs) was never shown in the UI, and the main Herald topbar became unreachable after a report rendered. Real backend-driven progress (token streaming or a new execution-lifecycle hook) was explicitly ruled out as too large — `packages/adapter-langgraph`'s LLM calls are non-streaming end-to-end and shared with Vāda; a client-side simulated progress indicator was chosen instead. The topbar bug's exact root cause is not yet confirmed — task 11's brief requires live reproduction before any fix, not a guess from the report text.
+
+**Conflicts-with 8, retroactively added to task 8's Issue (#457):** both tasks touch `packages/adapter-langgraph/src/adapter.ts` (same file, different lines — task 8 exports a pre-audit cost estimator; task 11 attaches the already-computed post-audit `estimatedCostUsd` to `Conclusion`'s return shape). Declared to serialize on file-collision grounds, not a logical dependency.
+
+The rate-limiter log lines ("Per-IP/Per-owner rate limit check failed — allowing request") observed in the same session are NOT part of task 11 — traced to the already-tracked expired-Upstash-Redis backlog item below, operational not code.
 
 ## Dropped during planning
 
@@ -61,7 +70,7 @@ component (blast radius: herald, atta, vada, vitakka, attalabs) — checked `vad
 `aeg-studio-cleanup.md`, and `aeg-governance-hardening.md` directly plus all open PRs for overlap
 on `packages/ui/footer` or `packages/ui/topbar`: none found.
 
-Tasks 6 and 8 touch shared packages (`packages/ui/smart-prompt-input`, `packages/adapter-langgraph`)
+Tasks 6, 8, and 11 touch shared packages (`packages/ui/smart-prompt-input`, `packages/adapter-langgraph`)
 with blast radius into `vada` — checked all open PRs (#295, #286, both `vada-production-v1`) directly
 for file overlap with `smart-prompt-input.tsx`, `adapter-langgraph`, `audit-input/`, or `BulkAudit.tsx`:
 none found.
