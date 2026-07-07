@@ -17,6 +17,8 @@ Vāda is a YAML-driven multi-agent deliberation runtime, shipping as an MCP serv
 
 The product surface today is the catalog of YAML team specs at `packages/agents/vada-deliberation/yamls/`. The engine treats every YAML identically — there are no per-team code branches. As of D-033 (May 12-13, 2026, vada-decisions.md), the YAML schema is `2.0` and all flows are expressed as a sequence of rounds.
 
+**Scope note:** `packages/agents/` is a shared namespace, not exclusively Vāda's — it also hosts standalone, non-Vāda packages (e.g. `forensic-hiring-auditor`, Herald's forensic match-audit engine; see `.claude/skills/herald-engine/SKILL.md`). This skill documents only the Vāda deliberation catalog above; a change elsewhere under `packages/agents/` doesn't necessarily touch Vāda's architecture.
+
 ---
 
 ## Vāda Teams Catalog
