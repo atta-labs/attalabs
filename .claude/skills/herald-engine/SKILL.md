@@ -79,6 +79,17 @@ This ensures the UI never crashes. **The shape must match `MatchReport` exactly.
 
 ---
 
+## Input Resolution (`POST /api/audit/resolve-input`)
+
+Separate endpoint from the audit call — resolves a polymorphic CV or JD input (pasted text, URL, Herald profile username, or an uploaded file) into a plain `{ text, ... }` shape the audit call consumes. Two payload shapes, dispatched on `content-type`:
+
+- `application/json` — `{ role: 'cv' | 'jd', input }`, handled by `handleJson`, which delegates to `resolveCvInput`/`resolveJdInput` (`src/lib/audit-input/resolve.ts`).
+- `multipart/form-data` — a `file` + `kind` (`'pdf' | 'markdown'`) + `role` (`'cv' | 'jd'`, defaults to `'cv'` for backward compatibility with pre-existing callers), handled inline by `handleFileUpload` in the route itself (not `resolve.ts` — file parsing has always lived separately). Both roles share one `unpdf`/`file.text()` extraction branch; only the returned shape (`ResolvedCv` vs `ResolvedJd`) branches on `role`.
+
+CV file upload predates the JD file-upload path; JD's `.docx` support is out of scope (no parser exists in this repo).
+
+---
+
 ## GitHub Signal Tool (`packages/agents/forensic-hiring-auditor/src/tools/github-signals.ts`)
 
 GitHub signals are raw facts — no LLM interpretation happens in the tool itself.
