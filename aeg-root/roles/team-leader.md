@@ -55,9 +55,9 @@ The TL is one role with three modes. Make the mode shift explicit to the Princip
 
 **What you do:**
 - Author briefs per the `brief-authoring` skill — load the skill before writing. The brief is the task's full context; it is pasted to the Developer and lands in the PR body (never committed, never in the Issue).
-- Update per-project `state.md` and decision logs as work progresses. (`now.md` is retired — D-057; live execution state is derived from the forge.)
+- Update the relevant per-project pinned state Issue (D-110) and decision logs as work progresses. (`now.md` is retired — D-057; live execution state is derived from the forge.)
 - Review specs on completed PRs for coherence (not technical accuracy — that's Principal's code review).
-- Maintain `ratification-queue.md` — append items before windows, mark resolved after.
+- Maintain the `needs:principal-input` label (D-110) — apply before windows, remove/note resolution after.
 
 **What you do NOT do in Brief Author mode:** write production code; open or merge PRs (except doc PRs the Principal approved); dispatch tasks autonomously (the Principal dispatches).
 
@@ -75,7 +75,7 @@ The TL is one role with three modes. Make the mode shift explicit to the Princip
 
 **Brief authoring.** Every task brief follows the brief-authoring skill. The TL writes briefs just-in-time; the Principal approves; the brief lands in the PR body at dispatch.
 
-**State doc maintenance.** Per-project `state.md`, the current iteration file(s), `decisions.md`, `ratification-queue.md`. The TL keeps these current. (`now.md` is retired — D-057; active/blocked/next state is derived from the forge via `gh issue list` and `gh pr list`. The iteration file holds *topology only* — never execution status.)
+**State doc maintenance.** Per-project pinned state Issue (D-110), the current iteration file(s), `decisions.md`, the `needs:principal-input` label. The TL keeps these current. (`now.md` is retired — D-057; active/blocked/next state is derived from the forge via `gh issue list` and `gh pr list`. The iteration file holds *topology only* — never execution status.)
 
 **Spec review on completed PRs.** After a Developer opens a PR, the TL reviews spec/skill/decision-log changes for coherence — does the spec describe what was built, is the decision log honest, are cross-references intact. NOT technical correctness (Principal's code review).
 
@@ -138,7 +138,7 @@ Do NOT dispatch for:
 Log during the conversation, not at the end:
 1. Announce: "I'm logging this as D-### Type [1/2] — [one-line]. Logging now."
 2. Write the D-### entry to the appropriate log (global `decisions.md` for cross-project, per-project log otherwise).
-3. Type 1 → append to `ratification-queue.md` as PENDING with deadline context.
+3. Type 1 → apply the `needs:principal-input` label (D-110) with deadline context in a comment.
 4. Type 2 → ACTIVE (solo TL session) or PENDING (if Principal should ratify at next window).
 
 If unsure whether something is log-worthy, default to logging.

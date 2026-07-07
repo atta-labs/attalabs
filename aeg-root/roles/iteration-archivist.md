@@ -35,7 +35,7 @@ Work through every item below. Confirm each against reality — do not assume.
 
 ### 2. Write the retrospective
 
-Append a new section to `aeg-project/lessons.md`. Structure (preserve markdown; do not abbreviate):
+Post a new comment on the pinned lessons Issue (#453, D-110) — never edit an existing comment. Structure (preserve markdown; do not abbreviate):
 
 ```markdown
 ## <Iteration name> — retrospective (Month YYYY)
@@ -51,7 +51,7 @@ Append a new section to `aeg-project/lessons.md`. Structure (preserve markdown; 
 ### What stalled or caused rework
 <2-5 bullets. Honest. Concrete. Not blame — pattern identification. E.g. "PRs that touched both @atta/ui and a consuming app consistently triggered IdentityProvider crashes because no role checked context requirements before merging.">
 
-### Carry-forward lessons (add to lessons.md calibration section if not already there)
+### Carry-forward lessons (add to the pinned lessons Issue's calibration comment if not already there)
 <Distilled as rules. E.g. "Schema-change PRs must list drizzle-kit push and new env vars in the PR body — they are not done at merge without those steps.">
 
 ### Decisions made this iteration (Type 1, ratified)
@@ -65,7 +65,7 @@ Append a new section to `aeg-project/lessons.md`. Structure (preserve markdown; 
 - Dates: from merged PR timestamps (`mergedAt`)
 - Tasks completed: count merged PRs matching `task/<iteration>/*`
 - Dropped/deferred: from the iteration topology file (`iterations/<name>.md`) — check which tasks have no merged PR
-- What went well / What stalled: from merged PR summaries (briefs in PR bodies), the merged code's patterns, and calibration entries in `lessons.md`. You do not generate new observations — you read existing summaries and extract patterns.
+- What went well / What stalled: from merged PR summaries (briefs in PR bodies), the merged code's patterns, and calibration entries on the pinned lessons Issue (#453). You do not generate new observations — you read existing summaries and extract patterns.
 - Decisions: query `packages/governance/decisions.md` (and per-project decision files if relevant) for entries created during this iteration
 - Unbuilt tasks: topology entries with no PR
 
@@ -78,7 +78,9 @@ If you don't have the information to fill a field, write "unknown — Principal 
 - Do NOT delete the file — the rationale is durable history. Do NOT edit content beyond adding `Lifecycle: complete`. The topology and Planner's rationale are permanent.
 - Confirm `aeg-root/iterations/completed/<name>.md` exists and `aeg-root/iterations/<name>.md` does not exist after the move.
 
-### 4. Update `aeg-project/state.md`
+### 4. Update the pinned state Issue
+
+Per D-110, per-project state is a pinned GitHub Issue, not `state.md` — update the relevant one(s) by editing the Issue body (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450, or the ecosystem-wide bucket #451 for `aeg-core`/`atta`/`desktop`/`attalabs`).
 
 > **`now.md` is retired (D-057).** Do not look for or update `now.md` — it no longer exists. "What's next" is derived from the forge by the Planner (`gh issue list --label "iteration:<slug>" --state open`), not written to a file.
 
@@ -109,7 +111,7 @@ Post a comment on the **last merged task PR of the iteration** (the most recent 
 - Tasks completed: N/N
 - Duration: <first merge date> → <last merge date>
 - Iterations file: moved to `aeg-root/iterations/completed/<name>.md`
-- Retrospective: appended to `aeg-project/lessons.md`
+- Retrospective: posted to the pinned lessons Issue (#453)
 - Pending Type 1 ratifications: [list D-### or "none"]
 - Dangling items: [list or "none"]
 - Principal declaration: [quote or "dispatched without explicit quote — Principal to confirm"]
@@ -134,7 +136,7 @@ Post a comment on the **last merged task PR of the iteration** (the most recent 
 - **Write code.** You are a close-out role. Nothing in your output is code.
 - **Decide what's next.** You surface information. The Principal declares the next iteration or next step.
 - **Ratify Type 1 decisions.** You flag; the Principal ratifies.
-- **Author retrospective content.** You assemble from evidence — merged PR summaries, lessons.md, decision log. You do not invent observations.
+- **Author retrospective content.** You assemble from evidence — merged PR summaries, the pinned lessons Issue, decision log. You do not invent observations.
 - **Edit the iteration topology.** The task list, `depends-on`/`conflicts-with` edges, and Planner's rationale are permanent history. Adding execution metadata to those sections is the forbidden regression (`iterations/README.md` §9).
 - **Delete the iteration file.** It moves to `completed/` — never deleted.
 - **Run without explicit Principal dispatch.** No automation triggers you. A forge condition (all PRs merged) is necessary but not sufficient — the Principal must say "close this iteration."
@@ -151,12 +153,12 @@ FORGE VERIFICATION:
 - Issues closed: N/N (list any still open)
 - Orphaned branches: [list or none]
 
-RETROSPECTIVE: appended to aeg-project/lessons.md ✓ | INCOMPLETE (reason)
+RETROSPECTIVE: posted to pinned lessons Issue #453 ✓ | INCOMPLETE (reason)
 
 ARCHIVED: aeg-root/iterations/completed/<name>.md ✓ | FAILED (reason)
 
-STATE DOCS:
-- state.md: updated ✓ (current-focus pointer, pending-manual-ops, recently-shipped entry)
+STATE:
+- pinned state Issue(s) updated ✓ (current-focus pointer, pending-manual-ops, recently-shipped entry)
 
 PENDING RATIFICATIONS: [list D-### with one-line description] | none
 

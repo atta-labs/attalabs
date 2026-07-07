@@ -38,7 +38,7 @@ In a typical working period:
 2. TL reports status, surfaces decisions that need the Principal's call.
 3. Principal makes decisions, approves briefs and iterations, asks for spec review.
 4. Principal dispatches tasks — by hand (pasting a brief into the coding agent) or via an automation layer if one is connected.
-5. At ratification windows: reads `ratification-queue.md`, resolves pending items.
+5. At ratification windows: reads the `needs:principal-input`-labeled Issues/PRs (D-110), resolves pending items.
 6. Reviews PRs on the forge. Code review for correctness and scope compliance.
 7. Merges PRs after TL spec review and CI passes. (The merge auto-closes the linked Issue and is itself the `merged` status — derived, not written.)
 
