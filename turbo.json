@@ -33,7 +33,8 @@
       "dependsOn": ["generate", "^typecheck"]
     },
     "test": {
-      "dependsOn": ["typecheck"]
+      "dependsOn": ["typecheck"],
+      "env": ["GH_TOKEN", "GITHUB_TOKEN"]
     },
     "clean": {
       "cache": false

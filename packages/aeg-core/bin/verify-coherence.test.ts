@@ -163,6 +163,12 @@ describe('fetchProvenance — Part 2: null-closer fallback', () => {
  * subprocess (not the in-process `runCoherenceChecks`) so this actually
  * exercises the same stdio path CI does, including the real `git fetch`
  * this file's `loadIterationFiles` now performs.
+ *
+ * Timeout raised 30s → 60s (aeg-forge-state-v1 3b, #437): `loadIterationFiles`
+ * now derives each non-touched iteration from the forge (one `gh` round trip
+ * per iteration, sequential) instead of a local `git show` — ~30s observed
+ * across this repo's real ~20 iterations, leaving no margin under the old
+ * 30s budget.
  */
 describe('CLI --json mode produces pure JSON on stdout (PR #378 review)', () => {
   it('parses as JSON with no leading/trailing noise, regardless of exit code', () => {
@@ -173,7 +179,7 @@ describe('CLI --json mode produces pure JSON on stdout (PR #378 review)', () => 
     // JSON purity independent of the repo's current coherence state.
     let out: string
     try {
-      out = execFileSync('bun', [scriptPath, '--json'], { encoding: 'utf8', timeout: 30_000 })
+      out = execFileSync('bun', [scriptPath, '--json'], { encoding: 'utf8', timeout: 60_000 })
     } catch (err) {
       out = (err as { stdout?: string }).stdout ?? ''
     }
@@ -181,5 +187,5 @@ describe('CLI --json mode produces pure JSON on stdout (PR #378 review)', () => 
     const parsed = JSON.parse(out)
     expect(parsed).toHaveProperty('summary')
     expect(parsed).toHaveProperty('checks')
-  }, 30_000)
+  }, 60_000)
 })
