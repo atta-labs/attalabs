@@ -17,6 +17,7 @@
 export { fetchForgeFacts, buildBranchName, fetchForgeTasksByLabel } from './fetch-forge-facts'
 export { mapForgeFacts, AEG_BLOCKED_LABEL } from './map-forge-facts'
 export { fetchPullRequestBriefs } from './fetch-pull-request-brief'
+export { fetchIterationTokenLedger } from './fetch-token-ledger'
 export { resolveRepo } from './resolve-repo'
 export { loadIterationSnapshot, loadIterationProgress } from './load-snapshot'
 export type { IterationSnapshot, IterationProgress } from './load-snapshot'
@@ -26,4 +27,5 @@ export type {
   PullRequestBriefSnapshot,
   FetchPullRequestBriefsInput
 } from './fetch-pull-request-brief'
+export type { FetchTokenLedgerInput, TokenLedgerSnapshot } from './fetch-token-ledger'
 export type { RepoRef } from './resolve-repo'

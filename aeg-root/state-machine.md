@@ -143,6 +143,8 @@ Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer i
 | **Orchestration-tool runtime** (if used) | Edits config; reads (audit) | Reads | Appends events via the tool | — |
 | **CI/forge Actions** | Approves workflow changes via PR | Proposes workflow changes via PR | — | Runs as forge-CI automation |
 
+**Token ledger — a second read path (`aeg-forge-state-v1` task 4b, #445):** the table row above still governs who *writes* `iterations/<name>.tokens.md` (the Archivist, sole writer) — that is unchanged. AEG Studio's iteration page, however, no longer *reads* that file to render totals: it re-derives the Developer/Reviewer/Security rows live from the task's own merged PR(s) (`packages/aeg-core/src/parse-token-report.ts`, `apps/aeg/web/studio/src/lib/forge/fetch-token-ledger.ts`) — narrower than the file (it cannot recover the Archivist's own row or the Planner's report; see `iterations/README.md` §12). The file is not deleted and remains the durable, complete record.
+
 ### Reviewer & Security review authority (D-026, extended by D-030)
 
 The Reviewer role has two specializations — code review (`roles/reviewer.md`) and security review (`roles/security.md`) — and one narrow authority profile:
