@@ -393,7 +393,7 @@ function AttachmentTiles({ onCountChange }: { onCountChange?: (count: number) =>
         )}
       >
         <div className='overflow-hidden'>
-          <div className='flex flex-wrap gap-2 p-1'>
+          <div className='flex gap-2 p-1 overflow-x-auto'>
             {files.map((f) => (
               <AttachmentTileItem key={f.id} f={f} extra={extras.get(f.id)} onRemove={() => remove(f.id)} />
             ))}
