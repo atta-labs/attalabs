@@ -1,12 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Button as FallbackButton } from '@atta/ui/components'
+import { Button as FallbackButton, useToastContext } from '@atta/ui/components'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
 import { JDInput } from './JDInput'
 import { LoadingState } from './LoadingState'
-import { ReportView } from './ReportView'
+import { auditFailureMessage, ReportView } from './ReportView'
 
 interface CandidateProfile {
   name: string
@@ -99,6 +99,7 @@ export function EnvoyFlow({
 }) {
   const comps = useComponents()
   const Button = (comps.Button as typeof FallbackButton | undefined) ?? FallbackButton
+  const { errorToast } = useToastContext()
   const [state, setState] = useState<FlowState>('input')
   const [report, setReport] = useState<MatchReport | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -153,6 +154,9 @@ export function EnvoyFlow({
       }
 
       const data: MatchReport = await res.json()
+      if (data.auditFailed) {
+        errorToast('Audit failed', auditFailureMessage(data.auditFailed))
+      }
       resultBuffer.current = data
       tryReveal()
     } catch (err) {

@@ -6,7 +6,7 @@ import { Badge } from '@atta/ui/components/badge'
 import { Button, Card, CardContent } from '@atta/ui/components'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/components'
 
-import { ReportView } from '@/components/envoy/ReportView'
+import { auditFailureMessage, ReportView } from '@/components/envoy/ReportView'
 import { resolveCvFileRequest, resolveCvJsonRequest, resolveJdRequest } from '@/lib/audit-input/client'
 import type { ResolvedCv, ResolvedJd } from '@/lib/audit-input/types'
 import type { MatchReport } from '@/lib/types'
@@ -519,6 +519,22 @@ function AuditCell({ cell, candidateLabel, jdLabel }: AuditCellProps) {
   }
 
   const { report } = cell
+
+  if (report.auditFailed) {
+    return (
+      <Card className='overflow-hidden border-destructive/30'>
+        <CardContent className='flex h-[160px] flex-col items-center justify-center gap-2 p-6'>
+          <Badge className='bg-destructive/10 text-destructive border-destructive/40 font-mono text-[9px] uppercase tracking-[0.2em]'>
+            Failed
+          </Badge>
+          <p className='text-center font-mono text-[11px] text-muted-foreground'>
+            {auditFailureMessage(report.auditFailed)}
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   const signalCount = report.signal.length
   const hardCount = report.hard_requirements?.filter((r) => r.kind === 'hard').length ?? 0
   const hardMetCount = report.hard_requirements?.filter((r) => r.kind === 'hard' && r.met).length ?? 0
