@@ -23,13 +23,18 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 3a | Cut per-task gates over to the forge adapter                          | #427  | aeg, aeg-core   | 1          | —              |
 | 3b | Cut verify-coherence.ts's repo-wide sweep over to the forge adapter    | #437  | aeg, aeg-core   | 1          | —              |
 | 4  | Migrate token ledgers, lessons, per-project state to forge objects     | #428  | aeg, aeg-core   | —          | —              |
+| 4b | Live PR/comment token aggregation, repoint Studio off tokens.md         | #445  | aeg, aeg-core   | 4          | —              |
 | 5  | Update AEG Studio to render from forge-native sources                  | #429  | aeg             | 1, 3a, 3b  | —              |
 | 6  | Delete fully-redundant files (changelog, ratification queue)           | #430  | aeg             | 4          | —              |
-| 7  | Final cutover: delete migrated files, complete the birth rule          | #431  | aeg, aeg-core   | 3a, 3b, 4, 5 | —            |
+| 7  | Final cutover: delete migrated files, complete the birth rule          | #431  | aeg, aeg-core   | 3a, 3b, 4, 4b, 5 | —        |
 
 ## Row split (Planner act, 2026-07-06)
 
 Task 3 split into 3a/3b at brief-time dig — pre-authorized by its own original rationale ("if any one gate's cutover is large enough to justify its own PR, split it"). `verify-coherence.ts`'s `loadIterationFiles()` is a synchronous, repo-wide, cross-iteration function feeding the entire coherence-check battery (A1–R1) — a different verification story than the four per-task gates (each reads one iteration at a time, mostly a clean drop-in swap). 3a keeps Issue #427 (narrowed scope); 3b is new, Issue #437. Kept row-adjacent (3a then 3b) deliberately, not fought — both touch the same live dispatch/coherence machinery every active iteration depends on, and running them sequentially lets 3a's golden-comparison proof inform 3b's.
+
+## Row split (Planner act, 2026-07-07)
+
+Task 4's own required consumer sweep (its brief's Step 0) found a real, live consumer of `.tokens.md` with no forge-native replacement: AEG Studio's iteration-detail page renders token totals straight off the file. Task 4's original Boundary assumed a "sum PR/Issue comments at read time" mechanism would just exist — it doesn't yet, and building it (multi-source aggregation across PR-body "Token report" tables, re-push entries, and Reviewer/Security verdict-comment `Tokens:` lines, then repointing Studio) is a materially different, larger concern than mechanically moving `lessons.md`/`state.md`/`ratification-queue.md` to pinned Issues. Split out as 4b, kept row-adjacent to 4 for the same reason 3a/3b were: same underlying goal, sequenced dependency, not a hard technical coupling. Task 4 itself is narrowed — it no longer touches `.tokens.md` at all. Task 7's `Depends-on` updated accordingly (see its own amendment on #431).
 
 ## Cross-iteration dependencies
 
