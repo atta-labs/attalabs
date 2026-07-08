@@ -20,7 +20,7 @@ export {
   readDocAcks
 } from './doc-owners'
 export type { C5Result, DocAck, DocOwnersBinding } from './doc-owners'
-export { isWaiverLabelActorVerified, PRINCIPAL_ALLOWLIST, WAIVER_LABEL } from './waiver-label'
+export { isWaiverLabelActorVerified, PRINCIPAL_ALLOWLIST, WAIVER_LABEL, WAIVER_LABEL_REVIEW } from './waiver-label'
 export { deriveSection7, globsOverlap } from './derive-section7'
 export type { Section7Match } from './derive-section7'
 export { checkManifestValidity, parseNoDocRules } from './manifest-validity'
@@ -56,6 +56,7 @@ export {
   checkL1,
   checkL2,
   checkL3,
+  checkL4,
   checkR1,
   checkT1,
   checkT2,
@@ -68,6 +69,10 @@ export {
 export type { CheckFailure, CheckResult, ForgeIssue, IterationFile, TaskEntry } from './coherence-checks'
 export { buildProvenanceBlock, hasProvenance, taskRefFromBranch } from './archive-task'
 export type { MergedPrFacts } from './archive-task'
+export { extractCodeReviewVerdict, extractSecurityReviewVerdict } from './verdict-extraction'
+export type { VerdictExtraction } from './verdict-extraction'
+export { checkReviewGate } from './review-gate'
+export type { ReviewGateInput, ReviewGateResult, ReviewGateVerdict } from './review-gate'
 export { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 export type { IssueSectionResult } from './issue-validation'
 export { checkPremises, parsePremiseBlock } from './premise-check'

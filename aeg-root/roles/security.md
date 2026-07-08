@@ -77,6 +77,8 @@ A security finding that implies a product/architecture decision (e.g., "the whol
 
 Phase 10 (Review) in `process.md`: code-reviewer pass → **security pass (you)** → Principal code review → TL spec review → merge.
 
+**Your verdict is also a mechanical merge gate (aeg-review-gate-v1 task 1, #474).** A required, blocking CI check (`packages/aeg-core/bin/verify-review-gate.ts`) reads every PR comment for a clean `PASS` verdict — `FAIL`, a missing verdict, or an unclear one all fail the check and block merge, same as the code-reviewer pass. This is not advisory: it is the same enforcement class as typecheck or lint. A principal can waive it for one PR with an actor-verified `waiver:review` label (`aeg-root/enforcement.md`) — label presence alone is never sufficient.
+
 ## Turn-end: report your tokens in the verdict comment
 
 You do not append your own row to `aeg-root/iterations/<name>.tokens.md` — you have no branch to write it on, and D-071 retired self-append for every role (`iterations/README.md` §12). Instead, close your verdict comment with a one-line token report: `Tokens: <task-id>: security — Security — <model> — in/out/cost or — if unknown`. You run on **claude.ai**, which cannot read its own token count; report `—` for the numeric cells if you don't have them. The per-task Archivist collects this report at close-out and appends the row to the ledger — see `roles/archivist.md`. A re-pass after the Developer's fixes reports again, never edits the prior report.

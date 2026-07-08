@@ -15,6 +15,7 @@
 import { type AnchorField, anchoredRegion } from './anchored-region'
 import { headerRegion } from './brief-validation'
 import { readTierFromPrBody } from './pr-tier'
+import { extractCodeReviewVerdict, extractSecurityReviewVerdict } from './verdict-extraction'
 
 export type MergedPrFacts = {
   number: number
@@ -116,29 +117,6 @@ function extractDecision(body: string, tier: 0 | 1 | 3 | null): { decision: stri
   return { decision: 'none', danglingNote: null }
 }
 
-function extractVerdict(
-  comments: string[],
-  markerPattern: RegExp,
-  valuePattern: RegExp,
-  missingLabel: string
-): { value: string; danglingNote: string | null } {
-  const hit = comments.find((c) => markerPattern.test(c))
-  if (!hit) {
-    return {
-      value: `no ${missingLabel} pass was run before merge — DANGLING, see below`,
-      danglingNote: `no ${missingLabel} verdict comment found on this PR`
-    }
-  }
-  const m = hit.match(valuePattern)
-  if (!m) {
-    return {
-      value: `${missingLabel} comment found but verdict marker unclear — DANGLING, see below`,
-      danglingNote: `${missingLabel} comment found but could not extract a clear verdict marker`
-    }
-  }
-  return { value: (m[1] as string).toUpperCase().replace(/[_-]/g, ' '), danglingNote: null }
-}
-
 /** Assemble the block purely from frozen facts; absent facts become DANGLING entries. */
 export function buildProvenanceBlock(facts: MergedPrFacts): {
   block: string
@@ -175,20 +153,10 @@ export function buildProvenanceBlock(facts: MergedPrFacts): {
   const { decision, danglingNote: decisionDangling } = extractDecision(facts.body, tier)
   if (decisionDangling) dangling.push(decisionDangling)
 
-  const codeReview = extractVerdict(
-    facts.comments,
-    /verdict|APPROVE|REQUEST[ _-]?CHANGES|LGTM/i,
-    /\b(APPROVE|REQUEST[ _-]?CHANGES|LGTM)\b/i,
-    'code-reviewer'
-  )
+  const codeReview = extractCodeReviewVerdict(facts.comments)
   if (codeReview.danglingNote) dangling.push(codeReview.danglingNote)
 
-  const security = extractVerdict(
-    facts.comments,
-    /security.*\b(PASS|FAIL)\b|\b(PASS|FAIL)\b.*security/i,
-    /\b(PASS|FAIL)\b/i,
-    'security-review'
-  )
+  const security = extractSecurityReviewVerdict(facts.comments)
   if (security.danglingNote) dangling.push(security.danglingNote)
 
   const ticket = extractField(facts.body, 'Ticket') ?? 'none'

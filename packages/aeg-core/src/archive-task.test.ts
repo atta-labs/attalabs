@@ -184,7 +184,7 @@ describe('buildProvenanceBlock', () => {
   })
 
   it('captures a code-review APPROVE verdict comment when present', () => {
-    const comments = ['Reviewed the diff. verdict: APPROVE. Looks clean.']
+    const comments = ['VERDICT: APPROVE\n\nBRIEF CONFORMANCE: clean. Looks good.']
     const { block, dangling } = buildProvenanceBlock(facts({ body: FULL_BODY, comments }))
     expect(block).toContain('- Code review:  APPROVE')
     expect(dangling.some((d) => d.includes('code-reviewer'))).toBe(false)
@@ -197,7 +197,7 @@ describe('buildProvenanceBlock', () => {
   })
 
   it('captures a security PASS verdict comment when present', () => {
-    const comments = ['security review: PASS, no findings.']
+    const comments = ['VERDICT: PASS\n\nFINDINGS: none.']
     const { block, dangling } = buildProvenanceBlock(facts({ body: FULL_BODY, comments }))
     expect(block).toContain('- Security:     PASS')
     expect(dangling.some((d) => d.includes('security-review'))).toBe(false)

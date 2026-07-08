@@ -72,43 +72,48 @@ if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+issue[[:space:]]+edit\b' \
   bun packages/aeg-core/bin/open-issue.ts edit <n> [--body-file /path/to/body.md] [--title \"...\"]"
 fi
 
-# --- Waiver-label mutation (D-097) ------------------------------------------
-# `waiver:docs` is the ONLY way a C5 doc-coverage finding is ever honored as
-# waived — CI verifies the ACTOR of that label's own labeling timeline event
-# against a principal allowlist. But a local agent session shares the
-# Principal's own `gh` PAT, so actor verification alone is spoofable at this
-# layer: an agent applying the label would inherit the Principal's identity
-# on the labeling event, defeating the whole point. This block denies ANY
-# command mutating `waiver:docs` specifically, from an agent session — every
-# OTHER label mutation stays covered by the general exemption noted above.
+# --- Waiver-label mutation (D-097, extended to waiver:review by
+# aeg-review-gate-v1 task 1/#474) ---------------------------------------------
+# `waiver:docs`/`waiver:review` are the ONLY ways a C5 doc-coverage finding or
+# the pre-merge review gate are ever honored as waived — CI verifies the
+# ACTOR of that label's own labeling timeline event against a principal
+# allowlist. But a local agent session shares the Principal's own `gh` PAT,
+# so actor verification alone is spoofable at this layer: an agent applying
+# the label would inherit the Principal's identity on the labeling event,
+# defeating the whole point (live-fire proof, aeg-review-gate-v1 task 1: an
+# agent session applying `waiver:review` via `gh pr edit` unblocked the gate
+# before this extension existed). This block denies ANY command mutating
+# `waiver:docs` OR `waiver:review` specifically, from an agent session —
+# every OTHER label mutation stays covered by the general exemption noted
+# above.
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+(pr|issue)[[:space:]]+edit\b' \
   && printf '%s' "$command" | grep -qE '(--add-label|--remove-label)\b' \
-  && printf '%s' "$command" | grep -qi 'waiver:docs'; then
-  deny "Forge gate (D-097): mutating the \`waiver:docs\` label is not allowed from an agent session — a doc-coverage waiver is a forge-authenticated human act, and a local agent acts with the Principal's own \`gh\` credential, so actor verification alone would be spoofable here. Only the Principal, outside an agent session, may apply or remove this label. Every other label is unaffected by this gate."
+  && printf '%s' "$command" | grep -qiE 'waiver:docs|waiver:review'; then
+  deny "Forge gate (D-097): mutating the \`waiver:docs\`/\`waiver:review\` labels is not allowed from an agent session — a waiver is a forge-authenticated human act, and a local agent acts with the Principal's own \`gh\` credential, so actor verification alone would be spoofable here. Only the Principal, outside an agent session, may apply or remove these labels. Every other label is unaffected by this gate."
 fi
 
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+api\b' \
   && printf '%s' "$command" | grep -qE '/(issues|pulls)/[0-9]+/labels' \
-  && printf '%s' "$command" | grep -qiE 'waiver:docs|waiver%3Adocs'; then
-  deny "Forge gate (D-097): mutating the \`waiver:docs\` label via raw \`gh api\` is not allowed from an agent session — see the \`gh pr/issue edit\` deny message above for why. Only the Principal, outside an agent session, may apply or remove this label."
+  && printf '%s' "$command" | grep -qiE 'waiver:docs|waiver%3Adocs|waiver:review|waiver%3Areview'; then
+  deny "Forge gate (D-097): mutating the \`waiver:docs\`/\`waiver:review\` labels via raw \`gh api\` is not allowed from an agent session — see the \`gh pr/issue edit\` deny message above for why. Only the Principal, outside an agent session, may apply or remove these labels."
 fi
 
 # GraphQL label mutations (`addLabelsToLabelable`/`removeLabelsFromLabelable`)
 # take an opaque label NODE ID, not a name — a two-step bypass (read-call
-# resolves `waiver:docs`'s node ID via a `label(name: ...)` lookup, a second
-# call mutates by that ID alone) would never contain the literal string
-# `waiver:docs` in the mutating command, so a text-scoped match on that
-# string is not a reliable gate here the way it is for `gh pr/issue edit`
-# (label names) and the REST endpoint above (also label names). Denied
-# UNCONDITIONALLY instead — every raw GraphQL label mutation, regardless of
-# which label — since a static single-command grep cannot distinguish a
-# `waiver:docs` node ID from any other. The sanctioned path for every OTHER
-# label stays `gh pr/issue edit --add-label`/`--remove-label` (name-based,
-# untouched above), so this does not remove any legitimate path — raw
-# GraphQL label mutations were never the sanctioned mechanism for anything.
+# resolves the label's node ID via a `label(name: ...)` lookup, a second
+# call mutates by that ID alone) would never contain the literal label name
+# in the mutating command, so a text-scoped match on that string is not a
+# reliable gate here the way it is for `gh pr/issue edit` (label names) and
+# the REST endpoint above (also label names). Denied UNCONDITIONALLY
+# instead — every raw GraphQL label mutation, regardless of which label —
+# since a static single-command grep cannot distinguish a waiver label's
+# node ID from any other. The sanctioned path for every OTHER label stays
+# `gh pr/issue edit --add-label`/`--remove-label` (name-based, untouched
+# above), so this does not remove any legitimate path — raw GraphQL label
+# mutations were never the sanctioned mechanism for anything.
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+api[[:space:]]+graphql\b' \
   && printf '%s' "$command" | grep -qE '(addLabelsToLabelable|removeLabelsFromLabelable)'; then
-  deny "Forge gate (D-097): mutating labels via a raw GraphQL label mutation is not allowed from an agent session — these mutations resolve labels by opaque node ID, so a static command-text check cannot reliably tell a \`waiver:docs\` mutation apart from any other (a two-step 'look up the ID, then mutate by ID' pattern would otherwise bypass a text-based check entirely). Use \`gh pr edit --add-label <name>\` / \`gh issue edit --add-label <name>\` instead — denied separately, only when the label is \`waiver:docs\`."
+  deny "Forge gate (D-097): mutating labels via a raw GraphQL label mutation is not allowed from an agent session — these mutations resolve labels by opaque node ID, so a static command-text check cannot reliably tell a \`waiver:docs\`/\`waiver:review\` mutation apart from any other (a two-step 'look up the ID, then mutate by ID' pattern would otherwise bypass a text-based check entirely). Use \`gh pr edit --add-label <name>\` / \`gh issue edit --add-label <name>\` instead — denied separately, only when the label is \`waiver:docs\` or \`waiver:review\`."
 fi
 
 # --- gh api bypass attempts --------------------------------------------------
