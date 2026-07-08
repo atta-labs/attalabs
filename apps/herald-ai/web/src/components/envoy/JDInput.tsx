@@ -327,11 +327,12 @@ export function JDInput({
         </div>
 
         {/* Scroll hint — sticks to the viewport bottom while the hero is still
-            in view, scrolling away naturally once the hero's own bottom edge
-            passes (position: sticky, not fixed). Pure Tailwind, no custom CSS. */}
+            in view, settling right above the input once the hero's own
+            bottom edge (position: sticky, not fixed) passes. Static shape,
+            no moving structure — only the color/opacity breathes (animate-pulse). */}
         <div
           aria-hidden='true'
-          className='pointer-events-none sticky bottom-0 h-20 animate-pulse bg-gradient-to-t from-primary/10 via-primary/5 to-transparent backdrop-blur-sm'
+          className='pointer-events-none sticky bottom-0 h-10 animate-pulse bg-gradient-to-t from-primary/15 to-transparent'
         />
       </div>
 
