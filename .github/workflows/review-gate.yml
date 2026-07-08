@@ -1,0 +1,94 @@
+name: Review Gate
+
+# Split out of forge-lifecycle.yml's consolidated `aeg-gate-suite` job
+# (D-115, 2026-07-08). Required pre-merge check: a task-branch or fix/*
+# branch PR must not merge without a clean code-reviewer APPROVE verdict AND
+# a clean security-review PASS verdict on the PR, or a principal-actor-
+# verified `waiver:review` label (D-097 pattern). Only plan/* branches are
+# exempt (`isReviewGateExemptBranch` — topology/decision-log docs only, no
+# code to review).
+#
+# Why this is its own workflow, not a step in the consolidated job: this
+# check's real inputs — PR comments and labels — are fetched LIVE via
+# `gh pr view` inside `verify-review-gate.ts`, never tied to a specific
+# commit. But a verdict comment fires GitHub's `issue_comment` event, not
+# `pull_request` — an entirely separate event the consolidated job (wired
+# only to `pull_request`) structurally cannot receive. Before this split,
+# posting a verdict comment never re-triggered CI on its own; every verdict
+# landed this way this session required a manual `gh run rerun`. Live-fire
+# bug this same gap caused (PR #485, 2026-07-08): a real prior FAILURE
+# (correctly evaluated on a `synchronize` run, no verdict existed yet) got
+# silently superseded by a `skipped` conclusion on a later `edited` run (a
+# Test Plan checkbox tick, unrelated to the review state) — `skipped`
+# doesn't fail the job, so the PR read fully green and merged DANGLING.
+# `packages/aeg-core`'s own `if: !cancelled()` fix (PR #488) closed the
+# skip-vs-fail hole; this split additionally closes the "nothing wakes CI up
+# after a verdict lands" gap, so a real verdict comment gets evaluated
+# automatically instead of needing a manual rerun.
+#
+# Cost trade-off, named explicitly: this reintroduces one job's
+# checkout/setup overhead per trigger — partially undoing the consolidation
+# forge-lifecycle.yml's own header documents (a ~9-job/run billing problem).
+# This is one job, not nine, and the `issue_comment` path is filtered (see
+# the job's own `if:`) to only run its expensive steps when the comment
+# text plausibly carries a verdict, so ordinary PR chat doesn't spend a
+# billed minute. Judged worth it to kill the "did anyone remember to rerun
+# it" failure mode. If Actions-minutes become tight again, reconsider.
+#
+# `issue_comment` events do not carry the PR's head SHA/branch the way
+# `pull_request` events do (the payload only has `issue.number`) — the first
+# step resolves both via `gh pr view` before checkout, and checkout uses
+# that resolved SHA explicitly rather than relying on the event's default ref
+# (which for `issue_comment` is the repo's default branch, not the PR head).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  issue_comment:
+    types: [created]
+
+jobs:
+  review-gate:
+    name: Review gate
+    if: >
+      github.event_name == 'pull_request' ||
+      (github.event.issue.pull_request != null && contains(github.event.comment.body, 'VERDICT'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Resolve PR number, branch, and head SHA
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            NUMBER="${{ github.event.pull_request.number }}"
+          else
+            NUMBER="${{ github.event.issue.number }}"
+          fi
+          BRANCH=$(gh pr view "$NUMBER" --repo "${{ github.repository }}" --json headRefName -q .headRefName)
+          SHA=$(gh pr view "$NUMBER" --repo "${{ github.repository }}" --json headRefOid -q .headRefOid)
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.sha }}
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Review gate (code-reviewer + security-review verdicts)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.pr.outputs.branch }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: bun packages/aeg-core/bin/verify-review-gate.ts

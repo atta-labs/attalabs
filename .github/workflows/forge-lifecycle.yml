@@ -10,7 +10,9 @@ name: AEG Gate Suite
 # checkout, one bun setup, one dependency install — same gates, same
 # strictness, ~1-2 billed minutes instead of ~9-10. (A 10th step, Review
 # gate, was added later — aeg-review-gate-v1 task 1, #474 — same job, same
-# amortized overhead; see step 10/10 below.)
+# amortized overhead — then split back OUT into its own workflow, D-115,
+# 2026-07-08, once its need for an `issue_comment` trigger made it a genuine
+# exception to "same event set as everything else"; see `review-gate.yml`.)
 #
 # Consolidated here (formerly): forge-lifecycle.yml's closes-n-gate /
 # coherence-gate / single-plan-pr-gate, verify-test-plan.yml (deleted),
@@ -289,42 +291,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr edit "${{ github.event.pull_request.number }}" --add-label "needs:brief-correction"
 
-      # ── 10/10 · Review gate (aeg-review-gate-v1 task 1, #474) ────────────
-      # Required pre-merge check: a task-branch PR must not merge without a
-      # clean code-reviewer APPROVE verdict AND a clean security-review PASS
-      # verdict on the PR, or a principal-actor-verified `waiver:review`
-      # label (D-097 pattern). Reuses `extractCodeReviewVerdict`/
-      # `extractSecurityReviewVerdict` (`verdict-extraction.ts`) — the exact
-      # detection the post-merge Archivist automation already runs, now
-      # gated pre-merge and blocking instead of post-merge and advisory-only.
-      # Only plan/* branches bypass, inside the CLI itself (BRANCH env,
-      # `isReviewGateExemptBranch` — a plan PR touches only topology/
-      # decision-log docs, never code). fix/* is deliberately NOT exempt
-      # despite also being a non-task branch — it carries real code and is
-      # held to the same gate as task/*/* (see review-gate.ts's docstring
-      # for the incident this fixed). This is a going-forward gate that
-      # never re-evaluates already-merged history.
-      #
-      # Runs on EVERY triggering action (no action-based `if` filter beyond
-      # `!cancelled()`), unlike the diff-scoped checks above. Live-fire gap
-      # (PR #485, 2026-07-08): the original `if` matched Test Plan's
-      # allow-list ([opened, synchronize, reopened]), but this step's inputs
-      # (PR comments + labels, fetched fresh via `gh pr view` inside
-      # verify-review-gate.ts) are never tied to a specific commit the way a
-      # diff-scoped check's are — the SAME reasoning that gives Test Plan its
-      # `edited` carve-out above applies here, only more so: a verdict
-      # comment or a `waiver:review` label can land well after the PR's last
-      # push, with no commit to re-trigger a scoped re-run. The action-based
-      # skip let a real prior FAILURE (evaluated correctly on a `synchronize`
-      # run) get silently superseded by a `skipped` conclusion on a later
-      # `edited` run (a Test Plan checkbox tick) — `skipped` doesn't fail the
-      # job, so the PR read fully green despite no code-review verdict ever
-      # existing. Since this step has no dependency on the diff or checkout
-      # at all, there is no event type it is ever correct to skip on.
-      - name: Review gate (code-reviewer + security-review verdicts)
-        if: ${{ !cancelled() }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: ${{ github.head_ref }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: bun packages/aeg-core/bin/verify-review-gate.ts
+      # Review gate (code-reviewer + security-review verdicts) moved out to
+      # its own workflow, `review-gate.yml` (D-115, 2026-07-08) — it needs an
+      # `issue_comment` trigger (posting a verdict) that this job's
+      # `pull_request`-only trigger set structurally cannot receive. See that
+      # file's header for the full rationale and the live-fire bug (PR #485)
+      # that motivated it.
