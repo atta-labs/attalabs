@@ -57,6 +57,14 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      # issues: read — fetchWaiverLabelActor (verify-review-gate.ts) calls
+      # `gh api .../issues/{pr}/timeline` for the waiver:review label-actor
+      # check. A PR is an Issue under GitHub's own model, and the timeline
+      # endpoint is scoped under `issues`, not `pull-requests`, even for a
+      # pull request number — without this, any PR that ever gets a real
+      # waiver:review label would hard-fail this job with a 403 instead of
+      # evaluating the waiver (security-reviewer finding on PR #489).
+      issues: read
     steps:
       - name: Resolve PR number, branch, and head SHA
         id: pr
