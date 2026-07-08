@@ -228,7 +228,7 @@ export function EnvoyFlow({
     return (
       <div>
         <ReportView report={report} />
-        <ResultActions onNewAudit={handleRetry} />
+        {!report.auditFailed && <ResultActions onNewAudit={handleRetry} />}
       </div>
     )
   }
