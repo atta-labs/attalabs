@@ -144,6 +144,7 @@ function waiverActiveFromEnv(): boolean {
     .map((s) => s.trim())
     .filter(Boolean)
   return isWaiverLabelActorVerified({
+    label: WAIVER_LABEL,
     labels,
     labelActor: process.env.WAIVER_LABEL_ACTOR || null,
     principalAllowlist: PRINCIPAL_ALLOWLIST

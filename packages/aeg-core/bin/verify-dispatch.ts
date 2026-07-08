@@ -69,7 +69,7 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { deriveIterationFromForge } from '@atta/aeg-forge-state'
+import { deriveIterationFromForge, listActiveIterationSlugs } from '@atta/aeg-forge-state'
 import { resolveGithubToken } from '../../../apps/aeg/web/studio/src/lib/forge/github-token'
 import { resolveRepo, type RepoRef } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
 import {
@@ -250,32 +250,35 @@ function resolvePriorTask(
   }
 }
 
-const ITERATIONS_DIR = join(REPO_ROOT, 'aeg-root/iterations')
-
-function otherActiveIterationSlugs(excludeSlug: string): string[] {
-  if (!existsSync(ITERATIONS_DIR)) return []
-  return sh(`ls ${ITERATIONS_DIR}`)
-    .split('\n')
-    .map((s) => s.trim())
-    .filter((s) => s.endsWith('.md') && s !== `${excludeSlug}.md`)
-    .map((s) => s.replace(/\.md$/, ''))
+/**
+ * Milestone-aware candidate discovery (aeg-review-gate-v1 task 1, #474,
+ * amendment): "active" is a GitHub Milestone titled exactly the iteration
+ * slug, open (D-110) — the SAME `listActiveIterationSlugs` Studio's
+ * `readOtherActiveIterations` (`apps/aeg/web/studio/src/lib/forge/
+ * dispatch-readiness.ts`, task 5, #429) already calls, shared rather than
+ * duplicated per this task's own "no parallel implementation" discipline.
+ * Previously read the local `aeg-root/iterations/*.md` file listing —
+ * file-based and unaware of Milestone state, so closing an iteration's
+ * topology file to `completed/` WITHOUT also closing its Milestone left this
+ * CLI saying READY while Studio correctly said BLOCKED (reproduced live on
+ * `aeg-forge-state-v1`/`aeg-review-gate-v1`, 2026-07-08).
+ */
+function otherActiveIterationSlugs(excludeSlug: string, repo: RepoRef): string[] {
+  return listActiveIterationSlugs(repo.owner, repo.repo)
+    .map((m) => m.slug)
+    .filter((slug) => slug !== excludeSlug)
 }
 
 /**
  * One entry per project named in `projects`: the first active, all-Issues-closed
  * prior iteration found, or a null-slug pass-through when none is found.
- * Forge-derived (task aeg-forge-state-v1 3a) — `otherActiveIterationSlugs`
- * still lists CANDIDATE SLUGS from the iteration-file directory listing
- * (a separate, file-existence concern, out of this task's scope per the
- * birth-rule migration); only each candidate's task/project content now
- * comes from the forge instead of parsing its file.
  */
 async function resolvePriorIterationArchival(
   projects: string[],
   excludeSlug: string,
   repo: RepoRef
 ): Promise<DispatchPriorIterationFact[]> {
-  const candidates = otherActiveIterationSlugs(excludeSlug)
+  const candidates = otherActiveIterationSlugs(excludeSlug, repo)
   const facts: DispatchPriorIterationFact[] = []
 
   for (const project of projects) {

@@ -5,6 +5,7 @@ describe('isWaiverLabelActorVerified (D-097 actor-verified waiver label)', () =>
   it('label absent → false, regardless of actor', () => {
     expect(
       isWaiverLabelActorVerified({
+        label: WAIVER_LABEL,
         labels: ['tier:1'],
         labelActor: 'daniboomerang',
         principalAllowlist: PRINCIPAL_ALLOWLIST
@@ -15,6 +16,7 @@ describe('isWaiverLabelActorVerified (D-097 actor-verified waiver label)', () =>
   it('label present, actor null → false', () => {
     expect(
       isWaiverLabelActorVerified({
+        label: WAIVER_LABEL,
         labels: [WAIVER_LABEL],
         labelActor: null,
         principalAllowlist: PRINCIPAL_ALLOWLIST
@@ -25,6 +27,7 @@ describe('isWaiverLabelActorVerified (D-097 actor-verified waiver label)', () =>
   it('label present, actor not in allowlist → false', () => {
     expect(
       isWaiverLabelActorVerified({
+        label: WAIVER_LABEL,
         labels: [WAIVER_LABEL],
         labelActor: 'some-agent-bot',
         principalAllowlist: PRINCIPAL_ALLOWLIST
@@ -35,10 +38,22 @@ describe('isWaiverLabelActorVerified (D-097 actor-verified waiver label)', () =>
   it('label present, actor in allowlist → true', () => {
     expect(
       isWaiverLabelActorVerified({
+        label: WAIVER_LABEL,
         labels: [WAIVER_LABEL],
         labelActor: 'daniboomerang',
         principalAllowlist: PRINCIPAL_ALLOWLIST
       })
     ).toBe(true)
+  })
+
+  it('a different label present (e.g. waiver:review) never verifies waiver:docs', () => {
+    expect(
+      isWaiverLabelActorVerified({
+        label: WAIVER_LABEL,
+        labels: ['waiver:review'],
+        labelActor: 'daniboomerang',
+        principalAllowlist: PRINCIPAL_ALLOWLIST
+      })
+    ).toBe(false)
   })
 })

@@ -87,6 +87,8 @@ If you discover something that needs a decision above review authority — the b
 
 Phase 10 (Review) in `process.md`. The order is: **code-reviewer pass (you) → security pass (`roles/security.md`) → Principal code review → TL spec review → merge.** Your verdict feeds the human reviews; it does not replace them.
 
+**Your verdict is also a mechanical merge gate (aeg-review-gate-v1 task 1, #474).** A required, blocking CI check (`packages/aeg-core/bin/verify-review-gate.ts`) reads every PR comment for a clean `APPROVE` verdict — `REQUEST CHANGES`, a missing verdict, or an unclear one all fail the check and block merge, same as this repo's own security pass. This is not advisory: it is the same enforcement class as typecheck or lint. A principal can waive it for one PR with an actor-verified `waiver:review` label (`aeg-root/enforcement.md`) — label presence alone is never sufficient.
+
 ## Turn-end: report your tokens in the verdict comment
 
 You do not append your own row to `aeg-root/iterations/<name>.tokens.md` — you have no branch to write it on, and D-071 retired self-append for every role (`iterations/README.md` §12). Instead, close your verdict comment with a one-line token report: `Tokens: <task-id>: review — Reviewer — <model> — in/out/cost or — if unknown`. You run on **claude.ai**, which cannot read its own token count; report `—` for the numeric cells if you don't have them. The per-task Archivist collects this report at close-out and appends the row to the ledger — see `roles/archivist.md`. A re-review (after the Developer pushes fixes) reports again, never edits the prior report.
