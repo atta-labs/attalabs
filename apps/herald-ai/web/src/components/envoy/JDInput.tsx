@@ -340,16 +340,20 @@ export function JDInput({
         </div>
       ) : auditAvailable ? (
         <div className='relative mx-auto max-w-[680px] px-6 py-10'>
-          {/* Soft circular glow behind the input, anchored to the very bottom
-              of the page — not a full-width band, a blob narrower than the
-              input (Gemini's "Ask Gemini" bar treatment). Extends BELOW the
-              input's own box (which has its own solid surface) rather than
-              sitting fully behind it — otherwise the input's opaque
-              background hides the glow completely. */}
-          <div
-            aria-hidden='true'
-            className='pointer-events-none absolute -bottom-16 left-1/2 -z-10 h-40 w-96 -translate-x-1/2 animate-pulse rounded-full bg-radial from-primary/35 to-transparent blur-2xl'
-          />
+          {/* Scroll teaser — fixed to the viewport (not the page), so it's
+              visible from the very top: a circle mostly below the fold with
+              only its top third peeking above the viewport bottom edge,
+              hinting there's an input to scroll to. translate-y-2/3 pushes
+              2/3 of the circle's own height below bottom:0, leaving the top
+              third showing. Hides once the real input has scrolled into
+              view (promptNear) — its own .ai-gradient-border takes over as
+              the "you're here" cue at that point, so we don't show both. */}
+          {!promptNear && (
+            <div
+              aria-hidden='true'
+              className='pointer-events-none fixed bottom-0 left-1/2 aspect-square w-[min(680px,calc(100vw-3rem))] -translate-x-1/2 translate-y-2/3 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-radial from-primary/35 to-transparent blur-2xl'
+            />
+          )}
           <div ref={promptRef} className={cn('relative rounded-xl', promptNear && 'ai-gradient-border')}>
             <SmartPromptInput
               onSubmit={handleSubmit}
