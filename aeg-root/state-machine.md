@@ -42,7 +42,7 @@ The conversational role set is: **Principal, Team Leader, Developer, Reviewer** 
 
 There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, contracts, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, the active iteration, and the decision log there. It never expects a per-project copy of the model.
 
-Living **state** is held in `aeg-project/` folders: one at the repo root (for monorepo-level tasks) and one per project (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). A task updates the root `packages/governance/decisions.md` + `changelog.md` (governance is global) **plus** the `aeg-project/` slice of each project it touches (one for a single-project task, several for a cross-project task — resolve which via `packages/governance/projects.md`). An `aeg-project/` folder holds state only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (D-041.)
+Living **state** is held in `aeg-project/` folders: one at the repo root (for monorepo-level tasks) and one per project (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). A task updates the root `packages/governance/decisions.md` (governance is global) **plus** the `aeg-project/` slice of each project it touches (one for a single-project task, several for a cross-project task — resolve which via `packages/governance/projects.md`). An `aeg-project/` folder holds state only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (D-041.)
 
 ---
 
@@ -123,16 +123,14 @@ Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer i
 | **Briefs (dispatched)** | Can amend via reply to escalation | Can amend via reply to escalation — logged as an event, NOT a brief edit | Reads only — brief is frozen after dispatch; escalate if wrong | Cannot mutate |
 | **Briefs (pre-dispatch)** | Approves the brief | Writes the brief just-in-time per the `brief-authoring` skill, consuming the planner-brief contract; pastes to Developer (lands in PR body) | — | Validates structure; flags malformed (`needs:brief-correction`) |
 | **Specs** (`apps/*/specs/*.md`) | Approves PR; ratifies via D-### if spec-only | Coherence review on PR; can open spec-only PRs | Writes in PR per brief scope | Validates cross-references; flags stale specs in drift cron |
-| **Decision logs** (per-project + global) | Approves Type 1 entries; ratifies PENDING Type 2 at windows | Appends Type 2 entries; announces Type 1 to ratification queue | Appends in PR per brief scope | Validates D-### sequence and supersession integrity |
+| **Decision logs** (per-project + global) | Approves Type 1 entries; ratifies PENDING Type 2 at windows | Appends Type 2 entries; labels Type 1 entries `needs:principal-input` (D-110) | Appends in PR per brief scope | Validates D-### sequence and supersession integrity |
 | **Skills** (canonical `aeg-root/skills/*/SKILL.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale skill references in drift cron |
 | **Agent defs** | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale agent references in drift cron |
 | **`state.md`** | Approves PR | Writes in PR | Flags state changes needed in PR description | Updates per-project state at close-out, for every project the task listed |
 | **Per-project backlogs** (`apps/*/specs/*-backlog.md`), `specs/ecosystem-backlog.md` | Approves PR | Writes (held/future items — out of the flow) | — | — |
-| **`changelog.md`** | Approves PR | Appends per PR (never edits existing) | — | Appends at close-out |
-| **`lessons.md`** | Approves PR | Appends lessons; monthly review | — | — |
 | **`coordination.md`**, **`state-machine.md`** | Approves PR; final authority on system-level rule changes | Proposes changes via PR | — | Flags inconsistencies in drift cron |
 | **`thinking.md`** | Reads | Writes freely in any TL session (best-effort, optional) | Reads | Flags if untouched >7 days |
-| **`ratification-queue.md`** | Approves/rejects/defers items at windows | Appends items; marks resolved after Principal action | Appends via escalation (`severity: product`) | — |
+| **Per-project state / lessons log** (pinned Issues, D-110) | Approves/rejects/defers items at windows | Appends items; marks resolved after Principal action | Appends via escalation (`severity: product`) | — |
 | **Source code** | Merges PR | — | Writes in PR per brief scope; opens PR | — |
 | **Forge labels** (the Section 14 vocabulary) | Applies `override:docs` (Principal-only) | Applies `tier:*` (Planner, at cut) + `needs:*-input` / `aeg:blocked` (by hand or via automation) | Applies `needs:*-input` / `aeg:blocked` (by hand or via automation) | Applies `needs:brief-correction`; asserts `tier:*` label == PR-body `Tier:` (drift cron) |
 | **Task status** | — | — | — | — *(nobody writes it — derived from the forge)* |
@@ -171,7 +169,7 @@ Used when verifying state, resolving contradictions, running verify-docs, post-m
 2. Ratified specs (`Status: ratified` + supporting D-###)
 3. Shipped code (main — what actually runs)
 4. Aspirational specs (`Status: target`)
-5. PM docs (`state.md`, iteration files, `changelog.md`, `lessons.md`) — non-derivable operational facts / plan topology (active status derived from forge)
+5. PM docs (iteration files) plus per-project pinned state/lessons Issues (D-110) — non-derivable operational facts / plan topology (active status derived from forge)
 6. Skills + `thinking.md`
 7. Briefs / Issues / PR descriptions — intent at time of writing
 8. Conversation logs / tool runtime logs — lowest
@@ -252,13 +250,13 @@ When a Developer reaches a decision not covered by the brief, it escalates throu
 
 **`severity: strategy`** — which design path to take; TL Strategist mode. ("The brief's approach A has a structural issue — switch to B?"; "this touches an undiscussed area"; "the diff is right but the spec is stale.") Adds `needs:strategy-input`; same path, different cognitive mode.
 
-**`severity: product`** — requires a Principal decision. Rare; reserved for Type 1 decisions discovered during execution. Adds `needs:principal-input`. If the Principal is present, they decide and reply; if not, the item goes to `ratification-queue.md` and the Developer terminates, resuming via a follow-up dispatch after the window.
+**`severity: product`** — requires a Principal decision. Rare; reserved for Type 1 decisions discovered during execution. Adds `needs:principal-input`. If the Principal is present, they decide and reply; if not, the item stays labeled `needs:principal-input` (D-110) and the Developer terminates, resuming via a follow-up dispatch after the window.
 
 While blocked, the task carries an `aeg:blocked` label (the one status with no native forge fact). The Reviewer uses the same severity vocabulary for `[ESCALATE]` findings.
 
 ### Type 1 decisions during execution
 
-Type 1 (irreversible) decisions cannot be self-ratified by the TL in a solo session. They ALWAYS go to the ratification queue unless the Principal is actively present (has replied to an escalation in this session). For queued items, the Developer terminates after acknowledgment and resumes after the window.
+Type 1 (irreversible) decisions cannot be self-ratified by the TL in a solo session. They ALWAYS get the `needs:principal-input` label (D-110) unless the Principal is actively present (has replied to an escalation in this session). For labeled items, the Developer terminates after acknowledgment and resumes after the window.
 
 ### Emergency override
 
@@ -306,7 +304,7 @@ Every piece of work is assigned an impact tier; the tier determines required doc
 
 **Does NOT wait:** Tier 0/1 merges (anytime); `severity: execution`/`strategy` escalations (TL resolves); Type 2 decisions made with the Principal present.
 
-**Cadence:** the Principal sets the times; the queue assumes no specific schedule. Items append to `ratification-queue.md`. **TL responsibility:** before the window, ensure pending items are appended with enough context to decide without follow-up; after, update artifacts to reflect what was ratified.
+**Cadence:** the Principal sets the times; the queue assumes no specific schedule. Items are labeled `needs:principal-input` (D-110), not appended to a file. **TL responsibility:** before the window, ensure labeled items carry enough context to decide without follow-up; after, remove the label and update artifacts to reflect what was ratified.
 
 ---
 
@@ -376,7 +374,6 @@ Every override is logged (verify-docs prints that the override was active; the A
 Append-only; never edited in place except to add `SUPERSEDED`/`RETIRED`/`EXPIRED` status or fill forward-reference fields:
 
 - All decision logs (per-project `*-decisions.md` + global `decisions.md`)
-- `aeg-project/ratification-queue.md`
 - `aeg-project/retrospectives/*.md` (when created)
 - **The provenance block on a merged PR** (D-030) — assembled once at close-out from frozen facts, posted as a PR comment, never updated. Append-only by construction: a record of what shipped, not a status to maintain.
 - **The per-iteration token/cost ledger** (`aeg-root/iterations/<name>.tokens.md`) — every role reports its tokens at the end of its turn (PR body, verdict comment, or planning report); the per-task Archivist is the sole writer, appending one row per role-turn at close-out (D-071); re-entry appends another row; the iteration total is `sum(rows)`, derived at read time, never stored. Same philosophy as derived task status: don't store the aggregate, sum the immutable entries. See `iterations/README.md` §12.

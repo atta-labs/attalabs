@@ -239,7 +239,6 @@ AEG defines **task close-out** (the per-task Archivist) and **iteration close-ou
 
 - **No task Issue to close.** A plan PR *creates* Issues; it does not resolve one. There is no `Closes #N` task to auto-close — do not invent one. (If the plan PR closes a *planning* Issue or epic, close that; but there is no per-task Issue here.)
 - **Flag the plan branch + worktree for cleanup.** The `plan/<iteration>` branch and `.worktrees/plan/<iteration>` are not garbage-collected automatically (the recurring L‑001 / aeg-ui-v1 pattern). After merge, flag them for `git worktree remove` + branch delete.
-- **Optional changelog line.** If the plan shipped a durable governance artifact (a new decision, a model change), append one line to `aeg-project/changelog.md`. A pure topology-only plan PR does not require a changelog entry.
 - **Adapted provenance on the merged PR.** Post a short provenance note to the merged plan PR — what the plan shipped (N Issues cut, decision D-### recorded, topology written) — the plan-PR analogue of the Archivist's task provenance block. There is no task ledger row to reconcile; the plan's token report is the Planner's (see "Turn-end" below) — **who records that report into the ledger** for a plan PR, which has no task Issue, is not yet specified (D-071 flags this as an open gap; do not invent a mechanism here).
 
 ## Turn-end: report your tokens, don't append them

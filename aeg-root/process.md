@@ -165,7 +165,7 @@ The Developer escalates through the escalation mechanism — a manual escalation
 
 The task is marked `blocked` (an `aeg:blocked` label — the one status with no native forge fact) until a reply arrives. The responder (TL or Principal) formulates a reply and the Developer resumes.
 
-**Type 1 during execution:** if the question needs an irreversible decision and the Principal isn't available, it goes to `ratification-queue.md`; the next window resolves it. The Developer may terminate and resume via a follow-up dispatch after the window.
+**Type 1 during execution:** if the question needs an irreversible decision and the Principal isn't available, the Issue/PR stays labeled `needs:principal-input` (D-110); the next window resolves it. The Developer may terminate and resume via a follow-up dispatch after the window.
 
 **Brief amendment:** if the brief itself is wrong in a way that blocks all paths, the TL issues an amendment (logged as a separate event, not a brief edit — briefs are frozen after dispatch) or kills the task.
 
@@ -265,7 +265,7 @@ The test plan is split by who can structurally execute each item:
 
 The Principal merges. Tier 3 work merges during a ratification window (`coordination.md`); Tier 0/1 anytime. The merge **auto-closes the linked Issue** (via `Closes #N`) — and the merge *is* the `merged` status; nobody writes a label. An automation layer may surface a completion notification.
 
-**Post-merge: the Archivist closes out** (`roles/archivist.md`) — confirms the Issue closed, decision logged if Tier 3, changelog appended, docs coherent, per-project `state.md` updated for every project the task listed, `docs-index.md` regenerated. It **flags** (does not perform) orphaned branches and worktree removal. It writes no task status.
+**Post-merge: the Archivist closes out** (`roles/archivist.md`) — confirms the Issue closed, decision logged if Tier 3, docs coherent, per-project pinned state Issue updated for every project the task listed (D-110), `docs-index.md` regenerated. It **flags** (does not perform) orphaned branches and worktree removal. It writes no task status.
 
 **Exit:** code is in main, Issue closed, close-out done.
 

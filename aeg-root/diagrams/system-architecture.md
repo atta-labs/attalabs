@@ -243,8 +243,7 @@ flowchart TB
     ValidCheck -->|No| Blocked2[needs:brief-correction]
 
     Merge[PR merged — auto-closes Issue] --> CloseOut[Archivist close-out]
-    CloseOut --> ChangeLog[Append changelog]
-    CloseOut --> PerProject[Update per-project state.md<br/>for every project the task listed<br/>(now.md retired — D-057)]
+    CloseOut --> PerProject[Update per-project pinned state Issue (D-110)<br/>for every project the task listed<br/>(now.md retired — D-057)]
     CloseOut --> IndexRegen[Regenerate docs-index.md]
     CloseOut --> SeqValid[Validate D-### sequence within each log]
     CloseOut --> Orphans[Flag orphaned branches + worktrees]
@@ -261,7 +260,7 @@ flowchart TB
     classDef neutralNode fill:#f5f5f5,stroke:#424242,color:#000
 
     class CI,Typecheck,Lint,Tests,VerifyDocs ciNode
-    class ArchivistAdvisory,AdvisoryChecks,Comments,BriefValid,CloseOut,ChangeLog,PerProject,IndexRegen,SeqValid,Orphans,DriftCheck,StaleSpec,MetaCreep,DriftIssue archivistNode
+    class ArchivistAdvisory,AdvisoryChecks,Comments,BriefValid,CloseOut,PerProject,IndexRegen,SeqValid,Orphans,DriftCheck,StaleSpec,MetaCreep,DriftIssue archivistNode
     class Block,Blocked2 blockNode
     class Ready,Merge passNode
     class PROpen,CIPass,ValidCheck,Daily neutralNode
@@ -321,11 +320,10 @@ flowchart TB
         Manual[aeg-root/aeg-manual-flow.md<br/>running the flow by hand]
         StateMach[aeg-root/state-machine.md<br/>artifacts, mutations, hierarchy]
         Decisions[packages/governance/decisions.md — global decision log]
-        StateNow[aeg-project/state.md — non-derivable operational facts<br/>(now.md retired D-057 — active state from forge)]
+        StateNow[Per-project pinned state Issues (D-110) — non-derivable operational facts<br/>(now.md retired D-057 — active state from forge)]
         Iterations[aeg-root/iterations/ — README + per-iteration<br/>topology files the plan]
         Projects[packages/governance/projects.md — project registry]
         Reviewer[aeg-root/reviewer-prompt.md — for stateless AIs]
-        RatQueue[aeg-project/ratification-queue.md — append-only]
         Think[aeg-project/thinking.md — working memory]
         Diagrams[aeg-root/diagrams/ — process-flow + system-architecture]
         Roles[aeg-root/roles/ — principal, team-leader, planner,<br/>developer, reviewer, security, archivist]
@@ -359,7 +357,7 @@ flowchart TB
     classDef specsNode fill:#ffe0b2,stroke:#e65100,color:#000
     classDef toolingNode fill:#e1bee7,stroke:#6a1b9a,color:#000
 
-    class Coord,Process,Manual,StateMach,Decisions,StateNow,Iterations,Projects,Reviewer,RatQueue,Think,Diagrams,Roles pmNode
+    class Coord,Process,Manual,StateMach,Decisions,StateNow,Iterations,Projects,Reviewer,Think,Diagrams,Roles pmNode
     class BriefSkill,OtherSkills skillsNode
     class ProjectSpec,ProjectDec,Backlog specsNode
     class VerifyScript,ArchivistFlow toolingNode
@@ -384,7 +382,7 @@ flowchart LR
     H --> I[Principal code review]
     I --> J[TL spec review]
     J --> K[Principal merge — Issue auto-closes]
-    K --> L[Archivist close-out:<br/>changelog, per-project state.md, docs-index]
+    K --> L[Archivist close-out:<br/>per-project pinned state Issue, docs-index]
 
     classDef devNode fill:#c8e6c9,stroke:#2e7d32,color:#000
     classDef ciNode fill:#ffe0b2,stroke:#e65100,color:#000

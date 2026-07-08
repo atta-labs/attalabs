@@ -144,7 +144,7 @@ flowchart LR
     subgraph Archivist["Archivist (automation)"]
         A_Validate[Validate briefs — needs:brief-correction]
         A_Verify[verify-docs CI gate]
-        A_CloseOut[Close-out: changelog, per-product PM,<br/>flag orphans + worktrees]
+        A_CloseOut[Close-out: per-product PM,<br/>flag orphans + worktrees]
         A_Index[Regenerate docs-index.md]
         A_Drift[Flag drift in daily cron]
     end
@@ -216,7 +216,7 @@ flowchart TD
 
     subgraph Phase7["Phase 7: Escalation (optional)"]
         BlockedLabel[aeg:blocked label + needs:*-input]
-        QueueEntry[ratification-queue.md entry if Type 1]
+        QueueEntry[needs:principal-input label if Type 1]
     end
 
     subgraph Phase9["Phase 9: PR"]
@@ -228,7 +228,7 @@ flowchart TD
     subgraph Phase11["Phase 11: Merge + close-out"]
         Main[Code in main]
         Closed[Issue auto-closed via Closes-N<br/>merged status derived]
-        CloseOut[changelog appended; per-product PM updated;<br/>orphans + worktree flagged]
+        CloseOut[per-product PM updated;<br/>orphans + worktree flagged]
     end
 
     Phase0 --> Phase1
@@ -254,22 +254,22 @@ How Type 1 decisions, Tier 3 merges, and Lock approvals batch through governance
 sequenceDiagram
     participant Dev as Developer
     participant TL as Team Leader
-    participant Queue as ratification-queue.md
+    participant Label as needs:principal-input label
     participant Princ as Principal (Dani)
 
     Note over Dev,Princ: During execution, Type 1 decision needed
 
     Dev->>TL: escalate (severity: product)
-    TL->>Queue: Append entry: question, context, deadline
-    Queue->>Dev: Reply: "QUEUED for next ratification window"
+    TL->>Label: Apply label to the Issue/PR: question, context, deadline
+    Label->>Dev: Reply: "LABELED for next ratification window"
 
     Note over Dev: Developer terminates this dispatch
 
     Note over Princ: At ratification window
 
-    Princ->>Queue: Read all pending items
-    Princ->>Queue: Resolve each: ratify, reject, or defer
-    Queue->>TL: Notify of ratifications (chat session)
+    Princ->>Label: List labeled Issues/PRs (gh issue/pr list --label needs:principal-input)
+    Princ->>Label: Resolve each: ratify, reject, or defer (remove label)
+    Label->>TL: Notify of ratifications (chat session)
     TL->>Dev: Re-dispatch with amended brief if needed
 
     Note over TL: Same flow for Type 2 PENDING items<br/>and Lock approvals
