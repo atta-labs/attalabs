@@ -40,7 +40,7 @@ export function ReportView({ report }: { report: MatchReport }) {
           <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{report.candidate.title}</p>
         </header>
 
-        <section className='mb-8 border-b border-destructive/30 pb-8'>
+        <section className='mb-8'>
           {Badge ? (
             <Badge className='border-destructive/40 bg-destructive/10 font-mono text-[10px] uppercase tracking-[0.2em] text-destructive'>
               Audit Failed
