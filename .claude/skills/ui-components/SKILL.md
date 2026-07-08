@@ -359,6 +359,8 @@ When wiring an action that belongs in the right cluster (Settings gear, theme sw
 
 When a button has both icon and label (Sign out, Settings, Theme — Herald's pattern post-D-061): always render the label text. Do **not** wrap it in `<span className='hidden md:inline'>` — the label is hidden in the desktop cluster only by the topbar's own breakpoint, not by per-button visibility classes. Inside the mobile sheet the label needs to be visible.
 
+On these icon+label buttons, always add `leading-none` to the button's className alongside the icon. Without it, the label `<span>` keeps the default text-size line-height (taller than the `h-4 w-4` icon), so even though `items-center` centers the flex row correctly, the label's line-box doesn't tightly hug its glyphs and can look vertically off relative to the icon. `leading-none` collapses the label to its natural glyph height so it optically matches the icon.
+
 The contract lives at `packages/ui/topbar/index.tsx` (single source of truth). Adding a new slot (or changing where `extraActions` renders) requires updating every consumer's mental model — touch with care.
 
 ---
