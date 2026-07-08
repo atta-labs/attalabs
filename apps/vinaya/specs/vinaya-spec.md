@@ -1,6 +1,8 @@
 # Vinaya — Product Spec (seed)
 
-First mention of this file — created by `vinaya-studio-v1` task 0 (#479). Captures the ratified/pending decisions that define Vinaya so far. Full rationale lives in [`packages/governance/decisions.md`](../../../packages/governance/decisions.md) (D-086 through D-113); this doc is the product-level summary, not a replacement for it.
+Status: draft
+
+First mention of this file — created by `vinaya-studio-v1` task 0 (#479). Captures the ratified/pending decisions that define Vinaya so far. Most of the source decisions (D-086 through D-109) are themselves still `PENDING` ratification in `packages/governance/decisions.md` — this doc summarizes intent, it is not itself a ratified commitment. Full rationale lives in [`packages/governance/decisions.md`](../../../packages/governance/decisions.md) (D-086 through D-113); this doc is the product-level summary, not a replacement for it.
 
 ## What Vinaya is
 
