@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button as FallbackButton, useToastContext } from '@atta/ui/components'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import type { MatchReport } from '@/lib/types'
+import { useHeroCollapse } from './hero-collapse-context'
 import { JDInput } from './JDInput'
 import { LoadingState } from './LoadingState'
 import { auditFailureMessage, ReportView } from './ReportView'
@@ -100,12 +101,24 @@ export function EnvoyFlow({
   const comps = useComponents()
   const Button = (comps.Button as typeof FallbackButton | undefined) ?? FallbackButton
   const { errorToast } = useToastContext()
+  const { setIsCollapsed } = useHeroCollapse()
   const [state, setState] = useState<FlowState>('input')
   const [report, setReport] = useState<MatchReport | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [localProfile, setLocalProfile] = useState<CandidateProfile>(profile)
   const resultBuffer = useRef<MatchReport | null>(null)
   const animationDone = useRef(false)
+
+  // JDInput's hero unmounts once state leaves 'input', taking its scroll
+  // sentinel and IntersectionObserver with it — but HeroCollapseProvider's
+  // isCollapsed state lives above both and isn't reset by that unmount. Left
+  // alone, whatever value it last held (often `true`, since submitting the
+  // JD usually happens after scrolling the sticky prompt input into view)
+  // persists for the rest of the flow, keeping the docked identity bar
+  // rendered on top of the topbar even on screens with no hero to dock for.
+  useEffect(() => {
+    if (state !== 'input') setIsCollapsed(false)
+  }, [state, setIsCollapsed])
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
