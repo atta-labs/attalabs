@@ -1,5 +1,5 @@
 # Iteration: aeg-forge-state-v1 — July 2026
-Lifecycle: active
+Lifecycle: complete
 
 Goal: Migrate this repo's own governance state per D-110's disposition — delete the fully
 redundant files, move high-churn state to forge-native objects (Milestones, labels, Issue/PR
