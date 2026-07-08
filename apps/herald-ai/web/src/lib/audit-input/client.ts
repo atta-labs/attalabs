@@ -45,8 +45,20 @@ export async function resolveCvFileRequest(file: File, kind: 'pdf' | 'markdown')
   const form = new FormData()
   form.append('file', file)
   form.append('kind', kind)
+  form.append('role', 'cv')
   const res = await fetch(ENDPOINT, { method: 'POST', body: form })
   if (!res.ok) throw new Error(await readError(res))
   const data = (await res.json()) as { resolved: ResolvedCv }
+  return data.resolved
+}
+
+export async function resolveJdFileRequest(file: File, kind: 'pdf' | 'markdown'): Promise<ResolvedJd> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('kind', kind)
+  form.append('role', 'jd')
+  const res = await fetch(ENDPOINT, { method: 'POST', body: form })
+  if (!res.ok) throw new Error(await readError(res))
+  const data = (await res.json()) as { resolved: ResolvedJd }
   return data.resolved
 }

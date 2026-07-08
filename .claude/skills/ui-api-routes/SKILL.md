@@ -132,11 +132,14 @@ return NextResponse.json({ error: 'failed' })    // different shape on error
 ```
 src/app/api/
 ├── audit/route.ts              # POST — main feature endpoint (engine-backed, see LLM Integration)
+├── audit/resolve-input/route.ts  # POST — polymorphic input resolver, see note below
 ├── admin/
 │   └── onboarding-chat/route.ts
 └── mcp/
     └── signals/route.ts        # GET — MCP server endpoint
 ```
+
+**Reference example — resolving polymorphic input by role:** `audit/resolve-input/route.ts` (Herald) is the pattern to copy when a route must resolve more than one input shape into more than one output shape. It dispatches on `content-type` (JSON vs `multipart/form-data`), and within each branch further dispatches on an explicit `role` discriminator (e.g. `'cv' | 'jd'`) read from the body/form data — never inferred from file contents or shape. The multipart branch shares one parsing path (file-type extraction) across roles and branches only the final output-shape construction on `role`. New role values default to the pre-existing behavior so older callers that don't send the field keep working unchanged.
 
 ---
 
