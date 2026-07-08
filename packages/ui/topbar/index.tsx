@@ -140,7 +140,7 @@ function TopBarWithAuth({
             </>
           ) : (
             <SignInButton mode='modal'>
-              <Button variant='outline' className='h-8 gap-2 px-2.5 text-xs leading-none md:px-3'>
+              <Button variant='outline' className='h-8 gap-2 px-2.5 text-xs md:px-3'>
                 <LogIn className='h-4 w-4' />
                 <span>Sign in</span>
               </Button>

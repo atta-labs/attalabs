@@ -1,7 +1,16 @@
 import * as React from 'react'
+import { cn } from '../../../../lib/utils'
 import { Button as ButtonPrimitive, buttonVariants, type ButtonProps } from '../../installed/button'
 
-function Button({ children, asChild = false, ...props }: ButtonProps) {
+// leading-none default — see basic/components/interactive/button.tsx for the
+// rationale AND the required cn(className, 'leading-none') argument order (a
+// caller's text-size class silently wins over a leading-none passed BEFORE
+// it in tailwind-merge's conflict resolution). Merged alongside this
+// wrapper's existing asChild adaptation (installed/ stays a verbatim
+// animate-ui CLI paste).
+function Button({ children, asChild = false, className, ...props }: ButtonProps) {
+  const mergedClassName = cn(className, 'leading-none')
+
   if (asChild) {
     const child = React.isValidElement(children)
       ? children
@@ -11,7 +20,7 @@ function Button({ children, asChild = false, ...props }: ButtonProps) {
 
     if (child) {
       return (
-        <ButtonPrimitive asChild={true} {...props}>
+        <ButtonPrimitive asChild={true} className={mergedClassName} {...props}>
           {child}
         </ButtonPrimitive>
       )
@@ -19,7 +28,7 @@ function Button({ children, asChild = false, ...props }: ButtonProps) {
   }
 
   return (
-    <ButtonPrimitive asChild={false} {...props}>
+    <ButtonPrimitive asChild={false} className={mergedClassName} {...props}>
       {children}
     </ButtonPrimitive>
   )
