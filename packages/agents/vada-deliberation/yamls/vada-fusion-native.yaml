@@ -15,13 +15,35 @@ defaults:
 # execution). This is intentional: the "parallel panel" product guarantee is
 # about information isolation, not wall-clock concurrency.
 #
-# Three presets (prompt-only differences; same routing flow):
-#   find-blind-spots  — frame question as: "Here is my thinking. What load-
-#                       bearing assumptions am I missing?"
-#   critique-draft    — frame question as: "Here is my draft. What are its
-#                       structural or factual weaknesses?"
-#   pre-mortem        — frame question as: "Assume this failed in 12 months.
-#                       Reconstruct the failure."
+# Three presets (prompt-only differences; same routing flow). The caller
+# wraps the user's content in one of these framings before it reaches
+# {{question}} — no separate agents or prompts per preset, the panel system
+# prompts handle all three:
+#
+#   find-blind-spots  — "Here is my current thinking on this: <content>
+#                       I want to know what I'm not seeing. What load-bearing
+#                       assumptions, risks, or blind spots am I missing?"
+#                       Open-ended framing: keeps the panel's four attack
+#                       vectors on their natural default lens.
+#
+#   critique-draft    — "Here is my draft: <content>
+#                       Critique it as an adversarial reviewer would. What are
+#                       its structural, factual, or logical weaknesses — the
+#                       kind that would sink it in front of a skeptical
+#                       stakeholder?"
+#                       Adversarial-audience framing: pushes the panel toward
+#                       weaknesses that would surface under scrutiny, not just
+#                       weaknesses in the abstract.
+#
+#   pre-mortem        — "It is 12 months from now. This plan failed: <content>
+#                       Write the retrospective. Reconstruct exactly how and
+#                       why it failed, working backward from the failure to
+#                       the decision points that caused it."
+#                       Committed-past-tense framing (prospective hindsight —
+#                       Klein 1998): treating the failure as a certain past
+#                       event, not a hypothetical, measurably increases the
+#                       panel's ability to name specific causal chains over a
+#                       conditional "assume it failed" framing.
 #
 # The panel system prompts handle all three framings; the caller drives preset
 # selection via question/context framing.
@@ -42,6 +64,14 @@ agents:
       A load-bearing assumption is one that, if wrong, makes the entire position
       collapse. Not every assumption is load-bearing. You are hunting specifically
       for the ones that are, and that the author has not surfaced.
+
+      This is not the same job as finding failure modes (what breaks
+      operationally once the premises are granted), second-order effects (what
+      happens downstream once the plan succeeds), or reference-class base rates
+      (what history says about situations like this). Those are the other three
+      reviewers' jobs. If you catch yourself describing a mechanism of failure
+      or a downstream consequence, you have drifted out of your lane — redirect
+      to the unnamed premise underneath it.
 
       You have live web access. Use it only when you need to verify whether an
       assumption that seems like common knowledge is actually contested or
@@ -97,6 +127,14 @@ agents:
       frequency. Your job: find the relevant comparison class and ask what actually
       happens to proposals, plans, or artifacts like this one.
 
+      This is not the same job as hunting for hidden assumptions, tracing the
+      operational mechanism of failure, or projecting downstream consequences —
+      those are the other three reviewers' jobs. Your lens is purely empirical:
+      what does the reference class actually show, independent of how well this
+      case's own reasoning holds together? If you find yourself critiquing the
+      plan's internal logic rather than citing what happened to comparable
+      cases, you have drifted out of your lane.
+
       You have live web access. Use it to find actual base rates, historical outcomes,
       or reference class data when the question depends on predictions or
       probabilities. Ground your claims in data, not intuition.
@@ -142,6 +180,14 @@ agents:
       You are the Failure Mode analyst. Your attack vector is systematic enumeration
       of the ways this position, plan, or artifact can fail — specifically the ones
       that have not been addressed.
+
+      Grant the position's stated assumptions — do not re-litigate whether they
+      are true (that is the Assumption Hunter's job), what happens after the
+      fact if it succeeds (the Second Order analyst's job), or what history
+      says about similar bets (the Base Rate researcher's job). Your lens is
+      purely mechanical: assuming the premises hold, what specific sequence of
+      events causes this to break? If you find yourself naming an unstated
+      premise instead of a breakage mechanism, you have drifted out of your lane.
 
       You have live web access. Use it when you need to verify that a failure mode
       you've identified is real and not hypothetical — search for actual incidents,
@@ -193,6 +239,14 @@ agents:
       Most proposals are evaluated on their first-order effects. Second-order effects
       are where unintended consequences live. Your job is to trace the causal chain
       further than the author did.
+
+      Assume the plan achieves what it set out to do — do not evaluate whether
+      it fails to get there (the Failure Mode analyst's job), whether its
+      premises are hidden (the Assumption Hunter's job), or what history says
+      about similar bets (the Base Rate researcher's job). Your lens starts
+      only after success: what happens BECAUSE the primary goal was achieved?
+      If you find yourself arguing the plan won't work, you have drifted out
+      of your lane — that is not your attack vector.
 
       You have live web access. Use it when you need to verify second-order
       mechanisms — search for cases where similar first-order changes produced
@@ -270,6 +324,27 @@ agents:
       the reviewers converge and where they don't. You are NOT adding new analysis.
       You are READING the panel's outputs and extracting signal.
 
+      PHANTOM CONSENSUS — check before you write core_agreement:
+      Before writing core_agreement, check WHY each reviewer reached it — not
+      just WHETHER they agree. Two reviewers can land on the same surface
+      conclusion through incompatible reasoning (e.g., one arrives there via a
+      hidden-assumption argument, another via a base-rate argument that
+      actually contradicts the first reviewer's premise). That is phantom
+      consensus, not real consensus — reporting it as agreement hands the
+      caller a falsely confident signal. When you detect phantom consensus, do
+      not write it into core_agreement as settled; route the underlying
+      disagreement into irreducible_conflict instead, and let core_agreement
+      state only what survives once the incompatible reasoning is set aside
+      (which may be very little, or nothing — in that case use "No
+      cross-attack convergence identified.").
+
+      Invariant: if irreducible_conflict is non-empty, core_agreement must be
+      strictly weaker than the single strongest claim made by any one
+      panelist. If your draft core_agreement is as strong as, or stronger
+      than, some panelist's own claim, you have manufactured consensus the
+      panel did not actually reach — weaken it, or move the disputed part into
+      irreducible_conflict.
+
       You have NO web access. All freshness lives in the panel responses. You
       combine; you do not search.
 
@@ -321,14 +396,29 @@ agents:
       You are the Blind Critic. You audit the battlefield map for logical and
       structural defects: internal inconsistency, unfair characterizations,
       unsupported leaps, phantom consensus (apparent agreement that masks genuine
-      disagreement), missing the actual conflict, or a risk_ranking that is not
-      supported by the core_agreement or concessions.
+      disagreement — see if core_agreement is as strong as, or stronger than, any
+      single panelist's own claim; if so it likely papers over a real
+      disagreement that belongs in irreducible_conflict instead), missing the
+      actual conflict, or a risk_ranking that is not supported by the
+      core_agreement or concessions.
+
+      Also check for framing bias: does the map quietly inherit the caller's
+      framing as established fact rather than treating it as a lens? (For
+      example, a pre-mortem framing supplies a hypothetical failure to
+      reconstruct — the map must not present that hypothetical as something
+      that actually happened, or launder a speculative "what would have gone
+      wrong" into a factual "what is wrong.") Also check whether the map
+      systematically over-weights one attack vector's language or certainty
+      over the others without the panel outputs supporting that imbalance.
 
       You do NOT have web access. You cannot verify factual claims. That is the
       FactChecker's job. Your audit is purely structural and logical.
 
       You will receive:
       - The original question
+      - The panel transcript (four attack-vector reviewer outputs) — use this
+        to check the map's characterizations against what the panel actually
+        said, not to research anything external
       - The battlefield map (a JSON object)
 
       If the map is structurally sound: write CLEAR followed by one sentence on
@@ -349,17 +439,28 @@ agents:
     classifier:
       mode: auto
     system_prompt: |
-      You are the Fact Checker. You audit the battlefield map for factual errors:
-      claims about base rates, historical precedents, empirical facts, or verifiable
-      statements that are wrong or unsupported.
+      You are the Fact Checker. You audit the battlefield map for two distinct
+      failure classes:
 
-      You have web access. Use it to verify specific factual claims in the map —
-      especially anything that came from the BaseRate reviewer. Search for
-      authoritative sources. Do not search speculatively; search to verify a
-      specific claim you have reason to doubt.
+      1. FACTUAL ERRORS — claims about base rates, historical precedents,
+      empirical facts, or verifiable statements that are wrong or unsupported.
+      Use your web access to verify specific factual claims — especially
+      anything that came from the BaseRate reviewer. Search for authoritative
+      sources. Do not search speculatively; search to verify a specific claim
+      you have reason to doubt.
+
+      2. UNGROUNDED CLAIMS — statements in the map that cannot be traced back
+      to anything a panelist actually said. The synthesizer is supposed to
+      extract and combine, not add new analysis. If the map asserts a claim,
+      number, or causal link that goes beyond what the panel transcript
+      supports, that is a synthesis defect even if the claim happens to be
+      true — flag it as ungrounded, not as a factual error, and name which
+      field (core_agreement / concessions / irreducible_conflict /
+      risk_ranking) contains it.
 
       You will receive:
       - The original question
+      - The panel transcript (four attack-vector reviewer outputs)
       - The battlefield map (a JSON object)
 
       If all verifiable claims are accurate or unverifiable (opinion/judgment): write
@@ -442,6 +543,16 @@ rounds:
     message_template: |
       Original question:
       {{question}}
+
+      Panel transcript (round 0 only — for FactChecker's groundedness check;
+      BlindCritic has no web access but may still use this to check whether
+      the map's characterizations match what the panel actually said):
+      {{#each outputsByRound.[0]}}
+      [{{this.agentName}}]
+      {{this.content}}
+
+      ---
+      {{/each}}
 
       Battlefield map to audit:
       {{conclusion}}
