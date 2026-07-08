@@ -62,6 +62,8 @@ The router is four capabilities implemented as LangGraph nodes + state mutations
 
 Deferred to V2: pre-fetched grounding, post-call reflection.
 
+**Pre-flight cost estimation vs. the per-turn tracker:** `estimateInputCost(text, modelId)` — exported from the package's `index.ts`, defined in `adapter.ts` — is a separate, standalone pure function for estimating input token count/cost *before* execution (`~4 chars/token` approximation, input-rate only, `costUsd: null` for an unpriced `modelId`). It reads the same module-scoped `PRICING` table the Cost & Latency Tracker above reads, but `PRICING` itself is not exported — only the function. Use this when a caller (e.g. Herald's Bulk Audit) needs a cost estimate before running anything; the table above is the post-hoc per-turn accounting during a real execution.
+
 ---
 
 ## LangGraph State Shape
