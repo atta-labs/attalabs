@@ -1,8 +1,8 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
-import { locateBody, resolveShippableArgs } from './open-issue'
+import { describe, expect, it, vi } from 'vitest'
+import { locateBody, resolveMilestoneToAttach, resolveShippableArgs } from './open-issue'
 
 describe('locateBody', () => {
   it('reads --body-file <path> and records the file source with its arg index', () => {
@@ -162,5 +162,73 @@ describe('regular-file body-file input is unaffected by the fix', () => {
 
     cleanup()
     rmSync(dir, { recursive: true, force: true })
+  })
+})
+
+describe('resolveMilestoneToAttach (aeg-review-gate-v1 task 1 follow-up)', () => {
+  const activeLookup = vi.fn((slug: string) =>
+    slug === 'aeg-review-gate-v1' ? { goal: '', lifecycle: 'active' as const } : null
+  )
+
+  it('attaches the slug when the label is present, an open Milestone matches, and no explicit --milestone was given', () => {
+    const lookup = vi.fn().mockReturnValue({ goal: '', lifecycle: 'active' as const })
+    const result = resolveMilestoneToAttach(['iteration:aeg-review-gate-v1', 'tier:1'], ['--title', 't'], false, lookup)
+    expect(result).toBe('aeg-review-gate-v1')
+    expect(lookup).toHaveBeenCalledWith('aeg-review-gate-v1')
+  })
+
+  it('returns null on edit — creation-time behavior only, never force-attaches retroactively', () => {
+    const lookup = vi.fn().mockReturnValue({ goal: '', lifecycle: 'active' as const })
+    const result = resolveMilestoneToAttach(['iteration:aeg-review-gate-v1'], ['--title', 't'], true, lookup)
+    expect(result).toBeNull()
+    expect(lookup).not.toHaveBeenCalled()
+  })
+
+  it('returns null when no iteration label is present — not a task Issue', () => {
+    const lookup = vi.fn()
+    const result = resolveMilestoneToAttach(['tier:1'], ['--title', 't'], false, lookup)
+    expect(result).toBeNull()
+    expect(lookup).not.toHaveBeenCalled()
+  })
+
+  it('returns null when the caller already passed an explicit --milestone flag', () => {
+    const lookup = vi.fn()
+    const result = resolveMilestoneToAttach(
+      ['iteration:aeg-review-gate-v1'],
+      ['--milestone', 'something-else'],
+      false,
+      lookup
+    )
+    expect(result).toBeNull()
+    expect(lookup).not.toHaveBeenCalled()
+  })
+
+  it('returns null when the caller passed --milestone=<value> inline-equals form', () => {
+    const lookup = vi.fn()
+    const result = resolveMilestoneToAttach(['iteration:aeg-review-gate-v1'], ['--milestone=x'], false, lookup)
+    expect(result).toBeNull()
+    expect(lookup).not.toHaveBeenCalled()
+  })
+
+  it('returns null when no Milestone exists yet for the slug (not a hard failure)', () => {
+    const lookup = vi.fn().mockReturnValue(null)
+    const result = resolveMilestoneToAttach(['iteration:brand-new-iteration'], ['--title', 't'], false, lookup)
+    expect(result).toBeNull()
+  })
+
+  it('returns null when a Milestone exists for the slug but is closed (complete, not active)', () => {
+    const lookup = vi.fn().mockReturnValue({ goal: '', lifecycle: 'complete' as const })
+    const result = resolveMilestoneToAttach(['iteration:aeg-forge-state-v1'], ['--title', 't'], false, lookup)
+    expect(result).toBeNull()
+  })
+
+  it('uses the first iteration:<slug> label when multiple are somehow present', () => {
+    const result = resolveMilestoneToAttach(
+      ['iteration:aeg-review-gate-v1', 'iteration:other-iteration'],
+      ['--title', 't'],
+      false,
+      activeLookup
+    )
+    expect(result).toBe('aeg-review-gate-v1')
   })
 })

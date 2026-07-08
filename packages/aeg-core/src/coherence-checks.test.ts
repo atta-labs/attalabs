@@ -8,6 +8,7 @@ import {
   checkL1,
   checkL2,
   checkL3,
+  checkL4,
   checkR1,
   checkT1,
   checkT2,
@@ -761,5 +762,58 @@ describe('L3: active-iteration-count', () => {
     const r = checkL3([makeIterationFile('arch', true)])
     expect(r.status).toBe('info')
     expect(r.note).toMatch(/0 active/)
+  })
+})
+
+// ---------- L4: Issue-level Milestone-attachment drift (advisory) ------------
+
+describe('L4: Issue-level Milestone-attachment drift', () => {
+  it('info, clean — every open Issue in an active iteration is attached to the matching Milestone', () => {
+    const r = checkL4(
+      ['aeg-review-gate-v1'],
+      [{ iteration: 'aeg-review-gate-v1', issue: 1, milestoneTitle: 'aeg-review-gate-v1' }]
+    )
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(0)
+    expect(r.note).toBeUndefined()
+  })
+
+  it('flags an Issue in an active iteration with no milestone attached at all', () => {
+    const r = checkL4(
+      ['vinaya-studio-v1'],
+      [
+        { iteration: 'vinaya-studio-v1', issue: 10, milestoneTitle: null },
+        { iteration: 'vinaya-studio-v1', issue: 11, milestoneTitle: null },
+        { iteration: 'vinaya-studio-v1', issue: 12, milestoneTitle: null }
+      ]
+    )
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(3)
+    expect(r.failures[0]?.reason).toMatch(/no GitHub-native milestone attached/)
+    expect(r.note).toMatch(/3 open task-Issue/)
+  })
+
+  it('flags an Issue attached to the WRONG Milestone, naming which one', () => {
+    const r = checkL4(
+      ['aeg-review-gate-v1'],
+      [{ iteration: 'aeg-review-gate-v1', issue: 5, milestoneTitle: 'some-other-iteration' }]
+    )
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(1)
+    expect(r.failures[0]?.reason).toMatch(/attached to Milestone "some-other-iteration" instead/)
+  })
+
+  it('never flags an Issue in a NON-active iteration (no open Milestone) — closed/archived iterations are out of scope', () => {
+    const r = checkL4(
+      ['aeg-review-gate-v1'], // only this one is active
+      [{ iteration: 'aeg-forge-state-v1', issue: 99, milestoneTitle: null }]
+    )
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(0)
+  })
+
+  it('status is always info — never fails CI, matching L1/L2 advisory framing', () => {
+    const r = checkL4(['x'], [{ iteration: 'x', issue: 1, milestoneTitle: null }])
+    expect(r.status).toBe('info')
   })
 })

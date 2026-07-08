@@ -56,6 +56,7 @@ export {
   checkL1,
   checkL2,
   checkL3,
+  checkL4,
   checkR1,
   checkT1,
   checkT2,

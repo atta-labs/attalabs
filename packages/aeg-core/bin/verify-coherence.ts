@@ -30,7 +30,7 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { deriveIterationFromForge } from '@atta/aeg-forge-state'
+import { deriveIterationFromForge, listActiveIterationSlugs, listIssueMilestonesForSlug } from '@atta/aeg-forge-state'
 import type { Iteration } from '@atta/aeg-types'
 import {
   checkA1,
@@ -42,6 +42,7 @@ import {
   checkL1,
   checkL2,
   checkL3,
+  checkL4,
   checkManifestValidity,
   checkR1,
   checkT1,
@@ -516,6 +517,17 @@ export async function runCoherenceChecks(
   }
   results.push(checkL1(files, entriesBySlug))
   results.push(checkL2(files, entriesBySlug))
+
+  // L4 — Issue-level Milestone-attachment drift (aeg-review-gate-v1 task 1
+  // follow-up). Active = forge Milestone open (D-110), the same authority
+  // `verify-dispatch.ts`'s Milestone-aware discovery uses — not `!f.archived`
+  // (file location), so this never flags an iteration whose file predates
+  // the Milestone birth rule but has no live Milestone yet.
+  const milestoneActiveSlugs = listActiveIterationSlugs(owner, repoName).map((m) => m.slug)
+  const issueMilestones = milestoneActiveSlugs.flatMap((slug) =>
+    listIssueMilestonesForSlug(owner, repoName, slug).map((f) => ({ iteration: slug, ...f }))
+  )
+  results.push(checkL4(milestoneActiveSlugs, issueMilestones))
 
   // N/M stubs
   results.push(...checkN1N2M1M2M3())

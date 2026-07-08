@@ -29,6 +29,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { findMilestoneForSlug, type MilestoneFacts } from '@atta/aeg-forge-state'
 import { checkForgeTitle } from '../src/brief-validation'
 import { checkIssueRationale, isTaskIssueLabelSet } from '../src/issue-validation'
 
@@ -170,6 +171,49 @@ function fetchForgeLabels(issueRef: string): string[] {
   }
 }
 
+/** First `iteration:<slug>` label's slug, or `null` when the set carries none. */
+function iterationSlugFromLabels(labels: string[]): string | null {
+  const label = labels.find((l) => l.startsWith('iteration:'))
+  return label ? label.slice('iteration:'.length) : null
+}
+
+/** True when argv already carries an explicit `--milestone`/`-m` flag — the caller's choice always wins. */
+function hasExplicitMilestoneFlag(args: string[]): boolean {
+  return args.some((a) => a === '--milestone' || a === '-m' || a.startsWith('--milestone='))
+}
+
+/**
+ * Milestone auto-attach on Issue CREATE (aeg-review-gate-v1 task 1 follow-up).
+ * `deriveIterationFromForge`/`listActiveIterationSlugs` (`@atta/aeg-forge-state`)
+ * never read an Issue's GitHub-native milestone field — only the
+ * `iteration:<slug>` label — so this drift was never functionally
+ * load-pathing; it is pure GitHub-view hygiene (a Milestone showing
+ * `open_issues=0` while 3 real open task Issues carry its label). Creation-time
+ * only, by design: `edit` never force-attaches retroactively (an unrelated
+ * body edit must not silently reassign an Issue's milestone).
+ *
+ * Not a hard failure when no matching Milestone exists yet — an iteration's
+ * Milestone may not exist yet at first-Issue-cut time (task 5/#429 backfilled
+ * Milestones after the fact for the first cohort; a brand-new iteration's
+ * very first Issue necessarily precedes its own Milestone in some workflows).
+ * `lookupMilestone` is injected so this stays testable without a real `gh` call.
+ */
+export function resolveMilestoneToAttach(
+  labels: string[],
+  args: string[],
+  isEdit: boolean,
+  lookupMilestone: (slug: string) => MilestoneFacts | null
+): string | null {
+  if (isEdit) return null
+  if (!isTaskIssueLabelSet(labels)) return null
+  if (hasExplicitMilestoneFlag(args)) return null
+  const slug = iterationSlugFromLabels(labels)
+  if (!slug) return null
+  const milestone = lookupMilestone(slug)
+  if (milestone?.lifecycle !== 'active') return null
+  return slug
+}
+
 export function main(): void {
   const argv = process.argv.slice(2)
   const validateOnly = argv.includes('--validate-only')
@@ -218,7 +262,20 @@ export function main(): void {
     process.exit(0)
   }
 
-  const { finalArgs, cleanup } = resolveShippableArgs(bodyArgs, bodyResult)
+  const milestoneSlug = resolveMilestoneToAttach(labels, bodyArgs, isEdit, (slug) => {
+    try {
+      return findMilestoneForSlug('{owner}', '{repo}', slug)
+    } catch {
+      console.warn(`[open-issue] milestone lookup for "${slug}" failed (gh api) — creating without --milestone.`)
+      return null
+    }
+  })
+  const createArgs = milestoneSlug ? [...bodyArgs, '--milestone', milestoneSlug] : bodyArgs
+  if (milestoneSlug) {
+    console.log(`[open-issue] auto-attaching to open Milestone "${milestoneSlug}" (iteration label match).`)
+  }
+
+  const { finalArgs, cleanup } = resolveShippableArgs(createArgs, bodyResult)
   try {
     const finalGhArgs = isEdit ? [ghArgs[0] as string, ...finalArgs] : finalArgs
     const ghCmd = isEdit ? ['issue', 'edit', ...finalGhArgs] : ['issue', 'create', ...finalGhArgs]

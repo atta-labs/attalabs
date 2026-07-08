@@ -1,6 +1,6 @@
 /**
  * verify-coherence pure check evaluators — deterministic plan↔forge coherence
- * oracle logic (A1/A2/A3, T1/T2/T3, D1, L1/L2/L3, closes-N). Per D-067.
+ * oracle logic (A1/A2/A3, T1/T2/T3, D1, L1/L2/L3/L4, closes-N). Per D-067.
  *
  * Pure — no `fs`, no `fetch`, no `process.env`. All forge facts and iteration
  * topology are injected by the caller (`bin/verify-coherence.ts`, the I/O shim).
@@ -518,6 +518,52 @@ export function checkL3(files: IterationFile[]): CheckResult {
     status: 'info',
     failures: [],
     note: `${active.length} active iteration(s): ${active.map((f) => f.slug).join(', ') || '(none)'}`
+  }
+}
+
+/**
+ * L4: Issue-level Milestone-attachment drift (aeg-review-gate-v1 task 1
+ * follow-up). An open task-Issue carrying `iteration:<slug>` for an ACTIVE
+ * iteration (open Milestone titled the slug, D-110) whose GitHub-native
+ * `milestone` field doesn't match that same Milestone.
+ *
+ * **Advisory (info-only)**, same framing as L1/L2 (`state-machine.md` §12):
+ * confirmed NOT functionally load-bearing — `deriveIterationFromForge`/
+ * `listActiveIterationSlugs` never read an Issue's milestone field, only the
+ * `iteration:<slug>` label, which remains the sole, sufficient membership
+ * signal. This is real drift between GitHub's own Milestone view (e.g.
+ * `open_issues`/`closed_issues` counts) and reality — cosmetic, not a gate,
+ * surfaced so it doesn't silently accumulate rather than because anything
+ * downstream currently breaks. `open-issue.ts` prevents new drift at
+ * creation time (ring 0); this is the ring-1/2 detection half for whatever
+ * predates that gate or was created outside it.
+ */
+export function checkL4(
+  activeIterationSlugs: string[],
+  issueMilestones: Array<{ iteration: string; issue: number; milestoneTitle: string | null }>
+): CheckResult {
+  const activeSet = new Set(activeIterationSlugs)
+  const failures: CheckFailure[] = []
+  for (const f of issueMilestones) {
+    if (!activeSet.has(f.iteration)) continue
+    if (f.milestoneTitle === f.iteration) continue
+    failures.push({
+      issue: f.issue,
+      iteration: f.iteration,
+      reason:
+        f.milestoneTitle === null
+          ? `Issue #${f.issue} carries iteration:${f.iteration} (active) but has no GitHub-native milestone attached`
+          : `Issue #${f.issue} carries iteration:${f.iteration} (active) but is attached to Milestone "${f.milestoneTitle}" instead`
+    })
+  }
+  return {
+    check: 'L4',
+    status: 'info',
+    failures,
+    note:
+      failures.length > 0
+        ? `${failures.length} open task-Issue(s) in an active iteration whose GitHub-native milestone doesn't match their iteration:<slug> label (cosmetic drift, advisory)`
+        : undefined
   }
 }
 

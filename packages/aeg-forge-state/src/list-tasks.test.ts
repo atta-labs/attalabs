@@ -14,7 +14,8 @@ describe('listTasksForSlug', () => {
         number: 425,
         title: '[aeg-forge-state-v1] 1 — Generic forge-reading adapter (packages/forge-state)',
         body: '**Dependency rationale** — `Depends-on: —`. First task.\n\n**Traps to avoid** — none.',
-        state: 'open',
+        state: 'OPEN',
+        milestone: null,
         labels: [{ name: 'tier:3' }, { name: 'project:aeg-core' }, { name: 'iteration:aeg-forge-state-v1' }]
       }
     ])
@@ -40,21 +41,24 @@ describe('listTasksForSlug', () => {
         number: 2,
         title: '[iter] 7a — split B',
         body: '',
-        state: 'open',
+        state: 'OPEN',
+        milestone: null,
         labels: [{ name: 'iteration:iter' }]
       },
       {
         number: 1,
         title: '[iter] 7 — split A',
         body: '',
-        state: 'open',
+        state: 'OPEN',
+        milestone: null,
         labels: [{ name: 'iteration:iter' }]
       },
       {
         number: 3,
         title: '[iter] 2 — earlier task',
         body: '',
-        state: 'open',
+        state: 'OPEN',
+        milestone: null,
         labels: [{ name: 'iteration:iter' }]
       }
     ])
@@ -69,7 +73,8 @@ describe('listTasksForSlug', () => {
         number: 1,
         title: 'A malformed title with no brackets',
         body: '',
-        state: 'open',
+        state: 'OPEN',
+        milestone: null,
         labels: [{ name: 'iteration:iter' }]
       }
     ])
