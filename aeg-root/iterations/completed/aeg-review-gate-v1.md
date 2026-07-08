@@ -1,5 +1,5 @@
 # Iteration: aeg-review-gate-v1 — July 2026
-Lifecycle: active
+Lifecycle: complete
 
 Goal: Close a real process gap found while archiving `aeg-forge-state-v1`: the post-merge Archivist
 automation flags a missing code-reviewer/security-review pass as DANGLING, but that check runs
