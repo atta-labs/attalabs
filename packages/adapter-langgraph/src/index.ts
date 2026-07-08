@@ -4,7 +4,7 @@
  * LangGraph-based adapter for the Vāda engine.
  */
 
-export { LangGraphAdapter } from './adapter'
+export { estimateInputCost, LangGraphAdapter } from './adapter'
 export type { LangGraphAdapterConfig, ReviewerConfig } from './adapter'
 export { buildStateGraph } from './graph-builder'
 export type { NodeExecutor, NodeExecutionContext } from './graph-builder'
