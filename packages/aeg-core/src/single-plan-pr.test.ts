@@ -34,7 +34,7 @@ describe('checkSinglePlanPr — single-plan-PR guard (D-069 task 19 / #336)', ()
 
   it('passes when two plan-branch diffs touch DIFFERENT iterations topology files', () => {
     const branchFiles = ['aeg-root/iterations/aeg-governance-hardening.md']
-    const otherOpenPrs = [{ number: 200, files: ['aeg-root/iterations/herald-hardening-v1.md'] }]
+    const otherOpenPrs = [{ number: 200, files: ['aeg-root/iterations/aeg-forge-state-v1.md'] }]
     expect(checkSinglePlanPr(branchFiles, otherOpenPrs)).toEqual({ ok: true })
   })
 
