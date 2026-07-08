@@ -38,7 +38,7 @@ export default async function AegMethodologyPage() {
           <Heading level={2} className='font-serif text-2xl text-foreground'>
             Roles
           </Heading>
-          <Text className='font-sans text-sm text-muted-foreground'>
+          <Text as='span' className='block font-sans text-sm text-muted-foreground'>
             One card per file in <SourceLinkChip label='aeg-root/roles/' href={githubTreeUrl('aeg-root/roles')} /> —{' '}
             {roles.length} today.
           </Text>
@@ -55,7 +55,7 @@ export default async function AegMethodologyPage() {
           <Heading level={2} className='font-serif text-2xl text-foreground'>
             Rings
           </Heading>
-          <Text className='font-sans text-sm text-muted-foreground'>
+          <Text as='span' className='block font-sans text-sm text-muted-foreground'>
             Sourced from <SourceLinkChip label='enforcement.md' href={githubBlobUrl('aeg-root/enforcement.md')} /> —
             three rings, by where a violation dies. Expand any row for the real quoted rule and its real hook/CI link.
           </Text>
@@ -70,7 +70,7 @@ export default async function AegMethodologyPage() {
           <Heading level={2} className='font-serif text-2xl text-foreground'>
             Contracts
           </Heading>
-          <Text className='font-sans text-sm text-muted-foreground'>
+          <Text as='span' className='block font-sans text-sm text-muted-foreground'>
             One card per file in{' '}
             <SourceLinkChip label='aeg-root/contracts/' href={githubTreeUrl('aeg-root/contracts')} /> —{' '}
             {contracts.length} today. Each is the single source of truth for one role-to-role hand-off.
