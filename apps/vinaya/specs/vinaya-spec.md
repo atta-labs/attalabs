@@ -8,6 +8,20 @@ First mention of this file — created by `vinaya-studio-v1` task 0 (#479). Capt
 
 A governance layer for AI coding agents: deterministic checks every agent must satisfy before merge, installed with `npx vinaya init`. Vinaya doesn't block agents — it redirects them into a governed flow, so a human reviews judgment, not compliance. "Vinaya" means "discipline" / "the rules of conduct" in Pali.
 
+## Pages — the full site map, kept current here
+
+Every route `apps/vinaya/web` has or will have, and its real status. Update this table whenever a page is added, built, or its status changes — this is the one place to check "what pages exist" without reconstructing it from task history.
+
+| Route | Purpose | Status | Built by | UI polish |
+|---|---|---|---|---|
+| `/` | Landing — locked D-088/D-108 copy, `npx vinaya init` CTA (marked coming-soon) | **Live** | Task 0 (#479, merged) | Functional, not yet applying the rings-drilldown visual design |
+| `/known-limits` | Honest, individually-verified list of what Vinaya doesn't do yet | **Live** | Task 0 (#479, merged) | Functional, not yet designed |
+| `/aeg` | The AEG methodology itself — rings, roles, contracts — read from real files at build time, not hand-transcribed | **Built, fixing a bug found in review** | Task 0b (#480, PR #485 open) | **Not yet applied** — content is real and verified; the polished rings-drilldown visual design explored separately (`vinaya-rings-drilldown` mockup) has not been applied to it. No task registered for this yet. |
+| `/docs` | CLI command reference | **Deferred, no task exists** | Not started — blocked on `vinaya-cli-v1` actually shipping commands (currently 0/7 issues dispatched). Documenting a CLI that doesn't exist would be premature. | N/A |
+| Studio dashboard (routes TBD, mirrors AEG Studio's existing route structure — iteration list, task tables, coherence checks) | The live derived-status viewer | **Not started** | Task 1 (#388, amended — ports `apps/aeg/web`'s dashboard routes into this app rather than copying the whole app) | N/A |
+
+**The UI-polish gap, named explicitly:** `/` , `/known-limits`, and `/aeg` are all functionally correct today but visually generic — none of them yet apply the design already explored in the `vinaya-rings-drilldown` mockup (a separate, earlier design-exploration artifact, not yet wired to real data). No task exists yet for this design-application pass. See the drift-prevention/registration note: this gap was found by direct Principal review of the built page, not by any process that would have caught it automatically — worth registering as its own task rather than leaving implicit.
+
 ## Positioning (locked copy — D-088, D-108)
 
 Wording refinements are Principal-owned; do not improvise these fields.
