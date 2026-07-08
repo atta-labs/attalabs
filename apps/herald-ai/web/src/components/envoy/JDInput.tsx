@@ -131,7 +131,7 @@ export function JDInput({
     <div>
       {/* Hero — flows on the page; scrolls with the page (no internal scroller) */}
       <div>
-        <div className='mx-auto max-w-[680px] px-6 pt-20 pb-4'>
+        <div className='mx-auto max-w-[680px] px-6 pt-10 pb-4'>
           <header>
             <div className='flex items-start gap-5'>
               {candidateAvatarUrl && (
@@ -325,6 +325,14 @@ export function JDInput({
             </div>
           </header>
         </div>
+
+        {/* Scroll hint — sticks to the viewport bottom while the hero is still
+            in view, scrolling away naturally once the hero's own bottom edge
+            passes (position: sticky, not fixed). Pure Tailwind, no custom CSS. */}
+        <div
+          aria-hidden='true'
+          className='pointer-events-none sticky bottom-0 h-20 animate-pulse bg-gradient-to-t from-primary/10 via-primary/5 to-transparent backdrop-blur-sm'
+        />
       </div>
 
       {/* Input / audit gate. The real prompt (auditAvailable) flows with the

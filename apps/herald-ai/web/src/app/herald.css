@@ -13,7 +13,9 @@
 
 /* Audit prompt input — attention border once scrolled (near) into view.
    Draws a 1px moving gradient ring using --primary via mask-composite
-   (paints only the ring, not the fill) so it works over any surface. */
+   (paints only the ring, not the fill) so it works over any surface.
+   Deliberately slow + low-contrast (color-mix'd down to 40%) — an ambient
+   cue, not a flashing one. */
 @keyframes ai-gradient-border {
   to { background-position: -200% 0; }
 }
@@ -22,10 +24,17 @@
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  padding: 1.5px;
-  background: linear-gradient(90deg, transparent, var(--primary), transparent, var(--primary), transparent);
+  padding: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--primary) 40%, transparent),
+    transparent,
+    color-mix(in oklch, var(--primary) 40%, transparent),
+    transparent
+  );
   background-size: 200% 100%;
-  animation: ai-gradient-border 3s linear infinite;
+  animation: ai-gradient-border 10s linear infinite;
   -webkit-mask: linear-gradient(white 0 0) content-box, linear-gradient(white 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
