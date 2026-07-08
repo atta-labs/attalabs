@@ -73,7 +73,7 @@ If you don't have the information to fill a field, write "unknown — Principal 
 
 ### 3. Close the Milestone
 
-- `gh milestone edit --state closed <slug>` (or the equivalent `gh api` call) — closing the Milestone IS the iteration's lifecycle transition to `complete`. This is a forge action, not a repo commit.
+- `gh` has no built-in `milestone` subcommand — resolve the Milestone's number by title, then close it via the REST API directly: `gh api "repos/{owner}/{repo}/milestones?state=open" --jq '.[] | select(.title=="<slug>") | .number'`, then `gh api repos/{owner}/{repo}/milestones/<number> -X PATCH -f state=closed`. Closing the Milestone IS the iteration's lifecycle transition to `complete`. This is a forge action, not a repo commit.
 - The Issues themselves are already closed (verified in step 1) and stay attached to the closed Milestone — that attachment is the durable historical record; nothing needs to be moved or archived as a file.
 - **Legacy exception:** if this iteration still has a pre-cutover topology file at `aeg-root/iterations/<name>.md` (rare — the forge-native cutover is complete for every iteration created after `aeg-forge-state-v1`), archive it as before: add `Lifecycle: complete` as the first line after the `# Iteration:` heading, then `git mv aeg-root/iterations/<name>.md aeg-root/iterations/completed/<name>.md`. Do NOT delete it — the rationale is durable history. Confirm the move landed and the source path no longer exists.
 

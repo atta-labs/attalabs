@@ -14,6 +14,13 @@
  * same way a genuinely code-free `plan/*` branch is. This is a going-forward
  * gate, never a re-evaluation of already-merged history.
  *
+ * Fail-closed change from the prior bypass logic: a literal `BRANCH=main`
+ * used to match the old "any non-task branch" bypass too. It no longer does
+ * — `main` isn't `plan/*`, so it now falls through to the real check. Harmless
+ * in the one real caller (`forge-lifecycle.yml`'s `pull_request` trigger,
+ * where `BRANCH` is always the PR's head ref, never literally `main`), but
+ * worth naming explicitly since it IS a behavior change from before.
+ *
  * Thin CLI/I/O shim, same discipline as `verify-single-plan-pr.ts`: resolves
  * the PR's comments/labels/waiver-label-actor via `gh`, calls the pure
  * `checkReviewGate` (`@atta/aeg-core`), and exits non-zero with a clear
