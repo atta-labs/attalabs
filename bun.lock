@@ -323,6 +323,7 @@
       "name": "@atta/vinaya-web",
       "version": "0.1.0",
       "dependencies": {
+        "@atta/aeg-core": "workspace:*",
         "@atta/auth": "workspace:*",
         "@atta/cms": "workspace:*",
         "@atta/instrumentation": "workspace:*",
@@ -332,6 +333,8 @@
         "next": "^16.2.1",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
+        "react-markdown": "^10.1.0",
+        "remark-gfm": "^4.0.1",
         "tailwindcss": "^4.0.0",
       },
       "devDependencies": {
