@@ -38,6 +38,22 @@ export type ReviewGateInput = {
 }
 
 /**
+ * True only for `plan/*` branches — topology/decision-log docs only, ever,
+ * by contract (roles/planner.md Step 0): a plan PR has no code to review.
+ * Every other branch, INCLUDING `fix/*`, is held to the review gate — `fix/*`
+ * carries real code despite not matching `task/<iteration>/<id>`, so reusing
+ * `checkClosesN`'s broader "any non-task branch bypasses" idiom here was a
+ * gap: a `fix/*` PR could merge with no enforced code-reviewer or
+ * security-review verdict. `checkClosesN`'s bypass is correct for itself (it
+ * asks "does this PR close a tracked task Issue," which `fix/*` genuinely
+ * doesn't) — this function answers a different question ("is there code to
+ * review") and must not reuse that bypass.
+ */
+export function isReviewGateExemptBranch(branch: string): boolean {
+  return branch.startsWith('plan/')
+}
+
+/**
  * `pass` when either (a) `waiver:review` is present and actor-verified against
  * `PRINCIPAL_ALLOWLIST`, or (b) both verdicts are clean — code-reviewer
  * `APPROVE` (not `REQUEST_CHANGES`, not missing, not unclear) and

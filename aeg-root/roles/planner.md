@@ -3,7 +3,9 @@ sidebar_title: Planner
 ---
 # Role: Planner
 
-**A mode of the Team Leader.** Same intelligence as the Brief Author, one altitude up. The Brief Author turns one intent into one brief; the Planner turns an intent plus a slice of tickets into a whole **iteration** — a set of forge Issues plus the thin topology file (`aeg-root/iterations/<name>.md`).
+**A mode of the Team Leader.** Same intelligence as the Brief Author, one altitude up. The Brief Author turns one intent into one brief; the Planner turns an intent plus a slice of tickets into a whole **iteration** — a GitHub Milestone plus a set of labeled forge Issues.
+
+**Forge-native by default (`aeg-forge-state-v1`, D-110) — no topology file, no plan PR, no commit.** Create a Milestone titled `<slug>` (its description is the iteration goal), then cut task Issues labeled `iteration:<slug>` with the full Planner's rationale (§"The Planner's rationale" below) in each body. `@atta/aeg-forge-state` derives topology, dependencies, and lifecycle purely from those forge objects — nothing to write to `main`, nothing for `verify-coherence` to fall back to a file for. This cutover is now complete for every active iteration, including the one holdout (`vada-production-v1`) that briefly kept a thin `.md` file while 9 pre-D-078 Issues were backfilled — see `iterations/README.md` §4 for that history. Do not create a new topology file for a new iteration; if you find yourself about to write one, stop — the forge-native path below is the whole job.
 
 Read this with `iterations/README.md` (the model) and `coordination.md` (session start). The Planner exists because the relationships *between* tasks — dependencies, conflicts, split-vs-combine — are invisible to a brief written in isolation. Seeing them is the whole job.
 
@@ -62,11 +64,11 @@ The principle: **the planner does not start work it cannot finish well.** Garbag
 
 ## What you produce
 
-Exactly two artifacts, and nothing else:
-1. **Forge Issues** — one per task. Each holds task identity + metadata + the **Planner's rationale** (§"The Planner's rationale" below). It holds: title, project label(s), `depends-on`/`conflicts-with` references, external ticket link, and the rationale block. **No brief** (that's just-in-time, in the PR body later). **No status** (derived from the forge). **No priority/estimates/points** (those live in the company's planning tool).
-2. **The thin iteration file** — topology only: task→Issue mapping (real Issue numbers — never `#TBD`), `depends-on` edges, `conflicts-with` edges, iteration grouping, and backlog lane. No rationale, no task prose, no status, no PR numbers, no timestamps.
+Exactly two artifacts, both on the forge, nothing committed to the repo:
+1. **A Milestone** — titled `<slug>`, description = the iteration goal. Its open/closed state is the iteration's lifecycle (open = active, closed = complete) — nothing else sets it.
+2. **Forge Issues** — one per task, labeled `iteration:<slug>`. Each holds task identity + metadata + the **Planner's rationale** (§"The Planner's rationale" below): title, project label(s), `depends-on`/`conflicts-with` references, external ticket link, and the rationale block. **No brief** (that's just-in-time, in the PR body later). **No status** (derived from the forge). **No priority/estimates/points** (those live in the company's planning tool).
 
-**Cutting forge Issues IS the canonical plan act (D-055).** The iteration is not fully planned until every task row in the thin file has a real Issue number. `#TBD` is not a valid state in a dispatched or active iteration — it means the plan is incomplete. The Planner writes the rationale INTO the Issue body; the thin file row carries only the link and edges. Brief Authors read the rationale from the Issue; they must not need to load the iteration file to understand what they are implementing.
+**Cutting forge Issues IS the canonical plan act (D-055).** The iteration is not fully planned until every task has a real Issue, labeled and attached to the Milestone. `#TBD` is not a valid state in a dispatched or active iteration — it means the plan is incomplete. The Planner writes the rationale INTO the Issue body. Brief Authors read the rationale from the Issue; they must not need to load a separate iteration file to understand what they are implementing — there isn't one.
 
 You write no briefs and no status. **Cutting the Issue and writing its number into the topology table is the backlog → todo promotion** (`iterations/README.md` §3). Leaving the Issue column as `#TBD` keeps the task backlog — it is neither briefable nor executable. Not every task in the iteration need have an Issue at plan time; backlog tasks may remain `#TBD` until promoted. But before any task is dispatched, the Planner must cut its Issue, record the real number in the topology table, and only then hand it to the Brief Author. A task with `#TBD` in its Issue column is not dispatchable — the Brief Author and Developer both hard-STOP on it (D-054).
 
@@ -187,7 +189,7 @@ When you raise a warning, state the specific signal, give your recommendation (u
 
 ## Naming the iteration
 
-Name the iteration's file (`aeg-root/iterations/<name>.md`) after its **center of gravity — the durable, highest-leverage work — not its narrowest downstream feature.** When an iteration onboards a project onto shared infrastructure (or grows that infra), name the onboarding/infra, not the feature riding on it. A name must not imply narrower scope than the `Project(s)` column reveals. (Full rule: `iterations/README.md` §4 "Naming an iteration.")
+Name the Milestone (its title is the `<slug>`) after its **center of gravity — the durable, highest-leverage work — not its narrowest downstream feature.** When an iteration onboards a project onto shared infrastructure (or grows that infra), name the onboarding/infra, not the feature riding on it. A name must not imply narrower scope than the tasks' `Project(s)` fields reveal. (Full rule: `iterations/README.md` §4 "Naming an iteration.")
 
 ---
 
@@ -198,12 +200,12 @@ Moving a task from one iteration to another is a **Planner power** — it is a t
 **Only `todo`/backlog tasks are movable.** A task with an open branch or open PR (in-flight / in-review) must be finished or dropped first — never relocated mid-flight. Verify with the forge before moving: no `task/<src>/<n>` branch, no open PR.
 
 **The refactor, step by step:**
-1. **Plan the destination** — cut/confirm the destination iteration's topology and each moved task's refreshed Planner's rationale (sizing may change once it lands on the new iteration's substrate; re-derive it, do not copy the stale one).
-2. **Relabel each moved Issue** `iteration:<src>` → `iteration:<dest>` and post a one-line provenance comment on it (from where, to where, why).
-3. **Annotate the source iteration's topology** with a `Moved out → <dest>` marker on each moved task's row — while the source is still in `aeg-root/iterations/` (before archival; once in `completed/` the file is frozen history the Archivist owns).
-4. **Leave the close to the Archivist.** After your plan lands, the source iteration has no open task work (every task merged, dropped, or now moved) and the Iteration Archivist can close it (D-070 close-gate). You do not archive it yourself — deciding-what's-next and refactoring is yours; the close-out mechanics are the Archivist's.
+1. **Plan the destination** — confirm the destination Milestone and each moved task's refreshed Planner's rationale (sizing may change once it lands on the new iteration's substrate; re-derive it, do not copy the stale one).
+2. **Relabel each moved Issue** `iteration:<src>` → `iteration:<dest>`, re-attach it to the destination Milestone, and post a one-line provenance comment on it (from where, to where, why) — the relabel + comment *is* the move; there is no separate topology row to edit.
+3. **If the source iteration still has a legacy topology file** (rare — see the forge-native default above), annotate the moved task's row with `Moved out → <dest>` before archival. Forge-native source iterations need no file annotation; the Issue's relabel + comment is the whole record.
+4. **Leave the close to the Archivist.** After your plan lands, the source iteration has no open task work (every task merged, dropped, or now moved) and the Iteration Archivist can close it (D-070 close-gate) — closing the source Milestone. You do not archive it yourself — deciding-what's-next and refactoring is yours; the close-out mechanics are the Archivist's.
 
-**Movement provenance is recorded in four durable places** (all auditable): the Issue (relabel + comment), the source iteration file (annotation), the destination iteration file (task row + refreshed rationale), and the Archivist retrospective ("Tasks moved out"). This is the honest, forge-derivable record that a task changed address rather than vanishing.
+**Movement provenance is recorded on the forge** (auditable): the Issue (relabel + Milestone re-attach + comment) and the Archivist retrospective ("Tasks moved out") posted to the pinned lessons Issue. This is the honest, forge-derivable record that a task changed address rather than vanishing.
 
 This conforms to `Lock: YES` **D-070** and to **D-069**'s one law: a moved task is neither *done* nor *dropped* in the source — movement is a re-scope that removes the task from the iteration entirely, not a path to *done* (which is still only a merged PR naming the Issue).
 
@@ -217,19 +219,19 @@ Once an Issue is assigned (`todo`), a Developer picks it up: reads the rationale
 
 ---
 
-## Step 0 — commit plan artifacts via a worktree + PR, never directly to `main`
+## Step 0 — creating the iteration itself needs no worktree, no PR, no commit
 
-**Your plan artifacts (the thin iteration file, the decision-log entry, any topology edit) are repo files, and every repo-file change reaches `main` the same way a Developer's does: through a worktree branch + PR + green merge — never a direct commit to `main`.** The Planner is not exempt because it writes docs instead of code; "I only edited the iteration file" is exactly the drift this rule closes (see the pinned lessons Issue #453, entry L‑006). The universal rule lives in `coordination.md` § "Every repo-file change goes through a worktree + PR"; this is its Planner-specific Step 0.
+**Creating a Milestone and cutting labeled Issues are forge actions, not repo-file changes — there is nothing to commit.** The old requirement to open a `plan/<iteration>` worktree + PR existed because the topology file and decision-log entries were repo files, and every repo-file change reaches `main` through a worktree branch + PR + green merge, same as a Developer's. That still applies **only if this planning act also writes an actual repo file** — most commonly a decision-log entry (`packages/governance/decisions.md`, `apps/*/specs/*-decisions.md`) for a Type 1 ratification. If your plan produces no repo-file change at all (the common case — Milestone + Issues only), skip this section entirely: no worktree, no plan PR, nothing for `.husky` or `check-pr-green.sh` to gate.
 
-Before committing any plan artifact, create a worktree off `origin/main` and work there:
+When a plan **does** need a decision-log entry, open it the same way any doc change does — a worktree off `origin/main`, commit, PR:
 
 ```
 git worktree add .worktrees/plan/<iteration> -b plan/<iteration> origin/main && cd .worktrees/plan/<iteration> && bun install --frozen-lockfile --silent
 ```
 
-Then commit the topology + decision entry on that branch and open the plan PR. The `.husky/pre-commit` / `pre-push` guards refuse a direct commit or push to `main`, and the merge-gate hook (`.claude/hooks/check-pr-green.sh`) refuses a red merge — so this is enforced, not merely asked. Cutting forge Issues is a forge action (not a repo commit) and does not need the worktree; the worktree is for the *file* artifacts.
+The `.husky/pre-commit` / `pre-push` guards refuse a direct commit or push to `main`, and the merge-gate hook (`.claude/hooks/check-pr-green.sh`) refuses a red merge — so this is enforced, not merely asked, for the cases where a file is actually being written.
 
-**Only one open plan PR per iteration, at a time — mechanically enforced (D-069 task 19).** Two concurrent plan PRs for the same iteration, each cut from `origin/main` before the other merged, each unaware of the other's newly-added Issue, is exactly the race that produced two competing plan PRs for `aeg-governance-hardening` itself (#352/#354) — the coherence oracle's T2 check correctly flagged the resulting inconsistency, but by then both PRs already existed. This is no longer just a planning discipline: `packages/aeg-core/bin/open-pr.ts`'s single-plan-PR guard (`checkSinglePlanPr`) refuses outright to open or edit a plan PR whose diff touches an iteration's topology file while another OPEN PR's diff already touches that same iteration's topology file, naming the conflicting PR. If you hit this refusal, wait for the existing plan PR to merge or close before opening another for the same iteration — do not work around it by targeting a different branch or bypassing `open-pr.ts`.
+**Only one open plan PR per iteration, at a time — mechanically enforced (D-069 task 19), for the case where a plan PR exists at all.** Two concurrent plan PRs for the same iteration, each cut from `origin/main` before the other merged, is the race that produced two competing plan PRs for `aeg-governance-hardening` itself (#352/#354). `packages/aeg-core/bin/open-pr.ts`'s single-plan-PR guard (`checkSinglePlanPr`) still refuses outright to open or edit a plan PR whose diff touches an iteration's topology file while another OPEN PR's diff already touches it — relevant now mainly to the historical `completed/*.md` files, since new iterations no longer have a live topology file to race on.
 
 ---
 

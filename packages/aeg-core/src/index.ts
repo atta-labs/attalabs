@@ -71,7 +71,7 @@ export { buildProvenanceBlock, hasProvenance, taskRefFromBranch } from './archiv
 export type { MergedPrFacts } from './archive-task'
 export { extractCodeReviewVerdict, extractSecurityReviewVerdict } from './verdict-extraction'
 export type { VerdictExtraction } from './verdict-extraction'
-export { checkReviewGate } from './review-gate'
+export { checkReviewGate, isReviewGateExemptBranch } from './review-gate'
 export type { ReviewGateInput, ReviewGateResult, ReviewGateVerdict } from './review-gate'
 export { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 export type { IssueSectionResult } from './issue-validation'

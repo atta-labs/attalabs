@@ -297,11 +297,13 @@ jobs:
       # `extractSecurityReviewVerdict` (`verdict-extraction.ts`) — the exact
       # detection the post-merge Archivist automation already runs, now
       # gated pre-merge and blocking instead of post-merge and advisory-only.
-      # Non-task branches (plan PRs, `main`) bypass inside the CLI itself
-      # (BRANCH env, `taskRefFromBranch` — same idiom as the Closes #N gate
-      # above): a plan PR touching only topology files has no code to
-      # review, and this is a going-forward gate that never re-evaluates
-      # already-merged history.
+      # Only plan/* branches bypass, inside the CLI itself (BRANCH env,
+      # `isReviewGateExemptBranch` — a plan PR touches only topology/
+      # decision-log docs, never code). fix/* is deliberately NOT exempt
+      # despite also being a non-task branch — it carries real code and is
+      # held to the same gate as task/*/* (see review-gate.ts's docstring
+      # for the incident this fixed). This is a going-forward gate that
+      # never re-evaluates already-merged history.
       - name: Review gate (code-reviewer + security-review verdicts)
         if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
         env:

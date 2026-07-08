@@ -44,9 +44,7 @@ export function isGrandfathered(isoDate: string | null | undefined): boolean {
  * exemption mechanism. Do not add to it going forward; fix the Issue body
  * instead (D-055's rationale contract).
  */
-export const R1_GRANDFATHERED_ISSUES: ReadonlySet<number> = new Set([
-  183, 184, 185, 186, 187, 188, 240, 241, 244, 279, 280, 281, 282
-])
+export const R1_GRANDFATHERED_ISSUES: ReadonlySet<number> = new Set([279, 280, 281, 282])
 
 // ---------- types -------------------------------------------------------------
 

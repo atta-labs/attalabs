@@ -7,11 +7,19 @@
  * PR, or an actor-verified `waiver:review` label is present (D-097's exact
  * pattern — `isWaiverLabelActorVerified`, reused not duplicated).
  *
- * Non-task branches (plan PRs, `main` itself) bypass — same
- * `/^task\/([^/]+)\/([^/]+)$/` pattern and exit-0-on-non-match idiom as
- * `verify-coherence.ts --closes-n`'s `checkClosesN` bypass: a plan PR
- * touching only topology files has no code to review, and this is a
- * going-forward gate, never a re-evaluation of already-merged history.
+ * Only `plan/*` branches bypass (`isReviewGateExemptBranch`) — a plan PR
+ * touches only topology/decision-log docs, never code. Every other branch,
+ * INCLUDING `fix/*`, is held to the gate: `fix/*` carries real code despite
+ * not matching `task/<iteration>/<id>`, so it must not be waved through the
+ * same way a genuinely code-free `plan/*` branch is. This is a going-forward
+ * gate, never a re-evaluation of already-merged history.
+ *
+ * Fail-closed change from the prior bypass logic: a literal `BRANCH=main`
+ * used to match the old "any non-task branch" bypass too. It no longer does
+ * — `main` isn't `plan/*`, so it now falls through to the real check. Harmless
+ * in the one real caller (`forge-lifecycle.yml`'s `pull_request` trigger,
+ * where `BRANCH` is always the PR's head ref, never literally `main`), but
+ * worth naming explicitly since it IS a behavior change from before.
  *
  * Thin CLI/I/O shim, same discipline as `verify-single-plan-pr.ts`: resolves
  * the PR's comments/labels/waiver-label-actor via `gh`, calls the pure
@@ -28,7 +36,7 @@
 
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
-import { checkReviewGate, taskRefFromBranch, WAIVER_LABEL_REVIEW } from '../src/index'
+import { checkReviewGate, isReviewGateExemptBranch, WAIVER_LABEL_REVIEW } from '../src/index'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
@@ -86,8 +94,10 @@ export function main(prNumber: number): void {
 
 if (import.meta.main) {
   const branch = process.env.BRANCH ?? ''
-  if (branch && !taskRefFromBranch(branch)) {
-    console.log(`verify-review-gate: branch "${branch}" is not a task branch — bypass (no code to review).`)
+  if (isReviewGateExemptBranch(branch)) {
+    console.log(
+      `verify-review-gate: branch "${branch}" is a plan branch — bypass (topology/decision-log docs only, no code to review).`
+    )
     process.exit(0)
   }
 
