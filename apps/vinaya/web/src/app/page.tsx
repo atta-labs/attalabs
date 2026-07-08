@@ -28,7 +28,7 @@ export default function HomePage() {
           officer.
         </Text>
         <Text size='sm' className='font-mono text-muted-foreground'>
-          sits underneath Cursor / Claude Code / Codex / Gemini CLI / GitHub &mdash; replaces none of them.
+          sits underneath Cursor/Claude Code/Codex/Gemini CLI/GitHub, replaces none of them.
         </Text>
       </section>
 

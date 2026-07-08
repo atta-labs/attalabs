@@ -17,9 +17,9 @@ const KNOWN_LIMITS: KnownLimit[] = [
     source: 'Verified: milestone vinaya-cli-v1, issues #381–#387, all open, 0 closed (checked 2026-07-08).'
   },
   {
-    title: 'Vinaya Studio is local-only for v1.0',
+    title: 'Vinaya Studio doesn’t exist yet either',
     detail:
-      'Studio renders check output on your own machine. There is no deployed or hosted Studio instance, and no committed date for one — a hosted, read-only instance is a future phase with no timeline beyond "deferred."',
+      'Studio has no code in this repo yet (same undispatched state as the CLI). When it ships, v1.0 is local-only — no deployed or hosted instance, and no committed date for one beyond "deferred."',
     source: 'Verified against D-101 (Studio deployment roadmap) — Phase 1 is local-only; Phase 3 is undated.'
   },
   {

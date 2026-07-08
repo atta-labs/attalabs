@@ -16,7 +16,7 @@ Wording refinements are Principal-owned; do not improvise these fields.
 - **Subhead:** Install Vinaya and every coding agent must satisfy the same deterministic rules before merge.
 - **Clarifier:** "We don't block agents — we redirect them into a governed flow, so you review judgment, not compliance."
 - **Genre anchor:** "Branch protection for the AI era."
-- **Boundary statement:** sits underneath Cursor / Claude Code / Codex / Gemini CLI / GitHub — replaces none of them.
+- **Boundary statement:** sits underneath Cursor/Claude Code/Codex/Gemini CLI/GitHub, replaces none of them.
 - **Value sentence (D-108):** "Vinaya lets you trust AI agents to work inside your engineering process without becoming their compliance officer."
 - **Sequencing law (D-108):** pain and refusal first, principles second — the first five minutes must feel like relief, not doctrine.
 
