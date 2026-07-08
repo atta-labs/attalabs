@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button, useToastContext } from '@atta/ui/components'
+import { cn } from '@/lib/utils'
 
 interface PublishToggleProps {
   initialIsPublished: boolean
@@ -88,7 +89,10 @@ export function PublishToggle({ initialIsPublished, hasAnyKey }: PublishTogglePr
       variant={published ? 'outline' : 'default'}
       onClick={handleTogglePublish}
       disabled={publishing}
-      className='h-auto max-w-[140px] shrink-0 whitespace-normal text-right font-mono text-xs uppercase leading-tight tracking-[0.2em]'
+      className={cn(
+        'h-auto max-w-[140px] shrink-0 whitespace-normal text-center font-mono text-xs uppercase leading-tight tracking-[0.2em]',
+        published && 'border-destructive/40 text-destructive hover:border-destructive/60 hover:text-destructive'
+      )}
     >
       {publishing ? '...' : published ? 'Unpublish profile' : 'Publish profile'}
     </Button>

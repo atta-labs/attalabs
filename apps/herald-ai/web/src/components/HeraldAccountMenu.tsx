@@ -32,7 +32,7 @@ export function HeraldAccountMenu() {
       variant='outline'
       aria-label='Sign out'
       title='Sign out'
-      className='h-8 gap-2 px-2.5 text-xs md:px-3'
+      className='h-8 gap-2 px-2.5 text-xs leading-none md:px-3'
       onClick={() => signOut({ redirectUrl: '/' })}
     >
       <LogOut className='h-4 w-4' />

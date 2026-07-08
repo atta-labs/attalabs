@@ -48,7 +48,7 @@ export async function HeraldTopBar({ context = 'main' }: { context?: 'main' | 'o
         variant='outline'
         aria-label='Settings'
         title='Settings'
-        className='h-8 gap-2 px-2.5 text-xs md:px-3'
+        className='h-8 gap-2 px-2.5 text-xs leading-none md:px-3'
       >
         <Link href={`/${user.username}/settings`}>
           <SettingsIcon className='h-4 w-4' />
