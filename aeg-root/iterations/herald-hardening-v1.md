@@ -22,6 +22,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 9 | New shared tile-collection primitive (DocCollector)                                             | #458  | herald          | —          | —              |
 | 10 | Bulk Audit input redesign: two-surface layout, live N×M + cost estimate                        | #459  | herald          | 7, 8, 9    | —              |
 | 11 | Single-audit UX: simulated progress, cost display, topbar scroll fix                           | #465  | herald, vada    | —          | 8              |
+| 12 | Model picker: stale lock state + Anthropic model allowlist gate                                | #469  | herald, vada, atta, vitakka | — | —      |
 
 **Note:** task 3 is intentionally absent — its Issue (#348, pricing-table gap) was dropped before
 promotion to this table (see "Dropped during planning" below); the number is retired, not reused.
@@ -41,6 +42,10 @@ Task 11 was found live by the Principal during a real, successful single-profile
 **Conflicts-with 8, retroactively added to task 8's Issue (#457):** both tasks touch `packages/adapter-langgraph/src/adapter.ts` (same file, different lines — task 8 exports a pre-audit cost estimator; task 11 attaches the already-computed post-audit `estimatedCostUsd` to `Conclusion`'s return shape). Declared to serialize on file-collision grounds, not a logical dependency.
 
 The rate-limiter log lines ("Per-IP/Per-owner rate limit check failed — allowing request") observed in the same session are NOT part of task 11 — traced to the already-tracked expired-Upstash-Redis backlog item below, operational not code.
+
+## Model picker bugs (Planner act, 2026-07-08)
+
+Task 12 was found live by the Principal while manually testing PR #467's failure path via the Herald settings page — two distinct bugs surfaced in the same session and were explicitly bundled into one task (Principal direction, 2026-07-08), same pattern as task 11. First: a fake OpenAI key saved via the settings page showed "Configured" immediately but its models stayed locked in the picker — traced to `configuredVendors` being a server-render-time-only prop with no refresh signal after a client-side key save. Second: Claude Opus 4.7 was the newest Anthropic model available in the picker despite Opus 4.8 and Fable 5 having shipped weeks-to-months prior — the Principal explicitly rejected a caching explanation ("I do not have these models ever") before Planner traced it to `packages/models/src/transform.ts`'s `OVERLAY_ONLY_PROVIDERS` gate, which silently drops any Anthropic model from models.dev's live response unless it's also hand-listed in `overlay.ts` — a permanent allowlist, not a staleness window. Both fixes are contained; the blast radius is wide only because `@atta/models` is shared by every product's picker (`herald, vada, atta, vitakka`), so relaxing the Anthropic gate needs re-verification across all four, not just Herald.
 
 ## Dropped during planning
 
