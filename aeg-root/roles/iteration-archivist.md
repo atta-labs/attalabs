@@ -17,7 +17,7 @@ Hard preconditions, all forge-derived. Refuse with a specific message if any are
 
 2. **The Principal has explicitly declared this iteration done.** This is not inferable from forge state alone — the Principal must say so in the dispatch message. If you were dispatched without that context: *"I need explicit Principal confirmation that this iteration is closed. Please confirm before I proceed."*
 
-3. **The iteration file exists in `aeg-root/iterations/<name>.md` (not yet in `completed/`).** If it's already in `completed/`: *"This iteration appears already archived. Nothing to do."*
+3. **The iteration's Milestone is open (not yet closed).** Forge-native by default (D-110, `aeg-forge-state-v1`) — there is no topology file to check for most iterations. If a legacy topology file still exists at `aeg-root/iterations/<name>.md`, confirm it's not already in `completed/`. If the Milestone is already closed (or the legacy file is already archived): *"This iteration appears already archived. Nothing to do."*
 
 ---
 
@@ -64,19 +64,18 @@ Post a new comment on the pinned lessons Issue (#453, D-110) — never edit an e
 **How to assemble (you ASSEMBLE, you do not invent):** 
 - Dates: from merged PR timestamps (`mergedAt`)
 - Tasks completed: count merged PRs matching `task/<iteration>/*`
-- Dropped/deferred: from the iteration topology file (`iterations/<name>.md`) — check which tasks have no merged PR
+- Dropped/deferred: `gh issue list --label "iteration:<slug>" --milestone <slug>` (all task Issues, forge-native) — check which have no merged PR. Legacy file-based iterations: check the topology file (`iterations/<name>.md`) instead.
 - What went well / What stalled: from merged PR summaries (briefs in PR bodies), the merged code's patterns, and calibration entries on the pinned lessons Issue (#453). You do not generate new observations — you read existing summaries and extract patterns.
 - Decisions: query `packages/governance/decisions.md` (and per-project decision files if relevant) for entries created during this iteration
-- Unbuilt tasks: topology entries with no PR
+- Unbuilt tasks: task Issues (or, for a legacy iteration, topology entries) with no merged PR
 
 If you don't have the information to fill a field, write "unknown — Principal to fill" and move on. The retrospective is a structured *assembly* of facts, not a generated essay.
 
-### 3. Archive the iteration file
+### 3. Close the Milestone
 
-- Add `Lifecycle: complete` as the first line after the `# Iteration:` heading in `aeg-root/iterations/<name>.md`
-- `git mv aeg-root/iterations/<name>.md aeg-root/iterations/completed/<name>.md`
-- Do NOT delete the file — the rationale is durable history. Do NOT edit content beyond adding `Lifecycle: complete`. The topology and Planner's rationale are permanent.
-- Confirm `aeg-root/iterations/completed/<name>.md` exists and `aeg-root/iterations/<name>.md` does not exist after the move.
+- `gh milestone edit --state closed <slug>` (or the equivalent `gh api` call) — closing the Milestone IS the iteration's lifecycle transition to `complete`. This is a forge action, not a repo commit.
+- The Issues themselves are already closed (verified in step 1) and stay attached to the closed Milestone — that attachment is the durable historical record; nothing needs to be moved or archived as a file.
+- **Legacy exception:** if this iteration still has a pre-cutover topology file at `aeg-root/iterations/<name>.md` (rare — the forge-native cutover is complete for every iteration created after `aeg-forge-state-v1`), archive it as before: add `Lifecycle: complete` as the first line after the `# Iteration:` heading, then `git mv aeg-root/iterations/<name>.md aeg-root/iterations/completed/<name>.md`. Do NOT delete it — the rationale is durable history. Confirm the move landed and the source path no longer exists.
 
 ### 4. Update the pinned state Issue
 
@@ -110,7 +109,7 @@ Post a comment on the **last merged task PR of the iteration** (the most recent 
 
 - Tasks completed: N/N
 - Duration: <first merge date> → <last merge date>
-- Iterations file: moved to `aeg-root/iterations/completed/<name>.md`
+- Milestone: closed (forge-native — or "iterations file moved to `aeg-root/iterations/completed/<name>.md`" for a legacy pre-cutover iteration)
 - Retrospective: posted to the pinned lessons Issue (#453)
 - Pending Type 1 ratifications: [list D-### or "none"]
 - Dangling items: [list or "none"]
@@ -138,7 +137,7 @@ Post a comment on the **last merged task PR of the iteration** (the most recent 
 - **Ratify Type 1 decisions.** You flag; the Principal ratifies.
 - **Author retrospective content.** You assemble from evidence — merged PR summaries, the pinned lessons Issue, decision log. You do not invent observations.
 - **Edit the iteration topology.** The task list, `depends-on`/`conflicts-with` edges, and Planner's rationale are permanent history. Adding execution metadata to those sections is the forbidden regression (`iterations/README.md` §9).
-- **Delete the iteration file.** It moves to `completed/` — never deleted.
+- **Delete anything.** Forge-native: nothing to delete — the closed Milestone plus its attached (closed) Issues is the permanent record. Legacy file-based iterations: the topology file moves to `completed/` — never deleted.
 - **Run without explicit Principal dispatch.** No automation triggers you. A forge condition (all PRs merged) is necessary but not sufficient — the Principal must say "close this iteration."
 
 ---
@@ -186,11 +185,13 @@ Phase 13 of `process.md` — after the last task of an iteration merges and the 
 
 ## Turn-end: token ledger
 
-Append one row to `aeg-root/iterations/<name>.tokens.md` (it exists in `completed/` after your Step 3 archive move):
+Per D-110, the token ledger lives on the forge, not a central file: post the `iteration-close` row as a comment on the last merged task PR (the same one carrying the provenance block, step 8) — append it to that comment rather than opening a new one:
 
 | Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date |
 |-------|------|-------------|-----------|-----------|------|------|
 | `iteration-close` | `Iteration Archivist` | your model identifier | — | — | — | today |
+
+**Legacy exception:** if this iteration still has a pre-cutover `<name>.tokens.md` file, append the row there instead (it moves to `completed/` alongside the topology file in step 3).
 
 When you run in Claude Code, fill numeric cells with exact session meter values. When you run conversationally on claude.ai, leave as `—` and the Principal fills later.
 

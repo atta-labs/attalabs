@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkReviewGate } from './review-gate'
+import { checkReviewGate, isReviewGateExemptBranch } from './review-gate'
 
 const APPROVE_COMMENT = 'VERDICT: APPROVE\n\nBRIEF CONFORMANCE: clean. Looks good.'
 const PASS_COMMENT = 'VERDICT: PASS\n\nFINDINGS: none.'
@@ -101,5 +101,24 @@ describe('checkReviewGate', () => {
       expect(result.verdict).toBe('fail')
       expect(result.waived).toBe(false)
     })
+  })
+})
+
+describe('isReviewGateExemptBranch', () => {
+  it('exempts a plan branch — topology/decision-log docs only, no code', () => {
+    expect(isReviewGateExemptBranch('plan/vinaya-v1')).toBe(true)
+  })
+
+  it('does NOT exempt a fix branch — fix/* carries real code (the gap this closes)', () => {
+    expect(isReviewGateExemptBranch('fix/some-bug')).toBe(false)
+  })
+
+  it('does NOT exempt a task branch — held to the gate as before', () => {
+    expect(isReviewGateExemptBranch('task/vada-production-v1/10')).toBe(false)
+  })
+
+  it('does NOT exempt an unrecognized branch — fail closed, not fail open', () => {
+    expect(isReviewGateExemptBranch('some-random-branch')).toBe(false)
+    expect(isReviewGateExemptBranch('')).toBe(false)
   })
 })
