@@ -341,17 +341,19 @@ export function JDInput({
       ) : auditAvailable ? (
         <div className='relative mx-auto max-w-[680px] px-6 py-10'>
           {/* Scroll teaser — fixed to the viewport (not the page), so it's
-              visible from the very top: a circle mostly below the fold with
-              only its top third peeking above the viewport bottom edge,
-              hinting there's an input to scroll to. translate-y-2/3 pushes
-              2/3 of the circle's own height below bottom:0, leaving the top
-              third showing. Hides once the real input has scrolled into
-              view (promptNear) — its own .ai-gradient-border takes over as
-              the "you're here" cue at that point, so we don't show both. */}
+              visible from the very top: a wide, SHORT ellipse (width and
+              height set independently — not a circle) mostly below the
+              fold, only its top third peeking above the viewport bottom
+              edge. translate-y-2/3 pushes 2/3 of its own height below
+              bottom:0, leaving the top third showing — subtle because the
+              ellipse itself is short, not because the reveal fraction is
+              small. Hides once the real input has scrolled into view
+              (promptNear) — its own .ai-gradient-border takes over as the
+              "you're here" cue at that point, so we don't show both. */}
           {!promptNear && (
             <div
               aria-hidden='true'
-              className='pointer-events-none fixed bottom-0 left-1/2 aspect-square w-[min(680px,calc(100vw-3rem))] -translate-x-1/2 translate-y-2/3 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-radial from-primary/35 to-transparent blur-2xl'
+              className='pointer-events-none fixed bottom-0 left-1/2 h-40 w-[75vw] -translate-x-1/2 translate-y-2/3 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-radial from-primary/35 to-transparent blur-2xl'
             />
           )}
           <div ref={promptRef} className={cn('relative rounded-xl', promptNear && 'ai-gradient-border')}>
