@@ -211,6 +211,7 @@ export function EnvoyFlow({
         isOwner={isOwner}
         ownerSettingsHref={`/${username}/settings?tab=api-keys`}
         preview={previewMode}
+        username={username}
       />
     )
   }

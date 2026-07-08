@@ -1,11 +1,12 @@
 'use client'
 
 import type { FileUIPart } from 'ai'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Download, ExternalLink } from 'lucide-react'
 import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
 import { useComponents } from '@atta/ui/lib/library-provider'
+import { cn } from '@atta/ui/lib/utils'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { SummaryMarkdown } from '@/components/summary-markdown'
 import { useHeroCollapse } from './hero-collapse-context'
@@ -43,7 +44,8 @@ export function JDInput({
   auditAvailable = true,
   isOwner = false,
   ownerSettingsHref,
-  preview = false
+  preview = false,
+  username
 }: {
   onSubmit: (jd: string) => void
   candidateName?: string
@@ -61,11 +63,27 @@ export function JDInput({
   isOwner?: boolean
   ownerSettingsHref?: string
   preview?: boolean
+  username: string
 }) {
   const { setIsCollapsed } = useHeroCollapse()
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const promptRef = useRef<HTMLDivElement>(null)
+  const [promptNear, setPromptNear] = useState(false)
   const components = useComponents()
   const { Button, Badge } = components
+
+  // Attention gradient border — fires once the prompt is (nearly) scrolled
+  // into view, not only once it's fully at rest at the bottom.
+  useEffect(() => {
+    const el = promptRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(([entry]) => entry && setPromptNear(entry.isIntersecting), {
+      root: null,
+      threshold: 0.6
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     setIsCollapsed(false)
@@ -309,7 +327,9 @@ export function JDInput({
         </div>
       </div>
 
-      {/* Pinned input / audit gate — sticky to viewport bottom while user scrolls the hero */}
+      {/* Input / audit gate. The real prompt (auditAvailable) flows with the
+          page rather than sticking to the viewport bottom — it gets an
+          attention gradient border instead once scrolled (near) into view. */}
       {preview ? (
         <div className='sticky bottom-0 z-30 bg-background/95 backdrop-blur-md'>
           <div className='mx-auto max-w-[680px] px-6 py-4'>
@@ -319,8 +339,8 @@ export function JDInput({
           </div>
         </div>
       ) : auditAvailable ? (
-        <div className='sticky bottom-0 z-30 bg-background/95 backdrop-blur-md'>
-          <div className='mx-auto max-w-[680px] px-6 py-4'>
+        <div className='mx-auto max-w-[680px] px-6 py-10'>
+          <div ref={promptRef} className={cn('relative rounded-xl', promptNear && 'ai-gradient-border')}>
             <SmartPromptInput
               onSubmit={handleSubmit}
               placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
@@ -328,6 +348,7 @@ export function JDInput({
               pasteToFileChars={1000}
               surface='popover'
               textareaVariant='bare'
+              ctaLabel={`Audit ${username}`}
               // INJECTION CONTRACT (see ui-library-system SKILL.md):
               // SmartPromptInput resolves NO library. Herald's library is selected
               // at runtime per user via LibraryProvider; useComponents() returns
