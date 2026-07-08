@@ -8,24 +8,36 @@
  * implementation per fact, §11 constraint). Pure — no `fs`, no `fetch`.
  *
  * Picks the MOST RECENT comment carrying a clear value, not the first comment
- * merely matching the loose marker pattern (aeg-review-gate-v1 task 1 fix —
- * the original single-comment `.find()` broke on real multi-comment PRs:
- * a REQUEST_CHANGES verdict followed by fixes and a later clean APPROVE, or
- * the post-merge Archivist's own DANGLING-note prose — which contains the
- * word "verdict" — loosely matching the marker pattern ahead of a genuine
- * later verdict comment. Verified live against PR #461/#472, both of which
- * carry exactly this shape). A comment only counts as ambiguous/"unclear"
- * when at least one comment matches the marker but NONE carries a clear value.
+ * merely matching the pattern (aeg-review-gate-v1 task 1 fix — the original
+ * single-comment `.find()` broke on real multi-comment PRs: a REQUEST_CHANGES
+ * verdict followed by fixes and a later clean APPROVE).
+ *
+ * Line-anchored `VERDICT:` marker only — NOT a bare word search anywhere in
+ * the comment (aeg-review-gate-v1 task 1 follow-up, security-review FAIL
+ * finding, confirmed by direct execution: the old bare `\b(PASS|FAIL)\b`
+ * pattern matched the post-merge Archivist's own auto-generated DANGLING
+ * placeholder text — "no security-review pass was run before merge —
+ * DANGLING, see below" — as a clean PASS, since it contains the standalone
+ * word "pass". Same risk in reverse for "APPROVE" inside ordinary prose,
+ * e.g. "I do NOT approve of that design"). `^\s*VERDICT:\s*<value>\b`,
+ * multiline, is the real subagent contract (`roles/reviewer.md`/
+ * `roles/security.md`'s own VERDICT block, which `.claude/agents/
+ * code-reviewer.md`/`security-reviewer.md` require verbatim) — tightening
+ * to it closes the gap without inventing a new convention.
+ *
+ * No separate "marker present but value unclear" branch: a generic
+ * `VERDICT:`-prefix-only marker would itself cross-contaminate the two
+ * extractors (a security reviewer's own `VERDICT: PASS` line would loosely
+ * match the code-review marker too, misreporting "code-reviewer comment
+ * found but unclear" for a comment that was never a code review at all).
+ * Anything that doesn't match the exact value pattern reads as "missing",
+ * identical to no comment existing — which is also what the DANGLING
+ * placeholder case above requires.
  */
 
 export type VerdictExtraction = { value: string; danglingNote: string | null }
 
-function extractVerdict(
-  comments: string[],
-  markerPattern: RegExp,
-  valuePattern: RegExp,
-  missingLabel: string
-): VerdictExtraction {
+function extractVerdict(comments: string[], valuePattern: RegExp, missingLabel: string): VerdictExtraction {
   const clearHits = comments.filter((c) => valuePattern.test(c))
   if (clearHits.length > 0) {
     const latest = clearHits[clearHits.length - 1] as string
@@ -33,35 +45,18 @@ function extractVerdict(
     return { value: (m[1] as string).toUpperCase().replace(/[_-]/g, ' '), danglingNote: null }
   }
 
-  const ambiguousHit = comments.find((c) => markerPattern.test(c))
-  if (!ambiguousHit) {
-    return {
-      value: `no ${missingLabel} pass was run before merge — DANGLING, see below`,
-      danglingNote: `no ${missingLabel} verdict comment found on this PR`
-    }
-  }
   return {
-    value: `${missingLabel} comment found but verdict marker unclear — DANGLING, see below`,
-    danglingNote: `${missingLabel} comment found but could not extract a clear verdict marker`
+    value: `no ${missingLabel} pass was run before merge — DANGLING, see below`,
+    danglingNote: `no ${missingLabel} verdict comment found on this PR`
   }
 }
 
 /** `value` is `APPROVE`, `REQUEST CHANGES`, `LGTM`, or a DANGLING placeholder string. */
 export function extractCodeReviewVerdict(comments: string[]): VerdictExtraction {
-  return extractVerdict(
-    comments,
-    /verdict|APPROVE|REQUEST[ _-]?CHANGES|LGTM/i,
-    /\b(APPROVE|REQUEST[ _-]?CHANGES|LGTM)\b/i,
-    'code-reviewer'
-  )
+  return extractVerdict(comments, /^\s*VERDICT:\s*(APPROVE|REQUEST[ _-]?CHANGES|LGTM)\b/im, 'code-reviewer')
 }
 
 /** `value` is `PASS`, `FAIL`, or a DANGLING placeholder string. */
 export function extractSecurityReviewVerdict(comments: string[]): VerdictExtraction {
-  return extractVerdict(
-    comments,
-    /security.*\b(PASS|FAIL)\b|\b(PASS|FAIL)\b.*security/i,
-    /\b(PASS|FAIL)\b/i,
-    'security-review'
-  )
+  return extractVerdict(comments, /^\s*VERDICT:\s*(PASS|FAIL)\b/im, 'security-review')
 }

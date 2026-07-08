@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { checkReviewGate } from './review-gate'
 
-const APPROVE_COMMENT = 'Reviewed the diff. verdict: APPROVE. Looks clean.'
-const PASS_COMMENT = 'security review: PASS, no findings.'
-const REQUEST_CHANGES_COMMENT = 'verdict: REQUEST_CHANGES — see inline notes.'
-const FAIL_COMMENT = 'FAIL — hardcoded credential found. security scan complete.'
+const APPROVE_COMMENT = 'VERDICT: APPROVE\n\nBRIEF CONFORMANCE: clean. Looks good.'
+const PASS_COMMENT = 'VERDICT: PASS\n\nFINDINGS: none.'
+const REQUEST_CHANGES_COMMENT = 'VERDICT: REQUEST_CHANGES\n\nsee inline notes.'
+const FAIL_COMMENT = 'VERDICT: FAIL\n\nhardcoded credential found.'
 
 describe('checkReviewGate', () => {
   it('passes when both verdicts are clean (APPROVE + PASS)', () => {
