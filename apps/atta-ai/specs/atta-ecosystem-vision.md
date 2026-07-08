@@ -355,7 +355,7 @@ When this document conflicts with what's been built or what's about to be built,
 
 - `atta-naming-decision.md` — canonical brand architecture: AttaLabs vs Atta, no `-AI` suffix, Pāli rule demoted, domain decisions
 - `aeg-project/state.md` — concrete state across products and infrastructure (in repo)
-- `aeg-project/now.md`, `roadmap.md`, `changelog.md`, `lessons.md` — active work plan, sequencing, completed work log, calibration lessons (in repo)
+- `aeg-project/now.md`, `roadmap.md`, `lessons.md` — active work plan, sequencing, calibration lessons (in repo)
 - `atta-build-strategy.md` — sequencing, hide-the-work discipline, first-user tests
 - `atta-market-research.md` — competitive landscape and what to watch
 - `atta-finetuning-research.md` — technical research for Sati's eventual fine-tuning layer

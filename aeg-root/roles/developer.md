@@ -158,7 +158,7 @@ All Tier 0 items, plus:
 All Tier 1 items, plus:
 
 - [ ] Decision log entry appended with: status (ACTIVE/PENDING), type (1/2), rationale, alternatives rejected, consequences
-- [ ] State updated: the relevant per-project pinned state Issue (D-110) if state changed (for every project the task lists — update operational facts, phase intent, resolved pending-manual-ops; do NOT write active-work status, which is derived from the forge), `aeg-project/changelog/YYYY-MM-DD-<branch>.md` entry created (`now.md` is retired — D-057)
+- [ ] State updated: the relevant per-project pinned state Issue (D-110) if state changed (for every project the task lists — update operational facts, phase intent, resolved pending-manual-ops; do NOT write active-work status, which is derived from the forge) (`now.md` is retired — D-057)
 - [ ] Lock entry created with `Lock: YES` if the decision closes an irreversible branch
 - [ ] If a lock was conformed to or challenged, the brief contained the appropriate acknowledgment block
 - [ ] Merge happens at a ratification window (do not open the PR and expect immediate merge for Tier 3 work)

@@ -1,5 +1,0 @@
-## June 29, 2026 — Vāda T4: vada-fusion A2 benchmark condition
-
-### Vāda
-
-- **T4 (#179, PR #233)** — Wires OpenRouter Fusion as the A2 external benchmark condition for `vada-production-v1`. Creates `packages/agents/vada-fusion/` (`@atta/vada-fusion`) with `vada-fusion.yaml` — single-agent spec (`model: openrouter/fusion`, solo shape, `experimental: true`) — so the benchmark harness can call it as condition A2 alongside `a0-baseline` and `a1-baseline`. Adds `modelPrefixes: ['openrouter/']` to the openrouter vendor entry so `resolveVendorByPrefix('openrouter/fusion')` resolves without explicit `agentVendorOverrides`. Wires A2 into `verify-baselines.ts` via a `providerKeys` adapter; skips gracefully without `OPENROUTER_API_KEY`. `vada-fusion` is NOT a user-facing catalog team slot — benchmark condition only. Pending principal: `OPENROUTER_API_KEY=sk-or-…` live-run of A2 condition in `verify-baselines.ts` (unchecked principal test plan item). Tier 1. Conforms-to `vada-rethink-v1-decision.md §4.3`. Closes #179.
