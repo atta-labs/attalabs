@@ -30,7 +30,12 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { deriveIterationFromForge, listActiveIterationSlugs, listIssueMilestonesForSlug } from '@atta/aeg-forge-state'
+import {
+  deriveIterationFromForge,
+  findMilestoneForSlug,
+  listActiveIterationSlugs,
+  listIssueMilestonesForSlug
+} from '@atta/aeg-forge-state'
 import type { Iteration } from '@atta/aeg-types'
 import {
   checkA1,
@@ -324,6 +329,29 @@ export async function loadIterationFiles(prContext: PrReadContext = null, onlySl
 
   await loadDir(ITERATIONS_RELDIR, false)
   await loadDir(COMPLETED_RELDIR, true)
+
+  // Forge-native iterations with no topology file at all (D-113 cutover:
+  // vinaya-studio-v1, vinaya-cli-v1, herald-hardening-v1 all had their
+  // aeg-root/iterations/*.md deleted once their Milestone-derived replacement
+  // was proven safe) are structurally invisible to the directory-listing
+  // enumeration above — there is no filename for a slug with zero file to
+  // ever appear in `mainNames`/`prNames`, so `deriveOrFallback` is never even
+  // called for it, even though `deriveOrFallback` itself already handles a
+  // missing file gracefully (readFileAtRef → null → pure-forge return, see
+  // its own doc comment). Only attempted when the caller wants exactly one
+  // slug (`onlySlug` — the closes-n gate's scoped-load path; the unscoped
+  // repo-wide sweep never sets it and is unaffected) and that slug wasn't
+  // already found via files. Gated on an explicit Milestone existence check
+  // so an unrecognized branch slug (typo, deleted iteration with no
+  // Milestone either) still reports "no topology found" rather than silently
+  // synthesizing an iteration.
+  if (onlySlug && repo && !files.some((f) => f.slug === onlySlug)) {
+    const milestone = findMilestoneForSlug(repo.owner, repo.repo, onlySlug)
+    if (milestone) {
+      const iteration = await deriveOrFallback(repo, onlySlug, `${ITERATIONS_RELDIR}/${onlySlug}.md`)
+      if (iteration !== null) files.push({ slug: onlySlug, archived: false, iteration })
+    }
+  }
 
   return files
 }
