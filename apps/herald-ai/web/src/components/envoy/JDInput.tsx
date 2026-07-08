@@ -345,17 +345,22 @@ export function JDInput({
               height set independently — not a circle) mostly below the
               fold, only its top third peeking above the viewport bottom
               edge. translate-y-2/3 pushes 2/3 of its own height below
-              bottom:0, leaving the top third showing — subtle because the
-              ellipse itself is short, not because the reveal fraction is
-              small. Hides once the real input has scrolled into view
-              (promptNear) — its own .ai-gradient-border takes over as the
-              "you're here" cue at that point, so we don't show both. */}
-          {!promptNear && (
-            <div
-              aria-hidden='true'
-              className='pointer-events-none fixed bottom-0 left-1/2 h-40 w-[75vw] -translate-x-1/2 translate-y-2/3 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-radial from-primary/35 to-transparent blur-2xl'
-            />
-          )}
+              bottom:0, leaving the top third showing. Fades out smoothly as
+              the real input scrolls into view (promptNear) instead of
+              unmounting outright — the outer div owns the fade transition,
+              the inner div owns the pulse animation, kept on separate
+              elements so the two don't fight over the same opacity
+              property. Its own .ai-gradient-border takes over as the
+              "you're here" cue once fully near, so we don't show both. */}
+          <div
+            aria-hidden='true'
+            className={cn(
+              'pointer-events-none fixed bottom-0 left-1/2 h-20 w-[75vw] -translate-x-1/2 translate-y-2/3 transition-opacity duration-700 ease-out',
+              promptNear ? 'opacity-0' : 'opacity-100'
+            )}
+          >
+            <div className='h-full w-full animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-radial from-primary/35 to-transparent blur-2xl' />
+          </div>
           <div ref={promptRef} className={cn('relative rounded-xl', promptNear && 'ai-gradient-border')}>
             <SmartPromptInput
               onSubmit={handleSubmit}
