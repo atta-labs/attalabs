@@ -27,7 +27,7 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
       data-slot='tabs-trigger'
       className={cn(
         'h-auto cursor-pointer rounded-none bg-transparent px-4 pt-0 pb-3',
-        'font-mono text-[10px] tracking-widest uppercase',
+        'font-mono text-xs tracking-widest uppercase',
         'text-foreground/40 transition-colors hover:bg-transparent hover:text-foreground/70',
         'data-[active]:text-foreground',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0',

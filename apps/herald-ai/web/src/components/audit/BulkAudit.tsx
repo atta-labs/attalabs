@@ -5,6 +5,7 @@ import { Fragment, useState } from 'react'
 import { Badge } from '@atta/ui/components/badge'
 import { Button, Card, CardContent } from '@atta/ui/components'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/components'
+import { NextLink } from '@atta/ui/lib/next-link'
 
 import { auditFailureMessage, ReportView } from '@/components/envoy/ReportView'
 import { resolveCvFileRequest, resolveCvJsonRequest, resolveJdRequest } from '@/lib/audit-input/client'
@@ -250,12 +251,9 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
             <p className='text-sm text-muted-foreground'>
               Bulk audits run on your Anthropic API key. Add your key in Settings to get started.
             </p>
-            <a
-              href={settingsHref}
-              className='mt-4 inline-block font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
-            >
+            <NextLink href={settingsHref} variant='subtle' className='mt-4 inline-block underline underline-offset-2'>
               Settings → API Keys
-            </a>
+            </NextLink>
           </CardContent>
         </Card>
       </div>

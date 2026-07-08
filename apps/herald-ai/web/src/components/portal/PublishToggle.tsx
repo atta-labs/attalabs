@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import {
   Button,
   Dialog,
@@ -77,7 +78,13 @@ export function PublishToggle({ initialIsPublished, hasAnyKey }: PublishTogglePr
           published && 'hover:border-destructive/60 hover:bg-destructive/10 hover:text-destructive'
         )}
       >
-        {publishing ? '...' : published ? 'Unpublish profile' : 'Publish profile'}
+        {publishing ? (
+          <Loader2 className='h-3.5 w-3.5 animate-spin' />
+        ) : published ? (
+          'Unpublish profile'
+        ) : (
+          'Publish profile'
+        )}
       </Button>
       <Dialog open={showKeylessConfirm} onOpenChange={setShowKeylessConfirm}>
         <DialogContent className='border-border/60 bg-popover'>
@@ -101,7 +108,7 @@ export function PublishToggle({ initialIsPublished, hasAnyKey }: PublishTogglePr
               disabled={publishing}
               className='font-mono text-xs uppercase tracking-[0.2em]'
             >
-              {publishing ? '...' : 'Publish anyway'}
+              {publishing ? <Loader2 className='h-3.5 w-3.5 animate-spin' /> : 'Publish anyway'}
             </Button>
           </DialogFooter>
         </DialogContent>

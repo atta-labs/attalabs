@@ -9,7 +9,7 @@ import { Button as ButtonPrimitive, buttonVariants, type ButtonProps } from '../
 // wrapper's existing asChild adaptation (installed/ stays a verbatim
 // animate-ui CLI paste).
 function Button({ children, asChild = false, className, ...props }: ButtonProps) {
-  const mergedClassName = cn(className, 'leading-none')
+  const mergedClassName = cn(className, 'leading-none', 'cursor-pointer disabled:cursor-not-allowed')
 
   if (asChild) {
     const child = React.isValidElement(children)

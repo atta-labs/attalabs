@@ -6,6 +6,7 @@ import { Download, ExternalLink } from 'lucide-react'
 import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
 import { useComponents } from '@atta/ui/lib/library-provider'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { cn } from '@atta/ui/lib/utils'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { SummaryMarkdown } from '@/components/summary-markdown'
@@ -402,23 +403,25 @@ export function JDInput({
                 {!auditAvailable && (
                   <div className='flex items-center justify-between gap-4'>
                     <p className='font-mono text-xs text-warning'>No API key — recruiters can't run audits yet.</p>
-                    <a
+                    <NextLink
                       href={ownerSettingsHref ?? '/'}
-                      className='shrink-0 font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
+                      variant='subtle'
+                      className='shrink-0 underline underline-offset-2'
                     >
                       Settings → API Keys
-                    </a>
+                    </NextLink>
                   </div>
                 )}
                 {!isPublished && (
                   <div className='flex items-center justify-between gap-4'>
                     <p className='font-mono text-xs text-warning'>Not published yet — only you can see this.</p>
-                    <a
+                    <NextLink
                       href={ownerSettingsHref ?? '/'}
-                      className='shrink-0 font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
+                      variant='subtle'
+                      className='shrink-0 underline underline-offset-2'
                     >
                       Publish in Settings
-                    </a>
+                    </NextLink>
                   </div>
                 )}
               </div>

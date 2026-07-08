@@ -17,8 +17,18 @@ import { Button as InstalledButton, buttonVariants } from '../../installed/butto
 // caller className containing a text-size class (e.g. text-xs), which is
 // every real button. Verified: twMerge('leading-none','text-xs') → 'text-xs'
 // (leading-none dropped) vs twMerge('text-xs','leading-none') → both keep.
+//
+// cursor-pointer: shadcn's canonical omits it because native <button> defaults
+// to cursor:default in Chrome/Safari (unlike <a>, which gets pointer from the
+// UA stylesheet automatically) — every button in this app should read as
+// clickable regardless of variant.
 function Button({ className, ...props }: ComponentProps<typeof InstalledButton>) {
-  return <InstalledButton className={cn(className, 'leading-none')} {...props} />
+  return (
+    <InstalledButton
+      className={cn(className, 'leading-none', 'cursor-pointer disabled:cursor-not-allowed')}
+      {...props}
+    />
+  )
 }
 
 export { Button, buttonVariants }

@@ -235,6 +235,7 @@ const PROFILE_TABS = ['profile', 'experience', 'connections', 'api-keys', 'heral
 type ProfileTab = (typeof PROFILE_TABS)[number]
 
 export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: ProfileData; defaultTab?: ProfileTab }) {
+  const [activeTab, setActiveTab] = useState<ProfileTab>(defaultTab)
   const [form, setForm] = useState({
     name: profile.name,
     title: profile.title,
@@ -402,12 +403,20 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
         <Card className='mb-6 w-full gap-0 border-destructive/25 bg-destructive/8 py-0 shadow-none'>
           <CardContent className='px-4 py-2.5'>
             <p className='font-mono text-xs text-destructive'>
-              Audit disabled — add an API key in the API Keys tab to enable forensic match reports for recruiters.
+              Audit disabled — add an API key to enable forensic match reports for recruiters.{' '}
+              <Button
+                type='button'
+                variant='link'
+                onClick={() => setActiveTab('api-keys')}
+                className='h-auto w-fit p-0 align-baseline font-mono text-xs text-destructive underline underline-offset-2 hover:text-destructive'
+              >
+                Go to API Keys →
+              </Button>
             </p>
           </CardContent>
         </Card>
       )}
-      <Tabs defaultValue={defaultTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProfileTab)}>
         <TabsList className='mb-6 flex w-full flex-nowrap justify-start overflow-x-auto'>
           <TabsTrigger value='profile' className='shrink-0'>
             Profile
@@ -568,29 +577,19 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
         <TabsContent value='experience'>
           <div className='space-y-8'>
             <section>
-              <div className='mb-2 flex items-baseline justify-between'>
-                <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
-                <div className='flex overflow-hidden rounded border border-border'>
-                  <Button
-                    type='button'
-                    variant={summaryMode === 'edit' ? 'default' : 'ghost'}
-                    onClick={() => setSummaryMode('edit')}
-                    className='h-auto rounded-none px-3 py-1.5 font-mono text-xs'
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    type='button'
-                    variant={summaryMode === 'preview' ? 'default' : 'ghost'}
-                    onClick={() => setSummaryMode('preview')}
-                    className='h-auto rounded-none border-l border-border px-3 py-1.5 font-mono text-xs'
-                  >
-                    Preview
-                  </Button>
+              <Tabs value={summaryMode} onValueChange={(v) => setSummaryMode(v as 'edit' | 'preview')}>
+                <div className='mb-2 flex items-baseline justify-between'>
+                  <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
+                  <TabsList className='border-b-0'>
+                    <TabsTrigger value='edit' className='pb-1'>
+                      Edit
+                    </TabsTrigger>
+                    <TabsTrigger value='preview' className='pb-1'>
+                      Preview
+                    </TabsTrigger>
+                  </TabsList>
                 </div>
-              </div>
-              {summaryMode === 'edit' ? (
-                <>
+                <TabsContent value='edit' className='mt-0'>
                   <Textarea
                     className={`${inputClass} h-40 max-h-[160px] resize-none overflow-y-auto font-mono text-xs`}
                     value={form.summary}
@@ -602,16 +601,17 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                   <p className='mt-1 font-mono text-xs text-muted-foreground/60'>
                     Use <strong className='font-medium'>**bold**</strong> for the lead and ## for section titles.
                   </p>
-                </>
-              ) : (
-                <div className='min-h-40 rounded-md border border-border px-4 py-3'>
-                  {form.summary ? (
-                    <SummaryMarkdown text={form.summary} />
-                  ) : (
-                    <p className='font-mono text-xs text-muted-foreground/60'>Nothing to preview.</p>
-                  )}
-                </div>
-              )}
+                </TabsContent>
+                <TabsContent value='preview' className='mt-0'>
+                  <div className='min-h-40 rounded-md border border-border px-4 py-3'>
+                    {form.summary ? (
+                      <SummaryMarkdown text={form.summary} />
+                    ) : (
+                      <p className='font-mono text-xs text-muted-foreground/60'>Nothing to preview.</p>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </section>
 
             <section>

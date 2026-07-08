@@ -4,7 +4,7 @@ import { Button, Input, Textarea } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 import { type UIMessage, useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
-import { Pencil, X } from 'lucide-react'
+import { Loader2, Pencil, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -634,7 +634,12 @@ export function AIOnboarding() {
             )}
 
             {uploading && <div className='animate-pulse text-sm text-muted-foreground'>Extracting your profile...</div>}
-            {isThinking && !uploading && <div className='animate-pulse text-sm text-muted-foreground'>...</div>}
+            {isThinking && !uploading && (
+              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                <span>Thinking…</span>
+              </div>
+            )}
 
             {status === 'error' && !state.complete && (
               <div className='flex items-center gap-3'>
