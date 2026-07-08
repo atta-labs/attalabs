@@ -74,9 +74,7 @@ export function PortalPreviewFrame({
             <h3 className='font-display text-sm font-semibold'>{title}</h3>
             <div className='flex items-center gap-2'>
               <div className={`h-2 w-2 rounded-full ${isReady ? 'bg-success' : 'bg-warning'}`} />
-              <span className='font-mono text-[10px] text-muted-foreground'>
-                {isReady ? 'Connected' : 'Connecting...'}
-              </span>
+              <span className='font-mono text-xs text-muted-foreground'>{isReady ? 'Connected' : 'Connecting...'}</span>
             </div>
           </div>
           <div className='flex gap-2'>
@@ -119,16 +117,14 @@ export function PortalPreviewFrame({
           <div className='absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-full border bg-background/90 px-3 py-1.5 shadow-sm backdrop-blur-sm'>
             <div className='flex items-center gap-1.5'>
               <div className={`h-1.5 w-1.5 rounded-full ${isReady ? 'bg-success' : 'bg-warning'}`} />
-              <span className='font-mono text-[9px] text-muted-foreground'>
-                {isReady ? 'Connected' : 'Connecting...'}
-              </span>
+              <span className='font-mono text-xs text-muted-foreground'>{isReady ? 'Connected' : 'Connecting...'}</span>
             </div>
             {portalUrl && (
               <a
                 href={portalUrl}
                 target='_blank'
                 rel='noopener noreferrer'
-                className='font-mono text-[9px] text-muted-foreground hover:text-foreground hover:underline'
+                className='font-mono text-xs text-muted-foreground hover:text-foreground hover:underline'
               >
                 {hostname}
               </a>

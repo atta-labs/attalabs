@@ -3,7 +3,7 @@ import { NextLink } from '@atta/ui/lib/next-link'
 export default function NotFound() {
   return (
     <div className='flex min-h-screen flex-col items-center justify-center px-6'>
-      <p className='text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Herald</p>
+      <p className='text-xs uppercase tracking-[0.25em] text-muted-foreground'>Herald</p>
       <h1 className='mt-2 font-display text-6xl tracking-tight'>404</h1>
       <p className='mt-3 text-sm text-muted-foreground'>This profile doesn't exist yet.</p>
       <NextLink

@@ -179,7 +179,7 @@ export function ThemeBrowser({
       <div className='flex w-72 flex-shrink-0 flex-col border-r border-border'>
         <div className='border-b border-border px-4 py-3'>
           <h2 className='font-display text-lg tracking-tight'>Themes</h2>
-          <p className='font-mono text-[10px] text-muted-foreground'>{themes.length} available</p>
+          <p className='font-mono text-xs text-muted-foreground'>{themes.length} available</p>
         </div>
 
         <div className='flex-1 overflow-y-auto'>
@@ -234,7 +234,7 @@ export function ThemeBrowser({
                         variant='ghost'
                         size='sm'
                         onClick={() => handleSchemeChange(theme._id, s)}
-                        className={`h-5 px-1.5 font-mono text-[9px] uppercase tracking-widest ${
+                        className={`h-5 px-1.5 font-mono text-xs uppercase tracking-widest ${
                           thisScheme === s ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground'
                         }`}
                       >

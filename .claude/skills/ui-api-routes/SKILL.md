@@ -137,9 +137,13 @@ src/app/api/
 ├── audit/resolve-input/route.ts  # POST — polymorphic input resolver, see note below
 ├── admin/
 │   └── onboarding-chat/route.ts
+├── webhooks/
+│   └── clerk/route.ts          # POST — Clerk `user.deleted` → DB cleanup, see note below
 └── mcp/
     └── signals/route.ts        # GET — MCP server endpoint
 ```
+
+**Reference example — vendor webhook, not the standard user-request shape:** `webhooks/clerk/route.ts` (Herald) doesn't follow the `{ success, data }` / `{ success, error }` response envelope described below — it's not a client-facing route, it's Clerk calling us. It verifies the request with `verifyWebhook` from `@clerk/nextjs/webhooks` (reads `CLERK_WEBHOOK_SIGNING_SECRET`), returns a 400 on verification failure, and on `user.deleted` deletes the corresponding rows from `users`, `apiKeys`, and `userProviderKeys` (only `heraldProfiles` has a DB-level `ON DELETE CASCADE`; the other two tables have no FK and need explicit cleanup) so a deleted account's username/GitHub handle can be re-claimed immediately instead of staying blocked by orphaned rows.
 
 **Reference example — resolving polymorphic input by role:** `audit/resolve-input/route.ts` (Herald) is the pattern to copy when a route must resolve more than one input shape into more than one output shape. It dispatches on `content-type` (JSON vs `multipart/form-data`), and within each branch further dispatches on an explicit `role` discriminator (e.g. `'cv' | 'jd'`) read from the body/form data — never inferred from file contents or shape. The multipart branch shares one parsing path (file-type extraction) across roles and branches only the final output-shape construction on `role`. New role values default to the pre-existing behavior so older callers that don't send the field keep working unchanged.
 

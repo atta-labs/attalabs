@@ -33,26 +33,24 @@ export function ReportView({ report }: { report: MatchReport }) {
     return (
       <article className='mx-auto max-w-[680px] px-6 py-12 print:max-w-none print:px-0 print:py-0'>
         <header className='mb-8 border-b border-border pb-6'>
-          <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-            Forensic Match Audit
-          </p>
+          <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
           <h1 className='mt-2 font-display text-2xl tracking-tight'>{report.candidate.name}</h1>
           <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{report.candidate.title}</p>
         </header>
 
         <section className='mb-8'>
           {Badge ? (
-            <Badge className='border-destructive/40 bg-destructive/10 font-mono text-[10px] uppercase tracking-[0.2em] text-destructive'>
+            <Badge className='border-destructive/40 bg-destructive/10 font-mono text-xs uppercase tracking-[0.2em] text-destructive'>
               Audit Failed
             </Badge>
           ) : (
-            <p className='font-mono text-[10px] uppercase tracking-[0.2em] text-destructive'>Audit Failed</p>
+            <p className='font-mono text-xs uppercase tracking-[0.2em] text-destructive'>Audit Failed</p>
           )}
-          <p className='mt-4 text-[14px] leading-relaxed text-foreground'>{auditFailureMessage(report.auditFailed)}</p>
+          <p className='mt-4 text-sm leading-relaxed text-foreground'>{auditFailureMessage(report.auditFailed)}</p>
         </section>
 
         <footer className='border-t border-border pt-4 print:mt-6'>
-          <p className='font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground'>
+          <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>
             Herald · Forensic Match Audit · heyherald.com
           </p>
         </footer>
@@ -67,7 +65,7 @@ export function ReportView({ report }: { report: MatchReport }) {
     <article className='mx-auto max-w-[680px] px-6 py-12 print:max-w-none print:px-0 print:py-0'>
       {/* ── Header ── */}
       <header className='mb-8 border-b border-border pb-6'>
-        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
+        <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
         <h1 className='mt-2 font-display text-2xl tracking-tight'>{report.candidate.name}</h1>
         <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{report.candidate.title}</p>
       </header>
@@ -80,11 +78,11 @@ export function ReportView({ report }: { report: MatchReport }) {
         <div className='mt-2'>
           <p className='font-mono text-sm font-medium uppercase tracking-wider'>{report.recommendation}</p>
           {Badge ? (
-            <Badge variant='outline' className='mt-1 font-mono text-[9px] uppercase tracking-[0.2em]'>
+            <Badge variant='outline' className='mt-1 font-mono text-xs uppercase tracking-[0.2em]'>
               Confidence: {report.confidence}
             </Badge>
           ) : (
-            <p className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+            <p className='font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
               Confidence: {report.confidence}
             </p>
           )}
@@ -92,7 +90,7 @@ export function ReportView({ report }: { report: MatchReport }) {
 
         <ul className='mt-6 space-y-1'>
           {report.confidence_reasoning.map((reason) => (
-            <li key={reason} className='text-[13px] leading-relaxed text-muted-foreground'>
+            <li key={reason} className='text-sm leading-relaxed text-muted-foreground'>
               <span className='mr-2 text-foreground/40'>—</span>
               {reason}
             </li>
@@ -103,7 +101,7 @@ export function ReportView({ report }: { report: MatchReport }) {
       {/* ── Hard Requirements ── */}
       {hardOnly.length > 0 && (
         <section className='mb-8 border-b border-border pb-8'>
-          <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+          <h2 className='mb-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>
             Hard Requirements
           </h2>
 
@@ -120,10 +118,8 @@ export function ReportView({ report }: { report: MatchReport }) {
                       )}
                     </span>
                     <div>
-                      <p className={`text-[13px] font-medium ${req.met ? '' : 'text-destructive'}`}>
-                        {req.requirement}
-                      </p>
-                      <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>{req.evidence}</p>
+                      <p className={`text-sm font-medium ${req.met ? '' : 'text-destructive'}`}>{req.requirement}</p>
+                      <p className='mt-0.5 text-xs leading-relaxed text-muted-foreground'>{req.evidence}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -137,8 +133,8 @@ export function ReportView({ report }: { report: MatchReport }) {
                     )}
                   </span>
                   <div>
-                    <p className={`text-[13px] font-medium ${req.met ? '' : 'text-destructive'}`}>{req.requirement}</p>
-                    <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>{req.evidence}</p>
+                    <p className={`text-sm font-medium ${req.met ? '' : 'text-destructive'}`}>{req.requirement}</p>
+                    <p className='mt-0.5 text-xs leading-relaxed text-muted-foreground'>{req.evidence}</p>
                   </div>
                 </div>
               )
@@ -149,9 +145,7 @@ export function ReportView({ report }: { report: MatchReport }) {
 
       {/* ── Detected Signals ── */}
       <section className='mb-8 border-b border-border pb-8'>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-          Detected Signals
-        </h2>
+        <h2 className='mb-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Detected Signals</h2>
 
         <div className='space-y-4'>
           {report.signal.map((signal) =>
@@ -159,31 +153,31 @@ export function ReportView({ report }: { report: MatchReport }) {
               <Card key={signal.title}>
                 <CardContent className='p-3'>
                   <div className='flex items-baseline justify-between gap-3'>
-                    <h3 className='font-mono text-[13px] font-medium'>{signal.title}</h3>
+                    <h3 className='font-mono text-sm font-medium'>{signal.title}</h3>
                     {Badge ? (
-                      <Badge variant='outline' className='shrink-0 font-mono text-[9px] uppercase tracking-[0.2em]'>
+                      <Badge variant='outline' className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'>
                         {signal.confidence}
                       </Badge>
                     ) : (
-                      <span className='shrink-0 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground'>
+                      <span className='shrink-0 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
                         {signal.confidence}
                       </span>
                     )}
                   </div>
-                  <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>{signal.observation}</p>
-                  <p className='mt-0.5 text-[13px] leading-relaxed'>{signal.interpretation}</p>
+                  <p className='mt-0.5 text-xs leading-relaxed text-muted-foreground'>{signal.observation}</p>
+                  <p className='mt-0.5 text-sm leading-relaxed'>{signal.interpretation}</p>
                 </CardContent>
               </Card>
             ) : (
               <div key={signal.title} className='border-l border-foreground/10 pl-3'>
                 <div className='flex items-baseline justify-between gap-3'>
-                  <h3 className='font-mono text-[13px] font-medium'>{signal.title}</h3>
-                  <span className='shrink-0 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground'>
+                  <h3 className='font-mono text-sm font-medium'>{signal.title}</h3>
+                  <span className='shrink-0 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
                     {signal.confidence}
                   </span>
                 </div>
-                <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>{signal.observation}</p>
-                <p className='mt-0.5 text-[13px] leading-relaxed'>{signal.interpretation}</p>
+                <p className='mt-0.5 text-xs leading-relaxed text-muted-foreground'>{signal.observation}</p>
+                <p className='mt-0.5 text-sm leading-relaxed'>{signal.interpretation}</p>
               </div>
             )
           )}
@@ -192,22 +186,18 @@ export function ReportView({ report }: { report: MatchReport }) {
 
       {/* ── Gaps ── */}
       <section className='mb-8 border-b border-border pb-8'>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-          Identified Gaps
-        </h2>
+        <h2 className='mb-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Identified Gaps</h2>
 
         <div className='space-y-3'>
           {report.gaps.map((item) =>
             Card && CardContent ? (
               <Card key={item.gap}>
                 <CardContent className='p-3'>
-                  <p
-                    className={`text-[13px] font-medium ${item.severity === 'disqualifying' ? 'text-destructive' : ''}`}
-                  >
+                  <p className={`text-sm font-medium ${item.severity === 'disqualifying' ? 'text-destructive' : ''}`}>
                     {item.gap}
                   </p>
                   {item.severity === 'minor' && item.mitigation && (
-                    <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>
+                    <p className='mt-0.5 text-xs leading-relaxed text-muted-foreground'>
                       Mitigation: {item.mitigation}
                     </p>
                   )}
@@ -215,13 +205,11 @@ export function ReportView({ report }: { report: MatchReport }) {
               </Card>
             ) : (
               <div key={item.gap} className='border-l border-foreground/10 pl-3'>
-                <p className={`text-[13px] font-medium ${item.severity === 'disqualifying' ? 'text-destructive' : ''}`}>
+                <p className={`text-sm font-medium ${item.severity === 'disqualifying' ? 'text-destructive' : ''}`}>
                   {item.gap}
                 </p>
                 {item.severity === 'minor' && item.mitigation && (
-                  <p className='mt-0.5 text-[12px] leading-relaxed text-muted-foreground'>
-                    Mitigation: {item.mitigation}
-                  </p>
+                  <p className='mt-0.5 text-xs leading-relaxed text-muted-foreground'>Mitigation: {item.mitigation}</p>
                 )}
               </div>
             )
@@ -232,14 +220,14 @@ export function ReportView({ report }: { report: MatchReport }) {
       {/* ── Interview Hooks ── */}
       {report.interview_hooks.length > 0 && (
         <section className='mb-8'>
-          <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+          <h2 className='mb-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>
             Recommended Interview Questions
           </h2>
 
           <ol className='space-y-2'>
             {report.interview_hooks.map((hook, i) => (
-              <li key={hook} className='flex gap-3 text-[13px] leading-relaxed'>
-                <span className='shrink-0 font-mono text-[10px] text-muted-foreground'>
+              <li key={hook} className='flex gap-3 text-sm leading-relaxed'>
+                <span className='shrink-0 font-mono text-xs text-muted-foreground'>
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 {hook}
@@ -251,7 +239,7 @@ export function ReportView({ report }: { report: MatchReport }) {
 
       {/* ── Footer ── */}
       <footer className='border-t border-border pt-4 print:mt-6'>
-        <p className='font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground'>
+        <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>
           Herald · Forensic Match Audit · heyherald.com
         </p>
       </footer>

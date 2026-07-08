@@ -235,6 +235,7 @@ const PROFILE_TABS = ['profile', 'experience', 'connections', 'api-keys', 'heral
 type ProfileTab = (typeof PROFILE_TABS)[number]
 
 export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: ProfileData; defaultTab?: ProfileTab }) {
+  const [activeTab, setActiveTab] = useState<ProfileTab>(defaultTab)
   const [form, setForm] = useState({
     name: profile.name,
     title: profile.title,
@@ -391,10 +392,10 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
     update('stack', stackTags.filter((t) => t !== tag).join(', '))
   }
 
-  const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
+  const labelClass = 'mb-1 block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'
   const inputClass =
     'bg-card border-border focus-visible:border-foreground/30 focus-visible:ring-0 focus-visible:ring-offset-0'
-  const sectionHeadClass = 'mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'
+  const sectionHeadClass = 'mb-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'
 
   return (
     <div>
@@ -402,12 +403,20 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
         <Card className='mb-6 w-full gap-0 border-destructive/25 bg-destructive/8 py-0 shadow-none'>
           <CardContent className='px-4 py-2.5'>
             <p className='font-mono text-xs text-destructive'>
-              Audit disabled — add an API key in the API Keys tab to enable forensic match reports for recruiters.
+              Audit disabled — add an API key to enable forensic match reports for recruiters.{' '}
+              <Button
+                type='button'
+                variant='link'
+                onClick={() => setActiveTab('api-keys')}
+                className='h-auto w-fit p-0 align-baseline font-mono text-xs text-destructive underline underline-offset-2 hover:text-destructive'
+              >
+                Go to API Keys →
+              </Button>
             </p>
           </CardContent>
         </Card>
       )}
-      <Tabs defaultValue={defaultTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProfileTab)}>
         <TabsList className='mb-6 flex w-full flex-nowrap justify-start overflow-x-auto'>
           <TabsTrigger value='profile' className='shrink-0'>
             Profile
@@ -462,12 +471,12 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                     size='sm'
                     onClick={() => avatarInputRef.current?.click()}
                     disabled={avatarUploading}
-                    className='gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em]'
+                    className='gap-1.5 font-mono text-xs uppercase tracking-[0.15em]'
                   >
                     <Upload className='h-3 w-3' />
                     {avatarUploading ? 'Uploading...' : 'Upload'}
                   </Button>
-                  <p className='font-mono text-[10px] text-muted-foreground'>JPG, PNG, WebP · max 5 MB</p>
+                  <p className='font-mono text-xs text-muted-foreground'>JPG, PNG, WebP · max 5 MB</p>
                 </div>
               </div>
             </section>
@@ -568,29 +577,19 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
         <TabsContent value='experience'>
           <div className='space-y-8'>
             <section>
-              <div className='mb-2 flex items-baseline justify-between'>
-                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
-                <div className='flex overflow-hidden rounded border border-border'>
-                  <Button
-                    type='button'
-                    variant={summaryMode === 'edit' ? 'default' : 'ghost'}
-                    onClick={() => setSummaryMode('edit')}
-                    className='h-auto rounded-none px-2.5 py-0.5 font-mono text-[9px]'
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    type='button'
-                    variant={summaryMode === 'preview' ? 'default' : 'ghost'}
-                    onClick={() => setSummaryMode('preview')}
-                    className='h-auto rounded-none border-l border-border px-2.5 py-0.5 font-mono text-[9px]'
-                  >
-                    Preview
-                  </Button>
+              <Tabs value={summaryMode} onValueChange={(v) => setSummaryMode(v as 'edit' | 'preview')}>
+                <div className='mb-2 flex items-baseline justify-between'>
+                  <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
+                  <TabsList className='border-b-0'>
+                    <TabsTrigger value='edit' className='pb-1'>
+                      Edit
+                    </TabsTrigger>
+                    <TabsTrigger value='preview' className='pb-1'>
+                      Preview
+                    </TabsTrigger>
+                  </TabsList>
                 </div>
-              </div>
-              {summaryMode === 'edit' ? (
-                <>
+                <TabsContent value='edit' className='mt-0'>
                   <Textarea
                     className={`${inputClass} h-40 max-h-[160px] resize-none overflow-y-auto font-mono text-xs`}
                     value={form.summary}
@@ -599,26 +598,27 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                       '**One-line lead — your seniority and focus in a single bold sentence.**\n\n## Background\nWhere you started and how you got here.\n\n## How I Work\nYour approach, values, what makes you effective.\n\n## Your Lab / Projects\nWhat you build independently.'
                     }
                   />
-                  <p className='mt-1 font-mono text-[9px] text-muted-foreground/60'>
+                  <p className='mt-1 font-mono text-xs text-muted-foreground/60'>
                     Use <strong className='font-medium'>**bold**</strong> for the lead and ## for section titles.
                   </p>
-                </>
-              ) : (
-                <div className='min-h-40 rounded-md border border-border px-4 py-3'>
-                  {form.summary ? (
-                    <SummaryMarkdown text={form.summary} />
-                  ) : (
-                    <p className='font-mono text-[9px] text-muted-foreground/60'>Nothing to preview.</p>
-                  )}
-                </div>
-              )}
+                </TabsContent>
+                <TabsContent value='preview' className='mt-0'>
+                  <div className='min-h-40 rounded-md border border-border px-4 py-3'>
+                    {form.summary ? (
+                      <SummaryMarkdown text={form.summary} />
+                    ) : (
+                      <p className='font-mono text-xs text-muted-foreground/60'>Nothing to preview.</p>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </section>
 
             <section>
               <div className='mb-2 flex items-baseline justify-between'>
-                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Stack</h2>
+                <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Stack</h2>
                 <span
-                  className={`font-mono text-[9px] ${stackOverLimit ? 'text-destructive' : stackAtLimit ? 'text-warning' : 'text-muted-foreground/60'}`}
+                  className={`font-mono text-xs ${stackOverLimit ? 'text-destructive' : stackAtLimit ? 'text-warning' : 'text-muted-foreground/60'}`}
                 >
                   {stackOverLimit
                     ? `${stackTags.length}/${STACK_MAX} — remove tags to reach limit`
@@ -708,7 +708,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                   <CardContent className='p-4'>
                     <div className='mb-4 flex items-center gap-2.5'>
                       <span className='font-mono text-sm text-foreground'>{cvFilename}</span>
-                      <span className='rounded-sm bg-success/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.15em] text-success'>
+                      <span className='rounded-sm bg-success/15 px-1.5 py-0.5 font-mono text-xs uppercase tracking-[0.15em] text-success'>
                         Uploaded
                       </span>
                     </div>
@@ -766,10 +766,10 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
               <div className='rounded border border-dashed border-destructive/30 p-4'>
                 <div className='flex items-start justify-between gap-4'>
                   <div>
-                    <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-destructive'>
+                    <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-destructive'>
                       Overwrite from CV
                     </h2>
-                    <p className='mt-1 font-mono text-[10px] text-muted-foreground'>
+                    <p className='mt-1 font-mono text-xs text-muted-foreground'>
                       Parse a CV and overwrite name, title, summary, and stack. Cannot be undone.
                     </p>
                   </div>
@@ -779,7 +779,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                     size='sm'
                     onClick={() => cvInputRef.current?.click()}
                     disabled={uploading}
-                    className='shrink-0 border-destructive/40 font-mono text-[10px] uppercase tracking-[0.15em] text-destructive hover:bg-destructive/10 hover:text-destructive'
+                    className='shrink-0 border-destructive/40 font-mono text-xs uppercase tracking-[0.15em] text-destructive hover:bg-destructive/10 hover:text-destructive'
                   >
                     {uploading ? 'Parsing...' : 'Parse & Overwrite'}
                   </Button>
@@ -829,7 +829,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
             <section>
               <div className='mb-4 flex items-center gap-2'>
                 <GitHubIcon className='h-3.5 w-3.5 text-foreground' />
-                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>GitHub</h2>
+                <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>GitHub</h2>
               </div>
               <label htmlFor='field-github' className={labelClass}>
                 Handle
@@ -846,7 +846,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
             <section>
               <div className='mb-4 flex items-center gap-2'>
                 <LinkedInIcon className='h-3.5 w-3.5 text-foreground' />
-                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>LinkedIn</h2>
+                <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>LinkedIn</h2>
               </div>
               <label htmlFor='field-linkedin' className={labelClass}>
                 Profile URL
@@ -863,7 +863,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
             <section>
               <div className='mb-4 flex items-center gap-2'>
                 <DiscordIcon className='h-3.5 w-3.5 text-foreground' />
-                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Discord</h2>
+                <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Discord</h2>
               </div>
               <label htmlFor='field-discord' className={labelClass}>
                 Handle

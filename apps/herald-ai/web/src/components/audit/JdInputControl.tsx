@@ -20,10 +20,10 @@ export function JdInputControl({ value, onChange, index }: JdInputControlProps) 
     <div className='space-y-2'>
       <Tabs value={value.kind} onValueChange={(v) => setKind(v as JdInputKind)}>
         <TabsList className='h-8'>
-          <TabsTrigger value='text' className='font-mono text-[10px] uppercase tracking-[0.2em]'>
+          <TabsTrigger value='text' className='font-mono text-xs uppercase tracking-[0.2em]'>
             Paste text
           </TabsTrigger>
-          <TabsTrigger value='url' className='font-mono text-[10px] uppercase tracking-[0.2em]'>
+          <TabsTrigger value='url' className='font-mono text-xs uppercase tracking-[0.2em]'>
             URL
           </TabsTrigger>
         </TabsList>
@@ -47,7 +47,7 @@ export function JdInputControl({ value, onChange, index }: JdInputControlProps) 
             className='font-sans text-sm'
             aria-label={`Job description ${index + 1} (URL)`}
           />
-          <p className='font-mono text-[10px] text-muted-foreground'>
+          <p className='font-mono text-xs text-muted-foreground'>
             Public http(s) URL. Herald fetches the page and extracts the JD text on submit.
           </p>
         </div>

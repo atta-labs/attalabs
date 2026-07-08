@@ -6,6 +6,7 @@ import { Download, ExternalLink } from 'lucide-react'
 import { DiscordIcon, GitHubIcon, LinkedInIcon } from '@/components/social-icons'
 import { SmartPromptInput } from '@atta/ui/smart-prompt-input'
 import { useComponents } from '@atta/ui/lib/library-provider'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { cn } from '@atta/ui/lib/utils'
 import { AvatarFrame } from '@/components/avatar-frame'
 import { SummaryMarkdown } from '@/components/summary-markdown'
@@ -43,6 +44,7 @@ export function JDInput({
   candidateDiscord,
   auditAvailable = true,
   isOwner = false,
+  isPublished = true,
   ownerSettingsHref,
   preview = false,
   username
@@ -61,6 +63,7 @@ export function JDInput({
   candidateDiscord?: string
   auditAvailable?: boolean
   isOwner?: boolean
+  isPublished?: boolean
   ownerSettingsHref?: string
   preview?: boolean
   username: string
@@ -298,13 +301,13 @@ export function JDInput({
                         <div className='flex flex-wrap gap-1.5'>
                           {topStack.map((s) =>
                             Badge ? (
-                              <Badge key={s} variant='outline' className='font-mono text-[11px]'>
+                              <Badge key={s} variant='outline' className='font-mono text-xs'>
                                 {s}
                               </Badge>
                             ) : (
                               <span
                                 key={s}
-                                className='rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground'
+                                className='rounded border border-border px-2 py-0.5 font-mono text-xs text-muted-foreground'
                               >
                                 {s}
                               </span>
@@ -338,68 +341,94 @@ export function JDInput({
             </div>
           </div>
         </div>
-      ) : auditAvailable ? (
-        <div className='relative mx-auto max-w-[680px] px-6 py-10'>
-          {/* Scroll teaser — fixed to the viewport (not the page), so it's
-              visible from the very top: a wide, SHORT ellipse (width and
-              height set independently — not a circle) mostly below the
-              fold, only its top third peeking above the viewport bottom
-              edge. translate-y-2/3 pushes 2/3 of its own height below
-              bottom:0, leaving the top third showing. Fades out smoothly as
-              the real input scrolls into view (promptNear) instead of
-              unmounting outright — the outer div owns the fade transition,
-              the inner div owns the pulse animation, kept on separate
-              elements so the two don't fight over the same opacity
-              property. Its own .ai-gradient-border takes over as the
-              "you're here" cue once fully near, so we don't show both. */}
-          <div
-            aria-hidden='true'
-            className={cn(
-              'pointer-events-none fixed bottom-0 left-1/2 h-20 w-[75vw] -translate-x-1/2 translate-y-2/3 transition-opacity duration-700 ease-out',
-              promptNear ? 'opacity-0' : 'opacity-100'
-            )}
-          >
-            <div className='h-full w-full animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-radial from-primary/35 to-transparent blur-2xl' />
-          </div>
-          <div ref={promptRef} className={cn('relative rounded-xl', promptNear && 'ai-gradient-border')}>
-            <SmartPromptInput
-              onSubmit={handleSubmit}
-              placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
-              submitOn='cmdenter'
-              pasteToFileChars={1000}
-              surface='popover'
-              textareaVariant='bare'
-              ctaLabel={`Audit ${username}`}
-              // INJECTION CONTRACT (see ui-library-system SKILL.md):
-              // SmartPromptInput resolves NO library. Herald's library is selected
-              // at runtime per user via LibraryProvider; useComponents() returns
-              // the active map (Button/Textarea/DropdownMenu*). The component map
-              // starts empty during the dynamic-import window — the vendor falls
-              // back to native HTML on undefined keys.
-              components={{
-                Textarea: components.Textarea,
-                Button: components.Button,
-                DropdownMenu: components.DropdownMenu,
-                DropdownMenuTrigger: components.DropdownMenuTrigger,
-                DropdownMenuContent: components.DropdownMenuContent,
-                DropdownMenuItem: components.DropdownMenuItem
-              }}
-            />
-          </div>
-        </div>
-      ) : isOwner ? (
-        <div className='sticky bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md'>
-          <div className='mx-auto flex max-w-[680px] items-center justify-between px-6 py-3'>
-            <p className='font-mono text-xs text-warning'>No API key — recruiters can't run audits yet.</p>
-            <a
-              href={ownerSettingsHref ?? '/'}
-              className='shrink-0 font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
-            >
-              Settings → API Keys
-            </a>
-          </div>
-        </div>
-      ) : null}
+      ) : (
+        <>
+          {auditAvailable && (
+            <div className='relative mx-auto max-w-[680px] px-6 py-10'>
+              {/* Scroll teaser — fixed to the viewport (not the page), so it's
+                  visible from the very top: a wide, SHORT ellipse (width and
+                  height set independently — not a circle) mostly below the
+                  fold, only its top third peeking above the viewport bottom
+                  edge. translate-y-2/3 pushes 2/3 of its own height below
+                  bottom:0, leaving the top third showing. Fades out smoothly as
+                  the real input scrolls into view (promptNear) instead of
+                  unmounting outright — the outer div owns the fade transition,
+                  the inner div owns the pulse animation, kept on separate
+                  elements so the two don't fight over the same opacity
+                  property. Its own .ai-gradient-border takes over as the
+                  "you're here" cue once fully near, so we don't show both. */}
+              <div
+                aria-hidden='true'
+                className={cn(
+                  'pointer-events-none fixed bottom-0 left-1/2 h-20 w-[75vw] -translate-x-1/2 translate-y-2/3 transition-opacity duration-700 ease-out',
+                  promptNear ? 'opacity-0' : 'opacity-100'
+                )}
+              >
+                <div className='h-full w-full animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-radial from-primary/35 to-transparent blur-2xl' />
+              </div>
+              <div ref={promptRef} className={cn('relative rounded-xl', promptNear && 'ai-gradient-border')}>
+                <SmartPromptInput
+                  onSubmit={handleSubmit}
+                  placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
+                  submitOn='cmdenter'
+                  pasteToFileChars={1000}
+                  surface='popover'
+                  textareaVariant='bare'
+                  ctaLabel={`Audit ${username}`}
+                  // INJECTION CONTRACT (see ui-library-system SKILL.md):
+                  // SmartPromptInput resolves NO library. Herald's library is selected
+                  // at runtime per user via LibraryProvider; useComponents() returns
+                  // the active map (Button/Textarea/DropdownMenu*). The component map
+                  // starts empty during the dynamic-import window — the vendor falls
+                  // back to native HTML on undefined keys.
+                  components={{
+                    Textarea: components.Textarea,
+                    Button: components.Button,
+                    DropdownMenu: components.DropdownMenu,
+                    DropdownMenuTrigger: components.DropdownMenuTrigger,
+                    DropdownMenuContent: components.DropdownMenuContent,
+                    DropdownMenuItem: components.DropdownMenuItem
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          {/* One sticky footer for every owner-only notice. auditAvailable and
+              isPublished are independent facts — each renders its own line
+              only when true, so they stack in one box instead of two sticky
+              elements fighting over the same bottom:0 position. */}
+          {isOwner && (!auditAvailable || !isPublished) && (
+            <div className='sticky bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md'>
+              <div className='mx-auto flex max-w-[680px] flex-col gap-1.5 px-6 py-3'>
+                {!auditAvailable && (
+                  <div className='flex items-center justify-between gap-4'>
+                    <p className='font-mono text-xs text-warning'>No API key — recruiters can't run audits yet.</p>
+                    <NextLink
+                      href={ownerSettingsHref ?? '/'}
+                      variant='subtle'
+                      className='shrink-0 underline underline-offset-2'
+                    >
+                      Settings → API Keys
+                    </NextLink>
+                  </div>
+                )}
+                {!isPublished && (
+                  <div className='flex items-center justify-between gap-4'>
+                    <p className='font-mono text-xs text-warning'>Not published yet — only you can see this.</p>
+                    <NextLink
+                      href={ownerSettingsHref ?? '/'}
+                      variant='subtle'
+                      className='shrink-0 underline underline-offset-2'
+                    >
+                      Publish in Settings
+                    </NextLink>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

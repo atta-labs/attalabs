@@ -21,12 +21,12 @@ export function HeraldAccountTab() {
   const { user, isLoaded } = useUser()
   const [open, setOpen] = useState(false)
 
-  const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
+  const labelClass = 'mb-1 block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'
 
   return (
     <div className='space-y-8'>
       <section>
-        <h2 className='mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Identity</h2>
+        <h2 className='mb-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Identity</h2>
         <div className='space-y-3 rounded-md border border-border bg-card p-4'>
           <div>
             <span className={labelClass}>Name</span>
@@ -42,7 +42,7 @@ export function HeraldAccountTab() {
       </section>
 
       <section>
-        <h2 className='mb-3 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Manage</h2>
+        <h2 className='mb-3 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Manage</h2>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger
             render={
@@ -58,7 +58,7 @@ export function HeraldAccountTab() {
             className='flex flex-col bg-background p-0 data-[side=top]:h-dvh'
           >
             <div className='flex h-14 shrink-0 items-center justify-between border-b border-border px-6'>
-              <span className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+              <span className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>
                 Manage account
               </span>
               <SheetClose render={<Button variant='outline' size='icon' aria-label='Close' />}>
@@ -73,7 +73,7 @@ export function HeraldAccountTab() {
             </div>
           </SheetContent>
         </Sheet>
-        <p className='mt-2 font-mono text-[10px] text-muted-foreground'>
+        <p className='mt-2 font-mono text-xs text-muted-foreground'>
           Opens the full account surface — profile, security, connected accounts.
         </p>
       </section>

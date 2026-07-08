@@ -25,6 +25,13 @@ export async function HeraldTopBar({ context = 'main' }: { context?: 'main' | 'o
 
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
 
+  // Signed-in users must not click through the marketing homepage — it
+  // immediately redirects them right back (see (marketing)/page.tsx), which
+  // tore down and remounted whatever page they were on (most visibly
+  // AIOnboarding) for a jarring flash of the wrong layout. Send them straight
+  // to where '/' would have sent them anyway.
+  const logoHref = userId ? (user?.onboardingComplete ? '/bulk-audit' : '/onboarding') : '/'
+
   const profileLink =
     userId && user?.onboardingComplete && user.username
       ? [{ label: `/${user.username}`, href: `/${user.username}`, external: true as const }]
@@ -43,13 +50,7 @@ export async function HeraldTopBar({ context = 'main' }: { context?: 'main' | 'o
   // resolves correctly inside the (owner) tree.
   const extraActions =
     userId && user?.onboardingComplete && user.username ? (
-      <Button
-        asChild
-        variant='outline'
-        aria-label='Settings'
-        title='Settings'
-        className='h-8 gap-2 px-2.5 text-xs md:px-3'
-      >
+      <Button asChild variant='outline' aria-label='Settings' className='h-8 gap-2 px-2.5 text-xs md:px-3'>
         <Link href={`/${user.username}/settings`}>
           <SettingsIcon className='h-4 w-4' />
           <span>Settings</span>
@@ -61,6 +62,7 @@ export async function HeraldTopBar({ context = 'main' }: { context?: 'main' | 'o
     <TopBar
       logoText='Herald'
       logoUrl={logoUrl}
+      logoHref={logoHref}
       logoTagline={['Forensic hiring', 'audits']}
       isSignedIn={!!userId}
       signedInLinks={signedInLinks}
