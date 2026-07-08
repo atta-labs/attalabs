@@ -341,11 +341,14 @@ export function JDInput({
       ) : auditAvailable ? (
         <div className='relative mx-auto max-w-[680px] px-6 py-10'>
           {/* Soft circular glow behind the input, anchored to the very bottom
-              of the page — not a full-width band, a blob roughly the input's
-              own width (Gemini's "Ask Gemini" bar treatment). */}
+              of the page — not a full-width band, a blob narrower than the
+              input (Gemini's "Ask Gemini" bar treatment). Extends BELOW the
+              input's own box (which has its own solid surface) rather than
+              sitting fully behind it — otherwise the input's opaque
+              background hides the glow completely. */}
           <div
             aria-hidden='true'
-            className='pointer-events-none absolute bottom-0 left-1/2 -z-10 h-32 w-72 -translate-x-1/2 animate-pulse rounded-full bg-radial from-primary/15 to-transparent blur-2xl'
+            className='pointer-events-none absolute -bottom-16 left-1/2 -z-10 h-40 w-96 -translate-x-1/2 animate-pulse rounded-full bg-radial from-primary/35 to-transparent blur-2xl'
           />
           <div ref={promptRef} className={cn('relative rounded-xl', promptNear && 'ai-gradient-border')}>
             <SmartPromptInput
