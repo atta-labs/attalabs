@@ -1,7 +1,12 @@
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText } from 'ai'
 import { CV_PARSER_PROMPT } from '../prompts/cv-parser'
+import { MAX_STACK_TAGS } from '../types'
 import type { CandidateProfile } from '../types'
+
+export function capStack(stack: string[]): string[] {
+  return stack.slice(0, MAX_STACK_TAGS)
+}
 
 export async function parseCv(cvText: string, apiKey: string): Promise<CandidateProfile> {
   const anthropic = createAnthropic({ apiKey })
@@ -38,7 +43,7 @@ export async function parseCv(cvText: string, apiKey: string): Promise<Candidate
     location: (parsed.location as string | undefined) ?? undefined,
     availability: (parsed.availability as string | undefined) ?? undefined,
     summary: (parsed.summary as string) ?? '',
-    stack: (parsed.stack as string[]) ?? [],
+    stack: capStack((parsed.stack as string[]) ?? []),
     projects: (parsed.projects as CandidateProfile['projects']) ?? [],
     experience: (parsed.experience as CandidateProfile['experience']) ?? []
   }

@@ -1,3 +1,5 @@
+export const MAX_STACK_TAGS = 20
+
 export interface CandidateProfile {
   name: string
   title: string
