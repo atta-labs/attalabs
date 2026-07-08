@@ -139,6 +139,10 @@
 - [Vāda V2 Specification](./apps/vada-ai/specs/legacy/vada-v2-specification.md)
 - [Vāda Workflow Design — Implementation Notes](./apps/vada-ai/specs/legacy/workflow-design.md)
 
+### vinaya
+
+- [Vinaya — Product Spec (seed)](./apps/vinaya/specs/vinaya-spec.md)
+
 ### vitakka-ai
 
 - [Vitakka](./apps/vitakka-ai/specs/vitakka-human.md)
