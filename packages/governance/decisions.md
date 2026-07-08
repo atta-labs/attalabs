@@ -2866,6 +2866,7 @@ Concretely:
 **Date:** 2026-07-08
 **Status:** ACTIVE
 **Type:** 2 (reversible via a superseding D-entry; enforcement is a GitHub Actions workflow, not new infrastructure)
+**Conforms to lock:** D-069 — relocates where the forge-lifecycle Review gate step runs and what re-triggers it; does not change the law (a task-branch or `fix/*` PR still cannot merge without real verdicts), the terminal-status vocabulary, or any other D-069-locked invariant.
 **Authored by:** Principal (direct action, following D-114's own fix and a Principal question about the remaining friction)
 **Ratified by:** Principal
 

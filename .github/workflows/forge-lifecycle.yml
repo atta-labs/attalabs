@@ -24,7 +24,7 @@ name: AEG Gate Suite
 #
 # Independent failure visibility is preserved by construction:
 #   - every gate step is guarded by `!cancelled()` — an earlier step's failure
-#     NEVER skips a later gate step; all 10 verdicts are always produced
+#     NEVER skips a later gate step; all 9 verdicts are always produced
 #     (within a step's own event scope, see below);
 #   - no `continue-on-error` — a failing gate step shows its own red X in the
 #     step list and fails the job (there is no fail-fast hiding: fail-fast is
@@ -80,7 +80,7 @@ jobs:
         if: ${{ github.event.action != 'edited' }}
         run: bun install --frozen-lockfile
 
-      # ── 1/10 · Closes #N ─────────────────────────────────────────────────
+      # ── 1/9 · Closes #N ─────────────────────────────────────────────────
       # Task-branch PRs must declare `Closes #N` in the body (D-069).
       # Non-task branches bypass automatically.
       - name: "Closes #N (task-branch PRs)"
@@ -95,7 +95,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bun packages/aeg-core/bin/verify-coherence.ts --closes-n
 
-      # ── 2/10 · Coherence oracle ──────────────────────────────────────────
+      # ── 2/9 · Coherence oracle ──────────────────────────────────────────
       # Stateless coherence oracle (verify-coherence.ts). A1/A2/A3/T1/T2/T3/
       # D1/R1/N1/M1/M3 failures → red (the CLI exits non-zero on ANY check
       # with status:'fail' — see coherence-checks.ts for each check's exact
@@ -160,7 +160,7 @@ jobs:
         # $? instead of reflecting the real failure. Default to 1.
         run: exit "${{ steps.oracle.outputs.exit || '1' }}"
 
-      # ── 3/10 · Single-plan-PR guard ──────────────────────────────────────
+      # ── 3/9 · Single-plan-PR guard ──────────────────────────────────────
       # Ring-1 backstop (task 24, #364, Part 1). `open-pr.ts`'s
       # `checkSinglePlanPrGate` is ring-0 prevention but only runs for PRs
       # opened through that wrapper — a web-UI-opened PR bypasses it. This
@@ -176,7 +176,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: bun packages/aeg-core/bin/verify-single-plan-pr.ts
 
-      # ── 4/10 · Runtime Test Plan checkbox state ──────────────────────────
+      # ── 4/9 · Runtime Test Plan checkbox state ──────────────────────────
       # D-049 gate: a PR is not mergeable while any `- [ ]` box in the
       # brief's Test Plan section is unticked. `Test Plan: unit-tests-only`
       # (first-class allowed value) passes by default. Runs on `edited` too
@@ -225,7 +225,7 @@ jobs:
             | jq -r '[.data.repository.pullRequest.timelineItems.nodes[] | select(.label.name == "waiver:docs")] | last | .actor.login // ""')
           echo "actor=$actor" >> "$GITHUB_OUTPUT"
 
-      # ── 5/10 · Tier-appropriate documentation gate ───────────────────────
+      # ── 5/9 · Tier-appropriate documentation gate ───────────────────────
       # verify-docs --pr (C0–C5). Runs on `labeled`/`unlabeled` too because
       # PR_LABELS feeds the tier derivation. WAIVER_LABEL_ACTOR (D-097) feeds
       # the actor-verified waiver check — label presence alone never suffices.
@@ -239,7 +239,7 @@ jobs:
           WAIVER_LABEL_ACTOR: ${{ steps.waiver_actor.outputs.actor }}
         run: bun packages/aeg-core/bin/verify-docs.ts --pr
 
-      # ── 6/10 · Biome lint/format ─────────────────────────────────────────
+      # ── 6/9 · Biome lint/format ─────────────────────────────────────────
       # Mirrors the local lint-staged/Husky enforcement into CI so it binds
       # every writer (GitHub API/MCP writes, direct pushes, hand-merges) —
       # same Biome config, identical gate.
@@ -247,7 +247,7 @@ jobs:
         if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
         run: bun run format-and-lint
 
-      # ── 7/10 · Commit-message format ─────────────────────────────────────
+      # ── 7/9 · Commit-message format ─────────────────────────────────────
       # Reuses commitlint.config.js — the same rules Husky enforces locally,
       # so local and CI cannot diverge on commit format.
       - name: Commit-message format
@@ -257,7 +257,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: bunx commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
 
-      # ── 8/10 · Forbidden colors (UI) ─────────────────────────────────────
+      # ── 8/9 · Forbidden colors (UI) ─────────────────────────────────────
       # Diff-scoped: scans only the added lines in changed UI files. Encodes
       # the patterns documented in .claude/skills/ui-theme-tokens/SKILL.md.
       # Designed to under-match rather than over-match — pre-existing
@@ -269,7 +269,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: bun scripts/check-forbidden-colors.ts --pr
 
-      # ── 9/10 · Brief Validation ──────────────────────────────────────────
+      # ── 9/9 · Brief Validation ──────────────────────────────────────────
       # Real, CI-enforced gate (D-069) — checks the PR body carries every
       # required brief section (Tier, For, Project, Test Plan, surface map,
       # doc-update list, worktree Step 0, stop conditions, autonomy clause,
