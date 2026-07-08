@@ -325,15 +325,6 @@ export function JDInput({
             </div>
           </header>
         </div>
-
-        {/* Scroll hint — sticks to the viewport bottom while the hero is still
-            in view, settling right above the input once the hero's own
-            bottom edge (position: sticky, not fixed) passes. Static shape,
-            no moving structure — only the color/opacity breathes (animate-pulse). */}
-        <div
-          aria-hidden='true'
-          className='pointer-events-none sticky bottom-0 h-10 animate-pulse bg-gradient-to-t from-primary/15 to-transparent'
-        />
       </div>
 
       {/* Input / audit gate. The real prompt (auditAvailable) flows with the
@@ -348,7 +339,14 @@ export function JDInput({
           </div>
         </div>
       ) : auditAvailable ? (
-        <div className='mx-auto max-w-[680px] px-6 py-10'>
+        <div className='relative mx-auto max-w-[680px] px-6 py-10'>
+          {/* Soft circular glow behind the input, anchored to the very bottom
+              of the page — not a full-width band, a blob roughly the input's
+              own width (Gemini's "Ask Gemini" bar treatment). */}
+          <div
+            aria-hidden='true'
+            className='pointer-events-none absolute bottom-0 left-1/2 -z-10 h-32 w-72 -translate-x-1/2 animate-pulse rounded-full bg-radial from-primary/15 to-transparent blur-2xl'
+          />
           <div ref={promptRef} className={cn('relative rounded-xl', promptNear && 'ai-gradient-border')}>
             <SmartPromptInput
               onSubmit={handleSubmit}
