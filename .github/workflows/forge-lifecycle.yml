@@ -304,8 +304,25 @@ jobs:
       # held to the same gate as task/*/* (see review-gate.ts's docstring
       # for the incident this fixed). This is a going-forward gate that
       # never re-evaluates already-merged history.
+      #
+      # Runs on EVERY triggering action (no action-based `if` filter beyond
+      # `!cancelled()`), unlike the diff-scoped checks above. Live-fire gap
+      # (PR #485, 2026-07-08): the original `if` matched Test Plan's
+      # allow-list ([opened, synchronize, reopened]), but this step's inputs
+      # (PR comments + labels, fetched fresh via `gh pr view` inside
+      # verify-review-gate.ts) are never tied to a specific commit the way a
+      # diff-scoped check's are — the SAME reasoning that gives Test Plan its
+      # `edited` carve-out above applies here, only more so: a verdict
+      # comment or a `waiver:review` label can land well after the PR's last
+      # push, with no commit to re-trigger a scoped re-run. The action-based
+      # skip let a real prior FAILURE (evaluated correctly on a `synchronize`
+      # run) get silently superseded by a `skipped` conclusion on a later
+      # `edited` run (a Test Plan checkbox tick) — `skipped` doesn't fail the
+      # job, so the PR read fully green despite no code-review verdict ever
+      # existing. Since this step has no dependency on the diff or checkout
+      # at all, there is no event type it is ever correct to skip on.
       - name: Review gate (code-reviewer + security-review verdicts)
-        if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.head_ref }}
