@@ -1250,6 +1250,8 @@ The five-way comparison among A1, VR-NS, VR-S-same, VR-S-cross, and MW is what w
 
 This conditions list does not include a separate VR-CLI condition because CLI mode is not in v1. v1.5 will add CLI conditions once the cognitive design is validated by the v1 conditions.
 
+The repeatable benchmark harness (T9, Issue #184) runs these six plus two conditions added after this section was written — FUSION-default and FUSION-native — against identical per-question input. See §6a for the full eight-condition input/artifact protocol.
+
 ### 5.3 Judging method
 
 **Manual judging by Claude in a fresh context, with Dani as final arbiter.**
@@ -1337,6 +1339,44 @@ The v2 bucket is for cognitive enhancements with less certain payoff. Each is te
 - **No web UI as the primary surface.** v1 ships MCP-first because that's where Dani uses it. The web UI exists for trial/demo and onboarding, not as a primary product surface.
 - **No autonomous agent-to-agent debate.** Vāda's existing autonomous mode (Crucible, Sparring, War Room) is a different research direction. Vāda Reviewers is a brokered-mode product. Autonomous mode lives separately and is tested separately.
 - **No fixed-vendor lock-in.** The team must remain vendor-agnostic indefinitely. If a vendor exits the market or becomes uncompetitive, the team must continue functioning with the others.
+
+---
+
+## 6a. Comparison protocol — pinned before any benchmark run
+
+This section is the harness contract: for each condition, the exact common input, the artifact a judge (T10) evaluates, and any per-condition invocation parameters. Pinned by `vada-production-v1` T9 (Issue #184) before the first dry run, per D-066. Implemented by `apps/vada-ai/web/scripts/run-benchmark.ts`.
+
+§5.2 locked six conditions (A0, A1, VR-NS, VR-S-same, VR-S-cross, MW). Two more were added to the harness matrix after §5.2 was written, once `vada-fusion` (A2 external benchmark, Issue #179) and `vada-fusion-native` (Outside Read engine, Issue #180) existed: **FUSION-default** and **FUSION-native**. All eight run against identical per-question input.
+
+### Common input contract
+
+Per benchmark question (from `apps/vada-ai/web/scripts/bench/corpus.ts`), the harness computes exactly two upstream artifacts, once, and reuses them verbatim across every condition that needs them — no condition re-derives its own input:
+
+1. **`question`** — the raw corpus question text. Used directly by A0, A1, FUSION-default, FUSION-native, MW.
+2. **`draft`** — the primary AI's draft, computed by running the **A1** spec once (`a1-baseline.yaml`, structured JSON output). Reused as "the primary AI's draft" required by VR-NS/VR-S-same/VR-S-cross (§5.2). A1 is not re-run per reviewer condition — the harness caches it per question (`getPrimaryDraft()` in the runner) so VR-NS, VR-S-same, and VR-S-cross literally share one draft, keeping the input structurally identical across the three (§11 of the T9 brief: "structurally impossible to pass different prompts to different conditions").
+
+The three reviewer conditions (VR-NS, VR-S-same, VR-S-cross) additionally share one composed **review brief** — `question` + `draft`, wrapped in a fixed template (`buildReviewBrief()`) — passed as the `{{question}}` template variable into `vada-reviewers.yaml` / `vada-reviewers-synthesis.yaml`. This is not a YAML edit: the brief is caller-supplied content, exactly how the production MCP tools already work (the calling AI composes the brief; the YAML template is generic).
+
+### Per-condition definition
+
+| Condition | YAML | Input | Judged artifact | Invocation parameters |
+|---|---|---|---|---|
+| **A0** | `a0-baseline` | `question` | Raw response text | None. Primary model default `claude-sonnet-4-6` (`--model` overridable). |
+| **A1** | `a1-baseline` | `question` | Structured JSON (`recommendation` + full object) | None. Same primary model as A0. This run **is** the shared `draft` reused below. |
+| **VR-NS** | `vada-reviewers` | review brief (`question` + `draft`) | The **conversational synthesis** — see below | 3 reviewers, no engine synthesis round. |
+| **VR-S-same** | `vada-reviewers-synthesis` | review brief (`question` + `draft`) | Synthesizer's structured output | No override — the YAML's own `Synthesizer` default (`claude-sonnet-4-6`) already matches "primary AI's vendor's flagship" for a Claude primary. |
+| **VR-S-cross** | `vada-reviewers-synthesis` | review brief (`question` + `draft`) | Synthesizer's structured output | Invocation-time `reviewerConfig: { Synthesizer: <model> }` override (`LangGraphAdapter.reviewerConfig`, zero YAML edits). Model chosen from primary's vendor: primary=Claude → `gpt-5`; primary=anything else → `claude-opus-4-7`. |
+| **MW** | — (no YAML) | `question` | The historical Dani-collected response, when recorded | See "MW data path" below. |
+| **FUSION-default** | `vada-fusion` | `question` | Raw response text (opaque `openrouter/fusion` route) | None — single agent, `defaults.model: openrouter/fusion`. |
+| **FUSION-native** | `vada-fusion-native` | `question` | The battlefield map (`core_agreement` / `concessions` / `irreducible_conflict` / `risk_ranking`), post-audit | None. Four-agent attack-vector panel → synthesizer → BlindCritic+FactChecker audit, as declared in the YAML. |
+
+**VR-NS's judged artifact — reconstructing "conversational synthesis."** `vada-reviewers.yaml` compiles to a review round only; it has no synthesis round (that is the point of VR-NS — it tests the *unsynthesized* default). But §5.2 defines VR-NS's artifact as "primary AI's draft + 3 reviewer responses + primary AI's **conversational synthesis**" — in production, that synthesis happens downstream in the calling AI's own conversation turn, outside anything the engine executes. The harness reconstructs this as one additional plain LLM call (same model as the primary, no engine/YAML/adapter change — the same pattern `scripts/bench/runner.ts` and `scripts/bench/judge-brokered.ts` already use for baseline/judge calls): given the question, the draft, and the three reviewer critiques, the primary model writes its final conversational answer. That text is VR-NS's judged artifact, and its tokens/cost/elapsed are folded into the row's totals alongside the review round's.
+
+**MW data path.** No historical Dani-collected corpus has been transcribed into the repo yet. `apps/vada-ai/web/scripts/bench/mw-corpus.ts` defines the lookup table (`Record<corpusQuestionId, { response, source }>`), currently empty. When a question id has an entry, the harness records `terminalState: 'HISTORICAL'` and tags the row `mw-present`. When it doesn't — every question today — the harness still writes one `benchmark_runs` row (no LLM call, `terminalState: 'ABSENT'`, tagged `mw-absent`, `response` set to a fixed "no historical data" note) rather than skipping or erroring. This keeps MW's presence/absence visible in the same table T10/T12 read, instead of silently vanishing from the matrix.
+
+**FUSION-default cost.** `openrouter/fusion` is an opaque multi-model route with no fixed per-token price; the harness records `costUsd: null` for this condition rather than fabricating a number (mirrors `@atta/adapter-langgraph`'s own "unknown model skips cost tracking" behavior for its internal, unexported pricing table).
+
+**Key-gating.** FUSION-default requires `OPENROUTER_API_KEY`; missing it is a clean skip (no partial row), not a crash. VR-S-cross requires whichever cross-vendor key its synthesizer override needs (`OPENAI_API_KEY` when primary is Claude, `ANTHROPIC_API_KEY` otherwise) — same clean-skip behavior. VR-NS/VR-S-same tolerate individual reviewer vendors missing their key (existing adapter behavior: that reviewer's transcript entry carries an error, the run continues) since losing one of three reviewers doesn't invalidate the condition the way losing the sole synthesizer would.
 
 ---
 

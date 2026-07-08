@@ -266,10 +266,12 @@ export const benchmarkRuns = pgTable(
     sessionType: text('session_type').notNull(),
     sessionId: uuid('session_id').notNull(),
     questionHash: text('question_hash').notNull(),
-    judgeModel: text('judge_model').notNull(),
-    judgeVerdict: text('judge_verdict').notNull(),
-    judgeScore: integer('judge_score').notNull(),
-    judgeReasoning: text('judge_reasoning').notNull(),
+    // Nullable: T9 harness rows are written before quality judging runs (T10
+    // enriches these columns after the fact). See vada-reviewers-spec.md §6a.
+    judgeModel: text('judge_model'),
+    judgeVerdict: text('judge_verdict'),
+    judgeScore: integer('judge_score'),
+    judgeReasoning: text('judge_reasoning'),
     reviewerScores: jsonb('reviewer_scores'),
     baselineLabel: text('baseline_label'),
     baselineResponse: text('baseline_response'),
