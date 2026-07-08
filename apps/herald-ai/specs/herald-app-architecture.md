@@ -149,7 +149,7 @@ The engine and adapter packages are consumed unchanged: `git diff main --stat` a
 
 `apps/herald-ai/web/next.config.ts` transpiles `@atta/engine` + `@atta/adapter-langgraph` and adds `outputFileTracingIncludes: { '/**': ['./yamls/**'] }` so the YAML is bundled into the serverless function (Vāda's pattern, scoped to Herald's local `yamls/` dir).
 
-The recruiter-facing input control is `JDInput` (`src/components/envoy/JDInput.tsx`), built on the shared `@atta/ui/smart-prompt-input` composite (`SmartPromptInput`, D-064 injection contract — Herald supplies primitives via `useComponents()`). Post-PR #207 `JDInput` opts in to `textareaVariant='bare'` + `surface='popover'` so it renders aligned with Vāda's deliberate-page hero (elevated `bg-popover`, outer focus halo, footer-less inline submit) — intentionally NOT the prior byte-identical default.
+The recruiter-facing input control is `JDInput` (`src/components/envoy/JDInput.tsx`), built on the shared `@atta/ui/smart-prompt-input` composite (`SmartPromptInput`, D-064 injection contract — Herald supplies primitives via `useComponents()`). Post-PR #207 `JDInput` opts in to `textareaVariant='bare'` + `surface='popover'` so it renders aligned with Vāda's deliberate-page hero (elevated `bg-popover`, outer focus halo, footer-less inline submit) — intentionally NOT the prior byte-identical default. `JDInput` also takes an `isPublished` prop (threaded from `EnvoyFlow` ← `[username]/(profile)/page.tsx`'s `user.isPublished`) so the "no API key" and "not published" owner-only notices render as independently-conditioned rows inside one sticky footer, instead of two separately-conditioned sticky elements that could overlap.
 
 ---
 
