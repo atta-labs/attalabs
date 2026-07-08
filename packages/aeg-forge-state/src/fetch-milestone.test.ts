@@ -7,7 +7,7 @@ vi.mock('./gh', () => ({
 }))
 
 const { ghApiGet } = await import('./gh')
-const { findMilestoneForSlug } = await import('./fetch-milestone')
+const { findMilestoneForSlug, listActiveIterationSlugs } = await import('./fetch-milestone')
 
 const OWNER = 'daniboomerang'
 const REPO = 'attalabs'
@@ -48,5 +48,30 @@ describe('findMilestoneForSlug', () => {
     vi.mocked(ghApiGet).mockReturnValue(emptyMilestones)
 
     expect(findMilestoneForSlug(OWNER, REPO, 'aeg-forge-state-v1')).toBeNull()
+  })
+})
+
+describe('listActiveIterationSlugs', () => {
+  it('maps every open milestone to its slug + goal', () => {
+    vi.mocked(ghApiGet).mockReturnValue([
+      { title: 'aeg-forge-state-v1', description: 'Migrate this repo governance state.', state: 'open' },
+      { title: 'herald-hardening-v1', description: null, state: 'open' }
+    ])
+
+    expect(listActiveIterationSlugs(OWNER, REPO)).toEqual([
+      { slug: 'aeg-forge-state-v1', goal: 'Migrate this repo governance state.' },
+      { slug: 'herald-hardening-v1', goal: '' }
+    ])
+  })
+
+  it('requests only open milestones, not the full state=all set', () => {
+    vi.mocked(ghApiGet).mockReturnValue([])
+    listActiveIterationSlugs(OWNER, REPO)
+    expect(ghApiGet).toHaveBeenCalledWith(`repos/${OWNER}/${REPO}/milestones?state=open&per_page=100`)
+  })
+
+  it('returns an empty list when no milestones are open (the real, current fixture)', () => {
+    vi.mocked(ghApiGet).mockReturnValue(emptyMilestones)
+    expect(listActiveIterationSlugs(OWNER, REPO)).toEqual([])
   })
 })

@@ -1,6 +1,6 @@
 export { deriveIterationFromForge } from './derive-from-forge'
-export { findMilestoneForSlug } from './fetch-milestone'
-export type { MilestoneFacts } from './fetch-milestone'
+export { findMilestoneForSlug, listActiveIterationSlugs } from './fetch-milestone'
+export type { ActiveIterationRef, MilestoneFacts } from './fetch-milestone'
 export { listTasksForSlug } from './list-tasks'
 export { parseRationaleDeps } from './parse-rationale-deps'
 export type { ParsedRationaleDeps } from './parse-rationale-deps'

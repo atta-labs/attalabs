@@ -32,13 +32,10 @@ import {
   type DispatchPriorIterationFact,
   type DispatchResult,
   type Iteration,
-  parseIteration,
   type Task
 } from '@atta/aeg-core'
 import { graphql } from '@octokit/graphql'
-import fs from 'node:fs/promises'
-import path from 'node:path'
-import { findAegRoot } from '../aeg-fs'
+import { loadActiveIterations } from '../aeg-fs'
 import { fetchOpenIssuesByLabel } from './fetch-open-issues'
 import { fetchProvenance } from './fetch-provenance'
 import { resolveGithubToken } from './github-token'
@@ -130,22 +127,8 @@ export async function loadDispatchReadiness(
 
 async function readOtherActiveIterations(excludeSlug: string): Promise<Array<{ slug: string; iteration: Iteration }>> {
   try {
-    const dir = path.join(findAegRoot(), 'iterations')
-    const entries = await fs.readdir(dir, { withFileTypes: true })
-    const files = entries.filter(
-      (e) =>
-        e.isFile() &&
-        e.name.endsWith('.md') &&
-        e.name !== 'README.md' &&
-        !e.name.endsWith('.tokens.md') &&
-        e.name !== `${excludeSlug}.md`
-    )
-    return await Promise.all(
-      files.map(async (f) => ({
-        slug: f.name.replace(/\.md$/, ''),
-        iteration: parseIteration(await fs.readFile(path.join(dir, f.name), 'utf8'))
-      }))
-    )
+    const all = await loadActiveIterations()
+    return all.filter((it) => it.fileSlug !== excludeSlug).map((it) => ({ slug: it.fileSlug, iteration: it.iteration }))
   } catch {
     return []
   }
