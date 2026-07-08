@@ -43,7 +43,15 @@ export interface RunAuditInput {
   onParseFailure?: ParseMatchReportOptions['onParseFailure']
 }
 
-export async function run(input: RunAuditInput): Promise<MatchReport | null> {
+/** Returned instead of a MatchReport when the audit execution itself failed
+ *  (rate-limit, timeout, auth, or unknown) — distinguishable from the `null`
+ *  a caller gets when the LLM responded but its output didn't parse. */
+export interface RunAuditFailure {
+  failed: true
+  reason: string
+}
+
+export async function run(input: RunAuditInput): Promise<MatchReport | RunAuditFailure | null> {
   const flow = getFlow()
   const plan = compileFlow(flow, input.profile, input.modelId, { schema: input.schema })
   const adapter = new LangGraphAdapter({
@@ -51,7 +59,9 @@ export async function run(input: RunAuditInput): Promise<MatchReport | null> {
     customTools: { fetch_github_signals: githubSignalToolHandler }
   })
   const conclusion = await adapter.execute({ plan })
-  if (conclusion.terminalState === 'FAILED') return null
+  if (conclusion.terminalState === 'FAILED') {
+    return { failed: true, reason: conclusion.error ?? 'Audit execution failed for an unknown reason' }
+  }
   return parseMatchReport(conclusion.content, input.candidateInfo, {
     onParseFailure: input.onParseFailure
   })

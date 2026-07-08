@@ -10,8 +10,56 @@ function gradeColorClass(grade: MatchReport['grade']): string {
   return ''
 }
 
+/** Plain-language copy for each auditFailed category — shared by the
+ *  single-audit report view, its toast, and the bulk-audit cell so the
+ *  three surfaces never drift into inconsistent wording. */
+export function auditFailureMessage(auditFailed: NonNullable<MatchReport['auditFailed']>): string {
+  switch (auditFailed.category) {
+    case 'quota':
+      return "The audit couldn't complete — the selected model's usage quota is exhausted. Switch models in Settings → Herald Model, or try again shortly."
+    case 'timeout':
+      return "The audit couldn't complete — the selected model took too long to respond. Try again, or switch to a faster model in Settings → Herald Model."
+    case 'auth':
+      return "The audit couldn't complete — the selected model's API key was rejected. Check your key in Settings → API Keys."
+    default:
+      return "The audit couldn't complete due to an unexpected error. Try again shortly."
+  }
+}
+
 export function ReportView({ report }: { report: MatchReport }) {
   const { Card, CardContent, Badge } = useComponents()
+
+  if (report.auditFailed) {
+    return (
+      <article className='mx-auto max-w-[680px] px-6 py-12 print:max-w-none print:px-0 print:py-0'>
+        <header className='mb-8 border-b border-border pb-6'>
+          <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+            Forensic Match Audit
+          </p>
+          <h1 className='mt-2 font-display text-2xl tracking-tight'>{report.candidate.name}</h1>
+          <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{report.candidate.title}</p>
+        </header>
+
+        <section className='mb-8'>
+          {Badge ? (
+            <Badge className='border-destructive/40 bg-destructive/10 font-mono text-[10px] uppercase tracking-[0.2em] text-destructive'>
+              Audit Failed
+            </Badge>
+          ) : (
+            <p className='font-mono text-[10px] uppercase tracking-[0.2em] text-destructive'>Audit Failed</p>
+          )}
+          <p className='mt-4 text-[14px] leading-relaxed text-foreground'>{auditFailureMessage(report.auditFailed)}</p>
+        </section>
+
+        <footer className='border-t border-border pt-4 print:mt-6'>
+          <p className='font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground'>
+            Herald · Forensic Match Audit · heyherald.com
+          </p>
+        </footer>
+      </article>
+    )
+  }
+
   const hardReqs = report.hard_requirements ?? []
   const hardOnly = hardReqs.filter((r) => r.kind === 'hard')
 

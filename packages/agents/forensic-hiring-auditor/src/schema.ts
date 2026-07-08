@@ -30,6 +30,13 @@ export type MatchReport = {
     mitigation: string | null
   }[]
   interview_hooks: string[]
+  /** Present only when the audit execution itself failed (rate-limit, timeout,
+   *  auth, or unknown) — the rest of the report's fields are placeholders when
+   *  this is set. Absent on every real, graded report. */
+  auditFailed?: {
+    reason: string
+    category: 'quota' | 'timeout' | 'auth' | 'unknown'
+  }
 }
 
 export const MatchReportSchema = z.object({
@@ -65,5 +72,11 @@ export const MatchReportSchema = z.object({
       mitigation: z.string().nullable()
     })
   ),
-  interview_hooks: z.array(z.string())
+  interview_hooks: z.array(z.string()),
+  auditFailed: z
+    .object({
+      reason: z.string(),
+      category: z.enum(['quota', 'timeout', 'auth', 'unknown'])
+    })
+    .optional()
 })
