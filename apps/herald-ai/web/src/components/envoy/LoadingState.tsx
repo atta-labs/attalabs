@@ -32,7 +32,7 @@ export function LoadingState({
   return (
     <div className='mx-auto max-w-[680px] px-6 py-12'>
       <header className='mb-8 border-b border-border pb-6'>
-        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
+        <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
         <h1 className='mt-2 font-display text-2xl tracking-tight'>{candidateName}</h1>
         <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{candidateTitle}</p>
       </header>
@@ -41,7 +41,7 @@ export function LoadingState({
         {STEPS.map((step, i) => (
           <div key={step.label} className='flex items-center gap-3'>
             <span
-              className={`font-mono text-[10px] ${
+              className={`font-mono text-xs ${
                 i < activeStep ? 'text-foreground' : i === activeStep ? 'text-foreground/60' : 'text-foreground/20'
               }`}
             >

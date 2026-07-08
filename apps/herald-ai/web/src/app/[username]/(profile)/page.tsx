@@ -95,6 +95,7 @@ export default async function EnvoyPage({
         previewMode={previewMode}
         hasAnyKey={hasAnyKey}
         isOwner={isOwner}
+        isPublished={user.isPublished}
       />
     </>
   )

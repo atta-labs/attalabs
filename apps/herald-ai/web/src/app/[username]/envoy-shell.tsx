@@ -141,7 +141,7 @@ function EnvoyNavContent({
                 </span>
               )}
               {profileIdentity.title && (
-                <span className='truncate text-[11px] text-muted-foreground sm:text-xs'>{profileIdentity.title}</span>
+                <span className='truncate text-xs text-muted-foreground'>{profileIdentity.title}</span>
               )}
             </div>
           )}

@@ -39,7 +39,7 @@ export function PreviewToolbar({
         size='sm'
         onClick={onPublish}
         disabled={!hasChanges || isPending}
-        className='font-mono text-[10px] uppercase tracking-[0.15em] disabled:opacity-30'
+        className='font-mono text-xs uppercase tracking-[0.15em] disabled:opacity-30'
       >
         {isPending ? 'Saving...' : saved ? 'Saved!' : 'Publish'}
       </Button>

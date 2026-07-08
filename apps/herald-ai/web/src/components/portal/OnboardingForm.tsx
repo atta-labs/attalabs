@@ -144,13 +144,13 @@ export function OnboardingForm() {
     }
   }
 
-  const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
+  const labelClass = 'mb-1 block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'
 
   function statusIndicator(status: FieldStatus, invalidMsg?: string) {
-    if (status === 'checking') return <p className='mt-1 font-mono text-[10px] text-muted-foreground'>Checking...</p>
-    if (status === 'valid') return <p className='mt-1 font-mono text-[10px] text-foreground'>✓ Valid</p>
+    if (status === 'checking') return <p className='mt-1 font-mono text-xs text-muted-foreground'>Checking...</p>
+    if (status === 'valid') return <p className='mt-1 font-mono text-xs text-foreground'>✓ Valid</p>
     if (status === 'invalid')
-      return <p className='mt-1 font-mono text-[10px] text-destructive'>{invalidMsg ?? 'Invalid'}</p>
+      return <p className='mt-1 font-mono text-xs text-destructive'>{invalidMsg ?? 'Invalid'}</p>
     return null
   }
 
@@ -213,16 +213,16 @@ export function OnboardingForm() {
           </Button>
           {parseStatus === 'parsed' && parsedProfile && (
             <div className='mt-3 border-l border-foreground/10 pl-3'>
-              <p className='font-mono text-[11px] text-foreground'>
+              <p className='font-mono text-xs text-foreground'>
                 Extracted: {parsedProfile.name} — {parsedProfile.title}
               </p>
-              <p className='mt-0.5 font-mono text-[10px] text-muted-foreground'>
+              <p className='mt-0.5 font-mono text-xs text-muted-foreground'>
                 {parsedProfile.stack.length} skills · {parsedProfile.projects.length} projects ·{' '}
                 {parsedProfile.experience.length} roles
               </p>
             </div>
           )}
-          {parseStatus === 'error' && <p className='mt-1 font-mono text-[10px] text-destructive'>Failed to parse CV</p>}
+          {parseStatus === 'error' && <p className='mt-1 font-mono text-xs text-destructive'>Failed to parse CV</p>}
         </div>
 
         {/* ── Error ── */}

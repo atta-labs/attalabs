@@ -172,7 +172,7 @@ export function AdminEditorPage({
                               setThemeId(theme._id)
                               handleSchemeToggle(theme._id, s)
                             }}
-                            className={`h-auto rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
+                            className={`h-auto rounded px-1.5 py-0.5 font-mono text-xs uppercase tracking-[0.1em] transition-colors ${
                               isSelected && colorScheme === s
                                 ? 'bg-foreground text-background'
                                 : 'text-muted-foreground hover:text-foreground'
@@ -196,12 +196,12 @@ export function AdminEditorPage({
         {/* Toolbar: Font + Style + Save */}
         <div className='flex shrink-0 items-center gap-4 border-b border-border px-4 py-2'>
           <div className='flex items-center gap-2'>
-            <span className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>Font</span>
+            <span className='font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>Font</span>
             <FontPicker value={fontSans} onChange={handleFontChange} />
           </div>
           {libraries.length > 0 && (
             <div className='flex items-center gap-2'>
-              <span className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>Style</span>
+              <span className='font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>Style</span>
               <LibraryDropdown value={library} libraries={libraries} onChange={handleLibraryChange} />
             </div>
           )}

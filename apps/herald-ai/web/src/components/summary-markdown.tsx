@@ -25,15 +25,15 @@ export function SummaryMarkdown({ text }: { text: string }) {
           </h3>
         ),
         p: ({ children }) => (
-          <p className='mt-4 font-sans text-[15px] leading-relaxed text-foreground first:mt-0'>{children}</p>
+          <p className='mt-4 font-sans text-base leading-relaxed text-foreground first:mt-0'>{children}</p>
         ),
         ul: ({ children }) => (
-          <ul className='mt-3 list-disc pl-4 font-sans text-[15px] text-foreground marker:text-muted-foreground'>
+          <ul className='mt-3 list-disc pl-4 font-sans text-base text-foreground marker:text-muted-foreground'>
             {children}
           </ul>
         ),
         ol: ({ children }) => (
-          <ol className='mt-3 list-decimal pl-4 font-sans text-[15px] text-foreground marker:text-muted-foreground'>
+          <ol className='mt-3 list-decimal pl-4 font-sans text-base text-foreground marker:text-muted-foreground'>
             {children}
           </ol>
         ),

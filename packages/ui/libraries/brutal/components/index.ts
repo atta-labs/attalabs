@@ -144,6 +144,20 @@ export {
   SheetTrigger
 } from '../../basic/installed/sheet'
 
+// Dialog — falls back to basic
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger
+} from '../../basic/installed/dialog'
+
 // Text Reveal
 export { TextReveal } from '../../../text-reveal'
 export type { TextRevealProps } from '../../../text-reveal'

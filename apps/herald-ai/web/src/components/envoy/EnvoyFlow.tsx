@@ -87,7 +87,8 @@ export function EnvoyFlow({
   username,
   previewMode = false,
   hasAnyKey = false,
-  isOwner = false
+  isOwner = false,
+  isPublished = true
 }: {
   profile: CandidateProfile
   username: string
@@ -97,6 +98,7 @@ export function EnvoyFlow({
    *  model + vendor to use at runtime. (Task 3b.) */
   hasAnyKey?: boolean
   isOwner?: boolean
+  isPublished?: boolean
 }) {
   const comps = useComponents()
   const Button = (comps.Button as typeof FallbackButton | undefined) ?? FallbackButton
@@ -209,6 +211,7 @@ export function EnvoyFlow({
         candidateDiscord={localProfile.discord}
         auditAvailable={hasAnyKey}
         isOwner={isOwner}
+        isPublished={isPublished}
         ownerSettingsHref={`/${username}/settings?tab=api-keys`}
         preview={previewMode}
         username={username}
@@ -224,7 +227,7 @@ export function EnvoyFlow({
     return (
       <div className='mx-auto max-w-[680px] px-6 py-12'>
         <header className='mb-8 border-b border-border pb-6'>
-          <p className='text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
+          <p className='text-xs uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
           <h1 className='mt-2 font-display text-2xl tracking-tight'>{localProfile.name}</h1>
           <p className='mt-0.5 text-xs text-muted-foreground'>{localProfile.title}</p>
         </header>

@@ -447,7 +447,7 @@ export function AIOnboarding() {
     return (
       <div className='flex h-[calc(100vh-57px)] flex-col items-center justify-center px-6'>
         <div className='w-full max-w-[560px]'>
-          <Text as='p' className='mb-2 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+          <Text as='p' className='mb-2 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>
             Herald
           </Text>
           {firstAgentText ? (
@@ -482,7 +482,7 @@ export function AIOnboarding() {
               variant='outline'
               onClick={handleSend}
               disabled={isThinking || !input.trim()}
-              className='h-12 shrink-0 rounded-none border-border px-5 font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:bg-transparent hover:text-foreground'
+              className='h-12 shrink-0 rounded-none border-border px-5 font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground hover:bg-transparent hover:text-foreground'
             >
               Send
             </Button>
@@ -548,7 +548,7 @@ export function AIOnboarding() {
                             size='sm'
                             onClick={cancelEditingMessage}
                             disabled={editSaving}
-                            className='h-7 rounded-none font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground'
+                            className='h-7 rounded-none font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground'
                           >
                             Cancel
                           </Button>
@@ -558,7 +558,7 @@ export function AIOnboarding() {
                             size='sm'
                             onClick={submitEditedMessage}
                             disabled={!editingText.trim() || editSaving}
-                            className='h-7 rounded-none font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground'
+                            className='h-7 rounded-none font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground'
                           >
                             {editSaving ? 'Checking…' : 'Save & revalidate'}
                           </Button>
@@ -604,7 +604,7 @@ export function AIOnboarding() {
                   <Text as='p' className='font-mono text-sm text-foreground'>
                     ✓ {state.cvProfile.name} — {state.cvProfile.title}
                   </Text>
-                  <Text as='p' className='mt-0.5 font-mono text-[10px] text-muted-foreground'>
+                  <Text as='p' className='mt-0.5 font-mono text-xs text-muted-foreground'>
                     {state.cvProfile.stack.length} skills · {state.cvProfile.projects} projects ·{' '}
                     {state.cvProfile.experience} roles
                   </Text>
@@ -646,7 +646,7 @@ export function AIOnboarding() {
                   variant='ghost'
                   size='sm'
                   onClick={() => regenerate()}
-                  className='h-7 rounded-none font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground'
+                  className='h-7 rounded-none font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground'
                 >
                   Retry
                 </Button>
@@ -690,7 +690,7 @@ export function AIOnboarding() {
                     variant='outline'
                     onClick={handleCvPasteSubmit}
                     disabled={!cvPasteText.trim()}
-                    className='h-10 flex-1 rounded-none border-border font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground'
+                    className='h-10 flex-1 rounded-none border-border font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground'
                   >
                     Extract Profile
                   </Button>
@@ -701,7 +701,7 @@ export function AIOnboarding() {
                       setCvPasteMode(false)
                       setCvPasteText('')
                     }}
-                    className='h-10 rounded-none font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground'
+                    className='h-10 rounded-none font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground'
                   >
                     Cancel
                   </Button>
@@ -747,7 +747,7 @@ export function AIOnboarding() {
                 variant='outline'
                 onClick={handleSend}
                 disabled={isThinking || !input.trim() || state.complete || uploading}
-                className='h-12 shrink-0 rounded-none border-border px-5 font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:bg-transparent hover:text-foreground'
+                className='h-12 shrink-0 rounded-none border-border px-5 font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground hover:bg-transparent hover:text-foreground'
               >
                 Send
               </Button>

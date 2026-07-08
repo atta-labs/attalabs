@@ -391,10 +391,10 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
     update('stack', stackTags.filter((t) => t !== tag).join(', '))
   }
 
-  const labelClass = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
+  const labelClass = 'mb-1 block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'
   const inputClass =
     'bg-card border-border focus-visible:border-foreground/30 focus-visible:ring-0 focus-visible:ring-offset-0'
-  const sectionHeadClass = 'mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'
+  const sectionHeadClass = 'mb-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'
 
   return (
     <div>
@@ -462,12 +462,12 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                     size='sm'
                     onClick={() => avatarInputRef.current?.click()}
                     disabled={avatarUploading}
-                    className='gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em]'
+                    className='gap-1.5 font-mono text-xs uppercase tracking-[0.15em]'
                   >
                     <Upload className='h-3 w-3' />
                     {avatarUploading ? 'Uploading...' : 'Upload'}
                   </Button>
-                  <p className='font-mono text-[10px] text-muted-foreground'>JPG, PNG, WebP · max 5 MB</p>
+                  <p className='font-mono text-xs text-muted-foreground'>JPG, PNG, WebP · max 5 MB</p>
                 </div>
               </div>
             </section>
@@ -569,13 +569,13 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
           <div className='space-y-8'>
             <section>
               <div className='mb-2 flex items-baseline justify-between'>
-                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
+                <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
                 <div className='flex overflow-hidden rounded border border-border'>
                   <Button
                     type='button'
                     variant={summaryMode === 'edit' ? 'default' : 'ghost'}
                     onClick={() => setSummaryMode('edit')}
-                    className='h-auto rounded-none px-2.5 py-0.5 font-mono text-[9px]'
+                    className='h-auto rounded-none px-3 py-1.5 font-mono text-xs'
                   >
                     Edit
                   </Button>
@@ -583,7 +583,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                     type='button'
                     variant={summaryMode === 'preview' ? 'default' : 'ghost'}
                     onClick={() => setSummaryMode('preview')}
-                    className='h-auto rounded-none border-l border-border px-2.5 py-0.5 font-mono text-[9px]'
+                    className='h-auto rounded-none border-l border-border px-3 py-1.5 font-mono text-xs'
                   >
                     Preview
                   </Button>
@@ -599,7 +599,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                       '**One-line lead — your seniority and focus in a single bold sentence.**\n\n## Background\nWhere you started and how you got here.\n\n## How I Work\nYour approach, values, what makes you effective.\n\n## Your Lab / Projects\nWhat you build independently.'
                     }
                   />
-                  <p className='mt-1 font-mono text-[9px] text-muted-foreground/60'>
+                  <p className='mt-1 font-mono text-xs text-muted-foreground/60'>
                     Use <strong className='font-medium'>**bold**</strong> for the lead and ## for section titles.
                   </p>
                 </>
@@ -608,7 +608,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                   {form.summary ? (
                     <SummaryMarkdown text={form.summary} />
                   ) : (
-                    <p className='font-mono text-[9px] text-muted-foreground/60'>Nothing to preview.</p>
+                    <p className='font-mono text-xs text-muted-foreground/60'>Nothing to preview.</p>
                   )}
                 </div>
               )}
@@ -616,9 +616,9 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
 
             <section>
               <div className='mb-2 flex items-baseline justify-between'>
-                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Stack</h2>
+                <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Stack</h2>
                 <span
-                  className={`font-mono text-[9px] ${stackOverLimit ? 'text-destructive' : stackAtLimit ? 'text-warning' : 'text-muted-foreground/60'}`}
+                  className={`font-mono text-xs ${stackOverLimit ? 'text-destructive' : stackAtLimit ? 'text-warning' : 'text-muted-foreground/60'}`}
                 >
                   {stackOverLimit
                     ? `${stackTags.length}/${STACK_MAX} — remove tags to reach limit`
@@ -708,7 +708,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                   <CardContent className='p-4'>
                     <div className='mb-4 flex items-center gap-2.5'>
                       <span className='font-mono text-sm text-foreground'>{cvFilename}</span>
-                      <span className='rounded-sm bg-success/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.15em] text-success'>
+                      <span className='rounded-sm bg-success/15 px-1.5 py-0.5 font-mono text-xs uppercase tracking-[0.15em] text-success'>
                         Uploaded
                       </span>
                     </div>
@@ -766,10 +766,10 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
               <div className='rounded border border-dashed border-destructive/30 p-4'>
                 <div className='flex items-start justify-between gap-4'>
                   <div>
-                    <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-destructive'>
+                    <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-destructive'>
                       Overwrite from CV
                     </h2>
-                    <p className='mt-1 font-mono text-[10px] text-muted-foreground'>
+                    <p className='mt-1 font-mono text-xs text-muted-foreground'>
                       Parse a CV and overwrite name, title, summary, and stack. Cannot be undone.
                     </p>
                   </div>
@@ -779,7 +779,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                     size='sm'
                     onClick={() => cvInputRef.current?.click()}
                     disabled={uploading}
-                    className='shrink-0 border-destructive/40 font-mono text-[10px] uppercase tracking-[0.15em] text-destructive hover:bg-destructive/10 hover:text-destructive'
+                    className='shrink-0 border-destructive/40 font-mono text-xs uppercase tracking-[0.15em] text-destructive hover:bg-destructive/10 hover:text-destructive'
                   >
                     {uploading ? 'Parsing...' : 'Parse & Overwrite'}
                   </Button>
@@ -829,7 +829,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
             <section>
               <div className='mb-4 flex items-center gap-2'>
                 <GitHubIcon className='h-3.5 w-3.5 text-foreground' />
-                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>GitHub</h2>
+                <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>GitHub</h2>
               </div>
               <label htmlFor='field-github' className={labelClass}>
                 Handle
@@ -846,7 +846,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
             <section>
               <div className='mb-4 flex items-center gap-2'>
                 <LinkedInIcon className='h-3.5 w-3.5 text-foreground' />
-                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>LinkedIn</h2>
+                <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>LinkedIn</h2>
               </div>
               <label htmlFor='field-linkedin' className={labelClass}>
                 Profile URL
@@ -863,7 +863,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
             <section>
               <div className='mb-4 flex items-center gap-2'>
                 <DiscordIcon className='h-3.5 w-3.5 text-foreground' />
-                <h2 className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Discord</h2>
+                <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Discord</h2>
               </div>
               <label htmlFor='field-discord' className={labelClass}>
                 Handle

@@ -140,7 +140,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
   const [submittedCvs, setSubmittedCvs] = useState<ResolvedCv[]>([])
   const [resolveError, setResolveError] = useState<string | null>(null)
 
-  const labelClass = 'mb-1.5 block font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'
+  const labelClass = 'mb-1.5 block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'
 
   function updateJd(id: string, next: JdSlot['input']) {
     setJds((prev) => prev.map((j) => (j.id === id ? { ...j, input: next } : j)))
@@ -242,7 +242,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
     return (
       <div className='mx-auto max-w-[680px] px-6 py-12'>
         <header className='mb-8'>
-          <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Audit</p>
+          <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Audit</p>
           <h1 className='mt-2 font-serif text-3xl tracking-tight text-foreground'>Bulk Audit</h1>
         </header>
         <Card className='bg-card/50'>
@@ -276,17 +276,17 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
         <div className='mx-auto mb-6 max-w-[1440px]'>
           <div className='flex items-center justify-between'>
             <div>
-              <p className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+              <p className='font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
                 {cvCount} candidate{cvCount !== 1 ? 's' : ''} × {jdCount} JD{jdCount !== 1 ? 's' : ''} — {totalCells}{' '}
                 audit{totalCells !== 1 ? 's' : ''}
               </p>
               {isRunning ? (
-                <p className='mt-0.5 flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground'>
+                <p className='mt-0.5 flex items-center gap-1.5 font-mono text-xs text-muted-foreground'>
                   <Loader2 className='h-3 w-3 animate-spin' />
                   {completedCells}/{totalCells} complete
                 </p>
               ) : (
-                <p className='mt-0.5 font-mono text-[10px] text-muted-foreground'>
+                <p className='mt-0.5 font-mono text-xs text-muted-foreground'>
                   {errorCells > 0 ? (
                     <span>
                       {completedCells - errorCells} done · <span className='text-destructive'>{errorCells} failed</span>
@@ -300,7 +300,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
             <Button
               onClick={handleReset}
               variant='outline'
-              className='font-mono text-[10px] uppercase tracking-[0.2em]'
+              className='font-mono text-xs uppercase tracking-[0.2em]'
               disabled={isRunning}
             >
               New Matrix
@@ -318,10 +318,8 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
             <div className='border-b border-border pb-3' />
             {submittedJds.map((jd, jdIdx) => (
               <div key={`jd-header-${jdIdx}`} className='border-b border-border pb-3'>
-                <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
-                  JD {jdIdx + 1}
-                </p>
-                <p className='mt-0.5 truncate font-mono text-[11px] text-foreground/70'>
+                <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>JD {jdIdx + 1}</p>
+                <p className='mt-0.5 truncate font-mono text-xs text-foreground/70'>
                   {jd.kind === 'url' ? jd.sourceLabel : jd.sourceLabel}
                 </p>
               </div>
@@ -333,10 +331,10 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                 {/* Row label */}
                 <div className='flex items-start pt-4'>
                   <div>
-                    <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+                    <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>
                       Candidate {cvIdx + 1}
                     </p>
-                    <p className='mt-0.5 font-mono text-[11px] text-foreground'>{cv.candidateLabel}</p>
+                    <p className='mt-0.5 font-mono text-xs text-foreground'>{cv.candidateLabel}</p>
                   </div>
                 </div>
 
@@ -365,7 +363,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
   return (
     <div className='mx-auto max-w-[680px] px-6 py-12'>
       <header className='mb-8'>
-        <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>Audit</p>
+        <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Audit</p>
         <h1 className='mt-2 font-serif text-3xl tracking-tight text-foreground'>Bulk Audit</h1>
         <p className='mt-2 text-sm text-muted-foreground'>
           Match N candidates against M job descriptions — one forensic report per pair. JDs accept pasted text or a URL;
@@ -377,7 +375,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
         <div className='space-y-4'>
           <div className='flex items-baseline justify-between'>
             <span className={labelClass}>Job Descriptions</span>
-            <span className='font-mono text-[10px] text-muted-foreground'>
+            <span className='font-mono text-xs text-muted-foreground'>
               {jds.length}/{MAX_JDS}
             </span>
           </div>
@@ -385,7 +383,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
           {jds.map((slot, index) => (
             <div key={slot.id} className='space-y-1.5 rounded-md border border-border p-4'>
               <div className='flex items-baseline justify-between'>
-                <span className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+                <span className='font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
                   JD {index + 1}
                 </span>
                 {jds.length > 1 && (
@@ -393,7 +391,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                     onClick={() => removeJd(slot.id)}
                     variant='ghost'
                     size='sm'
-                    className='h-6 px-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground'
+                    className='h-6 px-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground'
                   >
                     <X className='mr-1 h-3 w-3' />
                     Remove
@@ -409,7 +407,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               onClick={addJd}
               variant='outline'
               size='sm'
-              className='font-mono text-[10px] uppercase tracking-[0.2em]'
+              className='font-mono text-xs uppercase tracking-[0.2em]'
             >
               <Plus className='mr-1 h-3 w-3' />
               Add Job Description
@@ -420,7 +418,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
         <div className='space-y-4'>
           <div className='flex items-baseline justify-between'>
             <span className={labelClass}>Candidates</span>
-            <span className='font-mono text-[10px] text-muted-foreground'>
+            <span className='font-mono text-xs text-muted-foreground'>
               {cvs.length}/{MAX_CANDIDATES}
             </span>
           </div>
@@ -428,7 +426,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
           {cvs.map((slot, index) => (
             <div key={slot.id} className='space-y-1.5 rounded-md border border-border p-4'>
               <div className='flex items-baseline justify-between'>
-                <span className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
+                <span className='font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
                   Candidate {index + 1}
                 </span>
                 {cvs.length > 1 && (
@@ -436,7 +434,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                     onClick={() => removeCv(slot.id)}
                     variant='ghost'
                     size='sm'
-                    className='h-6 px-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground'
+                    className='h-6 px-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground'
                   >
                     <X className='mr-1 h-3 w-3' />
                     Remove
@@ -452,7 +450,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               onClick={addCv}
               variant='outline'
               size='sm'
-              className='font-mono text-[10px] uppercase tracking-[0.2em]'
+              className='font-mono text-xs uppercase tracking-[0.2em]'
             >
               <Plus className='mr-1 h-3 w-3' />
               Add Candidate
@@ -497,7 +495,7 @@ function AuditCell({ cell, candidateLabel, jdLabel }: AuditCellProps) {
       <Card className='overflow-hidden'>
         <CardContent className='flex h-[160px] flex-col items-center justify-center gap-3 p-6'>
           <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />
-          <p className='font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground'>
+          <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>
             Auditing {candidateLabel}…
           </p>
         </CardContent>
@@ -509,10 +507,10 @@ function AuditCell({ cell, candidateLabel, jdLabel }: AuditCellProps) {
     return (
       <Card className='overflow-hidden border-destructive/30'>
         <CardContent className='flex h-[160px] flex-col items-center justify-center gap-2 p-6'>
-          <Badge className='bg-destructive/10 text-destructive border-destructive/40 font-mono text-[9px] uppercase tracking-[0.2em]'>
+          <Badge className='bg-destructive/10 text-destructive border-destructive/40 font-mono text-xs uppercase tracking-[0.2em]'>
             Failed
           </Badge>
-          <p className='text-center font-mono text-[11px] text-muted-foreground'>{cell.message}</p>
+          <p className='text-center font-mono text-xs text-muted-foreground'>{cell.message}</p>
         </CardContent>
       </Card>
     )
@@ -524,10 +522,10 @@ function AuditCell({ cell, candidateLabel, jdLabel }: AuditCellProps) {
     return (
       <Card className='overflow-hidden border-destructive/30'>
         <CardContent className='flex h-[160px] flex-col items-center justify-center gap-2 p-6'>
-          <Badge className='bg-destructive/10 text-destructive border-destructive/40 font-mono text-[9px] uppercase tracking-[0.2em]'>
+          <Badge className='bg-destructive/10 text-destructive border-destructive/40 font-mono text-xs uppercase tracking-[0.2em]'>
             Failed
           </Badge>
-          <p className='text-center font-mono text-[11px] text-muted-foreground'>
+          <p className='text-center font-mono text-xs text-muted-foreground'>
             {auditFailureMessage(report.auditFailed)}
           </p>
         </CardContent>
@@ -552,26 +550,26 @@ function AuditCell({ cell, candidateLabel, jdLabel }: AuditCellProps) {
             </span>
             <Badge
               variant='outline'
-              className={`font-mono text-[9px] uppercase tracking-[0.15em] ${gradeBadgeClass(report.grade)}`}
+              className={`font-mono text-xs uppercase tracking-[0.15em] ${gradeBadgeClass(report.grade)}`}
             >
               {report.confidence}
             </Badge>
           </div>
           <div className='flex items-center gap-3'>
             {hardCount > 0 && (
-              <span className='font-mono text-[10px] text-muted-foreground'>
+              <span className='font-mono text-xs text-muted-foreground'>
                 <span className={hardMetCount === hardCount ? 'text-success' : 'text-destructive'}>
                   {hardMetCount}/{hardCount}
                 </span>{' '}
                 hard req
               </span>
             )}
-            <span className='font-mono text-[10px] text-muted-foreground'>
+            <span className='font-mono text-xs text-muted-foreground'>
               {signalCount} signal{signalCount !== 1 ? 's' : ''}
             </span>
           </div>
         </div>
-        <p className='mt-1.5 line-clamp-2 text-[12px] leading-relaxed text-foreground/80'>{report.recommendation}</p>
+        <p className='mt-1.5 line-clamp-2 text-xs leading-relaxed text-foreground/80'>{report.recommendation}</p>
       </div>
 
       {/* Expand / collapse toggle */}
@@ -580,7 +578,7 @@ function AuditCell({ cell, candidateLabel, jdLabel }: AuditCellProps) {
           render={
             <Button
               variant='ghost'
-              className='flex w-full items-center justify-between rounded-none border-0 px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:bg-accent/10 hover:text-foreground'
+              className='flex w-full items-center justify-between rounded-none border-0 px-4 py-2.5 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground hover:bg-accent/10 hover:text-foreground'
             />
           }
         >

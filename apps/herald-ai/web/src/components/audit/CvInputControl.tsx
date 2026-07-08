@@ -36,16 +36,16 @@ export function CvInputControl({ value, onChange, index }: CvInputControlProps) 
     <div className='space-y-2'>
       <Tabs value={value.kind} onValueChange={(v) => setKind(v as CvInputDraftKind)}>
         <TabsList className='h-8'>
-          <TabsTrigger value='text' className='font-mono text-[10px] uppercase tracking-[0.2em]'>
+          <TabsTrigger value='text' className='font-mono text-xs uppercase tracking-[0.2em]'>
             Paste text
           </TabsTrigger>
-          <TabsTrigger value='markdown' className='font-mono text-[10px] uppercase tracking-[0.2em]'>
+          <TabsTrigger value='markdown' className='font-mono text-xs uppercase tracking-[0.2em]'>
             .md
           </TabsTrigger>
-          <TabsTrigger value='pdf' className='font-mono text-[10px] uppercase tracking-[0.2em]'>
+          <TabsTrigger value='pdf' className='font-mono text-xs uppercase tracking-[0.2em]'>
             .pdf
           </TabsTrigger>
-          <TabsTrigger value='profile' className='font-mono text-[10px] uppercase tracking-[0.2em]'>
+          <TabsTrigger value='profile' className='font-mono text-xs uppercase tracking-[0.2em]'>
             Profile
           </TabsTrigger>
         </TabsList>
@@ -71,7 +71,7 @@ export function CvInputControl({ value, onChange, index }: CvInputControlProps) 
             className='font-mono text-sm'
             aria-label={`Candidate ${index + 1} (Herald profile)`}
           />
-          <p className='font-mono text-[10px] text-muted-foreground'>Username of a published Herald profile.</p>
+          <p className='font-mono text-xs text-muted-foreground'>Username of a published Herald profile.</p>
         </div>
       )}
 
@@ -121,21 +121,19 @@ function FileSlot({ file, accept, onSelect, onClear, label, ariaLabel }: FileSlo
           <div className='flex items-center gap-2 overflow-hidden'>
             <FileText className='h-3.5 w-3.5 shrink-0 text-muted-foreground' />
             <span className='truncate font-mono text-xs text-foreground'>{file.name}</span>
-            <span className='shrink-0 font-mono text-[10px] text-muted-foreground'>
-              {(file.size / 1024).toFixed(1)} KB
-            </span>
+            <span className='shrink-0 font-mono text-xs text-muted-foreground'>{(file.size / 1024).toFixed(1)} KB</span>
           </div>
           <Button
             variant='ghost'
             size='sm'
-            className='h-6 px-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground'
+            className='h-6 px-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground'
             onClick={onClear}
           >
             <X className='h-3 w-3' />
           </Button>
         </div>
       ) : (
-        <p className='font-mono text-[10px] text-muted-foreground'>{label}</p>
+        <p className='font-mono text-xs text-muted-foreground'>{label}</p>
       )}
     </div>
   )
