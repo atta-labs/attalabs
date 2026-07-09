@@ -29,6 +29,28 @@ async function downloadCv(url: string, filename: string) {
   }
 }
 
+/**
+ * Extracts plain text from a PDF data URL. Mirrors the exact `unpdf`
+ * `extractText` call shape used server-side in
+ * `apps/herald-ai/web/src/app/api/admin/parse-cv/route.ts` and client-side
+ * in `packages/ui/doc-collector/doc-collector.tsx`. Dynamic-imported (never
+ * a static top-level import) so this page's initial bundle doesn't pay for
+ * PDF.js unless a PDF is actually attached.
+ */
+async function extractPdfText(dataUrl: string): Promise<string> {
+  const comma = dataUrl.indexOf(',')
+  if (comma === -1) return ''
+  try {
+    const data = dataUrl.slice(comma + 1)
+    const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0))
+    const { extractText } = await import('unpdf')
+    const result = await extractText(bytes)
+    return Array.isArray(result.text) ? result.text.join('\n') : result.text
+  } catch {
+    return ''
+  }
+}
+
 export function JDInput({
   onSubmit,
   candidateName = 'Dani Estevez Martin',
@@ -110,19 +132,24 @@ export function JDInput({
   const cvFilename = candidateCvUrl ? `${(candidateName ?? 'CV').replace(/\s+/g, '_')}_CV.${cvExt}` : null
   const hasSocialLinks = !!(candidateGithub || candidateLinkedin || candidateDiscord)
 
-  function handleSubmit(text: string, files: FileUIPart[]) {
+  async function handleSubmit(text: string, files: FileUIPart[]) {
     let jd = text.trim()
     if (!jd && files.length > 0) {
-      const textFile = files.find((f) => f.mediaType?.startsWith('text/'))
-      if (textFile?.url.startsWith('data:')) {
-        const comma = textFile.url.indexOf(',')
-        if (comma !== -1) {
-          const header = textFile.url.slice(0, comma)
-          const data = textFile.url.slice(comma + 1)
-          try {
-            jd = header.includes(';base64') ? atob(data) : decodeURIComponent(data)
-          } catch {
-            // ignore decode failure
+      const pdfFile = files.find((f) => f.mediaType === 'application/pdf')
+      if (pdfFile?.url.startsWith('data:')) {
+        jd = await extractPdfText(pdfFile.url)
+      } else {
+        const textFile = files.find((f) => f.mediaType?.startsWith('text/'))
+        if (textFile?.url.startsWith('data:')) {
+          const comma = textFile.url.indexOf(',')
+          if (comma !== -1) {
+            const header = textFile.url.slice(0, comma)
+            const data = textFile.url.slice(comma + 1)
+            try {
+              jd = header.includes(';base64') ? atob(data) : decodeURIComponent(data)
+            } catch {
+              // ignore decode failure
+            }
           }
         }
       }
@@ -372,6 +399,13 @@ export function JDInput({
                   placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
                   submitOn='cmdenter'
                   pasteToFileChars={1000}
+                  // One JD in, one report out — this page audits a single job
+                  // description at a time (bulk/multi-candidate is a separate,
+                  // not-yet-built surface). accept + maxFiles enforce that at
+                  // the input itself rather than relying on handleSubmit's
+                  // silent first-text-file extraction below.
+                  accept='.md,.pdf'
+                  maxFiles={1}
                   surface='popover'
                   textareaVariant='bare'
                   ctaLabel={`Audit ${username}`}
