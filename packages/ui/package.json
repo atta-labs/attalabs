@@ -34,6 +34,7 @@
     "./footer": "./footer/index.tsx",
     "./topbar": "./topbar/index.tsx",
     "./smart-prompt-input": "./smart-prompt-input/index.ts",
+    "./doc-collector": "./doc-collector/index.ts",
     "./text-reveal": "./text-reveal/index.ts"
   },
   "scripts": {

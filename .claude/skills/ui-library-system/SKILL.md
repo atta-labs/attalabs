@@ -486,11 +486,12 @@ All four patterns are needed. Our libraries use `export type * from '../../../ty
 
 Some components in `@atta/ui` live OUTSIDE the four-library system because they are
 composite primitives shared across products (Herald, Vāda, …) and the library
-swap doesn't apply to them. `SmartPromptInput` is the current example. It lives
-at `packages/ui/smart-prompt-input/` and is imported as
-`@atta/ui/smart-prompt-input`. Its contract is documented here — the library
-contract validator does NOT cover composite components, so any prop addition
-must update this section instead.
+swap doesn't apply to them. `SmartPromptInput` and `DocCollector` are the current
+examples. `SmartPromptInput` lives at `packages/ui/smart-prompt-input/` and is
+imported as `@atta/ui/smart-prompt-input`; `DocCollector` lives at
+`packages/ui/doc-collector/` and is imported as `@atta/ui/doc-collector`. Their
+contracts are documented here — the library contract validator does NOT cover
+composite components, so any prop addition must update this section instead.
 
 **Library-resolved primitives that newly joined the contract.** `TextReveal`
 (typography animation primitive) was added to the contract and all four
@@ -632,6 +633,63 @@ the same way `submitSlot` was added:
 4. **No library swap.** SmartPromptInput is a single implementation. Do not
    create per-library variants.
 
+### `DocCollector` — drop-zone document tile collector
+
+Located at `packages/ui/doc-collector/doc-collector.tsx`, imported as
+`@atta/ui/doc-collector`. A flat-list document collector — a drop-zone for
+`.md`/`.pdf` files plus a plain textarea + explicit Add button — distinct
+from `SmartPromptInput`'s one-message-plus-attachments contract. The
+Principal explicitly ruled out extending `SmartPromptInput` for this
+(2026-07-06/07 design-iteration session): a flat list of standalone
+documents doesn't fit a single-message-with-attachments shape. It is a new,
+separate, standalone primitive.
+
+`DocCollector` shares `AttachmentTileItem` with `SmartPromptInput` — the
+tile visual now lives at `packages/ui/doc-collector/attachment-tile-item.tsx`
+as a common export (`FileExtra` interface included), rather than being
+duplicated. `SmartPromptInput` imports it from there too.
+
+#### Behavior
+
+- **Instant tile on drop, eager resolution.** Dropping a `.md`/`.pdf` file
+  inserts a tile with `status: 'resolving'` immediately — before resolution
+  completes — then patches it to `status: 'ready'` (with resolved `text`) or
+  `status: 'error'`. `.md`/text files resolve via `file.text()`; `.pdf`
+  files resolve via a dynamic `import('unpdf')` inside the drop handler
+  (never a static top-level import, so non-`DocCollector` consumers of
+  `packages/ui` never pay for PDF.js in their bundle), mirroring the exact
+  `extractText` call shape used server-side in
+  `apps/herald-ai/web/src/app/api/admin/parse-cv/route.ts`.
+- **Commit gating.** Typed/pasted text is NEVER auto-converted into a tile
+  on any length threshold — unlike `SmartPromptInput`'s `pasteToFileChars`,
+  there is no such path here. A tile is created only on explicit click of
+  the Add button.
+- **Newest-first ordering.** The tile row (`flex gap-2 overflow-x-auto`,
+  matching `SmartPromptInput`'s `AttachmentTiles` pattern) always shows the
+  most recently committed item first, sorted by `addedAt`.
+
+#### Props
+
+| Prop | Type | Default | Purpose |
+|------|------|---------|---------|
+| `onItemsChange` | `(items: DocCollectorItem[]) => void` | — | Fired on every items-array change — drop, resolution completing, removal, Add commit. Consumers read resolved `text` from here; `DocCollector` does not compute word/token counts itself. |
+| `accept` | `string` | `'.md,.pdf'` | File-drop accept string. |
+| `className` | `string` | — | Outer wrapper className. |
+| `components` | `DocCollectorComponents` | `{}` | **INJECTION CONTRACT** — see Governance section above. Consumer-injected library primitives: `Textarea`, `Button`. Each is optional; the collector degrades to a native `<textarea>`/`<button>` when undefined (graceful first-paint window for runtime libraries). `DocCollector` resolves NO library itself. |
+
+`DocCollectorItem` shape: `{ id, filename, kind: 'md' | 'pdf' | 'text', status: 'resolving' | 'ready' | 'error', text?, error?, addedAt }`.
+
+#### Injection contract implementation
+
+`packages/ui/doc-collector/components-context.tsx` mirrors
+`smart-prompt-input/vendor/components-context.tsx`'s shape exactly — a React
+context + `DocCollectorComponentsProvider` + `useDocCollectorComponents()`
+hook. `DocCollector` chose the same context pattern as `SmartPromptInput`
+(rather than direct prop-threading) for consistency across the two
+composites, even though `DocCollector`'s own tree is shallow enough that
+prop-threading alone would have worked — matching precedent keeps the
+injection mechanism predictable for future composites.
+
 ---
 
 ## File Reference
@@ -646,5 +704,6 @@ the same way `submitSlot` was added:
 | `packages/ui/lib/library-loader.ts` | `useLibraryLoader` — dynamic import with race condition guard |
 | `packages/ui/libraries/{name}/components/index.ts` | The canonical export list for each library |
 | `packages/ui/smart-prompt-input/smart-prompt-input.tsx` | Composite prompt entry — see "Cross-product composite components" above |
+| `packages/ui/doc-collector/doc-collector.tsx` | Composite document collector — see "Cross-product composite components" above |
 | `apps/{app}/web/tsconfig.json` | Path aliases that point `@atta/ui` at the generated index |
 | `apps/{app}/web/next.config.ts` | Calls `generateUIIndex` at build time |
