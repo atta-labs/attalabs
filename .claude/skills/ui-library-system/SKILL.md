@@ -587,6 +587,7 @@ is always rendered exactly once — in whichever mode is active.
 | `ctaLabel` | `string` | — | If set, replaces the icon submit with a full-width CTA bar. Disables `submitSlot`. |
 | `hint` | `string` | — | Small mono hint in the footer. |
 | `accept` | `string` | — | File-input accept string. Shows the action menu (paperclip). |
+| `maxFiles` | `number` | — | Caps the number of attachments accepted (drop, paste, or file dialog). Omit for no cap. Forwarded straight to the vendored `PromptInput`'s own `maxFiles`. Exceeding it (or `accept`) now both surface a rejection message via `handleError` — previously only `accept` rejections were shown, `max_files`/`max_file_size` were silently swallowed. |
 | `status` | `SmartPromptStatus` | `'idle'` | Drives the submit icon / spinner. |
 | `onStop` | `() => void` | — | Called when user clicks Stop during streaming. |
 | `className` | `string` | — | On the outer wrapper. |

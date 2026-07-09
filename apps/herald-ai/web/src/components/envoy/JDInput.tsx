@@ -372,6 +372,13 @@ export function JDInput({
                   placeholder="Paste the job description here. I'll show you exactly how I fit — and why."
                   submitOn='cmdenter'
                   pasteToFileChars={1000}
+                  // One JD in, one report out — this page audits a single job
+                  // description at a time (bulk/multi-candidate is a separate,
+                  // not-yet-built surface). accept + maxFiles enforce that at
+                  // the input itself rather than relying on handleSubmit's
+                  // silent first-text-file extraction below.
+                  accept='.md,.pdf'
+                  maxFiles={1}
                   surface='popover'
                   textareaVariant='bare'
                   ctaLabel={`Audit ${username}`}

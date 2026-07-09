@@ -63,6 +63,8 @@ export interface SmartPromptInputProps {
   ctaLabel?: string
   hint?: string
   accept?: string
+  /** Caps the number of attachments accepted (drop, paste, or file dialog). Omit for no cap. */
+  maxFiles?: number
   status?: SmartPromptStatus
   onStop?: () => void
   className?: string
@@ -333,6 +335,7 @@ export function SmartPromptInput({
   ctaLabel,
   hint,
   accept,
+  maxFiles,
   status = 'idle',
   onStop,
   className,
@@ -474,9 +477,17 @@ export function SmartPromptInput({
     requestAnimationFrame(() => remeasure())
   }
 
-  const handleError = ({ code }: { code: string; message: string }) => {
+  const handleError = ({ code, message }: { code: string; message: string }) => {
+    // 'accept' keeps its existing custom copy; 'max_files'/'max_file_size'
+    // previously had no handler at all here and were silently swallowed —
+    // the vendor already provides a sensible message for those, so surface
+    // it verbatim rather than inventing per-caller copy for every maxFiles
+    // value a consumer might pass.
     if (code === 'accept') {
       setRejectionError('Only PDF, Markdown, or text files are accepted.')
+      setTimeout(() => setRejectionError(null), 4000)
+    } else if (code === 'max_files' || code === 'max_file_size') {
+      setRejectionError(message)
       setTimeout(() => setRejectionError(null), 4000)
     }
   }
@@ -493,6 +504,7 @@ export function SmartPromptInput({
       <div ref={inputRowRef} className={cn(SURFACE_WRAPPER_CLASS[surface], className)}>
         <PromptInput
           accept={accept}
+          maxFiles={maxFiles}
           onSubmit={handleSubmit}
           onError={handleError}
           inputGroupClassName={SURFACE_INPUT_GROUP_CLASS[surface] || undefined}
