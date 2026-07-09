@@ -17,6 +17,11 @@ docs/
 !apps/aeg/web/studio/src/app/docs/**
 !apps/aeg/web/studio/src/lib/docs/
 !apps/aeg/web/studio/src/lib/docs/**
+# Re-include Vinaya Studio's docs route (vinaya-studio-v1 task 1 addendum).
+!apps/vinaya/web/src/app/studio/docs/
+!apps/vinaya/web/src/app/studio/docs/**
+!apps/vinaya/web/src/lib/docs/
+!apps/vinaya/web/src/lib/docs/**
 
 # Environment
 .env

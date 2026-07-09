@@ -2,9 +2,19 @@ export const dynamic = 'force-dynamic'
 
 import { buildFaviconIcons, createProductClient, getAttaBranding, getAttaConfig } from '@atta/cms'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
+import { TopBar } from '@atta/ui/topbar'
+import { Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
+
+const links = [
+  { label: 'Home', href: '/', exact: true },
+  { label: 'Known Limits', href: '/known-limits' },
+  { label: 'AEG', href: '/aeg' },
+  { label: 'Studio', href: '/studio', exact: true },
+  { label: 'Docs', href: '/studio/docs' }
+]
 
 // Vinaya has no Sanity project of its own yet — borrows Atta's theme/branding,
 // same precedent as apps/aeg/web/studio. See apps/vinaya/specs/vinaya-spec.md.
@@ -32,6 +42,15 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       cookieName='vinaya-color-scheme'
       withAuth={false}
     >
+      <TopBar
+        logo={
+          <Text as='span' className='font-serif text-lg tracking-tight'>
+            Vinaya
+          </Text>
+        }
+        links={links}
+        withAuth={false}
+      />
       {children}
     </NextWebShell>
   )

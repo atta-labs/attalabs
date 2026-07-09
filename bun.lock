@@ -324,10 +324,12 @@
       "version": "0.1.0",
       "dependencies": {
         "@atta/aeg-core": "workspace:*",
+        "@atta/aeg-forge-state": "workspace:*",
         "@atta/auth": "workspace:*",
         "@atta/cms": "workspace:*",
         "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
+        "@octokit/graphql": "^8.1.1",
         "@tailwindcss/postcss": "^4.0.0",
         "lucide-react": "^1.7.0",
         "next": "^16.2.1",
@@ -343,6 +345,7 @@
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
         "typescript": "^5.7.0",
+        "vitest": "^2.1.0",
       },
     },
     "apps/vitakka-ai/mcp": {
