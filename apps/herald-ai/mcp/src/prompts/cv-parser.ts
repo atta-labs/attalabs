@@ -1,9 +1,11 @@
+import { MAX_STACK_TAGS } from '../types'
+
 export const CV_PARSER_PROMPT = `You are a structured data extractor. Given a CV/resume text, extract the candidate's professional information into a strict JSON format.
 
 RULES:
 - Extract only what is explicitly stated. Do not infer or embellish.
 - If a field is not present in the CV, use null for optional fields or empty arrays.
-- "stack" should list specific technologies, tools, frameworks, and methodologies mentioned. Each entry is a single clean term (e.g. "React", "TypeScript", "LangGraph") — no comma-separated values inside one entry.
+- "stack" should list the ${MAX_STACK_TAGS} most relevant specific technologies, tools, frameworks, and methodologies mentioned — do not list every one seen if there are more than ${MAX_STACK_TAGS}; pick the ones most central to the candidate's work. Each entry is a single clean term (e.g. "React", "TypeScript", "LangGraph") — no comma-separated values inside one entry.
 - "projects" should capture notable projects with brief descriptions.
 - "experience" should list roles in reverse chronological order.
 - Keep descriptions concise and factual.

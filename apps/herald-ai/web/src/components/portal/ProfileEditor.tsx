@@ -18,6 +18,7 @@ import {
   Textarea,
   useToastContext
 } from '@atta/ui/components'
+import { MAX_STACK_TAGS as STACK_MAX } from '@atta/herald-ai-mcp'
 import { Download, ExternalLink, Upload, X } from 'lucide-react'
 import { ProviderKeysSection } from '@atta/ui/account'
 import type { VendorId } from '@atta/models'
@@ -367,8 +368,6 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
       if (cvDirectRef.current) cvDirectRef.current.value = ''
     }
   }
-
-  const STACK_MAX = 20
 
   const stackTags = form.stack
     .split(',')
