@@ -1,7 +1,8 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: intentional loose contract — see DocCollectorComponents jsdoc
 'use client'
 
-import { createContext, useContext, type ComponentType } from 'react'
+import type { ComponentType } from 'react'
+import { createComponentsContext } from '../lib/create-components-context'
 
 /**
  * Components injected by the consuming app.
@@ -25,20 +26,7 @@ export interface DocCollectorComponents {
   Button?: ComponentType<any>
 }
 
-const DocCollectorComponentsContext = createContext<DocCollectorComponents>({})
+const { Provider, useComponentsContext } = createComponentsContext<DocCollectorComponents>()
 
-export function DocCollectorComponentsProvider({
-  components,
-  children
-}: {
-  components: DocCollectorComponents | undefined
-  children: React.ReactNode
-}) {
-  return (
-    <DocCollectorComponentsContext.Provider value={components ?? {}}>{children}</DocCollectorComponentsContext.Provider>
-  )
-}
-
-export function useDocCollectorComponents() {
-  return useContext(DocCollectorComponentsContext)
-}
+export const DocCollectorComponentsProvider = Provider
+export const useDocCollectorComponents = useComponentsContext

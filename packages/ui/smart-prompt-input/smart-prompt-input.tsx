@@ -17,9 +17,9 @@ import {
   type PromptInputMessage
 } from './vendor/prompt-input'
 import { SmartPromptComponentsProvider, type SmartPromptComponents } from './vendor/components-context'
-import { AttachmentTileItem, type FileExtra } from '../doc-collector/attachment-tile-item'
+import { AttachmentChip } from '../lib/attachment-chip'
 import type { TextareaVariant } from '../types/form/textarea'
-import { cn } from '../lib/utils'
+import { cn, formatBytes } from '../lib/utils'
 
 export type SmartPromptInputSurface = 'card' | 'popover' | 'bare'
 
@@ -225,6 +225,12 @@ const statusMap: Record<SmartPromptStatus, ChatStatus> = {
   error: 'error'
 }
 
+interface FileExtra {
+  size: number
+  charCount?: number
+  textPreview?: string
+}
+
 function AttachmentTiles({ onCountChange }: { onCountChange?: (count: number) => void }) {
   const { files, remove } = usePromptInputAttachments()
   const [extras, setExtras] = useState<Map<string, FileExtra>>(new Map())
@@ -293,9 +299,26 @@ function AttachmentTiles({ onCountChange }: { onCountChange?: (count: number) =>
       >
         <div className='overflow-hidden'>
           <div className='flex gap-2 p-1 overflow-x-auto'>
-            {files.map((f) => (
-              <AttachmentTileItem key={f.id} f={f} extra={extras.get(f.id)} onRemove={() => remove(f.id)} />
-            ))}
+            {files.map((f) => {
+              const extra = extras.get(f.id)
+              const isText = f.mediaType.startsWith('text/')
+              const meta =
+                isText && extra?.charCount !== undefined
+                  ? `${extra.charCount.toLocaleString()} chars`
+                  : extra
+                    ? formatBytes(extra.size)
+                    : '—'
+              return (
+                <AttachmentChip
+                  key={f.id}
+                  filename={f.filename ?? 'file'}
+                  status={extra ? 'ready' : 'resolving'}
+                  meta={meta}
+                  preview={extra?.textPreview}
+                  onRemove={() => remove(f.id)}
+                />
+              )
+            })}
           </div>
         </div>
       </div>

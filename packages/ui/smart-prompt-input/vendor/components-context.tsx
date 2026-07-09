@@ -1,7 +1,8 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: intentional loose contract — see SmartPromptComponents jsdoc
 'use client'
 
-import { createContext, useContext, type ComponentType } from 'react'
+import type { ComponentType } from 'react'
+import { createComponentsContext } from '../../lib/create-components-context'
 
 /**
  * Components injected by the consuming app.
@@ -31,20 +32,7 @@ export interface SmartPromptComponents {
   DropdownMenuItem?: ComponentType<any>
 }
 
-const SmartPromptComponentsContext = createContext<SmartPromptComponents>({})
+const { Provider, useComponentsContext } = createComponentsContext<SmartPromptComponents>()
 
-export function SmartPromptComponentsProvider({
-  components,
-  children
-}: {
-  components: SmartPromptComponents | undefined
-  children: React.ReactNode
-}) {
-  return (
-    <SmartPromptComponentsContext.Provider value={components ?? {}}>{children}</SmartPromptComponentsContext.Provider>
-  )
-}
-
-export function useSmartPromptComponents() {
-  return useContext(SmartPromptComponentsContext)
-}
+export const SmartPromptComponentsProvider = Provider
+export const useSmartPromptComponents = useComponentsContext

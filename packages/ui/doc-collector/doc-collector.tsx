@@ -1,15 +1,14 @@
 'use client'
 
-import type { FileUIPart } from 'ai'
 import { nanoid } from 'nanoid'
-import { type ChangeEvent, type DragEvent, useCallback, useRef, useState } from 'react'
-import { AttachmentTileItem, type FileExtra } from './attachment-tile-item'
+import { type ChangeEvent, type DragEvent, useCallback, useEffect, useRef, useState } from 'react'
 import {
   DocCollectorComponentsProvider,
   useDocCollectorComponents,
   type DocCollectorComponents
 } from './components-context'
-import { cn } from '../lib/utils'
+import { AttachmentChip } from '../lib/attachment-chip'
+import { cn, formatBytes } from '../lib/utils'
 
 export type DocCollectorItemStatus = 'resolving' | 'ready' | 'error'
 
@@ -111,31 +110,6 @@ export function createTextItem(text: string, now: number, ordinal: number): DocC
   }
 }
 
-function kindToMediaType(kind: DocCollectorItem['kind']): string {
-  if (kind === 'pdf') return 'application/pdf'
-  if (kind === 'md') return 'text/markdown'
-  return 'text/plain'
-}
-
-function toFileUIPart(item: DocCollectorItem): FileUIPart & { id: string } {
-  return {
-    id: item.id,
-    type: 'file',
-    mediaType: kindToMediaType(item.kind),
-    filename: item.filename,
-    url: ''
-  }
-}
-
-function toFileExtra(item: DocCollectorItem, size: number | undefined): FileExtra | undefined {
-  if (item.status !== 'ready' || item.text === undefined) return undefined
-  return {
-    size: size ?? new Blob([item.text]).size,
-    charCount: item.text.length,
-    textPreview: item.text.slice(0, 200).trim()
-  }
-}
-
 export function DocCollector({ onItemsChange, accept = DEFAULT_ACCEPT, className, components }: DocCollectorProps) {
   const [items, setItems] = useState<DocCollectorItem[]>([])
   const [draftText, setDraftText] = useState('')
@@ -143,20 +117,23 @@ export function DocCollector({ onItemsChange, accept = DEFAULT_ACCEPT, className
   const [dropError, setDropError] = useState<string | null>(null)
   // Byte sizes aren't part of the public DocCollectorItem contract (only
   // filename/kind/status/text/error/addedAt are) — tracked separately here
-  // purely to feed AttachmentTileItem's `extra.size` display.
+  // purely to feed the chip tooltip's byte-size fallback.
   const sizesRef = useRef<Map<string, number>>(new Map())
   const textOrdinalRef = useRef(0)
 
-  const updateItems = useCallback(
-    (updater: (prev: DocCollectorItem[]) => DocCollectorItem[]) => {
-      setItems((prev) => {
-        const next = updater(prev)
-        onItemsChange?.(next)
-        return next
-      })
-    },
-    [onItemsChange]
-  )
+  // Fired from an effect, not from inside the setItems updater — an updater
+  // function can run more than once during React's render phase, and calling
+  // a different component's setState from in there is illegal ("Cannot
+  // update a component while rendering a different component"). Mirrors
+  // SmartPromptInput's AttachmentTiles, which fires onCountChange the same
+  // way (packages/ui/smart-prompt-input/smart-prompt-input.tsx).
+  useEffect(() => {
+    onItemsChange?.(items)
+  }, [items, onItemsChange])
+
+  const updateItems = useCallback((updater: (prev: DocCollectorItem[]) => DocCollectorItem[]) => {
+    setItems(updater)
+  }, [])
 
   const resolveDroppedFile = useCallback(
     (file: File) => {
@@ -239,7 +216,32 @@ export function DocCollector({ onItemsChange, accept = DEFAULT_ACCEPT, className
 
   return (
     <DocCollectorComponentsProvider components={components}>
-      <div className={cn('flex flex-col gap-3', className)}>
+      <div className={cn('flex flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
+        {items.length > 0 && (
+          <div className='flex gap-2 overflow-x-auto pt-2'>
+            {items.map((item) => {
+              const meta =
+                item.status === 'ready' && item.text !== undefined
+                  ? `${item.text.length.toLocaleString()} chars`
+                  : sizesRef.current.get(item.id) !== undefined
+                    ? formatBytes(sizesRef.current.get(item.id) as number)
+                    : '—'
+              const preview = item.status === 'ready' ? item.text?.slice(0, 240).trim() : undefined
+              return (
+                <AttachmentChip
+                  key={item.id}
+                  filename={item.filename}
+                  status={item.status}
+                  meta={meta}
+                  preview={preview}
+                  error={item.error}
+                  onRemove={() => handleRemove(item.id)}
+                />
+              )
+            })}
+          </div>
+        )}
+
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -253,19 +255,6 @@ export function DocCollector({ onItemsChange, accept = DEFAULT_ACCEPT, className
         </div>
 
         {dropError && <p className='font-mono text-[10px] text-destructive'>{dropError}</p>}
-
-        {items.length > 0 && (
-          <div className='flex gap-2 overflow-x-auto'>
-            {items.map((item) => (
-              <AttachmentTileItem
-                key={item.id}
-                f={toFileUIPart(item)}
-                extra={toFileExtra(item, sizesRef.current.get(item.id))}
-                onRemove={() => handleRemove(item.id)}
-              />
-            ))}
-          </div>
-        )}
 
         <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
       </div>
@@ -283,36 +272,47 @@ function DocCollectorTextInput({
   onAdd: () => void
 }) {
   const { Textarea, Button } = useDocCollectorComponents()
+  // Deliberately NOT field-sizing-content (SmartPromptInput's textarea
+  // auto-grows with content) — DocCollector's textarea is a fixed-height,
+  // fixed-row box that scrolls internally once content exceeds it, so the
+  // rest of the component (drop-zone, tile row) never reflows as the user types.
+  const textareaClassName = 'h-20 w-full resize-none overflow-y-auto'
 
   return (
-    <div className='flex flex-col gap-2'>
+    <div className='flex flex-col gap-1.5 rounded-md border border-input bg-background p-2 focus-within:ring-1 focus-within:ring-ring'>
       {Textarea ? (
         <Textarea
           placeholder='Paste text here…'
           value={draftText}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onDraftTextChange(e.target.value)}
+          variant='bare'
+          rows={3}
+          className={textareaClassName}
         />
       ) : (
         <textarea
           placeholder='Paste text here…'
           value={draftText}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onDraftTextChange(e.target.value)}
-          className='min-h-24 w-full rounded-md border border-input bg-background p-2 font-sans text-sm text-foreground'
+          rows={3}
+          className={cn(textareaClassName, 'bg-transparent font-sans text-sm text-foreground outline-none')}
         />
       )}
-      {Button ? (
-        <Button type='button' onClick={onAdd} className='self-end'>
-          Add
-        </Button>
-      ) : (
-        <button
-          type='button'
-          onClick={onAdd}
-          className='self-end rounded-md bg-primary px-3 py-1.5 font-mono text-xs uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/90'
-        >
-          Add
-        </button>
-      )}
+      <div className='flex justify-end'>
+        {Button ? (
+          <Button type='button' size='sm' onClick={onAdd}>
+            Add Document
+          </Button>
+        ) : (
+          <button
+            type='button'
+            onClick={onAdd}
+            className='rounded-md bg-primary px-3 py-1 font-mono text-xs uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/90'
+          >
+            Add Document
+          </button>
+        )}
+      </div>
     </div>
   )
 }
