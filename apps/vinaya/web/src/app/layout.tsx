@@ -9,10 +9,10 @@ import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
 
 const links = [
-  { label: 'Home', href: '/' },
+  { label: 'Home', href: '/', exact: true },
   { label: 'Known Limits', href: '/known-limits' },
   { label: 'AEG', href: '/aeg' },
-  { label: 'Studio', href: '/studio' },
+  { label: 'Studio', href: '/studio', exact: true },
   { label: 'Docs', href: '/studio/docs' }
 ]
 
