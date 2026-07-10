@@ -185,7 +185,19 @@ async function realFetch(url: string, init: SafeFetchInit): Promise<Response> {
   const { Agent, fetch: undiciFetch } = await import('undici')
   const dispatcher = new Agent({
     connect: {
-      lookup: (_hostname, _opts, cb) => cb(null, init.pinnedAddress, init.pinnedFamily)
+      // Node 20+'s Happy Eyeballs dual-stack connect (lookupAndConnectMultiple)
+      // calls a custom `lookup` with `{ all: true }` and expects the
+      // array-of-addresses callback shape — the single-address shape silently
+      // produces "Invalid IP address: undefined" under that path. Handle both.
+      lookup: (_hostname, opts, cb) => {
+        if (opts && typeof opts === 'object' && 'all' in opts && opts.all) {
+          ;(cb as (err: null, addresses: { address: string; family: number }[]) => void)(null, [
+            { address: init.pinnedAddress, family: init.pinnedFamily }
+          ])
+        } else {
+          cb(null, init.pinnedAddress, init.pinnedFamily)
+        }
+      }
     }
   })
   try {
