@@ -303,7 +303,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
         <div className='grid grid-cols-2 gap-8 h-full'>
           {/* Candidates Column */}
           <div className='grid grid-rows-[auto_1fr] gap-4 h-full'>
-            <div className='flex items-baseline justify-between'>
+            <div className='flex h-8 items-center justify-between'>
               <span className={labelClass}>
                 Candidates
                 {cvs.length > 0 && (
@@ -340,7 +340,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
 
           {/* Job Descriptions Column */}
           <div className='grid grid-rows-[auto_1fr] gap-4 h-full border-l border-border pl-8'>
-            <div className='flex items-baseline justify-between'>
+            <div className='flex h-8 items-center justify-between'>
               <span className={labelClass}>
                 Job Descriptions
                 {jds.length > 0 && (
