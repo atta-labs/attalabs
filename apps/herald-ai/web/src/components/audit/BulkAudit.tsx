@@ -301,6 +301,20 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
       </header>
 
       <div className='space-y-8 h-full'>
+        {/*
+          Both DocCollector instances below pin an explicit h-[510px] (via className,
+          see DocCollector's `className` prop doc in ui-library-system SKILL.md) so the
+          CV/JD columns never reflow relative to each other or to themselves as items are
+          added — the drop zone (flex-1 min-h-[64px] inside DocCollector) absorbs the height
+          delta instead. 510px is not arbitrary: it's the empirically-verified minimum where
+          a populated column's "Add by X"/"Paste The Doc" rows land at the identical Y as an
+          empty column's (measured via getBoundingClientRect() against the real running app,
+          not estimated) — 500px is the exact convergence point, 510px adds a small margin so
+          the drop zone still clears its own 64px floor with room to spare. If DocCollector's
+          internal chip-row/label/custom-source-row/paste-box heights ever change, re-derive
+          this by adding items in a live browser and checking the two columns' row alignment,
+          not by guessing a bigger number.
+        */}
         <div className='grid grid-cols-2 gap-8 h-full'>
           {/* Candidates Column */}
           <div className='grid grid-rows-[auto_1fr] grid-cols-1 gap-4 h-full'>

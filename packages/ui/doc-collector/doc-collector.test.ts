@@ -4,8 +4,10 @@ import {
   insertNewestFirst,
   patchItemById,
   removeItemById,
+  resolveCustomSourceValue,
   resolveFileKind,
   resolveFileText,
+  type DocCollectorCustomSource,
   type DocCollectorItem
 } from './doc-collector'
 
@@ -115,5 +117,61 @@ describe('removeItemById', () => {
     const b: DocCollectorItem = { id: 'b', filename: 'b.pdf', kind: 'pdf', status: 'ready', text: 'B', addedAt: 1 }
     const items = removeItemById([a, b], 'a')
     expect(items.map((it) => it.id)).toEqual(['b'])
+  })
+})
+
+describe('resolveCustomSourceValue — resolve-then-insert (never add-then-patch)', () => {
+  function makeSource(overrides: Partial<DocCollectorCustomSource> = {}): DocCollectorCustomSource {
+    return {
+      label: 'Herald Username',
+      placeholder: 'username',
+      resolve: vi.fn().mockResolvedValue({ text: 'resolved text', filename: '@dani.usr' }),
+      ...overrides
+    }
+  }
+
+  it('returns null for blank/whitespace-only input — Add is a no-op, resolve is never called', async () => {
+    const source = makeSource()
+    expect(await resolveCustomSourceValue(source, '', 1)).toBeNull()
+    expect(await resolveCustomSourceValue(source, '   \n\t  ', 1)).toBeNull()
+    expect(source.resolve).not.toHaveBeenCalled()
+  })
+
+  it('trims the value before checking blank and before calling resolve', async () => {
+    const source = makeSource()
+    await resolveCustomSourceValue(source, '  dani  ', 1)
+    expect(source.resolve).toHaveBeenCalledWith('dani')
+  })
+
+  it("on success, returns a ready item built from resolve()'s result — never a resolving/error tile first", async () => {
+    const source = makeSource({
+      resolve: vi.fn().mockResolvedValue({ text: 'CV text', filename: '@dani.usr', meta: { username: 'dani' } })
+    })
+    const result = await resolveCustomSourceValue(source, 'dani', 1000, () => 'fixed-id')
+    expect(result).toEqual({
+      item: {
+        id: 'fixed-id',
+        filename: '@dani.usr',
+        kind: 'text',
+        status: 'ready',
+        text: 'CV text',
+        meta: { username: 'dani' },
+        addedAt: 1000
+      }
+    })
+  })
+
+  it("on rejection, returns the thrown Error's message and never fabricates an item", async () => {
+    const source = makeSource({
+      resolve: vi.fn().mockRejectedValue(new Error('Published Herald profile not found'))
+    })
+    const result = await resolveCustomSourceValue(source, 'nobody', 1)
+    expect(result).toEqual({ error: 'Published Herald profile not found' })
+  })
+
+  it('on a non-Error rejection, falls back to a generic message', async () => {
+    const source = makeSource({ resolve: vi.fn().mockRejectedValue('a plain string throw') })
+    const result = await resolveCustomSourceValue(source, 'x', 1)
+    expect(result).toEqual({ error: 'Failed to resolve.' })
   })
 })

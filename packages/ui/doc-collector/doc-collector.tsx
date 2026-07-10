@@ -129,6 +129,32 @@ export function createTextItem(text: string, now: number, ordinal: number): DocC
   }
 }
 
+/**
+ * Resolves a custom source's typed value into a ready item, or an error
+ * message on rejection — pure, no state mutation. Mirrors `resolveFileText`'s
+ * split from the drop handler: resolution is independently testable here;
+ * the component (`handleCustomAdd`) owns inserting the item into `items` /
+ * deciding how to report the error (inline vs `source.onError`).
+ *
+ * Returns `null` for blank input (Add is a no-op, same commit-gating spirit
+ * as `createTextItem`), `{ item }` on success, `{ error }` on rejection.
+ */
+export async function resolveCustomSourceValue(
+  source: DocCollectorCustomSource,
+  rawValue: string,
+  now: number,
+  makeId: () => string = nanoid
+): Promise<{ item: DocCollectorItem } | { error: string } | null> {
+  const value = rawValue.trim()
+  if (!value) return null
+  try {
+    const { text, filename, meta } = await source.resolve(value)
+    return { item: { id: makeId(), filename, kind: 'text', status: 'ready', text, meta, addedAt: now } }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to resolve.' }
+  }
+}
+
 export function DocCollector({
   onItemsChange,
   accept = DEFAULT_ACCEPT,
@@ -241,24 +267,11 @@ export function DocCollector({
 
   const handleCustomAdd = useCallback(
     async (source: DocCollectorCustomSource, rawValue: string): Promise<string | null> => {
-      const value = rawValue.trim()
-      if (!value) return null
-      try {
-        const { text, filename, meta } = await source.resolve(value)
-        const item: DocCollectorItem = {
-          id: nanoid(),
-          filename,
-          kind: 'text',
-          status: 'ready',
-          text,
-          meta,
-          addedAt: Date.now()
-        }
-        updateItems((prev) => insertNewestFirst(prev, item))
-        return null
-      } catch (err) {
-        return err instanceof Error ? err.message : 'Failed to resolve.'
-      }
+      const result = await resolveCustomSourceValue(source, rawValue, Date.now())
+      if (!result) return null
+      if ('error' in result) return result.error
+      updateItems((prev) => insertNewestFirst(prev, result.item))
+      return null
     },
     [updateItems]
   )
