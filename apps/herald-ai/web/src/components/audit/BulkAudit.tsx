@@ -403,7 +403,10 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               {cvProfiles.length > 0 && (
                 <div className='flex flex-wrap gap-2 pt-1'>
                   {cvProfiles.map((p) => (
-                    <Badge key={p} variant='outline' className='font-mono text-xs flex items-center gap-1 pl-2 pr-1'>
+                    <span
+                      key={p}
+                      className='flex items-center gap-1 rounded border border-border px-2 py-0.5 font-mono text-xs text-foreground'
+                    >
                       @{p}
                       <Button
                         type='button'
@@ -414,7 +417,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                       >
                         <X className='h-3 w-3' />
                       </Button>
-                    </Badge>
+                    </span>
                   ))}
                 </div>
               )}
@@ -475,10 +478,9 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               {jdUrls.length > 0 && (
                 <div className='flex flex-wrap gap-2 pt-1'>
                   {jdUrls.map((u) => (
-                    <Badge
+                    <span
                       key={u}
-                      variant='outline'
-                      className='font-mono text-xs flex items-center gap-1 pl-2 pr-1 max-w-full'
+                      className='flex items-center gap-1 rounded border border-border px-2 py-0.5 font-mono text-xs text-foreground max-w-full'
                     >
                       <span className='truncate max-w-[200px]'>{u}</span>
                       <Button
@@ -490,7 +492,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                       >
                         <X className='h-3 w-3' />
                       </Button>
-                    </Badge>
+                    </span>
                   ))}
                 </div>
               )}
