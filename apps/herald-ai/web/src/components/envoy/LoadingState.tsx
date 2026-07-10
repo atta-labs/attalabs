@@ -8,6 +8,18 @@ const STEPS = [
   { label: 'Generating Decision Artifact...', duration: 1500 }
 ]
 
+// STEPS above only covers the first 5s of animation. The real audit call
+// can take ~70-90s (server's 90s LLM timeout, up to 2 attempts), so these
+// rotate after STEPS completes purely to keep the user informed the
+// process is still alive — cosmetic only, never coupled to the real
+// response, which can arrive at any point.
+const EXTENDED_LABELS = [
+  'Weighing Evidence Against Requirements...',
+  'Verifying Signal Confidence...',
+  'Still Working — Complex Audits Can Take Up to 90 Seconds...'
+]
+const EXTENDED_LABEL_INTERVAL_MS = 6000
+
 export function LoadingState({
   candidateName = 'Dani Estevez Martin',
   candidateTitle = 'Senior Frontend Architect · AI Systems · Web3'
@@ -16,6 +28,8 @@ export function LoadingState({
   candidateTitle?: string
 }) {
   const [activeStep, setActiveStep] = useState(0)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [extendedLabelIndex, setExtendedLabelIndex] = useState(0)
 
   useEffect(() => {
     let elapsed = 0
@@ -28,6 +42,21 @@ export function LoadingState({
 
     return () => timers.forEach(clearTimeout)
   }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(
+      () => setExtendedLabelIndex((i) => (i + 1) % EXTENDED_LABELS.length),
+      EXTENDED_LABEL_INTERVAL_MS
+    )
+    return () => clearInterval(interval)
+  }, [])
+
+  const showExtendedLabel = elapsedSeconds >= 5
 
   return (
     <div className='mx-auto max-w-[680px] px-6 py-12'>
@@ -56,7 +85,18 @@ export function LoadingState({
             </p>
           </div>
         ))}
+
+        {showExtendedLabel && (
+          <div className='flex items-center gap-3'>
+            <span className='font-mono text-xs text-foreground/60'>—</span>
+            <p className='font-mono text-xs text-foreground transition-opacity duration-500'>
+              {EXTENDED_LABELS[extendedLabelIndex]}
+            </p>
+          </div>
+        )}
       </div>
+
+      <p className='mt-6 font-mono text-xs text-muted-foreground'>{elapsedSeconds}s elapsed</p>
     </div>
   )
 }

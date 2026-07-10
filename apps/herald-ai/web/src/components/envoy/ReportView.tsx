@@ -68,6 +68,11 @@ export function ReportView({ report }: { report: MatchReport }) {
         <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
         <h1 className='mt-2 font-display text-2xl tracking-tight'>{report.candidate.name}</h1>
         <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{report.candidate.title}</p>
+        {report.estimatedCostUsd !== undefined && (
+          <p className='mt-0.5 font-mono text-xs text-muted-foreground'>
+            Estimated cost: ${report.estimatedCostUsd.toFixed(4)}
+          </p>
+        )}
       </header>
 
       {/* ── Decision Anchor ── */}
