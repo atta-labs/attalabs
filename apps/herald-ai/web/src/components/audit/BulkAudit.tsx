@@ -3,7 +3,7 @@
 import { ChevronDown, ChevronUp, Loader2, X } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import { Badge } from '@atta/ui/components/badge'
-import { Button, Card, CardContent, Textarea, Input } from '@atta/ui/components'
+import { Button, Card, CardContent, Textarea, Input, useToastContext } from '@atta/ui/components'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 
@@ -81,6 +81,8 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
   const [jdUrlDraft, setJdUrlDraft] = useState('')
   const [cvProfiles, setCvProfiles] = useState<string[]>([])
   const [cvProfileDraft, setCvProfileDraft] = useState('')
+  const [isAddingProfile, setIsAddingProfile] = useState(false)
+  const { errorToast } = useToastContext()
 
   const [state, setState] = useState<'idle' | 'resolving' | 'running' | 'done'>('idle')
   const [cells, setCells] = useState<Cells>({})
@@ -96,6 +98,24 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
   const m = Math.min(rawJds, MAX_JDS)
   const overCap = rawCvs > MAX_CANDIDATES || rawJds > MAX_JDS
   const canRun = n > 0 && m > 0 && state === 'idle'
+
+  async function handleAddProfile() {
+    const val = cvProfileDraft.trim()
+    if (!val || cvProfiles.includes(val)) {
+      setCvProfileDraft('')
+      return
+    }
+    setIsAddingProfile(true)
+    try {
+      await resolveCvJsonRequest({ kind: 'profile', value: val })
+      setCvProfiles((prev) => [...prev, val])
+      setCvProfileDraft('')
+    } catch (err: any) {
+      errorToast('Invalid Profile', err.message || 'The user does not exist.')
+    } finally {
+      setIsAddingProfile(false)
+    }
+  }
 
   async function handleRun() {
     if (!canRun) return
@@ -374,14 +394,11 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                   aria-label='Herald Profile username'
                   value={cvProfileDraft}
                   onChange={(e) => setCvProfileDraft(e.target.value)}
+                  disabled={isAddingProfile}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
-                      const val = cvProfileDraft.trim()
-                      if (val && !cvProfiles.includes(val)) {
-                        setCvProfiles((prev) => [...prev, val])
-                      }
-                      setCvProfileDraft('')
+                      void handleAddProfile()
                     }
                   }}
                   className='font-mono text-sm'
@@ -389,15 +406,12 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                 <Button
                   variant='secondary'
                   size='sm'
+                  disabled={isAddingProfile}
                   onClick={() => {
-                    const val = cvProfileDraft.trim()
-                    if (val && !cvProfiles.includes(val)) {
-                      setCvProfiles((prev) => [...prev, val])
-                    }
-                    setCvProfileDraft('')
+                    void handleAddProfile()
                   }}
                 >
-                  Add
+                  {isAddingProfile ? <Loader2 className='h-4 w-4 animate-spin' /> : 'Add'}
                 </Button>
               </div>
               {cvProfiles.length > 0 && (
