@@ -93,6 +93,12 @@ export async function fetchOpenIssuesByLabel(
  * `first: 100`, no pagination — this repo's open-issue count (~30 at
  * authoring time) is well within a single page; re-evaluate if it grows into
  * the hundreds.
+ *
+ * Also excludes `vinaya:state-object` (task 2 addendum, PR #499 review) —
+ * D-110's pinned per-project/root-ecosystem state, ratification queue, and
+ * lessons-log Issues (#447-#453) are permanent forge-native storage objects,
+ * never meant to be closed and carrying no actionable work, so they don't
+ * belong in a backlog-of-open-work view alongside real Issues like #497.
  */
 
 export type BacklogIssue = { number: number; title: string; url: string; labels: string[] }
@@ -135,5 +141,8 @@ export async function fetchOpenIssuesWithoutIterationLabel(
       url: n.url,
       labels: n.labels?.nodes?.map((l) => l.name) ?? []
     }))
-    .filter((issue) => !issue.labels.some((label) => /^iteration:/.test(label)))
+    .filter(
+      (issue) =>
+        !issue.labels.some((label) => /^iteration:/.test(label)) && !issue.labels.includes('vinaya:state-object')
+    )
 }
