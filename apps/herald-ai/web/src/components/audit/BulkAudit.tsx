@@ -1,9 +1,9 @@
 'use client'
 
-import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2, X } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import { Badge } from '@atta/ui/components/badge'
-import { Button, Card, CardContent, Textarea } from '@atta/ui/components'
+import { Button, Card, CardContent, Textarea, Input } from '@atta/ui/components'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 
@@ -11,6 +11,7 @@ import { auditFailureMessage, ReportView } from '@/components/envoy/ReportView'
 import type { ResolvedCv, ResolvedJd } from '@/lib/audit-input/types'
 import type { MatchReport } from '@/lib/types'
 import { DocCollector, type DocCollectorItem } from '@atta/ui/doc-collector'
+import { resolveCvJsonRequest, resolveJdRequest } from '@/lib/audit-input/client'
 
 const MAX_JDS = 10
 const MAX_CANDIDATES = 10
@@ -76,6 +77,11 @@ function gradeBadgeClass(grade: MatchReport['grade']): string {
 export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsHref: string }) {
   const [jds, setJds] = useState<DocCollectorItem[]>([])
   const [cvs, setCvs] = useState<DocCollectorItem[]>([])
+  const [jdUrls, setJdUrls] = useState<string[]>([])
+  const [jdUrlDraft, setJdUrlDraft] = useState('')
+  const [cvProfiles, setCvProfiles] = useState<string[]>([])
+  const [cvProfileDraft, setCvProfileDraft] = useState('')
+
   const [state, setState] = useState<'idle' | 'resolving' | 'running' | 'done'>('idle')
   const [cells, setCells] = useState<Cells>({})
   const [submittedJds, setSubmittedJds] = useState<ResolvedJd[]>([])
@@ -84,8 +90,11 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
 
   const labelClass = 'mb-1.5 block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'
 
-  const n = Math.min(cvs.length, MAX_CANDIDATES)
-  const m = Math.min(jds.length, MAX_JDS)
+  const rawCvs = cvs.length + cvProfiles.length
+  const rawJds = jds.length + jdUrls.length
+  const n = Math.min(rawCvs, MAX_CANDIDATES)
+  const m = Math.min(rawJds, MAX_JDS)
+  const overCap = rawCvs > MAX_CANDIDATES || rawJds > MAX_JDS
   const canRun = n > 0 && m > 0 && state === 'idle'
 
   async function handleRun() {
@@ -95,27 +104,52 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
 
     // Only process items that have completed resolution and have text.
     // Also enforce the maximum limits.
-    const readyCvs = cvs.filter((cv) => cv.status === 'ready' && cv.text !== undefined).slice(0, MAX_CANDIDATES)
-    const readyJds = jds.filter((jd) => jd.status === 'ready' && jd.text !== undefined).slice(0, MAX_JDS)
+    const readyCvs = cvs.filter((cv) => cv.status === 'ready' && cv.text !== undefined)
+    const readyJds = jds.filter((jd) => jd.status === 'ready' && jd.text !== undefined)
 
-    if (readyCvs.length === 0 || readyJds.length === 0) {
-      setResolveError('No valid, fully resolved documents found. Wait for uploads to finish or check for errors.')
+    if (readyCvs.length === 0 && cvProfiles.length === 0) {
+      setResolveError('No CVs found. Wait for uploads to finish or add a profile.')
+      setState('idle')
+      return
+    }
+    if (readyJds.length === 0 && jdUrls.length === 0) {
+      setResolveError('No JDs found. Wait for uploads to finish or add a URL.')
       setState('idle')
       return
     }
 
-    const resolvedCvs: ResolvedCv[] = readyCvs.map((cv) => ({
-      kind: cv.kind === 'text' ? 'text' : cv.kind === 'pdf' ? 'pdf' : 'markdown',
-      text: cv.text!,
-      username: null,
-      candidateLabel: cv.filename
-    }))
+    let resolvedCvProfiles: ResolvedCv[] = []
+    let resolvedJdUrls: ResolvedJd[] = []
 
-    const resolvedJds: ResolvedJd[] = readyJds.map((jd) => ({
-      kind: jd.kind === 'text' ? 'text' : jd.kind === 'pdf' ? 'pdf' : 'markdown',
-      text: jd.text!,
-      sourceLabel: jd.filename
-    }))
+    try {
+      resolvedCvProfiles = await Promise.all(
+        cvProfiles.map((username) => resolveCvJsonRequest({ kind: 'profile', value: username }))
+      )
+      resolvedJdUrls = await Promise.all(jdUrls.map((url) => resolveJdRequest({ kind: 'url', value: url })))
+    } catch (err) {
+      setResolveError(`Failed to resolve URL or Profile: ${err instanceof Error ? err.message : String(err)}`)
+      setState('idle')
+      return
+    }
+
+    const resolvedCvs: ResolvedCv[] = [
+      ...readyCvs.map((cv) => ({
+        kind: (cv.kind === 'text' ? 'text' : cv.kind === 'pdf' ? 'pdf' : 'markdown') as 'text' | 'pdf' | 'markdown',
+        text: cv.text!,
+        username: null,
+        candidateLabel: cv.filename
+      })),
+      ...resolvedCvProfiles
+    ].slice(0, MAX_CANDIDATES)
+
+    const resolvedJds: ResolvedJd[] = [
+      ...readyJds.map((jd) => ({
+        kind: (jd.kind === 'text' ? 'text' : jd.kind === 'pdf' ? 'pdf' : 'markdown') as 'text' | 'pdf' | 'markdown',
+        text: jd.text!,
+        sourceLabel: jd.filename
+      })),
+      ...resolvedJdUrls
+    ].slice(0, MAX_JDS)
 
     const initial: Cells = {}
     for (let cvIdx = 0; cvIdx < resolvedCvs.length; cvIdx++) {
@@ -154,6 +188,10 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
     setSubmittedJds([])
     setSubmittedCvs([])
     setResolveError(null)
+    setJdUrls([])
+    setJdUrlDraft('')
+    setCvProfiles([])
+    setCvProfileDraft('')
   }
 
   if (!hasKey) {
@@ -293,9 +331,9 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
             <div className='flex items-baseline justify-between'>
               <span className={labelClass}>
                 Candidates
-                {cvs.length > 0 && (
+                {rawCvs > 0 && (
                   <Badge variant='secondary' className='ml-2 font-mono'>
-                    {cvs.length}
+                    {rawCvs}
                   </Badge>
                 )}
               </span>
@@ -304,6 +342,48 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               </span>
             </div>
             <DocCollector accept='.md,.pdf' onItemsChange={setCvs} components={{ Textarea, Button }} />
+            <div className='rounded-lg border border-border p-3 space-y-3 bg-muted/20 mt-4'>
+              <p className='font-mono text-xs text-muted-foreground uppercase tracking-widest'>
+                Or add by Herald Profile
+              </p>
+              <div className='flex items-center gap-2'>
+                <Input
+                  type='text'
+                  placeholder='username'
+                  value={cvProfileDraft}
+                  onChange={(e) => setCvProfileDraft(e.target.value)}
+                  className='font-mono text-sm'
+                />
+                <Button
+                  variant='secondary'
+                  size='sm'
+                  onClick={() => {
+                    const val = cvProfileDraft.trim()
+                    if (val && !cvProfiles.includes(val)) {
+                      setCvProfiles((prev) => [...prev, val])
+                    }
+                    setCvProfileDraft('')
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              {cvProfiles.length > 0 && (
+                <div className='flex flex-wrap gap-2 pt-1'>
+                  {cvProfiles.map((p) => (
+                    <Badge key={p} variant='outline' className='font-mono text-xs flex items-center gap-1 pl-2 pr-1'>
+                      @{p}
+                      <button
+                        onClick={() => setCvProfiles((prev) => prev.filter((x) => x !== p))}
+                        className='hover:bg-muted p-0.5 rounded'
+                      >
+                        <X className='h-3 w-3' />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Job Descriptions Column */}
@@ -311,9 +391,9 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
             <div className='flex items-baseline justify-between'>
               <span className={labelClass}>
                 Job Descriptions
-                {jds.length > 0 && (
+                {rawJds > 0 && (
                   <Badge variant='secondary' className='ml-2 font-mono'>
-                    {jds.length}
+                    {rawJds}
                   </Badge>
                 )}
               </span>
@@ -322,10 +402,59 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               </span>
             </div>
             <DocCollector accept='.md,.pdf' onItemsChange={setJds} components={{ Textarea, Button }} />
+            <div className='rounded-lg border border-border p-3 space-y-3 bg-muted/20 mt-4'>
+              <p className='font-mono text-xs text-muted-foreground uppercase tracking-widest'>Or add by URL</p>
+              <div className='flex items-center gap-2'>
+                <Input
+                  type='url'
+                  placeholder='https://...'
+                  value={jdUrlDraft}
+                  onChange={(e) => setJdUrlDraft(e.target.value)}
+                  className='font-sans text-sm'
+                />
+                <Button
+                  variant='secondary'
+                  size='sm'
+                  onClick={() => {
+                    const val = jdUrlDraft.trim()
+                    if (val && !jdUrls.includes(val)) {
+                      setJdUrls((prev) => [...prev, val])
+                    }
+                    setJdUrlDraft('')
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              {jdUrls.length > 0 && (
+                <div className='flex flex-wrap gap-2 pt-1'>
+                  {jdUrls.map((u) => (
+                    <Badge
+                      key={u}
+                      variant='outline'
+                      className='font-mono text-xs flex items-center gap-1 pl-2 pr-1 max-w-full'
+                    >
+                      <span className='truncate max-w-[200px]'>{u}</span>
+                      <button
+                        onClick={() => setJdUrls((prev) => prev.filter((x) => x !== u))}
+                        className='hover:bg-muted p-0.5 rounded shrink-0'
+                      >
+                        <X className='h-3 w-3' />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {resolveError && <p className='font-mono text-xs text-destructive text-center'>{resolveError}</p>}
+        {overCap && (
+          <p className='font-mono text-xs text-warning text-center mt-2'>
+            Caps exceeded: Only the first {MAX_CANDIDATES} CVs and {MAX_JDS} JDs will be audited.
+          </p>
+        )}
 
         <div className='flex justify-center pt-4'>
           <Button
