@@ -298,10 +298,9 @@ export function DocCollector({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             className={cn(
-              'flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
+              'flex min-h-[64px] w-full h-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
               isDragOver && 'border-primary bg-accent/40'
             )}
-            style={{ height: '100%' }}
           >
             <p className='font-mono text-xs text-muted-foreground'>Drop {accept} files here</p>
           </div>
