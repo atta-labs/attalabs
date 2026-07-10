@@ -23,10 +23,23 @@ export interface DocCollectorItem {
   error?: string
   /** `Date.now()` at commit time — drives newest-first ordering. */
   addedAt: number
+  /** Opaque consumer payload — DocCollector never reads or interprets this. */
+  meta?: unknown
+}
+
+export interface DocCollectorCustomSource {
+  /** Short label, e.g. "Herald Profile" or "URL" — shown as "Or add by <label>". */
+  label: string
+  placeholder: string
+  /** Native input type, e.g. 'text' | 'url'. Defaults to 'text'. */
+  type?: string
+  /** Resolves the typed value into item text + a display filename (+ optional opaque meta). Throw to surface an error on the tile. */
+  resolve: (value: string) => Promise<{ text: string; filename: string; meta?: unknown }>
 }
 
 export interface DocCollectorProps {
   onItemsChange?: (items: DocCollectorItem[]) => void
+  customSources?: DocCollectorCustomSource[]
   /** File-drop accept string. Defaults to `.md,.pdf`. */
   accept?: string
   /** Outer wrapper className. */
@@ -110,7 +123,13 @@ export function createTextItem(text: string, now: number, ordinal: number): DocC
   }
 }
 
-export function DocCollector({ onItemsChange, accept = DEFAULT_ACCEPT, className, components }: DocCollectorProps) {
+export function DocCollector({
+  onItemsChange,
+  accept = DEFAULT_ACCEPT,
+  className,
+  components,
+  customSources
+}: DocCollectorProps) {
   const [items, setItems] = useState<DocCollectorItem[]>([])
   const [draftText, setDraftText] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
@@ -214,6 +233,36 @@ export function DocCollector({ onItemsChange, accept = DEFAULT_ACCEPT, className
     setDraftText('')
   }, [draftText, updateItems])
 
+  const handleCustomAdd = useCallback(
+    (source: DocCollectorCustomSource, rawValue: string) => {
+      const value = rawValue.trim()
+      if (!value) return
+      const id = nanoid()
+      const item: DocCollectorItem = {
+        id,
+        filename: value,
+        kind: 'text',
+        status: 'resolving',
+        addedAt: Date.now()
+      }
+      updateItems((prev) => insertNewestFirst(prev, item))
+      void (async () => {
+        try {
+          const { text, filename, meta } = await source.resolve(value)
+          updateItems((prev) => patchItemById(prev, id, { status: 'ready', text, filename, meta }))
+        } catch (err) {
+          updateItems((prev) =>
+            patchItemById(prev, id, {
+              status: 'error',
+              error: err instanceof Error ? err.message : 'Failed to resolve.'
+            })
+          )
+        }
+      })()
+    },
+    [updateItems]
+  )
+
   return (
     <DocCollectorComponentsProvider components={components}>
       <div className={cn('flex flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
@@ -257,6 +306,13 @@ export function DocCollector({ onItemsChange, accept = DEFAULT_ACCEPT, className
         {dropError && <p className='font-mono text-[10px] text-destructive'>{dropError}</p>}
 
         <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
+        {customSources?.map((source) => (
+          <DocCollectorCustomSourceRow
+            key={source.label}
+            source={source}
+            onSubmit={(value) => handleCustomAdd(source, value)}
+          />
+        ))}
       </div>
     </DocCollectorComponentsProvider>
   )
@@ -310,6 +366,73 @@ function DocCollectorTextInput({
             className='rounded-md bg-primary px-3 py-1 font-mono text-xs uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/90'
           >
             Add as document
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function DocCollectorCustomSourceRow({
+  source,
+  onSubmit
+}: {
+  source: DocCollectorCustomSource
+  onSubmit: (value: string) => void
+}) {
+  const { Input, Button } = useDocCollectorComponents()
+  const [draft, setDraft] = useState('')
+
+  function handleSubmit() {
+    if (!draft.trim()) return
+    onSubmit(draft)
+    setDraft('')
+  }
+
+  return (
+    <div className='flex flex-col gap-1.5 rounded-md border border-input bg-background p-3'>
+      <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Or add by {source.label}</p>
+      <div className='flex items-center gap-2'>
+        {Input ? (
+          <Input
+            type={source.type || 'text'}
+            placeholder={source.placeholder}
+            value={draft}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setDraft(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleSubmit()
+              }
+            }}
+            className='font-mono text-sm flex-1'
+          />
+        ) : (
+          <input
+            type={source.type || 'text'}
+            placeholder={source.placeholder}
+            value={draft}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setDraft(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleSubmit()
+              }
+            }}
+            className='font-mono text-sm flex-1 bg-transparent text-foreground outline-none border border-input rounded-md px-3 py-2 focus:ring-1 focus:ring-ring'
+          />
+        )}
+        {Button ? (
+          <Button type='button' variant='secondary' size='sm' onClick={handleSubmit}>
+            Add
+          </Button>
+        ) : (
+          <button
+            type='button'
+            onClick={handleSubmit}
+            className='rounded-md bg-secondary px-3 py-1 font-mono text-xs uppercase tracking-wide text-secondary-foreground transition-colors hover:bg-secondary/90'
+          >
+            Add
           </button>
         )}
       </div>
