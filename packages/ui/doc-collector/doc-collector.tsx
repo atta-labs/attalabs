@@ -260,43 +260,45 @@ export function DocCollector({
   return (
     <DocCollectorComponentsProvider components={components}>
       <div className={cn('flex flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
-        <div className='flex h-16 shrink-0 items-center gap-2 overflow-x-auto pb-1'>
-          {items.map((item) => {
-            const meta =
-              item.status === 'ready' && item.text !== undefined
-                ? `${item.text.length.toLocaleString()} chars`
-                : sizesRef.current.get(item.id) !== undefined
-                  ? formatBytes(sizesRef.current.get(item.id) as number)
-                  : '—'
-            const preview = item.status === 'ready' ? item.text?.slice(0, 240).trim() : undefined
-            return (
-              <AttachmentChip
-                key={item.id}
-                filename={item.filename}
-                status={item.status}
-                meta={meta}
-                preview={preview}
-                error={item.error}
-                onRemove={() => handleRemove(item.id)}
-              />
-            )
-          })}
-        </div>
+        {items.length > 0 && (
+          <div className='flex h-16 shrink-0 items-center gap-2 overflow-x-auto pb-1'>
+            {items.map((item) => {
+              const meta =
+                item.status === 'ready' && item.text !== undefined
+                  ? `${item.text.length.toLocaleString()} chars`
+                  : sizesRef.current.get(item.id) !== undefined
+                    ? formatBytes(sizesRef.current.get(item.id) as number)
+                    : '—'
+              const preview = item.status === 'ready' ? item.text?.slice(0, 240).trim() : undefined
+              return (
+                <AttachmentChip
+                  key={item.id}
+                  filename={item.filename}
+                  status={item.status}
+                  meta={meta}
+                  preview={preview}
+                  error={item.error}
+                  onRemove={() => handleRemove(item.id)}
+                />
+              )
+            })}
+          </div>
+        )}
 
-        <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Drop Docs</p>
+        <p className='shrink-0 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Drop Docs</p>
 
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={cn(
-            'flex h-24 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
+            'flex flex-1 min-h-[64px] w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
             isDragOver && 'border-primary bg-accent/40'
           )}
         >
           <p className='font-mono text-xs text-muted-foreground'>Drop {accept} files here</p>
         </div>
-        {dropError && <p className='font-mono text-[10px] text-destructive'>{dropError}</p>}
+        {dropError && <p className='shrink-0 font-mono text-[10px] text-destructive'>{dropError}</p>}
 
         {customSources?.map((source) => (
           <DocCollectorCustomSourceRow
