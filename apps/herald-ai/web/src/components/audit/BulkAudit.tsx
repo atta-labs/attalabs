@@ -8,7 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/co
 import { NextLink } from '@atta/ui/lib/next-link'
 
 import { auditFailureMessage, ReportView } from '@/components/envoy/ReportView'
-import type { ResolvedCv, ResolvedJd } from '@/lib/audit-input/types'
+import type { ResolvedCv, ResolvedJd, CvInputKind } from '@/lib/audit-input/types'
 import type { MatchReport } from '@/lib/types'
 import { DocCollector, type DocCollectorItem } from '@atta/ui/doc-collector'
 import { resolveCvJsonRequest, resolveJdRequest } from '@/lib/audit-input/client'
@@ -133,21 +133,27 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
     }
 
     const resolvedCvs: ResolvedCv[] = [
-      ...readyCvs.map((cv) => ({
-        kind: (cv.kind === 'text' ? 'text' : cv.kind === 'pdf' ? 'pdf' : 'markdown') as 'text' | 'pdf' | 'markdown',
-        text: cv.text!,
-        username: null,
-        candidateLabel: cv.filename
-      })),
+      ...readyCvs.map((cv): ResolvedCv => {
+        const kind: CvInputKind = cv.kind === 'text' ? 'text' : cv.kind === 'pdf' ? 'pdf' : 'markdown'
+        return {
+          kind,
+          text: cv.text!,
+          username: null,
+          candidateLabel: cv.filename
+        }
+      }),
       ...resolvedCvProfiles
     ].slice(0, MAX_CANDIDATES)
 
     const resolvedJds: ResolvedJd[] = [
-      ...readyJds.map((jd) => ({
-        kind: (jd.kind === 'text' ? 'text' : jd.kind === 'pdf' ? 'pdf' : 'markdown') as 'text' | 'pdf' | 'markdown',
-        text: jd.text!,
-        sourceLabel: jd.filename
-      })),
+      ...readyJds.map((jd): ResolvedJd => {
+        const kind: 'text' | 'pdf' | 'markdown' = jd.kind === 'text' ? 'text' : jd.kind === 'pdf' ? 'pdf' : 'markdown'
+        return {
+          kind,
+          text: jd.text!,
+          sourceLabel: jd.filename
+        }
+      }),
       ...resolvedJdUrls
     ].slice(0, MAX_JDS)
 
@@ -350,8 +356,19 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                 <Input
                   type='text'
                   placeholder='username'
+                  aria-label='Herald Profile username'
                   value={cvProfileDraft}
                   onChange={(e) => setCvProfileDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      const val = cvProfileDraft.trim()
+                      if (val && !cvProfiles.includes(val)) {
+                        setCvProfiles((prev) => [...prev, val])
+                      }
+                      setCvProfileDraft('')
+                    }
+                  }}
                   className='font-mono text-sm'
                 />
                 <Button
@@ -408,8 +425,19 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                 <Input
                   type='url'
                   placeholder='https://...'
+                  aria-label='Job description URL'
                   value={jdUrlDraft}
                   onChange={(e) => setJdUrlDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      const val = jdUrlDraft.trim()
+                      if (val && !jdUrls.includes(val)) {
+                        setJdUrls((prev) => [...prev, val])
+                      }
+                      setJdUrlDraft('')
+                    }
+                  }}
                   className='font-sans text-sm'
                 />
                 <Button
