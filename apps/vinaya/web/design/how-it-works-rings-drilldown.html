@@ -1,0 +1,674 @@
+<title>vinaya — the mechanism, zoomed</title>
+<style>
+  :root{
+    --ground:#0b0f0d;
+    --panel:#121a17;
+    --panel-raised:#16201c;
+    --line:#223029;
+    --line-soft:#182420;
+    --ink:#eef2ee;
+    --ink-dim:#869089;
+    --ink-faint:#4c5850;
+    --ring0:#e0a84f;
+    --ring0-soft:#3a2e18;
+    --ring1:#4bc7b3;
+    --ring1-soft:#153a34;
+    --ring2:#9a86e6;
+    --ring2-soft:#241f3d;
+    --contracts:#7ea3c9;
+    --contracts-soft:#1b2733;
+    --roles:#c98a9e;
+    --roles-soft:#2a1c22;
+    --hub:#f5f7f4;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  a{color:inherit;}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0;}
+  :focus-visible{outline:2px solid var(--ring1);outline-offset:2px;}
+
+  .stage{position:relative;min-height:100vh;display:flex;flex-direction:column;}
+
+  .head{
+    border-bottom:1px solid var(--line-soft);
+    padding:16px 24px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    position:relative;z-index:5;
+  }
+  .word{font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:0.02em;}
+  .word span{color:var(--ink-faint);font-weight:400;}
+  .crumbs{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12.5px;color:var(--ink-dim);flex-wrap:wrap;}
+  .crumb-sep{color:var(--ink-faint);}
+  .crumb-btn{padding:4px 9px;border-radius:3px;border:1px solid transparent;transition:border-color .15s ease,color .15s ease,background .15s ease;letter-spacing:0.02em;}
+  .crumb-btn:hover{border-color:var(--line);background:var(--panel);}
+  .crumb-btn.current{color:var(--ink);background:var(--panel-raised);border-color:var(--line);}
+  .reset-btn{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);letter-spacing:0.06em;text-transform:uppercase;border:1px solid var(--line);padding:6px 11px;border-radius:3px;transition:color .15s ease,border-color .15s ease;}
+  .reset-btn:hover{color:var(--ink-dim);border-color:var(--ink-faint);}
+
+  .main{flex:1;display:grid;grid-template-columns:1fr;position:relative;}
+  .main.with-panel{grid-template-columns:1fr min(360px,40vw);}
+
+  .rig{position:relative;display:flex;align-items:center;justify-content:center;padding:24px;min-height:min(80vh,760px);}
+
+  .sweep-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+  .sweep{width:min(72vh,680px);height:min(72vh,680px);border-radius:50%;background:conic-gradient(from 0deg, color-mix(in oklab, var(--ring1) 18%, transparent), transparent 24%);opacity:0.5;}
+  @media (prefers-reduced-motion:no-preference){.sweep{animation:spin 10s linear infinite;}}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .diagram{width:100%;max-width:680px;height:auto;position:relative;z-index:1;}
+
+  .arc{cursor:pointer;transition:opacity .15s ease, filter .15s ease;}
+  .arc:hover{filter:brightness(1.18);}
+  .band{cursor:pointer;transition:filter .15s ease;fill:none;}
+  .band:hover{filter:brightness(1.25);}
+  .arc-label{font-family:var(--mono);pointer-events:none;}
+  .arc-label .t1{font-weight:700;letter-spacing:0.01em;}
+  .arc-label .t2{fill:var(--ink-faint);}
+  .band-label-box{cursor:pointer;}
+  .band-leader{fill:none;stroke-width:1;stroke-dasharray:1.5 4;opacity:0.6;pointer-events:none;}
+
+  .hub-group{cursor:pointer;}
+  .hub-group.leaf{cursor:default;}
+  .hub-circle{transition:filter .15s ease;}
+  .hub-group:not(.leaf):hover .hub-circle{filter:brightness(1.1);}
+  .hub-label{font-family:var(--mono);font-weight:700;pointer-events:none;}
+  .hub-sub{font-family:var(--mono);fill:var(--ink-faint);pointer-events:none;}
+
+  .ring-layer{transition:opacity .28s ease;}
+  @media (prefers-reduced-motion:no-preference){.ring-layer.entering{animation:fadeUp .32s ease both;}}
+  @keyframes fadeUp{from{opacity:0;transform:scale(0.96);}to{opacity:1;transform:scale(1);}}
+
+  .connector{stroke:var(--ink-faint);stroke-width:1;stroke-dasharray:2 4;fill:none;opacity:0.7;}
+  .connector-dot{fill:var(--ink-dim);}
+  .connector-label{font-family:var(--mono);font-size:10px;fill:var(--ink-dim);}
+
+  .caption{display:flex;justify-content:center;gap:22px;flex-wrap:wrap;padding:0 24px 22px;font-family:var(--mono);font-size:11px;color:var(--ink-dim);}
+  .cap-item{display:flex;align-items:center;gap:7px;}
+  .cap-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+
+  .panel{border-left:1px solid var(--line-soft);background:var(--panel);padding:26px 24px 24px;display:none;flex-direction:column;gap:18px;overflow-y:auto;}
+  .main.with-panel .panel{display:flex;}
+  .panel-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faint);margin:0;}
+  .panel-title{font-family:var(--mono);font-weight:700;font-size:19px;margin:0;line-height:1.25;}
+  .panel-title .tag{margin-left:10px;vertical-align:middle;}
+  .panel-row-label{font-family:var(--mono);font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 5px;}
+  .panel-row-value{font-size:13.5px;color:var(--ink-dim);line-height:1.55;margin:0;}
+  .panel-row-value.strong{color:var(--ink);}
+  .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;padding:3px 8px;border-radius:3px;}
+  .tag.human{background:var(--roles-soft);color:var(--roles);}
+  .tag.agent{background:var(--line-soft);color:var(--ink-dim);}
+
+  .intro-copy{max-width:64ch;font-size:14.5px;color:var(--ink-dim);line-height:1.6;margin:0;padding:0 24px 8px;text-align:center;margin-inline:auto;}
+  .intro-copy strong{color:var(--ink);font-weight:600;}
+
+  @media (max-width:860px){
+    .main.with-panel{grid-template-columns:1fr;}
+    .panel{border-left:none;border-top:1px solid var(--line-soft);}
+  }
+</style>
+
+<div class="stage">
+  <div class="head">
+    <div class="word">vinaya<span>/mechanism</span></div>
+    <nav class="crumbs" id="crumbs" aria-label="drill-down path"></nav>
+    <button class="reset-btn" id="resetBtn" type="button">reset ↺</button>
+  </div>
+
+  <p class="intro-copy" id="introCopy"></p>
+
+  <div class="main" id="mainEl">
+    <div class="rig">
+      <div class="sweep-wrap" aria-hidden="true"><div class="sweep"></div></div>
+      <svg class="diagram" id="svg" viewBox="0 0 720 720" role="img" aria-label="Radial drill-down diagram of the AEG enforcement model"></svg>
+    </div>
+    <div class="panel" id="panel"></div>
+  </div>
+
+  <div class="caption" id="caption"></div>
+</div>
+
+<script>
+(function(){
+  var row = function(label, value){ return { label:label, value:value }; };
+  var trow = function(label, value, tag){ return { label:label, value:value, tag:tag }; };
+
+  var leaf = function(id, label, sub, rows, tag){
+    return { id:id, label:label, sub:sub, rows:rows, tag:tag||null, children:null };
+  };
+
+  // ---- Ring 0 — Prevent (agent's own machine). Real hooks in .husky/. ----
+  var ring0 = {
+    id:'ring0', label:'RING 0', sub:'PREVENT — agent’s own machine', ringKey:'ring0',
+    children:[
+      leaf('pre-commit','pre-commit','refuses direct commits to main, then runs the full check', [
+        row('Catches','A commit made directly on main — every repo change must land via a worktree branch + PR + green merge, never a direct commit.'),
+        trow('Who pays / responsible','Nobody — the agent reads the refusal and works on a branch instead.','agent'),
+        row('Contract','.husky/pre-commit — exits 1 before the commit is created if HEAD is main, then runs bun run check.')
+      ]),
+      leaf('commit-msg','commit-msg','commitlint on every commit message', [
+        row('Catches','A malformed commit message — wrong type, bad scope format, header over 72 characters.'),
+        trow('Who pays / responsible','Nobody — the agent edits the message and retries.','agent'),
+        row('Contract','.husky/commit-msg → commitlint --edit, against commitlint.config.js.')
+      ]),
+      leaf('branch-topology','branch topology', 'branch name must literal-match the iteration file', [
+        row('Catches','A task/<iteration>/<n> push whose <n> doesn’t match a real row in that iteration’s topology file — the wrong-branch-name failure mode.'),
+        trow('Who pays / responsible','Nobody — the push is refused before it reaches origin.','agent'),
+        row('Contract','check-branch-topology.ts, run from .husky/pre-push on every task/*/* push.')
+      ]),
+      leaf('push-target','push-target check','refuses pushes to an already-resolved branch', [
+        row('Catches','A push to a task branch whose most recent PR is already merged or closed — work landing on a branch that’s already done.'),
+        trow('Who pays / responsible','Nobody at push time — but a network flake never blocks: this check fails open.','agent'),
+        row('Contract','check-push-target.ts, called from .husky/pre-push.')
+      ]),
+      leaf('first-push-gate','first-push dispatch gate','mechanizes the Developer’s own entry-gate', [
+        row('Catches','A task branch’s first push before its dependencies have actually merged, or while a conflicting sibling’s PR is still open.'),
+        trow('Who pays / responsible','Nobody — refused at the earliest possible moment, before any PR exists.','agent'),
+        row('Contract','check-first-push-dispatch.ts — runs verify-dispatch.ts in gate mode on the first push only.')
+      ]),
+      leaf('verify-docs-push','verify-docs --push','doc coverage, warn-only here', [
+        row('Catches','Missing doc coverage for the change — but this chokepoint can’t see a waiver label yet, since no PR exists.'),
+        trow('Who pays / responsible','Nobody yet — it warns, never blocks. Ring 1 is where this becomes a real gate.','agent'),
+        row('Contract','verify-docs.ts --push — always exits 0 here by design.')
+      ])
+    ]
+  };
+
+  // ---- Ring 1 — Detect (CI). Real jobs in .github/workflows/{ci,forge-lifecycle}.yml. ----
+  var ring1 = {
+    id:'ring1', label:'RING 1', sub:'DETECT — CI, the guarantee', ringKey:'ring1',
+    children:[
+      leaf('typecheck-tests','typecheck + tests','same rules, but nothing gets to skip them', [
+        row('Catches','Type errors and broken behavior in every package touched by the PR’s diff.'),
+        trow('Who pays / responsible','Merge is blocked until this is green.','agent'),
+        row('Contract','ci.yml → typecheck-and-tests job.')
+      ]),
+      leaf('coherence-oracle','coherence oracle','plan vs. reality, checked in JSON mode', [
+        row('Catches','A PR whose plan and reality have diverged — A1/A2/A3 incoherence classes.'),
+        trow('Who pays / responsible','Merge blocked; aeg:incoherent label applied automatically on failure.','agent'),
+        row('Contract','forge-lifecycle.yml → coherence oracle (blocking) + label step.')
+      ]),
+      leaf('doc-gate','documentation gate','tier-appropriate doc coverage', [
+        row('Catches','A change that needed doc coverage and didn’t get it — the same thing Ring 0 could only warn about.'),
+        trow('Who pays / responsible','Merge blocked unless a principal has applied a waiver:docs label.','agent'),
+        row('Contract','forge-lifecycle.yml → tier-appropriate documentation gate.')
+      ]),
+      leaf('biome-colors','biome + forbidden colors','style and this repo’s UI token rule', [
+        row('Catches','Lint/format violations, and — specifically — any hardcoded color outside the semantic token set.'),
+        trow('Who pays / responsible','Merge blocked until clean.','agent'),
+        row('Contract','forge-lifecycle.yml → Biome lint/format + Forbidden colors (UI) steps.')
+      ]),
+      leaf('brief-validation','brief validation','no brief, no merge', [
+        row('Catches','A PR with no brief, or a malformed one.'),
+        trow('Who pays / responsible','needs:brief-correction label applied; merge blocked.','agent'),
+        row('Contract','forge-lifecycle.yml → Brief Validation job.')
+      ]),
+      leaf('single-plan-pr','single-plan-PR guard','one open plan PR per iteration', [
+        row('Catches','A second open plan PR for an iteration that already has one — a planning-side race.'),
+        trow('Who pays / responsible','Merge blocked on the newer one.','agent'),
+        row('Contract','forge-lifecycle.yml → single-plan-PR guard (ring-1 backstop).')
+      ])
+    ]
+  };
+
+  // ---- Ring 2 — Audit (post-merge, continuous). Real jobs in archivist.yml. ----
+  var ring2 = {
+    id:'ring2', label:'RING 2', sub:'AUDIT — post-merge, continuous', ringKey:'ring2',
+    children:[
+      leaf('post-merge','post-merge archivist','changelog, provenance, state.md', [
+        row('Catches','A merged PR with no changelog entry, no provenance block, no updated project state.'),
+        trow('Who pays / responsible','Nobody blocked — this runs after the merge already happened.','agent'),
+        row('Contract','archivist.yml → post-merge job, runs archive-task.')
+      ]),
+      leaf('daily-drift','daily drift check','stale blockers, dead branches', [
+        row('Catches','Blockers that have gone stale, and branches abandoned mid-task.'),
+        trow('Who pays / responsible','Flagged for a human to act on — never auto-resolved.','agent'),
+        row('Contract','archivist.yml → daily-drift job (stale-blocker + dead-branch-audit), scheduled.')
+      ]),
+      leaf('direct-main-detect','direct-main-push detection','the forensic catch for a bypass', [
+        row('Catches','A commit on main that didn’t come through a merged PR — Ring 0/1 got bypassed somehow.'),
+        trow('Who pays / responsible','Nobody automatically — it surfaces the incident; a human decides what happens next.','agent'),
+        row('Contract','archivist.yml → direct-main-push-detection job.')
+      ])
+    ]
+  };
+
+  // ---- Contracts — the fixed interfaces the mechanism depends on. ----
+  var contracts = {
+    id:'contracts', label:'CONTRACTS', sub:'the interfaces everything else depends on', ringKey:'contracts',
+    children:[
+      leaf('brief','the brief','the unit of context', [
+        row('Defines','Every section an agent needs to execute — tier, scope, stop-conditions, test plan. If it isn’t in the brief, it doesn’t exist.'),
+        trow('Produced by','Team Leader','agent'),
+        row('Consumed by','Developer, Reviewer, Archivist — pasted into the PR body, its one permanent home, never committed as a file.')
+      ]),
+      leaf('brief-in-pr','brief-in-PR-body','where the brief actually lives', [
+        row('Defines','The brief lives in the PR description, never the Issue — so Reviewer and Archivist always find it attached to the work it governed.'),
+        trow('Produced by','Developer, on opening the PR','agent'),
+        row('Consumed by','Reviewer, Security, Archivist.')
+      ]),
+      leaf('check-json','check --json','one shape, three consumers', [
+        row('Defines','A versioned, machine-readable shape for check results — so the CLI, CI, and Studio all agree on what “passing” means.'),
+        trow('Produced by','the @atta/aeg-core check engine','agent'),
+        row('Consumed by','vinaya check (CLI), CI workflows, the Studio renderer.')
+      ]),
+      leaf('statesource','StateSource contract','one interface, two backends', [
+        row('Defines','A pure, typed interface for reading forge state — implemented once by a forge adapter, once by a file adapter.'),
+        trow('Produced by','@atta/aeg-core (types only)','agent'),
+        row('Consumed by','Vinaya CLI and Vinaya Studio — one-way imports, both directions.')
+      ]),
+      leaf('provenance-block','provenance block','the permanent record', [
+        row('Defines','Brief + reviews + decision log + merge metadata, assembled from already-frozen facts and posted once — append-only.'),
+        trow('Produced by','Archivist','agent'),
+        row('Consumed by','Anyone auditing the merged PR later.')
+      ]),
+      leaf('issue-template','issue template','the only fields an Issue is allowed', [
+        row('Defines','Deps / conflicts / project label / ticket link only — CI rejects any other planning field written onto it.'),
+        trow('Produced by','Team Leader, opening the Issue','agent'),
+        row('Consumed by','Every role that self-locates against forge state.')
+      ])
+    ]
+  };
+
+  // ---- Roles — who acts, human or agent. ----
+  var roles = {
+    id:'roles', label:'ROLES', sub:'who acts — human or agent', ringKey:'roles',
+    children:[
+      leaf('principal','Principal','the only merge authority', [
+        row('Does','Ratifies irreversible decisions; the only one who can merge (Step 8).'),
+        row('Touches','Ring 1 — the merge decision · Ring 2 — Tier 3 ratification'),
+        row('Refuses when','— final authority; nothing sits above it to refuse to.')
+      ], 'human'),
+      leaf('team-leader','Team Leader','plans, then writes the brief', [
+        row('Does','Turns intent into an iteration (Planner mode); writes the brief a Developer executes against (Brief Author mode).'),
+        row('Touches','Before Ring 0 — the brief exists before any commit does.'),
+        row('Refuses when','Asked to write code instead of a brief, or to implement directly.')
+      ], 'agent'),
+      leaf('developer','Developer','executes the brief, opens the PR', [
+        row('Does','Opens a worktree, writes the code, runs the local checks, opens the PR.'),
+        row('Touches','Ring 0 — runs the local hooks · Ring 1 — opens into CI'),
+        row('Refuses when','Input isn’t a well-formed brief; a depends-on isn’t merged; a conflicts-with sibling’s PR is open.')
+      ], 'agent'),
+      leaf('reviewer','Reviewer','independent judgment, fresh context', [
+        row('Does','Judges brief-conformance and spec-conformance on a PR it did not write.'),
+        row('Touches','Ring 1 — produces APPROVE / REQUEST CHANGES'),
+        row('Refuses when','No open PR; no brief in the PR body; or it authored the code.')
+      ], 'agent'),
+      leaf('security','Security','an independent security pass', [
+        row('Does','Reviews the same PR for secrets, auth misconfig, injection surfaces.'),
+        row('Touches','Ring 1 — produces PASS / FAIL'),
+        row('Refuses when','Same gate as Reviewer: no open PR, or no brief in the PR body.')
+      ], 'agent'),
+      leaf('archivist','Archivist','closes out, writes the record', [
+        row('Does','Confirms the changelog, decision log, and provenance block; updates every project’s state.md.'),
+        row('Touches','Ring 2 — runs only after merge'),
+        row('Refuses when','The PR is not merged: “Nothing to close out; merge first.”')
+      ], 'agent')
+    ]
+  };
+
+  var tree = {
+    id:'github', label:'GITHUB', sub:'source of truth', ringKey:'hub',
+    children:[contracts, ring0, ring1, ring2, roles]
+  };
+
+  var ringVar = function(key){
+    return {ring0:'--ring0',ring1:'--ring1',ring2:'--ring2',contracts:'--contracts',roles:'--roles'}[key] || '--hub';
+  };
+  var ringSoftVar = function(key){
+    return {ring0:'--ring0-soft',ring1:'--ring1-soft',ring2:'--ring2-soft',contracts:'--contracts-soft',roles:'--roles-soft'}[key] || '--line-soft';
+  };
+
+  var path = [tree];
+  function current(){ return path[path.length - 1]; }
+
+  function polar(cx, cy, r, angleDeg){
+    var a = (angleDeg - 90) * Math.PI / 180;
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  }
+
+  function sectorPath(cx, cy, rIn, rOut, a0, a1){
+    var p0 = polar(cx, cy, rOut, a0);
+    var p1 = polar(cx, cy, rOut, a1);
+    var p2 = polar(cx, cy, rIn, a1);
+    var p3 = polar(cx, cy, rIn, a0);
+    var large = (a1 - a0) > 180 ? 1 : 0;
+    return ['M', p0.x, p0.y, 'A', rOut, rOut, 0, large, 1, p1.x, p1.y,
+            'L', p2.x, p2.y, 'A', rIn, rIn, 0, large, 0, p3.x, p3.y, 'Z'].join(' ');
+  }
+
+  function svgns(tag){ return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+  function wrapLabel(s, max){
+    var words = s.split(' ');
+    var lines = []; var cur = '';
+    words.forEach(function(w){
+      var test = cur ? cur + ' ' + w : w;
+      if(test.length > max && cur){ lines.push(cur); cur = w; } else { cur = test; }
+    });
+    if(cur) lines.push(cur);
+    return lines;
+  }
+
+  function drawHubLabel(group, cx, cy, node, hubR, hasChildren){
+    var labelLines = wrapLabel(node.label, 16);
+    var startY = cy - ((labelLines.length - 1) * 8);
+    labelLines.forEach(function(line, i){
+      var t = svgns('text');
+      t.setAttribute('class', 'hub-label');
+      t.setAttribute('x', cx); t.setAttribute('y', startY + i * 16 - (hasChildren ? 2 : -2));
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('font-size', hasChildren ? '13' : '15');
+      t.setAttribute('fill', 'var(--ink)');
+      t.textContent = line;
+      group.appendChild(t);
+    });
+    if(node.sub){
+      var subLines = wrapLabel(node.sub, 20);
+      subLines.forEach(function(line, i){
+        var s = svgns('text');
+        s.setAttribute('class', 'hub-sub');
+        s.setAttribute('x', cx);
+        s.setAttribute('y', startY + labelLines.length * 16 + i * 12 + 4);
+        s.setAttribute('text-anchor', 'middle');
+        s.setAttribute('font-size', '9.5');
+        s.textContent = line;
+        group.appendChild(s);
+      });
+    }
+  }
+
+  function renderRoot(layer, cx, cy){
+    var node = tree;
+    var hubR = 58;
+    var hubGroup = svgns('g');
+    hubGroup.setAttribute('class', 'hub-group leaf');
+    var hubCircle = svgns('circle');
+    hubCircle.setAttribute('class', 'hub-circle');
+    hubCircle.setAttribute('cx', cx); hubCircle.setAttribute('cy', cy); hubCircle.setAttribute('r', hubR);
+    hubCircle.setAttribute('fill', 'var(--panel-raised)');
+    hubCircle.setAttribute('stroke', 'var(--hub)');
+    hubCircle.setAttribute('stroke-width', '1.5');
+    hubGroup.appendChild(hubCircle);
+    drawHubLabel(hubGroup, cx, cy, node, hubR, true);
+    layer.appendChild(hubGroup);
+
+    var bandWidth = 22, gapBetween = 12;
+    var order = node.children; // contracts, ring0, ring1, ring2, roles — innermost to outermost
+    var angles = [0, 72, 144, 216, 288];
+    var rIn = hubR + 16;
+
+    order.forEach(function(child, i){
+      var rOut = rIn + bandWidth;
+      var rMid = (rIn + rOut) / 2;
+      var color = ringVar(child.ringKey);
+
+      var band = svgns('circle');
+      band.setAttribute('class', 'band');
+      band.setAttribute('cx', cx); band.setAttribute('cy', cy); band.setAttribute('r', rMid);
+      band.setAttribute('stroke', 'var(' + color + ')');
+      band.setAttribute('stroke-opacity', child.ringKey === 'contracts' || child.ringKey === 'roles' ? '0.45' : '0.7');
+      band.setAttribute('stroke-width', bandWidth);
+      band.addEventListener('click', function(){ path.push(child); render(); });
+      layer.appendChild(band);
+
+      var angle = angles[i];
+      var labelR = rIn + 16 + (order.length - 1 - i) * 0; // placeholder, recomputed below
+      var boxR = 300 - i * 0;
+      var leadFrom = polar(cx, cy, rMid, angle);
+      var leadTo = polar(cx, cy, 300, angle);
+
+      var leader = svgns('path');
+      leader.setAttribute('class', 'band-leader');
+      leader.setAttribute('stroke', 'var(' + color + ')');
+      leader.setAttribute('d', 'M ' + leadFrom.x + ' ' + leadFrom.y + ' L ' + leadTo.x + ' ' + leadTo.y);
+      layer.appendChild(leader);
+
+      var boxW = 132, boxH = 34;
+      var boxX = leadTo.x - boxW / 2;
+      var boxY = leadTo.y - boxH / 2;
+      // keep labels inside the viewport
+      boxX = Math.max(6, Math.min(720 - boxW - 6, boxX));
+      boxY = Math.max(6, Math.min(720 - boxH - 6, boxY));
+
+      var g = svgns('g');
+      g.setAttribute('class', 'band-label-box');
+      g.addEventListener('click', function(){ path.push(child); render(); });
+
+      var rect = svgns('rect');
+      rect.setAttribute('x', boxX); rect.setAttribute('y', boxY);
+      rect.setAttribute('width', boxW); rect.setAttribute('height', boxH);
+      rect.setAttribute('rx', 4);
+      rect.setAttribute('fill', 'var(--panel)');
+      rect.setAttribute('stroke', 'var(' + color + ')');
+      rect.setAttribute('stroke-opacity', '0.6');
+      g.appendChild(rect);
+
+      var t1 = svgns('text');
+      t1.setAttribute('class', 'arc-label');
+      t1.setAttribute('x', boxX + boxW / 2); t1.setAttribute('y', boxY + 15);
+      t1.setAttribute('text-anchor', 'middle'); t1.setAttribute('font-size', '10.5');
+      t1.setAttribute('font-weight', '700'); t1.setAttribute('fill', 'var(' + color + ')');
+      t1.textContent = child.label;
+      g.appendChild(t1);
+
+      var t2 = svgns('text');
+      t2.setAttribute('class', 'arc-label t2');
+      t2.setAttribute('x', boxX + boxW / 2); t2.setAttribute('y', boxY + 27);
+      t2.setAttribute('text-anchor', 'middle'); t2.setAttribute('font-size', '8.5');
+      t2.textContent = wrapLabel(child.sub, 24)[0];
+      g.appendChild(t2);
+
+      layer.appendChild(g);
+      rIn = rOut + gapBetween;
+    });
+
+    // connectors: agent / human touching the whole diagram
+    var mk = function(x, y, dx, dy, label, color){
+      var dot = svgns('circle');
+      dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', 3.5);
+      dot.setAttribute('fill', color);
+      layer.appendChild(dot);
+      var line = svgns('path');
+      line.setAttribute('class', 'connector');
+      line.setAttribute('d', 'M ' + x + ' ' + y + ' Q ' + (x + dx * 0.6) + ' ' + (y + dy * 0.2) + ' ' + (x + dx) + ' ' + (y + dy));
+      layer.appendChild(line);
+      var t = svgns('text');
+      t.setAttribute('class', 'connector-label');
+      t.setAttribute('x', x + dx + (dx > 0 ? 8 : -8));
+      t.setAttribute('y', y + dy + 4);
+      t.setAttribute('text-anchor', dx > 0 ? 'start' : 'end');
+      t.textContent = label;
+      layer.appendChild(t);
+    };
+    mk(36, 36, 30, 55, 'agent writes code', 'var(--ink-dim)');
+    mk(684, 684, -30, -55, 'human reviews + ratifies', 'var(--roles)');
+  }
+
+  function renderZoomed(layer, cx, cy, node){
+    var hasChildren = node.children && node.children.length;
+    var hubR = hasChildren ? 82 : 110;
+
+    var hubGroup = svgns('g');
+    hubGroup.setAttribute('class', 'hub-group' + (hasChildren ? '' : ' leaf'));
+    var hubCircle = svgns('circle');
+    hubCircle.setAttribute('class', 'hub-circle');
+    hubCircle.setAttribute('cx', cx); hubCircle.setAttribute('cy', cy); hubCircle.setAttribute('r', hubR);
+    hubCircle.setAttribute('fill', 'var(--panel-raised)');
+    hubCircle.setAttribute('stroke', 'var(' + ringVar(node.ringKey) + ')');
+    hubCircle.setAttribute('stroke-width', '1.5');
+    hubGroup.appendChild(hubCircle);
+    drawHubLabel(hubGroup, cx, cy, node, hubR, hasChildren);
+
+    hubGroup.addEventListener('click', function(){ path.pop(); render(); });
+    layer.appendChild(hubGroup);
+
+    if(hasChildren){
+      var n = node.children.length;
+      var gap = 3.2;
+      var span = 360 / n;
+      var rIn = hubR + 22;
+      var rOut = rIn + 128;
+
+      node.children.forEach(function(child, i){
+        var a0 = i * span + gap / 2;
+        var a1 = (i + 1) * span - gap / 2;
+        var arc = svgns('path');
+        arc.setAttribute('class', 'arc');
+        arc.setAttribute('d', sectorPath(cx, cy, rIn, rOut, a0, a1));
+        var key = node.ringKey;
+        arc.setAttribute('fill', 'var(' + ringSoftVar(key) + ')');
+        arc.setAttribute('stroke', 'var(' + ringVar(key) + ')');
+        arc.setAttribute('stroke-opacity', '0.55');
+        arc.setAttribute('stroke-width', '1');
+        arc.addEventListener('click', function(){ path.push(child); render(); });
+        layer.appendChild(arc);
+
+        var mid = (a0 + a1) / 2;
+        var rMid = (rIn + rOut) / 2;
+        var pos = polar(cx, cy, rMid, mid);
+        var g = svgns('g');
+        g.setAttribute('class', 'arc-label');
+        g.style.pointerEvents = 'none';
+
+        var lines = wrapLabel(child.label, 14);
+        var t0y = pos.y - ((lines.length - 1) * 7) - 6;
+        lines.forEach(function(line, li){
+          var t = svgns('text');
+          t.setAttribute('class', 't1');
+          t.setAttribute('x', pos.x); t.setAttribute('y', t0y + li * 14);
+          t.setAttribute('text-anchor', 'middle');
+          t.setAttribute('font-size', '12');
+          t.setAttribute('fill', 'var(--ink)');
+          t.textContent = line;
+          g.appendChild(t);
+        });
+
+        if(child.sub){
+          var subw = wrapLabel(child.sub, 18).slice(0, 2);
+          subw.forEach(function(line, si){
+            var t2 = svgns('text');
+            t2.setAttribute('class', 't2');
+            t2.setAttribute('x', pos.x);
+            t2.setAttribute('y', t0y + lines.length * 14 + si * 11 + 3);
+            t2.setAttribute('text-anchor', 'middle');
+            t2.setAttribute('font-size', '9');
+            t2.textContent = line;
+            g.appendChild(t2);
+          });
+        }
+        layer.appendChild(g);
+      });
+    }
+  }
+
+  function render(){
+    var node = current();
+    var svg = document.getElementById('svg');
+    svg.innerHTML = '';
+    var cx = 360, cy = 360;
+
+    var layer = svgns('g');
+    layer.setAttribute('class', 'ring-layer entering');
+
+    if(node.id === 'github'){
+      renderRoot(layer, cx, cy);
+    } else {
+      renderZoomed(layer, cx, cy, node);
+    }
+
+    svg.appendChild(layer);
+    renderCrumbs();
+    renderPanel(node);
+    renderCaption();
+  }
+
+  function renderCrumbs(){
+    var el = document.getElementById('crumbs');
+    el.innerHTML = '';
+    path.forEach(function(n, i){
+      if(i > 0){
+        var sep = document.createElement('span');
+        sep.className = 'crumb-sep'; sep.textContent = '/';
+        el.appendChild(sep);
+      }
+      var btn = document.createElement('button');
+      btn.className = 'crumb-btn' + (i === path.length - 1 ? ' current' : '');
+      btn.type = 'button';
+      btn.textContent = n.label.toLowerCase();
+      btn.addEventListener('click', function(){ path = path.slice(0, i + 1); render(); });
+      el.appendChild(btn);
+    });
+  }
+
+  function escapeHtml(s){
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function renderPanel(node){
+    var main = document.getElementById('mainEl');
+    var panel = document.getElementById('panel');
+    var intro = document.getElementById('introCopy');
+
+    if(node.rows){
+      main.classList.add('with-panel');
+      intro.style.display = 'none';
+      var parent = path[path.length - 2];
+      var html =
+        '<div>' +
+          '<p class="panel-eyebrow">' + escapeHtml(parent.label) + ' → ' + escapeHtml(node.label) + '</p>' +
+          '<h3 class="panel-title">' + escapeHtml(node.label) +
+            (node.tag ? '<span class="tag ' + node.tag + '">' + node.tag + '</span>' : '') +
+          '</h3>' +
+        '</div>';
+      node.rows.forEach(function(r){
+        html += '<div>' +
+          '<p class="panel-row-label">' + escapeHtml(r.label) + '</p>' +
+          '<p class="panel-row-value' + (r.tag ? ' strong' : '') + '">' + escapeHtml(r.value) +
+            (r.tag ? '<span class="tag ' + r.tag + '" style="margin-left:8px;">' + r.tag + '</span>' : '') +
+          '</p>' +
+        '</div>';
+      });
+      panel.innerHTML = html;
+    } else {
+      main.classList.remove('with-panel');
+      intro.style.display = '';
+      intro.textContent = node.id === 'github'
+        ? 'Five layers around one source of truth — innermost to outermost: the contracts everything depends on, then Ring 0 (prevent), Ring 1 (detect), Ring 2 (audit), then the roles that operate all of it. Click a ring to zoom in.'
+        : 'Click a segment to keep zooming — down to what it catches, who answers for it, and the exact file or job that enforces it.';
+    }
+  }
+
+  function renderCaption(){
+    var el = document.getElementById('caption');
+    if(current().id !== 'github'){ el.innerHTML = ''; return; }
+    var items = [
+      ['--contracts', 'contracts — the interfaces'],
+      ['--ring0', 'ring 0 — prevent'],
+      ['--ring1', 'ring 1 — detect'],
+      ['--ring2', 'ring 2 — audit'],
+      ['--roles', 'roles — who acts']
+    ];
+    el.innerHTML = items.map(function(it){
+      return '<div class="cap-item"><span class="cap-dot" style="background:var(' + it[0] + ')"></span>' + it[1] + '</div>';
+    }).join('');
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    path = [tree];
+    render();
+  });
+
+  render();
+})();
+</script>
