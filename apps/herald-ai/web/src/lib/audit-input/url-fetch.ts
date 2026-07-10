@@ -179,13 +179,48 @@ async function realLookup(hostname: string): Promise<ResolvedAddress[]> {
   return records.map((r) => ({ address: r.address, family: r.family as 4 | 6 }))
 }
 
+type NodeLookupCallback = (err: null, address: string, family: number) => void
+type NodeLookupAllCallback = (err: null, addresses: { address: string; family: number }[]) => void
+type NodeLookupOptions = { all?: boolean } | undefined
+
+/**
+ * Builds the custom `lookup` function passed to undici's `Agent({ connect })`
+ * — pins the TCP connect to a single already-validated address regardless of
+ * what `hostname` resolves to at connect time (closes the DNS-rebinding race
+ * window; see this file's header comment, layer 3).
+ *
+ * Exported and pulled out of `realFetch` specifically so both callback
+ * shapes below are independently testable. Node 20+'s Happy Eyeballs
+ * dual-stack connect (`lookupAndConnectMultiple`, default since Node 20)
+ * invokes a custom `lookup` with `{ all: true }` and expects the
+ * array-of-addresses callback shape; without `all`, it expects the
+ * single-address shape. Answering only the single-address shape — the
+ * original implementation — silently breaks under the `{ all: true }` path
+ * with `TypeError [ERR_INVALID_IP_ADDRESS]: Invalid IP address: undefined`,
+ * surfacing to callers as an opaque "fetch failed" on every URL, not just
+ * protected sites (confirmed by reproducing against a real, unprotected,
+ * working URL before this fix).
+ */
+export function pinnedLookup(
+  address: string,
+  family: 4 | 6
+): (hostname: string, opts: NodeLookupOptions, cb: NodeLookupCallback | NodeLookupAllCallback) => void {
+  return (_hostname, opts, cb) => {
+    if (opts && typeof opts === 'object' && 'all' in opts && opts.all) {
+      ;(cb as NodeLookupAllCallback)(null, [{ address, family }])
+    } else {
+      ;(cb as NodeLookupCallback)(null, address, family)
+    }
+  }
+}
+
 async function realFetch(url: string, init: SafeFetchInit): Promise<Response> {
   // Lazy import undici only when needed — keeps the lib usable in test envs
   // that swap `fetchImpl` without touching network primitives.
   const { Agent, fetch: undiciFetch } = await import('undici')
   const dispatcher = new Agent({
     connect: {
-      lookup: (_hostname, _opts, cb) => cb(null, init.pinnedAddress, init.pinnedFamily)
+      lookup: pinnedLookup(init.pinnedAddress, init.pinnedFamily)
     }
   })
   try {

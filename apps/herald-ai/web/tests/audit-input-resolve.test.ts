@@ -15,6 +15,7 @@ import {
   fetchAndExtractText,
   isPrivateIPv6,
   parseCharsetFromContentType,
+  pinnedLookup,
   type ResolvedAddress,
   type SafeFetchDeps,
   validateJdUrl
@@ -383,6 +384,59 @@ describe('fetchAndExtractText — SSRF defense-in-depth', () => {
     await expect(fetchAndExtractText('https://public.example.com/', { lookup, fetchImpl })).rejects.toThrow(
       /Redirect blocked/
     )
+  })
+})
+
+describe('pinnedLookup — undici Agent connect.lookup, both Node callback shapes', () => {
+  // Regression coverage for the bug that made every real-world URL fetch
+  // fail with a generic "Fetch failed: fetch failed" regardless of target
+  // site (reproduced against a live, unprotected Greenhouse job posting
+  // before this fix — not Binance-specific, not a WAF issue). Node 20+'s
+  // Happy Eyeballs dual-stack connect (`lookupAndConnectMultiple`, the
+  // default since Node 20) invokes a custom `lookup` with `{ all: true }`
+  // and expects the array-of-addresses callback shape; the older code
+  // always answered in the single-address shape, so Node's internals
+  // received `undefined` where they expected an array —
+  // `TypeError [ERR_INVALID_IP_ADDRESS]: Invalid IP address: undefined`,
+  // several layers below anything `fetchAndExtractText`'s own
+  // `fetchImpl`/`lookup` injection points reach (those replace `realFetch`
+  // entirely; `pinnedLookup` is what `realFetch` builds internally). Its
+  // own callback signature is exactly what this test exercises directly.
+
+  it('without `{ all: true }` (legacy single-connect path): answers (err, address, family)', () => {
+    const lookup = pinnedLookup('93.184.216.34', 4)
+    let seen: unknown[] = []
+    lookup('example.com', undefined, (...args: unknown[]) => {
+      seen = args
+    })
+    expect(seen).toEqual([null, '93.184.216.34', 4])
+  })
+
+  it('with `{ all: true }` (Node 20+ Happy Eyeballs path): answers (err, [{address, family}]) — the exact fix', () => {
+    const lookup = pinnedLookup('93.184.216.34', 4)
+    let seen: unknown[] = []
+    lookup('example.com', { all: true }, (...args: unknown[]) => {
+      seen = args
+    })
+    expect(seen).toEqual([null, [{ address: '93.184.216.34', family: 4 }]])
+  })
+
+  it('with `{ all: false }`: still answers the single-address shape, not the array shape', () => {
+    const lookup = pinnedLookup('93.184.216.34', 4)
+    let seen: unknown[] = []
+    lookup('example.com', { all: false }, (...args: unknown[]) => {
+      seen = args
+    })
+    expect(seen).toEqual([null, '93.184.216.34', 4])
+  })
+
+  it('pins the exact address/family it was built with, regardless of the hostname argument', () => {
+    const lookup = pinnedLookup('2001:db8::1', 6)
+    let seen: unknown[] = []
+    lookup('this-hostname-is-ignored.example.com', { all: true }, (...args: unknown[]) => {
+      seen = args
+    })
+    expect(seen).toEqual([null, [{ address: '2001:db8::1', family: 6 }]])
   })
 })
 

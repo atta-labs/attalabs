@@ -645,10 +645,10 @@ Principal explicitly ruled out extending `SmartPromptInput` for this
 documents doesn't fit a single-message-with-attachments shape. It is a new,
 separate, standalone primitive.
 
-`DocCollector` shares `AttachmentTileItem` with `SmartPromptInput` — the
-tile visual now lives at `packages/ui/doc-collector/attachment-tile-item.tsx`
-as a common export (`FileExtra` interface included), rather than being
-duplicated. `SmartPromptInput` imports it from there too.
+`DocCollector` shares `AttachmentChip` with `SmartPromptInput` — the tile
+visual lives at `packages/ui/lib/attachment-chip.tsx` (`AttachmentChip` +
+`AttachmentChipProps`) as a common export, rather than being duplicated.
+`SmartPromptInput` imports it from there too.
 
 #### Behavior
 
@@ -665,20 +665,35 @@ duplicated. `SmartPromptInput` imports it from there too.
   on any length threshold — unlike `SmartPromptInput`'s `pasteToFileChars`,
   there is no such path here. A tile is created only on explicit click of
   the Add button.
-- **Newest-first ordering.** The tile row (`flex gap-2 overflow-x-auto`,
-  matching `SmartPromptInput`'s `AttachmentTiles` pattern) always shows the
-  most recently committed item first, sorted by `addedAt`.
+- **Newest-first ordering.** The tile row (conditionally rendered only when
+  `items.length > 0`, `flex items-center gap-2 overflow-x-auto`) always shows
+  the most recently committed item first, sorted by `addedAt`.
+- **Custom sources (resolve-then-insert).** Each entry in `customSources`
+  renders its own labeled row (`Input` + `Add` button) below the drop zone.
+  Unlike file drops, a custom source resolves *before* any tile is created —
+  `source.resolve(value)` is awaited first; only on success is a
+  `status: 'ready'` tile inserted. On rejection, nothing is added to the
+  list — the row reports the error itself (via `source.onError` if the
+  consumer provided one, else an inline message that self-clears after 4s).
+  This intentionally differs from the drop-zone's instant-tile-then-patch
+  pattern: a dropped file is a real artifact worth showing even if
+  unreadable, but a mistyped username/URL shouldn't leave a permanent error
+  tile in the collected-documents list.
 
 #### Props
 
 | Prop | Type | Default | Purpose |
 |------|------|---------|---------|
-| `onItemsChange` | `(items: DocCollectorItem[]) => void` | — | Fired on every items-array change — drop, resolution completing, removal, Add commit. Consumers read resolved `text` from here; `DocCollector` does not compute word/token counts itself. |
+| `onItemsChange` | `(items: DocCollectorItem[]) => void` | — | Fired on every items-array change — drop, resolution completing, removal, Add commit, custom-source resolution. Consumers read resolved `text` from here; `DocCollector` does not compute word/token counts itself. |
 | `accept` | `string` | `'.md,.pdf'` | File-drop accept string. |
-| `className` | `string` | — | Outer wrapper className. |
-| `components` | `DocCollectorComponents` | `{}` | **INJECTION CONTRACT** — see Governance section above. Consumer-injected library primitives: `Textarea`, `Button`. Each is optional; the collector degrades to a native `<textarea>`/`<button>` when undefined (graceful first-paint window for runtime libraries). `DocCollector` resolves NO library itself. |
+| `className` | `string` | — | Outer wrapper className. Consumers needing stable multi-column layouts (e.g. Herald's Bulk Audit, two `DocCollector`s side by side) pin an explicit height here so the drop zone — not the whole card — absorbs the height delta between empty and populated states. |
+| `components` | `DocCollectorComponents` | `{}` | **INJECTION CONTRACT** — see Governance section above. Consumer-injected library primitives: `Textarea`, `Button`, `Input`. Each is optional; the collector degrades to a native `<textarea>`/`<input>`/`<button>` when undefined (graceful first-paint window for runtime libraries). `DocCollector` resolves NO library itself. |
+| `customSources` | `DocCollectorCustomSource[]` | — | Extra named ways to add an item beyond file-drop/paste — e.g. Herald's "Add by Herald Username" and "Add by URL" rows. See below. |
 
-`DocCollectorItem` shape: `{ id, filename, kind: 'md' | 'pdf' | 'text', status: 'resolving' | 'ready' | 'error', text?, error?, addedAt }`.
+`DocCollectorItem` shape: `{ id, filename, kind: 'md' | 'pdf' | 'text', status: 'resolving' | 'ready' | 'error', text?, error?, addedAt, meta?: unknown }`.
+`meta` is an opaque per-item payload — `DocCollector` never reads or interprets it, only stores and returns it. It exists so a `customSources.resolve()` can round-trip extra structured data to the consumer alongside `text`/`filename` (e.g. Herald's CV-by-username source stashes `{ username }` in `meta` so `BulkAudit.tsx` can tell the `/api/audit` batch endpoint to re-fetch the *live* profile at audit time instead of trusting the resolved-at-add-time text snapshot).
+
+`DocCollectorCustomSource` shape: `{ label: string, placeholder: string, type?: string, resolve: (value: string) => Promise<{ text: string; filename: string; meta?: unknown }>, onError?: (message: string) => void }`. `resolve` throwing rejects the add (no tile created); `onError` is optional so `DocCollector` stays toast-library-agnostic — omit it and the row falls back to an inline error message instead.
 
 #### Injection contract implementation
 

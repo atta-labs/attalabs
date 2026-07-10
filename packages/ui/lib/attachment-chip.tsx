@@ -73,7 +73,7 @@ export function AttachmentChip({ filename, status = 'ready', meta, preview, erro
         aria-label={`Remove ${filename}`}
         onClick={onRemove}
         onMouseDown={(e) => e.preventDefault()}
-        className='absolute -right-1.5 -top-1.5 z-10 hidden h-4 w-4 items-center justify-center rounded-full bg-foreground text-background shadow ring-1 ring-background/40 transition hover:bg-foreground/80 group-hover:flex'
+        className='absolute -right-1.5 -top-1.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background shadow ring-1 ring-background/40 transition hover:bg-foreground/80'
       >
         <X className='h-2.5 w-2.5' />
       </button>

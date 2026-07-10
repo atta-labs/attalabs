@@ -23,10 +23,29 @@ export interface DocCollectorItem {
   error?: string
   /** `Date.now()` at commit time — drives newest-first ordering. */
   addedAt: number
+  /** Opaque consumer payload — DocCollector never reads or interprets this. */
+  meta?: unknown
+}
+
+export interface DocCollectorCustomSource {
+  /** Short label, e.g. "Herald Profile" or "URL" — shown as "Or add by <label>". */
+  label: string
+  placeholder: string
+  /** Native input type, e.g. 'text' | 'url'. Defaults to 'text'. */
+  type?: string
+  /** Resolves the typed value into item text + a display filename (+ optional opaque meta). Throw to reject the add; no tile is created. */
+  resolve: (value: string) => Promise<{ text: string; filename: string; meta?: unknown }>
+  /**
+   * Reports a rejected add. Optional — DocCollector stays toast-library-agnostic
+   * (injection contract), so the consumer decides how to surface it (e.g. a
+   * toast). When omitted, the row falls back to an inline error message.
+   */
+  onError?: (message: string) => void
 }
 
 export interface DocCollectorProps {
   onItemsChange?: (items: DocCollectorItem[]) => void
+  customSources?: DocCollectorCustomSource[]
   /** File-drop accept string. Defaults to `.md,.pdf`. */
   accept?: string
   /** Outer wrapper className. */
@@ -110,7 +129,39 @@ export function createTextItem(text: string, now: number, ordinal: number): DocC
   }
 }
 
-export function DocCollector({ onItemsChange, accept = DEFAULT_ACCEPT, className, components }: DocCollectorProps) {
+/**
+ * Resolves a custom source's typed value into a ready item, or an error
+ * message on rejection — pure, no state mutation. Mirrors `resolveFileText`'s
+ * split from the drop handler: resolution is independently testable here;
+ * the component (`handleCustomAdd`) owns inserting the item into `items` /
+ * deciding how to report the error (inline vs `source.onError`).
+ *
+ * Returns `null` for blank input (Add is a no-op, same commit-gating spirit
+ * as `createTextItem`), `{ item }` on success, `{ error }` on rejection.
+ */
+export async function resolveCustomSourceValue(
+  source: DocCollectorCustomSource,
+  rawValue: string,
+  now: number,
+  makeId: () => string = nanoid
+): Promise<{ item: DocCollectorItem } | { error: string } | null> {
+  const value = rawValue.trim()
+  if (!value) return null
+  try {
+    const { text, filename, meta } = await source.resolve(value)
+    return { item: { id: makeId(), filename, kind: 'text', status: 'ready', text, meta, addedAt: now } }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to resolve.' }
+  }
+}
+
+export function DocCollector({
+  onItemsChange,
+  accept = DEFAULT_ACCEPT,
+  className,
+  components,
+  customSources
+}: DocCollectorProps) {
   const [items, setItems] = useState<DocCollectorItem[]>([])
   const [draftText, setDraftText] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
@@ -214,11 +265,22 @@ export function DocCollector({ onItemsChange, accept = DEFAULT_ACCEPT, className
     setDraftText('')
   }, [draftText, updateItems])
 
+  const handleCustomAdd = useCallback(
+    async (source: DocCollectorCustomSource, rawValue: string): Promise<string | null> => {
+      const result = await resolveCustomSourceValue(source, rawValue, Date.now())
+      if (!result) return null
+      if ('error' in result) return result.error
+      updateItems((prev) => insertNewestFirst(prev, result.item))
+      return null
+    },
+    [updateItems]
+  )
+
   return (
     <DocCollectorComponentsProvider components={components}>
       <div className={cn('flex flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
         {items.length > 0 && (
-          <div className='flex gap-2 overflow-x-auto pt-2'>
+          <div className='flex shrink-0 items-center gap-2 overflow-x-auto pt-2 pb-2'>
             {items.map((item) => {
               const meta =
                 item.status === 'ready' && item.text !== undefined
@@ -242,21 +304,33 @@ export function DocCollector({ onItemsChange, accept = DEFAULT_ACCEPT, className
           </div>
         )}
 
+        <p className='shrink-0 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Drop Docs</p>
+
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={cn(
-            'flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
+            'flex flex-1 min-h-[64px] w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
             isDragOver && 'border-primary bg-accent/40'
           )}
         >
           <p className='font-mono text-xs text-muted-foreground'>Drop {accept} files here</p>
         </div>
+        {dropError && <p className='shrink-0 font-mono text-[10px] text-destructive'>{dropError}</p>}
 
-        {dropError && <p className='font-mono text-[10px] text-destructive'>{dropError}</p>}
+        {customSources?.map((source) => (
+          <DocCollectorCustomSourceRow
+            key={source.label}
+            source={source}
+            onSubmit={(value) => handleCustomAdd(source, value)}
+          />
+        ))}
 
-        <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
+        <div className='shrink-0'>
+          <p className='mb-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Paste The Doc</p>
+          <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
+        </div>
       </div>
     </DocCollectorComponentsProvider>
   )
@@ -301,7 +375,7 @@ function DocCollectorTextInput({
       <div className='flex justify-end'>
         {Button ? (
           <Button type='button' size='sm' onClick={onAdd}>
-            Add Document
+            Add
           </Button>
         ) : (
           <button
@@ -309,10 +383,98 @@ function DocCollectorTextInput({
             onClick={onAdd}
             className='rounded-md bg-primary px-3 py-1 font-mono text-xs uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/90'
           >
-            Add Document
+            Add
           </button>
         )}
       </div>
+    </div>
+  )
+}
+
+function DocCollectorCustomSourceRow({
+  source,
+  onSubmit
+}: {
+  source: DocCollectorCustomSource
+  onSubmit: (value: string) => Promise<string | null>
+}) {
+  const { Input, Button } = useDocCollectorComponents()
+  const [draft, setDraft] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit() {
+    const value = draft.trim()
+    if (!value || submitting) return
+    setSubmitting(true)
+    setError(null)
+    const err = await onSubmit(value)
+    setSubmitting(false)
+    if (err) {
+      if (source.onError) {
+        source.onError(err)
+      } else {
+        setError(err)
+        setTimeout(() => setError(null), 4000)
+      }
+      return
+    }
+    setDraft('')
+  }
+
+  return (
+    <div className='flex shrink-0 flex-col gap-1.5'>
+      <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Add by {source.label}</p>
+      <div className='flex items-center gap-2'>
+        {Input ? (
+          <Input
+            type={source.type || 'text'}
+            placeholder={source.placeholder}
+            value={draft}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setDraft(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleSubmit()
+              }
+            }}
+            className='font-mono text-sm flex-1'
+            disabled={submitting}
+            aria-label={source.label}
+          />
+        ) : (
+          <input
+            type={source.type || 'text'}
+            placeholder={source.placeholder}
+            value={draft}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setDraft(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleSubmit()
+              }
+            }}
+            className='font-mono text-sm flex-1 bg-transparent text-foreground outline-none border border-input rounded-md px-3 py-2 focus:ring-1 focus:ring-ring'
+            disabled={submitting}
+            aria-label={source.label}
+          />
+        )}
+        {Button ? (
+          <Button type='button' size='sm' onClick={handleSubmit} disabled={submitting || !draft.trim()}>
+            Add
+          </Button>
+        ) : (
+          <button
+            type='button'
+            onClick={handleSubmit}
+            className='rounded-md bg-primary px-3 py-1 font-mono text-xs uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50'
+            disabled={submitting || !draft.trim()}
+          >
+            Add
+          </button>
+        )}
+      </div>
+      {error && <p className='font-mono text-[10px] text-destructive'>{error}</p>}
     </div>
   )
 }

@@ -1,20 +1,19 @@
 'use client'
 
-import { ChevronDown, ChevronUp, Loader2, Plus, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import { Badge } from '@atta/ui/components/badge'
-import { Button, Card, CardContent } from '@atta/ui/components'
+import { Button, Card, CardContent, Textarea, Input, useToastContext } from '@atta/ui/components'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 
 import { auditFailureMessage, ReportView } from '@/components/envoy/ReportView'
-import { resolveCvFileRequest, resolveCvJsonRequest, resolveJdRequest } from '@/lib/audit-input/client'
-import type { ResolvedCv, ResolvedJd } from '@/lib/audit-input/types'
+import type { ResolvedCv, ResolvedJd, CvInputKind } from '@/lib/audit-input/types'
 import type { MatchReport } from '@/lib/types'
-import { CvInputControl, type CvInputDraft } from './CvInputControl'
-import { JdInputControl } from './JdInputControl'
+import { DocCollector, type DocCollectorItem } from '@atta/ui/doc-collector'
+import { resolveCvJsonRequest, resolveJdRequest } from '@/lib/audit-input/client'
 
-const MAX_JDS = 5
+const MAX_JDS = 10
 const MAX_CANDIDATES = 10
 
 type CellStatus =
@@ -22,69 +21,12 @@ type CellStatus =
   | { status: 'loaded'; report: MatchReport }
   | { status: 'error'; message: string }
 
-type JdSlot = {
-  id: string
-  input: { kind: 'text'; value: string } | { kind: 'url'; value: string }
-}
-type CvSlot = { id: string; input: CvInputDraft }
-
 type Cells = Record<string, CellStatus>
 
 function cellKey(cvIdx: number, jdIdx: number): string {
   return `${cvIdx}-${jdIdx}`
 }
 
-function newJdSlot(): JdSlot {
-  return { id: cryptoRandomId(), input: { kind: 'text', value: '' } }
-}
-
-function newCvSlot(): CvSlot {
-  return { id: cryptoRandomId(), input: { kind: 'profile', value: '' } }
-}
-
-function cryptoRandomId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  return `id-${Math.random().toString(36).slice(2, 10)}`
-}
-
-function jdIsFilled(slot: JdSlot): boolean {
-  return slot.input.value.trim().length > 0
-}
-
-function cvIsFilled(slot: CvSlot): boolean {
-  if (slot.input.kind === 'text' || slot.input.kind === 'profile') {
-    return slot.input.value.trim().length > 0
-  }
-  return slot.input.file !== null
-}
-
-async function resolveJdSlot(slot: JdSlot): Promise<ResolvedJd> {
-  if (slot.input.kind === 'text') {
-    return resolveJdRequest({ kind: 'text', value: slot.input.value })
-  }
-  return resolveJdRequest({ kind: 'url', value: slot.input.value.trim() })
-}
-
-async function resolveCvSlot(slot: CvSlot): Promise<ResolvedCv> {
-  if (slot.input.kind === 'text') {
-    return resolveCvJsonRequest({ kind: 'text', value: slot.input.value })
-  }
-  if (slot.input.kind === 'profile') {
-    return resolveCvJsonRequest({ kind: 'profile', value: slot.input.value })
-  }
-  if (!slot.input.file) {
-    throw new Error('No file selected')
-  }
-  return resolveCvFileRequest(slot.input.file, slot.input.kind)
-}
-
-// Wire every CV kind through the unified batch shape — both profile lookups
-// and ad-hoc text CVs run under the logged-in user's BYOK key resolved
-// server-side in handleBatch. (Previously, non-profile kinds detoured through
-// the single-shape _test_profile_override hatch which spent the server env
-// key — flagged in PR #123 review, fixed here.)
 type BatchCandidatePayload = { kind: 'username'; value: string } | { kind: 'text'; label: string; text: string }
 
 function payloadForCv(cv: ResolvedCv): BatchCandidatePayload {
@@ -133,72 +75,61 @@ function gradeBadgeClass(grade: MatchReport['grade']): string {
 }
 
 export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsHref: string }) {
-  const [jds, setJds] = useState<JdSlot[]>(() => [newJdSlot()])
-  const [cvs, setCvs] = useState<CvSlot[]>(() => [newCvSlot()])
+  const [jds, setJds] = useState<DocCollectorItem[]>([])
+  const [cvs, setCvs] = useState<DocCollectorItem[]>([])
   const [state, setState] = useState<'idle' | 'resolving' | 'running' | 'done'>('idle')
   const [cells, setCells] = useState<Cells>({})
   const [submittedJds, setSubmittedJds] = useState<ResolvedJd[]>([])
   const [submittedCvs, setSubmittedCvs] = useState<ResolvedCv[]>([])
   const [resolveError, setResolveError] = useState<string | null>(null)
+  const { errorToast } = useToastContext()
 
-  const labelClass = 'mb-1.5 block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'
+  const labelClass = 'font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'
 
-  function updateJd(id: string, next: JdSlot['input']) {
-    setJds((prev) => prev.map((j) => (j.id === id ? { ...j, input: next } : j)))
-  }
-  function updateCv(id: string, next: CvSlot['input']) {
-    setCvs((prev) => prev.map((c) => (c.id === id ? { ...c, input: next } : c)))
-  }
-  function addJd() {
-    setJds((prev) => (prev.length < MAX_JDS ? [...prev, newJdSlot()] : prev))
-  }
-  function addCv() {
-    setCvs((prev) => (prev.length < MAX_CANDIDATES ? [...prev, newCvSlot()] : prev))
-  }
-  function removeJd(id: string) {
-    setJds((prev) => (prev.length > 1 ? prev.filter((j) => j.id !== id) : prev))
-  }
-  function removeCv(id: string) {
-    setCvs((prev) => (prev.length > 1 ? prev.filter((c) => c.id !== id) : prev))
-  }
-
-  const filledJds = jds.filter(jdIsFilled)
-  const filledCvs = cvs.filter(cvIsFilled)
-  const canRun = filledJds.length > 0 && filledCvs.length > 0 && state === 'idle'
+  const n = Math.min(cvs.length, MAX_CANDIDATES)
+  const m = Math.min(jds.length, MAX_JDS)
+  const overCap = cvs.length > MAX_CANDIDATES || jds.length > MAX_JDS
+  const canRun = n > 0 && m > 0 && state === 'idle'
 
   async function handleRun() {
     if (!canRun) return
     setResolveError(null)
     setState('resolving')
 
-    let resolvedJds: ResolvedJd[]
-    let resolvedCvs: ResolvedCv[]
-    try {
-      ;[resolvedJds, resolvedCvs] = await Promise.all([
-        Promise.all(
-          filledJds.map(async (slot, i) => {
-            try {
-              return await resolveJdSlot(slot)
-            } catch (err) {
-              throw new Error(`JD ${i + 1}: ${err instanceof Error ? err.message : 'resolution failed'}`)
-            }
-          })
-        ),
-        Promise.all(
-          filledCvs.map(async (slot, i) => {
-            try {
-              return await resolveCvSlot(slot)
-            } catch (err) {
-              throw new Error(`Candidate ${i + 1}: ${err instanceof Error ? err.message : 'resolution failed'}`)
-            }
-          })
-        )
-      ])
-    } catch (err) {
-      setResolveError(err instanceof Error ? err.message : 'Input resolution failed')
+    // Only process items that have completed resolution and have text.
+    // Also enforce the maximum limits.
+    const readyCvs = cvs.filter((cv) => cv.status === 'ready' && cv.text !== undefined)
+    const readyJds = jds.filter((jd) => jd.status === 'ready' && jd.text !== undefined)
+
+    if (readyCvs.length === 0) {
+      setResolveError('No CVs ready yet. Wait for uploads/resolution to finish or check for errors.')
       setState('idle')
       return
     }
+    if (readyJds.length === 0) {
+      setResolveError('No JDs ready yet. Wait for uploads/resolution to finish or check for errors.')
+      setState('idle')
+      return
+    }
+
+    const resolvedCvs: ResolvedCv[] = readyCvs.slice(0, MAX_CANDIDATES).map((cv): ResolvedCv => {
+      const kind: CvInputKind = cv.kind === 'text' ? 'text' : cv.kind === 'pdf' ? 'pdf' : 'markdown'
+      const username = (cv.meta as { username?: string } | undefined)?.username ?? null
+      return {
+        kind: username ? 'profile' : kind,
+        text: cv.text!,
+        username,
+        candidateLabel: cv.filename
+      }
+    })
+
+    const resolvedJds: ResolvedJd[] = readyJds.slice(0, MAX_JDS).map(
+      (jd): ResolvedJd => ({
+        kind: jd.kind === 'text' ? 'text' : jd.kind === 'pdf' ? 'pdf' : 'markdown',
+        text: jd.text!,
+        sourceLabel: jd.filename
+      })
+    )
 
     const initial: Cells = {}
     for (let cvIdx = 0; cvIdx < resolvedCvs.length; cvIdx++) {
@@ -359,121 +290,132 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
   const resolving = state === 'resolving'
 
   return (
-    <div className='mx-auto max-w-[680px] px-6 py-12'>
+    <div className='mx-auto max-w-[1080px] px-6 py-12'>
       <header className='mb-8'>
         <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Audit</p>
         <h1 className='mt-2 font-serif text-3xl tracking-tight text-foreground'>Bulk Audit</h1>
-        <p className='mt-2 text-sm text-muted-foreground'>
+        <p className='mt-2 text-sm text-muted-foreground max-w-[680px]'>
           Match N candidates against M job descriptions — one forensic report per pair. JDs accept pasted text or a URL;
           CVs accept pasted text, a markdown/PDF upload, or a published Herald profile.
         </p>
       </header>
 
-      <div className='space-y-8'>
-        <div className='space-y-4'>
-          <div className='flex items-baseline justify-between'>
-            <span className={labelClass}>Job Descriptions</span>
-            <span className='font-mono text-xs text-muted-foreground'>
-              {jds.length}/{MAX_JDS}
-            </span>
+      <div className='space-y-8 h-full'>
+        {/*
+          Both DocCollector instances below pin an explicit h-[510px] (via className,
+          see DocCollector's `className` prop doc in ui-library-system SKILL.md) so the
+          CV/JD columns never reflow relative to each other or to themselves as items are
+          added — the drop zone (flex-1 min-h-[64px] inside DocCollector) absorbs the height
+          delta instead. 510px is not arbitrary: it's the empirically-verified minimum where
+          a populated column's "Add by X"/"Paste The Doc" rows land at the identical Y as an
+          empty column's (measured via getBoundingClientRect() against the real running app,
+          not estimated) — 500px is the exact convergence point, 510px adds a small margin so
+          the drop zone still clears its own 64px floor with room to spare. If DocCollector's
+          internal chip-row/label/custom-source-row/paste-box heights ever change, re-derive
+          this by adding items in a live browser and checking the two columns' row alignment,
+          not by guessing a bigger number.
+        */}
+        <div className='grid grid-cols-2 gap-8 h-full'>
+          {/* Candidates Column */}
+          <div className='grid grid-rows-[auto_1fr] grid-cols-1 gap-4 h-full'>
+            <div className='flex h-8 items-center justify-between'>
+              <span className={labelClass}>
+                Candidates
+                {cvs.length > 0 && (
+                  <Badge variant='secondary' className='ml-2 font-mono'>
+                    {cvs.length}
+                  </Badge>
+                )}
+              </span>
+              <span className='font-mono text-xs text-muted-foreground'>
+                {n}/{MAX_CANDIDATES}
+              </span>
+            </div>
+            <DocCollector
+              className='h-[510px] min-h-0 min-w-0'
+              accept='.md,.pdf'
+              onItemsChange={setCvs}
+              components={{ Textarea, Button, Input }}
+              customSources={[
+                {
+                  label: 'Herald Username',
+                  placeholder: 'username',
+                  resolve: async (value) => {
+                    const resolved = await resolveCvJsonRequest({ kind: 'profile', value })
+                    return {
+                      text: resolved.text,
+                      filename: `@${resolved.username}.usr`,
+                      meta: { username: resolved.username }
+                    }
+                  },
+                  onError: (message) => errorToast('Could not add candidate', message)
+                }
+              ]}
+            />
           </div>
 
-          {jds.map((slot, index) => (
-            <div key={slot.id} className='space-y-1.5 rounded-md border border-border p-4'>
-              <div className='flex items-baseline justify-between'>
-                <span className='font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
-                  JD {index + 1}
-                </span>
-                {jds.length > 1 && (
-                  <Button
-                    onClick={() => removeJd(slot.id)}
-                    variant='ghost'
-                    size='sm'
-                    className='h-6 px-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground'
-                  >
-                    <X className='mr-1 h-3 w-3' />
-                    Remove
-                  </Button>
+          {/* Job Descriptions Column */}
+          <div className='grid grid-rows-[auto_1fr] grid-cols-1 gap-4 h-full border-l border-border pl-8'>
+            <div className='flex h-8 items-center justify-between'>
+              <span className={labelClass}>
+                Job Descriptions
+                {jds.length > 0 && (
+                  <Badge variant='secondary' className='ml-2 font-mono'>
+                    {jds.length}
+                  </Badge>
                 )}
-              </div>
-              <JdInputControl value={slot.input} onChange={(next) => updateJd(slot.id, next)} index={index} />
+              </span>
+              <span className='font-mono text-xs text-muted-foreground'>
+                {m}/{MAX_JDS}
+              </span>
             </div>
-          ))}
-
-          {jds.length < MAX_JDS && (
-            <Button
-              onClick={addJd}
-              variant='outline'
-              size='sm'
-              className='font-mono text-xs uppercase tracking-[0.2em]'
-            >
-              <Plus className='mr-1 h-3 w-3' />
-              Add Job Description
-            </Button>
-          )}
-        </div>
-
-        <div className='space-y-4'>
-          <div className='flex items-baseline justify-between'>
-            <span className={labelClass}>Candidates</span>
-            <span className='font-mono text-xs text-muted-foreground'>
-              {cvs.length}/{MAX_CANDIDATES}
-            </span>
+            <DocCollector
+              className='h-[510px] min-h-0 min-w-0'
+              accept='.md,.pdf'
+              onItemsChange={setJds}
+              components={{ Textarea, Button, Input }}
+              customSources={[
+                {
+                  label: 'URL',
+                  placeholder: 'https://...',
+                  type: 'url',
+                  resolve: async (value) => {
+                    const resolved = await resolveJdRequest({ kind: 'url', value })
+                    return { text: resolved.text, filename: `${resolved.sourceLabel}.url` }
+                  },
+                  onError: (message) => errorToast('Could not add job description', message)
+                }
+              ]}
+            />
           </div>
-
-          {cvs.map((slot, index) => (
-            <div key={slot.id} className='space-y-1.5 rounded-md border border-border p-4'>
-              <div className='flex items-baseline justify-between'>
-                <span className='font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
-                  Candidate {index + 1}
-                </span>
-                {cvs.length > 1 && (
-                  <Button
-                    onClick={() => removeCv(slot.id)}
-                    variant='ghost'
-                    size='sm'
-                    className='h-6 px-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground'
-                  >
-                    <X className='mr-1 h-3 w-3' />
-                    Remove
-                  </Button>
-                )}
-              </div>
-              <CvInputControl value={slot.input} onChange={(next) => updateCv(slot.id, next)} index={index} />
-            </div>
-          ))}
-
-          {cvs.length < MAX_CANDIDATES && (
-            <Button
-              onClick={addCv}
-              variant='outline'
-              size='sm'
-              className='font-mono text-xs uppercase tracking-[0.2em]'
-            >
-              <Plus className='mr-1 h-3 w-3' />
-              Add Candidate
-            </Button>
-          )}
         </div>
 
-        {resolveError && <p className='font-mono text-xs text-destructive'>Couldn't resolve inputs — {resolveError}</p>}
+        {resolveError && <p className='font-mono text-xs text-destructive text-center'>{resolveError}</p>}
+        {overCap && (
+          <p className='font-mono text-xs text-warning text-center mt-2'>
+            Caps exceeded: Only the first {MAX_CANDIDATES} CVs and {MAX_JDS} JDs will be audited.
+          </p>
+        )}
 
-        <Button
-          onClick={handleRun}
-          disabled={!canRun || resolving}
-          className='font-mono text-xs uppercase tracking-[0.2em]'
-        >
-          {resolving ? (
-            <>
-              <Loader2 className='mr-2 h-3 w-3 animate-spin' />
-              Resolving inputs…
-            </>
-          ) : (
-            <>
-              Run {filledCvs.length || 'N'} × {filledJds.length || 'M'} Matrix
-            </>
-          )}
-        </Button>
+        <div className='flex justify-center pt-4'>
+          <Button
+            onClick={handleRun}
+            disabled={!canRun || resolving}
+            size='lg'
+            className='w-full max-w-md font-mono text-xs uppercase tracking-[0.2em]'
+          >
+            {resolving ? (
+              <>
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                Preparing Matrix…
+              </>
+            ) : !canRun ? (
+              'Add CVs and job descriptions to start'
+            ) : (
+              `${n} × ${m} = Generate ${n * m} report${n * m !== 1 ? 's' : ''}`
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   )

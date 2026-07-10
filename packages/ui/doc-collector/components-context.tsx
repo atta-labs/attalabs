@@ -24,6 +24,7 @@ import { createComponentsContext } from '../lib/create-components-context'
 export interface DocCollectorComponents {
   Textarea?: ComponentType<any>
   Button?: ComponentType<any>
+  Input?: ComponentType<any>
 }
 
 const { Provider, useComponentsContext } = createComponentsContext<DocCollectorComponents>()
