@@ -33,8 +33,14 @@ export interface DocCollectorCustomSource {
   placeholder: string
   /** Native input type, e.g. 'text' | 'url'. Defaults to 'text'. */
   type?: string
-  /** Resolves the typed value into item text + a display filename (+ optional opaque meta). Throw to reject the add; the row shows the error inline and no tile is created. */
+  /** Resolves the typed value into item text + a display filename (+ optional opaque meta). Throw to reject the add; no tile is created. */
   resolve: (value: string) => Promise<{ text: string; filename: string; meta?: unknown }>
+  /**
+   * Reports a rejected add. Optional — DocCollector stays toast-library-agnostic
+   * (injection contract), so the consumer decides how to surface it (e.g. a
+   * toast). When omitted, the row falls back to an inline error message.
+   */
+  onError?: (message: string) => void
 }
 
 export interface DocCollectorProps {
@@ -261,7 +267,7 @@ export function DocCollector({
     <DocCollectorComponentsProvider components={components}>
       <div className={cn('flex flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
         {items.length > 0 && (
-          <div className='flex shrink-0 items-center gap-2 overflow-x-auto pt-3 pb-1'>
+          <div className='flex shrink-0 items-center gap-2 overflow-x-auto pt-2 pb-2'>
             {items.map((item) => {
               const meta =
                 item.status === 'ready' && item.text !== undefined
@@ -392,8 +398,12 @@ function DocCollectorCustomSourceRow({
     const err = await onSubmit(value)
     setSubmitting(false)
     if (err) {
-      setError(err)
-      setTimeout(() => setError(null), 4000)
+      if (source.onError) {
+        source.onError(err)
+      } else {
+        setError(err)
+        setTimeout(() => setError(null), 4000)
+      }
       return
     }
     setDraft('')

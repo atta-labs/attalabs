@@ -3,7 +3,7 @@
 import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import { Badge } from '@atta/ui/components/badge'
-import { Button, Card, CardContent, Textarea, Input } from '@atta/ui/components'
+import { Button, Card, CardContent, Textarea, Input, useToastContext } from '@atta/ui/components'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 
@@ -82,6 +82,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
   const [submittedJds, setSubmittedJds] = useState<ResolvedJd[]>([])
   const [submittedCvs, setSubmittedCvs] = useState<ResolvedCv[]>([])
   const [resolveError, setResolveError] = useState<string | null>(null)
+  const { errorToast } = useToastContext()
 
   const labelClass = 'mb-1.5 block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'
 
@@ -332,7 +333,8 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                       filename: `@${resolved.username}.usr`,
                       meta: { username: resolved.username }
                     }
-                  }
+                  },
+                  onError: (message) => errorToast('Could not add candidate', message)
                 }
               ]}
             />
@@ -366,7 +368,8 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                   resolve: async (value) => {
                     const resolved = await resolveJdRequest({ kind: 'url', value })
                     return { text: resolved.text, filename: `${resolved.sourceLabel}.url` }
-                  }
+                  },
+                  onError: (message) => errorToast('Could not add job description', message)
                 }
               ]}
             />
