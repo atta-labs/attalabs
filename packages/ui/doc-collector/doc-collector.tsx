@@ -259,9 +259,15 @@ export function DocCollector({
 
   return (
     <DocCollectorComponentsProvider components={components}>
-      <div className={cn('flex min-h-[460px] flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
+      <div
+        className={cn('grid min-h-[460px] gap-3 rounded-lg border border-border bg-card p-3', className)}
+        style={{ gridTemplateRows: '1fr auto' }}
+      >
         {/* Section A — Drop Docs */}
-        <div className='flex min-h-0 flex-1 flex-col gap-2'>
+        <div
+          className='grid min-h-0 gap-2'
+          style={{ gridTemplateRows: items.length > 0 ? 'auto auto 1fr auto' : 'auto 1fr auto' }}
+        >
           {items.length > 0 && (
             <div className='flex shrink-0 gap-2 overflow-x-auto pb-1'>
               {items.map((item) => {
@@ -292,28 +298,33 @@ export function DocCollector({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             className={cn(
-              'flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
+              'flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
               isDragOver && 'border-primary bg-accent/40'
             )}
+            style={{ height: '100%' }}
           >
             <p className='font-mono text-xs text-muted-foreground'>Drop {accept} files here</p>
           </div>
-          {dropError && <p className='font-mono text-[10px] text-destructive'>{dropError}</p>}
+          {dropError ? <p className='font-mono text-[10px] text-destructive'>{dropError}</p> : <div />}
         </div>
 
-        {/* Section B — Custom Sources */}
-        {customSources?.map((source) => (
-          <DocCollectorCustomSourceRow
-            key={source.label}
-            source={source}
-            onSubmit={(value) => handleCustomAdd(source, value)}
-          />
-        ))}
+        <div className='flex flex-col gap-3'>
+          {/* Section B — Custom Sources */}
+          {customSources?.map((source) => (
+            <DocCollectorCustomSourceRow
+              key={source.label}
+              source={source}
+              onSubmit={(value) => handleCustomAdd(source, value)}
+            />
+          ))}
 
-        {/* Section C — Paste The Doc */}
-        <div className='shrink-0'>
-          <p className='mb-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Paste The Doc</p>
-          <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
+          {/* Section C — Paste The Doc */}
+          <div className='shrink-0'>
+            <p className='mb-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
+              Paste The Doc
+            </p>
+            <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
+          </div>
         </div>
       </div>
     </DocCollectorComponentsProvider>
