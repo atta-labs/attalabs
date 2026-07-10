@@ -262,9 +262,8 @@ export function DocCollector({
       <div className={cn('flex min-h-[460px] flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
         {/* Section A — Drop Docs */}
         <div className='flex min-h-0 flex-1 flex-col gap-2'>
-          <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Drop Docs</p>
           {items.length > 0 && (
-            <div className='flex shrink-0 gap-2 overflow-x-auto pt-2'>
+            <div className='flex shrink-0 gap-2 overflow-x-auto pb-1'>
               {items.map((item) => {
                 const meta =
                   item.status === 'ready' && item.text !== undefined
@@ -287,6 +286,7 @@ export function DocCollector({
               })}
             </div>
           )}
+          <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Drop Docs</p>
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}

@@ -302,7 +302,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
       <div className='space-y-8'>
         <div className='grid grid-cols-2 gap-8'>
           {/* Candidates Column */}
-          <div className='space-y-4'>
+          <div className='flex h-full flex-col space-y-4'>
             <div className='flex items-baseline justify-between'>
               <span className={labelClass}>
                 Candidates
@@ -317,6 +317,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               </span>
             </div>
             <DocCollector
+              className='flex-1'
               accept='.md,.pdf'
               onItemsChange={setCvs}
               components={{ Textarea, Button, Input }}
@@ -338,7 +339,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
           </div>
 
           {/* Job Descriptions Column */}
-          <div className='space-y-4 border-l border-border pl-8'>
+          <div className='flex h-full flex-col space-y-4 border-l border-border pl-8'>
             <div className='flex items-baseline justify-between'>
               <span className={labelClass}>
                 Job Descriptions
@@ -353,6 +354,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               </span>
             </div>
             <DocCollector
+              className='flex-1'
               accept='.md,.pdf'
               onItemsChange={setJds}
               components={{ Textarea, Button, Input }}
