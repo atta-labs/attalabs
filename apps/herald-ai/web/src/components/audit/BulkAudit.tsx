@@ -406,10 +406,11 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                     <Badge key={p} variant='outline' className='font-mono text-xs flex items-center gap-1 pl-2 pr-1'>
                       @{p}
                       <Button
+                        type='button'
                         variant='ghost'
-                        size='sm'
                         onClick={() => setCvProfiles((prev) => prev.filter((x) => x !== p))}
-                        className='hover:bg-muted-foreground/20 p-0 h-4 w-4 rounded-full'
+                        aria-label={`Remove profile ${p}`}
+                        className='h-auto w-auto p-0 text-muted-foreground hover:bg-transparent hover:text-foreground'
                       >
                         <X className='h-3 w-3' />
                       </Button>
@@ -481,10 +482,11 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                     >
                       <span className='truncate max-w-[200px]'>{u}</span>
                       <Button
+                        type='button'
                         variant='ghost'
-                        size='sm'
                         onClick={() => setJdUrls((prev) => prev.filter((x) => x !== u))}
-                        className='hover:bg-muted-foreground/20 p-0 h-4 w-4 rounded-full shrink-0'
+                        aria-label={`Remove URL ${u}`}
+                        className='h-auto w-auto p-0 text-muted-foreground hover:bg-transparent hover:text-foreground shrink-0'
                       >
                         <X className='h-3 w-3' />
                       </Button>
