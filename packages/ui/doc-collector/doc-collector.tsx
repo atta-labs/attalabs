@@ -259,71 +259,56 @@ export function DocCollector({
 
   return (
     <DocCollectorComponentsProvider components={components}>
-      <div
-        className={cn('grid min-h-[460px] gap-3 rounded-lg border border-border bg-card p-3', className)}
-        style={{ gridTemplateRows: '1fr auto' }}
-      >
-        {/* Section A — Drop Docs */}
-        <div
-          className='grid min-h-0 gap-2'
-          style={{ gridTemplateRows: items.length > 0 ? 'auto auto 1fr auto' : 'auto 1fr auto' }}
-        >
-          {items.length > 0 && (
-            <div className='flex shrink-0 gap-2 overflow-x-auto pb-1'>
-              {items.map((item) => {
-                const meta =
-                  item.status === 'ready' && item.text !== undefined
-                    ? `${item.text.length.toLocaleString()} chars`
-                    : sizesRef.current.get(item.id) !== undefined
-                      ? formatBytes(sizesRef.current.get(item.id) as number)
-                      : '—'
-                const preview = item.status === 'ready' ? item.text?.slice(0, 240).trim() : undefined
-                return (
-                  <AttachmentChip
-                    key={item.id}
-                    filename={item.filename}
-                    status={item.status}
-                    meta={meta}
-                    preview={preview}
-                    error={item.error}
-                    onRemove={() => handleRemove(item.id)}
-                  />
-                )
-              })}
-            </div>
-          )}
-          <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Drop Docs</p>
-          <div
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            className={cn(
-              'flex min-h-[64px] w-full h-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
-              isDragOver && 'border-primary bg-accent/40'
-            )}
-          >
-            <p className='font-mono text-xs text-muted-foreground'>Drop {accept} files here</p>
-          </div>
-          {dropError ? <p className='font-mono text-[10px] text-destructive'>{dropError}</p> : <div />}
+      <div className={cn('flex flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
+        <div className='flex h-16 shrink-0 items-center gap-2 overflow-x-auto pb-1'>
+          {items.map((item) => {
+            const meta =
+              item.status === 'ready' && item.text !== undefined
+                ? `${item.text.length.toLocaleString()} chars`
+                : sizesRef.current.get(item.id) !== undefined
+                  ? formatBytes(sizesRef.current.get(item.id) as number)
+                  : '—'
+            const preview = item.status === 'ready' ? item.text?.slice(0, 240).trim() : undefined
+            return (
+              <AttachmentChip
+                key={item.id}
+                filename={item.filename}
+                status={item.status}
+                meta={meta}
+                preview={preview}
+                error={item.error}
+                onRemove={() => handleRemove(item.id)}
+              />
+            )
+          })}
         </div>
 
-        <div className='flex flex-col gap-3'>
-          {/* Section B — Custom Sources */}
-          {customSources?.map((source) => (
-            <DocCollectorCustomSourceRow
-              key={source.label}
-              source={source}
-              onSubmit={(value) => handleCustomAdd(source, value)}
-            />
-          ))}
+        <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Drop Docs</p>
 
-          {/* Section C — Paste The Doc */}
-          <div className='shrink-0'>
-            <p className='mb-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>
-              Paste The Doc
-            </p>
-            <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
-          </div>
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          className={cn(
+            'flex h-24 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
+            isDragOver && 'border-primary bg-accent/40'
+          )}
+        >
+          <p className='font-mono text-xs text-muted-foreground'>Drop {accept} files here</p>
+        </div>
+        {dropError && <p className='font-mono text-[10px] text-destructive'>{dropError}</p>}
+
+        {customSources?.map((source) => (
+          <DocCollectorCustomSourceRow
+            key={source.label}
+            source={source}
+            onSubmit={(value) => handleCustomAdd(source, value)}
+          />
+        ))}
+
+        <div className='shrink-0'>
+          <p className='mb-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Paste The Doc</p>
+          <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
         </div>
       </div>
     </DocCollectorComponentsProvider>
