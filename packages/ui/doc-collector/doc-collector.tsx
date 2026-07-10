@@ -309,7 +309,7 @@ function DocCollectorTextInput({
             onClick={onAdd}
             className='rounded-md bg-primary px-3 py-1 font-mono text-xs uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/90'
           >
-            Add Document
+            Add as document
           </button>
         )}
       </div>
