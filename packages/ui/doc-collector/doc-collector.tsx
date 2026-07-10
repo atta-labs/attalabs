@@ -261,7 +261,7 @@ export function DocCollector({
     <DocCollectorComponentsProvider components={components}>
       <div className={cn('flex flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
         {items.length > 0 && (
-          <div className='flex h-16 shrink-0 items-center gap-2 overflow-x-auto pb-1'>
+          <div className='flex shrink-0 items-center gap-2 overflow-x-auto pt-3 pb-1'>
             {items.map((item) => {
               const meta =
                 item.status === 'ready' && item.text !== undefined
