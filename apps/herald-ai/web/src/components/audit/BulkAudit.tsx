@@ -118,16 +118,31 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
       return
     }
 
-    let resolvedCvProfiles: ResolvedCv[] = []
-    let resolvedJdUrls: ResolvedJd[] = []
+    const resolvedCvProfiles: ResolvedCv[] = []
+    const resolvedJdUrls: ResolvedJd[] = []
 
-    try {
-      resolvedCvProfiles = await Promise.all(
-        cvProfiles.map((username) => resolveCvJsonRequest({ kind: 'profile', value: username }))
-      )
-      resolvedJdUrls = await Promise.all(jdUrls.map((url) => resolveJdRequest({ kind: 'url', value: url })))
-    } catch (err) {
-      setResolveError(`Failed to resolve URL or Profile: ${err instanceof Error ? err.message : String(err)}`)
+    const resolveErrors: string[] = []
+
+    const cvResults = await Promise.allSettled(
+      cvProfiles.map((username) => resolveCvJsonRequest({ kind: 'profile', value: username }))
+    )
+    cvResults.forEach((res, i) => {
+      if (res.status === 'rejected')
+        resolveErrors.push(
+          `Profile ${cvProfiles[i]}: ${res.reason instanceof Error ? res.reason.message : String(res.reason)}`
+        )
+      else resolvedCvProfiles.push(res.value)
+    })
+
+    const jdResults = await Promise.allSettled(jdUrls.map((url) => resolveJdRequest({ kind: 'url', value: url })))
+    jdResults.forEach((res, i) => {
+      if (res.status === 'rejected')
+        resolveErrors.push(`URL ${jdUrls[i]}: ${res.reason instanceof Error ? res.reason.message : String(res.reason)}`)
+      else resolvedJdUrls.push(res.value)
+    })
+
+    if (resolveErrors.length > 0) {
+      setResolveError(resolveErrors.join(' | '))
       setState('idle')
       return
     }
@@ -390,12 +405,14 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                   {cvProfiles.map((p) => (
                     <Badge key={p} variant='outline' className='font-mono text-xs flex items-center gap-1 pl-2 pr-1'>
                       @{p}
-                      <button
+                      <Button
+                        variant='ghost'
+                        size='sm'
                         onClick={() => setCvProfiles((prev) => prev.filter((x) => x !== p))}
-                        className='hover:bg-muted p-0.5 rounded'
+                        className='hover:bg-muted-foreground/20 p-0 h-4 w-4 rounded-full'
                       >
                         <X className='h-3 w-3' />
-                      </button>
+                      </Button>
                     </Badge>
                   ))}
                 </div>
@@ -463,12 +480,14 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
                       className='font-mono text-xs flex items-center gap-1 pl-2 pr-1 max-w-full'
                     >
                       <span className='truncate max-w-[200px]'>{u}</span>
-                      <button
+                      <Button
+                        variant='ghost'
+                        size='sm'
                         onClick={() => setJdUrls((prev) => prev.filter((x) => x !== u))}
-                        className='hover:bg-muted p-0.5 rounded shrink-0'
+                        className='hover:bg-muted-foreground/20 p-0 h-4 w-4 rounded-full shrink-0'
                       >
                         <X className='h-3 w-3' />
-                      </button>
+                      </Button>
                     </Badge>
                   ))}
                 </div>
