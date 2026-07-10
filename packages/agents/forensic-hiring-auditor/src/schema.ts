@@ -37,6 +37,8 @@ export type MatchReport = {
     reason: string
     category: 'quota' | 'timeout' | 'auth' | 'unknown'
   }
+  /** Total estimated USD cost across all LLM calls for this audit, when pricing is known. */
+  estimatedCostUsd?: number
 }
 
 export const MatchReportSchema = z.object({
@@ -78,5 +80,6 @@ export const MatchReportSchema = z.object({
       reason: z.string(),
       category: z.enum(['quota', 'timeout', 'auth', 'unknown'])
     })
-    .optional()
+    .optional(),
+  estimatedCostUsd: z.number().optional()
 })

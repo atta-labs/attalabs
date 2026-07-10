@@ -62,7 +62,8 @@ export async function run(input: RunAuditInput): Promise<MatchReport | RunAuditF
   if (conclusion.terminalState === 'FAILED') {
     return { failed: true, reason: conclusion.error ?? 'Audit execution failed for an unknown reason' }
   }
-  return parseMatchReport(conclusion.content, input.candidateInfo, {
+  const report = parseMatchReport(conclusion.content, input.candidateInfo, {
     onParseFailure: input.onParseFailure
   })
+  return report && { ...report, estimatedCostUsd: conclusion.estimatedCostUsd }
 }
