@@ -13,6 +13,7 @@ const links = [
   { label: 'Known Limits', href: '/known-limits' },
   { label: 'AEG', href: '/aeg' },
   { label: 'Studio', href: '/studio', exact: true },
+  { label: 'Backlog', href: '/studio/backlog' },
   { label: 'Docs', href: '/studio/docs' }
 ]
 
