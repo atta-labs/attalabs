@@ -322,7 +322,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               components={{ Textarea, Button, Input }}
               customSources={[
                 {
-                  label: 'Herald Profile',
+                  label: 'Herald Username',
                   placeholder: 'username',
                   resolve: async (value) => {
                     const resolved = await resolveCvJsonRequest({ kind: 'profile', value })

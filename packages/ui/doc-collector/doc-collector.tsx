@@ -33,7 +33,7 @@ export interface DocCollectorCustomSource {
   placeholder: string
   /** Native input type, e.g. 'text' | 'url'. Defaults to 'text'. */
   type?: string
-  /** Resolves the typed value into item text + a display filename (+ optional opaque meta). Throw to surface an error on the tile. */
+  /** Resolves the typed value into item text + a display filename (+ optional opaque meta). Throw to reject the add; the row shows the error inline and no tile is created. */
   resolve: (value: string) => Promise<{ text: string; filename: string; meta?: unknown }>
 }
 
@@ -234,78 +234,74 @@ export function DocCollector({
   }, [draftText, updateItems])
 
   const handleCustomAdd = useCallback(
-    (source: DocCollectorCustomSource, rawValue: string) => {
+    async (source: DocCollectorCustomSource, rawValue: string): Promise<string | null> => {
       const value = rawValue.trim()
-      if (!value) return
-      const id = nanoid()
-      const item: DocCollectorItem = {
-        id,
-        filename: value,
-        kind: 'text',
-        status: 'resolving',
-        addedAt: Date.now()
-      }
-      updateItems((prev) => insertNewestFirst(prev, item))
-      void (async () => {
-        try {
-          const { text, filename, meta } = await source.resolve(value)
-          updateItems((prev) => patchItemById(prev, id, { status: 'ready', text, filename, meta }))
-        } catch (err) {
-          updateItems((prev) =>
-            patchItemById(prev, id, {
-              status: 'error',
-              error: err instanceof Error ? err.message : 'Failed to resolve.'
-            })
-          )
+      if (!value) return null
+      try {
+        const { text, filename, meta } = await source.resolve(value)
+        const item: DocCollectorItem = {
+          id: nanoid(),
+          filename,
+          kind: 'text',
+          status: 'ready',
+          text,
+          meta,
+          addedAt: Date.now()
         }
-      })()
+        updateItems((prev) => insertNewestFirst(prev, item))
+        return null
+      } catch (err) {
+        return err instanceof Error ? err.message : 'Failed to resolve.'
+      }
     },
     [updateItems]
   )
 
   return (
     <DocCollectorComponentsProvider components={components}>
-      <div className={cn('flex flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
-        {items.length > 0 && (
-          <div className='flex gap-2 overflow-x-auto pt-2'>
-            {items.map((item) => {
-              const meta =
-                item.status === 'ready' && item.text !== undefined
-                  ? `${item.text.length.toLocaleString()} chars`
-                  : sizesRef.current.get(item.id) !== undefined
-                    ? formatBytes(sizesRef.current.get(item.id) as number)
-                    : '—'
-              const preview = item.status === 'ready' ? item.text?.slice(0, 240).trim() : undefined
-              return (
-                <AttachmentChip
-                  key={item.id}
-                  filename={item.filename}
-                  status={item.status}
-                  meta={meta}
-                  preview={preview}
-                  error={item.error}
-                  onRemove={() => handleRemove(item.id)}
-                />
-              )
-            })}
-          </div>
-        )}
-
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={cn(
-            'flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
-            isDragOver && 'border-primary bg-accent/40'
+      <div className={cn('flex h-[420px] flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
+        {/* Section A — Drop Docs */}
+        <div className='flex min-h-0 flex-1 flex-col gap-2'>
+          <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Drop Docs</p>
+          {items.length > 0 && (
+            <div className='flex shrink-0 gap-2 overflow-x-auto pt-2'>
+              {items.map((item) => {
+                const meta =
+                  item.status === 'ready' && item.text !== undefined
+                    ? `${item.text.length.toLocaleString()} chars`
+                    : sizesRef.current.get(item.id) !== undefined
+                      ? formatBytes(sizesRef.current.get(item.id) as number)
+                      : '—'
+                const preview = item.status === 'ready' ? item.text?.slice(0, 240).trim() : undefined
+                return (
+                  <AttachmentChip
+                    key={item.id}
+                    filename={item.filename}
+                    status={item.status}
+                    meta={meta}
+                    preview={preview}
+                    error={item.error}
+                    onRemove={() => handleRemove(item.id)}
+                  />
+                )
+              })}
+            </div>
           )}
-        >
-          <p className='font-mono text-xs text-muted-foreground'>Drop {accept} files here</p>
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            className={cn(
+              'flex min-h-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
+              isDragOver && 'border-primary bg-accent/40'
+            )}
+          >
+            <p className='font-mono text-xs text-muted-foreground'>Drop {accept} files here</p>
+          </div>
+          {dropError && <p className='font-mono text-[10px] text-destructive'>{dropError}</p>}
         </div>
 
-        {dropError && <p className='font-mono text-[10px] text-destructive'>{dropError}</p>}
-
-        <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
+        {/* Section B — Custom Sources */}
         {customSources?.map((source) => (
           <DocCollectorCustomSourceRow
             key={source.label}
@@ -313,6 +309,12 @@ export function DocCollector({
             onSubmit={(value) => handleCustomAdd(source, value)}
           />
         ))}
+
+        {/* Section C — Paste The Doc */}
+        <div className='shrink-0'>
+          <p className='mb-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Paste The Doc</p>
+          <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
+        </div>
       </div>
     </DocCollectorComponentsProvider>
   )
@@ -357,7 +359,7 @@ function DocCollectorTextInput({
       <div className='flex justify-end'>
         {Button ? (
           <Button type='button' size='sm' onClick={onAdd}>
-            Add Document
+            Add
           </Button>
         ) : (
           <button
@@ -365,7 +367,7 @@ function DocCollectorTextInput({
             onClick={onAdd}
             className='rounded-md bg-primary px-3 py-1 font-mono text-xs uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/90'
           >
-            Add as document
+            Add
           </button>
         )}
       </div>
@@ -378,20 +380,31 @@ function DocCollectorCustomSourceRow({
   onSubmit
 }: {
   source: DocCollectorCustomSource
-  onSubmit: (value: string) => void
+  onSubmit: (value: string) => Promise<string | null>
 }) {
   const { Input, Button } = useDocCollectorComponents()
   const [draft, setDraft] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  function handleSubmit() {
-    if (!draft.trim()) return
-    onSubmit(draft)
+  async function handleSubmit() {
+    const value = draft.trim()
+    if (!value || submitting) return
+    setSubmitting(true)
+    setError(null)
+    const err = await onSubmit(value)
+    setSubmitting(false)
+    if (err) {
+      setError(err)
+      setTimeout(() => setError(null), 4000)
+      return
+    }
     setDraft('')
   }
 
   return (
-    <div className='flex flex-col gap-1.5 rounded-md border border-input bg-background p-3'>
-      <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Or add by {source.label}</p>
+    <div className='flex shrink-0 flex-col gap-1.5'>
+      <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Add by {source.label}</p>
       <div className='flex items-center gap-2'>
         {Input ? (
           <Input
@@ -406,6 +419,8 @@ function DocCollectorCustomSourceRow({
               }
             }}
             className='font-mono text-sm flex-1'
+            disabled={submitting}
+            aria-label={source.label}
           />
         ) : (
           <input
@@ -420,22 +435,32 @@ function DocCollectorCustomSourceRow({
               }
             }}
             className='font-mono text-sm flex-1 bg-transparent text-foreground outline-none border border-input rounded-md px-3 py-2 focus:ring-1 focus:ring-ring'
+            disabled={submitting}
+            aria-label={source.label}
           />
         )}
         {Button ? (
-          <Button type='button' variant='secondary' size='sm' onClick={handleSubmit}>
+          <Button
+            type='button'
+            variant='secondary'
+            size='sm'
+            onClick={handleSubmit}
+            disabled={submitting || !draft.trim()}
+          >
             Add
           </Button>
         ) : (
           <button
             type='button'
             onClick={handleSubmit}
-            className='rounded-md bg-secondary px-3 py-1 font-mono text-xs uppercase tracking-wide text-secondary-foreground transition-colors hover:bg-secondary/90'
+            className='rounded-md bg-secondary px-3 py-1 font-mono text-xs uppercase tracking-wide text-secondary-foreground transition-colors hover:bg-secondary/90 disabled:opacity-50'
+            disabled={submitting || !draft.trim()}
           >
             Add
           </button>
         )}
       </div>
+      {error && <p className='font-mono text-[10px] text-destructive'>{error}</p>}
     </div>
   )
 }
