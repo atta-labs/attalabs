@@ -259,7 +259,7 @@ export function DocCollector({
 
   return (
     <DocCollectorComponentsProvider components={components}>
-      <div className={cn('flex h-[420px] flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
+      <div className={cn('flex min-h-[460px] flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
         {/* Section A — Drop Docs */}
         <div className='flex min-h-0 flex-1 flex-col gap-2'>
           <p className='font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Drop Docs</p>
@@ -292,7 +292,7 @@ export function DocCollector({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             className={cn(
-              'flex min-h-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
+              'flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
               isDragOver && 'border-primary bg-accent/40'
             )}
           >
@@ -440,20 +440,14 @@ function DocCollectorCustomSourceRow({
           />
         )}
         {Button ? (
-          <Button
-            type='button'
-            variant='secondary'
-            size='sm'
-            onClick={handleSubmit}
-            disabled={submitting || !draft.trim()}
-          >
+          <Button type='button' size='sm' onClick={handleSubmit} disabled={submitting || !draft.trim()}>
             Add
           </Button>
         ) : (
           <button
             type='button'
             onClick={handleSubmit}
-            className='rounded-md bg-secondary px-3 py-1 font-mono text-xs uppercase tracking-wide text-secondary-foreground transition-colors hover:bg-secondary/90 disabled:opacity-50'
+            className='rounded-md bg-primary px-3 py-1 font-mono text-xs uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50'
             disabled={submitting || !draft.trim()}
           >
             Add
