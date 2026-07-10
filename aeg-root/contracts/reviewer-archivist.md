@@ -1,5 +1,10 @@
 ---
 sidebar_title: Reviewer → Archivist
+contract_id: reviewer-archivist
+status: active
+producer: reviewer
+consumer: archivist
+carrier: pr-verdict-comment
 ---
 # Contract: Reviewer → per-task Archivist
 

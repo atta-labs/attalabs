@@ -1,5 +1,19 @@
 ---
 sidebar_title: Developer
+role_id: developer
+actor: agent
+performs:
+  - write-the-code
+  - write-the-tests
+  - pass-typecheck-lint-hooks
+  - open-the-pull-request
+  - run-agent-test-plan-items
+  - address-review-findings
+refuses_when: >
+  Input isn't a well-formed brief (missing tier/scope/stop-conditions);
+  a dispatch gate is unmet (unmerged depends-on, an open conflicts-with PR);
+  the task Issue is #TBD or blank; the prior task's provenance block is
+  missing; or the Step 0 branch name doesn't literal-match the topology row.
 ---
 # Developer — Role Reference
 

@@ -1,5 +1,10 @@
 ---
 sidebar_title: Planner → Brief
+contract_id: planner-brief
+status: active
+producer: planner
+consumer: team-leader
+carrier: issue-body
 ---
 # Contract: Planner → Brief Author
 

@@ -1,5 +1,21 @@
 ---
 sidebar_title: Principal
+role_id: principal
+actor: human
+performs:
+  - decide-strategy-and-roadmap
+  - make-final-architecture-decisions
+  - merge-the-pull-request
+  - reject-a-direction
+  - ratify-type1-decisions
+  - dispatch-tasks
+  - review-pull-requests
+refuses_when: >
+  No self-refusal gate — this doc describes the Principal's seat from the
+  perspective of agents interacting with it. The corresponding constraint is
+  on those agents: they must not write code, author briefs, plan iterations,
+  execute tasks, merge PRs, or close Issues out of band on the Principal's
+  behalf.
 ---
 # Principal — Role Reference
 

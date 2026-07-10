@@ -1,5 +1,20 @@
 ---
 sidebar_title: Planner
+role_id: planner
+actor: agent
+performs:
+  - create-the-milestone
+  - cut-labeled-issues
+  - size-tasks-via-deep-dig
+  - write-planners-rationale
+  - declare-dependency-and-conflict-edges
+  - move-tasks-across-iterations
+refuses_when: >
+  The readiness gate hasn't passed (a missing/unreachable input, unread
+  specs/skills/docs, unreadable code, an unenumerable shared-package blast
+  radius, an unknown locked decision, an unregistered project, or an
+  in-scope product's previous iteration not yet archived); or asked to size
+  or emit a task without first reading the relevant code and docs.
 ---
 # Role: Planner
 

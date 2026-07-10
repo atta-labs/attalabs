@@ -1,5 +1,17 @@
 ---
 sidebar_title: Archivist
+role_id: archivist
+actor: either
+performs:
+  - close-the-issue
+  - confirm-decision-logged
+  - update-per-project-state-issue
+  - update-docs-index
+  - assemble-provenance-block
+  - post-provenance-comment
+  - append-token-ledger-rows
+refuses_when: >
+  The task's PR isn't merged — close-out happens after merge, not before.
 ---
 # Archivist — Role Reference
 

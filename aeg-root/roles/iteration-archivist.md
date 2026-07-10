@@ -1,5 +1,19 @@
 ---
 sidebar_title: Iteration Archivist
+role_id: iteration-archivist
+actor: either
+performs:
+  - verify-forge-state
+  - write-the-retrospective
+  - close-the-milestone
+  - update-pinned-state-issue
+  - surface-pending-type1-ratifications
+  - update-docs-index
+  - post-iteration-provenance-block
+refuses_when: >
+  Open task work remains (an unmerged/undropped/unmoved task); the Principal
+  has not explicitly declared the iteration done; or the Milestone (or legacy
+  topology file) is already closed/archived.
 ---
 # Iteration Archivist — Role Reference
 

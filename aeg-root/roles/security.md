@@ -1,5 +1,19 @@
 ---
 sidebar_title: Security Reviewer
+role_id: security
+actor: agent
+performs:
+  - security-review-the-pull-request
+  - scan-for-secret-leakage
+  - check-byok-crypto-handling
+  - check-auth-and-permissions
+  - check-mcp-agent-tooling-exposure
+  - check-injection-surfaces
+  - check-dependency-risk
+  - produce-the-verdict
+refuses_when: >
+  There's no open PR to security-review; the PR body carries no brief; or
+  the reviewer authored the code under review.
 ---
 # Security Reviewer — Role Reference
 
