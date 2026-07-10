@@ -84,7 +84,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
   const [resolveError, setResolveError] = useState<string | null>(null)
   const { errorToast } = useToastContext()
 
-  const labelClass = 'mb-1.5 block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'
+  const labelClass = 'font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'
 
   const n = Math.min(cvs.length, MAX_CANDIDATES)
   const m = Math.min(jds.length, MAX_JDS)
