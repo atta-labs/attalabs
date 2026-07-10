@@ -12,9 +12,7 @@ const links = [
   { label: 'Home', href: '/', exact: true },
   { label: 'Known Limits', href: '/known-limits' },
   { label: 'AEG', href: '/aeg' },
-  { label: 'Studio', href: '/studio', exact: true },
-  { label: 'Backlog', href: '/studio/backlog' },
-  { label: 'Docs', href: '/studio/docs' }
+  { label: 'Studio', href: '/studio', exact: true }
 ]
 
 // Vinaya has no Sanity project of its own yet — borrows Atta's theme/branding,
