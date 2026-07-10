@@ -318,7 +318,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               </span>
             </div>
             <DocCollector
-              className='h-[470px] min-h-0 min-w-0'
+              className='h-[510px] min-h-0 min-w-0'
               accept='.md,.pdf'
               onItemsChange={setCvs}
               components={{ Textarea, Button, Input }}
@@ -356,7 +356,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               </span>
             </div>
             <DocCollector
-              className='h-[470px] min-h-0 min-w-0'
+              className='h-[510px] min-h-0 min-w-0'
               accept='.md,.pdf'
               onItemsChange={setJds}
               components={{ Textarea, Button, Input }}
