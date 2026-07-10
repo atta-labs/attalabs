@@ -299,10 +299,10 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
         </p>
       </header>
 
-      <div className='space-y-8'>
-        <div className='grid grid-cols-2 gap-8'>
+      <div className='space-y-8 h-full'>
+        <div className='grid grid-cols-2 gap-8 h-full'>
           {/* Candidates Column */}
-          <div className='flex h-full flex-col space-y-4'>
+          <div className='grid grid-rows-[auto_1fr] gap-4 h-full'>
             <div className='flex items-baseline justify-between'>
               <span className={labelClass}>
                 Candidates
@@ -317,7 +317,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               </span>
             </div>
             <DocCollector
-              className='flex-1'
+              className='h-full min-h-0'
               accept='.md,.pdf'
               onItemsChange={setCvs}
               components={{ Textarea, Button, Input }}
@@ -339,7 +339,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
           </div>
 
           {/* Job Descriptions Column */}
-          <div className='flex h-full flex-col space-y-4 border-l border-border pl-8'>
+          <div className='grid grid-rows-[auto_1fr] gap-4 h-full border-l border-border pl-8'>
             <div className='flex items-baseline justify-between'>
               <span className={labelClass}>
                 Job Descriptions
@@ -354,7 +354,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               </span>
             </div>
             <DocCollector
-              className='flex-1'
+              className='h-full min-h-0'
               accept='.md,.pdf'
               onItemsChange={setJds}
               components={{ Textarea, Button, Input }}
