@@ -65,19 +65,28 @@ export function ReportView({ report, avatarUrl }: { report: MatchReport; avatarU
   return (
     <article className='mx-auto max-w-[680px] px-6 py-12 print:max-w-none print:px-0 print:py-0'>
       {/* ── Header ── */}
-      <header className='mb-8 flex items-start gap-4 border-b border-border pb-6'>
-        {avatarUrl && (
-          <AvatarFrame src={avatarUrl} alt={report.candidate.name} size={56} variant='plain' pennant={false} />
-        )}
-        <div>
-          <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
-          <h1 className='mt-2 font-display text-2xl tracking-tight'>{report.candidate.name}</h1>
-          <p className='mt-0.5 font-mono text-sm text-muted-foreground'>{report.candidate.title}</p>
-          {report.estimatedCostUsd !== undefined && (
-            <p className='mt-0.5 font-mono text-xs text-warning'>
-              Estimated cost: ${report.estimatedCostUsd.toFixed(4)}
-            </p>
+      <header className='mb-8 border-b border-border pb-6'>
+        <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
+        <div className='mt-2 flex items-center gap-4'>
+          {avatarUrl && (
+            <AvatarFrame
+              src={avatarUrl}
+              alt={report.candidate.name}
+              size={80}
+              variant='dossier'
+              pennant
+              pennantAnimated
+            />
           )}
+          <div>
+            <h1 className='font-display text-2xl tracking-tight'>{report.candidate.name}</h1>
+            <p className='mt-0.5 font-mono text-sm text-muted-foreground'>{report.candidate.title}</p>
+            {report.estimatedCostUsd !== undefined && (
+              <p className='mt-0.5 font-mono text-xs text-warning'>
+                Estimated cost: ${report.estimatedCostUsd.toFixed(4)}
+              </p>
+            )}
+          </div>
         </div>
       </header>
 
