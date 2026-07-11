@@ -297,8 +297,13 @@ function extractRawFromResponse(repository: NonNullable<BatchResponse['repositor
 
   // Prefer the PR that actually closed the issue (branch-name-independent).
   // Fall back to the branch-named PR for in-flight tasks (open issue, PR open
-  // on the task/<iter>/<id> branch).
-  const closingPr = issue?.timelineItems?.nodes?.[0]?.closer ?? null
+  // on the task/<iter>/<id> branch) — and also when a ClosedEvent closer is a
+  // Commit, in which case the `... on PullRequest` fragment yields an empty
+  // object, not `null`. Guard on `number`/`url` (same shape-check `prRefs`
+  // below already applies) so that empty object doesn't win over `branchPr`.
+  const rawCloser = issue?.timelineItems?.nodes?.[0]?.closer ?? null
+  const closingPr =
+    rawCloser && typeof rawCloser.number === 'number' && typeof rawCloser.url === 'string' ? rawCloser : null
   const branchPr = prs && prs.nodes.length > 0 && prs.nodes[0] ? prs.nodes[0] : null
 
   return {
