@@ -1,4 +1,5 @@
 export * from './types'
+export type { StateSource } from './state-source'
 export { ANCHOR_FIELDS, anchoredRegion } from './anchored-region'
 export type { AnchorField } from './anchored-region'
 export { parseRegistry } from './parse-registry'
