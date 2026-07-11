@@ -140,7 +140,7 @@ Vada uses this pattern in: `RoomRoster`, `MessageCard`, `SessionCard` (stacked),
 
 ### RULE #1: Do NOT hand-maintain the catalog
 
-The catalog is fetched live from models.dev. Don't commit a static list of models. If you need curation (tier/description), add to `OVERLAY` — one line per entry.
+The catalog is fetched live from models.dev. Don't commit a static list of models. If you need curation (tier/description), add to `OVERLAY` — one line per entry. This applies uniformly to every vendor, including Anthropic — there is no per-vendor allowlist gate anywhere in `transform.ts`. `OVERLAY` only ever supplies cosmetic tier/description; it never gates whether a model is visible, for any provider. A model absent from `OVERLAY` still surfaces with `tier: 'balanced'` and no description — it does not get dropped.
 
 ### RULE #2: CatalogProvider must wrap at the page level
 
