@@ -22,8 +22,7 @@
 
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
-import { deriveIterationFromForge, listActiveIterationSlugs } from '@atta/aeg-forge-state'
-import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
+import { deriveIterationFromForge, listActiveIterationSlugs, resolveRepo } from '@atta/aeg-forge-state'
 import { findStaleBlockers } from '../src/index'
 import type { StaleBlocker, StaleBlockerIterationFact, StaleBlockerTaskFact } from '../src/index'
 

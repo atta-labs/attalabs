@@ -2,9 +2,10 @@
  * Public entry point for the local GitHub read adapter.
  *
  * Given a list of tasks for an iteration, return a `Map<TaskId, ForgeFacts>`
- * matching the `@atta/aeg-core` contract. One batched GraphQL query covers
- * all tasks (issue + ref + latest PR per task, aliased) — rate-limit-friendly
- * and avoids aggregating REST `/reviews` for `reviewDecision`.
+ * matching the `ForgeFacts` contract (`./types`). One batched GraphQL query
+ * covers all tasks (issue + ref + latest PR per task, aliased) —
+ * rate-limit-friendly and avoids aggregating REST `/reviews` for
+ * `reviewDecision`.
  *
  * Read-only, always (AEG D-029). No writes, no labels, no comments.
  *
@@ -14,14 +15,15 @@
  *   - Tasks with no Issue number (`null`) are omitted from the query and the
  *     map; `deriveIteration` treats absent entries as `todo` (D-059).
  *
- * SERVER-ONLY. Pulls `node:child_process` transitively via `./github-token`.
+ * SERVER-ONLY. Pulls `node:child_process` transitively via
+ * `@atta/aeg-forge-state`'s `resolveGithubToken`.
  */
 
+import { resolveGithubToken } from '@atta/aeg-forge-state'
 import { graphql } from '@octokit/graphql'
-import type { ForgeFacts } from '@atta/aeg-core'
-import { resolveGithubToken } from './github-token'
+import type { FetchForgeFactsInput, ForgeFactsSnapshot, PrRef, RawTaskFacts, TaskRef } from './fetch-forge-facts-types'
 import { mapForgeFacts } from './map-forge-facts'
-import type { FetchForgeFactsInput, ForgeFactsSnapshot, PrRef, RawTaskFacts, TaskRef } from './types'
+import type { ForgeFacts } from './types'
 
 /** Branch ref convention: `task/<iteration>/<id>` (iterations/README.md). */
 export function buildBranchName(iteration: string, taskId: string): string {
@@ -37,7 +39,7 @@ export function buildBranchName(iteration: string, taskId: string): string {
  *   - Any network/API error occurs.
  *
  * Callers use this to resolve `#TBD` issue numbers in the topology file;
- * the result is merged with topology refs by `load-snapshot.ts`.
+ * the result is merged with topology refs by the caller's own snapshot logic.
  */
 export async function fetchForgeTasksByLabel(input: {
   owner: string

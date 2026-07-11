@@ -23,10 +23,16 @@
  */
 
 import 'server-only'
-import { deriveIteration, type DerivedIteration, type ForgeFacts, type Iteration } from '@atta/aeg-core'
-import { fetchForgeFacts, fetchForgeTasksByLabel } from './fetch-forge-facts'
-import { resolveRepo, type RepoRef } from './resolve-repo'
-import type { PrRef } from './types'
+import {
+  deriveIteration,
+  fetchForgeFacts,
+  fetchForgeTasksByLabel,
+  type DerivedIteration,
+  type ForgeFacts,
+  type Iteration,
+  type PrRef
+} from '@atta/aeg-core'
+import { resolveRepo, type RepoRef } from '@atta/aeg-forge-state'
 
 export type IterationSnapshot = {
   derived: DerivedIteration

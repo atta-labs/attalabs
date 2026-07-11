@@ -31,9 +31,8 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { deriveIteration, parseIteration, type Iteration } from '@atta/aeg-core'
+import { deriveIteration, fetchForgeFacts, parseIteration, type Iteration } from '@atta/aeg-core'
 import { deriveIterationFromForge, findMilestoneForSlug } from '@atta/aeg-forge-state'
-import { fetchForgeFacts } from '../src/lib/forge/fetch-forge-facts'
 
 const REPO_ROOT = join(import.meta.dir, '../../../../..')
 const DEFAULT_ITERATION = 'aeg-forge-state-v1'

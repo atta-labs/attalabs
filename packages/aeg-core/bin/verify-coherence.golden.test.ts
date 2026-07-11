@@ -1,7 +1,6 @@
 import { execSync } from 'node:child_process'
 import { describe, it } from 'vitest'
-import { deriveIterationFromForge } from '@atta/aeg-forge-state'
-import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
+import { deriveIterationFromForge, resolveRepo } from '@atta/aeg-forge-state'
 import { parseIteration } from '../src/index'
 
 /**

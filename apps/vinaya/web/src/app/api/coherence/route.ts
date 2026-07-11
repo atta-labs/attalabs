@@ -21,7 +21,7 @@ import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { findAegRoot } from '@/lib/aeg-fs'
-import { resolveRepo } from '@/lib/forge/resolve-repo'
+import { resolveRepo } from '@atta/aeg-forge-state'
 
 const execFileAsync = promisify(execFile)
 

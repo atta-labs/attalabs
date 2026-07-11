@@ -1,13 +1,12 @@
 /**
- * Internal types for the local GitHub read adapter.
- *
- * `ForgeFacts` is owned by `@atta/aeg-core`; this module imports it and never
- * redefines it. These types describe the *adapter's* input/output shapes — the
- * raw GitHub responses the I/O layer extracts and the snapshot envelope the
- * caller consumes.
+ * Internal types for the local GitHub read adapter (`fetch-forge-facts.ts`,
+ * `map-forge-facts.ts`). `ForgeFacts` is defined in `./types`; this module
+ * imports it and never redefines it. These types describe the *adapter's*
+ * input/output shapes — the raw GitHub responses the I/O layer extracts and
+ * the snapshot envelope the caller consumes.
  */
 
-import type { ForgeFacts } from '@atta/aeg-core'
+import type { ForgeFacts } from './types'
 
 /** Identity of a task as parsed from the iteration topology table. */
 export type TaskRef = {
@@ -27,7 +26,7 @@ export type FetchForgeFactsInput = {
   /**
    * Optional explicit token. When absent the I/O layer auto-discovers (env,
    * then `gh auth token`). When discovery also fails, the snapshot returns
-   * `unavailable: true` rather than throwing — Studio must render without it.
+   * `unavailable: true` rather than throwing — callers must render without it.
    */
   token?: string
 }
@@ -35,16 +34,16 @@ export type FetchForgeFactsInput = {
 /**
  * Snapshot returned by `fetchForgeFacts`. The brief's literal contract is
  * `Promise<Map<TaskId, ForgeFacts>>`; we wrap it so the no-token / unreachable
- * case has an explicit soft signal Studio can surface ("live status
+ * case has an explicit soft signal callers can surface ("live status
  * unavailable") without having to infer it from an empty map.
  */
 export type ForgeFactsSnapshot = {
   facts: Map<string, ForgeFacts>
   /**
    * Forge identity (number + URL + state) of the PR each task's facts resolved
-   * to, keyed by task id. Display-only — `ForgeFacts` (owned by
-   * `@atta/aeg-core`) deliberately carries no forge identity, so surfaces that
-   * link to the PR read it from here instead. Empty when `unavailable`.
+   * to, keyed by task id. Display-only — `ForgeFacts` deliberately carries no
+   * forge identity, so surfaces that link to the PR read it from here instead.
+   * Empty when `unavailable`.
    */
   prRefs: Map<string, PrRef>
   /**
@@ -102,5 +101,3 @@ export type RawTaskFacts = {
     mergedAt: string | null
   } | null
 }
-
-export type { ForgeFacts }

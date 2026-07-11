@@ -2,7 +2,7 @@
  * Pure mapper: GitHub raw responses → `ForgeFacts`. No I/O. Isolated from the
  * I/O layer so the derivation is exhaustively testable with fixtures.
  *
- * Field-by-field correspondence to `ForgeFacts` (defined in @atta/aeg-core):
+ * Field-by-field correspondence to `ForgeFacts` (defined in `./types`):
  *
  *   issueState     ← issue.state lowercased ('OPEN' | 'CLOSED' → 'open' | 'closed')
  *   assigned       ← issue.assigneesCount > 0
@@ -26,7 +26,8 @@
  * `deriveIteration` treats as `todo` — iteration tasks are minimum `todo` per D-059).
  */
 
-import type { ForgeFacts, RawTaskFacts } from './types'
+import type { RawTaskFacts } from './fetch-forge-facts-types'
+import type { ForgeFacts } from './types'
 
 export const AEG_BLOCKED_LABEL = 'aeg:blocked'
 

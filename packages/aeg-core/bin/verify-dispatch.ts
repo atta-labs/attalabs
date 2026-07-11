@@ -69,9 +69,14 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { deriveIterationFromForge, listActiveIterationSlugs } from '@atta/aeg-forge-state'
-import { resolveGithubToken } from '../../../apps/aeg/web/studio/src/lib/forge/github-token'
-import { resolveRepo, type RepoRef } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
+import {
+  deriveIterationFromForge,
+  fetchProvenance,
+  listActiveIterationSlugs,
+  resolveGithubToken,
+  resolveRepo,
+  type RepoRef
+} from '@atta/aeg-forge-state'
 import {
   type BaselineEntry,
   captureBaseline,
@@ -89,7 +94,6 @@ import {
   parsePremiseBlock
 } from '../src/index'
 import type { Iteration, Task } from '../src/types'
-import { fetchProvenance } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-provenance'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)

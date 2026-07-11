@@ -13,11 +13,10 @@
 
 import { Badge } from '@atta/ui/components'
 import type { Registry } from '@atta/aeg-core'
+import { resolveGithubToken, resolveRepo } from '@atta/aeg-forge-state'
 import type { Metadata } from 'next'
 import { readRegistry } from '@/lib/aeg-fs'
 import { fetchOpenIssuesWithoutIterationLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
-import { resolveGithubToken } from '@/lib/forge/github-token'
-import { resolveRepo } from '@/lib/forge/resolve-repo'
 
 // Forge reads derive live Issue state from GitHub — never serve from cache.
 export const dynamic = 'force-dynamic'

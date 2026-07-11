@@ -47,10 +47,10 @@ import {
   deriveIterationFromForge,
   findMilestoneForSlug,
   listActiveIterationSlugs,
-  listArchivedIterationSlugs
+  listArchivedIterationSlugs,
+  resolveRepo
 } from '@atta/aeg-forge-state'
 import { loadIterationProgress } from '@/lib/forge/load-snapshot'
-import { resolveRepo } from '@/lib/forge/resolve-repo'
 
 const ITERATIONS_DIR = 'iterations'
 const REGISTRY_FILE = 'projects.md'

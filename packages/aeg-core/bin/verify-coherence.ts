@@ -32,10 +32,13 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   deriveIterationFromForge,
+  fetchProvenance,
   findMilestoneForSlug,
   listActiveIterationSlugs,
   listArchivedIterationSlugs,
-  listIssueMilestonesForSlug
+  listIssueMilestonesForSlug,
+  resolveGithubToken,
+  resolveRepo
 } from '@atta/aeg-forge-state'
 import type { Iteration } from '@atta/aeg-types'
 import {
@@ -55,17 +58,14 @@ import {
   checkT2,
   checkT3,
   DOC_OWNERS_PATH,
+  fetchForgeFacts,
+  fetchOpenIssuesByLabel,
   parseIteration,
   R1_GRANDFATHERED_ISSUES,
   scopeT2ToPlanPr,
   touchesAnyTopology
 } from '../src/index'
 import type { CheckResult, ForgeFacts, IterationFile, TaskEntry } from '../src/index'
-import { fetchForgeFacts } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-forge-facts'
-import { fetchOpenIssuesByLabel } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-open-issues'
-import { fetchProvenance } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-provenance'
-import { resolveGithubToken } from '../../../apps/aeg/web/studio/src/lib/forge/github-token'
-import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)

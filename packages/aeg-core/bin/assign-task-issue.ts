@@ -29,8 +29,7 @@
 
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
-import { deriveIterationFromForge } from '@atta/aeg-forge-state'
-import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
+import { deriveIterationFromForge, resolveRepo } from '@atta/aeg-forge-state'
 import { decideIssueAssignment, parseTaskBranch } from '../src/index'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')

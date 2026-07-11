@@ -20,8 +20,7 @@
  * Exit code: 0 = allow (push proceeds), 1 = refuse.
  */
 
-import { deriveIterationFromForge } from '@atta/aeg-forge-state'
-import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
+import { deriveIterationFromForge, resolveRepo } from '@atta/aeg-forge-state'
 import { checkBranchTopology, taskBranchTopologyFields } from '../src/index'
 
 if (import.meta.main) {

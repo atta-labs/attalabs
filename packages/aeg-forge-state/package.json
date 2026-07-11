@@ -14,7 +14,8 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@atta/aeg-types": "workspace:*"
+    "@atta/aeg-types": "workspace:*",
+    "@octokit/graphql": "^8.1.1"
   },
   "devDependencies": {
     "@atta/typescript-config": "workspace:*",
