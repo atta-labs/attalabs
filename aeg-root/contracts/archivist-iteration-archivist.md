@@ -1,5 +1,10 @@
 ---
 sidebar_title: Archivist → Iteration Archivist
+contract_id: archivist-iteration-archivist
+status: active
+producer: archivist
+consumer: iteration-archivist
+carrier: pr-provenance-comments, iteration-file
 ---
 # Contract: per-task Archivist → Iteration Archivist
 

@@ -1,5 +1,10 @@
 ---
 sidebar_title: Brief → Developer
+contract_id: brief-developer
+status: active
+producer: team-leader
+consumer: developer
+carrier: pr-body
 ---
 # Contract: Brief Author → Developer
 

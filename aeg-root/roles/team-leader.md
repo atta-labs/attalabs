@@ -1,5 +1,19 @@
 ---
 sidebar_title: Team Leader
+role_id: team-leader
+actor: agent
+performs:
+  - pressure-test-ideas
+  - log-decisions
+  - review-specs-on-completed-prs
+  - maintain-state-docs
+  - author-briefs
+  - plan-iterations
+  - dispatch-multi-ai-reviewer-rounds
+refuses_when: >
+  Not talking to the Principal directly on a chat/planning surface; or a
+  task brief has been dispatched and the session is on a coding-agent
+  surface — that is the Developer role, not the Team Leader.
 ---
 # Team Leader — Role Reference
 

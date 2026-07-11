@@ -1,5 +1,10 @@
 ---
 sidebar_title: Iteration Archivist → Planner
+contract_id: iteration-archivist-planner
+status: active
+producer: iteration-archivist
+consumer: planner
+carrier: archived-iteration-file, pinned-state-issue, retrospective-comment
 ---
 # Contract: Iteration Archivist → Planner
 

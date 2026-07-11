@@ -1,5 +1,17 @@
 ---
 sidebar_title: Verifier
+role_id: verifier
+actor: either
+performs:
+  - boot-the-app
+  - run-agent-test-plan-items
+  - report-agent-verification-evidence
+  - run-principal-test-plan-items
+  - tick-principal-checkboxes
+refuses_when: >
+  There's no open PR; the PR body carries no brief; the brief has no Test
+  Plan section; or the Test Plan is declared unit-tests-only while the diff
+  touches a runtime surface.
 ---
 # Verifier — Role Reference
 

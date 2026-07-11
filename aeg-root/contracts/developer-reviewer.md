@@ -1,5 +1,10 @@
 ---
 sidebar_title: Developer → Reviewer
+contract_id: developer-reviewer
+status: active
+producer: developer
+consumer: reviewer
+carrier: pr-diff-and-body
 ---
 # Contract: Developer → Reviewer
 

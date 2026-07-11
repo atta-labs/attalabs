@@ -1,5 +1,21 @@
 ---
 sidebar_title: Reviewer
+role_id: reviewer
+actor: agent
+performs:
+  - review-the-pull-request
+  - check-brief-conformance
+  - check-spec-conformance
+  - flag-scope-violations
+  - check-test-honesty
+  - check-doc-coupling
+  - check-lock-awareness
+  - check-multi-project-reach
+  - produce-the-verdict
+  - escalate-findings
+refuses_when: >
+  There's no open PR for the task; the PR body carries no brief; or the
+  reviewer authored the code under review.
 ---
 # Reviewer — Role Reference
 
