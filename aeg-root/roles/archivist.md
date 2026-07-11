@@ -5,6 +5,7 @@ actor: either
 performs:
   - close-the-issue
   - confirm-decision-logged
+  - confirm-docs-updated
   - update-per-project-state-issue
   - update-docs-index
   - assemble-provenance-block

@@ -4,7 +4,7 @@ contract_id: archivist-iteration-archivist
 status: active
 producer: archivist
 consumer: iteration-archivist
-carrier: pr-provenance-comments
+carrier: pr-provenance-comments, iteration-file
 ---
 # Contract: per-task Archivist → Iteration Archivist
 

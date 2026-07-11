@@ -13,7 +13,10 @@ refuses_when: >
   Input isn't a well-formed brief (missing tier/scope/stop-conditions);
   a dispatch gate is unmet (unmerged depends-on, an open conflicts-with PR);
   the task Issue is #TBD or blank; the prior task's provenance block is
-  missing; or the Step 0 branch name doesn't literal-match the topology row.
+  missing; a named product's previous iteration is complete but not
+  archived; the task's row doesn't exist yet in the iteration's
+  forge-derived task list; or the Step 0 branch name doesn't literal-match
+  the topology row.
 ---
 # Developer — Role Reference
 

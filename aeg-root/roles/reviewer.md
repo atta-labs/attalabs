@@ -9,6 +9,8 @@ performs:
   - flag-scope-violations
   - check-test-honesty
   - check-doc-coupling
+  - check-lock-awareness
+  - check-multi-project-reach
   - produce-the-verdict
   - escalate-findings
 refuses_when: >
