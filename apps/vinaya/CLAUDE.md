@@ -11,7 +11,7 @@ Vinaya is a governance layer for AI coding agents — deterministic checks that 
 | Surface | Path | Package | Status |
 |---------|------|---------|--------|
 | Web | `web/` | `@atta/vinaya-web` | Landing + Known Limits pages live; Studio dashboard live at `/studio`, methodology-doc browser at `/studio/docs`; site-wide TopBar on every route |
-| CLI | `cli/` | — | Not yet implemented (`vinaya-cli-v1`, undispatched) |
+| CLI | `cli/` | `@atta/vinaya-cli` | Skeleton only — `vinaya help`/`version` router, hierarchical config loader, versioned `--json` envelope (`vinaya-cli-v1` task 1, #381). Real command logic (`init`, `check`, `doctor`, forge writes) not yet implemented. |
 
 ---
 

@@ -141,6 +141,7 @@
 
 ### vinaya
 
+- [Vinaya — product backlog](./apps/vinaya/specs/vinaya-backlog.md)
 - [Vinaya — Product Spec (seed)](./apps/vinaya/specs/vinaya-spec.md)
 
 ### vitakka-ai
