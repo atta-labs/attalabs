@@ -38,8 +38,9 @@ name: AEG Gate Suite
 #     re-evaluate the gate without an empty commit — D-049);
 #   - verify-docs also ran on `labeled`/`unlabeled` (PR_LABELS feeds the
 #     tier derivation).
-# On `edited` the dependency install is skipped too — verify-test-plan.ts is
-# dependency-free and its old workflow never installed.
+# Install always runs, including on `edited` — verify-test-plan.ts now goes
+# through packages/aeg-core, which depends on @atta/aeg-forge-state (forge
+# migration, #512/#515/#517/#519/#521), so it is no longer dependency-free.
 #
 # Permissions are the union of what the 9 jobs individually held:
 #   contents: read (all), issues: write (coherence A1 labeling),
@@ -74,10 +75,7 @@ jobs:
         with:
           bun-version: latest
 
-      # Skipped on `edited`: only the dependency-free Test Plan gate runs
-      # there (its pre-consolidation workflow never installed dependencies).
       - name: Install dependencies
-        if: ${{ github.event.action != 'edited' }}
         run: bun install --frozen-lockfile
 
       # ── 1/9 · Closes #N ─────────────────────────────────────────────────
