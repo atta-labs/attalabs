@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button, Input, Badge } from '@atta/ui'
 import { useToastContext } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
@@ -164,6 +165,7 @@ function ProviderKeyRow({ vendor, label, configured, onSaved }: ProviderKeyRowPr
 }
 
 export function ProviderKeysSection() {
+  const router = useRouter()
   const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null)
   const [providerError, setProviderError] = useState(false)
 
@@ -178,6 +180,11 @@ export function ProviderKeysSection() {
       setProviderError(true)
     }
   }, [])
+
+  const handleSaved = useCallback(() => {
+    fetchProviderStatus()
+    router.refresh()
+  }, [fetchProviderStatus, router])
 
   useEffect(() => {
     fetchProviderStatus()
@@ -213,7 +220,7 @@ export function ProviderKeysSection() {
                 vendor={v.id}
                 label={v.label}
                 configured={providerStatus[v.id] === true}
-                onSaved={fetchProviderStatus}
+                onSaved={handleSaved}
               />
             </div>
           ))}
