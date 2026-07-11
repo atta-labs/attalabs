@@ -119,6 +119,8 @@ Signals are detected by:
 - `GITHUB_PAT` is optional — the `fetch_github_signals` tool returns `[]` without it (and without a `github_handle`), and the auditor is instructed to proceed on the profile alone
 - Exposed to the auditor agent as `extractSignals` wrapped in `fetchGithubSignalsForHandle` — declared as a custom tool in the YAML, invoked by the model at most once per audit, not called deterministically by Herald's route
 
+**Capturing structured signals onto the report (herald-hardening-v1 Task 13, #520).** The LLM only ever sees the flattened `string[]` evidence (`fetchGithubSignalsForHandle`'s return contract, unchanged). To surface the richer `RawSignal[]` on the report itself, `run()` (`packages/agents/forensic-hiring-auditor/src/index.ts`) builds its `customTools` map with `createGithubSignalToolHandler(onSignals)` instead of the plain `githubSignalToolHandler` — a factory that returns a fresh closure per call, invoking `onSignals(signals)` with the full `RawSignal[]` before mapping to the string array the LLM receives. `run()` declares `capturedSignals` as a local `let` inside its own function body (never module-level), so concurrent `run()` invocations — batch mode fans out 1-10 candidates via `Promise.all` — each own an independent capture; there is no shared mutable state to race on. After `adapter.execute()` returns, `run()` attaches `capturedSignals` onto the returned `MatchReport` as `githubSignals?: RawSignal[]` (only when non-empty). `githubSignalToolHandler` (the original, non-capturing export) is unchanged and still used nowhere else — kept for any future caller that doesn't need the capture.
+
 ---
 
 ## LLM Configuration
