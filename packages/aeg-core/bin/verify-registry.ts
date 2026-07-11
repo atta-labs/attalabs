@@ -17,6 +17,7 @@ import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import matter from 'gray-matter'
+import { resolveRepo } from '@atta/aeg-forge-state'
 import { checkG1, checkG2, checkG3, checkG4, checkG5, parseEnforcementRegistry } from '../src/index'
 import type { GateRow, RegistryCheckResult } from '../src/index'
 
@@ -135,16 +136,43 @@ function findCrossingFiles(candidateFiles: string[]): string[] {
 
 // ---------- G4: forge resolution -----------------------------------------------
 
-const resolveCache = new Map<number, boolean>()
+/**
+ * Cheap reachability probe, same pattern `check-first-push-dispatch.ts` uses
+ * before trusting any `gh`-shelling script's output: `resolveRepo()` alone
+ * can still succeed (e.g. `AEG_REPO` set, or a git remote parses) even when
+ * `gh` itself cannot reach a host or resolve credentials — that gap is what
+ * silently turned every G4 call into a false "does not resolve" before this
+ * fix. Checked once, upfront, before any `gh issue view`/`gh pr view` call.
+ */
+function ghReachable(): boolean {
+  try {
+    execSync('gh auth status', { encoding: 'utf8', stdio: ['ignore', 'ignore', 'ignore'], timeout: 8000 })
+    return true
+  } catch {
+    return false
+  }
+}
 
-function resolveFn(n: number): boolean {
-  if (resolveCache.has(n)) return resolveCache.get(n) ?? false
-  const repo = process.env.AEG_REPO
-  const repoFlag = repo ? `-R ${repo}` : ''
-  const issueOk = sh(`gh issue view ${n} ${repoFlag} --json number`) !== ''
-  const resolved = issueOk || sh(`gh pr view ${n} ${repoFlag} --json number`) !== ''
-  resolveCache.set(n, resolved)
-  return resolved
+/**
+ * `repoFlag` (`<owner>/<repo>`) is always resolved and passed explicitly —
+ * every call carries `-R <owner>/<repo>` unconditionally (task 23/#360: an
+ * untargeted `gh` call from a worktree checkout silently mis-scopes or
+ * returns nothing). Callers only construct this after confirming both
+ * `resolveRepo()` and `ghReachable()` succeeded (see `main`'s severity:infra
+ * escape hatch) — a transient `gh` failure on an individual call still
+ * reads as "does not resolve" (the same known, documented limitation
+ * `verify-dispatch.ts`'s own `sh()` helper has), but total unreachability
+ * no longer silently produces fabricated per-citation findings.
+ */
+function makeResolveFn(repoFlag: string): (n: number) => boolean {
+  const cache = new Map<number, boolean>()
+  return (n: number): boolean => {
+    if (cache.has(n)) return cache.get(n) ?? false
+    const issueOk = sh(`gh issue view ${n} -R ${repoFlag} --json number`) !== ''
+    const resolved = issueOk || sh(`gh pr view ${n} -R ${repoFlag} --json number`) !== ''
+    cache.set(n, resolved)
+    return resolved
+  }
 }
 
 // ---------- G5: role/contract frontmatter --------------------------------------
@@ -201,11 +229,32 @@ if (import.meta.main) {
   const roles = readRoles()
   const contracts = readContracts()
 
+  // G4 severity:infra escape hatch (mirrors verify-dispatch.ts's runGateMode
+  // exactly): resolve the repo and probe `gh` reachability ONCE, up front.
+  // Neither failing is a real G4 finding — it means G4 cannot be evaluated
+  // at all, not that a citation is fabricated. G1/G2/G3/G5 need no forge
+  // access and always run regardless.
+  const repo = await resolveRepo()
+  const ghOk = repo !== null && ghReachable()
+
+  const g4Result: RegistryCheckResult = ghOk
+    ? checkG4(enforcementContent, makeResolveFn(`${repo.owner}/${repo.repo}`))
+    : {
+        check: 'G4',
+        status: 'fail',
+        findings: [
+          {
+            reason:
+              "severity:infra — could not resolve a GitHub repo (AEG_REPO / git remote) or `gh` is unreachable (`gh auth status` failed). G4 skipped — cannot evaluate whether enforcement.md's cited forge numbers resolve."
+          }
+        ]
+      }
+
   const results: RegistryCheckResult[] = [
     checkG1(rows, existsFn),
     checkG2(rows, candidateFiles),
     checkG3(ring0Rows, crossingFiles),
-    checkG4(enforcementContent, resolveFn),
+    g4Result,
     checkG5(roles, contracts)
   ]
 

@@ -76,7 +76,7 @@ export function checkG2(rows: GateRow[], candidateFiles: string[]): RegistryChec
  * already-detected by the caller via a source-grep. Blocking.
  */
 export function checkG3(ring0Rows: GateRow[], crossingFiles: string[]): RegistryCheckResult {
-  const ring0Implementations = new Set(ring0Rows.filter((r) => r.ring === 'ring0').map((r) => r.implementation))
+  const ring0Implementations = new Set(ring0Rows.map((r) => r.implementation))
   const findings: RegistryFinding[] = []
   for (const path of crossingFiles) {
     if (!ring0Implementations.has(path)) {
