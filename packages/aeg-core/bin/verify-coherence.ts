@@ -32,9 +32,13 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   deriveIterationFromForge,
+  fetchProvenance,
   findMilestoneForSlug,
   listActiveIterationSlugs,
-  listIssueMilestonesForSlug
+  listArchivedIterationSlugs,
+  listIssueMilestonesForSlug,
+  resolveGithubToken,
+  resolveRepo
 } from '@atta/aeg-forge-state'
 import type { Iteration } from '@atta/aeg-types'
 import {
@@ -54,17 +58,14 @@ import {
   checkT2,
   checkT3,
   DOC_OWNERS_PATH,
+  fetchForgeFacts,
+  fetchOpenIssuesByLabel,
   parseIteration,
   R1_GRANDFATHERED_ISSUES,
   scopeT2ToPlanPr,
   touchesAnyTopology
 } from '../src/index'
 import type { CheckResult, ForgeFacts, IterationFile, TaskEntry } from '../src/index'
-import { fetchForgeFacts } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-forge-facts'
-import { fetchOpenIssuesByLabel } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-open-issues'
-import { fetchProvenance } from '../../../apps/aeg/web/studio/src/lib/forge/fetch-provenance'
-import { resolveGithubToken } from '../../../apps/aeg/web/studio/src/lib/forge/github-token'
-import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
@@ -350,6 +351,28 @@ export async function loadIterationFiles(prContext: PrReadContext = null, onlySl
     if (milestone) {
       const iteration = await deriveOrFallback(repo, onlySlug, `${ITERATIONS_RELDIR}/${onlySlug}.md`)
       if (iteration !== null) files.push({ slug: onlySlug, archived: false, iteration })
+    }
+  }
+
+  // Same forge-native gap, general (unscoped) sweep (#515):
+  // once no iteration carries a topology file at all, the directory-listing
+  // enumeration above finds nothing and every repo-wide check (A1-A3, T1-T3,
+  // D1, L1-L4) would silently see zero iterations. Fill in every Milestone
+  // (open or closed) the file sweep didn't already surface — same
+  // `deriveOrFallback` used everywhere else in this loader, so a Milestone
+  // whose slug DOES still have a legacy file gets its dependsOn/conflictsWith
+  // merged in exactly as before.
+  if (!onlySlug && repo) {
+    const activeRefs = listActiveIterationSlugs(repo.owner, repo.repo)
+    const archivedRefs = listArchivedIterationSlugs(repo.owner, repo.repo)
+    for (const { slug, archived } of [
+      ...activeRefs.map((r) => ({ slug: r.slug, archived: false })),
+      ...archivedRefs.map((r) => ({ slug: r.slug, archived: true }))
+    ]) {
+      if (files.some((f) => f.slug === slug)) continue
+      const relPath = `${archived ? COMPLETED_RELDIR : ITERATIONS_RELDIR}/${slug}.md`
+      const iteration = await deriveOrFallback(repo, slug, relPath)
+      if (iteration !== null) files.push({ slug, archived, iteration })
     }
   }
 

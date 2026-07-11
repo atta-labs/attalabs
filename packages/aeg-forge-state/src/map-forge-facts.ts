@@ -2,7 +2,7 @@
  * Pure mapper: GitHub raw responses → `ForgeFacts`. No I/O. Isolated from the
  * I/O layer so the derivation is exhaustively testable with fixtures.
  *
- * Field-by-field correspondence to `ForgeFacts` (defined in @atta/aeg-core):
+ * Field-by-field correspondence to `ForgeFacts` (defined in `@atta/aeg-types`):
  *
  *   issueState     ← issue.state lowercased ('OPEN' | 'CLOSED' → 'open' | 'closed')
  *   assigned       ← issue.assigneesCount > 0
@@ -15,7 +15,7 @@
  *   reviewDecision ← 'APPROVED' → 'approved'
  *                    'CHANGES_REQUESTED' → 'changes_requested'
  *                    'REVIEW_REQUIRED' / null → 'none'
- *                    (Only `'changes_requested'` flips status per types.ts.)
+ *                    (Only `'changes_requested'` flips status per aeg-types.)
  *   stateReason    ← issue.stateReason: 'COMPLETED' → 'completed',
  *                    'NOT_PLANNED' → 'not_planned', 'REOPENED' / null → null.
  *                    Drives honest terminal derivation (D-069): a closed-no-
@@ -26,7 +26,7 @@
  * `deriveIteration` treats as `todo` — iteration tasks are minimum `todo` per D-059).
  */
 
-import type { ForgeFacts, RawTaskFacts } from './types'
+import type { ForgeFacts, RawTaskFacts } from '@atta/aeg-types'
 
 export const AEG_BLOCKED_LABEL = 'aeg:blocked'
 

@@ -19,7 +19,7 @@ import { execSync } from 'node:child_process'
 import { join } from 'node:path'
 import { findDeadBranchPushes } from '../src/index'
 import type { DeadBranchFact, DeadBranchPush } from '../src/index'
-import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
+import { resolveRepo } from '@atta/aeg-forge-state'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)

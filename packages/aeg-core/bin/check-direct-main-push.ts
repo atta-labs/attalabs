@@ -23,7 +23,7 @@
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { checkDirectMainPush } from '../src/index'
-import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
+import { resolveRepo } from '@atta/aeg-forge-state'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)

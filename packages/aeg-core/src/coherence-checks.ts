@@ -8,6 +8,7 @@
 
 import { anchoredRegion } from './anchored-region'
 import { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
+import type { ForgeIssue } from '@atta/aeg-types'
 import type { ForgeFacts, Iteration, Task } from './types'
 
 // ---------- grandfather cutoff -----------------------------------------------
@@ -387,8 +388,12 @@ function resolveDepEntry(
   return taskToEntry.get(`${iterationSlug}/${dep}`) ?? taskToEntry.get(dep)
 }
 
-/** An open Issue's forge-fetched body + labels, as returned by the batched label query. */
-export type ForgeIssue = { number: number; body: string; labels: string[] }
+/**
+ * `ForgeIssue` lives in `@atta/aeg-types` (aeg-core-purity fix, #521) —
+ * re-exported here since every existing call site imports it from
+ * `@atta/aeg-core`.
+ */
+export type { ForgeIssue }
 
 /**
  * R1: Every active-iteration task Issue's body carries the full eight-field

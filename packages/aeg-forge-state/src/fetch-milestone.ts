@@ -35,12 +35,22 @@ export type ActiveIterationRef = { slug: string; goal: string }
  * Lists every OPEN Milestone as an active-iteration slug — the forge-native
  * enumeration of "which iterations are currently active" (D-110: an
  * iteration's Goal/Lifecycle lives on a Milestone titled exactly its slug).
- * Archived iterations have no Milestone-based enumeration equivalent by
- * design — they are a permanent, file-only concern (their topology files are
- * the historical record; `iterations/README.md`'s birth rule never migrates
- * history), not something this function is meant to surface.
  */
 export function listActiveIterationSlugs(owner: string, repo: string): ActiveIterationRef[] {
   const milestones = ghApiGet<GhMilestone[]>(`repos/${owner}/${repo}/milestones?state=open&per_page=100`)
+  return milestones.map((m) => ({ slug: m.title, goal: m.description ?? '' }))
+}
+
+/**
+ * Lists every CLOSED Milestone as an archived-iteration slug — the
+ * forge-native enumeration of "which iterations are complete" (#515).
+ * Mirrors `listActiveIterationSlugs`'s shape and query, `state=closed`
+ * instead of `open`. `deriveIterationFromForge`'s Issue lookup already queries
+ * `--state all` (`gh.ts`'s `ghIssueListByLabel`), so a closed Milestone's
+ * `iteration:<slug>`-labeled Issues (themselves closed, merged PRs) resolve
+ * correctly through the same task-list derivation active iterations use.
+ */
+export function listArchivedIterationSlugs(owner: string, repo: string): ActiveIterationRef[] {
+  const milestones = ghApiGet<GhMilestone[]>(`repos/${owner}/${repo}/milestones?state=closed&per_page=100`)
   return milestones.map((m) => ({ slug: m.title, goal: m.description ?? '' }))
 }

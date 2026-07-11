@@ -2,18 +2,18 @@
  * Open-issues-by-iteration-label fetch — the single implementation of the
  * "which Issues are still open under `iteration:<slug>`?" fact.
  *
- * Moved here from `packages/aeg-core/bin/verify-coherence.ts` (task 28, #372
- * bundled finding) so Studio's server components can call it without pulling
- * in that CLI's top-level `process.chdir` side effect. `verify-coherence.ts`
- * imports it from here — same direction as its existing
- * `fetchForgeFacts`/`resolveRepo` imports. One implementation per fact
- * (D-081 discipline); do not re-implement.
+ * One implementation per fact (D-081 discipline); do not re-implement.
  *
  * Read-only, always (AEG D-029). No writes, no labels, no comments.
+ *
+ * Lives in `@atta/aeg-forge-state`, not `@atta/aeg-core` (aeg-core-purity
+ * fix, #521) — `@atta/aeg-core/src` is zero-I/O (#372, #382, #506) and this
+ * module performs `@octokit/graphql` I/O. Re-exported from `@atta/aeg-core`
+ * for every existing call site that imports it from there.
  */
 
 import { graphql } from '@octokit/graphql'
-import type { ForgeIssue } from '@atta/aeg-core'
+import type { ForgeIssue } from '@atta/aeg-types'
 
 type LabeledIssuesResponse = {
   repository: Record<

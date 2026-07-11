@@ -1,13 +1,42 @@
 import { describe, expect, it } from 'vitest'
 import { AEG_BLOCKED_LABEL, mapForgeFacts } from './map-forge-facts'
-import type { RawTaskFacts } from './types'
+import type { RawTaskFacts } from '@atta/aeg-types'
 
-function rawBase(overrides: Partial<RawTaskFacts> = {}): RawTaskFacts {
+type IssueOverride = Partial<NonNullable<RawTaskFacts['issue']>> | null
+type PullRequestOverride = Partial<NonNullable<RawTaskFacts['pullRequest']>> | null
+
+/**
+ * Fixture builder — fills every required `RawTaskFacts` field with a
+ * realistic default, letting each test override only the fields it cares
+ * about. `issue: null` short-circuits to the "no issue" shape; any other
+ * partial merges onto the open/unassigned/unlabeled default.
+ */
+function rawBase(
+  overrides: { issue?: IssueOverride; refExists?: boolean; pullRequest?: PullRequestOverride } = {}
+): RawTaskFacts {
+  const issue: RawTaskFacts['issue'] =
+    overrides.issue === null
+      ? null
+      : { state: 'OPEN', stateReason: null, closedAt: null, assigneesCount: 0, labels: [], ...overrides.issue }
+
+  const pullRequest: RawTaskFacts['pullRequest'] =
+    overrides.pullRequest === null
+      ? null
+      : overrides.pullRequest === undefined
+        ? null
+        : {
+            number: 1,
+            url: 'https://github.com/o/r/pull/1',
+            state: 'OPEN',
+            reviewDecision: null,
+            mergedAt: null,
+            ...overrides.pullRequest
+          }
+
   return {
-    issue: { state: 'OPEN', stateReason: null, assigneesCount: 0, labels: [] },
-    refExists: false,
-    pullRequest: null,
-    ...overrides
+    issue,
+    refExists: overrides.refExists ?? false,
+    pullRequest
   }
 }
 

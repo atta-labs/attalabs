@@ -14,18 +14,23 @@
  *   Types: TaskRef, FetchForgeFactsInput, ForgeFactsSnapshot
  */
 
-export { fetchForgeFacts, buildBranchName, fetchForgeTasksByLabel } from './fetch-forge-facts'
-export { mapForgeFacts, AEG_BLOCKED_LABEL } from './map-forge-facts'
+export {
+  fetchForgeFacts,
+  buildBranchName,
+  fetchForgeTasksByLabel,
+  mapForgeFacts,
+  AEG_BLOCKED_LABEL
+} from '@atta/aeg-core'
+export { resolveRepo } from '@atta/aeg-forge-state'
+export type { FetchForgeFactsInput, ForgeFactsSnapshot, TaskRef, RawTaskFacts } from '@atta/aeg-core'
+export type { RepoRef } from '@atta/aeg-forge-state'
 export { fetchPullRequestBriefs } from './fetch-pull-request-brief'
 export { fetchIterationTokenLedger } from './fetch-token-ledger'
-export { resolveRepo } from './resolve-repo'
 export { loadIterationSnapshot, loadIterationProgress } from './load-snapshot'
 export type { IterationSnapshot, IterationProgress } from './load-snapshot'
-export type { FetchForgeFactsInput, ForgeFactsSnapshot, TaskRef, RawTaskFacts } from './types'
 export type {
   PullRequestBrief,
   PullRequestBriefSnapshot,
   FetchPullRequestBriefsInput
 } from './fetch-pull-request-brief'
 export type { FetchTokenLedgerInput, TokenLedgerSnapshot } from './fetch-token-ledger'
-export type { RepoRef } from './resolve-repo'

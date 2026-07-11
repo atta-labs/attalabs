@@ -2,9 +2,10 @@
  * Public entry point for the local GitHub read adapter.
  *
  * Given a list of tasks for an iteration, return a `Map<TaskId, ForgeFacts>`
- * matching the `@atta/aeg-core` contract. One batched GraphQL query covers
- * all tasks (issue + ref + latest PR per task, aliased) — rate-limit-friendly
- * and avoids aggregating REST `/reviews` for `reviewDecision`.
+ * matching the `ForgeFacts` contract (`@atta/aeg-types`). One batched GraphQL
+ * query covers all tasks (issue + ref + latest PR per task, aliased) —
+ * rate-limit-friendly and avoids aggregating REST `/reviews` for
+ * `reviewDecision`.
  *
  * Read-only, always (AEG D-029). No writes, no labels, no comments.
  *
@@ -14,14 +15,26 @@
  *   - Tasks with no Issue number (`null`) are omitted from the query and the
  *     map; `deriveIteration` treats absent entries as `todo` (D-059).
  *
- * SERVER-ONLY. Pulls `node:child_process` transitively via `./github-token`.
+ * SERVER-ONLY. Pulls `node:child_process` transitively via
+ * `resolveGithubToken`.
+ *
+ * Lives in `@atta/aeg-forge-state`, not `@atta/aeg-core` (aeg-core-purity
+ * fix, #521) — `@atta/aeg-core/src` is zero-I/O (#372, #382, #506) and this
+ * module performs `@octokit/graphql` I/O. Re-exported from `@atta/aeg-core`
+ * for every existing call site that imports it from there.
  */
 
 import { graphql } from '@octokit/graphql'
-import type { ForgeFacts } from '@atta/aeg-core'
+import type {
+  FetchForgeFactsInput,
+  ForgeFacts,
+  ForgeFactsSnapshot,
+  PrRef,
+  RawTaskFacts,
+  TaskRef
+} from '@atta/aeg-types'
 import { resolveGithubToken } from './github-token'
 import { mapForgeFacts } from './map-forge-facts'
-import type { FetchForgeFactsInput, ForgeFactsSnapshot, PrRef, RawTaskFacts, TaskRef } from './types'
 
 /** Branch ref convention: `task/<iteration>/<id>` (iterations/README.md). */
 export function buildBranchName(iteration: string, taskId: string): string {
@@ -37,7 +50,7 @@ export function buildBranchName(iteration: string, taskId: string): string {
  *   - Any network/API error occurs.
  *
  * Callers use this to resolve `#TBD` issue numbers in the topology file;
- * the result is merged with topology refs by `load-snapshot.ts`.
+ * the result is merged with topology refs by the caller's own snapshot logic.
  */
 export async function fetchForgeTasksByLabel(input: {
   owner: string
