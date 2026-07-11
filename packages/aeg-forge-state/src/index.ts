@@ -1,5 +1,5 @@
 export { deriveIterationFromForge } from './derive-from-forge'
-export { findMilestoneForSlug, listActiveIterationSlugs } from './fetch-milestone'
+export { findMilestoneForSlug, listActiveIterationSlugs, listArchivedIterationSlugs } from './fetch-milestone'
 export type { ActiveIterationRef, MilestoneFacts } from './fetch-milestone'
 export { listIssueMilestonesForSlug } from './list-issue-milestones'
 export type { IssueMilestoneFact } from './list-issue-milestones'
