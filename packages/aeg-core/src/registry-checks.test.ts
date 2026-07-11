@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkG1, checkG2 } from './registry-checks'
+import { checkG1, checkG2, checkG3 } from './registry-checks'
 import type { GateRow } from './registry-parse'
 
 function makeRow(overrides: Partial<GateRow> = {}): GateRow {
@@ -55,5 +55,23 @@ describe('checkG2', () => {
     const rows: GateRow[] = [makeRow({ implementation: '.husky/pre-commit' })]
     const result = checkG2(rows, ['.husky/pre-commit'])
     expect(result.status).toBe('pass')
+  })
+})
+
+describe('checkG3', () => {
+  it('fails when a GitHub-crossing file is not named by any Ring-0 row', () => {
+    const ring0Rows: GateRow[] = [makeRow({ ring: 'ring0', implementation: 'packages/aeg-core/bin/open-pr.ts' })]
+    const crossingFiles = ['packages/aeg-core/bin/open-pr.ts', 'packages/aeg-core/bin/rogue-github-caller.ts']
+    const result = checkG3(ring0Rows, crossingFiles)
+    expect(result.status).toBe('fail')
+    expect(result.findings).toHaveLength(1)
+    expect(result.findings[0]?.path).toBe('packages/aeg-core/bin/rogue-github-caller.ts')
+  })
+
+  it('passes when every crossing file is named by a Ring-0 row', () => {
+    const ring0Rows: GateRow[] = [makeRow({ ring: 'ring0', implementation: 'packages/aeg-core/bin/open-pr.ts' })]
+    const result = checkG3(ring0Rows, ['packages/aeg-core/bin/open-pr.ts'])
+    expect(result.status).toBe('pass')
+    expect(result.findings).toHaveLength(0)
   })
 })

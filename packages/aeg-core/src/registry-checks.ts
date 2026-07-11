@@ -69,3 +69,22 @@ export function checkG2(rows: GateRow[], candidateFiles: string[]): RegistryChec
   }
   return { check: 'G2', status: findings.length > 0 ? 'info' : 'pass', findings }
 }
+
+/**
+ * G3 — every file that makes a GitHub-crossing call is named by SOME Ring-0
+ * row's `implementation` — "no seventh way into GitHub". `crossingFiles` is
+ * already-detected by the caller via a source-grep. Blocking.
+ */
+export function checkG3(ring0Rows: GateRow[], crossingFiles: string[]): RegistryCheckResult {
+  const ring0Implementations = new Set(ring0Rows.filter((r) => r.ring === 'ring0').map((r) => r.implementation))
+  const findings: RegistryFinding[] = []
+  for (const path of crossingFiles) {
+    if (!ring0Implementations.has(path)) {
+      findings.push({
+        path,
+        reason: `"${path}" makes a GitHub-crossing call but is not named by any Ring-0 row's implementation — a seventh, unlisted way into GitHub`
+      })
+    }
+  }
+  return { check: 'G3', status: findings.length > 0 ? 'fail' : 'pass', findings }
+}
