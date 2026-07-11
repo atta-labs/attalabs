@@ -220,7 +220,13 @@ export function EnvoyFlow({
   }
 
   if (state === 'loading') {
-    return <LoadingState candidateName={localProfile.name} candidateTitle={localProfile.title} />
+    return (
+      <LoadingState
+        candidateName={localProfile.name}
+        candidateTitle={localProfile.title}
+        avatarUrl={localProfile.avatarUrl}
+      />
+    )
   }
 
   if (state === 'error') {

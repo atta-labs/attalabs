@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { AvatarFrame } from '@/components/avatar-frame'
 
 const STEPS = [
   { label: 'Forensic Analysis of Job Requirements...', duration: 1500 },
@@ -22,10 +23,12 @@ const EXTENDED_LABEL_INTERVAL_MS = 6000
 
 export function LoadingState({
   candidateName = 'Dani Estevez Martin',
-  candidateTitle = 'Senior Frontend Architect · AI Systems · Web3'
+  candidateTitle = 'Senior Frontend Architect · AI Systems · Web3',
+  avatarUrl
 }: {
   candidateName?: string
   candidateTitle?: string
+  avatarUrl?: string
 }) {
   const [activeStep, setActiveStep] = useState(0)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
@@ -62,8 +65,15 @@ export function LoadingState({
     <div className='mx-auto max-w-[680px] px-6 py-12'>
       <header className='mb-8 border-b border-border pb-6'>
         <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
-        <h1 className='mt-2 font-display text-2xl tracking-tight'>{candidateName}</h1>
-        <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{candidateTitle}</p>
+        <div className='mt-2 flex items-center gap-4'>
+          {avatarUrl && (
+            <AvatarFrame src={avatarUrl} alt={candidateName} size={80} variant='dossier' pennant pennantAnimated />
+          )}
+          <div>
+            <h1 className='font-display text-2xl tracking-tight'>{candidateName}</h1>
+            <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{candidateTitle}</p>
+          </div>
+        </div>
       </header>
 
       <div className='space-y-4'>
