@@ -30,7 +30,7 @@ const getCatalogCached = unstable_cache(
     const raw = await fetchModelsDev()
     return transformModelsDev(raw)
   },
-  ['atta-models-catalog'],
+  ['atta-models-catalog-v2'],
   { revalidate: REVALIDATE_SECONDS, tags: ['atta-models-catalog'] }
 )
 
