@@ -18,10 +18,6 @@ const MODELSDEV_TO_VENDOR_ID: Record<string, VendorId> = {
   fireworks: 'fireworks'
 }
 
-// Providers where only overlay-listed models are shown. Prevents deprecated
-// aliases (e.g. claude-3-5-haiku-latest) from models.dev leaking into the picker.
-const OVERLAY_ONLY_PROVIDERS: Set<string> = new Set(['anthropic'])
-
 // models.dev provider IDs with no native registry entry — proxied via OpenRouter.
 const OPENROUTER_PROXY_PROVIDERS: Set<string> = new Set(['meta', 'qwen', 'alibaba', 'google-vertex-anthropic'])
 
@@ -70,9 +66,6 @@ function buildEntry(providerId: string, modelKey: string, model: ModelsDevModel)
 
   const rawId = model.id ?? modelKey
   const overlayEntry = OVERLAY[rawId]
-
-  // For overlay-only providers, skip models not explicitly curated.
-  if (OVERLAY_ONLY_PROVIDERS.has(providerId) && !overlayEntry) return null
 
   const modelId = resolveModelIdForVendor(vendorId, providerId, rawId)
 
