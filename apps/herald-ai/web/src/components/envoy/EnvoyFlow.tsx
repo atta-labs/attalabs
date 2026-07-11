@@ -244,7 +244,7 @@ export function EnvoyFlow({
   if (state === 'result' && report) {
     return (
       <div>
-        <ReportView report={report} />
+        <ReportView report={report} avatarUrl={localProfile.avatarUrl} />
         {!report.auditFailed && <ResultActions onNewAudit={handleRetry} />}
       </div>
     )
