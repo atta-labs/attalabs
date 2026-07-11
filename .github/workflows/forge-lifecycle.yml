@@ -239,6 +239,18 @@ jobs:
           WAIVER_LABEL_ACTOR: ${{ steps.waiver_actor.outputs.actor }}
         run: bun packages/aeg-core/bin/verify-docs.ts --pr
 
+      # ── No new on-disk state (#512) ─────────────────────────────────────
+      # Blocks a diff that adds/edits a live `aeg-root/iterations/*.md`
+      # topology file (other than README.md) or any new `*.tokens.md` file
+      # anywhere — the residue classes this task's own Part B proved
+      # unnecessary. Existing `completed/**` files are exempt (D-117); this
+      # only stops *new* state-file creation.
+      - name: No new on-disk state
+        if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bun packages/aeg-core/bin/check-no-disk-state.ts
+
       # ── 6/9 · Biome lint/format ─────────────────────────────────────────
       # Mirrors the local lint-staged/Husky enforcement into CI so it binds
       # every writer (GitHub API/MCP writes, direct pushes, hand-merges) —
