@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkG1, checkG2, checkG3 } from './registry-checks'
+import { checkG1, checkG2, checkG3, checkG4 } from './registry-checks'
 import type { GateRow } from './registry-parse'
 
 function makeRow(overrides: Partial<GateRow> = {}): GateRow {
@@ -71,6 +71,24 @@ describe('checkG3', () => {
   it('passes when every crossing file is named by a Ring-0 row', () => {
     const ring0Rows: GateRow[] = [makeRow({ ring: 'ring0', implementation: 'packages/aeg-core/bin/open-pr.ts' })]
     const result = checkG3(ring0Rows, ['packages/aeg-core/bin/open-pr.ts'])
+    expect(result.status).toBe('pass')
+    expect(result.findings).toHaveLength(0)
+  })
+})
+
+describe('checkG4', () => {
+  it('fails naming a fabricated number that does not resolve', () => {
+    const content = 'See #99999 for context, and also #352.'
+    const resolveFn = (n: number) => n !== 99999
+    const result = checkG4(content, resolveFn)
+    expect(result.status).toBe('fail')
+    expect(result.findings).toHaveLength(1)
+    expect(result.findings[0]?.reason).toContain('99999')
+  })
+
+  it('passes when every cited number resolves', () => {
+    const content = 'See #352 and #474.'
+    const result = checkG4(content, () => true)
     expect(result.status).toBe('pass')
     expect(result.findings).toHaveLength(0)
   })

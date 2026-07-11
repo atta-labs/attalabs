@@ -88,3 +88,31 @@ export function checkG3(ring0Rows: GateRow[], crossingFiles: string[]): Registry
   }
   return { check: 'G3', status: findings.length > 0 ? 'fail' : 'pass', findings }
 }
+
+/**
+ * G4 — every `#NNN` cited in enforcement.md's body resolves in the forge.
+ * `resolveFn` wraps `gh issue view`/`gh pr view` (caller injects). Blocking.
+ * Broad reading (D-116 brief): every `#`-prefixed 3-or-more-digit number
+ * occurring anywhere in the body is checked, not just ones near keywords
+ * like "incident" — an incomplete keyword net would create a
+ * false-negative gap. The current repo's real citations are all 3-4
+ * digits; the lower bound of 3 exists only to exclude unrelated short
+ * numerals (ring/tier numbers) that are never written with a `#` prefix
+ * anyway — there is deliberately no upper bound, so a longer fabricated
+ * number is still caught.
+ */
+export function checkG4(content: string, resolveFn: (n: number) => boolean): RegistryCheckResult {
+  const cited = new Set<number>()
+  for (const hit of content.matchAll(/#(\d{3,})\b/g)) {
+    cited.add(Number(hit[1]))
+  }
+  const findings: RegistryFinding[] = []
+  for (const n of cited) {
+    if (!resolveFn(n)) {
+      findings.push({
+        reason: `#${n} is cited in enforcement.md but does not resolve to a real Issue or PR in the forge`
+      })
+    }
+  }
+  return { check: 'G4', status: findings.length > 0 ? 'fail' : 'pass', findings }
+}
