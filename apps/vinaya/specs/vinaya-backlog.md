@@ -25,7 +25,7 @@ First mention of this file — created by `vinaya-cli-v1` task 1 (#381), per the
 
 ## Unscoped (needs a brief before dispatch)
 
-- **D-117 decision-log back-fill.** `packages/governance/decisions.md` did not carry a D-117 entry at `vinaya-cli-v1` task 1 dig time (2026-07-11), despite an Issue #381 comment (repo owner, 2026-07-10) amending this task's config schema per D-117. Confirm ratification and back-fill the entry, or fold the decision into whichever task actually owns it.
+- **D-117 decision-log back-fill — Resolved as D-118.** See [D-118](../../../packages/governance/decisions.md) in `packages/governance/decisions.md`, backfilled by the `fix/d-117-decision-backfill` PR. The Issue #381 comment's provisional "D-117" label was superseded by a numbering collision with PR #517 (a different, unrelated decision that merged first and claimed D-117) — ratified as D-118 instead.
 
 ---
 
