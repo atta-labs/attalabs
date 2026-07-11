@@ -319,6 +319,21 @@
         "typescript": "^5.7.0",
       },
     },
+    "apps/vinaya/cli": {
+      "name": "@atta/vinaya-cli",
+      "version": "0.1.0",
+      "bin": {
+        "vinaya": "./src/index.ts",
+      },
+      "dependencies": {
+        "zod": "3.25.76",
+      },
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5.5.0",
+      },
+    },
     "apps/vinaya/web": {
       "name": "@atta/vinaya-web",
       "version": "0.1.0",
@@ -859,6 +874,8 @@
     "@atta/vada-fusion": ["@atta/vada-fusion@workspace:packages/agents/vada-fusion"],
 
     "@atta/vada-fusion-native": ["@atta/vada-fusion-native@workspace:packages/agents/vada-fusion-native"],
+
+    "@atta/vinaya-cli": ["@atta/vinaya-cli@workspace:apps/vinaya/cli"],
 
     "@atta/vinaya-web": ["@atta/vinaya-web@workspace:apps/vinaya/web"],
 

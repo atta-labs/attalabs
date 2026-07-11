@@ -1,0 +1,23 @@
+{
+  "name": "@atta/vinaya-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "vinaya": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src tests"
+  },
+  "dependencies": {
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@atta/typescript-config": "workspace:*",
+    "@types/bun": "latest",
+    "typescript": "^5.5.0"
+  }
+}
