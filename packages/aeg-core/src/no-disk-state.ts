@@ -1,23 +1,48 @@
 /**
  * New-on-disk-state guard (#512 Part D). Pure — no `fs`, no `git`/`gh` I/O.
- * Flags a diff-touched path as a disk-state offender when it is either
- * (a) a live iteration topology file other than `README.md` — the residue
- * class this task's own Part B proved unnecessary (forge derivation
- * already covers it, see `aeg-drift-prevention-v1.md`'s deletion) — or
- * (b) any `*.tokens.md` file, anywhere in the repo — the pre-D-071 ledger
- * shape `Tokens-in-PR-body` superseded.
+ * Flags a diff-touched path as a disk-state offender given its change
+ * status (`added` — the path didn't exist on the base ref — or `modified`
+ * — it already did):
  *
- * `aeg-root/iterations/completed/**` files are exempt from (a): their path
- * carries an extra `completed/` segment, so the single-level topology
- * regex below never matches them — this gate only stops *new* state-file
- * creation (decisions.md D-117); it does not retroactively flag the
- * deferred archive.
+ * (a) A live iteration topology file directly under `aeg-root/iterations/`
+ *     (not a subdirectory), other than `README.md` — the residue class
+ *     this task's own Part B proved unnecessary (forge derivation already
+ *     covers it, see `aeg-drift-prevention-v1.md`'s deletion). Fails on
+ *     `added` OR `modified`: this file class shouldn't exist at all
+ *     post-cutover, whether newly created or resurrected via an edit.
+ *
+ * (b) Any `.md` file anywhere under `aeg-root/iterations/` (any depth,
+ *     including `completed/**`), other than `README.md` — but ONLY when
+ *     `added`. `completed/**`'s existing files are legacy archive
+ *     (D-117 explicitly excludes them, per `iterations/README.md` §4/§11 —
+ *     they're never deleted or migrated, and editing one to fix a typo
+ *     must stay legal); this rule instead closes the gap a path-shape-only
+ *     exemption would leave open — a BRAND NEW file smuggled directly into
+ *     `completed/` (or any other subdirectory) to dodge rule (a)'s
+ *     top-level check. Deliberately status-based, not a hardcoded filename
+ *     allowlist: the legacy set only grows via the (currently-dormant,
+ *     forge-native-cutover-pending) Archivist move-to-completed flow, never
+ *     via this gate's own exemption logic.
+ *
+ * (c) Any `*.tokens.md` file, anywhere in the repo — the pre-D-071 ledger
+ *     shape `Tokens-in-PR-body` superseded — but ONLY when `added` (an
+ *     edit to one of the 4 existing legacy `completed/*.tokens.md` files
+ *     must stay legal, same reasoning as (b)).
  */
 
-const TOPOLOGY_FILE = /^aeg-root\/iterations\/[^/]+\.md$/
-const TOKENS_FILE = /\.tokens\.md$/
+export type DiskStateFileStatus = 'added' | 'modified'
 
-export function isNewDiskStateFile(path: string): boolean {
-  if (TOPOLOGY_FILE.test(path)) return path !== 'aeg-root/iterations/README.md'
-  return TOKENS_FILE.test(path)
+const TOP_LEVEL_TOPOLOGY_FILE = /^aeg-root\/iterations\/[^/]+\.md$/
+const ANY_DEPTH_ITERATIONS_MD = /^aeg-root\/iterations\/.*\.md$/
+const TOKENS_FILE = /\.tokens\.md$/
+const README = 'aeg-root/iterations/README.md'
+
+export function isNewDiskStateFile(path: string, status: DiskStateFileStatus): boolean {
+  if (path === README) return false
+
+  if (TOP_LEVEL_TOPOLOGY_FILE.test(path)) return true
+
+  if (status !== 'added') return false
+
+  return ANY_DEPTH_ITERATIONS_MD.test(path) || TOKENS_FILE.test(path)
 }

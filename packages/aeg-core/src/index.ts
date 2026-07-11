@@ -104,6 +104,7 @@ export type { StaleBlocker, StaleBlockerIterationFact, StaleBlockerTaskFact } fr
 export { checkSinglePlanPr, iterationSlugFromTopologyPath, touchesAnyTopology } from './single-plan-pr'
 export type { OpenPrFiles } from './single-plan-pr'
 export { isNewDiskStateFile } from './no-disk-state'
+export type { DiskStateFileStatus } from './no-disk-state'
 export { checkDirectMainPush } from './direct-main-push'
 export type { DirectMainPushFact, DirectMainPushResult } from './direct-main-push'
 export { findDeadBranchPushes } from './dead-branch-push-audit'
