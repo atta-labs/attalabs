@@ -7,8 +7,10 @@ import type { ModelEntry } from './catalog'
 // Key: the models.dev model id (not the OpenRouter-prefixed form).
 export const OVERLAY: Record<string, { tier?: ModelEntry['tier']; description?: string }> = {
   // Anthropic
-  'claude-opus-4-7': { tier: 'frontier', description: 'Deep reasoning' },
-  'claude-sonnet-4-6': { tier: 'balanced', description: 'Balanced — default' },
+  'claude-opus-4-8': { tier: 'frontier', description: 'Deep reasoning' },
+  'claude-sonnet-5': { tier: 'balanced', description: 'Balanced — default' },
+  'claude-opus-4-7': { tier: 'balanced', description: 'Deep reasoning' },
+  'claude-sonnet-4-6': { tier: 'balanced', description: 'Balanced' },
   'claude-haiku-4-5-20251001': { tier: 'fast', description: 'Fast + cheap' },
 
   // OpenAI
