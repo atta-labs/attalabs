@@ -267,46 +267,25 @@ export async function extractSignals(username: string, token: string): Promise<R
   return all
 }
 
-// Per-tool-call budget for GitHub signal fetching. Kept at the same 3s as the
-// retired deterministic pre-fetch so worst-case latency for the GitHub leg is
-// unchanged.
-export const GITHUB_SIGNAL_TIMEOUT_MS = 3000
-
-export async function fetchGithubSignalsForHandle(handle: string): Promise<string[]> {
-  const token = process.env.GITHUB_PAT
-  if (!token || !handle) return []
-
-  try {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), GITHUB_SIGNAL_TIMEOUT_MS)
-
-    const signals = await Promise.race([
-      extractSignals(handle, token),
-      new Promise<never>((_, reject) => {
-        controller.signal.addEventListener('abort', () => reject(new Error('Signal fetch timeout')))
-      })
-    ])
-
-    clearTimeout(timer)
-    return signals.map((s) => s.evidence)
-  } catch {
-    console.warn('[Herald] GitHub signal tool timed out or failed, returning empty evidence')
-    return []
-  }
-}
-
-export async function githubSignalToolHandler(args: Record<string, unknown>): Promise<string[]> {
-  const raw = args.github_handle
-  const handle = typeof raw === 'string' ? raw.trim() : ''
-  return fetchGithubSignalsForHandle(handle)
-}
+// Per-tool-call budget for GitHub signal fetching. Originally kept at the
+// same 3s as the retired deterministic single-call pre-fetch, but extractSignals
+// has since grown into a real fan-out — up to 5 repos, 4 parallel GitHub API
+// calls each (commits, PRs, contents, package.json) — so a 3s budget was
+// racing against and discarding genuine, still-in-flight signal data on real
+// GITHUB_PAT-authenticated runs (herald-hardening-v1 Task 13 follow-up,
+// #520, found live post-GITHUB_PAT-rotation). Raised to 10s: still a small,
+// bounded fraction of the 90s overall LLM turn budget — this does not block
+// the audit indefinitely, it just stops discarding data that was about to
+// arrive.
+export const GITHUB_SIGNAL_TIMEOUT_MS = 10000
 
 /**
- * Per-invocation variant of `githubSignalToolHandler` — same string-array
- * contract the LLM sees, but also hands the structured `RawSignal[]` to
- * `onSignals` before returning. Returns a fresh closure per call, so
- * concurrent `run()` invocations (batch mode: 1-10 candidates) each own an
- * independent capture — no shared mutable module state.
+ * Returns a fresh closure per call — same string-array contract the LLM
+ * sees, but also hands the structured `RawSignal[]` to `onSignals` before
+ * returning. Concurrent `run()` invocations (batch mode: 1-10 candidates)
+ * each own an independent capture — no shared mutable module state. This is
+ * the only `fetch_github_signals` implementation in this package; there is
+ * no separate non-capturing variant to keep in sync.
  */
 export function createGithubSignalToolHandler(
   onSignals: (signals: RawSignal[]) => void
