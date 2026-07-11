@@ -2,11 +2,11 @@
 
 /**
  * stale-blocker — daily-drift's stuck row-adjacent blocker check
- * (aeg-governance-hardening task 23, #360, Part 3). Thin I/O shim: reads the
- * active iteration topology files from disk (this job runs against a fresh
- * checkout of `main` on a schedule — no `origin/main` fetch needed, the
- * checkout already IS main), fetches each task's Issue open/closed +
- * opened-at and forge branch existence via `gh`/`git`, and calls the pure
+ * (aeg-governance-hardening task 23, #360, Part 3; forge-sole-state task 1).
+ * Thin I/O shim: enumerates active iterations from the forge (open
+ * Milestones, `listActiveIterationSlugs`), fetches each task's Issue
+ * open/closed + opened-at and forge branch existence via `gh`/`git`, and
+ * calls the pure
  * `findStaleBlockers` homed in `@atta/aeg-core`. Every `gh` call carries an
  * explicit `-R <owner>/<repo>` (task 23 Part 1 lesson — do not repeat the
  * repo-resolution gap in this new file).
@@ -21,9 +21,8 @@
  */
 
 import { execSync } from 'node:child_process'
-import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { deriveIterationFromForge } from '@atta/aeg-forge-state'
+import { deriveIterationFromForge, listActiveIterationSlugs } from '@atta/aeg-forge-state'
 import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
 import { findStaleBlockers } from '../src/index'
 import type { StaleBlocker, StaleBlockerIterationFact, StaleBlockerTaskFact } from '../src/index'
@@ -31,7 +30,6 @@ import type { StaleBlocker, StaleBlockerIterationFact, StaleBlockerTaskFact } fr
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
 
-const ITERATIONS_DIR = join(REPO_ROOT, 'aeg-root/iterations')
 const DEFAULT_THRESHOLD_DAYS = 4
 const MARKER = '<!-- aeg:stale-blocker -->'
 const LABEL = 'aeg:stale-blocker'
@@ -74,13 +72,6 @@ function shJson<T>(cmd: string): T | null {
   }
 }
 
-/** Real topology files only — excludes README.md, `*.tokens.md` ledgers, and the completed/ subdirectory. */
-function activeIterationFiles(): string[] {
-  return readdirSync(ITERATIONS_DIR, { withFileTypes: true })
-    .filter((e) => e.isFile() && e.name.endsWith('.md') && e.name !== 'README.md' && !e.name.endsWith('.tokens.md'))
-    .map((e) => e.name)
-}
-
 type IssueFact = { state: 'OPEN' | 'CLOSED'; createdAt: string }
 
 function branchExists(iterationSlug: string, taskId: string): boolean {
@@ -88,10 +79,9 @@ function branchExists(iterationSlug: string, taskId: string): boolean {
 }
 
 async function gatherIterationFacts(
-  fileName: string,
+  slug: string,
   repo: { owner: string; repo: string }
 ): Promise<StaleBlockerIterationFact> {
-  const slug = fileName.replace(/\.md$/, '')
   const iteration = await deriveIterationFromForge(repo.owner, repo.repo, slug)
 
   const tasks: StaleBlockerTaskFact[] = iteration.tasks.map((task) => {
@@ -176,7 +166,8 @@ async function main(): Promise<void> {
   }
 
   try {
-    const iterationFacts = await Promise.all(activeIterationFiles().map((f) => gatherIterationFacts(f, repo)))
+    const activeSlugs = listActiveIterationSlugs(repo.owner, repo.repo).map((r) => r.slug)
+    const iterationFacts = await Promise.all(activeSlugs.map((slug) => gatherIterationFacts(slug, repo)))
     const blockers = findStaleBlockers(iterationFacts, nowIso, thresholdDays)
 
     console.log(`[stale-blocker] threshold: ${thresholdDays} day(s); now: ${nowIso}`)
