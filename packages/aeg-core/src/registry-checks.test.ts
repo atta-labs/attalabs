@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkG1, checkG2, checkG3, checkG4 } from './registry-checks'
+import { checkG1, checkG2, checkG3, checkG4, checkG5 } from './registry-checks'
 import type { GateRow } from './registry-parse'
 
 function makeRow(overrides: Partial<GateRow> = {}): GateRow {
@@ -89,6 +89,34 @@ describe('checkG4', () => {
   it('passes when every cited number resolves', () => {
     const content = 'See #352 and #474.'
     const result = checkG4(content, () => true)
+    expect(result.status).toBe('pass')
+    expect(result.findings).toHaveLength(0)
+  })
+})
+
+describe('checkG5', () => {
+  it('fails when a contract producer is not a real role_id', () => {
+    const roles = [{ file: 'roles/planner.md', role_id: 'planner', performs: ['plan'], refuses_when: 'never' }]
+    const contracts = [{ file: 'contracts/planner-brief.md', producer: 'nonexistent-role', consumer: 'planner' }]
+    const result = checkG5(roles, contracts)
+    expect(result.status).toBe('fail')
+    expect(result.findings.some((f) => f.reason.includes('nonexistent-role'))).toBe(true)
+  })
+
+  it('fails when a role has empty performs', () => {
+    const roles = [{ file: 'roles/developer.md', role_id: 'developer', performs: [], refuses_when: 'never' }]
+    const result = checkG5(roles, [])
+    expect(result.status).toBe('fail')
+    expect(result.findings.some((f) => f.reason.includes('empty performs'))).toBe(true)
+  })
+
+  it('passes an all-valid fixture', () => {
+    const roles = [
+      { file: 'roles/planner.md', role_id: 'planner', performs: ['plan'], refuses_when: 'never' },
+      { file: 'roles/developer.md', role_id: 'developer', performs: ['write-the-code'], refuses_when: 'no brief' }
+    ]
+    const contracts = [{ file: 'contracts/planner-brief.md', producer: 'planner', consumer: 'developer' }]
+    const result = checkG5(roles, contracts)
     expect(result.status).toBe('pass')
     expect(result.findings).toHaveLength(0)
   })

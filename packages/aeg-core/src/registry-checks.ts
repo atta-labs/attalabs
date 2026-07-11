@@ -116,3 +116,45 @@ export function checkG4(content: string, resolveFn: (n: number) => boolean): Reg
   }
   return { check: 'G4', status: findings.length > 0 ? 'fail' : 'pass', findings }
 }
+
+/**
+ * G5 — every contract's producer/consumer is a real role_id; every role's
+ * `performs`/`refuses_when` is present and non-empty. Blocking.
+ *
+ * "The action exists" is satisfied by presence/well-formedness of the
+ * role's own frontmatter — there is no second, independent registry of
+ * valid actions to cross-reference `performs` entries against.
+ */
+export function checkG5(
+  roles: Array<{ file: string; role_id: string; performs: string[]; refuses_when: string }>,
+  contracts: Array<{ file: string; producer: string; consumer: string }>
+): RegistryCheckResult {
+  const roleIds = new Set(roles.map((r) => r.role_id))
+  const findings: RegistryFinding[] = []
+
+  for (const contract of contracts) {
+    if (!roleIds.has(contract.producer)) {
+      findings.push({
+        path: contract.file,
+        reason: `contract "${contract.file}" names producer "${contract.producer}", which is not a real role_id`
+      })
+    }
+    if (!roleIds.has(contract.consumer)) {
+      findings.push({
+        path: contract.file,
+        reason: `contract "${contract.file}" names consumer "${contract.consumer}", which is not a real role_id`
+      })
+    }
+  }
+
+  for (const role of roles) {
+    if (role.performs.length === 0) {
+      findings.push({ path: role.file, reason: `role "${role.role_id}" has an empty performs array` })
+    }
+    if (role.refuses_when.trim() === '') {
+      findings.push({ path: role.file, reason: `role "${role.role_id}" has an empty refuses_when` })
+    }
+  }
+
+  return { check: 'G5', status: findings.length > 0 ? 'fail' : 'pass', findings }
+}
