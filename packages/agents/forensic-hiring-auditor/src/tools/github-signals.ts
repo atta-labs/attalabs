@@ -300,3 +300,40 @@ export async function githubSignalToolHandler(args: Record<string, unknown>): Pr
   const handle = typeof raw === 'string' ? raw.trim() : ''
   return fetchGithubSignalsForHandle(handle)
 }
+
+/**
+ * Per-invocation variant of `githubSignalToolHandler` — same string-array
+ * contract the LLM sees, but also hands the structured `RawSignal[]` to
+ * `onSignals` before returning. Returns a fresh closure per call, so
+ * concurrent `run()` invocations (batch mode: 1-10 candidates) each own an
+ * independent capture — no shared mutable module state.
+ */
+export function createGithubSignalToolHandler(
+  onSignals: (signals: RawSignal[]) => void
+): (args: Record<string, unknown>) => Promise<string[]> {
+  return async (args: Record<string, unknown>) => {
+    const raw = args.github_handle
+    const handle = typeof raw === 'string' ? raw.trim() : ''
+    const token = process.env.GITHUB_PAT
+    if (!token || !handle) return []
+
+    try {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), GITHUB_SIGNAL_TIMEOUT_MS)
+
+      const signals = await Promise.race([
+        extractSignals(handle, token),
+        new Promise<never>((_, reject) => {
+          controller.signal.addEventListener('abort', () => reject(new Error('Signal fetch timeout')))
+        })
+      ])
+
+      clearTimeout(timer)
+      onSignals(signals)
+      return signals.map((s) => s.evidence)
+    } catch {
+      console.warn('[Herald] GitHub signal tool timed out or failed, returning empty evidence')
+      return []
+    }
+  }
+}
