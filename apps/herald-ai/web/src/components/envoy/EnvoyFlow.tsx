@@ -220,7 +220,13 @@ export function EnvoyFlow({
   }
 
   if (state === 'loading') {
-    return <LoadingState candidateName={localProfile.name} candidateTitle={localProfile.title} />
+    return (
+      <LoadingState
+        candidateName={localProfile.name}
+        candidateTitle={localProfile.title}
+        avatarUrl={localProfile.avatarUrl}
+      />
+    )
   }
 
   if (state === 'error') {
@@ -244,7 +250,7 @@ export function EnvoyFlow({
   if (state === 'result' && report) {
     return (
       <div>
-        <ReportView report={report} />
+        <ReportView report={report} avatarUrl={localProfile.avatarUrl} />
         {!report.auditFailed && <ResultActions onNewAudit={handleRetry} />}
       </div>
     )

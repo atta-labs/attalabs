@@ -53,10 +53,10 @@ The GitHub signal fetch is no longer a deterministic pre-fetch that races the LL
 
 | Operation | Timeout | On failure |
 |-----------|---------|-----------|
-| `fetch_github_signals` tool call | 3s (`GITHUB_SIGNAL_TIMEOUT_MS`) | Tool returns `[]`; model proceeds without GitHub evidence |
+| `fetch_github_signals` tool call | 10s (`GITHUB_SIGNAL_TIMEOUT_MS`) | Tool returns `[]`; model proceeds without GitHub evidence |
 | LLM generation (per attempt, 2 attempts) | 90s (`AUDIT_LLM_TIMEOUT_MS`) | Retry once, then partial report |
 
-**Never increase timeouts without understanding the user-facing impact.** The 3s signal-tool timeout is unchanged since the original deterministic pre-fetch — signals are still best-effort, not required. The LLM timeout has moved twice as the auditor grew: 25s → 45s (when a tool-call turn made the audit a 2-turn dialogue) → 90s (when `max_tokens` rose 2000 → 8000). Any reference to 25s is stale.
+**Never increase timeouts without understanding the user-facing impact.** The signal-tool timeout was 3s from the original single-call deterministic pre-fetch until herald-hardening-v1 Task 13's follow-up (#520, found live post-`GITHUB_PAT`-rotation): `extractSignals` had since grown into a real fan-out (up to 5 repos × 4 parallel GitHub API calls each), and the 3s budget was racing against and discarding genuine, still-in-flight signal data on real authenticated runs — not a hypothetical, observed live. Raised to 10s; still a small, bounded fraction of the 90s LLM turn budget, so signals remain best-effort, not required, and the audit still can't block indefinitely. The LLM timeout has moved twice as the auditor grew: 25s → 45s (when a tool-call turn made the audit a 2-turn dialogue) → 90s (when `max_tokens` rose 2000 → 8000). Any reference to 25s is stale.
 
 ### Caching
 
@@ -117,7 +117,9 @@ Signals are detected by:
 - No LLM inference — signals are structural facts, not interpretations
 - Private repos are included if accessible via `GITHUB_PAT`
 - `GITHUB_PAT` is optional — the `fetch_github_signals` tool returns `[]` without it (and without a `github_handle`), and the auditor is instructed to proceed on the profile alone
-- Exposed to the auditor agent as `extractSignals` wrapped in `fetchGithubSignalsForHandle` — declared as a custom tool in the YAML, invoked by the model at most once per audit, not called deterministically by Herald's route
+- Exposed to the auditor agent as `extractSignals` wrapped in `createGithubSignalToolHandler` — declared as a custom tool in the YAML, invoked by the model at most once per audit, not called deterministically by Herald's route
+
+**Capturing structured signals onto the report (herald-hardening-v1 Task 13, #520).** The LLM only ever sees the flattened `string[]` evidence — that contract is unchanged. To surface the richer `RawSignal[]` on the report itself, `run()` (`packages/agents/forensic-hiring-auditor/src/index.ts`) builds its `customTools` map with `createGithubSignalToolHandler(onSignals)` — a factory that returns a fresh closure per call, invoking `onSignals(signals)` with the full `RawSignal[]` before mapping to the string array the LLM receives. `run()` declares `capturedSignals` as a local `let` inside its own function body (never module-level), so concurrent `run()` invocations — batch mode fans out 1-10 candidates via `Promise.all` — each own an independent capture; there is no shared mutable state to race on. After `adapter.execute()` returns, `run()` attaches `capturedSignals` onto the returned `MatchReport` as `githubSignals?: RawSignal[]` (only when non-empty). `createGithubSignalToolHandler` is the only `fetch_github_signals` implementation in this package now — the earlier non-capturing `fetchGithubSignalsForHandle`/`githubSignalToolHandler` pair (kept initially "for any future caller") turned out to have none, and was deleted in the same follow-up that raised the timeout, rather than left as dead code implying a live second code path.
 
 ---
 
@@ -200,7 +202,7 @@ type MatchReport = {
 ## Anti-patterns
 
 - ❌ Modifying `packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml` without instruction
-- ❌ Removing the 3s `fetch_github_signals` tool timeout — signals must not block the audit indefinitely
+- ❌ Removing the `fetch_github_signals` tool timeout entirely (currently 10s) — signals must not block the audit indefinitely. Raising it when real evidence shows it's discarding in-flight data (as happened going from 3s → 10s, Task 13 follow-up) is not the same anti-pattern — that's tuning a bounded budget to reality, not removing the bound.
 - ❌ Removing or shrinking the 90s LLM timeout without understanding why it grew (tool-call turn, then higher `max_tokens`) — prevents spinner-of-death
 - ❌ Removing the partial report fallback — UI must never crash
 - ❌ Adding signals from non-author commits — identity filtering is required

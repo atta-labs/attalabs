@@ -2,6 +2,7 @@
 
 import { Check, X } from 'lucide-react'
 import { useComponents } from '@atta/ui/lib/library-provider'
+import { AvatarFrame } from '@/components/avatar-frame'
 import type { MatchReport } from '@/lib/types'
 
 function gradeColorClass(grade: MatchReport['grade']): string {
@@ -26,7 +27,7 @@ export function auditFailureMessage(auditFailed: NonNullable<MatchReport['auditF
   }
 }
 
-export function ReportView({ report }: { report: MatchReport }) {
+export function ReportView({ report, avatarUrl }: { report: MatchReport; avatarUrl?: string }) {
   const { Card, CardContent, Badge } = useComponents()
 
   if (report.auditFailed) {
@@ -66,8 +67,27 @@ export function ReportView({ report }: { report: MatchReport }) {
       {/* ── Header ── */}
       <header className='mb-8 border-b border-border pb-6'>
         <p className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Forensic Match Audit</p>
-        <h1 className='mt-2 font-display text-2xl tracking-tight'>{report.candidate.name}</h1>
-        <p className='mt-0.5 font-mono text-xs text-muted-foreground'>{report.candidate.title}</p>
+        <div className='mt-2 flex items-center gap-4'>
+          {avatarUrl && (
+            <AvatarFrame
+              src={avatarUrl}
+              alt={report.candidate.name}
+              size={80}
+              variant='dossier'
+              pennant
+              pennantAnimated
+            />
+          )}
+          <div>
+            <h1 className='font-display text-2xl tracking-tight'>{report.candidate.name}</h1>
+            <p className='mt-0.5 font-mono text-sm text-muted-foreground'>{report.candidate.title}</p>
+            {report.estimatedCostUsd !== undefined && (
+              <p className='mt-0.5 font-mono text-xs text-warning'>
+                Estimated cost: ${report.estimatedCostUsd.toFixed(4)}
+              </p>
+            )}
+          </div>
+        </div>
       </header>
 
       {/* ── Decision Anchor ── */}
@@ -76,7 +96,19 @@ export function ReportView({ report }: { report: MatchReport }) {
           {report.grade}
         </div>
         <div className='mt-2'>
-          <p className='font-mono text-sm font-medium uppercase tracking-wider'>{report.recommendation}</p>
+          {report.grade === 'NO FIT' ? (
+            Badge ? (
+              <Badge className='border-destructive/40 bg-destructive/10 font-mono text-xs uppercase tracking-[0.2em] text-destructive'>
+                Disqualified — Hard Requirement Not Met
+              </Badge>
+            ) : (
+              <p className='font-mono text-xs uppercase tracking-[0.2em] text-destructive'>
+                Disqualified — Hard Requirement Not Met
+              </p>
+            )
+          ) : (
+            <p className='font-mono text-sm font-medium uppercase tracking-wider'>{report.recommendation}</p>
+          )}
           {Badge ? (
             <Badge variant='outline' className='mt-1 font-mono text-xs uppercase tracking-[0.2em]'>
               Confidence: {report.confidence}
@@ -183,6 +215,47 @@ export function ReportView({ report }: { report: MatchReport }) {
           )}
         </div>
       </section>
+
+      {/* ── GitHub Evidence ── */}
+      {report.githubSignals && report.githubSignals.length > 0 && (
+        <section className='mb-8 border-b border-border pb-8'>
+          <h2 className='mb-4 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>GitHub Evidence</h2>
+
+          <div className='space-y-4'>
+            {report.githubSignals.map((signal, i) =>
+              Card && CardContent ? (
+                <Card key={`${signal.source.repo}-${i}`}>
+                  <CardContent className='p-3'>
+                    <div className='flex items-baseline justify-between gap-3'>
+                      <h3 className='font-mono text-sm font-medium'>{signal.source.repo}</h3>
+                      {Badge ? (
+                        <Badge variant='outline' className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'>
+                          {signal.confidence}
+                        </Badge>
+                      ) : (
+                        <span className='shrink-0 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
+                          {signal.confidence}
+                        </span>
+                      )}
+                    </div>
+                    <p className='mt-0.5 text-sm leading-relaxed text-muted-foreground'>{signal.evidence}</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div key={`${signal.source.repo}-${i}`} className='border-l border-foreground/10 pl-3'>
+                  <div className='flex items-baseline justify-between gap-3'>
+                    <h3 className='font-mono text-sm font-medium'>{signal.source.repo}</h3>
+                    <span className='shrink-0 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
+                      {signal.confidence}
+                    </span>
+                  </div>
+                  <p className='mt-0.5 text-sm leading-relaxed text-muted-foreground'>{signal.evidence}</p>
+                </div>
+              )
+            )}
+          </div>
+        </section>
+      )}
 
       {/* ── Gaps ── */}
       <section className='mb-8 border-b border-border pb-8'>

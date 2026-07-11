@@ -5,7 +5,8 @@ import { LangGraphAdapter } from '@atta/adapter-langgraph'
 import { compileFlow, loadFlow } from '@atta/engine'
 import type { Flow } from '@atta/engine'
 import { type ParseMatchReportOptions, parseMatchReport } from './parse'
-import { githubSignalToolHandler } from './tools/github-signals'
+import { createGithubSignalToolHandler } from './tools/github-signals'
+import type { RawSignal } from './tools/github-signals'
 import type { CandidateInfo } from './parse'
 import type { MatchReport } from './schema'
 
@@ -54,15 +55,29 @@ export interface RunAuditFailure {
 export async function run(input: RunAuditInput): Promise<MatchReport | RunAuditFailure | null> {
   const flow = getFlow()
   const plan = compileFlow(flow, input.profile, input.modelId, { schema: input.schema })
+  // Local to this call — batch mode runs 1-10 concurrent `run()` invocations,
+  // and a shared/module-level capture would let them clobber each other.
+  let capturedSignals: RawSignal[] = []
   const adapter = new LangGraphAdapter({
     providerKeys: { [input.vendor]: input.apiKey },
-    customTools: { fetch_github_signals: githubSignalToolHandler }
+    customTools: {
+      fetch_github_signals: createGithubSignalToolHandler((signals) => {
+        capturedSignals = signals
+      })
+    }
   })
   const conclusion = await adapter.execute({ plan })
   if (conclusion.terminalState === 'FAILED') {
     return { failed: true, reason: conclusion.error ?? 'Audit execution failed for an unknown reason' }
   }
-  return parseMatchReport(conclusion.content, input.candidateInfo, {
+  const report = parseMatchReport(conclusion.content, input.candidateInfo, {
     onParseFailure: input.onParseFailure
   })
+  return (
+    report && {
+      ...report,
+      estimatedCostUsd: conclusion.estimatedCostUsd,
+      ...(capturedSignals.length > 0 ? { githubSignals: capturedSignals } : {})
+    }
+  )
 }

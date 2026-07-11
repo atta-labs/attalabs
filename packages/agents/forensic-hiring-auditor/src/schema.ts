@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { RawSignal } from './tools/github-signals'
 
 export type HardRequirement = {
   requirement: string
@@ -37,6 +38,11 @@ export type MatchReport = {
     reason: string
     category: 'quota' | 'timeout' | 'auth' | 'unknown'
   }
+  /** Total estimated USD cost across all LLM calls for this audit, when pricing is known. */
+  estimatedCostUsd?: number
+  /** Structured GitHub evidence captured from the fetch_github_signals tool call,
+   *  when the auditor invoked it and it returned at least one signal. */
+  githubSignals?: RawSignal[]
 }
 
 export const MatchReportSchema = z.object({
@@ -78,5 +84,20 @@ export const MatchReportSchema = z.object({
       reason: z.string(),
       category: z.enum(['quota', 'timeout', 'auth', 'unknown'])
     })
+    .optional(),
+  estimatedCostUsd: z.number().optional(),
+  githubSignals: z
+    .array(
+      z.object({
+        type: z.enum(['architecture', 'data', 'infra', 'ai', 'unknown']),
+        evidence: z.string(),
+        source: z.object({
+          repo: z.string(),
+          file: z.string().optional(),
+          isPrivate: z.boolean()
+        }),
+        confidence: z.enum(['high', 'medium', 'low'])
+      })
+    )
     .optional()
 })

@@ -403,8 +403,12 @@ export function JDInput({
                   // description at a time (bulk/multi-candidate is a separate,
                   // not-yet-built surface). accept + maxFiles enforce that at
                   // the input itself rather than relying on handleSubmit's
-                  // silent first-text-file extraction below.
-                  accept='.md,.pdf'
+                  // silent first-text-file extraction below. `.txt` is
+                  // required here, not optional: pasteToFileChars converts
+                  // any paste ≥1000 chars (any real JD) into a `.txt` File
+                  // before it ever reaches handleSubmit, so omitting it
+                  // rejected the normal paste flow outright.
+                  accept='.md,.pdf,.txt'
                   maxFiles={1}
                   surface='popover'
                   textareaVariant='bare'

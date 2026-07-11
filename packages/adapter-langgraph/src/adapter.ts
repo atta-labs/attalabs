@@ -304,6 +304,7 @@ export class LangGraphAdapter implements Adapter {
         totalTokensInput,
         totalTokensOutput,
         totalElapsedMs,
+        estimatedCostUsd,
         ...(allFailed ? { error: 'All reviewer LLM calls failed' } : {})
       }
     }
@@ -379,7 +380,8 @@ export class LangGraphAdapter implements Adapter {
       terminalState,
       totalTokensInput,
       totalTokensOutput,
-      totalElapsedMs
+      totalElapsedMs,
+      estimatedCostUsd
     }
   }
 
@@ -396,6 +398,12 @@ export class LangGraphAdapter implements Adapter {
 
     const totalElapsedMs = state ? Date.now() - state.startedAt : 0
 
+    const estimatedCostUsd = transcript.reduce((sum, o) => {
+      const p = PRICING[o.model]
+      if (!p) return sum
+      return sum + (o.tokensInput * p.input + o.tokensOutput * p.output) / 1_000_000
+    }, 0)
+
     return {
       content: '',
       transcript,
@@ -403,6 +411,7 @@ export class LangGraphAdapter implements Adapter {
       totalTokensInput,
       totalTokensOutput,
       totalElapsedMs,
+      estimatedCostUsd,
       error: errorMessage
     }
   }

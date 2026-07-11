@@ -118,6 +118,8 @@ export interface Conclusion {
   totalElapsedMs: number
   /** Error description when terminalState is FAILED. */
   error?: string
+  /** Total estimated USD cost across all LLM calls in this session, when pricing is known for every model used. */
+  estimatedCostUsd?: number
 }
 
 // =============================================================================
