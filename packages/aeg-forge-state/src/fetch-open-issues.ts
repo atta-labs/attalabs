@@ -5,10 +5,15 @@
  * One implementation per fact (D-081 discipline); do not re-implement.
  *
  * Read-only, always (AEG D-029). No writes, no labels, no comments.
+ *
+ * Lives in `@atta/aeg-forge-state`, not `@atta/aeg-core` (aeg-core-purity
+ * fix, #521) — `@atta/aeg-core/src` is zero-I/O (#372, #382, #506) and this
+ * module performs `@octokit/graphql` I/O. Re-exported from `@atta/aeg-core`
+ * for every existing call site that imports it from there.
  */
 
 import { graphql } from '@octokit/graphql'
-import type { ForgeIssue } from './coherence-checks'
+import type { ForgeIssue } from '@atta/aeg-types'
 
 type LabeledIssuesResponse = {
   repository: Record<

@@ -239,47 +239,86 @@ async function readActiveIteration(fileSlug: string): Promise<{ fileSlug: string
   }
 }
 
-// ---------- archived iterations: forge-only (closed Milestones) ----------
+// ---------- archived iterations: forge-first, legacy-file-fallback ----------
+
+async function listCompletedFileSlugs(): Promise<string[]> {
+  const root = findAegRoot()
+  const dir = path.join(root, ITERATIONS_DIR, 'completed')
+  if (!existsSync(dir)) return []
+  const names = await fs.readdir(dir)
+  return names.filter((n) => n.endsWith('.md') && !n.endsWith('.tokens.md')).map((n) => n.replace(/\.md$/, ''))
+}
+
+async function readCompletedFile(fileSlug: string): Promise<Iteration | null> {
+  const root = findAegRoot()
+  const completedPath = path.join(root, ITERATIONS_DIR, 'completed', `${fileSlug}.md`)
+  if (!existsSync(completedPath)) return null
+  const raw = await fs.readFile(completedPath, 'utf8')
+  return parseIteration(raw)
+}
 
 /**
- * Enumerates every archived iteration from the forge (closed Milestones) and
- * derives each one's full `Iteration` via `deriveIterationFromForge`.
- * Forge-sole-state task 1: replaces the prior `aeg-root/iterations/completed/
- * *.md` file read — no on-disk fallback exists or is needed, since a closed
- * Milestone's `iteration:<slug>`-labeled Issues (queried `--state all`) fully
- * resolve every task's id/title/projects/dependency edges.
+ * Enumerates every archived iteration from the forge (closed Milestones),
+ * deriving each one's full `Iteration` via `deriveIterationFromForge` — then
+ * supplements with any `aeg-root/iterations/completed/*.md` file whose slug
+ * wasn't already resolved via a Milestone. That supplement is the permanent
+ * home of the small, closed, non-growing set of pre-Milestone-era legacy
+ * iterations (`aeg-forge-state-v1` task 5, #515) — no Milestone exists for
+ * them at all, so the closed-Milestone enumeration can never surface them.
+ * Mirrors the same "enumerate, then fill the gap" shape as
+ * `verify-coherence.ts`'s general sweep (#515).
  */
 export async function loadArchivedIterations(): Promise<Array<{ fileSlug: string; iteration: Iteration }>> {
+  const results: Array<{ fileSlug: string; iteration: Iteration }> = []
   const repo = await resolveRepo()
-  if (!repo) return []
 
-  try {
-    const refs = listArchivedIterationSlugs(repo.owner, repo.repo)
-    return await Promise.all(
-      refs.map(async (ref) => ({
-        fileSlug: ref.slug,
-        iteration: await deriveIterationFromForge(repo.owner, repo.repo, ref.slug)
-      }))
-    )
-  } catch (err) {
-    console.warn(`[aeg-fs] archived-iteration forge enumeration failed: ${(err as Error).message}`)
-    return []
+  if (repo) {
+    try {
+      const refs = listArchivedIterationSlugs(repo.owner, repo.repo)
+      const derived = await Promise.all(
+        refs.map(async (ref) => ({
+          fileSlug: ref.slug,
+          iteration: await deriveIterationFromForge(repo.owner, repo.repo, ref.slug)
+        }))
+      )
+      results.push(...derived)
+    } catch (err) {
+      console.warn(`[aeg-fs] archived-iteration forge enumeration failed: ${(err as Error).message}`)
+    }
   }
+
+  const seen = new Set(results.map((r) => r.fileSlug))
+  for (const slug of await listCompletedFileSlugs()) {
+    if (seen.has(slug)) continue
+    const iteration = await readCompletedFile(slug)
+    if (iteration) results.push({ fileSlug: slug, iteration })
+  }
+
+  return results
 }
 
 async function readArchivedIteration(fileSlug: string): Promise<{ fileSlug: string; iteration: Iteration } | null> {
   const repo = await resolveRepo()
-  if (!repo) return null
 
-  try {
-    const milestone = findMilestoneForSlug(repo.owner, repo.repo, fileSlug)
-    if (milestone?.lifecycle !== 'complete') return null
-    const iteration = await deriveIterationFromForge(repo.owner, repo.repo, fileSlug)
-    return { fileSlug, iteration }
-  } catch (err) {
-    console.warn(`[aeg-fs] forge derivation failed for archived iteration "${fileSlug}": ${(err as Error).message}`)
-    return null
+  if (repo) {
+    try {
+      const milestone = findMilestoneForSlug(repo.owner, repo.repo, fileSlug)
+      if (milestone) {
+        if (milestone.lifecycle !== 'complete') return null
+        const iteration = await deriveIterationFromForge(repo.owner, repo.repo, fileSlug)
+        return { fileSlug, iteration }
+      }
+    } catch (err) {
+      console.warn(`[aeg-fs] forge derivation failed for archived iteration "${fileSlug}": ${(err as Error).message}`)
+      return null
+    }
   }
+
+  // No Milestone resolves for this slug (repo unreachable, or a
+  // pre-Milestone-era legacy iteration, #515) — fall back to the
+  // completed/*.md file directly.
+  const iteration = await readCompletedFile(fileSlug)
+  return iteration ? { fileSlug, iteration } : null
 }
 
 // ---------- public API ----------

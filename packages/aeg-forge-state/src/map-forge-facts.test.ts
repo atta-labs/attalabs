@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { AEG_BLOCKED_LABEL, mapForgeFacts } from './map-forge-facts'
-import type { RawTaskFacts } from './fetch-forge-facts-types'
+import type { RawTaskFacts } from '@atta/aeg-types'
 
 type IssueOverride = Partial<NonNullable<RawTaskFacts['issue']>> | null
 type PullRequestOverride = Partial<NonNullable<RawTaskFacts['pullRequest']>> | null

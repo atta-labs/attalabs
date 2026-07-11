@@ -2,8 +2,8 @@
  * Public entry point for the local GitHub read adapter.
  *
  * Given a list of tasks for an iteration, return a `Map<TaskId, ForgeFacts>`
- * matching the `ForgeFacts` contract (`./types`). One batched GraphQL query
- * covers all tasks (issue + ref + latest PR per task, aliased) —
+ * matching the `ForgeFacts` contract (`@atta/aeg-types`). One batched GraphQL
+ * query covers all tasks (issue + ref + latest PR per task, aliased) —
  * rate-limit-friendly and avoids aggregating REST `/reviews` for
  * `reviewDecision`.
  *
@@ -16,14 +16,25 @@
  *     map; `deriveIteration` treats absent entries as `todo` (D-059).
  *
  * SERVER-ONLY. Pulls `node:child_process` transitively via
- * `@atta/aeg-forge-state`'s `resolveGithubToken`.
+ * `resolveGithubToken`.
+ *
+ * Lives in `@atta/aeg-forge-state`, not `@atta/aeg-core` (aeg-core-purity
+ * fix, #521) — `@atta/aeg-core/src` is zero-I/O (#372, #382, #506) and this
+ * module performs `@octokit/graphql` I/O. Re-exported from `@atta/aeg-core`
+ * for every existing call site that imports it from there.
  */
 
-import { resolveGithubToken } from '@atta/aeg-forge-state'
 import { graphql } from '@octokit/graphql'
-import type { FetchForgeFactsInput, ForgeFactsSnapshot, PrRef, RawTaskFacts, TaskRef } from './fetch-forge-facts-types'
+import type {
+  FetchForgeFactsInput,
+  ForgeFacts,
+  ForgeFactsSnapshot,
+  PrRef,
+  RawTaskFacts,
+  TaskRef
+} from '@atta/aeg-types'
+import { resolveGithubToken } from './github-token'
 import { mapForgeFacts } from './map-forge-facts'
-import type { ForgeFacts } from './types'
 
 /** Branch ref convention: `task/<iteration>/<id>` (iterations/README.md). */
 export function buildBranchName(iteration: string, taskId: string): string {

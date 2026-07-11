@@ -6,7 +6,7 @@
  * contents; `deriveIteration` consumes them plus a `ForgeFacts` snapshot.
  */
 
-import type { Iteration, Lifecycle, Task } from '@atta/aeg-types'
+import type { ForgeFacts, Iteration, Lifecycle, Task } from '@atta/aeg-types'
 
 // ---------- Registry (projects.md) ----------
 
@@ -39,47 +39,16 @@ export type Registry = Project[]
  */
 export type { Lifecycle, Task, Iteration }
 
-// ---------- Forge facts (the contract task 3 will produce) ----------
+// ---------- Forge facts ----------
 
 /**
- * Per-task forge snapshot. Task 3 (Local GitHub read adapter) produces this
- * from the live forge; `deriveIteration` consumes it. Every input the §3
- * status table needs is present here, and only those.
- *
- * Conventions for missing entries: a task absent from the `Map<TaskId,
- * ForgeFacts>` passed to `deriveIteration` is treated as `todo` — iteration
- * tasks are committed work; `backlog` is a project-level concept (D-059).
+ * `ForgeFacts` lives in `@atta/aeg-types` (aeg-core-purity fix, #521) —
+ * re-exported here for the same reason as `Lifecycle`/`Task`/`Iteration`:
+ * every existing call site imports it from `@atta/aeg-core`, and it moved
+ * out so the I/O-performing fetchers that produce it (now in
+ * `@atta/aeg-forge-state`) don't need to depend on `aeg-core`.
  */
-export type ForgeFacts = {
-  issueState: 'open' | 'closed'
-  /** Issue assignee present. No longer affects `todo` derivation (D-059). */
-  assigned: boolean
-  /** A `task/<iteration>/<n>` branch exists on the forge. */
-  branchExists: boolean
-  prState: 'none' | 'open' | 'merged'
-  /**
-   * GitHub's `reviewDecision` projected to AEG's three relevant values.
-   * `'none'` covers both "no review yet" and the (rare) approved-but-not-
-   * merged state — `'changes_requested'` is the only one that flips status.
-   */
-  reviewDecision: 'none' | 'changes_requested' | 'approved'
-  /** `aeg:blocked` label present. Wins over every other status (§3). */
-  blockedLabel: boolean
-  /**
-   * GitHub's native close reason (`stateReason`), projected to AEG's terms:
-   *   - `'completed'`    ← closed COMPLETED
-   *   - `'not_planned'`  ← closed NOT_PLANNED (legitimately dropped)
-   *   - `null`           ← issue open, or no close reason recorded
-   * Drives the honest terminal-status derivation (D-069): a closed Issue with
-   * no merged PR resolves to `dropped` (NOT_PLANNED) or `incoherent`
-   * (COMPLETED-but-unproven) — never the innocuous `todo`.
-   */
-  stateReason: 'completed' | 'not_planned' | null
-  /** ISO 8601 datetime when the Issue was closed, or `null` if still open. Used by the coherence oracle for grandfather cutoff logic. */
-  closedAt: string | null
-  /** ISO 8601 datetime when the closing PR was merged, or `null` if not yet merged. Used by the coherence oracle for grandfather cutoff logic. */
-  mergedAt: string | null
-}
+export type { ForgeFacts }
 
 // ---------- Derivation output ----------
 
