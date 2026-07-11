@@ -51,7 +51,7 @@ The model layer exists **once**, at repo-root `aeg-root/`. A unit's `aeg-project
 
 ## 5. The iteration — AEG's top-level artifact
 
-An iteration (`aeg-root/iterations/<name>.md`) is a **thin topology file**: task→Issue map, `depends-on` / `conflicts-with` edges, grouping. **No status, no PR numbers, no dates, no priority, no estimates.** It is the active slice of work the Planner pulled from a backlog. The link from backlog → iteration is a *human* (the Planner), not a file. (Full model: `aeg-root/iterations/README.md`.)
+An iteration is a **forge Milestone + `iteration:<slug>`-labeled Issues**: task→Issue map, `depends-on` / `conflicts-with` edges (in each Issue's "Dependency rationale" body section), grouping — no file. **No status, no PR numbers, no dates, no priority, no estimates.** It is the active slice of work the Planner pulled from a backlog. The link from backlog → iteration is a *human* (the Planner), not a file. (Full model: `aeg-root/iterations/README.md`.)
 
 ## 6. Conflicts and the two dispatch gates
 

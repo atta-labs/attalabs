@@ -19,7 +19,7 @@ The failure mode this prevents: an Iteration Archivist who begins close-out befo
 
 ## The hand-off carrier
 
-The **set of merged PRs**, each bearing a per-task provenance block comment, plus the **iteration file** at `aeg-root/iterations/<name>.md` which provides the task topology the Iteration Archivist checks against. Every task in the topology must have a merged PR with a provenance block; the absence of either is a gap the Iteration Archivist must flag before proceeding.
+The **set of merged PRs**, each bearing a per-task provenance block comment, plus the iteration's forge-derived task list (`iteration:<slug>`-labeled Issues, `deriveIterationFromForge`) which the Iteration Archivist checks against. Every task in that list must have a merged PR with a provenance block; the absence of either is a gap the Iteration Archivist must flag before proceeding.
 
 ---
 

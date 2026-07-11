@@ -26,7 +26,7 @@ If you are starting a fresh session and need to orient:
 4. `aeg-root/iterations/README.md` — the iteration model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
 5. **Per-project state (pinned Issues, D-110)** — what is true right now, per project (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450) plus the ecosystem-wide bucket (`aeg-core`/`atta`/`desktop`/`attalabs` + cross-project facts, #451). Non-derivable operational facts; current focus pointer.
 6. **Derive current execution state from the forge** — see the "Session-start forge queries" section below
-7. `aeg-root/iterations/<name>.md` — the current iteration's task topology (the plan); live status is queried from the forge, not read here. **Post-cutover (`aeg-forge-state-v1` task 7, #431):** most active iterations no longer have this file at all — task→Issue topology derives straight from the forge (a Milestone + `iteration:<slug>`-labeled Issues). `vada-production-v1` is the one deliberate, tracked exception still carrying a file (`iterations/README.md` §4); `completed/` iterations keep theirs permanently, by design.
+7. **The current iteration's task topology** — a forge Milestone + `iteration:<name>`-labeled Issues (`deriveIterationFromForge`, `@atta/aeg-forge-state`); no file to read. **Forge-sole-state task 1:** every active iteration is forge-native now — the last legacy topology file (`vada-production-v1.md`) was deleted in #486. A small, closed, non-growing set of pre-Milestone-era iterations still has a file under `aeg-root/iterations/completed/` (no Milestone exists to forge-derive them from — `iterations/README.md` §11); that set cannot grow, enforced by `check-no-disk-state` (blocking CI gate).
 8. **Lessons log (pinned Issue #453, D-110)** — calibration lessons + anti-patterns, one comment per lesson (read when authoring briefs or post-mortems)
 
 The AEG model front door is the **`aeg`** skill (the model in one read) → the **`aeg-roles`** skill (routes you to your role doc). Load those first; this file is the repo-specific companion.
@@ -65,7 +65,7 @@ gh issue list --label "iteration:<slug>" --state open --assignee ""
 gh issue list --label "aeg:blocked" --state open
 ```
 
-**"What's the current focus?"** — read the ecosystem pinned state Issue (#451, "Current focus" section) and the active iteration file at `aeg-root/iterations/<name>.md`.
+**"What's the current focus?"** — read the ecosystem pinned state Issue (#451, "Current focus" section) and the active iteration's forge-derived topology (`deriveIterationFromForge`, or `gh issue list --label "iteration:<name>"`).
 
 **"What merged recently?"** — `gh pr list --state merged --limit 20`
 
@@ -77,8 +77,8 @@ No brief, no audit finding, no "next steps" recommendation is valid without this
 
 Every fact lives in exactly one place (see `iterations/README.md` §1):
 
-- **The Git forge** (Issue / branch / PR / review / merge state) = **all live execution status, derived not stored.** Authoritative for task status and merge state. A task *is* a forge Issue.
-- **Repo** = code, specs, skills, PM docs, role docs, the thin iteration topology files, design decisions. Git-tracked, long-lived, changed by commits/PRs. The source of truth for *plan and governance* (not live status).
+- **The Git forge** (Issue / branch / PR / review / merge state, Milestones) = **all live execution status AND iteration topology, derived not stored.** Authoritative for task status, merge state, and every active iteration's task→Issue map + `depends-on`/`conflicts-with` edges (a Milestone + `iteration:<slug>`-labeled Issues). A task *is* a forge Issue.
+- **Repo** = code, specs, skills, PM docs, role docs, design decisions — and, for a small closed set of pre-Milestone-era legacy iterations only, their archived topology file. Git-tracked, long-lived, changed by commits/PRs. The source of truth for *doctrine and reference* (not live status, not — for any current iteration — plan topology either; see `iterations/README.md` §4/§11 and `check-no-disk-state`).
 - **The PR body** = the just-in-time brief — a task's full execution context. The brief is pasted here at PR-open, never committed separately, never in the Issue.
 - **Local filesystem** = orchestration-tool runtime state, worktrees, dev servers. Ephemeral. Never canonical.
 
@@ -90,7 +90,7 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 |------|---------|----------------|
 | `aeg-root/coordination.md` | This file. Rules, names, how to work. | Rare (system changes only) |
 | Per-project state (pinned Issue, D-110) | Non-derivable operational facts: known production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer. | Whenever state changes |
-| `aeg-root/iterations/<name>.md` | The current iteration's task topology (edges, grouping). Plan only — no status. | At plan time (Planner) |
+| Current iteration's task topology (Milestone + `iteration:<name>`-labeled Issues) | Edges, grouping. Plan only — no status. Forge-native; no file. | At plan time (Planner) |
 | Lessons log (pinned Issue #453, D-110) | Calibration lessons + anti-patterns. One new comment per lesson. | Monthly review |
 | `packages/governance/decisions.md` | Global cross-project decision log. | When decisions are made |
 | `docs-index.md` | Discovery map of repo content. Auto-generated. | When repo files added/removed/renamed |
@@ -268,7 +268,7 @@ Log to `decisions.md` (global) or the per-project log during the conversation. A
 | Global decision log | `packages/governance/decisions.md` |
 | Per-project decision log | `apps/{project}/specs/{project}-decisions.md` |
 | Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | Per-project pinned Issue (D-110): `aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide `aeg-core`/`atta`/`desktop`/`attalabs` #451 |
-| The execution plan (task topology, edges) | `aeg-root/iterations/<name>.md` |
+| The execution plan (task topology, edges) | The forge: cut the Issue, set `Depends-on`/`Conflicts-with` in its "Dependency rationale" body section. No file. |
 | Held / future project items | `apps/{project}/specs/{project}-backlog.md` (per project) or `specs/ecosystem-backlog.md` (monorepo) |
 | Completed work history | `git log` / merged-PR history (D-110 — redundant with a committed changelog, so none is kept) |
 | Calibration lessons + anti-patterns | Pinned Issue #453, one new comment per lesson (D-110) |

@@ -283,7 +283,7 @@ When the last task of an iteration has merged, the Principal declares it done an
 
 2. **Write the retrospective** — append a new section to `aeg-project/lessons.md` with observations on what went well, what stalled, carry-forward lessons, decisions made, and unbuilt tasks. Assembled from merged PR summaries, decision log, and topology — not invented.
 
-3. **Archive the iteration** — set `Lifecycle: complete` as the first line after the iteration file's heading, move the file from `aeg-root/iterations/` to `aeg-root/iterations/completed/` (one commit: `git mv`). This signals to the AEG Studio and any reader that the iteration is no longer active.
+3. **Archive the iteration** — close the iteration's Milestone (forge-native; forge-sole-state task 1 — no file to move for any iteration created after `aeg-forge-state-v1`). This signals to the AEG Studio and any reader that the iteration is no longer active. A small, closed, legacy set of pre-Milestone iterations still has this step as `git mv aeg-root/iterations/<name>.md aeg-root/iterations/completed/<name>.md` — see `iterations/README.md` §11.
 
 4. **Update state docs** — refresh `aeg-project/state.md` (last-updated date, current focus pointer, recently shipped section, clear any resolved pending-manual-ops). Active-work state is derived from the forge — no `now.md` (D-057).
 
