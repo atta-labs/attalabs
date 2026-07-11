@@ -291,6 +291,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr edit "${{ github.event.pull_request.number }}" --add-label "needs:brief-correction"
 
+      # ── 10/10 · No disk state (forge-sole-state task 1) ─────────────────
+      # GitHub is the sole state machine — fails the build if the tracked
+      # working tree carries a live iteration topology file, or a NEW
+      # aeg-root/iterations/completed/*.md / *.tokens.md file outside the
+      # closed, non-growing grandfathered legacy allowlist. Local file check
+      # only — no forge calls, no git history — so it runs on every event
+      # this job fires on, `edited` included.
+      - name: No disk state
+        if: ${{ !cancelled() }}
+        run: bun packages/aeg-core/bin/check-no-disk-state.ts
+
       # Review gate (code-reviewer + security-review verdicts) moved out to
       # its own workflow, `review-gate.yml` (D-115, 2026-07-08) — it needs an
       # `issue_comment` trigger (posting a verdict) that this job's
