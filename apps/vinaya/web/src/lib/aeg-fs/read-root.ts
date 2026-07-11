@@ -9,28 +9,26 @@
  * same way — each worktree carries its own checkout of `aeg-root/` and
  * `packages/governance/`.
  *
- * Active vs. archived (`aeg-forge-state-v1` task 5, #429, per D-110):
- *   - Active   = a GitHub Milestone titled exactly the iteration slug, open.
- *                Goal/lifecycle/task-list all derive from the forge
- *                (`@atta/aeg-forge-state`'s `deriveIterationFromForge`) — the
- *                same adapter task 3a/3b already cut the CLI gates over to.
- *                `dependsOn`/`conflictsWith` are still merged in from
- *                `aeg-root/iterations/<slug>.md`'s topology table (see
- *                `mergeTaskEdgesFromFile`) — the same deliberate, temporary
- *                narrowing `verify-coherence.ts`'s `deriveOrFallback` already
- *                applies, not a permanent data source. Falls back to the
- *                file ENTIRELY only when the forge itself is unreachable (no
- *                repo resolvable, `gh` unavailable/unauthenticated).
- *   - Archived = files inside `aeg-root/iterations/completed/`, read
- *                directly, permanently — per task 7 (#431)'s own scope,
- *                completed topology files are the historical record and are
- *                never deleted or migrated ("history never migrates — ring 2
- *                reads the past where it lies").
+ * Active vs. archived (`aeg-forge-state-v1` task 5, #429; #515, per D-110):
+ * both derive purely from the forge — a GitHub Milestone
+ * titled exactly the iteration slug (open = active, closed = archived).
+ * Goal/lifecycle/task-list all derive via `@atta/aeg-forge-state`'s
+ * `deriveIterationFromForge`, the same adapter the CLI gates use.
+ * `dependsOn`/`conflictsWith` for an ACTIVE iteration are additionally merged
+ * from a legacy `aeg-root/iterations/<slug>.md` topology table when one still
+ * exists on disk (see `mergeTaskEdgesFromFile`) — a deliberate,
+ * best-effort-only enrichment for any pre-cutover file that predates full
+ * Issue-body "Dependency rationale" coverage, not a required data source; no
+ * live iteration carries such a file after #512/#517 (the last one,
+ * `aeg-drift-prevention-v1.md`, was deleted there), so this path is dormant
+ * in practice and only degrades gracefully if one ever reappears. Archived
+ * iterations never had a file merge and never will — their dependency edges
+ * resolve entirely from each closed Issue's own body.
  *
  * Reads are confined to this module. Parsing is delegated to
- * `@atta/aeg-core` (pure, no I/O) for the archived/fallback file path, and to
+ * `@atta/aeg-core` (pure, no I/O) for the legacy file-merge path, and to
  * `@atta/aeg-forge-state` (pure I/O, no parsing logic re-implemented here)
- * for the active path. Consumers receive typed model objects.
+ * for everything else. Consumers receive typed model objects.
  */
 
 import 'server-only'
@@ -45,22 +43,26 @@ import {
   type Project,
   type Registry
 } from '@atta/aeg-core'
-import { deriveIterationFromForge, findMilestoneForSlug, listActiveIterationSlugs } from '@atta/aeg-forge-state'
+import {
+  deriveIterationFromForge,
+  findMilestoneForSlug,
+  listActiveIterationSlugs,
+  listArchivedIterationSlugs
+} from '@atta/aeg-forge-state'
 import { loadIterationProgress } from '@/lib/forge/load-snapshot'
 import { resolveRepo } from '@/lib/forge/resolve-repo'
 
 const ITERATIONS_DIR = 'iterations'
-const COMPLETED_DIR = 'completed'
 const REGISTRY_FILE = 'projects.md'
 const GOVERNANCE_DIR = 'packages/governance'
 
 export type IterationSummary = {
-  /** Slug from the Milestone title (active) or the file's H1 (archived). */
+  /** Slug from the Milestone title. */
   name: string
-  /** Filename slug — what the URL uses. Same as `name` for live files, but
-   *  resilient against H1/filename divergence. */
+  /** Filename slug — what the URL uses. Same as `name`; kept as a distinct
+   *  field since it's the historical key every consumer still keys off. */
   fileSlug: string
-  /** Source of truth: active = forge Milestone, archived = file location. */
+  /** Source of truth: active = open Milestone, archived = closed Milestone. */
   archived: boolean
   /** In-file `Lifecycle:` marker. Defaults to `'active'` when absent. */
   lifecycle: Lifecycle
@@ -111,19 +113,6 @@ export async function readRegistry(): Promise<Registry> {
 export async function readProject(name: string): Promise<Project | undefined> {
   const registry = await readRegistry()
   return registry.find((p) => p.name === name)
-}
-
-async function listIterationFiles(dir: string): Promise<string[]> {
-  if (!existsSync(dir)) return []
-  const entries = await fs.readdir(dir, { withFileTypes: true })
-  return entries
-    .filter((e) => e.isFile() && e.name.endsWith('.md') && e.name !== 'README.md' && !e.name.endsWith('.tokens.md'))
-    .map((e) => e.name)
-}
-
-async function readOne(dir: string, file: string): Promise<{ fileSlug: string; iteration: Iteration }> {
-  const raw = await fs.readFile(path.join(dir, file), 'utf8')
-  return { fileSlug: file.replace(/\.md$/, ''), iteration: parseIteration(raw) }
 }
 
 async function toSummary(fileSlug: string, iteration: Iteration, archived: boolean): Promise<IterationSummary> {
@@ -206,48 +195,35 @@ function mergeTaskEdgesFromFile(forgeIteration: Iteration, fileIteration: Iterat
 /**
  * Enumerates every active iteration from the forge (open Milestones) and
  * derives each one's full `Iteration` via `deriveIterationFromForge` — the
- * same adapter 3a/3b already proved against this repo's real data. Falls
- * back to reading `aeg-root/iterations/*.md` directly (excluding
- * `completed/`) only when the forge itself can't be reached at all (no repo
- * resolvable, or the forge call throws — no token/`gh` unavailable/network) —
- * mirrors `verify-coherence.ts`'s `deriveOrFallback` "never let one signal's
- * unavailability crash the whole oracle" discipline.
+ * same adapter 3a/3b already proved against this repo's real data. Returns
+ * `[]` when the forge can't be reached at all (no repo resolvable, or the
+ * forge call throws — no token/`gh` unavailable/network) — there is no
+ * on-disk enumeration source left to fall back to (#515).
  */
 export async function loadActiveIterations(): Promise<Array<{ fileSlug: string; iteration: Iteration }>> {
   const repo = await resolveRepo()
-  if (repo) {
-    try {
-      const refs = listActiveIterationSlugs(repo.owner, repo.repo)
-      return await Promise.all(
-        refs.map(async (ref) => {
-          const [iteration, fileIteration] = await Promise.all([
-            deriveIterationFromForge(repo.owner, repo.repo, ref.slug),
-            readActiveFile(ref.slug)
-          ])
-          return { fileSlug: ref.slug, iteration: mergeTaskEdgesFromFile(iteration, fileIteration) }
-        })
-      )
-    } catch (err) {
-      console.warn(
-        `[aeg-fs] active-iteration forge enumeration failed — falling back to file read: ${(err as Error).message}`
-      )
-    }
-  }
+  if (!repo) return []
 
-  const root = findAegRoot()
-  const activeDir = path.join(root, ITERATIONS_DIR)
-  const activeFiles = await listIterationFiles(activeDir)
-  return Promise.all(activeFiles.map((f) => readOne(activeDir, f)))
+  try {
+    const refs = listActiveIterationSlugs(repo.owner, repo.repo)
+    return await Promise.all(
+      refs.map(async (ref) => {
+        const [iteration, fileIteration] = await Promise.all([
+          deriveIterationFromForge(repo.owner, repo.repo, ref.slug),
+          readActiveFile(ref.slug)
+        ])
+        return { fileSlug: ref.slug, iteration: mergeTaskEdgesFromFile(iteration, fileIteration) }
+      })
+    )
+  } catch (err) {
+    console.warn(`[aeg-fs] active-iteration forge enumeration failed: ${(err as Error).message}`)
+    return []
+  }
 }
 
 async function readActiveIteration(fileSlug: string): Promise<{ fileSlug: string; iteration: Iteration } | null> {
   const repo = await resolveRepo()
-  if (!repo) {
-    // Forge wholly unreachable in this environment — best-effort file read,
-    // same graceful-degrade contract as the rest of the forge adapter.
-    const fileIteration = await readActiveFile(fileSlug)
-    return fileIteration ? { fileSlug, iteration: fileIteration } : null
-  }
+  if (!repo) return null
 
   try {
     const milestone = findMilestoneForSlug(repo.owner, repo.repo, fileSlug)
@@ -258,11 +234,51 @@ async function readActiveIteration(fileSlug: string): Promise<{ fileSlug: string
     ])
     return { fileSlug, iteration: mergeTaskEdgesFromFile(iteration, fileIteration) }
   } catch (err) {
-    console.warn(
-      `[aeg-fs] forge derivation failed for iteration "${fileSlug}" — falling back to file read: ${(err as Error).message}`
+    console.warn(`[aeg-fs] forge derivation failed for iteration "${fileSlug}": ${(err as Error).message}`)
+    return null
+  }
+}
+
+// ---------- archived iterations: forge-only (closed Milestones) ----------
+
+/**
+ * Enumerates every archived iteration from the forge (closed Milestones) and
+ * derives each one's full `Iteration` via `deriveIterationFromForge`.
+ * Forge-sole-state task 1: replaces the prior `aeg-root/iterations/completed/
+ * *.md` file read — no on-disk fallback exists or is needed, since a closed
+ * Milestone's `iteration:<slug>`-labeled Issues (queried `--state all`) fully
+ * resolve every task's id/title/projects/dependency edges.
+ */
+export async function loadArchivedIterations(): Promise<Array<{ fileSlug: string; iteration: Iteration }>> {
+  const repo = await resolveRepo()
+  if (!repo) return []
+
+  try {
+    const refs = listArchivedIterationSlugs(repo.owner, repo.repo)
+    return await Promise.all(
+      refs.map(async (ref) => ({
+        fileSlug: ref.slug,
+        iteration: await deriveIterationFromForge(repo.owner, repo.repo, ref.slug)
+      }))
     )
-    const fileIteration = await readActiveFile(fileSlug)
-    return fileIteration ? { fileSlug, iteration: fileIteration } : null
+  } catch (err) {
+    console.warn(`[aeg-fs] archived-iteration forge enumeration failed: ${(err as Error).message}`)
+    return []
+  }
+}
+
+async function readArchivedIteration(fileSlug: string): Promise<{ fileSlug: string; iteration: Iteration } | null> {
+  const repo = await resolveRepo()
+  if (!repo) return null
+
+  try {
+    const milestone = findMilestoneForSlug(repo.owner, repo.repo, fileSlug)
+    if (milestone?.lifecycle !== 'complete') return null
+    const iteration = await deriveIterationFromForge(repo.owner, repo.repo, fileSlug)
+    return { fileSlug, iteration }
+  } catch (err) {
+    console.warn(`[aeg-fs] forge derivation failed for archived iteration "${fileSlug}": ${(err as Error).message}`)
+    return null
   }
 }
 
@@ -274,14 +290,7 @@ export type IterationLists = {
 }
 
 export async function listIterations(): Promise<IterationLists> {
-  const root = findAegRoot()
-  const archivedDir = path.join(root, ITERATIONS_DIR, COMPLETED_DIR)
-  const archivedFiles = await listIterationFiles(archivedDir)
-
-  const [activeLoaded, archivedLoaded] = await Promise.all([
-    loadActiveIterations(),
-    Promise.all(archivedFiles.map((f) => readOne(archivedDir, f)))
-  ])
+  const [activeLoaded, archivedLoaded] = await Promise.all([loadActiveIterations(), loadArchivedIterations()])
 
   return {
     active: await Promise.all(activeLoaded.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, false))),
@@ -299,12 +308,9 @@ export async function readIteration(fileSlug: string): Promise<IterationDetail |
   const active = await readActiveIteration(fileSlug)
   if (active) return { fileSlug: active.fileSlug, archived: false, iteration: active.iteration }
 
-  const root = findAegRoot()
-  const archivedPath = path.join(root, ITERATIONS_DIR, COMPLETED_DIR, `${fileSlug}.md`)
-  if (existsSync(archivedPath)) {
-    const raw = await fs.readFile(archivedPath, 'utf8')
-    return { fileSlug, archived: true, iteration: parseIteration(raw) }
-  }
+  const archived = await readArchivedIteration(fileSlug)
+  if (archived) return { fileSlug: archived.fileSlug, archived: true, iteration: archived.iteration }
+
   return undefined
 }
 
@@ -317,14 +323,7 @@ export async function readIteration(fileSlug: string): Promise<IterationDetail |
 export async function iterationsForProject(
   projectName: string
 ): Promise<{ active: IterationSummary[]; archived: IterationSummary[] }> {
-  const root = findAegRoot()
-  const archivedDir = path.join(root, ITERATIONS_DIR, COMPLETED_DIR)
-  const archivedFiles = await listIterationFiles(archivedDir)
-
-  const [activeLoaded, archivedLoaded] = await Promise.all([
-    loadActiveIterations(),
-    Promise.all(archivedFiles.map((f) => readOne(archivedDir, f)))
-  ])
+  const [activeLoaded, archivedLoaded] = await Promise.all([loadActiveIterations(), loadArchivedIterations()])
 
   const activeFiltered = activeLoaded.filter(({ iteration }) =>
     iteration.tasks.some((t) => t.projects.includes(projectName))

@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { describe, expect, it } from 'vitest'
+import { describe, it } from 'vitest'
 import { deriveIterationFromForge } from '@atta/aeg-forge-state'
 import { resolveRepo } from '../../../apps/aeg/web/studio/src/lib/forge/resolve-repo'
 import { parseIteration } from '../src/index'
@@ -82,7 +82,17 @@ describe('golden comparison: forge-derived vs file-derived id/issue (aeg-forge-s
     }
 
     const slugs = activeIterationSlugs()
-    expect(slugs.length).toBeGreaterThan(0)
+    if (slugs.length === 0) {
+      // Expected, permanent steady state post-#515/#517: every active
+      // iteration is forge-native, so there is no file left for this test
+      // to compare against — the comparison this test exists to prove
+      // (file-derived vs forge-derived `id`/`issue`) is now vacuously true,
+      // not a gap. Do not reintroduce a `> 0` assertion; that would require
+      // a live topology file to exist just to keep this test meaningful,
+      // which is exactly the state this repo's cutover eliminated.
+      console.warn('[golden-comparison] no active iteration carries a topology file — nothing to compare, passing.')
+      return
+    }
 
     const mismatches: string[] = []
     let comparedCount = 0

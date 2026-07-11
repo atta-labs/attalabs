@@ -3,11 +3,11 @@
 /**
  * smoke-forge — bun-runnable verification harness for the local read adapter.
  *
- * Resolves one iteration's tasks — via a forge Milestone when the slug is
- * currently active (`@atta/aeg-forge-state`'s `deriveIterationFromForge`,
- * `aeg-forge-state-v1` task 5, #429), falling back to
- * `aeg-root/iterations/<slug>.md` when the forge is unreachable, or to
- * `aeg-root/iterations/completed/<slug>.md` for archived iterations — then
+ * Resolves one iteration's tasks — via a forge Milestone, active or closed
+ * (`@atta/aeg-forge-state`'s `deriveIterationFromForge`, `aeg-forge-state-v1`
+ * task 5, #429), falling back to `aeg-root/iterations/<slug>.md` or
+ * `aeg-root/iterations/completed/<slug>.md` only for the small legacy set
+ * of pre-Milestone-era iterations with no Milestone at all — then
  * runs `fetchForgeFacts` against this repo for the resolved tasks, prints the
  * snapshot, and additionally runs the snapshot through `deriveIteration` so
  * we can spot-check derived status for known-merged tasks (1 and 2 should be
@@ -47,8 +47,11 @@ function readFileIfExists(path: string): string | null {
 async function resolveIteration(slug: string): Promise<{ iteration: Iteration; source: string }> {
   try {
     const milestone = findMilestoneForSlug(OWNER, REPO, slug)
-    if (milestone && milestone.lifecycle === 'active') {
-      return { iteration: await deriveIterationFromForge(OWNER, REPO, slug), source: 'forge (active Milestone)' }
+    if (milestone) {
+      return {
+        iteration: await deriveIterationFromForge(OWNER, REPO, slug),
+        source: `forge (${milestone.lifecycle === 'active' ? 'active' : 'closed'} Milestone)`
+      }
     }
   } catch (err) {
     console.info(`[forge derivation failed, falling back to file] ${(err as Error).message}`)
@@ -58,7 +61,7 @@ async function resolveIteration(slug: string): Promise<{ iteration: Iteration; s
   if (activeRaw !== null) return { iteration: parseIteration(activeRaw), source: 'file (active, forge fallback)' }
 
   const archivedRaw = readFileIfExists(join(REPO_ROOT, 'aeg-root', 'iterations', 'completed', `${slug}.md`))
-  if (archivedRaw !== null) return { iteration: parseIteration(archivedRaw), source: 'file (archived)' }
+  if (archivedRaw !== null) return { iteration: parseIteration(archivedRaw), source: 'file (legacy archived)' }
 
   throw new Error(`No Milestone, active file, or archived file found for iteration "${slug}"`)
 }
