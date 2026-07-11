@@ -1,0 +1,2 @@
+[test]
+preload = "../../scripts/guard-bun-test-vitest.ts"
