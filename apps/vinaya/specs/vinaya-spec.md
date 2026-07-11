@@ -87,6 +87,18 @@ Verified against current repo state at the time of writing (2026-07-08); see the
 - `vinaya-cli-v1` — CLI: scaffold, `StateSource`, check engine, `init`, forge writes, lifecycle, trust surface. Undispatched (issues #381–#387).
 - `vinaya-studio-v1` — Studio: this bootstrap (task 0, #479), `/aeg` methodology page (task 0b, #480), port AEG Studio's dashboard routes into `apps/vinaya/web` under `/studio` (task 1, #388, **done**), plus an addendum on the same task/PR (#493) adding the `/studio/docs` methodology-doc browser and a site-wide TopBar, renderer contract (task 2, #389), `vinaya studio` launcher (task 3, #390).
 
+## CLI (`vinaya-cli-v1`, task 1, #381)
+
+`apps/vinaya/cli` — the `@atta/vinaya-cli` package, bin name `vinaya`. This task ships a **skeleton only**:
+
+- **Router:** `vinaya help` / `vinaya version` (`--json` supported) — no real command logic yet (`init`, `check`, `doctor`, forge writes are later tasks in this iteration).
+- **Config loader:** ported from Cetana's `apps/cetana-ai/cli/src/lib/config.ts` (copy-adapt; Cetana untouched). Hierarchical, file-level precedence — repo-local `vinaya.config.json` (walked up from `cwd`) over global `~/.vinaya/config.json`, `null` if neither exists. Its precedence regression tests ported alongside it (`apps/vinaya/cli/tests/config.test.ts`).
+- **Config schema — D-117:** a `rings` object (`ring1_forgeWriteInterception` / `ring2_asyncAudits`, plain booleans, no conditional logic per D-092/D-109) is the only schema surface this task ships. Ring 0 and the CI/branch-protection guarantee are never represented — they aren't configurable. **D-117 was not present in `packages/governance/decisions.md` at dig time (2026-07-11)** — the Issue #381 comment amending this task's scope predates the decision's own ratification appearing in the log (last entry at dig time: D-116). Implemented per the Issue comment (repo owner, unambiguous on shape) with this gap flagged for the Principal to reconcile — either back-fill the D-117 entry or confirm it lands with a later task.
+- **JSON envelope:** `src/lib/envelope.ts` wraps every `--json` payload as `{ schema: 1, data: ... }` (D-100/D-103) — no code path emits unversioned machine output.
+- **Ported, not carried over:** the config pattern + its tests only. No JSONL, no IPC, no coordinator, no state-sync code (D-095). No `@atta/aeg-core` import yet (keeps this task pure-`Project: vinaya`; the `StateSource` seam is a later task, already built and parked behind this one per D-081 row-adjacency).
+
+See `apps/vinaya/cli/README.md` for install (`bun link`, not a workspace script) and the config/envelope reference.
+
 ## Related decisions
 
-D-086 through D-113 in [`packages/governance/decisions.md`](../../../packages/governance/decisions.md) — search for "Vinaya" for the full set.
+D-086 through D-113 in [`packages/governance/decisions.md`](../../../packages/governance/decisions.md) — search for "Vinaya" for the full set. D-117 (this task's `rings` config amendment) is referenced above with its ratification-status caveat.
