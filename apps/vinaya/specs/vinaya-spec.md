@@ -99,6 +99,18 @@ Verified against current repo state at the time of writing (2026-07-08); see the
 
 See `apps/vinaya/cli/README.md` for install (`bun link`, not a workspace script) and the config/envelope reference.
 
+## StateSource (`vinaya-cli-v1`, task 2, #382)
+
+The seam every pure evaluator (`deriveIteration`, `sumLedger`, ...) consumes state through, so they never care whether an `Iteration` came from a git-tracked file or the forge.
+
+- **Contract:** `StateSource` (`packages/aeg-core/src/state-source.ts`, re-exported from `@atta/aeg-core`'s `index.ts`) — one method, `getIteration(slug: string): Promise<Iteration>`. Builds on `@atta/aeg-types`'s existing `Iteration`/`Task` shapes; does not redefine them. `aeg-core`'s zero-I/O purity charter (post-#372) means this file holds only the type — no adapter implementation lives here.
+- **Adapters** — both live in a new workspace, `apps/vinaya/sources` (`@atta/vinaya-sources`), the only package in this seam allowed I/O:
+  - `createForgeSource` (`src/forge-adapter.ts`) — the **primary** design. Wires `@atta/aeg-forge-state`'s `deriveIterationFromForge` behind the contract. **Imported as a workspace dependency (`workspace:*`), not re-homed** — `@atta/aeg-forge-state` (built by `aeg-forge-state-v1` #425, D-112 resequencing) is already a clean, general-purpose, repo/owner-parameterized package with its own existing consumers (`packages/aeg-core/bin/*`, both apps' `read-root.ts`/`stale-blocker.ts`); re-homing it would be a rename with no functional benefit and would break those consumers.
+  - `createFileSource` (`src/file-adapter.ts`) — **transitional**, a deliberate throwaway deleted once every `StateSource` consumer is forge-backed. Wraps `@atta/aeg-core`'s `parseIteration` over a configurable governance root (`FileSourceConfig.root`, default `aeg-root`) — never a hardcoded path constant (2026-07-05 Planner amendment), so the pending `vinaya-finding-aeg-root-into-aeg-core` relocation is a config flip, not a rewrite.
+  - `selectSource` (`src/select-source.ts`) — config-driven selection between the two, validated by a zod schema (`StateSourceConfigSchema`) mirroring `apps/vinaya/cli/src/lib/config.ts`'s schema-first shape.
+- **Proof:** a golden comparison (`apps/vinaya/sources/src/golden-forge-vs-file.test.ts`) derives `aeg-forge-state-v1` — a real, complete iteration — from both adapters and asserts equivalent `Iteration` shapes on every field the pure evaluators read (task ids/titles/issues/projects/dependency edges, lifecycle, goal). The file-side input is `aeg-root/iterations/completed/aeg-forge-state-v1.md`'s content pinned at commit `8112a295` (the live working-tree path was deleted by PR #521 the same day this task ran; the Milestone and Issues it derives from are untouched on GitHub, so the comparison remains genuine real-data proof). Gated on GitHub auth being available (`describe.skipIf` off `resolveGithubToken()`) — passed for real at dispatch time.
+- **Out of scope for this task:** rewiring `packages/aeg-core/bin/*` gates onto `StateSource` (`aeg-forge-state-v1`'s completed job); Studio changes (`vinaya-studio-v1` task 2); a Discussions or Projects-v2 client (excluded by D-110). Publish-time packaging of `sources` relative to the CLI's "surgically small" rule (D-084/D-104) is recorded as an open question in `apps/vinaya/sources/README.md`, deferred to a launch-readiness task.
+
 ## Related decisions
 
 D-086 through D-113 in [`packages/governance/decisions.md`](../../../packages/governance/decisions.md) — search for "Vinaya" for the full set. D-118 (this task's `rings` config amendment, provisionally labeled D-117 at brief time) is referenced above with its ratification-status caveat.

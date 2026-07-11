@@ -334,6 +334,21 @@
         "typescript": "^5.5.0",
       },
     },
+    "apps/vinaya/sources": {
+      "name": "@atta/vinaya-sources",
+      "version": "0.0.1",
+      "dependencies": {
+        "@atta/aeg-core": "workspace:*",
+        "@atta/aeg-forge-state": "workspace:*",
+        "@atta/aeg-types": "workspace:*",
+        "zod": "3.25.76",
+      },
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
     "apps/vinaya/web": {
       "name": "@atta/vinaya-web",
       "version": "0.1.0",
@@ -876,6 +891,8 @@
     "@atta/vada-fusion-native": ["@atta/vada-fusion-native@workspace:packages/agents/vada-fusion-native"],
 
     "@atta/vinaya-cli": ["@atta/vinaya-cli@workspace:apps/vinaya/cli"],
+
+    "@atta/vinaya-sources": ["@atta/vinaya-sources@workspace:apps/vinaya/sources"],
 
     "@atta/vinaya-web": ["@atta/vinaya-web@workspace:apps/vinaya/web"],
 
