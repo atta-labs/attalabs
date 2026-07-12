@@ -1,9 +1,10 @@
 # @atta/vinaya-sources
 
-StateSource adapters for Vinaya — implementations of the `StateSource`
-contract defined in `@atta/aeg-core` (`packages/aeg-core/src/state-source.ts`).
+The I/O boundary for Vinaya's aeg-core source contracts — the only package in
+these seams allowed file/forge reads. Implements `StateSource` and
+`DoctrineSource`, both defined I/O-free in `@atta/aeg-core`.
 
-## Adapters
+## StateSource adapters
 
 - **`createForgeSource`** (`src/forge-adapter.ts`) — primary design. Wires
   `@atta/aeg-forge-state`'s `deriveIterationFromForge` behind the contract.
@@ -16,6 +17,17 @@ contract defined in `@atta/aeg-core` (`packages/aeg-core/src/state-source.ts`).
 
 `selectSource` (`src/select-source.ts`) picks between the two from a
 zod-validated config object.
+
+## DoctrineSource adapter
+
+- **`createFileDoctrineSource`** (`src/doctrine-file-adapter.ts`) — file-backed
+  `DoctrineSource` for `deriveDiagramModel` (`@atta/aeg-core`,
+  enforcement-derivation-v1 task 5, #506). Reads `<root>/enforcement.md`,
+  `<root>/roles/*.md`, and `<root>/contracts/*.md` over a configurable root
+  (`DoctrineFileSourceConfig.root`, default `DEFAULT_GOVERNANCE_ROOT`), never a
+  hardcoded literal — same rule as `createFileSource`. This keeps `aeg-core`'s
+  derivation pure: doctrine arrives as already-read `DoctrineContent`, so the
+  library can be packaged for adopters whose repos have no `aeg-root/` (D-111).
 
 ## Open question — publish-time packaging (LAUNCH-iteration, not resolved here)
 

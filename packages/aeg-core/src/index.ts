@@ -85,6 +85,16 @@ export { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 export type { IssueSectionResult } from './issue-validation'
 export { findHeadingLine, findTable, rowToRecord } from './markdown-table'
 export type { ParsedTable, TableRow } from './markdown-table'
+export { deriveDiagramModel } from './diagram-model'
+export type {
+  DiagramConfig,
+  DiagramEdge,
+  DiagramFinding,
+  DiagramModel,
+  DiagramNode,
+  DiagramNodeKind,
+  RenderState
+} from './diagram-model'
 export { parseEnforcementRegistry } from './registry-parse'
 export type { GateRing, GateRow } from './registry-parse'
 export { checkG1, checkG2, checkG3, checkG4, checkG5 } from './registry-checks'
