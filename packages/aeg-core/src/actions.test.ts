@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import matter from 'gray-matter'
 import { describe, expect, it } from 'vitest'
-import { type Action, ACTIONS } from './actions'
+import { type Action, ACTIONS, CROSSING_KEYWORDS } from './actions'
 import { type GateRow, parseEnforcementRegistry } from './registry-parse'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
@@ -38,21 +38,8 @@ describe('ACTIONS — shape', () => {
 })
 
 describe('ACTIONS — real-file cross-check', () => {
-  // A stable keyword per into-github action that must appear (case-insensitive)
-  // in some real Ring-0 gate row's action text — the "feeds G3" tripwire from
-  // Issue #505. If enforcement.md ever drops the gate row backing a crossing,
-  // the corresponding assertion fails. grant-a-waiver's keyword is
-  // `pull request`: granting a waiver is an act on a pull request (labeling it),
-  // honored at the Ring-0 PR-creation/editing gate and refused-from-agents at
-  // the raw-API gate — both reference pull requests. See PR body.
-  const CROSSING_KEYWORDS: Record<string, string> = {
-    'publish-the-branch': 'git push',
-    'create-a-task-issue': 'task issue',
-    'open-a-pull-request': 'pull request',
-    'revise-a-pull-request': 'pull request',
-    'grant-a-waiver': 'pull request'
-  }
-
+  // CROSSING_KEYWORDS now lives in ./actions (exported), shared with
+  // diagram-model.ts's guards edges so the map can never drift (D-119).
   const ring0Rows: GateRow[] = parseEnforcementRegistry(readFileSync(ENFORCEMENT_PATH, 'utf8')).filter(
     (r) => r.ring === 'ring0'
   )

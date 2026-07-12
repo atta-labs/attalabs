@@ -17,7 +17,7 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
   const { name } = await params
   const project = await readProject(name)
   if (!project) notFound()
-  const { active, archived } = await iterationsForProject(name)
+  const { active, archived, forgeAvailable } = await iterationsForProject(name)
 
   return (
     <div className='space-y-8'>
@@ -33,7 +33,12 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
         </dl>
       </header>
 
-      <ProjectIterationsTabs projectName={project.name} active={active} archived={archived} />
+      <ProjectIterationsTabs
+        projectName={project.name}
+        active={active}
+        archived={archived}
+        forgeAvailable={forgeAvailable}
+      />
     </div>
   )
 }

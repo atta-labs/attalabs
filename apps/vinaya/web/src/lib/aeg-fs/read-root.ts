@@ -200,13 +200,29 @@ function mergeTaskEdgesFromFile(forgeIteration: Iteration, fileIteration: Iterat
  * forge call throws — no token/`gh` unavailable/network) — there is no
  * on-disk enumeration source left to fall back to (#515).
  */
-export async function loadActiveIterations(): Promise<Array<{ fileSlug: string; iteration: Iteration }>> {
+/**
+ * A loaded iteration list plus whether the live forge was actually reachable
+ * this request. `forgeAvailable === false` iff `resolveRepo()` returned null
+ * OR a forge enumeration catch fired — the caller can then degrade *visibly*
+ * (an explicit banner) instead of rendering a failure as truth-shaped
+ * emptiness (D-087: Studio stores nothing, so it must not lie by omission).
+ * The legacy `completed/*.md` supplement never affects the flag.
+ */
+type LoadedIterations = {
+  items: Array<{ fileSlug: string; iteration: Iteration }>
+  forgeAvailable: boolean
+}
+
+async function loadActiveIterationsWithStatus(): Promise<LoadedIterations> {
   const repo = await resolveRepo()
-  if (!repo) return []
+  if (!repo) {
+    console.warn('[aeg-fs] active-iteration enumeration skipped: repository could not be resolved (forge unreachable)')
+    return { items: [], forgeAvailable: false }
+  }
 
   try {
     const refs = listActiveIterationSlugs(repo.owner, repo.repo)
-    return await Promise.all(
+    const items = await Promise.all(
       refs.map(async (ref) => {
         const [iteration, fileIteration] = await Promise.all([
           deriveIterationFromForge(repo.owner, repo.repo, ref.slug),
@@ -215,10 +231,17 @@ export async function loadActiveIterations(): Promise<Array<{ fileSlug: string; 
         return { fileSlug: ref.slug, iteration: mergeTaskEdgesFromFile(iteration, fileIteration) }
       })
     )
+    return { items, forgeAvailable: true }
   } catch (err) {
     console.warn(`[aeg-fs] active-iteration forge enumeration failed: ${(err as Error).message}`)
-    return []
+    return { items: [], forgeAvailable: false }
   }
+}
+
+/** Back-compat array-returning wrapper (consumed by `dispatch-readiness.ts`
+ * and the `@/lib/aeg-fs` barrel — signature unchanged). */
+export async function loadActiveIterations(): Promise<Array<{ fileSlug: string; iteration: Iteration }>> {
+  return (await loadActiveIterationsWithStatus()).items
 }
 
 async function readActiveIteration(fileSlug: string): Promise<{ fileSlug: string; iteration: Iteration } | null> {
@@ -268,9 +291,10 @@ async function readCompletedFile(fileSlug: string): Promise<Iteration | null> {
  * Mirrors the same "enumerate, then fill the gap" shape as
  * `verify-coherence.ts`'s general sweep (#515).
  */
-export async function loadArchivedIterations(): Promise<Array<{ fileSlug: string; iteration: Iteration }>> {
+async function loadArchivedIterationsWithStatus(): Promise<LoadedIterations> {
   const results: Array<{ fileSlug: string; iteration: Iteration }> = []
   const repo = await resolveRepo()
+  let forgeAvailable = true
 
   if (repo) {
     try {
@@ -284,9 +308,14 @@ export async function loadArchivedIterations(): Promise<Array<{ fileSlug: string
       results.push(...derived)
     } catch (err) {
       console.warn(`[aeg-fs] archived-iteration forge enumeration failed: ${(err as Error).message}`)
+      forgeAvailable = false
     }
+  } else {
+    forgeAvailable = false
   }
 
+  // Legacy `completed/*.md` supplement — the permanent home of pre-Milestone
+  // iterations (#515). NOT a failure: it never flips `forgeAvailable`.
   const seen = new Set(results.map((r) => r.fileSlug))
   for (const slug of await listCompletedFileSlugs()) {
     if (seen.has(slug)) continue
@@ -294,7 +323,12 @@ export async function loadArchivedIterations(): Promise<Array<{ fileSlug: string
     if (iteration) results.push({ fileSlug: slug, iteration })
   }
 
-  return results
+  return { items: results, forgeAvailable }
+}
+
+/** Back-compat array-returning wrapper (signature unchanged for any consumer). */
+export async function loadArchivedIterations(): Promise<Array<{ fileSlug: string; iteration: Iteration }>> {
+  return (await loadArchivedIterationsWithStatus()).items
 }
 
 async function readArchivedIteration(fileSlug: string): Promise<{ fileSlug: string; iteration: Iteration } | null> {
@@ -326,14 +360,25 @@ async function readArchivedIteration(fileSlug: string): Promise<{ fileSlug: stri
 export type IterationLists = {
   active: IterationSummary[]
   archived: IterationSummary[]
+  /** False iff the live forge could not be reached this request — the UI must
+   * then show an explicit "unavailable" banner, not a truth-shaped empty list. */
+  forgeAvailable: boolean
 }
 
 export async function listIterations(): Promise<IterationLists> {
-  const [activeLoaded, archivedLoaded] = await Promise.all([loadActiveIterations(), loadArchivedIterations()])
+  const [activeLoaded, archivedLoaded] = await Promise.all([
+    loadActiveIterationsWithStatus(),
+    loadArchivedIterationsWithStatus()
+  ])
 
   return {
-    active: await Promise.all(activeLoaded.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, false))),
-    archived: await Promise.all(archivedLoaded.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, true)))
+    active: await Promise.all(
+      activeLoaded.items.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, false))
+    ),
+    archived: await Promise.all(
+      archivedLoaded.items.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, true))
+    ),
+    forgeAvailable: activeLoaded.forgeAvailable && archivedLoaded.forgeAvailable
   }
 }
 
@@ -361,13 +406,16 @@ export async function readIteration(fileSlug: string): Promise<IterationDetail |
  */
 export async function iterationsForProject(
   projectName: string
-): Promise<{ active: IterationSummary[]; archived: IterationSummary[] }> {
-  const [activeLoaded, archivedLoaded] = await Promise.all([loadActiveIterations(), loadArchivedIterations()])
+): Promise<{ active: IterationSummary[]; archived: IterationSummary[]; forgeAvailable: boolean }> {
+  const [activeLoaded, archivedLoaded] = await Promise.all([
+    loadActiveIterationsWithStatus(),
+    loadArchivedIterationsWithStatus()
+  ])
 
-  const activeFiltered = activeLoaded.filter(({ iteration }) =>
+  const activeFiltered = activeLoaded.items.filter(({ iteration }) =>
     iteration.tasks.some((t) => t.projects.includes(projectName))
   )
-  const archivedFiltered = archivedLoaded.filter(({ iteration }) =>
+  const archivedFiltered = archivedLoaded.items.filter(({ iteration }) =>
     iteration.tasks.some((t) => t.projects.includes(projectName))
   )
 
@@ -375,5 +423,5 @@ export async function iterationsForProject(
     Promise.all(activeFiltered.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, false))),
     Promise.all(archivedFiltered.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, true)))
   ])
-  return { active, archived }
+  return { active, archived, forgeAvailable: activeLoaded.forgeAvailable && archivedLoaded.forgeAvailable }
 }

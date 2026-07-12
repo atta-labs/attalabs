@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { extractRealPathLinks, type SourceLink } from './extract-paths'
-import { findHeadingLine, findTable, type ParsedTable } from './markdown-table'
+import { findHeadingLine, findTable, type ParsedTable } from '@atta/aeg-core'
 import { findAegRoot, githubBlobUrl, toRepoRelative } from './repo'
 import { findMatches, parseWorkflowJobs, type WorkflowMatch } from './workflow-jobs'
 

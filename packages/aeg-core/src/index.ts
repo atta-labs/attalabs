@@ -1,5 +1,6 @@
 export * from './types'
 export type { StateSource } from './state-source'
+export type { DoctrineContent, DoctrineSource } from './doctrine-source'
 export { ANCHOR_FIELDS, anchoredRegion } from './anchored-region'
 export type { AnchorField } from './anchored-region'
 export { parseRegistry } from './parse-registry'
@@ -82,11 +83,23 @@ export { checkReviewGate, isReviewGateExemptBranch } from './review-gate'
 export type { ReviewGateInput, ReviewGateResult, ReviewGateVerdict } from './review-gate'
 export { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 export type { IssueSectionResult } from './issue-validation'
+export { findHeadingLine, findTable, rowToRecord } from './markdown-table'
+export type { ParsedTable, TableRow } from './markdown-table'
+export { deriveDiagramModel } from './diagram-model'
+export type {
+  DiagramConfig,
+  DiagramEdge,
+  DiagramFinding,
+  DiagramModel,
+  DiagramNode,
+  DiagramNodeKind,
+  RenderState
+} from './diagram-model'
 export { parseEnforcementRegistry } from './registry-parse'
 export type { GateRing, GateRow } from './registry-parse'
 export { checkG1, checkG2, checkG3, checkG4, checkG5 } from './registry-checks'
 export type { RegistryCheckResult, RegistryCheckStatus, RegistryFinding } from './registry-checks'
-export { ACTIONS } from './actions'
+export { ACTIONS, CROSSING_KEYWORDS } from './actions'
 export type { Action, ActionCrossing } from './actions'
 export { checkPremises, parsePremiseBlock } from './premise-check'
 export type { PremiseAssertion, PremiseCheckResult } from './premise-check'
