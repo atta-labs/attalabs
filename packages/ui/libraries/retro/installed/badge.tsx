@@ -1,102 +1,49 @@
-'use client'
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { Slot } from "radix-ui"
 
-import { cn } from '../../../lib/utils'
-import type { BadgeProps } from '../../../types'
-import React from 'react'
+import { cn } from "../../../lib/utils"
 
-const sizeClasses: Record<string, string> = {
-  xs: 'px-1.5 py-0.5 text-xs',
-  sm: 'px-2.5 py-0.5 text-xs',
-  md: 'px-3 py-1.5 text-sm',
-  lg: 'px-4 py-2 text-base',
-  xl: 'px-5 py-2.5 text-lg',
-  '2xl': 'px-6 py-3 text-xl'
-}
-
-const variantClasses: Record<string, string> = {
-  default: 'bg-primary text-primary-foreground border-2 border-border',
-  secondary: 'bg-secondary text-secondary-foreground border-2 border-border',
-  destructive: 'bg-destructive text-destructive-foreground border-2 border-border',
-  outline: 'bg-transparent text-foreground border-2 border-border',
-  ai: 'text-white [background:linear-gradient(90deg,#3b82f6,#8b5cf6,#a855f7,#d946ef)] border-2 border-border',
-  'ai-outline':
-    'border-2 border-transparent [background:linear-gradient(var(--background),var(--background))_padding-box,linear-gradient(90deg,#3b82f6,#8b5cf6,#a855f7,#d946ef)_border-box] text-foreground'
-}
-
-const Badge = React.forwardRef<HTMLElement, BadgeProps>(
-  (
-    {
-      children,
-      size = 'md',
-      variant = 'default',
-      className = '',
-      onClick,
-      href,
-      onHover,
-      loading: _l,
-      iconLeft: _il,
-      iconRight: _ir,
-      badge: _b,
-      onDismiss: _od,
-      animation: _a,
-      animationDuration: _ad,
-      shape: _s,
-      radius: _r,
-      opacity: _o,
-      disabled: _d,
-      active: _ac,
-      ...props
+const badgeVariants = cva(
+  "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded border-2 px-2 py-0.5 text-xs font-head font-medium whitespace-nowrap shadow-sm transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive [&>svg]:pointer-events-none [&>svg]:size-3!",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        secondary:
+          "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
+        destructive:
+          "bg-destructive text-destructive-foreground [a]:hover:bg-destructive/90",
+        outline:
+          "bg-transparent text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
+        ghost:
+          "border-transparent bg-transparent shadow-none hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
+        link: "border-transparent bg-transparent shadow-none text-primary underline-offset-4 hover:underline",
+      },
     },
-    ref
-  ) => {
-    const classes = cn(
-      'inline-flex items-center justify-center font-semibold rounded transition-all',
-      sizeClasses[size ?? 'md'],
-      variantClasses[variant ?? 'default'],
-      className
-    )
-
-    if (href) {
-      return (
-        <a
-          ref={ref as React.Ref<HTMLAnchorElement>}
-          href={href}
-          className={classes}
-          onMouseEnter={onHover}
-          {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
-        >
-          {children}
-        </a>
-      )
-    }
-
-    if (onClick) {
-      return (
-        <button
-          ref={ref as React.Ref<HTMLButtonElement>}
-          onClick={onClick}
-          className={classes}
-          onMouseEnter={onHover}
-          {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
-        >
-          {children}
-        </button>
-      )
-    }
-
-    return (
-      <span
-        ref={ref as React.Ref<HTMLSpanElement>}
-        className={classes}
-        onMouseEnter={onHover}
-        {...(props as React.HTMLAttributes<HTMLSpanElement>)}
-      >
-        {children}
-      </span>
-    )
+    defaultVariants: {
+      variant: "default",
+    },
   }
 )
 
-Badge.displayName = 'Badge'
+function Badge({
+  className,
+  variant = "default",
+  asChild = false,
+  ...props
+}: React.ComponentProps<"span"> &
+  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot.Root : "span"
 
-export { Badge }
+  return (
+    <Comp
+      data-slot="badge"
+      data-variant={variant}
+      className={cn(badgeVariants({ variant }), className)}
+      {...props}
+    />
+  )
+}
+
+export { Badge, badgeVariants }

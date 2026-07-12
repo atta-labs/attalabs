@@ -15,7 +15,7 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 > |---|---|---|
 > | `basic` | shadcn (`ui.shadcn.com`) | `npx shadcn@latest add <component>` |
 > | `animate` | animate-ui (`animate-ui.com`) | `npx shadcn@latest add @animate-ui/...` |
-> | `retro` | retroui | shadcn-compatible registry |
+> | `retro` | retroui (`retroui.dev`, Radix flavor) | `npx shadcn@latest add https://retroui.dev/r/radix/<component>.json` |
 > | `brutal` | neobrutalism (`neobrutalism.dev`) | shadcn-compatible registry |
 >
 > **The rule:** `installed/<comp>.tsx` is a verbatim CLI paste from its library's upstream.
@@ -31,11 +31,12 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 >    Most upstreams export flat named components (`Tabs`, `TabsList`, `TabsTrigger`,
 >    `TabsContent`) — those match our contract directly, just re-export from `components/index.ts`
 >    and you're done.
-> 3. **If the upstream's API differs from our contract** (e.g. retroui exports
->    `Object.assign(Tabs.Root, { List, Trigger, Content })` — dotted API instead of flat),
->    **add a wrapper** in `components/<comp>.tsx` (or `components/interactive/`) that adapts
->    the dotted API to our contract's flat named exports. The wrapper IS editable. `installed/`
->    stays verbatim.
+> 3. **If the upstream's API differs from our contract**, **add a wrapper** in
+>    `components/<comp>.tsx` (or `components/interactive/`) that adapts it to our contract's
+>    flat named exports. The wrapper IS editable. `installed/` stays verbatim. (retro's old
+>    Base UI heritage needed this — dotted `Object.assign` Tabs, `render`-instead-of-`asChild`
+>    Button — but its Radix-flavor upstream exports flat components and native `asChild`, so
+>    those adapters were removed.)
 > 4. **If you want to vary appearance for one library (e.g. add a variant prop)** — that goes
 >    in the wrapper layer (`components/interactive/<comp>.tsx`), NOT in `installed/`. The
 >    `Button.ghost-pill` variant is the canonical example: basic's `installed/button.tsx` is
@@ -122,12 +123,12 @@ This includes "simple" cases like tab bars, toggle groups, segmented controls, o
 1. **Install the upstream canonical via shadcn CLI** into the active library's `installed/`. Each library has its own upstream registry — never hand-roll the file:
    - `basic` → `bunx shadcn@latest add <component>` (shadcn/ui registry)
    - `animate` → `bunx shadcn@latest add @animate-ui/<component>`
-   - `retro` → `bunx shadcn@latest add @retroui/<component>`
+   - `retro` → `bunx shadcn@latest add https://retroui.dev/r/radix/<component>.json` (Radix flavor)
    - `brutal` → `bunx shadcn@latest add @neobrutalism/<component>`
 
    Copy the CLI output verbatim to `packages/ui/libraries/{name}/installed/{component}.tsx`. Adjust ONLY the import paths (e.g. `@/lib/utils` → `../../../lib/utils`). Helper directory trees (e.g. animate-ui's `installed/animate-ui/primitives/...`) are preserved as-is. `installed/*` is Biome-ignored — never reformat.
 2. **Install the canonical in every other library too** (matching its own upstream). If a non-`basic` library has no design-system equivalent, fall back to basic with `export { Tabs } from '../../basic/installed/tabs'` in `components/index.ts`.
-3. **Wrap only if the upstream's exported shape differs from our contract.** Most upstreams export flat named components (`Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`) and re-export from `components/index.ts` directly. If the upstream uses a dotted `Object.assign` API (retroui Tabs) or a different child-prop name (retroui Button's `render` vs `asChild`), add a thin adapter in `components/interactive/{component}.tsx`. The adapter is editable; `installed/` stays verbatim.
+3. **Wrap only if the upstream's exported shape differs from our contract.** Most upstreams (including retro's Radix flavor) export flat named components (`Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`) and native `asChild`, so you re-export from `components/index.ts` directly. Add a thin adapter in `components/interactive/{component}.tsx` only when an upstream genuinely diverges — e.g. a dotted `Object.assign` API or a different child-prop name. (retro used to diverge on both counts under its old Base UI heritage; its Radix flavor no longer does.) The adapter is editable; `installed/` stays verbatim.
 4. **Add the component + its Props type** to `REQUIRED_COMPONENTS` and `REQUIRED_TYPES` in `packages/ui/component-contract.mjs`. The contract validates **component + type NAMES across libraries** — not variant enums. Each library derives its own Props from its own cva via `VariantProps<typeof buttonVariants>`.
 5. **Run `bun run validate:ui-contract`** — build fails if any library is missing the export.
 6. **Then `import { Tabs } from '@atta/ui'`** in the app.

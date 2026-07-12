@@ -1,35 +1,43 @@
-'use client'
+"use client"
 
-import * as CollapsiblePrimitive from '@radix-ui/react-collapsible'
-import * as React from 'react'
+import { Collapsible as CollapsiblePrimitive } from "radix-ui"
 
-function Collapsible({ ...props }: React.ComponentProps<typeof CollapsiblePrimitive.Root>) {
-  return <CollapsiblePrimitive.Root data-slot='collapsible' {...props} />
+import { cn } from "../../../lib/utils"
+
+function Collapsible({
+  ...props
+}: React.ComponentProps<typeof CollapsiblePrimitive.Root>) {
+  return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />
 }
 
 function CollapsibleTrigger({
-  render,
-  children,
   ...props
-}: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger> & {
-  render?: React.ReactElement
-}) {
-  if (render) {
-    return (
-      <CollapsiblePrimitive.CollapsibleTrigger asChild {...props}>
-        {React.cloneElement(render, {}, children)}
-      </CollapsiblePrimitive.CollapsibleTrigger>
-    )
-  }
+}: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>) {
   return (
-    <CollapsiblePrimitive.CollapsibleTrigger data-slot='collapsible-trigger' {...props}>
-      {children}
-    </CollapsiblePrimitive.CollapsibleTrigger>
+    <CollapsiblePrimitive.CollapsibleTrigger
+      data-slot="collapsible-trigger"
+      {...props}
+    />
   )
 }
 
-function CollapsibleContent({ ...props }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>) {
-  return <CollapsiblePrimitive.CollapsibleContent data-slot='collapsible-content' {...props} />
+function CollapsibleContent({
+  className,
+  ...props
+}: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>) {
+  return (
+    <CollapsiblePrimitive.CollapsibleContent
+      data-slot="collapsible-content"
+      // Radix publishes the measured height as
+      // `--radix-collapsible-content-height`; the collapsible-down/up keyframes
+      // interpolate against it for a real slide open/close.
+      className={cn(
+        "overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up",
+        className
+      )}
+      {...props}
+    />
+  )
 }
 
-export { Collapsible, CollapsibleContent, CollapsibleTrigger }
+export { Collapsible, CollapsibleTrigger, CollapsibleContent }
