@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildProvenanceBlock, hasProvenance, taskRefFromBranch } from './archive-task'
+import { buildProvenanceBlock, extractIssue, hasProvenance, taskRefFromBranch } from './archive-task'
 import type { MergedPrFacts } from './archive-task'
 
 function facts(overrides: Partial<MergedPrFacts> = {}): MergedPrFacts {
@@ -60,6 +60,25 @@ describe('taskRefFromBranch', () => {
 
   it('returns null for a malformed task branch (extra segment)', () => {
     expect(taskRefFromBranch('task/aeg-governance-hardening/5d/extra')).toBeNull()
+  })
+})
+
+// #524/#530 regression: a task PR can close an iteration-labeled Issue from a
+// non-task branch. `extractIssue` is the bin shim's second eligibility signal
+// (alongside `taskRefFromBranch`) — it must find the closing Issue number so
+// the shim can check that Issue's own `iteration:*` label.
+describe('extractIssue', () => {
+  it('finds Closes #N on a non-task-branch PR body (the #530 shape)', () => {
+    const body = '<!-- AEG:CLOSES:START -->\nCloses #524\n<!-- AEG:CLOSES:END -->\n\n## Summary\n\nCleanup fix.'
+    expect(extractIssue(body)).toEqual({ issue: 524, extraIssues: [], outsideHeader: false })
+  })
+
+  it('returns null when no Closes #N is present', () => {
+    expect(extractIssue('## Summary\n\nNo closing reference here.')).toEqual({
+      issue: null,
+      extraIssues: [],
+      outsideHeader: false
+    })
   })
 })
 
