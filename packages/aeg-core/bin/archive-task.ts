@@ -8,6 +8,12 @@
  * `bin/verify-brief.ts`'s exact shape (chdir to repo root; read env; call the
  * pure function; print; exit).
  *
+ * Task-PR eligibility is an OR of two signals, not branch-name-only: a
+ * `task/<iter>/<id>` branch, OR the closed Issue itself carrying an
+ * `iteration:*` label (checked live via `gh issue view --json labels`).
+ * Branch-name-only detection silently skipped a real task closure once
+ * (#524/#530 — a tracked Issue closed by an ad-hoc `fix/*`-branch PR).
+ *
  * Fail-loud discipline (D-069/#305 live-fire, Planner trap 6): no step here
  * catches and swallows a `gh`/API error into a silent success. A `gh` call
  * throwing propagates as an uncaught exception — non-zero exit, the error
@@ -17,7 +23,13 @@
 
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
-import { buildProvenanceBlock, hasProvenance, taskRefFromBranch } from '../src/index'
+import {
+  buildProvenanceBlock,
+  extractIssue,
+  hasProvenance,
+  isEligibleForProvenance,
+  taskRefFromBranch
+} from '../src/index'
 import type { MergedPrFacts } from '../src/index'
 
 const REPO_ROOT = join(import.meta.dir, '../../..')
@@ -56,9 +68,26 @@ export function main(): void {
   const prNumber = (associated[0] as AssociatedPr).number
   const pr = shJson<PrView>(`gh pr view ${prNumber} --json number,headRefName,body,mergedAt,comments`)
 
+  // Branch-name-only detection silently skipped a real task closure (#524/#530:
+  // Issue tagged `iteration:herald-hardening-v1`, closed by a `fix/*`-branch PR).
+  // `isEligibleForProvenance` (pure, unit-tested) makes the actual decision;
+  // this shim only fetches the two facts it needs — the branch ref, and the
+  // closed Issue's live labels.
   const ref = taskRefFromBranch(pr.headRefName)
-  if (!ref) {
-    console.log(`[archive-task] non-task branch (${pr.headRefName}) — skip.`)
+  let issueLabels: string[] = []
+  if (ref === null) {
+    const { issue: candidateIssue } = extractIssue(pr.body)
+    if (candidateIssue !== null) {
+      issueLabels = shJson<{ labels: { name: string }[] }>(`gh issue view ${candidateIssue} --json labels`).labels.map(
+        (l) => l.name
+      )
+    }
+  }
+
+  if (!isEligibleForProvenance(ref, issueLabels)) {
+    console.log(
+      `[archive-task] non-task branch (${pr.headRefName}) and closing Issue carries no iteration:* label — skip.`
+    )
     process.exit(0)
   }
 

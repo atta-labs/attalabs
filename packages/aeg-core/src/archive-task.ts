@@ -28,11 +28,42 @@ export type MergedPrFacts = {
 
 const TASK_BRANCH_PATTERN = /^task\/([^/]+)\/([^/]+)$/
 
-/** null when headRefName is not task/<iteration>/<taskId> */
+/**
+ * null when headRefName is not task/<iteration>/<taskId>.
+ *
+ * This is ONE of two independent eligibility signals for provenance —
+ * the branch-name pattern — not the only one. A PR that closes an
+ * iteration-labeled Issue from a non-`task/*` branch (e.g. a small ad-hoc
+ * `fix/*` cleanup that finally attaches `Closes #N` to a task whose real
+ * work already shipped elsewhere) is EQUALLY eligible: the CLI shim
+ * (`bin/archive-task.ts`) additionally checks the closed Issue's own
+ * `iteration:*` label via `gh issue view --json labels` and proceeds if
+ * either signal is present. `buildProvenanceBlock` already tolerates a
+ * `null` ref (falls back to a branch-name task label), so this function's
+ * only remaining job is the branch-name half of that OR — it is no longer
+ * the sole gate. (Confirmed gap, #524/#530: a task whose Issue carried
+ * `iteration:herald-hardening-v1` was closed by a `fix/*`-branch PR;
+ * branch-name-only detection silently skipped provenance forever.)
+ */
 export function taskRefFromBranch(branch: string): { iteration: string; taskId: string } | null {
   const m = branch.match(TASK_BRANCH_PATTERN)
   if (!m) return null
   return { iteration: m[1] as string, taskId: m[2] as string }
+}
+
+/**
+ * The eligibility decision itself, pulled out as a pure function so it's
+ * testable without mocking `gh` — the CLI shim (`bin/archive-task.ts`) does
+ * only the I/O (resolve `ref`, fetch the closed Issue's labels) and hands
+ * both facts here. True when EITHER signal holds: a real task-branch `ref`,
+ * or the closed Issue's own labels carry an `iteration:*` tag.
+ */
+export function isEligibleForProvenance(
+  ref: { iteration: string; taskId: string } | null,
+  issueLabels: string[]
+): boolean {
+  if (ref !== null) return true
+  return issueLabels.some((name) => name.startsWith('iteration:'))
 }
 
 const PROVENANCE_HEADING = '### AEG provenance'
@@ -88,7 +119,7 @@ function closesRefs(text: string): number[] {
  * body-wide so stray closing references stay flagged. Bodies without the
  * pair parse exactly as before.
  */
-function extractIssue(body: string): { issue: number | null; extraIssues: number[]; outsideHeader: boolean } {
+export function extractIssue(body: string): { issue: number | null; extraIssues: number[]; outsideHeader: boolean } {
   const bodyNums = closesRefs(stripCode(body))
   const anchored = anchoredRegion(body, 'CLOSES')
   if (anchored !== null) {
