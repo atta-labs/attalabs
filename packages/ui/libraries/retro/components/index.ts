@@ -49,7 +49,7 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue
-} from '../installed/select'
+} from './form/select'
 
 // Command — native retro (Radix flavor)
 export {
