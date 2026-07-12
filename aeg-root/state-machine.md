@@ -11,7 +11,7 @@ The constitution. This document defines the **Agentic Execution Governance (AEG)
 
 If you are unsure whether an action is permitted, the answer is here. If a role doc and this document conflict, this document wins.
 
-For the prose walkthrough (eleven phases), see `process.md`. For the iteration/task model, see `iterations/README.md`. For role-specific instructions, see `roles/`. For the role-seam contracts, see `contracts/`.
+For the prose walkthrough (thirteen phases), see `process.md`. For the iteration/task model, see `iterations/README.md`. For role-specific instructions, see `roles/`. For the role-seam contracts, see `contracts/`.
 
 ---
 
