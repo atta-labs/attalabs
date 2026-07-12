@@ -1,4 +1,7 @@
-export type { StateSource } from './contract'
+export type { DoctrineContent, StateSource } from './contract'
+export type { DoctrineSource } from './contract'
+export { createFileDoctrineSource } from './doctrine-file-adapter'
+export type { DoctrineFileSourceConfig } from './doctrine-file-adapter'
 export { createFileSource, DEFAULT_GOVERNANCE_ROOT } from './file-adapter'
 export type { FileSourceConfig } from './file-adapter'
 export { createForgeSource } from './forge-adapter'

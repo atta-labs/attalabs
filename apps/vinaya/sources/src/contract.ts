@@ -6,3 +6,4 @@
  * origin package.
  */
 export type { StateSource } from '@atta/aeg-core'
+export type { DoctrineContent, DoctrineSource } from '@atta/aeg-core'
