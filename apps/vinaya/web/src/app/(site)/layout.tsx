@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 const links = [
   { label: 'Home', href: '/', exact: true },
   { label: 'Known Limits', href: '/known-limits' },
-  { label: 'AEG', href: '/aeg' },
+  { label: 'How it works', href: '/aeg' },
   { label: 'Studio', href: '/studio', exact: true }
 ]
 
