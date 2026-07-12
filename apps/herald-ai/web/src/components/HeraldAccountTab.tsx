@@ -44,14 +44,12 @@ export function HeraldAccountTab() {
       <section>
         <h2 className='mb-3 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Manage</h2>
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger
-            render={
-              <Button type='button' variant='outline' className='gap-2 font-mono text-xs uppercase tracking-[0.2em]'>
-                <SettingsIcon className='h-3.5 w-3.5' />
-                Manage account
-              </Button>
-            }
-          />
+          <SheetTrigger asChild>
+            <Button type='button' variant='outline' className='gap-2 font-mono text-xs uppercase tracking-[0.2em]'>
+              <SettingsIcon className='h-3.5 w-3.5' />
+              Manage account
+            </Button>
+          </SheetTrigger>
           <SheetContent
             side='top'
             showCloseButton={false}
@@ -61,9 +59,11 @@ export function HeraldAccountTab() {
               <span className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>
                 Manage account
               </span>
-              <SheetClose render={<Button variant='outline' size='icon' aria-label='Close' />}>
-                <X className='h-4 w-4' />
-                <span className='sr-only'>Close</span>
+              <SheetClose asChild>
+                <Button variant='outline' size='icon' aria-label='Close'>
+                  <X className='h-4 w-4' />
+                  <span className='sr-only'>Close</span>
+                </Button>
               </SheetClose>
             </div>
             <div className='flex-1 overflow-auto px-4 py-6 sm:px-6'>

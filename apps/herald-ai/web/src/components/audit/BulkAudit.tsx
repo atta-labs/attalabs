@@ -514,18 +514,16 @@ function AuditCell({ cell, candidateLabel, jdLabel }: AuditCellProps) {
 
       {/* Expand / collapse toggle */}
       <Collapsible open={expanded} onOpenChange={setExpanded}>
-        <CollapsibleTrigger
-          render={
-            <Button
-              variant='ghost'
-              className='flex w-full items-center justify-between rounded-none border-0 px-4 py-2.5 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground hover:bg-accent/10 hover:text-foreground'
-            />
-          }
-        >
-          <span>
-            {jdLabel} · {candidateLabel}
-          </span>
-          {expanded ? <ChevronUp className='h-3 w-3' /> : <ChevronDown className='h-3 w-3' />}
+        <CollapsibleTrigger asChild>
+          <Button
+            variant='ghost'
+            className='flex w-full items-center justify-between rounded-none border-0 px-4 py-2.5 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground hover:bg-accent/10 hover:text-foreground'
+          >
+            <span>
+              {jdLabel} · {candidateLabel}
+            </span>
+            {expanded ? <ChevronUp className='h-3 w-3' /> : <ChevronDown className='h-3 w-3' />}
+          </Button>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className='border-t border-border'>
