@@ -101,7 +101,15 @@ D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
      publicly-exported primitive's `Props` is the correct workaround).
    - Retroui's Button uses `render` (Base UI) instead of `asChild` (Radix). Most consumers
      don't use either; for those that do, an adapter mapping `asChild`→`render` is added in
-     `components/interactive/button.tsx`.
+     `components/interactive/button.tsx`. **Implemented** (ui-retro-contract-v1 task 1, #536,
+     2026-07-12 — found live via a real console error on Herald's public profile): the
+     wrapper extracts the single valid child element (`isValidElement`, falling back to
+     `Children.toArray(...).find(isValidElement)` for a non-element-wrapped child) and passes
+     it as `render` when `asChild` is set and no explicit `render` was given; `children` is
+     then omitted from the forwarded props so base-ui's render element isn't double-rendered.
+     Retro's `Select`/`Collapsible` wrappers also accept `asChild` per a repo grep but were
+     **not** audited or fixed by that task — confirm before assuming the same adapter exists
+     there.
 4. **Validate:** `bun run validate:ui-contract` — every library must still export all
    contracted component names + type names.
 
