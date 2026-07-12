@@ -80,7 +80,7 @@ describe('enforcement.md Ring 0/1/2 tables (implementation + lock columns)', () 
   it('parses one record per gate row, matching the known row count per ring', async () => {
     const { ring0, ring1, ring2 } = await loadRingTables()
     expect(ring0.rows).toHaveLength(10)
-    expect(ring1.rows).toHaveLength(10)
+    expect(ring1.rows).toHaveLength(15)
     expect(ring2.rows).toHaveLength(7)
   })
 })

@@ -249,6 +249,22 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: bun packages/aeg-core/bin/check-no-disk-state.ts
 
+      # ── G-checks: registry load-bearing (G1–G5, enforcement-derivation-v1
+      # task 3, #504) ──────────────────────────────────────────────────────
+      # Makes enforcement.md's three ring tables load-bearing: G1
+      # (implementation-exists) and G2 (no-orphan-hook/CLI) print `info`
+      # findings but never fail (D-116 — flipping G1 to blocking now would
+      # retroactively fail in-flight work against a pre-existing orphan
+      # backlog). G3 (no seventh way into GitHub), G4 (cited forge numbers
+      # resolve — a fabricated citation fails the build), and G5
+      # (role/contract integrity) are blocking. GH_TOKEN is required — G4
+      # makes real `gh issue view`/`gh pr view` calls.
+      - name: "G-checks: registry load-bearing (G1–G5)"
+        if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun packages/aeg-core/bin/verify-registry.ts
+
       # ── 6/9 · Biome lint/format ─────────────────────────────────────────
       # Mirrors the local lint-staged/Husky enforcement into CI so it binds
       # every writer (GitHub API/MCP writes, direct pushes, hand-merges) —
