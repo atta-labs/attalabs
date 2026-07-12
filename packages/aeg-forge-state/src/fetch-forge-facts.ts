@@ -185,6 +185,9 @@ export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<Forg
  *
  * The issue sub-query includes timelineItems(CLOSED_EVENT) to surface the PR
  * that actually closed the issue — this is the primary source for prState/merged.
+ * It queries `last: 1`, not `first: 1`: an issue closed once (e.g. manually,
+ * `closer: null`), reopened, then closed again by a real merged PR has two
+ * ClosedEvents, and only the last one reflects reality (#524 regression).
  * The branch-based _prs query is kept as a fallback for in-flight tasks whose
  * PR is on the conventionally-named branch but the issue is still open.
  *
@@ -205,7 +208,7 @@ function buildBatchQuery(iteration: string, tasks: Array<TaskRef & { issue: numb
       closedAt
       assignees(first: 1) { totalCount }
       labels(first: 50) { nodes { name } }
-      timelineItems(first: 1, itemTypes: [CLOSED_EVENT]) {
+      timelineItems(last: 1, itemTypes: [CLOSED_EVENT]) {
         nodes {
           ... on ClosedEvent {
             closer {
@@ -263,7 +266,15 @@ type IssueNode = {
   closedAt: string | null
   assignees: { totalCount: number }
   labels: { nodes: Array<{ name: string }> }
-  /** First CLOSED_EVENT — the PR (or commit) that closed the issue, if any. */
+  /**
+   * Last CLOSED_EVENT (chronologically) — the PR (or commit) that actually
+   * closed the issue, if any. Using `last: 1` (not `first: 1`) matters: an
+   * issue can be closed, reopened, then closed again by a real merged PR —
+   * `first: 1` would return the stale original ClosedEvent (e.g. `closer:
+   * null` from a manual close) instead of the real one. GitHub's GraphQL
+   * connections preserve chronological (ascending) order regardless of
+   * `first`/`last`, so `last: 1`'s single result still lands at `nodes[0]`.
+   */
   timelineItems: {
     nodes: Array<{ closer: PrCloserNode }>
   }

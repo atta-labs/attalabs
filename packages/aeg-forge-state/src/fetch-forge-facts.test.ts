@@ -28,8 +28,13 @@ type TaskFixture = {
   closedAt: string | null
   assigneesCount: number
   labels: string[]
-  /** `'commit'` simulates a Commit-typed closer — the fragment yields `{}`. */
-  closer: PrFixture | 'commit' | null
+  /**
+   * `'commit'` simulates a Commit-typed closer — the fragment yields `{}`.
+   * A single value simulates one ClosedEvent (the common case). An array
+   * simulates multiple ClosedEvents on the timeline (close → reopen → close
+   * again) in chronological order, mirroring what `last: 1` picks from.
+   */
+  closer: PrFixture | 'commit' | null | Array<PrFixture | 'commit' | null>
   branchPr: PrFixture | null
 }
 
@@ -47,7 +52,20 @@ vi.mock('@octokit/graphql', () => ({
           assignees: { totalCount: fx.assigneesCount },
           labels: { nodes: fx.labels.map((name) => ({ name })) },
           timelineItems: {
-            nodes: [{ closer: fx.closer === 'commit' ? {} : fx.closer }]
+            // Mirrors what the real `timelineItems(last: 1, ...)` query
+            // returns: only the LAST ClosedEvent in chronological order,
+            // still landing at `nodes[0]`. When `fx.closer` is an array
+            // (multiple ClosedEvents on the timeline), only its last entry
+            // survives here — the earlier ones are what `first: 1` used to
+            // wrongly return (the #524 regression).
+            nodes: [
+              {
+                closer: (() => {
+                  const last = Array.isArray(fx.closer) ? fx.closer[fx.closer.length - 1] : fx.closer
+                  return last === 'commit' ? {} : last
+                })()
+              }
+            ]
           }
         }
         repository[`${alias}_ref`] = { name: `refs/heads/task/iter/${alias}` }
@@ -123,5 +141,48 @@ describe('fetchForgeFacts — squash-merge closer fact loss', () => {
     const facts = snapshot.facts.get('1')
     expect(facts?.prState).toBe('merged')
     expect(facts?.mergedAt).toBe('2026-06-30T09:00:00Z')
+  })
+})
+
+describe('fetchForgeFacts — stale ClosedEvent after reopen (#524)', () => {
+  it('resolves prState from the real closing PR, not a stale earlier ClosedEvent with a null closer', async () => {
+    // Reproduces Issue #524 exactly: closed once manually (closer: null),
+    // reopened, then closed again by a real merged PR. `first: 1` on
+    // timelineItems used to return the stale first event (closer: null),
+    // resolving prState to 'none' even though a PR really merged and closed
+    // it. `last: 1` must return the second (real) event instead.
+    fixtures.t_1 = {
+      issueState: 'CLOSED',
+      stateReason: 'COMPLETED',
+      closedAt: '2026-07-11T21:51:30Z',
+      assigneesCount: 1,
+      labels: [],
+      closer: [
+        null,
+        {
+          number: 530,
+          url: 'https://github.com/owner/repo/pull/530',
+          state: 'MERGED',
+          reviewDecision: 'APPROVED',
+          mergedAt: '2026-07-11T21:51:30Z'
+        }
+      ],
+      branchPr: null
+    }
+
+    const snapshot = await fetchForgeFacts({
+      owner: 'owner',
+      repo: 'repo',
+      iteration: 'iter',
+      tasks: [{ id: '1', issue: 524 }],
+      token: 'test-token'
+    })
+
+    const facts = snapshot.facts.get('1')
+    expect(facts?.prState).toBe('merged')
+    expect(facts?.mergedAt).toBe('2026-07-11T21:51:30Z')
+
+    const prRef = snapshot.prRefs.get('1')
+    expect(prRef?.number).toBe(530)
   })
 })
