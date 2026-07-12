@@ -58,6 +58,8 @@ Wording refinements are Principal-owned; do not improvise these fields.
 
 `init` is non-destructive by contract (full diff → confirm → install; `--dry-run`); `demo break` is the productized belief moment (refusal → self-correction → pass); `eject` restores stock in one command; `doctor` is treated as a product (diagnoses everything, mutates nothing).
 
+- **Studio cannot lie by omission (D-087).** When live forge enumeration fails (rate limit, network, `gh`/token missing, or `resolveRepo()` unresolvable), Vinaya Studio's iteration lists render an explicit "live forge state unavailable" warning banner — never a truth-shaped empty "No active iterations." state. The flag (`IterationLists.forgeAvailable`, `iterationsForProject().forgeAvailable` in `apps/vinaya/web/src/lib/aeg-fs/read-root.ts`) is derived per-request from that request's failures only (Studio stores nothing); the legacy `completed/*.md` supplement is not a failure and never trips the banner.
+
 ## CMS / theming (this task's implementation note)
 
 Vinaya has no Sanity project of its own yet. `apps/vinaya/web`'s layout borrows Atta's config/branding (`createProductClient('atta')`), the same precedent `apps/aeg/web/studio` uses for the same reason — a genuinely new product's visual identity isn't decided yet, and building one is out of scope for a two-page bootstrap. A dedicated Sanity project, theme, and branding are a later task once Vinaya's own visual identity is designed.
