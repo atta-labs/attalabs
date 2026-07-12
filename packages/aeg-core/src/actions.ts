@@ -102,3 +102,22 @@ export const ACTIONS: Action[] = [
     performedBy: ['iteration-archivist']
   }
 ]
+
+// A stable keyword per into-github action that must appear (case-insensitive)
+// in some real Ring-0 gate row's action text — the "feeds G3" tripwire from
+// Issue #505. If enforcement.md ever drops the gate row backing a crossing,
+// the corresponding assertion fails. grant-a-waiver's keyword is
+// `pull request`: granting a waiver is an act on a pull request (labeling it),
+// honored at the Ring-0 PR-creation/editing gate and refused-from-agents at
+// the raw-API gate — both reference pull requests. See PR body.
+//
+// Consumed by both `actions.test.ts` (the crossing tripwire) and
+// `diagram-model.ts` (the `guards` gate→action edges), so the one keyword map
+// can never drift between them (D-119, same no-drift principle as ACTIONS).
+export const CROSSING_KEYWORDS: Record<string, string> = {
+  'publish-the-branch': 'git push',
+  'create-a-task-issue': 'task issue',
+  'open-a-pull-request': 'pull request',
+  'revise-a-pull-request': 'pull request',
+  'grant-a-waiver': 'pull request'
+}
