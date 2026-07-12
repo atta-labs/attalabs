@@ -1,22 +1,34 @@
-import { Flex } from '@atta/ui/shared'
+import { TopBar } from '@atta/ui/topbar'
+import { Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { STUDIO_NAV } from './_lib/nav-groups'
 import { StudioShell } from './_components/StudioShell'
-import { StudioSidebar } from './_components/StudioSidebar'
 
 export const metadata: Metadata = {
   title: 'Vinaya Studio',
   description: 'Local governance studio for Vinaya artifacts.'
 }
 
+const links = [
+  { label: 'Projects', href: '/studio/projects' },
+  { label: 'Iterations', href: '/studio/iterations' },
+  { label: 'Backlog', href: '/studio/backlog' },
+  { label: 'Docs', href: '/studio/docs' }
+]
+
 export default function StudioLayout({ children }: { children: ReactNode }) {
   return (
-    <StudioShell>
-      <Flex className='h-full w-full overflow-hidden'>
-        <StudioSidebar groups={STUDIO_NAV} />
-        <main className='flex-1 overflow-y-auto bg-background'>{children}</main>
-      </Flex>
-    </StudioShell>
+    <>
+      <TopBar
+        logo={
+          <Text as='span' className='font-serif text-lg tracking-tight'>
+            Vinaya Studio
+          </Text>
+        }
+        links={links}
+        withAuth={false}
+      />
+      <StudioShell>{children}</StudioShell>
+    </>
   )
 }
