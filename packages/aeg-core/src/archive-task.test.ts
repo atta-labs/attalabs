@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { buildProvenanceBlock, extractIssue, hasProvenance, taskRefFromBranch } from './archive-task'
+import {
+  buildProvenanceBlock,
+  extractIssue,
+  hasProvenance,
+  isEligibleForProvenance,
+  taskRefFromBranch
+} from './archive-task'
 import type { MergedPrFacts } from './archive-task'
 
 function facts(overrides: Partial<MergedPrFacts> = {}): MergedPrFacts {
@@ -79,6 +85,30 @@ describe('extractIssue', () => {
       extraIssues: [],
       outsideHeader: false
     })
+  })
+})
+
+// #524/#530 regression, the actual shipped decision (not just its inputs):
+// a task-branch `ref` is sufficient on its own; a non-task branch needs the
+// closed Issue's own labels to carry `iteration:*`.
+describe('isEligibleForProvenance', () => {
+  const ref = { iteration: 'aeg-governance-hardening', taskId: '5d' }
+
+  it('is eligible when ref is a real task branch, regardless of labels', () => {
+    expect(isEligibleForProvenance(ref, [])).toBe(true)
+    expect(isEligibleForProvenance(ref, ['unrelated'])).toBe(true)
+  })
+
+  it('is eligible when ref is null but the Issue carries an iteration:* label (the #524/#530 shape)', () => {
+    expect(isEligibleForProvenance(null, ['iteration:herald-hardening-v1'])).toBe(true)
+  })
+
+  it('is NOT eligible when ref is null and no label starts with iteration:', () => {
+    expect(isEligibleForProvenance(null, ['bug', 'needs:principal-input'])).toBe(false)
+  })
+
+  it('is NOT eligible when ref is null and there are no labels at all', () => {
+    expect(isEligibleForProvenance(null, [])).toBe(false)
   })
 })
 

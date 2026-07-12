@@ -51,6 +51,21 @@ export function taskRefFromBranch(branch: string): { iteration: string; taskId: 
   return { iteration: m[1] as string, taskId: m[2] as string }
 }
 
+/**
+ * The eligibility decision itself, pulled out as a pure function so it's
+ * testable without mocking `gh` — the CLI shim (`bin/archive-task.ts`) does
+ * only the I/O (resolve `ref`, fetch the closed Issue's labels) and hands
+ * both facts here. True when EITHER signal holds: a real task-branch `ref`,
+ * or the closed Issue's own labels carry an `iteration:*` tag.
+ */
+export function isEligibleForProvenance(
+  ref: { iteration: string; taskId: string } | null,
+  issueLabels: string[]
+): boolean {
+  if (ref !== null) return true
+  return issueLabels.some((name) => name.startsWith('iteration:'))
+}
+
 const PROVENANCE_HEADING = '### AEG provenance'
 
 /** true when any comment already carries the provenance heading (idempotency, scoped to this PR). */

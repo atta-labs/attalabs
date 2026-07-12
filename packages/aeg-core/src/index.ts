@@ -68,7 +68,13 @@ export {
   scopeT2ToPlanPr
 } from './coherence-checks'
 export type { CheckFailure, CheckResult, ForgeIssue, IterationFile, TaskEntry } from './coherence-checks'
-export { buildProvenanceBlock, extractIssue, hasProvenance, taskRefFromBranch } from './archive-task'
+export {
+  buildProvenanceBlock,
+  extractIssue,
+  hasProvenance,
+  isEligibleForProvenance,
+  taskRefFromBranch
+} from './archive-task'
 export type { MergedPrFacts } from './archive-task'
 export { extractCodeReviewVerdict, extractSecurityReviewVerdict } from './verdict-extraction'
 export type { VerdictExtraction } from './verdict-extraction'
