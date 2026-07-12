@@ -1,19 +1,10 @@
-import { existsSync, promises as fs } from 'node:fs'
-import path from 'node:path'
+import { promises as fs } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { findHeadingLine, findTable, rowToRecord } from './markdown-table'
 
-/** Same repo-root marker `./repo.ts` uses, duplicated here since that module is `server-only`. */
-function findAegRootForTest(): string {
-  let dir = process.cwd()
-  for (let i = 0; i < 8; i++) {
-    if (existsSync(path.join(dir, 'packages/governance/projects.md'))) return path.join(dir, 'aeg-root')
-    const parent = path.dirname(dir)
-    if (parent === dir) break
-    dir = parent
-  }
-  throw new Error('Could not locate repo root (packages/governance/projects.md) above process.cwd()')
-}
+const REPO_ROOT = join(import.meta.dirname, '../../..')
+const ENFORCEMENT_PATH = join(REPO_ROOT, 'aeg-root/enforcement.md')
 
 /**
  * Round-trip proof that `enforcement.md`'s Ring 0/1/2 gate tables still
@@ -24,8 +15,7 @@ function findAegRootForTest(): string {
  */
 describe('enforcement.md Ring 0/1/2 tables (implementation + lock columns)', () => {
   async function loadRingTables() {
-    const enforcementPath = path.join(findAegRootForTest(), 'enforcement.md')
-    const raw = await fs.readFile(enforcementPath, 'utf8')
+    const raw = await fs.readFile(ENFORCEMENT_PATH, 'utf8')
     const lines = raw.split('\n')
 
     const ring0HeadingLine = findHeadingLine(lines, /^##\s*Ring 0/)
