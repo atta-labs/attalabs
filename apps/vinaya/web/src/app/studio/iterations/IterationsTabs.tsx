@@ -2,6 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui/components'
 import type { IterationSummary } from '@/lib/aeg-fs'
+import { ForgeUnavailableBanner } from '@/app/studio/_components/ForgeUnavailableBanner'
 import { IterationCard } from '@/app/studio/_components/IterationCard'
 
 function resolveDetailHref(it: IterationSummary): string | null {
@@ -10,9 +11,11 @@ function resolveDetailHref(it: IterationSummary): string | null {
   return `/studio/projects/${firstProject}/iterations/${it.fileSlug}`
 }
 
-function IterationsGrid({ iterations, emptyHint }: { iterations: IterationSummary[]; emptyHint: string }) {
+function IterationsGrid({ iterations, emptyHint }: { iterations: IterationSummary[]; emptyHint: string | null }) {
   if (iterations.length === 0) {
-    return <p className='font-sans text-sm text-muted-foreground/70'>{emptyHint}</p>
+    // A null hint means the empty state is explained elsewhere (the forge
+    // banner) — render nothing rather than a truth-shaped "none" message.
+    return emptyHint ? <p className='font-sans text-sm text-muted-foreground/70'>{emptyHint}</p> : null
   }
   return (
     <div className='grid gap-3 sm:grid-cols-2'>
@@ -23,19 +26,30 @@ function IterationsGrid({ iterations, emptyHint }: { iterations: IterationSummar
   )
 }
 
-export function IterationsTabs({ active, archived }: { active: IterationSummary[]; archived: IterationSummary[] }) {
+export function IterationsTabs({
+  active,
+  archived,
+  forgeAvailable
+}: {
+  active: IterationSummary[]
+  archived: IterationSummary[]
+  forgeAvailable: boolean
+}) {
   return (
-    <Tabs defaultValue='active'>
-      <TabsList>
-        <TabsTrigger value='active'>Active ({active.length})</TabsTrigger>
-        <TabsTrigger value='archived'>Archived ({archived.length})</TabsTrigger>
-      </TabsList>
-      <TabsContent value='active'>
-        <IterationsGrid iterations={active} emptyHint='No active iterations.' />
-      </TabsContent>
-      <TabsContent value='archived'>
-        <IterationsGrid iterations={archived} emptyHint='No archived iterations yet.' />
-      </TabsContent>
-    </Tabs>
+    <div className='space-y-4'>
+      {!forgeAvailable && <ForgeUnavailableBanner />}
+      <Tabs defaultValue='active'>
+        <TabsList>
+          <TabsTrigger value='active'>Active ({active.length})</TabsTrigger>
+          <TabsTrigger value='archived'>Archived ({archived.length})</TabsTrigger>
+        </TabsList>
+        <TabsContent value='active'>
+          <IterationsGrid iterations={active} emptyHint={forgeAvailable ? 'No active iterations.' : null} />
+        </TabsContent>
+        <TabsContent value='archived'>
+          <IterationsGrid iterations={archived} emptyHint='No archived iterations yet.' />
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }
