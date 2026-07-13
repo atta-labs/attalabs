@@ -571,6 +571,50 @@ export function checkL4(
 }
 
 /**
+ * L5: Open Milestone whose every task Issue is closed → the iteration is
+ * effectively complete but its Milestone was never closed / archived
+ * (Issue #481, drift class #2; 1 live incident this session —
+ * `aeg-forge-state-v1`'s Milestone left open after full archive).
+ *
+ * This is the FORGE-NATIVE analogue of file-based L1: L1 reads `IterationFile[]`
+ * (a `!f.archived` file location), but post-cutover most iterations have no
+ * topology file at all, so their Milestone-object drift is invisible to L1.
+ * L5 keys off `listActiveIterationSlugs` (open Milestones — the D-110
+ * authority) instead, so it sees exactly the iterations L1 no longer can.
+ *
+ * **Advisory (info-only)**, same framing as L1/L2/L4 (`state-machine.md` §12):
+ * a real completion may simply not be archived yet, so this never fails CI —
+ * only A1/A2/A3/N1/M1/M3 block. Slugs whose facts are unavailable (forge
+ * outage) are skipped, mirroring L1's `withFacts.length === 0` guard — an
+ * outage is not a finding.
+ */
+export function checkL5(activeIterationSlugs: string[], entriesBySlug: Map<string, TaskEntry[]>): CheckResult {
+  const failures: CheckFailure[] = []
+  for (const slug of activeIterationSlugs) {
+    const entries = entriesBySlug.get(slug) ?? []
+    const withFacts = entries.filter((e) => e.facts !== undefined)
+    if (withFacts.length === 0) continue // forge unavailable or no tasks with issues
+    const allClosed = withFacts.every((e) => e.facts?.issueState === 'closed')
+    if (allClosed) {
+      failures.push({
+        iteration: slug,
+        reason:
+          'Milestone still open but every task Issue is closed — close the Milestone / archive the iteration (advisory)'
+      })
+    }
+  }
+  return {
+    check: 'L5',
+    status: 'info',
+    failures,
+    note:
+      failures.length > 0
+        ? `${failures.length} open Milestone(s) whose task Issues are all closed — close/archive (advisory)`
+        : undefined
+  }
+}
+
+/**
  * Closes #N gate — Layer 1 of D-069's forge-lifecycle enforcement.
  *
  * A task PR (branch `task/<iter>/<n>`) must carry `Closes #<its-issue>` in
