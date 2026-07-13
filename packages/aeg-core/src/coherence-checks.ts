@@ -8,7 +8,7 @@
 
 import { anchoredRegion } from './anchored-region'
 import { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
-import type { ForgeIssue } from '@atta/aeg-types'
+import type { ForgeIssue, TaskIssueRef } from '@atta/aeg-types'
 import type { ForgeFacts, Iteration, Task } from './types'
 
 // ---------- grandfather cutoff -----------------------------------------------
@@ -614,22 +614,71 @@ export function checkL5(activeIterationSlugs: string[], entriesBySlug: Map<strin
   }
 }
 
+/** Extracts the set of Issue numbers a PR body's `Closes #N` (and Fixes/
+ * Resolves synonyms) references. Shared by `checkClosesN`'s forward and
+ * reverse directions, and by the CI wiring script that must resolve each
+ * referenced Issue's task identity *before* calling `checkClosesN` — one
+ * grammar, not a second copy of the pattern (D-078 discipline). Honors the
+ * AEG:CLOSES anchor pair (`anchored-region.ts`, task 30) when present: only
+ * references inside the pair count, so a Closes-shaped line in a pasted
+ * reference brief elsewhere in the PR body isn't picked up. */
+export function extractClosesReferences(prBody: string): Set<number> {
+  const closesPattern = /(?:closes|close|fixes|fix|resolves|resolve)\s*:?\s*#(\d+)/gi
+  const searchIn = anchoredRegion(prBody, 'CLOSES') ?? prBody
+  const referenced = new Set<number>()
+  for (const hit of searchIn.matchAll(closesPattern)) {
+    referenced.add(Number(hit[1]))
+  }
+  return referenced
+}
+
 /**
  * Closes #N gate — Layer 1 of D-069's forge-lifecycle enforcement.
  *
- * A task PR (branch `task/<iter>/<n>`) must carry `Closes #<its-issue>` in
- * the body. Non-task branches are silently bypassed (returns ok:true).
+ * Forward direction: a task PR (branch `task/<iter>/<n>`) must carry
+ * `Closes #<its-issue>` in the body. Non-task branches are silently
+ * bypassed for this direction (returns ok:true).
+ *
+ * Reverse direction (added: a branch NOT named `task/<iter>/<n>` that
+ * nonetheless closes a real AEG task Issue must be named after that task —
+ * the gap that let `feat/vinaya-landing-v3` implement Issue #509 with zero
+ * forge-visible status. Runs for ANY branch, gated on `taskIssueRefs` being
+ * supplied: each `Closes #N` the body references is looked up in the map;
+ * an entry resolving to a task's `{iterSlug, taskId}` requires
+ * `branch === "task/<iterSlug>/<taskId>"`. A missing map entry (issue not
+ * resolved, e.g. no forge token) or an ordinary non-task Issue (`null` in
+ * the map) skips the check for that reference — this direction only ever
+ * *adds* a failure, never silently passes something the forward direction
+ * would have caught.
  *
  * Pure function; reads from injected parameters. The CLI entry-point wires
- * in BRANCH + PR_BODY env vars.
+ * in BRANCH + PR_BODY env vars (forward) and a batched forge lookup
+ * (reverse, see `@atta/aeg-forge-state`'s `fetchTaskIssueRefs`).
  */
 export function checkClosesN(
   branch: string,
   prBody: string,
-  iterationFiles: IterationFile[]
+  iterationFiles: IterationFile[],
+  taskIssueRefs?: Map<number, TaskIssueRef | null>
 ): { ok: boolean; message?: string; expectedIssue?: number } {
+  const referenced = extractClosesReferences(prBody)
+
+  if (taskIssueRefs) {
+    for (const n of referenced) {
+      const ref = taskIssueRefs.get(n)
+      if (!ref) continue
+      const expectedBranch = `task/${ref.iterSlug}/${ref.taskId}`
+      if (branch !== expectedBranch) {
+        return {
+          ok: false,
+          message: `closes-n-reverse: branch "${branch}" closes #${n} (task ${ref.taskId} of iteration "${ref.iterSlug}") but is not named "${expectedBranch}" — rename the branch and re-push, or if this work is intentionally outside AEG's dispatch flow, remove the Closes reference.`
+        }
+      }
+    }
+  }
+
   const m = branch.match(/^task\/([^/]+)\/([^/]+)$/)
-  if (!m) return { ok: true } // non-task branch — bypass
+  if (!m) return { ok: true } // non-task branch — forward direction bypass
 
   const iterSlug = m[1] as string
   const taskId = m[2] as string
@@ -658,16 +707,6 @@ export function checkClosesN(
   }
 
   const expectedIssue = task.issue
-  const closesPattern = /(?:closes|close|fixes|fix|resolves|resolve)\s*:?\s*#(\d+)/gi
-  // When the body carries an AEG:CLOSES anchor pair (anchored-region.ts,
-  // task 30), only references inside the pair count — a Closes-shaped line in
-  // a pasted reference brief is ignored. No pair → whole body, as before.
-  const searchIn = anchoredRegion(prBody, 'CLOSES') ?? prBody
-  const referenced = new Set<number>()
-  for (const hit of searchIn.matchAll(closesPattern)) {
-    referenced.add(Number(hit[1]))
-  }
-
   if (!referenced.has(expectedIssue)) {
     return {
       ok: false,

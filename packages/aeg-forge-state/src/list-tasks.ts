@@ -1,10 +1,10 @@
-import type { Task } from '@atta/aeg-types'
+import type { Task, TaskIssueRef } from '@atta/aeg-types'
 import { type GhIssue, ghIssueListByLabel } from './gh'
 import { parseRationaleDeps } from './parse-rationale-deps'
 
 /** Issue title convention: `[<iteration-slug>] <task-id> — <title>`, the same
  * shape every AEG Issue is opened with (`open-issue.ts`, brief-authoring). */
-const TITLE_PATTERN = /^\[([^\]]+)]\s*(\S+)\s*—\s*(.+)$/
+export const TITLE_PATTERN = /^\[([^\]]+)]\s*(\S+)\s*—\s*(.+)$/
 
 function parseProjectLabels(labels: Array<{ name: string }>): string[] {
   return labels.filter((l) => l.name.startsWith('project:')).map((l) => l.name.slice('project:'.length))
@@ -54,4 +54,29 @@ export function listTasksForSlug(owner: string, repo: string, slug: string): Tas
     if (task) tasks.push(task)
   }
   return tasks.sort((a, b) => compareTaskIds(a.id, b.id))
+}
+
+/**
+ * Resolves an arbitrary Issue's title + labels to its AEG task identity, if
+ * it has one — the REVERSE of `taskFromIssue`/`listTasksForSlug` (those start
+ * from a known iteration slug and list its tasks; this starts from an
+ * unknown Issue and asks "is this a task Issue, and if so which task?").
+ *
+ * Same authoritative-signal discipline as `listTasksForSlug`'s doc comment:
+ * the `iteration:<slug>` label — not the title's bracketed text — is the
+ * slug source. The title only needs to match the `[<slug>] <id> — ...`
+ * shape closely enough to yield a task id; a bracket/label slug mismatch
+ * (title typo) doesn't invalidate the label's membership signal.
+ *
+ * Used by `checkClosesN`'s reverse-direction check (D-069 Layer 1 reverse,
+ * `@atta/aeg-core`'s `coherence-checks.ts`).
+ */
+export function resolveTaskIssueRef(title: string, labels: string[]): TaskIssueRef | null {
+  const m = title.match(TITLE_PATTERN)
+  if (!m) return null
+  const taskId = (m[2] ?? '').trim()
+  if (!taskId) return null
+  const iterSlug = labels.find((l) => l.startsWith('iteration:'))?.slice('iteration:'.length)
+  if (!iterSlug) return null
+  return { iterSlug, taskId }
 }

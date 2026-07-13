@@ -33,6 +33,7 @@ import { join } from 'node:path'
 import {
   deriveIterationFromForge,
   fetchProvenance,
+  fetchTaskIssueRefs,
   findMilestoneForSlug,
   listActiveIterationSlugs,
   listArchivedIterationSlugs,
@@ -59,6 +60,7 @@ import {
   checkT2,
   checkT3,
   DOC_OWNERS_PATH,
+  extractClosesReferences,
   fetchForgeFacts,
   fetchOpenIssuesByLabel,
   parseIteration,
@@ -648,7 +650,17 @@ if (import.meta.main) {
     // pay the full repo-wide sweep's latency for data this gate never uses.
     const branchIterSlug = branch.match(/^task\/([^/]+)\//)?.[1]
     const files = await loadIterationFiles(null, branchIterSlug)
-    const result = checkClosesN(branch, prBody, files)
+
+    // Reverse-direction data: resolve every `Closes #N` the body references
+    // to its AEG task identity, one batched forge query (not a per-issue
+    // loop — see `fetchTaskIssueRefs`'s own doc comment). A non-task branch
+    // (no `repo` resolvable, or the forge unreachable) still runs the
+    // forward direction below; the reverse check simply has nothing to flag.
+    const repo = await resolveRepo()
+    const taskIssueRefs = repo
+      ? await fetchTaskIssueRefs(repo.owner, repo.repo, [...extractClosesReferences(prBody)])
+      : undefined
+    const result = checkClosesN(branch, prBody, files, taskIssueRefs)
     if (result.ok) {
       const issueStr = result.expectedIssue ? ` (Closes #${result.expectedIssue} ✓)` : ''
       console.log(`closes-n: branch "${branch}" passes${issueStr}.`)

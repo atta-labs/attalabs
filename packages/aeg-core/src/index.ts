@@ -65,6 +65,7 @@ export {
   checkT2,
   checkT3,
   COHERENCE_ENFORCED_FROM,
+  extractClosesReferences,
   isGrandfathered,
   R1_GRANDFATHERED_ISSUES,
   scopeT2ToPlanPr
@@ -157,6 +158,14 @@ export {
   fetchForgeFacts,
   fetchForgeTasksByLabel,
   fetchOpenIssuesByLabel,
+  fetchTaskIssueRefs,
   mapForgeFacts
 } from '@atta/aeg-forge-state'
-export type { FetchForgeFactsInput, ForgeFactsSnapshot, PrRef, RawTaskFacts, TaskRef } from '@atta/aeg-types'
+export type {
+  FetchForgeFactsInput,
+  ForgeFactsSnapshot,
+  PrRef,
+  RawTaskFacts,
+  TaskIssueRef,
+  TaskRef
+} from '@atta/aeg-types'
