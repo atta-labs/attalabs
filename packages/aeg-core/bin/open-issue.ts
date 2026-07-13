@@ -29,7 +29,12 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { findMilestoneForSlug, type MilestoneFacts } from '@atta/aeg-forge-state'
+import {
+  amendRationaleDeps,
+  findMilestoneForSlug,
+  type MilestoneFacts,
+  parseRationaleDeps
+} from '@atta/aeg-forge-state'
 import { checkForgeTitle } from '../src/brief-validation'
 import { checkIssueRationale, isTaskIssueLabelSet } from '../src/issue-validation'
 
@@ -214,10 +219,212 @@ export function resolveMilestoneToAttach(
   return slug
 }
 
+// ---------- amend-deps subcommand --------------------------------------------
+//
+// `amend-deps` is the ONLY sanctioned way to change a task Issue's dependency
+// edges (Issue #481, drift class #1). It rewrites the structured
+// `Dependency rationale` field AND appends the matching `**Amendment (...)**`
+// paragraph in ONE atomic write (`amendRationaleDeps`), with a runtime
+// round-trip parse gate — closing the five-incident class this session where
+// the field and a later free-form amendment drifted apart because nothing
+// forced them to change together. Modeled on D-097's "the sanctioned path is
+// the only path": there is no code path here that rewrites one representation
+// without the other.
+
+/** Parses one edge-set flag value into ids. The empty markers (`—`/`–`/`-`/``) yield `[]`. */
+export function parseEdgeFlag(value: string): string[] {
+  const t = value.trim()
+  if (t === '' || t === '—' || t === '–' || t === '-') return []
+  return t
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+}
+
+/** Order-sensitive edge-set equality — the round-trip gate's core predicate. */
+export function edgesEqual(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i])
+}
+
+export type AmendDepsFlags = {
+  issue: string | null
+  dependsOn?: string[]
+  conflictsWith?: string[]
+  note: string
+  actor: string
+  dryRun: boolean
+}
+
+/**
+ * Parses the `amend-deps` subcommand's own flags (its body is composed, never
+ * accepted, so `locateBody` is deliberately NOT reused here). A field flag that
+ * is absent leaves `dependsOn`/`conflictsWith` `undefined` (untouched);
+ * present-but-empty yields `[]` (the explicit `—` marker).
+ */
+export function parseAmendArgs(args: string[]): AmendDepsFlags {
+  const flags: AmendDepsFlags = { issue: null, note: '', actor: 'Planner', dryRun: false }
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i] as string
+    const valueFor = (name: string): string => {
+      if (a.startsWith(`${name}=`)) return a.slice(name.length + 1)
+      const v = args[i + 1] ?? ''
+      i++
+      return v
+    }
+    if (a === '--dry-run') flags.dryRun = true
+    else if (a === '--depends-on' || a.startsWith('--depends-on='))
+      flags.dependsOn = parseEdgeFlag(valueFor('--depends-on'))
+    else if (a === '--conflicts-with' || a.startsWith('--conflicts-with='))
+      flags.conflictsWith = parseEdgeFlag(valueFor('--conflicts-with'))
+    else if (a === '--note' || a.startsWith('--note=')) flags.note = valueFor('--note')
+    else if (a === '--actor' || a.startsWith('--actor=')) flags.actor = valueFor('--actor') || 'Planner'
+    else if (!a.startsWith('-') && flags.issue === null) flags.issue = a
+  }
+  return flags
+}
+
+/** Static flag validation. Returns a refusal message, or `null` when the flags are well-formed. */
+export function validateAmendFlags(flags: AmendDepsFlags): string | null {
+  if (flags.issue === null) return 'amend-deps requires the target Issue number as the first argument.'
+  if (flags.dependsOn === undefined && flags.conflictsWith === undefined) {
+    return 'amend-deps requires at least one of `--depends-on` / `--conflicts-with`.'
+  }
+  if (flags.note.trim() === '') return 'amend-deps requires a non-empty `--note` (the why for the amendment).'
+  return null
+}
+
+/** IO seams for {@link runAmendDeps}, injected so the orchestrator is testable without a real `gh`. */
+export type AmendDepsDeps = {
+  fetchLabels: (issue: string) => string[]
+  fetchBody: (issue: string) => string
+  editBody: (issue: string, newBody: string) => void
+  today: () => string
+  log: (msg: string) => void
+  fail: (msg: string) => never
+}
+
+/**
+ * The `amend-deps` orchestrator. Every real invocation is gated on a runtime
+ * round-trip parse (`parseRationaleDeps(newBody)` must deep-equal the requested
+ * sets) — the rewrite is NEVER trusted by construction. This is the exact
+ * "test against real data, not assumptions" trap (Issue #481) enforced on
+ * every invocation forever.
+ */
+export function runAmendDeps(flags: AmendDepsFlags, deps: AmendDepsDeps): void {
+  const err = validateAmendFlags(flags)
+  if (err) deps.fail(err)
+  const issue = flags.issue as string
+
+  const labels = deps.fetchLabels(issue)
+  if (!isTaskIssueLabelSet(labels)) {
+    deps.fail(`amend-deps targets task Issues only — Issue ${issue} carries no \`iteration:*\` label.`)
+  }
+
+  const body = deps.fetchBody(issue)
+  const before = parseRationaleDeps(body)
+
+  const input = {
+    note: flags.note,
+    date: deps.today(),
+    actor: flags.actor,
+    ...(flags.dependsOn !== undefined ? { dependsOn: flags.dependsOn } : {}),
+    ...(flags.conflictsWith !== undefined ? { conflictsWith: flags.conflictsWith } : {})
+  }
+
+  let newBody: string
+  try {
+    newBody = amendRationaleDeps(body, input)
+  } catch (e) {
+    deps.fail(`amend-deps could not rewrite Issue ${issue}: ${(e as Error).message}`)
+  }
+
+  // Round-trip gate (hard) — the writer and parser must agree on the grammar.
+  const after = parseRationaleDeps(newBody)
+  if (flags.dependsOn !== undefined && !edgesEqual(after.dependsOn, flags.dependsOn)) {
+    deps.fail(
+      `amend-deps round-trip FAILED for Depends-on: requested [${flags.dependsOn.join(', ')}] but parseRationaleDeps read back [${after.dependsOn.join(', ')}]. Nothing written.`
+    )
+  }
+  if (flags.conflictsWith !== undefined && !edgesEqual(after.conflictsWith, flags.conflictsWith)) {
+    deps.fail(
+      `amend-deps round-trip FAILED for Conflicts-with: requested [${flags.conflictsWith.join(', ')}] but parseRationaleDeps read back [${after.conflictsWith.join(', ')}]. Nothing written.`
+    )
+  }
+
+  // Rationale gate — the amended body must still carry the full rationale.
+  const rationale = checkIssueRationale(newBody)
+  if (rationale.status === 'fail') {
+    deps.fail(
+      `amend-deps: the amended body no longer passes the rationale gate (${rationale.errors.join(' | ')}). Nothing written.`
+    )
+  }
+
+  if (flags.dryRun) {
+    deps.log(newBody)
+    deps.log('round-trip PASS')
+    return
+  }
+
+  deps.editBody(issue, newBody)
+  if (flags.dependsOn !== undefined) {
+    deps.log(`[open-issue] Depends-on: [${before.dependsOn.join(', ')}] → [${after.dependsOn.join(', ')}]`)
+  }
+  if (flags.conflictsWith !== undefined) {
+    deps.log(`[open-issue] Conflicts-with: [${before.conflictsWith.join(', ')}] → [${after.conflictsWith.join(', ')}]`)
+  }
+}
+
+/** Fetches an Issue's current body from the forge — hard refusal on fetch/parse failure (#417 pattern). */
+function fetchForgeBody(issueRef: string): string {
+  let out: string
+  try {
+    out = execFileSync('gh', ['issue', 'view', issueRef, '--json', 'body'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+  } catch {
+    fail(
+      `could not fetch Issue ${issueRef}'s body from the forge (\`gh issue view\`). Check gh auth/network and retry; refusing to amend blind.`
+    )
+  }
+  try {
+    return (JSON.parse(out) as { body: string }).body
+  } catch {
+    fail(`could not parse \`gh issue view ${issueRef} --json body\` output — refusing to amend blind.`)
+  }
+}
+
+/** Ships an amended body through the SAME same-bytes edit machinery `edit` uses (`resolveShippableArgs`). */
+function ghEditBody(issueRef: string, newBody: string): void {
+  const bodyResult: BodyResult = { body: newBody, source: { kind: 'file', argIndex: 1, inlineForm: false } }
+  const { finalArgs, cleanup } = resolveShippableArgs(['--body-file', '__amend_placeholder__'], bodyResult)
+  try {
+    const out = execFileSync('gh', ['issue', 'edit', issueRef, ...finalArgs], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'inherit']
+    })
+    console.log(out.trim())
+  } finally {
+    cleanup()
+  }
+}
+
 export function main(): void {
   const argv = process.argv.slice(2)
   const validateOnly = argv.includes('--validate-only')
   const args = argv.filter((a) => a !== '--validate-only')
+
+  if (args[0] === 'amend-deps') {
+    runAmendDeps(parseAmendArgs(args.slice(1)), {
+      fetchLabels: fetchForgeLabels,
+      fetchBody: fetchForgeBody,
+      editBody: ghEditBody,
+      today: () => new Date().toISOString().slice(0, 10),
+      log: (m) => console.log(m),
+      fail
+    })
+    return
+  }
 
   const isEdit = args[0] === 'edit'
   const ghArgs = isEdit ? args.slice(1) : args

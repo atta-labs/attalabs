@@ -2,7 +2,18 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSyn
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { locateBody, resolveMilestoneToAttach, resolveShippableArgs } from './open-issue'
+import {
+  type AmendDepsDeps,
+  type AmendDepsFlags,
+  edgesEqual,
+  locateBody,
+  parseAmendArgs,
+  parseEdgeFlag,
+  resolveMilestoneToAttach,
+  resolveShippableArgs,
+  runAmendDeps,
+  validateAmendFlags
+} from './open-issue'
 
 describe('locateBody', () => {
   it('reads --body-file <path> and records the file source with its arg index', () => {
@@ -230,5 +241,142 @@ describe('resolveMilestoneToAttach (aeg-review-gate-v1 task 1 follow-up)', () =>
       activeLookup
     )
     expect(result).toBe('aeg-review-gate-v1')
+  })
+})
+
+// ---------- amend-deps subcommand (Issue #481, drift class #1) ----------------
+
+const BODY_429 = readFileSync(join(__dirname, '../../aeg-forge-state/src/fixtures/issue-429-body.md'), 'utf8')
+
+describe('parseEdgeFlag', () => {
+  it('splits a comma-joined value into trimmed ids', () => {
+    expect(parseEdgeFlag('1, 2, aeg-x #3')).toEqual(['1', '2', 'aeg-x #3'])
+  })
+  it('treats every empty marker as no edges', () => {
+    for (const marker of ['—', '–', '-', '', '  ']) expect(parseEdgeFlag(marker)).toEqual([])
+  })
+})
+
+describe('edgesEqual', () => {
+  it('is order-sensitive and length-sensitive', () => {
+    expect(edgesEqual(['1', '2'], ['1', '2'])).toBe(true)
+    expect(edgesEqual(['1', '2'], ['2', '1'])).toBe(false)
+    expect(edgesEqual(['1'], ['1', '2'])).toBe(false)
+    expect(edgesEqual([], [])).toBe(true)
+  })
+})
+
+describe('parseAmendArgs', () => {
+  it('parses the issue, both edge flags, note, actor, and dry-run', () => {
+    const flags = parseAmendArgs([
+      '481',
+      '--depends-on',
+      '1, 2',
+      '--conflicts-with',
+      '—',
+      '--note',
+      'why',
+      '--actor',
+      'Alice',
+      '--dry-run'
+    ])
+    expect(flags).toEqual({
+      issue: '481',
+      dependsOn: ['1', '2'],
+      conflictsWith: [],
+      note: 'why',
+      actor: 'Alice',
+      dryRun: true
+    })
+  })
+  it('leaves an unpassed edge field undefined (untouched)', () => {
+    const flags = parseAmendArgs(['481', '--conflicts-with', '3', '--note', 'x'])
+    expect(flags.dependsOn).toBeUndefined()
+    expect(flags.conflictsWith).toEqual(['3'])
+  })
+  it('supports the --flag=value form', () => {
+    const flags = parseAmendArgs(['481', '--depends-on=4,5', '--note=y'])
+    expect(flags.dependsOn).toEqual(['4', '5'])
+    expect(flags.note).toBe('y')
+  })
+})
+
+describe('validateAmendFlags', () => {
+  const base: AmendDepsFlags = { issue: '481', note: 'why', actor: 'Planner', dryRun: false }
+  it('refuses when neither edge flag is present', () => {
+    expect(validateAmendFlags(base)).toMatch(/at least one of/)
+  })
+  it('refuses an empty note', () => {
+    expect(validateAmendFlags({ ...base, dependsOn: ['1'], note: '   ' })).toMatch(/non-empty `--note`/)
+  })
+  it('refuses a missing issue', () => {
+    expect(validateAmendFlags({ ...base, issue: null, dependsOn: ['1'] })).toMatch(/target Issue number/)
+  })
+  it('accepts a well-formed flag set', () => {
+    expect(validateAmendFlags({ ...base, dependsOn: ['1'] })).toBeNull()
+  })
+})
+
+function makeDeps(overrides: Partial<AmendDepsDeps> = {}): {
+  deps: AmendDepsDeps
+  edited: Array<{ issue: string; body: string }>
+  logs: string[]
+} {
+  const edited: Array<{ issue: string; body: string }> = []
+  const logs: string[] = []
+  const deps: AmendDepsDeps = {
+    fetchLabels: () => ['iteration:aeg-forge-state-v1', 'tier:1'],
+    fetchBody: () => BODY_429,
+    editBody: (issue, body) => edited.push({ issue, body }),
+    today: () => '2026-07-13',
+    log: (m) => logs.push(m),
+    fail: (m) => {
+      throw new Error(m)
+    },
+    ...overrides
+  }
+  return { deps, edited, logs }
+}
+
+describe('runAmendDeps', () => {
+  it('refuses when the target is not a task Issue (no iteration:* label)', () => {
+    const { deps, edited } = makeDeps({ fetchLabels: () => ['tier:1'] })
+    expect(() => runAmendDeps(parseAmendArgs(['429', '--depends-on', '2', '--note', 'x']), deps)).toThrow(
+      /targets task Issues only/
+    )
+    expect(edited).toHaveLength(0)
+  })
+
+  it('refuses a missing --note (flag validation) with no forge write', () => {
+    const { deps, edited } = makeDeps()
+    expect(() => runAmendDeps(parseAmendArgs(['429', '--depends-on', '2']), deps)).toThrow(/non-empty `--note`/)
+    expect(edited).toHaveLength(0)
+  })
+
+  it('refuses on a round-trip mismatch and writes nothing (the gate, on real data)', () => {
+    // `aeg-governance-hardening #368, 5` — the bare `5` inherits the qualifier
+    // on parse (→ `aeg-governance-hardening 5`), so the read-back != requested.
+    const { deps, edited } = makeDeps()
+    expect(() =>
+      runAmendDeps(parseAmendArgs(['429', '--depends-on', 'aeg-governance-hardening #368, 5', '--note', 'x']), deps)
+    ).toThrow(/round-trip FAILED for Depends-on/)
+    expect(edited).toHaveLength(0)
+  })
+
+  it('dry-run prints the body + round-trip PASS and performs NO forge write', () => {
+    const { deps, edited, logs } = makeDeps()
+    runAmendDeps(parseAmendArgs(['429', '--depends-on', '2, 3', '--note', 'Task 3 dropped.', '--dry-run']), deps)
+    expect(edited).toHaveLength(0)
+    expect(logs).toContain('round-trip PASS')
+    expect(logs.some((l) => l.includes('`Depends-on: 2, 3`'))).toBe(true)
+  })
+
+  it('a real run ships the amended body once and logs the edge change', () => {
+    const { deps, edited, logs } = makeDeps()
+    runAmendDeps(parseAmendArgs(['429', '--depends-on', '2, 3', '--note', 'Task 3 dropped.']), deps)
+    expect(edited).toHaveLength(1)
+    expect(edited[0]?.issue).toBe('429')
+    expect(edited[0]?.body).toContain('**Amendment (2026-07-13, Planner)')
+    expect(logs.some((l) => l.includes('Depends-on: [1, 3a, 3b] → [2, 3]'))).toBe(true)
   })
 })
