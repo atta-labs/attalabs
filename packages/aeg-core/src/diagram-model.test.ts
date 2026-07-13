@@ -20,35 +20,42 @@ const FIXTURE_ENFORCEMENT = `# Enforcement
 
 ## Ring 0 — Prevention
 
-| Action | Gate | implementation | lock |
-|--------|------|----------------|------|
-| \`git push\` | pre-push | .husky/pre-push | principal |
-| Creating a pull request | forge gate | .claude/hooks/x.sh | |
+| Action | Summary | Category | Gate | implementation | lock |
+|--------|---------|----------|------|----------------|------|
+| \`git push\` | Ever had someone push straight to main? | hook | pre-push | .husky/pre-push | principal |
+| Creating a pull request | Ever opened a PR nobody understood? | event | forge gate | .claude/hooks/x.sh | |
 
 ## Ring 1 — Detection
 
-| CI check | Re-verifies | implementation | lock |
-|----------|-------------|----------------|------|
-| Brief validation | brief shape | ci.yml | |
+| CI check | Summary | Category | Re-verifies | implementation | lock |
+|----------|---------|----------|-------------|----------------|------|
+| Brief validation | Ever seen an empty PR title? | ci | brief shape | ci.yml | |
 
 ## Ring 2 — Audit
 
-| Mechanism | Catches | implementation | lock |
-|-----------|---------|----------------|------|
-| Daily drift check | drift | archivist.yml | |
+| Mechanism | Summary | Category | Catches | implementation | lock |
+|-----------|---------|----------|---------|----------------|------|
+| Daily drift check | Ever missed slow drift? | event | drift | archivist.yml | |
 `
 
 const FIXTURE_DOCTRINE: DoctrineContent = {
   enforcement: FIXTURE_ENFORCEMENT,
   roles: [
-    { path: 'roles/developer.md', content: '---\nrole_id: developer\n---\n' },
-    { path: 'roles/planner.md', content: '---\nrole_id: planner\n---\n' },
+    {
+      path: 'roles/developer.md',
+      content: '---\nrole_id: developer\nactor: agent\nsummary: Ever had someone review their own work?\n---\n'
+    },
+    {
+      path: 'roles/planner.md',
+      content: '---\nrole_id: planner\nactor: human\nsummary: Ever had a plan with no rationale?\n---\n'
+    },
     { path: 'roles/no-id.md', content: '---\nsidebar_title: Nope\n---\n' } // skipped, no role_id
   ],
   contracts: [
     {
       path: 'contracts/planner-brief.md',
-      content: '---\ncontract_id: planner-brief\nproducer: planner\nconsumer: developer\n---\n'
+      content:
+        '---\ncontract_id: planner-brief\nproducer: planner\nconsumer: developer\nsummary: Ever had a hand-off lose details?\n---\n'
     },
     { path: 'contracts/no-id.md', content: '---\nstatus: draft\n---\n' } // skipped, no contract_id
   ]
@@ -135,6 +142,30 @@ describe('deriveDiagramModel — fixture', () => {
     expect(m.findings).toHaveLength(0)
     expect(m.nodes.find((n) => n.id === 'gate:creating-a-pull-request')?.renderState).toBe('active')
   })
+
+  it('carries summary on gate/check/action/role/contract nodes', () => {
+    expect(byId('gate:git-push')?.summary).toBe('Ever had someone push straight to main?')
+    expect(byId('check:brief-validation')?.summary).toBe('Ever seen an empty PR title?')
+    expect(byId('action:publish-the-branch')?.summary).toBe('Ever had a branch pushed straight to main by mistake?')
+    expect(byId('role:developer')?.summary).toBe('Ever had someone review their own work?')
+    expect(byId('contract:planner-brief')?.summary).toBe('Ever had a hand-off lose details?')
+  })
+
+  it('carries category only on gate/check nodes', () => {
+    expect(byId('gate:git-push')?.category).toBe('hook')
+    expect(byId('check:brief-validation')?.category).toBe('ci')
+    expect(byId('action:publish-the-branch')?.category).toBeUndefined()
+    expect(byId('role:developer')?.category).toBeUndefined()
+    expect(byId('contract:planner-brief')?.category).toBeUndefined()
+  })
+
+  it('carries actorType only on role nodes', () => {
+    expect(byId('role:developer')?.actorType).toBe('agent')
+    expect(byId('role:planner')?.actorType).toBe('human')
+    expect(byId('gate:git-push')?.actorType).toBeUndefined()
+    expect(byId('action:publish-the-branch')?.actorType).toBeUndefined()
+    expect(byId('contract:planner-brief')?.actorType).toBeUndefined()
+  })
 })
 
 // --- Real-file cross-check (pattern: actions.test.ts) --------------------
@@ -188,5 +219,32 @@ describe('deriveDiagramModel — real aeg-root/ cross-check', () => {
   it('produces globally unique node ids', () => {
     const ids = model.nodes.map((n) => n.id)
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('carries a non-empty summary on every gate/check/action/role/contract node', () => {
+    for (const n of model.nodes) {
+      if (n.kind === 'ring') continue
+      expect(n.summary, `${n.id} has no summary`).toBeTruthy()
+    }
+  })
+
+  it('carries category on gate/check nodes only, undefined elsewhere', () => {
+    for (const n of model.nodes) {
+      if (n.kind === 'gate' || n.kind === 'check') {
+        expect(['ci', 'hook', 'event']).toContain(n.category)
+      } else {
+        expect(n.category).toBeUndefined()
+      }
+    }
+  })
+
+  it('carries actorType on role nodes only, undefined elsewhere', () => {
+    for (const n of model.nodes) {
+      if (n.kind === 'role') {
+        expect(['agent', 'human', 'either']).toContain(n.actorType)
+      } else {
+        expect(n.actorType).toBeUndefined()
+      }
+    }
   })
 })
