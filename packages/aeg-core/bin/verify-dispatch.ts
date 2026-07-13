@@ -225,13 +225,13 @@ function resolveConflictsWith(
 
 /**
  * "The prior task" means the immediately preceding TABLE ROW (`idx - 1`),
- * not the `Depends-on` column — intentional (D-081), not a bug. Every
- * earlier row's full archival (Issue closed, PR merged, provenance posted)
- * is the freshness guarantee for THIS task's premises, regardless of
- * whether that row is a declared dependency. A prior agent read the
- * `Depends-on`-based prose in `contracts/brief-developer.md`, saw this
- * row-position code, concluded "bug," and nearly bypassed a genuinely
- * correct block (live misdiagnosis, 2026-07-03) — do not repeat that.
+ * not the `Depends-on` column (D-081). D-120 (2026-07-13) removed the
+ * predicate `checkDispatchReadiness` used to evaluate from this fact — D-077
+ * automated the provenance-posting signal the row-adjacency block existed to
+ * protect. This resolver still runs and still feeds `DispatchGateInput.priorTask`
+ * (dormant, no longer consumed by the gate) — dead-but-harmless plumbing, kept
+ * rather than stripped to avoid a second, non-required removal pass across
+ * every caller of this function.
  */
 function resolvePriorTask(
   iteration: Iteration,

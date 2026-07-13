@@ -6,7 +6,7 @@ describe('extractBlockerRefs', () => {
     expect(
       extractBlockerRefs([
         'dispatch-gate depends-on: task 28 depends on 27 (#370), whose PR is not merged yet',
-        'dispatch-gate prior-archival: prior task 27 (#370) does not pass the coherence gate',
+        'dispatch-gate prior-iteration-archival: project `aeg` previous iteration (#370) is not archived',
         'dispatch-gate conflicts-with: task 28 conflicts with 25 (#365), whose PR is open'
       ])
     ).toEqual(['#370', '#365'])

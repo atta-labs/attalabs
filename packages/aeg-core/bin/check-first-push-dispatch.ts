@@ -48,9 +48,9 @@
  * refusal here: a task legitimately mid-flight across multiple pre-PR pushes
  * always has commits ahead of main, so the combined exit code would block
  * every push after the first. The dispatch-readiness predicates (Issue-
- * existence, depends-on, prior-archival, etc. — the actual entry-gate items
- * this task mechanizes) are unaffected by leftover-detection and are what
- * this gate cares about.
+ * existence, depends-on, conflicts-with, prior-iteration-archival, etc. —
+ * the actual entry-gate items this task mechanizes) are unaffected by
+ * leftover-detection and are what this gate cares about.
  *
  * Usage: bun packages/aeg-core/bin/check-first-push-dispatch.ts <branch> <pr-exists:0|1>
  * Exit code: 0 = allow (push proceeds), 1 = refuse.

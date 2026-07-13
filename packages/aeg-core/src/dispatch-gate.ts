@@ -34,6 +34,16 @@ export type DispatchDependsOnFact = DispatchEdgeFact & { merged: boolean }
 
 export type DispatchConflictsWithFact = DispatchEdgeFact & { openOrInFlight: boolean }
 
+/**
+ * D-120 (2026-07-13) removed the predicate that consumed this fact
+ * (`checkDispatchReadiness` no longer blocks on it) — D-077 automated the
+ * signal (per-task provenance posting) this predicate existed to protect,
+ * making the row-adjacency gate itself the stale part, not the automation.
+ * Kept, dormant, rather than deleted: several callers (`bin/verify-dispatch.ts`,
+ * both Studio/Vinaya `map-dispatch-input.ts` mappers) still assemble this
+ * fact as harmless dead plumbing, and `DispatchGateInput.priorTask` below
+ * remains the exact shape needed to test the predicate's absence.
+ */
 export type DispatchPriorTaskFact = {
   id: string
   issue: number | null
@@ -59,7 +69,11 @@ export type DispatchGateInput = {
   issueRationalePass: boolean
   dependsOn: DispatchDependsOnFact[]
   conflictsWith: DispatchConflictsWithFact[]
-  /** The immediately-prior task in this same iteration's topology, or null when this is the first task. */
+  /**
+   * The immediately-prior task in this same iteration's topology, or null
+   * when this is the first task. D-120: no longer read by
+   * `checkDispatchReadiness` — dormant field, kept for caller compatibility.
+   */
   priorTask: DispatchPriorTaskFact | null
   /** One entry per project named in `task.projects`. */
   priorIterationArchival: DispatchPriorIterationFact[]
@@ -111,24 +125,13 @@ export function checkDispatchReadiness(input: DispatchGateInput): DispatchResult
     }
   }
 
-  // Prior-task archival — all three predicates (Issue closed, PR merged, provenance present).
-  // `input.priorTask` is the immediately preceding TABLE ROW, not a `Depends-on`
-  // edge — intentional (D-081). Every earlier row's full archival is the
-  // freshness guarantee for this task's premises, independent of whether that
-  // row is a declared dependency. See `resolvePriorTask` in bin/verify-dispatch.ts.
-  if (input.priorTask) {
-    const p = input.priorTask
-    const owed: string[] = []
-    if (!p.issueClosed) owed.push('Issue not closed')
-    if (!p.prMerged) owed.push('PR not merged to main')
-    if (!p.hasProvenance) owed.push('provenance block absent')
-    if (owed.length > 0) {
-      const issueStr = p.issue !== null ? ` (#${p.issue})` : ''
-      blockers.push(
-        `dispatch-gate prior-archival: prior task ${p.id}${issueStr} in iteration ${iterationSlug} does not pass the coherence gate: ${owed.join(', ')} — the Archivist must fully close it out before ${taskLabel} can proceed. (row-adjacency is by design — the gate checks the preceding table row, not the Depends-on column; see D-081)`
-      )
-    }
-  }
+  // Prior-task archival / row-adjacency predicate REMOVED (D-120, 2026-07-13).
+  // D-052 item 1 required every earlier table row's full archival (Issue
+  // closed, PR merged, provenance posted) regardless of whether that row was
+  // a declared dependency — D-077 automated the provenance-posting signal
+  // this existed to protect, so the blanket row-order block outlived its
+  // justification. `input.priorTask` is still accepted (dormant) for caller
+  // compatibility; see the type's doc comment above.
 
   // Prior-iteration archival, per project named in Project(s).
   for (const proj of input.priorIterationArchival) {
