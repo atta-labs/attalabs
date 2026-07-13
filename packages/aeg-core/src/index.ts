@@ -127,8 +127,6 @@ export type {
   DispatchPriorTaskFact,
   DispatchResult
 } from './dispatch-gate'
-export { findStaleBlockers } from './stale-blocker'
-export type { StaleBlocker, StaleBlockerIterationFact, StaleBlockerTaskFact } from './stale-blocker'
 export { checkSinglePlanPr, iterationSlugFromTopologyPath, touchesAnyTopology } from './single-plan-pr'
 export type { OpenPrFiles } from './single-plan-pr'
 export { isNewDiskStateFile } from './no-disk-state'

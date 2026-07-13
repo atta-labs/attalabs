@@ -86,7 +86,7 @@ function globCandidateFiles(): string[] {
  * comments/labels/close/reopen/merge are "sanctioned append operations",
  * not gated. Scoping crossingFiles any broader (e.g. to every file that
  * merely shells `gh issue view`) would flag
- * `archive-task.ts`/`dead-branch-audit.ts`/`stale-blocker.ts` — Ring-2
+ * `archive-task.ts`/`dead-branch-audit.ts` — Ring-2
  * mechanisms that legitimately comment/label/close as scheduled CI jobs,
  * never as an interactive agent-session command check-forge-gates.sh could
  * ever see — producing false G3 STOP conditions on working, documented

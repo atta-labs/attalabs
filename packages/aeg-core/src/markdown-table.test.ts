@@ -71,6 +71,8 @@ describe('enforcement.md Ring 0/1/2 tables (implementation + lock columns)', () 
     const { ring0, ring1, ring2 } = await loadRingTables()
     expect(ring0.rows).toHaveLength(10)
     expect(ring1.rows).toHaveLength(15)
-    expect(ring2.rows).toHaveLength(7)
+    // D-120 (2026-07-13) removed the "Daily drift check — stuck row-adjacent
+    // blockers" ring-2 row (its subject matter, stale-blocker.ts, was retired).
+    expect(ring2.rows).toHaveLength(6)
   })
 })

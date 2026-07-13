@@ -90,17 +90,14 @@ describe('checkDispatchReadiness', () => {
     expect(result.ready).toBe(true)
   })
 
-  it('blocks with all three owed reasons when prior task fails every archival predicate', () => {
+  it('D-120: no longer blocks when prior task fails every archival predicate (row-adjacency gate removed)', () => {
     const result = checkDispatchReadiness(
       makeInput({
         priorTask: { id: '10', issue: 282, issueClosed: false, prMerged: false, hasProvenance: false }
       })
     )
-    expect(result.ready).toBe(false)
-    expect(result.blockers[0]).toContain('prior-archival')
-    expect(result.blockers[0]).toContain('Issue not closed')
-    expect(result.blockers[0]).toContain('PR not merged to main')
-    expect(result.blockers[0]).toContain('provenance block absent')
+    expect(result.ready).toBe(true)
+    expect(result.blockers.some((b) => b.includes('prior-archival'))).toBe(false)
   })
 
   it('passes when the prior task is fully archived', () => {

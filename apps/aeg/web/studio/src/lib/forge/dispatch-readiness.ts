@@ -4,8 +4,10 @@
  * For tasks in `todo` status only, computes `@atta/aeg-core`'s
  * `checkDispatchReadiness` — the exact function `bin/verify-dispatch.ts`
  * calls to print `READY`/`NOT READY` — so the board's `Todo` badge can show
- * whether a task is genuinely dispatchable right now (row-adjacency included,
- * which the `Deps` column alone cannot show).
+ * whether a task is genuinely dispatchable right now. D-120 (2026-07-13)
+ * removed the row-adjacency predicate from the gate itself; `priorTask`
+ * facts are still assembled below (dormant, feeding a field the gate no
+ * longer reads) as dead-but-harmless plumbing — see `dispatch-gate.ts`.
  *
  * Display-only overlay: this NEVER touches `DerivedStatus`/`deriveIteration`
  * and is unrelated to the `blocked` status (D-069's anomaly holding-pen) —
@@ -59,7 +61,8 @@ export async function loadDispatchReadiness(
   const taskById = new Map(iteration.tasks.map((t) => [t.id, t]))
 
   // Row-adjacency prior task per todo task (D-081 — the preceding TABLE ROW,
-  // not the Depends-on column).
+  // not the Depends-on column). Dormant since D-120: still assembled and
+  // passed through, but `checkDispatchReadiness` no longer evaluates it.
   const priorByTaskId = new Map<string, Task | null>()
   for (const t of todo) {
     const idx = iteration.tasks.findIndex((x) => x.id === t.id)

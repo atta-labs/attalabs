@@ -8,11 +8,11 @@
  * date, and calls the pure `findDeadBranchPushes` (`@atta/aeg-core`).
  *
  * Extends task 23's `daily-drift` job (`.github/workflows/archivist.yml`) —
- * same never-red discipline as `stale-blocker.ts`: this script always exits
- * 0; the job step also wraps it in `continue-on-error: true`. A violation
- * is flagged via the `aeg:dead-branch-push` label plus one idempotent
- * tracking comment on the branch's own (already-resolved) PR — mirroring
- * `stale-blocker.ts`'s `aeg:stale-blocker` pattern exactly.
+ * never-red discipline: this script always exits 0; the job step also wraps
+ * it in `continue-on-error: true`. A violation is flagged via the
+ * `aeg:dead-branch-push` label plus one idempotent tracking comment on the
+ * branch's own (already-resolved) PR — the same label/idempotent-comment
+ * pattern this repo's other daily-drift notification channels use.
  */
 
 import { execSync } from 'node:child_process'

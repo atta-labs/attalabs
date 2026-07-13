@@ -13,8 +13,8 @@
  *
  * Exists to catch the "six topology rows landed on a merged plan PR's
  * branch" incident class (2026-07-03) server-side, within a day, instead of
- * never — mirroring `stale-blocker.ts`'s shape and never-red discipline
- * exactly: `daily-drift` (the CI job that calls this) must never fail red.
+ * never — never-red discipline: `daily-drift` (the CI job that calls this)
+ * must never fail red.
  */
 
 export type DeadBranchFact = {

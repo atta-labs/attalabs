@@ -28,6 +28,9 @@
  *   prior task          ← the immediately preceding TABLE ROW (row-adjacency,
  *                         D-081), not the Depends-on column — resolved by the
  *                         caller; this mapper only attaches its forge facts.
+ *                         Dormant since D-120 (2026-07-13): `checkDispatchReadiness`
+ *                         no longer evaluates `priorTask`; still assembled
+ *                         here as dead-but-harmless plumbing.
  *   rationale           ← `checkIssueRationale` (aeg-core) against the Issue
  *                         body the loader fetched; an unfetchable body passes
  *                         (CLI parity: a null `gh issue view` passes).
