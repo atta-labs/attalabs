@@ -11,22 +11,22 @@ describe('parseEnforcementRegistry', () => {
     const fixture = `
 ## Ring 0 — Prevention (nothing invalid leaves the machine)
 
-| Action | Gate | What must be true | implementation | lock |
-|---|---|---|---|---|
-| Editing a file | Edit gate | Something | \`.claude/hooks/check-skill.sh\` |  |
+| Action | Summary | Category | Gate | What must be true | implementation | lock |
+|---|---|---|---|---|---|---|
+| Editing a file | Ever edited code you never read the docs for? | hook | Edit gate | Something | \`.claude/hooks/check-skill.sh\` |  |
 
 ## Ring 1 — Detection (what turns the forge red)
 
-| CI check | Re-verifies | implementation | lock |
-|---|---|---|---|
-| Coherence oracle | Plan/forge drift | \`packages/aeg-core/bin/verify-coherence.ts\` | D-100 |
+| CI check | Summary | Category | Re-verifies | implementation | lock |
+|---|---|---|---|---|---|
+| Coherence oracle | Ever found a task marked done that never merged? | ci | Plan/forge drift | \`packages/aeg-core/bin/verify-coherence.ts\` | D-100 |
 
 ## Ring 2 — Audit (drift from any writer, any era)
 
-| Mechanism | Runs | Catches | implementation | lock |
-|---|---|---|---|---|
-| Post-merge archivist | On merge | Audit record | \`packages/aeg-core/bin/archive-task.ts\` |  |
-| Staleness audits | Dispatched periodically | Doc drift |  |  |
+| Mechanism | Summary | Category | Runs | Catches | implementation | lock |
+|---|---|---|---|---|---|---|
+| Post-merge archivist | Ever wanted a permanent record of what shipped? | event | On merge | Audit record | \`packages/aeg-core/bin/archive-task.ts\` |  |
+| Staleness audits | Ever had docs contradict a decision? | event | Dispatched periodically | Doc drift |  |  |
 `
     const rows = parseEnforcementRegistry(fixture)
     expect(rows).toHaveLength(4)
@@ -35,6 +35,8 @@ describe('parseEnforcementRegistry', () => {
     expect(ring0).toEqual<GateRow>({
       ring: 'ring0',
       action: 'Editing a file',
+      summary: 'Ever edited code you never read the docs for?',
+      category: 'hook',
       implementation: '.claude/hooks/check-skill.sh',
       lock: '',
       line: ring0!.line
@@ -42,13 +44,18 @@ describe('parseEnforcementRegistry', () => {
 
     const ring1 = rows.find((r) => r.ring === 'ring1')
     expect(ring1?.action).toBe('Coherence oracle')
+    expect(ring1?.summary).toBe('Ever found a task marked done that never merged?')
+    expect(ring1?.category).toBe('ci')
     expect(ring1?.implementation).toBe('packages/aeg-core/bin/verify-coherence.ts')
     expect(ring1?.lock).toBe('D-100')
 
     const ring2Rows = rows.filter((r) => r.ring === 'ring2')
     expect(ring2Rows).toHaveLength(2)
+    expect(ring2Rows[0]?.summary).toBe('Ever wanted a permanent record of what shipped?')
+    expect(ring2Rows[0]?.category).toBe('event')
     expect(ring2Rows[0]?.implementation).toBe('packages/aeg-core/bin/archive-task.ts')
     expect(ring2Rows[1]?.action).toBe('Staleness audits')
+    expect(ring2Rows[1]?.category).toBe('event')
     expect(ring2Rows[1]?.implementation).toBe('')
   })
 
@@ -69,6 +76,25 @@ describe('parseEnforcementRegistry', () => {
 
     for (const row of rows) {
       expect(row.line).toBeGreaterThan(0)
+      expect(row.summary.length).toBeGreaterThan(0)
+      expect(['ci', 'hook', 'event']).toContain(row.category)
     }
+  })
+
+  it('reads summary/category correctly for a real row per ring', () => {
+    const content = readFileSync(ENFORCEMENT_PATH, 'utf8')
+    const rows = parseEnforcementRegistry(content)
+
+    const ring0 = rows.find((r) => r.ring === 'ring0' && r.action === '`git push`')
+    expect(ring0?.summary).toBe('Ever had someone accidentally push straight to main?')
+    expect(ring0?.category).toBe('hook')
+
+    const ring1 = rows.find((r) => r.ring === 'ring1' && r.action === 'Coherence oracle')
+    expect(ring1?.summary).toBe('Ever found a task marked "done" that was never actually merged?')
+    expect(ring1?.category).toBe('ci')
+
+    const ring2 = rows.find((r) => r.ring === 'ring2' && r.action === '**Post-merge archivist**')
+    expect(ring2?.summary).toBe('Ever wanted a permanent, honest record of exactly what shipped and why?')
+    expect(ring2?.category).toBe('event')
   })
 })

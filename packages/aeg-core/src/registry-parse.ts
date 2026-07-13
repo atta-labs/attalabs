@@ -24,6 +24,8 @@ export type GateRing = 'ring0' | 'ring1' | 'ring2'
 export type GateRow = {
   ring: GateRing
   action: string
+  summary: string
+  category: 'ci' | 'hook' | 'event'
   implementation: string
   lock: string
   line: number
@@ -62,9 +64,11 @@ export function parseEnforcementRegistry(content: string): GateRow[] {
       const cells = row.cells
       if (cells.length < 3) continue
       const action = cells[0] ?? ''
+      const summary = stripBackticks(cells[1] ?? '')
+      const category = stripBackticks(cells[2] ?? '') as GateRow['category']
       const implementation = stripBackticks(cells[cells.length - 2] ?? '')
       const lock = (cells[cells.length - 1] ?? '').trim()
-      result.push({ ring, action, implementation, lock, line: row.line })
+      result.push({ ring, action, summary, category, implementation, lock, line: row.line })
     }
   }
 

@@ -6,6 +6,8 @@ function makeRow(overrides: Partial<GateRow> = {}): GateRow {
   return {
     ring: 'ring0',
     action: 'Some action',
+    summary: 'Some summary?',
+    category: 'hook',
     implementation: '',
     lock: '',
     line: 1,
