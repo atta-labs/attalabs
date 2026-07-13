@@ -250,7 +250,13 @@ export function EnvoyFlow({
   if (state === 'result' && report) {
     return (
       <div>
-        <ReportView report={report} avatarUrl={localProfile.avatarUrl} />
+        <ReportView
+          report={report}
+          avatarUrl={localProfile.avatarUrl}
+          CardComponent={comps.Card}
+          CardContentComponent={comps.CardContent}
+          BadgeComponent={comps.Badge}
+        />
         {!report.auditFailed && <ResultActions onNewAudit={handleRetry} />}
       </div>
     )

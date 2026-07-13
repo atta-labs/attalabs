@@ -25,6 +25,8 @@ export interface DocCollectorComponents {
   Textarea?: ComponentType<any>
   Button?: ComponentType<any>
   Input?: ComponentType<any>
+  Card?: ComponentType<any>
+  CardContent?: ComponentType<any>
 }
 
 const { Provider, useComponentsContext } = createComponentsContext<DocCollectorComponents>()

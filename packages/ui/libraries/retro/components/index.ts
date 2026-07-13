@@ -7,8 +7,8 @@ export { Badge } from '../installed/badge'
 // Interactive — Collapsible
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
 
-// Interactive — Tabs
-export { Tabs, TabsContent, TabsList, TabsTrigger } from './interactive/tabs'
+// Interactive — Tabs (flat upstream exports — no adapter needed)
+export { Tabs, TabsContent, TabsList, TabsTrigger } from '../installed/tabs'
 
 // Interactive — DropdownMenu
 export {
@@ -49,9 +49,9 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue
-} from '../installed/select'
+} from './form/select'
 
-// Command — falls back to basic
+// Command — native retro (Radix flavor)
 export {
   Command,
   CommandEmpty,
@@ -61,13 +61,13 @@ export {
   CommandList,
   CommandSeparator,
   CommandShortcut
-} from '../../basic/installed/command'
+} from '../installed/command'
 
 // Form
 export { Input, InputBlock } from './form/input'
 export { Checkbox } from './form/checkbox'
 export { Textarea } from './form/textarea'
-export { Slider } from '../../basic/installed/slider'
+export { Slider } from '../installed/slider'
 
 // Model — falls back to basic
 export { ModelIcon, type ModelIconProps } from '../../basic/components/model/model-icon'
@@ -98,13 +98,13 @@ export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 // Interactive — Button
 export { Button, buttonVariants } from './interactive/button'
 
-// Content — Card
-export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './content/card'
+// Content — Card (native retro upstream ships CardAction)
+export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../installed/card'
 
 // Display — Toast (falls back to basic)
 export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
 
-// Sidebar — falls back to basic
+// Sidebar — native retro (Radix flavor)
 export {
   Sidebar,
   SidebarContent,
@@ -130,9 +130,9 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar
-} from '../../basic/installed/sidebar'
+} from '../installed/sidebar'
 
-// Sheet — falls back to basic
+// Sheet — native retro (Radix flavor)
 export {
   Sheet,
   SheetClose,
@@ -142,9 +142,9 @@ export {
   SheetHeader,
   SheetTitle,
   SheetTrigger
-} from '../../basic/installed/sheet'
+} from '../installed/sheet'
 
-// Dialog — falls back to basic
+// Dialog — native retro (Radix flavor)
 export {
   Dialog,
   DialogClose,
@@ -156,7 +156,7 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger
-} from '../../basic/installed/dialog'
+} from '../installed/dialog'
 
 // Text Reveal
 export { TextReveal } from '../../../text-reveal'

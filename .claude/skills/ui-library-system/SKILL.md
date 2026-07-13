@@ -15,7 +15,7 @@ description: How the @atta/ui multi-library system works — build-time generati
 > |---|---|
 > | `basic` | shadcn (`ui.shadcn.com`) |
 > | `animate` | animate-ui (`animate-ui.com`) |
-> | `retro` | retroui |
+> | `retro` | retroui (`retroui.dev`, **Radix flavor**) |
 > | `brutal` | neobrutalism (`neobrutalism.dev`) |
 >
 > So `installed/<comp>.tsx` in each library is a verbatim CLI paste from that library's
@@ -32,9 +32,12 @@ description: How the @atta/ui multi-library system works — build-time generati
 > 2. **Match the contract** — `packages/ui/component-contract.mjs` requires each library to
 >    export the same set of components + Props types. If the upstream's API is flat named
 >    exports (most are) and matches the contract, just re-export from `components/index.ts`.
-> 3. **If the upstream's API doesn't match the contract** (e.g. retroui's `Object.assign`
->    dotted API), **add a wrapper** in `components/<comp>.tsx` or `components/interactive/`
->    that adapts the API to the contract. The wrapper IS editable. `installed/` stays verbatim.
+> 3. **If the upstream's API doesn't match the contract**, **add a wrapper** in
+>    `components/<comp>.tsx` or `components/interactive/` that adapts the API to the contract.
+>    The wrapper IS editable. `installed/` stays verbatim. (retro used to need this for its
+>    old Base UI heritage — dotted `Object.assign` Tabs and `render`-instead-of-`asChild`
+>    Button — but as of the Radix-flavor switch, retro's upstream exports flat named
+>    components and native `asChild`, so those adapters are gone.)
 > 4. **If you want a library-specific variant** — add it to the wrapper layer (e.g.
 >    `components/interactive/<comp>.tsx`), NOT in `installed/`. The `Button.ghost-pill` variant
 >    is the canonical example.
@@ -71,7 +74,7 @@ D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
 |---|---|---|---|
 | `basic` | shadcn/ui | `bunx shadcn@latest add <component>` | Default registry. Slot/asChild idioms. |
 | `animate` | animate-ui | `bunx shadcn@latest add @animate-ui/<component>` | Motion-driven Radix wrappers. Installs a helper tree under `installed/animate-ui/primitives/...` — preserve as-is, never flatten. |
-| `retro` | retroui | `bunx shadcn@latest add @retroui/<component>` | Base UI–based. Often dotted `Object.assign(Tabs.Root, { List, Trigger, Content })` API and `render` instead of `asChild`. |
+| `retro` | retroui (Radix flavor) | `bunx shadcn@latest add https://retroui.dev/r/radix/<component>.json` | retroui relaunched (2026-07-12) shipping each component in two flavors under `https://retroui.dev/r/<flavor>/<component>.json` (a shadcn-CLI registry item; source is the JSON's `files[0].content`). retro standardizes on the **Radix** flavor — flat named exports, native `asChild`, consolidated `radix-ui` package imports (not per-component `@radix-ui/react-*`). The old `@retroui/<component>` namespace and Base UI heritage are gone. |
 | `brutal` | neobrutalism | `bunx shadcn@latest add @neobrutalism/<component>` | Radix-based; `noShadow` / `neutral` / `reverse` variant set instead of `outline`/`destructive`. |
 
 ### Doctrine (the rule, restated for skim-readers)
@@ -85,6 +88,42 @@ D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
   matches the precedent for `packages/cms/{vada-ai,vitakka-ai}` auto-generated dirs) so
   formatter rules never fight a fresh CLI paste. Re-installing later just works.
 
+### Base UI vs Radix flavor — the `asChild` contract idiom
+
+The cross-library composition idiom is **Radix `asChild`** (`<Trigger asChild><Link/></Trigger>`).
+App code writes it uniformly and every library must accept it — that is the contract. But
+the four libraries are NOT all the same primitive stack: some `installed/*` files are **Base
+UI** (`@base-ui/react`), which composes via `render={<El/>}`, not `asChild`. A Base UI
+component with an app passing `asChild` fails to typecheck (the prop doesn't exist on its
+Props) and, if `...props`-spread, leaks `asChild` onto the DOM at runtime.
+
+**Rule:** any Base UI `installed/*` component that apps use with `asChild` carries an
+`asChild`→`render` adapter in its **wrapper layer** (`libraries/<lib>/components/…`), never in
+`installed/*` (D-065). The adapter resolves the single element child and forwards it as
+`render` (`resolveSingleChild` — factor one shared helper when 3+ wrappers need it; basic's
+lives at `libraries/basic/components/as-child.ts`). This is the same pattern task 1 (#536)
+built for retro's Base UI Button before retro was re-based onto Radix.
+
+**Flavor matrix — TODAY** (per `installed/*` import; `radix` = native `asChild`, `base-ui` =
+needs the adapter; `→basic` = no own installed file, re-exports basic's). The earlier claim
+that basic is Radix was wrong — basic is the current Base UI holdout:
+
+| Component | basic | animate | brutal | retro |
+|---|---|---|---|---|
+| Button | radix | own | radix | radix |
+| Popover | radix | radix | radix | radix |
+| DropdownMenu | radix | radix | radix | radix |
+| Collapsible | **base-ui** (adapter) | radix | radix | radix |
+| Sheet | **base-ui** (adapter) | →basic (wrapper) | →basic (wrapper) | radix |
+| Dialog | base-ui | →basic | →basic | radix |
+| Tooltip | base-ui | →basic | →basic | radix |
+
+Adapters exist where an app actually passes `asChild` AND the resolved primitive is Base UI:
+`SheetTrigger`/`SheetClose`/`CollapsibleTrigger` in basic (`ui-retro-contract-v1` f/u 4, #539).
+`Dialog`/`Tooltip` are Base UI in basic too but no app uses them with `asChild` yet — add the
+same adapter if that changes. animate/brutal fall back to basic's Sheet, so they re-export the
+basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet`.
+
 ### CLI workflow when adding or restoring a component
 
 1. **Install:** run the matching CLI from the table above. If the upstream registry is down
@@ -94,22 +133,15 @@ D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
    class strings, variants, types, or formatting. Don't run Biome `--write` against the
    file — the ignore glob exists for that.
 3. **Wrap only if the upstream shape differs from the cross-library contract:**
-   - Retroui's Tabs ships `Object.assign(Tabs.Root, { List, Trigger, Content })` (dotted API).
-     The contract requires flat named exports — add an adapter in
-     `components/interactive/tabs.tsx` that casts each dotted member to its Base UI primitive
-     prop types (retroui's internal `ITabs*` interfaces are not exported, so casting to the
-     publicly-exported primitive's `Props` is the correct workaround).
-   - Retroui's Button uses `render` (Base UI) instead of `asChild` (Radix). Most consumers
-     don't use either; for those that do, an adapter mapping `asChild`→`render` is added in
-     `components/interactive/button.tsx`. **Implemented** (ui-retro-contract-v1 task 1, #536,
-     2026-07-12 — found live via a real console error on Herald's public profile): the
-     wrapper extracts the single valid child element (`isValidElement`, falling back to
-     `Children.toArray(...).find(isValidElement)` for a non-element-wrapped child) and passes
-     it as `render` when `asChild` is set and no explicit `render` was given; `children` is
-     then omitted from the forwarded props so base-ui's render element isn't double-rendered.
-     Retro's `Select`/`Collapsible` wrappers also accept `asChild` per a repo grep but were
-     **not** audited or fixed by that task — confirm before assuming the same adapter exists
-     there.
+   - As of the Radix-flavor switch (ui-retro-contract-v1 task 2, #539, 2026-07-12) retro's
+     upstream matches the contract natively — Tabs exports flat (`Tabs`, `TabsList`,
+     `TabsTrigger`, `TabsContent`) and Button supports `asChild` via Radix `Slot`. Both the
+     old dotted-Tabs adapter and the `asChild`→`render` Button adapter (task 1, #536) were
+     **deleted** by that switch. retro's Button wrapper now only bakes in the universal
+     `leading-none` default; `installed/button.tsx` already bundles `cursor-pointer`.
+   - The only surviving retro wrappers adapt OUR own extensions, not an upstream mismatch:
+     `form/input.tsx` (adds our `InputBlock` + the shared `InputProps` mapping — no upstream
+     equivalent) and `form/checkbox.tsx` (a thin re-export of the native retro checkbox).
 4. **Validate:** `bun run validate:ui-contract` — every library must still export all
    contracted component names + type names.
 
@@ -118,7 +150,8 @@ D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
 - Each library derives its **own** Props from its **own** cva via
   `VariantProps<typeof buttonVariants>` (or equivalent). Variant names diverge across
   libraries by design (e.g. brutal's Button has `noShadow`/`neutral`/`reverse`; basic +
-  animate share `outline`/`destructive`/`ghost`/`link`; retroui omits `destructive`).
+  animate share `outline`/`destructive`/`ghost`/`link`; the Radix-flavor retroui Button
+  ships `destructive` too).
 - **`component-contract.mjs` validates COMPONENT + TYPE NAMES, NOT variant enums.**
   We previously kept cross-library `ButtonVariant` / `ButtonSize` / `ButtonVariantsFn` types
   forcing every library to extend with a shared name set. That gave consumers no real
@@ -695,7 +728,7 @@ visual lives at `packages/ui/lib/attachment-chip.tsx` (`AttachmentChip` +
 | `onItemsChange` | `(items: DocCollectorItem[]) => void` | — | Fired on every items-array change — drop, resolution completing, removal, Add commit, custom-source resolution. Consumers read resolved `text` from here; `DocCollector` does not compute word/token counts itself. |
 | `accept` | `string` | `'.md,.pdf'` | File-drop accept string. |
 | `className` | `string` | — | Outer wrapper className. Consumers needing stable multi-column layouts (e.g. Herald's Bulk Audit, two `DocCollector`s side by side) pin an explicit height here so the drop zone — not the whole card — absorbs the height delta between empty and populated states. |
-| `components` | `DocCollectorComponents` | `{}` | **INJECTION CONTRACT** — see Governance section above. Consumer-injected library primitives: `Textarea`, `Button`, `Input`. Each is optional; the collector degrades to a native `<textarea>`/`<input>`/`<button>` when undefined (graceful first-paint window for runtime libraries). `DocCollector` resolves NO library itself. |
+| `components` | `DocCollectorComponents` | `{}` | **INJECTION CONTRACT** — see Governance section above. Consumer-injected library primitives: `Textarea`, `Button`, `Input`, `Card`, `CardContent`. Each is optional; the collector degrades to a native `<textarea>`/`<input>`/`<button>` (or, for the outer container, a hand-rolled `div` when `Card`/`CardContent` are absent) during the first-paint window for runtime libraries. When injected, the outer container renders the consumer library's `Card` (its own border/shadow/radius) with `Card`'s padding/gap neutralised and re-applied on `CardContent` to keep the p-3/gap-3 spacing. `DocCollector` resolves NO library itself. |
 | `customSources` | `DocCollectorCustomSource[]` | — | Extra named ways to add an item beyond file-drop/paste — e.g. Herald's "Add by Herald Username" and "Add by URL" rows. See below. |
 
 `DocCollectorItem` shape: `{ id, filename, kind: 'md' | 'pdf' | 'text', status: 'resolving' | 'ready' | 'error', text?, error?, addedAt, meta?: unknown }`.

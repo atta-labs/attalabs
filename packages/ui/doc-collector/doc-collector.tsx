@@ -276,62 +276,81 @@ export function DocCollector({
     [updateItems]
   )
 
+  // Outer container is a real Card (RULE 1) when the consuming app injects one
+  // via the components contract, so a runtime library renders its own Card
+  // chrome (border/shadow/radius). Card's own padding/gap are neutralised
+  // (gap-0 py-0) and re-applied on CardContent to keep the original p-3/gap-3
+  // spacing; the drop-zone still absorbs height via flex-1. Falls back to the
+  // hand-rolled div during the first-render window (no Card injected yet).
+  const Card = components?.Card
+  const CardContent = components?.CardContent
+
+  const body = (
+    <>
+      {items.length > 0 && (
+        <div className='flex shrink-0 items-center gap-2 overflow-x-auto pt-2 pb-2'>
+          {items.map((item) => {
+            const meta =
+              item.status === 'ready' && item.text !== undefined
+                ? `${item.text.length.toLocaleString()} chars`
+                : sizesRef.current.get(item.id) !== undefined
+                  ? formatBytes(sizesRef.current.get(item.id) as number)
+                  : '—'
+            const preview = item.status === 'ready' ? item.text?.slice(0, 240).trim() : undefined
+            return (
+              <AttachmentChip
+                key={item.id}
+                filename={item.filename}
+                status={item.status}
+                meta={meta}
+                preview={preview}
+                error={item.error}
+                onRemove={() => handleRemove(item.id)}
+              />
+            )
+          })}
+        </div>
+      )}
+
+      <p className='shrink-0 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Drop Docs</p>
+
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        className={cn(
+          'flex flex-1 min-h-[64px] w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
+          isDragOver && 'border-primary bg-accent/40'
+        )}
+      >
+        <p className='font-mono text-xs text-muted-foreground'>Drop {accept} files here</p>
+      </div>
+      {dropError && <p className='shrink-0 font-mono text-[10px] text-destructive'>{dropError}</p>}
+
+      {customSources?.map((source) => (
+        <DocCollectorCustomSourceRow
+          key={source.label}
+          source={source}
+          onSubmit={(value) => handleCustomAdd(source, value)}
+        />
+      ))}
+
+      <div className='shrink-0'>
+        <p className='mb-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Paste The Doc</p>
+        <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
+      </div>
+    </>
+  )
+
   return (
     <DocCollectorComponentsProvider components={components}>
-      <div className={cn('flex flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>
-        {items.length > 0 && (
-          <div className='flex shrink-0 items-center gap-2 overflow-x-auto pt-2 pb-2'>
-            {items.map((item) => {
-              const meta =
-                item.status === 'ready' && item.text !== undefined
-                  ? `${item.text.length.toLocaleString()} chars`
-                  : sizesRef.current.get(item.id) !== undefined
-                    ? formatBytes(sizesRef.current.get(item.id) as number)
-                    : '—'
-              const preview = item.status === 'ready' ? item.text?.slice(0, 240).trim() : undefined
-              return (
-                <AttachmentChip
-                  key={item.id}
-                  filename={item.filename}
-                  status={item.status}
-                  meta={meta}
-                  preview={preview}
-                  error={item.error}
-                  onRemove={() => handleRemove(item.id)}
-                />
-              )
-            })}
-          </div>
-        )}
-
-        <p className='shrink-0 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Drop Docs</p>
-
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={cn(
-            'flex flex-1 min-h-[64px] w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors',
-            isDragOver && 'border-primary bg-accent/40'
-          )}
-        >
-          <p className='font-mono text-xs text-muted-foreground'>Drop {accept} files here</p>
-        </div>
-        {dropError && <p className='shrink-0 font-mono text-[10px] text-destructive'>{dropError}</p>}
-
-        {customSources?.map((source) => (
-          <DocCollectorCustomSourceRow
-            key={source.label}
-            source={source}
-            onSubmit={(value) => handleCustomAdd(source, value)}
-          />
-        ))}
-
-        <div className='shrink-0'>
-          <p className='mb-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground'>Paste The Doc</p>
-          <DocCollectorTextInput draftText={draftText} onDraftTextChange={setDraftText} onAdd={handleAdd} />
-        </div>
-      </div>
+      {Card && CardContent ? (
+        <Card className={cn('gap-0 py-0', className)}>
+          <CardContent className='flex min-h-0 flex-1 flex-col gap-3 p-3'>{body}</CardContent>
+        </Card>
+      ) : (
+        <div className={cn('flex flex-col gap-3 rounded-lg border border-border bg-card p-3', className)}>{body}</div>
+      )}
     </DocCollectorComponentsProvider>
   )
 }
@@ -353,13 +372,14 @@ function DocCollectorTextInput({
   const textareaClassName = 'h-20 w-full resize-none overflow-y-auto'
 
   return (
-    <div className='flex flex-col gap-1.5 rounded-md border border-input bg-background p-2 focus-within:ring-1 focus-within:ring-ring'>
+    // No wrapping box: the Textarea carries its own border/focus, so the paste
+    // panel is just the textarea with the Add button right-aligned below it.
+    <div className='flex flex-col gap-1.5'>
       {Textarea ? (
         <Textarea
           placeholder='Paste text here…'
           value={draftText}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onDraftTextChange(e.target.value)}
-          variant='bare'
           rows={3}
           className={textareaClassName}
         />
@@ -369,7 +389,10 @@ function DocCollectorTextInput({
           value={draftText}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onDraftTextChange(e.target.value)}
           rows={3}
-          className={cn(textareaClassName, 'bg-transparent font-sans text-sm text-foreground outline-none')}
+          className={cn(
+            textareaClassName,
+            'rounded-md border border-input bg-background px-3 py-2 font-sans text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring'
+          )}
         />
       )}
       <div className='flex justify-end'>

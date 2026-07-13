@@ -8,6 +8,19 @@
    against this selector instead of the default media query. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* retroui (radix flavor) theme layer. The retro library's installed/* pastes —
+   and shadcn's own Radix tabs/sidebar in basic — use these modifiers, which
+   Tailwind v4 would otherwise compile natively as [data-active]/[data-horizontal]
+   and never match. Selector logic mirrors retroui's compiled output verbatim so
+   future upstream pastes keep working, and composes with group-/peer- prefixes
+   automatically (e.g. group-data-horizontal/tabs:h-11):
+   - data-active matches BOTH Radix data-state="active" (tabs) AND a literal
+     data-active attribute (sidebar), excluding data-active="false".
+   - data-horizontal / data-vertical match Radix data-orientation. */
+@custom-variant data-active (&:where([data-state=active], [data-active]:not([data-active=false])));
+@custom-variant data-horizontal (&:where([data-orientation=horizontal]));
+@custom-variant data-vertical (&:where([data-orientation=vertical]));
+
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
 @source "../../../packages/aeg-core/src/**/*.{ts,tsx}";
@@ -47,6 +60,7 @@
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
   --font-heading: var(--font-serif);
+  --font-head: var(--font-sans);
   --font-body: var(--font-sans);
 
   --radius: var(--radius);

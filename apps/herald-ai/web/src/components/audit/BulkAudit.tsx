@@ -2,8 +2,7 @@
 
 import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { Fragment, useState } from 'react'
-import { Badge } from '@atta/ui/components/badge'
-import { Button, Card, CardContent, Textarea, Input, useToastContext } from '@atta/ui/components'
+import { Badge, Button, Card, CardContent, Textarea, Input, useToastContext } from '@atta/ui/components'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 
@@ -335,7 +334,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               className='h-[510px] min-h-0 min-w-0'
               accept='.md,.pdf'
               onItemsChange={setCvs}
-              components={{ Textarea, Button, Input }}
+              components={{ Textarea, Button, Input, Card, CardContent }}
               customSources={[
                 {
                   label: 'Herald Username',
@@ -373,7 +372,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               className='h-[510px] min-h-0 min-w-0'
               accept='.md,.pdf'
               onItemsChange={setJds}
-              components={{ Textarea, Button, Input }}
+              components={{ Textarea, Button, Input, Card, CardContent }}
               customSources={[
                 {
                   label: 'URL',
@@ -402,7 +401,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
             onClick={handleRun}
             disabled={!canRun || resolving}
             size='lg'
-            className='w-full max-w-md font-mono text-xs uppercase tracking-[0.2em]'
+            className='h-auto w-full max-w-md whitespace-normal text-center font-mono text-xs uppercase tracking-widest'
           >
             {resolving ? (
               <>
@@ -514,18 +513,16 @@ function AuditCell({ cell, candidateLabel, jdLabel }: AuditCellProps) {
 
       {/* Expand / collapse toggle */}
       <Collapsible open={expanded} onOpenChange={setExpanded}>
-        <CollapsibleTrigger
-          render={
-            <Button
-              variant='ghost'
-              className='flex w-full items-center justify-between rounded-none border-0 px-4 py-2.5 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground hover:bg-accent/10 hover:text-foreground'
-            />
-          }
-        >
-          <span>
-            {jdLabel} · {candidateLabel}
-          </span>
-          {expanded ? <ChevronUp className='h-3 w-3' /> : <ChevronDown className='h-3 w-3' />}
+        <CollapsibleTrigger asChild>
+          <Button
+            variant='ghost'
+            className='flex w-full items-center justify-between rounded-none border-0 px-4 py-2.5 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground hover:bg-accent/10 hover:text-foreground'
+          >
+            <span>
+              {jdLabel} · {candidateLabel}
+            </span>
+            {expanded ? <ChevronUp className='h-3 w-3' /> : <ChevronDown className='h-3 w-3' />}
+          </Button>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className='border-t border-border'>

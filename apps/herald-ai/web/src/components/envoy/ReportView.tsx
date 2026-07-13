@@ -1,7 +1,8 @@
 'use client'
 
+import type { ComponentType } from 'react'
 import { Check, X } from 'lucide-react'
-import { useComponents } from '@atta/ui/lib/library-provider'
+import { Badge as DefaultBadge, Card as DefaultCard, CardContent as DefaultCardContent } from '@atta/ui/components'
 import { AvatarFrame } from '@/components/avatar-frame'
 import type { MatchReport } from '@/lib/types'
 
@@ -27,8 +28,30 @@ export function auditFailureMessage(auditFailed: NonNullable<MatchReport['auditF
   }
 }
 
-export function ReportView({ report, avatarUrl }: { report: MatchReport; avatarUrl?: string }) {
-  const { Card, CardContent, Badge } = useComponents()
+export function ReportView({
+  report,
+  avatarUrl,
+  CardComponent = DefaultCard,
+  CardContentComponent = DefaultCardContent,
+  BadgeComponent = DefaultBadge
+}: {
+  report: MatchReport
+  avatarUrl?: string
+  /**
+   * Call-site-aware library resolution (ui-retro-contract-v1 f/u 3): ReportView
+   * renders on BOTH the public-profile tree (via EnvoyFlow) and chrome (via
+   * BulkAudit). Default primitives resolve BUILD-TIME to the CMS chrome library
+   * via the flat `@atta/ui/components` import. The public-profile call site
+   * injects its `useComponents()`-resolved primitives so the candidate's own
+   * library renders. Mirrors HeraldAccountMenu's `ButtonComponent` carve-out.
+   */
+  CardComponent?: ComponentType<any>
+  CardContentComponent?: ComponentType<any>
+  BadgeComponent?: ComponentType<any>
+}) {
+  const Card = CardComponent
+  const CardContent = CardContentComponent
+  const Badge = BadgeComponent
 
   if (report.auditFailed) {
     return (
@@ -40,13 +63,9 @@ export function ReportView({ report, avatarUrl }: { report: MatchReport; avatarU
         </header>
 
         <section className='mb-8'>
-          {Badge ? (
-            <Badge className='border-destructive/40 bg-destructive/10 font-mono text-xs uppercase tracking-[0.2em] text-destructive'>
-              Audit Failed
-            </Badge>
-          ) : (
-            <p className='font-mono text-xs uppercase tracking-[0.2em] text-destructive'>Audit Failed</p>
-          )}
+          <Badge className='border-destructive/40 bg-destructive/10 font-mono text-xs uppercase tracking-[0.2em] text-destructive'>
+            Audit Failed
+          </Badge>
           <p className='mt-4 text-sm leading-relaxed text-foreground'>{auditFailureMessage(report.auditFailed)}</p>
         </section>
 
@@ -109,15 +128,9 @@ export function ReportView({ report, avatarUrl }: { report: MatchReport; avatarU
           ) : (
             <p className='font-mono text-sm font-medium uppercase tracking-wider'>{report.recommendation}</p>
           )}
-          {Badge ? (
-            <Badge variant='outline' className='mt-1 font-mono text-xs uppercase tracking-[0.2em]'>
-              Confidence: {report.confidence}
-            </Badge>
-          ) : (
-            <p className='font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
-              Confidence: {report.confidence}
-            </p>
-          )}
+          <Badge variant='outline' className='mt-1 font-mono text-xs uppercase tracking-[0.2em]'>
+            Confidence: {report.confidence}
+          </Badge>
         </div>
 
         <ul className='mt-6 space-y-1'>
@@ -186,15 +199,9 @@ export function ReportView({ report, avatarUrl }: { report: MatchReport; avatarU
                 <CardContent className='p-3'>
                   <div className='flex items-baseline justify-between gap-3'>
                     <h3 className='font-mono text-sm font-medium'>{signal.title}</h3>
-                    {Badge ? (
-                      <Badge variant='outline' className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'>
-                        {signal.confidence}
-                      </Badge>
-                    ) : (
-                      <span className='shrink-0 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
-                        {signal.confidence}
-                      </span>
-                    )}
+                    <Badge variant='outline' className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'>
+                      {signal.confidence}
+                    </Badge>
                   </div>
                   <p className='mt-0.5 text-xs leading-relaxed text-muted-foreground'>{signal.observation}</p>
                   <p className='mt-0.5 text-sm leading-relaxed'>{signal.interpretation}</p>
@@ -228,15 +235,9 @@ export function ReportView({ report, avatarUrl }: { report: MatchReport; avatarU
                   <CardContent className='p-3'>
                     <div className='flex items-baseline justify-between gap-3'>
                       <h3 className='font-mono text-sm font-medium'>{signal.source.repo}</h3>
-                      {Badge ? (
-                        <Badge variant='outline' className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'>
-                          {signal.confidence}
-                        </Badge>
-                      ) : (
-                        <span className='shrink-0 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground'>
-                          {signal.confidence}
-                        </span>
-                      )}
+                      <Badge variant='outline' className='shrink-0 font-mono text-xs uppercase tracking-[0.2em]'>
+                        {signal.confidence}
+                      </Badge>
                     </div>
                     <p className='mt-0.5 text-sm leading-relaxed text-muted-foreground'>{signal.evidence}</p>
                   </CardContent>
