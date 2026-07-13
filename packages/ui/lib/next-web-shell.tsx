@@ -9,7 +9,7 @@ import { CookieNameProvider } from './cookie-name-context'
 import { LibraryProvider } from './library-provider'
 import { ThemeProvider } from './theme-context'
 import type { UILibrary } from './library-loader'
-import { ToastProvider } from '../libraries/basic/components/display/toast'
+import { ActiveToastProvider } from './active-toast-provider'
 
 // Injected as the first <script> in <head> during dev only.
 // Runs synchronously before Turbopack's HMR bootstrap — guarantees extension
@@ -93,7 +93,7 @@ export async function NextWebShell({
             <ThemeProvider theme={theme as CMSTheme | null} styleId={styleId}>
               <LibraryProvider library={libraryId}>
                 <CookieNameProvider cookieName={cookieName}>
-                  <ToastProvider defaultPosition='bottom-right'>{children}</ToastProvider>
+                  <ActiveToastProvider defaultPosition='bottom-right'>{children}</ActiveToastProvider>
                 </CookieNameProvider>
               </LibraryProvider>
             </ThemeProvider>
@@ -102,7 +102,7 @@ export async function NextWebShell({
           <ThemeProvider theme={theme as CMSTheme | null} styleId={styleId}>
             <LibraryProvider library={libraryId}>
               <CookieNameProvider cookieName={cookieName}>
-                <ToastProvider defaultPosition='bottom-right'>{children}</ToastProvider>
+                <ActiveToastProvider defaultPosition='bottom-right'>{children}</ActiveToastProvider>
               </CookieNameProvider>
             </LibraryProvider>
           </ThemeProvider>

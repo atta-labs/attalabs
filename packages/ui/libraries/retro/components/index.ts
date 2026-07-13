@@ -28,11 +28,11 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '../installed/dropdown-menu'
-// DropdownMenuItemTextHighlight — falls back to basic
+// DropdownMenuItemTextHighlight — native retro (wraps retro's own DropdownMenuItem)
 export {
   DropdownMenuItemTextHighlight,
   type DropdownMenuItemTextHighlightProps
-} from '../../basic/components/interactive/dropdown-menu-item-text-highlight'
+} from './interactive/dropdown-menu-item-text-highlight'
 
 // Interactive — Popover
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '../installed/popover'
@@ -101,8 +101,9 @@ export { Button, buttonVariants } from './interactive/button'
 // Content — Card (native retro upstream ships CardAction)
 export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../installed/card'
 
-// Display — Toast (falls back to basic)
-export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
+// Display — Toast (native retro card built on retroui's Alert)
+export { Toast } from './display/toast'
+export { ToastProvider, useToastContext } from './display/toast-provider'
 
 // Sidebar — native retro (Radix flavor)
 export {

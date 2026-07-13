@@ -124,10 +124,15 @@ function EnvoyNavContent({
         />
       </div>
 
-      {/* Row 2 — docked identity bar (fixed to viewport), slides in when hero scrolls away */}
+      {/* Row 2 — docked identity bar (fixed to viewport), slides in when hero scrolls away.
+          `isCollapsed` reflects scroll position, which SSR cannot know — a server/client
+          mismatch on `className`/`aria-hidden` here is expected, not a bug; the first
+          IntersectionObserver callback settles it to the correct value immediately after
+          hydration (React's own recommended escape hatch for this exact case). */}
       <div
         className={cn('fixed inset-x-0 top-0 z-50 bg-background/80 backdrop-blur-md', dockedTransition)}
         aria-hidden={!isCollapsed}
+        suppressHydrationWarning
       >
         <div className='mx-auto flex h-12 max-w-[680px] items-center gap-2.5 px-6'>
           {profileIdentity.avatarUrl && (
