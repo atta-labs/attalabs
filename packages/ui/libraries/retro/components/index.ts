@@ -101,8 +101,9 @@ export { Button, buttonVariants } from './interactive/button'
 // Content — Card (native retro upstream ships CardAction)
 export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../installed/card'
 
-// Display — Toast (falls back to basic)
-export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
+// Display — Toast (native retro card built on retroui's Alert)
+export { Toast } from './display/toast'
+export { ToastProvider, useToastContext } from './display/toast-provider'
 
 // Sidebar — native retro (Radix flavor)
 export {
