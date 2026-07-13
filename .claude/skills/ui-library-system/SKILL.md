@@ -88,6 +88,42 @@ D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
   matches the precedent for `packages/cms/{vada-ai,vitakka-ai}` auto-generated dirs) so
   formatter rules never fight a fresh CLI paste. Re-installing later just works.
 
+### Base UI vs Radix flavor — the `asChild` contract idiom
+
+The cross-library composition idiom is **Radix `asChild`** (`<Trigger asChild><Link/></Trigger>`).
+App code writes it uniformly and every library must accept it — that is the contract. But
+the four libraries are NOT all the same primitive stack: some `installed/*` files are **Base
+UI** (`@base-ui/react`), which composes via `render={<El/>}`, not `asChild`. A Base UI
+component with an app passing `asChild` fails to typecheck (the prop doesn't exist on its
+Props) and, if `...props`-spread, leaks `asChild` onto the DOM at runtime.
+
+**Rule:** any Base UI `installed/*` component that apps use with `asChild` carries an
+`asChild`→`render` adapter in its **wrapper layer** (`libraries/<lib>/components/…`), never in
+`installed/*` (D-065). The adapter resolves the single element child and forwards it as
+`render` (`resolveSingleChild` — factor one shared helper when 3+ wrappers need it; basic's
+lives at `libraries/basic/components/as-child.ts`). This is the same pattern task 1 (#536)
+built for retro's Base UI Button before retro was re-based onto Radix.
+
+**Flavor matrix — TODAY** (per `installed/*` import; `radix` = native `asChild`, `base-ui` =
+needs the adapter; `→basic` = no own installed file, re-exports basic's). The earlier claim
+that basic is Radix was wrong — basic is the current Base UI holdout:
+
+| Component | basic | animate | brutal | retro |
+|---|---|---|---|---|
+| Button | radix | own | radix | radix |
+| Popover | radix | radix | radix | radix |
+| DropdownMenu | radix | radix | radix | radix |
+| Collapsible | **base-ui** (adapter) | radix | radix | radix |
+| Sheet | **base-ui** (adapter) | →basic (wrapper) | →basic (wrapper) | radix |
+| Dialog | base-ui | →basic | →basic | radix |
+| Tooltip | base-ui | →basic | →basic | radix |
+
+Adapters exist where an app actually passes `asChild` AND the resolved primitive is Base UI:
+`SheetTrigger`/`SheetClose`/`CollapsibleTrigger` in basic (`ui-retro-contract-v1` f/u 4, #539).
+`Dialog`/`Tooltip` are Base UI in basic too but no app uses them with `asChild` yet — add the
+same adapter if that changes. animate/brutal fall back to basic's Sheet, so they re-export the
+basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet`.
+
 ### CLI workflow when adding or restoring a component
 
 1. **Install:** run the matching CLI from the table above. If the upstream registry is down
