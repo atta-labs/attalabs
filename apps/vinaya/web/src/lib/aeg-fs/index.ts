@@ -1,3 +1,4 @@
+export type { ForgeSlugFailure, ForgeStatus } from './forge-status'
 export {
   findAegRoot,
   readRegistry,

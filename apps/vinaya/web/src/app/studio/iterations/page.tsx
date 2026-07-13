@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 }
 
 export default async function IterationsPage() {
-  const { active, archived, forgeAvailable } = await listIterations()
+  const { active, archived, forge } = await listIterations()
 
   return (
     <div className='space-y-8'>
@@ -22,7 +22,7 @@ export default async function IterationsPage() {
         </p>
       </header>
 
-      <IterationsTabs active={active} archived={archived} forgeAvailable={forgeAvailable} />
+      <IterationsTabs active={active} archived={archived} forge={forge} />
     </div>
   )
 }

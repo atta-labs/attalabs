@@ -6,8 +6,15 @@
 
 import { execFileSync } from 'node:child_process'
 
+// Augment PATH so `gh` resolves under macOS Homebrew and the typical install
+// locations even when Next/Bun launches with a minimal environment.
+const systemEnv = {
+  ...process.env,
+  PATH: [process.env.PATH, '/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin'].filter(Boolean).join(':')
+}
+
 function run(args: string[]): string {
-  return execFileSync('gh', args, { encoding: 'utf8' })
+  return execFileSync('gh', args, { encoding: 'utf8', env: systemEnv })
 }
 
 export function ghApiGet<T>(path: string): T {
