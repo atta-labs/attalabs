@@ -1,5 +1,5 @@
 import { cmsClient, getHeraldBranding } from '@atta/cms'
-import { Button } from '@atta/ui/components/button'
+import { Button } from '@atta/ui/components'
 import { TopBar } from '@atta/ui/topbar'
 import { auth } from '@clerk/nextjs/server'
 import Link from 'next/link'
@@ -46,8 +46,12 @@ export async function HeraldTopBar({ context = 'main' }: { context?: 'main' | 'o
   // Gear → /{me}/settings, rendered in TopBar's right-cluster `extraActions`
   // slot (immediately before `accountMenu`). Matches `HeraldAccountMenu`'s
   // responsive icon-with-label pattern: icon-only ≤ md, icon + "Settings" ≥ md.
-  // D-035: imported from the build-time `Button` so the app-chrome library
-  // resolves correctly inside the (owner) tree.
+  // D-035: `Button` comes from the FLAT `@atta/ui/components` import, which
+  // herald's next.config.ts aliases (webpack + turbopack) to
+  // `packages/ui/generated/herald/components.ts` — written by
+  // generateUIIndex('herald') from the CMS chrome library (retro). So chrome
+  // renders the build-time CMS library. NOT the `@atta/ui/components/button`
+  // subpath, which bypasses the alias and always resolves to basic.
   const extraActions =
     userId && user?.onboardingComplete && user.username ? (
       <Button asChild variant='outline' aria-label='Settings' className='h-8 gap-2 px-2.5 text-xs md:px-3'>
