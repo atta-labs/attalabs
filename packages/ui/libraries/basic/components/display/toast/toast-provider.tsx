@@ -15,10 +15,12 @@ import { Toast } from '../../../installed/toast/toast'
 
 /**
  * Not part of the `@atta/ui/types` contract — a library-specific override for
- * which card renders each toast. `createToastProvider` stays internal so the
- * shared `ToastProviderProps` contract type is never widened for this.
+ * which card renders each toast. Exported (not folded into `ToastProviderProps`)
+ * so callers needing a LIVE override — `ActiveToastProvider` resolving the
+ * active library via `useComponents()` — can type it without widening the
+ * shared contract type.
  */
-type ToastCardComponent = ComponentType<ToastProps>
+export type ToastCardComponent = ComponentType<ToastProps>
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
 
@@ -39,8 +41,12 @@ const getPositionClasses = (position: ToastPosition): string => {
   }
 }
 
-export function createToastProvider(CardComponent: ToastCardComponent = Toast) {
-  return function ToastProvider({ children, defaultPosition = 'bottom-right' }: ToastProviderProps) {
+export function createToastProvider(defaultCardComponent: ToastCardComponent = Toast) {
+  return function ToastProvider({
+    children,
+    defaultPosition = 'bottom-right',
+    CardComponent = defaultCardComponent
+  }: ToastProviderProps & { CardComponent?: ToastCardComponent }) {
     const [notifications, setNotifications] = useState<ToastData[]>([])
     const [isClient, setIsClient] = useState(false)
     const nextIdRef = useRef(1)
