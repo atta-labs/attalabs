@@ -1,3 +1,5 @@
+export { amendRationaleDeps } from './amend-rationale-deps'
+export type { AmendDepsInput } from './amend-rationale-deps'
 export { deriveIterationFromForge } from './derive-from-forge'
 export { findMilestoneForSlug, listActiveIterationSlugs, listArchivedIterationSlugs } from './fetch-milestone'
 export type { ActiveIterationRef, MilestoneFacts } from './fetch-milestone'

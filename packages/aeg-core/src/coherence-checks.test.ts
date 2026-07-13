@@ -9,6 +9,7 @@ import {
   checkL2,
   checkL3,
   checkL4,
+  checkL5,
   checkR1,
   checkT1,
   checkT2,
@@ -815,5 +816,44 @@ describe('L4: Issue-level Milestone-attachment drift', () => {
   it('status is always info — never fails CI, matching L1/L2 advisory framing', () => {
     const r = checkL4(['x'], [{ iteration: 'x', issue: 1, milestoneTitle: null }])
     expect(r.status).toBe('info')
+  })
+})
+
+// ---------- L5: open Milestone, all Issues closed (forge-native L1) -----------
+
+describe('L5: open-Milestone-all-closed (advisory — info, never fail)', () => {
+  it('info + finding — open Milestone whose every task Issue is closed', () => {
+    const entries = [
+      makeEntry('iter-5', '1', 101, makeFacts({ issueState: 'closed' })),
+      makeEntry('iter-5', '2', 102, makeFacts({ issueState: 'closed' }))
+    ]
+    const r = checkL5(['iter-5'], new Map([['iter-5', entries]]))
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(1)
+    expect(r.failures[0]?.iteration).toBe('iter-5')
+    expect(r.failures[0]?.reason).toMatch(/Milestone still open but every task Issue is closed/)
+  })
+
+  it('info + no findings — at least one task Issue still open', () => {
+    const entries = [
+      makeEntry('iter-5', '1', 101, makeFacts({ issueState: 'closed' })),
+      makeEntry('iter-5', '2', 102, makeFacts({ issueState: 'open' }))
+    ]
+    const r = checkL5(['iter-5'], new Map([['iter-5', entries]]))
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(0)
+  })
+
+  it('skips a slug whose facts are all unavailable — a forge outage is not a finding', () => {
+    const entries = [makeEntry('iter-5', '1', 101, undefined)]
+    const r = checkL5(['iter-5'], new Map([['iter-5', entries]]))
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(0)
+  })
+
+  it('skips a slug with no entries at all (no tasks with issues)', () => {
+    const r = checkL5(['iter-5'], new Map())
+    expect(r.status).toBe('info')
+    expect(r.failures).toHaveLength(0)
   })
 })

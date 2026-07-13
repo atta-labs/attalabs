@@ -52,6 +52,7 @@ import {
   checkL2,
   checkL3,
   checkL4,
+  checkL5,
   checkManifestValidity,
   checkR1,
   checkT1,
@@ -579,6 +580,11 @@ export async function runCoherenceChecks(
     listIssueMilestonesForSlug(owner, repoName, slug).map((f) => ({ iteration: slug, ...f }))
   )
   results.push(checkL4(milestoneActiveSlugs, issueMilestones))
+
+  // L5 — forge-native Milestone-state coherence (Issue #481, drift class #2):
+  // an open Milestone whose every task Issue is closed. Advisory analogue of
+  // file-based L1 for post-cutover iterations that have no topology file.
+  results.push(checkL5(milestoneActiveSlugs, entriesBySlug))
 
   // N/M stubs
   results.push(...checkN1N2M1M2M3())

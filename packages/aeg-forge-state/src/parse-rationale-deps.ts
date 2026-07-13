@@ -3,16 +3,23 @@ export type ParsedRationaleDeps = {
   conflictsWith: string[]
 }
 
-const SECTION_HEADER = /\*\*Dependency rationale\*\*/i
-const NEXT_HEADER = /\*\*[A-Z][^*]*\*\*/
-const FIELD_LABEL = /^(Depends-on|Conflicts-with)\s*:\s*(.*)$/i
+/**
+ * The one grammar (D-078). These four constants ARE the "Dependency rationale"
+ * grammar; `parseRationaleDeps` (reader) and `amendRationaleDeps` (writer, in
+ * `amend-rationale-deps.ts`) are the only two functions allowed to read them —
+ * never a second copy of the regexes. Exported so the writer shares this exact
+ * grammar rather than duplicating it.
+ */
+export const SECTION_HEADER = /\*\*Dependency rationale\*\*/i
+export const NEXT_HEADER = /\*\*[A-Z][^*]*\*\*/
+export const FIELD_LABEL = /^(Depends-on|Conflicts-with)\s*:\s*(.*)$/i
 
 /** A valid edge id: a bare task id (`1`, `7a`), a bare Issue ref (`#372`), or
  * a cross-iteration reference (`<slug> #372` / `<slug> 25`). Rejects plain
  * prose that happens to share a backtick span with a labeled field — e.g. a
  * `` `vinaya check` `` command-name mention inside the same "Dependency
  * rationale" paragraph (found in Issue #384's real body). */
-const ID_TOKEN = /^(?:[\w.-]+\s+)?#?\d+[a-z]?$/i
+export const ID_TOKEN = /^(?:[\w.-]+\s+)?#?\d+[a-z]?$/i
 
 /** Splits a qualified id (`aeg-governance-hardening #368`) into its slug and
  * the bare remainder (`#368`); `null` slug for an already-bare id (`#372`,
