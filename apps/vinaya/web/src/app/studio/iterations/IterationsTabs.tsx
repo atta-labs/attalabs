@@ -1,8 +1,8 @@
 'use client'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui/components'
-import type { IterationSummary } from '@/lib/aeg-fs'
-import { ForgeUnavailableBanner } from '@/app/studio/_components/ForgeUnavailableBanner'
+import type { ForgeStatus, IterationSummary } from '@/lib/aeg-fs'
+import { ForgeBanners } from '@/app/studio/_components/ForgeUnavailableBanner'
 import { IterationCard } from '@/app/studio/_components/IterationCard'
 
 function resolveDetailHref(it: IterationSummary): string | null {
@@ -29,22 +29,22 @@ function IterationsGrid({ iterations, emptyHint }: { iterations: IterationSummar
 export function IterationsTabs({
   active,
   archived,
-  forgeAvailable
+  forge
 }: {
   active: IterationSummary[]
   archived: IterationSummary[]
-  forgeAvailable: boolean
+  forge: { active: ForgeStatus; archived: ForgeStatus }
 }) {
   return (
     <div className='space-y-4'>
-      {!forgeAvailable && <ForgeUnavailableBanner />}
+      <ForgeBanners forge={forge} />
       <Tabs defaultValue='active'>
         <TabsList>
           <TabsTrigger value='active'>Active ({active.length})</TabsTrigger>
           <TabsTrigger value='archived'>Archived ({archived.length})</TabsTrigger>
         </TabsList>
         <TabsContent value='active'>
-          <IterationsGrid iterations={active} emptyHint={forgeAvailable ? 'No active iterations.' : null} />
+          <IterationsGrid iterations={active} emptyHint={forge.active.kind === 'ok' ? 'No active iterations.' : null} />
         </TabsContent>
         <TabsContent value='archived'>
           <IterationsGrid iterations={archived} emptyHint='No archived iterations yet.' />
