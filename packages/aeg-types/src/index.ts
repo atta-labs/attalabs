@@ -106,6 +106,13 @@ export type ForgeFacts = {
 /** An open Issue's forge-fetched body + labels, as returned by the batched label query. */
 export type ForgeIssue = { number: number; body: string; labels: string[] }
 
+/** A `Closes #N` Issue's resolved AEG task identity — the iteration slug and
+ * task id derived from its title (`[<slug>] <id> — ...`) and `iteration:<slug>`
+ * label. Used by `checkClosesN`'s reverse-direction check (D-069 Layer 1
+ * reverse): a branch closing an Issue that resolves to one of these must be
+ * named `task/<iterSlug>/<taskId>`. */
+export type TaskIssueRef = { iterSlug: string; taskId: string }
+
 /** Identity of a task as parsed from the iteration topology table. */
 export type TaskRef = {
   /** Task id from the topology table — a string (e.g. `3`, `7a`). */

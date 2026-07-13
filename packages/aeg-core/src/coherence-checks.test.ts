@@ -141,6 +141,50 @@ describe('checkClosesN', () => {
     expect(r.ok).toBe(true)
     expect(r.expectedIssue).toBe(300)
   })
+
+  // ---------- reverse direction: task-closing PR on a mismatched branch ------
+  // (the `feat/vinaya-landing-v3` + Issue #509 live gap this brief closes)
+
+  it('fail — non-task branch closes a real task Issue (reverse gate)', () => {
+    const taskIssueRefs = new Map([[509, { iterSlug: 'vinaya-pages-v1', taskId: '2' }]])
+    const r = checkClosesN('feat/vinaya-landing-v3', 'Closes #509', [], taskIssueRefs)
+    expect(r.ok).toBe(false)
+    expect(r.message).toMatch(/^closes-n-reverse:/)
+    expect(r.message).toContain('branch "feat/vinaya-landing-v3"')
+    expect(r.message).toContain('closes #509')
+    expect(r.message).toContain('task 2 of iteration "vinaya-pages-v1"')
+    expect(r.message).toContain('not named "task/vinaya-pages-v1/2"')
+  })
+
+  it('ok — non-task branch closes an ordinary (non-task) Issue', () => {
+    const taskIssueRefs = new Map([[42, null]])
+    const r = checkClosesN('fix/some-typo', 'Closes #42', [], taskIssueRefs)
+    expect(r).toEqual({ ok: true })
+  })
+
+  it('ok — non-task branch closes an Issue absent from the resolved map (unresolved forge lookup)', () => {
+    const r = checkClosesN('fix/some-typo', 'Closes #42', [], new Map())
+    expect(r).toEqual({ ok: true })
+  })
+
+  it('ok — task branch correctly named for the task Issue it closes (reverse passes trivially)', () => {
+    const files = [makeIterationFile('aeg-consolidation', false)]
+    files[0]!.iteration.tasks = [makeTask('2', 264)]
+    const taskIssueRefs = new Map([[264, { iterSlug: 'aeg-consolidation', taskId: '2' }]])
+    const r = checkClosesN('task/aeg-consolidation/2', 'Closes #264', files, taskIssueRefs)
+    expect(r.ok).toBe(true)
+    expect(r.expectedIssue).toBe(264)
+  })
+
+  it('fail — task branch closes a DIFFERENT task Issue than its own name implies', () => {
+    const files = [makeIterationFile('aeg-consolidation', false)]
+    files[0]!.iteration.tasks = [makeTask('2', 264), makeTask('3', 265)]
+    const taskIssueRefs = new Map([[265, { iterSlug: 'aeg-consolidation', taskId: '3' }]])
+    const r = checkClosesN('task/aeg-consolidation/2', 'Closes #265', files, taskIssueRefs)
+    expect(r.ok).toBe(false)
+    expect(r.message).toMatch(/^closes-n-reverse:/)
+    expect(r.message).toContain('not named "task/aeg-consolidation/3"')
+  })
 })
 
 // ---------- A1: closed-without-merge -----------------------------------------
