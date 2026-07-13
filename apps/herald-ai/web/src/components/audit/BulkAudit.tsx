@@ -2,8 +2,7 @@
 
 import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { Fragment, useState } from 'react'
-import { Badge } from '@atta/ui/components/badge'
-import { Button, Card, CardContent, Textarea, Input, useToastContext } from '@atta/ui/components'
+import { Badge, Button, Card, CardContent, Textarea, Input, useToastContext } from '@atta/ui/components'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 
