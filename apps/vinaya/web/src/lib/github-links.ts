@@ -36,8 +36,8 @@ export const GITHUB_DEFAULT_BRANCH = 'main'
 
 /**
  * Builds a GitHub blob URL for a repo-relative path, optionally anchored to a
- * specific line — lets every quoted claim on the page link straight to the
- * real source line a skeptical reader can check.
+ * specific line — shared by any Vinaya web page that needs to link a claim
+ * straight to the real source line a skeptical reader can check.
  */
 export function githubBlobUrl(relPath: string, line?: number): string {
   const base = `https://github.com/${GITHUB_REPO}/blob/${GITHUB_DEFAULT_BRANCH}/${relPath}`

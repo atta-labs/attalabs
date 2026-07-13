@@ -1,7 +1,7 @@
 import 'server-only'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import { findRepoRoot, githubBlobUrl } from './repo'
+import { findRepoRoot, githubBlobUrl } from '../github-links'
 
 export type WorkflowStep = {
   name: string

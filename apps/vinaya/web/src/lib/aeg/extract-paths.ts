@@ -1,7 +1,7 @@
 import 'server-only'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
-import { findRepoRoot, githubBlobUrl } from './repo'
+import { findRepoRoot, githubBlobUrl } from '../github-links'
 
 /** A real, existence-verified repo file referenced inside a quoted piece of text. */
 export type SourceLink = {

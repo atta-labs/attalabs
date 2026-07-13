@@ -2,7 +2,7 @@ import 'server-only'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { deriveTitle, parseDocFrontmatter } from '@atta/aeg-core/docs'
-import { findAegRoot, githubBlobUrl, toRepoRelative } from './repo'
+import { findAegRoot, githubBlobUrl, toRepoRelative } from '../github-links'
 
 export type ContractDoc = {
   slug: string
