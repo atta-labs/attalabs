@@ -60,7 +60,7 @@
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
   --font-heading: var(--font-serif);
-  --font-head: var(--font-serif);
+  --font-head: var(--font-sans);
   --font-body: var(--font-sans);
 
   --radius: var(--radius);

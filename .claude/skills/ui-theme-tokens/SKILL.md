@@ -215,10 +215,13 @@ All tokens below are exposed as Tailwind utilities. For any token `X`, you can u
 | `font-mono` | Technical data, signal titles, code |
 
 > **`font-head` is NOT for app code.** `globals.css` also defines `--font-head`
-> (mapped to `var(--font-serif)`), but only so the vendored retro `installed/*`
-> pastes — which use retroui's own `font-head` heading token — resolve to a font
-> instead of emitting nothing. It is a compat alias for the `installed/` layer, not
-> an app-author token. In product code use `font-serif` (or `font-heading`) for
+> (mapped to `var(--font-sans)`), but only so the vendored retro `installed/*`
+> pastes — which use retroui's own `font-head` token — resolve to a font instead
+> of emitting nothing. It is mapped to the **sans** stack (not serif) because
+> pre-relaunch retro rendered these tab-trigger/button labels in sans, and
+> serif-uppercase triggers read as broken on Herald; a real display-font slot is
+> future CMS work. It is a compat alias for the `installed/` layer, not an
+> app-author token. In product code use `font-serif` (or `font-heading`) for
 > headings; never `font-head`.
 
 ### Radius
