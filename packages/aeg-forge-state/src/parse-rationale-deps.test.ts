@@ -8,7 +8,7 @@ const FIXTURES = join(__dirname, 'fixtures')
  * real bodies the 2026-07-06 spike and this task's own golden comparison
  * were validated against. Static fixtures, not live calls: `bun test` must
  * not depend on network/gh access (CI has no `GH_TOKEN` wired for this job). */
-function readIssueBodyFixture(number: 383 | 384): string {
+function readIssueBodyFixture(number: 383 | 384 | 509): string {
   return readFileSync(join(FIXTURES, `issue-${number}-body.md`), 'utf8')
 }
 
@@ -63,6 +63,17 @@ describe('parseRationaleDeps', () => {
   it("ignores an unrelated backtick span in the same paragraph (Issue #384's `vinaya check` mention)", () => {
     const body = readIssueBodyFixture(384)
     expect(parseRationaleDeps(body)).toEqual({ dependsOn: ['3'], conflictsWith: [] })
+  })
+
+  it("does NOT re-parse a prose-cited historical field as a live edge (Issue #509's real body)", () => {
+    // Regression for Issue #509 ([vinaya-pages-v1] 2): the `Depends-on: 1`
+    // labeled span is the live declaration; the LATER `Depends-on: 2` span
+    // is prose citing a removed historical edge (an Amendment explaining why
+    // it no longer applies), not a fresh re-declaration. Before the fix this
+    // resolved to `dependsOn: ['1', '2']`, and since #509 was renumbered to
+    // task id "2" in the same amendment, edge "2" self-referenced #509.
+    const body = readIssueBodyFixture(509)
+    expect(parseRationaleDeps(body)).toEqual({ dependsOn: ['1'], conflictsWith: [] })
   })
 
   it('returns empty edges when the body has no Dependency rationale section', () => {

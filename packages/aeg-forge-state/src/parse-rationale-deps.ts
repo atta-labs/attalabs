@@ -104,12 +104,26 @@ function extractSection(body: string): string {
  * fixed on Issue #388: a qualified label span followed by a bare
  * continuation span that was itself a same-slug reference used to silently
  * lose its qualifier.
+ *
+ * Each field (`dependsOn`/`conflictsWith`) is assigned by its FIRST labeled
+ * span only. A later labeled span for a field already assigned is a prose
+ * re-mention — e.g. an Amendment citing a removed historical value in
+ * backticks for readability (`` `Depends-on: 2` `` describing a dropped
+ * edge) — not a fresh re-declaration, and is ignored rather than resetting
+ * or extending that field. Fixed on Issue #509: without this, the reader
+ * treated the historical citation as a live edge, producing a
+ * self-referencing dependency once the Issue was renumbered to that same
+ * task id. This never collides with the tolerated multi-span convention
+ * (Issue #383): there, only the FIRST span per field is ever labeled and
+ * later values arrive as bare continuation spans, which this guard doesn't
+ * touch.
  */
 export function parseRationaleDeps(body: string): ParsedRationaleDeps {
   const section = extractSection(body)
   const dependsOn: string[] = []
   const conflictsWith: string[] = []
   let current: 'dependsOn' | 'conflictsWith' | null = null
+  const assignedFields = new Set<'dependsOn' | 'conflictsWith'>()
   const lastSlugByField = {
     dependsOn: { current: null as string | null },
     conflictsWith: { current: null as string | null }
@@ -121,9 +135,13 @@ export function parseRationaleDeps(body: string): ParsedRationaleDeps {
     const content = (match[1] ?? '').trim()
     const labelMatch = content.match(FIELD_LABEL)
     if (labelMatch) {
-      current = labelMatch[1]?.toLowerCase() === 'conflicts-with' ? 'conflictsWith' : 'dependsOn'
-      const ids = resolveIds(labelMatch[2] ?? '', lastSlugByField[current])
-      ;(current === 'dependsOn' ? dependsOn : conflictsWith).push(...ids)
+      const field = labelMatch[1]?.toLowerCase() === 'conflicts-with' ? 'conflictsWith' : 'dependsOn'
+      if (!assignedFields.has(field)) {
+        assignedFields.add(field)
+        current = field
+        const ids = resolveIds(labelMatch[2] ?? '', lastSlugByField[field])
+        ;(field === 'dependsOn' ? dependsOn : conflictsWith).push(...ids)
+      }
     } else if (current) {
       const ids = resolveIds(content, lastSlugByField[current])
       ;(current === 'dependsOn' ? dependsOn : conflictsWith).push(...ids)
