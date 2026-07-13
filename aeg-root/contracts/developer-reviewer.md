@@ -5,6 +5,7 @@ status: active
 producer: developer
 consumer: reviewer
 carrier: pr-diff-and-body
+summary: Ever had a reviewer waste time on basics instead of judging the actual work?
 ---
 # Contract: Developer → Reviewer
 

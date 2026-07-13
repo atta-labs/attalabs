@@ -16,6 +16,7 @@ performs:
 refuses_when: >
   There's no open PR for the task; the PR body carries no brief; or the
   reviewer authored the code under review.
+summary: Ever had a PR reviewed by someone who never read what it was supposed to satisfy?
 ---
 # Reviewer — Role Reference
 

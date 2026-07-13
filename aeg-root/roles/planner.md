@@ -15,6 +15,7 @@ refuses_when: >
   radius, an unknown locked decision, an unregistered project, or an
   in-scope product's previous iteration not yet archived); or asked to size
   or emit a task without first reading the relevant code and docs.
+summary: Ever had a project start with no real plan, just vibes?
 ---
 # Role: Planner
 

@@ -14,6 +14,7 @@ refuses_when: >
   Open task work remains (an unmerged/undropped/unmoved task); the Principal
   has not explicitly declared the iteration done; or the Milestone (or legacy
   topology file) is already closed/archived.
+summary: Ever started new work standing on assumptions about old work that turned out stale?
 ---
 # Iteration Archivist — Role Reference
 

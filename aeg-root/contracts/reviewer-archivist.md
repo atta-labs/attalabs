@@ -5,6 +5,7 @@ status: active
 producer: reviewer
 consumer: archivist
 carrier: pr-verdict-comment
+summary: Ever had a vague "looks good" review that told you nothing about what was checked?
 ---
 # Contract: Reviewer → per-task Archivist
 

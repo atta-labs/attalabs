@@ -5,6 +5,7 @@ status: active
 producer: planner
 consumer: team-leader
 carrier: issue-body
+summary: Ever had a plan's key details get lost the moment someone else picked it up?
 ---
 # Contract: Planner → Brief Author
 

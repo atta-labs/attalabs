@@ -33,6 +33,9 @@ export type DiagramNode = {
   renderState: RenderState
   lock?: string | null
   sourceLine?: number
+  summary?: string
+  category?: 'ci' | 'hook' | 'event'
+  actorType?: 'agent' | 'human' | 'either'
 }
 
 export type DiagramEdge = {
@@ -88,12 +91,23 @@ function ringLabels(enforcement: string): Record<0 | 1 | 2, string> {
   return { 0: find('0'), 1: find('1'), 2: find('2') }
 }
 
-function extractRoleId(content: string): string | null {
-  const { data } = matter(content)
-  return typeof data.role_id === 'string' ? data.role_id : null
+type RoleFrontmatter = {
+  roleId: string
+  summary?: string
+  actorType?: 'agent' | 'human' | 'either'
 }
 
-type ContractFrontmatter = { contractId: string; producer?: string; consumer?: string }
+function extractRole(content: string): RoleFrontmatter | null {
+  const { data } = matter(content)
+  if (typeof data.role_id !== 'string') return null
+  return {
+    roleId: data.role_id,
+    summary: typeof data.summary === 'string' ? data.summary : undefined,
+    actorType: data.actor === 'agent' || data.actor === 'human' || data.actor === 'either' ? data.actor : undefined
+  }
+}
+
+type ContractFrontmatter = { contractId: string; producer?: string; consumer?: string; summary?: string }
 
 function extractContract(content: string): ContractFrontmatter | null {
   const { data } = matter(content)
@@ -101,7 +115,8 @@ function extractContract(content: string): ContractFrontmatter | null {
   return {
     contractId: data.contract_id,
     producer: typeof data.producer === 'string' ? data.producer : undefined,
-    consumer: typeof data.consumer === 'string' ? data.consumer : undefined
+    consumer: typeof data.consumer === 'string' ? data.consumer : undefined,
+    summary: typeof data.summary === 'string' ? data.summary : undefined
   }
 }
 
@@ -171,23 +186,46 @@ export function deriveDiagramModel(
       renderState = 'active'
     }
 
-    nodes.push({ id, kind, label: row.action, ringIndex, renderState, lock, sourceLine: row.line })
+    nodes.push({
+      id,
+      kind,
+      label: row.action,
+      ringIndex,
+      renderState,
+      lock,
+      sourceLine: row.line,
+      summary: row.summary,
+      category: row.category
+    })
     if (ringIndex === 0) ring0Gates.push({ id, label: row.action })
   }
 
   // --- Action nodes (always active in v1) ---
   for (const action of ACTIONS) {
-    nodes.push({ id: `action:${action.id}`, kind: 'action', label: action.label, renderState: 'active' })
+    nodes.push({
+      id: `action:${action.id}`,
+      kind: 'action',
+      label: action.label,
+      renderState: 'active',
+      summary: action.summary
+    })
   }
 
   // --- Role nodes from roles/*.md frontmatter (skip files without role_id) ---
   const roleIds = new Set<string>()
   for (const file of doctrine.roles) {
-    const roleId = extractRoleId(file.content)
-    if (roleId === null) continue
-    if (roleIds.has(roleId)) continue
-    roleIds.add(roleId)
-    nodes.push({ id: `role:${roleId}`, kind: 'role', label: roleId, renderState: 'active' })
+    const role = extractRole(file.content)
+    if (role === null) continue
+    if (roleIds.has(role.roleId)) continue
+    roleIds.add(role.roleId)
+    nodes.push({
+      id: `role:${role.roleId}`,
+      kind: 'role',
+      label: role.roleId,
+      renderState: 'active',
+      summary: role.summary,
+      actorType: role.actorType
+    })
   }
 
   // --- Contract nodes from contracts/*.md frontmatter (skip without id) ---
@@ -200,7 +238,8 @@ export function deriveDiagramModel(
       id: `contract:${contract.contractId}`,
       kind: 'contract',
       label: contract.contractId,
-      renderState: 'active'
+      renderState: 'active',
+      summary: contract.summary
     })
   }
 

@@ -35,6 +35,12 @@ describe('ACTIONS — shape', () => {
     const commit = ACTIONS.find((a) => a.id === 'commit-the-work')
     expect(commit?.crosses).toBe('none')
   })
+
+  it('every summary is non-empty', () => {
+    for (const a of ACTIONS) {
+      expect(a.summary.length).toBeGreaterThan(0)
+    }
+  })
 })
 
 describe('ACTIONS — real-file cross-check', () => {

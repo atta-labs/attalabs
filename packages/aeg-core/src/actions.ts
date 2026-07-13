@@ -38,6 +38,7 @@ export type Action = {
   label: string
   crosses: ActionCrossing
   performedBy: string[] // role_id[]
+  summary: string
 }
 
 export const ACTIONS: Action[] = [
@@ -45,61 +46,71 @@ export const ACTIONS: Action[] = [
     id: 'publish-the-branch',
     label: 'publish the branch',
     crosses: 'into-github',
-    performedBy: ['developer']
+    performedBy: ['developer'],
+    summary: 'Ever had a branch pushed straight to main by mistake?'
   },
   {
     id: 'create-a-task-issue',
     label: 'create a task issue',
     crosses: 'into-github',
-    performedBy: ['planner']
+    performedBy: ['planner'],
+    summary: 'Ever opened a ticket that turned out to have zero plan behind it?'
   },
   {
     id: 'open-a-pull-request',
     label: 'open a pull request',
     crosses: 'into-github',
-    performedBy: ['developer']
+    performedBy: ['developer'],
+    summary: 'Ever gotten a PR with no explanation of what it does or why?'
   },
   {
     id: 'revise-a-pull-request',
     label: 'revise a pull request',
     crosses: 'into-github',
-    performedBy: ['developer', 'planner']
+    performedBy: ['developer', 'planner'],
+    summary: 'Ever seen a PR quietly gutted after it already passed review?'
   },
   {
     id: 'grant-a-waiver',
     label: 'grant a waiver',
     crosses: 'into-github',
-    performedBy: ['principal']
+    performedBy: ['principal'],
+    summary: 'Ever had someone bypass a rule just by typing the right words?'
   },
   {
     id: 'commit-the-work',
     label: 'commit the work',
     crosses: 'none',
-    performedBy: ['developer']
+    performedBy: ['developer'],
+    summary: "Ever had a commit land that plain doesn't build?"
   },
   {
     id: 'author-the-brief',
     label: 'author the brief',
     crosses: 'none',
-    performedBy: ['team-leader']
+    performedBy: ['team-leader'],
+    summary: 'Ever started a task with no clear idea of what "done" means?'
   },
   {
     id: 'produce-the-verdict',
     label: 'produce the verdict',
     crosses: 'none',
-    performedBy: ['reviewer', 'security']
+    performedBy: ['reviewer', 'security'],
+    summary: 'Ever gotten a review that was really just a rubber stamp?'
   },
   {
     id: 'post-provenance-comment',
     label: 'post the provenance comment',
     crosses: 'none',
-    performedBy: ['archivist']
+    performedBy: ['archivist'],
+    summary: 'Ever needed to know exactly what shipped, and why, six months later?'
   },
   {
     id: 'write-the-retrospective',
     label: 'write the retrospective',
     crosses: 'none',
-    performedBy: ['iteration-archivist']
+    performedBy: ['iteration-archivist'],
+    summary: 'Ever finished a big chunk of work with nobody writing down what was learned?'
   }
 ]
 
