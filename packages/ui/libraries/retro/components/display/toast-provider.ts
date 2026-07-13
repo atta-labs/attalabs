@@ -1,3 +1,5 @@
+'use client'
+
 import { createToastProvider } from '../../../basic/components/display/toast/toast-provider'
 import { Toast } from './toast'
 
