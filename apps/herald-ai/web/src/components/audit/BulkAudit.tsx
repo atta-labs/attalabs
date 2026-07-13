@@ -335,7 +335,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               className='h-[510px] min-h-0 min-w-0'
               accept='.md,.pdf'
               onItemsChange={setCvs}
-              components={{ Textarea, Button, Input }}
+              components={{ Textarea, Button, Input, Card, CardContent }}
               customSources={[
                 {
                   label: 'Herald Username',
@@ -373,7 +373,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
               className='h-[510px] min-h-0 min-w-0'
               accept='.md,.pdf'
               onItemsChange={setJds}
-              components={{ Textarea, Button, Input }}
+              components={{ Textarea, Button, Input, Card, CardContent }}
               customSources={[
                 {
                   label: 'URL',
