@@ -142,7 +142,7 @@ export {
   SheetHeader,
   SheetTitle,
   SheetTrigger
-} from '../../basic/installed/sheet'
+} from '../../basic/components/overlay/sheet'
 
 // Dialog — falls back to basic
 export {

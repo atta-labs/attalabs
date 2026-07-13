@@ -14,7 +14,7 @@ export { Input, InputBlock } from './form/input'
 export { Textarea } from './form/textarea'
 export { Checkbox } from './form/checkbox'
 export { Button, buttonVariants } from './interactive/button'
-export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
+export { Collapsible, CollapsibleContent, CollapsibleTrigger } from './interactive/collapsible'
 // Interactive — Tabs
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './interactive/tabs'
 export {
@@ -118,7 +118,7 @@ export {
   SheetHeader,
   SheetTitle,
   SheetTrigger
-} from '../installed/sheet'
+} from './overlay/sheet'
 // Dialog
 export {
   Dialog,
