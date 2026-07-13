@@ -402,7 +402,7 @@ export function BulkAudit({ hasKey, settingsHref }: { hasKey: boolean; settingsH
             onClick={handleRun}
             disabled={!canRun || resolving}
             size='lg'
-            className='w-full max-w-md font-mono text-xs uppercase tracking-[0.2em]'
+            className='h-auto w-full max-w-md whitespace-normal text-center font-mono text-xs uppercase tracking-widest'
           >
             {resolving ? (
               <>
