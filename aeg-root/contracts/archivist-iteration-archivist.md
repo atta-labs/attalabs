@@ -5,6 +5,7 @@ status: active
 producer: archivist
 consumer: iteration-archivist
 carrier: pr-provenance-comments, iteration-file
+summary: Ever closed out a big project only to find smaller pieces were never really finished?
 ---
 # Contract: per-task Archivist → Iteration Archivist
 

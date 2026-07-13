@@ -14,6 +14,7 @@ refuses_when: >
   Not talking to the Principal directly on a chat/planning surface; or a
   task brief has been dispatched and the session is on a coding-agent
   surface — that is the Developer role, not the Team Leader.
+summary: Ever had a task handed off missing the context the person who scoped it had?
 ---
 # Team Leader — Role Reference
 

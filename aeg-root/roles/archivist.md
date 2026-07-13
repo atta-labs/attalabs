@@ -13,6 +13,7 @@ performs:
   - append-token-ledger-rows
 refuses_when: >
   The task's PR isn't merged — close-out happens after merge, not before.
+summary: Ever lost track of why a decision was made, months later?
 ---
 # Archivist — Role Reference
 

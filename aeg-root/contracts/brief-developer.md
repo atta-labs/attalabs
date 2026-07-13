@@ -5,6 +5,7 @@ status: active
 producer: team-leader
 consumer: developer
 carrier: pr-body
+summary: Ever handed someone a task and they missed something you thought was obvious?
 ---
 # Contract: Brief Author → Developer
 

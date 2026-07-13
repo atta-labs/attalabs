@@ -5,6 +5,7 @@ status: active
 producer: iteration-archivist
 consumer: planner
 carrier: archived-iteration-file, pinned-state-issue, retrospective-comment
+summary: Ever started planning the next phase on outdated info about the last one?
 ---
 # Contract: Iteration Archivist → Planner
 

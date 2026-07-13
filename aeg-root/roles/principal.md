@@ -16,6 +16,7 @@ refuses_when: >
   on those agents: they must not write code, author briefs, plan iterations,
   execute tasks, merge PRs, or close Issues out of band on the Principal's
   behalf.
+summary: Who's actually accountable for what merges?
 ---
 # Principal — Role Reference
 

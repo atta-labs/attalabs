@@ -12,6 +12,7 @@ refuses_when: >
   There's no open PR; the PR body carries no brief; the brief has no Test
   Plan section; or the Test Plan is declared unit-tests-only while the diff
   touches a runtime surface.
+summary: Ever had CI go green on a feature that didn't actually work when you tried it?
 ---
 # Verifier — Role Reference
 

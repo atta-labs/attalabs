@@ -14,6 +14,7 @@ performs:
 refuses_when: >
   There's no open PR to security-review; the PR body carries no brief; or
   the reviewer authored the code under review.
+summary: Ever shipped a change nobody checked for leaked secrets?
 ---
 # Security Reviewer — Role Reference
 
