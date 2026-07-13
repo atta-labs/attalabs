@@ -1,7 +1,6 @@
 'use client'
 
-import { Button as BasicButton } from '@atta/ui/components/button'
-import { useComponents } from '@atta/ui/lib/library-provider'
+import { Button as DefaultButton } from '@atta/ui/components/button'
 import { useClerk, useUser } from '@atta/auth'
 import { LogOut } from 'lucide-react'
 
@@ -16,16 +15,23 @@ import { LogOut } from 'lucide-react'
  * rounded avatar fights the per-library theme (e.g. retro/brutal want sharp
  * corners). A library Button stays theme-consistent everywhere.
  *
+ * Button policy (ui-retro-contract-v1 f/u 2): resolved BUILD-TIME via the
+ * static `@atta/ui/components/button` import on every chrome surface (topbar).
+ * The one exception is the candidate's public-profile tree (envoy-shell under
+ * `[username]/(profile)`), which must render the candidate's runtime-chosen
+ * library — that call site injects its `useComponents()`-resolved Button via
+ * the `ButtonComponent` prop. Chrome callers pass nothing and get build-time.
+ *
  * Named export kept as `HeraldAccountMenu` so existing layout imports are
  * unchanged; it simply renders a button now.
  */
-export function HeraldAccountMenu() {
+export function HeraldAccountMenu({ ButtonComponent = DefaultButton }: { ButtonComponent?: typeof DefaultButton }) {
   const { signOut } = useClerk()
   const { user } = useUser()
-  const comps = useComponents()
-  const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
 
   if (!user) return null
+
+  const Button = ButtonComponent
 
   return (
     <Button

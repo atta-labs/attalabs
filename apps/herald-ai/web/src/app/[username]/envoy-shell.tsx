@@ -120,7 +120,7 @@ function EnvoyNavContent({
               </div>
             ) : undefined
           }
-          accountMenu={<HeraldAccountMenu />}
+          accountMenu={<HeraldAccountMenu ButtonComponent={Button} />}
         />
       </div>
 
