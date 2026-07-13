@@ -35,6 +35,7 @@ import 'server-only'
 import { existsSync } from 'node:fs'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
+import { cache } from 'react'
 import {
   parseIteration,
   parseRegistry,
@@ -51,6 +52,18 @@ import {
   resolveRepo
 } from '@atta/aeg-forge-state'
 import { loadIterationProgress } from '@/lib/forge/load-snapshot'
+import { type ForgeSlugFailure, type ForgeStatus, reduceSettled } from './forge-status'
+
+/**
+ * Request-scoped memoization (React 19 `cache()`) so one request never
+ * re-fires an identical forge lookup — e.g. `listIterations()` plus a detail
+ * read in the same render tree. Request-scoped ONLY: no module-level TTL, no
+ * cross-request store (D-087, Studio stores nothing). `@atta/aeg-forge-state`'s
+ * own exports stay unwrapped; these wrappers are local to this module.
+ */
+const cachedListActiveIterationSlugs = cache(listActiveIterationSlugs)
+const cachedListArchivedIterationSlugs = cache(listArchivedIterationSlugs)
+const cachedDeriveIterationFromForge = cache(deriveIterationFromForge)
 
 const ITERATIONS_DIR = 'iterations'
 const REGISTRY_FILE = 'projects.md'
@@ -201,41 +214,59 @@ function mergeTaskEdgesFromFile(forgeIteration: Iteration, fileIteration: Iterat
  * on-disk enumeration source left to fall back to (#515).
  */
 /**
- * A loaded iteration list plus whether the live forge was actually reachable
- * this request. `forgeAvailable === false` iff `resolveRepo()` returned null
- * OR a forge enumeration catch fired — the caller can then degrade *visibly*
- * (an explicit banner) instead of rendering a failure as truth-shaped
- * emptiness (D-087: Studio stores nothing, so it must not lie by omission).
- * The legacy `completed/*.md` supplement never affects the flag.
+ * A loaded iteration list plus a structured `ForgeStatus` for this request.
+ * `ok`/`partial`/`unreachable` (never a single boolean — an AND across
+ * active+archived, or across every slug within one list, is the exact lie
+ * this type replaces: one transient per-slug failure used to discard every
+ * surviving iteration). The caller degrades *visibly and granularly* (an
+ * explicit banner naming the failed subset) instead of rendering a failure as
+ * truth-shaped emptiness (D-087: Studio stores nothing, so it must not lie by
+ * omission). The legacy `completed/*.md` supplement never affects status.
  */
 type LoadedIterations = {
   items: Array<{ fileSlug: string; iteration: Iteration }>
-  forgeAvailable: boolean
+  status: ForgeStatus
 }
 
 async function loadActiveIterationsWithStatus(): Promise<LoadedIterations> {
   const repo = await resolveRepo()
   if (!repo) {
     console.warn('[aeg-fs] active-iteration enumeration skipped: repository could not be resolved (forge unreachable)')
-    return { items: [], forgeAvailable: false }
+    return { items: [], status: { kind: 'unreachable' } }
   }
 
+  let refs: ReturnType<typeof listActiveIterationSlugs>
   try {
-    const refs = listActiveIterationSlugs(repo.owner, repo.repo)
-    const items = await Promise.all(
-      refs.map(async (ref) => {
-        const [iteration, fileIteration] = await Promise.all([
-          deriveIterationFromForge(repo.owner, repo.repo, ref.slug),
-          readActiveFile(ref.slug)
-        ])
-        return { fileSlug: ref.slug, iteration: mergeTaskEdgesFromFile(iteration, fileIteration) }
-      })
-    )
-    return { items, forgeAvailable: true }
+    refs = cachedListActiveIterationSlugs(repo.owner, repo.repo)
   } catch (err) {
-    console.warn(`[aeg-fs] active-iteration forge enumeration failed: ${(err as Error).message}`)
-    return { items: [], forgeAvailable: false }
+    console.warn(`[aeg-fs] active-iteration enumeration failed: ${(err as Error).message}`)
+    return { items: [], status: { kind: 'unreachable' } }
   }
+
+  const settled = await Promise.allSettled(
+    refs.map(async (ref) => {
+      const [iteration, fileIteration] = await Promise.all([
+        cachedDeriveIterationFromForge(repo.owner, repo.repo, ref.slug),
+        readActiveFile(ref.slug)
+      ])
+      return { fileSlug: ref.slug, iteration: mergeTaskEdgesFromFile(iteration, fileIteration) }
+    })
+  )
+
+  const items: Array<{ fileSlug: string; iteration: Iteration }> = []
+  const failures: ForgeSlugFailure[] = []
+  settled.forEach((result, i) => {
+    if (result.status === 'fulfilled') {
+      items.push(result.value)
+      return
+    }
+    const slug = refs[i]?.slug ?? '(unknown)'
+    const reason = result.reason instanceof Error ? result.reason.message : String(result.reason)
+    console.warn(`[aeg-fs] active-iteration derivation failed for "${slug}": ${reason}`)
+    failures.push({ slug, reason })
+  })
+
+  return { items, status: reduceSettled(refs.length, failures, false) }
 }
 
 /** Back-compat array-returning wrapper (consumed by `dispatch-readiness.ts`
@@ -252,7 +283,7 @@ async function readActiveIteration(fileSlug: string): Promise<{ fileSlug: string
     const milestone = findMilestoneForSlug(repo.owner, repo.repo, fileSlug)
     if (milestone?.lifecycle !== 'active') return null
     const [iteration, fileIteration] = await Promise.all([
-      deriveIterationFromForge(repo.owner, repo.repo, fileSlug),
+      cachedDeriveIterationFromForge(repo.owner, repo.repo, fileSlug),
       readActiveFile(fileSlug)
     ])
     return { fileSlug, iteration: mergeTaskEdgesFromFile(iteration, fileIteration) }
@@ -294,28 +325,40 @@ async function readCompletedFile(fileSlug: string): Promise<Iteration | null> {
 async function loadArchivedIterationsWithStatus(): Promise<LoadedIterations> {
   const results: Array<{ fileSlug: string; iteration: Iteration }> = []
   const repo = await resolveRepo()
-  let forgeAvailable = true
+  let status: ForgeStatus = { kind: 'unreachable' }
 
   if (repo) {
+    let refs: ReturnType<typeof listArchivedIterationSlugs> | null = null
     try {
-      const refs = listArchivedIterationSlugs(repo.owner, repo.repo)
-      const derived = await Promise.all(
+      refs = cachedListArchivedIterationSlugs(repo.owner, repo.repo)
+    } catch (err) {
+      console.warn(`[aeg-fs] archived-iteration enumeration failed: ${(err as Error).message}`)
+    }
+
+    if (refs) {
+      const settled = await Promise.allSettled(
         refs.map(async (ref) => ({
           fileSlug: ref.slug,
-          iteration: await deriveIterationFromForge(repo.owner, repo.repo, ref.slug)
+          iteration: await cachedDeriveIterationFromForge(repo.owner, repo.repo, ref.slug)
         }))
       )
-      results.push(...derived)
-    } catch (err) {
-      console.warn(`[aeg-fs] archived-iteration forge enumeration failed: ${(err as Error).message}`)
-      forgeAvailable = false
+      const failures: ForgeSlugFailure[] = []
+      settled.forEach((result, i) => {
+        if (result.status === 'fulfilled') {
+          results.push(result.value)
+          return
+        }
+        const slug = refs?.[i]?.slug ?? '(unknown)'
+        const reason = result.reason instanceof Error ? result.reason.message : String(result.reason)
+        console.warn(`[aeg-fs] archived-iteration derivation failed for "${slug}": ${reason}`)
+        failures.push({ slug, reason })
+      })
+      status = reduceSettled(refs.length, failures, false)
     }
-  } else {
-    forgeAvailable = false
   }
 
   // Legacy `completed/*.md` supplement — the permanent home of pre-Milestone
-  // iterations (#515). NOT a failure: it never flips `forgeAvailable`.
+  // iterations (#515). NOT a failure: it never affects `status`.
   const seen = new Set(results.map((r) => r.fileSlug))
   for (const slug of await listCompletedFileSlugs()) {
     if (seen.has(slug)) continue
@@ -323,7 +366,7 @@ async function loadArchivedIterationsWithStatus(): Promise<LoadedIterations> {
     if (iteration) results.push({ fileSlug: slug, iteration })
   }
 
-  return { items: results, forgeAvailable }
+  return { items: results, status }
 }
 
 /** Back-compat array-returning wrapper (signature unchanged for any consumer). */
@@ -339,7 +382,7 @@ async function readArchivedIteration(fileSlug: string): Promise<{ fileSlug: stri
       const milestone = findMilestoneForSlug(repo.owner, repo.repo, fileSlug)
       if (milestone) {
         if (milestone.lifecycle !== 'complete') return null
-        const iteration = await deriveIterationFromForge(repo.owner, repo.repo, fileSlug)
+        const iteration = await cachedDeriveIterationFromForge(repo.owner, repo.repo, fileSlug)
         return { fileSlug, iteration }
       }
     } catch (err) {
@@ -360,9 +403,10 @@ async function readArchivedIteration(fileSlug: string): Promise<{ fileSlug: stri
 export type IterationLists = {
   active: IterationSummary[]
   archived: IterationSummary[]
-  /** False iff the live forge could not be reached this request — the UI must
-   * then show an explicit "unavailable" banner, not a truth-shaped empty list. */
-  forgeAvailable: boolean
+  /** Per-list forge status — deliberately NOT ANDed into one signal (that AND
+   *  was the lie: a consumer could never tell "active enumeration died" from
+   *  "one archived slug failed"). The UI renders each independently. */
+  forge: { active: ForgeStatus; archived: ForgeStatus }
 }
 
 export async function listIterations(): Promise<IterationLists> {
@@ -378,7 +422,7 @@ export async function listIterations(): Promise<IterationLists> {
     archived: await Promise.all(
       archivedLoaded.items.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, true))
     ),
-    forgeAvailable: activeLoaded.forgeAvailable && archivedLoaded.forgeAvailable
+    forge: { active: activeLoaded.status, archived: archivedLoaded.status }
   }
 }
 
@@ -404,9 +448,11 @@ export async function readIteration(fileSlug: string): Promise<IterationDetail |
  * appear under multiple projects — that is correct and intentional (a
  * cross-project task is a normal shape, per `projects.md`).
  */
-export async function iterationsForProject(
-  projectName: string
-): Promise<{ active: IterationSummary[]; archived: IterationSummary[]; forgeAvailable: boolean }> {
+export async function iterationsForProject(projectName: string): Promise<{
+  active: IterationSummary[]
+  archived: IterationSummary[]
+  forge: { active: ForgeStatus; archived: ForgeStatus }
+}> {
   const [activeLoaded, archivedLoaded] = await Promise.all([
     loadActiveIterationsWithStatus(),
     loadArchivedIterationsWithStatus()
@@ -423,5 +469,5 @@ export async function iterationsForProject(
     Promise.all(activeFiltered.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, false))),
     Promise.all(archivedFiltered.map(({ fileSlug, iteration }) => toSummary(fileSlug, iteration, true)))
   ])
-  return { active, archived, forgeAvailable: activeLoaded.forgeAvailable && archivedLoaded.forgeAvailable }
+  return { active, archived, forge: { active: activeLoaded.status, archived: archivedLoaded.status } }
 }
