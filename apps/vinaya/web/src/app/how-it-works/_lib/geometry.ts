@@ -16,9 +16,17 @@ export const HUB_RADIUS = 56
 export const BAND_WIDTH = 26
 export const BAND_GAP = 8
 
+/** Rounded to 2 decimal places — trig output otherwise carries enough
+ * floating-point noise in its low digits to differ between the server's
+ * SSR pass and the client's hydration pass (same math, different V8
+ * build/JIT state), which React reports as a hydration mismatch. */
+function round(n: number): number {
+  return Math.round(n * 100) / 100
+}
+
 export function polarPoint(radius: number, angleDeg: number, center: Point = CENTER): Point {
   const rad = ((angleDeg - 90) * Math.PI) / 180
-  return { x: center.x + radius * Math.cos(rad), y: center.y + radius * Math.sin(rad) }
+  return { x: round(center.x + radius * Math.cos(rad)), y: round(center.y + radius * Math.sin(rad)) }
 }
 
 /** SVG path `d` for one annular sector between two radii and two angles. */
@@ -85,7 +93,7 @@ export function chordPath(a: Point, b: Point): string {
   const mx = (a.x + b.x) / 2
   const my = (a.y + b.y) / 2
   const towardCenter = 0.35
-  const cx = mx + (CENTER.x - mx) * towardCenter
-  const cy = my + (CENTER.y - my) * towardCenter
+  const cx = round(mx + (CENTER.x - mx) * towardCenter)
+  const cy = round(my + (CENTER.y - my) * towardCenter)
   return `M ${a.x} ${a.y} Q ${cx} ${cy} ${b.x} ${b.y}`
 }
