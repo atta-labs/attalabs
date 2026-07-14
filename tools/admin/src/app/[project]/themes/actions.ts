@@ -95,3 +95,18 @@ export async function setActiveThemeAction(
     throw new Error('Failed to set active theme.')
   }
 }
+
+export async function setActiveLibraryAction(project: ProjectKey, id: string): Promise<void> {
+  try {
+    const { writeClient } = getCmsClientsForProject(project)
+    const { configDocId } = PROJECT_CONFIG[project]
+    await writeClient
+      .patch(configDocId)
+      .set({
+        'userInterface.library': id
+      })
+      .commit()
+  } catch {
+    throw new Error('Failed to set active library.')
+  }
+}
