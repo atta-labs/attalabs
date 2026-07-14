@@ -1,4 +1,4 @@
-import { getThemes, getProductUiConfig } from '@atta/cms'
+import { getThemes, getProductUiConfig, getLibraries } from '@atta/cms'
 import { notFound } from 'next/navigation'
 import { getCmsClientsForProject } from '@/lib/cms-for-project'
 import { isValidProject, PROJECT_CONFIG } from '@/lib/project-config'
@@ -17,8 +17,9 @@ export default async function ThemesPage({ params }: { params: Promise<{ project
   const { readClient: attaReadClient } = getCmsClientsForProject('attalabs')
   const { configDocId } = PROJECT_CONFIG[validProject]
 
-  const [themes, config] = await Promise.all([
+  const [themes, libraries, config] = await Promise.all([
     getThemes(attaReadClient).catch(() => []),
+    getLibraries(attaReadClient).catch(() => []),
     getProductUiConfig(readClient, configDocId, configDocId).catch(() => null)
   ])
 
@@ -29,6 +30,8 @@ export default async function ThemesPage({ params }: { params: Promise<{ project
       themes={themes}
       currentThemeId={config?.userInterface?.theme?._id ?? null}
       currentColorScheme={config?.userInterface?.colorScheme ?? 'dark'}
+      libraries={libraries}
+      currentLibraryId={config?.userInterface?.library?._id ?? null}
     />
   )
 }
