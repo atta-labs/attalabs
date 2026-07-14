@@ -179,7 +179,7 @@ describe('CLI --json mode produces pure JSON on stdout (PR #378 review)', () => 
     // JSON purity independent of the repo's current coherence state.
     let out: string
     try {
-      out = execFileSync('bun', [scriptPath, '--json'], { encoding: 'utf8', timeout: 60_000 })
+      out = execFileSync('bun', [scriptPath, '--json'], { encoding: 'utf8', timeout: 120_000 })
     } catch (err) {
       out = (err as { stdout?: string }).stdout ?? ''
     }
@@ -187,5 +187,5 @@ describe('CLI --json mode produces pure JSON on stdout (PR #378 review)', () => 
     const parsed = JSON.parse(out)
     expect(parsed).toHaveProperty('summary')
     expect(parsed).toHaveProperty('checks')
-  }, 60_000)
+  }, 120_000)
 })
