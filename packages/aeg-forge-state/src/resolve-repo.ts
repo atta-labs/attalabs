@@ -40,11 +40,13 @@ const defaultExec: ResolveRepoExec = () =>
   execFileAsync('git', ['remote', 'get-url', 'origin'], { env: systemEnv, timeout: 5000 })
 
 let cached: RepoRef | null | undefined
+let inflight: Promise<RepoRef | null> | undefined
 
 /** Clears the module-level cache. Test-only seam so both the cached and the
  * retry branches can be exercised deterministically. */
 export function resetResolveRepoCache(): void {
   cached = undefined
+  inflight = undefined
 }
 
 export async function resolveRepo(exec: ResolveRepoExec = defaultExec): Promise<RepoRef | null> {
@@ -59,18 +61,26 @@ export async function resolveRepo(exec: ResolveRepoExec = defaultExec): Promise<
     }
   }
 
-  try {
-    const { stdout } = await exec()
-    // Exec succeeded — the result is deterministic (same remote URL every
-    // call), so cache it even when the URL is unparseable (`null`).
-    cached = parseGitRemoteUrl(stdout.trim())
-    return cached
-  } catch (err) {
-    // Transient failure (timeout, spawn error). Do NOT cache — retry next call.
-    const message = err instanceof Error ? err.message : String(err)
-    console.warn(`[aeg-forge-state] resolveRepo: git remote lookup failed (will retry): ${message}`)
-    return null
-  }
+  if (inflight) return inflight
+
+  inflight = (async () => {
+    try {
+      const { stdout } = await exec()
+      // Exec succeeded — the result is deterministic (same remote URL every
+      // call), so cache it even when the URL is unparseable (`null`).
+      cached = parseGitRemoteUrl(stdout.trim())
+      return cached
+    } catch (err) {
+      // Transient failure (timeout, spawn error). Do NOT cache — retry next call.
+      const message = err instanceof Error ? err.message : String(err)
+      console.warn(`[aeg-forge-state] resolveRepo: git remote lookup failed (will retry): ${message}`)
+      return null
+    } finally {
+      inflight = undefined
+    }
+  })()
+
+  return inflight
 }
 
 function parseGitRemoteUrl(url: string): RepoRef | null {
