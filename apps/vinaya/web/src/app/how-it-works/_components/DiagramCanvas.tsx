@@ -118,40 +118,39 @@ export function DiagramCanvas({ groups, chords, drilledGroup, selectedLeafId, on
           )
         })}
 
-      {drilledGroup !== null &&
-        drilledGroup.children.map((node) => {
-          const arc = drilledArcs.find((a) => a.id === node.id)
-          if (!arc) return null
-          const selected = node.id === selectedLeafId
-          const disabled = node.renderState === 'disabled'
-          const pos = polarPoint(arc.midRadius, arc.midAngle)
-          const lines = wrapLabel(node.label, 14)
-          return (
-            <g key={node.id} opacity={disabled ? 0.5 : 1}>
-              <path
-                d={arc.d}
-                className={
-                  selected
-                    ? 'cursor-pointer fill-primary/15 stroke-primary'
-                    : 'cursor-pointer fill-card stroke-border transition-colors hover:fill-accent/15 hover:stroke-accent'
-                }
-                strokeWidth={1}
-                {...interactiveProps(node.label, () => onSelectLeaf(node))}
-              />
-              {lines.map((line, li) => (
-                <text
-                  key={line}
-                  x={pos.x}
-                  y={pos.y + li * 12 - ((lines.length - 1) * 12) / 2}
-                  textAnchor='middle'
-                  className='pointer-events-none fill-card-foreground font-mono text-[10px]'
-                >
-                  {line}
-                </text>
-              ))}
-            </g>
-          )
-        })}
+      {drilledGroup?.children.map((node) => {
+        const arc = drilledArcs.find((a) => a.id === node.id)
+        if (!arc) return null
+        const selected = node.id === selectedLeafId
+        const disabled = node.renderState === 'disabled'
+        const pos = polarPoint(arc.midRadius, arc.midAngle)
+        const lines = wrapLabel(node.label, 14)
+        return (
+          <g key={node.id} opacity={disabled ? 0.5 : 1}>
+            <path
+              d={arc.d}
+              className={
+                selected
+                  ? 'cursor-pointer fill-primary/15 stroke-primary'
+                  : 'cursor-pointer fill-card stroke-border transition-colors hover:fill-accent/15 hover:stroke-accent'
+              }
+              strokeWidth={1}
+              {...interactiveProps(node.label, () => onSelectLeaf(node))}
+            />
+            {lines.map((line, li) => (
+              <text
+                key={line}
+                x={pos.x}
+                y={pos.y + li * 12 - ((lines.length - 1) * 12) / 2}
+                textAnchor='middle'
+                className='pointer-events-none fill-card-foreground font-mono text-[10px]'
+              >
+                {line}
+              </text>
+            ))}
+          </g>
+        )
+      })}
 
       {drilledGroup?.key === 'actors' &&
         chords.map((chord) => {
