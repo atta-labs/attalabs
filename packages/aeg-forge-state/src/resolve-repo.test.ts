@@ -52,4 +52,18 @@ describe('resolveRepo — transient vs deterministic caching', () => {
     expect(await resolveRepo(exec)).toEqual({ owner: 'octo', repo: 'repo' })
     expect(exec).not.toHaveBeenCalled()
   })
+
+  it('memoizes concurrent cold-cache calls into a single exec — closes the race', async () => {
+    const fakeExec = vi.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      return { stdout: 'git@github.com:acme/widgets.git\n' }
+    })
+
+    const results = await Promise.all([resolveRepo(fakeExec), resolveRepo(fakeExec), resolveRepo(fakeExec)])
+
+    expect(fakeExec).toHaveBeenCalledTimes(1)
+    for (const result of results) {
+      expect(result).toEqual({ owner: 'acme', repo: 'widgets' })
+    }
+  })
 })
