@@ -15,7 +15,7 @@ This page answers two questions: **what prevents an invalid artifact from ever b
 |---|---|---|---|
 | **Hooks** | The agent's own machine (command, commit, push) | The action itself is **refused** — the invalid artifact never exists outside the agent's session. The exact errors feed back; the agent fixes and retries, in-session. | Nobody. Self-correcting. |
 | **Branch Rules** | The forge (CI on every pull request) | The identical checks re-run; CI goes **red**; the merge gate makes red unmergeable by agents. Covers writers the local gates can't reach (web UI, humans, other tools). | Visible red — a human may look. Red on a gated rule now means a *gate bug*, not an agent failure. |
-| **Review** | After merge, continuously, across the whole forge | Drift is surfaced as findings, regardless of who or what wrote it — including history that predates the gates. | Scheduled clean-up, never a surprise mid-dispatch. |
+| **Audits** | After merge, continuously, across the whole forge | Drift is surfaced as findings, regardless of who or what wrote it — including history that predates the gates. | Scheduled clean-up, never a surprise mid-dispatch. |
 
 The same check implementations run at ring 0 and ring 1 — one codebase, two enforcement points, so the local gates and CI can never disagree.
 
@@ -76,7 +76,7 @@ Red CI plus the merge gate means no agent can merge the change. The Principal ca
 
 ---
 
-## Ring 2 — Review (drift from any writer, any era)
+## Ring 2 — Audits (drift from any writer, any era)
 
 | Mechanism | Summary | Category | Description | Runs | Catches | implementation | lock |
 | --- | --- | --- | --- | --- | --- | --- | --- |
