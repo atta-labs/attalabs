@@ -4,7 +4,6 @@ import { Heading, Text } from '@atta/ui/shared'
 import { ArrowUpRight, Lock } from 'lucide-react'
 import { badgeLabels, humanLabel, shortLabel } from '../_lib/display-label'
 import type { GroupKey } from '../_lib/groupings'
-import { DoctrineProse } from './DoctrineProse'
 
 const GROUP_TAG_LABEL: Record<GroupKey, string> = {
   ring0: 'ring 0',
@@ -18,30 +17,30 @@ const GROUP_TAG_LABEL: Record<GroupKey, string> = {
 /**
  * The leaf drill-down panel. Reading order is the whole design:
  *
- *   label → badge → question → truncated explanation → "Read more →"
+ *   kind tag → question → NAME → badges → render-state → description →
+ *   "Read more →"
  *
- * The question (`node.summary`) leads, because it is the one line written for
+ * The question (`node.summary`) leads because it is the one line authored for
  * a reader rather than for a gate ("Ever had a teammate change code they
- * clearly never read the docs for?" — every doctrine table calls this column
- * "Summary," but its content is always phrased as a question). Under it,
- * `node.detail` gives the opening of the real explanation, clamped, and
- * "Read more" carries the reader to the source line for the rest. So the
- * panel answers "why do I care?", then "what is it?", then "where's the full
- * text?" — a taste, not a transcript.
+ * clearly never read the docs for?" — every doctrine table calls that column
+ * "Summary," but its content is always phrased as a question). The name only
+ * says WHICH node, which someone who just clicked a wedge already knows. Then
+ * `node.detail` answers the question in one plain sentence, and "Read more"
+ * goes to the node's own doctrine source. Why care → what is it → where's the
+ * whole truth.
  *
- * `detail` is the doctrine column right before `implementation` (`gate`/
- * `check` rows only — `action`/`role`/`contract` rows have no equivalent
- * column, so nothing renders for them; it is never hand-authored to fill that
- * gap). It runs 1.5k–2.7k chars, which is why it is clamped and never shown
- * whole: #508's original "~40 words from doctrine tables" plan died on
- * exactly that discovery (#551: "25–600+ words with no consistent short
- * form"). #508's amended panel spec lists `summary` without `detail`; the
- * clamped explanation is a deliberate addition on top of it — the question
- * alone left the panel with nothing under it.
+ * `detail` is every kind's own `description` (see `DiagramNode.detail`) — one
+ * sentence, present on gate/check/action/role/contract alike. It is NEVER the
+ * enforcement table's spec column, which is written to enforce and reads like
+ * it; that column is what "Read more" reaches. #508's amended panel spec lists
+ * `summary` and a link with no field between them, which left the panel
+ * asking a question it never answered — `description` (#553) closed that.
  *
- * The title is `humanLabel(node.label)` — a few rows carry a leading
- * `G1 —`.."G5 —" prefix, stripped for display only; `node.label` itself keeps
- * it as the stable id everywhere else.
+ * The name is `shortLabel(humanLabel(...))`: `humanLabel` strips a `G1 —`..
+ * "G5 —" prefix and stray backticks for display, `shortLabel` cuts a doctrine
+ * `Action` cell down to its first clause — 29% carry a parenthetical or a
+ * D-###/#NNN citation, and a name is not a citation. `node.label` keeps the
+ * full string as the stable id everywhere else.
  *
  * The badge is one flat fill for every value, never keyed to WHICH category
  * ("hook" green, "gate" red) — the doctrine grades no category above another,
@@ -49,7 +48,7 @@ const GROUP_TAG_LABEL: Record<GroupKey, string> = {
  * exist. #508 specifies `variant='outline'`; outline renders near-invisible
  * against this page's cream background, so the fill is a deliberate departure
  * on that one point, preserving the brief's actual constraint (no per-value
- * colour coding).
+ * colour coding). `either` renders as two badges — see `badgeLabels`.
  *
  * No live-status pill — `DiagramModel.iteration` never backs this panel (see
  * `load-diagram.ts`).
@@ -107,7 +106,20 @@ export function LeafPanel({
         </div>
       )}
 
-      {node.detail && <DoctrineProse>{node.detail}</DoctrineProse>}
+      {/* Plain text, not a markdown renderer. `detail` used to be the
+          doctrine's enforcement column — 2.7k chars, dense with backticked
+          identifiers — so this rendered through `react-markdown` and clamped
+          to six lines. Since `detail` became `description` (one plain
+          sentence, no markdown in any of the 56), both were dead: a clamp
+          that can never fire and a parser with nothing to parse. Root
+          font-size here is 18px, so `text-sm` (0.875rem) renders at 15.75px,
+          under the 16px body floor — `size='md'` is the smallest that clears
+          it. */}
+      {node.detail && (
+        <Text size='md' className='font-sans text-card-foreground leading-relaxed'>
+          {node.detail}
+        </Text>
+      )}
 
       {readMoreHref && (
         <a
