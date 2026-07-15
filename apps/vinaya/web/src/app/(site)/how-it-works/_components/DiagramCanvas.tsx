@@ -4,7 +4,7 @@ import type { DiagramNode } from '@atta/aeg-core'
 import { GitBranch } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { bandCentroid, bandRingPath, CENTER, drillArcs, HUB_RADIUS, overviewBands, VIEW_SIZE } from '../_lib/geometry'
-import { humanLabel, shortLabel } from '../_lib/display-label'
+import { humanLabel, ringBadgeLabels, shortLabel } from '../_lib/display-label'
 import type { DiagramGroup, GroupKey } from '../_lib/groupings'
 
 type BandKey = GroupKey | 'substrate'
@@ -168,6 +168,7 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
   const drilledArcs = drilledGroup ? drillArcs(drilledGroup.children.map((n) => n.id)) : []
   const translate = `translate(${CENTER.x} ${CENTER.y})`
   const hubTitle = drilledGroup ? hubTitleLines(drilledGroup.label) : []
+  const hubLegend = drilledGroup ? ringBadgeLabels(drilledGroup.children) : []
 
   const bandLabel = (band: (typeof bands)[number]): string =>
     band.key === 'substrate' ? SUBSTRATE_LABEL : (groups.find((g) => g.key === band.key)?.label ?? '')
@@ -308,11 +309,26 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
               x={CENTER.x}
               y={CENTER.y - 10 + li * 58 - ((hubTitle.length - 1) * 58) / 2}
               textAnchor='middle'
-              className='fill-secondary-foreground font-mono font-bold text-6xl'
+              className='fill-muted-foreground font-mono text-6xl'
             >
               {line}
             </text>
           ))}
+          {/* Which kinds of thing this ring holds — the union of its own
+              children's badges, so it states what the ring HAS rather than
+              what a list somewhere claims it should. A ring whose nodes carry
+              no badge (actions, contracts) renders nothing here rather than an
+              empty rule. */}
+          {hubLegend.length > 0 && (
+            <text
+              x={CENTER.x}
+              y={CENTER.y - 10 + ((hubTitle.length - 1) * 58) / 2 + 62}
+              textAnchor='middle'
+              className='fill-muted-foreground font-mono text-2xl uppercase tracking-[0.18em]'
+            >
+              {hubLegend.join(' · ')}
+            </text>
+          )}
         </>
       ) : (
         <>

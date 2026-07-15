@@ -31,6 +31,47 @@ export function humanLabel(label: string): string {
 }
 
 /**
+ * The badges a node shows: its `category` (gate/check) or its `actorType`
+ * (role), never both — no node carries both fields. Structurally typed rather
+ * than importing `DiagramNode`, per this module's zero-import rule.
+ *
+ * `either` expands to HUMAN + AGENT rather than rendering the literal word.
+ * The doctrine says "either" because it is constraining one role in one
+ * field; a reader is asking "who does this?", and "EITHER" answers a question
+ * they did not ask — it only means anything once you already know the other
+ * two values exist. Two badges state the same fact without that prerequisite.
+ * A display expansion of one value, NOT a third actor type: `actorType` stays
+ * `agent | human | either` in the model.
+ *
+ * Shared by the leaf panel's badges and the drilled hub's legend, so the two
+ * cannot drift into disagreeing about what a node is.
+ */
+export function badgeLabels(node: { category?: string; actorType?: string }): string[] {
+  if (node.category) return [node.category]
+  if (node.actorType === 'either') return ['human', 'agent']
+  return node.actorType ? [node.actorType] : []
+}
+
+/**
+ * Every badge value present in a ring, first-seen order, deduped — the drilled
+ * hub's legend.
+ *
+ * Derived from the ring's own children, never a hardcoded list of what a ring
+ * "should" contain. `category`/`actorType` are TypeScript unions, erased at
+ * runtime, so the only honest runtime source for "what values exist here" is
+ * the nodes themselves. That also makes the legend self-correcting: delete the
+ * last `event` row from a ring's doctrine table and its EVENT chip goes with
+ * it, with no page change — the same property the diagram itself has.
+ *
+ * Consequently this lists what a ring HAS, not what it could have. A ring with
+ * only `ci` checks shows one chip, because a second chip would assert a
+ * variety that ring does not actually have.
+ */
+export function ringBadgeLabels(children: Array<{ category?: string; actorType?: string }>): string[] {
+  return Array.from(new Set(children.flatMap(badgeLabels)))
+}
+
+/**
  * The node's name, for anywhere a name is what's wanted — a wedge, a
  * breadcrumb, a title.
  *

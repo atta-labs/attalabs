@@ -2,7 +2,7 @@ import type { DiagramNode } from '@atta/aeg-core'
 import { Badge } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowUpRight, Lock } from 'lucide-react'
-import { humanLabel, shortLabel } from '../_lib/display-label'
+import { badgeLabels, humanLabel, shortLabel } from '../_lib/display-label'
 import type { GroupKey } from '../_lib/groupings'
 import { DoctrineProse } from './DoctrineProse'
 
@@ -70,17 +70,32 @@ export function LeafPanel({
 }) {
   return (
     <div className='flex flex-col gap-4'>
-      <div className='flex flex-col gap-2'>
-        <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-[0.1em]'>
-          {GROUP_TAG_LABEL[groupKey]}
-        </Text>
-        <Heading level={3} className='font-serif text-card-foreground text-xl'>
-          {shortLabel(humanLabel(node.label), 48)}
-        </Heading>
-      </div>
+      <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-[0.1em]'>
+        {GROUP_TAG_LABEL[groupKey]}
+      </Text>
 
-      {(node.category || node.actorType) && (
-        <Badge className='w-fit font-mono text-xs uppercase'>{node.category ?? node.actorType}</Badge>
+      {/* Question first, name second. The question is the one line written
+          for a reader — it earns the attention the name then collects. A
+          reader who has just clicked a wedge already knows WHICH node they
+          clicked; what they do not know is why it matters. */}
+      {node.summary && (
+        <Text size='xl' weight='semibold' className='font-serif text-card-foreground italic leading-snug'>
+          {node.summary}
+        </Text>
+      )}
+
+      <Heading level={3} className='font-mono text-card-foreground text-base uppercase tracking-[0.08em]'>
+        {shortLabel(humanLabel(node.label), 48)}
+      </Heading>
+
+      {badgeLabels(node).length > 0 && (
+        <div className='flex flex-wrap gap-1.5'>
+          {badgeLabels(node).map((label) => (
+            <Badge key={label} className='w-fit font-mono text-xs uppercase'>
+              {label}
+            </Badge>
+          ))}
+        </div>
       )}
 
       {node.renderState !== 'active' && (
@@ -90,15 +105,6 @@ export function LeafPanel({
             {node.renderState === 'locked' ? `locked${node.lock ? ` — ${node.lock}` : ''}` : 'disabled'}
           </Text>
         </div>
-      )}
-
-      {/* The question is the lead element of this panel, not a secondary
-          caption — round-3 fix: it was rendering at the same `sm` size as
-          every other line, with nothing setting it apart. */}
-      {node.summary && (
-        <Text size='xl' weight='semibold' className='font-serif text-card-foreground italic leading-snug'>
-          {node.summary}
-        </Text>
       )}
 
       {node.detail && <DoctrineProse>{node.detail}</DoctrineProse>}
