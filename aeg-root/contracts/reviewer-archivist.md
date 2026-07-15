@@ -1,6 +1,7 @@
 ---
 sidebar_title: Reviewer → Archivist
 contract_id: reviewer-archivist
+description: Carries a review’s actual findings into the permanent record, so a verdict says what was checked, not just that it passed.
 status: active
 producer: reviewer
 consumer: archivist

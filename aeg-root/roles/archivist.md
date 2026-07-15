@@ -1,6 +1,7 @@
 ---
 sidebar_title: Archivist
 role_id: archivist
+description: Closes out a merged pull request, recording what shipped and the intent it came from.
 actor: either
 performs:
   - close-the-issue

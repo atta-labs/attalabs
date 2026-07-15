@@ -1,6 +1,7 @@
 ---
 sidebar_title: Developer
 role_id: developer
+description: The coding agent that executes a brief — writes the change, opens the pull request, and answers for it.
 actor: agent
 performs:
   - write-the-code

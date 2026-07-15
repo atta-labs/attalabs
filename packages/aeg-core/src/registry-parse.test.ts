@@ -37,7 +37,13 @@ describe('parseEnforcementRegistry', () => {
       action: 'Editing a file',
       summary: 'Ever edited code you never read the docs for?',
       category: 'hook',
-      detail: 'Something',
+      // This fixture table has no `Description` header, so no description is
+      // read — NOT the `Gate` cell ("Edit gate") that happens to sit at the
+      // index a real table's Description occupies. That is the whole point of
+      // resolving the column by name: this table is 7 columns wide and so is
+      // Ring 0's real one, and only the header tells them apart.
+      description: undefined,
+      spec: 'Something',
       implementation: '.claude/hooks/check-skill.sh',
       lock: '',
       line: ring0!.line
@@ -97,5 +103,25 @@ describe('parseEnforcementRegistry', () => {
     const ring2 = rows.find((r) => r.ring === 'ring2' && r.action === 'Post-merge archivist')
     expect(ring2?.summary).toBe('Ever wanted a permanent, honest record of exactly what shipped and why?')
     expect(ring2?.category).toBe('event')
+  })
+
+  it('gives every real row a description, in all three rings', () => {
+    const rows = parseEnforcementRegistry(readFileSync(ENFORCEMENT_PATH, 'utf8'))
+    for (const row of rows) {
+      expect(row.description?.trim(), `${row.ring} row '${row.action}' has no Description`).toBeTruthy()
+    }
+  })
+
+  it('never reads the spec column as the description', () => {
+    // The failure this guards is silent, not loud: `description` is resolved
+    // by header name, but if that lookup ever regressed to an index, a ring
+    // whose columns happen to line up would hand back its spec and every
+    // assertion above would still pass — the page would just quietly go back
+    // to showing 2708 chars of enforcement prose. Ring 0's real table is 8
+    // columns and the fixture's is 7; only the header distinguishes them.
+    const rows = parseEnforcementRegistry(readFileSync(ENFORCEMENT_PATH, 'utf8'))
+    for (const row of rows) {
+      expect(row.description, `${row.ring} row '${row.action}' description === spec`).not.toBe(row.spec)
+    }
   })
 })

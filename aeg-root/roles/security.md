@@ -1,6 +1,7 @@
 ---
 sidebar_title: Security Reviewer
 role_id: security
+description: Checks an open pull request for what a correctness review misses — leaked secrets, unsafe configuration, exposed surfaces.
 actor: agent
 performs:
   - security-review-the-pull-request

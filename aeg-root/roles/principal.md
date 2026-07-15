@@ -1,6 +1,7 @@
 ---
 sidebar_title: Principal
 role_id: principal
+description: The person accountable for what merges — the one seat holding authority the mechanism never grants an agent.
 actor: human
 performs:
   - decide-strategy-and-roadmap

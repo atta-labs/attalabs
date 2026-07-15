@@ -1,6 +1,7 @@
 ---
 sidebar_title: Verifier
 role_id: verifier
+description: Exercises the change in the running product, because a green check is not the same as working software.
 actor: either
 performs:
   - boot-the-app

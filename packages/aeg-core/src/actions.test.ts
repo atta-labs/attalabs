@@ -41,6 +41,13 @@ describe('ACTIONS — shape', () => {
       expect(a.summary.length).toBeGreaterThan(0)
     }
   })
+
+  it('every description is non-empty, and says something the question does not', () => {
+    for (const a of ACTIONS) {
+      expect(a.description.length).toBeGreaterThan(0)
+      expect(a.description).not.toBe(a.summary)
+    }
+  })
 })
 
 describe('ACTIONS — real-file cross-check', () => {

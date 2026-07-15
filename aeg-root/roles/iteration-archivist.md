@@ -1,6 +1,7 @@
 ---
 sidebar_title: Iteration Archivist
 role_id: iteration-archivist
+description: Closes out a finished iteration, so the next one starts from what is true now rather than what was true before.
 actor: either
 performs:
   - verify-forge-state

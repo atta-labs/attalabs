@@ -1,6 +1,7 @@
 ---
 sidebar_title: Developer → Reviewer
 contract_id: developer-reviewer
+description: Carries finished work to its reviewer already accounted for, so review spends itself on judgement rather than on basics.
 status: active
 producer: developer
 consumer: reviewer

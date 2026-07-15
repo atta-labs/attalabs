@@ -34,10 +34,17 @@ export type DiagramNode = {
   lock?: string | null
   sourceLine?: number
   summary?: string
-  /** The gate/check's own doctrine "what this verifies" column — see
-   * `GateRow.detail`'s doc comment. Only `gate`/`check` nodes carry it;
-   * `action`/`role`/`contract` nodes have no equivalent doctrine column
-   * to derive one from. */
+  /** What this node actually does, in one plain sentence — every kind carries
+   * one, each from its own source's `description`: the enforcement table's
+   * Description column for `gate`/`check`, `description:` frontmatter for
+   * `role`/`contract`, the `ACTIONS` entry's field for `action`. One register
+   * for every kind, because a reader cannot see what kind of node they
+   * clicked. Never `GateRow.spec` — that column is written to enforce, not to
+   * read (38% of rows cite a decision id, an issue number or a file path;
+   * longest is 2650 chars), and rendering it here is the bug this field
+   * exists to prevent. `summary` asks the question, this answers it, and
+   * "Read more" carries the spec. Optional because a source may omit it,
+   * never because a kind structurally lacks one. */
   detail?: string
   category?: 'ci' | 'hook' | 'event'
   actorType?: 'agent' | 'human' | 'either'
@@ -100,6 +107,7 @@ function ringLabels(enforcement: string): Record<0 | 1 | 2, string> {
 
 type RoleFrontmatter = {
   roleId: string
+  description?: string
   summary?: string
   actorType?: 'agent' | 'human' | 'either'
 }
@@ -109,18 +117,26 @@ function extractRole(content: string): RoleFrontmatter | null {
   if (typeof data.role_id !== 'string') return null
   return {
     roleId: data.role_id,
+    description: typeof data.description === 'string' ? data.description : undefined,
     summary: typeof data.summary === 'string' ? data.summary : undefined,
     actorType: data.actor === 'agent' || data.actor === 'human' || data.actor === 'either' ? data.actor : undefined
   }
 }
 
-type ContractFrontmatter = { contractId: string; producer?: string; consumer?: string; summary?: string }
+type ContractFrontmatter = {
+  contractId: string
+  description?: string
+  producer?: string
+  consumer?: string
+  summary?: string
+}
 
 function extractContract(content: string): ContractFrontmatter | null {
   const { data } = matter(content)
   if (typeof data.contract_id !== 'string') return null
   return {
     contractId: data.contract_id,
+    description: typeof data.description === 'string' ? data.description : undefined,
     producer: typeof data.producer === 'string' ? data.producer : undefined,
     consumer: typeof data.consumer === 'string' ? data.consumer : undefined,
     summary: typeof data.summary === 'string' ? data.summary : undefined
@@ -202,7 +218,7 @@ export function deriveDiagramModel(
       lock,
       sourceLine: row.line,
       summary: row.summary,
-      detail: row.detail,
+      detail: row.description,
       category: row.category
     })
     if (ringIndex === 0) ring0Gates.push({ id, label: row.action })
@@ -215,7 +231,8 @@ export function deriveDiagramModel(
       kind: 'action',
       label: action.label,
       renderState: 'active',
-      summary: action.summary
+      summary: action.summary,
+      detail: action.description
     })
   }
 
@@ -232,6 +249,7 @@ export function deriveDiagramModel(
       label: role.roleId,
       renderState: 'active',
       summary: role.summary,
+      detail: role.description,
       actorType: role.actorType
     })
   }
@@ -247,7 +265,8 @@ export function deriveDiagramModel(
       kind: 'contract',
       label: contract.contractId,
       renderState: 'active',
-      summary: contract.summary
+      summary: contract.summary,
+      detail: contract.description
     })
   }
 

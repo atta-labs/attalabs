@@ -199,6 +199,28 @@ describe('deriveDiagramModel — real aeg-root/ cross-check', () => {
     expect(count('contract')).toBeGreaterThan(0)
   })
 
+  it('gives every leaf node a detail — no kind renders blank', () => {
+    // The panel is a pure function of the node: it renders `detail` if the
+    // node has one, with no per-kind branching. So "some kinds show an
+    // explanation and some show nothing" is never a UI bug to chase — it is
+    // this assertion failing. gate/check derive it from the enforcement
+    // table's own column; action/role/contract from `ACTIONS.description`
+    // and their file's `description:` frontmatter. Ring nodes are framing,
+    // not leaves, and are excluded.
+    const leaves = model.nodes.filter((n) => n.kind !== 'ring')
+    expect(leaves.length).toBeGreaterThan(0)
+    for (const node of leaves) {
+      expect(node.detail?.trim(), `${node.kind} node '${node.id}' has no detail`).toBeTruthy()
+    }
+  })
+
+  it("never lets a node's detail merely restate its question", () => {
+    for (const node of model.nodes) {
+      if (!node.detail || !node.summary) continue
+      expect(node.detail, `node '${node.id}' details === summary`).not.toBe(node.summary)
+    }
+  })
+
   it('gives every into-github action at least one guards edge', () => {
     for (const a of ACTIONS) {
       if (a.crosses !== 'into-github') continue
