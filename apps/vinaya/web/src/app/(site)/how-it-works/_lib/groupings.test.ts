@@ -31,8 +31,22 @@ function baseModel(gateIds: string[]): DiagramModel {
       ring1,
       ring2,
       ...gateIds.map(gate),
-      { id: 'action:publish-the-branch', kind: 'action', label: 'publish the branch', renderState: 'active' },
-      { id: 'action:commit-the-work', kind: 'action', label: 'commit the work', renderState: 'active' },
+      // One of each crossing — the seam must hold both, and used to hold only
+      // the first.
+      {
+        id: 'action:publish-the-branch',
+        kind: 'action',
+        label: 'publish the branch',
+        renderState: 'active',
+        crosses: 'into-github'
+      },
+      {
+        id: 'action:commit-the-work',
+        kind: 'action',
+        label: 'commit the work',
+        renderState: 'active',
+        crosses: 'none'
+      },
       role('developer'),
       role('reviewer'),
       contract('brief-developer')
@@ -56,12 +70,21 @@ describe('deriveGroups', () => {
     expect((ring0After?.children.length ?? 0) - (ring0Before?.children.length ?? 0)).toBe(-1)
   })
 
-  it('the actions seam holds only into-github actions, using ACTIONS.crosses, not a hardcoded list', () => {
-    const groups = deriveGroups(baseModel([]))
-    const actionsSeam = groups.find((g) => g.key === 'actions')
+  it('the actions seam holds EVERY action, crossing or not — #508: render the real 10/9/6', () => {
+    const m = baseModel([])
+    const ids = deriveGroups(m)
+      .find((g) => g.key === 'actions')
+      ?.children.map((n) => n.id)
 
-    expect(actionsSeam?.children.map((n) => n.id)).toContain('action:publish-the-branch')
-    expect(actionsSeam?.children.map((n) => n.id)).not.toContain('action:commit-the-work')
+    // This asserted `not.toContain('action:commit-the-work')` once, and so
+    // pinned the bug in place: the seam was named "GitHub Crossing" and held
+    // only the 5 crossings, leaving 5 canonical actions rendered nowhere. A
+    // test that encodes an omission is how an omission survives review.
+    expect(ids).toContain('action:publish-the-branch') // crosses: into-github
+    expect(ids).toContain('action:commit-the-work') // crosses: none
+    // Count from the model, never a literal — the seam is "every action node",
+    // so a fixture gaining one must not need this test edited.
+    expect(ids?.length).toBe(m.nodes.filter((n) => n.kind === 'action').length)
   })
 
   it('never hardcodes the actor count — reflects however many role nodes the model has', () => {

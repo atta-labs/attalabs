@@ -48,6 +48,15 @@ export type DiagramNode = {
   detail?: string
   category?: 'ci' | 'hook' | 'event'
   actorType?: 'agent' | 'human' | 'either'
+  /** Whether this action reaches GitHub — `action` nodes only, straight from
+   * its `ACTIONS` entry (D-119's canonical set). On the node because a
+   * renderer cannot get it any other way: `ACTIONS` is a value export, and
+   * importing it into a client component drags `@atta/aeg-forge-state`'s
+   * `node:child_process` into the browser bundle. The distinction is
+   * doctrine-load-bearing — ring-0 gates guard exactly the crossings, and
+   * G3 exists to prove there is no unguarded one — so it must survive to the
+   * render rather than being implied by which ring a node was filed under. */
+  crosses?: 'into-github' | 'none'
 }
 
 export type DiagramEdge = {
@@ -232,7 +241,8 @@ export function deriveDiagramModel(
       label: action.label,
       renderState: 'active',
       summary: action.summary,
-      detail: action.description
+      detail: action.description,
+      crosses: action.crosses
     })
   }
 

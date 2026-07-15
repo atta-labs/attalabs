@@ -221,6 +221,19 @@ describe('deriveDiagramModel — real aeg-root/ cross-check', () => {
     }
   })
 
+  it('carries every action’s crossing onto its node, straight from ACTIONS', () => {
+    // The renderer cannot reach `ACTIONS` — it is a value export, and pulling
+    // it into a client component drags `node:child_process` into the browser
+    // bundle. So the crossing has to arrive on the node or not at all, and
+    // "not at all" is what let the page file the 5 non-crossing actions under
+    // a ring named for the other 5 and then drop them.
+    for (const node of model.nodes.filter((n) => n.kind === 'action')) {
+      const canonical = ACTIONS.find((a) => `action:${a.id}` === node.id)
+      expect(canonical, `action node '${node.id}' is not in ACTIONS`).toBeDefined()
+      expect(node.crosses, `action node '${node.id}' lost its crossing`).toBe(canonical?.crosses)
+    }
+  })
+
   it('gives every into-github action at least one guards edge', () => {
     for (const a of ACTIONS) {
       if (a.crosses !== 'into-github') continue

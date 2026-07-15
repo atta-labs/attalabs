@@ -1,10 +1,10 @@
-import { ACTIONS, type DiagramModel, type DiagramNode, type RenderState } from '@atta/aeg-core'
+import type { DiagramModel, DiagramNode, RenderState } from '@atta/aeg-core'
 
 /**
  * The six interactive rings, outermost to innermost — matches Issue #508's
  * original rationale exactly: three enforcement rings (ring0/ring1/ring2),
- * two seam rings (`contracts` — the 6 role-to-role handoffs; `actions` — the
- * crossings into GitHub that gates guard), one actors ring. A seventh,
+ * two seam rings (`contracts` — the 6 role-to-role handoffs; `actions` — all
+ * 10 canonical acts, whether or not they reach GitHub), one actors ring. A seventh,
  * non-interactive "GitHub" substrate divider renders between `actions` and
  * `ring1` (see `geometry.ts`'s `SUBSTRATE_AFTER`) — it carries no
  * `DiagramNode` (the model has no dedicated substrate kind), so it is static
@@ -27,23 +27,32 @@ export type DiagramGroup = {
 
 const STATIC_GROUP_LABELS: Record<'contracts' | 'actions' | 'actors', string> = {
   contracts: 'What actors do',
-  actions: 'GitHub Crossing',
+  // Every act in the canonical set, not just the five that reach GitHub —
+  // "GitHub Crossing" was a name only five of the ten could ever live under,
+  // and naming the ring after the subset is what made dropping the other five
+  // look structural. Which acts cross is now a per-node badge (`crosses`),
+  // where a fact about a node belongs.
+  actions: 'The actions',
   actors: 'The actors'
 }
 
 /**
- * Derives the six interactive drill groups from a `DiagramModel`. The
- * `actions` seam reads `Action.crosses` from `ACTIONS` (already exported
- * from `@atta/aeg-core`, D-119's canonical single source) and matches it
- * back onto each `action:*` DiagramNode by id — `DiagramNode` itself carries
- * no `crosses` field, so this is real cross-referenced data, not a
- * hardcoded list. Internal-only actions (never crossing into GitHub —
- * `commit-the-work`, `author-the-brief`, `produce-the-verdict`,
- * `post-provenance-comment`, `write-the-retrospective`) are real
- * `DiagramModel` data but sit outside these seven canonical rings per Issue
- * #508's own count (3 enforcement + 1 substrate + 2 seam + 1 actors = 7,
- * with no eighth "internal actions" ring) — they are not dropped from the
- * model, only from this renderer's top-level bands.
+ * Derives the six interactive drill groups from a `DiagramModel`.
+ *
+ * The `actions` seam holds ALL ten canonical actions (D-119), not only the
+ * five that cross into GitHub. It used to hold five: the ring was called
+ * "GitHub Crossing", so the other five — `commit-the-work`,
+ * `author-the-brief`, `produce-the-verdict`, `post-provenance-comment`,
+ * `write-the-retrospective` — rendered nowhere, and the omission was argued
+ * from #508's "seven rings" count against #508's equally explicit "render the
+ * real 10/9/6". Both are satisfiable at once: one ring, ten children, seven
+ * bands. Reading a brief's two constraints as a conflict, and resolving it in
+ * favour of the one that drops data, is the failure mode to watch for here —
+ * this page's whole claim is that it renders the doctrine, and five pieces of
+ * doctrine were invisible.
+ *
+ * Which acts reach GitHub is `DiagramNode.crosses`, rendered per node, rather
+ * than implied by ring membership.
  */
 export function deriveGroups(model: DiagramModel): DiagramGroup[] {
   const ringNode = (index: 0 | 1 | 2): DiagramNode => {
@@ -54,8 +63,6 @@ export function deriveGroups(model: DiagramModel): DiagramGroup[] {
 
   const gateCheckChildren = (index: 0 | 1 | 2): DiagramNode[] =>
     model.nodes.filter((n) => (n.kind === 'gate' || n.kind === 'check') && n.ringIndex === index)
-
-  const githubActionIds = new Set(ACTIONS.filter((a) => a.crosses === 'into-github').map((a) => `action:${a.id}`))
 
   const groups: Record<GroupKey, DiagramGroup> = {
     actors: {
@@ -80,7 +87,7 @@ export function deriveGroups(model: DiagramModel): DiagramGroup[] {
       key: 'actions',
       label: STATIC_GROUP_LABELS.actions,
       renderState: 'active',
-      children: model.nodes.filter((n) => n.kind === 'action' && githubActionIds.has(n.id))
+      children: model.nodes.filter((n) => n.kind === 'action')
     },
     ring1: {
       key: 'ring1',

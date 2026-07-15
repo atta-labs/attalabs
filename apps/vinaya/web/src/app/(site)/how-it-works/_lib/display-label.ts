@@ -46,10 +46,14 @@ export function humanLabel(label: string): string {
  * Shared by the leaf panel's badges and the drilled hub's legend, so the two
  * cannot drift into disagreeing about what a node is.
  */
-export function badgeLabels(node: { category?: string; actorType?: string }): string[] {
+export function badgeLabels(node: { category?: string; actorType?: string; crosses?: string }): string[] {
   if (node.category) return [node.category]
   if (node.actorType === 'either') return ['human', 'agent']
-  return node.actorType ? [node.actorType] : []
+  if (node.actorType) return [node.actorType]
+  // Actions: does this act reach GitHub, or stay on the machine? Rendered as
+  // words rather than left to ring membership — the ring holds all ten.
+  if (node.crosses) return [node.crosses === 'into-github' ? 'reaches github' : 'stays local']
+  return []
 }
 
 /**
