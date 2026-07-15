@@ -144,7 +144,13 @@ export function RandomQuestionText({ questions, displayCount = 2, action }: Rand
       </div>
 
       {action && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: allRevealed ? 1 : 0 }} transition={{ duration: 0.5 }}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: allRevealed ? 1 : 0 }}
+          transition={{ duration: 0.5 }}
+          className={allRevealed ? undefined : 'pointer-events-none'}
+          aria-hidden={!allRevealed}
+        >
           {action}
         </motion.div>
       )}
