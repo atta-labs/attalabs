@@ -42,13 +42,13 @@ describe('readMoreTarget', () => {
     expect(readMoreTarget(node)).toEqual({ path: 'aeg-root/contracts/brief-developer.md' })
   })
 
-  it('returns null for action nodes — no single doctrine file backs them', () => {
+  it('points action nodes at the canonical action set — no doctrine markdown backs them, actions.ts does', () => {
     const node: DiagramNode = {
       id: 'action:commit-the-work',
       kind: 'action',
       label: 'commit the work',
       renderState: 'active'
     }
-    expect(readMoreTarget(node)).toBeNull()
+    expect(readMoreTarget(node)).toEqual({ path: 'packages/aeg-core/src/actions.ts' })
   })
 })

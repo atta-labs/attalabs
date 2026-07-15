@@ -4,7 +4,7 @@ import type { DiagramNode } from '@atta/aeg-core'
 import { GitBranch } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { bandCentroid, bandRingPath, CENTER, drillArcs, HUB_RADIUS, overviewBands, VIEW_SIZE } from '../_lib/geometry'
-import { humanLabel } from '../_lib/display-label'
+import { humanLabel, shortLabel } from '../_lib/display-label'
 import type { DiagramGroup, GroupKey } from '../_lib/groupings'
 
 type BandKey = GroupKey | 'substrate'
@@ -57,11 +57,19 @@ const RING_FILL: Record<BandKey, string> = {
   ring1: 'fill-chart-1/70',
   ring2: 'fill-chart-1'
 }
+/** Wedge fills — the drilled state only (the overview's own bands use
+ * `RING_FILL`). The two seam keys break from their `fill-background` band
+ * treatment here and take a real `muted` fill: "a gap in the colour wheel"
+ * only reads as a gap while a coloured ring sits on either side of it. Drilled,
+ * those neighbours are gone, and background-on-background rendered the wedges
+ * invisible — a literal blank screen. `muted` keeps them out of the categorical
+ * palette (they are still hand-offs, not mechanisms — no `success`/`warning`/
+ * `chart-1` hue is claimed) while actually being visible. */
 const RING_FILL_SOFT: Record<BandKey, string> = {
   actors: 'fill-success/25',
-  contracts: 'fill-background',
+  contracts: 'fill-muted',
   ring0: 'fill-warning/25',
-  actions: 'fill-background',
+  actions: 'fill-muted',
   substrate: 'fill-chart-1/20',
   ring1: 'fill-chart-1/32',
   ring2: 'fill-chart-1/45'
@@ -75,15 +83,6 @@ const RING_FILL_HOVER: Record<BandKey, string> = {
   ring1: 'hover:fill-chart-1/50',
   ring2: 'hover:fill-chart-1/65'
 }
-const RING_LEGEND_DOT: Record<BandKey, string> = {
-  actors: 'bg-success/45',
-  contracts: 'bg-background border border-border',
-  ring0: 'bg-warning/45',
-  actions: 'bg-background border border-border',
-  substrate: 'bg-chart-1/45',
-  ring1: 'bg-chart-1/70',
-  ring2: 'bg-chart-1'
-}
 
 const SUBSTRATE_LABEL = 'GitHub'
 
@@ -96,28 +95,10 @@ function bandStrokeWidth(key: BandKey): number {
 }
 
 /**
- * Wedge labels must be short — a verb phrase, not the full descriptive
- * sentence a doctrine row's `action` column can carry (e.g. "Opening a task
- * PR (final self-check before creation)"). Cuts at the first clause
- * boundary, then hard-truncates as a last resort. The FULL, untruncated
- * `node.label` still renders in the leaf panel once that node is clicked —
- * this only shortens what's crammed into a small pie slice.
- */
-function shortWedgeLabel(label: string, maxChars = 24): string {
-  // `\/` requires surrounding whitespace so it only matches a genuine
-  // alternate-phrasing slash ("...brief) / starting Step 0..."), never a
-  // slash inside a compound word ("role/contract", "hook/CLI") — those must
-  // survive intact, not get chopped down to "role"/"hook".
-  const clause = label.split(/ \(| \/ |—|–|: /)[0]?.trim() ?? label
-  if (clause.length <= maxChars) return clause
-  return `${clause.slice(0, maxChars - 1).trimEnd()}…`
-}
-
-/**
  * Round-4 rule: font size has a hard floor everywhere on this page — a
  * label that doesn't fit truncates with `…`, it never shrinks the font to
  * squeeze in. Used for the hub's center label, the one spot with no other
- * truncation already in place (`shortWedgeLabel` handles wedges).
+ * truncation already in place (`shortLabel` handles wedges).
  */
 function truncateWithEllipsis(label: string, maxChars: number): string {
   if (label.length <= maxChars) return label
@@ -267,7 +248,7 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
           const arc = drilledArcs.find((a) => a.id === node.id)
           if (!arc) return null
           // Tailwind size scale, not an arbitrary px value — `text-xl`.
-          const lines = wrapLabel(shortWedgeLabel(humanLabel(node.label)), 12)
+          const lines = wrapLabel(shortLabel(humanLabel(node.label)), 12)
           return (
             <g key={`drill-label-${node.id}`} className='pointer-events-none'>
               {lines.map((line, li) => (
@@ -310,11 +291,15 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
           className='pointer-events-none fill-none stroke-secondary-foreground'
         />
       )}
-      {/* Tailwind size scale only, no arbitrary px. Drilled-state text scaled
-          up to match the bigger hub — `text-6xl`/`text-2xl`, not the old
-          24px/12px that read tiny inside a 380-radius circle. Title wraps
-          to 2 lines before truncating — a 380-radius hub has the room, no
-          reason to ellipsis a label that would fit on a second row. */}
+      {/* Tailwind size scale only, no arbitrary px. Drilled-state title scaled
+          up to match the bigger hub — `text-6xl`, not the old 24px that read
+          tiny inside a 380-radius circle. Title wraps to 2 lines before
+          truncating — a 380-radius hub has the room, no reason to ellipsis a
+          label that would fit on a second row. The hub carries the group title
+          alone: its child count restated what the wedges already show, and
+          "back" labelled an affordance the breadcrumb states plainly. The
+          circle stays clickable — `interactiveProps` keeps the accessible
+          name. */}
       {drilledGroup ? (
         <>
           {hubTitle.map((line, li) => (
@@ -328,14 +313,6 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
               {line}
             </text>
           ))}
-          <text
-            x={CENTER.x}
-            y={CENTER.y - 10 + ((hubTitle.length - 1) * 58) / 2 + 70}
-            textAnchor='middle'
-            className='fill-muted-foreground font-mono text-2xl uppercase tracking-wide'
-          >
-            {drilledGroup.children.length} node(s) — back
-          </text>
         </>
       ) : (
         <>
@@ -358,22 +335,5 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
         </>
       )}
     </svg>
-  )
-}
-
-export function DiagramLegend({ groups }: { groups: DiagramGroup[] }) {
-  return (
-    <div className='flex flex-col gap-2'>
-      {groups.map((group) => (
-        <div key={group.key} className='flex items-center gap-1.5'>
-          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${RING_LEGEND_DOT[group.key]}`} />
-          <span className='font-mono text-muted-foreground text-xs'>{group.label}</span>
-        </div>
-      ))}
-      <div className='flex items-center gap-1.5'>
-        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${RING_LEGEND_DOT.substrate}`} />
-        <span className='font-mono text-muted-foreground text-xs'>{SUBSTRATE_LABEL}</span>
-      </div>
-    </div>
   )
 }

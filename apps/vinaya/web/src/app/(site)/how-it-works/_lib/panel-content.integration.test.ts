@@ -52,9 +52,10 @@ describe('leaf panel content, against real doctrine', () => {
 
     expect(panel.badge).toMatch(/^(ci|hook|event)$/)
     expect(panel.readMoreHref).toMatch(/^https:\/\/github\.com\/.*aeg-root\/enforcement\.md#L\d+$/)
-    // The doctrine column right before `implementation` — proves the
-    // model wiring (registry-parse → diagram-model → DiagramNode) actually
-    // reaches this panel, not just that the field exists on the type.
+    // Both render, so both are proven to survive the wiring
+    // (registry-parse → diagram-model → DiagramNode → panel) — not merely to
+    // exist on the type. `detail` reaches the panel clamped, never whole.
+    expect(panel.summary).toBeTruthy()
     expect(panel.detail).toBeTruthy()
   })
 
@@ -71,13 +72,16 @@ describe('leaf panel content, against real doctrine', () => {
       badge: action.category ?? action.actorType,
       renderState: action.renderState,
       summary: action.summary,
-      readMoreHref: target ?? undefined
+      readMoreHref: target ? githubBlobUrl(target.path, target.line) : undefined
     }
     // biome-ignore lint/suspicious/noConsole: intentional evidence dump for the PR body
     console.log('ACTION PANEL:', JSON.stringify(panel, null, 2))
 
     expect(panel.badge).toBeUndefined()
-    expect(panel.readMoreHref).toBeUndefined()
+    // Actions carry no `category`/`actorType`, but they DO link — to the
+    // canonical set that defines them. A bare path, no `#L` anchor: unlike
+    // enforcement.md rows, an action node carries no `sourceLine`.
+    expect(panel.readMoreHref).toMatch(/^https:\/\/github\.com\/.*packages\/aeg-core\/src\/actions\.ts$/)
   })
 
   it('renders a real role node correctly', async () => {

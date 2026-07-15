@@ -12,9 +12,9 @@ import {
 import { Heading, Text } from '@atta/ui/shared'
 import Link from 'next/link'
 import { useState } from 'react'
-import { humanLabel } from '../_lib/display-label'
+import { humanLabel, shortLabel } from '../_lib/display-label'
 import type { DiagramGroup, GroupKey } from '../_lib/groupings'
-import { DiagramCanvas, DiagramLegend } from './DiagramCanvas'
+import { DiagramCanvas } from './DiagramCanvas'
 import { FindingsBanner } from './FindingsBanner'
 import { LeafPanel } from './LeafPanel'
 
@@ -24,8 +24,10 @@ type Props = {
   readMoreHrefs: Record<string, string>
 }
 
+/** Prose, not markdown — this string renders through `Text`, so backticks
+ * would show up as literal backticks. The filenames read fine unquoted. */
 const OVERVIEW_TEXT =
-  'Every node here is derived at build time from this monorepo’s own doctrine — `enforcement.md`, `roles/*.md`, `contracts/*.md` — nothing on this page is hand-typed.'
+  'Every node here is derived at build time from this monorepo’s own doctrine — enforcement.md, roles/*.md and contracts/*.md — nothing on this page is hand-typed.'
 
 /** One-line editorial framing per ring, shown in the sidebar once that ring
  * is drilled — copy, same status as the ring/seam labels themselves
@@ -120,8 +122,13 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
               <>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
+                  {/* The node's NAME, never its full `Action` cell — a
+                      breadcrumb is a trail marker, and ten doctrine rows
+                      carry a whole sentence here (see `shortLabel`). The
+                      untruncated string is one glance away in the panel
+                      title beside it. */}
                   <BreadcrumbPage className='font-bold text-foreground'>
-                    {humanLabel(selectedLeaf.label)}
+                    {shortLabel(humanLabel(selectedLeaf.label))}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </>
@@ -154,21 +161,10 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
               <Text size='sm' className='font-sans text-card-foreground leading-relaxed'>
                 {drilledGroup ? GROUP_EXPLANATION[drilledGroup.key] : OVERVIEW_TEXT}
               </Text>
-              {drilledGroup && (
-                <Text size='xs' className='font-mono text-muted-foreground'>
-                  {drilledGroup.children.length} node(s) — click one for its detail.
-                </Text>
-              )}
             </div>
           )}
 
           <FindingsBanner findings={findings} />
-
-          {!selectedLeaf && (
-            <div className='mt-auto border-border border-t pt-4'>
-              <DiagramLegend groups={groups} />
-            </div>
-          )}
         </aside>
 
         <div className='flex min-h-[420px] w-full min-w-0 items-center justify-center p-4 lg:flex-1'>

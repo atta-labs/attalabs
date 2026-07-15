@@ -2,8 +2,9 @@ import type { DiagramNode } from '@atta/aeg-core'
 import { Badge } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowUpRight, Lock } from 'lucide-react'
-import { humanLabel } from '../_lib/display-label'
+import { humanLabel, shortLabel } from '../_lib/display-label'
 import type { GroupKey } from '../_lib/groupings'
+import { DoctrineProse } from './DoctrineProse'
 
 const GROUP_TAG_LABEL: Record<GroupKey, string> = {
   ring0: 'ring 0',
@@ -15,22 +16,43 @@ const GROUP_TAG_LABEL: Record<GroupKey, string> = {
 }
 
 /**
- * The leaf drill-down panel. Content model is Title → Question → Summary →
- * link (round-2 fix): the title is `humanLabel(node.label)` — a few
- * doctrine rows carry a leading `G1 —`.."G5 —" code prefix, stripped for
- * display only (see `display-label.ts`'s `humanLabel` doc comment); `node.label`
- * itself, G-number included, stays the stable id everywhere else. `node.summary`
- * is the doctrine row's rhetorical question ("Ever had a teammate change code they
- * clearly never read the docs for?" — every doctrine table literally labels
- * this column "Summary," but its actual content is always phrased as a
- * question), `node.detail` is the real mechanism explanation (`gate`/`check`
- * nodes only — the doctrine column right before `implementation`, e.g. "what
- * must be true," "Re-verifies," "Catches"; `action`/`role`/`contract` nodes
- * have no equivalent doctrine column, so no detail renders for them — never
- * hand-authored to fill the gap). Also: ring/kind tag, category-or-actorType
- * badge (neutral, never color-coded), a render-state indicator when not
- * `active`, and a GitHub "Read more" link. No live-status pill —
- * `DiagramModel.iteration` never backs this panel (see `load-diagram.ts`).
+ * The leaf drill-down panel. Reading order is the whole design:
+ *
+ *   label → badge → question → truncated explanation → "Read more →"
+ *
+ * The question (`node.summary`) leads, because it is the one line written for
+ * a reader rather than for a gate ("Ever had a teammate change code they
+ * clearly never read the docs for?" — every doctrine table calls this column
+ * "Summary," but its content is always phrased as a question). Under it,
+ * `node.detail` gives the opening of the real explanation, clamped, and
+ * "Read more" carries the reader to the source line for the rest. So the
+ * panel answers "why do I care?", then "what is it?", then "where's the full
+ * text?" — a taste, not a transcript.
+ *
+ * `detail` is the doctrine column right before `implementation` (`gate`/
+ * `check` rows only — `action`/`role`/`contract` rows have no equivalent
+ * column, so nothing renders for them; it is never hand-authored to fill that
+ * gap). It runs 1.5k–2.7k chars, which is why it is clamped and never shown
+ * whole: #508's original "~40 words from doctrine tables" plan died on
+ * exactly that discovery (#551: "25–600+ words with no consistent short
+ * form"). #508's amended panel spec lists `summary` without `detail`; the
+ * clamped explanation is a deliberate addition on top of it — the question
+ * alone left the panel with nothing under it.
+ *
+ * The title is `humanLabel(node.label)` — a few rows carry a leading
+ * `G1 —`.."G5 —" prefix, stripped for display only; `node.label` itself keeps
+ * it as the stable id everywhere else.
+ *
+ * The badge is one flat fill for every value, never keyed to WHICH category
+ * ("hook" green, "gate" red) — the doctrine grades no category above another,
+ * and a per-value palette would assert a severity ranking that does not
+ * exist. #508 specifies `variant='outline'`; outline renders near-invisible
+ * against this page's cream background, so the fill is a deliberate departure
+ * on that one point, preserving the brief's actual constraint (no per-value
+ * colour coding).
+ *
+ * No live-status pill — `DiagramModel.iteration` never backs this panel (see
+ * `load-diagram.ts`).
  *
  * `readMoreHref` arrives pre-computed from the server (`page.tsx`) — this
  * component must never import `@/lib/github-links` itself: that module is
@@ -53,14 +75,12 @@ export function LeafPanel({
           {GROUP_TAG_LABEL[groupKey]}
         </Text>
         <Heading level={3} className='font-serif text-card-foreground text-xl'>
-          {humanLabel(node.label)}
+          {shortLabel(humanLabel(node.label), 48)}
         </Heading>
       </div>
 
       {(node.category || node.actorType) && (
-        <Badge variant='outline' className='w-fit font-mono text-xs uppercase'>
-          {node.category ?? node.actorType}
-        </Badge>
+        <Badge className='w-fit font-mono text-xs uppercase'>{node.category ?? node.actorType}</Badge>
       )}
 
       {node.renderState !== 'active' && (
@@ -81,15 +101,7 @@ export function LeafPanel({
         </Text>
       )}
 
-      {/* Round-4 floor: body text (question/detail) >=16px. This app's root
-          font-size is 18px, so Tailwind's rem-based `text-sm` (0.875rem)
-          actually renders at 15.75px — under the floor. `size='md'`
-          (1rem) is the smallest Text size that clears it. */}
-      {node.detail && (
-        <Text size='md' className='font-sans text-card-foreground leading-relaxed'>
-          {node.detail}
-        </Text>
-      )}
+      {node.detail && <DoctrineProse>{node.detail}</DoctrineProse>}
 
       {readMoreHref && (
         <a
