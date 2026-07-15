@@ -8,11 +8,11 @@ import { describe, expect, it, vi } from 'vitest'
 // it must be stubbed to exercise this Server-Component-only code path.
 vi.mock('server-only', () => ({}))
 
-const { githubBlobUrl } = await import('../../../lib/github-links')
+const { githubBlobUrl } = await import('../../../../lib/github-links')
 const { deriveGroups } = await import('./groupings')
 const { readMoreTarget } = await import('./read-more')
 
-const REPO_ROOT = path.resolve(import.meta.dirname, '../../../../../../..')
+const REPO_ROOT = path.resolve(import.meta.dirname, '../../../../../../../..')
 const AEG_ROOT = path.join(REPO_ROOT, 'aeg-root')
 
 /**
@@ -44,6 +44,7 @@ describe('leaf panel content, against real doctrine', () => {
       badge: gate.category,
       renderState: gate.renderState,
       summary: gate.summary,
+      detail: gate.detail,
       readMoreHref: target ? githubBlobUrl(target.path, target.line) : undefined
     }
     // biome-ignore lint/suspicious/noConsole: intentional evidence dump for the PR body
@@ -51,11 +52,15 @@ describe('leaf panel content, against real doctrine', () => {
 
     expect(panel.badge).toMatch(/^(ci|hook|event)$/)
     expect(panel.readMoreHref).toMatch(/^https:\/\/github\.com\/.*aeg-root\/enforcement\.md#L\d+$/)
+    // The doctrine column right before `implementation` — proves the
+    // model wiring (registry-parse → diagram-model → DiagramNode) actually
+    // reaches this panel, not just that the field exists on the type.
+    expect(panel.detail).toBeTruthy()
   })
 
   it('renders a real action node correctly', async () => {
     const groups = await realGroups()
-    const action = groups.find((g) => g.key === 'action-github')?.children[0]
+    const action = groups.find((g) => g.key === 'actions')?.children[0]
     expect(action).toBeDefined()
     if (!action) return
 
@@ -95,5 +100,27 @@ describe('leaf panel content, against real doctrine', () => {
 
     expect(panel.badge).toMatch(/^(agent|human|either)$/)
     expect(panel.readMoreHref).toMatch(/^https:\/\/github\.com\/.*aeg-root\/roles\/.*\.md$/)
+  })
+
+  it('renders a real contract node correctly — now a first-class band, not a chord-only overlay', async () => {
+    const groups = await realGroups()
+    const contract = groups.find((g) => g.key === 'contracts')?.children[0]
+    expect(contract).toBeDefined()
+    if (!contract) return
+
+    const target = readMoreTarget(contract)
+    const panel = {
+      label: contract.label,
+      tag: 'contract',
+      badge: contract.category ?? contract.actorType,
+      renderState: contract.renderState,
+      summary: contract.summary,
+      readMoreHref: target ? githubBlobUrl(target.path, target.line) : undefined
+    }
+    // biome-ignore lint/suspicious/noConsole: intentional evidence dump for the PR body
+    console.log('CONTRACT PANEL:', JSON.stringify(panel, null, 2))
+
+    expect(panel.badge).toBeUndefined()
+    expect(panel.readMoreHref).toMatch(/^https:\/\/github\.com\/.*aeg-root\/contracts\/.*\.md$/)
   })
 })

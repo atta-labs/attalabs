@@ -34,6 +34,11 @@ export type DiagramNode = {
   lock?: string | null
   sourceLine?: number
   summary?: string
+  /** The gate/check's own doctrine "what this verifies" column — see
+   * `GateRow.detail`'s doc comment. Only `gate`/`check` nodes carry it;
+   * `action`/`role`/`contract` nodes have no equivalent doctrine column
+   * to derive one from. */
+  detail?: string
   category?: 'ci' | 'hook' | 'event'
   actorType?: 'agent' | 'human' | 'either'
 }
@@ -73,7 +78,14 @@ function slugify(cell: string): string {
 
 /** The three ring summary labels, keyed by ring index, from `enforcement.md`'s
  * `## The model:` summary table (the same table `loadRings` reads). Throws on a
- * malformed doctrine — same contract as `parseEnforcementRegistry`. */
+ * malformed doctrine — same contract as `parseEnforcementRegistry`.
+ *
+ * Keyed by row POSITION (row 0 = ring 0, row 1 = ring 1, row 2 = ring 2),
+ * not by a "0 —"/"1 —"/"2 —" text prefix on the cell — the labels
+ * themselves carry no numeric prefix (round-3 fix: dropped per Issue #508),
+ * so a prefix match would no longer find anything. The 3-row length check
+ * above is what actually guarantees the ring-0/1/2 order; position is a
+ * reliable key once that's enforced. */
 function ringLabels(enforcement: string): Record<0 | 1 | 2, string> {
   const lines = enforcement.split('\n')
   const summaryHeadingLine = findHeadingLine(lines, /^##\s*The model:/)
@@ -82,13 +94,8 @@ function ringLabels(enforcement: string): Record<0 | 1 | 2, string> {
   if (summaryTable?.rows.length !== 3) {
     throw new Error('enforcement.md: summary table does not have exactly 3 rows (Ring 0/1/2)')
   }
-  const byLabel = summaryTable.rows.map((row) => (row.cells[0] ?? '').replace(/\*\*/g, '').trim())
-  const find = (prefix: string): string => {
-    const label = byLabel.find((l) => l.startsWith(prefix))
-    if (label === undefined) throw new Error(`enforcement.md: summary table has no row labeled "${prefix}"`)
-    return label
-  }
-  return { 0: find('0'), 1: find('1'), 2: find('2') }
+  const byRow = summaryTable.rows.map((row) => (row.cells[0] ?? '').replace(/\*\*/g, '').trim())
+  return { 0: byRow[0] ?? '', 1: byRow[1] ?? '', 2: byRow[2] ?? '' }
 }
 
 type RoleFrontmatter = {
@@ -195,6 +202,7 @@ export function deriveDiagramModel(
       lock,
       sourceLine: row.line,
       summary: row.summary,
+      detail: row.detail,
       category: row.category
     })
     if (ringIndex === 0) ring0Gates.push({ id, label: row.action })

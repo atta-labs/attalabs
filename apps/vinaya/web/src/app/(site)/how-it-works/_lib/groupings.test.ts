@@ -1,6 +1,6 @@
 import type { DiagramModel, DiagramNode } from '@atta/aeg-core'
 import { describe, expect, it } from 'vitest'
-import { deriveContractChords, deriveGroups } from './groupings'
+import { deriveGroups } from './groupings'
 
 const ring0: DiagramNode = {
   id: 'ring:0',
@@ -34,7 +34,8 @@ function baseModel(gateIds: string[]): DiagramModel {
       { id: 'action:publish-the-branch', kind: 'action', label: 'publish the branch', renderState: 'active' },
       { id: 'action:commit-the-work', kind: 'action', label: 'commit the work', renderState: 'active' },
       role('developer'),
-      role('reviewer')
+      role('reviewer'),
+      contract('brief-developer')
     ],
     edges: [],
     findings: [],
@@ -55,20 +56,29 @@ describe('deriveGroups', () => {
     expect((ring0After?.children.length ?? 0) - (ring0Before?.children.length ?? 0)).toBe(-1)
   })
 
-  it('splits action nodes into github/internal seams using ACTIONS.crosses, not a hardcoded list', () => {
+  it('the actions seam holds only into-github actions, using ACTIONS.crosses, not a hardcoded list', () => {
     const groups = deriveGroups(baseModel([]))
-    const githubSeam = groups.find((g) => g.key === 'action-github')
-    const internalSeam = groups.find((g) => g.key === 'action-internal')
+    const actionsSeam = groups.find((g) => g.key === 'actions')
 
-    expect(githubSeam?.children.map((n) => n.id)).toContain('action:publish-the-branch')
-    expect(internalSeam?.children.map((n) => n.id)).toContain('action:commit-the-work')
-    expect(githubSeam?.children.map((n) => n.id)).not.toContain('action:commit-the-work')
+    expect(actionsSeam?.children.map((n) => n.id)).toContain('action:publish-the-branch')
+    expect(actionsSeam?.children.map((n) => n.id)).not.toContain('action:commit-the-work')
   })
 
   it('never hardcodes the actor count — reflects however many role nodes the model has', () => {
     const groups = deriveGroups(baseModel([]))
     const actors = groups.find((g) => g.key === 'actors')
     expect(actors?.children.length).toBe(2)
+  })
+
+  it('the contracts seam holds every real contract node — a first-class, drillable group', () => {
+    const groups = deriveGroups(baseModel([]))
+    const contracts = groups.find((g) => g.key === 'contracts')
+    expect(contracts?.children.map((n) => n.id)).toEqual(['contract:brief-developer'])
+  })
+
+  it('returns exactly the 6 canonical groups, in a fixed outer-to-inner order', () => {
+    const groups = deriveGroups(baseModel([]))
+    expect(groups.map((g) => g.key)).toEqual(['actors', 'contracts', 'ring0', 'actions', 'ring1', 'ring2'])
   })
 
   it('surfaces a disabled ring0 render-state onto the group, never overridden by a locked gate', () => {
@@ -83,31 +93,5 @@ describe('deriveGroups', () => {
     const ring0Group = groups.find((g) => g.key === 'ring0')
     expect(ring0Group?.renderState).toBe('disabled')
     expect(ring0Group?.children[0]?.renderState).toBe('locked')
-  })
-})
-
-describe('deriveContractChords', () => {
-  it('resolves producer/consumer role ids from produces/consumes edges, never guessed from the id', () => {
-    const model: DiagramModel = {
-      nodes: [role('team-leader'), role('developer'), contract('brief')],
-      edges: [
-        {
-          id: 'produces:role:team-leader:contract:brief',
-          kind: 'produces',
-          from: 'role:team-leader',
-          to: 'contract:brief'
-        },
-        { id: 'consumes:role:developer:contract:brief', kind: 'consumes', from: 'role:developer', to: 'contract:brief' }
-      ],
-      findings: [],
-      iteration: null
-    }
-    const chords = deriveContractChords(model)
-    expect(chords).toHaveLength(1)
-    expect(chords[0]).toMatchObject({
-      id: 'contract:brief',
-      producerRoleId: 'role:team-leader',
-      consumerRoleId: 'role:developer'
-    })
   })
 })

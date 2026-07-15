@@ -37,6 +37,7 @@ describe('parseEnforcementRegistry', () => {
       action: 'Editing a file',
       summary: 'Ever edited code you never read the docs for?',
       category: 'hook',
+      detail: 'Something',
       implementation: '.claude/hooks/check-skill.sh',
       lock: '',
       line: ring0!.line
@@ -72,7 +73,7 @@ describe('parseEnforcementRegistry', () => {
 
     const emptyImplementation = rows.filter((r) => r.implementation === '')
     // "Staleness audits" is the one genuinely non-deterministic row with no file.
-    expect(emptyImplementation.map((r) => r.action)).toEqual(['**Staleness audits**'])
+    expect(emptyImplementation.map((r) => r.action)).toEqual(['Staleness audits'])
 
     for (const row of rows) {
       expect(row.line).toBeGreaterThan(0)
@@ -93,7 +94,7 @@ describe('parseEnforcementRegistry', () => {
     expect(ring1?.summary).toBe('Ever found a task marked "done" that was never actually merged?')
     expect(ring1?.category).toBe('ci')
 
-    const ring2 = rows.find((r) => r.ring === 'ring2' && r.action === '**Post-merge archivist**')
+    const ring2 = rows.find((r) => r.ring === 'ring2' && r.action === 'Post-merge archivist')
     expect(ring2?.summary).toBe('Ever wanted a permanent, honest record of exactly what shipped and why?')
     expect(ring2?.category).toBe('event')
   })

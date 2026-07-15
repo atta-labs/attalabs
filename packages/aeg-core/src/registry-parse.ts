@@ -26,6 +26,14 @@ export type GateRow = {
   action: string
   summary: string
   category: 'ci' | 'hook' | 'event'
+  /** The substantive middle column — "What must be true..." (ring0),
+   * "Re-verifies" (ring1), "Catches" (ring2) — always the column
+   * immediately before `implementation`. Each ring names it differently,
+   * but structurally it's always the same slot: what the check actually
+   * verifies/produces, distinct from `summary`'s rhetorical question.
+   * Undefined when a table has no such column (only 5 cells: action,
+   * summary, category, implementation, lock). */
+  detail?: string
   implementation: string
   lock: string
   line: number
@@ -43,6 +51,19 @@ function stripBackticks(cell: string): string {
     return trimmed.slice(1, -1)
   }
   return trimmed
+}
+
+/** Strips markdown `**bold**` markers from a gate/check row's own name.
+ * `action` is the one cell this parser has never sanitized — most rows are
+ * plain text, but a real row can legitimately bold its name for doctrine-
+ * prose emphasis, and that literal `**...**` was leaking straight through
+ * to `DiagramNode.label` (visible asterisks in the how-it-works UI; every
+ * label already renders bold via CSS where it matters, so the markdown
+ * marker carries zero information downstream). Root-cause fix, not a
+ * per-row doctrine patch — the next accidentally-bolded name is covered
+ * too, not just the ones caught so far. */
+function stripBold(cell: string): string {
+  return cell.trim().replace(/\*\*/g, '')
 }
 
 /**
@@ -63,12 +84,15 @@ export function parseEnforcementRegistry(content: string): GateRow[] {
     for (const row of table.rows) {
       const cells = row.cells
       if (cells.length < 3) continue
-      const action = cells[0] ?? ''
+      const action = stripBold(cells[0] ?? '')
       const summary = stripBackticks(cells[1] ?? '')
       const category = stripBackticks(cells[2] ?? '') as GateRow['category']
       const implementation = stripBackticks(cells[cells.length - 2] ?? '')
       const lock = (cells[cells.length - 1] ?? '').trim()
-      result.push({ ring, action, summary, category, implementation, lock, line: row.line })
+      // The column right before `implementation` — only meaningful once it's
+      // past `category` (index 2); a bare 5-cell row has no such column.
+      const detail = cells.length > 5 ? stripBackticks(cells[cells.length - 3] ?? '') : undefined
+      result.push({ ring, action, summary, category, detail, implementation, lock, line: row.line })
     }
   }
 

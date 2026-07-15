@@ -1,5 +1,5 @@
 import 'server-only'
-import { loadDiagramModel } from '@/app/how-it-works/_lib/load-diagram'
+import { loadDiagramModel } from '@/app/(site)/how-it-works/_lib/load-diagram'
 
 /**
  * Every diagram node's `summary` field, doctrine-wide — written as a rhetorical
