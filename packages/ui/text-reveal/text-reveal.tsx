@@ -7,6 +7,10 @@ export interface TextRevealProps {
   text: string
   className?: string
   wordClassName?: string
+  /** Word-wrap justification. Defaults to 'center' (the original, still-used-everywhere
+   * behavior) — 'start' is for left-aligned body copy like a bullet list, where centered
+   * line-wrapping reads wrong. */
+  align?: 'center' | 'start'
 }
 
 const containerVariants = {
@@ -30,9 +34,12 @@ const childVariants = {
   }
 }
 
-export function TextReveal({ text, className, wordClassName }: TextRevealProps) {
-  // Regex to split by words and punctuation, preserving them correctly
-  const words = text.match(/[\p{L}\p{N}]+[^\s\p{L}\p{N}]?|[^\s]/gu) || []
+export function TextReveal({ text, className, wordClassName, align = 'center' }: TextRevealProps) {
+  // Regex to split by words and punctuation, preserving them correctly. The
+  // `(?:['']\p{L}\p{N}+)*` group keeps contractions ("didn't", "who's") as a single
+  // token — without it, the apostrophe greedily consumed as trailing punctuation and the
+  // final letter ("t", "s") was left to wrap onto its own line as an orphan word.
+  const words = text.match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*[^\s\p{L}\p{N}]?|[^\s]/gu) || []
 
   return (
     <div className={cn('inline-block', className)}>
@@ -40,7 +47,7 @@ export function TextReveal({ text, className, wordClassName }: TextRevealProps) 
         variants={containerVariants}
         initial='hidden'
         animate='visible'
-        className='flex flex-wrap justify-center'
+        className={cn('flex flex-wrap', align === 'center' ? 'justify-center' : 'justify-start')}
       >
         {words.map((word, index) => (
           <motion.span

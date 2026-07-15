@@ -4,9 +4,10 @@ import { AttaMark } from './marks/atta-mark'
 import { AttalabsMark } from './marks/attalabs-mark'
 import { HeraldMark } from './marks/herald-mark'
 import { VadaMark } from './marks/vada-mark'
+import { VinayaMark } from './marks/vinaya-mark'
 import { VitakkaMark } from './marks/vitakka-mark'
 
-export type ProductId = 'attalabs' | 'atta' | 'vada' | 'vitakka' | 'herald'
+export type ProductId = 'attalabs' | 'atta' | 'vada' | 'vitakka' | 'herald' | 'vinaya'
 
 export interface FooterLink {
   label: string
@@ -25,7 +26,8 @@ const PRODUCT_NAMES: Record<ProductId, string> = {
   atta: 'Atta',
   vada: 'Vāda',
   vitakka: 'Vitakka',
-  herald: 'Herald'
+  herald: 'Herald',
+  vinaya: 'Vinaya'
 }
 
 type MarkComponent = React.ComponentType<{ className?: string }>
@@ -34,7 +36,8 @@ const MARKS: Record<ProductId, MarkComponent> = {
   atta: AttaMark,
   vada: VadaMark,
   vitakka: VitakkaMark,
-  herald: HeraldMark
+  herald: HeraldMark,
+  vinaya: VinayaMark
 }
 
 export function Footer({ product, tagline, links = [] }: FooterProps) {
