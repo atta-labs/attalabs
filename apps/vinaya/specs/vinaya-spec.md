@@ -28,7 +28,18 @@ Every route `apps/vinaya/web` has or will have, and its real status. Update this
 
 **What task 2 (#509) specified and the v3 landing does not carry.** #509's settled design was a refusal page: a hero replaying the #474 review-gate incident (block → recovery prompt → self-correct → merge), the recognition line, three "corpses" each citing a real PR number, an identity-vs-syntax waiver panel, and a live dogfood strip reading open PRs / undispatched work / real red via StateSource. The v3 rework replaced that design at Principal direction; none of those elements are on the live page. Recorded here because the Issue's Boundary describes the design that was *settled*, not the one that *shipped* — the two diverged and nothing else states it. The dogfood strip is the one element dropped with no replacement: the landing reads doctrine (`loadDoctrineQuestions`) but no live forge state. No task exists for it.
 
-**Known open claim on the live page.** `FeatureGrid` feature 02 reads "non-destructive install, one-command eject" — both are `vinaya-cli-v1` commands with no code merged, which `/known-limits` states plainly on the same page. Correcting it is a positioning call constrained by D-090 (`Lock: YES` — git hooks are the universal ring 0; only forge-write interception is an "opt-in accelerator") and D-118 (a config key was rejected because it "would misleadingly imply they're optional"). Principal-owned, escalated `severity:product`, and deliberately not improvised here.
+**Known false claims live on the landing today.** `FeatureGrid` feature 02 (`_components/FeatureGrid.tsx`) reads, in full:
+
+> `body: 'non-destructive install, one-command eject, each ring is opt-in'`
+
+Two distinct defects, both **currently live on `main`**, both shipped by PR #561:
+
+1. **"non-destructive install, one-command eject"** — `vinaya init` and `vinaya eject` are `vinaya-cli-v1` commands with **no code merged**. `/known-limits`, two sections below on the same page, states this plainly. The page contradicts itself.
+2. **"each ring is opt-in"** — contradicts **D-090** (`Status: PENDING`, `Lock: YES`), which makes git hooks the **universal ring 0** and reserves "opt-in accelerator only" for forge-write interception alone. **D-118** rejected a Ring-0/CI config key for precisely this reason: it "would misleadingly imply they're optional". The page states on the acquisition surface exactly what the config schema was forbidden from implying. It also contradicts `FEATURES[4]` three cells away ("the same deterministic checks gate every merge — no special cases").
+
+**This paragraph is the only thing catching defect 2.** §11's CONTRADICTION check fires on `ACTIVE` decisions; D-090 is `PENDING`, so the machinery does not see it. Do not delete this note without fixing the cell.
+
+Correcting the copy is a positioning call against a locked decision — Principal-owned per the Positioning block below ("do not improvise these fields"), escalated `severity:product`, and deliberately not improvised. `rings 1 and 2 are opt-in` would be true; `each` and `or none` are the false parts.
 
 ## Positioning (locked copy — D-088, D-108)
 
