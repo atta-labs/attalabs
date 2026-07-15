@@ -14,7 +14,7 @@ Every route `apps/vinaya/web` has or will have, and its real status. Update this
 
 | Route | Purpose | Status | Built by | UI polish |
 |---|---|---|---|---|
-| `/` | Landing — locked D-088/D-108 copy, `npx vinaya init` CTA (marked coming-soon) | **Live** | Task 0 (#479, merged) | Functional, not yet applying the rings-drilldown visual design |
+| `/` | Landing — v3 hero copy ("Sustainable software development for the AI era" + Two-Eras story), `npx vinaya init` CTA (marked coming-soon) | **Live** | Task 0 (#479, merged); landing v3 design applied (`vinaya-landing-v3-implementation-brief`); renderer reworked from SVG+CSS to hand-rolled `<canvas>` (`vinaya-landing-v3-canvas-rework-brief`) | Applies landing v3 design — canvas hero scenes (`NormalEraCanvas`/`LightSpeedEraCanvas`/`ProtectedCanvas`), token-faithful (colors resolved from CSS vars, never hardcoded), not yet the cream theme itself |
 | `/known-limits` | Honest, individually-verified list of what Vinaya doesn't do yet | **Live** | Task 0 (#479, merged) | Functional, not yet designed |
 | `/aeg` | Superseded — now a genuine HTTP 301 to `/how-it-works` (a Route Handler returning `NextResponse.redirect(url, 301)`, not `next.config.ts`'s `redirects()`, which emits 308 for `permanent: true`) | **Live (redirect only)** | Task 4 (#508, `vinaya-pages-v1`) | N/A — no page, just a redirect |
 | `/how-it-works` | The interactive rings diagram — rendered entirely from `@atta/aeg-core`'s `DiagramModel` (zero hand-maintained diagram data): a concentric hub-and-band overview (ring 0/1/2, the two action-seam groupings, actors, plus a static "the forge" substrate hub) that drills into per-node sector arcs and a leaf detail panel | **Live** | Task 4 (#508, `vinaya-pages-v1`) | Applied — the design explored in `apps/vinaya/web/design/how-it-works-rings-drilldown.html` (concentric hub/band drill interaction) is now wired to real data; panel copy and a live-status pill from that mockup were deliberately not reproduced (see task 4's PR) |
@@ -28,6 +28,8 @@ Every route `apps/vinaya/web` has or will have, and its real status. Update this
 **The UI-polish gap, named explicitly:** `/` and `/known-limits` are functionally correct today but visually generic — neither yet applies the design already explored in the rings-drilldown prototype. `/how-it-works` (task 4, #508) closes this gap for the former `/aeg` surface: it applies the concentric hub/band drill interaction from `how-it-works-rings-drilldown.html`, wired to real `DiagramModel` data — see the "`/how-it-works` page" section below for what was and wasn't carried over from that mockup.
 
 ## Positioning (locked copy — D-088, D-108)
+
+**The live landing (`/`) now carries the v3 hero copy** ("Sustainable software development for the AI era" + the Two-Eras story), replacing the headline/subhead/clarifier below per the Principal-approved `vinaya-landing-v3-implementation-brief`. The decision-log amendment superseding D-088's landing copy is **Principal-owned and still pending ratification** — the fields below remain the last-ratified record until that amendment lands in `packages/governance/decisions.md`.
 
 Wording refinements are Principal-owned; do not improvise these fields.
 

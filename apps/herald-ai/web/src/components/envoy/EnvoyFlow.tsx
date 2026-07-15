@@ -74,13 +74,16 @@ const ANIMATION_DURATION = 5000
 // max wall time so the server always wins the race — otherwise the browser
 // aborts before the server can return its real response (the failure mode
 // Dani hit in dev on June 17 with API_TIMEOUT = 35 000 vs. server's 90 000-ms
-// AUDIT_LLM_TIMEOUT_MS). The server short-circuits on `LLM timeout` (no retry
-// after a timeout — see runSingleMatch in app/api/audit/route.ts), so worst-
-// case server wall time is one 90 s LLM window + the 3 s GitHub-tool budget +
-// a small overhead — well under 120 s. Server is the source of truth for the
-// partial-report fallback; the client should never declare "took longer than
-// expected" on its own.
-const API_TIMEOUT = 120_000
+// AUDIT_LLM_TIMEOUT_MS, and again live in prod with API_TIMEOUT = 120 000 vs.
+// a genuine ~115 s run). runSingleMatch (app/api/audit/route.ts) only skips
+// the retry when an attempt hits the 90 s race-timeout itself — a null result
+// or a reported run failure still retries once, so two full 90 s LLM windows
+// can both elapse before falling back to a partial report. Worst-case server
+// wall time is therefore ~2 * 90 s LLM windows + the 10 s GitHub-tool budget
+// (GITHUB_SIGNAL_TIMEOUT_MS) + overhead — up to ~190 s, not ~100 s. Server is
+// the source of truth for the partial-report fallback; the client should
+// never declare "took longer than expected" on its own.
+const API_TIMEOUT = 210_000
 
 export function EnvoyFlow({
   profile,

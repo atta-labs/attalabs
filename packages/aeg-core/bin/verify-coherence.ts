@@ -461,18 +461,21 @@ export async function runCoherenceChecks(
   const snapshotsBySlug = new Map<string, Map<string, ForgeFacts>>()
   let anyForgeUnavailable = false
 
-  for (const f of files) {
-    const tasks = f.iteration.tasks.filter((t) => t.issue !== null).map((t) => ({ id: t.id, issue: t.issue as number }))
+  const eligible = files
+    .map((f) => ({
+      f,
+      tasks: f.iteration.tasks.filter((t) => t.issue !== null).map((t) => ({ id: t.id, issue: t.issue as number }))
+    }))
+    .filter(({ tasks }) => tasks.length > 0)
 
-    if (tasks.length === 0) continue
+  const snapshotResults = await Promise.all(
+    eligible.map(async ({ f, tasks }) => ({
+      f,
+      snapshot: await fetchForgeFacts({ owner, repo: repoName, iteration: f.slug, tasks })
+    }))
+  )
 
-    const snapshot = await fetchForgeFacts({
-      owner,
-      repo: repoName,
-      iteration: f.slug,
-      tasks
-    })
-
+  for (const { f, snapshot } of snapshotResults) {
     if (snapshot.unavailable) {
       anyForgeUnavailable = true
     } else {

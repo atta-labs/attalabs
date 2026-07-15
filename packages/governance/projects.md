@@ -20,6 +20,7 @@ The folder is simply **the home for that project's specs and status** (`<path>/s
 
 | Project  | Path                  | Specs                       | Per-project state                    |
 |----------|-----------------------|-----------------------------|--------------------------------------|
+| admin    | `tools/admin`         | `tools/admin/specs/`        | (state tracked globally for now)     |
 | vada     | `apps/vada-ai`        | `apps/vada-ai/specs/`       | `apps/vada-ai/aeg-project/`   |
 | cetana   | `apps/cetana-ai`      | `apps/cetana-ai/specs/`     | `apps/cetana-ai/aeg-project/` |
 | herald   | `apps/herald-ai`      | `apps/herald-ai/specs/`     | `apps/herald-ai/aeg-project/` |
@@ -29,6 +30,8 @@ The folder is simply **the home for that project's specs and status** (`<path>/s
 | desktop  | `apps/desktop`        | `apps/desktop/specs/`       | (state tracked globally for now)     |
 | attalabs | `apps/attalabs`       | `apps/attalabs/specs/`      | (state tracked globally for now)     |
 | vinaya   | `apps/vinaya`         | `apps/vinaya/specs/`        | `apps/vinaya/aeg-project/`    |
+
+> **admin** — `tools/admin`: the internal Sanity-backed admin tool for managing per-product theme/library config across every AttaLabs product (not a product itself, no `.attalabs.dev` domain). Had real code and a task PR (#557, the Library-picker feature) before ever getting a registry row — added retroactively once that gap was noticed. `tools/*` carries no `-ai` suffix (internal-tooling convention, like `apps/aeg`, `apps/desktop`, `apps/attalabs`).
 
 > **vinaya** — Vinaya: the npm-distributed reference implementation of AEG (D-083–D-109, PENDING), installed into any GitHub repository. One app folder, three workspaces: `apps/vinaya/cli` (the `vinaya` command — init/check/pr/issue/doctor/upgrade/eject/demo/waiver), `apps/vinaya/web` (**Vinaya Studio**, copied from `apps/aeg/web`), and `apps/vinaya/sources` (the StateSource adapters — forge-backed primary, file-backed transitional). Imports `@atta/aeg-core` unchanged; the vinaya-namespace migration of shared code rides the later npm extraction, never a standalone rename (D-085). Folders are created by `vinaya-cli-v1` task 1 and `vinaya-studio-v1` task 1 — the registry row deliberately precedes the code. "Vinaya is the reference implementation of AEG": AEG stays the model's name (`aeg-root/` is untouched); Vinaya is the tool. Pāli name by elective aesthetic (consistent with D-025). `apps/vinaya` carries no `-ai` suffix (meta/infra convention).
 
