@@ -9,7 +9,7 @@ const FEATURES = [
   {
     number: '02',
     title: 'Adopt incrementally.',
-    body: 'non-destructive install, one-command eject, each ring is opt-in'
+    body: 'each ring is opt-in — take one, some, or none'
   },
   {
     number: '03',
