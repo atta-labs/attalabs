@@ -87,8 +87,8 @@ export async function getAttaConfig(client: SanityClient): Promise<PortalUiConfi
   return getProductUiConfig(client, 'attaConfig', 'attaConfig')
 }
 
-export async function getVitakkaConfig(client: SanityClient): Promise<PortalUiConfig | null> {
-  return getProductUiConfig(client, 'vitakkaConfig', 'vitakkaConfig')
+export async function getVinayaConfig(client: SanityClient): Promise<PortalUiConfig | null> {
+  return getProductUiConfig(client, 'vinayaConfig', 'vinayaConfig')
 }
 
 export async function getVadaConfig(client: SanityClient): Promise<PortalUiConfig | null> {

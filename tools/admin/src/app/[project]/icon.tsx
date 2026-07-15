@@ -6,8 +6,8 @@ import {
   getHeraldConfig,
   getVadaBranding,
   getVadaConfig,
-  getVitakkaBranding,
-  getVitakkaConfig
+  getVinayaBranding,
+  getVinayaConfig
 } from '@atta/cms'
 import type { CMSTheme, ColorScheme } from '@atta/cms'
 import { ImageResponse } from 'next/og'
@@ -17,14 +17,14 @@ const BRANDING_BY_PROJECT = {
   vada: getVadaBranding,
   atta: getAttaBranding,
   herald: getHeraldBranding,
-  vitakka: getVitakkaBranding
+  vinaya: getVinayaBranding
 } as const
 
 const CONFIG_BY_PROJECT = {
   vada: getVadaConfig,
   atta: getAttaConfig,
   herald: getHeraldConfig,
-  vitakka: getVitakkaConfig
+  vinaya: getVinayaConfig
 } as const
 
 function resolveColor(v: string | { value: string } | undefined): string | undefined {

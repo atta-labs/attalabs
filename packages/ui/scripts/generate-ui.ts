@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { cmsClient, cmsConfig, getAttaConfig, getHeraldConfig, getVadaConfig, getVitakkaConfig } from '@atta/cms'
+import { cmsClient, cmsConfig, getAttaConfig, getHeraldConfig, getVadaConfig, getVinayaConfig } from '@atta/cms'
 
 const _cache = new Map<string, UILibrary>()
 
@@ -26,7 +26,7 @@ function getGeneratedDir(): string {
 }
 
 type UILibrary = 'basic' | 'animate' | 'retro' | 'brutal'
-type App = 'vada' | 'atta' | 'vitakka' | 'herald'
+type App = 'vada' | 'atta' | 'vinaya' | 'herald'
 
 const CONFIG_FETCHERS: Record<
   App,
@@ -34,7 +34,7 @@ const CONFIG_FETCHERS: Record<
 > = {
   vada: () => getVadaConfig(cmsClient).catch(() => null),
   atta: () => getAttaConfig(cmsClient).catch(() => null),
-  vitakka: () => getVitakkaConfig(cmsClient).catch(() => null),
+  vinaya: () => getVinayaConfig(cmsClient).catch(() => null),
   herald: () => getHeraldConfig(cmsClient).catch(() => null)
 }
 

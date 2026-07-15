@@ -2,19 +2,19 @@ import { defineField, defineType } from 'sanity'
 
 import { productUserInterfaceFields } from './product-ui-fields'
 
-export const vitakkaConfig = defineType({
-  name: 'vitakkaConfig',
-  title: 'Vitakka Config',
+export const vinayaConfig = defineType({
+  name: 'vinayaConfig',
+  title: 'Vinaya Config',
   type: 'document',
   fields: [
     defineField({
       name: 'userInterface',
       title: 'User Interface',
       type: 'object',
-      fields: productUserInterfaceFields('Vitakka portal')
+      fields: productUserInterfaceFields('Vinaya portal')
     })
   ],
   preview: {
-    prepare: () => ({ title: 'Vitakka Config' })
+    prepare: () => ({ title: 'Vinaya Config' })
   }
 })

@@ -5,7 +5,7 @@
  * Usage: cd packages/cms && npx tsx scripts/seed-ui.ts
  *
  * Target project via SANITY_* env. Which singleton to create:
- *   SANITY_SEED_PRODUCT=herald | atta | vitakka | vada   (default: herald)
+ *   SANITY_SEED_PRODUCT=herald | atta | vinaya | vada   (default: herald)
  */
 
 import { createClient } from '@sanity/client'
@@ -23,7 +23,7 @@ const SEED_PRODUCT = (process.env.SANITY_SEED_PRODUCT ?? 'herald').toLowerCase()
 const PRODUCT_CONFIGS: Record<string, { _type: string; _id: string }> = {
   herald: { _type: 'heraldConfig', _id: 'heraldConfig' },
   atta: { _type: 'attaConfig', _id: 'attaConfig' },
-  vitakka: { _type: 'vitakkaConfig', _id: 'vitakkaConfig' },
+  vinaya: { _type: 'vinayaConfig', _id: 'vinayaConfig' },
   vada: { _type: 'vadaConfig', _id: 'vadaConfig' }
 }
 

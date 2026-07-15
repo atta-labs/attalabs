@@ -45,8 +45,8 @@ export const getAttaBranding = (client: SanityClient): Promise<CMSBranding | nul
 export const getVadaBranding = (client: SanityClient): Promise<CMSBranding | null> =>
   getBranding(client, 'branding-vada')
 
-export const getVitakkaBranding = (client: SanityClient): Promise<CMSBranding | null> =>
-  getBranding(client, 'branding-vitakka')
+export const getVinayaBranding = (client: SanityClient): Promise<CMSBranding | null> =>
+  getBranding(client, 'branding-vinaya')
 
 export const getAttalabsBranding = (client: SanityClient): Promise<CMSBranding | null> =>
   getBranding(client, 'branding-attalabs')

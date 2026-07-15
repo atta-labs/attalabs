@@ -15,7 +15,7 @@ export {
   getAttalabsBranding,
   getHeraldBranding,
   getVadaBranding,
-  getVitakkaBranding
+  getVinayaBranding
 } from './queries/branding'
 export { getLibraries, getLibraryById } from './queries/library'
 // Queries
@@ -25,7 +25,7 @@ export {
   getHeraldConfig,
   getProductUiConfig,
   getVadaConfig,
-  getVitakkaConfig
+  getVinayaConfig
 } from './queries/product-ui-config'
 export { getThemeById, getThemeByName, getThemeList, getThemes } from './queries/theme'
 // Types
@@ -43,7 +43,7 @@ export type {
   ThemeSpacing,
   ThemeTypography,
   VadaConfig,
-  VitakkaConfig
+  VinayaConfig
 } from './types'
 export { FIELD_TO_CSS_VAR, SHADOW_TO_CSS_VAR } from './types'
 

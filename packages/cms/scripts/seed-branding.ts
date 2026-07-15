@@ -8,7 +8,7 @@
  *   herald   — e9gbd2d1
  *   atta     — 892o2m9f
  *   vada     — ofnj2ojb
- *   vitakka  — o56nzgrr
+ *   vinaya   — o56nzgrr
  *   attalabs — l5n0n8nn
  *
  * Expects assets at: ~/Downloads/tmp 2/logos-bundle/{product}/
@@ -40,7 +40,7 @@ const SEED_PRODUCT = (process.env.SANITY_SEED_PRODUCT ?? 'herald').toLowerCase()
   | 'herald'
   | 'atta'
   | 'vada'
-  | 'vitakka'
+  | 'vinaya'
   | 'attalabs'
 
 const LOGOS_DIR = path.join(os.homedir(), 'Downloads', 'tmp 2', 'logos-bundle')
@@ -112,14 +112,14 @@ const PRODUCT_DATA = {
       'Two curved blades forming a V (apex down). Inside sits two connected circles joined by exchange arcs, representing dialogue. The blade curves are organic and intentional — they must not be straightened.',
     ...SHARED_VARIANT_TEXT
   },
-  vitakka: {
-    _id: 'branding-vitakka',
+  vinaya: {
+    _id: 'branding-vinaya',
     _type: 'branding',
-    productId: 'vitakka',
-    productName: 'Vitakka',
-    paliRoot: 'Vitakka',
-    paliMeaning: 'applied thought',
-    tagline: 'Focus engine — thought applied to its object',
+    productId: 'vinaya',
+    productName: 'Vinaya',
+    paliRoot: 'Vinaya',
+    paliMeaning: 'discipline / rules of conduct',
+    tagline: 'Discipline for the AI era',
     bladeDirection: 'apex-down',
     interiorElement: 'Target — concentric rings with crosshairs',
     interiorMeaning: 'Focus, thought applied to its object',
@@ -151,7 +151,7 @@ const ASSET_CONFIG: Record<string, ProductAssetConfig> = {
   herald: { faviconIcoFilename: 'herald-favicon.ico', appleTouchFilename: 'herald-apple-touch-icon.png' },
   atta: { faviconIcoFilename: 'atta-favicon.ico', appleTouchFilename: 'atta-apple-touch-icon.png' },
   vada: { faviconIcoFilename: 'vada-favicon.ico', appleTouchFilename: 'vada-apple-touch-icon.png' },
-  vitakka: { faviconIcoFilename: 'vitakka-favicon.ico', appleTouchFilename: 'vitakka-apple-touch-icon.png' },
+  vinaya: { faviconIcoFilename: 'vinaya-favicon.ico', appleTouchFilename: 'vinaya-apple-touch-icon.png' },
   attalabs: { faviconIcoFilename: 'favicon.ico', appleTouchFilename: 'apple-touch-icon.png' }
 }
 

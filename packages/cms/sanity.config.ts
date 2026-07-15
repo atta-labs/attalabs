@@ -6,23 +6,23 @@ import { schemaTypes } from './schemas'
 const product = process.env.SANITY_STUDIO_PRODUCT
 const isAtta = product === 'atta'
 const isVada = product === 'vada'
-const isVitakka = product === 'vitakka'
+const isVinaya = product === 'vinaya'
 const isAttalabs = product === 'attalabs'
 
 export default defineConfig({
-  name: isAtta ? 'atta' : isVada ? 'vada' : isVitakka ? 'vitakka' : isAttalabs ? 'attalabs' : 'herald',
+  name: isAtta ? 'atta' : isVada ? 'vada' : isVinaya ? 'vinaya' : isAttalabs ? 'attalabs' : 'herald',
   title: isAtta
     ? 'Atta CMS'
     : isVada
       ? 'Vada CMS'
-      : isVitakka
-        ? 'Vitakka CMS'
+      : isVinaya
+        ? 'Vinaya CMS'
         : isAttalabs
           ? 'AttalLabs CMS'
           : 'Herald CMS',
   projectId:
     process.env.SANITY_STUDIO_PROJECT_ID ||
-    (isAtta ? '892o2m9f' : isVada ? 'ofnj2ojb' : isVitakka ? 'o56nzgrr' : isAttalabs ? 'l5n0n8nn' : 'e9gbd2d1'),
+    (isAtta ? '892o2m9f' : isVada ? 'ofnj2ojb' : isVinaya ? 'o56nzgrr' : isAttalabs ? 'l5n0n8nn' : 'e9gbd2d1'),
   dataset: process.env.SANITY_STUDIO_DATASET || 'production',
   plugins: [
     structureTool({
@@ -49,20 +49,16 @@ export default defineConfig({
                     .title('Branding')
                     .child(S.document().schemaType('branding').documentId('branding-vada').title('Vada Branding'))
                 ])
-            : isVitakka
+            : isVinaya
               ? S.list()
-                  .title('Vitakka Content')
+                  .title('Vinaya Content')
                   .items([
                     S.listItem()
-                      .title('Vitakka Config')
-                      .child(
-                        S.document().schemaType('vitakkaConfig').documentId('vitakkaConfig').title('Vitakka Config')
-                      ),
+                      .title('Vinaya Config')
+                      .child(S.document().schemaType('vinayaConfig').documentId('vinayaConfig').title('Vinaya Config')),
                     S.listItem()
                       .title('Branding')
-                      .child(
-                        S.document().schemaType('branding').documentId('branding-vitakka').title('Vitakka Branding')
-                      )
+                      .child(S.document().schemaType('branding').documentId('branding-vinaya').title('Vinaya Branding'))
                   ])
               : isAttalabs
                 ? S.list()

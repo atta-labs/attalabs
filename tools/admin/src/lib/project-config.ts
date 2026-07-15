@@ -19,11 +19,11 @@ export const PROJECT_CONFIG = {
     previewUrl: 'http://localhost:3000',
     displayName: 'Herald'
   },
-  vitakka: {
-    projectId: PROJECT_IDS.vitakka,
-    configDocId: 'vitakkaConfig',
-    previewUrl: 'http://localhost:3002',
-    displayName: 'Vitakka'
+  vinaya: {
+    projectId: PROJECT_IDS.vinaya,
+    configDocId: 'vinayaConfig',
+    previewUrl: 'http://localhost:3006',
+    displayName: 'Vinaya'
   }
 } as const
 

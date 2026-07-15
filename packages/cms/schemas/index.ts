@@ -5,7 +5,7 @@ import { heraldConfig } from './herald-config'
 import { library } from './library'
 import { uiTheme } from './ui-theme'
 import { vadaConfig } from './vada-config'
-import { vitakkaConfig } from './vitakka-config'
+import { vinayaConfig } from './vinaya-config'
 
 export const schemaTypes = [
   uiTheme,
@@ -13,7 +13,7 @@ export const schemaTypes = [
   branding,
   heraldConfig,
   attaConfig,
-  vitakkaConfig,
+  vinayaConfig,
   vadaConfig,
   attalabsConfig
 ]
