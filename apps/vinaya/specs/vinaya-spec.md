@@ -37,9 +37,11 @@ Two distinct defects, both **currently live on `main`**, both shipped by PR #561
 1. **"non-destructive install, one-command eject"** — `vinaya init` and `vinaya eject` are `vinaya-cli-v1` commands with **no code merged**. `/known-limits`, two sections below on the same page, states this plainly. The page contradicts itself.
 2. **"each ring is opt-in"** — contradicts **D-090** (`Status: PENDING`, `Lock: YES`), which makes git hooks the **universal ring 0** and reserves "opt-in accelerator only" for forge-write interception alone. **D-118** rejected a Ring-0/CI config key for precisely this reason: it "would misleadingly imply they're optional". The page states on the acquisition surface exactly what the config schema was forbidden from implying. It also contradicts `FEATURES[4]` three cells away ("the same deterministic checks gate every merge — no special cases").
 
-**This paragraph is the only thing catching defect 2.** §11's CONTRADICTION check fires on `ACTIVE` decisions; D-090 is `PENDING`, so the machinery does not see it. Do not delete this note without fixing the cell.
+**Owned by #564** — cut as its own Issue precisely because #509 was the only open Issue covering this cell, and closing it would have left the defect with no work-tracking owner. Do not delete this note without fixing the cell; #564 carries the obligation.
 
-Correcting the copy is a positioning call against a locked decision — Principal-owned per the Positioning block below ("do not improvise these fields"), escalated `severity:product`, and deliberately not improvised. `rings 1 and 2 are opt-in` would be true; `each` and `or none` are the false parts.
+**Nothing else catches defect 2.** §11's CONTRADICTION check fires on `ACTIVE` decisions; D-090 is `PENDING`, so the machinery cannot see it. This note plus #564 are the only record.
+
+Correcting the copy is a positioning call: `rings 1 and 2 are opt-in` would be true — `each` and `or none` are the false parts. Escalated `severity:product`. Note the Positioning block's "do not improvise these fields" below is scoped to its **seven bulleted fields**, not to FeatureGrid — the cell is editable; it is deferred to #564 for a considered line, not because it is locked.
 
 ## Positioning (locked copy — D-088, D-108)
 
