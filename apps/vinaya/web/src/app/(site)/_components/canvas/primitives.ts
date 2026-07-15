@@ -293,6 +293,19 @@ export function getHumanThrowPoint(x: number, y: number, scale: number, throwAng
   return getHandPosition(x, y, scale, { angle: throwAngle, bend: 0 })
 }
 
+// `drawHuman`'s own head-top-to-leg-bottom span at scale=1 (26 up + 10 down — see the
+// body below) and `drawRobot`'s own antenna-top-to-body-bottom span at scale=1 (11 up +
+// 21 down). Two figures with DIFFERENT unit-height constants need DIFFERENT scale
+// constants to render at the SAME pixel height — computing each canvas's own scale as
+// `TWO_ERAS_FIGURE_HEIGHT / *_FIGURE_HEIGHT_UNITS` (see NormalEraCanvas /
+// LightSpeedEraCanvas) is what keeps the humans-row and agents-row the same height by
+// construction, instead of two independently-guessed scale numbers silently drifting
+// apart every time either constant changes.
+export const HUMAN_FIGURE_HEIGHT_UNITS = 36
+export const ROBOT_FIGURE_HEIGHT_UNITS = 32
+/** Shared target render height (logical units) for the two-eras row figures. */
+export const TWO_ERAS_FIGURE_HEIGHT = 96
+
 /**
  * Stick figure with an animated throwing arm: cocked elbow during windup straightens
  * into a full-extension whip at release, with a slight forward lunge as the arm
@@ -383,7 +396,7 @@ export function drawBow(
   ctx.save()
   ctx.translate(hand.x, hand.y)
   ctx.rotate(angle)
-  ctx.strokeStyle = colors.mutedForeground
+  ctx.strokeStyle = colors.foreground
   ctx.lineWidth = 1.3 * scale
   ctx.beginPath()
   ctx.moveTo(0, -BOW_TIP_SPAN * scale)
@@ -398,7 +411,7 @@ export function drawBow(
   const tipA = { x: hand.x + perpX * BOW_TIP_SPAN * scale, y: hand.y + perpY * BOW_TIP_SPAN * scale }
   const tipB = { x: hand.x - perpX * BOW_TIP_SPAN * scale, y: hand.y - perpY * BOW_TIP_SPAN * scale }
 
-  ctx.strokeStyle = colors.mutedForeground
+  ctx.strokeStyle = colors.foreground
   ctx.lineWidth = 1 * scale
   ctx.beginPath()
   ctx.moveTo(tipA.x, tipA.y)
@@ -413,7 +426,10 @@ export function drawBow(
   ctx.restore()
 }
 
-const BACKPACK_OFFSET = { x: 5, y: -14 }
+// x was 5 — the backpack's own near edge sits 2.3*scale inside its mouth point (see the
+// roundRect below), so a mouth at 5*scale left a visible 2.7*scale gap between the pack
+// and the spine line instead of tucking against it.
+const BACKPACK_OFFSET = { x: 2.4, y: -14 }
 
 /**
  * Where a backpack-carried arrow rests, on the OUTWARD side of the figure's back (away
@@ -620,22 +636,69 @@ export function drawBomb(ctx: CanvasRenderingContext2D, x: number, y: number, co
   ctx.lineWidth = 1.6
   ctx.stroke()
 
+  // TNT — the classic cartoon-bomb label, small enough to sit inside the body circle
+  // without crowding the outline.
   ctx.fillStyle = colors.destructive
-  ctx.font = `700 ${Math.round(r * 0.62)}px ${colors.fontMono}`
+  ctx.font = `700 ${Math.round(r * 0.6)}px ${colors.fontMono}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('</>', x, y)
+  ctx.fillText('TNT', x, y)
 
-  ctx.strokeStyle = colors.warning
-  ctx.lineWidth = 1.6
+  // Lit fuse — a curved cord from the bomb's cap to a burning tip, the classic
+  // cartoon-bomb read instead of the code-glyph this used to carry.
+  const fuseBaseX = x + r * 0.3
+  const fuseBaseY = y - r * 0.92
+  const tipX = x + r * 1.15
+  const tipY = y - r * 1.55
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.5
   ctx.lineCap = 'round'
-  line(ctx, x + r * 0.55, y - r * 0.55, x + r * 1.05, y - r * 1.15)
   ctx.beginPath()
-  ctx.arc(x + r * 1.05, y - r * 1.15, 1.8, 0, Math.PI * 2)
-  ctx.fillStyle = colors.warning
-  ctx.fill()
+  ctx.moveTo(fuseBaseX, fuseBaseY)
+  ctx.quadraticCurveTo(x + r * 0.95, y - r * 1.35, tipX, tipY)
+  ctx.stroke()
+
+  // Classic comic explosion burst at the fuse tip — two layered jagged stars (a wider
+  // warning-colored flash behind a smaller destructive-colored core), not a plain spark.
+  drawStarBurst(ctx, tipX, tipY, 8, r * 0.62, r * 0.26, colors.warning, colors.foreground, 0)
+  drawStarBurst(ctx, tipX, tipY, 6, r * 0.34, r * 0.14, colors.destructive, undefined, 0.3)
 
   ctx.restore()
+}
+
+/**
+ * A jagged alternating-radius polygon — the standard comic "BOOM" burst shape. Reused
+ * for the bomb's lit-fuse explosion; `strokeColor` is optional since the inner, smaller
+ * layer of a two-star burst reads better as a plain fill with no outline of its own.
+ */
+function drawStarBurst(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  spikes: number,
+  outerR: number,
+  innerR: number,
+  fillColor: string,
+  strokeColor: string | undefined,
+  rotation: number
+) {
+  ctx.beginPath()
+  for (let i = 0; i < spikes * 2; i++) {
+    const radius = i % 2 === 0 ? outerR : innerR
+    const angle = rotation + (i * Math.PI) / spikes
+    const px = cx + Math.cos(angle) * radius
+    const py = cy + Math.sin(angle) * radius
+    if (i === 0) ctx.moveTo(px, py)
+    else ctx.lineTo(px, py)
+  }
+  ctx.closePath()
+  ctx.fillStyle = fillColor
+  ctx.fill()
+  if (strokeColor) {
+    ctx.strokeStyle = strokeColor
+    ctx.lineWidth = 1.2
+    ctx.stroke()
+  }
 }
 
 /**
@@ -689,6 +752,64 @@ export function drawMissile(ctx: CanvasRenderingContext2D, x: number, y: number,
 }
 
 /**
+ * A real explosion, not a ring — for bot-caused impacts specifically, which read as
+ * measurably more destructive than a human's thrown arrow. Layers a fireball (two
+ * starbursts, warning outer + destructive inner, using the same jagged-burst shape
+ * `drawBomb`'s fuse spark uses) UNDER a big double shockwave and a bright flash core, all
+ * keyed off the same `alpha`/life envelope `drawImpactSpark` uses so the two stay in sync
+ * when both fire in the same scene. The fireball blooms (grows then shrinks) rather than
+ * just expanding, so it visually pops distinctly from the shockwave rings around it.
+ */
+export function drawExplosion(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  alpha: number,
+  colors: ThemeColors,
+  magnitude = 1
+) {
+  if (alpha <= 0) return
+  const life = 1 - alpha
+  const easedLife = 1 - (1 - life) ** 2
+  const bloom = Math.sin(Math.min(life, 1) * Math.PI) * magnitude
+
+  ctx.save()
+
+  // Fireball — layered jagged bursts, warning behind destructive, both scaled by the
+  // bloom envelope so they flash bigger than any shockwave ring then collapse.
+  ctx.globalAlpha = alpha * 0.95
+  drawStarBurst(ctx, x, y, 10, 14 + bloom * 30, 6 + bloom * 12, colors.warning, undefined, life * 2.4)
+  ctx.globalAlpha = alpha
+  drawStarBurst(ctx, x, y, 8, 8 + bloom * 20, 3 + bloom * 8, colors.destructive, undefined, life * -1.7)
+
+  // Big double shockwave — noticeably larger radius/line-width than the human-side
+  // impact spark, so the two read as different orders of magnitude, not just recolored.
+  ctx.globalAlpha = alpha * 0.8
+  ctx.strokeStyle = colors.warning
+  ctx.lineWidth = 3.5 * magnitude
+  ctx.beginPath()
+  ctx.arc(x, y, (10 + easedLife * 46) * magnitude, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.globalAlpha = alpha * 0.55
+  ctx.strokeStyle = colors.destructive
+  ctx.lineWidth = 2 * magnitude
+  ctx.beginPath()
+  ctx.arc(x, y, (6 + easedLife * 26) * magnitude, 0, Math.PI * 2)
+  ctx.stroke()
+
+  // Bright flash core — foreground, not a status color, so peak impact reads as a real
+  // flash of light rather than just another colored ring.
+  ctx.globalAlpha = alpha * alpha
+  ctx.fillStyle = colors.foreground
+  ctx.beginPath()
+  ctx.arc(x, y, 5 * magnitude, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.restore()
+}
+
+/**
  * A shockwave, not a single ring: two rings expanding outward at different rates plus a
  * bright core flash, all keyed off the same `alpha` envelope (1 at peak impact, fading
  * to 0) — center is the exact edge-point the projectile actually landed on.
@@ -735,7 +856,14 @@ export function drawImpactSpark(
 
 export const LABEL_FONT_SIZE = 18
 
-/** Always called with the projectile's own live (x, y) so text can never desync from it. */
+const LABEL_EDGE_MARGIN = 4
+
+/**
+ * Always called with the projectile's own live (x, y) so text can never desync from it.
+ * `logicalWidth`, when given, clamps the text's centered x so its own measured half-width
+ * never carries it past the canvas's left/right edge — origin columns near the canvas
+ * edge (with a long action label) would otherwise draw half off-canvas and get cut off.
+ */
 export function drawLabel(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -743,14 +871,22 @@ export function drawLabel(
   y: number,
   color: string,
   fontMono: string,
-  fontSize: number = LABEL_FONT_SIZE
+  fontSize: number = LABEL_FONT_SIZE,
+  logicalWidth?: number
 ) {
   ctx.save()
   ctx.font = `600 ${fontSize}px ${fontMono}`
   ctx.fillStyle = color
   ctx.textAlign = 'center'
   ctx.textBaseline = 'bottom'
-  ctx.fillText(text, x, y)
+  let drawX = x
+  if (logicalWidth !== undefined) {
+    const halfWidth = ctx.measureText(text).width / 2
+    const min = halfWidth + LABEL_EDGE_MARGIN
+    const max = logicalWidth - halfWidth - LABEL_EDGE_MARGIN
+    drawX = Math.min(Math.max(x, min), max)
+  }
+  ctx.fillText(text, drawX, y)
   ctx.restore()
 }
 

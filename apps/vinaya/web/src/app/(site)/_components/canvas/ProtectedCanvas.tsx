@@ -7,6 +7,7 @@ import {
   drawBackpack,
   drawBomb,
   drawBow,
+  drawExplosion,
   drawHuman,
   drawImpactSpark,
   drawLabel,
@@ -18,6 +19,7 @@ import {
   getHandPosition,
   getHumanThrowPoint,
   getRobotBodyCenter,
+  LABEL_FONT_SIZE,
   SPEAR_APPEAR_END,
   SPEAR_GRAB_END,
   SPEAR_RELEASE_AT,
@@ -26,6 +28,7 @@ import {
 import {
   angleOf,
   clamp01,
+  colCurveSign,
   curvedLerpPoint,
   edgePointOnCircle,
   hatchEnvelope,
@@ -61,7 +64,9 @@ const SPEAR_LENGTH = 62
 // A slight arc instead of a dead-straight line — origin and target are untouched
 // (curvedLerpPoint's offset is 0 at both ends), only the path in between bulges.
 const FLIGHT_ARC_BULGE = 22
-const HUMAN_SCALE = 2.8
+// Shrunk from 2.8 — at full era-canvas size the archers read as too tall next to this
+// ring's own proportions.
+const HUMAN_SCALE = 2.4
 const ROBOT_SCALE = 2.2
 
 // Both clusters sit OUTSIDE the ring with real breathing room to the ring edge —
@@ -210,13 +215,10 @@ export function ProtectedCanvas() {
           const flightT = clamp01((humanProgress - SPEAR_RELEASE_AT) / (1 - SPEAR_RELEASE_AT))
           objectAlpha = projectileAlpha(flightT)
           labelAlpha = labelRevealAlpha(flightT)
-          // Actors above the ring's center curve one way, actors below curve the other —
-          // a fixed bulge sign would make every projectile bow in the same absolute
-          // direction regardless of where its thrower sits, which reads as one uniform
-          // sideways wind rather than each one arcing naturally into the same target
-          // from its own side.
-          const curveSign = pos.y < CENTER.y ? -1 : 1
-          headPos = curvedLerpPoint(origin, target, flightT, FLIGHT_ARC_BULGE * curveSign)
+          // colCurveSign is the single source of truth for column-layout curve direction
+          // — actors in the first (top) half of the column curve one way, the second
+          // (bottom) half the other, so the whole column bows outward symmetrically.
+          headPos = curvedLerpPoint(origin, target, flightT, FLIGHT_ARC_BULGE * colCurveSign(pos.y, CENTER.y))
           tailPos = {
             x: headPos.x - Math.cos(throwAngle) * SPEAR_LENGTH,
             y: headPos.y - Math.sin(throwAngle) * SPEAR_LENGTH
@@ -230,7 +232,16 @@ export function ProtectedCanvas() {
 
         ctx.save()
         ctx.globalAlpha = labelAlpha
-        drawLabel(ctx, activeHuman.label, headPos.x, headPos.y - 20, colors.success, colors.fontMono)
+        drawLabel(
+          ctx,
+          activeHuman.label,
+          headPos.x,
+          headPos.y - 20,
+          colors.success,
+          colors.fontMono,
+          LABEL_FONT_SIZE,
+          LOGICAL_WIDTH
+        )
         ctx.restore()
 
         const flightT = clamp01((humanProgress - SPEAR_RELEASE_AT) / (1 - SPEAR_RELEASE_AT))
@@ -272,15 +283,24 @@ export function ProtectedCanvas() {
 
       ctx.save()
       ctx.globalAlpha = labelRevealAlpha(robotFlightProgress)
-      drawLabel(ctx, activeRobot.label, robotPos.x, robotPos.y - 30, colors.success, colors.fontMono)
+      drawLabel(
+        ctx,
+        activeRobot.label,
+        robotPos.x,
+        robotPos.y - 30,
+        colors.success,
+        colors.fontMono,
+        LABEL_FONT_SIZE,
+        LOGICAL_WIDTH
+      )
       ctx.restore()
 
-      drawImpactSpark(ctx, robotTarget.x, robotTarget.y, impactEnvelope(robotFlightProgress), colors, 'success')
+      drawExplosion(ctx, robotTarget.x, robotTarget.y, impactEnvelope(robotFlightProgress), colors)
     }
   })
 
   return (
-    <div className='relative mx-auto aspect-[660/400] w-3/4'>
+    <div className='relative mx-auto aspect-[660/400] w-[780px] max-w-full'>
       <div aria-hidden='true' className='absolute inset-0'>
         <canvas ref={canvasRef} className='h-full w-full' />
       </div>

@@ -41,6 +41,30 @@ export function curvedLerpPoint(a: Point, b: Point, t: number, bulge: number): P
   return { x: base.x + nx * offset, y: base.y + ny * offset }
 }
 
+/**
+ * Single source of truth for which way a projectile's arc bulges, given where its
+ * thrower/firer sits relative to the crowd's own center axis — every canvas that arranges
+ * actors either in a ROW (varying x, throwing down/across to a shared target) or a COLUMN
+ * (varying y, throwing sideways to a shared target) needs the two halves to bow in
+ * OPPOSITE directions so the whole crowd reads as arcing symmetrically outward, never a
+ * fixed sign that curves every actor the same absolute way regardless of which side of
+ * center they're on. An actor sitting exactly ON the center axis (the middle position of
+ * an odd-length row/column, e.g. actor 3 of 5) is dead-center between the two halves — it
+ * gets 0, a straight line, not an arbitrary tie-broken curve either way.
+ *
+ * Row and column use independently-verified sign conventions (they're different visual
+ * axes, not mirror images of each other) — don't collapse them into one formula.
+ */
+export function rowCurveSign(x: number, centerX: number): -1 | 0 | 1 {
+  if (x === centerX) return 0
+  return x < centerX ? 1 : -1
+}
+
+export function colCurveSign(y: number, centerY: number): -1 | 0 | 1 {
+  if (y === centerY) return 0
+  return y < centerY ? -1 : 1
+}
+
 export function angleOf(a: Point, b: Point): number {
   return Math.atan2(b.y - a.y, b.x - a.x)
 }
@@ -57,16 +81,20 @@ export function projectileAlpha(progress: number): number {
 }
 
 /**
- * Impact-spark envelope: silent until the tail of the cycle, quick rise, then a slow
- * eased-out fade — a real shockwave lingers, it doesn't snap off. Window is deliberately
- * wide (last ~38% of the flight) so the wave reads as a real event, not a single frame.
+ * Impact-spark/explosion envelope: silent until the very tail of the flight, quick rise,
+ * then a slow eased-out fade — a real shockwave lingers, it doesn't snap off. Start is
+ * deliberately late (last ~8% of the flight) so the effect stays tied to the actual
+ * moment of contact, for EVERY projectile — arrows included, not just bombs/missiles.
+ * An earlier version started at 0.62 (last ~38% of flight); that was subtle enough to go
+ * unnoticed on the small human-side arrow spark, but visibly bloomed `drawExplosion`'s
+ * much bigger fireball well before the bomb/missile had actually reached the sphere.
  */
 export function impactEnvelope(progress: number): number {
-  const start = 0.62
+  const start = 0.92
   if (progress < start) return 0
   const local = (progress - start) / (1 - start)
-  if (local < 0.12) return local / 0.12
-  const fadeT = clamp01((local - 0.12) / 0.88)
+  if (local < 0.2) return local / 0.2
+  const fadeT = clamp01((local - 0.2) / 0.8)
   return clamp01(1 - fadeT * fadeT)
 }
 

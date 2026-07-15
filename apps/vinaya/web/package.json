@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack --port 3006",
+    "dev": "bun scripts/dev.ts",
     "build": "next build",
     "start": "next start",
     "generate": "bun scripts/generate-ui.ts",

@@ -11,10 +11,13 @@ import {
   getBackpackMouth,
   getHandPosition,
   getHumanThrowPoint,
+  HUMAN_FIGURE_HEIGHT_UNITS,
+  LABEL_FONT_SIZE,
   SPEAR_APPEAR_END,
   SPEAR_GRAB_END,
   SPEAR_RELEASE_AT,
-  throwArmPose
+  throwArmPose,
+  TWO_ERAS_FIGURE_HEIGHT
 } from './primitives'
 import {
   angleOf,
@@ -25,7 +28,8 @@ import {
   labelRevealAlpha,
   lerpPoint,
   type Point,
-  projectileAlpha
+  projectileAlpha,
+  rowCurveSign
 } from './geometry'
 import { useCanvasScene } from './useCanvasScene'
 
@@ -34,12 +38,16 @@ import { useCanvasScene } from './useCanvasScene'
 // margin — same "canvas ends where the painting ends" principle as LOGICAL_HEIGHT below,
 // now applied to width. Everything else (HUMAN_ANCHOR, SPHERE) is defined relative to
 // LOGICAL_WIDTH / 2, so this single constant recenters the whole scene automatically.
-const LOGICAL_WIDTH = 300
+// Widened past the crowd's own span (60 logical units of pure side margin) so a
+// release-moment action label — measured and clamped in `drawLabel`, but only within
+// whatever margin actually exists — has room to sit fully on-canvas instead of getting
+// cut off near the leftmost/rightmost archer.
+const LOGICAL_WIDTH = 360
 // The canvas ends where the painting ends — LOGICAL_HEIGHT is trimmed to the actual
 // content bounds (topmost point across both era canvases to SPHERE's bottom edge, plus
 // a few px of stroke-antialiasing margin), not an arbitrary round number. Any visual
 // spacing around the canvas belongs to the surrounding flex/gap classes in
-// TwoErasSection.tsx, not to dead space baked in here.
+// HeroSection.tsx, not to dead space baked in here.
 // Grown back from the tight 386 fit — the crowd-to-sphere gap that trim left was too
 // short for a thrown spear's action label to clear the crowd before reaching the
 // sphere, making labels overlap the row. Only SPHERE moved down (see below); the crowd
@@ -57,7 +65,10 @@ const THROW_ARC_BULGE = 22
 
 // All six are archers now — the ground-planted spear was dropped in favor of a single
 // consistent mechanic (a backpack/quiver), which reads more naturally at this scale.
-const HUMAN_SCALE = 2.8
+// Derived from the shared TWO_ERAS_FIGURE_HEIGHT (not a standalone guess) — this is what
+// keeps the humans row rendering at the SAME pixel height as the agents row by
+// construction, instead of two independently-tuned scale numbers drifting apart.
+const HUMAN_SCALE = TWO_ERAS_FIGURE_HEIGHT / HUMAN_FIGURE_HEIGHT_UNITS
 const HUMAN_GRID_COLS = 4
 // Shared reference: both era canvases align their crowd's VISUAL CENTER (not top) to
 // this same y, so a human's body-middle lines up with the middle of the robots' two
@@ -187,7 +198,10 @@ export function NormalEraCanvas() {
           const flightT = clamp01((progress - SPEAR_RELEASE_AT) / (1 - SPEAR_RELEASE_AT))
           objectAlpha = projectileAlpha(flightT)
           labelAlpha = labelRevealAlpha(flightT)
-          headPos = curvedLerpPoint(origin, target, flightT, THROW_ARC_BULGE)
+          // rowCurveSign is the single source of truth for row-layout curve direction
+          // (shared with LightSpeedEraCanvas's robots) — NOT `side`, which encodes the
+          // unrelated backpack-facing convention and happens to carry the opposite sign.
+          headPos = curvedLerpPoint(origin, target, flightT, THROW_ARC_BULGE * rowCurveSign(pos.x, SPHERE.x))
           tailPos = {
             x: headPos.x - Math.cos(throwAngle) * SPEAR_LENGTH,
             y: headPos.y - Math.sin(throwAngle) * SPEAR_LENGTH
@@ -201,7 +215,16 @@ export function NormalEraCanvas() {
 
         ctx.save()
         ctx.globalAlpha = labelAlpha
-        drawLabel(ctx, active.label, headPos.x, headPos.y - 20, colors.warning, colors.fontMono)
+        drawLabel(
+          ctx,
+          active.label,
+          headPos.x,
+          headPos.y - 20,
+          colors.warning,
+          colors.fontMono,
+          LABEL_FONT_SIZE,
+          LOGICAL_WIDTH
+        )
         ctx.restore()
 
         const flightT = clamp01((progress - SPEAR_RELEASE_AT) / (1 - SPEAR_RELEASE_AT))
@@ -212,7 +235,7 @@ export function NormalEraCanvas() {
 
   return (
     <div aria-hidden='true'>
-      <canvas ref={canvasRef} className='mx-auto h-[437px] w-[300px]' />
+      <canvas ref={canvasRef} className='mx-auto h-[316px] w-[260px]' />
     </div>
   )
 }

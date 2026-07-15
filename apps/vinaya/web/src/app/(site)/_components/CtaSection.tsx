@@ -1,18 +1,20 @@
 import { Card, CardContent } from '@atta/ui'
-import { Text } from '@atta/ui/shared'
+import { Flex, Text } from '@atta/ui/shared'
 import Link from 'next/link'
 
 export function CtaSection() {
   return (
     <section className='flex flex-col items-center gap-3'>
-      <Card className='w-fit border-none bg-primary'>
-        <CardContent className='flex items-center gap-2 px-6 py-4'>
-          <Text as='span' className='font-mono text-primary-foreground/60'>
-            $
-          </Text>
-          <Text as='span' weight='bold' className='font-mono text-primary-foreground'>
-            npx vinaya init
-          </Text>
+      <Card>
+        <CardContent>
+          <Flex align='center' gap={2}>
+            <Text as='span' className='font-mono text-muted-foreground'>
+              $
+            </Text>
+            <Text as='span' weight='bold' className='font-mono text-foreground'>
+              npx vinaya init
+            </Text>
+          </Flex>
         </CardContent>
       </Card>
       <Text as='span' size='xs' className='font-mono uppercase tracking-[0.15em] text-muted-foreground'>
