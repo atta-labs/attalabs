@@ -83,6 +83,22 @@ const RING_FILL_HOVER: Record<BandKey, string> = {
   ring1: 'hover:fill-chart-1/50',
   ring2: 'hover:fill-chart-1/65'
 }
+/** The selected wedge's fill — deliberately the same value each key's hover
+ * uses, so selection reads as "this one stayed lit". Selection was an outline
+ * before: a hairline the eye has to hunt for, on a shape whose neighbours all
+ * carry one already. Depth is the property a pie chart has going spare, so
+ * selection spends that instead. Kept as its own map rather than reusing
+ * `RING_FILL_HOVER` with the prefix stripped, because Tailwind's scanner needs
+ * the literal class string present in this file. */
+const RING_FILL_SELECTED: Record<BandKey, string> = {
+  actors: 'fill-success/65',
+  contracts: 'fill-accent/20',
+  ring0: 'fill-warning/65',
+  actions: 'fill-accent/20',
+  substrate: 'fill-chart-1/35',
+  ring1: 'fill-chart-1/50',
+  ring2: 'fill-chart-1/65'
+}
 
 const SUBSTRATE_LABEL = 'GitHub'
 
@@ -169,6 +185,12 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
   const translate = `translate(${CENTER.x} ${CENTER.y})`
   const hubTitle = drilledGroup ? hubTitleLines(drilledGroup.label) : []
   const hubLegend = drilledGroup ? ringBadgeLabels(drilledGroup.children) : []
+  // The hub stacks title → legend → back, each placed off the one above it
+  // rather than off `CENTER` — a ring whose title wraps to two lines, or whose
+  // nodes carry no badge, must not leave a hole or collide.
+  const hubTitleBottom = CENTER.y - 10 + ((hubTitle.length - 1) * 58) / 2
+  const hubLegendY = hubTitleBottom + 62
+  const hubBackY = hubLegend.length > 0 ? hubLegendY + 52 : hubLegendY
 
   const bandLabel = (band: (typeof bands)[number]): string =>
     band.key === 'substrate' ? SUBSTRATE_LABEL : (groups.find((g) => g.key === band.key)?.label ?? '')
@@ -219,10 +241,10 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
               opacity={disabled ? 0.45 : 1}
               className={
                 selected
-                  ? `cursor-pointer stroke-primary ${RING_FILL_SOFT[key]} ${NO_NATIVE_OUTLINE}`
+                  ? `cursor-pointer ${RING_STROKE[key]} ${RING_FILL_SELECTED[key]} transition-colors ${NO_NATIVE_OUTLINE}`
                   : `cursor-pointer ${RING_STROKE[key]} ${RING_FILL_SOFT[key]} ${RING_FILL_HOVER[key]} transition-colors ${NO_NATIVE_OUTLINE}`
               }
-              strokeWidth={selected ? 2.5 : 1.5}
+              strokeWidth={1.5}
               {...interactiveProps(node.label, () => onSelectLeaf(node))}
             />
           )
@@ -278,9 +300,8 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
         cx={CENTER.x}
         cy={CENTER.y}
         r={drilledGroup ? 380 : HUB_RADIUS}
-        className={`fill-secondary stroke-border ${drilledGroup ? `cursor-pointer ${NO_NATIVE_OUTLINE}` : ''}`}
+        className='fill-secondary stroke-border'
         strokeWidth={1.5}
-        {...(drilledGroup ? interactiveProps('Back to overview', onBack) : {})}
       />
       {drilledGroup === null && (
         <GitBranch
@@ -296,11 +317,10 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
           up to match the bigger hub — `text-6xl`, not the old 24px that read
           tiny inside a 380-radius circle. Title wraps to 2 lines before
           truncating — a 380-radius hub has the room, no reason to ellipsis a
-          label that would fit on a second row. The hub carries the group title
-          alone: its child count restated what the wedges already show, and
-          "back" labelled an affordance the breadcrumb states plainly. The
-          circle stays clickable — `interactiveProps` keeps the accessible
-          name. */}
+          label that would fit on a second row.
+          The hub carries title → legend → back. The child count that used to
+          sit here is gone: it restated what the wedges already show. The
+          circle itself is inert — only the "← Back" text below takes a click. */}
       {drilledGroup ? (
         <>
           {hubTitle.map((line, li) => (
@@ -322,13 +342,32 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
           {hubLegend.length > 0 && (
             <text
               x={CENTER.x}
-              y={CENTER.y - 10 + ((hubTitle.length - 1) * 58) / 2 + 62}
+              y={hubLegendY}
               textAnchor='middle'
               className='fill-muted-foreground font-mono text-2xl uppercase tracking-[0.18em]'
             >
               {hubLegend.join(' · ')}
             </text>
           )}
+          {/* Back is its own control, not the whole hub. The hub was the click
+              target before — a 380-radius bullseye that looked like a label and
+              behaved like a button, so the only way to learn it was to click the
+              middle and be surprised.
+              Underlined, because it has to LOOK clickable and the two other
+              options here are worse: a real `Button` would need a
+              `foreignObject` (its own font/px scale fighting the viewBox), and
+              a rect-plus-text is hand-rolling a button primitive, which the UI
+              rules forbid outright. Underlined text is the one option that is
+              styling rather than a new primitive. */}
+          <text
+            x={CENTER.x}
+            y={hubBackY}
+            textAnchor='middle'
+            className={`cursor-pointer fill-muted-foreground font-mono text-xl uppercase underline decoration-1 underline-offset-[6px] tracking-[0.12em] transition-colors hover:fill-foreground ${NO_NATIVE_OUTLINE}`}
+            {...interactiveProps('Back to overview', onBack)}
+          >
+            ← Back
+          </text>
         </>
       ) : (
         <>
