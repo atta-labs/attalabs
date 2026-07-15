@@ -81,7 +81,7 @@ Wording refinements are Principal-owned; do not improvise these fields.
 
 ## CMS / theming (this task's implementation note)
 
-Vinaya has no Sanity project of its own yet. `apps/vinaya/web`'s layout borrows Atta's config/branding (`createProductClient('atta')`), the same precedent `apps/aeg/web/studio` uses for the same reason — a genuinely new product's visual identity isn't decided yet, and building one is out of scope for a two-page bootstrap. A dedicated Sanity project, theme, and branding are a later task once Vinaya's own visual identity is designed.
+Vinaya has its own Sanity CMS identity (D-122): it reuses Vitakka's project (`o56nzgrr`), since Vitakka is shelved and its "V" mark (apex-down blade, target-ring interior) fits Vinaya's initial. `apps/vinaya/web`'s layout fetches its own config/branding — `getVinayaConfig`/`getVinayaBranding` via `cmsClient` — the same house pattern every other product uses, replacing the earlier `createProductClient('atta')` borrow. The Sanity documents (`vinayaConfig`, `branding-vinaya`) were migrated in place from Vitakka's `vitakkaConfig`/`branding-vitakka`, copying theme/library references and every logo/favicon asset verbatim — no re-upload. `apps/vitakka-ai/web` now occupies the borrow-from-Atta pattern Vinaya used to use, since the shelved scaffold still needs to compile.
 
 ## `/how-it-works` page (`vinaya-pages-v1` task 4, #508)
 

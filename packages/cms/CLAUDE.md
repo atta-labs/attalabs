@@ -1,6 +1,6 @@
 # CMS Package — Claude Code Instructions
 
-Sanity CMS client, schemas, typed queries, and theme utilities for all Atta AI products. This package is the **single source of truth** for visual identity — colors, typography, UI library selection, logos, and brand assets — across Herald, Vada, Atta, and Vitakka.
+Sanity CMS client, schemas, typed queries, and theme utilities for all Atta AI products. This package is the **single source of truth** for visual identity — colors, typography, UI library selection, logos, and brand assets — across Herald, Vada, Atta, and Vinaya.
 
 ---
 
@@ -14,8 +14,8 @@ packages/cms/
 │   ├── types.ts             # CMSTheme, CMSBranding, PortalUiConfig, ThemeTypography, FIELD_TO_CSS_VAR
 │   ├── index.ts             # Public exports
 │   ├── queries/
-│   │   ├── product-ui-config.ts  # getHeraldConfig, getVadaConfig, getAttaConfig, getVitakkaConfig
-│   │   ├── branding.ts           # getHeraldBranding, getAttaBranding, getVadaBranding, getVitakkaBranding
+│   │   ├── product-ui-config.ts  # getHeraldConfig, getVadaConfig, getAttaConfig, getVinayaConfig
+│   │   ├── branding.ts           # getHeraldBranding, getAttaBranding, getVadaBranding, getVinayaBranding
 │   │   ├── theme.ts              # getThemeById, getThemeByName, getThemeList, getThemes
 │   │   └── library.ts            # getLibraries, getLibraryById
 │   └── utils/
@@ -96,7 +96,7 @@ Each product has its own studio. All managed from `packages/cms`.
 bun run studio              # Herald — port 3333
 bun run studio:atta         # Atta — port 3334
 bun run studio:vada         # Vada — port 3335
-bun run studio:vitakka      # Vitakka — port 3336
+bun run studio:vinaya       # Vinaya — port 3336
 ```
 
 ### Deploy
@@ -105,7 +105,7 @@ bun run studio:vitakka      # Vitakka — port 3336
 bun run studio:deploy           # Herald
 bun run studio:deploy:atta      # Atta
 bun run studio:deploy:vada      # Vada
-bun run studio:deploy:vitakka   # Vitakka
+bun run studio:deploy:vinaya    # Vinaya
 bun run studio:deploy:all       # All four
 ```
 
@@ -124,11 +124,11 @@ Each product has a `branding` document in Sanity storing logo SVG files, the ful
 | `logos`     | `logoOutlineLight/Dark`, `logoSolidLight/Dark`, `logoLockupOutlineLight/Dark`, `logoLockupSolidLight/Dark` (SVG `file` assets) |
 | `favicons`  | Shared `appleTouchIcon` + `faviconLight` + `faviconDark` objects, each set with `ico` + 7 PNG sizes (16/32/48/64/128/256/512) |
 
-Document IDs: `branding-herald`, `branding-atta`, `branding-vada`, `branding-vitakka`
+Document IDs: `branding-herald`, `branding-atta`, `branding-vada`, `branding-vinaya`
 
 Query functions:
 ```ts
-import { getHeraldBranding, getAttaBranding, getVadaBranding, getVitakkaBranding, cmsClient } from '@atta/cms'
+import { getHeraldBranding, getAttaBranding, getVadaBranding, getVinayaBranding, cmsClient } from '@atta/cms'
 
 const branding = await getAttaBranding(cmsClient).catch(() => null)
 // branding.logoSolidDark?.url  — resolved CDN URL, ready to use in <img src>
@@ -140,7 +140,7 @@ const branding = await getAttaBranding(cmsClient).catch(() => null)
 # From packages/cms/
 SANITY_API_TOKEN=<token> bun run seed:branding:atta
 SANITY_API_TOKEN=<token> bun run seed:branding:vada
-SANITY_API_TOKEN=<token> bun run seed:branding:vitakka
+SANITY_API_TOKEN=<token> bun run seed:branding:vinaya
 SANITY_API_TOKEN=<token> bun run seed:branding:herald   # document shell only, no assets yet
 ```
 
@@ -160,11 +160,11 @@ Each product has a singleton document in Sanity that stores:
 | `userInterface.colorScheme` | `'dark' \| 'light'` | Which color scheme to apply |
 | `userInterface.library` | ref → `uiLibrary` | Active component library |
 
-Document types: `heraldConfig`, `attaConfig`, `vadaConfig`, `vitakkaConfig`
+Document types: `heraldConfig`, `attaConfig`, `vadaConfig`, `vinayaConfig`
 
 Query functions:
 ```ts
-import { getHeraldConfig, getAttaConfig, getVadaConfig, getVitakkaConfig, cmsClient } from '@atta/cms'
+import { getHeraldConfig, getAttaConfig, getVadaConfig, getVinayaConfig, cmsClient } from '@atta/cms'
 ```
 
 ### What You Configure in Each Studio
