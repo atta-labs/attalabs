@@ -50,8 +50,11 @@ export function ProtectedSection() {
         </CardContent>
       </Card>
 
+      {/* `/how-it-works`, not `/aeg` — `/aeg` is a 301 to exactly here (task
+          4, #508). The landing's own CTA should not take a redirect hop to
+          the page the topbar links directly. */}
       <Button asChild size='lg'>
-        <Link href='/aeg'>How it works</Link>
+        <Link href='/how-it-works'>How it works</Link>
       </Button>
     </section>
   )
