@@ -135,6 +135,7 @@ describe('(d) sh()/shJson() other call sites are untouched', () => {
       'git rev-list --count origin/main',
       'git log -1 --format=%cI',
       'gh issue view',
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal `${...}` is the asserted command text, not an interpolation
       'gh pr list -R ${repo.owner}/${repo.repo} --state all'
     ]) {
       expect(src).toContain(needle)
