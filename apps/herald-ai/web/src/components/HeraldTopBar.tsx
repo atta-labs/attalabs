@@ -1,4 +1,4 @@
-import { cmsClient, getHeraldBranding } from '@atta/cms'
+import { getProductBranding } from '@atta/cms'
 import { Button } from '@atta/ui/components'
 import { TopBar } from '@atta/ui/topbar'
 import { auth } from '@clerk/nextjs/server'
@@ -19,7 +19,7 @@ import { HeraldAccountMenu } from '@/components/HeraldAccountMenu'
 export async function HeraldTopBar({ context = 'main' }: { context?: 'main' | 'owner' } = {}) {
   const { userId } = await auth()
   const [branding, user] = await Promise.all([
-    getHeraldBranding(cmsClient).catch(() => null),
+    getProductBranding('herald').catch(() => null),
     userId ? getUserByClerkId(userId) : Promise.resolve(null)
   ])
 

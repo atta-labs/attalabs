@@ -138,8 +138,8 @@ Async Server Component. Fetches theme from CMS config, generates CSS variables, 
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 
 export default async function RootLayout({ children }) {
-  const config = await getVadaConfig(cmsClient).catch(() => null)
-  return <NextWebShell config={config} styleId="vada-theme">{children}</NextWebShell>
+  const { config, branding } = await getProductCms('vada')
+  return <NextWebShell config={config} branding={branding} styleId="vada-theme">{children}</NextWebShell>
 }
 ```
 

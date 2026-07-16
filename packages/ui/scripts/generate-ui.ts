@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { cmsClient, cmsConfig, getAttaConfig, getHeraldConfig, getVadaConfig, getVinayaConfig } from '@atta/cms'
+import { cmsConfig, getProductConfig, PROJECT_IDS } from '@atta/cms'
 
 const _cache = new Map<string, UILibrary>()
 
@@ -28,16 +28,6 @@ function getGeneratedDir(): string {
 type UILibrary = 'basic' | 'animate' | 'retro' | 'brutal'
 type App = 'vada' | 'atta' | 'vinaya' | 'herald'
 
-const CONFIG_FETCHERS: Record<
-  App,
-  () => Promise<{ userInterface?: { library?: { id?: string } | null } | null } | null>
-> = {
-  vada: () => getVadaConfig(cmsClient).catch(() => null),
-  atta: () => getAttaConfig(cmsClient).catch(() => null),
-  vinaya: () => getVinayaConfig(cmsClient).catch(() => null),
-  herald: () => getHeraldConfig(cmsClient).catch(() => null)
-}
-
 export async function generateUIIndex(app: App): Promise<UILibrary> {
   const cached = _cache.get(app)
   if (cached) return cached
@@ -48,15 +38,18 @@ export async function generateUIIndex(app: App): Promise<UILibrary> {
   console.log('└──────────────────────────────────────────────┘')
 
   console.log('\n📡 CMS:')
-  console.log(`   Project: ${cmsConfig.projectId}`)
+  console.log(`   Project: ${PROJECT_IDS[app]}`)
   console.log(`   Dataset: ${cmsConfig.dataset}`)
-  console.log(`   Token:   ${process.env.SANITY_API_TOKEN ? 'yes' : 'no'}`)
 
-  const config = await CONFIG_FETCHERS[app]()
+  const config = await getProductConfig(app).catch((error: unknown) => {
+    const reason = error instanceof Error ? error.message : String(error)
+    console.warn(`   ⚠ config fetch failed: ${reason}`)
+    return null
+  })
   const fromCms = config?.userInterface?.library?.id != null
   const library = (config?.userInterface?.library?.id ?? 'basic') as UILibrary
 
-  console.log(`\n📦 Library: ${library}${fromCms ? '' : ' (fallback — CMS returned no config)'}`)
+  console.log(`\n📦 Library: ${library}${fromCms ? '' : ' (fallback — CMS returned no library)'}`)
 
   const dir = path.join(getGeneratedDir(), app)
   fs.mkdirSync(dir, { recursive: true })

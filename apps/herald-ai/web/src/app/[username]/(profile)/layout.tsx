@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { auth } from '@clerk/nextjs/server'
-import { cmsClient, getHeraldBranding } from '@atta/cms'
+import { getProductBranding } from '@atta/cms'
 import { getUserByUsername } from '@/db/queries'
 import { EnvoyShell } from '../envoy-shell'
 import { EnvoyLibraryShell } from '@/components/envoy/EnvoyLibraryShell'
@@ -15,7 +15,7 @@ export default async function ProfileLayout({
 }) {
   const { username } = await params
   const [branding, user, { userId }] = await Promise.all([
-    getHeraldBranding(cmsClient).catch(() => null),
+    getProductBranding('herald').catch(() => null),
     getUserByUsername(username),
     auth()
   ])

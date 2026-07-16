@@ -28,7 +28,7 @@ Sanity CMS — branding document (one per product)
 
 @atta/cms package
 ├── schemas/branding.ts              # Sanity schema
-├── src/queries/branding.ts          # getHeraldBranding, getAttaBranding, getVadaBranding, getVinayaBranding
+├── src/queries/branding.ts          # getProductBranding(productKey)
 └── src/types.ts                     # CMSBranding, CMSBrandingFaviconSet, CMSBrandingFile, CMSBrandingImage
 ```
 
@@ -41,7 +41,7 @@ Sanity CMS — branding document (one per product)
 | Vādā     | `branding-vada`      | `ofnj2ojb`     |
 | Vinaya   | `branding-vinaya`    | `o56nzgrr`     |
 
-The same IDs are exported from `@atta/cms` as `PROJECT_IDS`. Pair with `createProductClient(product)` to query any product's Sanity project from any app (see _Cross-product fetching_ below).
+The project IDs are exported from `@atta/cms` as `PROJECT_IDS`. Both the document `_id` and the project are derived from the product key, so `getProductBranding(key)` is all a caller needs (D-125).
 
 ### Asset Storage
 
@@ -54,33 +54,30 @@ The same IDs are exported from `@atta/cms` as `PROJECT_IDS`. Pair with `createPr
 ## Querying Branding
 
 ```ts
-import { cmsClient, getAttaBranding, getVadaBranding, getHeraldBranding, getVinayaBranding } from '@atta/cms'
+import { getProductBranding, getProductCms } from '@atta/cms'
 
-// In layout.tsx or a server component — for your own product's branding
-const branding = await getVadaBranding(cmsClient).catch(() => null)
+// In a server component — one product's branding
+const branding = await getProductBranding('vada').catch(() => null)
+
+// In a root layout — branding + UI config together, already degrading gracefully
+const { config, branding } = await getProductCms('vada')
 ```
 
 ### Cross-product fetching
 
-Each product's branding lives in its own Sanity project, so the app's default `cmsClient` (wired to one project via `SANITY_PROJECT_ID`) cannot reach other products' docs. For ecosystem surfaces — e.g. the Vāda home page showing Attā and Vinaya alongside Vāda — use `createProductClient(productKey)`:
+There is nothing special to do. Every read resolves its project from the product key, so an ecosystem surface — e.g. the Vāda home page showing Attā and Vinaya alongside Vāda — just asks for each key:
 
 ```ts
-import {
-  cmsClient,
-  createProductClient,
-  getAttaBranding,
-  getVadaBranding,
-  getVinayaBranding
-} from '@atta/cms'
+import { getProductBranding } from '@atta/cms'
 
 const [atta, vada, vinaya] = await Promise.all([
-  getAttaBranding(createProductClient('atta')).catch(() => null),
-  getVadaBranding(cmsClient).catch(() => null),
-  getVinayaBranding(createProductClient('vinaya')).catch(() => null)
+  getProductBranding('atta').catch(() => null),
+  getProductBranding('vada').catch(() => null),
+  getProductBranding('vinaya').catch(() => null)
 ])
 ```
 
-`createProductClient` returns a read-only Sanity client hitting the public CDN for the chosen project — no token required. `ProductKey` is `'herald' | 'atta' | 'vada' | 'vinaya'`. The same helper works for any other typed query in `@atta/cms` (themes, configs, etc.) when you need data from a sibling product.
+Reads hit the public CDN for the chosen project — no token required. `ProductKey` is `'herald' | 'atta' | 'vada' | 'vinaya' | 'attalabs'`.
 
 Returned shape — all asset fields include a resolved `url` string:
 
@@ -139,7 +136,7 @@ interface CMSBrandingFaviconSet {
 ### Rendering a logo in a component
 
 ```tsx
-const branding = await getAttaBranding(cmsClient).catch(() => null)
+const branding = await getProductBranding('atta').catch(() => null)
 
 // Pick the right variant based on active color scheme and render size
 const logoUrl = isDark
@@ -216,7 +213,7 @@ The script uses `client.createOrReplace()` — safe to re-run if assets are upda
 
 ## Rules
 
-- **MUST** use `get{Product}Branding(cmsClient)` — never call the Sanity client directly in app code
+- **MUST** use `getProductBranding(key)` (or `getProductCms(key)` in a root layout) — never call the Sanity client directly in app code
 - **MUST** guard against `null` branding — CMS may be unreachable during SSR
 - **MUST** use `file` type (not `image`) for SVG assets — `image` applies server-side transforms that corrupt SVGs
 - **MUST** choose outline vs solid based on render size — outline ≥ 48 px, solid < 48 px

@@ -32,6 +32,8 @@ Specs live in `specs/` at this level (`apps/atta-ai/specs/`):
 
 The root layout renders the shared `@atta/ui/footer` `Footer` component — no product-specific footer content beyond `product`/`tagline` props. See `.claude/skills/ui-components/SKILL.md` for the component itself.
 
+Theme and branding come from CMS via `getProductCms('atta')` — the product key resolves the Sanity project, so no `SANITY_PROJECT_ID` is involved (D-125). See `.claude/skills/ui-cms-theme/SKILL.md`.
+
 ---
 
 ## Related

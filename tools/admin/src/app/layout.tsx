@@ -1,18 +1,8 @@
-import {
-  cmsClient,
-  generateThemeCSSForScheme,
-  getAttaBranding,
-  getGoogleFontsUrl,
-  getHeraldBranding,
-  getVadaBranding,
-  getVadaConfig,
-  getVinayaBranding
-} from '@atta/cms'
+import { generateThemeCSSForScheme, getGoogleFontsUrl, getProductBranding, getProductConfig } from '@atta/cms'
 import { ToastProvider } from '@atta/ui/components'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { AdminShell } from '@/components/admin-shell'
-import { getCmsClientsForProject } from '@/lib/cms-for-project'
 import type { ProjectKey } from '@/lib/project-config'
 import '@atta/ui/globals.css'
 
@@ -22,12 +12,20 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
+  // The admin tool is internal and has no CMS identity of its own — it borrows
+  // Vāda's theme. Each project logo is read from that project's own Sanity.
+  //
+  // These reads inherit `useCdn` from NODE_ENV, and admin is the theme-editing
+  // tool — it must not read its own chrome from a stale CDN copy. Harmless
+  // today (this package has no build/start script, so NODE_ENV is always
+  // development and useCdn stays false); if admin ever gains a production
+  // start, pass an explicit non-CDN client here.
   const [config, vadaBranding, attaBranding, heraldBranding, vinayaBranding] = await Promise.all([
-    getVadaConfig(cmsClient).catch(() => null),
-    getVadaBranding(getCmsClientsForProject('vada').readClient).catch(() => null),
-    getAttaBranding(getCmsClientsForProject('atta').readClient).catch(() => null),
-    getHeraldBranding(getCmsClientsForProject('herald').readClient).catch(() => null),
-    getVinayaBranding(getCmsClientsForProject('vinaya').readClient).catch(() => null)
+    getProductConfig('vada').catch(() => null),
+    getProductBranding('vada').catch(() => null),
+    getProductBranding('atta').catch(() => null),
+    getProductBranding('herald').catch(() => null),
+    getProductBranding('vinaya').catch(() => null)
   ])
 
   const projectLogos: Record<ProjectKey, string | null> = {

@@ -9,13 +9,13 @@ Sanity CMS client, schemas, typed queries, and theme utilities for all Atta AI p
 ```
 packages/cms/
 ├── src/
-│   ├── client.ts            # cmsClient (read), cmsWriteClient (write), createCmsClient
-│   ├── config.ts            # Project ID, dataset, API version, CDN flag
+│   ├── client.ts            # PROJECT_IDS, ProductKey, createProductClient, cmsConfig
 │   ├── types.ts             # CMSTheme, CMSBranding, PortalUiConfig, ThemeTypography, FIELD_TO_CSS_VAR
 │   ├── index.ts             # Public exports
 │   ├── queries/
-│   │   ├── product-ui-config.ts  # getHeraldConfig, getVadaConfig, getAttaConfig, getVinayaConfig
-│   │   ├── branding.ts           # getHeraldBranding, getAttaBranding, getVadaBranding, getVinayaBranding
+│   │   ├── product-cms.ts        # getProductCms — config + branding for one product key
+│   │   ├── product-ui-config.ts  # getProductConfig, getProductUiConfig
+│   │   ├── branding.ts           # getProductBranding
 │   │   ├── theme.ts              # getThemeById, getThemeByName, getThemeList, getThemes
 │   │   └── library.ts            # getLibraries, getLibraryById
 │   └── utils/
@@ -44,9 +44,9 @@ packages/cms/
 All reads go through typed query functions exported from this package.
 
 ```tsx
-// ✅ Typed query from CMS package
-import { getVadaConfig, cmsClient } from '@atta/cms'
-const config = await getVadaConfig(cmsClient)
+// ✅ Typed query from CMS package, keyed by product
+import { getProductConfig } from '@atta/cms'
+const config = await getProductConfig('vada')
 
 // ❌ Raw client call in app code
 import { createClient } from '@sanity/client'
@@ -59,19 +59,28 @@ Theme config is fetched once in the root `layout.tsx` (async Server Component) a
 
 ```tsx
 // ✅ Root layout — server-side, once per request
-const config = await getVadaConfig(cmsClient).catch(() => null)
-return <NextWebShell config={config} styleId="vada-theme">{children}</NextWebShell>
+const { config, branding } = await getProductCms('vada')
+return <NextWebShell config={config} branding={branding} styleId="vada-theme">{children}</NextWebShell>
 
 // ❌ Never fetch theme inside a component
-const config = await getVadaConfig(cmsClient)  // inside a page or component
+const config = await getProductConfig('vada')  // inside a page or component
 ```
 
-### RULE #3: cmsClient vs cmsWriteClient
+### RULE #3: The Sanity project comes from the product key, never the environment (D-125)
 
 ```ts
-cmsClient       // Read-only, CDN-cached in production — use for all reads
-cmsWriteClient  // Requires SANITY_API_TOKEN — use only for admin mutations (server-side only)
+// ✅ The key resolves project + document ids
+const { config, branding } = await getProductCms('vinaya')
+
+// ❌ No ambient read client, no env-resolved project id
+const config = await getVinayaConfig(cmsClient)          // deleted — cmsClient is gone
+projectId: process.env.SANITY_PROJECT_ID ?? 'unconfigured'  // deleted — silent failure
 ```
+
+Project IDs are public and identical in every environment, so they live in `PROJECT_IDS`.
+Only `SANITY_DATASET` (varies per environment) and `SANITY_API_TOKEN` (a secret, writes
+only) are environment variables. `getProductCms` degrades to `null` when the CMS is
+unreachable and logs why outside production — never re-swallow it with `.catch(() => null)`.
 
 ### RULE #4: All colors go through generateThemeCSSForScheme — never transform manually
 
@@ -128,9 +137,9 @@ Document IDs: `branding-herald`, `branding-atta`, `branding-vada`, `branding-vin
 
 Query functions:
 ```ts
-import { getHeraldBranding, getAttaBranding, getVadaBranding, getVinayaBranding, cmsClient } from '@atta/cms'
+import { getProductBranding } from '@atta/cms'
 
-const branding = await getAttaBranding(cmsClient).catch(() => null)
+const branding = await getProductBranding('atta').catch(() => null)
 // branding.logoSolidDark?.url  — resolved CDN URL, ready to use in <img src>
 // branding.faviconDark?.png32?.url
 ```
@@ -164,7 +173,9 @@ Document types: `heraldConfig`, `attaConfig`, `vadaConfig`, `vinayaConfig`
 
 Query functions:
 ```ts
-import { getHeraldConfig, getAttaConfig, getVadaConfig, getVinayaConfig, cmsClient } from '@atta/cms'
+import { getProductConfig } from '@atta/cms'
+
+const config = await getProductConfig('herald')   // 'herald' | 'atta' | 'vada' | 'vinaya' | 'attalabs'
 ```
 
 ### What You Configure in Each Studio
@@ -204,11 +215,13 @@ Colors are stored as plain hex or any CSS color format. `generateThemeCSSForSche
 
 | Variable | Client | Purpose |
 |----------|--------|---------|
-| `SANITY_PROJECT_ID` | Server | Sanity project identifier |
-| `NEXT_PUBLIC_SANITY_PROJECT_ID` | Client+Server | Same, exposed to browser |
-| `SANITY_DATASET` | Server | Dataset (`production`) |
+| `SANITY_DATASET` | Server | Dataset (`production`) — genuinely varies per environment |
 | `NEXT_PUBLIC_SANITY_DATASET` | Client+Server | Same, exposed to browser |
-| `SANITY_API_TOKEN` | Server only | Write access (cmsWriteClient) |
+| `SANITY_API_TOKEN` | Server only | Write access — seed/migrate scripts, `tools/admin` write clients |
+
+There is **no** `SANITY_PROJECT_ID`. The project is resolved from the product key via
+`PROJECT_IDS` (D-125); the env var existed, duplicated a committed public value, and its
+absence failed silently. Any lingering entry in a `.env.local` or Vercel project is inert.
 
 ---
 

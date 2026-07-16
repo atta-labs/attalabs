@@ -1,31 +1,7 @@
-import {
-  createProductClient,
-  getAttaBranding,
-  getAttaConfig,
-  getHeraldBranding,
-  getHeraldConfig,
-  getVadaBranding,
-  getVadaConfig,
-  getVinayaBranding,
-  getVinayaConfig
-} from '@atta/cms'
+import { getProductCms } from '@atta/cms'
 import type { CMSTheme, ColorScheme } from '@atta/cms'
 import { ImageResponse } from 'next/og'
 import { PROJECT_CONFIG, isValidProject } from '@/lib/project-config'
-
-const BRANDING_BY_PROJECT = {
-  vada: getVadaBranding,
-  atta: getAttaBranding,
-  herald: getHeraldBranding,
-  vinaya: getVinayaBranding
-} as const
-
-const CONFIG_BY_PROJECT = {
-  vada: getVadaConfig,
-  atta: getAttaConfig,
-  herald: getHeraldConfig,
-  vinaya: getVinayaConfig
-} as const
 
 function resolveColor(v: string | { value: string } | undefined): string | undefined {
   if (!v) return undefined
@@ -62,11 +38,7 @@ export default async function Icon({ params }: { params: Promise<{ project: stri
     )
   }
 
-  const client = createProductClient(project)
-  const [branding, config] = await Promise.all([
-    BRANDING_BY_PROJECT[project](client).catch(() => null),
-    CONFIG_BY_PROJECT[project](client).catch(() => null)
-  ])
+  const { branding, config } = await getProductCms(project)
 
   const scheme: ColorScheme = config?.userInterface?.colorScheme ?? 'dark'
   const theme = config?.userInterface?.theme ?? null
