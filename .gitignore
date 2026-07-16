@@ -17,9 +17,15 @@ docs/
 !apps/aeg/web/studio/src/app/docs/**
 !apps/aeg/web/studio/src/lib/docs/
 !apps/aeg/web/studio/src/lib/docs/**
-# Re-include Vinaya Studio's docs route (vinaya-studio-v1 task 1 addendum).
+# Re-include Vinaya Studio's docs redirect stubs (vinaya-studio-v1 task 1
+# addendum; the live route itself moved to (site)/docs below, vinaya-pages-v1
+# task 8, #568).
 !apps/vinaya/web/src/app/studio/docs/
 !apps/vinaya/web/src/app/studio/docs/**
+# Re-include Vinaya's live docs route, moved from studio/docs/ to the (site)
+# Portal route group (vinaya-pages-v1 task 8, #568).
+!apps/vinaya/web/src/app/(site)/docs/
+!apps/vinaya/web/src/app/(site)/docs/**
 !apps/vinaya/web/src/lib/docs/
 !apps/vinaya/web/src/lib/docs/**
 

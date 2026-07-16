@@ -69,7 +69,7 @@ const markdownComponents = {
   em: (props: React.HTMLAttributes<HTMLElement>) => <em className='italic' {...props} />
 }
 
-export function DocPage({ doc, body, next, prev, basePath = '/studio/docs' }: DocPageProps) {
+export function DocPage({ doc, body, next, prev, basePath = '/docs' }: DocPageProps) {
   const content = stripLeadingH1(body)
 
   return (

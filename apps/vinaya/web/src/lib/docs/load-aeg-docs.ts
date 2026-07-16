@@ -7,7 +7,7 @@ import type { Doc, DocNav } from '@atta/aeg-core/docs'
 import { nestDocChildren } from './nest-doc-children'
 
 const SECTION_ORDER = ['Overview', 'Contracts', 'Roles', 'Diagrams', 'Skills']
-const DOCS_BASE_PATH = '/studio/docs'
+const DOCS_BASE_PATH = '/docs'
 
 const SECTION_BY_DIR: Record<string, string> = {
   contracts: 'Contracts',
