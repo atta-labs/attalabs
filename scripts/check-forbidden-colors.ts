@@ -21,6 +21,12 @@
  * `packages/ui/libraries/<lib>/installed/` (and nested helper trees) is exempt — verbatim
  * upstream CLI paste, see D-065.
  *
+ * `packages/cms/{product}-ai/` (e.g. `vada-ai`, `vinaya-ai`) is exempt — the built Sanity
+ * Studio output committed as a deploy snapshot, biome-ignored for the same reason
+ * (`biome.json`'s `!packages/cms/{vada-ai,vinaya-ai}`). A full rebuild rewrites these files
+ * byte-for-byte, so their vendor-bundled hex literals (Sanity's own UI, not ours) look like
+ * "new" lines in a diff even though nothing we authored changed.
+ *
  * Modes:
  *   --pr   Reads BASE_SHA / HEAD_SHA env vars (CI) or falls back to origin/main…HEAD.
  *   (none) Same as --pr (no full-repo scan; the gate is intentionally diff-only).
@@ -185,6 +191,9 @@ function isUiFile(p: string): boolean {
 // Matches nested helper trees too (e.g. `installed/animate-ui/primitives/...`).
 const INSTALLED_RE = /(?:^|\/)packages\/ui\/libraries\/[^/]+\/installed\//
 
+// Committed Sanity Studio build output — see the file-header comment above.
+const STUDIO_BUILD_RE = /(?:^|\/)packages\/cms\/[^/]+-ai\//
+
 function scanLine(file: string, line: number, text: string): Violation[] {
   const violations: Violation[] = []
   const trimmed = text.trim()
@@ -253,7 +262,9 @@ function main(): void {
     return
   }
 
-  const added = parseAddedLines(diff).filter((a) => isUiFile(a.file) && !INSTALLED_RE.test(a.file))
+  const added = parseAddedLines(diff).filter(
+    (a) => isUiFile(a.file) && !INSTALLED_RE.test(a.file) && !STUDIO_BUILD_RE.test(a.file)
+  )
   const violations: Violation[] = []
   for (const a of added) {
     violations.push(...scanLine(a.file, a.line, a.text))
