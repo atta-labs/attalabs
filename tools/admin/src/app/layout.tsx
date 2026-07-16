@@ -6,7 +6,7 @@ import {
   getHeraldBranding,
   getVadaBranding,
   getVadaConfig,
-  getVitakkaBranding
+  getVinayaBranding
 } from '@atta/cms'
 import { ToastProvider } from '@atta/ui/components'
 import type { Metadata } from 'next'
@@ -22,19 +22,19 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const [config, vadaBranding, attaBranding, heraldBranding, vitakkaBranding] = await Promise.all([
+  const [config, vadaBranding, attaBranding, heraldBranding, vinayaBranding] = await Promise.all([
     getVadaConfig(cmsClient).catch(() => null),
     getVadaBranding(getCmsClientsForProject('vada').readClient).catch(() => null),
     getAttaBranding(getCmsClientsForProject('atta').readClient).catch(() => null),
     getHeraldBranding(getCmsClientsForProject('herald').readClient).catch(() => null),
-    getVitakkaBranding(getCmsClientsForProject('vitakka').readClient).catch(() => null)
+    getVinayaBranding(getCmsClientsForProject('vinaya').readClient).catch(() => null)
   ])
 
   const projectLogos: Record<ProjectKey, string | null> = {
     vada: vadaBranding?.logoSolidDark?.url ?? null,
     atta: attaBranding?.logoSolidDark?.url ?? null,
     herald: heraldBranding?.logoSolidDark?.url ?? null,
-    vitakka: vitakkaBranding?.logoSolidDark?.url ?? null
+    vinaya: vinayaBranding?.logoSolidDark?.url ?? null
   }
 
   const theme = config?.userInterface?.theme ?? null

@@ -15,7 +15,7 @@ export const PROJECT_IDS = {
   herald: 'e9gbd2d1',
   atta: '892o2m9f',
   vada: 'ofnj2ojb',
-  vitakka: 'o56nzgrr',
+  vinaya: 'o56nzgrr',
   attalabs: 'l5n0n8nn'
 } as const
 
@@ -32,7 +32,7 @@ export function createCmsClient(options?: { token?: string; useCdn?: boolean }) 
 /**
  * Create a read-only Sanity client targeting a specific product's Sanity
  * project. Use this to fetch content (branding, config, theme) from another
- * product in the ecosystem — e.g. the Vāda home page showing Attā and Vitakka
+ * product in the ecosystem — e.g. the Vāda home page showing Attā and Vinaya
  * logos alongside its own.
  *
  * No token required: reads come over the public CDN for published content.

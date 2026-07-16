@@ -33,7 +33,7 @@ vi.mock('../client', () => {
       herald: 'e9gbd2d1',
       atta: '892o2m9f',
       vada: 'ofnj2ojb',
-      vitakka: 'o56nzgrr',
+      vinaya: 'o56nzgrr',
       attalabs: 'l5n0n8nn'
     }
   }

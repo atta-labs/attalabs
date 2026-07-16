@@ -23,7 +23,7 @@ export const branding = defineType({
       readOnly: true,
       validation: (Rule) => Rule.required(),
       options: {
-        list: ['herald', 'atta', 'vada', 'vitakka', 'attalabs'].map((id) => ({ title: id, value: id }))
+        list: ['herald', 'atta', 'vada', 'vinaya', 'attalabs'].map((id) => ({ title: id, value: id }))
       },
       description: 'Read-only. Set once on document creation.'
     }),

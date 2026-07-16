@@ -9,7 +9,7 @@
  *   cd packages/cms && bun run migrate:herald-to-product
  *
  * Env:
- *   MIGRATE_PRODUCT          — required: atta | vitakka | vada
+ *   MIGRATE_PRODUCT          — required: atta | vinaya | vada
  *   SANITY_PROJECT_ID        — destination project (e.g. Atta)
  *   SANITY_DATASET           — default production
  *   SANITY_API_TOKEN         — destination write token (Editor+)
@@ -24,7 +24,7 @@ const HERALD_PROJECT_ID = 'e9gbd2d1'
 
 const PRODUCT_DEST: Record<string, { _type: string; _id: string }> = {
   atta: { _type: 'attaConfig', _id: 'attaConfig' },
-  vitakka: { _type: 'vitakkaConfig', _id: 'vitakkaConfig' },
+  vinaya: { _type: 'vinayaConfig', _id: 'vinayaConfig' },
   vada: { _type: 'vadaConfig', _id: 'vadaConfig' }
 }
 

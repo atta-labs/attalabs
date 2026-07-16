@@ -49,13 +49,13 @@ Sanity CMS
 Each product has a dedicated config document in Sanity and a query function:
 
 ```ts
-import { cmsClient, getHeraldConfig, getVadaConfig, getAttaConfig, getVitakkaConfig } from '@atta/cms'
+import { cmsClient, getHeraldConfig, getVadaConfig, getAttaConfig, getVinayaConfig } from '@atta/cms'
 
 // In layout.tsx (server component)
 const config = await getHeraldConfig(cmsClient)    // Herald
 const config = await getVadaConfig(cmsClient)      // Vada
 const config = await getAttaConfig(cmsClient)      // Atta
-const config = await getVitakkaConfig(cmsClient)   // Vitakka
+const config = await getVinayaConfig(cmsClient)    // Vinaya
 ```
 
 The `PortalUiConfig` shape (same for all products):
@@ -188,7 +188,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 ```
 
-**`styleId` must be unique per product** — it identifies the injected `<style>` tag. Use `herald-theme`, `vada-theme`, `atta-theme`, `vitakka-theme`.
+**`styleId` must be unique per product** — it identifies the injected `<style>` tag. Use `herald-theme`, `vada-theme`, `atta-theme`, `vinaya-theme` (`vitakka-theme` remains in use too — the shelved Vitakka scaffold keeps its own `styleId` even though it now borrows Atta's CMS config).
 
 `NextWebShell` handles in order:
 1. Reads `cmsScheme` and `libraryId` from config
@@ -288,7 +288,7 @@ Each product has its own Sanity Studio deployment, managed from `packages/cms`. 
 bun run studio              # Herald studio — port 3333 (default)
 bun run studio:atta         # Atta studio — port 3334
 bun run studio:vada         # Vada studio — port 3335
-bun run studio:vitakka      # Vitakka studio — port 3336
+bun run studio:vinaya       # Vinaya studio — port 3336
 ```
 
 The `SANITY_STUDIO_PRODUCT` env var controls which product's schema/config is loaded. The `studio:*` scripts set this automatically.
@@ -299,17 +299,17 @@ The `SANITY_STUDIO_PRODUCT` env var controls which product's schema/config is lo
 bun run studio:deploy           # Deploy Herald studio
 bun run studio:deploy:atta      # Deploy Atta studio
 bun run studio:deploy:vada      # Deploy Vada studio
-bun run studio:deploy:vitakka   # Deploy Vitakka studio
+bun run studio:deploy:vinaya    # Deploy Vinaya studio
 bun run studio:deploy:all       # Deploy all four (sequential, prompts y/n)
 ```
 
 ### What You Configure Where
 
-Per **D-060** (Cross-Product Theme Centralization under Attalabs, 2026-06-25, `Lock: YES`), theme and library *documents* are no longer per-product. They are stored and managed exclusively in the central Attalabs Sanity project, and the Themes/Libraries sections are hidden from the other product studios' sidebars (Vāda, Vitakka, Herald, Attā).
+Per **D-060** (Cross-Product Theme Centralization under Attalabs, 2026-06-25, `Lock: YES`), theme and library *documents* are no longer per-product. They are stored and managed exclusively in the central Attalabs Sanity project, and the Themes/Libraries sections are hidden from the other product studios' sidebars (Vāda, Vinaya, Herald, Attā).
 
 | Document Type | Where it's edited | Purpose |
 |--------------|--------------------|---------|
-| `{product}Config` | Per-product studio (Vāda, Vitakka, Herald, Attā) | Config singleton — the *selection*: which theme/library ID the product points to, plus color scheme. Still per-product. |
+| `{product}Config` | Per-product studio (Vāda, Vinaya, Herald, Attā) | Config singleton — the *selection*: which theme/library ID the product points to, plus color scheme. Still per-product. |
 | `uiTheme` | Central Attalabs studio only (`attalabs.sanity.studio`, project `l5n0n8nn`) | Theme documents — color tokens (light/dark), typography, spacing, shadows |
 | `library` | Central Attalabs studio only (`attalabs.sanity.studio`, project `l5n0n8nn`) | Library documents — maps `id` to `basic` / `retro` / `animate` / `brutal` |
 

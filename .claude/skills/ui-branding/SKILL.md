@@ -28,7 +28,7 @@ Sanity CMS — branding document (one per product)
 
 @atta/cms package
 ├── schemas/branding.ts              # Sanity schema
-├── src/queries/branding.ts          # getHeraldBranding, getAttaBranding, getVadaBranding, getVitakkaBranding
+├── src/queries/branding.ts          # getHeraldBranding, getAttaBranding, getVadaBranding, getVinayaBranding
 └── src/types.ts                     # CMSBranding, CMSBrandingFaviconSet, CMSBrandingFile, CMSBrandingImage
 ```
 
@@ -39,7 +39,7 @@ Sanity CMS — branding document (one per product)
 | Herald   | `branding-herald`    | `e9gbd2d1`     |
 | Attā     | `branding-atta`      | `892o2m9f`     |
 | Vādā     | `branding-vada`      | `ofnj2ojb`     |
-| Vitakka  | `branding-vitakka`   | `o56nzgrr`     |
+| Vinaya   | `branding-vinaya`    | `o56nzgrr`     |
 
 The same IDs are exported from `@atta/cms` as `PROJECT_IDS`. Pair with `createProductClient(product)` to query any product's Sanity project from any app (see _Cross-product fetching_ below).
 
@@ -54,7 +54,7 @@ The same IDs are exported from `@atta/cms` as `PROJECT_IDS`. Pair with `createPr
 ## Querying Branding
 
 ```ts
-import { cmsClient, getAttaBranding, getVadaBranding, getHeraldBranding, getVitakkaBranding } from '@atta/cms'
+import { cmsClient, getAttaBranding, getVadaBranding, getHeraldBranding, getVinayaBranding } from '@atta/cms'
 
 // In layout.tsx or a server component — for your own product's branding
 const branding = await getVadaBranding(cmsClient).catch(() => null)
@@ -62,7 +62,7 @@ const branding = await getVadaBranding(cmsClient).catch(() => null)
 
 ### Cross-product fetching
 
-Each product's branding lives in its own Sanity project, so the app's default `cmsClient` (wired to one project via `SANITY_PROJECT_ID`) cannot reach other products' docs. For ecosystem surfaces — e.g. the Vāda home page showing Attā and Vitakka alongside Vāda — use `createProductClient(productKey)`:
+Each product's branding lives in its own Sanity project, so the app's default `cmsClient` (wired to one project via `SANITY_PROJECT_ID`) cannot reach other products' docs. For ecosystem surfaces — e.g. the Vāda home page showing Attā and Vinaya alongside Vāda — use `createProductClient(productKey)`:
 
 ```ts
 import {
@@ -70,24 +70,24 @@ import {
   createProductClient,
   getAttaBranding,
   getVadaBranding,
-  getVitakkaBranding
+  getVinayaBranding
 } from '@atta/cms'
 
-const [atta, vada, vitakka] = await Promise.all([
+const [atta, vada, vinaya] = await Promise.all([
   getAttaBranding(createProductClient('atta')).catch(() => null),
   getVadaBranding(cmsClient).catch(() => null),
-  getVitakkaBranding(createProductClient('vitakka')).catch(() => null)
+  getVinayaBranding(createProductClient('vinaya')).catch(() => null)
 ])
 ```
 
-`createProductClient` returns a read-only Sanity client hitting the public CDN for the chosen project — no token required. `ProductKey` is `'herald' | 'atta' | 'vada' | 'vitakka'`. The same helper works for any other typed query in `@atta/cms` (themes, configs, etc.) when you need data from a sibling product.
+`createProductClient` returns a read-only Sanity client hitting the public CDN for the chosen project — no token required. `ProductKey` is `'herald' | 'atta' | 'vada' | 'vinaya'`. The same helper works for any other typed query in `@atta/cms` (themes, configs, etc.) when you need data from a sibling product.
 
 Returned shape — all asset fields include a resolved `url` string:
 
 ```ts
 interface CMSBranding {
   _id: string
-  productId: 'herald' | 'atta' | 'vada' | 'vitakka'
+  productId: 'herald' | 'atta' | 'vada' | 'vinaya'
   productName: string
   paliRoot?: string
   paliMeaning?: string
@@ -162,7 +162,7 @@ const logoUrl = isDark
 | Product  | Blade Direction | Interior Element | Meaning |
 |----------|----------------|-----------------|---------|
 | Attā     | Λ — apex up    | Eye — almond ellipse with pupil | The self looking inward, awareness observing itself |
-| Vitakka  | V — apex down  | Target — concentric rings with crosshairs | Focus, thought applied to its object |
+| Vinaya   | V — apex down  | Target — concentric rings with crosshairs | Focus, thought applied to its object (reused from Vitakka, D-124 — its V initial fits Vinaya's) |
 | Vādā     | V — apex down  | Two circles connected by exchange arcs | Conversation, dialogue between two minds |
 | Herald   | TBD            | TBD | TBD — logos not yet designed |
 
@@ -189,7 +189,7 @@ The seed script uploads all SVG/PNG assets from `~/Downloads/logos/{product}/` a
 # From packages/cms/
 SANITY_API_TOKEN=<token> bun run seed:branding:atta
 SANITY_API_TOKEN=<token> bun run seed:branding:vada
-SANITY_API_TOKEN=<token> bun run seed:branding:vitakka
+SANITY_API_TOKEN=<token> bun run seed:branding:vinaya
 SANITY_API_TOKEN=<token> bun run seed:branding:herald   # document shell only, no assets
 ```
 

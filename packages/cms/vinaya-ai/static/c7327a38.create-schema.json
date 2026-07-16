@@ -13,12 +13,14 @@
             ]
           }
         ],
+        "description": "Unique identifier for this theme (e.g., \"Midnight Gold\", \"Cobalt\")",
         "name": "name",
         "type": "string",
         "title": "Theme Name"
       },
       {
         "rows": 2,
+        "description": "Brief description of this theme",
         "name": "description",
         "type": "text"
       },
@@ -173,18 +175,22 @@
             "type": "string"
           },
           {
+            "description": "CSS value (rgba, gradient, etc.)",
             "name": "headerBackground",
             "type": "string"
           },
           {
+            "description": "CSS gradient value",
             "name": "gradientPrimary",
             "type": "string"
           },
           {
+            "description": "CSS gradient value",
             "name": "gradientBackground",
             "type": "string"
           },
           {
+            "description": "CSS gradient or color value",
             "name": "gradientCard",
             "type": "string"
           }
@@ -344,18 +350,22 @@
             "type": "string"
           },
           {
+            "description": "CSS value (rgba, gradient, etc.)",
             "name": "headerBackground",
             "type": "string"
           },
           {
+            "description": "CSS gradient value",
             "name": "gradientPrimary",
             "type": "string"
           },
           {
+            "description": "CSS gradient value",
             "name": "gradientBackground",
             "type": "string"
           },
           {
+            "description": "CSS gradient or color value",
             "name": "gradientCard",
             "type": "string"
           }
@@ -365,20 +375,31 @@
         "title": "Dark Mode Colors"
       },
       {
+        "options": {
+          "collapsible": true,
+          "collapsed": false
+        },
         "fields": [
           {
+            "description": "e.g., \"Inter, sans-serif\"",
             "name": "fontSans",
-            "type": "string"
+            "type": "string",
+            "title": "Sans Font"
           },
           {
+            "description": "e.g., \"Merriweather, serif\"",
             "name": "fontSerif",
-            "type": "string"
+            "type": "string",
+            "title": "Serif Font"
           },
           {
+            "description": "e.g., \"JetBrains Mono, monospace\"",
             "name": "fontMono",
-            "type": "string"
+            "type": "string",
+            "title": "Mono Font"
           },
           {
+            "description": "Letter spacing, e.g., \"0em\"",
             "name": "trackingNormal",
             "type": "string"
           }
@@ -387,21 +408,33 @@
         "type": "object"
       },
       {
+        "options": {
+          "collapsible": true,
+          "collapsed": false
+        },
         "fields": [
           {
+            "description": "Base border radius, e.g., \"0.5rem\", \"1.25rem\"",
             "name": "radius",
             "type": "string",
             "title": "Border Radius"
           },
           {
+            "description": "Base spacing unit, e.g., \"0.25rem\"",
             "name": "spacing",
-            "type": "string"
+            "type": "string",
+            "title": "Base Spacing"
           }
         ],
         "name": "spacing",
-        "type": "object"
+        "type": "object",
+        "title": "Spacing & Radius"
       },
       {
+        "options": {
+          "collapsible": true,
+          "collapsed": false
+        },
         "fields": [
           {
             "name": "shadow2xs",
@@ -510,16 +543,244 @@
   {
     "fields": [
       {
+        "options": {
+          "list": [
+            {
+              "title": "herald",
+              "value": "herald"
+            },
+            {
+              "title": "atta",
+              "value": "atta"
+            },
+            {
+              "title": "vada",
+              "value": "vada"
+            },
+            {
+              "title": "vinaya",
+              "value": "vinaya"
+            },
+            {
+              "title": "attalabs",
+              "value": "attalabs"
+            }
+          ]
+        },
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "valid",
+                "constraint": [
+                  "herald",
+                  "atta",
+                  "vada",
+                  "vinaya",
+                  "attalabs"
+                ]
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ]
+          }
+        ],
+        "description": "Read-only. Set once on document creation.",
+        "readOnly": true,
+        "name": "productId",
+        "type": "string",
+        "title": "Product ID"
+      },
+      {
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ]
+          }
+        ],
+        "name": "productName",
+        "type": "string"
+      },
+      {
+        "description": "e.g. \"Attā (अत्ता)\"",
+        "name": "paliRoot",
+        "type": "string"
+      },
+      {
+        "description": "e.g. \"self\"",
+        "name": "paliMeaning",
+        "type": "string"
+      },
+      {
+        "description": "What the product is in one sentence",
+        "name": "tagline",
+        "type": "string",
+        "title": "One-line Description"
+      },
+      {
+        "options": {
+          "list": [
+            {
+              "title": "Λ — apex up",
+              "value": "apex-up"
+            },
+            {
+              "title": "V — apex down",
+              "value": "apex-down"
+            }
+          ]
+        },
+        "name": "bladeDirection",
+        "type": "string"
+      },
+      {
+        "description": "e.g. \"Eye — almond ellipse with pupil\"",
+        "name": "interiorElement",
+        "type": "string"
+      },
+      {
+        "description": "What the interior element represents",
+        "name": "interiorMeaning",
+        "type": "string"
+      },
+      {
+        "rows": 4,
+        "description": "Key constraints — e.g. blade curves are intentional and must not be straightened",
+        "name": "shapeNotes",
+        "type": "text"
+      },
+      {
+        "rows": 4,
+        "description": "What the outline variant is and how it is rendered",
+        "name": "outlineDescription",
+        "type": "text",
+        "title": "Outline Variant — Description"
+      },
+      {
+        "rows": 3,
+        "name": "outlineUseCases",
+        "type": "text",
+        "title": "Outline Variant — Use Cases"
+      },
+      {
+        "initialValue": 48,
+        "name": "outlineMinSizePx",
+        "type": "number",
+        "title": "Outline Minimum Size (px)"
+      },
+      {
+        "rows": 4,
+        "description": "What the solid variant is and how it is rendered",
+        "name": "solidDescription",
+        "type": "text",
+        "title": "Solid Variant — Description"
+      },
+      {
+        "rows": 3,
+        "name": "solidUseCases",
+        "type": "text",
+        "title": "Solid Variant — Use Cases"
+      },
+      {
+        "initialValue": 16,
+        "name": "solidMinSizePx",
+        "type": "number",
+        "title": "Solid Minimum Size (px)"
+      },
+      {
+        "description": "e.g. \"Equal to the height of the interior element on all sides\"",
+        "name": "clearSpace",
+        "type": "string",
+        "title": "Clear Space Rule"
+      },
+      {
+        "description": "List of things not to do with the logo",
+        "of": [
+          {
+            "type": "string"
+          }
+        ],
+        "name": "forbidden",
+        "type": "array",
+        "title": "Forbidden Uses"
+      },
+      {
+        "options": {
+          "accept": ".svg,image/svg+xml"
+        },
+        "name": "logoOutlineLight",
+        "type": "file",
+        "title": "Logo — Outline, Light"
+      },
+      {
+        "options": {
+          "accept": ".svg,image/svg+xml"
+        },
+        "name": "logoOutlineDark",
+        "type": "file",
+        "title": "Logo — Outline, Dark"
+      },
+      {
+        "options": {
+          "accept": ".svg,image/svg+xml"
+        },
+        "name": "logoSolidLight",
+        "type": "file",
+        "title": "Logo — Solid, Light"
+      },
+      {
+        "options": {
+          "accept": ".svg,image/svg+xml"
+        },
+        "name": "logoSolidDark",
+        "type": "file",
+        "title": "Logo — Solid, Dark"
+      },
+      {
+        "options": {
+          "accept": ".svg,image/svg+xml"
+        },
+        "description": "Square crop optimised for small sizes — source SVG for favicon generation",
+        "name": "logoFavicon",
+        "type": "file",
+        "title": "Logo — Favicon (SVG source)"
+      },
+      {
+        "description": "iOS home screen (180×180)",
+        "name": "appleTouchIcon",
+        "type": "image",
+        "title": "apple-touch-icon.png"
+      },
+      {
+        "options": {
+          "accept": ".ico"
+        },
+        "description": "Multi-resolution ICO (16, 32, 48 px)",
+        "name": "faviconIco",
+        "type": "file",
+        "title": "favicon.ico"
+      }
+    ],
+    "name": "branding",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
         "fields": [
           {
-            "description": "Active theme for the Herald portal",
-            "to": [
-              {
-                "type": "uiTheme"
-              }
-            ],
+            "description": "Active theme ID from Attalabs project (e.g. \"theme-cobalt\")",
             "name": "theme",
-            "type": "reference"
+            "type": "string",
+            "title": "Theme ID"
           },
           {
             "options": {
@@ -539,14 +800,10 @@
             "type": "string"
           },
           {
-            "description": "Active component library for the Herald portal",
-            "to": [
-              {
-                "type": "library"
-              }
-            ],
+            "description": "Active component library ID from Attalabs project (e.g. \"library-basic\")",
             "name": "library",
-            "type": "reference"
+            "type": "string",
+            "title": "Library ID"
           }
         ],
         "name": "userInterface",
@@ -561,14 +818,10 @@
       {
         "fields": [
           {
-            "description": "Active theme for the Atta portal",
-            "to": [
-              {
-                "type": "uiTheme"
-              }
-            ],
+            "description": "Active theme ID from Attalabs project (e.g. \"theme-cobalt\")",
             "name": "theme",
-            "type": "reference"
+            "type": "string",
+            "title": "Theme ID"
           },
           {
             "options": {
@@ -588,14 +841,10 @@
             "type": "string"
           },
           {
-            "description": "Active component library for the Atta portal",
-            "to": [
-              {
-                "type": "library"
-              }
-            ],
+            "description": "Active component library ID from Attalabs project (e.g. \"library-basic\")",
             "name": "library",
-            "type": "reference"
+            "type": "string",
+            "title": "Library ID"
           }
         ],
         "name": "userInterface",
@@ -610,14 +859,10 @@
       {
         "fields": [
           {
-            "description": "Active theme for the Vitakka portal",
-            "to": [
-              {
-                "type": "uiTheme"
-              }
-            ],
+            "description": "Active theme ID from Attalabs project (e.g. \"theme-cobalt\")",
             "name": "theme",
-            "type": "reference"
+            "type": "string",
+            "title": "Theme ID"
           },
           {
             "options": {
@@ -637,21 +882,17 @@
             "type": "string"
           },
           {
-            "description": "Active component library for the Vitakka portal",
-            "to": [
-              {
-                "type": "library"
-              }
-            ],
+            "description": "Active component library ID from Attalabs project (e.g. \"library-basic\")",
             "name": "library",
-            "type": "reference"
+            "type": "string",
+            "title": "Library ID"
           }
         ],
         "name": "userInterface",
         "type": "object"
       }
     ],
-    "name": "vitakkaConfig",
+    "name": "vinayaConfig",
     "type": "document"
   },
   {
@@ -659,14 +900,10 @@
       {
         "fields": [
           {
-            "description": "Active theme for the Vada portal",
-            "to": [
-              {
-                "type": "uiTheme"
-              }
-            ],
+            "description": "Active theme ID from Attalabs project (e.g. \"theme-cobalt\")",
             "name": "theme",
-            "type": "reference"
+            "type": "string",
+            "title": "Theme ID"
           },
           {
             "options": {
@@ -686,14 +923,10 @@
             "type": "string"
           },
           {
-            "description": "Active component library for the Vada portal",
-            "to": [
-              {
-                "type": "library"
-              }
-            ],
+            "description": "Active component library ID from Attalabs project (e.g. \"library-basic\")",
             "name": "library",
-            "type": "reference"
+            "type": "string",
+            "title": "Library ID"
           }
         ],
         "name": "userInterface",
@@ -702,5 +935,47 @@
     ],
     "name": "vadaConfig",
     "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "fields": [
+          {
+            "description": "Active theme ID from Attalabs project (e.g. \"theme-cobalt\")",
+            "name": "theme",
+            "type": "string",
+            "title": "Theme ID"
+          },
+          {
+            "options": {
+              "list": [
+                {
+                  "title": "Dark",
+                  "value": "dark"
+                },
+                {
+                  "title": "Light",
+                  "value": "light"
+                }
+              ]
+            },
+            "initialValue": "dark",
+            "name": "colorScheme",
+            "type": "string"
+          },
+          {
+            "description": "Active component library ID from Attalabs project (e.g. \"library-basic\")",
+            "name": "library",
+            "type": "string",
+            "title": "Library ID"
+          }
+        ],
+        "name": "userInterface",
+        "type": "object"
+      }
+    ],
+    "name": "attalabsConfig",
+    "type": "document",
+    "title": "AttalLabs Config"
   }
 ]

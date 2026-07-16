@@ -4,6 +4,8 @@ Vitakka AI is a focus and applied thought tool. "Vitakka" means "applied thought
 
 **Domain:** vitakka.ai
 
+**Status:** shelved scaffold. Its Sanity CMS identity (project `o56nzgrr`, the "V" mark) transferred to Vinaya (D-124) since Vitakka's project sat unused. `apps/vitakka-ai/web` now borrows Atta's theme/branding to keep compiling.
+
 ---
 
 ## Surfaces

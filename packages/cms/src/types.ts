@@ -81,7 +81,7 @@ export interface CMSBrandingImage {
 
 export interface CMSBranding {
   _id: string
-  productId: 'herald' | 'atta' | 'vada' | 'vitakka' | 'attalabs'
+  productId: 'herald' | 'atta' | 'vada' | 'vinaya' | 'attalabs'
   productName: string
   paliRoot?: string
   paliMeaning?: string
@@ -107,7 +107,7 @@ export interface CMSBranding {
   faviconIco?: CMSBrandingFile
 }
 
-/** Shared shape for Herald, Atta, Vitakka, and Vada CMS singletons */
+/** Shared shape for Herald, Atta, Vinaya, and Vada CMS singletons */
 export interface PortalUiConfig {
   _id: string
   userInterface: {
@@ -119,7 +119,7 @@ export interface PortalUiConfig {
 
 export type HeraldConfig = PortalUiConfig
 export type AttaConfig = PortalUiConfig
-export type VitakkaConfig = PortalUiConfig
+export type VinayaConfig = PortalUiConfig
 export type VadaConfig = PortalUiConfig
 export type AttalabsConfig = PortalUiConfig
 

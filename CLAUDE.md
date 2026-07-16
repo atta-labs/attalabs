@@ -31,9 +31,9 @@ For the canonical naming and ecosystem framing, see [`apps/atta-ai/specs/atta-na
 |---------|------|-----------|--------|--------|--------|
 | Vāda | [apps/vada-ai/](apps/vada-ai/) | [CLAUDE.md](apps/vada-ai/CLAUDE.md) | [README.md](apps/vada-ai/README.md) | `vada.attalabs.dev` | Live |
 | Atta | [apps/atta-ai/](apps/atta-ai/) | [CLAUDE.md](apps/atta-ai/CLAUDE.md) | [README.md](apps/atta-ai/README.md) | TBD (`atta.ai` target) | Hub serves `attalabs.dev`; consumer product not yet deployed |
-| Vitakka | [apps/vitakka-ai/](apps/vitakka-ai/) | [CLAUDE.md](apps/vitakka-ai/CLAUDE.md) | [README.md](apps/vitakka-ai/README.md) | `vitakka.attalabs.dev` | Scaffold |
+| Vitakka | [apps/vitakka-ai/](apps/vitakka-ai/) | [CLAUDE.md](apps/vitakka-ai/CLAUDE.md) | [README.md](apps/vitakka-ai/README.md) | `vitakka.attalabs.dev` | Scaffold, shelved — its Sanity CMS project now backs Vinaya's identity (D-124); borrows Atta's theme/branding to keep compiling |
 | Herald | [apps/herald-ai/](apps/herald-ai/) | [CLAUDE.md](apps/herald-ai/CLAUDE.md) | [README.md](apps/herald-ai/README.md) | `herald.attalabs.dev` | Active |
-| Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Bootstrap — landing + Known Limits live; CLI skeleton live (`vinaya help`/`version`), real commands not yet implemented |
+| Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Bootstrap — landing + Known Limits live; CLI skeleton live (`vinaya help`/`version`), real commands not yet implemented; CMS-backed via Vitakka's reused Sanity project (D-124) |
 | Cetana | [apps/cetana-ai/](apps/cetana-ai/) | (README only) | [README.md](apps/cetana-ai/README.md) | (internal) → `cetana.attalabs.dev` if/when published | V0/V0.5 in dev |
 
 ## App Structure Convention

@@ -2,9 +2,11 @@ import { generateUIIndex } from '@atta/ui/scripts/generate-ui'
 import type { NextConfig } from 'next'
 import { resolve } from 'node:path'
 
+// Vitakka is shelved and has no Sanity project of its own — borrows Atta's
+// config/library, same precedent apps/vinaya/web used before this rename.
 export default async function config(): Promise<NextConfig> {
-  await generateUIIndex('vitakka')
-  const componentsRelPath = '../../../packages/ui/generated/vitakka/components.ts'
+  await generateUIIndex('atta')
+  const componentsRelPath = '../../../packages/ui/generated/atta/components.ts'
   return {
     webpack: (config) => {
       config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
