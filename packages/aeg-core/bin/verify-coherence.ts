@@ -316,7 +316,7 @@ export async function loadIterationFiles(prContext: PrReadContext = null, onlySl
       const slug = name.replace(/\.md$/, '')
       if (onlySlug && slug !== onlySlug) continue
       const relPath = `${relDir}/${name}`
-      const readFromHead = prContext !== null && prContext.touchedFiles.has(relPath)
+      const readFromHead = prContext?.touchedFiles.has(relPath) ?? false
 
       if (readFromHead) {
         const raw = readFileAtRef(prContext!.prHeadSha, relPath)
