@@ -10,7 +10,8 @@ const links = [
   { label: 'Known Limits', href: '/known-limits' },
   { label: 'How it works', href: '/how-it-works' },
   { label: 'Studio', href: '/the-studio' },
-  { label: 'Install', href: '/install' }
+  { label: 'Install', href: '/install' },
+  { label: 'Docs', href: '/docs' }
 ]
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {
