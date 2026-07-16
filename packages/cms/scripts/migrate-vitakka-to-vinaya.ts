@@ -10,8 +10,13 @@
  * instead of erroring. Running it twice in a row is safe.
  *
  * Usage (from repo root):
- *   set -a && source apps/vitakka-ai/web/.env.local && set +a
+ *   set -a && source tools/admin/.env.local && set +a
+ *   export SANITY_PROJECT_ID=o56nzgrr SANITY_API_TOKEN="$SANITY_API_TOKEN_VINAYA"
  *   cd packages/cms && bun run migrate:vitakka-to-vinaya
+ *
+ * (Not apps/vitakka-ai/web/.env.local — that file now holds only a
+ * read-only legacy Vitakka token targeting the same project; a write
+ * token lives in tools/admin's per-project env, keyed SANITY_API_TOKEN_VINAYA.)
  *
  * Env:
  *   SANITY_PROJECT_ID — o56nzgrr (Vitakka/Vinaya's shared project)
@@ -43,14 +48,22 @@ function stripSystemKeys(doc: Record<string, unknown>): Record<string, unknown> 
   return out
 }
 
+// Belt-and-suspenders with migrate-herald-to-product.ts's PUBLISHED filter:
+// these queries match _id exactly, and a draft's _id is always prefixed
+// "drafts." in Sanity, so an exact match against the bare id can never
+// resolve a draft — the filter can never actually exclude anything here,
+// but it documents that intent explicitly rather than relying on the
+// id-shape invariant silently.
+const PUBLISHED = `!(_id in path("drafts.**"))`
+
 async function migrate() {
   const c = client()
 
   const [vitakkaConfig, vitakkaBranding, existingVinayaConfig, existingVinayaBranding] = await Promise.all([
-    c.fetch(`*[_id == "vitakkaConfig"][0]`),
-    c.fetch(`*[_id == "branding-vitakka"][0]`),
-    c.fetch(`*[_id == "vinayaConfig"][0]`),
-    c.fetch(`*[_id == "branding-vinaya"][0]`)
+    c.fetch(`*[_id == "vitakkaConfig" && ${PUBLISHED}][0]`),
+    c.fetch(`*[_id == "branding-vitakka" && ${PUBLISHED}][0]`),
+    c.fetch(`*[_id == "vinayaConfig" && ${PUBLISHED}][0]`),
+    c.fetch(`*[_id == "branding-vinaya" && ${PUBLISHED}][0]`)
   ])
 
   if (!vitakkaConfig && !vitakkaBranding) {
