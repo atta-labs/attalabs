@@ -12,8 +12,7 @@ Sanity CMS schemas, configuration, and typed queries for the Atta AI platform.
 |-----------|---------|
 | `src/schemas/` | Sanity document type definitions (profile, theme, envoy-config) |
 | `src/queries/` | Typed GROQ queries for reading Sanity data |
-| `src/client.ts` | Sanity client factory |
-| `src/config.ts` | Project ID, dataset, API version |
+| `src/client.ts` | `PROJECT_IDS`, `ProductKey`, `createProductClient`, dataset/API-version config |
 
 ## Usage (Step 5+)
 
@@ -28,9 +27,10 @@ const theme = await getTheme(profile.themeId)
 ## Environment Variables
 
 ```env
-SANITY_PROJECT_ID=
 SANITY_DATASET=production
-SANITY_API_TOKEN=
-NEXT_PUBLIC_SANITY_PROJECT_ID=
-NEXT_PUBLIC_SANITY_DATASET=
+NEXT_PUBLIC_SANITY_DATASET=production
+SANITY_API_TOKEN=          # writes only — seed/migrate scripts, admin mutations
 ```
+
+Reads need none of these to pick a project: it is resolved from the product key via
+`PROJECT_IDS` (D-125). Project IDs are public and identical in every environment.

@@ -29,7 +29,8 @@ Sanity CMS
     └── shadows: { shadow, shadowMd, ... }
 
 @atta/cms package
-├── queries/product-ui-config.ts   # getHeraldConfig, getVadaConfig, etc.
+├── queries/product-cms.ts         # getProductCms — config + branding, keyed by product
+├── queries/product-ui-config.ts   # getProductConfig, getProductUiConfig
 ├── queries/theme.ts               # getThemeById, getThemes
 ├── utils/theme.ts                 # generateThemeCSSForScheme, generateThemeCSS
 ├── utils/font-loader.ts           # getGoogleFontsUrl, loadThemeFonts
@@ -46,17 +47,31 @@ Sanity CMS
 
 ## Product Config Queries
 
-Each product has a dedicated config document in Sanity and a query function:
+Each product has a dedicated config document in Sanity. One generic query family reads
+them all, keyed by `ProductKey` (D-125) — there are no per-product query functions:
 
 ```ts
-import { cmsClient, getHeraldConfig, getVadaConfig, getAttaConfig, getVinayaConfig } from '@atta/cms'
+import { getProductCms, getProductConfig, getProductBranding } from '@atta/cms'
 
-// In layout.tsx (server component)
-const config = await getHeraldConfig(cmsClient)    // Herald
-const config = await getVadaConfig(cmsClient)      // Vada
-const config = await getAttaConfig(cmsClient)      // Atta
-const config = await getVinayaConfig(cmsClient)    // Vinaya
+// In layout.tsx (server component) — config + branding in one call
+const { config, branding } = await getProductCms('vinaya')
+
+// Or either one alone
+const config = await getProductConfig('herald')
+const branding = await getProductBranding('vada')
 ```
+
+The product key resolves everything: the Sanity project (from `PROJECT_IDS`), the config
+document (`${key}Config`), and the branding document (`branding-${key}`). Nothing comes
+from the environment — a project ID is public and identical in every environment, so it
+lives in code (D-125). Pass the key of the product whose *content* you want: a consumer
+that deliberately borrows another product's identity passes that product's key, and the
+call site says so out loud.
+
+`getProductCms` is the root-layout entry point. It fetches both documents in parallel and
+owns the graceful-degradation policy — on failure it returns `null` for that document, and
+logs the reason outside production. Do not wrap it in `.catch(() => null)`; that is what
+made a broken config indistinguishable from an unconfigured one (D-125).
 
 The `PortalUiConfig` shape (same for all products):
 
@@ -142,9 +157,9 @@ Theme application is **fully server-side rendered**. There is no flash of unstyl
 ```
 1. Browser requests page
 2. Next.js App Router invokes RootLayout (async Server Component)
-3. RootLayout calls getVadaConfig(cmsClient)
+3. RootLayout calls getProductCms('vada')
    → Sanity fetch happens on the SERVER (CDN-cached in production)
-   → .catch(() => null) ensures graceful degradation if CMS is unreachable
+   → getProductCms degrades to null if the CMS is unreachable (and logs why in dev)
 4. config is passed to NextWebShell (also a Server Component)
 5. NextWebShell runs server-side:
    a. await cookies() → reads atta-color-scheme cookie (if present)
@@ -163,7 +178,7 @@ Theme application is **fully server-side rendered**. There is no flash of unstyl
      with the other scheme's CSS, then flips <html data-theme>.
 ```
 
-**Key:** `cmsClient` uses `useCdn: true` in production, so Sanity serves from edge CDN — fast, no cold starts at the theme fetch level.
+**Key:** product clients use `useCdn: true` in production, so Sanity serves from edge CDN — fast, no cold starts at the theme fetch level.
 
 ## Root Layout Pattern
 
@@ -172,16 +187,16 @@ Every product's root `layout.tsx` **MUST** use `NextWebShell`. Never manually re
 ```tsx
 // apps/{product}-ai/web/src/app/layout.tsx
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
-import { cmsClient, getVadaConfig } from '@atta/cms'
+import { getProductCms } from '@atta/cms'
 import '@atta/ui/globals.css'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // .catch(() => null) = graceful degradation if CMS is unreachable
-  // NextWebShell handles null config by skipping theme/font injection
-  const config = await getVadaConfig(cmsClient).catch(() => null)
+  // getProductCms degrades to null config if the CMS is unreachable;
+  // NextWebShell handles null by skipping theme/font injection
+  const { config, branding } = await getProductCms('vada')
 
   return (
-    <NextWebShell config={config} styleId="vada-theme">
+    <NextWebShell config={config} branding={branding} styleId="vada-theme">
       {children}
     </NextWebShell>
   )
@@ -266,8 +281,10 @@ In components, use `--agent-color` via the `data-agent` attribute — never hard
 ## Rules
 
 - **MUST** use `NextWebShell` at every product's root layout — never replicate it manually
-- **MUST** use `get{Product}Config` from `@atta/cms` — never call the Sanity client directly in app code
-- **MUST** call `getThemeById`/`getThemeByName`/`getThemes`/`getLibraries` (or any other by-ID/by-name `uiTheme`/`library` lookup) with `createProductClient('attalabs')`, never a product's own `cmsClient` (D-114 — see "Any by-ID/by-name theme lookup must target the central project" below)
+- **MUST** use `getProductCms`/`getProductConfig`/`getProductBranding` from `@atta/cms` — never call the Sanity client directly in app code
+- **MUST NOT** resolve a Sanity project from an env var, or reintroduce an ambient read client — the project comes from the product key via `PROJECT_IDS` (D-125)
+- **MUST NOT** wrap `getProductCms` in `.catch(() => null)` — it already degrades gracefully and logs the reason in dev; re-swallowing restores the silent failure D-125 closed
+- **MUST** call `getThemeById`/`getThemeByName`/`getThemes`/`getLibraries` (or any other by-ID/by-name `uiTheme`/`library` lookup) with `createProductClient('attalabs')`, never a product's own client (D-114 — see "Any by-ID/by-name theme lookup must target the central project" below)
 - **MUST** inject font URLs from `getGoogleFontsUrl` — never hardcode Google Fonts URLs
 - **MUST NOT** add product-specific CSS variable definitions outside `globals.css` or the CMS theme system
 - **MUST NOT** override `--font-sans`, `--font-serif`, `--font-mono` in component CSS — let the theme own fonts
@@ -321,7 +338,7 @@ At read time, `getProductUiConfig` (`packages/cms/src/queries/product-ui-config.
 
 ### Any by-ID/by-name theme lookup must target the central project (D-114)
 
-`getProductUiConfig` is not the only place that fetches a `uiTheme`/`library` document — anything that looks one up **by ID or by name**, such as a per-user custom-theme feature (e.g. Herald's public-profile theme picker, `packages/cms/src/queries/theme.ts`'s `getThemeById`/`getThemeByName`/`getThemes`), must do the same central-project redirection. These lower-level query functions take a generic `SanityClient` parameter and perform **no redirection themselves** — passing them a product's own `cmsClient` will silently find nothing and return `null` post-D-060, since `uiTheme`/`library` documents no longer exist in any per-product project.
+`getProductUiConfig` is not the only place that fetches a `uiTheme`/`library` document — anything that looks one up **by ID or by name**, such as a per-user custom-theme feature (e.g. Herald's public-profile theme picker, `packages/cms/src/queries/theme.ts`'s `getThemeById`/`getThemeByName`/`getThemes`), must do the same central-project redirection. These lower-level query functions take a generic `SanityClient` parameter and perform **no redirection themselves** — passing them a product's own client (`createProductClient('herald')`) will silently find nothing and return `null` post-D-060, since `uiTheme`/`library` documents no longer exist in any per-product project.
 
 ```ts
 import { createProductClient, getThemeById } from '@atta/cms'
@@ -330,7 +347,7 @@ import { createProductClient, getThemeById } from '@atta/cms'
 const theme = await getThemeById(createProductClient('attalabs'), themeId)
 
 // ❌ Wrong — silently returns null for any themeId created after D-060
-const theme = await getThemeById(cmsClient, themeId)
+const theme = await getThemeById(createProductClient('herald'), themeId)
 ```
 
 This exact mistake shipped in Herald (D-114): a per-user profile theme was saved correctly but the public-page render resolved it against Herald's own project and always got `null`, so the saved theme silently never appeared. The write path, the DB column, and cache revalidation were all correct — only this one client was wrong. If you add per-user or per-entity theme customization to any other product, use `createProductClient('attalabs')` for every `uiTheme`/`library` lookup, not just the product-config resolver.
@@ -339,10 +356,15 @@ This exact mistake shipped in Herald (D-114): a per-user profile theme was saved
 
 ## Adding a New Product Theme
 
-1. Create a `{product}Config` singleton document type in the Sanity schema
-2. Add `get{Product}Config` in `packages/cms/src/queries/product-ui-config.ts`
-3. Export the new function from `packages/cms/src/index.ts`
-4. Use `NextWebShell` in the product's `layout.tsx` with a unique `styleId`
+1. Add the product's Sanity project ID to `PROJECT_IDS` in `packages/cms/src/client.ts` — this
+   extends `ProductKey`, and is the only edit `@atta/cms` needs
+2. Create a `{product}Config` singleton document type in the Sanity schema, with `_id`
+   `{product}Config`; name its branding document `branding-{product}`. The query layer derives
+   both IDs from the key, so these names are a contract, not a convention
+3. Call `getProductCms('{product}')` in the product's `layout.tsx` and pass the result to
+   `NextWebShell` with a unique `styleId`
+
+No new query function is needed — that was the old per-product pattern, deleted in D-125.
 
 ---
 
@@ -356,5 +378,6 @@ This exact mistake shipped in Herald (D-114): a per-user profile theme was saved
 - ❌ Calling `generateThemeCSS` (or `generateThemeCSSForScheme`) inside a component — theme CSS is injected once at root layout by `NextWebShell`
 - ❌ Duplicating `AuthProvider` or `LibraryProvider` inside `NextWebShell` children
 - ❌ Hand-rolling a color-scheme toggle — use `<ColorSchemeToggle />` from `@atta/ui/lib/color-scheme-toggle`
-- ❌ Passing a product's own `cmsClient` to `getThemeById`/`getThemeByName`/`getThemes`/`getLibraries` — these take a generic `SanityClient` and do no central-project redirection themselves; always pass `createProductClient('attalabs')` (D-114)
+- ❌ Passing a product's own client to `getThemeById`/`getThemeByName`/`getThemes`/`getLibraries` — these take a generic `SanityClient` and do no central-project redirection themselves; always pass `createProductClient('attalabs')` (D-114)
+- ❌ Reading `SANITY_PROJECT_ID` (or `NEXT_PUBLIC_SANITY_PROJECT_ID`) anywhere in app or package code — the project is resolved from the product key (D-125)
 - ❌ Reading the `atta-color-scheme` cookie directly anywhere except `NextWebShell` — keep the SSR resolution single-source
