@@ -65,6 +65,8 @@ Mirror Vāda/Herald: a Next.js App Router app, flat routes under a signed-in `(a
 
 > **§0 refinement — this section describes the *hosted* shape and is partially deferred.** Studio V1 has **no auth/sign-in**, so there is no signed-in `(app)` guard and no `/settings` connections page. Studio's V1 surfaces are the **sidebar-doc layout**: a root view, project pages, iteration pages (table → kanban → task detail), the task-dependency-graph view (removed, see #290), and the docs section. The route list below is retained as the eventual/hosted target.
 
+> **Theme/branding.** Studio has no CMS identity of its own — its root layout borrows Attā's via `getProductCms('atta')` and passes the result to `NextWebShell` (`styleId='aeg-theme'`). The product key resolves the Sanity project, so Studio needs no `SANITY_PROJECT_ID` (D-125). Note this whole app is superseded by Vinaya Studio (`apps/vinaya/web/studio`, #493).
+
 ```
 app/(app)/layout.tsx        shared signed-in layout: auth guard + shell + shared TopBar
 app/(app)/queue/            /queue        attention queue — logged-in home (what needs a human now)

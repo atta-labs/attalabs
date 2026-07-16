@@ -204,6 +204,8 @@ Reviewer responses: `apps/vada-ai/specs/engine/v2-results/`.
 
 Global chrome (topbar, footer) is shared cross-product `@atta/ui` — see [.claude/skills/ui-components/SKILL.md](../ui-components/SKILL.md), not this file, for footer/topbar content and layout.
 
+Vāda's theme and branding come from its own Sanity project (`ofnj2ojb`) via `getProductCms('vada')` — the product key resolves the project, so no `SANITY_PROJECT_ID` is involved (D-125). See [.claude/skills/ui-cms-theme/SKILL.md](../ui-cms-theme/SKILL.md) for that system; it is not this file's domain.
+
 ---
 
 ## Full docs
