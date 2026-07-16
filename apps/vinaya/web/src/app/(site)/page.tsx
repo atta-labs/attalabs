@@ -80,9 +80,6 @@ export default async function HomePage() {
         tagline='Discipline for the AI era'
         links={[
           { label: 'Known Limits', href: '/known-limits' },
-          // `/how-it-works`, not `/aeg` — `/aeg` is a 301 to exactly here
-          // (task 4, #508), so linking it made the footer take a redirect hop
-          // to the page the topbar above already links directly.
           { label: 'How it works', href: '/how-it-works' }
         ]}
       />
