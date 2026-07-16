@@ -11,33 +11,38 @@ interface KnownLimit {
 
 const KNOWN_LIMITS: KnownLimit[] = [
   {
-    title: 'No CLI commands exist yet',
+    title: 'No real CLI commands exist yet',
     detail:
-      'vinaya-cli-v1 is entirely undispatched — all seven tasks (init, check, doctor, upgrade, eject, waiver, pr/issue writes) are open with no code merged. There is no apps/vinaya/cli in this repo today.',
-    source: 'Verified: milestone vinaya-cli-v1, issues #381–#387, all open, 0 closed (checked 2026-07-08).'
+      'apps/vinaya/cli exists (vinaya-cli-v1 task 1, #381, merged) but is a help/version router only. The real commands — init, check, doctor, upgrade, eject, waiver, pr/issue writes — remain unbuilt: 5 of 7 vinaya-cli-v1 issues (#383–#387) are still open. Nothing is published — the npm registry has no `vinaya` or `@vinaya/cli` package.',
+    source:
+      'Verified 2026-07-16: apps/vinaya/cli/src/index.ts (help/version only, no other cases); gh issue view 381,382 → CLOSED, 383–387 → OPEN; npm view vinaya and npm view @vinaya/cli both 404.'
   },
   {
-    title: 'Vinaya Studio doesn’t exist yet either',
+    title: 'Vinaya Studio is local-only, not deployed',
     detail:
-      'Studio has no code in this repo yet (same undispatched state as the CLI). When it ships, v1.0 is local-only — no deployed or hosted instance, and no committed date for one beyond "deferred."',
-    source: 'Verified against D-101 (Studio deployment roadmap) — Phase 1 is local-only; Phase 3 is undated.'
+      '/studio is live in this app (vinaya-studio-v1 task 1, #388/#493) — a dashboard rendering derived governance state. It is local-only for v1.0: no deployed or hosted instance, and no committed date for one beyond "deferred."',
+    source:
+      'Verified 2026-07-16: apps/vinaya/web/src/app/studio/** live (layout.tsx, page.tsx, backlog/docs/iterations/projects). Cited against D-101 (Studio deployment roadmap) — Status: PENDING, not yet ratified — Phase 1 (v1.0) local-only, Phase 3 (deployed) deferred.'
   },
   {
     title: 'No Windows support',
     detail: 'v1.0 targets macOS and Linux only. Windows support is deferred, with no committed ship date.',
-    source: 'Verified against D-104 (v1.0 scope) — Node ≥ 20, macOS + Linux; Windows explicitly deferred.'
+    source:
+      'Verified 2026-07-16 against D-104 (v1.0 scope) — Status: PENDING, not yet ratified — "TypeScript, Node ≥ 20, macOS + Linux; Windows deferred and documented."'
   },
   {
     title: 'No editor extension',
     detail:
       'The only way to use Vinaya is the CLI (once it exists). There is no VS Code, JetBrains, or other editor plugin planned for v1.0.',
-    source: 'Verified against D-086 (Vinaya surfaces) — no editor extension in scope.'
+    source:
+      'Verified 2026-07-16: no editor-extension code exists anywhere in this repo. Cited against D-086 (Vinaya surfaces) — Status: PENDING, not yet ratified — "No editor extension."'
   },
   {
     title: 'No GitHub App / org-wide install',
     detail:
       "Vinaya acts through your own git and gh credentials — it does not install as a GitHub App, and there's no one-click, org-wide rollout.",
-    source: 'Verified against D-086 (Vinaya surfaces) — GitHub App install is deferred.'
+    source:
+      'Verified 2026-07-16: no GitHub App manifest or integration exists in this repo. Cited against D-086 (Vinaya surfaces) — Status: PENDING, not yet ratified — GitHub App for deployed Studio/org installs is deferred.'
   }
 ]
 
