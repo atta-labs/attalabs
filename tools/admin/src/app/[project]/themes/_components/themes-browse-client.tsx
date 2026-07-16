@@ -1,7 +1,15 @@
 'use client'
 
-import type { CMSTheme } from '@atta/cms'
-import { Button, useToastContext } from '@atta/ui/components'
+import type { CMSLibrary, CMSTheme } from '@atta/cms'
+import {
+  Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  useToastContext
+} from '@atta/ui/components'
 import {
   Dialog,
   DialogContent,
@@ -19,7 +27,7 @@ import { FontPicker } from '@/components/portal/font-picker'
 import { usePortalPreview } from '@/hooks/use-portal-preview'
 import { PortalPreviewFrame } from '@/components/portal/portal-preview-frame'
 import { exportShadcnCss } from '@/lib/export-shadcn-css'
-import { setActiveThemeAction } from '../actions'
+import { setActiveLibraryAction, setActiveThemeAction } from '../actions'
 import { CreateThemeDialog } from './create-theme-dialog'
 import { FourSquareSwatch } from './four-square-swatch'
 import { PROJECT_CONFIG } from '@/lib/project-config'
@@ -59,9 +67,18 @@ interface ThemesBrowseClientProps {
   themes: CMSTheme[]
   currentThemeId: string | null
   currentColorScheme: ColorScheme
+  libraries: CMSLibrary[]
+  currentLibraryId: string | null
 }
 
-export function ThemesBrowseClient({ project, themes, currentThemeId, currentColorScheme }: ThemesBrowseClientProps) {
+export function ThemesBrowseClient({
+  project,
+  themes,
+  currentThemeId,
+  currentColorScheme,
+  libraries,
+  currentLibraryId
+}: ThemesBrowseClientProps) {
   const [selectedId, setSelectedId] = useState<string | null>(currentThemeId ?? themes[0]?._id ?? null)
   const [schemeByTheme, setSchemeByTheme] = useState<Record<string, ColorScheme>>(() => {
     const initial: Record<string, ColorScheme> = {}
@@ -70,6 +87,9 @@ export function ThemesBrowseClient({ project, themes, currentThemeId, currentCol
   })
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
+  const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(currentLibraryId)
+  const [isLibraryPending, startLibraryTransition] = useTransition()
+  const [librarySaved, setLibrarySaved] = useState(false)
   const { successToast, errorToast } = useToastContext()
   const [selectedFontSans, setSelectedFontSans] = useState<string | undefined>(undefined)
   const [createOpen, setCreateOpen] = useState(false)
@@ -161,18 +181,50 @@ export function ThemesBrowseClient({ project, themes, currentThemeId, currentCol
     if (!selectedId) return
     startTransition(async () => {
       try {
-        await setActiveThemeAction(project, selectedId, selectedScheme)
+        const result = await setActiveThemeAction(project, selectedId, selectedScheme)
+        if (!result.ok) {
+          errorToast('Activation failed', result.message, 12000)
+          return
+        }
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
         successToast('Theme activated', `${selectedTheme?.name ?? 'Theme'} is now the active theme.`)
       } catch {
-        errorToast('Activation failed', 'Could not set the active theme. Try again.')
+        errorToast('Activation failed', 'Could not reach the admin server. Try again.')
       }
     })
   }
 
   const hasChanges =
     selectedId !== currentThemeId || selectedScheme !== currentColorScheme || selectedFontSans !== undefined
+
+  function handleLibrarySelect(libraryId: string) {
+    setSelectedLibraryId(libraryId)
+    setLibrarySaved(false)
+  }
+
+  function handlePublishLibrary() {
+    if (!selectedLibraryId) return
+    startLibraryTransition(async () => {
+      try {
+        const result = await setActiveLibraryAction(project, selectedLibraryId)
+        if (!result.ok) {
+          errorToast('Activation failed', result.message, 12000)
+          return
+        }
+        setLibrarySaved(true)
+        setTimeout(() => setLibrarySaved(false), 2000)
+        successToast(
+          'Library activated',
+          `${libraries.find((l) => l._id === selectedLibraryId)?.name ?? 'Library'} is now the active library.`
+        )
+      } catch {
+        errorToast('Activation failed', 'Could not reach the admin server. Try again.')
+      }
+    })
+  }
+
+  const hasLibraryChanges = selectedLibraryId !== currentLibraryId
 
   const headerContent = (
     <>
@@ -198,6 +250,28 @@ export function ThemesBrowseClient({ project, themes, currentThemeId, currentCol
       </Button>
       <Button variant='outline' size='sm' onClick={() => setCreateOpen(true)} className='font-mono text-[10px]'>
         Create Theme
+      </Button>
+      <span className='text-border'>|</span>
+      <Select value={selectedLibraryId ?? undefined} onValueChange={handleLibrarySelect}>
+        <SelectTrigger className='h-8 w-36 font-mono text-[10px]'>
+          <SelectValue placeholder='Library' />
+        </SelectTrigger>
+        <SelectContent>
+          {libraries.map((library) => (
+            <SelectItem key={library._id} value={library._id}>
+              {library.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button
+        variant='outline'
+        size='sm'
+        onClick={handlePublishLibrary}
+        disabled={!hasLibraryChanges || isLibraryPending}
+        className='font-mono text-[10px]'
+      >
+        {isLibraryPending ? 'Saving...' : librarySaved ? 'Saved!' : 'Set Active Library'}
       </Button>
     </>
   )

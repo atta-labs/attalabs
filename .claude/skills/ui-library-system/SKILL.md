@@ -454,7 +454,7 @@ For runtime apps: the component must be exported from `package.json`'s default e
 
 ### Changing the active library for an app
 
-**Build-time:** Change `userInterface.library` in that app's `{app}Config` Sanity document, then rebuild. The generated index will update.
+**Build-time:** Change `userInterface.library` in that app's `{app}Config` Sanity document, then rebuild. The generated index will update. `tools/admin`'s per-app `/themes` page also exposes a Library picker + "Set Active Library" action that performs this same write, as the supported alternative to hand-editing Sanity Studio.
 
 **Runtime:** Update the user's `library` field in the app's DB. `LibraryProvider` will re-import the new library on next render.
 
