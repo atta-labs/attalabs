@@ -82,6 +82,15 @@ describe('checkTestPlan', () => {
   it('passes on unit-tests-only sentinel', () => {
     expect(checkTestPlan('Test Plan: unit-tests-only').status).toBe('pass')
   })
+  it('passes on the bolded sentinel — brief-authoring §9 documents this exact form', () => {
+    // The skill's own canonical example. Used to FAIL: `\s*` cannot cross the
+    // `**` between the colon and the value, so a brief copying the skill
+    // verbatim was rejected by the gate that documents it.
+    expect(checkTestPlan('**Test Plan:** unit-tests-only').status).toBe('pass')
+  })
+  it('passes on the bolded sentinel with the emphasis closed before the colon', () => {
+    expect(checkTestPlan('**Test Plan**: unit-tests-only').status).toBe('pass')
+  })
   it('passes on at least one tagged item', () => {
     expect(checkTestPlan('- [ ] **[agent]** run the tests').status).toBe('pass')
   })
@@ -114,6 +123,17 @@ describe('checkTestPlanExclusivity', () => {
     const body =
       'Test Plan: unit-tests-only — fetchProvenance is pure-enough.\n\n' +
       '- [x] **[agent]** New regression tests for both root causes pass.'
+    const r = checkTestPlanExclusivity(body)
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/mutually exclusive/)
+  })
+
+  it('fails when the BOLDED unit-tests-only is declared alongside a tagged checkbox item', () => {
+    // The silent half of the same root cause: this guard's own clause never
+    // matched the bolded sentinel either, so it returned an early `pass` and
+    // let the self-contradictory body straight through — the exact combination
+    // #340 built it to catch, wearing the emphasis the skill documents.
+    const body = '**Test Plan:** unit-tests-only — pure parser.\n\n- [x] **[agent]** Regression tests pass.'
     const r = checkTestPlanExclusivity(body)
     expect(r.status).toBe('fail')
     expect(r.errors[0]).toMatch(/mutually exclusive/)
