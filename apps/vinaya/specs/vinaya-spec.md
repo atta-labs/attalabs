@@ -111,7 +111,7 @@ Verified against current repo state at the time of writing (2026-07-16); see the
 ## Iterations
 
 - `vinaya-cli-v1` — CLI: scaffold, `StateSource`, check engine, `init`, forge writes, lifecycle, trust surface. Undispatched (issues #381–#387).
-- `vinaya-studio-v1` — Studio: this bootstrap (task 0, #479), `/aeg` methodology page (task 0b, #480), port AEG Studio's dashboard routes into `apps/vinaya/web` under `/studio` (task 1, #388, **done**), plus an addendum on the same task/PR (#493) adding the `/studio/docs` methodology-doc browser and a site-wide TopBar, renderer contract (task 2, #389), `vinaya studio` launcher (task 3, #390).
+- `vinaya-studio-v1` — Studio: this bootstrap (task 0, #479), `/aeg` methodology page (task 0b, #480), port AEG Studio's dashboard routes into `apps/vinaya/web` under `/studio` (task 1, #388, **done**), plus an addendum on the same task/PR (#493) adding the `/studio/docs` methodology-doc browser and a site-wide TopBar, the web/cli import-boundary guard + renderer-contract chapter (task 4, #389), `vinaya studio` launcher (task 5, #390).
 - `vinaya-pages-v1` task 7 (#567) — read-only docs staleness audit of the surfaced `aeg-root/**.md` set, run 2026-07-16; findings live in PR #582's body (Closes #567) and are **unfixed**, pending their own follow-up task(s) (D-074 — findings are forge state, not a committed file).
 
 ## CLI (`vinaya-cli-v1`, task 1, #381)
@@ -125,6 +125,14 @@ Verified against current repo state at the time of writing (2026-07-16); see the
 - **Ported, not carried over:** the config pattern + its tests only. No JSONL, no IPC, no coordinator, no state-sync code (D-095). No `@atta/aeg-core` import yet (keeps this task pure-`Project: vinaya`; the `StateSource` seam is a later task, already built and parked behind this one per D-081 row-adjacency).
 
 See `apps/vinaya/cli/README.md` for install (`bun link`, not a workspace script) and the config/envelope reference.
+
+## Renderer contract (`vinaya-studio-v1`, task 4, #389)
+
+**The rule (D-087): Studio renders, it never re-derives.** Governance state enters Studio only through one of two permitted entry paths — `@atta/aeg-core`'s public API, **or** the `@atta/vinaya-sources` `StateSource` adapters. Both are legitimate; this is an OR, not a hierarchy — do not "fix" an aeg-core-direct call site into a `StateSource` one on the strength of this chapter alone. What both paths rule out is a third option: Studio computing any piece of governance state itself. The gates (`vinaya check`, and today `packages/aeg-core/bin/*`) compute governance state; Studio's only job is to render what they computed. If Studio ever re-derives any of it, Studio and the gates can disagree about the same repo — and a product whose dashboard contradicts its own gate has no product left.
+
+**The one-way import corollary.** `apps/vinaya/web` must never import `apps/vinaya/cli` internals, and `apps/vinaya/cli` must never import web internals — either direction crossing the boundary would let one surface reach around the other's derivation and compute governance facts on its own. This is now mechanically enforced, not asserted in prose: `apps/vinaya/web/src/lib/import-boundary.test.ts` (vitest) walks every `.ts`/`.tsx` file under `web/src` and fails on any import/export statement whose specifier names `@atta/vinaya-cli` (including subpaths) or reaches relatively into `../cli/`; `apps/vinaya/cli/tests/import-boundary.test.ts` (bun test) is the converse, walking `cli/src` and `cli/tests` for `@atta/vinaya-web` or `../web/` reaches. Each package guards its own boundary and fails its own CI; the two tests intentionally do not share an imported helper — that import would itself cross the boundary they exist to defend.
+
+**What is not a violation.** Fetching facts — plain I/O — in the web app is fine. `load-snapshot.ts` fetching forge facts over the network and handing them to `@atta/aeg-core`'s `deriveIteration` is the contract working as designed, not a breach: the derivation still happens inside aeg-core, not in Studio. The rule is about **derivation**, not about where an HTTP call lives. This is the distinction most likely to be misread: "Studio fetches data" is not the same claim as "Studio computes governance state," and only the second is forbidden.
 
 ## StateSource (`vinaya-cli-v1`, task 2, #382)
 
