@@ -1,6 +1,7 @@
 'use server'
 
-import { getCmsClientsForProject } from '@/lib/cms-for-project'
+import { describeCmsWriteError, getCmsClientsForProject } from '@/lib/cms-for-project'
+import type { CmsWriteResult } from '@/lib/cms-for-project'
 import { PROJECT_CONFIG } from '@/lib/project-config'
 import type { ProjectKey } from '@/lib/project-config'
 import type { ThemeEditorData } from './_types'
@@ -80,7 +81,7 @@ export async function setActiveThemeAction(
   project: ProjectKey,
   id: string,
   colorScheme: 'dark' | 'light'
-): Promise<void> {
+): Promise<CmsWriteResult> {
   try {
     const { writeClient } = getCmsClientsForProject(project)
     const { configDocId } = PROJECT_CONFIG[project]
@@ -91,12 +92,13 @@ export async function setActiveThemeAction(
         'userInterface.colorScheme': colorScheme
       })
       .commit()
-  } catch {
-    throw new Error('Failed to set active theme.')
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, message: describeCmsWriteError(error, project, 'set the active theme') }
   }
 }
 
-export async function setActiveLibraryAction(project: ProjectKey, id: string): Promise<void> {
+export async function setActiveLibraryAction(project: ProjectKey, id: string): Promise<CmsWriteResult> {
   try {
     const { writeClient } = getCmsClientsForProject(project)
     const { configDocId } = PROJECT_CONFIG[project]
@@ -106,7 +108,8 @@ export async function setActiveLibraryAction(project: ProjectKey, id: string): P
         'userInterface.library': id
       })
       .commit()
-  } catch {
-    throw new Error('Failed to set active library.')
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, message: describeCmsWriteError(error, project, 'set the active library') }
   }
 }

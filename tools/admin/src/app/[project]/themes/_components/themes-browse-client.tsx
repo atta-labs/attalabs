@@ -181,12 +181,16 @@ export function ThemesBrowseClient({
     if (!selectedId) return
     startTransition(async () => {
       try {
-        await setActiveThemeAction(project, selectedId, selectedScheme)
+        const result = await setActiveThemeAction(project, selectedId, selectedScheme)
+        if (!result.ok) {
+          errorToast('Activation failed', result.message, 12000)
+          return
+        }
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
         successToast('Theme activated', `${selectedTheme?.name ?? 'Theme'} is now the active theme.`)
       } catch {
-        errorToast('Activation failed', 'Could not set the active theme. Try again.')
+        errorToast('Activation failed', 'Could not reach the admin server. Try again.')
       }
     })
   }
@@ -203,7 +207,11 @@ export function ThemesBrowseClient({
     if (!selectedLibraryId) return
     startLibraryTransition(async () => {
       try {
-        await setActiveLibraryAction(project, selectedLibraryId)
+        const result = await setActiveLibraryAction(project, selectedLibraryId)
+        if (!result.ok) {
+          errorToast('Activation failed', result.message, 12000)
+          return
+        }
         setLibrarySaved(true)
         setTimeout(() => setLibrarySaved(false), 2000)
         successToast(
@@ -211,7 +219,7 @@ export function ThemesBrowseClient({
           `${libraries.find((l) => l._id === selectedLibraryId)?.name ?? 'Library'} is now the active library.`
         )
       } catch {
-        errorToast('Activation failed', 'Could not set the active library. Try again.')
+        errorToast('Activation failed', 'Could not reach the admin server. Try again.')
       }
     })
   }
