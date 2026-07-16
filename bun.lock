@@ -361,6 +361,7 @@
         "@atta/cms": "workspace:*",
         "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
+        "@atta/vinaya-cli": "workspace:*",
         "@atta/vinaya-sources": "workspace:*",
         "@octokit/graphql": "^8.1.1",
         "@tailwindcss/postcss": "^4.0.0",
