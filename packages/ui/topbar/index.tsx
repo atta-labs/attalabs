@@ -31,7 +31,11 @@ export interface TopBarProps {
   links?: TopBarLink[]
   /** Links shown only to signed-in users. Ignored when withAuth={false}. */
   signedInLinks?: TopBarLink[]
-  /** Extra actions rendered in the right section when signed in. Ignored when withAuth={false}. */
+  /**
+   * Extra actions rendered in the right section, next to `ColorSchemeToggle`.
+   * When `withAuth`, shown only when signed in. When `withAuth={false}`,
+   * always shown (there is no signed-in state to gate on).
+   */
   extraActions?: ReactNode
   /**
    * Replaces the default bare <UserButton /> when signed in.
@@ -226,7 +230,15 @@ function TopBarWithAuth({
 
 // ─── Without Clerk auth ────────────────────────────────────────────────────────
 
-function TopBarNoAuth({ logo, logoText = '', logoHref = '/', logoUrl, logoTagline, links = [] }: InnerProps) {
+function TopBarNoAuth({
+  logo,
+  logoText = '',
+  logoHref = '/',
+  logoUrl,
+  logoTagline,
+  links = [],
+  extraActions
+}: InnerProps) {
   const pathname = usePathname()
   const comps = useComponents()
   const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
@@ -268,6 +280,7 @@ function TopBarNoAuth({ logo, logoText = '', logoHref = '/', logoUrl, logoTaglin
         {/* Desktop actions — pinned right (no auth UI) */}
         <div className='hidden flex-1 items-center justify-end gap-3 md:flex'>
           <ColorSchemeToggle />
+          {extraActions}
         </div>
 
         {/* Mobile actions */}
@@ -314,6 +327,9 @@ function TopBarNoAuth({ logo, logoText = '', logoHref = '/', logoUrl, logoTaglin
                       {label}
                     </SheetClose>
                   ))}
+                  {extraActions && (
+                    <div className='flex h-14 items-center border-b border-border/30'>{extraActions}</div>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>

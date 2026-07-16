@@ -1,6 +1,6 @@
 import { getProductCms } from '@atta/cms'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { Logo, Text } from '@atta/ui/shared'
+import { Logo } from '@atta/ui/shared'
 import { TopBar } from '@atta/ui/topbar'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
@@ -27,17 +27,12 @@ export default async function StudioLayout({ children }: { children: ReactNode }
     <>
       <TopBar
         logo={
-          <div className='flex items-center gap-4'>
-            <NextLink href='/studio' variant='unstyled' className='flex items-center gap-2'>
-              <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-6' />
-              <Text as='span' className='font-serif text-lg tracking-tight'>
-                Vinaya Studio
-              </Text>
-            </NextLink>
-            <ProductSwitch current='studio' />
-          </div>
+          <NextLink href='/studio' variant='unstyled' className='flex items-center gap-2'>
+            <Logo dark={logoUrl ?? undefined} alt='Vinaya Studio' size='h-10' text={['Vinaya', 'Studio']} />
+          </NextLink>
         }
         links={links}
+        extraActions={<ProductSwitch current='studio' />}
         withAuth={false}
       />
       <StudioShell>{children}</StudioShell>

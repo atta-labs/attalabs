@@ -1,6 +1,6 @@
 import { getProductCms } from '@atta/cms'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { Logo, Text } from '@atta/ui/shared'
+import { Logo } from '@atta/ui/shared'
 import { TopBar } from '@atta/ui/topbar'
 import type { ReactNode } from 'react'
 import { ProductSwitch } from '@/app/_components/ProductSwitch'
@@ -20,17 +20,12 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
     <>
       <TopBar
         logo={
-          <div className='flex items-center gap-4'>
-            <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
-              <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-6' />
-              <Text as='span' className='font-serif text-lg tracking-tight'>
-                Vinaya
-              </Text>
-            </NextLink>
-            <ProductSwitch current='portal' />
-          </div>
+          <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
+            <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Execution', 'Harnessing']} />
+          </NextLink>
         }
         links={links}
+        extraActions={<ProductSwitch current='portal' />}
         withAuth={false}
       />
       {children}
