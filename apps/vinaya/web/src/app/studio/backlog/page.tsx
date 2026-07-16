@@ -15,6 +15,8 @@ import { Badge } from '@atta/ui/components'
 import type { Registry } from '@atta/aeg-core'
 import { resolveGithubToken, resolveRepo } from '@atta/aeg-forge-state'
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { isProductionDeploy } from '@/lib/env'
 import { readRegistry } from '@/lib/repo-state'
 import { fetchOpenIssuesWithoutIterationLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
 
@@ -69,6 +71,8 @@ function groupByProject(issues: BacklogIssue[], registry: Registry): Group[] {
 }
 
 export default async function BacklogPage() {
+  if (isProductionDeploy()) notFound()
+
   const [repo, token, registry] = await Promise.all([resolveRepo(), resolveGithubToken(), readRegistry()])
   const issues = repo && token ? await fetchOpenIssuesWithoutIterationLabel(repo.owner, repo.repo, token) : []
   const groups = groupByProject(issues, registry)
