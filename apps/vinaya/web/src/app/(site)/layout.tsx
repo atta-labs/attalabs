@@ -9,7 +9,8 @@ const links = [
   { label: 'Home', href: '/', exact: true },
   { label: 'Known Limits', href: '/known-limits' },
   { label: 'How it works', href: '/how-it-works' },
-  { label: 'Studio', href: '/the-studio' }
+  { label: 'Studio', href: '/the-studio' },
+  { label: 'Install', href: '/install' }
 ]
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {

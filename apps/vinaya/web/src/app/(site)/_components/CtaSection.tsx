@@ -22,10 +22,10 @@ export function CtaSection() {
       </Text>
       <Text size='sm' className='max-w-[420px] text-center font-sans text-muted-foreground'>
         No CLI exists yet &mdash; this command isn&rsquo;t runnable today. See the{' '}
-        <Link href='/known-limits' className='text-foreground underline hover:text-accent'>
-          Known Limits
+        <Link href='/install' className='text-foreground underline hover:text-accent'>
+          Install
         </Link>{' '}
-        page for what&rsquo;s built so far.
+        page for the full command reference and what&rsquo;s built so far.
       </Text>
     </section>
   )
