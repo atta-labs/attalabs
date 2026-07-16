@@ -313,11 +313,11 @@ const loadLibrary = useCallback((library: UILibrary) => {
 
 ## Composing the two patterns — build-time chrome + runtime per-user surface
 
-The two base patterns are not exclusive. An app can run **both** on **disjoint route subtrees**: a fixed, CMS-driven library for its authenticated chrome, and a per-user runtime choice on a public surface. The build-time generator sees Pattern 1; the public subtree behaves as Pattern 2; both resolve the same source-of-truth library id through the central `attalabs` resolver (D-060).
+The two base patterns are not exclusive. An app can run **both** on **disjoint route subtrees**: a fixed, CMS-driven library for its authenticated chrome, and a per-user runtime choice on a public surface. The build-time generator sees Pattern 1; the public subtree behaves as Pattern 2. Both read their library id through the same central `attalabs` resolver (D-060), so a composing app's build-time alias and its runtime provider agree by construction.
 
 The invariant that makes this work: **each subtree feeds its own `LibraryProvider`, and no shared parent layout wraps one.** A provider mounted in a common ancestor inherits into both subtrees and silently crosses the build-time and per-user paths — the regression this composition keeps re-introducing when someone "saves a hop."
 
-**Which apps compose the patterns, on which routes, and with which providers is an app-level architecture decision — documented by that app, not here.** The worked example, including its locked route-subtree contract and verification recipe, is Herald's: see [`apps/herald-ai/web/CLAUDE.md`](../../../apps/herald-ai/web/CLAUDE.md) RULE #6 and [`packages/governance/decisions.md`](../../../packages/governance/decisions.md) D-035 (`Lock: YES`).
+**Which apps compose the patterns, on which routes, and with which providers is an app-level architecture decision — owned by that app's spec, not here.** The worked example, including its locked route-subtree contract and verification recipe, is Herald's: see [`apps/herald-ai/specs/herald-app-architecture.md`](../../../apps/herald-ai/specs/herald-app-architecture.md) §4 "Library resolution — the critical invariant (D-035)", which `packages/governance/doc-owners` binds as the owner of those routes, and [`packages/governance/decisions.md`](../../../packages/governance/decisions.md) D-035 (`Lock: YES`).
 
 ---
 
