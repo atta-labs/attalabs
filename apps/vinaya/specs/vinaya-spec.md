@@ -99,13 +99,13 @@ Vinaya has its own Sanity CMS identity (D-124): it reuses Vitakka's project (`o5
 
 ## Known limits
 
-Verified against current repo state at the time of writing (2026-07-08); see the live [Known Limits page](../web/src/app/known-limits/page.tsx) for the canonical, user-facing version:
+Verified against current repo state at the time of writing (2026-07-16); see the live [Known Limits page](../web/src/app/(site)/known-limits/page.tsx) for the canonical, user-facing version:
 
-- No CLI commands exist yet (`vinaya-cli-v1`, issues #381–#387, all open/undispatched).
-- Vinaya Studio is local-only for v1.0 (D-101) — no deployed/hosted Studio, no committed date for one.
-- No Windows support in v1.0 (D-104) — macOS/Linux only.
-- No editor extension (D-086).
-- No GitHub App / org-wide install (D-086, deferred).
+- No real CLI commands exist yet — `apps/vinaya/cli` exists (`vinaya-cli-v1` task 1, #381, merged) but is a help/version router only; the real commands (`init`, `check`, `doctor`, `upgrade`, `eject`, `waiver`, `pr`/`issue` writes) remain unbuilt — 5 of 7 `vinaya-cli-v1` issues (#383–#387) still open; nothing is published (npm has no `vinaya` or `@vinaya/cli`).
+- Vinaya Studio is local-only, not deployed — `/studio` is live (`vinaya-studio-v1` task 1, #388/#493). Cited against D-101 (Studio deployment roadmap) — Status: PENDING, not yet ratified — Phase 1 (v1.0) local-only, Phase 3 (deployed) deferred.
+- No Windows support in v1.0 — macOS/Linux only. Cited against D-104 (v1.0 scope) — Status: PENDING, not yet ratified.
+- No editor extension. Cited against D-086 (Vinaya surfaces) — Status: PENDING, not yet ratified.
+- No GitHub App / org-wide install. Cited against D-086 (Vinaya surfaces) — Status: PENDING, not yet ratified — deferred.
 
 ## Iterations
 
