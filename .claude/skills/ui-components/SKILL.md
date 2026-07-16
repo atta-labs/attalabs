@@ -301,12 +301,14 @@ const theme = await client.fetch(`*[_type == "uiTheme"][0]`)
 
 | Slot | Where it renders ≥ md | Where it renders < md |
 |------|----------------------|-----------------------|
-| `signedInLinks` (centered nav links) | Absolutely centered between logo and the right cluster | Inside the hamburger sheet, stacked vertically with `h-14` rows |
-| `extraActions` (right-cluster buttons) | In the right cluster, **immediately before** `accountMenu` | Inside the hamburger sheet, **below** the nav links and **above** `accountMenu` |
-| `accountMenu` (Sign out / `<UserButton/>`) | At the end of the right cluster | Inside the hamburger sheet, **below** `extraActions` |
-| `SignInButton` (signed-out only) | In the right cluster, alone | Inside the hamburger sheet |
+| `signedInLinks` (centered nav links) | Absolutely centered between logo and the right cluster | Inside the hamburger sheet, stacked vertically with `h-14` rows. **Ignored when `withAuth={false}`.** |
+| `extraActions` (right-cluster buttons) | In the right cluster, immediately after `ColorSchemeToggle` (`withAuth={false}`) or **immediately before** `accountMenu` (`withAuth={true}`, signed in only) | Inside the hamburger sheet — below the nav links (`withAuth={false}`), or below the nav links and above `accountMenu` (`withAuth={true}`) |
+| `accountMenu` (Sign out / `<UserButton/>`) | At the end of the right cluster | Inside the hamburger sheet, **below** `extraActions`. **Ignored when `withAuth={false}`.** |
+| `SignInButton` (signed-out only) | In the right cluster, alone | Inside the hamburger sheet. **Ignored when `withAuth={false}`.** |
 
-**Below `md` the topbar collapses to: logo · `ColorSchemeToggle` · hamburger.** Nothing else renders inline. The hamburger renders unconditionally below `md` because there is always at least Sign-in or account UI to surface.
+**Below `md` the topbar collapses to: logo · `ColorSchemeToggle` · hamburger.** Nothing else renders inline. The hamburger renders unconditionally below `md` because there is always at least Sign-in or account UI to surface (`withAuth={true}`) or nav links (`withAuth={false}`).
+
+**`extraActions` on `withAuth={false}`** (`vinaya-pages-v1` task 6, #544): unlike `signedInLinks`/`accountMenu`/`SignInButton`, `extraActions` is NOT gated on auth mode — it renders unconditionally on both `TopBarWithAuth` and `TopBarNoAuth`, since there is no signed-in state to gate it on in the no-auth variant. Use it for content that must appear regardless of auth (e.g. a product switch next to `ColorSchemeToggle`) even on a `withAuth={false}` consumer.
 
 When wiring an action that belongs in the right cluster (Settings gear, theme switcher, owner-only buttons): use `extraActions` and trust the responsive contract — your button will appear in the desktop cluster and inside the mobile sheet automatically. Do NOT manually duplicate it in a custom mobile row; that creates two-place-to-fix drift.
 
