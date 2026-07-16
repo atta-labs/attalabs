@@ -111,7 +111,7 @@ Verified against current repo state at the time of writing (2026-07-08); see the
 
 - `vinaya-cli-v1` — CLI: scaffold, `StateSource`, check engine, `init`, forge writes, lifecycle, trust surface. Undispatched (issues #381–#387).
 - `vinaya-studio-v1` — Studio: this bootstrap (task 0, #479), `/aeg` methodology page (task 0b, #480), port AEG Studio's dashboard routes into `apps/vinaya/web` under `/studio` (task 1, #388, **done**), plus an addendum on the same task/PR (#493) adding the `/studio/docs` methodology-doc browser and a site-wide TopBar, renderer contract (task 2, #389), `vinaya studio` launcher (task 3, #390).
-- `vinaya-pages-v1` task 7 (#567) — read-only docs staleness audit of the surfaced `aeg-root/**.md` set, run 2026-07-16; findings live at `aeg-root/discovery/2026-07-16-docs-staleness-audit.md` and are **unfixed**, pending their own follow-up task(s).
+- `vinaya-pages-v1` task 7 (#567) — read-only docs staleness audit of the surfaced `aeg-root/**.md` set, run 2026-07-16; findings live in PR #582's body (Closes #567) and are **unfixed**, pending their own follow-up task(s) (D-074 — findings are forge state, not a committed file).
 
 ## CLI (`vinaya-cli-v1`, task 1, #381)
 
