@@ -45,13 +45,15 @@ describe('leaf panel content, against real doctrine', () => {
       renderState: gate.renderState,
       summary: gate.summary,
       detail: gate.detail,
-      readMoreHref: target ? githubBlobUrl(target.path, target.line) : undefined
+      readMoreHref: target?.docRoute,
+      viewSourceHref: target ? githubBlobUrl(target.path, target.line) : undefined
     }
     // biome-ignore lint/suspicious/noConsole: intentional evidence dump for the PR body
     console.log('GATE PANEL:', JSON.stringify(panel, null, 2))
 
     expect(panel.badge).toMatch(/^(ci|hook|event)$/)
-    expect(panel.readMoreHref).toMatch(/^https:\/\/github\.com\/.*aeg-root\/enforcement\.md#L\d+$/)
+    expect(panel.readMoreHref).toBe('/docs/enforcement')
+    expect(panel.viewSourceHref).toMatch(/^https:\/\/github\.com\/.*aeg-root\/enforcement\.md#L\d+$/)
     // Both render, so both are proven to survive the wiring
     // (registry-parse → diagram-model → DiagramNode → panel) — not merely to
     // exist on the type. `detail` reaches the panel clamped, never whole.
@@ -72,16 +74,19 @@ describe('leaf panel content, against real doctrine', () => {
       badge: action.category ?? action.actorType,
       renderState: action.renderState,
       summary: action.summary,
-      readMoreHref: target ? githubBlobUrl(target.path, target.line) : undefined
+      readMoreHref: target?.docRoute,
+      viewSourceHref: target ? githubBlobUrl(target.path, target.line) : undefined
     }
     // biome-ignore lint/suspicious/noConsole: intentional evidence dump for the PR body
     console.log('ACTION PANEL:', JSON.stringify(panel, null, 2))
 
     expect(panel.badge).toBeUndefined()
-    // Actions carry no `category`/`actorType`, but they DO link — to the
-    // canonical set that defines them. A bare path, no `#L` anchor: unlike
-    // enforcement.md rows, an action node carries no `sourceLine`.
-    expect(panel.readMoreHref).toMatch(/^https:\/\/github\.com\/.*packages\/aeg-core\/src\/actions\.ts$/)
+    // Actions carry no doctrine markdown, so no internal doc route — only
+    // "View source" renders for this kind, straight to the canonical set
+    // that defines them. A bare path, no `#L` anchor: unlike enforcement.md
+    // rows, an action node carries no `sourceLine`.
+    expect(panel.readMoreHref).toBeUndefined()
+    expect(panel.viewSourceHref).toMatch(/^https:\/\/github\.com\/.*packages\/aeg-core\/src\/actions\.ts$/)
   })
 
   it('renders a real role node correctly', async () => {
@@ -97,13 +102,15 @@ describe('leaf panel content, against real doctrine', () => {
       badge: role.actorType,
       renderState: role.renderState,
       summary: role.summary,
-      readMoreHref: target ? githubBlobUrl(target.path, target.line) : undefined
+      readMoreHref: target?.docRoute,
+      viewSourceHref: target ? githubBlobUrl(target.path, target.line) : undefined
     }
     // biome-ignore lint/suspicious/noConsole: intentional evidence dump for the PR body
     console.log('ROLE PANEL:', JSON.stringify(panel, null, 2))
 
     expect(panel.badge).toMatch(/^(agent|human|either)$/)
-    expect(panel.readMoreHref).toMatch(/^https:\/\/github\.com\/.*aeg-root\/roles\/.*\.md$/)
+    expect(panel.readMoreHref).toMatch(/^\/docs\/roles\/.+$/)
+    expect(panel.viewSourceHref).toMatch(/^https:\/\/github\.com\/.*aeg-root\/roles\/.*\.md$/)
   })
 
   it('renders a real contract node correctly — now a first-class band, not a chord-only overlay', async () => {
@@ -119,12 +126,14 @@ describe('leaf panel content, against real doctrine', () => {
       badge: contract.category ?? contract.actorType,
       renderState: contract.renderState,
       summary: contract.summary,
-      readMoreHref: target ? githubBlobUrl(target.path, target.line) : undefined
+      readMoreHref: target?.docRoute,
+      viewSourceHref: target ? githubBlobUrl(target.path, target.line) : undefined
     }
     // biome-ignore lint/suspicious/noConsole: intentional evidence dump for the PR body
     console.log('CONTRACT PANEL:', JSON.stringify(panel, null, 2))
 
     expect(panel.badge).toBeUndefined()
-    expect(panel.readMoreHref).toMatch(/^https:\/\/github\.com\/.*aeg-root\/contracts\/.*\.md$/)
+    expect(panel.readMoreHref).toMatch(/^\/docs\/contracts\/.+$/)
+    expect(panel.viewSourceHref).toMatch(/^https:\/\/github\.com\/.*aeg-root\/contracts\/.*\.md$/)
   })
 })
