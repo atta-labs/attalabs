@@ -143,6 +143,7 @@
 
 - [Vinaya — product backlog](./apps/vinaya/specs/vinaya-backlog.md)
 - [Vinaya — Product Spec (seed)](./apps/vinaya/specs/vinaya-spec.md)
+- [@atta/vinaya-sources — StateSource adapters (forge/file)](./apps/vinaya/sources/README.md)
 
 ### vitakka-ai
 
