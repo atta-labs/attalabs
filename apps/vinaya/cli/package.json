@@ -6,9 +6,6 @@
   "bin": {
     "vinaya": "./src/index.ts"
   },
-  "exports": {
-    "./commands": "./src/lib/commands.ts"
-  },
   "scripts": {
     "build": "tsc --noEmit",
     "test": "bun test",

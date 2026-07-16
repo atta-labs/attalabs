@@ -1,4 +1,4 @@
-import { COMMANDS } from './commands.js'
+import { COMMANDS } from '@atta/vinaya-sources'
 
 const NAME_COLUMN_WIDTH = 28
 const PLANNED_MARKER = '[planned — not yet implemented] '

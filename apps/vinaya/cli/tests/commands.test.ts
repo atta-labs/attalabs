@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { COMMANDS } from '../src/lib/commands.js'
+import { COMMANDS } from '@atta/vinaya-sources'
 
 const INDEX_PATH = fileURLToPath(new URL('../src/index.ts', import.meta.url))
 const INDEX_SOURCE = readFileSync(INDEX_PATH, 'utf-8')

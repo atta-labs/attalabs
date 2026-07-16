@@ -1,4 +1,4 @@
-import { COMMANDS } from '@atta/vinaya-cli/commands'
+import { COMMANDS } from '@atta/vinaya-sources'
 import { Badge, Card, CardContent } from '@atta/ui'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowLeft } from 'lucide-react'
