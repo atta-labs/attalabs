@@ -5,6 +5,7 @@ import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
+import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 
 export async function generateMetadata(): Promise<Metadata> {
   const { branding } = await getProductCms('vinaya')
@@ -27,6 +28,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       cookieName='vinaya-color-scheme'
       withAuth={false}
     >
+      <PreviewThemeListener />
       {children}
     </NextWebShell>
   )
