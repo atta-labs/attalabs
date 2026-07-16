@@ -60,7 +60,7 @@ Wording refinements are Principal-owned; do not improvise these fields.
 
 `init` is non-destructive by contract (full diff → confirm → install; `--dry-run`); `demo break` is the productized belief moment (refusal → self-correction → pass); `eject` restores stock in one command; `doctor` is treated as a product (diagnoses everything, mutates nothing).
 
-- **Studio cannot lie by omission (D-087).** When live forge enumeration fails (rate limit, network, `gh`/token missing, or `resolveRepo()` unresolvable), Vinaya Studio's iteration lists render an explicit "live forge state unavailable" warning banner — never a truth-shaped empty "No active iterations." state. The flag (`IterationLists.forgeAvailable`, `iterationsForProject().forgeAvailable` in `apps/vinaya/web/src/lib/aeg-fs/read-root.ts`) is derived per-request from that request's failures only (Studio stores nothing); the legacy `completed/*.md` supplement is not a failure and never trips the banner.
+- **Studio cannot lie by omission (D-087).** When live forge enumeration fails (rate limit, network, `gh`/token missing, or `resolveRepo()` unresolvable), Vinaya Studio's iteration lists render an explicit "live forge state unavailable" warning banner — never a truth-shaped empty "No active iterations." state. The flag (`IterationLists.forgeAvailable`, `iterationsForProject().forgeAvailable` in `apps/vinaya/web/src/lib/repo-state/read-root.ts`) is derived per-request from that request's failures only (Studio stores nothing); the legacy `completed/*.md` supplement is not a failure and never trips the banner.
 
 ## CMS / theming (this task's implementation note)
 

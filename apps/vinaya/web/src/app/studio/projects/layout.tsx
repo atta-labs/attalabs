@@ -1,6 +1,6 @@
 import { Flex } from '@atta/ui/shared'
 import type { ReactNode } from 'react'
-import { readRegistry } from '@/lib/aeg-fs'
+import { readRegistry } from '@/lib/repo-state'
 import { ProjectsSubBar } from './ProjectsSubBar'
 
 export default async function ProjectsLayout({ children }: { children: ReactNode }) {

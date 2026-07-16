@@ -3,9 +3,9 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 
 /**
- * Walks up from process.cwd() to find the monorepo root — same marker
- * `apps/aeg/web/studio`'s `aeg-fs/read-root.ts` uses, so both apps agree on
- * what "the repo root" means regardless of which app is running.
+ * Walks up from process.cwd() to find the monorepo root — the same marker
+ * `lib/repo-state/read-root.ts` uses, so both agree on what "the repo root"
+ * means regardless of which surface is running.
  */
 const GOVERNANCE_MARKER = 'packages/governance/projects.md'
 

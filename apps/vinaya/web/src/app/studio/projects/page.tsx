@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next'
-import { readRegistry } from '@/lib/aeg-fs'
+import { readRegistry } from '@/lib/repo-state'
 
 export const metadata: Metadata = {
   title: 'Projects · Vinaya Studio'

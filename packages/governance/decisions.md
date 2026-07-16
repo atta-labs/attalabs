@@ -3015,12 +3015,12 @@ Meanwhile this gate (mechanized into `checkDispatchReadiness`'s `priorTask` pred
 ## D-123 — "AEG" is retired as a public name; the methodology is Vinaya, published at `/how-it-works`
 
 **Date:** 2026-07-16
-**Status:** ACTIVE
+**Status:** PENDING
 **Type:** 2 (reversible — a name can be reinstated; nothing structural depends on this)
 **Lock:** NO
 **Authored by:** Developer (dispatched, Issue #508)
-**Ratified by:** Principal (direct, live conversation, 2026-07-16)
-**Supersedes:** D-102
+**Ratified by:** — (PENDING. The Principal said "AEG is dead, we refer to Vinaya" and asked for the route's removal; on being shown this entry they said they were not sure. Recorded as PENDING rather than ratified: the public-name retirement is real and the code reflects it, but the durable governance claim is the Principal's to make, and an agent must not bank a live sentence as ratification. D-102 sat PENDING for the same reason and nothing broke.)
+**Supersedes:** D-102 (which is itself PENDING, never ratified — so this supersedes an unratified entry, and neither is binding until the Principal says so)
 
 **Context:** D-102 published the model at `/aeg` as a standalone, citable, tool-independent methodology, distinct from Vinaya-the-tool — "the methodology is the moat", with `/docs` linking to `/aeg` and never the reverse. That framing assumed two names for two things. The Principal retired "AEG" as a public name (2026-07-16): the methodology and the tool are both Vinaya. D-102 was never ratified (`PENDING` since 2026-07-04), so no published commitment rests on it.
 

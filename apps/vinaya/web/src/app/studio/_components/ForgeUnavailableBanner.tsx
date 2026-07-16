@@ -1,5 +1,5 @@
 import { AlertTriangle } from 'lucide-react'
-import type { ForgeStatus } from '@/lib/aeg-fs/forge-status'
+import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 
 /**
  * Shown when live forge enumeration failed or partially failed this request.

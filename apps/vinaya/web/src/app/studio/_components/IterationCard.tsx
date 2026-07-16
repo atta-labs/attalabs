@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowRight } from 'lucide-react'
-import type { IterationSummary } from '@/lib/aeg-fs'
+import type { IterationSummary } from '@/lib/repo-state'
 
 type TaskProgressProps = {
   counts: IterationSummary['taskCounts']
