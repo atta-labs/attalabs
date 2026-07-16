@@ -80,6 +80,17 @@ export {
 // Layout
 export { Separator } from '../installed/separator'
 
+// Navigation — falls back to basic (no neobrutalism equivalent yet)
+export {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator
+} from '../../basic/installed/breadcrumb'
+
 // Content — Table
 export {
   Table,

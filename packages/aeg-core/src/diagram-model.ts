@@ -34,8 +34,29 @@ export type DiagramNode = {
   lock?: string | null
   sourceLine?: number
   summary?: string
+  /** What this node actually does, in one plain sentence — every kind carries
+   * one, each from its own source's `description`: the enforcement table's
+   * Description column for `gate`/`check`, `description:` frontmatter for
+   * `role`/`contract`, the `ACTIONS` entry's field for `action`. One register
+   * for every kind, because a reader cannot see what kind of node they
+   * clicked. Never `GateRow.spec` — that column is written to enforce, not to
+   * read (38% of rows cite a decision id, an issue number or a file path;
+   * longest is 2650 chars), and rendering it here is the bug this field
+   * exists to prevent. `summary` asks the question, this answers it, and
+   * "Read more" carries the spec. Optional because a source may omit it,
+   * never because a kind structurally lacks one. */
+  detail?: string
   category?: 'ci' | 'hook' | 'event'
   actorType?: 'agent' | 'human' | 'either'
+  /** Whether this action reaches GitHub — `action` nodes only, straight from
+   * its `ACTIONS` entry (D-119's canonical set). On the node because a
+   * renderer cannot get it any other way: `ACTIONS` is a value export, and
+   * importing it into a client component drags `@atta/aeg-forge-state`'s
+   * `node:child_process` into the browser bundle. The distinction is
+   * doctrine-load-bearing — ring-0 gates guard exactly the crossings, and
+   * G3 exists to prove there is no unguarded one — so it must survive to the
+   * render rather than being implied by which ring a node was filed under. */
+  crosses?: 'into-github' | 'none'
 }
 
 export type DiagramEdge = {
@@ -73,7 +94,14 @@ function slugify(cell: string): string {
 
 /** The three ring summary labels, keyed by ring index, from `enforcement.md`'s
  * `## The model:` summary table (the same table `loadRings` reads). Throws on a
- * malformed doctrine — same contract as `parseEnforcementRegistry`. */
+ * malformed doctrine — same contract as `parseEnforcementRegistry`.
+ *
+ * Keyed by row POSITION (row 0 = ring 0, row 1 = ring 1, row 2 = ring 2),
+ * not by a "0 —"/"1 —"/"2 —" text prefix on the cell — the labels
+ * themselves carry no numeric prefix (round-3 fix: dropped per Issue #508),
+ * so a prefix match would no longer find anything. The 3-row length check
+ * above is what actually guarantees the ring-0/1/2 order; position is a
+ * reliable key once that's enforced. */
 function ringLabels(enforcement: string): Record<0 | 1 | 2, string> {
   const lines = enforcement.split('\n')
   const summaryHeadingLine = findHeadingLine(lines, /^##\s*The model:/)
@@ -82,17 +110,13 @@ function ringLabels(enforcement: string): Record<0 | 1 | 2, string> {
   if (summaryTable?.rows.length !== 3) {
     throw new Error('enforcement.md: summary table does not have exactly 3 rows (Ring 0/1/2)')
   }
-  const byLabel = summaryTable.rows.map((row) => (row.cells[0] ?? '').replace(/\*\*/g, '').trim())
-  const find = (prefix: string): string => {
-    const label = byLabel.find((l) => l.startsWith(prefix))
-    if (label === undefined) throw new Error(`enforcement.md: summary table has no row labeled "${prefix}"`)
-    return label
-  }
-  return { 0: find('0'), 1: find('1'), 2: find('2') }
+  const byRow = summaryTable.rows.map((row) => (row.cells[0] ?? '').replace(/\*\*/g, '').trim())
+  return { 0: byRow[0] ?? '', 1: byRow[1] ?? '', 2: byRow[2] ?? '' }
 }
 
 type RoleFrontmatter = {
   roleId: string
+  description?: string
   summary?: string
   actorType?: 'agent' | 'human' | 'either'
 }
@@ -102,18 +126,26 @@ function extractRole(content: string): RoleFrontmatter | null {
   if (typeof data.role_id !== 'string') return null
   return {
     roleId: data.role_id,
+    description: typeof data.description === 'string' ? data.description : undefined,
     summary: typeof data.summary === 'string' ? data.summary : undefined,
     actorType: data.actor === 'agent' || data.actor === 'human' || data.actor === 'either' ? data.actor : undefined
   }
 }
 
-type ContractFrontmatter = { contractId: string; producer?: string; consumer?: string; summary?: string }
+type ContractFrontmatter = {
+  contractId: string
+  description?: string
+  producer?: string
+  consumer?: string
+  summary?: string
+}
 
 function extractContract(content: string): ContractFrontmatter | null {
   const { data } = matter(content)
   if (typeof data.contract_id !== 'string') return null
   return {
     contractId: data.contract_id,
+    description: typeof data.description === 'string' ? data.description : undefined,
     producer: typeof data.producer === 'string' ? data.producer : undefined,
     consumer: typeof data.consumer === 'string' ? data.consumer : undefined,
     summary: typeof data.summary === 'string' ? data.summary : undefined
@@ -195,6 +227,7 @@ export function deriveDiagramModel(
       lock,
       sourceLine: row.line,
       summary: row.summary,
+      detail: row.description,
       category: row.category
     })
     if (ringIndex === 0) ring0Gates.push({ id, label: row.action })
@@ -207,7 +240,9 @@ export function deriveDiagramModel(
       kind: 'action',
       label: action.label,
       renderState: 'active',
-      summary: action.summary
+      summary: action.summary,
+      detail: action.description,
+      crosses: action.crosses
     })
   }
 
@@ -224,6 +259,7 @@ export function deriveDiagramModel(
       label: role.roleId,
       renderState: 'active',
       summary: role.summary,
+      detail: role.description,
       actorType: role.actorType
     })
   }
@@ -239,7 +275,8 @@ export function deriveDiagramModel(
       kind: 'contract',
       label: contract.contractId,
       renderState: 'active',
-      summary: contract.summary
+      summary: contract.summary,
+      detail: contract.description
     })
   }
 

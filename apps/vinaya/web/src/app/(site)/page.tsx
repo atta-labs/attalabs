@@ -1,7 +1,7 @@
 import { ArrowDown } from 'lucide-react'
 import { Footer } from '@atta/ui/footer'
 import { Heading, Text } from '@atta/ui/shared'
-import { loadDoctrineQuestions } from '@/lib/aeg'
+import { loadDoctrineQuestions } from '@/lib/doctrine-questions'
 import { CtaSection } from './_components/CtaSection'
 import { FeatureGrid } from './_components/FeatureGrid'
 import { HeroSection } from './_components/HeroSection'
@@ -80,7 +80,7 @@ export default async function HomePage() {
         tagline='Discipline for the AI era'
         links={[
           { label: 'Known Limits', href: '/known-limits' },
-          { label: 'How it works', href: '/aeg' }
+          { label: 'How it works', href: '/how-it-works' }
         ]}
       />
     </>

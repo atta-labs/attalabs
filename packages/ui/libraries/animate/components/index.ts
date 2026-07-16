@@ -19,6 +19,16 @@ export { Input, InputBlock } from './form/input'
 export { Checkbox } from './form/checkbox'
 // Layout
 export { Separator } from '../../basic/installed/separator'
+// Navigation — falls back to basic
+export {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator
+} from '../../basic/installed/breadcrumb'
 // Form — falls back to basic
 export { Slider } from '../../basic/installed/slider'
 // Table

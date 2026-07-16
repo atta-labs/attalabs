@@ -3,9 +3,9 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 
 /**
- * Walks up from process.cwd() to find the monorepo root — same marker
- * `apps/aeg/web/studio`'s `aeg-fs/read-root.ts` uses, so both apps agree on
- * what "the repo root" means regardless of which app is running.
+ * Walks up from process.cwd() to find the monorepo root — the same marker
+ * `lib/repo-state/read-root.ts` uses, so both agree on what "the repo root"
+ * means regardless of which surface is running.
  */
 const GOVERNANCE_MARKER = 'packages/governance/projects.md'
 
@@ -36,8 +36,8 @@ export const GITHUB_DEFAULT_BRANCH = 'main'
 
 /**
  * Builds a GitHub blob URL for a repo-relative path, optionally anchored to a
- * specific line — lets every quoted claim on the page link straight to the
- * real source line a skeptical reader can check.
+ * specific line — shared by any Vinaya web page that needs to link a claim
+ * straight to the real source line a skeptical reader can check.
  */
 export function githubBlobUrl(relPath: string, line?: number): string {
   const base = `https://github.com/${GITHUB_REPO}/blob/${GITHUB_DEFAULT_BRANCH}/${relPath}`

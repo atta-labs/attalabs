@@ -6,8 +6,8 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
 
-// Vinaya has no Sanity project of its own yet — borrows Atta's theme/branding,
-// same precedent as apps/aeg/web/studio. See apps/vinaya/specs/vinaya-spec.md.
+// Vinaya has no Sanity project of its own yet — borrows Atta's theme/branding.
+// See apps/vinaya/specs/vinaya-spec.md.
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getAttaBranding(createProductClient('atta')).catch(() => null)
   return {

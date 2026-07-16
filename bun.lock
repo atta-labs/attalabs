@@ -359,8 +359,10 @@
         "@atta/cms": "workspace:*",
         "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
+        "@atta/vinaya-sources": "workspace:*",
         "@octokit/graphql": "^8.1.1",
         "@tailwindcss/postcss": "^4.0.0",
+        "d3-shape": "^3.2.0",
         "lucide-react": "^1.7.0",
         "next": "^16.2.1",
         "react": "^19.2.4",
@@ -371,6 +373,7 @@
       },
       "devDependencies": {
         "@atta/typescript-config": "workspace:*",
+        "@types/d3-shape": "^3.1.0",
         "@types/node": "^22.0.0",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",

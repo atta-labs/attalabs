@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { iterationsForProject, readProject } from '@/lib/aeg-fs'
+import { iterationsForProject, readProject } from '@/lib/repo-state'
 import { ProjectIterationsTabs } from './ProjectIterationsTabs'
 
 // Forge reads derive live Issue/PR state from GitHub — never serve from cache.

@@ -544,6 +544,22 @@ to the basic implementation via `export { TextReveal } from '../../basic/...'`).
 Use `import { TextReveal } from '@atta/ui'` from consumer code; no
 injection contract — it resolves like any other library primitive.
 
+**`Breadcrumb`** (`vinaya-pages-v1` task 4, #553) joined the same way, and is the
+plainest worked example of "Adding a Component to a Library" above: seven
+components (`Breadcrumb`, `BreadcrumbList`, `BreadcrumbItem`, `BreadcrumbLink`,
+`BreadcrumbPage`, `BreadcrumbSeparator`, `BreadcrumbEllipsis`) plus their seven
+Props types in `component-contract.mjs`. `basic/installed/breadcrumb.tsx` is the
+shadcn canonical — Radix `Slot`, so `BreadcrumbLink asChild` works natively and
+needs no adapter. `animate`, `retro` and `brutal` re-export it from
+`'../../basic/installed/breadcrumb'`. Its shared Props types live in
+`packages/ui/types/navigation/breadcrumb.ts`, under a `navigation/` type group
+that task added alongside the existing groups.
+
+No library ships its own flavor yet: the three basic fallbacks are the honest
+state, not a TODO. Give one its own `installed/breadcrumb.tsx` when that
+upstream actually has a breadcrumb worth swapping in — the contract already
+holds the export, so nothing else moves.
+
 ### Governance — shared composites resolve NO library; consumers inject
 
 > **Rule:** A shared composite component MUST NOT import from any concrete

@@ -14,7 +14,14 @@
  * Ring 1: CI check/Re-verifies; Ring 2: Mechanism/Runs/Catches) but always
  * ends in the same two columns: implementation, then lock. The FIRST column
  * is always the row's identifying label. This parser normalizes on that
- * structural shape, not on header text.
+ * structural shape rather than header text — necessarily, since the rings
+ * agree on almost no header wording.
+ *
+ * The one exception is `Description`, which IS looked up by header name: it is
+ * the only column spelled identically in all three tables, and the only one a
+ * table can legitimately lack. Position cannot express that difference (a
+ * 7-column table means two different shapes depending on the ring), so the
+ * name is the only honest key. See the lookup in `parseEnforcementRegistry`.
  */
 
 import { findHeadingLine, findTable } from './markdown-table'
@@ -26,6 +33,29 @@ export type GateRow = {
   action: string
   summary: string
   category: 'ci' | 'hook' | 'event'
+  /** One plain sentence: what this gate does, for a reader. Present in all
+   * three ring tables and resolved by header name (see the lookup below).
+   *
+   * The counterpart to `spec`, and not interchangeable with it — `spec` is
+   * written to ENFORCE: 17 of the 31 real rows cite a `D-###`, a `#NNN`, a
+   * task number or a file path, and the longest runs 2708 chars. That is
+   * correct for a gate and unreadable on a page. This column is the same fact
+   * addressed to a person, and is what a row's `summary` question gets
+   * answered by. The same bar `roles/*.md`/`contracts/*.md` hold via
+   * `description:` frontmatter and `ACTIONS` holds via its `description`
+   * field, so a reader gets one register whatever they click.
+   *
+   * Optional on the type only so a malformed table degrades instead of
+   * throwing — every real row carries one, asserted against the live file. */
+  description?: string
+  /** The substantive middle column — "What must be true..." (ring0),
+   * "Re-verifies" (ring1), "Catches" (ring2) — always the column
+   * immediately before `implementation`. Each ring names it differently,
+   * but structurally it's always the same slot: the normative spec, written
+   * for enforcement. Distinct from `summary`'s rhetorical question and from
+   * `description`'s plain-language answer to it. Undefined when a table has
+   * no such column. */
+  spec?: string
   implementation: string
   lock: string
   line: number
@@ -45,6 +75,19 @@ function stripBackticks(cell: string): string {
   return trimmed
 }
 
+/** Strips markdown `**bold**` markers from a gate/check row's own name.
+ * `action` is the one cell this parser has never sanitized — most rows are
+ * plain text, but a real row can legitimately bold its name for doctrine-
+ * prose emphasis, and that literal `**...**` was leaking straight through
+ * to `DiagramNode.label` (visible asterisks in the how-it-works UI; every
+ * label already renders bold via CSS where it matters, so the markdown
+ * marker carries zero information downstream). Root-cause fix, not a
+ * per-row doctrine patch — the next accidentally-bolded name is covered
+ * too, not just the ones caught so far. */
+function stripBold(cell: string): string {
+  return cell.trim().replace(/\*\*/g, '')
+}
+
 /**
  * Parses the three ring tables out of `enforcement.md`'s raw content into a
  * flat, normalized `GateRow[]`. Each row's `action` is its table's first
@@ -60,15 +103,31 @@ export function parseEnforcementRegistry(content: string): GateRow[] {
     if (headingLine === null) continue
     const table = findTable(lines, headingLine + 1)
     if (!table) continue
+    // `description` is found BY HEADER NAME, never by position — the one
+    // column here that can be. Every other column is positional out of
+    // necessity: the three ring tables name their first column differently
+    // ("Action"/"CI check"/"Mechanism") and their middle columns differently
+    // again ("Gate" + "What must be true" / "Re-verifies" / "Runs" +
+    // "Catches"), so only the ends are reliable. "Description" is spelled the
+    // same in all three, which makes a name lookup possible — and a name
+    // lookup is what keeps a table WITHOUT the column from having some other
+    // column silently read as its description. By index that is undetectable:
+    // a 7-column table means "has Description" in one ring and "has Gate" in
+    // another, and the parser cannot tell which. -1 here simply means the
+    // table doesn't have one.
+    const descriptionIndex = table.headers.findIndex((h) => h.trim().toLowerCase() === 'description')
     for (const row of table.rows) {
       const cells = row.cells
       if (cells.length < 3) continue
-      const action = cells[0] ?? ''
+      const action = stripBold(cells[0] ?? '')
       const summary = stripBackticks(cells[1] ?? '')
       const category = stripBackticks(cells[2] ?? '') as GateRow['category']
       const implementation = stripBackticks(cells[cells.length - 2] ?? '')
       const lock = (cells[cells.length - 1] ?? '').trim()
-      result.push({ ring, action, summary, category, implementation, lock, line: row.line })
+      const description =
+        descriptionIndex === -1 ? undefined : stripBackticks(cells[descriptionIndex] ?? '') || undefined
+      const spec = cells.length > 5 ? stripBackticks(cells[cells.length - 3] ?? '') : undefined
+      result.push({ ring, action, summary, category, description, spec, implementation, lock, line: row.line })
     }
   }
 

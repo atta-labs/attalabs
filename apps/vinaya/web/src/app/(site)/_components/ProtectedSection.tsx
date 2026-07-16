@@ -51,7 +51,7 @@ export function ProtectedSection() {
       </Card>
 
       <Button asChild size='lg'>
-        <Link href='/aeg'>How it works</Link>
+        <Link href='/how-it-works'>How it works</Link>
       </Button>
     </section>
   )

@@ -15,7 +15,7 @@ import { Badge } from '@atta/ui/components'
 import type { Registry } from '@atta/aeg-core'
 import { resolveGithubToken, resolveRepo } from '@atta/aeg-forge-state'
 import type { Metadata } from 'next'
-import { readRegistry } from '@/lib/aeg-fs'
+import { readRegistry } from '@/lib/repo-state'
 import { fetchOpenIssuesWithoutIterationLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
 
 // Forge reads derive live Issue state from GitHub — never serve from cache.

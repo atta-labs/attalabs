@@ -39,7 +39,7 @@ import {
 } from '@atta/aeg-core'
 import { fetchProvenance, resolveGithubToken } from '@atta/aeg-forge-state'
 import { graphql } from '@octokit/graphql'
-import { loadActiveIterations } from '../aeg-fs'
+import { loadActiveIterations } from '../repo-state'
 import type { IterationSnapshot } from './load-snapshot'
 import { buildDispatchGateInput } from './map-dispatch-input'
 

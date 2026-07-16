@@ -27,6 +27,17 @@ export type { CheckboxProps, CheckedState } from './form/checkbox'
 export type { FlexAlign, FlexDirection, FlexJustify, FlexProps, FlexWrap } from './layout/flex'
 export type { SeparatorOrientation, SeparatorProps } from './layout/separator'
 
+// Navigation
+export type {
+  BreadcrumbEllipsisProps,
+  BreadcrumbItemProps,
+  BreadcrumbLinkProps,
+  BreadcrumbListProps,
+  BreadcrumbPageProps,
+  BreadcrumbProps,
+  BreadcrumbSeparatorProps
+} from './navigation/breadcrumb'
+
 // Typography
 export type { HeadingLevel, HeadingProps, HeadingSize, HeadingWeight } from './typography/heading'
 export type { TextAs, TextProps, TextSize, TextWeight } from './typography/text'

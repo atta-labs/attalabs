@@ -26,6 +26,19 @@
 @source "../../../packages/aeg-core/src/**/*.{ts,tsx}";
 
 @theme inline {
+  /* The standard shadcn multi-series chart palette (`chart1`..`chart5` in
+     `packages/cms/schemas/ui-theme.ts`, piped through `generateThemeCSSForScheme`
+     into real `--chart-1`..`--chart-5` values at render time) was never
+     previously mapped into Tailwind's utility system — every other token in
+     this file gets a `--color-*` line, chart didn't. Vinaya's `/how-it-works`
+     rings diagram is the first consumer; wiring it here benefits every
+     product, not just this page. */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

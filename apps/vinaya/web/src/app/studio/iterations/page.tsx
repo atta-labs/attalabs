@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { listIterations } from '@/lib/aeg-fs'
+import { listIterations } from '@/lib/repo-state'
 import { IterationsTabs } from './IterationsTabs'
 
 // Forge reads derive live Issue/PR state from GitHub — never serve from cache.

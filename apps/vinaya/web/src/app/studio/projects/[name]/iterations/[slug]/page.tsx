@@ -4,7 +4,7 @@ import { sumLedger, type DerivedStatus, type DispatchResult, type LedgerRow } fr
 import { AlertTriangle, UserRound } from 'lucide-react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { readIteration, readProject } from '@/lib/aeg-fs'
+import { readIteration, readProject } from '@/lib/repo-state'
 import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
 import { fetchIterationTokenLedger } from '@/lib/forge/fetch-token-ledger'
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'

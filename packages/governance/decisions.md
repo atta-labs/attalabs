@@ -2717,7 +2717,8 @@ Concretely:
 ## D-102 — /aeg publishes the model as a first-class standalone methodology
 
 **Date:** 2026-07-04
-**Status:** PENDING
+**Status:** SUPERSEDED
+**Superseded by:** D-123
 **Type:** 1
 **Lock:** NO
 **Authored by:** TL (R-21)
@@ -2989,3 +2990,42 @@ Meanwhile this gate (mechanized into `checkDispatchReadiness`'s `priorTask` pred
 **Alternatives rejected:** Dumping the existing long-form doctrine cells into the drill panel — rejected, fails the "don't show more than fits" requirement (Principal, live conversation) and the cells aren't consistently short. Reproducing step5 mockup's "corpse"/"honest exception" narrative — rejected, that copy is hand-authored in the mockup file and doesn't exist in doctrine; reproducing it live would mean inventing content, not deriving it (violates D-087).
 
 **Consequences:** Every future gate/check/action/role/contract added to doctrine must also carry a `summary` (and `category` if it's a gate/check) for `/how-it-works`'s panels to stay complete — a row without one renders with an empty/`undefined` summary rather than failing the build: `GateRow.summary`/`.category` are required by `registry-parse.ts`'s cell-position read (a row missing those columns entirely would fail table parsing, not silently pass), but `DiagramNode.summary`/`.category`/`.actorType` are optional fields, so a role/contract file that omits `summary:` simply carries `undefined` on its node rather than breaking the build.
+
+---
+
+## D-122 — Doctrine gains a `description` layer: every node answers its own question, in one register
+
+**Date:** 2026-07-16
+**Status:** ACTIVE
+**Type:** 2 (reversible — a later task can extend or reshape the fields)
+**Lock:** NO
+**Authored by:** Developer (dispatched, Issue #508)
+**Ratified by:** Principal
+
+**Context:** D-121 gave every doctrine item a `summary` question but nothing that answers it, so `/how-it-works`'s panel asked "Ever had someone push straight to main?" and stopped. The panel therefore rendered the enforcement column underneath — the exact alternative D-121 had already rejected ("dumping the existing long-form doctrine cells into the drill panel"), rediscovered rather than read: 17 of the 31 real gate rows cite a `D-###`, a `#NNN`, a task number or a file path, and the longest runs 2708 chars. That column is written to ENFORCE and is correct as it stands; it was never page copy. A second gap compounded it: `role`/`contract`/`action` nodes had no equivalent column at all, so three of four node kinds rendered nothing and the panel's shape changed depending on what you clicked — a distinction no reader can see the reason for.
+
+**Decision:** `enforcement.md` gains a `Description` column (all three ring tables, 31 rows); `roles/*.md` and `contracts/*.md` gain a `description:` frontmatter key (15 files); `ACTIONS` gains a **required** `description` field (10 entries). `DiagramNode.detail` carries it for every kind, so a reader gets one register whatever they click. `GateRow` names the enforcement column `spec` — it is a spec, and the rename exists so `description` vs `spec` cannot be confused at a call site. `Description` is resolved BY HEADER NAME, not column index: the three ring tables share no other header wording, a 7-column table means two different shapes depending on the ring, and an index cannot tell "has Description" from "has Gate" — a fixture proves that exact case. `DiagramNode.crosses` carries each action's `ACTIONS.crosses` to the render, because a client component cannot import `ACTIONS` (it drags `node:child_process` into the browser bundle).
+
+**Alternatives rejected:** Reusing `sidebar_title` as a role/contract display name — rejected, it is the docs sidebar's own nav caption (consumed by `aeg-core/src/docs/*`); naming diagram nodes from a docs-nav hint welds two surfaces with different constraints through frontmatter, so a caption edit would silently rename doctrine nodes. Parsing a description out of each file's body (contracts' `**Seam:**` line, roles' first paragraph) — rejected, zero authoring cost but couples the model to markdown formatting, and actions have no body to parse. Truncating the enforcement column to a taste plus "Read more" — rejected on evidence: the cells have no clean prefix, so the cut lands mid-parenthetical or inside a citation on roughly half the rows.
+
+**Consequences:** Every future gate/check/action/role/contract must carry a `description` or its panel renders name + question + link with nothing between. `ACTIONS.description` is required, so the compiler enforces it there; `enforcement.md` and `roles`/`contracts` are held by real-doctrine tests instead (`registry-parse.test.ts` "gives every real row a description"; `diagram-model.test.ts` "gives every leaf node a detail"), which fail against the live files rather than a fixture. **The 56 descriptions were agent-drafted and Principal-reviewed after they were committed, not before — a departure from D-121's "all copy is Principal-authored/reviewed, not agent-invented".** Review found two that named the wrong mechanism outright ("Editing a governed file" described doc-coverage rather than the read-the-doc gate; "Typecheck + unit tests" claimed the whole repo where the row's own spec says `turbo --affected`). Both were corrected before merge. No gate covers this: the rule that copy is Principal-reviewed is a document, not a checker, and nothing in the suite can tell drafted-then-reviewed from reviewed-then-drafted — it was caught by a reviewer reasoning about commit order. A checker for it, if one is wanted, does not exist yet.
+
+---
+
+## D-123 — "AEG" is retired as a public name; the methodology is Vinaya, published at `/how-it-works`
+
+**Date:** 2026-07-16
+**Status:** PENDING
+**Type:** 2 (reversible — a name can be reinstated; nothing structural depends on this)
+**Lock:** NO
+**Authored by:** Developer (dispatched, Issue #508)
+**Ratified by:** — (PENDING. The Principal said "AEG is dead, we refer to Vinaya" and asked for the route's removal; on being shown this entry they said they were not sure. Recorded as PENDING rather than ratified: the public-name retirement is real and the code reflects it, but the durable governance claim is the Principal's to make, and an agent must not bank a live sentence as ratification. D-102 sat PENDING for the same reason and nothing broke.)
+**Supersedes:** D-102 (which is itself PENDING, never ratified — so this supersedes an unratified entry, and neither is binding until the Principal says so)
+
+**Context:** D-102 published the model at `/aeg` as a standalone, citable, tool-independent methodology, distinct from Vinaya-the-tool — "the methodology is the moat", with `/docs` linking to `/aeg` and never the reverse. That framing assumed two names for two things. The Principal retired "AEG" as a public name (2026-07-16): the methodology and the tool are both Vinaya. D-102 was never ratified (`PENDING` since 2026-07-04), so no published commitment rests on it.
+
+**Decision:** The public site names no predecessor. `/how-it-works` (task 4, #508) is where the model is published, under Vinaya, and it is the only such surface. The `/aeg` route — a 301 to `/how-it-works` since #508 — is deleted rather than kept as a permanent alias: it existed only to serve D-102's citability requirement, and a redirect preserving a retired brand's URL is that brand still being published, one hop away. #508's Boundary line "'AEG' appears once, near the footer, as 'the model this implements'" is obsolete with it; the page names nothing.
+
+**Alternatives rejected:** Keeping the 301 indefinitely — rejected, it costs little but it is exactly the citability D-102 asked for, for a name that is gone; keeping it would leave the retirement half-done and the next reader unsure which name is current. Renaming `/aeg` to a Vinaya-branded alias — rejected, there is nothing to alias: `/how-it-works` is the surface.
+
+**Consequences:** Any external link to `vinaya.attalabs.dev/aeg` now 404s rather than redirecting. `/aeg` was live as a real page (`vinaya-studio-v1` task 0b, #480/#485) before #508 made it a redirect, so such links may exist; none are known, and the site is pre-launch. Reversing this is one Route Handler if a real citation surfaces. `AEG` survives repo-internally — `aeg-root/`, `packages/aeg-core`, `AEG_REPO`, `AEG_BLOCKED_LABEL` — which this decision does not touch: it governs the public name only, and renaming the internal substrate is a separate, much larger question.

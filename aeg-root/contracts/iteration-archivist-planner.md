@@ -1,6 +1,7 @@
 ---
 sidebar_title: Iteration Archivist → Planner
 contract_id: iteration-archivist-planner
+description: Carries a finished iteration’s real outcome to the planning of the next, so no plan is built on a product that no longer exists.
 status: active
 producer: iteration-archivist
 consumer: planner

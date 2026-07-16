@@ -206,6 +206,14 @@ All tokens below are exposed as Tailwind utilities. For any token `X`, you can u
 | `sidebar-border` | Sidebar dividers |
 | `sidebar-ring` | Sidebar focus ring |
 
+### Chart / multi-series
+
+| Token | Use for |
+|-------|---------|
+| `chart-1` … `chart-5` | Distinguishing ≥3 categorical series in one visualization (chart segments, diagram rings/bands) — CMS-driven (`packages/cms/schemas/ui-theme.ts`'s `chart1`..`chart5` fields), scheme-fixed rather than paired to a surface/text role like the tokens above. Wired into Tailwind's utility system (`--color-chart-N`) in `packages/ui/styles/globals.css`; first real consumer is Vinaya's `/how-it-works` rings diagram. |
+
+**`chart-N` is scheme-fixed, not scheme-relative — do not treat it as "pale."** Unlike `muted`/`secondary` (which are calibrated *relative to the active scheme*, and can render nearly indistinguishable from `background` in a dark theme), `chart-N` values hold roughly constant lightness regardless of light/dark mode. For a genuinely pale/neutral fill that still contrasts against `background` in **both** schemes, use a low-opacity tint of `foreground` (e.g. `fill-foreground/12`) rather than `muted`/`secondary` — this is what `/how-it-works`'s seam rings do, after `muted`/`secondary` were tried first and found invisible-on-background in dark mode.
+
 ### Fonts
 
 | Class | Use for |

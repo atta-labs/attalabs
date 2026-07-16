@@ -1,13 +1,23 @@
 /**
  * Server-only reads of the repo's iteration/project state.
  *
- * The Studio runs from `apps/aeg/web/studio`; `aeg-root/` lives at the repo
- * root. `findAegRoot` walks up from `process.cwd()` until it finds a
- * directory containing `packages/governance/projects.md` (the project
- * registry — relocated from `aeg-root/projects.md`, `aeg-forge-state-v1`
- * task 2), then returns that directory's `aeg-root/`. Worktrees work the
- * same way — each worktree carries its own checkout of `aeg-root/` and
- * `packages/governance/`.
+ * This module ran as `lib/aeg-fs` until #553 — a name carried over verbatim
+ * when the Studio was ported here (#493) and never revisited. Vinaya names
+ * nothing after AEG: a Vinaya reader has no reason to know that word, and
+ * this module is Vinaya's own state reader, not a shared one (it is
+ * app-private — no package export, no tsconfig path). `findAegRoot` keeps its
+ * name because it returns the literal `aeg-root/` directory; renaming a
+ * function away from the thing it actually finds would be worse than the
+ * word. That directory is the substrate's, not Vinaya's, and renaming it is a
+ * separate, monorepo-wide question.
+ *
+ * Vinaya's Studio runs from `apps/vinaya/web/src/app/studio`; `aeg-root/`
+ * lives at the repo root. `findAegRoot` walks up from `process.cwd()` until
+ * it finds a directory containing `packages/governance/projects.md` (the
+ * project registry — relocated from `aeg-root/projects.md`,
+ * `aeg-forge-state-v1` task 2), then returns that directory's `aeg-root/`.
+ * Worktrees work the same way — each worktree carries its own checkout of
+ * `aeg-root/` and `packages/governance/`.
  *
  * Active vs. archived (`aeg-forge-state-v1` task 5, #429; #515, per D-110):
  * both derive purely from the forge — a GitHub Milestone
@@ -231,7 +241,9 @@ type LoadedIterations = {
 async function loadActiveIterationsWithStatus(): Promise<LoadedIterations> {
   const repo = await resolveRepo()
   if (!repo) {
-    console.warn('[aeg-fs] active-iteration enumeration skipped: repository could not be resolved (forge unreachable)')
+    console.warn(
+      '[repo-state] active-iteration enumeration skipped: repository could not be resolved (forge unreachable)'
+    )
     return { items: [], status: { kind: 'unreachable' } }
   }
 
@@ -239,7 +251,7 @@ async function loadActiveIterationsWithStatus(): Promise<LoadedIterations> {
   try {
     refs = cachedListActiveIterationSlugs(repo.owner, repo.repo)
   } catch (err) {
-    console.warn(`[aeg-fs] active-iteration enumeration failed: ${(err as Error).message}`)
+    console.warn(`[repo-state] active-iteration enumeration failed: ${(err as Error).message}`)
     return { items: [], status: { kind: 'unreachable' } }
   }
 
@@ -262,7 +274,7 @@ async function loadActiveIterationsWithStatus(): Promise<LoadedIterations> {
     }
     const slug = refs[i]?.slug ?? '(unknown)'
     const reason = result.reason instanceof Error ? result.reason.message : String(result.reason)
-    console.warn(`[aeg-fs] active-iteration derivation failed for "${slug}": ${reason}`)
+    console.warn(`[repo-state] active-iteration derivation failed for "${slug}": ${reason}`)
     failures.push({ slug, reason })
   })
 
@@ -270,7 +282,7 @@ async function loadActiveIterationsWithStatus(): Promise<LoadedIterations> {
 }
 
 /** Back-compat array-returning wrapper (consumed by `dispatch-readiness.ts`
- * and the `@/lib/aeg-fs` barrel — signature unchanged). */
+ * and the `@/lib/repo-state` barrel — signature unchanged). */
 export async function loadActiveIterations(): Promise<Array<{ fileSlug: string; iteration: Iteration }>> {
   return (await loadActiveIterationsWithStatus()).items
 }
@@ -288,7 +300,7 @@ async function readActiveIteration(fileSlug: string): Promise<{ fileSlug: string
     ])
     return { fileSlug, iteration: mergeTaskEdgesFromFile(iteration, fileIteration) }
   } catch (err) {
-    console.warn(`[aeg-fs] forge derivation failed for iteration "${fileSlug}": ${(err as Error).message}`)
+    console.warn(`[repo-state] forge derivation failed for iteration "${fileSlug}": ${(err as Error).message}`)
     return null
   }
 }
@@ -332,7 +344,7 @@ async function loadArchivedIterationsWithStatus(): Promise<LoadedIterations> {
     try {
       refs = cachedListArchivedIterationSlugs(repo.owner, repo.repo)
     } catch (err) {
-      console.warn(`[aeg-fs] archived-iteration enumeration failed: ${(err as Error).message}`)
+      console.warn(`[repo-state] archived-iteration enumeration failed: ${(err as Error).message}`)
     }
 
     if (refs) {
@@ -350,7 +362,7 @@ async function loadArchivedIterationsWithStatus(): Promise<LoadedIterations> {
         }
         const slug = refs?.[i]?.slug ?? '(unknown)'
         const reason = result.reason instanceof Error ? result.reason.message : String(result.reason)
-        console.warn(`[aeg-fs] archived-iteration derivation failed for "${slug}": ${reason}`)
+        console.warn(`[repo-state] archived-iteration derivation failed for "${slug}": ${reason}`)
         failures.push({ slug, reason })
       })
       status = reduceSettled(refs.length, failures, false)
@@ -386,7 +398,9 @@ async function readArchivedIteration(fileSlug: string): Promise<{ fileSlug: stri
         return { fileSlug, iteration }
       }
     } catch (err) {
-      console.warn(`[aeg-fs] forge derivation failed for archived iteration "${fileSlug}": ${(err as Error).message}`)
+      console.warn(
+        `[repo-state] forge derivation failed for archived iteration "${fileSlug}": ${(err as Error).message}`
+      )
       return null
     }
   }

@@ -38,7 +38,13 @@ export type Action = {
   label: string
   crosses: ActionCrossing
   performedBy: string[] // role_id[]
+  /** The rhetorical question — what a reader recognises. */
   summary: string
+  /** What the action actually is, plainly. The counterpart to `summary`:
+   * the question earns attention, this answers it. Required, so a new action
+   * cannot be added without one — the same bar `roles/*.md` and
+   * `contracts/*.md` hold via their `description:` frontmatter. */
+  description: string
 }
 
 export const ACTIONS: Action[] = [
@@ -47,70 +53,85 @@ export const ACTIONS: Action[] = [
     label: 'publish the branch',
     crosses: 'into-github',
     performedBy: ['developer'],
-    summary: 'Ever had a branch pushed straight to main by mistake?'
+    summary: 'Ever had a branch pushed straight to main by mistake?',
+    description: 'Pushing local commits up to GitHub, where the rest of the mechanism can finally see them.'
   },
   {
     id: 'create-a-task-issue',
     label: 'create a task issue',
     crosses: 'into-github',
     performedBy: ['planner'],
-    summary: 'Ever opened a ticket that turned out to have zero plan behind it?'
+    summary: 'Ever opened a ticket that turned out to have zero plan behind it?',
+    description:
+      'Opening the Issue that a task exists as — its scope, its reasoning and its dependencies, written down before anyone starts.'
   },
   {
     id: 'open-a-pull-request',
     label: 'open a pull request',
     crosses: 'into-github',
     performedBy: ['developer'],
-    summary: 'Ever gotten a PR with no explanation of what it does or why?'
+    summary: 'Ever gotten a PR with no explanation of what it does or why?',
+    description:
+      'Proposing finished work for review, carrying the account of what changed and which intent it came from.'
   },
   {
     id: 'revise-a-pull-request',
     label: 'revise a pull request',
     crosses: 'into-github',
     performedBy: ['developer', 'planner'],
-    summary: 'Ever seen a PR quietly gutted after it already passed review?'
+    summary: 'Ever seen a PR quietly gutted after it already passed review?',
+    description:
+      'Editing a pull request after it exists — its code, its title or its description, whether or not review already happened.'
   },
   {
     id: 'grant-a-waiver',
     label: 'grant a waiver',
     crosses: 'into-github',
     performedBy: ['principal'],
-    summary: 'Ever had someone bypass a rule just by typing the right words?'
+    summary: 'Ever had someone bypass a rule just by typing the right words?',
+    description:
+      'Deliberately excusing a rule for one case — an authority the mechanism grants to a person, never to an agent.'
   },
   {
     id: 'commit-the-work',
     label: 'commit the work',
     crosses: 'none',
     performedBy: ['developer'],
-    summary: "Ever had a commit land that plain doesn't build?"
+    summary: "Ever had a commit land that plain doesn't build?",
+    description: 'Recording a change locally — the last moment it costs nothing to catch a mistake.'
   },
   {
     id: 'author-the-brief',
     label: 'author the brief',
     crosses: 'none',
     performedBy: ['team-leader'],
-    summary: 'Ever started a task with no clear idea of what "done" means?'
+    summary: 'Ever started a task with no clear idea of what "done" means?',
+    description:
+      'Turning one intent into instructions someone can execute: what to build, what is out of scope, and what done means.'
   },
   {
     id: 'produce-the-verdict',
     label: 'produce the verdict',
     crosses: 'none',
     performedBy: ['reviewer', 'security'],
-    summary: 'Ever gotten a review that was really just a rubber stamp?'
+    summary: 'Ever gotten a review that was really just a rubber stamp?',
+    description: 'Judging finished work against the brief it came from, and saying plainly whether it passes.'
   },
   {
     id: 'post-provenance-comment',
     label: 'post the provenance comment',
     crosses: 'none',
     performedBy: ['archivist'],
-    summary: 'Ever needed to know exactly what shipped, and why, six months later?'
+    summary: 'Ever needed to know exactly what shipped, and why, six months later?',
+    description: 'Writing the permanent record of a merged task — what shipped, from what intent, checked by whom.'
   },
   {
     id: 'write-the-retrospective',
     label: 'write the retrospective',
     crosses: 'none',
     performedBy: ['iteration-archivist'],
-    summary: 'Ever finished a big chunk of work with nobody writing down what was learned?'
+    summary: 'Ever finished a big chunk of work with nobody writing down what was learned?',
+    description: 'Closing out a finished phase of work by recording what actually happened and what it taught.'
   }
 ]
 

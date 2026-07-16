@@ -103,6 +103,15 @@ export const REQUIRED_COMPONENTS = [
   // Layout
   'Separator',
 
+  // Navigation
+  'Breadcrumb',
+  'BreadcrumbEllipsis',
+  'BreadcrumbItem',
+  'BreadcrumbLink',
+  'BreadcrumbList',
+  'BreadcrumbPage',
+  'BreadcrumbSeparator',
+
   // Table
   'Table',
   'TableBody',
@@ -227,6 +236,15 @@ export const REQUIRED_TYPES = [
   // Layout — Separator
   'SeparatorOrientation',
   'SeparatorProps',
+
+  // Navigation — Breadcrumb
+  'BreadcrumbProps',
+  'BreadcrumbListProps',
+  'BreadcrumbItemProps',
+  'BreadcrumbLinkProps',
+  'BreadcrumbPageProps',
+  'BreadcrumbSeparatorProps',
+  'BreadcrumbEllipsisProps',
 
   // Typography — Heading
   'HeadingLevel',

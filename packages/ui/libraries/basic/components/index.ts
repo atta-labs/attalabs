@@ -70,6 +70,16 @@ export {
 } from './model/model-picker'
 // Layout
 export { Separator } from './layout/separator'
+// Navigation
+export {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator
+} from '../installed/breadcrumb'
 export { Slider } from '../installed/slider'
 // Table
 export {

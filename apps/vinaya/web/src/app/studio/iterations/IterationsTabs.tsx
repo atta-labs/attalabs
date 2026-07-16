@@ -1,7 +1,7 @@
 'use client'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui/components'
-import type { ForgeStatus, IterationSummary } from '@/lib/aeg-fs'
+import type { ForgeStatus, IterationSummary } from '@/lib/repo-state'
 import { ForgeBanners } from '@/app/studio/_components/ForgeUnavailableBanner'
 import { IterationCard } from '@/app/studio/_components/IterationCard'
 
