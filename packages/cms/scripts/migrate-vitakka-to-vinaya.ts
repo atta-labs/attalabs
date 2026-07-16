@@ -3,7 +3,7 @@
  * new document IDs (vinayaConfig, branding-vinaya) — same project (o56nzgrr).
  * Vitakka is shelved and its "V" mark fits Vinaya's initial, so this is a
  * rename-in-place, not a re-upload: theme/library refs and every logo/favicon
- * asset reference carry over verbatim (D-122).
+ * asset reference carry over verbatim (D-124).
  *
  * Idempotent: if the source documents are already gone and the destination
  * documents already exist, the script reports "already migrated" and exits 0

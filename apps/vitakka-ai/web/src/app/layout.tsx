@@ -8,7 +8,7 @@ import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
 
 // Vitakka is shelved and has no Sanity project of its own — its CMS identity
-// moved to Vinaya (D-122). Borrows Atta's theme/branding, same precedent
+// moved to Vinaya (D-124). Borrows Atta's theme/branding, same precedent
 // apps/vinaya/web used before this rename.
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getAttaBranding(createProductClient('atta')).catch(() => null)

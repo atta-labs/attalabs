@@ -162,7 +162,7 @@ const logoUrl = isDark
 | Product  | Blade Direction | Interior Element | Meaning |
 |----------|----------------|-----------------|---------|
 | Attā     | Λ — apex up    | Eye — almond ellipse with pupil | The self looking inward, awareness observing itself |
-| Vinaya   | V — apex down  | Target — concentric rings with crosshairs | Focus, thought applied to its object (reused from Vitakka, D-122 — its V initial fits Vinaya's) |
+| Vinaya   | V — apex down  | Target — concentric rings with crosshairs | Focus, thought applied to its object (reused from Vitakka, D-124 — its V initial fits Vinaya's) |
 | Vādā     | V — apex down  | Two circles connected by exchange arcs | Conversation, dialogue between two minds |
 | Herald   | TBD            | TBD | TBD — logos not yet designed |
 
