@@ -19,7 +19,7 @@
 - [Rules and patterns for the AIACanvas particle system — AIACanvas, AIASphere, AIARing components in @atta/ui/canvas](./.claude/skills/ui-canvas-animation/SKILL.md)
 - [How the CMS theme and UI config system works across all Atta AI products — Sanity schemas, theme generation, font loading, product configs](./.claude/skills/ui-cms-theme/SKILL.md)
 - [Rules for building UI across ALL Atta AI apps — component usage, CSS variables, theming, typography, inline styles, library system](./.claude/skills/ui-components/SKILL.md)
-- [How the @atta/ui multi-library system works — build-time generation (Vada pattern) vs runtime switching (Herald pattern), how to add a new app or library, and how to debug library resolution](./.claude/skills/ui-library-system/SKILL.md)
+- [How the @atta/ui multi-library system works — build-time generation vs runtime switching, how to add a new app or library, and how to debug library resolution](./.claude/skills/ui-library-system/SKILL.md)
 - [The complete and ONLY list of CSS color/radius/font tokens allowed in Atta AI UI code, AND the doctrine for which token to reach for in which situation. Hardcoded Tailwind palette colors (green-500, zinc-900, blue-400, etc.), raw hex / oklch / hsl values, and absolute colors (text-white, bg-black) are FORBIDDEN — always use the semantic tokens defined in @atta/ui/styles/globals.css according to the role doctrine below.](./.claude/skills/ui-theme-tokens/SKILL.md)
 - [Vāda's product structure (Vāda Teams catalog), wedges/capabilities/moats framework, current phase status, and locked architectural decisions. Load before any architectural decision, cross-cutting change, or when drafting executor tasks that span multiple layers.](./.claude/skills/vada-architecture/SKILL.md)
 - [Primitives and patterns for building Vāda home-page sections below the canvas hero — SectionWrapper, SectionLabel, StatusFooter, TwoColumnSection, and the section composition convention.](./.claude/skills/vada-home-sections/SKILL.md)
@@ -143,7 +143,6 @@
 
 - [Vinaya — product backlog](./apps/vinaya/specs/vinaya-backlog.md)
 - [Vinaya — Product Spec (seed)](./apps/vinaya/specs/vinaya-spec.md)
-- [@atta/vinaya-sources — StateSource adapters (forge/file)](./apps/vinaya/sources/README.md)
 
 ### vitakka-ai
 
