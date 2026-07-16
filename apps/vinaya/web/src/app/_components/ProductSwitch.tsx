@@ -1,6 +1,6 @@
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
-import { isProductionDeploy } from '@/lib/env'
+import { isVercelDeploy } from '@/lib/env'
 import { hasForgeConnection } from '@/lib/forge-connection'
 
 type Segment = 'portal' | 'studio'
@@ -26,13 +26,14 @@ function SwitchSegment({ label, href, active }: { label: string; href: string; a
 
 /**
  * Portal↔Studio switch. Reachable only where serving Studio is authorized
- * (D-126) — today that means: not a production deploy, and this server can
- * reach GitHub. Order matters: the synchronous env check MUST run first so a
- * production request never reaches the async forge check at all (see D-126 —
- * a GitHub token existing is not the same as this visitor being authorized).
+ * (D-126) — today that means: not a Vercel deploy (production or preview),
+ * and this server can reach GitHub. Order matters: the synchronous env check
+ * MUST run first so a deployed request never reaches the async forge check
+ * at all (see D-126 — a GitHub token existing is not the same as this
+ * visitor being authorized).
  */
 export async function ProductSwitch({ current }: { current: Segment }) {
-  if (isProductionDeploy()) return null
+  if (isVercelDeploy()) return null
   if (!(await hasForgeConnection())) return null
 
   return (

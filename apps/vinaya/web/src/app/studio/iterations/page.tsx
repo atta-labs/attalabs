@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { isProductionDeploy } from '@/lib/env'
+import { isVercelDeploy } from '@/lib/env'
 import { listIterations } from '@/lib/repo-state'
 import { IterationsTabs } from './IterationsTabs'
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 }
 
 export default async function IterationsPage() {
-  if (isProductionDeploy()) notFound()
+  if (isVercelDeploy()) notFound()
 
   const { active, archived, forge } = await listIterations()
 

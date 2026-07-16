@@ -1,12 +1,12 @@
 import { Flex } from '@atta/ui/shared'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
-import { isProductionDeploy } from '@/lib/env'
+import { isVercelDeploy } from '@/lib/env'
 import { readRegistry } from '@/lib/repo-state'
 import { ProjectsSubBar } from './ProjectsSubBar'
 
 export default async function ProjectsLayout({ children }: { children: ReactNode }) {
-  if (isProductionDeploy()) notFound()
+  if (isVercelDeploy()) notFound()
 
   const projects = await readRegistry()
   return (

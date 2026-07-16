@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
-import { isProductionDeploy } from '@/lib/env'
+import { isVercelDeploy } from '@/lib/env'
 
 export default function HomePage() {
-  if (isProductionDeploy()) {
+  if (isVercelDeploy()) {
     redirect('/the-studio')
   }
 
