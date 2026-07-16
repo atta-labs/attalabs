@@ -79,7 +79,7 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 
 ## Context
 
-All Atta AI products (Herald, Vada, Atta, Vitakka) share a single UI system via `@atta/ui`. The active component library and theme are set per-product in Sanity CMS and injected at the root layout via `NextWebShell`. These rules apply to every product, every surface.
+Every app in this monorepo shares a single UI system via `@atta/ui`. The active component library and theme are set per-consumer in Sanity CMS and injected at the root layout via `NextWebShell`. These rules apply to every consumer, every surface.
 
 ---
 
@@ -256,7 +256,7 @@ Font values (which Google Font is used for each role) are set by the active them
 
 ## The UI Library System
 
-`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each product uses exactly one, resolved either at build time (Vada pattern) or runtime (Herald pattern).
+`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each consumer uses exactly one, resolved either at build time or at runtime.
 
 ```tsx
 // ✅ Always import from the default alias — resolves to the active library
@@ -274,78 +274,30 @@ Shared cross-library primitives (`Heading`, `Text`, `Flex`, `AgentThinkingText`)
 
 ## Theme Loading from CMS
 
-### How It Works
+Colors, fonts, and the active component library are **not hardcoded** — they come from the CMS, and every consumer's root `layout.tsx` loads them through `NextWebShell`, which injects the CSS custom properties and font links and wraps the tree in the library/auth/toast providers.
 
-Each product has a CMS singleton (`heraldConfig`, `vadaConfig`, `attaConfig`, `vitakkaConfig`) that stores:
-- **Active theme** — color tokens for light/dark schemes
-- **Active library** — which UI library to use (`basic` | `retro` | `animate` | `brutal`)
-- **Color scheme** — `dark` | `light`
-
-The root `layout.tsx` of each product fetches this config and passes it to `NextWebShell`, which:
-1. Generates CSS custom properties from theme color tokens
-2. Injects a `<style>` block with all `--variable: value;` declarations
-3. Loads Google Fonts dynamically via `<link>` tags based on `theme.typography`
-4. Wraps everything in `LibraryProvider` (active library) + `AuthProvider` + `ToastProvider`
+That is the whole contract this skill needs you to know. What you must never do:
 
 ```tsx
-// apps/{product}/web/src/app/layout.tsx
-import { NextWebShell } from '@atta/ui/lib/next-web-shell'
-import { getVadaConfig } from '@atta/cms'   // or getHeraldConfig, getAttaConfig, etc.
-import { cmsClient } from '@atta/cms'
+// ✅ Theme values reach components as CSS variables via semantic tokens
+<div className="bg-background text-foreground" />
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const config = await getVadaConfig(cmsClient)
-  return (
-    <NextWebShell config={config} styleId="vada-theme">
-      {children}
-    </NextWebShell>
-  )
-}
+// ❌ Never call the CMS from inside a component
+const theme = await client.fetch(`*[_type == "uiTheme"][0]`)
+
+// ❌ Never replicate what NextWebShell does
+<style>{`:root { --background: ${color} }`}</style>
 ```
 
-### What NextWebShell Injects
+**For everything else** — which config document a consumer reads, the typed query functions, the SSR loading sequence, the root-layout pattern, `styleId` conventions, font loading, the color-scheme toggle, and how to wire up a new consumer's theme — see [`.claude/skills/ui-cms-theme/SKILL.md`](../ui-cms-theme/SKILL.md), which owns that domain.
 
-```html
-<!-- Fonts — loaded from Google Fonts based on theme.typography -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" />
-
-<!-- Theme — all CSS variables set from CMS theme tokens -->
-<style id="vada-theme">
-  :root {
-    --background: oklch(12% 0.02 60);
-    --foreground: oklch(88% 0.05 70);
-    --accent: oklch(70% 0.15 75);
-    --font-sans: 'DM Sans', sans-serif;
-    --font-serif: 'Playfair Display', serif;
-    --font-mono: 'DM Mono', monospace;
-    /* ... all tokens */
-  }
-</style>
-```
-
-### Reading Theme Config in a Route
-
-```tsx
-import { getHeraldConfig, cmsClient } from '@atta/cms'
-
-const config = await getHeraldConfig(cmsClient)
-const theme = config?.userInterface?.theme
-const colorScheme = config?.userInterface?.colorScheme ?? 'dark'
-const library = config?.userInterface?.library?.id ?? 'basic'
-```
-
-### Adding a New Product Theme
-
-1. Create a `{product}Config` document in Sanity with a linked theme and library
-2. Add a `get{Product}Config` query function in `packages/cms/src/queries/product-ui-config.ts`
-3. Use `NextWebShell` in the product's root `layout.tsx` with `style="` a unique `styleId`
+> **Why this skill names no consumer:** `@atta/ui` does not import any product, so this skill does not know any product's name either. Product-to-config mapping lives in the CMS skills and `packages/cms/CLAUDE.md`. A doc that enumerates consumers goes stale every time one is added, renamed, or retired — which is a coupling, not a convenience.
 
 ---
 
 ## `@atta/ui/topbar` `TopBar` — responsive contract
 
-`TopBar` from `@atta/ui/topbar` is the shared topbar used by every product's signed-in app chrome (Vāda, Herald, Atta, Vitakka; AEG Studio uses it via `withAuth={false}`). It exposes four mountable slots:
+`TopBar` from `@atta/ui/topbar` is the shared topbar used by every consumer's signed-in app chrome (consumers without auth mount it via `withAuth={false}`). It exposes four mountable slots:
 
 | Slot | Where it renders ≥ md | Where it renders < md |
 |------|----------------------|-----------------------|
@@ -358,7 +310,7 @@ const library = config?.userInterface?.library?.id ?? 'basic'
 
 When wiring an action that belongs in the right cluster (Settings gear, theme switcher, owner-only buttons): use `extraActions` and trust the responsive contract — your button will appear in the desktop cluster and inside the mobile sheet automatically. Do NOT manually duplicate it in a custom mobile row; that creates two-place-to-fix drift.
 
-When a button has both icon and label (Sign out, Settings, Theme — Herald's pattern post-D-061): always render the label text. Do **not** wrap it in `<span className='hidden md:inline'>` — the label is hidden in the desktop cluster only by the topbar's own breakpoint, not by per-button visibility classes. Inside the mobile sheet the label needs to be visible.
+When a button has both icon and label (Sign out, Settings, Theme — the pattern established by D-061): always render the label text. Do **not** wrap it in `<span className='hidden md:inline'>` — the label is hidden in the desktop cluster only by the topbar's own breakpoint, not by per-button visibility classes. Inside the mobile sheet the label needs to be visible.
 
 These icon+label buttons (Sign out, Settings, Sign in) need no per-call-site className for vertical alignment — `Button` itself defaults to `leading-none` in every library (see `.claude/skills/ui-library-system/SKILL.md`'s wrapper-pattern examples). Never re-add `leading-none` at a call site; if a button's label still looks vertically off against its icon, the fix belongs in the shared `Button` wrapper, not in the consumer.
 

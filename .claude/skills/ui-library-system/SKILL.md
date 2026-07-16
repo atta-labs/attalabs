@@ -1,6 +1,6 @@
 ---
 name: ui-library-system
-description: How the @atta/ui multi-library system works — build-time generation (Vada pattern) vs runtime switching (Herald pattern), how to add a new app or library, and how to debug library resolution
+description: How the @atta/ui multi-library system works — build-time generation vs runtime switching, how to add a new app or library, and how to debug library resolution
 ---
 
 # UI Library System — Atta AI
@@ -85,7 +85,7 @@ D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
 - Helper trees the upstream emits (e.g. animate-ui's `installed/animate-ui/primitives/...`)
   are preserved verbatim alongside the component files. Don't dedupe, don't flatten.
 - **Biome ignores `packages/ui/libraries/*/installed`** (configured in `biome.json` —
-  matches the precedent for `packages/cms/{vada-ai,vitakka-ai}` auto-generated dirs) so
+  matches the precedent for `packages/cms/*-ai` auto-generated studio dirs) so
   formatter rules never fight a fresh CLI paste. Re-installing later just works.
 
 ### Base UI vs Radix flavor — the `asChild` contract idiom
@@ -165,19 +165,20 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
 
 ## Overview
 
-`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each product uses exactly one at a time per surface, controlled by its Sanity CMS config (and, post-D-060, by the central `attalabs` library registry the per-product configs reference). There are two ways an app resolves which library it uses:
+`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each consumer uses exactly one at a time per surface, controlled by its Sanity CMS config (and, post-D-060, by the central `attalabs` library registry the per-consumer configs reference). There are two ways an app resolves which library it uses:
 
-| Pattern | Used By | How |
-|---------|---------|-----|
-| **Build-time generation** | Vada, Atta, Vitakka | `generate-ui.ts` runs at build, writes a generated index; tsconfig points `@atta/ui` at that file |
-| **Runtime switching** | Herald (public profile only) | `LibraryProvider` + `useLibraryLoader` dynamically import the active library in the browser |
-| **Hybrid** | **Herald** (whole app) | Both of the above, on different route subtrees — see "Pattern 3" below |
+| Pattern | Resolution | How |
+|---------|-----------|-----|
+| **Build-time generation** | Static, per-app | `generate-ui.ts` runs at build, writes a generated index; tsconfig points `@atta/ui` at that file |
+| **Runtime switching** | Dynamic, per-user | `LibraryProvider` + `useLibraryLoader` dynamically import the active library in the browser |
 
-Both base patterns are valid. Choose based on whether the library selection is static (per-app) or dynamic (per-user). Herald is the hybrid case because it mixes the two: the **app chrome** is the product's fixed CMS-driven design system (build-time-style), while each user's **public profile** carries the user's saved library choice (runtime).
+Both are valid. Choose based on whether the library selection is static (per-app) or dynamic (per-user). The two can also be **composed** on disjoint route subtrees — a fixed CMS-driven chrome plus a per-user public surface. That composition is an app-level architecture decision and is documented by the app that makes it, not here.
+
+> **This skill names no consumer.** `@atta/ui` imports no app, so the library system does not know which apps exist or which pattern each one picked. That mapping goes stale on every app added, renamed, or retired — it is a coupling, not a convenience. An app's own resolution choice is documented in that app's `CLAUDE.md`.
 
 ---
 
-## Pattern 1 — Build-Time Generation (Vada)
+## Pattern 1 — Build-Time Generation
 
 ### How It Works
 
@@ -189,17 +190,17 @@ Both base patterns are valid. Choose based on whether the library selection is s
 
 ### Generated File Format
 
-`packages/ui/generated/vada/components.ts`:
+`packages/ui/generated/{app}/components.ts`:
 ```ts
 // AUTO-GENERATED — DO NOT EDIT
-// App: vada | Library: animate
-export * from '../../libraries/animate/components'
+// App: {app} | Library: {library}
+export * from '../../libraries/{library}/components'
 ```
 
-`packages/ui/generated/vada/canvas.ts`:
+`packages/ui/generated/{app}/canvas.ts`:
 ```ts
 // AUTO-GENERATED — DO NOT EDIT
-// App: vada | Library: animate
+// App: {app} | Library: {library}
 export * from '../../canvas'
 ```
 
@@ -208,11 +209,11 @@ The file is gitignored — it is created on every build from the CMS config.
 ### next.config.ts Integration
 
 ```ts
-// apps/vada-ai/web/next.config.ts
+// apps/{app}/web/next.config.ts
 import { generateUIIndex } from '@atta/ui/scripts/generate-ui'
 
 const nextConfig = async () => {
-  await generateUIIndex('vada')   // writes generated/vada/components.ts
+  await generateUIIndex('{app}')   // writes generated/{app}/components.ts
   return { /* ...next config... */ }
 }
 export default nextConfig
@@ -221,18 +222,18 @@ export default nextConfig
 ### tsconfig.json Mapping
 
 ```json
-// apps/vada-ai/web/tsconfig.json
+// apps/{app}/web/tsconfig.json
 {
   "compilerOptions": {
     "paths": {
-      "@atta/ui": ["../../../packages/ui/generated/vada/components"],
-      "@atta/ui/canvas": ["../../../packages/ui/generated/vada/canvas"]
+      "@atta/ui": ["../../../packages/ui/generated/{app}/components"],
+      "@atta/ui/canvas": ["../../../packages/ui/generated/{app}/canvas"]
     }
   }
 }
 ```
 
-**Why this matters:** When you add a new component to the `animate` library (e.g. `DropdownMenu`), it only becomes available in Vada if it's exported from `packages/ui/libraries/animate/components/index.ts`. The generated file is just a `export *` passthrough — it has no content of its own.
+**Why this matters:** When you add a new component to the `animate` library (e.g. `DropdownMenu`), it only becomes available to a consumer if it's exported from `packages/ui/libraries/animate/components/index.ts`. The generated file is just a `export *` passthrough — it has no content of its own.
 
 ### When to Use This Pattern
 
@@ -242,7 +243,7 @@ export default nextConfig
 
 ---
 
-## Pattern 2 — Runtime Switching (Herald)
+## Pattern 2 — Runtime Switching
 
 ### How It Works
 
@@ -310,32 +311,13 @@ const loadLibrary = useCallback((library: UILibrary) => {
 
 ---
 
-## Pattern 3 — Hybrid: build-time chrome + runtime per-user surface (Herald)
+## Composing the two patterns — build-time chrome + runtime per-user surface
 
-Herald is **not** a pure runtime-switching app. It uses **both** patterns on **disjoint route subtrees** — and crossing them silently is a recurring regression class (`apps/aeg/project-management/decisions.md` D-035, Lock: YES).
+The two base patterns are not exclusive. An app can run **both** on **disjoint route subtrees**: a fixed, CMS-driven library for its authenticated chrome, and a per-user runtime choice on a public surface. The build-time generator sees Pattern 1; the public subtree behaves as Pattern 2. Both read their library id through the same central `attalabs` resolver (D-060), so a composing app's build-time alias and its runtime provider agree by construction.
 
-### Two surfaces, two providers
+The invariant that makes this work: **each subtree feeds its own `LibraryProvider`, and no shared parent layout wraps one.** A provider mounted in a common ancestor inherits into both subtrees and silently crosses the build-time and per-user paths — the regression this composition keeps re-introducing when someone "saves a hop."
 
-| Surface | Route subtree | LibraryProvider fed with | Source |
-|---------|---------------|--------------------------|--------|
-| **App chrome (build-time)** | `app/(app)/*` (`/bulk-audit`, `/onboarding`) **and** `app/[username]/(owner)/*` (`/{username}/ui`, `/{username}/settings`) | `getHeraldConfig(cmsClient).userInterface.library.id` — the product's CMS-managed library | `app/(app)/layout.tsx` and `app/[username]/(owner)/layout.tsx` each wrap children in `<CandidateShell initialLibrary={chromeLibrary}>` |
-| **Public profile (runtime per-user)** | `app/[username]/(profile)/*` (`/{username}` only) | `user.library` from Herald's DB | `app/[username]/(profile)/layout.tsx` wraps children in `<EnvoyLibraryShell initialLibrary={userLibrary}>` |
-
-`app/[username]/layout.tsx` is intentionally a **no-op passthrough** (`return children` + the icon `generateMetadata`). It deliberately does **not** wrap children in any `LibraryProvider` — putting one there would inherit a provider into both the `(profile)` and `(owner)` subtrees, crossing the build-time and per-user paths. The route-group split (`(profile)` vs `(owner)`) exists precisely so the two sibling layouts can feed their own providers without the parent leaking one. Touching `[username]/layout.tsx` to "save a hop" is the canonical D-035 regression — don't.
-
-### Where the build-time library id actually comes from (post-D-060)
-
-Theme and library metadata live centrally in the `attalabs` Sanity dataset. The `@atta/cms` resolver (`getProductUiConfig` / `getHeraldConfig`) intercepts the string `library` id stored in `heraldConfig.userInterface.library`, fetches the full `library` document from `attalabs`, and reconstructs `config.userInterface.library` so consumers (the build-time generator AND `(app)/layout.tsx` / `(owner)/layout.tsx` at runtime) see the same `library.id` string. That string is what both layouts feed `CandidateShell`, and what `scripts/generate-ui.ts` reads to write the `packages/ui/generated/herald/components.ts` alias target. Hybrid Herald therefore looks like Pattern 1 to the build-time generator and looks like Pattern 2 to its public-profile subtree, with both pulling the same source-of-truth library id through the central resolver.
-
-### Verification recipe (D-035, expanded for D-061)
-
-Set `user.library = retro` in Herald's DB (or via the appearance editor). Reload `/bulk-audit`, `/onboarding`, `/{username}/ui`, `/{username}/settings`, and `/{username}` (the public profile). The first four must stay on the **build-time** library; only the last switches to `retro`. The three surfaces (`(app)`, `(owner)`, `(profile)`) are independent — and they all resolve their library id through the same D-060 central-CMS path.
-
-### When to Use This Pattern
-
-- App is both an authenticated tool (chrome stays on the brand's design system) **and** a public per-user surface (visitors style it for themselves).
-- You need the chrome to be uneditable by the user even on routes that share the user's URL namespace (e.g. `/{username}/settings`).
-- You can afford to keep two layout files in sync — both must feed `LibraryProvider`, but with different sources.
+**Which apps compose the patterns, on which routes, and with which providers is an app-level architecture decision — owned by that app's spec, not here.** The worked example, including its locked route-subtree contract and verification recipe, is Herald's: see [`apps/herald-ai/specs/herald-app-architecture.md`](../../../apps/herald-ai/specs/herald-app-architecture.md) §4 "Library resolution — the critical invariant (D-035)", which `packages/governance/doc-owners` binds as the owner of those routes, and [`packages/governance/decisions.md`](../../../packages/governance/decisions.md) D-035 (`Lock: YES`).
 
 ---
 
@@ -374,7 +356,7 @@ export { DropdownMenu, ... } from '../../basic/installed/dropdown-menu' // falls
 3. Add the component name to `REQUIRED_COMPONENTS` in `packages/ui/component-contract.mjs`
 4. Add its Props type to `REQUIRED_TYPES` in `component-contract.mjs`
 5. Implement or add a `basic` fallback in **all other libraries** — the contract validator blocks builds until every library exports it
-6. For Vada (build-time pattern): the generated file is a passthrough, so no extra step needed — rebuild picks it up
+6. For build-time consumers: the generated file is a passthrough, so no extra step needed — rebuild picks it up
 
 **The contract validator enforces step 5.** You cannot forget — the build fails if any library is missing the export.
 
@@ -389,7 +371,7 @@ When a consumer needs visual behavior the canonical component does not ship by d
 
 Animate's `Textarea` re-exports basic's, so adding to basic automatically reaches animate. Retro and brutal each have their own `components/form/textarea.tsx` wrapper (ui-retro-contract-v1 follow-up, #540) implementing the full `TextareaVariant` union against their own `installed/textarea.tsx` idiom (retro: `outline`-based focus; brutal: `ring`-based focus) — previously these were bare passthroughs that silently ignored every variant, which broke Herald's `JDInput` (`textareaVariant='bare'` had no effect, rendering an opaque boxed textarea instead of blending into the popover surface). If you add an EIGHTH variant to the shared `TextareaVariant` union, propagate it to all four wrappers, not just basic's.
 
-**Add a prop (preferred for behavior controls).** Same playbook for typed presets like `Heading.weight`, `SmartPromptInput.surface`, `SmartPromptInput.textareaVariant`. Defaults must preserve byte-identical render for omitting callers. Default to `undefined` and conditionally spread (`{...(prop !== undefined && { variant: prop })}`) when the prop forwards into a vendor primitive that might not understand it — that keeps Herald's render unchanged.
+**Add a prop (preferred for behavior controls).** Same playbook for typed presets like `Heading.weight`, `SmartPromptInput.surface`, `SmartPromptInput.textareaVariant`. Defaults must preserve byte-identical render for omitting callers. Default to `undefined` and conditionally spread (`{...(prop !== undefined && { variant: prop })}`) when the prop forwards into a vendor primitive that might not understand it — that keeps existing consumers' renders unchanged.
 
 **Add a wrapper (preferred when the change requires reaching into TWO conflicting Tailwind modifier families at once, or when the install file is intentionally locked).** Wrappers live next to the component they extend (`libraries/{name}/components/interactive/{wrapper}.tsx`) and are exported from each library's `components/index.ts`. Libraries that don't customize the underlying primitive can re-export the basic wrapper as a fallback — animate and brutal still do this. Add the wrapper + its `Props` type to `component-contract.mjs`. Canonical example: `DropdownMenuItemTextHighlight`. Both `basic` and `retro` (ui-retro-contract-v1 task 3, #540) ship their OWN twin, each wrapping its own library's `DropdownMenuItem` so a retro dropdown renders retro's item styling rather than basic's. The wrapper accepts `selected?: boolean`, applying `cn('group', selected && 'bg-accent text-accent-foreground', className)` on top of the canonical `focus:bg-accent`/`data-[highlighted]:bg-accent` hover — so a selected item keeps the accent fill as a PERSISTENT commitment even when not focused or hovered.
 
@@ -453,13 +435,13 @@ If a component (e.g. `Tabs` or `Badge`) renders using the `basic` library styles
 * **Correct:** `import { Tabs } from '@atta/ui/components'` (Flat import)
 * **Why:** The `tsconfig.json` path mapping only maps the exact flat string `@atta/ui/components` (no wildcard `/*`). Subpath imports bypass the alias and fall back to `packages/ui/package.json` exports, which route `./components/*` directly to the `basic` library's installed files. Always import flatly from `@atta/ui/components`.
 
-**Build-time apps (Vada):**
+**Build-time apps:**
 1. Run `bun run validate:ui-contract` — check if the active library is missing the component
-2. Check `packages/ui/generated/vada/components.ts` — what library does it point to?
+2. Check `packages/ui/generated/{app}/components.ts` — what library does it point to?
 3. Check that the component is exported from `libraries/{library}/components/index.ts`
 4. If the generated file is stale, delete it and rebuild — `generateUIIndex` will recreate it
 
-**Runtime apps (Herald):**
+**Runtime apps:**
 1. Check that `LibraryProvider` wraps the component tree
 2. Check that `useComponents()` is called inside the provider
 3. Remember components are `undefined` until the dynamic import resolves
@@ -472,9 +454,9 @@ For runtime apps: the component must be exported from `package.json`'s default e
 
 ### Changing the active library for an app
 
-**Build-time (Vada):** Change `userInterface.library` in the `vadaConfig` Sanity document, then rebuild. The generated index will update.
+**Build-time:** Change `userInterface.library` in that app's `{app}Config` Sanity document, then rebuild. The generated index will update.
 
-**Runtime (Herald):** Update the user's `library` field in the DB. `LibraryProvider` will re-import the new library on next render.
+**Runtime:** Update the user's `library` field in the app's DB. `LibraryProvider` will re-import the new library on next render.
 
 ---
 
@@ -526,7 +508,7 @@ All four patterns are needed. Our libraries use `export type * from '../../../ty
 ## Cross-product composite components
 
 Some components in `@atta/ui` live OUTSIDE the four-library system because they are
-composite primitives shared across products (Herald, Vāda, …) and the library
+composite primitives shared across consumers and the library
 swap doesn't apply to them. `SmartPromptInput` and `DocCollector` are the current
 examples. `SmartPromptInput` lives at `packages/ui/smart-prompt-input/` and is
 imported as `@atta/ui/smart-prompt-input`; `DocCollector` lives at
@@ -571,7 +553,7 @@ holds the export, so nothing else moves.
 This is the `#213` lesson: when a shared input hard-imports `libraries/basic/installed/*`,
 products on `animate` / `retro` / `brutal` silently render the basic
 versions inside it, breaking visual coherence and theme-token discipline.
-It also forecloses Herald's runtime per-user library — a user who has chosen
+It also forecloses a runtime per-user library — a user who has chosen
 `brutal` sees a `basic` input.
 
 **Contract every shared composite MUST follow:**
