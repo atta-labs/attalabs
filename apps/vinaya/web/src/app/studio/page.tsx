@@ -1,4 +1,11 @@
+import { isProductionDeploy } from '@/lib/env'
+import { StudioLocalOnlyLanding } from './_components/StudioLocalOnlyLanding'
+
 export default function HomePage() {
+  if (isProductionDeploy()) {
+    return <StudioLocalOnlyLanding />
+  }
+
   return (
     <div className='space-y-6'>
       <h1 className='font-serif text-3xl tracking-tight text-foreground'>Vinaya Studio</h1>
