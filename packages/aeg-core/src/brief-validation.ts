@@ -78,13 +78,35 @@ export function checkTierField(prBody: string, readTier: (body: string) => 0 | 1
 }
 
 /**
- * Test Plan — pass iff the body contains the literal `Test Plan: unit-tests-only`
- * sentinel, OR at least one `**[agent]**`/`**[principal]**`-tagged checklist line.
- * Presence-only: does not judge whether tags are correctly assigned or whether
- * `unit-tests-only` is justified by the surface map.
+ * The `unit-tests-only` sentinel, tolerating the markdown emphasis every other
+ * brief field carries (`**Tier:**`, `**Project:**`, …). All three of
+ * `Test Plan: unit-tests-only`, `**Test Plan:** unit-tests-only` and
+ * `**Test Plan**: unit-tests-only` match.
+ *
+ * The bold forms used to fail: the pattern was `/Test Plan\s*:\s*unit-tests-only/i`,
+ * and `\s*` cannot cross the `**` sitting between the colon and the value — so
+ * `brief-authoring/SKILL.md` §9's own canonical example (`**Test Plan:** unit-tests-only`)
+ * was rejected by the gate that documents it, and any brief copying the skill
+ * verbatim bounced. Two checks read this sentinel and both were wrong in
+ * different directions: `checkTestPlan` false-FAILED a well-formed brief, while
+ * `checkTestPlanExclusivity` silently false-PASSED a self-contradictory one (a
+ * bolded `unit-tests-only` **plus** tagged checkboxes never tripped it, because
+ * its own guard clause never matched either) — the exact combination that guard
+ * was built for in #340. Fixing the doc instead of the pattern was rejected:
+ * bold is the house convention for brief fields, so an unbolded Test Plan is the
+ * odd one out and drifts back the moment someone tidies it.
+ */
+const TEST_PLAN_UNIT_TESTS_ONLY_RE = /(?:\*\*)?Test Plan(?:\*\*)?\s*:\s*(?:\*\*)?\s*unit-tests-only/i
+
+/**
+ * Test Plan — pass iff the body contains the `Test Plan: unit-tests-only`
+ * sentinel (bolded or not — see `TEST_PLAN_UNIT_TESTS_ONLY_RE`), OR at least one
+ * `**[agent]**`/`**[principal]**`-tagged checklist line. Presence-only: does not
+ * judge whether tags are correctly assigned or whether `unit-tests-only` is
+ * justified by the surface map.
  */
 export function checkTestPlan(prBody: string): BriefSectionResult {
-  if (/Test Plan\s*:\s*unit-tests-only/i.test(prBody)) return { status: 'pass', errors: [] }
+  if (TEST_PLAN_UNIT_TESTS_ONLY_RE.test(prBody)) return { status: 'pass', errors: [] }
   if (/\*\*\[(?:agent|principal)\]\*\*/.test(prBody)) return { status: 'pass', errors: [] }
   return {
     status: 'fail',
@@ -106,7 +128,7 @@ export function checkTestPlan(prBody: string): BriefSectionResult {
  * previously let through.
  */
 export function checkTestPlanExclusivity(prBody: string): BriefSectionResult {
-  if (!/Test Plan\s*:\s*unit-tests-only/i.test(prBody)) return { status: 'pass', errors: [] }
+  if (!TEST_PLAN_UNIT_TESTS_ONLY_RE.test(prBody)) return { status: 'pass', errors: [] }
   if (/^-\s*\[[ xX]\]\s*\*{2}\[(?:agent|principal)\]\*{2}/im.test(prBody)) {
     return {
       status: 'fail',
