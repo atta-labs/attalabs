@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { notFound, redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
-import { cmsClient, getHeraldConfig } from '@atta/cms'
+import { getProductConfig } from '@atta/cms'
 import { CandidateShell } from '@/components/portal/CandidateShell'
 import { HeraldTopBar } from '@/components/HeraldTopBar'
 import { getUserByClerkId } from '@/db/queries'
@@ -33,7 +33,7 @@ export default async function OwnerLayout({
   // D-035 (Lock: YES): owner /ui + /settings render the BUILD-TIME library —
   // never the visitor's profile library. Mirrors app/(app)/layout.tsx so
   // crossing the two paths stays impossible-by-construction.
-  const config = await getHeraldConfig(cmsClient).catch(() => null)
+  const config = await getProductConfig('herald').catch(() => null)
   const chromeLibrary = (config?.userInterface?.library?.id ?? 'basic') as UILibrary
 
   return (

@@ -1,7 +1,14 @@
 import { createClient } from '@sanity/client'
 
+/**
+ * Connection settings shared by every product client.
+ *
+ * `projectId` is deliberately absent: which Sanity project a read targets is a
+ * function of *which product's content is wanted*, which the caller always
+ * knows statically. It is resolved from {@link PROJECT_IDS}, never from the
+ * environment. Only values that genuinely vary per environment live here.
+ */
 export const cmsConfig = {
-  projectId: process.env.SANITY_PROJECT_ID ?? process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ?? 'unconfigured',
   dataset: process.env.SANITY_DATASET ?? process.env.NEXT_PUBLIC_SANITY_DATASET ?? 'production',
   apiVersion: '2024-01-01',
   useCdn: process.env.NODE_ENV === 'production'
@@ -9,7 +16,8 @@ export const cmsConfig = {
 
 /**
  * Sanity project IDs for every Atta AI product. Public identifiers — safe to
- * commit. Use {@link createProductClient} to target any of them.
+ * commit, and identical in every environment. Use {@link createProductClient}
+ * to target any of them.
  */
 export const PROJECT_IDS = {
   herald: 'e9gbd2d1',
@@ -21,19 +29,9 @@ export const PROJECT_IDS = {
 
 export type ProductKey = keyof typeof PROJECT_IDS
 
-export function createCmsClient(options?: { token?: string; useCdn?: boolean }) {
-  return createClient({
-    ...cmsConfig,
-    token: options?.token ?? process.env.SANITY_API_TOKEN,
-    useCdn: options?.useCdn ?? cmsConfig.useCdn
-  })
-}
-
 /**
  * Create a read-only Sanity client targeting a specific product's Sanity
- * project. Use this to fetch content (branding, config, theme) from another
- * product in the ecosystem — e.g. the Vāda home page showing Attā and Vinaya
- * logos alongside its own.
+ * project — the only way to read product content.
  *
  * No token required: reads come over the public CDN for published content.
  */
@@ -45,16 +43,3 @@ export function createProductClient(product: ProductKey, options?: { useCdn?: bo
     useCdn: options?.useCdn ?? cmsConfig.useCdn
   })
 }
-
-/** Read-only client for fetching published content */
-export const cmsClient = createClient({
-  ...cmsConfig,
-  useCdn: cmsConfig.useCdn
-})
-
-/** Write client for mutations (server-side only) */
-export const cmsWriteClient = createClient({
-  ...cmsConfig,
-  token: process.env.SANITY_API_TOKEN,
-  useCdn: false
-})

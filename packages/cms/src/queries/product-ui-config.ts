@@ -1,6 +1,6 @@
 import type { SanityClient } from '@sanity/client'
 import type { PortalUiConfig } from '../types'
-import { createProductClient } from '../client'
+import { createProductClient, type ProductKey } from '../client'
 
 const THEME_PROJECTION = `{
   _id,
@@ -79,22 +79,13 @@ export async function getProductUiConfig(
   return config
 }
 
-export async function getHeraldConfig(client: SanityClient): Promise<PortalUiConfig | null> {
-  return getProductUiConfig(client, 'heraldConfig', 'heraldConfig')
-}
-
-export async function getAttaConfig(client: SanityClient): Promise<PortalUiConfig | null> {
-  return getProductUiConfig(client, 'attaConfig', 'attaConfig')
-}
-
-export async function getVinayaConfig(client: SanityClient): Promise<PortalUiConfig | null> {
-  return getProductUiConfig(client, 'vinayaConfig', 'vinayaConfig')
-}
-
-export async function getVadaConfig(client: SanityClient): Promise<PortalUiConfig | null> {
-  return getProductUiConfig(client, 'vadaConfig', 'vadaConfig')
-}
-
-export async function getAttalabsConfig(client: SanityClient): Promise<PortalUiConfig | null> {
-  return getProductUiConfig(client, 'attalabsConfig', 'attalabsConfig')
+/**
+ * Fetch a product's UI config singleton from that product's own Sanity project.
+ *
+ * The project is resolved from the product key, so a caller cannot accidentally
+ * read one product's config document out of another product's project.
+ */
+export async function getProductConfig(product: ProductKey): Promise<PortalUiConfig | null> {
+  const docId = `${product}Config`
+  return getProductUiConfig(createProductClient(product), docId, docId)
 }

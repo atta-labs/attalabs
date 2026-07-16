@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { buildFaviconIcons, cmsClient, getAttaBranding, getAttaConfig } from '@atta/cms'
+import { buildFaviconIcons, getProductCms } from '@atta/cms'
 import { IdentityProvider } from '@atta/identity/react'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import { Footer } from '@atta/ui/footer'
@@ -11,7 +11,7 @@ import '@atta/ui/canvas.css'
 import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const branding = await getAttaBranding(cmsClient).catch(() => null)
+  const { branding } = await getProductCms('atta')
   return {
     title: 'Atta — Where deep thinking happens',
     description: 'A place for deep thinking with AI. Bring any model. Deliberate across them. Keep what matters.',
@@ -20,10 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const [config, branding] = await Promise.all([
-    getAttaConfig(cmsClient).catch(() => null),
-    getAttaBranding(cmsClient).catch(() => null)
-  ])
+  const { config, branding } = await getProductCms('atta')
 
   return (
     <NextWebShell config={config} branding={branding} styleId='atta-theme' cookieName='atta-color-scheme'>

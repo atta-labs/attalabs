@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { buildFaviconIcons, cmsClient, getVadaBranding, getVadaConfig } from '@atta/cms'
+import { buildFaviconIcons, getProductCms } from '@atta/cms'
 import { IdentityProvider } from '@atta/identity/react'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import type { Metadata } from 'next'
@@ -12,7 +12,7 @@ import { MockModeBanner } from '@/components/MockModeBanner'
 import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const branding = await getVadaBranding(cmsClient).catch(() => null)
+  const { branding } = await getProductCms('vada')
   return {
     title: 'Vada AI',
     description: 'Deliberation engine for structured thinking.',
@@ -21,10 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const [config, branding] = await Promise.all([
-    getVadaConfig(cmsClient).catch(() => null),
-    getVadaBranding(cmsClient).catch(() => null)
-  ])
+  const { config, branding } = await getProductCms('vada')
 
   return (
     <NextWebShell config={config} branding={branding} styleId='vada-theme' cookieName='vada-color-scheme'>

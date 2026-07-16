@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic'
 
-import { buildFaviconIcons, cmsClient, getVinayaBranding, getVinayaConfig } from '@atta/cms'
+import { buildFaviconIcons, getProductCms } from '@atta/cms'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const branding = await getVinayaBranding(cmsClient).catch(() => null)
+  const { branding } = await getProductCms('vinaya')
   return {
     title: 'Vinaya — Branch protection for the AI era',
     description:
@@ -17,10 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const [config, branding] = await Promise.all([
-    getVinayaConfig(cmsClient).catch(() => null),
-    getVinayaBranding(cmsClient).catch(() => null)
-  ])
+  const { config, branding } = await getProductCms('vinaya')
 
   return (
     <NextWebShell

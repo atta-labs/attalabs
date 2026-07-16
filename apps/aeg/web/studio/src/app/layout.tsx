@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { cmsClient, getAttaBranding, getAttaConfig } from '@atta/cms'
+import { getProductCms } from '@atta/cms'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import { TopBar } from '@atta/ui/topbar'
 import type { Metadata } from 'next'
@@ -16,10 +16,7 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const [config, branding] = await Promise.all([
-    getAttaConfig(cmsClient).catch(() => null),
-    getAttaBranding(cmsClient).catch(() => null)
-  ])
+  const { config, branding } = await getProductCms('atta')
 
   const links = [
     { label: 'Projects', href: '/projects' },
