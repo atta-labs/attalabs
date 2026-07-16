@@ -199,7 +199,7 @@ export function AIOnboarding() {
   useEffect(() => {
     if (state.waitingForCv || state.cvParsed || state.complete) return
     const last = messages[messages.length - 1]
-    if (!last || last.role !== 'assistant') return
+    if (last?.role !== 'assistant') return
     const text = last.parts
       .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
       .map((p) => p.text)
