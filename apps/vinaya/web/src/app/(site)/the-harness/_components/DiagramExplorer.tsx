@@ -236,6 +236,26 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
                   ))}
                 </div>
               )}
+              {/* Drilled ring only: the ring's own members, by full name (the
+                  wedges truncate; here they read whole). Derived from
+                  `drilledGroup.children` — the same model-derived nodes the
+                  diagram paints, never a hardcoded per-ring list, so a doctrine
+                  row added or removed shows up here with no page change. Names
+                  only, no per-node prose, per the drilled framing above. */}
+              {drilledGroup && (
+                <div className='mt-1 flex flex-col gap-2'>
+                  <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-[0.1em]'>
+                    In this ring — {drilledGroup.children.length}
+                  </Text>
+                  <div className='flex flex-col gap-1.5'>
+                    {drilledGroup.children.map((node) => (
+                      <Text key={node.id} size='sm' className='font-sans text-card-foreground leading-snug'>
+                        {humanLabel(node.label)}
+                      </Text>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
