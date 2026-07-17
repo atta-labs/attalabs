@@ -1,6 +1,7 @@
 'use client'
 
 import { Badge, Button } from '@atta/ui/components'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { DashboardTask, TaskCategory } from '@/app/studio/_lib/load-dashboard-tasks'
@@ -89,37 +90,46 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
       ) : (
         <div className='space-y-2'>
           {filtered.map((task) => {
-            const badge = (
-              <Badge
-                variant='outline'
-                className={`shrink-0 font-mono text-xs ${task.badge.badgeClass}`}
-                title={task.badge.title}
-              >
-                {task.badge.label}
-              </Badge>
-            )
-            const label = (
-              <span className='font-mono text-xs'>
-                <span className='text-card-foreground group-hover:text-accent'>{task.title}</span>
-                {task.iterationSlug && <span className='text-muted-foreground/70'> · {task.iterationSlug}</span>}
-              </span>
-            )
-            const key = `${task.iterationSlug}-${task.taskId}`
-            return task.issueUrl ? (
-              <a
-                key={key}
-                href={task.issueUrl}
-                target='_blank'
-                rel='noreferrer'
-                className='group flex items-center gap-2'
-              >
-                {badge}
-                {label}
-              </a>
-            ) : (
-              <div key={key} className='group flex items-center gap-2'>
-                {badge}
-                {label}
+            const key = `${task.iterationSlug ?? 'backlog'}-${task.taskId}`
+            return (
+              <div key={key} className='flex flex-wrap items-center gap-2 font-mono text-xs'>
+                {task.issue != null &&
+                  (task.issueUrl ? (
+                    <a
+                      href={task.issueUrl}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='shrink-0 text-muted-foreground hover:text-accent hover:underline'
+                    >
+                      #{task.issue}
+                    </a>
+                  ) : (
+                    <span className='shrink-0 text-muted-foreground'>#{task.issue}</span>
+                  ))}
+                <Badge
+                  variant='outline'
+                  className={`shrink-0 font-mono text-xs ${task.badge.badgeClass}`}
+                  title={task.badge.title}
+                >
+                  {task.badge.label}
+                </Badge>
+                <span className='text-card-foreground'>{task.title}</span>
+                {task.iterationSlug && (
+                  <span className='text-muted-foreground/70'>
+                    ·{' '}
+                    {task.iterationHref ? (
+                      <NextLink
+                        variant='unstyled'
+                        href={task.iterationHref}
+                        className='hover:text-accent hover:underline'
+                      >
+                        {task.iterationSlug}
+                      </NextLink>
+                    ) : (
+                      task.iterationSlug
+                    )}
+                  </span>
+                )}
               </div>
             )
           })}

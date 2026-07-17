@@ -43,6 +43,8 @@ export type TaskBadge = { label: string; badgeClass: string; title?: string }
 export type DashboardTask = {
   /** Iteration slug, or `null` for a backlog Issue (no iteration by definition). */
   iterationSlug: string | null
+  /** Deep link to the iteration's board, or `null` (backlog / no project). */
+  iterationHref: string | null
   taskId: string
   title: string
   issue: number | null
@@ -72,6 +74,7 @@ export function backlogToTasks(issues: BacklogIssue[]): DashboardTask[] {
   const v = statusVisual('backlog')
   return issues.map((issue) => ({
     iterationSlug: null,
+    iterationHref: null,
     taskId: `backlog-${issue.number}`,
     title: issue.title,
     issue: issue.number,
@@ -96,8 +99,10 @@ export async function loadDashboardTasks(): Promise<DashboardTask[]> {
         snapshot.repo && task.issue != null
           ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${task.issue}`
           : null
+      const iterationHref = task.projects[0] ? `/studio/projects/${task.projects[0]}/iterations/${fileSlug}` : null
       const base = {
         iterationSlug: fileSlug,
+        iterationHref,
         taskId: String(task.id),
         title: task.title,
         issue: task.issue,
