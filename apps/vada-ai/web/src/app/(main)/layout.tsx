@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { ToastProvider } from '@atta/ui'
-import { Button } from '@atta/ui'
+import { ToastProvider } from '@atta/ui/components'
+import { Button } from '@atta/ui/components'
 import { auth } from '@atta/auth/hooks'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Logo } from '@atta/ui/shared'
