@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@atta/ui'
+import { Button } from '@atta/ui/components'
 import type { ReactNode } from 'react'
 
 interface ScrollButtonProps {

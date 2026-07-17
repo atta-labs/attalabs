@@ -1,4 +1,4 @@
-import { Card, CardContent } from '@atta/ui'
+import { Card, CardContent } from '@atta/ui/components'
 import { Flex, Text } from '@atta/ui/shared'
 import Link from 'next/link'
 

@@ -1,4 +1,4 @@
-import { Card, CardContent } from '@atta/ui'
+import { Card, CardContent } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'

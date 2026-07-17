@@ -1,4 +1,4 @@
-import { CodeBlock } from '@atta/ui'
+import { CodeBlock } from '@atta/ui/components'
 
 // `my-0` overrides `CodeBlock`'s own `my-4`: that margin is right for the docs
 // markdown flow the component's treatment comes from, but here the entry's

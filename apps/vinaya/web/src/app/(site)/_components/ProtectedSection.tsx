@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import { Button, Card, CardContent } from '@atta/ui'
+import { Button, Card, CardContent } from '@atta/ui/components'
 import { Flex, Heading, Text } from '@atta/ui/shared'
 import Link from 'next/link'
 import { ProtectedCanvasPortrait } from './canvas/ProtectedCanvasPortrait'
