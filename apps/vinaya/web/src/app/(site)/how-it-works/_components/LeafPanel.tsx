@@ -137,8 +137,8 @@ export function LeafPanel({
           {readMoreHref && (
             <NextLink
               href={readMoreHref}
-              variant='unstyled'
-              className='inline-flex w-fit items-center gap-1 text-card-foreground text-sm underline-offset-4 hover:text-accent hover:underline'
+              variant='link'
+              className='inline-flex w-fit items-center gap-1 text-card-foreground text-sm hover:text-accent'
             >
               Read more
               <ArrowUpRight className='h-3.5 w-3.5' />
@@ -149,8 +149,8 @@ export function LeafPanel({
               href={viewSourceHref}
               target='_blank'
               rel='noreferrer'
-              variant='unstyled'
-              className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm underline-offset-4 hover:text-accent hover:underline'
+              variant='link'
+              className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm hover:text-accent'
             >
               View source
               <ArrowUpRight className='h-3.5 w-3.5' />
