@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { Separator } from '@atta/ui/components'
+import { NextLink } from '@atta/ui/lib/next-link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
@@ -50,10 +51,12 @@ const markdownComponents = {
   pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
     <pre className='my-4 overflow-x-auto rounded-md bg-muted p-4 font-mono text-sm text-foreground' {...props} />
   ),
-  a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a className='text-accent underline-offset-4 hover:underline' {...props} />
+  a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <NextLink href={href ?? '#'} variant='unstyled' className='text-accent underline-offset-4 hover:underline'>
+      {children}
+    </NextLink>
   ),
-  hr: (props: React.HTMLAttributes<HTMLHRElement>) => <hr className='my-8 border-border opacity-50' {...props} />,
+  hr: () => <Separator className='my-8 opacity-50' />,
   table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
     <div className='my-6 overflow-x-auto'>
       <table className='w-full border-collapse text-sm' {...props} />
@@ -82,7 +85,7 @@ export function DocPage({ doc, body, next, prev, basePath = '/docs' }: DocPagePr
           {doc.description && <p className='text-lg leading-relaxed text-muted-foreground'>{doc.description}</p>}
         </header>
 
-        <hr className='border-border opacity-60' />
+        <Separator className='opacity-60' />
 
         <div className='text-base doc-page-content'>
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
@@ -92,27 +95,29 @@ export function DocPage({ doc, body, next, prev, basePath = '/docs' }: DocPagePr
 
         {(prev || next) && (
           <>
-            <hr className='border-border opacity-60' />
+            <Separator className='opacity-60' />
             <footer className='flex items-center justify-between gap-4 pt-2'>
               {prev ? (
-                <Link
+                <NextLink
                   href={`${basePath}/${prev.slug}`}
-                  className='group flex items-center gap-2 font-serif text-base text-foreground transition-colors hover:text-accent'
+                  variant='nav'
+                  className='group flex items-center gap-2 font-serif text-base text-foreground'
                 >
                   <ArrowLeft className='size-4 transition-transform group-hover:-translate-x-0.5' />
                   <span>{prev.title}</span>
-                </Link>
+                </NextLink>
               ) : (
                 <span />
               )}
               {next ? (
-                <Link
+                <NextLink
                   href={`${basePath}/${next.slug}`}
-                  className='group flex items-center gap-2 font-serif text-base text-foreground transition-colors hover:text-accent'
+                  variant='nav'
+                  className='group flex items-center gap-2 font-serif text-base text-foreground'
                 >
                   <span>{next.title}</span>
                   <ArrowRight className='size-4 transition-transform group-hover:translate-x-0.5' />
-                </Link>
+                </NextLink>
               ) : (
                 <span />
               )}
