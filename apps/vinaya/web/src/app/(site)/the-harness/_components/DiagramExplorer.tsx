@@ -101,6 +101,11 @@ const GROUP_EXPLANATION = Object.fromEntries(
  * "reviewer-archivist" must not become "Reviewer-Archivist". */
 const capitalizeFirst = (s: string): string => (s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
+/** The one body-copy style, shared by the intro, every ring description, and
+ * every list item — same font, colour and line-height everywhere, so no two
+ * paragraphs in this sidebar can drift apart. Paired with `size='sm'`. */
+const BODY_TEXT = 'font-sans text-card-foreground leading-relaxed'
+
 /**
  * Client-side orchestrator — receives already-derived `groups` as a plain
  * prop. It must never import `deriveGroups` or any other `@atta/aeg-core`
@@ -222,7 +227,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
               <Heading level={2} className='font-serif text-card-foreground text-xl'>
                 {drilledGroup ? drilledGroup.label : HARNESS_TITLE}
               </Heading>
-              <Text size='sm' className='font-sans text-card-foreground leading-relaxed'>
+              <Text size='sm' className={BODY_TEXT}>
                 {drilledGroup ? GROUP_EXPLANATION[drilledGroup.key] : HARNESS_INTRO}
               </Text>
               {/* Overview only: the ring legend, outer → center. Once a ring
@@ -235,7 +240,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
                       <Text as='span' size='sm' className='font-sans font-bold text-card-foreground'>
                         {entry.name}
                       </Text>
-                      <Text size='sm' className='font-sans text-muted-foreground leading-snug'>
+                      <Text size='sm' className={BODY_TEXT}>
                         {entry.description}
                       </Text>
                     </div>
@@ -253,13 +258,15 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
                   <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-[0.1em]'>
                     In this ring — {drilledGroup.children.length}
                   </Text>
-                  <div className='flex flex-col gap-1.5'>
-                    {drilledGroup.children.map((node, index) => (
-                      <Text key={node.id} size='sm' className='font-sans text-card-foreground leading-snug'>
-                        {index + 1}. {capitalizeFirst(humanLabel(node.label))}
-                      </Text>
+                  <ol className='flex list-decimal flex-col gap-2.5 pl-5'>
+                    {drilledGroup.children.map((node) => (
+                      <li key={node.id} className='pl-1 marker:text-muted-foreground'>
+                        <Text as='span' size='sm' className={BODY_TEXT}>
+                          {capitalizeFirst(humanLabel(node.label))}
+                        </Text>
+                      </li>
                     ))}
-                  </div>
+                  </ol>
                 </div>
               )}
             </div>
