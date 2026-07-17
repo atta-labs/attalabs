@@ -192,9 +192,6 @@ export function BacklogTable({
             Clear
           </Button>
         )}
-        <span className='ml-auto font-mono text-xs text-muted-foreground'>
-          {filtered.length} of {issues.length}
-        </span>
       </div>
 
       <div className='rounded-lg border border-border bg-card'>
