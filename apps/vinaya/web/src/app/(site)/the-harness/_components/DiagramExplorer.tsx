@@ -25,23 +25,75 @@ type Props = {
   viewSourceHrefs: Record<string, string>
 }
 
-/** Prose, not markdown — this string renders through `Text`, so backticks
- * would show up as literal backticks. The filenames read fine unquoted. */
-const OVERVIEW_TEXT =
-  'Every node here is derived at build time from this monorepo’s own doctrine — enforcement.md, roles/*.md and contracts/*.md — nothing on this page is hand-typed.'
+/** Overview framing, shown in the sidebar before any ring is drilled — copy,
+ * not derived data, same status as the ring/seam labels themselves
+ * (`groupings.ts`'s `STATIC_GROUP_LABELS`). Prose, not markdown: it renders
+ * through `Text`, so backticks would show up literally. */
+const HARNESS_TITLE = 'The Vinaya harness — the rings that keep your code safe'
+const HARNESS_INTRO =
+  'Vinaya is a series of deterministic checks and workflows that hold agentic and human development to the same discipline — an AI agent and a person answer to the identical rules before anything merges. Each ring below is read at build time from this repo’s own doctrine, not hand-written for this page.'
 
-/** One-line editorial framing per ring, shown in the sidebar once that ring
- * is drilled — copy, same status as the ring/seam labels themselves
- * (`groupings.ts`'s `STATIC_GROUP_LABELS`), not derived data. */
-const GROUP_EXPLANATION: Record<GroupKey, string> = {
-  actors: 'The roles that operate this mechanism — some are agents, some are human, some can be either.',
-  contracts:
-    'Every hand-off between two roles is a written contract, not a hallway conversation — each with a named producer and consumer.',
-  ring0: 'Runs on the agent’s own machine, before anything leaves it. A violation here never becomes a commit.',
-  actions: 'The exact acts that cross from an agent’s local machine into GitHub — every one of them gated.',
-  ring1: 'Runs in CI, on every pull request — the same checks Ring 0 ran, but nothing gets to skip them.',
-  ring2: 'Runs continuously after merge, across the whole forge — drift gets surfaced, never silently inherited.'
-}
+/**
+ * The rings, outer → center — the sidebar legend on the overview, and the
+ * single-ring framing shown once a ring is drilled (`GROUP_EXPLANATION`,
+ * derived below from the entries that map to a drillable `GroupKey`). Two
+ * entries — `GitHub` (the static substrate divider) and `main — Protected`
+ * (the centre hub) — carry no `GroupKey`: they are framing chrome, not
+ * drillable groups, so they appear in the legend only.
+ */
+type LegendEntry = { name: string; description: string; groupKey?: GroupKey }
+const HARNESS_LEGEND: LegendEntry[] = [
+  {
+    name: 'The Actors',
+    groupKey: 'actors',
+    description:
+      'Every human and AI agent that touches the repo — Developer, Reviewer, Planner, Archivist. One rulebook binds all of them.'
+  },
+  {
+    name: 'What Actors Do',
+    groupKey: 'contracts',
+    description:
+      'The contracts: the defined handoffs between actors — brief to developer, developer to reviewer, reviewer to archivist. Each handoff carries a fixed obligation.'
+  },
+  {
+    name: 'Hooks',
+    groupKey: 'ring0',
+    description:
+      'Checks on the agent’s own machine. An invalid commit or push is refused before it ever leaves the session; the agent reads the error and fixes it in place. Self-correcting — nobody downstream pays.'
+  },
+  {
+    name: 'The Actions',
+    groupKey: 'actions',
+    description:
+      'The canonical acts of work — write the code, commit, open the PR, produce the verdict, post provenance. Ten in all; some cross into GitHub, some stay local.'
+  },
+  {
+    name: 'GitHub',
+    description:
+      'The forge where actions land — issues, branches, pull requests. The shared substrate everything writes to.'
+  },
+  {
+    name: 'Branch Rules',
+    groupKey: 'ring1',
+    description:
+      'CI on every pull request. The same checks re-run on the forge; a violation turns CI red and the merge gate makes red unmergeable by agents. Catches writers the local hooks can’t reach — the web UI, humans, other tools.'
+  },
+  {
+    name: 'Audits',
+    groupKey: 'ring2',
+    description:
+      'Continuous sweeps across the whole forge, after merge. Drift surfaces as findings no matter who wrote it — even history that predates the gates. Scheduled clean-up, never a mid-work surprise.'
+  },
+  {
+    name: 'main — Protected',
+    description:
+      'The branch everything guards. It only ever advances through the rings above — reviewed, checked, green. A push that slips past by force doesn’t stay invisible — the Audits ring catches it after the fact.'
+  }
+]
+
+const GROUP_EXPLANATION = Object.fromEntries(
+  HARNESS_LEGEND.filter((entry) => entry.groupKey).map((entry) => [entry.groupKey, entry.description])
+) as Record<GroupKey, string>
 
 /**
  * Client-side orchestrator — receives already-derived `groups` as a plain
@@ -162,11 +214,28 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
                   title/description, a different element). Switches to the
                   drilled ring's own name once drilled, same as before. */}
               <Heading level={2} className='font-serif text-card-foreground text-xl'>
-                {drilledGroup ? drilledGroup.label : 'Agents obey checkers, not documents.'}
+                {drilledGroup ? drilledGroup.label : HARNESS_TITLE}
               </Heading>
               <Text size='sm' className='font-sans text-card-foreground leading-relaxed'>
-                {drilledGroup ? GROUP_EXPLANATION[drilledGroup.key] : OVERVIEW_TEXT}
+                {drilledGroup ? GROUP_EXPLANATION[drilledGroup.key] : HARNESS_INTRO}
               </Text>
+              {/* Overview only: the ring legend, outer → center. Once a ring
+                  is drilled the heading/intro above switch to that ring's own
+                  name and framing, so the full legend gives way to the one. */}
+              {!drilledGroup && (
+                <div className='mt-1 flex flex-col gap-3.5'>
+                  {HARNESS_LEGEND.map((entry) => (
+                    <div key={entry.name} className='flex flex-col gap-1'>
+                      <Text as='span' className='font-mono text-card-foreground text-xs uppercase tracking-[0.1em]'>
+                        {entry.name}
+                      </Text>
+                      <Text size='sm' className='font-sans text-muted-foreground leading-snug'>
+                        {entry.description}
+                      </Text>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
