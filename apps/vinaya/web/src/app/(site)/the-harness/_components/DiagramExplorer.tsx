@@ -307,7 +307,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
               `font-mono text-muted-foreground` "The actors" title) — same
               typeface and colour, so the page title and the ring read as one
               type system, not two. */}
-          <Heading level={1} className='shrink-0 text-center font-mono text-3xl text-muted-foreground'>
+          <Heading level={1} className='shrink-0 text-center font-mono text-2xl text-muted-foreground'>
             {HARNESS_NAME}
           </Heading>
           {/* `items-start` + the SVG's own `xMidYMin` alignment pin the ring to
