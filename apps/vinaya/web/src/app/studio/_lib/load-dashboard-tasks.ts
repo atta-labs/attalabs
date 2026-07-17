@@ -1,15 +1,18 @@
 /**
- * Aggregates the dashboard's "Tasks (ready + in-flight)" card across every
- * active iteration (task 11, #571). It reads the SAME derivation the iteration
- * board reads — `deriveIteration` (via `loadIterationSnapshot`) for the
- * `DerivedStatus`, and `checkDispatchReadiness` (via `loadDispatchReadiness`)
- * for the `todo` Ready/Blocked sub-state — and never a second status mapping
- * of its own (`status-display.ts` is the one source of the label vocabulary;
- * this module only *selects* which derived tasks to surface).
+ * Aggregates the dashboard's Tasks card across every active iteration (task 11,
+ * #571) — everything Ready to pick up plus everything actively moving. It reads
+ * the SAME derivation the iteration board reads — `deriveIteration` (via
+ * `loadIterationSnapshot`) for the `DerivedStatus`, and `checkDispatchReadiness`
+ * (via `loadDispatchReadiness`) for the `todo` Ready/Blocked sub-state — and
+ * never a second status mapping of its own (`status-display.ts` is the one
+ * source of the label vocabulary; this module only *selects* which derived
+ * tasks to surface).
  *
- * "Ready" = a `todo` task whose dispatch gate passes right now. "In-flight" =
- * the `in-flight` DerivedStatus (branch open, no PR). Everything else is out of
- * scope for this card — it is the "what can I pick up / what is moving" window.
+ * "Ready" = a `todo` task whose dispatch gate passes right now. "Active" = the
+ * three moving statuses `in-flight` (branch, no PR), `in-review` (PR open), and
+ * `changes-requested` (reviewer asked for changes). `todo`-but-not-ready,
+ * `merged`, and the terminal anomaly states are out of scope — this is the
+ * "what can I pick up / what is moving" window.
  *
  * Forge honesty: `loadActiveIterations` returns `[]` when the forge is
  * unreachable, so this returns `[]` too — the dashboard reads the forge status
@@ -25,6 +28,8 @@ import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
 import { loadActiveIterations } from '@/lib/repo-state'
 
+type ActiveStatus = 'in-flight' | 'in-review' | 'changes-requested'
+
 export type DashboardTask = {
   iterationSlug: string
   taskId: string
@@ -32,16 +37,26 @@ export type DashboardTask = {
   issue: number | null
   /** Link to the task's GitHub Issue, or `null` when no issue/repo resolves. */
   issueUrl: string | null
-  status: Extract<DerivedStatus, 'todo' | 'in-flight'>
+  status: Extract<DerivedStatus, 'todo' | ActiveStatus>
   /** Present only for a Ready (`todo`) task — its passing gate verdict. */
   readiness: DispatchResult | null
 }
 
-// In-flight (moving) before Ready (pickable) — the card walks from work in
-// motion to work available.
-const STATUS_RANK: Record<DashboardTask['status'], number> = { 'in-flight': 0, todo: 1 }
+// Moving work before pickable work — the card walks from in motion to available.
+const STATUS_RANK: Record<DashboardTask['status'], number> = {
+  'in-review': 0,
+  'changes-requested': 1,
+  'in-flight': 2,
+  todo: 3
+}
 
-export async function loadReadyAndInFlightTasks(): Promise<DashboardTask[]> {
+const ACTIVE_STATUSES: readonly ActiveStatus[] = ['in-flight', 'in-review', 'changes-requested']
+
+function isActive(status: DerivedStatus | undefined): status is ActiveStatus {
+  return status !== undefined && (ACTIVE_STATUSES as readonly string[]).includes(status)
+}
+
+export async function loadReadyAndActiveTasks(): Promise<DashboardTask[]> {
   const active = await loadActiveIterations()
   const out: DashboardTask[] = []
 
@@ -64,7 +79,7 @@ export async function loadReadyAndInFlightTasks(): Promise<DashboardTask[]> {
         issueUrl
       }
 
-      if (status === 'in-flight') {
+      if (isActive(status)) {
         out.push({ ...base, status, readiness: null })
       } else if (status === 'todo') {
         const readiness = readinessById.get(String(task.id))

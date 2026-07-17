@@ -22,7 +22,7 @@ import { fetchOpenIssuesWithoutIterationLabel, type BacklogIssue } from '@/lib/f
 import { ForgeBanners, ForgeUnavailableBanner } from '@/app/studio/_components/ForgeUnavailableBanner'
 import { DashboardCard } from '@/app/studio/_components/DashboardCard'
 import { LabelBadge, rankedLabels } from '@/app/studio/_components/LabelBadge'
-import { loadReadyAndInFlightTasks, type DashboardTask } from '@/app/studio/_lib/load-dashboard-tasks'
+import { loadReadyAndActiveTasks, type DashboardTask } from '@/app/studio/_lib/load-dashboard-tasks'
 import { statusVisual, todoDispatchVisual } from '@/app/studio/projects/[name]/iterations/[slug]/_lib/status-display'
 
 // Forge reads derive live Issue/PR state from GitHub — never serve from cache.
@@ -49,10 +49,12 @@ function iterationHref(it: IterationSummary): string | null {
 }
 
 function taskVisual(task: DashboardTask): { label: string; badgeClass: string; title?: string } {
-  if (task.status === 'in-flight') return statusVisual('in-flight')
   // A `todo` task always carries a passing readiness (the loader only surfaces
-  // Ready ones); the fallback is a pure type guard that never runs.
-  return task.readiness ? todoDispatchVisual(task.readiness) : statusVisual('todo')
+  // Ready ones); the `statusVisual('todo')` fallback is a pure type guard. Every
+  // active status (in-flight / in-review / changes-requested) reads its own
+  // badge straight from the shared status vocabulary.
+  if (task.status === 'todo') return task.readiness ? todoDispatchVisual(task.readiness) : statusVisual('todo')
+  return statusVisual(task.status)
 }
 
 export default async function HomePage() {
@@ -75,7 +77,7 @@ export default async function HomePage() {
     readRegistry(),
     listIterations(),
     loadBacklog(primedToken),
-    loadReadyAndInFlightTasks()
+    loadReadyAndActiveTasks()
   ])
 
   const active = iterations.active
@@ -86,8 +88,8 @@ export default async function HomePage() {
       <header className='space-y-2'>
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>Vinaya Studio</h1>
         <p className='font-sans text-base text-muted-foreground'>
-          Local governance for Vinaya artifacts — projects, iterations, backlog, and the tasks ready to pick up right
-          now.
+          Local governance for Vinaya artifacts — projects, iterations, backlog, and the tasks ready to pick up or
+          already moving.
         </p>
       </header>
 
