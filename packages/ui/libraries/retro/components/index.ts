@@ -4,6 +4,10 @@ export type * from '../../../types'
 // Display
 export { Badge } from '../installed/badge'
 
+// Display — Code falls back to basic (retroui has no equivalent; basic's is
+// hand-written in its wrapper layer, since shadcn ships no code component)
+export { Code, CodeBlock } from '../../basic/components/display/code'
+
 // Interactive — Collapsible
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
 

@@ -8,6 +8,7 @@ export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './content/card'
 // Display
 export { Badge } from './display/badge'
+export { Code, CodeBlock } from './display/code'
 export { Toast, ToastProvider, useToastContext } from './display/toast'
 // Form
 export { Input, InputBlock } from './form/input'
