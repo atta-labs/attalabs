@@ -36,8 +36,8 @@ export const metadata: Metadata = {
 // four cards. The header count always shows the true total behind the card.
 const PREVIEW = 3
 
-async function loadBacklog(): Promise<{ issues: BacklogIssue[]; forge: ForgeStatus }> {
-  const [repo, token] = await Promise.all([resolveRepo(), resolveGithubToken()])
+async function loadBacklog(token: string | null): Promise<{ issues: BacklogIssue[]; forge: ForgeStatus }> {
+  const repo = await resolveRepo()
   if (!repo || !token) return { issues: [], forge: { kind: 'unreachable' } }
   return fetchOpenIssuesWithoutIterationLabel(repo.owner, repo.repo, token)
 }
@@ -47,10 +47,25 @@ export default async function HomePage() {
     redirect('/the-studio')
   }
 
+  // Resolve the forge token ONCE and prime it for this process before the
+  // loaders below fan out. Without this, each concurrent loader — the
+  // Iterations-card progress reads AND the Tasks-card readiness fan-out, a dozen
+  // or more forge calls across every active iteration — independently spawns
+  // `gh auth token`. That burst of concurrent 5s-timeout subprocesses starves
+  // the sibling backlog query's own token resolution past its timeout, so a
+  // reachable backlog renders as a false "unavailable" — the exact lie D-087
+  // forbids (observed live: backlog card empty while `/studio/backlog` loads
+  // fine). `resolveGithubToken` reads `process.env.GITHUB_TOKEN` on every call,
+  // so priming it collapses every downstream resolution (app + package) to this
+  // one. Local-only Studio (D-101): one machine, one user, one token — priming
+  // the env is safe, and we never overwrite an explicitly-set token.
+  const primedToken = await resolveGithubToken()
+  if (primedToken && !process.env.GITHUB_TOKEN) process.env.GITHUB_TOKEN = primedToken
+
   const [registry, iterations, backlog, tasks] = await Promise.all([
     readRegistry(),
     listIterations(),
-    loadBacklog(),
+    loadBacklog(primedToken),
     loadReadyAndInFlightTasks()
   ])
 
