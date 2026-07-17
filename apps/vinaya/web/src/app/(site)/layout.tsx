@@ -8,7 +8,7 @@ import { ProductSwitch } from '@/app/_components/ProductSwitch'
 const links = [
   { label: 'Home', href: '/', exact: true },
   { label: 'Known Limits', href: '/known-limits' },
-  { label: 'How it works', href: '/how-it-works' },
+  { label: 'The Harness', href: '/the-harness' },
   { label: 'Studio', href: '/the-studio' },
   { label: 'Install', href: '/install' },
   { label: 'Docs', href: '/docs' }
