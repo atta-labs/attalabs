@@ -2,8 +2,10 @@ import 'server-only'
 import { existsSync } from 'node:fs'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import { buildDocNav, deriveTitle, isSurfacedDoc, parseDocFrontmatter } from '@atta/aeg-core/docs'
+import { deriveDiagramModel } from '@atta/aeg-core'
+import { buildDocNav, deriveTitle, isSurfacedDoc, modelBackedDocPaths, parseDocFrontmatter } from '@atta/aeg-core/docs'
 import type { Doc, DocNav } from '@atta/aeg-core/docs'
+import { createFileDoctrineSource } from '@atta/vinaya-sources'
 import { nestDocChildren } from './nest-doc-children'
 
 const SECTION_ORDER = ['Overview', 'Contracts', 'Roles', 'Diagrams', 'Skills']
@@ -74,6 +76,12 @@ export async function loadAegDocs(): Promise<LoadedDocs> {
   const root = findAegRoot()
   const files = await walkMarkdown(root)
 
+  // The surfacing rule is model-backed (D-079, D-087): a doc publishes iff a
+  // `DiagramModel` node points at it. Derive the same model `/how-it-works`
+  // renders, then let its node→doc mapping be the allowlist.
+  const doctrine = await createFileDoctrineSource({ root }).getDoctrine()
+  const surfacedPaths = modelBackedDocPaths(deriveDiagramModel(doctrine, null, null))
+
   const docs: Doc[] = []
   const bodyBySlug = new Map<string, string>()
 
@@ -81,7 +89,7 @@ export async function loadAegDocs(): Promise<LoadedDocs> {
     const raw = await fs.readFile(filePath, 'utf8')
     const parsed = parseDocFrontmatter(raw)
     const slug = slugFromFile(filePath, root)
-    if (!isSurfacedDoc(`${slug}.md`, parsed.frontmatter)) continue
+    if (!isSurfacedDoc(`${slug}.md`, parsed.frontmatter, surfacedPaths)) continue
     const fallback = fallbackTitleFromSlug(slug)
     const title = deriveTitle(parsed, fallback)
     const section = parsed.frontmatter.section ?? defaultSectionFor(slug)
