@@ -18,8 +18,14 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   const { branding } = await getProductCms('vinaya')
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
 
+  // App-shell height: the shell is a full-viewport flex column — TopBar keeps
+  // its own intrinsic height, the content region takes exactly the rest. Pages
+  // that want to fill the viewport (the diagram, docs) use `h-full` against
+  // this region; long pages (Home) scroll inside it. No page hardcodes the
+  // TopBar's pixel height (the old `calc(100dvh-56px)`), so the shell can never
+  // drift a few pixels into a stray window scroll.
   return (
-    <>
+    <div className='flex h-dvh flex-col'>
       <TopBar
         logo={
           <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
@@ -30,7 +36,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         extraActions={<ProductSwitch current='portal' />}
         withAuth={false}
       />
-      {children}
-    </>
+      <div className='min-h-0 flex-1 overflow-y-auto'>{children}</div>
+    </div>
   )
 }
