@@ -52,18 +52,19 @@ export const COMMANDS: readonly Command[] = [
   },
   {
     name: 'check',
-    description: 'Run one named check, or every check, and report pass/fail',
+    description: 'Run one check, or every registered check',
     flags: [
-      { flag: '--json', description: 'Enveloped JSON output' },
-      { flag: '--diff-only', description: 'Scope checks to the current change surface (ring-1 default)' },
-      { flag: '--parallel', description: 'Run checks concurrently, concurrency-capped' }
+      { flag: '--all', description: 'Run every registered check instead of one named check' },
+      { flag: '--json', description: 'Enveloped JSON output (schema: 1)' },
+      { flag: '--diff-only', description: 'Scope diff-declared checks to changed files' },
+      { flag: '--parallel[=n]', description: 'Concurrency cap (default: cpu-derived)' }
     ],
-    status: 'planned'
+    status: 'shipped'
   },
   {
     name: 'new check',
-    description: 'Scaffold a new custom check from a worked template',
-    status: 'planned'
+    description: 'Scaffold a custom check into ./scripts/vinaya-checks/',
+    status: 'shipped'
   },
   {
     name: 'pr create',
@@ -112,7 +113,7 @@ export const COMMANDS: readonly Command[] = [
   },
   {
     name: 'studio',
-    description: 'Launch Vinaya Studio locally',
-    status: 'planned'
+    description: 'Launch local Vinaya Studio against this repo (requires a Vinaya workspace checkout)',
+    status: 'shipped'
   }
 ]
