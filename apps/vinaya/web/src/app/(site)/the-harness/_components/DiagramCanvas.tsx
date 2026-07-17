@@ -197,7 +197,13 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
 
   return (
     <svg
-      viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
+      // Crop the square viewBox's built-in whitespace — the overview's
+      // outermost band tops out at r≈707 in a 770-centred 1540 box, leaving a
+      // ~63px dead margin all round that scaled up to a visible gap above the
+      // ring. Inset 36 removes most of it while still clearing the drilled
+      // ring (DRILL_R_OUT 730 → outer edge at 40/1500, 4px inside this window).
+      viewBox={`36 36 ${VIEW_SIZE - 72} ${VIEW_SIZE - 72}`}
+      preserveAspectRatio='xMidYMin meet'
       className='h-full max-h-full w-full max-w-full'
       role='img'
       aria-label='Vinaya enforcement mechanism, rendered from the current doctrine'

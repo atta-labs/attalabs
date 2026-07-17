@@ -7,12 +7,13 @@ export default async function DocsLayout({ children }: { children: ReactNode }) 
   const { nav } = await loadAegDocs()
 
   return (
-    // Under `studio/`, this height came for free from StudioShell's own
-    // h-[calc(100dvh-3.5rem)] wrapper. The `(site)` group has no such
-    // ancestor — its TopBar sits directly above `{children}` — so this
-    // layout now supplies the same 56px-TopBar-height calc itself, matching
-    // how-it-works/page.tsx's identical wrapper.
-    <Flex className='h-[calc(100dvh-56px)] w-full overflow-hidden'>
+    // Fills the (site) app-shell's scroll region exactly. `h-full` resolves
+    // against `(site)/layout.tsx`'s `flex-1` content area (a definite height =
+    // viewport − TopBar), so this no longer hardcodes the TopBar's pixel height
+    // — and no longer nests a second `calc(100dvh-56px)` box inside the shell's
+    // own `overflow-y-auto` region. `min-h-0` lets it shrink instead of forcing
+    // that outer region to scroll.
+    <Flex className='h-full min-h-0 w-full overflow-hidden'>
       <DocSidebarHost nav={nav} />
       <main className='flex-1 overflow-y-auto px-12 pb-10 bg-background'>
         <div className='mx-auto max-w-4xl'>{children}</div>

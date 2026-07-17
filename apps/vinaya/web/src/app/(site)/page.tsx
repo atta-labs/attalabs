@@ -80,7 +80,7 @@ export default async function HomePage() {
         tagline='Discipline for the AI era'
         links={[
           { label: 'Known Limits', href: '/known-limits' },
-          { label: 'How it works', href: '/how-it-works' }
+          { label: 'The Harness', href: '/the-harness' }
         ]}
       />
     </>

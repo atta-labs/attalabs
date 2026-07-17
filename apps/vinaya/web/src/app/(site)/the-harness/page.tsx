@@ -6,7 +6,7 @@ import { loadDiagramModel } from './_lib/load-diagram'
 import { readMoreTarget } from './_lib/read-more'
 
 export const metadata = {
-  title: 'How it works — Vinaya',
+  title: 'The Harness — Vinaya',
   description:
     'The enforcement mechanism, rendered at build time from this monorepo’s own doctrine files — nothing hand-transcribed.'
 }
@@ -56,7 +56,7 @@ export default async function HowItWorksPage() {
     // `DiagramExplorer` stacks its sidebar under the ring, which no longer
     // fits a fixed viewport-height box — so the wrapper reverts to natural
     // height and the page scrolls instead of clipping.
-    <div className='w-full lg:h-[calc(100dvh-56px)] lg:min-h-[560px]'>
+    <div className='w-full lg:h-full lg:overflow-hidden'>
       <DiagramExplorer
         groups={groups}
         findings={model.findings}
