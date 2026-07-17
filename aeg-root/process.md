@@ -9,8 +9,6 @@ It is the canonical "how do we actually work?" document. Every other PM doc (`co
 
 If you are starting a new session and need to understand the workflow, read this first. Then `coordination.md` for session protocol, then the role doc that applies to you, then any project-specific specs.
 
-For the visual schema, see `diagrams/process-flow.md` (being brought in line with the forge-derived-status model; where a diagram and this prose disagree, this prose is canonical).
-
 ---
 
 ## Where tasks come from: the iteration
