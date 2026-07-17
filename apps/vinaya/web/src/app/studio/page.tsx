@@ -1,7 +1,7 @@
 /**
- * Studio home (task 11, #571) — a dashboard: three preview cards (Projects,
- * Iterations, Backlog) on the first row, then a full-width Tasks (ready +
- * in-flight) card on its own row listing every such task.
+ * Studio home (task 11, #571) — a dashboard: two preview cards (Projects,
+ * Iterations) on the first row, then a full-width Backlog card and a full-width
+ * Tasks (ready + in-flight) card, each on its own row listing every entry.
  *
  * The `isVercelDeploy()` redirect stays (D-101: Studio is local-only for v1.0;
  * production/preview send the visitor to the `/the-studio` Portal page). Every
@@ -31,8 +31,8 @@ export const metadata: Metadata = {
   title: 'Vinaya Studio'
 }
 
-// Preview rows shown per card on the three preview cards — a window, not the
-// page. The header count shows the true total behind the card.
+// Preview rows shown on the two preview cards (Projects, Iterations) — a
+// window, not the page. The header count shows the true total behind the card.
 const PREVIEW = 4
 
 async function loadBacklog(token: string | null): Promise<{ issues: BacklogIssue[]; forge: ForgeStatus }> {
@@ -95,7 +95,7 @@ export default async function HomePage() {
         <ForgeUnavailableBanner scope='both' status={backlog.forge} detail='The backlog cannot be listed right now.' />
       )}
 
-      <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+      <div className='grid gap-4 sm:grid-cols-2'>
         {/* Projects — local registry, never forge-backed, always available. */}
         <DashboardCard title='Projects' count={registry.length} href='/studio/projects' viewAllLabel='All projects'>
           {registry.length === 0 ? (
@@ -145,76 +145,75 @@ export default async function HomePage() {
             })
           )}
         </DashboardCard>
-
-        {/* Backlog — open Issues with no iteration label; row links to GitHub. */}
-        <DashboardCard title='Backlog' count={backlog.issues.length} href='/studio/backlog' viewAllLabel='Full backlog'>
-          {backlog.issues.length === 0 ? (
-            backlog.forge.kind === 'ok' ? (
-              <p className='font-sans text-xs text-muted-foreground/70'>Everything is tracked under an iteration.</p>
-            ) : null
-          ) : (
-            backlog.issues.slice(0, PREVIEW).map((issue) => (
-              <a
-                key={issue.number}
-                href={issue.url}
-                target='_blank'
-                rel='noreferrer'
-                className='group flex items-baseline gap-2 truncate font-mono text-xs'
-              >
-                <span className='shrink-0 text-muted-foreground/70'>#{issue.number}</span>
-                <span className='truncate font-sans text-card-foreground group-hover:text-accent'>{issue.title}</span>
-              </a>
-            ))
-          )}
-        </DashboardCard>
       </div>
 
-      {/* Tasks (ready + in-flight) — its own full-width row; ALL such tasks,
-          each linking to its GitHub Issue. */}
+      {/* Backlog — its own full-width row; every open no-iteration Issue, each
+          linking to its GitHub Issue. */}
+      <DashboardCard title='Backlog' count={backlog.issues.length} href='/studio/backlog' viewAllLabel='Full backlog'>
+        {backlog.issues.length === 0 ? (
+          backlog.forge.kind === 'ok' ? (
+            <p className='font-sans text-xs text-muted-foreground/70'>Everything is tracked under an iteration.</p>
+          ) : null
+        ) : (
+          backlog.issues.map((issue) => (
+            <a
+              key={issue.number}
+              href={issue.url}
+              target='_blank'
+              rel='noreferrer'
+              className='group flex items-baseline gap-3 font-mono text-xs'
+            >
+              <span className='shrink-0 text-muted-foreground/70'>#{issue.number}</span>
+              <span className='font-sans text-card-foreground group-hover:text-accent'>{issue.title}</span>
+            </a>
+          ))
+        )}
+      </DashboardCard>
+
+      {/* Tasks (ready + in-flight) — its own full-width row; ALL such tasks in
+          one column so titles read in full, each linking to its GitHub Issue. */}
       <DashboardCard title='Tasks' count={tasks.length} href='/studio/iterations' viewAllLabel='Iteration boards'>
         {tasks.length === 0 ? (
           iterations.forge.active.kind === 'ok' ? (
             <p className='font-sans text-xs text-muted-foreground/70'>No tasks ready or in flight.</p>
           ) : null
         ) : (
-          <div className='grid gap-x-6 gap-y-2 lg:grid-cols-2'>
-            {tasks.map((task) => {
-              const visual = taskVisual(task)
-              const label = (
-                <span className='min-w-0 flex-1 truncate font-mono text-xs'>
-                  <span className='text-muted-foreground/70'>{task.iterationSlug} · </span>
-                  <span className='text-card-foreground group-hover:text-accent'>{task.title}</span>
-                </span>
-              )
-              const badge = (
-                <Badge
-                  variant='outline'
-                  className={`shrink-0 font-mono text-xs ${visual.badgeClass}`}
-                  title={visual.title}
-                >
-                  {visual.label}
-                </Badge>
-              )
-              const key = `${task.iterationSlug}-${task.taskId}`
-              return task.issueUrl ? (
-                <a
-                  key={key}
-                  href={task.issueUrl}
-                  target='_blank'
-                  rel='noreferrer'
-                  className='group flex items-center gap-2'
-                >
-                  {badge}
-                  {label}
-                </a>
-              ) : (
-                <div key={key} className='group flex items-center gap-2'>
-                  {badge}
-                  {label}
-                </div>
-              )
-            })}
-          </div>
+          tasks.map((task) => {
+            const visual = taskVisual(task)
+            const label = (
+              <span className='font-mono text-xs'>
+                <span className='text-muted-foreground/70'>{task.iterationSlug} · </span>
+                <span className='text-card-foreground group-hover:text-accent'>{task.title}</span>
+              </span>
+            )
+            const badge = (
+              <Badge
+                variant='outline'
+                className={`shrink-0 font-mono text-xs ${visual.badgeClass}`}
+                title={visual.title}
+              >
+                {visual.label}
+              </Badge>
+            )
+            const key = `${task.iterationSlug}-${task.taskId}`
+            return task.issueUrl ? (
+              <a
+                key={key}
+                href={task.issueUrl}
+                target='_blank'
+                rel='noreferrer'
+                className='group flex items-center gap-2'
+              >
+                {badge}
+                {label}
+              </a>
+            ) : (
+              <div key={key} className='group flex items-center gap-2'>
+                {badge}
+                {label}
+              </div>
+            )
+          })
         )}
       </DashboardCard>
     </div>
