@@ -63,6 +63,15 @@ function tierOptions(issues: BacklogIssue[]): string[] {
   return [...present].sort((a, b) => Number(a.slice('tier:'.length)) - Number(b.slice('tier:'.length)))
 }
 
+/** Distinct `needs:*`/`status:*` labels present — the Flags family, `needs:*` first. */
+function flagOptions(issues: BacklogIssue[]): string[] {
+  const present = new Set<string>()
+  for (const issue of issues) {
+    for (const label of issue.labels) if (label.startsWith('needs:') || label.startsWith('status:')) present.add(label)
+  }
+  return [...present].sort((a, b) => a.localeCompare(b))
+}
+
 export default async function BacklogPage() {
   if (isVercelDeploy()) notFound()
 
@@ -96,6 +105,7 @@ export default async function BacklogPage() {
           issues={issues}
           projectOptions={projectOptions(issues, registry)}
           tierOptions={tierOptions(issues)}
+          flagOptions={flagOptions(issues)}
         />
       )}
     </div>

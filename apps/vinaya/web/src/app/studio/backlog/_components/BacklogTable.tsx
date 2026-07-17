@@ -93,19 +93,19 @@ function FilterGroup({
   options,
   selected,
   onToggle,
-  strip
+  strip = ''
 }: {
   name: string
   options: string[]
   selected: Set<string>
   onToggle: (value: string) => void
   /** Prefix to strip for the chip's display text (the full label still filters). */
-  strip: string
+  strip?: string
 }) {
   if (options.length === 0) return null
   return (
     <div className='flex flex-wrap items-center gap-1.5'>
-      <span className='font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground'>{name}</span>
+      <span className='font-mono text-[0.7rem] font-medium uppercase tracking-wider text-foreground'>{name}</span>
       {options.map((option) => (
         <FilterChip
           key={option}
@@ -121,16 +121,20 @@ function FilterGroup({
 export function BacklogTable({
   issues,
   projectOptions,
-  tierOptions
+  tierOptions,
+  flagOptions
 }: {
   issues: BacklogIssue[]
   /** Distinct `project:*` labels present, in registry order. */
   projectOptions: string[]
   /** Distinct `tier:*` labels present, low tier first. */
   tierOptions: string[]
+  /** Distinct `needs:*`/`status:*` labels present. */
+  flagOptions: string[]
 }) {
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set())
   const [selectedTiers, setSelectedTiers] = useState<Set<string>>(new Set())
+  const [selectedFlags, setSelectedFlags] = useState<Set<string>>(new Set())
 
   const toggle = (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (value: string) =>
     setter((prev) => {
@@ -143,15 +147,16 @@ export function BacklogTable({
   const filtered = useMemo(
     () =>
       issues.filter((issue) => {
-        const { projects, tier } = splitLabels(issue.labels)
+        const { projects, tier, flags } = splitLabels(issue.labels)
         const projectOk = selectedProjects.size === 0 || projects.some((p) => selectedProjects.has(p))
         const tierOk = selectedTiers.size === 0 || (tier !== null && selectedTiers.has(tier))
-        return projectOk && tierOk
+        const flagOk = selectedFlags.size === 0 || flags.some((f) => selectedFlags.has(f))
+        return projectOk && tierOk && flagOk
       }),
-    [issues, selectedProjects, selectedTiers]
+    [issues, selectedProjects, selectedTiers, selectedFlags]
   )
 
-  const anyFilter = selectedProjects.size > 0 || selectedTiers.size > 0
+  const anyFilter = selectedProjects.size > 0 || selectedTiers.size > 0 || selectedFlags.size > 0
 
   return (
     <div className='space-y-3'>
@@ -170,6 +175,7 @@ export function BacklogTable({
           onToggle={toggle(setSelectedTiers)}
           strip='tier:'
         />
+        <FilterGroup name='Flags' options={flagOptions} selected={selectedFlags} onToggle={toggle(setSelectedFlags)} />
         {anyFilter && (
           <Button
             type='button'
@@ -179,6 +185,7 @@ export function BacklogTable({
             onClick={() => {
               setSelectedProjects(new Set())
               setSelectedTiers(new Set())
+              setSelectedFlags(new Set())
             }}
           >
             <X className='size-3.5' aria-hidden />
@@ -228,7 +235,7 @@ export function BacklogTable({
                         href={issue.url}
                         target='_blank'
                         rel='noreferrer'
-                        className='font-sans text-sm text-card-foreground hover:text-accent hover:underline'
+                        className='block max-w-[260px] font-sans text-sm text-card-foreground hover:text-accent hover:underline'
                       >
                         {issue.title}
                       </a>
