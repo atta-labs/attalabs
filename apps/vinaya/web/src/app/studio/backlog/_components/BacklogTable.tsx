@@ -49,7 +49,7 @@ function labelKind(label: string): LabelKind {
 
 function LabelBadge({ label }: { label: string }) {
   return (
-    <Badge variant='outline' className={`font-mono text-[0.65rem] ${KIND_CLASS[labelKind(label)]}`}>
+    <Badge variant='outline' className={`font-mono text-xs ${KIND_CLASS[labelKind(label)]}`}>
       {label}
     </Badge>
   )
@@ -105,7 +105,7 @@ function FilterGroup({
   if (options.length === 0) return null
   return (
     <div className='flex flex-wrap items-center gap-1.5'>
-      <span className='font-mono text-[0.7rem] uppercase tracking-wider text-foreground'>{name}</span>
+      <span className='font-mono text-xs uppercase tracking-wider text-foreground'>{name}</span>
       {options.map((option) => (
         <FilterChip
           key={option}
@@ -198,10 +198,10 @@ export function BacklogTable({
         <Table className='min-w-[720px] table-fixed'>
           <TableHeader>
             <TableRow>
-              <TableHead className='w-12 px-3 font-sans text-xs uppercase tracking-wider'>#</TableHead>
-              <TableHead className='w-[29%] font-sans text-xs uppercase tracking-wider'>Title</TableHead>
+              <TableHead className='w-[6%] px-2 font-sans text-xs uppercase tracking-wider'>#</TableHead>
+              <TableHead className='w-[37%] font-sans text-xs uppercase tracking-wider'>Title</TableHead>
               <TableHead className='w-[20%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-              <TableHead className='w-24 font-sans text-xs uppercase tracking-wider'>Tier</TableHead>
+              <TableHead className='w-[11%] font-sans text-xs uppercase tracking-wider'>Tier</TableHead>
               <TableHead className='w-[26%] font-sans text-xs uppercase tracking-wider'>Flags</TableHead>
             </TableRow>
           </TableHeader>
@@ -217,7 +217,7 @@ export function BacklogTable({
                 const { projects, tier, flags } = splitLabels(issue.labels)
                 return (
                   <TableRow key={issue.number}>
-                    <TableCell className='px-3 align-top'>
+                    <TableCell className='px-2 align-top'>
                       <a
                         href={issue.url}
                         target='_blank'
