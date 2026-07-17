@@ -1,18 +1,24 @@
 /**
  * Aggregates the dashboard's Tasks card across every active iteration (task 11,
- * #571) — everything Ready to pick up plus everything actively moving. It reads
- * the SAME derivation the iteration board reads — `deriveIteration` (via
- * `loadIterationSnapshot`) for the `DerivedStatus`, and `checkDispatchReadiness`
- * (via `loadDispatchReadiness`) for the `todo` Ready/Blocked sub-state — and
- * never a second status mapping of its own (`status-display.ts` is the one
- * source of the label vocabulary; this module only *selects* which derived
- * tasks to surface).
+ * #571) — everything Ready to pick up, everything actively moving, and
+ * everything Blocked. It reads the SAME derivation the iteration board reads —
+ * `deriveIteration` (via `loadIterationSnapshot`) for the `DerivedStatus`, and
+ * `checkDispatchReadiness` (via `loadDispatchReadiness`) for the `todo`
+ * Ready/Blocked sub-state — and never a second status mapping of its own:
+ * `status-display.ts` is the one source of the label vocabulary, and this
+ * module resolves each task's badge through it here (server-side) so the client
+ * panel stays presentational.
  *
- * "Ready" = a `todo` task whose dispatch gate passes right now. "Active" = the
- * three moving statuses `in-flight` (branch, no PR), `in-review` (PR open), and
- * `changes-requested` (reviewer asked for changes). `todo`-but-not-ready,
- * `merged`, and the terminal anomaly states are out of scope — this is the
- * "what can I pick up / what is moving" window.
+ * A task's `category` is one of five, mapped from its derived status:
+ *   - `ready`             — a `todo` task whose dispatch gate passes now
+ *   - `blocked`           — a `todo` task whose gate FAILS (Blocked · needs #N),
+ *                           OR the `blocked` DerivedStatus (an `aeg:blocked`
+ *                           label — D-069's anomaly holding-pen)
+ *   - `in-flight`         — branch open, no PR
+ *   - `in-review`         — PR open
+ *   - `changes-requested` — reviewer asked for changes
+ * `merged` and the terminal anomaly states are out of scope — this is the
+ * "what can I pick up / what is moving / what is stuck" window.
  *
  * Forge honesty: `loadActiveIterations` returns `[]` when the forge is
  * unreachable, so this returns `[]` too — the dashboard reads the forge status
@@ -23,40 +29,59 @@
  */
 
 import 'server-only'
-import type { DerivedStatus, DispatchResult } from '@atta/aeg-core'
+import type { BacklogIssue } from '@/lib/forge/fetch-open-issues'
 import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
 import { loadActiveIterations } from '@/lib/repo-state'
+import { statusVisual, todoDispatchVisual } from '@/app/studio/projects/[name]/iterations/[slug]/_lib/status-display'
 
-type ActiveStatus = 'in-flight' | 'in-review' | 'changes-requested'
+export type TaskCategory = 'ready' | 'blocked' | 'in-flight' | 'in-review' | 'changes-requested' | 'backlog'
+
+/** A resolved status badge — pre-computed here so the client stays dumb. */
+export type TaskBadge = { label: string; badgeClass: string; title?: string }
 
 export type DashboardTask = {
-  iterationSlug: string
+  /** Iteration slug, or `null` for a backlog Issue (no iteration by definition). */
+  iterationSlug: string | null
   taskId: string
   title: string
   issue: number | null
   /** Link to the task's GitHub Issue, or `null` when no issue/repo resolves. */
   issueUrl: string | null
-  status: Extract<DerivedStatus, 'todo' | ActiveStatus>
-  /** Present only for a Ready (`todo`) task — its passing gate verdict. */
-  readiness: DispatchResult | null
+  category: TaskCategory
+  badge: TaskBadge
 }
 
-// Moving work before pickable work — the card walks from in motion to available.
-const STATUS_RANK: Record<DashboardTask['status'], number> = {
+// Moving work first, then pickable, then stuck, then unscheduled backlog.
+const CATEGORY_RANK: Record<TaskCategory, number> = {
   'in-review': 0,
   'changes-requested': 1,
   'in-flight': 2,
-  todo: 3
+  ready: 3,
+  blocked: 4,
+  backlog: 5
 }
 
-const ACTIVE_STATUSES: readonly ActiveStatus[] = ['in-flight', 'in-review', 'changes-requested']
-
-function isActive(status: DerivedStatus | undefined): status is ActiveStatus {
-  return status !== undefined && (ACTIVE_STATUSES as readonly string[]).includes(status)
+/**
+ * Map the backlog Issues into the same `DashboardTask` shape so the Tasks card
+ * can list them alongside iteration tasks under a `backlog` filter — one row
+ * type, one badge vocabulary (`statusVisual('backlog')`). Backlog Issues carry
+ * no iteration, so `iterationSlug` is `null` and no iteration renders.
+ */
+export function backlogToTasks(issues: BacklogIssue[]): DashboardTask[] {
+  const v = statusVisual('backlog')
+  return issues.map((issue) => ({
+    iterationSlug: null,
+    taskId: `backlog-${issue.number}`,
+    title: issue.title,
+    issue: issue.number,
+    issueUrl: issue.url,
+    category: 'backlog' as const,
+    badge: { label: v.label, badgeClass: v.badgeClass }
+  }))
 }
 
-export async function loadReadyAndActiveTasks(): Promise<DashboardTask[]> {
+export async function loadDashboardTasks(): Promise<DashboardTask[]> {
   const active = await loadActiveIterations()
   const out: DashboardTask[] = []
 
@@ -79,14 +104,29 @@ export async function loadReadyAndActiveTasks(): Promise<DashboardTask[]> {
         issueUrl
       }
 
-      if (isActive(status)) {
-        out.push({ ...base, status, readiness: null })
-      } else if (status === 'todo') {
+      let entry: Pick<DashboardTask, 'category' | 'badge'> | null = null
+
+      if (status === 'todo') {
+        // Ready vs Blocked · needs #N — the gate's own verdict, never re-derived.
         const readiness = readinessById.get(String(task.id))
-        if (readiness?.ready) out.push({ ...base, status, readiness })
+        if (readiness) {
+          const v = todoDispatchVisual(readiness)
+          entry = {
+            category: readiness.ready ? 'ready' : 'blocked',
+            badge: { label: v.label, badgeClass: v.badgeClass, title: v.title }
+          }
+        }
+      } else if (status === 'blocked') {
+        const v = statusVisual('blocked')
+        entry = { category: 'blocked', badge: { label: v.label, badgeClass: v.badgeClass, title: v.description } }
+      } else if (status === 'in-flight' || status === 'in-review' || status === 'changes-requested') {
+        const v = statusVisual(status)
+        entry = { category: status, badge: { label: v.label, badgeClass: v.badgeClass } }
       }
+
+      if (entry) out.push({ ...base, ...entry })
     }
   }
 
-  return out.sort((a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status])
+  return out.sort((a, b) => CATEGORY_RANK[a.category] - CATEGORY_RANK[b.category])
 }
