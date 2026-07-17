@@ -20,8 +20,9 @@ export function DashboardCard({
   title: string
   /** Total behind this card — shown next to the title. `null` hides it. */
   count: number | null
-  href: string
-  viewAllLabel: string
+  /** Footer "view all" link target. Omit (with `viewAllLabel`) for no footer. */
+  href?: string
+  viewAllLabel?: string
   children: ReactNode
 }) {
   return (
@@ -34,14 +35,16 @@ export function DashboardCard({
       </CardHeader>
       <CardContent className='flex flex-1 flex-col gap-3'>
         <div className='flex-1 space-y-2'>{children}</div>
-        <NextLink
-          variant='unstyled'
-          href={href}
-          className='group inline-flex items-center gap-1 font-mono text-xs text-muted-foreground transition-colors hover:text-accent'
-        >
-          {viewAllLabel}
-          <ArrowRight className='size-3 transition-transform group-hover:translate-x-0.5' />
-        </NextLink>
+        {href && viewAllLabel ? (
+          <NextLink
+            variant='unstyled'
+            href={href}
+            className='group inline-flex items-center gap-1 font-mono text-xs text-muted-foreground transition-colors hover:text-accent'
+          >
+            {viewAllLabel}
+            <ArrowRight className='size-3 transition-transform group-hover:translate-x-0.5' />
+          </NextLink>
+        ) : null}
       </CardContent>
     </Card>
   )

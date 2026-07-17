@@ -21,6 +21,7 @@ import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 import { fetchOpenIssuesWithoutIterationLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
 import { ForgeBanners, ForgeUnavailableBanner } from '@/app/studio/_components/ForgeUnavailableBanner'
 import { DashboardCard } from '@/app/studio/_components/DashboardCard'
+import { LabelBadge, rankedLabels } from '@/app/studio/_components/LabelBadge'
 import { loadReadyAndInFlightTasks, type DashboardTask } from '@/app/studio/_lib/load-dashboard-tasks'
 import { statusVisual, todoDispatchVisual } from '@/app/studio/projects/[name]/iterations/[slug]/_lib/status-display'
 
@@ -161,10 +162,15 @@ export default async function HomePage() {
               href={issue.url}
               target='_blank'
               rel='noreferrer'
-              className='group flex items-baseline gap-3 font-mono text-xs'
+              className='group flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-xs'
             >
               <span className='shrink-0 text-muted-foreground/70'>#{issue.number}</span>
               <span className='font-sans text-card-foreground group-hover:text-accent'>{issue.title}</span>
+              <span className='flex flex-wrap gap-1'>
+                {rankedLabels(issue.labels).map((label) => (
+                  <LabelBadge key={label} label={label} />
+                ))}
+              </span>
             </a>
           ))
         )}
@@ -172,7 +178,7 @@ export default async function HomePage() {
 
       {/* Tasks (ready + in-flight) — its own full-width row; ALL such tasks in
           one column so titles read in full, each linking to its GitHub Issue. */}
-      <DashboardCard title='Tasks' count={tasks.length} href='/studio/iterations' viewAllLabel='Iteration boards'>
+      <DashboardCard title='Tasks' count={tasks.length}>
         {tasks.length === 0 ? (
           iterations.forge.active.kind === 'ok' ? (
             <p className='font-sans text-xs text-muted-foreground/70'>No tasks ready or in flight.</p>
@@ -182,8 +188,8 @@ export default async function HomePage() {
             const visual = taskVisual(task)
             const label = (
               <span className='font-mono text-xs'>
-                <span className='text-muted-foreground/70'>{task.iterationSlug} · </span>
                 <span className='text-card-foreground group-hover:text-accent'>{task.title}</span>
+                <span className='text-muted-foreground/70'> · {task.iterationSlug}</span>
               </span>
             )
             const badge = (

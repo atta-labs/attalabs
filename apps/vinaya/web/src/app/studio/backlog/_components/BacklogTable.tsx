@@ -1,9 +1,10 @@
 'use client'
 
-import { Badge, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
+import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { BacklogIssue } from '@/lib/forge/fetch-open-issues'
+import { LabelBadge, splitLabels } from '@/app/studio/_components/LabelBadge'
 
 /**
  * The backlog as a filterable table (task 11 #571 follow-up). Replaces the
@@ -29,44 +30,8 @@ import type { BacklogIssue } from '@/lib/forge/fetch-open-issues'
  * palette). `needs:*` reads `warning`; there is no `info`/blue token.
  */
 
-type LabelKind = 'project' | 'tier' | 'status' | 'needs' | 'other'
-
-const KIND_CLASS: Record<LabelKind, string> = {
-  project: 'text-accent border-accent/40',
-  tier: 'text-foreground border-border',
-  status: 'text-primary border-primary/40',
-  needs: 'text-warning border-warning/40',
-  other: 'text-muted-foreground border-border'
-}
-
-function labelKind(label: string): LabelKind {
-  if (label.startsWith('project:')) return 'project'
-  if (label.startsWith('tier:')) return 'tier'
-  if (label.startsWith('status:')) return 'status'
-  if (label.startsWith('needs:')) return 'needs'
-  return 'other'
-}
-
-function LabelBadge({ label }: { label: string }) {
-  return (
-    <Badge variant='outline' className={`font-mono text-xs ${KIND_CLASS[labelKind(label)]}`}>
-      {label}
-    </Badge>
-  )
-}
-
 function Dash() {
   return <span className='font-mono text-xs text-muted-foreground/60'>—</span>
-}
-
-type SplitLabels = { projects: string[]; tier: string | null; flags: string[] }
-
-function splitLabels(labels: string[]): SplitLabels {
-  return {
-    projects: labels.filter((l) => l.startsWith('project:')),
-    tier: labels.find((l) => l.startsWith('tier:')) ?? null,
-    flags: labels.filter((l) => l.startsWith('needs:') || l.startsWith('status:'))
-  }
 }
 
 /** One toggle chip in a filter row — filled when active, outline when not. */
