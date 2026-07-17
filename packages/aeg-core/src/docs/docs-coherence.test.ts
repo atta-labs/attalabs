@@ -25,8 +25,18 @@ function loadTree(name: 'broken' | 'clean'): DocsCoherenceEntry[] {
   })
 }
 
+// The surfaced set is model-backed (D-079/D-087): in production it is
+// `modelBackedDocPaths(deriveDiagramModel(...))`. These fixtures test the C6
+// mechanism (reachability, parent refs, cross-doc links), so they pass the
+// set that a model WOULD produce for each tree directly — the docs a node
+// points at. The `surfaced` frontmatter override still wins over it in both
+// directions (`roles/planner.md` = false, `iterations/hidden-but-surfaced.md`
+// = true in the broken tree), independent of what the set contains.
+const SURFACED_BROKEN = new Set(['process.md', 'roles/verifier.md'])
+const SURFACED_CLEAN = new Set(['process.md', 'roles/developer.md', 'roles/reviewer.md'])
+
 describe('evaluateDocsCoherence: broken tree', () => {
-  const result = evaluateDocsCoherence(loadTree('broken'))
+  const result = evaluateDocsCoherence(loadTree('broken'), SURFACED_BROKEN)
 
   it('reports a surfaced orphan (dangling parent reference)', () => {
     expect(result.errors).toContain('C6: surfaced doc "roles/verifier.md" is not reachable in the doc nav')
@@ -58,7 +68,7 @@ describe('evaluateDocsCoherence: broken tree', () => {
 
 describe('evaluateDocsCoherence: clean tree', () => {
   it('passes with zero errors', () => {
-    const result = evaluateDocsCoherence(loadTree('clean'))
+    const result = evaluateDocsCoherence(loadTree('clean'), SURFACED_CLEAN)
     expect(result.errors).toEqual([])
   })
 })
