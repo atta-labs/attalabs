@@ -17,6 +17,7 @@ vinaya help
 |---------|-------------|
 | `vinaya help` | Usage text |
 | `vinaya version` | Print the installed CLI version (`--json` for the enveloped machine form) |
+| `vinaya studio` | Launch local Vinaya Studio against the current repo |
 
 ## Config
 
