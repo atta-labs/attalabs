@@ -201,11 +201,11 @@ export function BacklogTable({
         <Table className='min-w-[720px] table-fixed'>
           <TableHeader>
             <TableRow>
-              <TableHead className='w-14 font-sans text-xs uppercase tracking-wider'>#</TableHead>
-              <TableHead className='w-[28%] font-sans text-xs uppercase tracking-wider'>Title</TableHead>
-              <TableHead className='w-[26%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-              <TableHead className='w-16 font-sans text-xs uppercase tracking-wider'>Tier</TableHead>
-              <TableHead className='w-[24%] font-sans text-xs uppercase tracking-wider'>Flags</TableHead>
+              <TableHead className='w-16 font-sans text-xs uppercase tracking-wider'>#</TableHead>
+              <TableHead className='w-[26%] font-sans text-xs uppercase tracking-wider'>Title</TableHead>
+              <TableHead className='w-[20%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
+              <TableHead className='w-24 font-sans text-xs uppercase tracking-wider'>Tier</TableHead>
+              <TableHead className='w-[26%] font-sans text-xs uppercase tracking-wider'>Flags</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -249,7 +249,9 @@ export function BacklogTable({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className='align-top'>{tier ? <LabelBadge label={tier} /> : <Dash />}</TableCell>
+                    <TableCell className='align-top'>
+                      <div className='flex flex-wrap gap-1'>{tier ? <LabelBadge label={tier} /> : <Dash />}</div>
+                    </TableCell>
                     <TableCell className='align-top'>
                       <div className='flex flex-wrap gap-1'>
                         {flags.length > 0 ? flags.map((label) => <LabelBadge key={label} label={label} />) : <Dash />}
