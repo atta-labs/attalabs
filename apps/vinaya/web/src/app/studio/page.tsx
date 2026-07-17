@@ -89,7 +89,7 @@ export default async function HomePage() {
         <ForgeUnavailableBanner scope='both' status={backlog.forge} detail='The backlog cannot be listed right now.' />
       )}
 
-      <div className='grid gap-4 sm:grid-cols-2'>
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
         {/* Projects — local registry, never forge-backed, always available. */}
         <DashboardCard title='Projects' count={registry.length} href='/studio/projects' viewAllLabel='All projects'>
           {registry.length === 0 ? (
