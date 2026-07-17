@@ -15,10 +15,16 @@ import type { ForgeStatus } from '@/lib/repo-state/forge-status'
  */
 export function ForgeUnavailableBanner({
   scope,
-  status
+  status,
+  detail
 }: {
   scope: 'active' | 'archived' | 'both'
   status: ForgeStatus
+  /** Overrides the iteration-worded tail of the `unreachable` message so a
+   *  non-iteration surface (e.g. the backlog view, task 11 #571) can reuse this
+   *  banner without claiming "iterations cannot be listed". Defaults to the
+   *  iterations wording, so every existing call site is unchanged. */
+  detail?: string
 }) {
   if (status.kind === 'ok') return null
 
@@ -27,8 +33,8 @@ export function ForgeUnavailableBanner({
       <div className='flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-warning'>
         <AlertTriangle className='size-4 shrink-0 translate-y-0.5 text-warning' aria-hidden />
         <p className='font-sans text-xs text-warning'>
-          Live forge state unavailable — GitHub could not be reached. Showing archived/legacy data only; active
-          iterations cannot be listed right now.
+          Live forge state unavailable — GitHub could not be reached.{' '}
+          {detail ?? 'Showing archived/legacy data only; active iterations cannot be listed right now.'}
         </p>
       </div>
     )

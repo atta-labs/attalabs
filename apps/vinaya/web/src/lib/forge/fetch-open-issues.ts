@@ -18,8 +18,23 @@
  */
 
 import { graphql } from '@octokit/graphql'
+import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 
 export type BacklogIssue = { number: number; title: string; url: string; labels: string[] }
+
+/**
+ * The backlog fetch result carries a `ForgeStatus` alongside the issues —
+ * mirroring `listIterations`'s `{ …, forge }` shape (task 11, #571) — so a
+ * consumer can distinguish a genuinely empty backlog (`ok`, `[]`) from a forge
+ * failure that produced an empty list (`unreachable`). Without it, a page can't
+ * tell "everything is tracked" from "GitHub was unreachable" and would render a
+ * failure as truth-shaped emptiness (D-087: Studio must not lie by omission).
+ *
+ * Only `ok` / `unreachable` ever appear here — this is one repo-wide query, not
+ * a per-slug fan-out, so there is no `partial` (that state belongs to
+ * `listIterations`, which loads many slugs and can lose a subset).
+ */
+export type BacklogResult = { issues: BacklogIssue[]; forge: ForgeStatus }
 
 type OpenIssuesResponse = {
   repository: {
@@ -33,7 +48,7 @@ export async function fetchOpenIssuesWithoutIterationLabel(
   owner: string,
   repo: string,
   token: string
-): Promise<BacklogIssue[]> {
+): Promise<BacklogResult> {
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
 
   const query = `query OpenIssues($owner: String!, $repo: String!) {
@@ -47,12 +62,14 @@ export async function fetchOpenIssuesWithoutIterationLabel(
   let response: OpenIssuesResponse
   try {
     response = await client<OpenIssuesResponse>(query, { owner, repo })
-  } catch {
-    return []
+  } catch (err) {
+    // Raw `Error.message` stays in the log, never the UI (graceful-errors rule).
+    console.warn(`[fetch-open-issues] backlog query failed: ${(err as Error).message}`)
+    return { issues: [], forge: { kind: 'unreachable' } }
   }
 
   const nodes = response.repository?.issues.nodes ?? []
-  return nodes
+  const issues = nodes
     .map((n) => ({
       number: n.number,
       title: n.title,
@@ -63,4 +80,5 @@ export async function fetchOpenIssuesWithoutIterationLabel(
       (issue) =>
         !issue.labels.some((label) => /^iteration:/.test(label)) && !issue.labels.includes('vinaya:state-object')
     )
+  return { issues, forge: { kind: 'ok' } }
 }
