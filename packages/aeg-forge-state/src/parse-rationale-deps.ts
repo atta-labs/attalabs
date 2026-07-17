@@ -31,6 +31,18 @@ function isEmptyMarker(s: string): boolean {
   return t === '' || t === '—' || t === '-' || t === '–'
 }
 
+/** Appends only ids not already present — a bare continuation span can
+ * legitimately re-mention an id already captured for this field (plain prose
+ * referencing the id it just labeled, e.g. `` `Conflicts-with: #570` ``
+ * followed later by "the `#570` edge is..."), and that re-mention carries no
+ * new edge. Fixed on Issue #569: without this, the duplicate propagated all
+ * the way to a React key collision in Vinaya Studio's task table. */
+function pushUnique(arr: string[], ids: string[]): void {
+  for (const id of ids) {
+    if (!arr.includes(id)) arr.push(id)
+  }
+}
+
 function splitIds(raw: string): string[] {
   if (isEmptyMarker(raw)) return []
   return raw
@@ -140,11 +152,11 @@ export function parseRationaleDeps(body: string): ParsedRationaleDeps {
         assignedFields.add(field)
         current = field
         const ids = resolveIds(labelMatch[2] ?? '', lastSlugByField[field])
-        ;(field === 'dependsOn' ? dependsOn : conflictsWith).push(...ids)
+        pushUnique(field === 'dependsOn' ? dependsOn : conflictsWith, ids)
       }
     } else if (current) {
       const ids = resolveIds(content, lastSlugByField[current])
-      ;(current === 'dependsOn' ? dependsOn : conflictsWith).push(...ids)
+      pushUnique(current === 'dependsOn' ? dependsOn : conflictsWith, ids)
     }
     match = spanPattern.exec(section)
   }
