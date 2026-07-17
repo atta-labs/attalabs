@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { runStudio } from './commands/studio.js'
 import { printJson } from './lib/envelope.js'
 import { printHelp } from './lib/output.js'
 
@@ -29,6 +30,11 @@ try {
       } else {
         process.stdout.write(`${version}\n`)
       }
+      break
+    }
+    case 'studio': {
+      const code = await runStudio(process.cwd(), args)
+      process.exit(code)
       break
     }
     default:
