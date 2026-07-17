@@ -135,7 +135,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
   }
 
   return (
-    <div className='flex h-full w-full flex-col'>
+    <div className='flex h-full w-full flex-col overflow-hidden'>
       <div className='flex shrink-0 items-center justify-between gap-4 border-border border-b px-6 py-3'>
         {/* Dynamic breadcrumb — depth mirrors drill state (round-4 fix; used
             to be a static "Home / How it works" string regardless of how

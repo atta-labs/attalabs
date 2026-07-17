@@ -56,7 +56,7 @@ export default async function HowItWorksPage() {
     // `DiagramExplorer` stacks its sidebar under the ring, which no longer
     // fits a fixed viewport-height box — so the wrapper reverts to natural
     // height and the page scrolls instead of clipping.
-    <div className='w-full lg:h-[calc(100dvh-56px)] lg:min-h-[560px]'>
+    <div className='w-full lg:h-[calc(100dvh-56px)] lg:min-h-[560px] lg:overflow-hidden'>
       <DiagramExplorer
         groups={groups}
         findings={model.findings}
