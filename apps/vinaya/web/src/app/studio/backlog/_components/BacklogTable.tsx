@@ -201,8 +201,8 @@ export function BacklogTable({
         <Table className='min-w-[720px] table-fixed'>
           <TableHeader>
             <TableRow>
-              <TableHead className='w-16 font-sans text-xs uppercase tracking-wider'>#</TableHead>
-              <TableHead className='w-[26%] font-sans text-xs uppercase tracking-wider'>Title</TableHead>
+              <TableHead className='w-12 px-3 font-sans text-xs uppercase tracking-wider'>#</TableHead>
+              <TableHead className='w-[29%] font-sans text-xs uppercase tracking-wider'>Title</TableHead>
               <TableHead className='w-[20%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
               <TableHead className='w-24 font-sans text-xs uppercase tracking-wider'>Tier</TableHead>
               <TableHead className='w-[26%] font-sans text-xs uppercase tracking-wider'>Flags</TableHead>
@@ -220,7 +220,7 @@ export function BacklogTable({
                 const { projects, tier, flags } = splitLabels(issue.labels)
                 return (
                   <TableRow key={issue.number}>
-                    <TableCell className='align-top'>
+                    <TableCell className='px-3 align-top'>
                       <a
                         href={issue.url}
                         target='_blank'
