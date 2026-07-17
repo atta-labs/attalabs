@@ -380,7 +380,11 @@ export default async function IterationPage({ params }: { params: Promise<Params
 }
 
 function DepList({ items, resolve }: { items: string[]; resolve: (id: string) => string | null }) {
-  const resolved = items.map((id) => ({ id, label: resolve(id) })).filter((x) => x.label !== null)
+  // Dedupe defensively — Studio renders forge-derived edges verbatim, and a
+  // duplicate raw id (e.g. a parser re-mention bug, since fixed upstream in
+  // `parseRationaleDeps`) would otherwise collide as a React key (#569).
+  const uniqueItems = Array.from(new Set(items))
+  const resolved = uniqueItems.map((id) => ({ id, label: resolve(id) })).filter((x) => x.label !== null)
   if (resolved.length === 0) {
     return <span className='font-mono text-xs text-muted-foreground/60'>—</span>
   }

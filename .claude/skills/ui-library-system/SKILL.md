@@ -542,6 +542,46 @@ state, not a TODO. Give one its own `installed/breadcrumb.tsx` when that
 upstream actually has a breadcrumb worth swapping in — the contract already
 holds the export, so nothing else moves.
 
+**`Code` / `CodeBlock`** (`vinaya-pages-v1` task 9, #569) joined the contract the
+same way — and is the first contracted component with **no upstream canonical in
+any library**. That makes it the precedent for a question `Breadcrumb` doesn't
+answer: *where does a contracted component live when there is nothing to paste
+into `installed/`?*
+
+Verified against the official shadcn registry (`ui.shadcn.com/docs/components`,
+2026-07-17): **shadcn ships no `code`, `code-block`, or `snippet` component.** It
+ships `Kbd` — keyboard keys, not code display. So `basic/installed/code.tsx`
+**does not exist and must not be created**: `installed/` holds a verbatim CLI
+paste from that library's own upstream (D-065), and hand-rolling a file there is
+exactly the drift the banner calls non-negotiable. Pasting *another* registry's
+code-block (shadcn-studio, shadcn.io, retroui) into `basic/installed/` is the
+same violation wearing a disguise — basic ← shadcn only, and a third-party item
+there is permanent drift no future `bunx shadcn@latest add` can reconcile.
+
+The component is therefore hand-written in the **editable wrapper layer**:
+`libraries/basic/components/display/code.tsx`, alongside `display/badge.tsx`
+(our own component, same layer, same reason). `retro`/`animate`/`brutal`
+re-export it from `'../../basic/components/display/code'` — note that path
+points at the **wrapper**, not `installed/`, unlike `Breadcrumb`'s fallback.
+Shared Props types live in `packages/ui/types/display/code.ts`, keeping the type
+group aligned with the component's own directory the way `display/badge.tsx` ↔
+`types/display/badge.ts` already does.
+
+**The rule this establishes:** no upstream canonical ⇒ the wrapper layer, never
+`installed/`. `installed/` is for pastes; if there is nothing to paste, the file
+should not exist. A contracted component with no upstream is a normal, finished
+state — not a placeholder waiting for an install.
+
+`Code` is an inline `<code>` chip; `CodeBlock` is a `<pre>` block that holds
+**only** code, with explanatory prose kept outside it. Both merge `className`
+LAST (`cn(base, className)`) — they are a base component's own styling, which a
+caller may legitimately override, which is the opposite case from `Button`'s
+`leading-none` universal default (see "Argument order matters" above: that one
+merges last *because* it must always win). Both are hook-free and carry no
+`'use client'`, so they render in a server component; adding a copy-to-clipboard
+button would force a client boundary on every consumer and is deliberately not
+part of the contract.
+
 ### Governance — shared composites resolve NO library; consumers inject
 
 > **Rule:** A shared composite component MUST NOT import from any concrete

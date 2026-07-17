@@ -16,6 +16,7 @@ export type {
 
 // Display
 export type { BadgeAnimation, BadgeProps, BadgeShape, BadgeSize, BadgeVariant } from './display/badge'
+export type { CodeBlockProps, CodeProps } from './display/code'
 
 // Form
 export type { InputBlockProps, InputProps, InputSize, InputVariant } from './form/input'

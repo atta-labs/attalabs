@@ -1,5 +1,7 @@
 export type { DoctrineContent, StateSource } from './contract'
 export type { DoctrineSource } from './contract'
+export { COMMANDS } from './commands'
+export type { Command, CommandFlag, CommandStatus } from './commands'
 export { createFileDoctrineSource } from './doctrine-file-adapter'
 export type { DoctrineFileSourceConfig } from './doctrine-file-adapter'
 export { createFileSource, DEFAULT_GOVERNANCE_ROOT } from './file-adapter'

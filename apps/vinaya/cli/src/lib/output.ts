@@ -1,20 +1,24 @@
+import { COMMANDS } from '@atta/vinaya-sources'
+
+const NAME_COLUMN_WIDTH = 28
+const PLANNED_MARKER = '[planned — not yet implemented] '
+
+function row(indent: string, name: string, description: string): string {
+  const padded = name.length >= NAME_COLUMN_WIDTH ? `${name} ` : name.padEnd(NAME_COLUMN_WIDTH)
+  return `${indent}${padded}${description}`
+}
+
 export function printHelp(): void {
-  process.stdout.write(`vinaya — Vinaya CLI
+  const lines = ['vinaya — Vinaya CLI', '', 'USAGE', '  vinaya <command> [options]', '', 'COMMANDS']
 
-USAGE
-  vinaya <command> [options]
+  for (const command of COMMANDS) {
+    const marker = command.status === 'planned' ? PLANNED_MARKER : ''
+    lines.push(row('  ', command.name, `${marker}${command.description}`))
+    for (const flag of command.flags ?? []) {
+      lines.push(row('    ', flag.flag, `${marker}${flag.description}`))
+    }
+  }
 
-COMMANDS
-  help                          Show this help text
-  version                       Print the CLI version
-    --json                        Enveloped JSON output (schema: 1)
-  studio                        Launch local Vinaya Studio against this repo
-  check <name> | --all          Run one check, or every registered check
-    --json                        Enveloped JSON output (schema: 1)
-    --diff-only                   Scope diff-declared checks to changed files
-    --parallel[=n]                Concurrency cap (default: cpu-derived)
-  new check <name>               Scaffold a custom check into ./scripts/vinaya-checks/
-
-Run 'vinaya version' to check what's installed.
-`)
+  lines.push('', "Run 'vinaya version' to check what's installed.")
+  process.stdout.write(`${lines.join('\n')}\n`)
 }

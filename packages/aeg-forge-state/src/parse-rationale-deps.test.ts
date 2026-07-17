@@ -76,6 +76,18 @@ describe('parseRationaleDeps', () => {
     expect(parseRationaleDeps(body)).toEqual({ dependsOn: ['1'], conflictsWith: [] })
   })
 
+  it('does NOT duplicate an id that a later bare span merely re-mentions in prose (Issue #569 regression)', () => {
+    // Regression for Issue #569 ([vinaya-pages-v1] 9): `Conflicts-with: #570`
+    // is the live declaration; the later bare `#570` span is plain prose
+    // ("the `#570` edge is sequencing, not exclusion...") re-mentioning the
+    // SAME id, not a continuation value. Before the fix this resolved to
+    // conflictsWith: ['#570', '#570'], which propagated to a React key
+    // collision in Vinaya Studio's task table (DepList, page.tsx).
+    const body =
+      '**Dependency rationale** — `Depends-on: —`. `Conflicts-with: #570`. The `#570` edge is sequencing, not exclusion: task 10 re-derives `/known-limits`.\n\n**Traps to avoid** — none.'
+    expect(parseRationaleDeps(body)).toEqual({ dependsOn: [], conflictsWith: ['#570'] })
+  })
+
   it('returns empty edges when the body has no Dependency rationale section', () => {
     expect(parseRationaleDeps('**Boundary** — some text with `a backtick span` in it.')).toEqual({
       dependsOn: [],

@@ -33,6 +33,11 @@ export const REQUIRED_COMPONENTS = [
   'CardHeader',
   'CardTitle',
 
+  // Code — hand-written in each library's wrapper layer (shadcn ships no code
+  // component, so `installed/` has no canonical to paste; D-065)
+  'Code',
+  'CodeBlock',
+
   // Collapsible
   'Collapsible',
   'CollapsibleContent',
@@ -207,6 +212,10 @@ export const REQUIRED_TYPES = [
   'CardHeaderProps',
   'CardProps',
   'CardTitleProps',
+
+  // Code
+  'CodeProps',
+  'CodeBlockProps',
 
   // Form — Input
   'InputBlockProps',
