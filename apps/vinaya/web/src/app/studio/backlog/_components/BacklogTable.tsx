@@ -105,7 +105,7 @@ function FilterGroup({
   if (options.length === 0) return null
   return (
     <div className='flex flex-wrap items-center gap-1.5'>
-      <span className='font-mono text-[0.7rem] font-medium uppercase tracking-wider text-foreground'>{name}</span>
+      <span className='font-mono text-[0.7rem] uppercase tracking-wider text-foreground'>{name}</span>
       {options.map((option) => (
         <FilterChip
           key={option}
@@ -198,14 +198,14 @@ export function BacklogTable({
       </div>
 
       <div className='rounded-lg border border-border bg-card'>
-        <Table className='min-w-[720px]'>
+        <Table className='min-w-[720px] table-fixed'>
           <TableHeader>
             <TableRow>
-              <TableHead className='w-16 font-sans text-xs uppercase tracking-wider'>#</TableHead>
-              <TableHead className='font-sans text-xs uppercase tracking-wider'>Title</TableHead>
-              <TableHead className='w-[22%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-              <TableHead className='w-20 font-sans text-xs uppercase tracking-wider'>Tier</TableHead>
-              <TableHead className='w-[18%] font-sans text-xs uppercase tracking-wider'>Flags</TableHead>
+              <TableHead className='w-14 font-sans text-xs uppercase tracking-wider'>#</TableHead>
+              <TableHead className='w-[28%] font-sans text-xs uppercase tracking-wider'>Title</TableHead>
+              <TableHead className='w-[26%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
+              <TableHead className='w-16 font-sans text-xs uppercase tracking-wider'>Tier</TableHead>
+              <TableHead className='w-[24%] font-sans text-xs uppercase tracking-wider'>Flags</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -235,7 +235,7 @@ export function BacklogTable({
                         href={issue.url}
                         target='_blank'
                         rel='noreferrer'
-                        className='block max-w-[260px] font-sans text-sm text-card-foreground hover:text-accent hover:underline'
+                        className='block break-words font-sans text-sm text-card-foreground hover:text-accent hover:underline'
                       >
                         {issue.title}
                       </a>
