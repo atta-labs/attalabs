@@ -34,11 +34,11 @@ export default function TheStudioPage() {
             Run it locally to see Projects, Iterations, and Backlog.
           </Text>
           <NextLink
-            href='/studio/docs'
+            href='/docs'
             variant='unstyled'
             className='inline-flex items-center gap-1.5 font-sans text-sm text-accent hover:underline'
           >
-            The methodology docs are public — browse them at /studio/docs
+            The methodology docs are public — browse them at /docs
             <ArrowRight className='size-4' aria-hidden />
           </NextLink>
         </CardContent>
