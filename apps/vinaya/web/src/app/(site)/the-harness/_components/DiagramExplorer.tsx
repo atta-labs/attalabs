@@ -296,11 +296,12 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
         </aside>
 
         {/* Diagram column: a title row on top, then the ring filling whatever
-            height is left. The page never scrolls (`lg:h-[calc(100dvh-56px)]`),
-            so the SVG — which scales to its box via `viewBox` + `h-full` — just
-            renders smaller to make room for the title, rather than pushing the
-            page taller. `min-h-0` lets the canvas wrapper shrink below the
-            ring's intrinsic size instead of forcing a scroll. */}
+            height is left. The page fills the app-shell's scroll region via
+            `h-full` (see `(site)/layout.tsx`), so the SVG — which scales to its
+            box via `viewBox` + `h-full` — just renders smaller to make room for
+            the title, rather than pushing the page taller. `min-h-0` lets the
+            canvas wrapper shrink below the ring's intrinsic size instead of
+            forcing a scroll. */}
         <div className='flex min-h-[420px] w-full min-w-0 flex-col items-center gap-2 p-4 lg:min-h-0 lg:flex-1'>
           {/* Matches the ring's own hub-centre label (`DiagramCanvas`'s
               `font-mono text-muted-foreground` "The actors" title) — same
