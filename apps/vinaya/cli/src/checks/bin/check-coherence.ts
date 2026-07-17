@@ -1,0 +1,201 @@
+#!/usr/bin/env bun
+
+/**
+ * Core check: coherence. Thin adapter over `@atta/aeg-core`'s coherence
+ * evaluators — mirrors `packages/aeg-core/bin/verify-coherence.ts`'s
+ * forge-fact assembly, but scoped to the CURRENT task branch's iteration
+ * only (derived from `BRANCH`/the current git branch), the same
+ * branch-derived scoping `verify-coherence.ts`'s own `ciIterationSlug`
+ * already uses for T2/T3.
+ *
+ * Iteration state is read ONLY through a `StateSource`
+ * (`createForgeSource`). Forge facts come only from the two primitives this
+ * task's boundary re-exports from `@atta/aeg-core`: `fetchForgeFacts` and
+ * `fetchOpenIssuesByLabel`.
+ *
+ * Known scope gap (recorded in the PR body): this check runs A1, A3, T1, T2,
+ * T3, D1, R1, L1 (and the always-info L3) — the checks whose required facts
+ * are obtainable from the two forge primitives above. It does NOT run A2
+ * (needs `fetchProvenance`, not re-exported), or L2/L4/L5 (need
+ * `listActiveIterationSlugs`/`listIssueMilestonesForSlug`, not re-exported).
+ * A2/L2/L4/L5 are genuinely unavailable to this check's dependency boundary,
+ * not re-derived — a narrower but honest scope versus `verify-coherence.ts`.
+ *
+ * scope: full — reads the live forge, not the local diff.
+ */
+
+import { execFile, execSync } from 'node:child_process'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
+import {
+  checkA1,
+  checkA3,
+  checkD1,
+  checkL1,
+  checkL3,
+  checkR1,
+  checkT1,
+  checkT2,
+  checkT3,
+  fetchForgeFacts,
+  fetchOpenIssuesByLabel,
+  R1_GRANDFATHERED_ISSUES,
+  scopeT2ToPlanPr,
+  type CheckResult,
+  type IterationFile,
+  type TaskEntry
+} from '@atta/aeg-core'
+import { createForgeSource } from '@atta/vinaya-sources'
+import { CHECK_SCHEMA_VERSION, emitCheckError } from '../contract'
+
+const CHECK_NAME = 'coherence'
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../../../../..')
+process.chdir(REPO_ROOT)
+
+const execFileAsync = promisify(execFile)
+
+function sh(cmd: string): string {
+  try {
+    return execSync(cmd, { encoding: 'utf8' }).trim()
+  } catch {
+    return ''
+  }
+}
+
+function resolveRepo(): { owner: string; repo: string } | null {
+  const fromEnv = process.env.AEG_REPO
+  if (fromEnv) {
+    const m = fromEnv.match(/^([^/]+)\/(.+)$/)
+    if (m?.[1] && m[2]) return { owner: m[1], repo: m[2] }
+  }
+  const url = sh('git remote get-url origin')
+  const ssh = url.match(/^git@github\.com:([^/]+)\/(.+?)(?:\.git)?$/)
+  if (ssh?.[1] && ssh[2]) return { owner: ssh[1], repo: ssh[2] }
+  const https = url.match(/^https?:\/\/(?:[^@]+@)?github\.com\/([^/]+)\/(.+?)(?:\.git)?\/?$/)
+  if (https?.[1] && https[2]) return { owner: https[1], repo: https[2] }
+  return null
+}
+
+async function resolveToken(): Promise<string | null> {
+  if (process.env.GITHUB_TOKEN) return process.env.GITHUB_TOKEN
+  if (process.env.GH_TOKEN) return process.env.GH_TOKEN
+  try {
+    const { stdout } = await execFileAsync('gh', ['auth', 'token'])
+    const token = stdout.trim()
+    return token.length > 0 ? token : null
+  } catch {
+    return null
+  }
+}
+
+function currentIterationSlug(): string | null {
+  const branch = process.env.BRANCH || sh('git rev-parse --abbrev-ref HEAD')
+  const m = branch.match(/^task\/([^/]+)\//)
+  return m?.[1] ?? null
+}
+
+function issueToEntry(entries: TaskEntry[]): Map<number, TaskEntry> {
+  const m = new Map<number, TaskEntry>()
+  for (const e of entries) if (e.task.issue !== null) m.set(e.task.issue, e)
+  return m
+}
+
+function taskToEntry(entries: TaskEntry[], slug: string): Map<string, TaskEntry> {
+  const m = new Map<string, TaskEntry>()
+  for (const e of entries) m.set(`${slug}/${e.task.id}`, e)
+  return m
+}
+
+function emitFailure(result: CheckResult): void {
+  const detail = result.failures.map((f) => f.reason).join(' | ') || result.note || 'see check output'
+  emitCheckError({
+    schema: CHECK_SCHEMA_VERSION,
+    check: CHECK_NAME,
+    severity: 'error',
+    message: `${result.check}: ${detail}`,
+    agent_recovery_prompt:
+      'Read the named coherence failure and resolve the underlying forge/topology drift it names (merge the ' +
+      'dependency, close the stale Issue, or fix the topology row), then re-run `vinaya check coherence`.'
+  })
+}
+
+async function main(): Promise<void> {
+  const slug = currentIterationSlug()
+  if (!slug) {
+    // Non-task branch — nothing scoped to check. Mirrors verify-brief.ts's bypass.
+    process.exit(0)
+  }
+
+  const repo = resolveRepo()
+  if (!repo) {
+    emitCheckError({
+      schema: CHECK_SCHEMA_VERSION,
+      check: CHECK_NAME,
+      severity: 'error',
+      message: 'coherence severity:infra — could not resolve owner/repo.',
+      agent_recovery_prompt:
+        'Set AEG_REPO=owner/repo, or confirm `git remote get-url origin` resolves to a GitHub URL, then re-run `vinaya check coherence`.'
+    })
+    process.exit(1)
+  }
+
+  const source = createForgeSource({ owner: repo.owner, repo: repo.repo })
+  const iteration = await source.getIteration(slug)
+  const file: IterationFile = { slug, archived: false, iteration }
+
+  const baseEntries: TaskEntry[] = iteration.tasks.map((t) => ({
+    iterationSlug: slug,
+    archived: false,
+    task: t,
+    facts: undefined
+  }))
+
+  const taskRefs = iteration.tasks.filter((t) => t.issue !== null).map((t) => ({ id: t.id, issue: t.issue as number }))
+  const snapshot = await fetchForgeFacts({ owner: repo.owner, repo: repo.repo, iteration: slug, tasks: taskRefs })
+
+  const results: CheckResult[] = [checkL3([file])]
+
+  if (snapshot.unavailable) {
+    emitCheckError({
+      schema: CHECK_SCHEMA_VERSION,
+      check: CHECK_NAME,
+      severity: 'error',
+      message: `coherence severity:infra — forge facts unavailable for iteration "${slug}": ${snapshot.reason ?? 'unknown'}`,
+      agent_recovery_prompt:
+        'Confirm `gh auth status` passes and the forge is reachable, then re-run `vinaya check coherence`.'
+    })
+    process.exit(1)
+  }
+
+  const enrichedEntries: TaskEntry[] = iteration.tasks.map((t) => ({
+    iterationSlug: slug,
+    archived: false,
+    task: t,
+    facts: snapshot.facts.get(t.id)
+  }))
+
+  results.push(checkA1(enrichedEntries))
+  results.push(checkA3(enrichedEntries))
+  results.push(checkT1(enrichedEntries))
+  results.push(checkD1(enrichedEntries, issueToEntry(enrichedEntries), taskToEntry(enrichedEntries, slug)))
+  results.push(checkT3(baseEntries, slug, enrichedEntries, new Set()))
+  results.push(checkL1([file], new Map([[slug, enrichedEntries]])))
+
+  const token = (await resolveToken()) ?? ''
+  const openIssuesBySlug = await fetchOpenIssuesByLabel([slug], repo.owner, repo.repo, token)
+  const topologyIssues = new Set(iteration.tasks.map((t) => t.issue).filter((n): n is number => n !== null))
+  const openNums = (openIssuesBySlug.get(slug) ?? []).map((i) => i.number)
+  results.push(scopeT2ToPlanPr(checkT2(new Map([[slug, openNums]]), new Map([[slug, topologyIssues]]), slug), false))
+  results.push(checkR1(openIssuesBySlug, R1_GRANDFATHERED_ISSUES))
+
+  const failed = results.filter((r) => r.status === 'fail')
+  if (failed.length > 0) {
+    for (const r of failed) emitFailure(r)
+    process.exit(1)
+  }
+
+  process.exit(0)
+}
+
+main()

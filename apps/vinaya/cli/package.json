@@ -13,6 +13,8 @@
     "lint": "biome check src tests"
   },
   "dependencies": {
+    "@atta/aeg-core": "workspace:*",
+    "@atta/vinaya-sources": "workspace:*",
     "zod": "3.25.76"
   },
   "devDependencies": {
