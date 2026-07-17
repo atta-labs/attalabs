@@ -9,13 +9,13 @@
  *       another surfaced doc.
  *
  * (a) and (b) mirror the real parent/child resolution
- * `apps/aeg/web/studio/src/lib/docs/nest-doc-children.ts` performs when
- * building Studio's live `/docs` nav: a doc whose `parent:` frontmatter
- * points at a nonexistent (or excluded) slug is silently dropped from that
- * nav's flat list — reachable neither at the top level nor as anyone's
- * child. That silent-drop is the exact defect this check exists to catch;
- * Studio's file itself is not touched or imported (out of this task's
- * surface — validated, not edited).
+ * `apps/vinaya/web/src/lib/docs/nest-doc-children.ts` performs when building
+ * Vinaya's live `/docs` nav (a Portal route since `vinaya-pages-v1` task 8;
+ * `apps/aeg/web/studio` carries its own parallel copy of this logic and is
+ * not touched or imported here): a doc whose `parent:` frontmatter points at
+ * a nonexistent (or excluded) slug is silently dropped from that nav's flat
+ * list — reachable neither at the top level nor as anyone's child. That
+ * silent-drop is the exact defect this check exists to catch.
  */
 
 import { deriveTitle, type ParsedDoc } from './parse-doc'

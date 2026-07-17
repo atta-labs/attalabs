@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { TextReveal } from '@atta/ui'
+import { TextReveal } from '@atta/ui/components'
 import type { ReactNode } from 'react'
 
 // Beat between one bullet finishing its own cascade and the next one starting — without

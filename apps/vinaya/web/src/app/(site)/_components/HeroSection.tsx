@@ -2,7 +2,7 @@
 
 import { ArrowDown, Check, X } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { Card, CardContent } from '@atta/ui'
+import { Card, CardContent } from '@atta/ui/components'
 import { Flex, Heading, Text } from '@atta/ui/shared'
 import { LightSpeedEraCanvas } from './canvas/LightSpeedEraCanvas'
 import { NormalEraCanvas } from './canvas/NormalEraCanvas'

@@ -1,5 +1,5 @@
 import { COMMANDS } from '@atta/vinaya-sources'
-import { Badge, Code } from '@atta/ui'
+import { Badge, Code } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { CommandBlock } from './_components/CommandBlock'
 import { DetailText } from './_components/DetailText'

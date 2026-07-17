@@ -16,7 +16,7 @@ const links = [
   { label: 'Projects', href: '/studio/projects' },
   { label: 'Iterations', href: '/studio/iterations' },
   { label: 'Backlog', href: '/studio/backlog' },
-  { label: 'Docs', href: '/studio/docs' }
+  { label: 'Docs', href: '/docs' }
 ]
 
 export default async function StudioLayout({ children }: { children: ReactNode }) {

@@ -1,4 +1,4 @@
-import { Code } from '@atta/ui'
+import { Code } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 
 // A deliberately dumb splitter, not a markdown renderer: split on backticks,

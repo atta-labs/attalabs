@@ -12,7 +12,11 @@ describe('readMoreTarget', () => {
       renderState: 'active',
       sourceLine: 42
     }
-    expect(readMoreTarget(node)).toEqual({ path: 'aeg-root/enforcement.md', line: 42 })
+    expect(readMoreTarget(node)).toEqual({
+      path: 'aeg-root/enforcement.md',
+      line: 42,
+      docRoute: '/docs/enforcement'
+    })
   })
 
   it('links a check node to enforcement.md at its sourceLine', () => {
@@ -24,12 +28,19 @@ describe('readMoreTarget', () => {
       renderState: 'active',
       sourceLine: 100
     }
-    expect(readMoreTarget(node)).toEqual({ path: 'aeg-root/enforcement.md', line: 100 })
+    expect(readMoreTarget(node)).toEqual({
+      path: 'aeg-root/enforcement.md',
+      line: 100,
+      docRoute: '/docs/enforcement'
+    })
   })
 
   it('links a role node to its own roles/<id>.md file, no line', () => {
     const node: DiagramNode = { id: 'role:developer', kind: 'role', label: 'developer', renderState: 'active' }
-    expect(readMoreTarget(node)).toEqual({ path: 'aeg-root/roles/developer.md' })
+    expect(readMoreTarget(node)).toEqual({
+      path: 'aeg-root/roles/developer.md',
+      docRoute: '/docs/roles/developer'
+    })
   })
 
   it('links a contract node to its own contracts/<id>.md file, no line', () => {
@@ -39,7 +50,10 @@ describe('readMoreTarget', () => {
       label: 'brief-developer',
       renderState: 'active'
     }
-    expect(readMoreTarget(node)).toEqual({ path: 'aeg-root/contracts/brief-developer.md' })
+    expect(readMoreTarget(node)).toEqual({
+      path: 'aeg-root/contracts/brief-developer.md',
+      docRoute: '/docs/contracts/brief-developer'
+    })
   })
 
   it('points action nodes at the canonical action set — no doctrine markdown backs them, actions.ts does', () => {

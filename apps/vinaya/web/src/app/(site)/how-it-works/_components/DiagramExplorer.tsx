@@ -22,6 +22,7 @@ type Props = {
   groups: DiagramGroup[]
   findings: DiagramFinding[]
   readMoreHrefs: Record<string, string>
+  viewSourceHrefs: Record<string, string>
 }
 
 /** Prose, not markdown — this string renders through `Text`, so backticks
@@ -53,7 +54,7 @@ const GROUP_EXPLANATION: Record<GroupKey, string> = {
  * fully visible without scrolling. Title/description/legend live in a
  * fixed-width sidebar on the left; the diagram takes the rest of the row.
  */
-export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
+export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHrefs }: Props) {
   const [drilledKey, setDrilledKey] = useState<GroupKey | null>(null)
   const [selectedLeaf, setSelectedLeaf] = useState<DiagramNode | null>(null)
 
@@ -147,7 +148,12 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
       <div className='flex flex-col-reverse lg:min-h-0 lg:flex-1 lg:flex-row'>
         <aside className='flex w-full shrink-0 flex-col gap-5 overflow-y-auto border-border border-t bg-card p-6 text-card-foreground lg:w-[340px] lg:border-t-0 lg:border-r'>
           {selectedLeaf && drilledGroup ? (
-            <LeafPanel node={selectedLeaf} groupKey={drilledGroup.key} readMoreHref={readMoreHrefs[selectedLeaf.id]} />
+            <LeafPanel
+              node={selectedLeaf}
+              groupKey={drilledGroup.key}
+              readMoreHref={readMoreHrefs[selectedLeaf.id]}
+              viewSourceHref={viewSourceHrefs[selectedLeaf.id]}
+            />
           ) : (
             <div className='flex flex-col gap-3'>
               {/* Sidebar title/tagline — page framing (round-2 wrongly
