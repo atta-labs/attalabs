@@ -30,10 +30,8 @@ export type DashboardTask = {
   taskId: string
   title: string
   issue: number | null
-  /** First project of the task — the board href's project segment. */
-  project: string | null
-  /** Deep link to the task's iteration board, or `null` when no project. */
-  boardHref: string | null
+  /** Link to the task's GitHub Issue, or `null` when no issue/repo resolves. */
+  issueUrl: string | null
   status: Extract<DerivedStatus, 'todo' | 'in-flight'>
   /** Present only for a Ready (`todo`) task — its passing gate verdict. */
   readiness: DispatchResult | null
@@ -54,15 +52,16 @@ export async function loadReadyAndInFlightTasks(): Promise<DashboardTask[]> {
 
     for (const task of iteration.tasks) {
       const status = statusById.get(String(task.id))
-      const project = task.projects[0] ?? null
-      const boardHref = project ? `/studio/projects/${project}/iterations/${fileSlug}` : null
+      const issueUrl =
+        snapshot.repo && task.issue != null
+          ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${task.issue}`
+          : null
       const base = {
         iterationSlug: fileSlug,
         taskId: String(task.id),
         title: task.title,
         issue: task.issue,
-        project,
-        boardHref
+        issueUrl
       }
 
       if (status === 'in-flight') {
