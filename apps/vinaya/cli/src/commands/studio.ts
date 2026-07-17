@@ -43,7 +43,10 @@ export function resolveStudioTarget(cwd: string): StudioTarget {
 
 function spawnDev(webDir: string, args: string[]): Promise<number> {
   return new Promise((resolve) => {
-    const child = spawn('bun', ['scripts/dev.ts', ...args], { cwd: webDir, stdio: 'inherit' })
+    // `bun run dev` (not a direct `bun scripts/dev.ts` invocation) — bun's
+    // `run` puts the workspace's node_modules/.bin on PATH for the child,
+    // which `next` needs; a bare script invocation does not.
+    const child = spawn('bun', ['run', 'dev', ...args], { cwd: webDir, stdio: 'inherit' })
     child.on('exit', (code) => resolve(code ?? 0))
   })
 }
