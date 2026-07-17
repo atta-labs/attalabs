@@ -4,15 +4,8 @@ import type { Flow, FlowAgent } from '@atta/engine'
 import { probeProviderKey } from '@atta/identity'
 import type { VendorId } from '@atta/models'
 import { useCatalog } from '@atta/models'
-import { Button, ModelPicker, useToastContext } from '@atta/ui'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@atta/ui/components/dialog'
+import { Button, ModelPicker, useToastContext } from '@atta/ui/components'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { AlertTriangle, ArrowUpRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'

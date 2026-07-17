@@ -17,7 +17,7 @@
 
 import { findModelEntryByModelId, useCatalog, type ModelEntry, type VendorId } from '@atta/models'
 import { ModelIcon } from '@atta/ui/components'
-import { Card, CardContent, CardHeader } from '@atta/ui/components/card'
+import { Card, CardContent, CardHeader } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 import { AIACanvas, AIASphere } from '@atta/ui/canvas'
 import { useId, useMemo } from 'react'

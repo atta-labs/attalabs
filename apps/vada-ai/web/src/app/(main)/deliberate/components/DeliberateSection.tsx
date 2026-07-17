@@ -2,16 +2,15 @@
 
 import type { FileUIPart } from 'ai'
 import type { Flow } from '@atta/engine'
-import { Button } from '@atta/ui/components/button'
 import {
-  Button as LibraryButton,
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   Textarea,
   TextReveal
-} from '@atta/ui'
+} from '@atta/ui/components'
 import { Heading } from '@atta/ui/shared'
 import { SmartPromptInput, type SmartPromptComponents } from '@atta/ui/smart-prompt-input'
 import { ArrowUp } from 'lucide-react'
@@ -24,12 +23,13 @@ import { TeamPicker } from './TeamPicker'
 /**
  * INJECTION CONTRACT (see ui-library-system SKILL.md): SmartPromptInput
  * resolves NO library — the consumer injects. Vāda's library is build-time
- * (animate), so we import from `@atta/ui` which the build-time generator
- * resolves to the active library.
+ * (animate), so we import from `@atta/ui/components` — the only specifier the
+ * tsconfig alias maps to the generated index. Bare `@atta/ui` and subpaths like
+ * `@atta/ui/components/button` bypass the alias and hardcode `basic`.
  */
 const smartPromptComponents: SmartPromptComponents = {
   Textarea,
-  Button: LibraryButton,
+  Button,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
