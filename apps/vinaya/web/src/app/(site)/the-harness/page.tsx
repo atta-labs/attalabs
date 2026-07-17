@@ -6,7 +6,7 @@ import { loadDiagramModel } from './_lib/load-diagram'
 import { readMoreTarget } from './_lib/read-more'
 
 export const metadata = {
-  title: 'How it works — Vinaya',
+  title: 'The Harness — Vinaya',
   description:
     'The enforcement mechanism, rendered at build time from this monorepo’s own doctrine files — nothing hand-transcribed.'
 }

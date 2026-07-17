@@ -76,7 +76,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
         {/* Dynamic breadcrumb — depth mirrors drill state (round-4 fix; used
             to be a static "Home / How it works" string regardless of how
             deep you'd drilled). Every segment before the last is a real
-            back-navigation control: "How it works" resets to the overview,
+            back-navigation control: "The Harness" resets to the overview,
             the ring segment (when a leaf is selected) drops back to that
             ring. This replaces the sidebar's old "← Back" button entirely —
             one back-affordance, not two doing the same job. */}
@@ -96,11 +96,11 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
                 // segment above isn't affected since anchors keep it.
                 <BreadcrumbLink asChild className='uppercase'>
                   <button type='button' onClick={handleBack}>
-                    How it works
+                    The Harness
                   </button>
                 </BreadcrumbLink>
               ) : (
-                <BreadcrumbPage className='font-bold text-foreground'>How it works</BreadcrumbPage>
+                <BreadcrumbPage className='font-bold text-foreground'>The Harness</BreadcrumbPage>
               )}
             </BreadcrumbItem>
             {drilledGroup && (
