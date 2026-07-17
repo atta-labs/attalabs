@@ -29,7 +29,8 @@ type Props = {
  * not derived data, same status as the ring/seam labels themselves
  * (`groupings.ts`'s `STATIC_GROUP_LABELS`). Prose, not markdown: it renders
  * through `Text`, so backticks would show up literally. */
-const HARNESS_TITLE = 'The Vinaya harness — the rings that keep your code safe'
+const HARNESS_NAME = 'The Vinaya harness'
+const HARNESS_TITLE = 'The forge rings that keep your code safe'
 const HARNESS_INTRO =
   'Vinaya is a series of deterministic checks and workflows that hold agentic and human development to the same discipline — an AI agent and a person answer to the identical rules before anything merges. Each ring below is read at build time from this repo’s own doctrine, not hand-written for this page.'
 
@@ -275,15 +276,26 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
           <FindingsBanner findings={findings} />
         </aside>
 
-        <div className='flex min-h-[420px] w-full min-w-0 items-center justify-center p-4 lg:flex-1'>
-          <DiagramCanvas
-            groups={groups}
-            drilledGroup={drilledGroup}
-            selectedLeafId={selectedLeaf?.id ?? null}
-            onDrill={handleDrill}
-            onBack={handleBack}
-            onSelectLeaf={setSelectedLeaf}
-          />
+        {/* Diagram column: a title row on top, then the ring filling whatever
+            height is left. The page never scrolls (`lg:h-[calc(100dvh-56px)]`),
+            so the SVG — which scales to its box via `viewBox` + `h-full` — just
+            renders smaller to make room for the title, rather than pushing the
+            page taller. `min-h-0` lets the canvas wrapper shrink below the
+            ring's intrinsic size instead of forcing a scroll. */}
+        <div className='flex min-h-[420px] w-full min-w-0 flex-col items-center gap-3 p-4 lg:min-h-0 lg:flex-1'>
+          <Heading level={1} className='shrink-0 text-center font-serif text-2xl text-foreground'>
+            {HARNESS_NAME}
+          </Heading>
+          <div className='flex min-h-0 w-full flex-1 items-center justify-center'>
+            <DiagramCanvas
+              groups={groups}
+              drilledGroup={drilledGroup}
+              selectedLeafId={selectedLeaf?.id ?? null}
+              onDrill={handleDrill}
+              onBack={handleBack}
+              onSelectLeaf={setSelectedLeaf}
+            />
+          </div>
         </div>
       </div>
     </div>
