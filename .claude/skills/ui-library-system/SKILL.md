@@ -226,12 +226,14 @@ export default nextConfig
 {
   "compilerOptions": {
     "paths": {
-      "@atta/ui": ["../../../packages/ui/generated/{app}/components"],
+      "@atta/ui/components": ["../../../packages/ui/generated/{app}/components"],
       "@atta/ui/canvas": ["../../../packages/ui/generated/{app}/canvas"]
     }
   }
 }
 ```
+
+**Alias `@atta/ui/components`, never bare `@atta/ui`** — this is what all four live apps do, and app code must import that exact string. Aliasing the bare name instead would make `from '@atta/ui'` "work" in one app while silently resolving to `basic` in every app that didn't, which is precisely the bug ("Import Bypass Bug" under Debugging). One string, aliased everywhere, imported everywhere.
 
 **Why this matters:** When you add a new component to the `animate` library (e.g. `DropdownMenu`), it only becomes available to a consumer if it's exported from `packages/ui/libraries/animate/components/index.ts`. The generated file is just a `export *` passthrough — it has no content of its own.
 
@@ -398,12 +400,12 @@ Animate's `Textarea` re-exports basic's, so adding to basic automatically reache
    }
    ```
 
-2. **Add tsconfig path aliases:**
+2. **Add tsconfig path aliases** — the alias key is `@atta/ui/components`, not bare `@atta/ui` (see the note under "Generated File Format" above, and "Import Bypass Bug" under Debugging). Every live app aliases this exact string; app code must import it verbatim:
    ```json
    {
      "compilerOptions": {
        "paths": {
-         "@atta/ui": ["../../../packages/ui/generated/your-app/components"],
+         "@atta/ui/components": ["../../../packages/ui/generated/your-app/components"],
          "@atta/ui/canvas": ["../../../packages/ui/generated/your-app/canvas"]
        }
      }
@@ -429,11 +431,18 @@ Animate's `Textarea` re-exports basic's, so adding to basic automatically reache
 
 **First step for any missing component:** run `bun run validate:ui-contract`. If the library doesn't export it, the contract will tell you exactly what's missing across all libraries.
 
-**Subpath Import Bypass Bug:**
+**Import Bypass Bug — two wrong forms, not one:**
 If a component (e.g. `Tabs` or `Badge`) renders using the `basic` library styles (or is broken) even though the app's active library is configured as `animate`, check how it is imported.
-* **Incorrect:** `import { Tabs } from '@atta/ui/components/tabs'` (Subpath import)
-* **Correct:** `import { Tabs } from '@atta/ui/components'` (Flat import)
-* **Why:** The `tsconfig.json` path mapping only maps the exact flat string `@atta/ui/components` (no wildcard `/*`). Subpath imports bypass the alias and fall back to `packages/ui/package.json` exports, which route `./components/*` directly to the `basic` library's installed files. Always import flatly from `@atta/ui/components`.
+* **Incorrect — subpath:** `import { Tabs } from '@atta/ui/components/tabs'`
+* **Incorrect — bare package name:** `import { Tabs } from '@atta/ui'`
+* **Correct — the exact aliased string:** `import { Tabs } from '@atta/ui/components'`
+* **Why:** A build-time app's `tsconfig.json` aliases only **exact strings** — `@atta/ui/components` and `@atta/ui/canvas` (plus whatever else that app declares). There is no wildcard and **no bare `@atta/ui` entry**. Anything else falls back to `packages/ui/package.json`'s `exports`, and both fallbacks land on `basic`:
+  * `"./components/*"` → `./libraries/basic/installed/*.tsx` — catches the subpath form.
+  * `"."` → `./libraries/basic/components/index.ts` — **catches the bare form, hardcoding `basic`.**
+
+  So `@atta/ui` is not "the flat import" — it is the second way to pin yourself to `basic`. Only the exact aliased string reaches `packages/ui/generated/{app}/components.ts`, which is what re-exports the CMS-configured library. **"Flat" here means "no subpath *after* `/components`", never "drop the `/components`".**
+* **Why this is easy to get wrong:** both wrong forms typecheck, and both render correctly on any app whose active library *is* `basic` — the bug is invisible until a product switches to `retro`/`animate`/`brutal`, at which point bare-imported surfaces keep rendering `basic` while their correctly-imported siblings switch. A half-themed app, with no error. (`vinaya-pages-v1` task 8, #568: this section previously named only the subpath form, and a brief citing a bare-import call site as "correct precedent" propagated it to 12 files across two products.)
+* **Not this bug:** `@atta/ui/shared`, `@atta/ui/topbar`, `@atta/ui/footer`, `@atta/ui/canvas`, `@atta/ui/lib/*`, `@atta/ui/smart-prompt-input`, `@atta/ui/doc-collector`. These resolve to library-independent code (shared primitives, composites, utilities) — they are not library-swapped, so there is no per-app index for them to miss.
 
 **Build-time apps:**
 1. Run `bun run validate:ui-contract` — check if the active library is missing the component
