@@ -24,7 +24,7 @@
  * scope: full — reads the live forge, not the local diff.
  */
 
-import { execFile, execSync } from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
@@ -55,9 +55,11 @@ process.chdir(REPO_ROOT)
 
 const execFileAsync = promisify(execFile)
 
-function sh(cmd: string): string {
+// Array-form execFileSync — no shell, so no injection surface even though
+// today's arguments are fixed literals.
+function git(args: string[]): string {
   try {
-    return execSync(cmd, { encoding: 'utf8' }).trim()
+    return execFileSync('git', args, { encoding: 'utf8' }).trim()
   } catch {
     return ''
   }
@@ -69,7 +71,7 @@ function resolveRepo(): { owner: string; repo: string } | null {
     const m = fromEnv.match(/^([^/]+)\/(.+)$/)
     if (m?.[1] && m[2]) return { owner: m[1], repo: m[2] }
   }
-  const url = sh('git remote get-url origin')
+  const url = git(['remote', 'get-url', 'origin'])
   const ssh = url.match(/^git@github\.com:([^/]+)\/(.+?)(?:\.git)?$/)
   if (ssh?.[1] && ssh[2]) return { owner: ssh[1], repo: ssh[2] }
   const https = url.match(/^https?:\/\/(?:[^@]+@)?github\.com\/([^/]+)\/(.+?)(?:\.git)?\/?$/)
@@ -90,7 +92,7 @@ async function resolveToken(): Promise<string | null> {
 }
 
 function currentIterationSlug(): string | null {
-  const branch = process.env.BRANCH || sh('git rev-parse --abbrev-ref HEAD')
+  const branch = process.env.BRANCH || git(['rev-parse', '--abbrev-ref', 'HEAD'])
   const m = branch.match(/^task\/([^/]+)\//)
   return m?.[1] ?? null
 }
@@ -107,6 +109,28 @@ function taskToEntry(entries: TaskEntry[], slug: string): Map<string, TaskEntry>
   return m
 }
 
+/** Tailors the instruction to the specific coherence check code that fired, rather than one canned prompt for every failure class. */
+function recoveryPromptFor(checkCode: string): string {
+  switch (checkCode) {
+    case 'A1':
+      return "The task's Issue is closed but its closing PR is not merged. Verify the PR actually merged (or reopen the Issue if it was closed in error), then re-run `vinaya check coherence`."
+    case 'A3':
+      return 'The closing PR merged but the Issue is still open (a GitHub auto-close misfire). Manually close the Issue, then re-run `vinaya check coherence`.'
+    case 'T1':
+      return "The topology names an Issue number that doesn't resolve on the forge. Fix the Issue number in the topology, or ask the Planner to re-cut it, then re-run `vinaya check coherence`."
+    case 'T2':
+      return "An open Issue under this iteration's label is missing from the topology. Add its row to the iteration's task list, then re-run `vinaya check coherence`."
+    case 'T3':
+      return 'A task in this active iteration has no Issue (#TBD). Ask the Planner to cut the Issue, then re-run `vinaya check coherence`.'
+    case 'D1':
+      return "This task has an open PR but a declared dependency isn't closed. Close the dependency first (or verify it truly is), then re-run `vinaya check coherence`."
+    case 'R1':
+      return 'The Issue fails the D-078 rationale gate. Ask the Planner to complete the eight-field rationale on the Issue body, then re-run `vinaya check coherence`.'
+    default:
+      return 'Read the named coherence failure and resolve the underlying forge/topology drift it names, then re-run `vinaya check coherence`.'
+  }
+}
+
 function emitFailure(result: CheckResult): void {
   const detail = result.failures.map((f) => f.reason).join(' | ') || result.note || 'see check output'
   emitCheckError({
@@ -114,9 +138,7 @@ function emitFailure(result: CheckResult): void {
     check: CHECK_NAME,
     severity: 'error',
     message: `${result.check}: ${detail}`,
-    agent_recovery_prompt:
-      'Read the named coherence failure and resolve the underlying forge/topology drift it names (merge the ' +
-      'dependency, close the stale Issue, or fix the topology row), then re-run `vinaya check coherence`.'
+    agent_recovery_prompt: recoveryPromptFor(result.check)
   })
 }
 

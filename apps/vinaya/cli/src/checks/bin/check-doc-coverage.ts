@@ -12,7 +12,7 @@
  * a bound doc."
  */
 
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -32,16 +32,18 @@ process.chdir(REPO_ROOT)
 
 const CHECK_NAME = 'doc-coverage'
 
-function sh(cmd: string): string {
+// Array-form execFileSync — no shell, so `base` (env-controlled) is passed
+// to git as an inert literal argv element, never shell-interpreted.
+function git(args: string[]): string {
   try {
-    return execSync(cmd, { encoding: 'utf8' }).trim()
+    return execFileSync('git', args, { encoding: 'utf8' }).trim()
   } catch {
     return ''
   }
 }
 
 function changedFiles(base: string): string[] {
-  return sh(`git diff --name-only ${base}...HEAD`)
+  return git(['diff', '--name-only', `${base}...HEAD`])
     .split('\n')
     .map((s) => s.trim())
     .filter(Boolean)

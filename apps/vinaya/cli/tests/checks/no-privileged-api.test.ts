@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { join } from 'node:path'
 import type { CheckSpec } from '../../src/checks/contract'
 import { coreCheckRegistry } from '../../src/checks/registry'
@@ -28,11 +28,49 @@ describe('no-privileged-api (D-092)', () => {
     }
   })
 
-  it('a core-shaped spec and a custom-shaped spec with the same run target produce structurally identical outcomes', async () => {
-    const coreShaped: CheckSpec = { name: 'core-fixture', run: FIXTURE, scope: 'full' }
-    const customShaped: CheckSpec = { name: 'custom-fixture', run: FIXTURE, scope: 'full' }
+  describe('a REAL core-registry check run through runChecks', () => {
+    // `Bun.spawn` inherits the parent env (runner.ts sets no explicit `env`
+    // override) — clear PR_BODY so `brief-shape`'s own "no PR_BODY → exit 0"
+    // bypass is deterministic regardless of what this test process inherited.
+    const savedPrBody = process.env.PR_BODY
+    beforeEach(() => {
+      delete process.env.PR_BODY
+    })
+    afterEach(() => {
+      if (savedPrBody !== undefined) process.env.PR_BODY = savedPrBody
+    })
 
-    const [coreOutcome, customOutcome] = await runChecks([coreShaped, customShaped], {
+    it("produces a CheckOutcome structurally identical to a fixture custom check's — the literal §6 Part 5 requirement", async () => {
+      const briefShapeSpec = coreCheckRegistry().find((s) => s.name === 'brief-shape')
+      if (!briefShapeSpec) {
+        throw new Error(
+          'coreCheckRegistry() no longer registers "brief-shape" — update this test to name a live core check'
+        )
+      }
+      const customSpec: CheckSpec = { name: 'custom-fixture', run: FIXTURE, scope: 'full' }
+
+      const [coreOutcome, customOutcome] = await runChecks([briefShapeSpec, customSpec], {
+        parallel: 2,
+        diffOnly: false,
+        changedFiles: null,
+        defaultTimeoutMs: 10_000
+      })
+
+      // Both ran through the SAME runChecks call — one is a real
+      // src/checks/bin/check-brief-shape.ts subprocess pulled straight from
+      // the registry, not a fabricated core-shaped object.
+      expect(Object.keys(coreOutcome ?? {}).sort()).toEqual(Object.keys(customOutcome ?? {}).sort())
+      expect(coreOutcome?.exitCode).toBe(0) // no PR_BODY → brief-shape's documented bypass
+      expect(coreOutcome?.status).toBe('pass')
+      expect(customOutcome?.status).toBe('pass')
+    })
+  })
+
+  it('runChecks has no branch on provenance — a core-labeled spec and a custom-labeled spec pointed at the SAME executable behave identically', async () => {
+    const coreLabeled: CheckSpec = { name: 'core-fixture', run: FIXTURE, scope: 'full' }
+    const customLabeled: CheckSpec = { name: 'custom-fixture', run: FIXTURE, scope: 'full' }
+
+    const [coreOutcome, customOutcome] = await runChecks([coreLabeled, customLabeled], {
       parallel: 2,
       diffOnly: false,
       changedFiles: null,
@@ -42,20 +80,5 @@ describe('no-privileged-api (D-092)', () => {
     expect(Object.keys(coreOutcome ?? {}).sort()).toEqual(Object.keys(customOutcome ?? {}).sort())
     expect(coreOutcome?.status).toBe(customOutcome?.status)
     expect(coreOutcome?.exitCode).toBe(customOutcome?.exitCode)
-  })
-
-  it('runChecks has no branch on provenance — the real core registry runs through the identical path a fixture custom check does', async () => {
-    const customSpec: CheckSpec = { name: 'custom-fixture', run: FIXTURE, scope: 'full' }
-    const [customOutcome] = await runChecks([customSpec], {
-      parallel: 1,
-      diffOnly: false,
-      changedFiles: null,
-      defaultTimeoutMs: 5000
-    })
-    const expectedFields = ['durationMs', 'errors', 'exitCode', 'name', 'status'].sort()
-    expect(
-      Object.keys(customOutcome ?? {}).sort(),
-      'a custom check outcome must carry exactly the same field set a core check outcome does — no privileged shape either side'
-    ).toEqual(expectedFields)
   })
 })

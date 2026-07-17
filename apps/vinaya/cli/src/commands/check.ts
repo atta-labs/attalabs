@@ -1,13 +1,15 @@
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { emitCheckError, type CheckError, type CheckOutcome, type CheckSpec } from '../checks/contract'
 import { coreCheckRegistry } from '../checks/registry'
 import { defaultParallelism, runChecks } from '../checks/runner'
 import { loadConfigChecked } from '../lib/config'
 import { printJson } from '../lib/envelope'
 
-function sh(cmd: string): string {
+// Array-form execFileSync — no shell, so `base` (env-controlled) is passed
+// to git as an inert literal argv element, never shell-interpreted.
+function git(args: string[]): string {
   try {
-    return execSync(cmd, { encoding: 'utf8' }).trim()
+    return execFileSync('git', args, { encoding: 'utf8' }).trim()
   } catch {
     return ''
   }
@@ -15,8 +17,8 @@ function sh(cmd: string): string {
 
 function changedFiles(): string[] {
   const base = process.env.BASE_SHA || 'origin/main'
-  let out = sh(`git diff --name-only ${base}...HEAD`)
-  if (!out) out = sh('git diff --name-only main...HEAD')
+  let out = git(['diff', '--name-only', `${base}...HEAD`])
+  if (!out) out = git(['diff', '--name-only', 'main...HEAD'])
   return out
     .split('\n')
     .map((s) => s.trim())

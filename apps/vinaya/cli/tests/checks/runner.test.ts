@@ -8,6 +8,7 @@ const PASSING = join(FIXTURES, 'passing-check.ts')
 const FAILING = join(FIXTURES, 'failing-check.ts')
 const MALFORMED = join(FIXTURES, 'malformed-check.ts')
 const SLEEPER = join(FIXTURES, 'sleeper.ts')
+const STUBBORN_SLEEPER = join(FIXTURES, 'stubborn-sleeper.ts')
 
 function fullScope(overrides: Partial<CheckSpec> & Pick<CheckSpec, 'name' | 'run'>): CheckSpec {
   return { scope: 'full', ...overrides }
@@ -48,6 +49,23 @@ describe('runChecks', () => {
     expect(outcome?.exitCode).toBeNull()
     expect(elapsed).toBeLessThan(2000)
   })
+
+  it('escalates to SIGKILL when a timed-out check traps/ignores SIGTERM', async () => {
+    // stubborn-sleeper.ts ignores SIGTERM entirely — if the runner only ever
+    // sent SIGTERM, `proc.exited` would never resolve and this test would
+    // hang past bun:test's own timeout. Its completion IS the proof the
+    // SIGKILL escalation actually terminates the process.
+    const start = performance.now()
+    const [outcome] = await runChecks(
+      [fullScope({ name: 'stubborn', run: STUBBORN_SLEEPER, args: ['10000'], timeoutMs: 300 })],
+      BASE_OPTS
+    )
+    const elapsed = performance.now() - start
+    expect(outcome?.status).toBe('timeout')
+    expect(outcome?.exitCode).toBeNull()
+    // Bounded by timeoutMs + the runner's SIGKILL grace period + slack.
+    expect(elapsed).toBeLessThan(4000)
+  }, 10_000)
 
   it('caps concurrency — 6 checks at 300ms each with parallel=2 take at least ~900ms', async () => {
     const specs = Array.from({ length: 6 }, (_, i) => fullScope({ name: `sleep-${i}`, run: SLEEPER, args: ['300'] }))

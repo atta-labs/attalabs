@@ -12,29 +12,35 @@
  * scope: diff — reads only the PR body + the diff, never the whole repo.
  */
 
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { checkBriefSections, isDecisionLog, readTierFromPrBody } from '@atta/aeg-core'
 import { CHECK_SCHEMA_VERSION, emitCheckError } from '../contract'
 
 const CHECK_NAME = 'brief-shape'
 
-function sh(cmd: string): string {
+// Array-form execFileSync — no shell, so a filename/ref containing shell
+// metacharacters (backticks, `;`, `$()`) is passed to git as an inert
+// literal argv element, never interpreted. Security review finding
+// (command injection): a shell-string-interpolated `sh(cmd: string)` here
+// would let an attacker-chosen filename in the PR's own diff execute
+// arbitrary commands once this check runs in CI.
+function git(args: string[]): string {
   try {
-    return execSync(cmd, { encoding: 'utf8' }).trim()
+    return execFileSync('git', args, { encoding: 'utf8' }).trim()
   } catch {
     return ''
   }
 }
 
 function changedFiles(base: string): string[] {
-  return sh(`git diff --name-only ${base}...HEAD`)
+  return git(['diff', '--name-only', `${base}...HEAD`])
     .split('\n')
     .map((s) => s.trim())
     .filter(Boolean)
 }
 
 function diffAddsLockYes(base: string, file: string): boolean {
-  const diff = sh(`git diff ${base}...HEAD -- ${file}`)
+  const diff = git(['diff', `${base}...HEAD`, '--', file])
   return diff.split('\n').some((line) => line.startsWith('+') && !line.startsWith('+++') && /Lock:\s*YES/.test(line))
 }
 

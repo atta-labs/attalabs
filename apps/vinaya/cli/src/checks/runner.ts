@@ -44,6 +44,9 @@ function shouldSkip(spec: CheckSpec, opts: RunOptions): boolean {
   return !opts.changedFiles.some((f) => regexes.some((re) => re.test(f)))
 }
 
+/** Grace period between SIGTERM and SIGKILL for a timed-out check. */
+const KILL_GRACE_MS = 2000
+
 async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome> {
   const start = performance.now()
   const proc = Bun.spawn([spec.run, ...(spec.args ?? [])], {
@@ -53,9 +56,14 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
   })
 
   let timedOut = false
+  let killTimer: ReturnType<typeof setTimeout> | undefined
   const timer = setTimeout(() => {
     timedOut = true
+    // SIGTERM first; a check that traps/ignores it would otherwise run
+    // forever past its declared timeout — escalate to SIGKILL after a
+    // grace period so "the runner enforces the timeout" is actually true.
     proc.kill()
+    killTimer = setTimeout(() => proc.kill('SIGKILL'), KILL_GRACE_MS)
   }, timeoutMs)
 
   const [stderrText] = await Promise.all([
@@ -66,6 +74,7 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
   ])
   const exitCode = await proc.exited
   clearTimeout(timer)
+  clearTimeout(killTimer)
   const durationMs = performance.now() - start
 
   if (timedOut) {
@@ -114,8 +123,17 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
  * `CheckSpec` came from the built-in registry or from `vinaya.config.json`;
  * see `tests/checks/no-privileged-api.test.ts` for the mechanical proof.
  *
- * The runner enforces the per-check timeout itself (spawn, race, kill) — a
- * check trusted to time itself out cannot be trusted at all.
+ * The runner enforces the per-check timeout itself (spawn, SIGTERM, escalate
+ * to SIGKILL after `KILL_GRACE_MS`) — a check trusted to time itself out
+ * cannot be trusted at all.
+ *
+ * Known hardening gaps, not addressed by this task (documented rather than
+ * silently ignored): `Bun.spawn` inherits the full parent environment — the
+ * contract's "no-network-by-default" rule is convention-only, nothing here
+ * sandboxes or scrubs a check's network access or secret visibility; and the
+ * timeout kill targets only the direct child, not a process group/tree, so a
+ * check that itself shells out to a further subprocess can leave that
+ * grandchild running past the kill.
  */
 export async function runChecks(specs: CheckSpec[], opts: RunOptions): Promise<CheckOutcome[]> {
   const results: CheckOutcome[] = new Array(specs.length)

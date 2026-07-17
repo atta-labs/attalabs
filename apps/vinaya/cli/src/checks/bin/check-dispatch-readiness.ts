@@ -32,7 +32,7 @@
  * scope: full — reads the live forge, not the local diff.
  */
 
-import { execFile, execSync } from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
@@ -55,9 +55,11 @@ process.chdir(REPO_ROOT)
 
 const execFileAsync = promisify(execFile)
 
-function sh(cmd: string): string {
+// Array-form execFileSync — no shell, so no injection surface even though
+// today's arguments are fixed literals.
+function git(args: string[]): string {
   try {
-    return execSync(cmd, { encoding: 'utf8' }).trim()
+    return execFileSync('git', args, { encoding: 'utf8' }).trim()
   } catch {
     return ''
   }
@@ -69,7 +71,7 @@ function resolveRepo(): { owner: string; repo: string } | null {
     const m = fromEnv.match(/^([^/]+)\/(.+)$/)
     if (m?.[1] && m[2]) return { owner: m[1], repo: m[2] }
   }
-  const url = sh('git remote get-url origin')
+  const url = git(['remote', 'get-url', 'origin'])
   const ssh = url.match(/^git@github\.com:([^/]+)\/(.+?)(?:\.git)?$/)
   if (ssh?.[1] && ssh[2]) return { owner: ssh[1], repo: ssh[2] }
   const https = url.match(/^https?:\/\/(?:[^@]+@)?github\.com\/([^/]+)\/(.+?)(?:\.git)?\/?$/)
@@ -90,7 +92,7 @@ async function resolveToken(): Promise<string | null> {
 }
 
 function currentBranch(): string {
-  return process.env.BRANCH || sh('git rev-parse --abbrev-ref HEAD')
+  return process.env.BRANCH || git(['rev-parse', '--abbrev-ref', 'HEAD'])
 }
 
 function fail(message: string, prompt: string): never {
@@ -217,15 +219,33 @@ async function main(): Promise<void> {
         check: CHECK_NAME,
         severity: 'error',
         message: blocker,
-        agent_recovery_prompt:
-          'Resolve the named blocker (merge the dependency, wait for the conflicting PR to close, or ask the Planner ' +
-          'to complete the Issue) before continuing work on this task, then re-run `vinaya check dispatch-readiness`.'
+        agent_recovery_prompt: recoveryPromptFor(blocker)
       })
     }
     process.exit(1)
   }
 
   process.exit(0)
+}
+
+/** Tailors the instruction to `checkDispatchReadiness`'s own `dispatch-gate <category>:` blocker prefixes, rather than one canned prompt for every failure type. */
+function recoveryPromptFor(blocker: string): string {
+  if (blocker.startsWith('dispatch-gate issue-existence:')) {
+    return 'This task has no resolvable Issue yet. Wait for the Planner to cut the Issue (or fix the phantom reference in the topology), then re-run `vinaya check dispatch-readiness`.'
+  }
+  if (blocker.startsWith('dispatch-gate rationale:')) {
+    return "The task's Issue fails the D-078 rationale gate. Ask the Planner to complete the eight-field rationale on the Issue body, then re-run `vinaya check dispatch-readiness`."
+  }
+  if (blocker.startsWith('dispatch-gate depends-on:')) {
+    return 'A declared dependency is not merged yet. Do not start this task — wait for the named dependency PR to merge, then re-run `vinaya check dispatch-readiness`.'
+  }
+  if (blocker.startsWith('dispatch-gate conflicts-with:')) {
+    return 'A declared conflicting task has an open or in-flight PR. Wait for it to merge before continuing, then re-run `vinaya check dispatch-readiness`.'
+  }
+  if (blocker.startsWith('dispatch-gate prior-iteration-archival:')) {
+    return "This project's previous iteration is not archived. Ask the Iteration Archivist to run first, then re-run `vinaya check dispatch-readiness`."
+  }
+  return 'Resolve the named dispatch blocker before continuing work on this task, then re-run `vinaya check dispatch-readiness`.'
 }
 
 main()
