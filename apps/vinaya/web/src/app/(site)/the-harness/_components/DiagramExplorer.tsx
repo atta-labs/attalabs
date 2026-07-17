@@ -282,8 +282,12 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
             renders smaller to make room for the title, rather than pushing the
             page taller. `min-h-0` lets the canvas wrapper shrink below the
             ring's intrinsic size instead of forcing a scroll. */}
-        <div className='flex min-h-[420px] w-full min-w-0 flex-col items-center gap-1 p-4 lg:min-h-0 lg:flex-1'>
-          <Heading level={1} className='shrink-0 text-center font-serif text-3xl text-foreground'>
+        <div className='flex min-h-[420px] w-full min-w-0 flex-col items-center gap-6 p-4 lg:min-h-0 lg:flex-1'>
+          {/* Matches the ring's own hub-centre label (`DiagramCanvas`'s
+              `font-mono text-muted-foreground` "The actors" title) — same
+              typeface and colour, so the page title and the ring read as one
+              type system, not two. */}
+          <Heading level={1} className='shrink-0 text-center font-mono text-3xl text-muted-foreground'>
             {HARNESS_NAME}
           </Heading>
           {/* `items-start` + the SVG's own `xMidYMin` alignment pin the ring to
