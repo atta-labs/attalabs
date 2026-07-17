@@ -1,4 +1,21 @@
-import { Separator, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
+// `@atta/ui/components`, not bare `@atta/ui`: this app's tsconfig aliases only
+// the exact string `@atta/ui/components` (→ `generated/vinaya/components`, the
+// active-library passthrough). Bare `@atta/ui` has no alias here, so it falls
+// back to `packages/ui/package.json`'s `"."` export — hardcoded
+// `libraries/basic/components` — which would pin this page to `basic` no matter
+// which library the CMS selects. See ui-library-system's "Subpath Import
+// Bypass Bug": the aliased flat string is the one that resolves per-library.
+import {
+  Code,
+  CodeBlock,
+  Separator,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import ReactMarkdown from 'react-markdown'
@@ -72,12 +89,24 @@ const markdownComponents = {
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote className='my-6 border-l-2 border-accent/60 pl-4 text-muted-foreground italic' {...props} />
   ),
-  code: (props: React.HTMLAttributes<HTMLElement>) => (
-    <code className='rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.92em] text-foreground' {...props} />
-  ),
-  pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
-    <pre className='my-4 overflow-x-auto rounded-md bg-muted p-4 font-mono text-sm text-foreground' {...props} />
-  ),
+  // `Code`/`CodeBlock` from the cross-library contract, not local class
+  // strings — their values were copied FROM this file when `vinaya-pages-v1`
+  // task 9 (#569) added them for `/install`, so the chip/block treatments are
+  // the same pixels, now from one source instead of two.
+  //
+  // The `className` branch is not decoration: ReactMarkdown routes BOTH inline
+  // code and a fenced block's inner `<code>` through this one entry, and only
+  // the fenced-with-a-language case arrives carrying `language-<x>`. `Code`
+  // merges (`cn(chip, className)`) where the old local element overwrote
+  // (`<code className='chip' {...props}/>` — a later JSX prop wins), so an
+  // unconditional `<Code {...props}/>` would newly stamp the chip (muted fill,
+  // padding, 0.92em) INSIDE every fenced block that names a language. Keeping
+  // the overwrite semantics preserves the byte-identical render the adoption
+  // promised: `CodeBlock`'s `<pre>` already owns the block treatment, so the
+  // inner element wants no chip.
+  code: ({ className, ...props }: React.HTMLAttributes<HTMLElement>) =>
+    className ? <code className={className} {...props} /> : <Code {...props} />,
+  pre: (props: React.HTMLAttributes<HTMLPreElement>) => <CodeBlock {...props} />,
   a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
     <NextLink href={href ?? '#'} variant='unstyled' className='text-accent underline-offset-4 hover:underline'>
       {children}
