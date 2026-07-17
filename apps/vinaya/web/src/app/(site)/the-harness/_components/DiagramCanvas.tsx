@@ -198,6 +198,7 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
   return (
     <svg
       viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
+      preserveAspectRatio='xMidYMin meet'
       className='h-full max-h-full w-full max-w-full'
       role='img'
       aria-label='Vinaya enforcement mechanism, rendered from the current doctrine'

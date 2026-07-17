@@ -282,11 +282,15 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
             renders smaller to make room for the title, rather than pushing the
             page taller. `min-h-0` lets the canvas wrapper shrink below the
             ring's intrinsic size instead of forcing a scroll. */}
-        <div className='flex min-h-[420px] w-full min-w-0 flex-col items-center gap-3 p-4 lg:min-h-0 lg:flex-1'>
-          <Heading level={1} className='shrink-0 text-center font-serif text-2xl text-foreground'>
+        <div className='flex min-h-[420px] w-full min-w-0 flex-col items-center gap-4 p-4 lg:min-h-0 lg:flex-1'>
+          <Heading level={1} className='shrink-0 text-center font-serif text-3xl text-foreground'>
             {HARNESS_NAME}
           </Heading>
-          <div className='flex min-h-0 w-full flex-1 items-center justify-center'>
+          {/* `items-start` + the SVG's own `xMidYMin` alignment pin the ring to
+              the top of this box, so the gap from title to ring equals the gap
+              from title to the top bar (both the `gap-4`/`p-4` value) instead of
+              the ring floating centred with a big gap above it. */}
+          <div className='flex min-h-0 w-full flex-1 items-start justify-center'>
             <DiagramCanvas
               groups={groups}
               drilledGroup={drilledGroup}
