@@ -258,7 +258,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
                   <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-[0.1em]'>
                     In this ring — {drilledGroup.children.length}
                   </Text>
-                  <ol className='flex list-decimal flex-col gap-2.5 pl-5'>
+                  <ol className='flex list-decimal flex-col gap-1 pl-5'>
                     {drilledGroup.children.map((node) => (
                       <li key={node.id} className='pl-1 marker:text-muted-foreground'>
                         <Text as='span' size='sm' className={BODY_TEXT}>
