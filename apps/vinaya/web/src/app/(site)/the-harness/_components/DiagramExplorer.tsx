@@ -282,7 +282,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
             renders smaller to make room for the title, rather than pushing the
             page taller. `min-h-0` lets the canvas wrapper shrink below the
             ring's intrinsic size instead of forcing a scroll. */}
-        <div className='flex min-h-[420px] w-full min-w-0 flex-col items-center gap-4 p-4 lg:min-h-0 lg:flex-1'>
+        <div className='flex min-h-[420px] w-full min-w-0 flex-col items-center gap-1 p-4 lg:min-h-0 lg:flex-1'>
           <Heading level={1} className='shrink-0 text-center font-serif text-3xl text-foreground'>
             {HARNESS_NAME}
           </Heading>
