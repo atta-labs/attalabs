@@ -29,7 +29,7 @@ type Props = {
  * not derived data, same status as the ring/seam labels themselves
  * (`groupings.ts`'s `STATIC_GROUP_LABELS`). Prose, not markdown: it renders
  * through `Text`, so backticks would show up literally. */
-const HARNESS_NAME = 'The Vinaya harness'
+const HARNESS_NAME = 'The Vinaya Harness'
 const HARNESS_TITLE = 'The forge rings that keep your code safe'
 const HARNESS_INTRO =
   'Vinaya is a series of deterministic checks and workflows that hold agentic and human development to the same discipline — an AI agent and a person answer to the identical rules before anything merges. Each ring below is read at build time from this repo’s own doctrine, not hand-written for this page.'
