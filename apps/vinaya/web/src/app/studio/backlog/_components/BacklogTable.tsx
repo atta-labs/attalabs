@@ -1,22 +1,7 @@
 'use client'
 
-import {
-  Badge,
-  Button,
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@atta/ui/components'
-import { ChevronDown, ListFilter, X } from 'lucide-react'
+import { Badge, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
+import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { BacklogIssue } from '@/lib/forge/fetch-open-issues'
 
@@ -32,7 +17,12 @@ import type { BacklogIssue } from '@/lib/forge/fetch-open-issues'
  * defined as open Issues carrying NO `iteration:*` label (`fetch-open-issues.ts`),
  * so every row is open and iteration-less. A row matches when it carries ANY
  * selected project (multi-project rows match either) AND its tier is selected;
- * an empty filter set means "all".
+ * an empty filter set means "all". Filters are inline toggle chips — every
+ * option is visible at a glance, and they wrap on narrow screens.
+ *
+ * The `#` and Title columns are split (like the iteration board's table). The
+ * table sets a `min-w` so the library Table's own `overflow-auto` scroll
+ * container kicks in on narrow screens instead of cramming the columns.
  *
  * Label styling is keyed to a label's CATEGORY (its prefix), never its value —
  * one flat semantic-token variant per family (the doctrine forbids a per-value
@@ -65,6 +55,10 @@ function LabelBadge({ label }: { label: string }) {
   )
 }
 
+function Dash() {
+  return <span className='font-mono text-xs text-muted-foreground/60'>—</span>
+}
+
 type SplitLabels = { projects: string[]; tier: string | null; flags: string[] }
 
 function splitLabels(labels: string[]): SplitLabels {
@@ -75,45 +69,52 @@ function splitLabels(labels: string[]): SplitLabels {
   }
 }
 
-/** A multi-select checkbox dropdown over one label family. */
-function FilterMenu({
+/** One toggle chip in a filter row — filled when active, outline when not. */
+function FilterChip({ label, active, onToggle }: { label: string; active: boolean; onToggle: () => void }) {
+  return (
+    <Button
+      type='button'
+      variant={active ? 'default' : 'outline'}
+      size='sm'
+      onClick={onToggle}
+      aria-pressed={active}
+      className={`h-7 font-mono text-xs ${
+        active ? 'border-accent bg-accent text-accent-foreground hover:bg-accent/90' : 'text-muted-foreground'
+      }`}
+    >
+      {label}
+    </Button>
+  )
+}
+
+/** A labelled row of toggle chips over one label family. */
+function FilterGroup({
   name,
   options,
   selected,
-  onToggle
+  onToggle,
+  strip
 }: {
   name: string
   options: string[]
   selected: Set<string>
   onToggle: (value: string) => void
+  /** Prefix to strip for the chip's display text (the full label still filters). */
+  strip: string
 }) {
   if (options.length === 0) return null
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant='outline' size='sm' className='gap-1.5 font-mono text-xs'>
-          <ListFilter className='size-3.5' aria-hidden />
-          {name}
-          {selected.size > 0 && <span className='rounded bg-accent/15 px-1 text-accent'>{selected.size}</span>}
-          <ChevronDown className='size-3.5 text-muted-foreground' aria-hidden />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align='start' className='min-w-44'>
-        <DropdownMenuLabel className='font-mono text-xs'>{name}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {options.map((option) => (
-          <DropdownMenuCheckboxItem
-            key={option}
-            checked={selected.has(option)}
-            onCheckedChange={() => onToggle(option)}
-            onSelect={(event) => event.preventDefault()}
-            className='font-mono text-xs'
-          >
-            {option}
-          </DropdownMenuCheckboxItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className='flex flex-wrap items-center gap-1.5'>
+      <span className='font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground'>{name}</span>
+      {options.map((option) => (
+        <FilterChip
+          key={option}
+          label={option.slice(strip.length)}
+          active={selected.has(option)}
+          onToggle={() => onToggle(option)}
+        />
+      ))}
+    </div>
   )
 }
 
@@ -154,19 +155,27 @@ export function BacklogTable({
 
   return (
     <div className='space-y-3'>
-      <div className='flex flex-wrap items-center gap-2'>
-        <FilterMenu
+      <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
+        <FilterGroup
           name='Project'
           options={projectOptions}
           selected={selectedProjects}
           onToggle={toggle(setSelectedProjects)}
+          strip='project:'
         />
-        <FilterMenu name='Tier' options={tierOptions} selected={selectedTiers} onToggle={toggle(setSelectedTiers)} />
+        <FilterGroup
+          name='Tier'
+          options={tierOptions}
+          selected={selectedTiers}
+          onToggle={toggle(setSelectedTiers)}
+          strip='tier:'
+        />
         {anyFilter && (
           <Button
+            type='button'
             variant='ghost'
             size='sm'
-            className='gap-1 font-mono text-xs text-muted-foreground'
+            className='h-7 gap-1 font-mono text-xs text-muted-foreground'
             onClick={() => {
               setSelectedProjects(new Set())
               setSelectedTiers(new Set())
@@ -182,19 +191,20 @@ export function BacklogTable({
       </div>
 
       <div className='rounded-lg border border-border bg-card'>
-        <Table className='table-fixed'>
+        <Table className='min-w-[720px]'>
           <TableHeader>
             <TableRow>
-              <TableHead className='w-[46%] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
-              <TableHead className='w-[24%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-              <TableHead className='w-[10%] font-sans text-xs uppercase tracking-wider'>Tier</TableHead>
-              <TableHead className='w-[20%] font-sans text-xs uppercase tracking-wider'>Flags</TableHead>
+              <TableHead className='w-16 font-sans text-xs uppercase tracking-wider'>#</TableHead>
+              <TableHead className='font-sans text-xs uppercase tracking-wider'>Title</TableHead>
+              <TableHead className='w-[22%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
+              <TableHead className='w-20 font-sans text-xs uppercase tracking-wider'>Tier</TableHead>
+              <TableHead className='w-[18%] font-sans text-xs uppercase tracking-wider'>Flags</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className='py-8 text-center font-sans text-sm text-muted-foreground/70'>
+                <TableCell colSpan={5} className='py-8 text-center font-sans text-sm text-muted-foreground/70'>
                   No issues match these filters.
                 </TableCell>
               </TableRow>
@@ -208,10 +218,19 @@ export function BacklogTable({
                         href={issue.url}
                         target='_blank'
                         rel='noreferrer'
-                        className='hover:text-accent hover:underline'
+                        className='whitespace-nowrap font-mono text-xs text-muted-foreground hover:text-accent hover:underline'
                       >
-                        <span className='font-mono text-xs text-muted-foreground'>#{issue.number}</span>{' '}
-                        <span className='font-sans text-sm text-card-foreground'>{issue.title}</span>
+                        #{issue.number}
+                      </a>
+                    </TableCell>
+                    <TableCell className='align-top'>
+                      <a
+                        href={issue.url}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='font-sans text-sm text-card-foreground hover:text-accent hover:underline'
+                      >
+                        {issue.title}
                       </a>
                     </TableCell>
                     <TableCell className='align-top'>
@@ -219,24 +238,14 @@ export function BacklogTable({
                         {projects.length > 0 ? (
                           projects.map((label) => <LabelBadge key={label} label={label} />)
                         ) : (
-                          <span className='font-mono text-xs text-muted-foreground/60'>—</span>
+                          <Dash />
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className='align-top'>
-                      {tier ? (
-                        <LabelBadge label={tier} />
-                      ) : (
-                        <span className='font-mono text-xs text-muted-foreground/60'>—</span>
-                      )}
-                    </TableCell>
+                    <TableCell className='align-top'>{tier ? <LabelBadge label={tier} /> : <Dash />}</TableCell>
                     <TableCell className='align-top'>
                       <div className='flex flex-wrap gap-1'>
-                        {flags.length > 0 ? (
-                          flags.map((label) => <LabelBadge key={label} label={label} />)
-                        ) : (
-                          <span className='font-mono text-xs text-muted-foreground/60'>—</span>
-                        )}
+                        {flags.length > 0 ? flags.map((label) => <LabelBadge key={label} label={label} />) : <Dash />}
                       </div>
                     </TableCell>
                   </TableRow>
