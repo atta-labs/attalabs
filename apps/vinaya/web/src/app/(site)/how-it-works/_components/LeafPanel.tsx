@@ -1,8 +1,8 @@
 import type { DiagramNode } from '@atta/aeg-core'
 import { Badge } from '@atta/ui/components'
+import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowUpRight, Lock } from 'lucide-react'
-import Link from 'next/link'
 import { badgeLabels, humanLabel, shortLabel } from '../_lib/display-label'
 import type { GroupKey } from '../_lib/groupings'
 
@@ -135,24 +135,26 @@ export function LeafPanel({
       {(readMoreHref || viewSourceHref) && (
         <div className='flex flex-col gap-2'>
           {readMoreHref && (
-            <Link
+            <NextLink
               href={readMoreHref}
-              className='inline-flex w-fit items-center gap-1 text-card-foreground text-sm hover:text-accent'
+              variant='unstyled'
+              className='inline-flex w-fit items-center gap-1 text-card-foreground text-sm underline-offset-4 hover:text-accent hover:underline'
             >
               Read more
               <ArrowUpRight className='h-3.5 w-3.5' />
-            </Link>
+            </NextLink>
           )}
           {viewSourceHref && (
-            <a
+            <NextLink
               href={viewSourceHref}
               target='_blank'
               rel='noreferrer'
-              className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm hover:text-accent'
+              variant='unstyled'
+              className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm underline-offset-4 hover:text-accent hover:underline'
             >
               View source
               <ArrowUpRight className='h-3.5 w-3.5' />
-            </a>
+            </NextLink>
           )}
         </div>
       )}
