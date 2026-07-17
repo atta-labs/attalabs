@@ -1,19 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import type { CheckSpec } from '../src/checks/contract'
+import { runChecks } from '../src/checks/runner'
+import { VinayaConfigSchema } from '../src/lib/config'
 
 // We test config.ts functions by changing process.cwd() via chdir
 // and by testing the config path logic with temp dirs.
 
 // Import after setup to avoid side effects
 let loadConfig: typeof import('../src/lib/config.js').loadConfig
+let loadConfigChecked: typeof import('../src/lib/config.js').loadConfigChecked
 let configPath: typeof import('../src/lib/config.js').configPath
 let writeConfig: typeof import('../src/lib/config.js').writeConfig
 
 const TEST_CONFIG = {
   rings: { ring1_forgeWriteInterception: true, ring2_asyncAudits: false }
 }
+
+const INVALID_CHECKS_FIXTURE = join(import.meta.dir, 'fixtures', 'checks', 'vinaya.config.invalid.json')
 
 describe('config', () => {
   let tmpDir: string
@@ -28,6 +34,7 @@ describe('config', () => {
     // Re-import fresh module after chdir
     const mod = await import('../src/lib/config.js')
     loadConfig = mod.loadConfig
+    loadConfigChecked = mod.loadConfigChecked
     configPath = mod.configPath
     writeConfig = mod.writeConfig
   })
@@ -134,5 +141,88 @@ describe('config', () => {
 
     // Invalid schema — VinayaConfigSchema.parse throws, loadConfig swallows and returns null
     expect(loadConfig()).toBeNull()
+  })
+
+  it('accepts a declarative checks entry with glob scoping', () => {
+    const localPath = join(tmpDir, 'vinaya.config.json')
+    writeFileSync(
+      localPath,
+      JSON.stringify({
+        checks: { 'my-check': { run: './scripts/my-check.ts', scope: 'diff', include: ['src/**/*.ts'] } }
+      }),
+      'utf-8'
+    )
+
+    const result = loadConfig()
+    expect(result?.checks?.['my-check']?.run).toBe('./scripts/my-check.ts')
+    expect(result?.checks?.['my-check']?.scope).toBe('diff')
+    expect(result?.checks?.['my-check']?.include).toEqual(['src/**/*.ts'])
+  })
+
+  it('loadConfig swallows an invalid checks entry to null (existing null-on-failure contract, unchanged)', () => {
+    const localPath = join(tmpDir, 'vinaya.config.json')
+    // Fixture has a "scop" typo — schema requires "scope".
+    copyFileSync(INVALID_CHECKS_FIXTURE, localPath)
+
+    expect(loadConfig()).toBeNull()
+  })
+
+  it('loadConfigChecked surfaces the same invalid checks entry loudly instead of silently returning null', () => {
+    const localPath = join(tmpDir, 'vinaya.config.json')
+    copyFileSync(INVALID_CHECKS_FIXTURE, localPath)
+
+    const result = loadConfigChecked()
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toContain('typo')
+      expect(result.path).toContain('vinaya.config.json')
+    }
+  })
+
+  it('loadConfigChecked reports ok:true with config:null when no config file exists', () => {
+    const result = loadConfigChecked()
+    if (configPath() === null) {
+      expect(result).toEqual({ ok: true, config: null })
+    }
+  })
+
+  it('loadConfigChecked reports the same valid config loadConfig does', () => {
+    const localPath = join(tmpDir, 'vinaya.config.json')
+    writeFileSync(localPath, JSON.stringify(TEST_CONFIG), 'utf-8')
+
+    const checked = loadConfigChecked()
+    expect(checked.ok).toBe(true)
+    if (checked.ok) {
+      expect(checked.config?.rings?.ring1_forgeWriteInterception).toBe(true)
+    }
+  })
+})
+
+describe('config-registered check runs through the runner', () => {
+  const CLI_ROOT = join(import.meta.dir, '..')
+  const FIXTURE_CONFIG = join(import.meta.dir, 'fixtures', 'checks', 'vinaya.config.json')
+
+  it('runs a check registered the way the fixture vinaya.config.json would produce it', async () => {
+    const raw = JSON.parse(readFileSync(FIXTURE_CONFIG, 'utf-8'))
+    const config = VinayaConfigSchema.parse(raw)
+    const entry = config.checks?.['fixture-check']
+    expect(entry).toBeDefined()
+    expect(entry?.run.startsWith('./')).toBe(true)
+
+    // The config's `run` is repo-relative; resolve it against the CLI root
+    // the same way a real vinaya.config.json's entries are resolved relative
+    // to the repo they're registered in.
+    const spec: CheckSpec = {
+      name: 'fixture-check',
+      ...(entry as NonNullable<typeof entry>),
+      run: join(CLI_ROOT, (entry as NonNullable<typeof entry>).run)
+    }
+    const [outcome] = await runChecks([spec], {
+      parallel: 1,
+      diffOnly: false,
+      changedFiles: null,
+      defaultTimeoutMs: 5000
+    })
+    expect(outcome?.status).toBe('pass')
   })
 })

@@ -1,0 +1,9 @@
+{
+  "checks": {
+    "fixture-check": {
+      "run": "./tests/fixtures/checks/passing-check.ts",
+      "scope": "diff",
+      "include": ["**/*"]
+    }
+  }
+}
