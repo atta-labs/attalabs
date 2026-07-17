@@ -95,6 +95,12 @@ const GROUP_EXPLANATION = Object.fromEntries(
   HARNESS_LEGEND.filter((entry) => entry.groupKey).map((entry) => [entry.groupKey, entry.description])
 ) as Record<GroupKey, string>
 
+/** Sentence-case a display label's first character — doctrine `Action` cells
+ * are written lower-case ("publish the branch"), and the sidebar list reads
+ * them back as "Publish the branch". First letter only, never title-case:
+ * "reviewer-archivist" must not become "Reviewer-Archivist". */
+const capitalizeFirst = (s: string): string => (s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+
 /**
  * Client-side orchestrator — receives already-derived `groups` as a plain
  * prop. It must never import `deriveGroups` or any other `@atta/aeg-core`
@@ -226,7 +232,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
                 <div className='mt-1 flex flex-col gap-3.5'>
                   {HARNESS_LEGEND.map((entry) => (
                     <div key={entry.name} className='flex flex-col gap-1'>
-                      <Text as='span' className='font-mono text-card-foreground text-xs uppercase tracking-[0.1em]'>
+                      <Text as='span' size='sm' className='font-sans font-bold text-card-foreground'>
                         {entry.name}
                       </Text>
                       <Text size='sm' className='font-sans text-muted-foreground leading-snug'>
@@ -248,9 +254,9 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
                     In this ring — {drilledGroup.children.length}
                   </Text>
                   <div className='flex flex-col gap-1.5'>
-                    {drilledGroup.children.map((node) => (
+                    {drilledGroup.children.map((node, index) => (
                       <Text key={node.id} size='sm' className='font-sans text-card-foreground leading-snug'>
-                        {humanLabel(node.label)}
+                        {index + 1}. {capitalizeFirst(humanLabel(node.label))}
                       </Text>
                     ))}
                   </div>
