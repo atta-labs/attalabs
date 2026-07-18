@@ -4,7 +4,9 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkCommand } from './commands/check.js'
+import { issueCreateCommand, issueEditCommand } from './commands/issue.js'
 import { newCheckCommand } from './commands/new-check.js'
+import { prCreateCommand, prEditCommand } from './commands/pr.js'
 import { runStudio } from './commands/studio.js'
 import { printJson } from './lib/envelope.js'
 import { printHelp } from './lib/output.js'
@@ -49,6 +51,30 @@ try {
         newCheckCommand(rest)
       } else {
         console.error(`Unknown 'new' subcommand: ${subcommand ?? '(none)'}`)
+        process.exit(2)
+      }
+      break
+    }
+    case 'pr': {
+      const [subcommand, ...rest] = args
+      if (subcommand === 'create') {
+        prCreateCommand(rest)
+      } else if (subcommand === 'edit') {
+        prEditCommand(rest)
+      } else {
+        console.error(`Unknown 'pr' subcommand: ${subcommand ?? '(none)'} (expected 'create' or 'edit')`)
+        process.exit(2)
+      }
+      break
+    }
+    case 'issue': {
+      const [subcommand, ...rest] = args
+      if (subcommand === 'create') {
+        issueCreateCommand(rest)
+      } else if (subcommand === 'edit') {
+        issueEditCommand(rest)
+      } else {
+        console.error(`Unknown 'issue' subcommand: ${subcommand ?? '(none)'} (expected 'create' or 'edit')`)
         process.exit(2)
       }
       break

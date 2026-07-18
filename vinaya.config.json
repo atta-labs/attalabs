@@ -1,0 +1,25 @@
+{
+  "briefSchema": {
+    "pr": {
+      "sections": [
+        { "builtin": "tier" },
+        { "builtin": "testPlan" },
+        { "builtin": "testPlanExclusivity" },
+        { "builtin": "principalPlaceholder" },
+        { "builtin": "surfaceMap" },
+        { "builtin": "docUpdateList" },
+        { "builtin": "worktreeStep0" },
+        { "builtin": "stopConditions" },
+        { "builtin": "autonomyClause" },
+        { "builtin": "project" },
+        { "builtin": "for" },
+        { "builtin": "closesN" },
+        { "builtin": "lockAck" },
+        { "builtin": "premiseCoverage" }
+      ]
+    },
+    "issue": {
+      "sections": [{ "builtin": "issueRationale" }]
+    }
+  }
+}

@@ -69,22 +69,60 @@ export const COMMANDS: readonly Command[] = [
   {
     name: 'pr create',
     description: 'Open a pull request after full brief-schema validation',
-    status: 'planned'
+    flags: [
+      { flag: '--title', description: 'PR title (validated against the forge-title grammar)' },
+      { flag: '--body-file', description: 'Path to the PR body (stream-safe; the same bytes are validated and sent)' },
+      { flag: '--label', description: 'Label(s) to apply (repeatable, comma-separated)' },
+      { flag: '--validate-only', description: 'Run every gate and report PASS without opening the PR' },
+      { flag: '--json', description: 'Enveloped JSON output (schema: 1)' }
+    ],
+    details: [
+      'Runs the config-defined brief-schema gate (`briefSchema.pr` in `vinaya.config.json`) LOCALLY before any `gh` write — prevention, not detection. On any failure it refuses with the versioned CheckError contract (one JSON line per finding on stderr, exit 1) whose `agent_recovery_prompt` names the exact corrective command.'
+    ],
+    status: 'shipped'
   },
   {
     name: 'pr edit',
-    description: 'Edit an existing pull request after full brief-schema validation',
-    status: 'planned'
+    description: 'Edit an existing pull request (<n>) after full brief-schema validation',
+    flags: [
+      { flag: '--title', description: 'New PR title (validated against the forge-title grammar)' },
+      { flag: '--body-file', description: 'Path to the new PR body (stream-safe; same bytes validated and sent)' },
+      { flag: '--validate-only', description: 'Run every gate and report PASS without editing the PR' },
+      { flag: '--json', description: 'Enveloped JSON output (schema: 1)' }
+    ],
+    details: [
+      "The target PR's real head branch and changed files are fetched from the forge to build the validation context — a failed fetch is a hard refusal, never a fall-back to the local checkout."
+    ],
+    status: 'shipped'
   },
   {
     name: 'issue create',
     description: 'Open an issue after full brief-schema validation',
-    status: 'planned'
+    flags: [
+      { flag: '--title', description: 'Issue title (validated on task Issues)' },
+      { flag: '--body-file', description: 'Path to the Issue body (stream-safe; same bytes validated and sent)' },
+      { flag: '--label', description: 'Label(s) to apply; an `iteration:*` label marks a task Issue' },
+      { flag: '--validate-only', description: 'Run every gate and report PASS without opening the Issue' },
+      { flag: '--json', description: 'Enveloped JSON output (schema: 1)' }
+    ],
+    details: [
+      'A task Issue (any `iteration:*` label) must carry the full Planner rationale (`briefSchema.issue`); non-task Issues pass through unvalidated.'
+    ],
+    status: 'shipped'
   },
   {
     name: 'issue edit',
-    description: 'Edit an existing issue after full brief-schema validation',
-    status: 'planned'
+    description: 'Edit an existing issue (<n>) after full brief-schema validation',
+    flags: [
+      { flag: '--title', description: 'New Issue title (validated on task Issues)' },
+      { flag: '--body-file', description: 'Path to the new Issue body (stream-safe; same bytes validated and sent)' },
+      { flag: '--validate-only', description: 'Run every gate and report PASS without editing the Issue' },
+      { flag: '--json', description: 'Enveloped JSON output (schema: 1)' }
+    ],
+    details: [
+      "The target Issue's actual labels are fetched from the forge and unioned with argv to decide task-Issue applicability — a failed fetch is a hard refusal."
+    ],
+    status: 'shipped'
   },
   {
     name: 'doctor',
