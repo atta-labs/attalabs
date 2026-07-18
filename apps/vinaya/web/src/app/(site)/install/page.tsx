@@ -3,6 +3,8 @@ import { Badge, Code } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { CommandBlock } from './_components/CommandBlock'
 import { DetailText } from './_components/DetailText'
+import { commandSlug } from './_components/command-slug'
+import { InstallSidebar } from './_components/InstallSidebar'
 
 // `init` leads the page — it is the install, so its reference entry stands in
 // for a separate top "install" section rather than sitting wherever the
@@ -11,57 +13,68 @@ const ORDERED_COMMANDS = [...COMMANDS].sort((a, b) => (a.name === 'init' ? -1 : 
 
 export default function InstallPage() {
   return (
-    <main className='mx-auto flex max-w-3xl flex-col gap-10 px-6 py-12'>
-      <section className='flex flex-col gap-4'>
-        <Heading level={1} className='font-serif'>
-          Install
-        </Heading>
-        <Text className='font-sans' muted>
-          Vinaya&rsquo;s command reference.
-        </Text>
-      </section>
+    // Two-pane command reference on `lg:` — a sticky command sidebar beside the
+    // content pane, the cli.github.com/manual shape. Below `lg` the sidebar is
+    // hidden (`InstallSidebar` is `lg:block`) and this flex row collapses to the
+    // same centered `max-w-3xl` scrolling column the page has always been: the
+    // one visible child (`main`) is `flex-1`, so it fills the `max-w-3xl` box.
+    <div className='mx-auto flex w-full max-w-3xl gap-10 px-6 py-12 lg:max-w-6xl'>
+      <InstallSidebar commands={ORDERED_COMMANDS} />
 
-      <section className='flex flex-col gap-8'>
-        {ORDERED_COMMANDS.map((command) => {
-          const synopsis = command.name === 'init' ? `npx vinaya ${command.name}` : `vinaya ${command.name}`
-          return (
-            <div key={command.name} className='flex flex-col gap-3'>
-              <div className='flex flex-wrap items-center gap-3'>
-                <Heading level={3} className='font-serif'>
-                  {command.name}
-                </Heading>
-                {command.status === 'planned' && <Badge variant='outline'>Coming soon</Badge>}
-              </div>
+      <main className='flex min-w-0 flex-1 flex-col gap-10'>
+        <section className='flex flex-col gap-4'>
+          <Heading level={1} className='font-serif'>
+            Install
+          </Heading>
+          <Text className='font-sans' muted>
+            Vinaya&rsquo;s command reference.
+          </Text>
+        </section>
 
-              <CommandBlock command={synopsis} />
-
-              <Text className='font-sans'>{command.description}</Text>
-
-              {command.details?.map((paragraph) => (
-                <DetailText key={paragraph} text={paragraph} />
-              ))}
-
-              {command.flags && command.flags.length > 0 && (
-                <div className='flex flex-col gap-1'>
-                  <Text weight='bold' className='font-sans'>
-                    Options
-                  </Text>
-                  <div className='flex flex-col gap-1 pl-4'>
-                    {command.flags.map((flag) => (
-                      <div key={flag.flag} className='flex flex-wrap items-baseline gap-2'>
-                        <Code>{flag.flag}</Code>
-                        <Text as='span' size='sm' className='font-sans' muted>
-                          {flag.description}
-                        </Text>
-                      </div>
-                    ))}
-                  </div>
+        <section className='flex flex-col gap-8'>
+          {ORDERED_COMMANDS.map((command) => {
+            const synopsis = command.name === 'init' ? `npx vinaya ${command.name}` : `vinaya ${command.name}`
+            return (
+              // `scroll-mt-6` offsets the anchor target so a click/scroll-spy
+              // jump lands the heading just below the pane's top edge, not flush.
+              <div key={command.name} id={commandSlug(command.name)} className='flex scroll-mt-6 flex-col gap-3'>
+                <div className='flex flex-wrap items-center gap-3'>
+                  <Heading level={3} className='font-serif'>
+                    {command.name}
+                  </Heading>
+                  {command.status === 'planned' && <Badge variant='outline'>Coming soon</Badge>}
                 </div>
-              )}
-            </div>
-          )
-        })}
-      </section>
-    </main>
+
+                <CommandBlock command={synopsis} />
+
+                <Text className='font-sans'>{command.description}</Text>
+
+                {command.details?.map((paragraph) => (
+                  <DetailText key={paragraph} text={paragraph} />
+                ))}
+
+                {command.flags && command.flags.length > 0 && (
+                  <div className='flex flex-col gap-1'>
+                    <Text weight='bold' className='font-sans'>
+                      Options
+                    </Text>
+                    <div className='flex flex-col gap-1 pl-4'>
+                      {command.flags.map((flag) => (
+                        <div key={flag.flag} className='flex flex-wrap items-baseline gap-2'>
+                          <Code>{flag.flag}</Code>
+                          <Text as='span' size='sm' className='font-sans' muted>
+                            {flag.description}
+                          </Text>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </section>
+      </main>
+    </div>
   )
 }
