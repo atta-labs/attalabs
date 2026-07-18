@@ -76,54 +76,62 @@ export function backlogToTasks(issues: BacklogIssue[]): DashboardTask[] {
 
 export async function loadDashboardTasks(): Promise<DashboardTask[]> {
   const active = await loadActiveIterations()
-  const out: DashboardTask[] = []
 
-  for (const { fileSlug, iteration } of active) {
-    const snapshot = await loadIterationSnapshot(iteration, fileSlug)
-    const statusById = new Map(snapshot.derived.tasks.map((dt) => [dt.task.id, dt.status]))
-    const readinessById = await loadDispatchReadiness(iteration, fileSlug, snapshot)
+  // Fan the per-iteration forge reads out in parallel — each iteration's
+  // snapshot + readiness are independent, and the underlying forge derivation
+  // is now genuinely async (`@atta/aeg-forge-state` async twins), so the old
+  // serial `for…of await` loop needlessly summed every iteration's latency.
+  const perIteration = await Promise.all(
+    active.map(async ({ fileSlug, iteration }) => {
+      const rows: DashboardTask[] = []
+      const snapshot = await loadIterationSnapshot(iteration, fileSlug)
+      const statusById = new Map(snapshot.derived.tasks.map((dt) => [dt.task.id, dt.status]))
+      const readinessById = await loadDispatchReadiness(iteration, fileSlug, snapshot)
 
-    for (const task of iteration.tasks) {
-      const status = statusById.get(String(task.id))
-      const issueUrl =
-        snapshot.repo && task.issue != null
-          ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${task.issue}`
-          : null
-      const iterationHref = task.projects[0] ? `/studio/projects/${task.projects[0]}/iterations/${fileSlug}` : null
-      const base = {
-        iterationSlug: fileSlug,
-        iterationHref,
-        taskId: String(task.id),
-        title: task.title,
-        issue: task.issue,
-        issueUrl
-      }
-
-      let entry: Pick<DashboardTask, 'category' | 'badge'> | null = null
-
-      if (status === 'todo') {
-        // Ready vs Blocked · needs #N — the gate's own verdict, never re-derived.
-        const readiness = readinessById.get(String(task.id))
-        if (readiness) {
-          const v = todoDispatchVisual(readiness)
-          entry = {
-            category: readiness.ready ? 'ready' : 'blocked',
-            badge: { label: v.label, badgeClass: v.badgeClass, title: v.title }
-          }
+      for (const task of iteration.tasks) {
+        const status = statusById.get(String(task.id))
+        const issueUrl =
+          snapshot.repo && task.issue != null
+            ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${task.issue}`
+            : null
+        const iterationHref = task.projects[0] ? `/studio/projects/${task.projects[0]}/iterations/${fileSlug}` : null
+        const base = {
+          iterationSlug: fileSlug,
+          iterationHref,
+          taskId: String(task.id),
+          title: task.title,
+          issue: task.issue,
+          issueUrl
         }
-      } else if (status === 'blocked') {
-        const v = statusVisual('blocked')
-        entry = { category: 'blocked', badge: { label: v.label, badgeClass: v.badgeClass, title: v.description } }
-      } else if (status === 'in-flight' || status === 'in-review' || status === 'changes-requested') {
-        const v = statusVisual(status)
-        entry = { category: status, badge: { label: v.label, badgeClass: v.badgeClass } }
+
+        let entry: Pick<DashboardTask, 'category' | 'badge'> | null = null
+
+        if (status === 'todo') {
+          // Ready vs Blocked · needs #N — the gate's own verdict, never re-derived.
+          const readiness = readinessById.get(String(task.id))
+          if (readiness) {
+            const v = todoDispatchVisual(readiness)
+            entry = {
+              category: readiness.ready ? 'ready' : 'blocked',
+              badge: { label: v.label, badgeClass: v.badgeClass, title: v.title }
+            }
+          }
+        } else if (status === 'blocked') {
+          const v = statusVisual('blocked')
+          entry = { category: 'blocked', badge: { label: v.label, badgeClass: v.badgeClass, title: v.description } }
+        } else if (status === 'in-flight' || status === 'in-review' || status === 'changes-requested') {
+          const v = statusVisual(status)
+          entry = { category: status, badge: { label: v.label, badgeClass: v.badgeClass } }
+        }
+
+        if (entry) rows.push({ ...base, ...entry })
       }
 
-      if (entry) out.push({ ...base, ...entry })
-    }
-  }
+      return rows
+    })
+  )
 
   // Ordering is the panel's job (its `CATEGORY_ORDER` is the single source, and
   // it must order the merged iteration+backlog list anyway) — return unsorted.
-  return out
+  return perIteration.flat()
 }
