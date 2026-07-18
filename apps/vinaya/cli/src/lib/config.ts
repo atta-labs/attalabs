@@ -20,6 +20,55 @@ const CheckEntrySchema = z.object({
   timeoutMs: z.number().optional()
 })
 
+// briefSchema (vinaya-cli-v1 task 5, D-087): the config-defined brief schema
+// the forge-write commands validate a body against. WHICH sections a `pr`/
+// `issue` body must carry is expressed HERE, never hardcoded in the command
+// code — this repo's required-section set is just one instance (one
+// derivation, N consumers). Declarative only: a section is either a named
+// battle-tested built-in (backed by an `@atta/aeg-core` validator) or a
+// generic heading/field/phrase matcher an adopter authors for their own
+// required sections. No conditional grammar (D-109: no if/unless/except) —
+// any diff-conditionality (lock-ack, premise coverage) lives inside the
+// built-in validator's code, never in this config.
+export const BRIEF_BUILTINS = [
+  'tier',
+  'testPlan',
+  'testPlanExclusivity',
+  'principalPlaceholder',
+  'surfaceMap',
+  'docUpdateList',
+  'worktreeStep0',
+  'stopConditions',
+  'autonomyClause',
+  'project',
+  'for',
+  'closesN',
+  'lockAck',
+  'premiseCoverage',
+  'issueRationale'
+] as const
+export type BriefBuiltin = (typeof BRIEF_BUILTINS)[number]
+
+// A single required section. Discriminated by which key is present:
+//   { "builtin": "tier" }             — run the named aeg-core validator
+//   { "heading": "Rollback Plan" }    — require a matching `## …` heading
+//   { "field": "Ticket" }             — require a `Ticket:` header field
+//   { "phrase": "signed-off-by" }     — require a literal phrase anywhere
+// `name` is an optional human label for the custom-matcher forms.
+const BriefSectionSchema = z.union([
+  z.object({ builtin: z.enum(BRIEF_BUILTINS) }),
+  z.object({ heading: z.string().min(1), name: z.string().optional() }),
+  z.object({ field: z.string().min(1), name: z.string().optional() }),
+  z.object({ phrase: z.string().min(1), name: z.string().optional() })
+])
+export type BriefSection = z.infer<typeof BriefSectionSchema>
+
+const BriefSchemaSchema = z.object({
+  pr: z.object({ sections: z.array(BriefSectionSchema) }).optional(),
+  issue: z.object({ sections: z.array(BriefSectionSchema) }).optional()
+})
+export type BriefSchema = z.infer<typeof BriefSchemaSchema>
+
 export const VinayaConfigSchema = z.object({
   rings: z
     .object({
@@ -27,7 +76,8 @@ export const VinayaConfigSchema = z.object({
       ring2_asyncAudits: z.boolean()
     })
     .optional(),
-  checks: z.record(z.string(), CheckEntrySchema).optional()
+  checks: z.record(z.string(), CheckEntrySchema).optional(),
+  briefSchema: BriefSchemaSchema.optional()
 })
 
 export type VinayaConfig = z.infer<typeof VinayaConfigSchema>
