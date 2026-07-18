@@ -1,24 +1,36 @@
 /**
- * Backlog view (Studio task 2, #498) — every open Issue carrying no
- * `iteration:*` label, grouped by its `project:<name>` label. Closes the gap
- * where an Issue like #497 (`project:aeg-core`, no iteration) was invisible
- * on every existing page — `/studio/iterations` and `/studio/projects/[name]`
- * both query iteration-scoped data only.
+ * Backlog view (Studio task 2, #498; table redesign task 11, #571) — every
+ * open Issue carrying no `iteration:*` label, as a filterable table. Closes the
+ * gap where unscoped Issues (e.g. #497) were invisible on every iteration-scoped
+ * Studio page — `/studio/iterations` and `/studio/projects/[name]` both query
+ * iteration-scoped data only.
  *
- * Grouping: a `project:<name>` label matching a registry row groups under
- * that project's name; a `project:<name>` label matching no registry row
- * still gets its own group, keyed by the literal label (not dropped); issues
- * with no `project:*` label at all fall into "No project".
+ * One row per Issue (task 11): a cross-project Issue like #513 (`project:aeg` +
+ * `project:aeg-core`) is a single row carrying both project badges — the
+ * project filter matches it under either — instead of the old first-label-wins
+ * grouping that silently dropped its second project (D-091).
+ *
+ * Filters (project, tier, flags) and their vocabulary live in `BacklogTable`; this
+ * server component only fetches, computes the distinct filter options, and
+ * stays honest about forge failure. Iteration/state are NOT filters here: the
+ * backlog is by definition the open, no-`iteration:*` set (`fetch-open-issues.ts`),
+ * so every row is open and iteration-less — nothing to filter on.
+ *
+ * Forge honesty (task 11): the fetch carries a `ForgeStatus`; when the forge is
+ * unreachable the page renders a banner, never a truth-shaped "everything is
+ * tracked" empty state (D-087).
  */
 
-import { Badge } from '@atta/ui/components'
 import type { Registry } from '@atta/aeg-core'
 import { resolveGithubToken, resolveRepo } from '@atta/aeg-forge-state'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { isVercelDeploy } from '@/lib/env'
 import { readRegistry } from '@/lib/repo-state'
+import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 import { fetchOpenIssuesWithoutIterationLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
+import { ForgeUnavailableBanner } from '@/app/studio/_components/ForgeUnavailableBanner'
+import { BacklogTable } from './_components/BacklogTable'
 
 // Forge reads derive live Issue state from GitHub — never serve from cache.
 export const dynamic = 'force-dynamic'
@@ -27,55 +39,47 @@ export const metadata: Metadata = {
   title: 'Backlog · Vinaya Studio'
 }
 
-type Group = { key: string; heading: string; issues: BacklogIssue[] }
-
-const NO_PROJECT_KEY = '__no-project__'
-
-function groupByProject(issues: BacklogIssue[], registry: Registry): Group[] {
-  const groups = new Map<string, Group>()
-
+/** Distinct `project:*` labels present, registry order first then any extras. */
+function projectOptions(issues: BacklogIssue[], registry: Registry): string[] {
+  const present = new Set<string>()
   for (const issue of issues) {
-    const projectLabel = issue.labels.find((label) => label.startsWith('project:'))
-    let key: string
-    let heading: string
-
-    if (!projectLabel) {
-      key = NO_PROJECT_KEY
-      heading = 'No project'
-    } else {
-      const projectName = projectLabel.slice('project:'.length)
-      const project = registry.find((p) => p.name === projectName)
-      key = project ? project.name : projectLabel
-      heading = project ? project.name : projectLabel
-    }
-
-    const group = groups.get(key) ?? { key, heading, issues: [] }
-    group.issues.push(issue)
-    groups.set(key, group)
+    for (const label of issue.labels) if (label.startsWith('project:')) present.add(label)
   }
-
-  // Registry order first, then unmatched project labels, then "No project" last.
-  const ordered: Group[] = []
+  const ordered: string[] = []
   for (const project of registry) {
-    const group = groups.get(project.name)
-    if (group) ordered.push(group)
+    const label = `project:${project.name}`
+    if (present.has(label)) ordered.push(label)
   }
-  for (const [key, group] of groups) {
-    if (key === NO_PROJECT_KEY || registry.some((p) => p.name === key)) continue
-    ordered.push(group)
-  }
-  const noProject = groups.get(NO_PROJECT_KEY)
-  if (noProject) ordered.push(noProject)
-
+  for (const label of present) if (!ordered.includes(label)) ordered.push(label)
   return ordered
+}
+
+/** Distinct `tier:*` labels present, lowest tier first. */
+function tierOptions(issues: BacklogIssue[]): string[] {
+  const present = new Set<string>()
+  for (const issue of issues) {
+    for (const label of issue.labels) if (label.startsWith('tier:')) present.add(label)
+  }
+  return [...present].sort((a, b) => Number(a.slice('tier:'.length)) - Number(b.slice('tier:'.length)))
+}
+
+/** Distinct `needs:*`/`status:*` labels present — the Flags family, `needs:*` first. */
+function flagOptions(issues: BacklogIssue[]): string[] {
+  const present = new Set<string>()
+  for (const issue of issues) {
+    for (const label of issue.labels) if (label.startsWith('needs:') || label.startsWith('status:')) present.add(label)
+  }
+  return [...present].sort((a, b) => a.localeCompare(b))
 }
 
 export default async function BacklogPage() {
   if (isVercelDeploy()) notFound()
 
   const [repo, token, registry] = await Promise.all([resolveRepo(), resolveGithubToken(), readRegistry()])
-  const issues = repo && token ? await fetchOpenIssuesWithoutIterationLabel(repo.owner, repo.repo, token) : []
-  const groups = groupByProject(issues, registry)
+  const { issues, forge }: { issues: BacklogIssue[]; forge: ForgeStatus } =
+    repo && token
+      ? await fetchOpenIssuesWithoutIterationLabel(repo.owner, repo.repo, token)
+      : { issues: [], forge: { kind: 'unreachable' } }
 
   return (
     <div className='space-y-8'>
@@ -86,50 +90,23 @@ export default async function BacklogPage() {
         </p>
       </header>
 
-      {groups.length === 0 ? (
-        <p className='font-sans text-sm text-muted-foreground'>
-          No backlog issues — everything is tracked under an iteration.
-        </p>
+      <ForgeUnavailableBanner scope='both' status={forge} detail='The backlog cannot be listed right now.' />
+
+      {issues.length === 0 ? (
+        // A forge failure already showed the banner above — only claim an empty
+        // backlog when the forge was actually reachable (D-087).
+        forge.kind === 'ok' ? (
+          <p className='font-sans text-sm text-muted-foreground'>
+            No backlog issues — everything is tracked under an iteration.
+          </p>
+        ) : null
       ) : (
-        <div className='space-y-8'>
-          {groups.map((group) => (
-            <section key={group.key} className='space-y-3'>
-              <h2 className='font-serif text-xl tracking-tight text-foreground'>{group.heading}</h2>
-              <ul className='space-y-3'>
-                {group.issues.map((issue) => {
-                  const badgeLabels = issue.labels.filter((label) => !label.startsWith('project:'))
-                  return (
-                    <li key={issue.number} className='space-y-1 border-b border-border pb-3'>
-                      <p className='font-mono text-sm text-foreground'>
-                        <a
-                          href={issue.url}
-                          target='_blank'
-                          rel='noreferrer'
-                          className='hover:text-accent hover:underline'
-                        >
-                          #{issue.number} {issue.title}
-                        </a>
-                      </p>
-                      {badgeLabels.length > 0 && (
-                        <div className='flex flex-wrap gap-1'>
-                          {badgeLabels.map((label) => (
-                            <Badge
-                              key={label}
-                              variant='outline'
-                              className='font-mono text-[0.65rem] text-muted-foreground border-border'
-                            >
-                              {label}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
-          ))}
-        </div>
+        <BacklogTable
+          issues={issues}
+          projectOptions={projectOptions(issues, registry)}
+          tierOptions={tierOptions(issues)}
+          flagOptions={flagOptions(issues)}
+        />
       )}
     </div>
   )
