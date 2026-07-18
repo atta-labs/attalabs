@@ -1,13 +1,18 @@
 /**
- * Studio home (task 11, #571) — a dashboard: two preview cards (Projects,
- * Iterations) on the first row, then a full-width Backlog card and a full-width
- * Tasks (ready + in-flight) card, each on its own row listing every entry.
+ * Studio home (task 11, #571) — a three-card dashboard: two preview cards
+ * (Projects, Iterations) on the first row, then a single full-width **Tasks**
+ * card. The Tasks card is the one work surface — every Ready / active / blocked
+ * iteration task PLUS the backlog, in one status-filterable list (the backlog
+ * was folded in here rather than shown as its own card; consolidated from the
+ * brief's original four-card layout during the design pass, Principal-directed).
+ * Rows are minimal: `#issue` (→ GitHub), a status badge, the plain title, and
+ * the iteration slug (→ its board; backlog rows carry no iteration).
  *
  * The `isVercelDeploy()` redirect stays (D-101: Studio is local-only for v1.0;
- * production/preview send the visitor to the `/the-studio` Portal page). Every
- * forge-backed card is honest about failure — a page-level banner renders when
- * the forge is unreachable, and no card renders an empty list produced by that
- * failure (D-087: Studio stores nothing, so it must not lie by omission).
+ * production/preview send the visitor to the `/the-studio` Portal page). Forge
+ * honesty (D-087): a page-level banner renders when the forge is unreachable,
+ * and no card renders an empty list produced by that failure — the Projects
+ * card, local registry only, still renders.
  */
 
 import { NextLink } from '@atta/ui/lib/next-link'

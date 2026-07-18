@@ -54,16 +54,6 @@ export type DashboardTask = {
   badge: TaskBadge
 }
 
-// Moving work first, then pickable, then stuck, then unscheduled backlog.
-const CATEGORY_RANK: Record<TaskCategory, number> = {
-  'in-review': 0,
-  'changes-requested': 1,
-  'in-flight': 2,
-  ready: 3,
-  blocked: 4,
-  backlog: 5
-}
-
 /**
  * Map the backlog Issues into the same `DashboardTask` shape so the Tasks card
  * can list them alongside iteration tasks under a `backlog` filter — one row
@@ -133,5 +123,7 @@ export async function loadDashboardTasks(): Promise<DashboardTask[]> {
     }
   }
 
-  return out.sort((a, b) => CATEGORY_RANK[a.category] - CATEGORY_RANK[b.category])
+  // Ordering is the panel's job (its `CATEGORY_ORDER` is the single source, and
+  // it must order the merged iteration+backlog list anyway) — return unsorted.
+  return out
 }

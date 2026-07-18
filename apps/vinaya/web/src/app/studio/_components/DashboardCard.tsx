@@ -4,11 +4,12 @@ import { ArrowRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 /**
- * One dashboard card (task 11, #571) — a titled window onto a full page. The
- * header carries the total count (the same number the linked page shows, so
- * the two never disagree — a card claiming 5 while its page shows 3 would be a
- * second truth domain); the body holds a few preview rows; the footer links
- * onward. A window, not the room.
+ * One dashboard card (task 11, #571) — a titled surface with a total count in
+ * the header. The body holds whatever the caller passes: a few preview rows
+ * that link onward (Projects, Iterations) or a full status-filtered list (the
+ * unified Tasks card). The footer "view all" link is optional — omit
+ * `href`/`viewAllLabel` for a card that IS the surface, not a window onto
+ * another page (the Tasks card has no onward page to link to).
  */
 export function DashboardCard({
   title,
