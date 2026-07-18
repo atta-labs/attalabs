@@ -24,7 +24,7 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
       align='center'
       justify='center'
       gap={4}
-      className='border-b border-border bg-card px-6 py-2.5 h-10 font-mono text-[11px] select-none shrink-0'
+      className='sticky top-0 z-20 border-b border-border bg-card px-6 py-2.5 h-10 font-mono text-[11px] select-none shrink-0'
     >
       <Flex align='center' gap={2} className='overflow-x-auto no-scrollbar'>
         {projects.map((p, idx) => {

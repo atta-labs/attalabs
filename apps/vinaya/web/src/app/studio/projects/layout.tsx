@@ -1,4 +1,3 @@
-import { Flex } from '@atta/ui/shared'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { isVercelDeploy } from '@/lib/env'
@@ -9,16 +8,13 @@ export default async function ProjectsLayout({ children }: { children: ReactNode
   if (isVercelDeploy()) notFound()
 
   const projects = await readRegistry()
+  // StudioShell owns the scroll container (`studio/layout.tsx`); this layout adds
+  // no overflow/height of its own. The sub-bar is `sticky top-0` so it pins under
+  // the topbar as StudioShell scrolls, instead of scrolling away with the content.
   return (
-    <Flex direction='column' className='h-full overflow-hidden'>
+    <>
       <ProjectsSubBar projects={projects} />
-      {/* Padding lives on the inner wrapper, NOT the scroll container — sticky
-          descendants (the tasks-table header) pin to the scrollport edge, and
-          scrollport padding offsets them below the visible top with rows
-          bleeding through the gap. */}
-      <div className='flex-1 overflow-y-auto'>
-        <div className='mx-auto max-w-4xl px-8 py-8'>{children}</div>
-      </div>
-    </Flex>
+      <div className='mx-auto max-w-4xl px-8 py-8'>{children}</div>
+    </>
   )
 }
