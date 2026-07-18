@@ -69,8 +69,10 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { type DocsCoherenceEntry, evaluateDocsCoherence, parseDocFrontmatter } from '../src/docs'
+import { type DocsCoherenceEntry, evaluateDocsCoherence, modelBackedDocPaths, parseDocFrontmatter } from '../src/docs'
 import {
+  type DoctrineContent,
+  deriveDiagramModel,
   checkDecisionNumbers,
   checkManifestValidity,
   DOC_OWNERS_PATH,
@@ -311,6 +313,27 @@ function findDecisionLogs(): string[] {
 
 const AEG_ROOT_PREFIX = 'aeg-root/'
 
+/**
+ * The doctrine the `DiagramModel` derives from — raw `enforcement.md` + the
+ * `roles/*.md` and `contracts/*.md` files, read here (a bin script does I/O)
+ * and handed to the pure `deriveDiagramModel`. The surfaced-doc allowlist C6
+ * checks against is model-backed (D-079/D-087), so C6 needs the same model
+ * `/docs` and `/the-harness` render.
+ */
+function loadDoctrine(): DoctrineContent {
+  const read = (p: string): string => (existsSync(p) ? readFileSync(p, 'utf8') : '')
+  const list = (glob: string): string[] =>
+    sh(`git ls-files '${glob}'`)
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  return {
+    enforcement: read('aeg-root/enforcement.md'),
+    roles: list('aeg-root/roles/*.md').map((path) => ({ path, content: read(path) })),
+    contracts: list('aeg-root/contracts/*.md').map((path) => ({ path, content: read(path) }))
+  }
+}
+
 function runC6(): void {
   const files = sh("git ls-files 'aeg-root/*.md'")
     .split('\n')
@@ -328,7 +351,8 @@ function runC6(): void {
     }
   })
 
-  const result = evaluateDocsCoherence(entries)
+  const surfacedPaths = modelBackedDocPaths(deriveDiagramModel(loadDoctrine(), null, null))
+  const result = evaluateDocsCoherence(entries, surfacedPaths)
   for (const e of result.errors) errors.push(e)
   for (const n of result.notes) notes.push(n)
 }

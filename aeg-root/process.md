@@ -9,8 +9,6 @@ It is the canonical "how do we actually work?" document. Every other PM doc (`co
 
 If you are starting a new session and need to understand the workflow, read this first. Then `coordination.md` for session protocol, then the role doc that applies to you, then any project-specific specs.
 
-For the visual schema, see `diagrams/process-flow.md` (being brought in line with the forge-derived-status model; where a diagram and this prose disagree, this prose is canonical).
-
 ---
 
 ## Where tasks come from: the iteration
@@ -344,7 +342,7 @@ A rollback is its own task with its own brief. The decision to roll back is a Ty
 
 ## How this process maps to file artifacts
 
-For which files get mutated in which phase by which actor, see `state-machine.md` (the artifact + mutation matrix). For the visual schema, see `diagrams/process-flow.md`. For the roles, see `roles/principal.md`, `team-leader.md` (incl. Planner mode), `developer.md`, `reviewer.md`, `security.md`, `archivist.md`. For the iteration/task model, see `iterations/README.md` and `roles/planner.md`. For brief authoring, see the `brief-authoring` skill.
+For which files get mutated in which phase by which actor, see `state-machine.md` (the artifact + mutation matrix). For the roles, see `roles/principal.md`, `team-leader.md` (incl. Planner mode), `developer.md`, `reviewer.md`, `security.md`, `archivist.md`. For the iteration/task model, see `iterations/README.md` and `roles/planner.md`. For brief authoring, see the `brief-authoring` skill.
 
 ---
 

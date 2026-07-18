@@ -52,7 +52,9 @@ describe('leaf panel content, against real doctrine', () => {
     console.log('GATE PANEL:', JSON.stringify(panel, null, 2))
 
     expect(panel.badge).toMatch(/^(ci|hook|event)$/)
-    expect(panel.readMoreHref).toBe('/docs/enforcement')
+    // A gate deep-links to its own anchored section on its ring page — no
+    // longer the top of one enforcement.md page (`vinaya-pages-v1` task 12).
+    expect(panel.readMoreHref).toMatch(/^\/docs\/rings\/ring-0#.+$/)
     expect(panel.viewSourceHref).toMatch(/^https:\/\/github\.com\/.*aeg-root\/enforcement\.md#L\d+$/)
     // Both render, so both are proven to survive the wiring
     // (registry-parse → diagram-model → DiagramNode → panel) — not merely to
@@ -81,11 +83,11 @@ describe('leaf panel content, against real doctrine', () => {
     console.log('ACTION PANEL:', JSON.stringify(panel, null, 2))
 
     expect(panel.badge).toBeUndefined()
-    // Actions carry no doctrine markdown, so no internal doc route — only
-    // "View source" renders for this kind, straight to the canonical set
-    // that defines them. A bare path, no `#L` anchor: unlike enforcement.md
-    // rows, an action node carries no `sourceLine`.
-    expect(panel.readMoreHref).toBeUndefined()
+    // An action deep-links to its own section on the actions page
+    // (`vinaya-pages-v1` task 12 — actions used to have no doc route at all).
+    // "View source" still goes to the canonical set: a bare path, no `#L`
+    // anchor, since an action node carries no `sourceLine`.
+    expect(panel.readMoreHref).toMatch(/^\/docs\/actions#.+$/)
     expect(panel.viewSourceHref).toMatch(/^https:\/\/github\.com\/.*packages\/aeg-core\/src\/actions\.ts$/)
   })
 

@@ -1,6 +1,8 @@
 /**
  * C6 — the docs-coherence check (state-machine.md Section 15c). Pure: given
- * every parsed doc entry from `aeg-root/`, asserts:
+ * every parsed doc entry from `aeg-root/` and the model-backed surfaced-path
+ * allowlist (D-079/D-087 — `modelBackedDocPaths`, passed in because deriving
+ * it requires reading doctrine, which this pure module never does), asserts:
  *   (a) every surfaced doc is reachable in the doc-nav tree the docs engine
  *       (`buildDocNav`) would build for the surfaced set;
  *   (b) no surfaced doc's `parent:` reference points at a doc that doesn't
@@ -90,11 +92,14 @@ function resolveRelativeMdLink(fromRelPath: string, target: string): string | nu
   return stack.join('/')
 }
 
-export function evaluateDocsCoherence(entries: DocsCoherenceEntry[]): DocsCoherenceResult {
+export function evaluateDocsCoherence(
+  entries: DocsCoherenceEntry[],
+  surfacedPaths: ReadonlySet<string> = new Set()
+): DocsCoherenceResult {
   const errors: string[] = []
   const notes: string[] = []
 
-  const surfacedEntries = entries.filter((e) => isSurfacedDoc(e.relPath, e.frontmatter))
+  const surfacedEntries = entries.filter((e) => isSurfacedDoc(e.relPath, e.frontmatter, surfacedPaths))
   const surfacedRelPaths = new Set(surfacedEntries.map((e) => e.relPath))
   const docs = surfacedEntries.map(toDoc)
   const bySlug = new Map(docs.map((d) => [d.slug, d]))

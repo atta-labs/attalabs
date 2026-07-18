@@ -575,15 +575,15 @@ A finding is `grandfathered: true` when its terminal event is strictly before `C
 
 ## Section 15c: Coherence Seam — Surfaced-Doc Manifest (`verify-docs.ts` full mode, check C6)
 
-The seam between **the surfaced-doc manifest** (which `aeg-root/` docs count as generic AEG framework documentation) and **the doc-nav tree** the docs engine (`packages/aeg-core/src/docs/`) builds from them. D-079 makes "what counts as a surfaced doc" a single, data-driven definition instead of two competing ones — this check (C6) and `aeg-studio-cleanup`'s Studio `/docs` curation both consume it.
+The seam between **the surfaced-doc manifest** (which `aeg-root/` docs a `DiagramModel` node points at — the public set) and **the doc-nav tree** the docs engine (`packages/aeg-core/src/docs/`) builds from them. D-079 makes "what counts as a surfaced doc" a single, data-driven definition instead of two competing ones — this check (C6) and Vinaya's `/docs` loader both consume it.
 
 ### The manifest: `packages/aeg-core/src/docs/surfaced-manifest.ts`
 
-Exported rule data, not hardcoded check logic: an ordered list of path-based exclusion rules — active iteration topology/execution files except `iterations/README.md`; `*.tokens.md` ledgers; `packages/governance/projects.md`; `aeg-root/discovery/**` — plus `isSurfacedDoc(relPath, frontmatter)`, where a per-file `surfaced: true|false` frontmatter flag overrides the path rules in either direction. Paths matching none of the exclusion rules default to **surfaced** — a new generic doc must not silently vanish from the manifest; only the enumerated execution-state/registry classes are excluded.
+**Model-backed, not path-based** (D-079/D-087, `vinaya-pages-v1` task 12, #590): a doc is surfaced iff a `DiagramModel` node points at it. `modelBackedDocPaths(model)` derives the allowlist — the same node→doc mapping `read-more.ts` uses: gate/check → `enforcement.md`, role → `roles/<id>.md`, contract → `contracts/<id>.md` (`action`/`ring` nodes back no doc). `isSurfacedDoc(relPath, frontmatter, surfacedPaths)` consults that set; a per-file `surfaced: true|false` frontmatter flag is the only override, winning in either direction. The set is passed in — the module imports only the `DiagramModel` **type**, so aeg-core stays zero-I/O (the doctrine is read, and the model derived, by each caller). This **replaced** the earlier ordered path-exclusion rules outright; a second competing rule is the failure mode the manifest exists to prevent.
 
 ### The check: `packages/aeg-core/src/docs/docs-coherence.ts`
 
-Pure, given the parsed file list under `aeg-root/`:
+Pure, given the parsed file list under `aeg-root/` and the model-backed surfaced set (`modelBackedDocPaths`, passed in — deriving it reads doctrine, which this module never does):
 - **Reachability** — every surfaced doc's slug is reachable in the nav tree the docs engine would build for the surfaced set. This mirrors the real parent/child resolution `apps/aeg/web/studio/src/lib/docs/nest-doc-children.ts` performs when building Studio's live `/docs` nav: a doc whose `parent:` frontmatter points at a nonexistent or excluded slug is silently dropped from that nav's flat list — reachable neither at the top level nor as anyone's child. That silent-drop is the exact defect this check exists to catch; Studio's file itself is read-only reference, never imported or edited by this check.
 - **Dangling parent** — the more specific diagnostic naming exactly which `parent:` reference is broken.
 - **Dangling link** — every relative `.md` link between two surfaced docs resolves to another surfaced doc.

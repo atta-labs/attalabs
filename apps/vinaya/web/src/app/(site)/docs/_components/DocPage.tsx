@@ -6,6 +6,7 @@
 // which library the CMS selects. See ui-library-system's "Subpath Import
 // Bypass Bug": the aliased flat string is the one that resolves per-library.
 import {
+  Badge,
   Code,
   CodeBlock,
   Separator,
@@ -32,6 +33,11 @@ export type DocPageProps = {
   next?: Doc
   prev?: Doc
   basePath?: string
+  /** The model frame for this doc's node: the kind that backs it (`role`,
+   * `contract`, `enforcement`) and its `category`/`actorType` badges. Present
+   * for the 16 model-backed docs, all doc-model-sourced — the page hand-writes
+   * none of it. The raw markdown below is framed as the machine artifact it is. */
+  frame?: { kindTag: string; badges: string[] }
 }
 
 const markdownComponents = {
@@ -130,7 +136,7 @@ const markdownComponents = {
   em: (props: React.HTMLAttributes<HTMLElement>) => <em className='italic' {...props} />
 }
 
-export function DocPage({ doc, body, next, prev, basePath = '/docs' }: DocPageProps) {
+export function DocPage({ doc, body, next, prev, basePath = '/docs', frame }: DocPageProps) {
   const content = stripLeadingH1(body)
 
   return (
@@ -138,8 +144,8 @@ export function DocPage({ doc, body, next, prev, basePath = '/docs' }: DocPagePr
       <StickyDocHeader title={doc.title} section={doc.section} />
       <article className='space-y-4 pt-4'>
         <header className='space-y-3'>
-          <Text as='span' size='xs' muted className='font-mono uppercase tracking-[0.15em]'>
-            {doc.section}
+          <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
+            {frame?.kindTag ?? doc.section}
           </Text>
           <Heading level={1} className='font-serif font-light tracking-normal leading-tight text-foreground'>
             {doc.title}
@@ -149,9 +155,24 @@ export function DocPage({ doc, body, next, prev, basePath = '/docs' }: DocPagePr
               {doc.description}
             </Text>
           )}
+          {frame && frame.badges.length > 0 && (
+            <div className='flex flex-wrap gap-1.5'>
+              {frame.badges.map((label) => (
+                <Badge key={label} className='w-fit font-mono text-xs uppercase'>
+                  {label}
+                </Badge>
+              ))}
+            </div>
+          )}
         </header>
 
         <Separator className='opacity-60' />
+
+        {frame && (
+          <Text as='p' size='xs' muted className='font-mono uppercase tracking-widest'>
+            The doctrine below, as agents read it
+          </Text>
+        )}
 
         <div className='text-base doc-page-content'>
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
