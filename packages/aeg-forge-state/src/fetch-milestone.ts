@@ -1,4 +1,4 @@
-import { ghApiGet } from './gh'
+import { ghApiGet, ghApiGetAsync } from './gh'
 import type { Lifecycle } from '@atta/aeg-types'
 
 export type MilestoneFacts = {
@@ -52,5 +52,17 @@ export function listActiveIterationSlugs(owner: string, repo: string): ActiveIte
  */
 export function listArchivedIterationSlugs(owner: string, repo: string): ActiveIterationRef[] {
   const milestones = ghApiGet<GhMilestone[]>(`repos/${owner}/${repo}/milestones?state=closed&per_page=100`)
+  return milestones.map((m) => ({ slug: m.title, goal: m.description ?? '' }))
+}
+
+/** Async twin of `listActiveIterationSlugs` — non-blocking `gh` exec, same map. */
+export async function listActiveIterationSlugsAsync(owner: string, repo: string): Promise<ActiveIterationRef[]> {
+  const milestones = await ghApiGetAsync<GhMilestone[]>(`repos/${owner}/${repo}/milestones?state=open&per_page=100`)
+  return milestones.map((m) => ({ slug: m.title, goal: m.description ?? '' }))
+}
+
+/** Async twin of `listArchivedIterationSlugs` — non-blocking `gh` exec, same map. */
+export async function listArchivedIterationSlugsAsync(owner: string, repo: string): Promise<ActiveIterationRef[]> {
+  const milestones = await ghApiGetAsync<GhMilestone[]>(`repos/${owner}/${repo}/milestones?state=closed&per_page=100`)
   return milestones.map((m) => ({ slug: m.title, goal: m.description ?? '' }))
 }
