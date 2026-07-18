@@ -3,10 +3,10 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowUpRight } from 'lucide-react'
 import type { DiagramNode } from '@atta/aeg-core'
-import { badgeLabels, humanLabel, shortLabel } from '../how-it-works/_lib/display-label'
-import { deriveGroups, type GroupKey } from '../how-it-works/_lib/groupings'
-import { loadDiagramModel } from '../how-it-works/_lib/load-diagram'
-import { readMoreTarget } from '../how-it-works/_lib/read-more'
+import { badgeLabels, humanLabel, shortLabel } from '../the-harness/_lib/display-label'
+import { deriveGroups, type GroupKey } from '../the-harness/_lib/groupings'
+import { loadDiagramModel } from '../the-harness/_lib/load-diagram'
+import { readMoreTarget } from '../the-harness/_lib/read-more'
 import { loadAegDocs } from '@/lib/docs/load-aeg-docs'
 
 export const metadata = {
@@ -28,7 +28,7 @@ const GROUP_TAG_LABEL: Record<GroupKey, string> = {
  * The generated reference view of the harness. `/docs` used to redirect into a
  * raw-markdown dump that published ~60% of `aeg-root/` — most of it backing no
  * node a reader could reach. It is now the other renderer of the same
- * `DiagramModel` `/how-it-works` draws (D-087): every part of the harness,
+ * `DiagramModel` `/the-harness` draws (D-087): every part of the harness,
  * grouped by its ring, each carrying the model's own plain-English `detail`,
  * its `category`/`actorType` badges, and — for a ring-0 gate — the action it
  * guards. A part that backs an `aeg-root/**` doc links to it; that doc page
@@ -74,8 +74,8 @@ export default async function DocsReferencePage() {
         </Text>
         <Text size='sm' muted className='leading-relaxed'>
           Generated from the same model{' '}
-          <NextLink href='/how-it-works' variant='unstyled' className='text-accent underline-offset-4 hover:underline'>
-            How it works
+          <NextLink href='/the-harness' variant='unstyled' className='text-accent underline-offset-4 hover:underline'>
+            The Harness
           </NextLink>{' '}
           draws — nothing on this page is hand-written.
         </Text>

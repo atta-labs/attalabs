@@ -77,7 +77,7 @@ export async function loadAegDocs(): Promise<LoadedDocs> {
   const files = await walkMarkdown(root)
 
   // The surfacing rule is model-backed (D-079, D-087): a doc publishes iff a
-  // `DiagramModel` node points at it. Derive the same model `/how-it-works`
+  // `DiagramModel` node points at it. Derive the same model `/the-harness`
   // renders, then let its node→doc mapping be the allowlist.
   const doctrine = await createFileDoctrineSource({ root }).getDoctrine()
   const surfacedPaths = modelBackedDocPaths(deriveDiagramModel(doctrine, null, null))

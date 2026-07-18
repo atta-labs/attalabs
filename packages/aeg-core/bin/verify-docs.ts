@@ -318,7 +318,7 @@ const AEG_ROOT_PREFIX = 'aeg-root/'
  * `roles/*.md` and `contracts/*.md` files, read here (a bin script does I/O)
  * and handed to the pure `deriveDiagramModel`. The surfaced-doc allowlist C6
  * checks against is model-backed (D-079/D-087), so C6 needs the same model
- * `/docs` and `/how-it-works` render.
+ * `/docs` and `/the-harness` render.
  */
 function loadDoctrine(): DoctrineContent {
   const read = (p: string): string => (existsSync(p) ? readFileSync(p, 'utf8') : '')
