@@ -27,14 +27,14 @@ You are in the Verifier phase when a PR is open, the code-reviewer and security 
 
 ## The two-actor split (the whole shape of the role)
 
-Verification is split by *who can structurally do it* — mirroring the two-source asymmetry D-048 encoded for the token ledger (terminal roles know their own tokens; chat roles do not). The test plan in the brief tags each item with one of two labels:
+Verification is split by *who can structurally do it* — mirroring the same two-source asymmetry the token ledger uses (terminal roles know their own tokens; chat roles do not). The test plan in the brief tags each item with one of two labels:
 
 - **`[agent]`** — non-auth, scriptable, dispatchable against a booted app. Examples: an SSRF rejection (the safe-fetch refuses a private IP), a parse check (a malformed `.md` returns the right error), a route response shape (`GET /api/x` returns the right JSON for a known input), a render smoke (the page mounts without crashing on stubbed data). These are executed by a **dispatched local agent** (the Developer's own session, or a fresh executor) with the app running locally. The agent reports executed-and-passing in the PR.
 - **`[principal]`** — auth-gated, key-dependent, visual, or otherwise reachable only from a real signed-in browser session. Examples: a signed-in BYOK audit with the Principal's stored key, a ModelPicker render behind Clerk, a visual confirmation that a new card renders in the right column. These are executed by the **Principal** in a browser. The Principal ticks the box.
 
 A test-plan item is one tag or the other — never both — and a brief that touches a runtime surface carries at least one of each kind when the surface includes both reachable paths. Pure-logic tasks (a parser, a sum function, a markdown normaliser — no runtime surface) declare **`Test Plan: unit-tests-only`** and are exempt from the runtime gate; the unit tests in CI are the proof.
 
-The split is deliberate and asymmetric: the agent can prove `[agent]` items because they don't require what the agent structurally lacks (an auth session, the Principal's BYOK key, eyes on a rendered page); the Principal proves `[principal]` items because they require exactly those things. **Pretending the agent could verify a `[principal]` item is the failure mode this role exists to remove.** (Mirror of D-048: the Brief Author cannot self-fill a chat-role token cell because the chat surface doesn't expose its own count; here, the dispatched agent cannot self-fill a `[principal]` test item because the agent surface doesn't expose authenticated browser state.)
+The split is deliberate and asymmetric: the agent can prove `[agent]` items because they don't require what the agent structurally lacks (an auth session, the Principal's BYOK key, eyes on a rendered page); the Principal proves `[principal]` items because they require exactly those things. **Pretending the agent could verify a `[principal]` item is the failure mode this role exists to remove.** (The same mirror as the token ledger: the Brief Author cannot self-fill a chat-role token cell because the chat surface doesn't expose its own count; here, the dispatched agent cannot self-fill a `[principal]` test item because the agent surface doesn't expose authenticated browser state.)
 
 ---
 
@@ -147,7 +147,7 @@ A `unit-tests-only` brief produces a much shorter block:
 - ❌ **Skipping verification because the reviewer approved.** Code review and verification answer different questions. A clean code review on broken runtime code is exactly what this phase exists to catch.
 - ❌ **Re-running the same `[agent]` item after a fix without re-pasting evidence.** A second run produces second output; show it.
 - ❌ **Inventing a test plan at verification time because the brief omitted one.** The brief is the source of truth for what "verified" means; inventing one mid-flight loses the Planner's intent and lets the agent grade its own homework.
-- ❌ **Downgrading a `[principal]` item to `[agent]` to make the agent half complete.** The Principal-only items exist precisely because the agent cannot prove them; reclassifying them is the failure mode (D-049 is built around not pretending the asymmetry away).
+- ❌ **Downgrading a `[principal]` item to `[agent]` to make the agent half complete.** The Principal-only items exist precisely because the agent cannot prove them; reclassifying them is the failure mode — the whole split is built around not pretending the asymmetry away.
 - ❌ **Writing "verified ✓" in the PR body without the per-item evidence.** Verification has the same evidence-or-it-didn't-happen discipline as the code-reviewer's FINDINGS block.
 - ❌ **Treating `Test Plan: unit-tests-only` as a way around the gate when the diff actually touches a runtime surface.** The Verifier rejects this at the entry gate; the Brief Validation gate should also reject it pre-dispatch.
 
@@ -157,4 +157,4 @@ A `unit-tests-only` brief produces a much shorter block:
 
 The `[agent]` half is run from the Developer's session (terminal role) — its turn-end ledger row already covers it (see `roles/developer.md`); no separate Verifier row is appended. The `[principal]` half is run by the Principal in a browser, which is not a metered surface, so no token row exists for it. Verification therefore adds **no new row class** to the per-iteration ledger; the Developer's `<task>: develop` row carries the agent-side cost, and the Principal's browser-side time has no token cost to record. (Re-entry after a failure follows the existing append-only rule on the Developer side.)
 
-See `iterations/README.md` §12 for the ledger format; `state-machine.md` §13 for the append-only rule.
+The row format and the append-only rule are part of the harness's token-ledger doctrine.

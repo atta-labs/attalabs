@@ -41,13 +41,13 @@ This is why the Planner's rationale field survives even though a mechanical deri
 
 ---
 
-## An id may cite; it must never carry meaning
+## Reader-facing readability — no unresolvable symbols
 
-Some of these docs are read by strangers, not only by agents that carry the decision log in context. The published set (`aeg-root/enforcement.md`, the role docs, the contracts) is now the harness's public face, and a stranger cannot resolve a bare `D-###` or `§N`. So:
+Some of these docs are read by strangers, not only by agents that carry the decision log in context. The published set (the enforcement map, the role docs, the contracts) is the harness's public face, and a stranger cannot resolve a decision id, a bare section number, or a pointer to a file that isn't published — a `D-0xx` points at the decision log, which isn't a published page, so to a reader it references an invisible file and means nothing. The rule is therefore strict, not "cite lightly":
 
-> **An id may cite; it must never carry meaning.** Delete the citation and the sentence must remain complete and true. `"Per D-108, hooks are never clobbered"` fails (delete `D-108` and the sentence loses its subject); `"Existing hooks are never clobbered — the installer appends a marked block instead. (D-108)"` passes. The same holds for bare section references: `"see §7"` is meaningless to a stranger; `"see the doc-update list (§7)"` survives. **Carve-out — the rule governs prose, not machine fields.** Ids stay verbatim in fields a parser reads: `Conforms-to: D-###` (verify-docs C4; `archive-task.ts`), and `decisions.md`'s `## D-NNN` headings. A pass that strips ids from machine fields breaks CI and is forbidden.
+> **No reader-facing text in a published doc may contain a symbol a reader cannot resolve from the page — no `D-0xx`, no bare `§N`, no internal-file citation. Machine fields (`Conforms-to:`, `## D-NNN` headings, frontmatter) are exempt.**
 
-This is a judgment obligation, not (yet) a mechanical gate — the Reviewer holds it (`contracts/developer-reviewer.md`, `roles/reviewer.md`): a doc that satisfies C5 mechanically but reads as a bare id-citation to a stranger is a finding.
+State the fact in plain words and delete the symbol; the sentence must stay true and complete for a stranger. This is a judgment obligation the Reviewer holds — a published doc that leaves an unresolvable symbol on the page is a finding.
 
 ---
 

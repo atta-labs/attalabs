@@ -43,7 +43,7 @@ The Principal holds final authority over:
 - **Author briefs.** The TL does this (Brief Author mode). The Principal approves briefs but does not draft them.
 - **Plan iterations.** The TL does this (Planner mode). The Principal approves the iteration but does not decompose it.
 - **Execute tasks.** The Developer executes. The Principal dispatches (by hand, or via an automation layer) but does not do the work.
-- **Manage day-to-day PM docs.** The TL maintains the iteration files, `thinking.md`, decision logs, and each project's pinned operational-state Issue during working sessions. The Principal approves and merges. (`state.md` and `now.md` are both retired — per-project state moved onto a pinned GitHub Issue per project (D-110) and `now.md` was dropped (D-057); active-work state is derived from the forge.)
+- **Manage day-to-day PM docs.** The TL maintains the iteration files, `thinking.md`, decision logs, and each project's pinned operational-state Issue during working sessions. The Principal approves and merges. (`state.md` and `now.md` are both retired — per-project state moved onto a pinned GitHub Issue per project and `now.md` was dropped; active-work state is derived from the forge.)
 - **Monitor every blocked task.** The TL watches `needs:execution-input` and `needs:strategy-input`. The Principal monitors `needs:principal-input` only.
 
 ---
@@ -56,7 +56,7 @@ In a typical working period:
 2. TL reports status, surfaces decisions that need the Principal's call.
 3. Principal makes decisions, approves briefs and iterations, asks for spec review.
 4. Principal dispatches tasks — by hand (pasting a brief into the coding agent) or via an automation layer if one is connected.
-5. At ratification windows: reads the `needs:principal-input`-labeled Issues/PRs (D-110), resolves pending items.
+5. At ratification windows: reads the `needs:principal-input`-labeled Issues/PRs, resolves pending items.
 6. Reviews PRs on the forge. Code review for correctness and scope compliance.
 7. Merges PRs after TL spec review and CI passes. (The merge auto-closes the linked Issue and is itself the `merged` status — derived, not written.)
 

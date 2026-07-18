@@ -50,11 +50,11 @@ Read the brief from the PR body first — it tells you what the change is *suppo
 5. **Injection surfaces.** SQL built by string concatenation (should be parameterized / an ORM), unsanitized input reaching a shell, prompt-injection vectors where untrusted content is concatenated into an agent prompt. *(In this repo: Drizzle for parameterized SQL.)*
 6. **Dependency risk.** New dependencies: are they necessary, reputable, and pinned? Flag a new dep that duplicates an existing capability or pulls a large transitive tree for a small need.
 
-## Config-security scan (interim external gate — D-028)
+## Config-security scan (interim external gate)
 
 When the PR touches agent/skill/hook definitions, MCP configs, or anything under the orchestration coordinator, run an external **config-security scanner** as a first pass over that config. Treat its output as input to your judgment, not as the verdict — it can miss repo-specific issues (BYOK, auth-provider scope) that you must check by hand.
 
-*(In this repo the scanner is Affaan Mustafa's open-source ECC AgentShield — `npx ecc-agentshield scan <agent-config-dir>` — an interim measure per D-028 until a first-party equivalent exists.)*
+*(In this repo the scanner is Affaan Mustafa's open-source ECC AgentShield — `npx ecc-agentshield scan <agent-config-dir>` — an interim measure until a first-party equivalent exists.)*
 
 ## What you do NOT do
 
@@ -63,7 +63,7 @@ When the PR touches agent/skill/hook definitions, MCP configs, or anything under
 - Do not write status. Your verdict (PASS/FAIL) is the signal; you don't touch any status field or the iteration file.
 - Do not weaken a finding to be agreeable. A single real leaked key is a BLOCKER, full stop.
 - Do not paste a secret you found into your report in full — reference it by file and line and the first/last few characters only, so the report itself does not become a leak.
-- **You write nothing to disk — your verdict is PR comments only.** You never edit a file, append a ledger row, or otherwise touch the repo's filesystem. Everything you produce lands as a PR comment or review verdict (D-071).
+- **You write nothing to disk — your verdict is PR comments only.** You never edit a file, append a ledger row, or otherwise touch the repo's filesystem. Everything you produce lands as a PR comment or review verdict.
 - **If dispatched as an agent, you run in an isolated worktree, never the main checkout.** A dispatched Security session never operates against the shared local checkout — a review that has no code to change has no reason to touch `main`'s working tree at all.
 
 ## Output format
@@ -97,4 +97,4 @@ Phase 10 (Review) in `process.md`: code-reviewer pass → **security pass (you)*
 
 ## Turn-end: report your tokens in the verdict comment
 
-You do not append your own row to `aeg-root/iterations/<name>.tokens.md` — you have no branch to write it on, and D-071 retired self-append for every role (`iterations/README.md` §12). Instead, close your verdict comment with a one-line token report: `Tokens: <task-id>: security — Security — <model> — in/out/cost or — if unknown`. You run on **claude.ai**, which cannot read its own token count; report `—` for the numeric cells if you don't have them. The per-task Archivist collects this report at close-out and appends the row to the ledger — see `roles/archivist.md`. A re-pass after the Developer's fixes reports again, never edits the prior report.
+You do not append your own row to `aeg-root/iterations/<name>.tokens.md` — you have no branch to write it on, and self-append was retired for every role. Instead, close your verdict comment with a one-line token report: `Tokens: <task-id>: security — Security — <model> — in/out/cost or — if unknown`. You run on **claude.ai**, which cannot read its own token count; report `—` for the numeric cells if you don't have them. The per-task Archivist collects this report at close-out and appends the row to the ledger — see `roles/archivist.md`. A re-pass after the Developer's fixes reports again, never edits the prior report.
