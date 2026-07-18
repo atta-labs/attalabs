@@ -10,7 +10,7 @@
  * project filter matches it under either — instead of the old first-label-wins
  * grouping that silently dropped its second project (D-091).
  *
- * Filters (project + tier) and their vocabulary live in `BacklogTable`; this
+ * Filters (project, tier, flags) and their vocabulary live in `BacklogTable`; this
  * server component only fetches, computes the distinct filter options, and
  * stays honest about forge failure. Iteration/state are NOT filters here: the
  * backlog is by definition the open, no-`iteration:*` set (`fetch-open-issues.ts`),

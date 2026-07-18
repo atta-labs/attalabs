@@ -13,13 +13,14 @@ import { LabelBadge, splitLabels } from '@/app/studio/_components/LabelBadge'
  * badges instead of being duplicated under two headings — and the project
  * filter matches it under either (D-091: never drop the second project).
  *
- * Filters are project + tier only — the two label families that actually vary
+ * Filters are project, tier, and flags — the label families that actually vary
  * across backlog rows. Iteration and state do NOT vary here: the backlog is
  * defined as open Issues carrying NO `iteration:*` label (`fetch-open-issues.ts`),
  * so every row is open and iteration-less. A row matches when it carries ANY
- * selected project (multi-project rows match either) AND its tier is selected;
- * an empty filter set means "all". Filters are inline toggle chips — every
- * option is visible at a glance, and they wrap on narrow screens.
+ * selected project (multi-project rows match either) AND its tier is selected
+ * AND it carries any selected flag (`needs:*`/`status:*`); an empty family means
+ * "all" for that family. Filters are inline toggle chips (not a dropdown) —
+ * every option is visible at a glance, and they wrap on narrow screens.
  *
  * The `#` and Title columns are split (like the iteration board's table). The
  * table sets a `min-w` so the library Table's own `overflow-auto` scroll
