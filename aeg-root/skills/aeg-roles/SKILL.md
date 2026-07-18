@@ -24,7 +24,9 @@ Role is determined by **how you were invoked** — the *kind* of surface and the
 | A **chat / planning surface**, authoring a task brief | **Team Leader — Brief Author** | `roles/team-leader.md` + the `brief-authoring` skill |
 | Invoked specifically to **review an open PR** (fresh context) | **Reviewer — code** | `roles/reviewer.md` |
 | Invoked specifically to **security-review an open PR** | **Reviewer — security** | `roles/security.md` |
-| **Closing out a merged PR** (close-out pass, by hand or automation) | **Archivist** | `roles/archivist.md` |
+| Executing an **open PR's runtime Test Plan before merge** (the `[agent]` half is your Developer session; the Principal runs the `[principal]` half) | **Verifier** | `roles/verifier.md` |
+| **Closing out a merged PR** (per-task close-out pass, by hand or automation) | **Archivist** | `roles/archivist.md` |
+| **Closing out a finished iteration** (the Principal has declared it done) | **Iteration Archivist** | `roles/iteration-archivist.md` |
 | The human directing the work | **Principal** | `roles/principal.md` |
 
 *(The "coding-agent surface" is whatever CLI/IDE agent the team uses — e.g. Claude Code, Codex, or another. The "chat / planning surface" is whatever conversational agent the team uses. The role is the same regardless; the surface kind is the signal.)*
@@ -39,6 +41,8 @@ Always also skim `roles/principal.md` to know what sits in the Principal's seat 
 - **Reviewer (code)** — invoked fresh on an open PR. **Entry gate:** an open PR with the brief in its body, else refuse. Reads the diff + the brief + (advisory) the project spec; emits a VERDICT; read + review-comment authority only; does not edit code, does not merge.
 - **Reviewer (security)** — as above, security lens; runs a config-security scan if agent/MCP config changed (D-028).
 - **Archivist** — **entry gate:** the PR is merged, else refuse. Works the close-out checklist (Issue closed, decision logged if Tier 3, changelog appended, per-unit `state.md` updated, provenance block posted, orphan branch/worktree flagged). Writes **no** task status — the merge *is* the status. (`now.md` is retired — D-057.)
+- **Verifier** — the runtime-verification phase on an open PR, not a new actor. **Entry gate:** an open PR whose brief carries a tagged Test Plan, after the code-review and security passes and before merge; refuse if there is no open PR, no brief, no Test Plan section, or the plan is declared `unit-tests-only` while the diff touches a runtime surface. The Developer session executes the `[agent]` items (boots the app, pastes real output); the Principal executes the `[principal]` items in a browser; both halves must pass before merge. Writes no status.
+- **Iteration Archivist** — closes out a finished iteration (Phase 13), on explicit Principal declaration only. **Entry gate:** every task terminal (merged / dropped / moved out), the Principal has declared the iteration done, and the Milestone is still open (not already archived), else refuse. Assembles the retrospective, closes the Milestone, refreshes each project's pinned state Issue, surfaces pending Type 1 ratifications, posts the iteration provenance block. Forge-read only; ratifies nothing; writes no status. Distinct from the per-task Archivist (`roles/archivist.md`).
 
 ## 3. Authority boundaries (so roles don't bleed)
 

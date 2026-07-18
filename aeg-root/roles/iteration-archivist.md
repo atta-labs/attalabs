@@ -95,7 +95,7 @@ If you don't have the information to fill a field, write "unknown — Principal 
 
 ### 4. Update the pinned state Issue
 
-Per D-110, per-project state is a pinned GitHub Issue, not `state.md` — update the relevant one(s) by editing the Issue body (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450, or the ecosystem-wide bucket #451 for `aeg-core`/`atta`/`desktop`/`attalabs`).
+Per-project state is a pinned GitHub Issue, not a `state.md` file (D-110) — update the relevant one(s) by editing the Issue body (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450, or the ecosystem-wide bucket #451 for `aeg-core`/`atta`/`desktop`/`attalabs`).
 
 > **`now.md` is retired (D-057).** Do not look for or update `now.md` — it no longer exists. "What's next" is derived from the forge by the Planner (`gh issue list --label "iteration:<slug>" --state open`), not written to a file.
 
@@ -201,7 +201,7 @@ Phase 13 of `process.md` — after the last task of an iteration merges and the 
 
 ## Turn-end: token ledger
 
-Per D-110, the token ledger lives on the forge, not a central file: post the `iteration-close` row as a comment on the last merged task PR (the same one carrying the provenance block, step 8) — append it to that comment rather than opening a new one:
+The token ledger lives on the forge, not a central file (D-110): post the `iteration-close` row as a comment on the last merged task PR (the same one carrying the provenance block, step 8) — append it to that comment rather than opening a new one:
 
 | Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date |
 |-------|------|-------------|-----------|-----------|------|------|
