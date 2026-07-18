@@ -1,40 +1,38 @@
 import type { DiagramNode } from '@atta/aeg-core'
+import { nodeDocHref } from '@atta/aeg-core/docs'
 
 /**
- * Resolves the "Read more" / "View source" targets for a leaf node's own
- * doctrine source. `path`/`line` are the GitHub source location — always
- * present, and the sole target before the docs route existed. `docRoute` is
- * the in-app rendered doc, when one exists to link to.
+ * Resolves the "Read more" / "View source" targets for a leaf node. `path`/
+ * `line` are the GitHub source location — always present, and the sole target
+ * before the docs route existed. `docRoute` is the in-app rendered doc.
  *
- * gate/check nodes carry `sourceLine` against `enforcement.md` directly — the
- * source link goes straight to that line, but the rendered doc
- * (`DocPage.tsx`) has no per-row anchor (no `rehype-slug`), so `docRoute`
- * lands at the top of the page, not the row. role/contract nodes carry no
- * `sourceLine` today, but their `label` is literally their doctrine
- * frontmatter id (`role.roleId` / `contract.contractId`, see
- * `diagram-model.ts`), and every `aeg-root/roles/*.md` /
- * `aeg-root/contracts/*.md` file today is named `<id>.md` — the same
- * convention backs both the GitHub path and the docs route, so there is one
- * mapping, not two.
+ * `docRoute` comes straight from `@atta/aeg-core`'s `nodeDocHref` — the one
+ * node→`/docs` derivation the nav, the map, and this resolver all share, so a
+ * deep link and a heading anchor can never disagree. It now reaches the exact
+ * node at the right granularity: a gate/check lands on
+ * `/docs/rings/ring-<n>#<slug>` (its own anchored section, no longer the top of
+ * one 42KB page); a role/contract on its own page; an action on
+ * `/docs/actions#<slug>` (previously omitted — `ACTIONS` carries its own
+ * `summary`/`description`, now rendered).
  *
- * action nodes have no doctrine markdown file — `ACTIONS` is a TypeScript
- * const in `packages/aeg-core/src/actions.ts`, not an `aeg-root/**` document
- * — so `docRoute` is omitted; the canonical set is still a real, readable,
- * single-source file (D-119), so `path` still points straight at it. No line
- * anchor — the node carries no `sourceLine` against that file.
+ * The GitHub `path`/`line` targets are unchanged: gate/check → `enforcement.md`
+ * at `sourceLine`; role/contract → their `aeg-root/**.md` file (no line, their
+ * `label` is the frontmatter id); action → `actions.ts` (the canonical set,
+ * no `aeg-root/**` doc backs it).
  */
 export function readMoreTarget(node: DiagramNode): { path: string; line?: number; docRoute?: string } | null {
+  const docRoute = nodeDocHref(node) ?? undefined
   if (node.kind === 'gate' || node.kind === 'check') {
-    return { path: 'aeg-root/enforcement.md', line: node.sourceLine, docRoute: '/docs/enforcement' }
+    return { path: 'aeg-root/enforcement.md', line: node.sourceLine, docRoute }
   }
   if (node.kind === 'role') {
-    return { path: `aeg-root/roles/${node.label}.md`, docRoute: `/docs/roles/${node.label}` }
+    return { path: `aeg-root/roles/${node.label}.md`, docRoute }
   }
   if (node.kind === 'contract') {
-    return { path: `aeg-root/contracts/${node.label}.md`, docRoute: `/docs/contracts/${node.label}` }
+    return { path: `aeg-root/contracts/${node.label}.md`, docRoute }
   }
   if (node.kind === 'action') {
-    return { path: 'packages/aeg-core/src/actions.ts' }
+    return { path: 'packages/aeg-core/src/actions.ts', docRoute }
   }
   return null
 }

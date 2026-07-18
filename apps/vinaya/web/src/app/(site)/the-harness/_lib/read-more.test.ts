@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { readMoreTarget } from './read-more'
 
 describe('readMoreTarget', () => {
-  it('links a gate node to enforcement.md at its sourceLine', () => {
+  it('links a gate node to its ring page at its own anchored section', () => {
     const node: DiagramNode = {
       id: 'gate:pre-commit',
       kind: 'gate',
@@ -15,11 +15,11 @@ describe('readMoreTarget', () => {
     expect(readMoreTarget(node)).toEqual({
       path: 'aeg-root/enforcement.md',
       line: 42,
-      docRoute: '/docs/enforcement'
+      docRoute: '/docs/rings/ring-0#pre-commit'
     })
   })
 
-  it('links a check node to enforcement.md at its sourceLine', () => {
+  it('links a check node to its ring page at its own anchored section', () => {
     const node: DiagramNode = {
       id: 'check:typecheck',
       kind: 'check',
@@ -31,7 +31,7 @@ describe('readMoreTarget', () => {
     expect(readMoreTarget(node)).toEqual({
       path: 'aeg-root/enforcement.md',
       line: 100,
-      docRoute: '/docs/enforcement'
+      docRoute: '/docs/rings/ring-1#typecheck'
     })
   })
 
@@ -56,13 +56,16 @@ describe('readMoreTarget', () => {
     })
   })
 
-  it('points action nodes at the canonical action set — no doctrine markdown backs them, actions.ts does', () => {
+  it('links an action node to its section on the actions page, source at actions.ts', () => {
     const node: DiagramNode = {
       id: 'action:commit-the-work',
       kind: 'action',
       label: 'commit the work',
       renderState: 'active'
     }
-    expect(readMoreTarget(node)).toEqual({ path: 'packages/aeg-core/src/actions.ts' })
+    expect(readMoreTarget(node)).toEqual({
+      path: 'packages/aeg-core/src/actions.ts',
+      docRoute: '/docs/actions#commit-the-work'
+    })
   })
 })

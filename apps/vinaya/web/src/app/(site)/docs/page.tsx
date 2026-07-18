@@ -2,12 +2,10 @@ import { Badge, Card, CardContent, Separator } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowUpRight } from 'lucide-react'
-import type { DiagramNode } from '@atta/aeg-core'
+import { nodeDocHref } from '@atta/aeg-core/docs'
 import { badgeLabels, humanLabel, shortLabel } from '../the-harness/_lib/display-label'
 import { deriveGroups, type GroupKey } from '../the-harness/_lib/groupings'
 import { loadDiagramModel } from '../the-harness/_lib/load-diagram'
-import { readMoreTarget } from '../the-harness/_lib/read-more'
-import { loadAegDocs } from '@/lib/docs/load-aeg-docs'
 
 export const metadata = {
   title: 'Docs — Vinaya',
@@ -39,8 +37,6 @@ const GROUP_TAG_LABEL: Record<GroupKey, string> = {
 export default async function DocsReferencePage() {
   const model = await loadDiagramModel()
   const groups = deriveGroups(model)
-  const { nav } = await loadAegDocs()
-  const surfacedSlugs = new Set(nav.flat.map((doc) => doc.slug))
 
   // The action a ring-0 gate guards, resolved from the model's `guards` edges —
   // `from` is the gate node, `to` the `action:<id>` node whose label we show.
@@ -51,13 +47,6 @@ export default async function DocsReferencePage() {
     const label = actionLabelById.get(edge.to)
     if (!label) continue
     guardsByNodeId.set(edge.from, [...(guardsByNodeId.get(edge.from) ?? []), humanLabel(label)])
-  }
-
-  const docRouteFor = (node: DiagramNode): string | undefined => {
-    const target = readMoreTarget(node)
-    if (!target?.docRoute) return undefined
-    const slug = target.docRoute.replace(/^\/docs\//, '')
-    return surfacedSlugs.has(slug) ? target.docRoute : undefined
   }
 
   return (
@@ -90,7 +79,7 @@ export default async function DocsReferencePage() {
           <div className='grid gap-3 sm:grid-cols-2'>
             {group.children.map((node) => {
               const guards = guardsByNodeId.get(node.id) ?? []
-              const docRoute = docRouteFor(node)
+              const docRoute = nodeDocHref(node) ?? undefined
               return (
                 <Card key={node.id} className='bg-card'>
                   <CardContent className='flex flex-col gap-2 p-4'>
