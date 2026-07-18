@@ -1,9 +1,9 @@
-import { Badge, Card, CardContent, Separator } from '@atta/ui/components'
+import { Separator } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
-import { ArrowUpRight } from 'lucide-react'
 import { nodeDocHref } from '@atta/aeg-core/docs'
 import { badgeLabels, humanLabel, shortLabel } from '../the-harness/_lib/display-label'
+import { HarnessCard } from './_components/HarnessCard'
 import { deriveGroups, type GroupKey } from '../the-harness/_lib/groupings'
 import { loadDiagramModel } from '../the-harness/_lib/load-diagram'
 
@@ -77,51 +77,17 @@ export default async function DocsReferencePage() {
             {group.label}
           </Heading>
           <div className='grid gap-3 sm:grid-cols-2'>
-            {group.children.map((node) => {
-              const guards = guardsByNodeId.get(node.id) ?? []
-              const docRoute = nodeDocHref(node) ?? undefined
-              return (
-                <Card key={node.id} className='bg-card'>
-                  <CardContent className='flex flex-col gap-2 p-4'>
-                    <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-[0.1em]'>
-                      {GROUP_TAG_LABEL[group.key]}
-                    </Text>
-                    <Heading level={3} className='font-mono text-card-foreground text-sm uppercase tracking-[0.06em]'>
-                      {shortLabel(humanLabel(node.label), 48)}
-                    </Heading>
-                    {badgeLabels(node).length > 0 && (
-                      <div className='flex flex-wrap gap-1.5'>
-                        {badgeLabels(node).map((label) => (
-                          <Badge key={label} className='w-fit font-mono text-xs uppercase'>
-                            {label}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    {node.detail && (
-                      <Text size='sm' className='font-sans text-card-foreground leading-relaxed'>
-                        {node.detail}
-                      </Text>
-                    )}
-                    {guards.length > 0 && (
-                      <Text size='xs' muted className='font-sans leading-relaxed'>
-                        Guards: {guards.join(', ')}
-                      </Text>
-                    )}
-                    {docRoute && (
-                      <NextLink
-                        href={docRoute}
-                        variant='link'
-                        className='inline-flex w-fit items-center gap-1 text-card-foreground text-sm hover:text-accent'
-                      >
-                        Read the doctrine
-                        <ArrowUpRight className='h-3.5 w-3.5' />
-                      </NextLink>
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })}
+            {group.children.map((node) => (
+              <HarnessCard
+                key={node.id}
+                kindTag={GROUP_TAG_LABEL[group.key]}
+                title={shortLabel(humanLabel(node.label), 72)}
+                badges={badgeLabels(node)}
+                detail={node.detail}
+                guards={guardsByNodeId.get(node.id)}
+                href={nodeDocHref(node) ?? undefined}
+              />
+            ))}
           </div>
         </section>
       ))}
