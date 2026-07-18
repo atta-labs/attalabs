@@ -1,5 +1,5 @@
 import type { Task, TaskIssueRef } from '@atta/aeg-types'
-import { type GhIssue, ghIssueListByLabel } from './gh'
+import { type GhIssue, ghIssueListByLabel, ghIssueListByLabelAsync } from './gh'
 import { parseRationaleDeps } from './parse-rationale-deps'
 
 /** Issue title convention: `[<iteration-slug>] <task-id> — <title>`, the same
@@ -42,18 +42,29 @@ function compareTaskIds(a: string, b: string): number {
   return a.localeCompare(b)
 }
 
-/** Lists `iteration:<slug>`-labeled Issues and builds the `Task[]` for that
- * iteration. Issue title's bracketed slug is not re-validated against
- * `slug` — the `iteration:<slug>` label is the authoritative membership
- * signal; a title typo should not silently drop a real task. */
-export function listTasksForSlug(owner: string, repo: string, slug: string): Task[] {
-  const issues = ghIssueListByLabel(owner, repo, `iteration:${slug}`)
+/** Shared `GhIssue[] → Task[]` transform (`taskFromIssue` map + `compareTaskIds`
+ * sort), the single source both the sync and async list functions call so the
+ * two can never derive a different task list. */
+function tasksFromIssues(issues: GhIssue[]): Task[] {
   const tasks: Task[] = []
   for (const issue of issues) {
     const task = taskFromIssue(issue)
     if (task) tasks.push(task)
   }
   return tasks.sort((a, b) => compareTaskIds(a.id, b.id))
+}
+
+/** Lists `iteration:<slug>`-labeled Issues and builds the `Task[]` for that
+ * iteration. Issue title's bracketed slug is not re-validated against
+ * `slug` — the `iteration:<slug>` label is the authoritative membership
+ * signal; a title typo should not silently drop a real task. */
+export function listTasksForSlug(owner: string, repo: string, slug: string): Task[] {
+  return tasksFromIssues(ghIssueListByLabel(owner, repo, `iteration:${slug}`))
+}
+
+/** Async twin of `listTasksForSlug` — non-blocking `gh` exec, same transform. */
+export async function listTasksForSlugAsync(owner: string, repo: string, slug: string): Promise<Task[]> {
+  return tasksFromIssues(await ghIssueListByLabelAsync(owner, repo, `iteration:${slug}`))
 }
 
 /**
