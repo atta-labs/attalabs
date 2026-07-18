@@ -57,8 +57,8 @@ import {
 import {
   deriveIterationFromForge,
   findMilestoneForSlug,
-  listActiveIterationSlugs,
-  listArchivedIterationSlugs,
+  listActiveIterationSlugsAsync,
+  listArchivedIterationSlugsAsync,
   resolveRepo
 } from '@atta/aeg-forge-state'
 import { loadIterationProgress } from '@/lib/forge/load-snapshot'
@@ -70,10 +70,36 @@ import { type ForgeSlugFailure, type ForgeStatus, reduceSettled } from './forge-
  * read in the same render tree. Request-scoped ONLY: no module-level TTL, no
  * cross-request store (D-087, Studio stores nothing). `@atta/aeg-forge-state`'s
  * own exports stay unwrapped; these wrappers are local to this module.
+ *
+ * The enumeration path uses the ASYNC `gh` twins: `execFileSync` blocks the
+ * event loop, so the sync enumeration serialized every `Promise.allSettled`
+ * fan-out below into strictly-sequential `gh` spawns. The async twins let them
+ * genuinely overlap. `cache()` wrapping an async function memoizes the returned
+ * promise — fine.
+ *
+ * TWO derive wrappers, and the split is load-bearing:
+ *   - `cachedDeriveIterationFromForge` (3 primitive args) — the single-slug
+ *     detail paths (`readActiveIteration`/`readArchivedIteration`), which have
+ *     no pre-known Milestone and still call `findMilestoneForSlug` for their
+ *     404 existence logic.
+ *   - `cachedDeriveIterationFromForgeKnown` (5 PRIMITIVE args) — the
+ *     enumeration paths, which already listed every Milestone up front so goal
+ *     comes from the ref and lifecycle is fixed per list. It passes those as
+ *     primitives and reconstructs the `{ goal, lifecycle }` object INSIDE the
+ *     cached fn. Passing a fresh object as an arg to a `cache()`-wrapped fn
+ *     would break request dedup — `cache()` keys by `Object.is` per argument,
+ *     so a new object literal is a new key every call, and `loadActiveIterations`
+ *     is invoked more than once per request (the dashboard-readiness path
+ *     re-reads it). Primitive keys dedup correctly; skipping the redundant
+ *     per-slug `findMilestoneForSlug` re-fetch is the whole point of the split.
  */
-const cachedListActiveIterationSlugs = cache(listActiveIterationSlugs)
-const cachedListArchivedIterationSlugs = cache(listArchivedIterationSlugs)
+const cachedListActiveIterationSlugs = cache(listActiveIterationSlugsAsync)
+const cachedListArchivedIterationSlugs = cache(listArchivedIterationSlugsAsync)
 const cachedDeriveIterationFromForge = cache(deriveIterationFromForge)
+const cachedDeriveIterationFromForgeKnown = cache(
+  (owner: string, repo: string, slug: string, goal: string, lifecycle: Lifecycle) =>
+    deriveIterationFromForge(owner, repo, slug, { goal, lifecycle })
+)
 
 const ITERATIONS_DIR = 'iterations'
 const REGISTRY_FILE = 'projects.md'
@@ -247,9 +273,9 @@ async function loadActiveIterationsWithStatus(): Promise<LoadedIterations> {
     return { items: [], status: { kind: 'unreachable' } }
   }
 
-  let refs: ReturnType<typeof listActiveIterationSlugs>
+  let refs: Awaited<ReturnType<typeof listActiveIterationSlugsAsync>>
   try {
-    refs = cachedListActiveIterationSlugs(repo.owner, repo.repo)
+    refs = await cachedListActiveIterationSlugs(repo.owner, repo.repo)
   } catch (err) {
     console.warn(`[repo-state] active-iteration enumeration failed: ${(err as Error).message}`)
     return { items: [], status: { kind: 'unreachable' } }
@@ -258,7 +284,7 @@ async function loadActiveIterationsWithStatus(): Promise<LoadedIterations> {
   const settled = await Promise.allSettled(
     refs.map(async (ref) => {
       const [iteration, fileIteration] = await Promise.all([
-        cachedDeriveIterationFromForge(repo.owner, repo.repo, ref.slug),
+        cachedDeriveIterationFromForgeKnown(repo.owner, repo.repo, ref.slug, ref.goal, 'active'),
         readActiveFile(ref.slug)
       ])
       return { fileSlug: ref.slug, iteration: mergeTaskEdgesFromFile(iteration, fileIteration) }
@@ -340,9 +366,9 @@ async function loadArchivedIterationsWithStatus(): Promise<LoadedIterations> {
   let status: ForgeStatus = { kind: 'unreachable' }
 
   if (repo) {
-    let refs: ReturnType<typeof listArchivedIterationSlugs> | null = null
+    let refs: Awaited<ReturnType<typeof listArchivedIterationSlugsAsync>> | null = null
     try {
-      refs = cachedListArchivedIterationSlugs(repo.owner, repo.repo)
+      refs = await cachedListArchivedIterationSlugs(repo.owner, repo.repo)
     } catch (err) {
       console.warn(`[repo-state] archived-iteration enumeration failed: ${(err as Error).message}`)
     }
@@ -351,7 +377,7 @@ async function loadArchivedIterationsWithStatus(): Promise<LoadedIterations> {
       const settled = await Promise.allSettled(
         refs.map(async (ref) => ({
           fileSlug: ref.slug,
-          iteration: await cachedDeriveIterationFromForge(repo.owner, repo.repo, ref.slug)
+          iteration: await cachedDeriveIterationFromForgeKnown(repo.owner, repo.repo, ref.slug, ref.goal, 'complete')
         }))
       )
       const failures: ForgeSlugFailure[] = []
