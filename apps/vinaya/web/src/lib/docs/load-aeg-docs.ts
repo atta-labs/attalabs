@@ -120,17 +120,10 @@ export async function loadAegDocs(): Promise<LoadedDocs> {
   roleDocs.sort(byTitle)
   contractDocs.sort(byTitle)
 
-  // Synthetic, model-derived nav entries: one Actions page, and The Rings
-  // (parent + three ring children).
-  const actionsDoc: Doc = {
-    slug: 'actions',
-    title: 'Actions',
-    section: 'Actions',
-    order: 0,
-    href: `${DOCS_BASE_PATH}/actions`,
-    filePath: 'packages/aeg-core/src/actions.ts'
-  }
-
+  // Synthetic, model-derived nav entries. The three rings are flat sidebar
+  // items (each its own page) under the "The Rings" section — not a collapsible
+  // parent. `ringsDoc` is the `/docs/rings` intro route (redirect target for
+  // `/docs/enforcement`), routable but not itself a sidebar item.
   const ringChildren: Doc[] = ([0, 1, 2] as const).map((i) => ({
     slug: `rings/ring-${i}`,
     title: `Ring ${i} · ${ringLabel(model, i)}`,
@@ -147,15 +140,48 @@ export async function loadAegDocs(): Promise<LoadedDocs> {
     section: 'The Rings',
     order: 0,
     href: `${DOCS_BASE_PATH}/rings`,
-    filePath: 'aeg-root/enforcement.md',
-    children: ringChildren
+    filePath: 'aeg-root/enforcement.md'
   }
 
+  // The Actions page (`/docs/actions`, one route) split into two sidebar
+  // entries by GitHub crossing — the two `#`-anchored groups on that page.
+  const actionsDoc: Doc = {
+    slug: 'actions',
+    title: 'Actions',
+    section: 'Actions',
+    order: 0,
+    href: `${DOCS_BASE_PATH}/actions`,
+    filePath: 'packages/aeg-core/src/actions.ts'
+  }
+  const actionNavItems: Doc[] = [
+    {
+      slug: 'actions-reaches-github',
+      title: 'Reaches GitHub',
+      sidebarTitle: 'Reaches GitHub',
+      section: 'Actions',
+      order: 0,
+      href: `${DOCS_BASE_PATH}/actions#reaches-github`,
+      filePath: 'packages/aeg-core/src/actions.ts'
+    },
+    {
+      slug: 'actions-stays-local',
+      title: 'Stays local',
+      sidebarTitle: 'Stays local',
+      section: 'Actions',
+      order: 1,
+      href: `${DOCS_BASE_PATH}/actions#stays-local`,
+      filePath: 'packages/aeg-core/src/actions.ts'
+    }
+  ]
+
+  // Order: The Rings first (below the sidebar title), then Roles, Contracts,
+  // Actions. `flat` carries only the routable docs — the anchor-only Action
+  // items are sidebar chrome, not routes.
   const sections: DocSection[] = [
+    { id: 'the-rings', label: 'The Rings', docs: ringChildren },
     { id: 'roles', label: 'Roles', docs: roleDocs },
     { id: 'contracts', label: 'Contracts', docs: contractDocs },
-    { id: 'actions', label: 'Actions', docs: [actionsDoc] },
-    { id: 'the-rings', label: 'The Rings', docs: [ringsDoc] }
+    { id: 'actions', label: 'Actions', docs: actionNavItems }
   ]
 
   const flat: Doc[] = [...roleDocs, ...contractDocs, actionsDoc, ringsDoc, ...ringChildren]

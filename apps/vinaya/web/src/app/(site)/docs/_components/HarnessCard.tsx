@@ -30,13 +30,13 @@ export function HarnessCard({ kindTag, title, badges, detail, guards, href }: Ha
   return (
     <Card className='h-full bg-card'>
       <CardContent className='flex h-full flex-col gap-2 p-4'>
-        <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-[0.1em]'>
+        <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-widest'>
           {kindTag}
         </Text>
 
         <Heading
           level={3}
-          className='line-clamp-2 min-h-[2lh] font-mono text-card-foreground text-sm uppercase leading-snug tracking-[0.06em]'
+          className='line-clamp-2 min-h-[2lh] font-mono text-card-foreground text-sm uppercase leading-snug tracking-widest'
         >
           {title}
         </Heading>

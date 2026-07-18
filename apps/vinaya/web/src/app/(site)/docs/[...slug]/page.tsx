@@ -7,7 +7,7 @@ import { loadDiagramModel } from '../../the-harness/_lib/load-diagram'
 import { githubBlobUrl } from '@/lib/github-links'
 import { loadAegDocs } from '@/lib/docs/load-aeg-docs'
 import { DocPage } from '../_components/DocPage'
-import { type HarnessSection, HarnessSectionsPage } from '../_components/HarnessSectionsPage'
+import { type HarnessSection, type HarnessSectionGroup, HarnessSectionsPage } from '../_components/HarnessSectionsPage'
 
 type Params = { slug: string[] }
 
@@ -80,16 +80,29 @@ function gateSections(model: DiagramModel, ringIndex: 0 | 1 | 2): HarnessSection
     }))
 }
 
-function actionSections(): HarnessSection[] {
-  return ACTIONS.map((a) => ({
+/**
+ * The actions page, split into two `#`-anchored groups by GitHub crossing —
+ * the two `/docs/actions#reaches-github` / `#stays-local` sidebar entries. The
+ * crossing is the group heading, so no redundant per-action badge.
+ */
+function actionGroups(): HarnessSectionGroup[] {
+  const toSection = (a: (typeof ACTIONS)[number]): HarnessSection => ({
     slug: a.id,
     heading: humanLabel(a.label),
-    badges: [a.crosses === 'into-github' ? 'reaches github' : 'stays local'],
+    badges: [],
     performedBy: a.performedBy,
     summary: a.summary,
     detail: a.description,
     viewSourceHref: githubBlobUrl('packages/aeg-core/src/actions.ts')
-  }))
+  })
+  return [
+    {
+      id: 'reaches-github',
+      label: 'Reaches GitHub',
+      sections: ACTIONS.filter((a) => a.crosses === 'into-github').map(toSection)
+    },
+    { id: 'stays-local', label: 'Stays local', sections: ACTIONS.filter((a) => a.crosses === 'none').map(toSection) }
+  ]
 }
 
 export default async function AegDocPage({ params }: { params: Promise<Params> }) {
@@ -126,7 +139,7 @@ export default async function AegDocPage({ params }: { params: Promise<Params> }
     )
   }
   if (joined === 'actions') {
-    return <HarnessSectionsPage doc={doc} sections={actionSections()} next={next} prev={prev} basePath={basePath} />
+    return <HarnessSectionsPage doc={doc} groups={actionGroups()} next={next} prev={prev} basePath={basePath} />
   }
 
   // --- File-sized pages (roles / contracts): raw markdown under the frame ---

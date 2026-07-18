@@ -52,7 +52,7 @@ export default async function DocsReferencePage() {
   return (
     <article className='space-y-8 pt-4'>
       <header className='space-y-3'>
-        <Text as='span' size='xs' muted className='font-mono uppercase tracking-[0.15em]'>
+        <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
           Reference
         </Text>
         <Heading level={1} className='font-serif font-light tracking-normal leading-tight text-foreground'>

@@ -27,21 +27,97 @@ export type HarnessSection = {
   viewSourceHref?: string
 }
 
+/** A titled, `#`-anchored group of sections (e.g. the Actions page's "Reaches
+ * GitHub" / "Stays local"). When a page needs no grouping (the ring pages), it
+ * passes `sections` directly instead. */
+export type HarnessSectionGroup = {
+  id: string
+  label: string
+  sections: HarnessSection[]
+}
+
 export type HarnessSectionsPageProps = {
   doc: Doc
-  sections: HarnessSection[]
+  /** Flat sections (ring pages). */
+  sections?: HarnessSection[]
+  /** Grouped sections with anchored group headings (actions page). */
+  groups?: HarnessSectionGroup[]
   next?: Doc
   prev?: Doc
   basePath?: string
 }
 
-export function HarnessSectionsPage({ doc, sections, next, prev, basePath = '/docs' }: HarnessSectionsPageProps) {
+function SectionBlock({ section }: { section: HarnessSection }) {
+  return (
+    <section id={section.slug} className='scroll-mt-24 space-y-2'>
+      <Heading level={3} size='xl' className='font-mono text-card-foreground text-base uppercase tracking-widest'>
+        {section.heading}
+      </Heading>
+
+      {section.badges.length > 0 && (
+        <div className='flex flex-wrap gap-1.5'>
+          {section.badges.map((label) => (
+            <Badge key={label} className='w-fit font-mono text-xs uppercase'>
+              {label}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {section.summary && (
+        <Text size='lg' weight='semibold' className='font-serif text-card-foreground italic leading-snug'>
+          {section.summary}
+        </Text>
+      )}
+
+      {section.detail && (
+        <Text size='md' className='font-sans text-card-foreground leading-relaxed'>
+          {section.detail}
+        </Text>
+      )}
+
+      {section.guards && section.guards.length > 0 && (
+        <Text size='sm' muted className='font-sans leading-relaxed'>
+          Guards: {section.guards.join(', ')}
+        </Text>
+      )}
+
+      {section.performedBy && section.performedBy.length > 0 && (
+        <Text size='sm' muted className='font-sans leading-relaxed'>
+          Performed by: {section.performedBy.join(', ')}
+        </Text>
+      )}
+
+      {section.viewSourceHref && (
+        <NextLink
+          href={section.viewSourceHref}
+          target='_blank'
+          rel='noreferrer'
+          variant='link'
+          className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm hover:text-accent'
+        >
+          View source
+          <ArrowUpRight className='h-3.5 w-3.5' />
+        </NextLink>
+      )}
+    </section>
+  )
+}
+
+export function HarnessSectionsPage({
+  doc,
+  sections,
+  groups,
+  next,
+  prev,
+  basePath = '/docs'
+}: HarnessSectionsPageProps) {
   return (
     <>
       <StickyDocHeader title={doc.title} section={doc.section} />
       <article className='space-y-4 pt-4'>
         <header className='space-y-3'>
-          <Text as='span' size='xs' muted className='font-mono uppercase tracking-[0.15em]'>
+          <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
             {doc.section}
           </Text>
           <Heading level={1} className='font-serif font-light tracking-normal leading-tight text-foreground'>
@@ -56,66 +132,30 @@ export function HarnessSectionsPage({ doc, sections, next, prev, basePath = '/do
 
         <Separator className='opacity-60' />
 
-        <div className='doc-page-content space-y-10'>
-          {sections.map((section) => (
-            <section key={section.slug} id={section.slug} className='scroll-mt-24 space-y-2'>
-              <Heading
-                level={2}
-                size='xl'
-                className='font-mono text-card-foreground text-base uppercase tracking-[0.06em]'
-              >
-                {section.heading}
-              </Heading>
-
-              {section.badges.length > 0 && (
-                <div className='flex flex-wrap gap-1.5'>
-                  {section.badges.map((label) => (
-                    <Badge key={label} className='w-fit font-mono text-xs uppercase'>
-                      {label}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {section.summary && (
-                <Text size='lg' weight='semibold' className='font-serif text-card-foreground italic leading-snug'>
-                  {section.summary}
-                </Text>
-              )}
-
-              {section.detail && (
-                <Text size='md' className='font-sans text-card-foreground leading-relaxed'>
-                  {section.detail}
-                </Text>
-              )}
-
-              {section.guards && section.guards.length > 0 && (
-                <Text size='sm' muted className='font-sans leading-relaxed'>
-                  Guards: {section.guards.join(', ')}
-                </Text>
-              )}
-
-              {section.performedBy && section.performedBy.length > 0 && (
-                <Text size='sm' muted className='font-sans leading-relaxed'>
-                  Performed by: {section.performedBy.join(', ')}
-                </Text>
-              )}
-
-              {section.viewSourceHref && (
-                <NextLink
-                  href={section.viewSourceHref}
-                  target='_blank'
-                  rel='noreferrer'
-                  variant='link'
-                  className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm hover:text-accent'
+        {groups ? (
+          <div className='doc-page-content space-y-12'>
+            {groups.map((group) => (
+              <div key={group.id} className='space-y-8'>
+                <Heading
+                  id={group.id}
+                  level={2}
+                  className='scroll-mt-24 font-serif font-light tracking-normal leading-tight text-foreground'
                 >
-                  View source
-                  <ArrowUpRight className='h-3.5 w-3.5' />
-                </NextLink>
-              )}
-            </section>
-          ))}
-        </div>
+                  {group.label}
+                </Heading>
+                {group.sections.map((section) => (
+                  <SectionBlock key={section.slug} section={section} />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className='doc-page-content space-y-10'>
+            {(sections ?? []).map((section) => (
+              <SectionBlock key={section.slug} section={section} />
+            ))}
+          </div>
+        )}
 
         {(prev || next) && (
           <>
