@@ -17,6 +17,7 @@ import {
   SidebarProvider
 } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
+import { Text } from '@atta/ui/shared'
 import { ChevronDown } from 'lucide-react'
 import type { Doc, DocNav } from '@atta/aeg-core/docs'
 
@@ -29,6 +30,16 @@ export function DocSidebar({ nav, pathname }: DocSidebarProps) {
       className='h-full min-h-0 w-(--sidebar-width) shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'
     >
       <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
+        <NextLink
+          href='/docs'
+          variant='unstyled'
+          className='mb-2 block px-2 py-1 hover:opacity-80'
+          aria-current={pathname === '/docs' ? 'page' : undefined}
+        >
+          <Text as='span' className='font-serif text-base font-light tracking-tight text-sidebar-foreground'>
+            The Harness
+          </Text>
+        </NextLink>
         {nav.sections.map((section) => (
           <SidebarGroup key={section.id} className='py-1.5'>
             <SidebarGroupLabel className='font-sans text-[11px] font-bold tracking-[0.15em] uppercase text-sidebar-foreground/60'>
