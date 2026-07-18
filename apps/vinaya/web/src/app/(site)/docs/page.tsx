@@ -1,5 +1,4 @@
 import { Separator } from '@atta/ui/components'
-import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import { nodeDocHref } from '@atta/aeg-core/docs'
 import { badgeLabels, humanLabel, shortLabel } from '../the-harness/_lib/display-label'
@@ -7,10 +6,12 @@ import { HarnessCard } from './_components/HarnessCard'
 import { deriveGroups, type GroupKey } from '../the-harness/_lib/groupings'
 import { loadDiagramModel } from '../the-harness/_lib/load-diagram'
 
+const INTRO =
+  'Vinaya is a series of deterministic checks and workflows that hold agentic and human development to the same discipline — an AI agent and a person answer to the identical rules before anything merges. Each ring below is read at build time from this repo’s own doctrine, not hand-written for this page.'
+
 export const metadata = {
   title: 'Docs — Vinaya',
-  description:
-    'Every part of the harness, generated at build time from this repo’s own doctrine — each part with its plain-English description, the machine doctrine beneath.'
+  description: INTRO
 }
 
 const GROUP_TAG_LABEL: Record<GroupKey, string> = {
@@ -59,14 +60,7 @@ export default async function DocsReferencePage() {
           The harness, part by part
         </Heading>
         <Text size='lg' muted className='leading-relaxed'>
-          {metadata.description}
-        </Text>
-        <Text size='sm' muted className='leading-relaxed'>
-          Generated from the same model{' '}
-          <NextLink href='/the-harness' variant='unstyled' className='text-accent underline-offset-4 hover:underline'>
-            The Harness
-          </NextLink>{' '}
-          draws — nothing on this page is hand-written.
+          {INTRO}
         </Text>
       </header>
 
