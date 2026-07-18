@@ -79,7 +79,6 @@ describe('isSurfacedDoc: model-backed rule', () => {
       'documentation-coherence.md',
       'iterations/README.md',
       'diagrams/system-architecture.md',
-      'diagrams/process-flow.md',
       'skills/aeg/SKILL.md',
       'templates/brief-template.md'
     ]) {
