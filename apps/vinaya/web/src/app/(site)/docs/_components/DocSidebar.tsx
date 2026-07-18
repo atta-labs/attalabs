@@ -16,6 +16,17 @@ import type { Doc, DocNav } from '@atta/aeg-core/docs'
 
 export type DocSidebarProps = { nav: DocNav; pathname: string }
 
+/** The map at `/docs` — where the "The Harness" title used to link. A plain
+ * title reads as decoration, not a link, so the overview is its own item. */
+const OVERVIEW_DOC: Doc = {
+  slug: 'overview',
+  title: 'Overview',
+  section: 'Overview',
+  order: 0,
+  href: '/docs',
+  filePath: ''
+}
+
 export function DocSidebar({ nav, pathname }: DocSidebarProps) {
   return (
     <SidebarProvider
@@ -23,16 +34,20 @@ export function DocSidebar({ nav, pathname }: DocSidebarProps) {
       className='h-full min-h-0 w-(--sidebar-width) shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'
     >
       <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
-        <NextLink
-          href='/docs'
-          variant='unstyled'
-          className='mb-3 block px-2 py-1 hover:opacity-80'
-          aria-current={pathname === '/docs' ? 'page' : undefined}
+        <Text
+          as='span'
+          className='mb-2 block px-2 font-sans text-sm font-bold uppercase tracking-widest text-sidebar-foreground'
         >
-          <Text as='span' className='font-sans text-sm font-bold uppercase tracking-widest text-sidebar-foreground'>
-            The Harness
-          </Text>
-        </NextLink>
+          The Harness
+        </Text>
+
+        <SidebarGroup className='py-1.5'>
+          <SidebarGroupContent>
+            <SidebarMenu className='gap-0.5'>
+              <FlatDocItem doc={OVERVIEW_DOC} pathname={pathname} />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         {nav.sections.map((section) => (
           <SidebarGroup key={section.id} className='py-1.5'>
