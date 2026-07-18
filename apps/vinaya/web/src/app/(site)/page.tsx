@@ -78,10 +78,7 @@ export default async function HomePage() {
       <Footer
         product='vinaya'
         tagline='Discipline for the AI era'
-        links={[
-          { label: 'Known Limits', href: '/known-limits' },
-          { label: 'The Harness', href: '/the-harness' }
-        ]}
+        links={[{ label: 'The Harness', href: '/the-harness' }]}
       />
     </>
   )
