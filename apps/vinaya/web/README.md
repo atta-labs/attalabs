@@ -1,6 +1,6 @@
 # Vinaya Web
 
-Landing page and Known Limits page for Vinaya. Part of the [AttaLabs](../../../README.md) ecosystem.
+Landing page plus the methodology surfaces (The Harness, Docs, Install, Studio) for Vinaya. Part of the [AttaLabs](../../../README.md) ecosystem.
 
 **Domain:** vinaya.attalabs.dev
 
