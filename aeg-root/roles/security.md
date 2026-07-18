@@ -93,7 +93,7 @@ A security finding that implies a product/architecture decision (e.g., "the whol
 
 Phase 10 (Review) in `process.md`: code-reviewer pass → **security pass (you)** → Principal code review → TL spec review → merge.
 
-**Your verdict is also a mechanical merge gate (aeg-review-gate-v1 task 1, #474).** A required, blocking CI check (`packages/aeg-core/bin/verify-review-gate.ts`) reads every PR comment for a clean `PASS` verdict — `FAIL`, a missing verdict, or an unclear one all fail the check and block merge, same as the code-reviewer pass. This is not advisory: it is the same enforcement class as typecheck or lint. A principal can waive it for one PR with an actor-verified `waiver:review` label (`aeg-root/enforcement.md`) — label presence alone is never sufficient.
+**Your verdict is also a mechanical merge gate (the review-gate iteration, task 1).** A required, blocking CI check (`packages/aeg-core/bin/verify-review-gate.ts`) reads every PR comment for a clean `PASS` verdict — `FAIL`, a missing verdict, or an unclear one all fail the check and block merge, same as the code-reviewer pass. This is not advisory: it is the same enforcement class as typecheck or lint. A principal can waive it for one PR with an actor-verified `waiver:review` label (`aeg-root/enforcement.md`) — label presence alone is never sufficient.
 
 ## Turn-end: report your tokens in the verdict comment
 

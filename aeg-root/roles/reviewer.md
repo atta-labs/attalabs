@@ -105,7 +105,7 @@ If you discover something that needs a decision above review authority — the b
 
 Phase 10 (Review) in `process.md`. The order is: **code-reviewer pass (you) → security pass (`roles/security.md`) → Principal code review → TL spec review → merge.** Your verdict feeds the human reviews; it does not replace them.
 
-**Your verdict is also a mechanical merge gate (aeg-review-gate-v1 task 1, #474).** A required, blocking CI check (`packages/aeg-core/bin/verify-review-gate.ts`) reads every PR comment for a clean `APPROVE` verdict — `REQUEST CHANGES`, a missing verdict, or an unclear one all fail the check and block merge, same as this repo's own security pass. This is not advisory: it is the same enforcement class as typecheck or lint. A principal can waive it for one PR with an actor-verified `waiver:review` label (`aeg-root/enforcement.md`) — label presence alone is never sufficient.
+**Your verdict is also a mechanical merge gate (the review-gate iteration, task 1).** A required, blocking CI check (`packages/aeg-core/bin/verify-review-gate.ts`) reads every PR comment for a clean `APPROVE` verdict — `REQUEST CHANGES`, a missing verdict, or an unclear one all fail the check and block merge, same as this repo's own security pass. This is not advisory: it is the same enforcement class as typecheck or lint. A principal can waive it for one PR with an actor-verified `waiver:review` label (`aeg-root/enforcement.md`) — label presence alone is never sufficient.
 
 ## Turn-end: report your tokens in the verdict comment
 

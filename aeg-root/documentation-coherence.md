@@ -43,11 +43,11 @@ This is why the Planner's rationale field survives even though a mechanical deri
 
 ## Reader-facing readability — no unresolvable symbols
 
-Some of these docs are read by strangers, not only by agents that carry the decision log in context. The published set (the enforcement map, the role docs, the contracts) is the harness's public face, and a stranger cannot resolve a decision id, a bare section number, or a pointer to a file that isn't published — a `D-0xx` points at the decision log, which isn't a published page, so to a reader it references an invisible file and means nothing. The rule is therefore strict, not "cite lightly":
+Some of these docs are read by strangers, not only by agents that carry the decision log in context. The published set (the enforcement map, the role docs, the contracts) is the harness's public face, and any token that requires insider knowledge — a decision id, a section number, an Issue or PR number, an iteration slug, an internal file path — means nothing to a stranger, because it points at something not on the page. The rule is therefore a principle, not a fixed list of symbol types:
 
-> **No reader-facing text in a published doc may contain a symbol a reader cannot resolve from the page — no `D-0xx`, no bare `§N`, no internal-file citation. Machine fields (`Conforms-to:`, `## D-NNN` headings, frontmatter) are exempt.**
+> **A reader-facing published doc contains no token that requires insider knowledge — no decision ids, section refs, Issue/PR numbers, iteration slugs, or internal paths; state facts in plain words. Machine fields and named references to other published docs are exempt.**
 
-State the fact in plain words and delete the symbol; the sentence must stay true and complete for a stranger. This is a judgment obligation the Reviewer holds — a published doc that leaves an unresolvable symbol on the page is a finding.
+State the fact in plain words and delete the token; the sentence must stay true and complete for a stranger. Exempt: machine fields a parser/build reads (`Conforms-to:`, `## D-NNN` headings, frontmatter keys), and named references to other **published** docs a reader can open. This is a judgment obligation the Reviewer holds — a published doc that leaves an insider-only token on the page is a finding.
 
 ---
 

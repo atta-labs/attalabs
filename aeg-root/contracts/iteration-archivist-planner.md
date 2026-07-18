@@ -20,7 +20,7 @@ summary: Ever started planning the next phase on outdated info about the last on
 
 The Planner starts a new iteration by reading the current state of a product. If the previous iteration was not archived — if the Iteration Archivist did not run — the Planner reads state docs that describe a product that no longer exists. The plan is built on wrong assumptions and dispatches tasks against a reality that merged away.
 
-This is the failure that actually happened: herald-onto-engine and aeg-ui-v1 completed without the Iteration Archivist running. The Planner started herald-agents-v2, vada-agents-v2, and aeg-governance-ui-v2 against state docs still describing the pre-completion product. The root cause was a missing gate: the Planner's readiness gate had no item that checked whether the previous iteration on each product was archived.
+This is the failure that actually happened: two earlier iterations completed without the Iteration Archivist running. The Planner then started three new iterations against state docs still describing the pre-completion product. The root cause was a missing gate: the Planner's readiness gate had no item that checked whether the previous iteration on each product was archived.
 
 This contract formalizes the close-out outputs the Iteration Archivist must produce, and the physical check the Planner must perform on them. The check is not a checklist item the Planner reviews — it is a filesystem fact: does `aeg-root/iterations/completed/<name>.md` exist? If no, the gate fails.
 
@@ -31,8 +31,8 @@ This contract formalizes the close-out outputs the Iteration Archivist must prod
 Four artifacts, all produced by the Iteration Archivist at close-out:
 
 1. The **archived iteration file** at `aeg-root/iterations/completed/<name>.md` — the physical signal.
-2. The updated **pinned state Issue** (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide #451) — the authoritative current-state snapshot for the product (current-focus pointer, resolved pending-manual-ops, recently-shipped entry).
-3. The **retrospective** posted as a new comment on the pinned lessons Issue (#453) — the durable failure-mode record.
+2. The updated **pinned state Issue** (one per product, plus an ecosystem-wide bucket) — the authoritative current-state snapshot for the product (current-focus pointer, resolved pending-manual-ops, recently-shipped entry).
+3. The **retrospective** posted as a new comment on the pinned lessons Issue — the durable failure-mode record.
 
 All three must exist before the Planner is authorized to plan the next iteration on the product. (`now.md` is retired. "What's next" is derived from the forge: open Issues without an assigned PR in the current iteration, plus `gh issue list --label "iteration:<slug>" --state open`.)
 
@@ -46,7 +46,7 @@ Every artifact the Iteration Archivist produces (left) has exactly one obligatio
 |---|---|---|
 | **Archived iteration file** at `aeg-root/iterations/completed/<name>.md` | Readiness gate item 8 | The Planner MUST confirm this file exists before planning any new iteration on the same product. Absence means the Iteration Archivist has not run — planning is blocked. |
 | **Updated pinned state Issue** reflecting current product state (current-focus pointer updated, pending-manual-ops current, recently-shipped entry added) | Readiness gate item 2 (specs reachable) | The Planner reads the updated state Issue as the authoritative current-state snapshot. A state Issue not updated by the Iteration Archivist means the plan is built on wrong assumptions about what the product looks like post-iteration. |
-| **Retrospective** posted as a comment on the pinned lessons Issue (#453) | Readiness gate item 5 (locked decisions known) | The Planner reads lessons since the last iteration to avoid re-litigating resolved decisions or repeating known failure modes. A missing retrospective means the Planner plans blind to the iteration's carry-forward lessons. |
+| **Retrospective** posted as a comment on the pinned lessons Issue | Readiness gate item 5 (locked decisions known) | The Planner reads lessons since the last iteration to avoid re-litigating resolved decisions or repeating known failure modes. A missing retrospective means the Planner plans blind to the iteration's carry-forward lessons. |
 
 > **`now.md` is retired.** "What's next" is not a produced artifact — it is derived from the forge: `gh issue list --label "iteration:<slug>" --state open` filtered to Issues with no open PR. The Planner runs this query directly rather than reading a file that would need hand-maintenance.
 
@@ -58,7 +58,7 @@ Every artifact the Iteration Archivist produces (left) has exactly one obligatio
 
 - Move the iteration file to `completed/` — this is the **physical signal** the Planner's gate checks. A close-out that does everything else but fails to move the file is an incomplete close-out that correctly blocks planning.
 - Update the relevant pinned state Issue(s) to reflect the iteration's output: update the current-focus pointer, add a recently-shipped entry, clear resolved pending-manual-ops. A state Issue that still describes work in progress after the iteration closed is a bug in the close-out.
-- Post the retrospective as a new comment on the pinned lessons Issue (#453). These three outputs are the close-out contract. A close-out missing any of them is incomplete and the Planner's gate will correctly block.
+- Post the retrospective as a new comment on the pinned lessons Issue. These three outputs are the close-out contract. A close-out missing any of them is incomplete and the Planner's gate will correctly block.
 - **Do not** update `now.md` — it no longer exists. "What's next" is derived from the forge by the Planner, not written by the Archivist.
 
 ## Consumer obligations (the Planner)
@@ -66,7 +66,7 @@ Every artifact the Iteration Archivist produces (left) has exactly one obligatio
 - Run readiness gate item 8 before planning any iteration that includes a product: confirm `aeg-root/iterations/completed/<name>.md` exists for the previous iteration on each product in scope.
 - If any prior iteration on an in-scope product exists in `aeg-root/iterations/` but NOT in `completed/`, STOP: *"The previous iteration `<name>` on `<product>` has not been archived — the Iteration Archivist has not run. Dispatch the Iteration Archivist for `<name>` before planning proceeds."*
 - Do not improvise around a missing close-out. "The Iteration Archivist probably ran" is not a passed gate. The filesystem check is the gate. If the file isn't there, stop.
-- Read the updated pinned state Issue and lessons Issue (#453) as the authoritative current-state snapshot — not a previous session's memory, not an earlier planning pass. These reflect what the iteration actually shipped; planning against anything else is planning against stale reality.
+- Read the updated pinned state Issue and lessons Issue as the authoritative current-state snapshot — not a previous session's memory, not an earlier planning pass. These reflect what the iteration actually shipped; planning against anything else is planning against stale reality.
 - Derive "what's next" from the forge: `gh issue list --label "iteration:<slug>" --state open` filtered to Issues without an assigned open PR. Do not look for a `now.md` — it no longer exists.
 
 ---

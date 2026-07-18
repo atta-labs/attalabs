@@ -51,7 +51,7 @@ Work through every item below. Confirm each against reality — do not assume.
 
 ### 2. Write the retrospective
 
-Post a new comment on the pinned lessons Issue (#453) — never edit an existing comment. Structure (preserve markdown; do not abbreviate):
+Post a new comment on the pinned lessons Issue — never edit an existing comment. Structure (preserve markdown; do not abbreviate):
 
 ```markdown
 ## <Iteration name> — retrospective (Month YYYY)
@@ -81,7 +81,7 @@ Post a new comment on the pinned lessons Issue (#453) — never edit an existing
 - Dates: from merged PR timestamps (`mergedAt`)
 - Tasks completed: count merged PRs matching `task/<iteration>/*`
 - Dropped/deferred: `gh issue list --label "iteration:<slug>" --milestone <slug>` (all task Issues, forge-native) — check which have no merged PR. Legacy file-based iterations: check the topology file (`iterations/<name>.md`) instead.
-- What went well / What stalled: from merged PR summaries (briefs in PR bodies), the merged code's patterns, and calibration entries on the pinned lessons Issue (#453). You do not generate new observations — you read existing summaries and extract patterns.
+- What went well / What stalled: from merged PR summaries (briefs in PR bodies), the merged code's patterns, and calibration entries on the pinned lessons Issue. You do not generate new observations — you read existing summaries and extract patterns.
 - Decisions: query `packages/governance/decisions.md` (and per-project decision files if relevant) for entries created during this iteration
 - Unbuilt tasks: task Issues (or, for a legacy iteration, topology entries) with no merged PR
 
@@ -95,7 +95,7 @@ If you don't have the information to fill a field, write "unknown — Principal 
 
 ### 4. Update the pinned state Issue
 
-Per-project state is a pinned GitHub Issue, not a `state.md` file — update the relevant one(s) by editing the Issue body (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450, or the ecosystem-wide bucket #451 for `aeg-core`/`atta`/`desktop`/`attalabs`).
+Per-project state is a pinned GitHub Issue, not a `state.md` file — update the relevant one(s) by editing the Issue body (one for `aeg`, `vada`, `herald`, `cetana`, or the ecosystem-wide bucket for `aeg-core`/`atta`/`desktop`/`attalabs`).
 
 > **`now.md` is retired.** Do not look for or update `now.md` — it no longer exists. "What's next" is derived from the forge by the Planner (`gh issue list --label "iteration:<slug>" --state open`), not written to a file.
 
@@ -126,7 +126,7 @@ Post a comment on the **last merged task PR of the iteration** (the most recent 
 - Tasks completed: N/N
 - Duration: <first merge date> → <last merge date>
 - Milestone: closed (forge-native — or "iterations file moved to `aeg-root/iterations/completed/<name>.md`" for a legacy pre-cutover iteration)
-- Retrospective: posted to the pinned lessons Issue (#453)
+- Retrospective: posted to the pinned lessons Issue
 - Pending Type 1 ratifications: [list D-### or "none"]
 - Dangling items: [list or "none"]
 - Principal declaration: [quote or "dispatched without explicit quote — Principal to confirm"]
@@ -168,7 +168,7 @@ FORGE VERIFICATION:
 - Issues closed: N/N (list any still open)
 - Orphaned branches: [list or none]
 
-RETROSPECTIVE: posted to pinned lessons Issue #453 ✓ | INCOMPLETE (reason)
+RETROSPECTIVE: posted to pinned lessons Issue ✓ | INCOMPLETE (reason)
 
 ARCHIVED: aeg-root/iterations/completed/<name>.md ✓ | FAILED (reason)
 
