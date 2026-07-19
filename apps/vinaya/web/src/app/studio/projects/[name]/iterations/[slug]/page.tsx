@@ -160,15 +160,20 @@ export default async function IterationPage({ params }: { params: Promise<Params
           // Table's opt-in `stickyHeader` prop stays available for surfaces that
           // want a pinned header and can accept the vertical scroll box.
           <div className='overflow-hidden rounded-lg border border-border bg-card'>
-            <Table className='min-w-[720px] table-fixed md:min-w-0'>
+            {/* `min-w-[760px]` (no `md:min-w-0`): `w-full` fills a wide container,
+                but the table never shrinks below 760px — it scrolls horizontally
+                instead, so the columns never cram their labels below readability at
+                a narrow width. Column %s leave the label columns (PROJECT(S),
+                CONFLICTS) wide enough for the header text + retro's `px-2` gutter. */}
+            <Table className='min-w-[760px] table-fixed'>
               <TableHeader className='[&_th]:whitespace-nowrap'>
                 <TableRow>
-                  <TableHead className='w-[5%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
+                  <TableHead className='w-[4%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>Task</TableHead>
-                  <TableHead className='w-[13%] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
-                  <TableHead className='w-[15%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-                  <TableHead className='w-[11%] font-sans text-xs uppercase tracking-wider'>Deps</TableHead>
-                  <TableHead className='w-[13%] font-sans text-xs uppercase tracking-wider'>Conflicts</TableHead>
+                  <TableHead className='w-[11%] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
+                  <TableHead className='w-[16%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
+                  <TableHead className='w-[9%] font-sans text-xs uppercase tracking-wider'>Deps</TableHead>
+                  <TableHead className='w-[16%] font-sans text-xs uppercase tracking-wider'>Conflicts</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
