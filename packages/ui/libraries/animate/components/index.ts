@@ -36,8 +36,9 @@ export {
 // Form — falls back to basic
 export { Slider } from '../../basic/installed/slider'
 // Table
+export { Table } from './table'
+export type { TableProps } from './table'
 export {
-  Table,
   TableBody,
   TableCaption,
   TableCell,

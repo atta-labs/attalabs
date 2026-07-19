@@ -124,15 +124,10 @@ const markdownComponents = {
   // library's table look here — a hardcoded <table> can never do that,
   // regardless of className. TableRow already puts a border-b on each row,
   // so per-cell borders (th/td) are dropped as redundant, not reinvented.
-  // Wrap the library Table in a self-contained horizontal-scroll container so a
-  // wide markdown table scrolls inside its own box instead of bleeding past the
-  // prose column and overflowing the page. `[&>div]:overflow-visible` defers the
-  // Table's own inner scroller to this one so the two don't nest.
-  table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
-    <div className='my-6 max-w-full overflow-x-auto overflow-y-hidden [&>div]:overflow-visible'>
-      <Table {...props} />
-    </div>
-  ),
+  // `@atta/ui` Table owns its own horizontal-scroll container, so a wide markdown
+  // table scrolls inside its own box instead of bleeding past the prose column.
+  // `containerClassName` puts the block margin on that scroll wrapper.
+  table: (props: React.TableHTMLAttributes<HTMLTableElement>) => <Table containerClassName='my-6' {...props} />,
   thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableHeader {...props} />,
   tbody: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableBody {...props} />,
   tr: (props: React.HTMLAttributes<HTMLTableRowElement>) => <TableRow {...props} />,

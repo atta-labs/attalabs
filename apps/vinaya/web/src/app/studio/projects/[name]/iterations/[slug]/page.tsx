@@ -149,19 +149,16 @@ export default async function IterationPage({ params }: { params: Promise<Params
             No tasks declared in this iteration's topology table.
           </p>
         ) : (
-          // THIS card is the single horizontal-scroll container: `overflow-x-auto`
-          // clips at the card's own width and scrolls the wide table inside it;
-          // `overflow-y-hidden` clips the rounded corners so a row background can't
-          // poke past them. `[&>div]:overflow-visible` neutralizes the library
-          // Table's OWN inner overflow-auto wrapper so the two don't nest (a nested
-          // inner scroller let `min-w` bleed past the card and overflow the page on
-          // mobile). Natural column sizing (NO `table-fixed`): the Task column
-          // takes the slack (`w-full`) and every other column is exactly as wide as
-          // its content, so headers like CONFLICTS keep their `px-4` gutter instead
-          // of being crushed against the edge. `[&_th]:whitespace-nowrap` stops the
-          // labels from wrapping. `min-w-[760px]` keeps it readable and scrolling
-          // below the container width; `md:min-w-0` lets it fill the page at ≥ md.
-          <div className='overflow-x-auto overflow-y-hidden rounded-lg border border-border bg-card [&>div]:overflow-visible'>
+          // `@atta/ui` Table now owns the horizontal-scroll container itself
+          // (`lib/scrollable-table.tsx`), so the card only supplies chrome:
+          // `overflow-hidden` clips the rounded corners so a row background can't
+          // poke past them. Natural column sizing (NO `table-fixed`): the Task
+          // column takes the slack (`w-full`) and every other column is exactly as
+          // wide as its content, so headers like CONFLICTS keep their `px-4` gutter
+          // instead of being crushed. `[&_th]:whitespace-nowrap` stops the labels
+          // wrapping. `min-w-[760px]` keeps it readable and scrolling below the
+          // container width; `md:min-w-0` lets it fill the page at ≥ md.
+          <div className='overflow-hidden rounded-lg border border-border bg-card'>
             <Table className='min-w-[760px] md:min-w-0'>
               <TableHeader className='[&_th]:whitespace-nowrap [&_th]:bg-card [&_th]:border-b [&_th]:border-border'>
                 <TableRow>
@@ -322,12 +319,8 @@ export default async function IterationPage({ params }: { params: Promise<Params
         ) : ledgerRows.length === 0 ? (
           <p className='font-sans text-sm text-muted-foreground/70'>No ledger data yet.</p>
         ) : (
-          // Same self-contained scroll pattern as the tasks table above: THIS
-          // card clips (`overflow-x-auto`) and scrolls the min-w table inside it,
-          // `overflow-y-hidden` clips the rounded corners, and
-          // `[&>div]:overflow-visible` defers the library Table's own inner
-          // scroller to this one so they don't nest.
-          <div className='overflow-x-auto overflow-y-hidden rounded-lg border border-border bg-card [&>div]:overflow-visible'>
+          // Table owns its own scroll now; the card just clips rounded corners.
+          <div className='overflow-hidden rounded-lg border border-border bg-card'>
             <Table className='min-w-[720px]'>
               <TableHeader>
                 <TableRow>

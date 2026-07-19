@@ -160,12 +160,8 @@ export function BacklogTable({
         )}
       </div>
 
-      {/* Self-contained horizontal scroll: THIS card clips (`overflow-x-auto`)
-          and scrolls the min-w table inside it, `overflow-y-hidden` clips the
-          rounded corners, `[&>div]:overflow-visible` defers the library Table's
-          own inner scroller so the two don't nest (a nested inner scroller let
-          the min-w table bleed past the card and overflow the page on mobile). */}
-      <div className='overflow-x-auto overflow-y-hidden rounded-lg border border-border bg-card [&>div]:overflow-visible'>
+      {/* Table owns its own scroll now; the card just clips rounded corners. */}
+      <div className='overflow-hidden rounded-lg border border-border bg-card'>
         <Table className='min-w-[720px] table-fixed'>
           <TableHeader>
             <TableRow>
