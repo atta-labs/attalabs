@@ -54,10 +54,10 @@ export function InstallSidebar({ commands }: { commands: readonly Command[] }) {
 
   return (
     <SidebarProvider
-      style={{ '--sidebar-width': '15rem' } as React.CSSProperties}
-      className='sticky top-0 hidden max-h-dvh w-(--sidebar-width) shrink-0 self-start border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:block'
+      style={{ '--sidebar-width': '16rem' } as React.CSSProperties}
+      className='hidden h-full min-h-0 w-(--sidebar-width) shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:block'
     >
-      <SidebarContent className='max-h-dvh gap-0 overflow-y-auto px-2 py-6'>
+      <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
         <Text
           as='span'
           className='mb-2 block px-2 font-sans text-sm font-bold uppercase tracking-widest text-sidebar-foreground'
