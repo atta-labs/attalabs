@@ -49,23 +49,28 @@ export type ScrollableTableProps = ComponentProps<'table'> & {
  */
 export function makeScrollableTable(InstalledTable: ComponentType<ComponentProps<'table'>>, stickyHeaderClass: string) {
   function Table({ className, containerClassName, stickyHeader = true, ...props }: ScrollableTableProps) {
+    // Sticky mode switches on the table's own CONTAINER width, not the viewport
+    // (`@container/tbl` + `@min-[780px]/tbl:` on the inner). Only when the
+    // container is wide enough to actually FIT the table (≥ 780px, past the
+    // 720–760 min-widths) does the header pin: the installed container is left
+    // non-scrolling so the header sticks to the page/shell and the shell absorbs
+    // any overflow. Below that width — including the awkward intermediate range
+    // where a viewport breakpoint would have said "wide" while the table still
+    // didn't fit — the installed container keeps its OWN horizontal scroll, so the
+    // table scrolls inside its own box (contained, never overflowing the card) and
+    // the header is not pinned. `stickyHeaderClass` is authored with the same
+    // `@min-[780px]/tbl:` prefix.
     return (
-      <div
-        className={cn(
-          'w-full min-w-0 max-w-full',
-          // Sticky mode is `md`+ only. At ≥ md the installed container is left
-          // non-scrolling so the header pins to the page/shell (not a trapping
-          // box) and the shell absorbs any horizontal overflow. Below md the
-          // installed container keeps its OWN horizontal scroll, so a wide table
-          // scrolls inside its own box (no whole-shell sideways scroll) — and the
-          // header is not pinned there. `stickyHeaderClass` is authored with `md:`
-          // prefixes, so it too only applies at ≥ md.
-          stickyHeader && 'md:[&>div]:overflow-visible',
-          stickyHeader && stickyHeaderClass,
-          containerClassName
-        )}
-      >
-        <InstalledTable className={className} {...props} />
+      <div className='@container/tbl w-full min-w-0 max-w-full'>
+        <div
+          className={cn(
+            stickyHeader && '@min-[780px]/tbl:[&>div]:overflow-visible',
+            stickyHeader && stickyHeaderClass,
+            containerClassName
+          )}
+        >
+          <InstalledTable className={className} {...props} />
+        </div>
       </div>
     )
   }

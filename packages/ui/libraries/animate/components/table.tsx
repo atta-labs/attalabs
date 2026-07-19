@@ -1,6 +1,6 @@
 // Wraps animate's own installed Table in the shared scrollable-table wrapper
-// (`lib/scrollable-table.tsx`) — robust horizontal scroll + the `stickyHeader` /
-// `maxHeight` props. The installed file stays verbatim; TableHeader/Body/Row/etc.
+// (`lib/scrollable-table.tsx`) — responsive horizontal scroll + the `stickyHeader`
+// prop (container-query gated). The installed file stays verbatim; TableHeader/Body/Row/etc.
 // still come straight from `../installed/table` via `components/index.ts`.
 //
 // STICKY_HEADER is this library's literal (Tailwind-scannable) pinned-header
@@ -10,7 +10,7 @@ import { makeScrollableTable } from '../../../lib/scrollable-table'
 import { Table as InstalledTable } from '../installed/table'
 
 const STICKY_HEADER =
-  'md:[&_thead_th]:sticky md:[&_thead_th]:top-0 md:[&_thead_th]:z-10 md:[&_thead_th]:bg-card md:[&_thead_th]:shadow-[inset_0_-1px_0_0_var(--border)]'
+  '@min-[780px]/tbl:[&_thead_th]:sticky @min-[780px]/tbl:[&_thead_th]:top-0 @min-[780px]/tbl:[&_thead_th]:z-10 @min-[780px]/tbl:[&_thead_th]:bg-card @min-[780px]/tbl:[&_thead_th]:shadow-[inset_0_-1px_0_0_var(--border)]'
 
 export const Table = makeScrollableTable(InstalledTable, STICKY_HEADER)
 export type { ScrollableTableProps as TableProps } from '../../../lib/scrollable-table'
