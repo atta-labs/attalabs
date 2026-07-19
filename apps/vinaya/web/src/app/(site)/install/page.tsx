@@ -24,7 +24,7 @@ export default function InstallPage() {
     <Flex className='flex-col lg:h-full lg:min-h-0 lg:flex-row lg:overflow-hidden'>
       <InstallSidebar commands={ORDERED_COMMANDS} />
 
-      <main className='min-w-0 flex-1 px-6 py-12 lg:overflow-y-auto lg:px-12 lg:pt-8 lg:pb-10'>
+      <main className='min-w-0 flex-1 px-6 py-12 lg:overflow-y-auto lg:px-12 lg:pt-4 lg:pb-10'>
         <div className='mx-auto flex max-w-3xl flex-col gap-10 lg:max-w-4xl'>
           <section className='flex flex-col gap-4'>
             <Heading level={1} className='font-serif'>
