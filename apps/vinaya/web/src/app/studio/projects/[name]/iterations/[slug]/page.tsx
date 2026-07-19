@@ -149,9 +149,10 @@ export default async function IterationPage({ params }: { params: Promise<Params
             No tasks declared in this iteration's topology table.
           </p>
         ) : (
-          // The `@atta/ui` Table owns all table behavior. Its header pins on scroll
-          // by DEFAULT (page-scroll sticky, no fixed height) — `containerClassName`
-          // only shifts the pin down past the sticky ProjectsSubBar (`top-10`).
+          // The `@atta/ui` Table owns all table behavior. `stickyHeader` (opt-in —
+          // off by default on the shared primitive) pins the header on scroll
+          // (page-scroll sticky, no fixed height); `containerClassName` shifts the
+          // pin down past the sticky ProjectsSubBar (`top-10`).
           // `table-fixed` + percentage widths fit the columns on a laptop (no
           // horizontal scroll) while the bounded Task column wraps long titles to
           // two lines; `min-w-[760px]` keeps labels readable and lets the Studio
@@ -159,7 +160,11 @@ export default async function IterationPage({ params }: { params: Promise<Params
           // `overflow-hidden`: the pinned header must be free to escape it to stick
           // to the shell, and horizontal overflow must reach the shell to scroll.
           <div className='rounded-lg border border-border bg-card'>
-            <Table className='min-w-[760px] table-fixed' containerClassName='@min-[780px]/tbl:[&_thead_th]:top-10'>
+            <Table
+              stickyHeader
+              className='min-w-[760px] table-fixed'
+              containerClassName='@min-[780px]/tbl:[&_thead_th]:top-10'
+            >
               <TableHeader className='[&_th]:whitespace-nowrap'>
                 <TableRow>
                   <TableHead className='w-[4%] font-semibold text-foreground'>#</TableHead>
@@ -322,7 +327,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
           // Header pins on scroll by default; `top-10` clears the ProjectsSubBar.
           // No card `overflow-hidden` so the pinned header can stick to the shell.
           <div className='rounded-lg border border-border bg-card'>
-            <Table className='min-w-[720px]' containerClassName='@min-[780px]/tbl:[&_thead_th]:top-10'>
+            <Table stickyHeader className='min-w-[720px]' containerClassName='@min-[780px]/tbl:[&_thead_th]:top-10'>
               <TableHeader>
                 <TableRow>
                   <TableHead className='font-semibold text-foreground'>Phase</TableHead>

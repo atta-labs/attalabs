@@ -71,7 +71,7 @@ const markdownComponents = {
   // `containerClassName` puts the block margin on that scroll wrapper.
   // `[&_thead_th]:top-10` pins the header below the Studio ProjectsSubBar.
   table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
-    <Table containerClassName='my-4 @min-[780px]/tbl:[&_thead_th]:top-10' {...props} />
+    <Table stickyHeader containerClassName='my-4 @min-[780px]/tbl:[&_thead_th]:top-10' {...props} />
   ),
   thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableHeader {...props} />,
   tbody: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableBody {...props} />,

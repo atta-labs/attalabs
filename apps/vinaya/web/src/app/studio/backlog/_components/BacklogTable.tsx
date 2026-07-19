@@ -164,7 +164,7 @@ export function BacklogTable({
           `overflow-hidden` on the card: the pinned header must be free to stick to
           the Studio shell, and horizontal overflow must reach the shell to scroll. */}
       <div className='rounded-lg border border-border bg-card'>
-        <Table className='min-w-[720px] table-fixed'>
+        <Table stickyHeader className='min-w-[720px] table-fixed'>
           <TableHeader>
             <TableRow>
               <TableHead className='w-[6%] px-2 font-semibold text-foreground'>#</TableHead>

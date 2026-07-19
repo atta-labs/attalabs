@@ -11,22 +11,24 @@ export type ScrollableTableProps = ComponentProps<'table'> & {
   /**
    * Pin the header row while you scroll PAST the table — it sticks at the top of
    * the nearest scrolling ancestor and leaves when the table scrolls out. No
-   * fixed height. **On by default.**
+   * fixed height. **OFF by default — opt in per call site.**
    *
-   * How it works: the wrapper does NOT trap the sticky in a horizontal-scroll box
-   * (that would pin the header to the box, not the page). Instead it leaves the
-   * installed container `overflow-visible`, so the header sticks to whatever
-   * ancestor actually scrolls — a page shell (e.g. Studio's `overflow-y-auto`
-   * region) or the page itself — and that same ancestor absorbs horizontal
-   * overflow on narrow viewports (no page-body sideways scroll where a shell
-   * contains it). The per-library sticky-header border (its own row border
-   * width + `--border` color) is applied so the pinned header keeps a matching
-   * rule after sticky detaches it from the row.
+   * Default-off is deliberate: this is a shared `@atta/ui` primitive used by every
+   * product (Vāda, Herald, Atta, Vinaya), and pinning is only correct where the
+   * table sits inside a scrolling ancestor to pin against. A consumer that has
+   * browser-verified the behavior opts in explicitly (`<Table stickyHeader>`);
+   * everyone else gets the responsive horizontal-scroll wrapper with no behavior
+   * change. Vinaya's tables pass `stickyHeader` at every call site.
    *
-   * Set `false` for the alternative: a self-contained horizontal-scroll box with
-   * NO sticky header (the installed container scrolls x itself). Use that when a
-   * table sits in a context with no scrolling ancestor to pin against and must
-   * not push the page sideways.
+   * How it works when on: the wrapper does NOT trap the sticky in a
+   * horizontal-scroll box (that would pin the header to the box, not the page). It
+   * leaves the installed container `overflow-visible` (gated on `@min-[780px]/tbl:`
+   * so it only engages once the container is wide enough to fit the table), so the
+   * header sticks to whatever ancestor actually scrolls — a page shell (e.g.
+   * Studio's `overflow-y-auto` region) or the page itself. The per-library
+   * sticky-header rule (matching each library's own row-border width and color) is
+   * applied so the pinned header keeps a matching separator after sticky detaches
+   * it from the row.
    */
   stickyHeader?: boolean
 }
@@ -39,16 +41,19 @@ export type ScrollableTableProps = ComponentProps<'table'> & {
  * the table's intrinsic width, the constraint the installed container needs so a
  * `min-w` table clips/scrolls instead of overflowing the page.
  *
- * `stickyHeader` (default on) is why this is a factory: sticky `<th>` cells detach
- * from the row border (a `border-collapse` quirk), so the pinned header must carry
- * its own bottom border — and that border differs per library (retro/brutal rows
- * are `border-b-2`, the rest `border-b`; all use the `--border` token). Each
- * library passes its own literal, Tailwind-scannable sticky-header class as the
- * second arg, so `stickyHeader` renders identically-contracted and correct in all
- * four, with zero sticky/border classes at the call site.
+ * `stickyHeader` (opt-in) is why this is a factory: sticky `<th>` cells detach from
+ * the row border (a `border-collapse` quirk), so the pinned header must carry its
+ * own bottom rule as a box-shadow — and that rule must match each library's REAL
+ * row border, which differs by both width AND color: retro/brutal rows are
+ * `border-b-2`, basic/animate `border-b`; retro/animate rows use `currentColor`
+ * (no color class), basic uses `border-border/60`, brutal uses `border-border`. So
+ * each library passes its own literal, Tailwind-scannable sticky-header class as
+ * the second arg (retro/animate → `currentColor`, basic → `--border`/60, brutal →
+ * `--border`), and `stickyHeader` renders per-library-correct in all four with
+ * zero sticky/border classes at the call site.
  */
 export function makeScrollableTable(InstalledTable: ComponentType<ComponentProps<'table'>>, stickyHeaderClass: string) {
-  function Table({ className, containerClassName, stickyHeader = true, ...props }: ScrollableTableProps) {
+  function Table({ className, containerClassName, stickyHeader = false, ...props }: ScrollableTableProps) {
     // Sticky mode switches on the table's own CONTAINER width, not the viewport
     // (`@container/tbl` + `@min-[780px]/tbl:` on the inner). Only when the
     // container is wide enough to actually FIT the table (≥ 780px, past the

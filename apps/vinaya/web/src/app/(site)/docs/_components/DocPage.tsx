@@ -133,7 +133,7 @@ const markdownComponents = {
   // exists once the table's container is wide enough to fit the table (below
   // that width the table scrolls in its own contained box instead).
   table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
-    <Table containerClassName='my-6 @min-[780px]/tbl:[&_thead_th]:top-12' {...props} />
+    <Table stickyHeader containerClassName='my-6 @min-[780px]/tbl:[&_thead_th]:top-12' {...props} />
   ),
   thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableHeader {...props} />,
   tbody: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableBody {...props} />,
