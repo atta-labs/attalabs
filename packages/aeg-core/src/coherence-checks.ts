@@ -6,7 +6,7 @@
  * topology are injected by the caller (`bin/verify-coherence.ts`, the I/O shim).
  */
 
-import { anchoredRegion } from './anchored-region'
+import { anchoredRegion, stripCode } from './anchored-region'
 import { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 import type { ForgeIssue, TaskIssueRef } from '@atta/aeg-types'
 import type { ForgeFacts, Iteration, Task } from './types'
@@ -621,10 +621,14 @@ export function checkL5(activeIterationSlugs: string[], entriesBySlug: Map<strin
  * grammar, not a second copy of the pattern (D-078 discipline). Honors the
  * AEG:CLOSES anchor pair (`anchored-region.ts`, task 30) when present: only
  * references inside the pair count, so a Closes-shaped line in a pasted
- * reference brief elsewhere in the PR body isn't picked up. */
+ * reference brief elsewhere in the PR body isn't picked up. The searched region
+ * is additionally `stripCode`d before matching, for parity with GitHub's
+ * auto-close parser (which ignores `Closes #N` inside code) — a backticked-only
+ * reference resolves to no Issue here exactly as it does on merge, so this
+ * repo-wide check and the pre-merge `checkClosesN` agree with GitHub. */
 export function extractClosesReferences(prBody: string): Set<number> {
   const closesPattern = /(?:closes|close|fixes|fix|resolves|resolve)\s*:?\s*#(\d+)/gi
-  const searchIn = anchoredRegion(prBody, 'CLOSES') ?? prBody
+  const searchIn = stripCode(anchoredRegion(prBody, 'CLOSES') ?? prBody)
   const referenced = new Set<number>()
   for (const hit of searchIn.matchAll(closesPattern)) {
     referenced.add(Number(hit[1]))

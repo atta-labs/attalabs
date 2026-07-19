@@ -225,6 +225,27 @@ describe('checkClosesN', () => {
   it('fails when missing', () => {
     expect(checkClosesN('no closes reference').status).toBe('fail')
   })
+  it("fails a body whose only Closes #N is inside an inline code span — GitHub won't auto-close it", () => {
+    const result = checkClosesN('Summary of the change. The bug: `Closes #5` was backticked.')
+    expect(result.status).toBe('fail')
+    expect(result.errors[0]).toContain('only inside a code span')
+  })
+  it('fails a body whose only Closes #N is inside a fenced block', () => {
+    const result = checkClosesN('Summary.\n\n```\nCloses #5\n```\n')
+    expect(result.status).toBe('fail')
+    expect(result.errors[0]).toContain('only inside a code span')
+  })
+  it('passes a bare Closes #N in prose', () => {
+    expect(checkClosesN('Ships the fix. Closes #5').status).toBe('pass')
+  })
+  it('passes a bare Closes #N inside the AEG:CLOSES anchor', () => {
+    const body = 'Summary.\n\n<!-- AEG:CLOSES:START -->\nCloses #5\n<!-- AEG:CLOSES:END -->\n'
+    expect(checkClosesN(body).status).toBe('pass')
+  })
+  it('passes when a fenced example Closes #99 sits alongside a real bare Closes #5', () => {
+    const body = 'Ships it. Closes #5\n\n```\nExample: Closes #99\n```\n'
+    expect(checkClosesN(body).status).toBe('pass')
+  })
 })
 
 describe('headerRegion', () => {

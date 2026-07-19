@@ -59,6 +59,22 @@ function maskCode(body: string): string {
 }
 
 /**
+ * Removes fenced code blocks and inline code spans entirely, so example/quoted
+ * text (a Test Plan's `Closes #123` fixture, a pasted reference brief) is never
+ * parsed as a real field. This mirrors GitHub's own auto-close parser, which
+ * ignores `Closes #N` inside code — a gate that strips the same way can never
+ * pass a body GitHub then refuses to auto-close (#311 regression, #608/#611
+ * strandings). Unlike `maskCode`, indices are NOT preserved: use this when you
+ * only test/scan the stripped text, `maskCode` when you must map positions back
+ * onto the original body. Shared by `archive-task.ts` (provenance Issue read),
+ * `brief-validation.ts` (`checkClosesN`), and `coherence-checks.ts`
+ * (`extractClosesReferences`) — one stripper, never a duplicated regex.
+ */
+export function stripCode(body: string): string {
+  return body.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '')
+}
+
+/**
  * The text between the first `<!-- AEG:<field>:START -->` and the first
  * `<!-- AEG:<field>:END -->` after it, or `null` when the body carries no
  * (well-formed, non-code) pair for this field. `null` is the signal for

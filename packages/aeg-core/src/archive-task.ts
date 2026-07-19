@@ -12,7 +12,7 @@
  * posted by hand on PRs #302/#305/#306.
  */
 
-import { type AnchorField, anchoredRegion } from './anchored-region'
+import { type AnchorField, anchoredRegion, stripCode } from './anchored-region'
 import { headerRegion } from './brief-validation'
 import { readTierFromPrBody } from './pr-tier'
 import { extractCodeReviewVerdict, extractSecurityReviewVerdict } from './verdict-extraction'
@@ -71,11 +71,6 @@ const PROVENANCE_HEADING = '### AEG provenance'
 /** true when any comment already carries the provenance heading (idempotency, scoped to this PR). */
 export function hasProvenance(comments: string[]): boolean {
   return comments.some((c) => c.includes(PROVENANCE_HEADING))
-}
-
-/** Removes fenced code blocks and inline code spans, so example text (e.g. a Test Plan's `Closes #123` fixture) is never parsed as a real reference. Regression from #311's first live run. */
-function stripCode(body: string): string {
-  return body.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '')
 }
 
 /**

@@ -15,6 +15,7 @@ import {
   checkT2,
   checkT3,
   type CheckResult,
+  extractClosesReferences,
   type ForgeIssue,
   type IterationFile,
   scopeT2ToPlanPr,
@@ -899,5 +900,21 @@ describe('L5: open-Milestone-all-closed (advisory — info, never fail)', () => 
     const r = checkL5(['iter-5'], new Map())
     expect(r.status).toBe('info')
     expect(r.failures).toHaveLength(0)
+  })
+})
+
+describe('extractClosesReferences', () => {
+  it('picks up a bare Closes #N', () => {
+    expect([...extractClosesReferences('Ships it. Closes #5')]).toEqual([5])
+  })
+  it('ignores a Closes #N inside an inline code span — GitHub would too', () => {
+    expect(extractClosesReferences('The bug: `Closes #5` was backticked.').size).toBe(0)
+  })
+  it('ignores a Closes #N inside a fenced block but keeps a real bare one', () => {
+    expect([...extractClosesReferences('Closes #5\n\n```\nExample: Closes #99\n```\n')]).toEqual([5])
+  })
+  it('reads only the AEG:CLOSES anchor and strips code within it', () => {
+    const body = '<!-- AEG:CLOSES:START -->\nCloses #5\n<!-- AEG:CLOSES:END -->\n\nProse: Closes #99'
+    expect([...extractClosesReferences(body)]).toEqual([5])
   })
 })
