@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 }
 
 const links = [
+  { label: 'Home', href: '/studio' },
   { label: 'Projects', href: '/studio/projects' },
   { label: 'Iterations', href: '/studio/iterations' },
   { label: 'Backlog', href: '/studio/backlog' },

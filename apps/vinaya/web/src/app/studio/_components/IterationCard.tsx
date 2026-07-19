@@ -8,7 +8,7 @@ type TaskProgressProps = {
 }
 
 function TaskProgress({ counts }: TaskProgressProps) {
-  const { total, done, ongoing, todo, forgeAvailable } = counts
+  const { total, done, ongoing, todo, blocked, forgeAvailable } = counts
 
   if (!forgeAvailable) {
     return (
@@ -40,6 +40,8 @@ function TaskProgress({ counts }: TaskProgressProps) {
           {ongoing > 0 && <span className='text-primary'>{ongoing} active</span>}
           {(done > 0 || ongoing > 0) && todo > 0 && ' · '}
           {todo > 0 && <span>{todo} to do</span>}
+          {(done > 0 || ongoing > 0 || todo > 0) && blocked > 0 && ' · '}
+          {blocked > 0 && <span className='text-warning'>{blocked} blocked</span>}
         </span>
         <span>{pct}%</span>
       </div>

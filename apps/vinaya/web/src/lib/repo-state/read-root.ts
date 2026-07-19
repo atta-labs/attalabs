@@ -126,6 +126,7 @@ export type IterationSummary = {
     done: number
     ongoing: number
     todo: number
+    blocked: number
     forgeAvailable: boolean
   }
   /** Task identity refs for forge progress queries — `{ id, issue }` per task.
@@ -184,7 +185,7 @@ async function toSummary(fileSlug: string, iteration: Iteration, archived: boole
 
   // Archived iterations are complete by definition — skip GitHub entirely.
   if (archived) {
-    return { ...base, taskCounts: { total, done: total, ongoing: 0, todo: 0, forgeAvailable: true } }
+    return { ...base, taskCounts: { total, done: total, ongoing: 0, todo: 0, blocked: 0, forgeAvailable: true } }
   }
 
   // Active: use loadIterationProgress, which resolves #TBD issue numbers via
@@ -196,7 +197,8 @@ async function toSummary(fileSlug: string, iteration: Iteration, archived: boole
       total,
       done: progress.merged,
       ongoing: progress.active,
-      todo: progress.todo + progress.backlog + progress.blocked,
+      todo: progress.todo + progress.backlog,
+      blocked: progress.blocked,
       forgeAvailable: !progress.unavailable
     }
   }
