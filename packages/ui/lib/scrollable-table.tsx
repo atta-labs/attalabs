@@ -53,10 +53,14 @@ export function makeScrollableTable(InstalledTable: ComponentType<ComponentProps
       <div
         className={cn(
           'w-full min-w-0 max-w-full',
-          // Sticky mode: keep the installed container non-scrolling so the header
-          // pins to the page/shell (not a trapping box), and apply the per-library
-          // pinned-header styling.
-          stickyHeader && '[&>div]:overflow-visible',
+          // Sticky mode is `md`+ only. At ≥ md the installed container is left
+          // non-scrolling so the header pins to the page/shell (not a trapping
+          // box) and the shell absorbs any horizontal overflow. Below md the
+          // installed container keeps its OWN horizontal scroll, so a wide table
+          // scrolls inside its own box (no whole-shell sideways scroll) — and the
+          // header is not pinned there. `stickyHeaderClass` is authored with `md:`
+          // prefixes, so it too only applies at ≥ md.
+          stickyHeader && 'md:[&>div]:overflow-visible',
           stickyHeader && stickyHeaderClass,
           containerClassName
         )}

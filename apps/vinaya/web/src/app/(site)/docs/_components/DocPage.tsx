@@ -127,10 +127,12 @@ const markdownComponents = {
   // `@atta/ui` Table owns its own horizontal-scroll container, so a wide markdown
   // table scrolls inside its own box instead of bleeding past the prose column.
   // `containerClassName` puts the block margin on that scroll wrapper.
-  // `[&_thead_th]:top-16` shifts the pinned header below the sticky doc breadcrumb
-  // (`StickyDocHeader`, `sticky top-0 z-20`), so the header doesn't pin behind it.
+  // `md:[&_thead_th]:top-12` shifts the pinned header below the ~55px sticky doc
+  // breadcrumb (`StickyDocHeader`, `sticky top-0 z-20`) so it doesn't pin behind
+  // it — `md:` because the pinned header only exists at ≥ md (below md the table
+  // scrolls in its own contained box instead).
   table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
-    <Table containerClassName='my-6 [&_thead_th]:top-16' {...props} />
+    <Table containerClassName='my-6 md:[&_thead_th]:top-12' {...props} />
   ),
   thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableHeader {...props} />,
   tbody: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableBody {...props} />,

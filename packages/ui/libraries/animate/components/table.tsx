@@ -10,7 +10,7 @@ import { makeScrollableTable } from '../../../lib/scrollable-table'
 import { Table as InstalledTable } from '../installed/table'
 
 const STICKY_HEADER =
-  '[&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-card [&_thead_th]:shadow-[inset_0_-1px_0_0_var(--border)]'
+  'md:[&_thead_th]:sticky md:[&_thead_th]:top-0 md:[&_thead_th]:z-10 md:[&_thead_th]:bg-card md:[&_thead_th]:shadow-[inset_0_-1px_0_0_var(--border)]'
 
 export const Table = makeScrollableTable(InstalledTable, STICKY_HEADER)
 export type { ScrollableTableProps as TableProps } from '../../../lib/scrollable-table'

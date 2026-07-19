@@ -159,7 +159,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
           // `overflow-hidden`: the pinned header must be free to escape it to stick
           // to the shell, and horizontal overflow must reach the shell to scroll.
           <div className='rounded-lg border border-border bg-card'>
-            <Table className='min-w-[760px] table-fixed' containerClassName='[&_thead_th]:top-10'>
+            <Table className='min-w-[760px] table-fixed' containerClassName='md:[&_thead_th]:top-10'>
               <TableHeader className='[&_th]:whitespace-nowrap'>
                 <TableRow>
                   <TableHead className='w-[4%] font-semibold text-foreground'>#</TableHead>
@@ -322,7 +322,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
           // Header pins on scroll by default; `top-10` clears the ProjectsSubBar.
           // No card `overflow-hidden` so the pinned header can stick to the shell.
           <div className='rounded-lg border border-border bg-card'>
-            <Table className='min-w-[720px]' containerClassName='[&_thead_th]:top-10'>
+            <Table className='min-w-[720px]' containerClassName='md:[&_thead_th]:top-10'>
               <TableHeader>
                 <TableRow>
                   <TableHead className='font-semibold text-foreground'>Phase</TableHead>
