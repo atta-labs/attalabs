@@ -162,12 +162,12 @@ export default async function IterationPage({ params }: { params: Promise<Params
             <Table className='min-w-[760px] table-fixed' containerClassName='[&_thead_th]:top-10'>
               <TableHeader className='[&_th]:whitespace-nowrap'>
                 <TableRow>
-                  <TableHead className='w-[4%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Task</TableHead>
-                  <TableHead className='w-[11%] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
-                  <TableHead className='w-[16%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-                  <TableHead className='w-[9%] font-sans text-xs uppercase tracking-wider'>Deps</TableHead>
-                  <TableHead className='w-[16%] font-sans text-xs uppercase tracking-wider'>Conflicts</TableHead>
+                  <TableHead className='w-[4%] font-semibold text-foreground'>#</TableHead>
+                  <TableHead className='font-semibold text-foreground'>Task</TableHead>
+                  <TableHead className='w-[11%] font-semibold text-foreground'>Issue</TableHead>
+                  <TableHead className='w-[16%] font-semibold text-foreground'>Project(s)</TableHead>
+                  <TableHead className='w-[9%] font-semibold text-foreground'>Deps</TableHead>
+                  <TableHead className='w-[16%] font-semibold text-foreground'>Conflicts</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -325,17 +325,13 @@ export default async function IterationPage({ params }: { params: Promise<Params
             <Table className='min-w-[720px]' containerClassName='[&_thead_th]:top-10'>
               <TableHeader>
                 <TableRow>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Phase</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Role</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Agent / Model</TableHead>
-                  <TableHead className='w-28 text-right font-sans text-xs uppercase tracking-wider'>
-                    Tokens in
-                  </TableHead>
-                  <TableHead className='w-28 text-right font-sans text-xs uppercase tracking-wider'>
-                    Tokens out
-                  </TableHead>
-                  <TableHead className='w-24 text-right font-sans text-xs uppercase tracking-wider'>Cost</TableHead>
-                  <TableHead className='w-28 font-sans text-xs uppercase tracking-wider'>Date</TableHead>
+                  <TableHead className='font-semibold text-foreground'>Phase</TableHead>
+                  <TableHead className='font-semibold text-foreground'>Role</TableHead>
+                  <TableHead className='font-semibold text-foreground'>Agent / Model</TableHead>
+                  <TableHead className='w-28 text-right font-semibold text-foreground'>Tokens in</TableHead>
+                  <TableHead className='w-28 text-right font-semibold text-foreground'>Tokens out</TableHead>
+                  <TableHead className='w-24 text-right font-semibold text-foreground'>Cost</TableHead>
+                  <TableHead className='w-28 font-semibold text-foreground'>Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

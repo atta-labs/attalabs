@@ -167,11 +167,11 @@ export function BacklogTable({
         <Table className='min-w-[720px] table-fixed'>
           <TableHeader>
             <TableRow>
-              <TableHead className='w-[6%] px-2 font-sans text-xs uppercase tracking-wider'>#</TableHead>
-              <TableHead className='w-[37%] font-sans text-xs uppercase tracking-wider'>Title</TableHead>
-              <TableHead className='w-[20%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-              <TableHead className='w-[11%] font-sans text-xs uppercase tracking-wider'>Tier</TableHead>
-              <TableHead className='w-[26%] font-sans text-xs uppercase tracking-wider'>Flags</TableHead>
+              <TableHead className='w-[6%] px-2 font-semibold text-foreground'>#</TableHead>
+              <TableHead className='w-[37%] font-semibold text-foreground'>Title</TableHead>
+              <TableHead className='w-[20%] font-semibold text-foreground'>Project(s)</TableHead>
+              <TableHead className='w-[11%] font-semibold text-foreground'>Tier</TableHead>
+              <TableHead className='w-[26%] font-semibold text-foreground'>Flags</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
