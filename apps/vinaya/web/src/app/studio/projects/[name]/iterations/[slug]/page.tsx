@@ -150,20 +150,17 @@ export default async function IterationPage({ params }: { params: Promise<Params
           </p>
         ) : (
           // The card supplies only chrome (`overflow-hidden` clips the rounded
-          // corners); the `@atta/ui` Table owns all table behavior. `stickyHeader`
-          // + `maxHeight` are first-class Table props — the pinned header (with its
-          // correct per-library border) is rendered by the library wrapper, NOT
-          // restyled here. Natural column sizing (NO `table-fixed`): the Task column
-          // takes the slack (`w-full`); `[&_th]:whitespace-nowrap` keeps labels on
-          // one line; `min-w-[760px]` scrolls horizontally below the container
-          // width, `md:min-w-0` fills the page at ≥ md.
+          // corners); the `@atta/ui` Table owns table behavior. `table-fixed` +
+          // percentage widths let the columns fit the container on a laptop (no
+          // horizontal scroll) while the bounded Task column wraps long titles to
+          // two lines; `min-w-[720px]` scrolls horizontally on mobile, `md:min-w-0`
+          // fills the page at ≥ md. The header is NOT pinned: each library's own
+          // header border (retro's `[&_tr]:border-b-2`) renders natively when the
+          // header isn't sticky — no detached-cell border to reconstruct. The
+          // Table's opt-in `stickyHeader` prop stays available for surfaces that
+          // want a pinned header and can accept the vertical scroll box.
           <div className='overflow-hidden rounded-lg border border-border bg-card'>
-            {/* `table-fixed` + percentage widths: the columns fit the container on a
-                laptop (no horizontal scroll) and the Task column is bounded, so long
-                titles wrap to two lines instead of forcing the table wider. Below
-                `md` the `min-w-[720px]` makes it scroll horizontally on mobile;
-                `md:min-w-0` lets it fill the page. `stickyHeader` pins the header. */}
-            <Table className='min-w-[720px] table-fixed md:min-w-0' stickyHeader maxHeight='70vh'>
+            <Table className='min-w-[720px] table-fixed md:min-w-0'>
               <TableHeader className='[&_th]:whitespace-nowrap'>
                 <TableRow>
                   <TableHead className='w-[5%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
