@@ -19,6 +19,13 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
 
   const activeProjectName = getActiveProjectName()
 
+  // `sticky top-0` pins the bar under the topbar within StudioShell's scroll
+  // container. `-mt-8` + `mx-[calc(50%-50vw)]` break it out of StudioShell's
+  // centered `max-w-6xl px-8 py-8` inner wrapper so the bar is flush-top and
+  // full-bleed — both are DELIBERATELY coupled to that exact `px-8 py-8`
+  // padding; if StudioShell's padding changes, revisit these two utilities.
+  // `h-10` is the bar's pinned height: sibling sticky headers in this same
+  // scroll container (the iteration board's task table) offset by `top-10`.
   return (
     <Flex
       align='center'

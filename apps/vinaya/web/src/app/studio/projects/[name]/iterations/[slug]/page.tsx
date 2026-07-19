@@ -155,9 +155,12 @@ export default async function IterationPage({ params }: { params: Promise<Params
           // cannot overflow horizontally. Sticky lives on the th cells (not
           // thead) for cross-browser reliability; th carries its own bg and
           // border because row borders don't travel with sticky cells.
+          // `top-10` (not `top-0`): the ProjectsSubBar (`projects/layout.tsx`,
+          // `sticky top-0` × `h-10`) shares this StudioShell scroll container, so
+          // the header pins BELOW it rather than behind its opaque, higher-z bar.
           <div className='rounded-lg border border-border bg-card [&>div]:overflow-visible'>
             <Table className='table-fixed'>
-              <TableHeader className='[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-card [&_th]:border-b [&_th]:border-border'>
+              <TableHeader className='[&_th]:sticky [&_th]:top-10 [&_th]:z-10 [&_th]:bg-card [&_th]:border-b [&_th]:border-border'>
                 <TableRow>
                   <TableHead className='w-[4%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>Task</TableHead>
