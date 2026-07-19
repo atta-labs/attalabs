@@ -272,7 +272,7 @@ export function checkForField(prBody: string): BriefSectionResult {
  * imply "GitHub will auto-close"; stripping code here is what makes it so.
  */
 export function checkClosesN(prBody: string): BriefSectionResult {
-  const closesPattern = /(?:closes|close|fixes|fix|resolves|resolve)\s*:?\s*#\d+/i
+  const closesPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s*#\d+/i
   if (closesPattern.test(stripCode(prBody))) {
     return { status: 'pass', errors: [] }
   }

@@ -627,7 +627,7 @@ export function checkL5(activeIterationSlugs: string[], entriesBySlug: Map<strin
  * reference resolves to no Issue here exactly as it does on merge, so this
  * repo-wide check and the pre-merge `checkClosesN` agree with GitHub. */
 export function extractClosesReferences(prBody: string): Set<number> {
-  const closesPattern = /(?:closes|close|fixes|fix|resolves|resolve)\s*:?\s*#(\d+)/gi
+  const closesPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s*#(\d+)/gi
   const searchIn = stripCode(anchoredRegion(prBody, 'CLOSES') ?? prBody)
   const referenced = new Set<number>()
   for (const hit of searchIn.matchAll(closesPattern)) {

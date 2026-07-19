@@ -917,4 +917,13 @@ describe('extractClosesReferences', () => {
     const body = '<!-- AEG:CLOSES:START -->\nCloses #5\n<!-- AEG:CLOSES:END -->\n\nProse: Closes #99'
     expect([...extractClosesReferences(body)]).toEqual([5])
   })
+  it('ignores a double-backtick code span but keeps a real bare ref (PR #617 review)', () => {
+    expect([...extractClosesReferences('See ``Closes #99`` — real: Closes #5')]).toEqual([5])
+  })
+  it('does not over-strip a bare ref sitting between two inline code spans', () => {
+    expect([...extractClosesReferences('Use `a` then Closes #5 and `b`.')]).toEqual([5])
+  })
+  it('accepts past-tense closed/fixed/resolved keywords', () => {
+    expect([...extractClosesReferences('Fixed #5')]).toEqual([5])
+  })
 })

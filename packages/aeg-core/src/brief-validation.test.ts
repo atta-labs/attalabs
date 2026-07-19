@@ -246,6 +246,24 @@ describe('checkClosesN', () => {
     const body = 'Ships it. Closes #5\n\n```\nExample: Closes #99\n```\n'
     expect(checkClosesN(body).status).toBe('pass')
   })
+  it('fails a double-backtick-only Closes #N — GitHub sees a code span (PR #617 review)', () => {
+    const result = checkClosesN('See ``Closes #5`` here.')
+    expect(result.status).toBe('fail')
+    expect(result.errors[0]).toContain('only inside a code span')
+  })
+  it('fails a triple-backtick inline-only Closes #N', () => {
+    expect(checkClosesN('Ref: ```Closes #5``` inline.').status).toBe('fail')
+  })
+  it('does not over-strip a bare Closes #N sitting between two inline code spans', () => {
+    // The lazy matched-run rule must close each span at its own delimiter,
+    // never swallow the bare reference between them.
+    expect(checkClosesN('Use `a` then Closes #5 and `b`.').status).toBe('pass')
+  })
+  it('accepts the closed/fixed/resolved past-tense keywords (GitHub keyword set)', () => {
+    for (const phrase of ['Closed #5', 'Fixed #5', 'Resolved #5']) {
+      expect(checkClosesN(phrase).status).toBe('pass')
+    }
+  })
 })
 
 describe('headerRegion', () => {

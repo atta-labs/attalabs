@@ -69,9 +69,22 @@ function maskCode(body: string): string {
  * onto the original body. Shared by `archive-task.ts` (provenance Issue read),
  * `brief-validation.ts` (`checkClosesN`), and `coherence-checks.ts`
  * (`extractClosesReferences`) — one stripper, never a duplicated regex.
+ *
+ * Inline spans are matched by CommonMark's rule: an opening run of N backticks
+ * is closed by the next run of exactly N backticks on the same line. The
+ * `(`+)…\1` backreference is what makes a **double**-backtick span
+ * (`` ``Closes #5`` ``) strip as one unit — an earlier `` `[^`\n]*` `` form
+ * instead peeled the outer backticks as two empty spans and left the inner
+ * `Closes #5` surviving as bare text (a false-green: passed the gate, but
+ * GitHub, seeing a code span, refused to auto-close — PR #617 review). Fenced
+ * blocks (```` ``` ````) are stripped first so a fence line is never mis-read as
+ * an inline span. NOT covered: 4-space **indented** code blocks — distinguishing
+ * a genuine indented block from list-continuation text needs a real CommonMark
+ * parser, and a wrong guess would blank a legitimately bare `Closes` (the brief's
+ * over-strip stop condition), so that rare form is left to prose recognition.
  */
 export function stripCode(body: string): string {
-  return body.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '')
+  return body.replace(/```[\s\S]*?```/g, '').replace(/(`+)[^\n]*?\1/g, '')
 }
 
 /**
