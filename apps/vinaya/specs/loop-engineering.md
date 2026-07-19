@@ -1,6 +1,8 @@
 # Loop Engineering — proposal (NOT ratified)
 
-**Status:** proposal / design capture. Nothing here is decided. This doc preserves the thinking from the 2026-07-19 session so it survives to a future planning pass. It is not a spec to build against until a Type-1 decision ratifies the model.
+**Status:** draft
+
+Proposal / design capture — nothing here is decided. This doc preserves the thinking from the 2026-07-19 session so it survives to a future planning pass. It is not a spec to build against until a Type-1 decision ratifies the model.
 
 **Scope:** how "loop engineering" scales AEG + Vinaya — where the loop lives, what it does, the vocabulary it forces, and how it graduates safely. Companion to the `iteration → tranche` rename (which is a prerequisite, see below).
 
