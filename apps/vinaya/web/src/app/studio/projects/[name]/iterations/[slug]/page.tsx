@@ -149,17 +149,20 @@ export default async function IterationPage({ params }: { params: Promise<Params
             No tasks declared in this iteration's topology table.
           </p>
         ) : (
-          // `[&>div]:overflow-visible` neutralizes the Table's own overflow-x-auto
-          // container — with it in place the sticky header would stick to that
-          // wrapper instead of the page scrollport. Safe: table-fixed + w-full
-          // cannot overflow horizontally. Sticky lives on the th cells (not
-          // thead) for cross-browser reliability; th carries its own bg and
-          // border because row borders don't travel with sticky cells.
-          // `top-10` (not `top-0`): the ProjectsSubBar (`projects/layout.tsx`,
-          // `sticky top-0` × `h-10`) shares this StudioShell scroll container, so
-          // the header pins BELOW it rather than behind its opaque, higher-z bar.
-          <div className='rounded-lg border border-border bg-card [&>div]:overflow-visible'>
-            <Table className='table-fixed'>
+          // Responsive split. ≥ md: `md:[&>div]:overflow-visible` neutralizes the
+          // Table's own overflow-x-auto container so the sticky header sticks to
+          // the shared StudioShell scrollport (not the wrapper), and `md:min-w-0`
+          // lets the table-fixed columns reflow to full width — six columns read
+          // fine at ≥ 768px. < md: neither override applies, so the min-w-[760px]
+          // table exceeds the viewport and the library's overflow-x-auto container
+          // scrolls it horizontally (the BacklogTable pattern) instead of cramming
+          // six columns below readability. Sticky lives on the th cells (not thead)
+          // for cross-browser reliability; th carries its own bg and border because
+          // row borders don't travel with sticky cells. `top-10` (not `top-0`): the
+          // ProjectsSubBar (`projects/layout.tsx`, `sticky top-0` × `h-10`) shares
+          // this scroll container, so the header pins BELOW it, not behind its bar.
+          <div className='rounded-lg border border-border bg-card md:[&>div]:overflow-visible'>
+            <Table className='min-w-[760px] table-fixed md:min-w-0'>
               <TableHeader className='[&_th]:sticky [&_th]:top-10 [&_th]:z-10 [&_th]:bg-card [&_th]:border-b [&_th]:border-border'>
                 <TableRow>
                   <TableHead className='w-[4%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
@@ -320,7 +323,9 @@ export default async function IterationPage({ params }: { params: Promise<Params
           <p className='font-sans text-sm text-muted-foreground/70'>No ledger data yet.</p>
         ) : (
           <div className='rounded-lg border border-border bg-card'>
-            <Table>
+            {/* min-w so the seven-column ledger scrolls in the Table's own
+                overflow-x-auto container on narrow viewports instead of cramming. */}
+            <Table className='min-w-[720px]'>
               <TableHeader>
                 <TableRow>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>Phase</TableHead>
