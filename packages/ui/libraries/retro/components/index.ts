@@ -96,12 +96,11 @@ export {
 } from '../../basic/installed/breadcrumb'
 
 // Content — Table
-export { Table } from './table'
+export { Table, TableCell } from './table'
 export type { TableProps } from './table'
 export {
   TableBody,
   TableCaption,
-  TableCell,
   TableFooter,
   TableHead,
   TableHeader,

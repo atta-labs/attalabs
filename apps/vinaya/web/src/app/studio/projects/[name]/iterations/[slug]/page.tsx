@@ -158,15 +158,20 @@ export default async function IterationPage({ params }: { params: Promise<Params
           // one line; `min-w-[760px]` scrolls horizontally below the container
           // width, `md:min-w-0` fills the page at ≥ md.
           <div className='overflow-hidden rounded-lg border border-border bg-card'>
-            <Table className='min-w-[760px] md:min-w-0' stickyHeader maxHeight='70vh'>
+            {/* `table-fixed` + percentage widths: the columns fit the container on a
+                laptop (no horizontal scroll) and the Task column is bounded, so long
+                titles wrap to two lines instead of forcing the table wider. Below
+                `md` the `min-w-[720px]` makes it scroll horizontally on mobile;
+                `md:min-w-0` lets it fill the page. `stickyHeader` pins the header. */}
+            <Table className='min-w-[720px] table-fixed md:min-w-0' stickyHeader maxHeight='70vh'>
               <TableHeader className='[&_th]:whitespace-nowrap'>
                 <TableRow>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>#</TableHead>
-                  <TableHead className='w-full font-sans text-xs uppercase tracking-wider'>Task</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Deps</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Conflicts</TableHead>
+                  <TableHead className='w-[5%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
+                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Task</TableHead>
+                  <TableHead className='w-[13%] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
+                  <TableHead className='w-[15%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
+                  <TableHead className='w-[11%] font-sans text-xs uppercase tracking-wider'>Deps</TableHead>
+                  <TableHead className='w-[13%] font-sans text-xs uppercase tracking-wider'>Conflicts</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

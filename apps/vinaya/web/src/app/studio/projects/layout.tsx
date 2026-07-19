@@ -14,7 +14,9 @@ export default async function ProjectsLayout({ children }: { children: ReactNode
   return (
     <>
       <ProjectsSubBar projects={projects} />
-      <div className='mx-auto max-w-4xl px-8 py-8'>{children}</div>
+      {/* max-w-6xl (matches StudioShell) so the iteration board's wide task table
+          shows all its columns on a laptop instead of forcing a horizontal scroll. */}
+      <div className='mx-auto max-w-6xl px-8 py-8'>{children}</div>
     </>
   )
 }
