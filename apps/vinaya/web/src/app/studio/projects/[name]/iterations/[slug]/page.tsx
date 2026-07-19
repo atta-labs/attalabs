@@ -149,23 +149,17 @@ export default async function IterationPage({ params }: { params: Promise<Params
             No tasks declared in this iteration's topology table.
           </p>
         ) : (
-          // The card supplies only chrome (`overflow-hidden` clips the rounded
-          // corners); the `@atta/ui` Table owns table behavior. `table-fixed` +
-          // percentage widths let the columns fit the container on a laptop (no
+          // The `@atta/ui` Table owns all table behavior. Its header pins on scroll
+          // by DEFAULT (page-scroll sticky, no fixed height) — `containerClassName`
+          // only shifts the pin down past the sticky ProjectsSubBar (`top-10`).
+          // `table-fixed` + percentage widths fit the columns on a laptop (no
           // horizontal scroll) while the bounded Task column wraps long titles to
-          // two lines; `min-w-[720px]` scrolls horizontally on mobile, `md:min-w-0`
-          // fills the page at ≥ md. The header is NOT pinned: each library's own
-          // header border (retro's `[&_tr]:border-b-2`) renders natively when the
-          // header isn't sticky — no detached-cell border to reconstruct. The
-          // Table's opt-in `stickyHeader` prop stays available for surfaces that
-          // want a pinned header and can accept the vertical scroll box.
-          <div className='overflow-hidden rounded-lg border border-border bg-card'>
-            {/* `min-w-[760px]` (no `md:min-w-0`): `w-full` fills a wide container,
-                but the table never shrinks below 760px — it scrolls horizontally
-                instead, so the columns never cram their labels below readability at
-                a narrow width. Column %s leave the label columns (PROJECT(S),
-                CONFLICTS) wide enough for the header text + retro's `px-2` gutter. */}
-            <Table className='min-w-[760px] table-fixed'>
+          // two lines; `min-w-[760px]` keeps labels readable and lets the Studio
+          // shell scroll horizontally on a narrow viewport. Card has NO
+          // `overflow-hidden`: the pinned header must be free to escape it to stick
+          // to the shell, and horizontal overflow must reach the shell to scroll.
+          <div className='rounded-lg border border-border bg-card'>
+            <Table className='min-w-[760px] table-fixed' containerClassName='[&_thead_th]:top-10'>
               <TableHeader className='[&_th]:whitespace-nowrap'>
                 <TableRow>
                   <TableHead className='w-[4%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
@@ -325,9 +319,10 @@ export default async function IterationPage({ params }: { params: Promise<Params
         ) : ledgerRows.length === 0 ? (
           <p className='font-sans text-sm text-muted-foreground/70'>No ledger data yet.</p>
         ) : (
-          // Table owns its own scroll now; the card just clips rounded corners.
+          // Short footer ledger — no pinned header wanted, so `stickyHeader={false}`
+          // keeps it as a self-contained horizontal-scroll box (card clips corners).
           <div className='overflow-hidden rounded-lg border border-border bg-card'>
-            <Table className='min-w-[720px]'>
+            <Table className='min-w-[720px]' stickyHeader={false}>
               <TableHeader>
                 <TableRow>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>Phase</TableHead>

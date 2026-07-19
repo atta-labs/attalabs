@@ -1,68 +1,62 @@
-import type { ComponentProps, ComponentType, CSSProperties } from 'react'
+import type { ComponentProps, ComponentType } from 'react'
 import { cn } from './utils'
 
 export type ScrollableTableProps = ComponentProps<'table'> & {
   /**
-   * Extends/overrides the scroll-container div (merged LAST, so a consumer's
-   * class wins). Escape hatch for one-off container tweaks.
+   * Extends/overrides the wrapper div (merged LAST, so a consumer's class wins).
+   * Common use: shift the pinned header down past a fixed bar above the table
+   * with `'[&_thead_th]:top-10'` (defaults to `top-0`).
    */
   containerClassName?: string
   /**
-   * Cap the table's scroll container height (any CSS length, e.g. `'70vh'`).
-   * Turns on vertical scrolling INSIDE the table's own box instead of growing
-   * the page. Pair with `stickyHeader` for a pinned header.
-   */
-  maxHeight?: string
-  /**
-   * Pin the header row while the body scrolls vertically. Library-correct in
-   * every library (the per-library border/background is baked into each
-   * library's wrapper — see `makeScrollableTable`'s second arg), so a consumer
-   * just writes `<Table stickyHeader maxHeight="70vh">` and never restyles the
-   * header at the call site. No effect without a bounded height (`maxHeight`, or
-   * a `max-h-*` on `containerClassName`), since there is nothing to scroll under.
+   * Pin the header row while you scroll PAST the table — it sticks at the top of
+   * the nearest scrolling ancestor and leaves when the table scrolls out. No
+   * fixed height. **On by default.**
+   *
+   * How it works: the wrapper does NOT trap the sticky in a horizontal-scroll box
+   * (that would pin the header to the box, not the page). Instead it leaves the
+   * installed container `overflow-visible`, so the header sticks to whatever
+   * ancestor actually scrolls — a page shell (e.g. Studio's `overflow-y-auto`
+   * region) or the page itself — and that same ancestor absorbs horizontal
+   * overflow on narrow viewports (no page-body sideways scroll where a shell
+   * contains it). The per-library sticky-header border (its own row border
+   * width + `--border` color) is applied so the pinned header keeps a matching
+   * rule after sticky detaches it from the row.
+   *
+   * Set `false` for the alternative: a self-contained horizontal-scroll box with
+   * NO sticky header (the installed container scrolls x itself). Use that when a
+   * table sits in a context with no scrolling ancestor to pin against and must
+   * not push the page sideways.
    */
   stickyHeader?: boolean
 }
 
 /**
- * Wraps a library's installed `Table` in a width-clamp so the table's OWN
- * container scrolls it horizontally in any layout context instead of bleeding
- * past its parent and overflowing the page — and adds the cross-library
- * `stickyHeader` / `maxHeight` behaviors as first-class props.
+ * Wraps a library's installed `Table` so the table is responsive (never bleeds
+ * past its parent) and its header pins on scroll — both correct in every library.
  *
- * Why the width clamp is needed: every library's `installed/table.tsx` renders
- * its own `w-full` horizontal-scroll container (`overflow-x-auto` in basic/retro,
- * `overflow-auto` in animate/brutal — both clip on x), but `w-full` has no width
- * floor, so when an ancestor is itself a scroll container (a page shell with
- * `overflow-y-auto`, which CSS promotes to `overflow-x: auto`) the container's
- * width resolves to the table's `min-w`, nothing clips, and the table pushes the
- * whole page wider than the viewport. `min-w-0 max-w-full` caps the width at the
- * parent and lets it shrink below the table's intrinsic width — the exact
- * constraint the installed container needs before its OWN overflow will clip and
- * scroll. Verified in a real browser: the installed container clips, the table
- * scrolls inside it, `document.scrollWidth === innerWidth`.
+ * `min-w-0 max-w-full` caps the wrapper at its parent and lets it shrink below
+ * the table's intrinsic width, the constraint the installed container needs so a
+ * `min-w` table clips/scrolls instead of overflowing the page.
  *
- * The wrapper adds NO overflow of its own and does NOT neutralize the installed
- * container, so each library's per-library table styling is preserved (retro's
- * `rounded border-2 shadow-md` frame stays put, content scrolls inside it).
- *
- * `stickyHeader` is the reason this is a factory rather than a single shared
- * component: sticky `<th>` cells detach from the row's border (a `border-collapse`
- * quirk), so a pinned header must carry its own bottom border — and its width
- * differs per library (retro's rows are `border-b-2`, the rest `border-b`). Each
+ * `stickyHeader` (default on) is why this is a factory: sticky `<th>` cells detach
+ * from the row border (a `border-collapse` quirk), so the pinned header must carry
+ * its own bottom border — and that border differs per library (retro/brutal rows
+ * are `border-b-2`, the rest `border-b`; all use the `--border` token). Each
  * library passes its own literal, Tailwind-scannable sticky-header class as the
- * second arg, so `stickyHeader` renders correctly and identically-contracted in
- * all four. The class targets `thead th` from the wrapper, so the consumer's
- * `TableHeader` needs no sticky/border/background classes at all.
+ * second arg, so `stickyHeader` renders identically-contracted and correct in all
+ * four, with zero sticky/border classes at the call site.
  */
 export function makeScrollableTable(InstalledTable: ComponentType<ComponentProps<'table'>>, stickyHeaderClass: string) {
-  function Table({ className, containerClassName, maxHeight, stickyHeader = false, ...props }: ScrollableTableProps) {
+  function Table({ className, containerClassName, stickyHeader = true, ...props }: ScrollableTableProps) {
     return (
       <div
-        style={maxHeight ? ({ '--atta-table-max-h': maxHeight } as CSSProperties) : undefined}
         className={cn(
           'w-full min-w-0 max-w-full',
-          maxHeight && '[&>div]:max-h-[var(--atta-table-max-h)] [&>div]:overflow-y-auto',
+          // Sticky mode: keep the installed container non-scrolling so the header
+          // pins to the page/shell (not a trapping box), and apply the per-library
+          // pinned-header styling.
+          stickyHeader && '[&>div]:overflow-visible',
           stickyHeader && stickyHeaderClass,
           containerClassName
         )}

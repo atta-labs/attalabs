@@ -160,8 +160,10 @@ export function BacklogTable({
         )}
       </div>
 
-      {/* Table owns its own scroll now; the card just clips rounded corners. */}
-      <div className='overflow-hidden rounded-lg border border-border bg-card'>
+      {/* Data table — header pins on scroll by default (`@atta/ui` Table). No
+          `overflow-hidden` on the card: the pinned header must be free to stick to
+          the Studio shell, and horizontal overflow must reach the shell to scroll. */}
+      <div className='rounded-lg border border-border bg-card'>
         <Table className='min-w-[720px] table-fixed'>
           <TableHeader>
             <TableRow>
