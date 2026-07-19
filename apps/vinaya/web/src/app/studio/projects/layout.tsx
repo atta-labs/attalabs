@@ -14,6 +14,10 @@ export default async function ProjectsLayout({ children }: { children: ReactNode
   return (
     <>
       <ProjectsSubBar projects={projects} />
+      {/* max-w-4xl keeps prose pages (task-detail briefs) at a readable measure. A
+          wide board table that doesn't fit this width scrolls inside its own
+          container (the responsive Table wrapper), so the column width no longer
+          needs the page widened to accommodate it. */}
       <div className='mx-auto max-w-4xl px-8 py-8'>{children}</div>
     </>
   )

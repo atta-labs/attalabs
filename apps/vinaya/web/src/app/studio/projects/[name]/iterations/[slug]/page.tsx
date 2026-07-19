@@ -149,25 +149,30 @@ export default async function IterationPage({ params }: { params: Promise<Params
             No tasks declared in this iteration's topology table.
           </p>
         ) : (
-          // `[&>div]:overflow-visible` neutralizes the Table's own overflow-x-auto
-          // container — with it in place the sticky header would stick to that
-          // wrapper instead of the page scrollport. Safe: table-fixed + w-full
-          // cannot overflow horizontally. Sticky lives on the th cells (not
-          // thead) for cross-browser reliability; th carries its own bg and
-          // border because row borders don't travel with sticky cells.
-          // `top-10` (not `top-0`): the ProjectsSubBar (`projects/layout.tsx`,
-          // `sticky top-0` × `h-10`) shares this StudioShell scroll container, so
-          // the header pins BELOW it rather than behind its opaque, higher-z bar.
-          <div className='rounded-lg border border-border bg-card [&>div]:overflow-visible'>
-            <Table className='table-fixed'>
-              <TableHeader className='[&_th]:sticky [&_th]:top-10 [&_th]:z-10 [&_th]:bg-card [&_th]:border-b [&_th]:border-border'>
+          // The `@atta/ui` Table owns all table behavior. `stickyHeader` (opt-in —
+          // off by default on the shared primitive) pins the header on scroll
+          // (page-scroll sticky, no fixed height); `containerClassName` shifts the
+          // pin down past the sticky ProjectsSubBar (`top-10`).
+          // `table-fixed` + percentage widths fit the columns on a laptop (no
+          // horizontal scroll) while the bounded Task column wraps long titles to
+          // two lines; `min-w-[760px]` keeps labels readable and lets the Studio
+          // shell scroll horizontally on a narrow viewport. Card has NO
+          // `overflow-hidden`: the pinned header must be free to escape it to stick
+          // to the shell, and horizontal overflow must reach the shell to scroll.
+          <div className='rounded-lg border border-border bg-card'>
+            <Table
+              stickyHeader
+              className='min-w-[760px] table-fixed'
+              containerClassName='@min-[780px]/tbl:[&_thead_th]:top-10'
+            >
+              <TableHeader className='[&_th]:whitespace-nowrap'>
                 <TableRow>
-                  <TableHead className='w-[4%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Task</TableHead>
-                  <TableHead className='w-[14%] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
-                  <TableHead className='w-[15%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-                  <TableHead className='w-[10%] font-sans text-xs uppercase tracking-wider'>Deps</TableHead>
-                  <TableHead className='w-[12%] font-sans text-xs uppercase tracking-wider'>Conflicts</TableHead>
+                  <TableHead className='w-[4%] font-semibold text-foreground'>#</TableHead>
+                  <TableHead className='font-semibold text-foreground'>Task</TableHead>
+                  <TableHead className='w-[11%] font-semibold text-foreground'>Issue</TableHead>
+                  <TableHead className='w-[16%] font-semibold text-foreground'>Project(s)</TableHead>
+                  <TableHead className='w-[9%] font-semibold text-foreground'>Deps</TableHead>
+                  <TableHead className='w-[16%] font-semibold text-foreground'>Conflicts</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -319,21 +324,19 @@ export default async function IterationPage({ params }: { params: Promise<Params
         ) : ledgerRows.length === 0 ? (
           <p className='font-sans text-sm text-muted-foreground/70'>No ledger data yet.</p>
         ) : (
+          // Header pins on scroll by default; `top-10` clears the ProjectsSubBar.
+          // No card `overflow-hidden` so the pinned header can stick to the shell.
           <div className='rounded-lg border border-border bg-card'>
-            <Table>
+            <Table stickyHeader className='min-w-[720px]' containerClassName='@min-[780px]/tbl:[&_thead_th]:top-10'>
               <TableHeader>
                 <TableRow>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Phase</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Role</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Agent / Model</TableHead>
-                  <TableHead className='w-28 text-right font-sans text-xs uppercase tracking-wider'>
-                    Tokens in
-                  </TableHead>
-                  <TableHead className='w-28 text-right font-sans text-xs uppercase tracking-wider'>
-                    Tokens out
-                  </TableHead>
-                  <TableHead className='w-24 text-right font-sans text-xs uppercase tracking-wider'>Cost</TableHead>
-                  <TableHead className='w-28 font-sans text-xs uppercase tracking-wider'>Date</TableHead>
+                  <TableHead className='font-semibold text-foreground'>Phase</TableHead>
+                  <TableHead className='font-semibold text-foreground'>Role</TableHead>
+                  <TableHead className='font-semibold text-foreground'>Agent / Model</TableHead>
+                  <TableHead className='w-28 text-right font-semibold text-foreground'>Tokens in</TableHead>
+                  <TableHead className='w-28 text-right font-semibold text-foreground'>Tokens out</TableHead>
+                  <TableHead className='w-24 text-right font-semibold text-foreground'>Cost</TableHead>
+                  <TableHead className='w-28 font-semibold text-foreground'>Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

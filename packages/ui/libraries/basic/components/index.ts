@@ -83,8 +83,9 @@ export {
 } from '../installed/breadcrumb'
 export { Slider } from '../installed/slider'
 // Table
+export { Table } from './table'
+export type { TableProps } from './table'
 export {
-  Table,
   TableBody,
   TableCaption,
   TableCell,

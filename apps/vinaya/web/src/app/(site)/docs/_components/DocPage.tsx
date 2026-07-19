@@ -124,7 +124,17 @@ const markdownComponents = {
   // library's table look here — a hardcoded <table> can never do that,
   // regardless of className. TableRow already puts a border-b on each row,
   // so per-cell borders (th/td) are dropped as redundant, not reinvented.
-  table: (props: React.TableHTMLAttributes<HTMLTableElement>) => <Table className='my-6' {...props} />,
+  // `@atta/ui` Table owns its own horizontal-scroll container, so a wide markdown
+  // table scrolls inside its own box instead of bleeding past the prose column.
+  // `containerClassName` puts the block margin on that scroll wrapper.
+  // `@min-[780px]/tbl:[&_thead_th]:top-12` shifts the pinned header below the ~55px sticky doc
+  // breadcrumb (`StickyDocHeader`, `sticky top-0 z-20`) so it doesn't pin behind
+  // it — the `@min-[780px]/tbl:` container query because the pinned header only
+  // exists once the table's container is wide enough to fit the table (below
+  // that width the table scrolls in its own contained box instead).
+  table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
+    <Table stickyHeader containerClassName='my-6 @min-[780px]/tbl:[&_thead_th]:top-12' {...props} />
+  ),
   thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableHeader {...props} />,
   tbody: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableBody {...props} />,
   tr: (props: React.HTMLAttributes<HTMLTableRowElement>) => <TableRow {...props} />,

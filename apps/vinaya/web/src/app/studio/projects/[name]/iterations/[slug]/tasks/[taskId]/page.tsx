@@ -1,4 +1,4 @@
-import { Badge } from '@atta/ui/components'
+import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import type { DerivedTask } from '@atta/aeg-core'
 import { CircleDot, ExternalLink, FileText, GitPullRequest, MessageSquareWarning } from 'lucide-react'
@@ -60,16 +60,27 @@ const markdownComponents = {
     <a className='text-accent underline-offset-4 hover:underline' rel='noreferrer' {...props} />
   ),
   hr: (props: React.HTMLAttributes<HTMLHRElement>) => <hr className='my-6 border-border opacity-50' {...props} />,
+  // Routed through the library-switchable Table set (not a raw <table>) so a
+  // product on the retro/animate/brutal library gets that library's table look,
+  // and the Table's own overflow-x-auto container makes it scroll on narrow
+  // viewports for free — a hardcoded <table> can do neither. Mirrors the
+  // identical markdown-override in DocPage.tsx. TableRow already puts a border-b
+  // on each row, so per-cell borders are dropped as redundant, not reinvented.
+  // `@atta/ui` Table owns its own horizontal-scroll container, so a wide markdown
+  // table scrolls inside its own box instead of bleeding past the column.
+  // `containerClassName` puts the block margin on that scroll wrapper.
+  // `[&_thead_th]:top-10` pins the header below the Studio ProjectsSubBar.
   table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
-    <div className='my-4 overflow-x-auto'>
-      <table className='w-full border-collapse text-sm' {...props} />
-    </div>
+    <Table stickyHeader containerClassName='my-4 @min-[780px]/tbl:[&_thead_th]:top-10' {...props} />
   ),
+  thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableHeader {...props} />,
+  tbody: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableBody {...props} />,
+  tr: (props: React.HTMLAttributes<HTMLTableRowElement>) => <TableRow {...props} />,
   th: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => (
-    <th className='border-b border-border px-3 py-2 text-left font-sans font-semibold text-foreground' {...props} />
+    <TableHead className='font-sans font-semibold text-foreground' {...props} />
   ),
   td: (props: React.TdHTMLAttributes<HTMLTableCellElement>) => (
-    <td className='border-b border-border/60 px-3 py-2 align-top text-foreground' {...props} />
+    <TableCell className='align-top text-foreground' {...props} />
   ),
   strong: (props: React.HTMLAttributes<HTMLElement>) => <strong className='font-semibold text-foreground' {...props} />,
   em: (props: React.HTMLAttributes<HTMLElement>) => <em className='italic' {...props} />
