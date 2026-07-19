@@ -319,10 +319,10 @@ export default async function IterationPage({ params }: { params: Promise<Params
         ) : ledgerRows.length === 0 ? (
           <p className='font-sans text-sm text-muted-foreground/70'>No ledger data yet.</p>
         ) : (
-          // Short footer ledger — no pinned header wanted, so `stickyHeader={false}`
-          // keeps it as a self-contained horizontal-scroll box (card clips corners).
-          <div className='overflow-hidden rounded-lg border border-border bg-card'>
-            <Table className='min-w-[720px]' stickyHeader={false}>
+          // Header pins on scroll by default; `top-10` clears the ProjectsSubBar.
+          // No card `overflow-hidden` so the pinned header can stick to the shell.
+          <div className='rounded-lg border border-border bg-card'>
+            <Table className='min-w-[720px]' containerClassName='[&_thead_th]:top-10'>
               <TableHeader>
                 <TableRow>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>Phase</TableHead>

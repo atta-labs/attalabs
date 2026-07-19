@@ -127,12 +127,7 @@ const markdownComponents = {
   // `@atta/ui` Table owns its own horizontal-scroll container, so a wide markdown
   // table scrolls inside its own box instead of bleeding past the prose column.
   // `containerClassName` puts the block margin on that scroll wrapper.
-  // Inline prose table — self-contained scroll box, no pinned header
-  // (`stickyHeader={false}`): it has no scrolling ancestor to pin against and
-  // must not push the page sideways.
-  table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
-    <Table stickyHeader={false} containerClassName='my-6' {...props} />
-  ),
+  table: (props: React.TableHTMLAttributes<HTMLTableElement>) => <Table containerClassName='my-6' {...props} />,
   thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableHeader {...props} />,
   tbody: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableBody {...props} />,
   tr: (props: React.HTMLAttributes<HTMLTableRowElement>) => <TableRow {...props} />,
