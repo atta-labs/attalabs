@@ -121,7 +121,10 @@ export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader,
 export { Toast } from './display/toast'
 export { ToastProvider, useToastContext } from './display/toast-provider'
 
-// Sidebar — native retro (Radix flavor)
+// Sidebar — native retro (Radix flavor). SidebarMenuButton comes from a wrapper
+// that adapts the Base-UI `render` idiom onto retro's `asChild` (cross-library
+// parity — see interactive/sidebar-menu-button.tsx).
+export { SidebarMenuButton, type SidebarMenuButtonProps } from './interactive/sidebar-menu-button'
 export {
   Sidebar,
   SidebarContent,
@@ -136,7 +139,6 @@ export {
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuBadge,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSkeleton,
   SidebarMenuSub,
