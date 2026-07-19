@@ -149,28 +149,28 @@ export default async function IterationPage({ params }: { params: Promise<Params
             No tasks declared in this iteration's topology table.
           </p>
         ) : (
-          // Responsive split. ≥ md: `md:[&>div]:overflow-visible` neutralizes the
-          // Table's own overflow-x-auto container so the sticky header sticks to
-          // the shared StudioShell scrollport (not the wrapper), and `md:min-w-0`
-          // lets the table-fixed columns reflow to full width — six columns read
-          // fine at ≥ 768px. < md: neither override applies, so the min-w-[760px]
-          // table exceeds the viewport and the library's overflow-x-auto container
-          // scrolls it horizontally (the BacklogTable pattern) instead of cramming
-          // six columns below readability. Sticky lives on the th cells (not thead)
-          // for cross-browser reliability; th carries its own bg and border because
-          // row borders don't travel with sticky cells. `top-10` (not `top-0`): the
-          // ProjectsSubBar (`projects/layout.tsx`, `sticky top-0` × `h-10`) shares
-          // this scroll container, so the header pins BELOW it, not behind its bar.
-          <div className='rounded-lg border border-border bg-card md:[&>div]:overflow-visible'>
-            <Table className='min-w-[760px] table-fixed md:min-w-0'>
-              <TableHeader className='[&_th]:sticky [&_th]:top-10 [&_th]:z-10 [&_th]:bg-card [&_th]:border-b [&_th]:border-border'>
+          // THIS card is the single horizontal-scroll container: `overflow-x-auto`
+          // clips at the card's own width and scrolls the wide table inside it;
+          // `overflow-y-hidden` clips the rounded corners so a row background can't
+          // poke past them. `[&>div]:overflow-visible` neutralizes the library
+          // Table's OWN inner overflow-auto wrapper so the two don't nest (a nested
+          // inner scroller let `min-w` bleed past the card and overflow the page on
+          // mobile). Natural column sizing (NO `table-fixed`): the Task column
+          // takes the slack (`w-full`) and every other column is exactly as wide as
+          // its content, so headers like CONFLICTS keep their `px-4` gutter instead
+          // of being crushed against the edge. `[&_th]:whitespace-nowrap` stops the
+          // labels from wrapping. `min-w-[760px]` keeps it readable and scrolling
+          // below the container width; `md:min-w-0` lets it fill the page at ≥ md.
+          <div className='overflow-x-auto overflow-y-hidden rounded-lg border border-border bg-card [&>div]:overflow-visible'>
+            <Table className='min-w-[760px] md:min-w-0'>
+              <TableHeader className='[&_th]:whitespace-nowrap [&_th]:bg-card [&_th]:border-b [&_th]:border-border'>
                 <TableRow>
-                  <TableHead className='w-[4%] font-sans text-xs uppercase tracking-wider'>#</TableHead>
-                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Task</TableHead>
-                  <TableHead className='w-[14%] font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
-                  <TableHead className='w-[15%] font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
-                  <TableHead className='w-[10%] font-sans text-xs uppercase tracking-wider'>Deps</TableHead>
-                  <TableHead className='w-[12%] font-sans text-xs uppercase tracking-wider'>Conflicts</TableHead>
+                  <TableHead className='font-sans text-xs uppercase tracking-wider'>#</TableHead>
+                  <TableHead className='w-full font-sans text-xs uppercase tracking-wider'>Task</TableHead>
+                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Issue</TableHead>
+                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Project(s)</TableHead>
+                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Deps</TableHead>
+                  <TableHead className='font-sans text-xs uppercase tracking-wider'>Conflicts</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -322,9 +322,12 @@ export default async function IterationPage({ params }: { params: Promise<Params
         ) : ledgerRows.length === 0 ? (
           <p className='font-sans text-sm text-muted-foreground/70'>No ledger data yet.</p>
         ) : (
-          <div className='rounded-lg border border-border bg-card'>
-            {/* min-w so the seven-column ledger scrolls in the Table's own
-                overflow-x-auto container on narrow viewports instead of cramming. */}
+          // Same self-contained scroll pattern as the tasks table above: THIS
+          // card clips (`overflow-x-auto`) and scrolls the min-w table inside it,
+          // `overflow-y-hidden` clips the rounded corners, and
+          // `[&>div]:overflow-visible` defers the library Table's own inner
+          // scroller to this one so they don't nest.
+          <div className='overflow-x-auto overflow-y-hidden rounded-lg border border-border bg-card [&>div]:overflow-visible'>
             <Table className='min-w-[720px]'>
               <TableHeader>
                 <TableRow>
