@@ -60,7 +60,9 @@ export function InstallSidebar({ commands }: { commands: readonly Command[] }) {
       <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
         <Text
           as='span'
-          className='mb-2 block px-2 font-sans text-sm font-bold uppercase tracking-widest text-sidebar-foreground'
+          size='sm'
+          weight='bold'
+          className='mb-2 block px-2 font-sans uppercase tracking-widest text-sidebar-foreground'
         >
           Commands
         </Text>

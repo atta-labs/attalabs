@@ -1,6 +1,6 @@
 import { COMMANDS } from '@atta/vinaya-sources'
 import { Badge, Code } from '@atta/ui/components'
-import { Heading, Text } from '@atta/ui/shared'
+import { Flex, Heading, Text } from '@atta/ui/shared'
 import { CommandBlock } from './_components/CommandBlock'
 import { DetailText } from './_components/DetailText'
 import { commandSlug } from './_components/command-slug'
@@ -21,7 +21,7 @@ export default function InstallPage() {
     // the sidebar is hidden and the whole thing collapses to the same centered
     // `max-w-3xl` scrolling column the page has always been (`main`'s `px-6
     // py-12` + the inner `mx-auto max-w-3xl gap-10` reproduce it exactly).
-    <div className='flex flex-col lg:h-full lg:min-h-0 lg:flex-row lg:overflow-hidden'>
+    <Flex className='flex-col lg:h-full lg:min-h-0 lg:flex-row lg:overflow-hidden'>
       <InstallSidebar commands={ORDERED_COMMANDS} />
 
       <main className='min-w-0 flex-1 px-6 py-12 lg:overflow-y-auto lg:px-12 lg:pt-8 lg:pb-10'>
@@ -80,6 +80,6 @@ export default function InstallPage() {
           </section>
         </div>
       </main>
-    </div>
+    </Flex>
   )
 }
