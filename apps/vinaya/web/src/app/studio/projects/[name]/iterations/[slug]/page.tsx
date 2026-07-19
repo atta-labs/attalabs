@@ -158,9 +158,18 @@ export default async function IterationPage({ params }: { params: Promise<Params
           // instead of being crushed. `[&_th]:whitespace-nowrap` stops the labels
           // wrapping. `min-w-[760px]` keeps it readable and scrolling below the
           // container width; `md:min-w-0` lets it fill the page at ≥ md.
+          //
+          // Sticky column headers are restored (they regressed when the old
+          // page-scroll sticky's `[&>div]:overflow-visible` neutraliser — which
+          // fought responsiveness — was removed): `containerClassName` caps the
+          // Table's own scroll container at `max-h-[70vh]` so a long board scrolls
+          // vertically INSIDE its box, and `[&_th]:sticky top-0` pins the header to
+          // that box. This composes cleanly with the horizontal scroll (same
+          // container, both axes) — unlike the old page-scoped `top-10` trick — and
+          // only bounds genuinely long boards (`max-h` doesn't force height).
           <div className='overflow-hidden rounded-lg border border-border bg-card'>
-            <Table className='min-w-[760px] md:min-w-0'>
-              <TableHeader className='[&_th]:whitespace-nowrap [&_th]:bg-card [&_th]:border-b [&_th]:border-border'>
+            <Table className='min-w-[760px] md:min-w-0' containerClassName='[&>div]:max-h-[70vh]'>
+              <TableHeader className='[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:whitespace-nowrap [&_th]:bg-card [&_th]:border-b [&_th]:border-border'>
                 <TableRow>
                   <TableHead className='font-sans text-xs uppercase tracking-wider'>#</TableHead>
                   <TableHead className='w-full font-sans text-xs uppercase tracking-wider'>Task</TableHead>

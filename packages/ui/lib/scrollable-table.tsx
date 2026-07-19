@@ -16,11 +16,12 @@ export type ScrollableTableProps = ComponentProps<'table'> & {
  * past its parent and overflowing the page.
  *
  * Why this is needed: every library's `installed/table.tsx` already renders its
- * own `w-full overflow-x-auto` container — but `w-full` has no width floor, so
- * when an ancestor is itself a scroll container (e.g. a page shell with
- * `overflow-y-auto`, which CSS promotes to `overflow-x: auto`) the container's
- * width resolves to the table's `min-w`, nothing clips, and the table pushes the
- * whole page wider than the viewport.
+ * own `w-full` horizontal-scroll container (`overflow-x-auto` in basic/retro,
+ * `overflow-auto` in animate/brutal — both clip on the x-axis) — but `w-full`
+ * has no width floor, so when an ancestor is itself a scroll container (e.g. a
+ * page shell with `overflow-y-auto`, which CSS promotes to `overflow-x: auto`)
+ * the container's width resolves to the table's `min-w`, nothing clips, and the
+ * table pushes the whole page wider than the viewport.
  *
  * The fix is a single transparent wrapper carrying `min-w-0 max-w-full`: that
  * caps the width at the parent (`max-w-full`) and lets it shrink below the
