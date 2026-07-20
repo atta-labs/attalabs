@@ -54,16 +54,14 @@ const LIBRARIES = [
     description: 'Motion-enhanced interactions. Scale on hover, spring on tap.',
     style: 'Motion-Enhanced',
     order: 3
-  },
-  {
-    _id: 'library-brutal',
-    _type: 'library',
-    id: 'brutal',
-    name: 'Brutal',
-    description: 'Neobrutalism. Hard offset shadows, thick borders.',
-    style: 'Neobrutalist / Stark',
-    order: 4
   }
+  // `brutal` is deliberately absent. Its vendored installed/* is a
+  // neobrutalism.dev paste that references tokens this repo has never defined
+  // (`main`, `secondary-background`, `radius-base`, `shadow-shadow`,
+  // `boxShadowX`), so it has never rendered correctly here — verified against
+  // origin/main, where none of those are defined either. The library document
+  // was removed from the CMS; re-adding it here would resurrect it in both
+  // theme pickers on the next seed. Its code is removed separately.
 ]
 
 async function seed() {
