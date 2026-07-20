@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowRight } from 'lucide-react'
 import type { IterationSummary } from '@/lib/repo-state'
+import { NO_BOARD_REASON } from '@/app/studio/_lib/iteration-href'
 
 type TaskProgressProps = {
   counts: IterationSummary['taskCounts']
@@ -70,14 +71,21 @@ export function IterationCard({ iteration: it, href, showProjects = false }: Ite
       </CardHeader>
       <CardContent className='space-y-2 font-mono text-xs text-muted-foreground'>
         {showProjects && it.projects.length > 0 && <p>projects · {it.projects.join(' · ')}</p>}
+        {!href && <p className='font-sans text-xs text-muted-foreground/70'>{NO_BOARD_REASON}</p>}
         {it.goal && <p className='line-clamp-2 font-sans text-xs'>{it.goal}</p>}
         <TaskProgress counts={it.taskCounts} />
       </CardContent>
     </Card>
   )
 
+  // No project → no board route exists. The card says why, both inline and on
+  // hover, rather than reading as a link that quietly does nothing (D-087).
   if (!href) {
-    return <div className={wrapperClassName}>{content}</div>
+    return (
+      <div className={`${wrapperClassName} cursor-help`} title={NO_BOARD_REASON}>
+        {content}
+      </div>
+    )
   }
 
   return (
