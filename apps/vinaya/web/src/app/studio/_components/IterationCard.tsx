@@ -57,7 +57,7 @@ type IterationCardProps = {
 }
 
 export function IterationCard({ iteration: it, href, showProjects = false }: IterationCardProps) {
-  const wrapperClassName = 'rounded-lg border border-border bg-card transition-colors hover:border-primary group block'
+  const wrapperClassName = 'group block'
 
   const content = (
     <Card>

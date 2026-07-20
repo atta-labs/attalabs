@@ -30,7 +30,7 @@ export default async function ProjectsPage() {
               key={project.name}
               variant='unstyled'
               href={`/studio/projects/${project.name}`}
-              className='group block rounded-lg border border-border bg-card transition-colors hover:border-primary'
+              className='group block'
             >
               <Card>
                 <CardHeader className='pb-2'>
