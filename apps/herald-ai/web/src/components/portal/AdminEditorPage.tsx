@@ -102,26 +102,36 @@ export function AdminEditorPage({
     if (selectedTheme) sendThemePreview(selectedTheme, colorScheme, font)
   }
 
-  // Only offer pairings that actually render. retro/brutal draw a hard border and
-  // a hard offset shadow, so a theme with a faint alpha border is frameless there
-  // (D-131 removed the shim that used to mask this by forcing --border to
-  // --foreground). Soft libraries take every theme.
+  // `themesForLibrary` is a strict PARTITION, not a one-way filter: retro/brutal get
+  // only `neobrutalist` themes and the soft libraries get only the rest (D-131). A
+  // neobrutalist theme is legible under basic/animate but is built around a hard border
+  // and offset shadow those libraries never draw, so it reads as a washed-out version of
+  // itself.
   const availableThemes = useMemo(() => themesForLibrary(themes, library), [themes, library])
 
   function handleLibraryChange(libraryId: string) {
+    // The partition can be empty — flagging themes is a CMS decision, so unflagging the
+    // last one leaves a library with nothing to pair with. Refuse the switch rather than
+    // completing it and silently leaving an incompatible theme selected AND publishable.
+    const compatible = themesForLibrary(themes, libraryId)
+    const first = compatible[0]
+    if (!first) {
+      errorToast('No compatible themes', 'No theme is currently marked compatible with that style.')
+      return
+    }
+
     setLibrary(libraryId)
     sendToPreviewRef.current?.({ type: 'PREVIEW_LIBRARY', library: libraryId })
 
     // Filtering the list stops NEW bad pairings; an already-selected theme would
-    // otherwise survive the switch. Fall back to the first compatible theme.
+    // otherwise survive the switch.
     if (
       !isThemeCompatible(
         themes.find((t) => t._id === themeId),
         libraryId
       )
     ) {
-      const fallback = themesForLibrary(themes, libraryId)[0]
-      if (fallback) handleThemeSelect(fallback._id)
+      handleThemeSelect(first._id)
     }
   }
 

@@ -29,7 +29,7 @@ If the color you want is not in the list, it does not exist. Pick the closest se
 (Decision Tree, Forbidden/Correct Patterns) are lookups and worked examples — when they
 disagree with these tables, these tables win, and the other section is the bug.
 
-Every token has exactly one role. Every token has exactly one role. Picking by role — not by "which color looks nicest in the current theme" — is what makes the system survive theme changes.
+Every token has exactly one role. Picking by role — not by "which color looks nicest in the current theme" — is what makes the system survive theme changes.
 
 ### Surface roles (where things sit)
 

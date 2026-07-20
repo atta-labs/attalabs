@@ -199,26 +199,34 @@ export function ThemesBrowseClient({
   const hasChanges =
     selectedId !== currentThemeId || selectedScheme !== currentColorScheme || selectedFontSans !== undefined
 
-  // Only offer pairings that actually render. retro/brutal draw a hard border and
-  // a hard offset shadow, so a theme with a faint alpha border is frameless there
-  // (D-131). `selectedLibraryId` is a document id (`library-retro`); the helper
-  // accepts both that and the bare id.
+  // Strict PARTITION (D-131): retro/brutal get only `neobrutalist` themes, the soft
+  // libraries only the rest — not a one-way filter. `selectedLibraryId` is a document
+  // id (`library-retro`); the helper accepts both that and the bare id.
   const availableThemes = useMemo(() => themesForLibrary(themes, selectedLibraryId), [themes, selectedLibraryId])
 
   function handleLibrarySelect(libraryId: string) {
+    // The partition can be empty — flagging themes is a CMS decision, so unflagging the
+    // last one leaves a library with nothing to pair with. Refuse the switch rather than
+    // completing it and silently leaving an incompatible theme selected AND publishable.
+    const compatible = themesForLibrary(themes, libraryId)
+    const first = compatible[0]
+    if (!first) {
+      errorToast('No compatible themes', 'No theme is currently marked compatible with that library.')
+      return
+    }
+
     setSelectedLibraryId(libraryId)
     setLibrarySaved(false)
 
     // Filtering the list stops NEW bad pairings; an already-selected theme would
-    // otherwise survive the switch. Fall back to the first compatible theme.
+    // otherwise survive the switch.
     if (
       !isThemeCompatible(
         themes.find((t) => t._id === selectedId),
         libraryId
       )
     ) {
-      const fallback = themesForLibrary(themes, libraryId)[0]
-      if (fallback) setSelectedId(fallback._id)
+      setSelectedId(first._id)
     }
   }
 

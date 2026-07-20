@@ -22,10 +22,18 @@
  * are extracted verbatim from the gate's own `blockers` strings.
  *
  * States sharing a status token are graded by opacity, hue = family,
- * intensity = weight (Principal direction, 2026-07-05):
+ * intensity = weight (Principal direction, 2026-07-05). The bg opacity is on
+ * `badgeClass`, the border opacity on `accentClass` — badges no longer carry a
+ * `border-*` of their own, so the constant neobrutalist outline shows through
+ * (D-131):
  *   success:     Ready (/10 bg, /40 border) < Merged (/25, /70)
  *   destructive: Blocked · needs #N (/10, /40) < blocked (/20, /60)
  *                < incoherent (/30, /80)
+ *   primary:     In-flight (/10, /40) < In review (/25, /70)
+ *
+ * `in-review` graded into the primary family by D-131: it was `accent` on a
+ * separate hue, but `accent` is a fill token now and cannot be an ink, so the
+ * two lifecycle states separate by weight rather than by family.
  */
 
 import type { DerivedStatus, DispatchResult } from '@atta/aeg-core'
@@ -66,14 +74,14 @@ const STATUS_VISUALS: Record<DerivedStatus, StatusVisual> = {
   },
   'in-flight': {
     label: 'In-flight',
-    badgeClass: 'bg-primary/15 text-primary',
-    accentClass: 'border-primary/50',
+    badgeClass: 'bg-primary/10 text-primary',
+    accentClass: 'border-primary/40',
     description: 'Branch open, no PR yet.'
   },
   'in-review': {
     label: 'In review',
-    badgeClass: 'bg-primary/15 text-primary',
-    accentClass: 'border-primary/50',
+    badgeClass: 'bg-primary/25 text-primary',
+    accentClass: 'border-primary/70',
     description: 'PR open, awaiting review.'
   },
   'changes-requested': {
