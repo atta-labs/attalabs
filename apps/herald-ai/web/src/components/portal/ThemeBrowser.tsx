@@ -212,7 +212,7 @@ export function ThemeBrowser({
                     handleSelect(theme._id)
                   }
                 }}
-                className={`mx-2 my-1.5 flex cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors ${
+                className={`mx-2 my-1.5 flex cursor-pointer flex-row items-center gap-3 px-4 py-3 text-left transition-colors ${
                   isSelected ? 'bg-primary/10' : 'hover:bg-foreground/5'
                 }`}
               >
