@@ -1,6 +1,7 @@
 'use client'
 
 import type { CMSLibrary, CMSTheme } from '@atta/cms'
+import { isThemeCompatible, themesForLibrary } from '@atta/cms'
 import { Button, Card, useToastContext } from '@atta/ui/components'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { EnvoyPreview } from './EnvoyPreview'
@@ -101,9 +102,27 @@ export function AdminEditorPage({
     if (selectedTheme) sendThemePreview(selectedTheme, colorScheme, font)
   }
 
+  // Only offer pairings that actually render. retro/brutal draw a hard border and
+  // a hard offset shadow, so a theme with a faint alpha border is frameless there
+  // (D-131 removed the shim that used to mask this by forcing --border to
+  // --foreground). Soft libraries take every theme.
+  const availableThemes = useMemo(() => themesForLibrary(themes, library), [themes, library])
+
   function handleLibraryChange(libraryId: string) {
     setLibrary(libraryId)
     sendToPreviewRef.current?.({ type: 'PREVIEW_LIBRARY', library: libraryId })
+
+    // Filtering the list stops NEW bad pairings; an already-selected theme would
+    // otherwise survive the switch. Fall back to the first compatible theme.
+    if (
+      !isThemeCompatible(
+        themes.find((t) => t._id === themeId),
+        libraryId
+      )
+    ) {
+      const fallback = themesForLibrary(themes, libraryId)[0]
+      if (fallback) handleThemeSelect(fallback._id)
+    }
   }
 
   async function handleSave() {
@@ -139,7 +158,7 @@ export function AdminEditorPage({
           <section>
             <SectionLabel>Theme</SectionLabel>
             <div className='flex flex-col gap-2'>
-              {themes.map((theme) => {
+              {availableThemes.map((theme) => {
                 const isSelected = themeId === theme._id
                 const hasBoth = !!(theme.dark?.primary && theme.light?.primary)
                 return (

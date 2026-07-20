@@ -31,3 +31,9 @@ export { FIELD_TO_CSS_VAR, SHADOW_TO_CSS_VAR } from './types'
 export { buildFaviconIcons } from './utils/favicon'
 export { getGoogleFontsUrl, loadThemeFonts } from './utils/font-loader'
 export { generateThemeCSS, generateThemeCSSForScheme, transformColorGroup } from './utils/theme'
+export {
+  isNeobrutalistLibrary,
+  isThemeCompatible,
+  NEOBRUTALIST_LIBRARIES,
+  themesForLibrary
+} from './utils/theme-compatibility'

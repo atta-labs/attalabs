@@ -12,7 +12,8 @@ const THEME_PROJECTION = `{
   dark,
   typography,
   spacing,
-  shadows
+  shadows,
+  neobrutalist
 }`
 
 /** Fetch all published themes */

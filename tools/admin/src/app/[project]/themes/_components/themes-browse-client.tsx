@@ -1,6 +1,7 @@
 'use client'
 
 import type { CMSLibrary, CMSTheme } from '@atta/cms'
+import { isThemeCompatible, themesForLibrary } from '@atta/cms'
 import {
   Button,
   Select,
@@ -198,9 +199,27 @@ export function ThemesBrowseClient({
   const hasChanges =
     selectedId !== currentThemeId || selectedScheme !== currentColorScheme || selectedFontSans !== undefined
 
+  // Only offer pairings that actually render. retro/brutal draw a hard border and
+  // a hard offset shadow, so a theme with a faint alpha border is frameless there
+  // (D-131). `selectedLibraryId` is a document id (`library-retro`); the helper
+  // accepts both that and the bare id.
+  const availableThemes = useMemo(() => themesForLibrary(themes, selectedLibraryId), [themes, selectedLibraryId])
+
   function handleLibrarySelect(libraryId: string) {
     setSelectedLibraryId(libraryId)
     setLibrarySaved(false)
+
+    // Filtering the list stops NEW bad pairings; an already-selected theme would
+    // otherwise survive the switch. Fall back to the first compatible theme.
+    if (
+      !isThemeCompatible(
+        themes.find((t) => t._id === selectedId),
+        libraryId
+      )
+    ) {
+      const fallback = themesForLibrary(themes, libraryId)[0]
+      if (fallback) setSelectedId(fallback._id)
+    }
   }
 
   function handlePublishLibrary() {
@@ -308,7 +327,7 @@ export function ThemesBrowseClient({
           </div>
 
           <div className='flex-1 overflow-y-auto'>
-            {themes.map((theme) => {
+            {availableThemes.map((theme) => {
               const isSelected = selectedId === theme._id
               const isApplied = theme._id === currentThemeId
               const thisScheme = schemeByTheme[theme._id] ?? 'dark'

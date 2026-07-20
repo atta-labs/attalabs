@@ -57,6 +57,30 @@ previously could not express them:
 | `primaryHover` | `--primary-hover` | retro's `installed/button.tsx` uses `hover:bg-primary-hover`. Without the field **and** the `--color-primary-hover` mapping in `globals.css`, that class emits no CSS and the hover silently never fires. |
 | `secondaryHover` | `--secondary-hover` | Same, for `hover:bg-secondary-hover`. |
 
+### Theme ↔ library compatibility (`neobrutalist`)
+
+`retro` and `brutal` draw a hard border AND a hard offset shadow on every surface.
+A theme tuned for the soft libraries typically ships a border at 0.14–0.20 alpha —
+fine under `basic`/`animate`, effectively **frameless** under a neobrutalist one,
+where the border IS the design. Before D-131 this was masked: `globals.css` forced
+`--border: var(--foreground)` for those two libraries, overriding whatever border a
+theme defined.
+
+`uiTheme.neobrutalist` (boolean) records that a theme has a solid border plus a
+`shadowColor`, i.e. that it survives that pairing. Both theme pickers — Herald's
+`/[username]/ui` editor and `tools/admin`'s themes page — filter on it via
+`themesForLibrary()` / `isThemeCompatible()` from `@atta/cms`
+(`utils/theme-compatibility.ts`), so selecting a neobrutalist library offers only
+tuned themes, and switching library re-selects a compatible theme rather than
+leaving a broken pairing in place.
+
+**The flag is explicit, never derived.** Deriving it from "has a `shadowColor`"
+would let a theme drift into the neobrutalist list because someone set an unrelated
+field, and the real requirement — a border solid enough to contrast with that
+theme's own surfaces — is a judgement call that a boolean records honestly.
+A neobrutalist theme is NOT filtered out of the soft libraries: a solid border and
+a shadow colour render fine under `basic`/`animate`.
+
 **The shadow ramp is scheme-agnostic; its colour is not.** `addShadowVars`
 (`utils/theme.ts`) applies one `shadows` map to both schemes by design — offsets and blur
 don't change between light and dark. Per-scheme shadow *colour* is achieved through

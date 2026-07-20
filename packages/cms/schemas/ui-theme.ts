@@ -171,6 +171,15 @@ export const uiTheme = defineType({
 
     // Shadows
     defineField({
+      name: 'neobrutalist',
+      title: 'Neobrutalist-ready',
+      type: 'boolean',
+      description:
+        'Tick when this theme has been tuned for the retro/brutal libraries: a SOLID border that contrasts with its own surfaces, plus a shadowColor. Those libraries draw a hard border and a hard offset shadow, so a theme with a faint alpha border renders effectively frameless there. The theme pickers use this to only offer compatible themes when a neobrutalist library is selected.',
+      initialValue: false,
+      group: 'colors'
+    }),
+    defineField({
       name: 'shadows',
       title: 'Shadows',
       type: 'object',
