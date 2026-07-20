@@ -4,7 +4,7 @@ sidebar_title: Operating Model (aeg)
 description: The front door to Agentic Execution Governance (AEG) — the operating model every agent works inside. Load at the start of ANY session in this repo, before doing anything substantive, regardless of role. Covers what AEG is, the four truth domains, forge-derived status, the iteration topology file, where the plan vs the flow vs governance live, the dispatch gates, the brief, the anti-regression rules, the orient-from-root layout (`aeg-root/` model + `aeg-project/` state — D-041), and the model-vs-product distinction. Ends by routing to the aeg-roles skill and the reading order. Does NOT cover role specifics (see aeg-roles + roles/*.md) or brief authoring (see brief-authoring).
 ---
 
-<!-- CANONICAL SOURCE (D-039). This file is the canonical home of the `aeg` skill, inside the AEG unit (aeg-root/skills/). The copy at .claude/skills/aeg/SKILL.md is a GENERATED VIEW produced by `aeg generate-skills` for the agent harness that loads from .claude/ — edit THIS file, then regenerate; never edit the generated view by hand. A different agent (e.g. Codex) generates its own view from this same source. -->
+<!-- CANONICAL SOURCE (D-039). This file is the canonical home of the `aeg` skill, inside the AEG unit (aeg-root/skills/). D-039 provides for an agent-specific GENERATED VIEW under .claude/skills/ (or another agent's equivalent), rebuilt from this file rather than authored by hand — but no such generator exists yet, and this repo has no generated view of this skill: agents are pointed at aeg-root/ directly (root CLAUDE.md). Edit THIS file; if a generator is ever built, regenerate rather than hand-editing its output. -->
 
 # AEG — the operating model (front door)
 
@@ -19,7 +19,7 @@ AEG is **agent-agnostic and tool-agnostic.** The roles below describe *what an a
 ## 1. AEG is two things sharing one name (don't confuse them)
 
 - **AEG the model** — this operating model: the governance/flow constitution. It lives at repo-root `aeg-root/` (the model exists once, at the root only — D-041) and governs the whole repo. *This skill is the model.*
-- **AEG the product** — a deployed UI that *visualizes* a repo's AEG execution, plus `aeg.sh`, a scaffolder that lays the AEG structure into any repo. In this repo it lives at `apps/aeg/`.
+- **AEG the product** — a deployed UI that *visualizes* a repo's AEG execution, plus the CLI that lays the AEG structure into any repo. That product is **Vinaya**; in this repo it lives at `apps/vinaya/` (the earlier `apps/aeg` app was superseded by it and deleted, D-131).
 
 When someone says "AEG," default to the model unless the context is clearly the product (the UI, the website, the scaffolder).
 
@@ -72,7 +72,7 @@ Principal → Team Leader → Developer → Reviewer (code + security) → merge
 - **Tiers** (D-003): Tier 0 trivial · Tier 1 implementation · Tier 3 project/roadmap. No Tier 2. When in doubt, Tier 3.
 - **Decisions** are append-only `D-###` entries in `decisions.md` (repo-level) or `<unit>/specs/<unit>-decisions.md` (per unit). **Type 1** = irreversible (Principal ratifies; PENDING until a window). **Type 2** = reversible (TL may ratify). `Lock: YES` = a closed branch a brief must acknowledge or formally challenge. Never edit an entry in place — supersede with a new one.
 - **Ratification windows**: 1–2 daily; the Principal resolves Type 1s, Tier 3 merges, lock approvals, `severity:product` escalations.
-- **verify-docs** (`.github/workflows/verify-docs.yml`) is a real blocking CI gate (D-027): changed specs need a `Status:` block, Tier 1+ code needs a doc change, Tier 3 needs a decision entry.
+- **verify-docs** (`packages/aeg-core/bin/verify-docs.ts`, run as a step of the `aeg-gate-suite` job in `.github/workflows/forge-lifecycle.yml` — the standalone `verify-docs.yml` workflow was consolidated away) is a real blocking CI gate (D-027): changed specs need a `Status:` block, Tier 1+ code needs a doc change, Tier 3 needs a decision entry.
 
 ## 10. The anti-regression rules — never violate
 

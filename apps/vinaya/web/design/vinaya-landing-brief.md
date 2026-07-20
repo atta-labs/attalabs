@@ -1,3 +1,5 @@
+> **Historical record.** This is the original handoff brief that produced `apps/vinaya/web`; it is kept as written and describes the repo as it stood at authoring time. The old AEG Studio app it refers to was deleted outright by `deprecation-v1` task 1 (D-131), so its path citations have been dropped — nothing else here has been restated.
+
 **Zero-context handoff — build the public Vinaya site (`vinaya.attalabs.dev`).** You are picking this up cold; everything you need is below. This is a NEW build in the `daniboomerang/attalabs` monorepo — `apps/vinaya/web` does not exist yet.
 
 ## What this repo/product is (minimum you need)
@@ -10,7 +12,7 @@
 
 Build a small, standalone Next.js app at `apps/vinaya/web`, two pages only, deployed to `vinaya.attalabs.dev` (wildcard DNS already configured for `*.attalabs.dev` — deployment is the same Vercel pattern every other app in this monorepo uses; check `apps/herald-ai/web` or `apps/vada-ai/web` for the reference `NextWebShell` / Sanity theme wiring pattern).
 
-**This is explicitly decoupled from and running AHEAD of** a separate, already-planned iteration (`vinaya-studio-v1`) that will eventually copy `apps/aeg/web`'s Studio UI into this same app as additional routes. Do NOT build Studio here. Do NOT structure this app assuming a later wholesale copy-in — build it as its own clean, small app; Studio routes get ADDED to it later, in a separate task, by someone else.
+**This is explicitly decoupled from and running AHEAD of** a separate, already-planned iteration (`vinaya-studio-v1`) that will eventually copy the old AEG Studio UI into this same app as additional routes. Do NOT build Studio here. Do NOT structure this app assuming a later wholesale copy-in — build it as its own clean, small app; Studio routes get ADDED to it later, in a separate task, by someone else.
 
 **Why this matters / urgency:** the person building this needs a real, live, public link to point to from their CV/portfolio *now*, even though the underlying CLI (`npx vinaya init`) isn't shippable yet. Priority is high. An honest "coming soon" on the actual install command is correct and wanted — do not fake a working install.
 
@@ -64,7 +66,7 @@ Design intent notes, in case the mockup's reasoning isn't self-evident:
 ## Explicitly out of scope for this task
 
 - `/docs` (CLI reference) — skip entirely.
-- Anything under `apps/aeg/web` — do not touch, do not copy from it.
+- Anything under the old AEG Studio app — do not touch, do not copy from it.
 - Vinaya Studio (the governance dashboard UI) — a separate, later task adds it into this same app; don't build placeholder routes for it.
 - Any personal/bio/about content — see constraint above, this is non-negotiable.
 - Making `npx vinaya init` actually work — it doesn't exist yet; the button/command block must read honestly as not-yet-available.

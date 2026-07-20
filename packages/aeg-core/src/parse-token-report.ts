@@ -10,7 +10,7 @@ import type { LedgerRow } from './types'
  * Developer's "Token report" section in a PR body, and the Reviewer's /
  * Security's / Planner's one-line `Tokens: …` report in a verdict comment,
  * PR body, or planning report. Nothing here does I/O — the caller (Studio's
- * forge adapter, `apps/aeg/web/studio/src/lib/forge/fetch-token-ledger.ts`)
+ * forge adapter, `apps/vinaya/web/src/lib/forge/fetch-token-ledger.ts`)
  * fetches the PR bodies/comments and hands them to `aggregateTaskTokenRows`.
  *
  * Cell parsing (`—`/null tolerance, thousand-separator commas, `$` cost

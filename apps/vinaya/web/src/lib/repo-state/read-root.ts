@@ -24,16 +24,15 @@
  * titled exactly the iteration slug (open = active, closed = archived).
  * Goal/lifecycle/task-list all derive via `@atta/aeg-forge-state`'s
  * `deriveIterationFromForge`, the same adapter the CLI gates use.
- * `dependsOn`/`conflictsWith` for an ACTIVE iteration are additionally merged
- * from a legacy `aeg-root/iterations/<slug>.md` topology table when one still
- * exists on disk (see `mergeTaskEdgesFromFile`) — a deliberate,
- * best-effort-only enrichment for any pre-cutover file that predates full
- * Issue-body "Dependency rationale" coverage, not a required data source; no
- * live iteration carries such a file after #512/#517 (the last one,
- * `aeg-drift-prevention-v1.md`, was deleted there), so this path is dormant
- * in practice and only degrades gracefully if one ever reappears. Archived
- * iterations never had a file merge and never will — their dependency edges
- * resolve entirely from each closed Issue's own body.
+ * `dependsOn`/`conflictsWith` for an ACTIVE iteration derive from the forge
+ * like everything else. A legacy `aeg-root/iterations/<slug>.md` topology
+ * table was once merged in as best-effort enrichment for pre-cutover files;
+ * that path was removed by `deprecation-v1` task 1 (D-131) once it was
+ * provably unreachable — no live iteration has carried such a file since
+ * #512/#517 deleted the last one (`aeg-drift-prevention-v1.md`), and
+ * `check-no-disk-state.ts` now CI-blocks adding a new active topology file
+ * at all. Archived iterations never had a file merge and never will — their
+ * dependency edges resolve entirely from each closed Issue's own body.
  *
  * Reads are confined to this module. Parsing is delegated to
  * `@atta/aeg-core` (pure, no I/O) for the legacy file-merge path, and to
@@ -204,44 +203,7 @@ async function toSummary(fileSlug: string, iteration: Iteration, archived: boole
   }
 }
 
-// ---------- active iterations: forge-first, file-fallback-on-error ----------
-
-async function readActiveFile(fileSlug: string): Promise<Iteration | null> {
-  const root = findAegRoot()
-  const activePath = path.join(root, ITERATIONS_DIR, `${fileSlug}.md`)
-  if (!existsSync(activePath)) return null
-  const raw = await fs.readFile(activePath, 'utf8')
-  return parseIteration(raw)
-}
-
-/**
- * `dependsOn`/`conflictsWith` are read from the topology table itself
- * (`parseIteration`) and merged onto the forge-derived tasks, NOT taken from
- * the forge — the same deliberate narrowing `verify-coherence.ts`'s
- * `deriveOrFallback` already applies (task 3b, #437) and for the same live
- * reason: an Issue's own "Dependency rationale" section can go stale when a
- * later Planner amendment updates the dependency set in prose without
- * editing the original literal `Depends-on:` line — confirmed live on this
- * very iteration's own #431 (`Depends-on: 3, 4, 5` in the original Boundary,
- * corrected to `3a, 3b, 4, 4b, 5` only by two later amendments; forge
- * derivation parses the first line, not the amendments). File-only tasks
- * (`#TBD` rows, no Issue cut yet) have no forge representation at all and
- * are appended as-is, same reasoning as `deriveOrFallback`.
- */
-function mergeTaskEdgesFromFile(forgeIteration: Iteration, fileIteration: Iteration | null): Iteration {
-  if (!fileIteration) return forgeIteration
-  const forgeTaskIds = new Set(forgeIteration.tasks.map((t) => t.id))
-  const fileTaskById = new Map(fileIteration.tasks.map((t) => [t.id, t]))
-
-  const mergedTasks = forgeIteration.tasks.map((t) => {
-    const fileTask = fileTaskById.get(t.id)
-    if (!fileTask) return t
-    return { ...t, dependsOn: fileTask.dependsOn, conflictsWith: fileTask.conflictsWith }
-  })
-  const fileOnlyTasks = fileIteration.tasks.filter((t) => !forgeTaskIds.has(t.id))
-
-  return { ...forgeIteration, tasks: [...mergedTasks, ...fileOnlyTasks] }
-}
+// ---------- active iterations: forge-derived ----------
 
 /**
  * Enumerates every active iteration from the forge (open Milestones) and
@@ -285,11 +247,8 @@ async function loadActiveIterationsWithStatus(): Promise<LoadedIterations> {
 
   const settled = await Promise.allSettled(
     refs.map(async (ref) => {
-      const [iteration, fileIteration] = await Promise.all([
-        cachedDeriveIterationFromForgeKnown(repo.owner, repo.repo, ref.slug, ref.goal, 'active'),
-        readActiveFile(ref.slug)
-      ])
-      return { fileSlug: ref.slug, iteration: mergeTaskEdgesFromFile(iteration, fileIteration) }
+      const iteration = await cachedDeriveIterationFromForgeKnown(repo.owner, repo.repo, ref.slug, ref.goal, 'active')
+      return { fileSlug: ref.slug, iteration }
     })
   )
 
@@ -322,11 +281,8 @@ async function readActiveIteration(fileSlug: string): Promise<{ fileSlug: string
   try {
     const milestone = findMilestoneForSlug(repo.owner, repo.repo, fileSlug)
     if (milestone?.lifecycle !== 'active') return null
-    const [iteration, fileIteration] = await Promise.all([
-      cachedDeriveIterationFromForge(repo.owner, repo.repo, fileSlug),
-      readActiveFile(fileSlug)
-    ])
-    return { fileSlug, iteration: mergeTaskEdgesFromFile(iteration, fileIteration) }
+    const iteration = await cachedDeriveIterationFromForge(repo.owner, repo.repo, fileSlug)
+    return { fileSlug, iteration }
   } catch (err) {
     console.warn(`[repo-state] forge derivation failed for iteration "${fileSlug}": ${(err as Error).message}`)
     return null

@@ -114,7 +114,7 @@ Before work begins, the brief is checked for well-formedness:
 - No obvious contradiction with active decision logs (string-match heuristic)
 - The task's Issue carries only execution metadata — **no** planning fields (priority/estimates/points), which the required Issue template + a CI check reject
 
-If it fails, it's not dispatchable until fixed. The Developer also re-checks well-formedness as its entry gate (`roles/developer.md`) — a malformed brief is refused, not guessed at. (Brief Validation is an Archivist-gate stub today — see `state-machine.md` for mechanically-enforced vs trusted.)
+If it fails, it's not dispatchable until fixed. The Developer also re-checks well-formedness as its entry gate (`roles/developer.md`) — a malformed brief is refused, not guessed at. (Brief Validation is a real blocking gate — the `Brief Validation` step (9/9) of the `aeg-gate-suite` job, D-069; see `state-machine.md` for mechanically-enforced vs trusted.)
 
 **Exit:** the brief is well-formed and dispatchable.
 
@@ -251,7 +251,7 @@ The test plan is split by who can structurally execute each item:
 
 **The merge gate.** A PR is not mergeable while any Test Plan checkbox is unticked — `[agent]` items waiting for evidence, or `[principal]` items waiting for Principal confirmation. An `[agent]` item that fails returns the PR to the Developer on the same branch (same loop as a `CHANGES_REQUESTED` review); a `[principal]` failure does the same. Re-running an item appends a fresh evidence comment; it does not edit the previous one.
 
-**Enforcement note:** today, the Verifier phase is **trusted discipline** — Phase 11 requires it, but no CI bot mechanically gates the merge on unticked boxes yet. A `verify-test-plan` CI check (a checkbox-state parse over the PR body) is the optional enforcer companion to this phase; whether it ships is decided per-iteration. The doctrine (Phase 11 exists; the brief carries a tagged Test Plan; an unticked box means not-yet-mergeable) holds whether the CI enforcer is on or off. Brief Validation rejects a brief that touches a runtime surface and has no tagged Test Plan.
+**Enforcement note:** the `verify-test-plan` CI check (a checkbox-state parse over the PR body) is **live and mandatory** — `packages/aeg-core/bin/verify-test-plan.ts` runs unconditionally as one of the nine always-produced verdicts of the `aeg-gate-suite` job (`.github/workflows/forge-lifecycle.yml`). It is not opt-in and not decided per-iteration. What remains **trusted discipline** is the judgment the parse cannot make — whether a ticked box was genuinely run. The doctrine (Phase 11 exists; the brief carries a tagged Test Plan; an unticked box means not-yet-mergeable) holds whether the CI enforcer is on or off. Brief Validation rejects a brief that touches a runtime surface and has no tagged Test Plan.
 
 **Exit:** every `[agent]` Test Plan item has an evidence comment on the PR and is ticked; every `[principal]` item is ticked by the Principal. Or: the brief declared `Test Plan: unit-tests-only` and the §4 surface is pure-logic.
 
@@ -369,4 +369,4 @@ New project specs and major feature specs (Tier 1 / Tier 3); the "Goal" section 
 Existing specs are not migrated wholesale; a spec adopts this format when it's next rewritten for other reasons.
 
 ### Why
-Spec Kit's evaluation found the template produces measurably better-structured artifacts — explicit priority, visible ambiguities, success tied to user-observable outcomes. The repo adopts the format without adopting Spec Kit the tool — see `apps/cetana-ai/specs/cetana-backlog.md` for the V0.7+ question of whether Cetana eventually wraps Spec Kit templates as MCP tools.
+Spec Kit's evaluation found the template produces measurably better-structured artifacts — explicit priority, visible ambiguities, success tied to user-observable outcomes. The repo adopts the format without adopting Spec Kit the tool. (The open question of whether an orchestrator eventually wraps Spec Kit templates as MCP tools was Cetana's; it retired with that product, D-095/D-131.)

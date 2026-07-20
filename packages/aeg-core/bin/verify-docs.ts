@@ -62,7 +62,7 @@
  * relative path here (DOC_OWNERS_PATH, git diff/ls-files, readdirSync walks)
  * must resolve correctly regardless of the invoking process's own working
  * directory — this script is a sibling of verify-coherence.ts, which is
- * spawned as a subprocess without an explicit cwd (apps/aeg/web/studio's API
+ * spawned as a subprocess without an explicit cwd (apps/vinaya/web's API
  * routes).
  */
 

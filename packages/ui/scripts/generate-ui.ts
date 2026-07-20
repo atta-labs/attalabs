@@ -6,7 +6,7 @@ const _cache = new Map<string, UILibrary>()
 
 // When called from next.config.ts or an app's `generate` script, process.cwd() is the
 // app's own directory. Apps nest at different depths under the monorepo root
-// (apps/{app}/web/ for most, apps/aeg/web/studio/ for AEG Studio), so a fixed
+// (apps/{app}/web/ for most, deeper for some), so a fixed
 // "N levels up" offset is wrong for at least one caller. Walk up from cwd to the
 // monorepo root (marked by turbo.json) instead, then descend into packages/ui/generated.
 function findRepoRoot(startDir: string): string {

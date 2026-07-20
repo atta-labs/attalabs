@@ -26,7 +26,7 @@ If you are starting a fresh session and need to orient:
 4. `aeg-root/iterations/README.md` — the iteration model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
 5. **Per-project state (pinned Issues, D-110)** — what is true right now, per project (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450) plus the ecosystem-wide bucket (`aeg-core`/`atta`/`desktop`/`attalabs` + cross-project facts, #451). Non-derivable operational facts; current focus pointer.
 6. **Derive current execution state from the forge** — see the "Session-start forge queries" section below
-7. `aeg-root/iterations/<name>.md` — the current iteration's task topology (the plan); live status is queried from the forge, not read here. **Post-cutover (`aeg-forge-state-v1` task 7, #431):** most active iterations no longer have this file at all — task→Issue topology derives straight from the forge (a Milestone + `iteration:<slug>`-labeled Issues). `vada-production-v1` is the one deliberate, tracked exception still carrying a file (`iterations/README.md` §4); `completed/` iterations keep theirs permanently, by design.
+7. `aeg-root/iterations/<name>.md` — the current iteration's task topology (the plan); live status is queried from the forge, not read here. **Post-cutover (`aeg-forge-state-v1` task 7, #431):** most active iterations no longer have this file at all — task→Issue topology derives straight from the forge (a Milestone + `iteration:<slug>`-labeled Issues). **No active iteration carries this file at all today** — `vada-production-v1` was the last tracked exception, and its file was deleted once the backfill completed (`iterations/README.md` §4); `completed/` iterations keep theirs permanently, by design, and `check-no-disk-state.ts` now CI-blocks adding a new active one.
 8. **Lessons log (pinned Issue #453, D-110)** — calibration lessons + anti-patterns, one comment per lesson (read when authoring briefs or post-mortems)
 
 The AEG model front door is the **`aeg`** skill (the model in one read) → the **`aeg-roles`** skill (routes you to your role doc). Load those first; this file is the repo-specific companion.
@@ -39,7 +39,7 @@ Living **state** is split between `aeg-project/` folders (decisions — files) a
 
 For deeper context on the operational model design:
 - `aeg-root/aeg-manual-flow.md` — running the flow by hand (the operator's guide)
-- `aeg-root/process.md` — the eleven-phase walkthrough from idea to merged code
+- `aeg-root/process.md` — the thirteen-phase walkthrough from idea to merged code
 - `aeg-root/diagrams/` — process and architecture diagrams (note: being brought in line with the forge-derived-status model; if a diagram shows agents writing status, the prose docs are canonical)
 
 Do not generate strategy, plan an iteration, or author briefs until you have read `state-machine.md` and the spec for any project in scope.
@@ -97,7 +97,7 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 
 > **`now.md` is retired (D-057).** Active work, blocked tasks, and next candidates are derived from the forge (see "Session-start forge queries" above). The forge is the single source of truth for what is happening; the per-project pinned state Issue holds what the forge cannot derive.
 
-The roadmap is **not** an AEG file — it lives in the company's tool (or, for solo AttaLabs work, in the backlogs `apps/<project>/specs/<project>-backlog.md` per project and `specs/ecosystem-backlog.md` for the monorepo, which are reference docs out of the flow). The old global `roadmap.md` is retired. **Backlog convention (D-037, D-041):** a unit's *plan* lives in its `specs/` (`specs/ecosystem-backlog.md` for the monorepo; `apps/<project>/specs/<project>-backlog.md` per project); a unit's *flow + governance* lives in the root `aeg-root/` (model, exists once); its *living state* lives in its `aeg-project/` (one at the root for monorepo-level work, one per project).
+The roadmap is **not** an AEG file — it lives in the company's tool (or, for solo AttaLabs work, in the per-project backlogs `apps/<project>/specs/<project>-backlog.md`, which are reference docs out of the flow). The old global `roadmap.md` is retired, and the monorepo-wide `specs/ecosystem-backlog.md` it once sat beside was deleted with the rest of the stale AEG research (`deprecation-v1` task 1, D-131) — cross-cutting items are cut as backlog Issues instead. **Backlog convention (D-037, D-041):** a unit's *plan* lives in its `specs/` (`apps/<project>/specs/<project>-backlog.md` per project); a unit's *flow + governance* lives in the root `aeg-root/` (model, exists once); its *living state* lives on the per-project pinned Issue (D-110 — the old per-unit `aeg-project/` state folder is retired).
 
 ### What lives in the repo
 
@@ -131,13 +131,12 @@ When context-sensitive, prefer the explicit qualifier ("AttaLabs ecosystem" vs "
 | **Vāda** | Deliberation engine. V1 live. Standalone product + deliberation layer inside Atta. Pāli for "debate/discourse." | `vada.attalabs.dev` |
 | **Vitakka** | Focused-thinking product. Not yet built. Standalone + focus layer inside Atta. Pāli for "directed thought." | `vitakka.attalabs.dev` (when built) |
 | **Sati** | Memory layer inside Atta. Standalone surface deferred. Pāli for "mindfulness, recollection." | TBD |
-| **Cetana** | Internal dev tooling — local orchestration coordinator. The automation of AEG's orchestration slice. V0.5 in active development. NOT part of Atta. Pāli for "volition, intention." | (internal today); `cetana.attalabs.dev` conditional future |
-| **AEG** | Agentic Execution Governance — the product that visualizes a repo's AEG execution + the `aeg.sh` scaffolder. The model is repo-root `aeg-root/`; the product is `apps/aeg/`. NOT part of Atta. | `aeg.attalabs.dev` (when built) |
+| **Vinaya** | Agentic Execution Governance made shippable — the CLI plus Vinaya Studio, the UI that visualizes a repo's AEG execution (`apps/vinaya/`). The model is repo-root `aeg-root/`. Supersedes both Cetana (retired, D-095/D-131) and the old AEG Studio app (deleted, D-131). NOT part of Atta. | `vinaya.attalabs.dev` |
 | **Herald** | Standalone forensic CV/JD match tool. NOT part of Atta. Sibling product in AttaLabs. English name. | `herald.attalabs.dev` (when deployed) |
 
 ### Naming convention — no `-AI` suffix on any product brand
 
-Locked May 12, 2026 (D-025). All product brands are bare: **Atta, Vāda, Vitakka, Sati, Herald, Cetana**. Never `AttaAI`, `VadaAI`, etc. The AI category signal is carried via page content and site metadata, not the brand.
+Locked May 12, 2026 (D-025). All product brands are bare: **Atta, Vāda, Vitakka, Sati, Herald, Vinaya**. Never `AttaAI`, `VadaAI`, etc. The AI category signal is carried via page content and site metadata, not the brand.
 
 ### Naming aesthetic — Pāli is preferred inside Atta, elective elsewhere
 
@@ -246,7 +245,7 @@ Active work, next candidates, and blocked tasks are **derived from the forge** �
 ### When the plan changes, update the appropriate file
 
 - **The execution plan changes** (a task's edges, a new task, iteration scope) → the current `iterations/<name>.md` (Planner, at plan time). Live task *status* is never written — it's derived from the forge.
-- **Held/future project items change** → the relevant per-project backlog (`apps/<project>/specs/<project>-backlog.md`) or the ecosystem backlog (`specs/ecosystem-backlog.md`) — out of the flow.
+- **Held/future project items change** → the relevant per-project backlog (`apps/<project>/specs/<project>-backlog.md`) — out of the flow.
 - **Lesson learned / anti-pattern** → post a new comment on the pinned lessons Issue (#453, D-110) — never edit an existing comment
 
 ### When repo structure changes, regenerate `docs-index.md`
@@ -269,7 +268,7 @@ Log to `decisions.md` (global) or the per-project log during the conversation. A
 | Per-project decision log | `apps/{project}/specs/{project}-decisions.md` |
 | Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | Per-project pinned Issue (D-110): `aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide `aeg-core`/`atta`/`desktop`/`attalabs` #451 |
 | The execution plan (task topology, edges) | `aeg-root/iterations/<name>.md` |
-| Held / future project items | `apps/{project}/specs/{project}-backlog.md` (per project) or `specs/ecosystem-backlog.md` (monorepo) |
+| Held / future project items | `apps/{project}/specs/{project}-backlog.md` (per project); cross-cutting items are cut as backlog Issues |
 | Completed work history | `git log` / merged-PR history (D-110 — redundant with a committed changelog, so none is kept) |
 | Calibration lessons + anti-patterns | Pinned Issue #453, one new comment per lesson (D-110) |
 | Items awaiting Principal ratification | `needs:principal-input` label on the relevant Issue/PR (D-110); historical record on pinned Issue #452 |
@@ -281,8 +280,8 @@ Log to `decisions.md` (global) or the per-project log during the conversation. A
 
 ## Anti-patterns
 
-- ❌ Reading or writing `roadmap.md` — it's retired; the execution plan is the iteration file, the product roadmap is the company's tool / backlogs (`specs/ecosystem-backlog.md`, `apps/*/specs/*-backlog.md`)
-- ❌ Putting a backlog anywhere but a `specs/` folder — the plan lives in `specs/` (D-037); `aeg-root/` (model) + `aeg-project/` (state) are flow + governance + state only (D-041)
+- ❌ Reading or writing `roadmap.md` — it's retired; the execution plan is the iteration file, the product roadmap is the company's tool / backlogs (`apps/*/specs/*-backlog.md`)
+- ❌ Putting a backlog anywhere but a `specs/` folder — the plan lives in `specs/` (D-037); `aeg-root/` is the model, flow + governance only (D-041), and living state is the per-project pinned Issue (D-110)
 - ❌ Writing task status anywhere (a file, the iteration topology, an Issue field) — status is derived from the forge; storing it recreates the racing status model the design eliminated
 - ❌ Adding execution metadata (status, PR #, dates) to the iteration topology file — it is plan topology only (`iterations/README.md` §9)
 - ❌ Putting the brief in the Issue — the brief is just-in-time and lives in the PR body; the Issue is task identity + metadata only

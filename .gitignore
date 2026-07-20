@@ -10,13 +10,9 @@ dist/
 build/
 **/.turbo/
 docs/
-# Re-include AEG docs renderer (aeg-core) + Studio docs route (task 7).
+# Re-include AEG docs renderer (aeg-core).
 !packages/aeg-core/src/docs/
 !packages/aeg-core/src/docs/**
-!apps/aeg/web/studio/src/app/docs/
-!apps/aeg/web/studio/src/app/docs/**
-!apps/aeg/web/studio/src/lib/docs/
-!apps/aeg/web/studio/src/lib/docs/**
 # Re-include Vinaya Studio's docs redirect stubs (vinaya-studio-v1 task 1
 # addendum; the live route itself moved to (site)/docs below, vinaya-pages-v1
 # task 8, #568).

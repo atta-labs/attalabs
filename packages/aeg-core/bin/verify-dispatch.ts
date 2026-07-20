@@ -258,7 +258,7 @@ function resolvePriorTask(
  * Milestone-aware candidate discovery (aeg-review-gate-v1 task 1, #474,
  * amendment): "active" is a GitHub Milestone titled exactly the iteration
  * slug, open (D-110) — the SAME `listActiveIterationSlugs` Studio's
- * `readOtherActiveIterations` (`apps/aeg/web/studio/src/lib/forge/
+ * `readOtherActiveIterations` (`apps/vinaya/web/src/lib/forge/
  * dispatch-readiness.ts`, task 5, #429) already calls, shared rather than
  * duplicated per this task's own "no parallel implementation" discipline.
  * Previously read the local `aeg-root/iterations/*.md` file listing —
