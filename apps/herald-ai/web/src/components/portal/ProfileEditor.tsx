@@ -578,15 +578,11 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
           <div className='space-y-8'>
             <section>
               <Tabs value={summaryMode} onValueChange={(v) => setSummaryMode(v as 'edit' | 'preview')}>
-                <div className='mb-2 flex items-baseline justify-between'>
+                <div className='mb-2 flex items-center justify-between'>
                   <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
-                  <TabsList className='border-b-0'>
-                    <TabsTrigger value='edit' className='pb-1'>
-                      Edit
-                    </TabsTrigger>
-                    <TabsTrigger value='preview' className='pb-1'>
-                      Preview
-                    </TabsTrigger>
+                  <TabsList>
+                    <TabsTrigger value='edit'>Edit</TabsTrigger>
+                    <TabsTrigger value='preview'>Preview</TabsTrigger>
                   </TabsList>
                 </div>
                 <TabsContent value='edit' className='mt-0'>
