@@ -78,7 +78,7 @@ Every artifact falls into one of five persistence classes. Persistence class det
 
 ### Class 3: Orchestration-tool runtime (ephemeral, optional)
 
-**What:** If an orchestration tool is used, its runtime state — static config, append-only event logs, IPC files. In this repo that is Cetana (`~/.cetana/config.json`, `~/.cetana/tasks/N.jsonl`, `~/.cetana/tasks/N/`). **This class only exists when a tool is in use; AEG does not require it.**
+**What:** If an orchestration tool is used, its runtime state — static config, append-only event logs, IPC files. No such tool is in use in this repo today — the orchestrator that once filled this slot was retired and deleted (D-095/D-132). **This class only exists when a tool is in use; AEG does not require it.**
 
 **Persistence:** Survives process restarts; lost on machine reinstall; recoverable from the tool's backup.
 

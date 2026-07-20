@@ -24,7 +24,7 @@ If you are starting a fresh session and need to orient:
 2. `aeg-root/state-machine.md` — the constitution; artifact states, roles, permissions, decision schema
 3. `aeg-root/roles/{your-role}.md` — Team Leader (incl. Planner & Brief Author modes), Developer, Principal, Reviewer, Security, or Archivist
 4. `aeg-root/iterations/README.md` — the iteration model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
-5. **Per-project state (pinned Issues, D-110)** — what is true right now, per project (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450) plus the ecosystem-wide bucket (`aeg-core`/`atta`/`desktop`/`attalabs` + cross-project facts, #451). Non-derivable operational facts; current focus pointer.
+5. **Per-project state (pinned Issues, D-110)** — what is true right now, per project (`aeg` #447, `vada` #448, `herald` #449) plus the ecosystem-wide bucket (`aeg-core`/`atta`/`desktop`/`attalabs` + cross-project facts, #451). Non-derivable operational facts; current focus pointer.
 6. **Derive current execution state from the forge** — see the "Session-start forge queries" section below
 7. `aeg-root/iterations/<name>.md` — the current iteration's task topology (the plan); live status is queried from the forge, not read here. **Post-cutover (`aeg-forge-state-v1` task 7, #431):** most active iterations no longer have this file at all — task→Issue topology derives straight from the forge (a Milestone + `iteration:<slug>`-labeled Issues). **No active iteration carries this file at all today** — `vada-production-v1` was the last tracked exception, and its file was deleted once the backfill completed (`iterations/README.md` §4); `completed/` iterations keep theirs permanently, by design, and `check-no-disk-state.ts` now CI-blocks adding a new active one.
 8. **Lessons log (pinned Issue #453, D-110)** — calibration lessons + anti-patterns, one comment per lesson (read when authoring briefs or post-mortems)
@@ -291,10 +291,9 @@ Log to `decisions.md` (global) or the per-project log during the conversation. A
 - ❌ Pretending to have read a spec that isn't in context — ask Dani by exact path, or use GitHub MCP
 - ❌ Renaming `@atta/*` packages to `@attalabs/*` — code namespace is Atta; AttaLabs is only the public URL
 - ❌ Treating Atta as merely a code namespace or "the ecosystem only" — Atta is **the product** (D-025)
-- ❌ Calling Cetana "Agentic Execution Governance" or treating it as the whole model — Cetana automates only AEG's orchestration slice; governance lives in this repo
 - ❌ Adding `-AI` suffix to any product brand (D-025)
 - ❌ Treating "Pāli name = built by Atta" as structural (demoted to elective aesthetic — D-025)
-- ❌ Treating Herald or Cetana as part of Atta — both are sibling AttaLabs products
+- ❌ Treating Herald or Vinaya as part of Atta — both are sibling AttaLabs products
 - ❌ Letting the Developer review its own work — review/security passes are separate fresh-context invocations (D-026)
 - ❌ Generating strategy or planning an iteration before reading the specs (spec-check gate)
 - ❌ Adding version suffixes to spec filenames (D-013 locked)

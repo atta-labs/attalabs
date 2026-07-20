@@ -2,7 +2,7 @@ import { DECOMMISSIONED_MODEL_IDS } from './deprecations'
 import { FALLBACK_CATALOG } from './fallback'
 
 /**
- * Resolve a model spec to a concrete model ID for CLI dispatch (e.g. cetana).
+ * Resolve a model spec to a concrete model ID for CLI dispatch.
  *
  * Spec formats:
  * - "<vendor>/<tier>" → resolves to the current non-decommissioned model for that

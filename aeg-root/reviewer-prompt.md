@@ -62,7 +62,6 @@ The proposal you are reviewing is part of the Atta ecosystem — a solo founder 
 Key architectural commitments already locked (do not challenge unless the lock itself causes a fatal flaw):
 - State machine framing for artifact governance
 - Three-role + Archivist model
-- Cetana V0 as the local dispatch coordinator
 - Tiered documentation (Tier 0 / 1 / 3; Tier 2 eliminated)
 - Append-only decision logs and ratification queue
 

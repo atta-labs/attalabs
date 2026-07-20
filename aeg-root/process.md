@@ -127,7 +127,7 @@ If it fails, it's not dispatchable until fixed. The Developer also re-checks wel
 Dispatch starts the task. There are two equivalent routes:
 
 - **Manual:** the Principal pastes the brief into the coding agent. The brief's worktree-first Step 0 makes the Developer create its own worktree (`.worktrees/task/<iteration>/<n>/`, branch `task/<iteration>/<n>`, from `origin/main`) as its first action.
-- **Automated:** an automation layer (in this repo, Cetana) creates the worktree, generates the agent's config, spawns the Developer in it, and streams progress. This is a convenience; the semantics are identical to manual.
+- **Automated:** an automation layer creates the worktree, generates the agent's config, spawns the Developer in it, and streams progress. This is a convenience; the semantics are identical to manual.
 
 Either way: **before starting, the Developer checks the dispatch gates against the forge** — every `depends-on` task's PR merged, no `conflicts-with` sibling's PR open. If a gate isn't satisfied, it does not start (the task serializes). Opening the branch *is* the `todo → in-flight` transition; nobody writes a status label.
 
