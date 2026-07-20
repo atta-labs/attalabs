@@ -26,7 +26,7 @@ Sanity CMS
     ├── dark: Record<string, color>    # Dark scheme color tokens
     ├── typography: { fontSans, fontSerif, fontMono }
     ├── spacing: { radius, spacing }
-    └── shadows: { shadow, shadowMd, ... }
+    └── shadows: { shadow, shadowMd, ... }   # RAMP only — colour comes from --shadow-color
 
 @atta/cms package
 ├── queries/product-cms.ts         # getProductCms — config + branding, keyed by product
@@ -44,6 +44,24 @@ Sanity CMS
 ```
 
 ---
+
+### Colour-group fields that are not surfaces (D-130)
+
+Three fields in the `light`/`dark` colour groups do not name a surface or an ink. They
+exist because the vendored neobrutalist components reference them and the theme system
+previously could not express them:
+
+| Field | CSS var | Why it exists |
+|---|---|---|
+| `shadowColor` | `--shadow-color` | The **colour** of the shadow ramp, deliberately separate from `border`. A theme wanting a black border *and* a visible offset shadow (retroui's own does exactly this) cannot express it if shadow strings reference `var(--border)` — the shadow goes black and disappears. Shadow strings in the `shadows` group MUST use `var(--shadow-color)`. |
+| `primaryHover` | `--primary-hover` | retro's `installed/button.tsx` uses `hover:bg-primary-hover`. Without the field **and** the `--color-primary-hover` mapping in `globals.css`, that class emits no CSS and the hover silently never fires. |
+| `secondaryHover` | `--secondary-hover` | Same, for `hover:bg-secondary-hover`. |
+
+**The shadow ramp is scheme-agnostic; its colour is not.** `addShadowVars`
+(`utils/theme.ts`) applies one `shadows` map to both schemes by design — offsets and blur
+don't change between light and dark. Per-scheme shadow *colour* is achieved through
+`shadowColor` living in the per-scheme colour group, so `var(--shadow-color)` resolves
+differently in each. Do not "fix" `addShadowVars` to duplicate the ramp.
 
 ## Product Config Queries
 
