@@ -137,6 +137,21 @@ Use this framework when labeling new work. Do NOT call something a moat unless i
 
 ---
 
+## UI token roles (D-131)
+
+Vāda renders through `@atta/ui` and follows the repo-wide token-role doctrine:
+**`accent` is a surface, `primary` is the highlight.** The neobrutalist libraries use
+`bg-accent` as a full-opacity hover *fill*, so a theme cannot also make it a light text
+colour — on a dark background a fill must be dark and text must be light.
+
+Vāda's 12 highlight call sites (`bench/*`, `mcp/page.tsx`, `deliberation/[id]/components/*`,
+`_archived-science/[slug]`) moved from `text-accent`/`border-accent` to their `primary`
+equivalents, matching the shared `next-link` nav-hover and `Logo` wordmark. In
+`theme-kpop-demon-hunter` both tokens are bright (accent cyan, primary magenta), so this
+is a hue shift, not a contrast change. **New Vāda UI must use `text-primary` /
+`hover:text-primary` for emphasis and leave `bg-accent` to component hover fills** — see
+`.claude/skills/ui-theme-tokens/SKILL.md`.
+
 ## Locked Architectural Decisions
 
 D-### references below name their log: `vada-decisions.md` for Vāda-internal, `decisions.md` for global.

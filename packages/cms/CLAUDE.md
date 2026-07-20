@@ -203,11 +203,24 @@ interface CMSTheme {
     fontMono?: string    // e.g. "'DM Mono', monospace"
   }
   spacing?: { radius?: string; spacing?: string }
-  shadows?: Record<string, string>
+  shadows?: Record<string, string>   // RAMP only — colour comes from the per-scheme shadowColor
+  neobrutalist?: boolean             // tuned for retro/brutal: solid border + shadowColor
 }
 ```
 
 Colors are stored as plain hex or any CSS color format. `generateThemeCSSForScheme` converts them all to oklch.
+
+Three colour-group fields are not surfaces or inks — they exist because the vendored
+neobrutalist components reference them: `shadowColor` (`--shadow-color`, deliberately
+separate from `border` so a black border can still cast a visible shadow), and
+`primaryHover` / `secondaryHover` (retro's `installed/button.tsx` uses
+`hover:bg-primary-hover`, which emits no CSS at all without both the field and a
+`--color-*` mapping in `globals.css`).
+
+`neobrutalist` is not a colour — it records that a theme has been tuned for the
+`retro`/`brutal` libraries. Both theme pickers partition on it via `themesForLibrary()`
+/ `isThemeCompatible()` (`utils/theme-compatibility.ts`), in both directions. See
+`.claude/skills/ui-cms-theme/SKILL.md`.
 
 ---
 

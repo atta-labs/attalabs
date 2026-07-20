@@ -7,7 +7,7 @@
  * The Studio is a renderer — no check logic lives here.
  */
 
-import { Button } from '@atta/ui/components/button'
+import { Button } from '@atta/ui/components'
 import { AlertTriangle, CheckCircle2, RefreshCw, ShieldCheck, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import type { CheckResult, CoherenceResponse } from '../../../../../../api/coherence/route'

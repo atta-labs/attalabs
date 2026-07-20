@@ -22,10 +22,18 @@
  * are extracted verbatim from the gate's own `blockers` strings.
  *
  * States sharing a status token are graded by opacity, hue = family,
- * intensity = weight (Principal direction, 2026-07-05):
+ * intensity = weight (Principal direction, 2026-07-05). The bg opacity is on
+ * `badgeClass`, the border opacity on `accentClass` — badges no longer carry a
+ * `border-*` of their own, so the constant neobrutalist outline shows through
+ * (D-131):
  *   success:     Ready (/10 bg, /40 border) < Merged (/25, /70)
  *   destructive: Blocked · needs #N (/10, /40) < blocked (/20, /60)
  *                < incoherent (/30, /80)
+ *   primary:     In-flight (/10, /40) < In review (/25, /70)
+ *
+ * `in-review` graded into the primary family by D-131: it was `accent` on a
+ * separate hue, but `accent` is a fill token now and cannot be an ink, so the
+ * two lifecycle states separate by weight rather than by family.
  */
 
 import type { DerivedStatus, DispatchResult } from '@atta/aeg-core'
@@ -54,55 +62,55 @@ type StatusVisual = {
 const STATUS_VISUALS: Record<DerivedStatus, StatusVisual> = {
   backlog: {
     label: 'Backlog',
-    badgeClass: 'bg-muted/40 text-muted-foreground border-border',
+    badgeClass: 'bg-muted/40 text-muted-foreground',
     accentClass: 'border-border',
     description: 'Not dispatched yet.'
   },
   todo: {
     label: 'Todo',
-    badgeClass: 'bg-muted/40 text-foreground border-border',
+    badgeClass: 'bg-muted/40 text-foreground',
     accentClass: 'border-border',
     description: 'Assigned, awaiting branch.'
   },
   'in-flight': {
     label: 'In-flight',
-    badgeClass: 'bg-primary/15 text-primary border-primary/50',
-    accentClass: 'border-primary/50',
+    badgeClass: 'bg-primary/10 text-primary',
+    accentClass: 'border-primary/40',
     description: 'Branch open, no PR yet.'
   },
   'in-review': {
     label: 'In review',
-    badgeClass: 'bg-accent/15 text-accent border-accent/50',
-    accentClass: 'border-accent/50',
+    badgeClass: 'bg-primary/25 text-primary',
+    accentClass: 'border-primary/70',
     description: 'PR open, awaiting review.'
   },
   'changes-requested': {
     label: 'Changes requested',
-    badgeClass: 'bg-warning/10 text-warning border-warning/40',
+    badgeClass: 'bg-warning/10 text-warning',
     accentClass: 'border-warning/40',
     description: 'Reviewer asked for changes.'
   },
   merged: {
     label: 'Merged',
-    badgeClass: 'bg-success/25 text-success border-success/70',
+    badgeClass: 'bg-success/25 text-success',
     accentClass: 'border-success/70',
     description: 'PR merged.'
   },
   dropped: {
     label: 'Dropped',
-    badgeClass: 'bg-muted/40 text-muted-foreground border-border',
+    badgeClass: 'bg-muted/40 text-muted-foreground',
     accentClass: 'border-border',
     description: 'Issue closed NOT_PLANNED — legitimately abandoned. No action needed.'
   },
   incoherent: {
     label: 'Incoherent',
-    badgeClass: 'bg-destructive/30 text-destructive border-destructive/80',
+    badgeClass: 'bg-destructive/30 text-destructive',
     accentClass: 'border-destructive/80',
     description: 'Closed COMPLETED but no merged PR — governance signal broken. Needs human investigation.'
   },
   blocked: {
     label: 'Blocked',
-    badgeClass: 'bg-destructive/20 text-destructive border-destructive/60',
+    badgeClass: 'bg-destructive/20 text-destructive',
     accentClass: 'border-destructive/60',
     description: '`aeg:blocked` label set on the Issue.'
   }
@@ -142,14 +150,14 @@ export function todoDispatchVisual(result: DispatchResult): TodoDispatchVisual {
   if (result.ready) {
     return {
       label: 'Ready',
-      badgeClass: 'bg-success/10 text-success border-success/40',
+      badgeClass: 'bg-success/10 text-success',
       title: 'Dispatch gate passes — dispatchable right now.'
     }
   }
   const refs = extractBlockerRefs(result.blockers)
   return {
     label: refs.length > 0 ? `Blocked · needs ${refs.join(' ')}` : 'Blocked',
-    badgeClass: 'bg-destructive/10 text-destructive border-destructive/40',
+    badgeClass: 'bg-destructive/10 text-destructive',
     title: result.blockers.join('\n')
   }
 }

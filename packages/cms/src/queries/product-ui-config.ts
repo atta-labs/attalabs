@@ -9,7 +9,8 @@ const THEME_PROJECTION = `{
   dark,
   typography,
   spacing,
-  shadows
+  shadows,
+  neobrutalist
 }`
 
 const LIBRARY_PROJECTION = `{

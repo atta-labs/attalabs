@@ -1,6 +1,7 @@
 'use client'
 
 import type { CMSLibrary, CMSTheme } from '@atta/cms'
+import { isThemeCompatible, themesForLibrary } from '@atta/cms'
 import {
   Button,
   Select,
@@ -198,9 +199,35 @@ export function ThemesBrowseClient({
   const hasChanges =
     selectedId !== currentThemeId || selectedScheme !== currentColorScheme || selectedFontSans !== undefined
 
+  // Strict PARTITION (D-131): retro/brutal get only `neobrutalist` themes, the soft
+  // libraries only the rest — not a one-way filter. `selectedLibraryId` is a document
+  // id (`library-retro`); the helper accepts both that and the bare id.
+  const availableThemes = useMemo(() => themesForLibrary(themes, selectedLibraryId), [themes, selectedLibraryId])
+
   function handleLibrarySelect(libraryId: string) {
+    // The partition can be empty — flagging themes is a CMS decision, so unflagging the
+    // last one leaves a library with nothing to pair with. Refuse the switch rather than
+    // completing it and silently leaving an incompatible theme selected AND publishable.
+    const compatible = themesForLibrary(themes, libraryId)
+    const first = compatible[0]
+    if (!first) {
+      errorToast('No compatible themes', 'No theme is currently marked compatible with that library.')
+      return
+    }
+
     setSelectedLibraryId(libraryId)
     setLibrarySaved(false)
+
+    // Filtering the list stops NEW bad pairings; an already-selected theme would
+    // otherwise survive the switch.
+    if (
+      !isThemeCompatible(
+        themes.find((t) => t._id === selectedId),
+        libraryId
+      )
+    ) {
+      setSelectedId(first._id)
+    }
   }
 
   function handlePublishLibrary() {
@@ -308,7 +335,7 @@ export function ThemesBrowseClient({
           </div>
 
           <div className='flex-1 overflow-y-auto'>
-            {themes.map((theme) => {
+            {availableThemes.map((theme) => {
               const isSelected = selectedId === theme._id
               const isApplied = theme._id === currentThemeId
               const thisScheme = schemeByTheme[theme._id] ?? 'dark'

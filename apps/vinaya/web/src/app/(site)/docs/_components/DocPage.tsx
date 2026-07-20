@@ -93,7 +93,7 @@ const markdownComponents = {
   ),
   li: (props: React.HTMLAttributes<HTMLLIElement>) => <li className='leading-relaxed' {...props} />,
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
-    <blockquote className='my-6 border-l-2 border-accent/60 pl-4 text-muted-foreground italic' {...props} />
+    <blockquote className='my-6 border-l-2 border-primary/60 pl-4 text-muted-foreground italic' {...props} />
   ),
   // `Code`/`CodeBlock` from the cross-library contract, not local class
   // strings — their values were copied FROM this file when `vinaya-pages-v1`
@@ -114,7 +114,7 @@ const markdownComponents = {
     className ? <code className={className} {...props} /> : <Code {...props} />,
   pre: (props: React.HTMLAttributes<HTMLPreElement>) => <CodeBlock {...props} />,
   a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <NextLink href={href ?? '#'} variant='unstyled' className='text-accent underline-offset-4 hover:underline'>
+    <NextLink href={href ?? '#'} variant='unstyled' className='text-primary underline-offset-4 hover:underline'>
       {children}
     </NextLink>
   ),

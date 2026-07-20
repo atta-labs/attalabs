@@ -47,8 +47,15 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  /* retro's vendored installed/button.tsx uses hover:bg-primary-hover /
+     hover:bg-secondary-hover (retroui theme tokens). Without a --color-*
+     mapping Tailwind emits NO css for those classes and the hover silently
+     never fires. --color-shadow-color backs the shadow ramp's colour, which
+     is deliberately NOT --border (see packages/cms/src/utils/theme.ts). */
+  --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-hover: var(--secondary-hover);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
@@ -58,6 +65,8 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-border: var(--border);
+  --color-shadow-color: var(--shadow-color);
+
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-sidebar: var(--sidebar);
@@ -117,12 +126,4 @@
   .shadow-2xl { box-shadow: var(--shadow-2xl); }
 }
 
-/* Neobrutalist libraries require high-contrast borders so offset shadows and
-   thick outlines are visible. The compound [data-theme] attribute raises
-   specificity to 0-2-1, beating any per-page theme overlay that scopes
-   its dark block with :root[data-theme="dark"] at 0-2-0. */
-html[data-library="retro"][data-theme],
-html[data-library="brutal"][data-theme] {
-  --border: var(--foreground);
-}
 

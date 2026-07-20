@@ -36,7 +36,7 @@ export default function TheStudioPage() {
           <NextLink
             href='/docs'
             variant='unstyled'
-            className='inline-flex items-center gap-1.5 font-sans text-sm text-accent hover:underline'
+            className='inline-flex items-center gap-1.5 font-sans text-sm text-primary hover:underline'
           >
             The methodology docs are public — browse them at /docs
             <ArrowRight className='size-4' aria-hidden />

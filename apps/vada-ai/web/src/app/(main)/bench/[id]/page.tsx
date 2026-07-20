@@ -71,7 +71,7 @@ export default async function BenchRunDetailPage({ params }: { params: Promise<{
   return (
     <div className='space-y-8 max-w-5xl'>
       <div className='space-y-2'>
-        <Link href='/bench' className='text-xs text-muted-foreground hover:text-accent'>
+        <Link href='/bench' className='text-xs text-muted-foreground hover:text-primary'>
           ← Brokered Benchmark
         </Link>
         <h1 className='font-serif text-2xl font-semibold leading-snug'>{run.sessionTitle ?? run.prompt ?? id}</h1>

@@ -45,7 +45,7 @@ function FilterChip({ label, active, onToggle }: { label: string; active: boolea
       onClick={onToggle}
       aria-pressed={active}
       className={`h-7 font-mono text-xs ${
-        active ? 'border-accent bg-accent text-accent-foreground hover:bg-accent/90' : 'text-muted-foreground'
+        active ? 'border-primary bg-accent text-accent-foreground hover:bg-accent/90' : 'text-muted-foreground'
       }`}
     >
       {label}
@@ -163,7 +163,7 @@ export function BacklogTable({
       {/* Data table — header pins on scroll by default (`@atta/ui` Table). No
           `overflow-hidden` on the card: the pinned header must be free to stick to
           the Studio shell, and horizontal overflow must reach the shell to scroll. */}
-      <div className='rounded-lg border border-border bg-card'>
+      <div>
         <Table stickyHeader className='min-w-[720px] table-fixed'>
           <TableHeader>
             <TableRow>
@@ -191,7 +191,7 @@ export function BacklogTable({
                         href={issue.url}
                         target='_blank'
                         rel='noreferrer'
-                        className='whitespace-nowrap font-mono text-xs text-muted-foreground hover:text-accent hover:underline'
+                        className='whitespace-nowrap font-mono text-xs text-muted-foreground hover:text-primary hover:underline'
                       >
                         #{issue.number}
                       </a>
@@ -201,7 +201,7 @@ export function BacklogTable({
                         href={issue.url}
                         target='_blank'
                         rel='noreferrer'
-                        className='block break-words font-sans text-sm text-card-foreground hover:text-accent hover:underline'
+                        className='block break-words font-sans text-sm text-card-foreground hover:text-primary hover:underline'
                       >
                         {issue.title}
                       </a>

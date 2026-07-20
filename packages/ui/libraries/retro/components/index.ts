@@ -12,7 +12,8 @@ export { Code, CodeBlock } from '../../basic/components/display/code'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
 
 // Interactive — Tabs (flat upstream exports — no adapter needed)
-export { Tabs, TabsContent, TabsList, TabsTrigger } from '../installed/tabs'
+export { Tabs, TabsContent, TabsList } from '../installed/tabs'
+export { TabsTrigger } from './interactive/tabs'
 
 // Interactive — DropdownMenu
 export {

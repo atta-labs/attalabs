@@ -27,6 +27,8 @@ export interface CMSTheme {
   typography?: ThemeTypography
   spacing?: ThemeSpacing
   shadows?: Record<string, string>
+  /** Tuned for the retro/brutal libraries — solid border + shadowColor. Drives picker filtering. */
+  neobrutalist?: boolean
 }
 
 export type ColorScheme = 'dark' | 'light'
@@ -36,7 +38,10 @@ export const FIELD_TO_CSS_VAR: Record<string, string> = {
   cardForeground: 'card-foreground',
   popoverForeground: 'popover-foreground',
   primaryForeground: 'primary-foreground',
+  primaryHover: 'primary-hover',
   secondaryForeground: 'secondary-foreground',
+  secondaryHover: 'secondary-hover',
+  shadowColor: 'shadow-color',
   mutedForeground: 'muted-foreground',
   accentForeground: 'accent-foreground',
   destructiveForeground: 'destructive-foreground',

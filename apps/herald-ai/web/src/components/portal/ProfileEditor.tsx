@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react'
 import {
+  Badge,
   Button,
   Card,
   CardContent,
@@ -577,15 +578,11 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
           <div className='space-y-8'>
             <section>
               <Tabs value={summaryMode} onValueChange={(v) => setSummaryMode(v as 'edit' | 'preview')}>
-                <div className='mb-2 flex items-baseline justify-between'>
+                <div className='mb-2 flex items-center justify-between'>
                   <h2 className='font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground'>Summary</h2>
-                  <TabsList className='border-b-0'>
-                    <TabsTrigger value='edit' className='pb-1'>
-                      Edit
-                    </TabsTrigger>
-                    <TabsTrigger value='preview' className='pb-1'>
-                      Preview
-                    </TabsTrigger>
+                  <TabsList>
+                    <TabsTrigger value='edit'>Edit</TabsTrigger>
+                    <TabsTrigger value='preview'>Preview</TabsTrigger>
                   </TabsList>
                 </div>
                 <TabsContent value='edit' className='mt-0'>
@@ -634,9 +631,10 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                 }}
               >
                 {stackTags.map((tag) => (
-                  <span
+                  <Badge
                     key={tag}
-                    className='flex items-center gap-1 rounded border border-border px-2 py-0.5 font-mono text-xs text-foreground'
+                    variant='outline'
+                    className='flex h-auto items-center gap-1 px-2 py-0.5 font-mono text-xs text-foreground'
                   >
                     {tag}
                     <Button
@@ -648,7 +646,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                     >
                       <X className='h-3 w-3' />
                     </Button>
-                  </span>
+                  </Badge>
                 ))}
                 {!stackAtLimit && (
                   <Input

@@ -37,8 +37,10 @@ const COLOR_FIELDS = [
   { name: 'popoverForeground', title: 'Popover Foreground' },
   { name: 'primary', title: 'Primary' },
   { name: 'primaryForeground', title: 'Primary Foreground' },
+  { name: 'primaryHover', title: 'Primary Hover' },
   { name: 'secondary', title: 'Secondary' },
   { name: 'secondaryForeground', title: 'Secondary Foreground' },
+  { name: 'secondaryHover', title: 'Secondary Hover' },
   { name: 'muted', title: 'Muted' },
   { name: 'mutedForeground', title: 'Muted Foreground' },
   { name: 'accent', title: 'Accent' },
@@ -50,6 +52,7 @@ const COLOR_FIELDS = [
   { name: 'warning', title: 'Warning' },
   { name: 'warningForeground', title: 'Warning Foreground' },
   { name: 'border', title: 'Border' },
+  { name: 'shadowColor', title: 'Shadow Color' },
   { name: 'input', title: 'Input' },
   { name: 'ring', title: 'Ring' },
   { name: 'chart1', title: 'Chart 1' },
@@ -167,6 +170,15 @@ export const uiTheme = defineType({
     }),
 
     // Shadows
+    defineField({
+      name: 'neobrutalist',
+      title: 'Neobrutalist-ready',
+      type: 'boolean',
+      description:
+        'Tick when this theme has been tuned for the retro/brutal libraries: a SOLID border that contrasts with its own surfaces, plus a shadowColor. Those libraries draw a hard border and a hard offset shadow, so a theme with a faint alpha border renders effectively frameless there. The theme pickers use this to only offer compatible themes when a neobrutalist library is selected.',
+      initialValue: false,
+      group: 'colors'
+    }),
     defineField({
       name: 'shadows',
       title: 'Shadows',

@@ -13,7 +13,7 @@ import { Badge } from '@atta/ui/components'
 export type LabelKind = 'project' | 'tier' | 'status' | 'needs' | 'other'
 
 const KIND_CLASS: Record<LabelKind, string> = {
-  project: 'text-accent border-accent/40',
+  project: 'text-primary border-primary/40',
   tier: 'text-foreground border-border',
   status: 'text-primary border-primary/40',
   needs: 'text-warning border-warning/40',

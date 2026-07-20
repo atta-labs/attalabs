@@ -75,7 +75,7 @@ export function CenterViewport({
             {content}
             {isStreaming && (
               <motion.span
-                className='ml-0.5 inline-block text-accent'
+                className='ml-0.5 inline-block text-primary'
                 animate={{ opacity: [1, 0, 1] }}
                 transition={{ duration: 0.8, repeat: Number.POSITIVE_INFINITY }}
               >

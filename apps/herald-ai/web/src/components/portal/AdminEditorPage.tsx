@@ -1,7 +1,8 @@
 'use client'
 
 import type { CMSLibrary, CMSTheme } from '@atta/cms'
-import { Button, useToastContext } from '@atta/ui/components'
+import { isThemeCompatible, themesForLibrary } from '@atta/cms'
+import { Button, Card, useToastContext } from '@atta/ui/components'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { EnvoyPreview } from './EnvoyPreview'
 import { FontPicker } from './FontPicker'
@@ -101,9 +102,37 @@ export function AdminEditorPage({
     if (selectedTheme) sendThemePreview(selectedTheme, colorScheme, font)
   }
 
+  // `themesForLibrary` is a strict PARTITION, not a one-way filter: retro/brutal get
+  // only `neobrutalist` themes and the soft libraries get only the rest (D-131). A
+  // neobrutalist theme is legible under basic/animate but is built around a hard border
+  // and offset shadow those libraries never draw, so it reads as a washed-out version of
+  // itself.
+  const availableThemes = useMemo(() => themesForLibrary(themes, library), [themes, library])
+
   function handleLibraryChange(libraryId: string) {
+    // The partition can be empty — flagging themes is a CMS decision, so unflagging the
+    // last one leaves a library with nothing to pair with. Refuse the switch rather than
+    // completing it and silently leaving an incompatible theme selected AND publishable.
+    const compatible = themesForLibrary(themes, libraryId)
+    const first = compatible[0]
+    if (!first) {
+      errorToast('No compatible themes', 'No theme is currently marked compatible with that style.')
+      return
+    }
+
     setLibrary(libraryId)
     sendToPreviewRef.current?.({ type: 'PREVIEW_LIBRARY', library: libraryId })
+
+    // Filtering the list stops NEW bad pairings; an already-selected theme would
+    // otherwise survive the switch.
+    if (
+      !isThemeCompatible(
+        themes.find((t) => t._id === themeId),
+        libraryId
+      )
+    ) {
+      handleThemeSelect(first._id)
+    }
   }
 
   async function handleSave() {
@@ -139,11 +168,11 @@ export function AdminEditorPage({
           <section>
             <SectionLabel>Theme</SectionLabel>
             <div className='flex flex-col gap-2'>
-              {themes.map((theme) => {
+              {availableThemes.map((theme) => {
                 const isSelected = themeId === theme._id
                 const hasBoth = !!(theme.dark?.primary && theme.light?.primary)
                 return (
-                  <div
+                  <Card
                     key={theme._id}
                     role='button'
                     tabIndex={0}
@@ -151,8 +180,10 @@ export function AdminEditorPage({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') handleThemeSelect(theme._id)
                     }}
-                    className={`flex cursor-pointer items-center gap-2 rounded border p-2 text-left transition-colors ${
-                      isSelected ? 'border-foreground/40 bg-foreground/5' : 'border-border hover:bg-foreground/5'
+                    // flex-row: retro/brutal Card bases are `flex flex-col`, which
+                    // `items-center` does not override in tailwind-merge.
+                    className={`flex cursor-pointer flex-row items-center gap-2 p-2 text-left transition-colors ${
+                      isSelected ? 'bg-foreground/5' : 'hover:bg-foreground/5'
                     }`}
                   >
                     <ThemeSwatch theme={theme} scheme={isSelected ? colorScheme : 'dark'} />
@@ -166,13 +197,13 @@ export function AdminEditorPage({
                             key={s}
                             type='button'
                             variant='ghost'
-                            size='sm'
+                            size='xs'
                             onClick={(e) => {
                               e.stopPropagation()
                               setThemeId(theme._id)
                               handleSchemeToggle(theme._id, s)
                             }}
-                            className={`h-auto rounded px-1.5 py-0.5 font-mono text-xs uppercase tracking-[0.1em] transition-colors ${
+                            className={`font-mono uppercase tracking-[0.1em] transition-colors ${
                               isSelected && colorScheme === s
                                 ? 'bg-foreground text-background'
                                 : 'text-muted-foreground hover:text-foreground'
@@ -183,7 +214,7 @@ export function AdminEditorPage({
                         ))}
                       </div>
                     )}
-                  </div>
+                  </Card>
                 )
               })}
             </div>

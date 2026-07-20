@@ -36,7 +36,7 @@ export function SynthesisCard({ synthesisContent, allEntries, round }: Synthesis
               <button
                 type='button'
                 onClick={() => setExpanded(!expanded)}
-                className='text-[10px] uppercase tracking-wider  transition-colors hover:text-accent'
+                className='text-[10px] uppercase tracking-wider  transition-colors hover:text-primary'
               >
                 {expanded ? '▲ Hide' : '▼ All agents'}
               </button>

@@ -26,7 +26,7 @@ Sanity CMS
     ├── dark: Record<string, color>    # Dark scheme color tokens
     ├── typography: { fontSans, fontSerif, fontMono }
     ├── spacing: { radius, spacing }
-    └── shadows: { shadow, shadowMd, ... }
+    └── shadows: { shadow, shadowMd, ... }   # RAMP only — colour comes from --shadow-color
 
 @atta/cms package
 ├── queries/product-cms.ts         # getProductCms — config + branding, keyed by product
@@ -44,6 +44,54 @@ Sanity CMS
 ```
 
 ---
+
+### Colour-group fields that are not surfaces (D-131)
+
+Three fields in the `light`/`dark` colour groups do not name a surface or an ink. They
+exist because the vendored neobrutalist components reference them and the theme system
+previously could not express them:
+
+| Field | CSS var | Why it exists |
+|---|---|---|
+| `shadowColor` | `--shadow-color` | The **colour** of the shadow ramp, deliberately separate from `border`. A theme wanting a black border *and* a visible offset shadow (retroui's own does exactly this) cannot express it if shadow strings reference `var(--border)` — the shadow goes black and disappears. Shadow strings in the `shadows` group MUST use `var(--shadow-color)`. |
+| `primaryHover` | `--primary-hover` | retro's `installed/button.tsx` uses `hover:bg-primary-hover`. Without the field **and** the `--color-primary-hover` mapping in `globals.css`, that class emits no CSS and the hover silently never fires. |
+| `secondaryHover` | `--secondary-hover` | Same, for `hover:bg-secondary-hover`. |
+
+### Theme ↔ library compatibility (`neobrutalist`)
+
+`retro` and `brutal` draw a hard border AND a hard offset shadow on every surface.
+A theme tuned for the soft libraries typically ships a border at 0.14–0.20 alpha —
+fine under `basic`/`animate`, effectively **frameless** under a neobrutalist one,
+where the border IS the design. Before D-131 this was masked: `globals.css` forced
+`--border: var(--foreground)` for those two libraries, overriding whatever border a
+theme defined.
+
+`uiTheme.neobrutalist` (boolean) records that a theme has a solid border plus a
+`shadowColor`, i.e. that it survives that pairing. Both theme pickers — Herald's
+`/[username]/ui` editor and `tools/admin`'s themes page — filter on it via
+`themesForLibrary()` / `isThemeCompatible()` from `@atta/cms`
+(`utils/theme-compatibility.ts`), so selecting a neobrutalist library offers only
+tuned themes, and switching library re-selects a compatible theme rather than
+leaving a broken pairing in place.
+
+The two flagged themes are seeded by `packages/cms/scripts/seed-neobrutalist-themes.ts` (`bun run seed:neobrutalist-themes`), so their values are reproducible into a fresh dataset rather than living only in published documents.
+
+**The flag is explicit, never derived.** Deriving it from "has a `shadowColor`"
+would let a theme drift into the neobrutalist list because someone set an unrelated
+field, and the real requirement — a border solid enough to contrast with that
+theme's own surfaces — is a judgement call that a boolean records honestly.
+The filter is a strict **partition**, both directions: neobrutalist libraries offer
+only flagged themes, and `basic`/`animate` offer only the unflagged ones. A
+neobrutalist theme is legible under a soft library but is tuned for a hard border
+and offset shadow that those libraries never draw, so it reads as a washed-out
+version of itself. The two are distinct visual families, not a superset and a
+subset.
+
+**The shadow ramp is scheme-agnostic; its colour is not.** `addShadowVars`
+(`utils/theme.ts`) applies one `shadows` map to both schemes by design — offsets and blur
+don't change between light and dark. Per-scheme shadow *colour* is achieved through
+`shadowColor` living in the per-scheme colour group, so `var(--shadow-color)` resolves
+differently in each. Do not "fix" `addShadowVars` to duplicate the ramp.
 
 ## Product Config Queries
 

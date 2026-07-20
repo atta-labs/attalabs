@@ -48,7 +48,7 @@ const markdownComponents = {
   ),
   li: (props: React.HTMLAttributes<HTMLLIElement>) => <li className='leading-relaxed' {...props} />,
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
-    <blockquote className='my-4 border-l-2 border-accent/60 pl-4 text-muted-foreground italic' {...props} />
+    <blockquote className='my-4 border-l-2 border-primary/60 pl-4 text-muted-foreground italic' {...props} />
   ),
   code: (props: React.HTMLAttributes<HTMLElement>) => (
     <code className='rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.9em] text-foreground' {...props} />
@@ -57,7 +57,7 @@ const markdownComponents = {
     <pre className='my-4 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs text-foreground' {...props} />
   ),
   a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a className='text-accent underline-offset-4 hover:underline' rel='noreferrer' {...props} />
+    <a className='text-primary underline-offset-4 hover:underline' rel='noreferrer' {...props} />
   ),
   hr: (props: React.HTMLAttributes<HTMLHRElement>) => <hr className='my-6 border-border opacity-50' {...props} />,
   // Routed through the library-switchable Table set (not a raw <table>) so a
@@ -111,15 +111,15 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
   return (
     <div className='space-y-8'>
       <nav className='font-mono text-xs text-muted-foreground'>
-        <NextLink variant='unstyled' href='/studio/projects' className='hover:text-accent'>
+        <NextLink variant='unstyled' href='/studio/projects' className='hover:text-primary'>
           projects
         </NextLink>
         <span className='px-1.5 text-muted-foreground/60'>/</span>
-        <NextLink variant='unstyled' href={`/studio/projects/${project.name}`} className='hover:text-accent'>
+        <NextLink variant='unstyled' href={`/studio/projects/${project.name}`} className='hover:text-primary'>
           {project.name}
         </NextLink>
         <span className='px-1.5 text-muted-foreground/60'>/</span>
-        <NextLink variant='unstyled' href={iterationHref} className='hover:text-accent'>
+        <NextLink variant='unstyled' href={iterationHref} className='hover:text-primary'>
           {iteration.name || slug}
         </NextLink>
         <span className='px-1.5 text-muted-foreground/60'>/</span>
@@ -132,9 +132,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
           <Badge className={`${visual.badgeClass} font-mono text-[0.65rem] uppercase tracking-wider`}>
             {visual.label}
           </Badge>
-          {archived ? (
-            <Badge className='bg-muted/40 text-muted-foreground border-border'>Archived iteration</Badge>
-          ) : null}
+          {archived ? <Badge className='bg-muted/40 text-muted-foreground'>Archived iteration</Badge> : null}
         </div>
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>
           <span className='font-mono text-2xl text-muted-foreground'>{taskRow.id}</span>
@@ -267,7 +265,7 @@ function EdgeList({
             className={
               blocking
                 ? 'rounded border border-warning/40 bg-warning/10 px-1.5 py-px font-mono text-[0.65rem] text-warning hover:border-warning'
-                : 'rounded border border-border bg-muted/30 px-1.5 py-px font-mono text-[0.65rem] text-muted-foreground hover:border-accent hover:text-accent'
+                : 'rounded border border-border bg-muted/30 px-1.5 py-px font-mono text-[0.65rem] text-muted-foreground hover:border-primary hover:text-primary'
             }
           >
             {id}
@@ -289,7 +287,7 @@ function LinksPanel({ issueUrl, brief }: { issueUrl: string | null; brief: PullR
               href={issueUrl}
               target='_blank'
               rel='noreferrer'
-              className='inline-flex items-center gap-2 text-foreground hover:text-accent'
+              className='inline-flex items-center gap-2 text-foreground hover:text-primary'
             >
               <CircleDot className='size-4 text-muted-foreground' aria-hidden />
               <span>Issue</span>
@@ -308,7 +306,7 @@ function LinksPanel({ issueUrl, brief }: { issueUrl: string | null; brief: PullR
               href={brief.url}
               target='_blank'
               rel='noreferrer'
-              className='inline-flex items-center gap-2 text-foreground hover:text-accent'
+              className='inline-flex items-center gap-2 text-foreground hover:text-primary'
             >
               <GitPullRequest className='size-4 text-muted-foreground' aria-hidden />
               <span>Pull request #{brief.number}</span>

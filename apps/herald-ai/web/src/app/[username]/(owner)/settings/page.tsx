@@ -60,7 +60,7 @@ export default async function CandidateSettingsPage({ searchParams }: { searchPa
     // and (app)/layout.tsx's `<main flex-1 overflow-hidden>` clipped content
     // with no scrollable element in between (api-keys tab list got cut off).
     <CatalogProvider catalog={catalog} className='h-full overflow-y-auto'>
-      <div className='mx-auto max-w-[700px] px-6 py-8'>
+      <div className='mx-auto w-full max-w-3xl px-6 py-8'>
         <div className='mb-8 flex items-center justify-between gap-4'>
           <div>
             <h1 className='font-serif text-xl tracking-tight'>Settings</h1>

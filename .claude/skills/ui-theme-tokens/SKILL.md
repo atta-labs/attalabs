@@ -23,9 +23,13 @@ If the color you want is not in the list, it does not exist. Pick the closest se
 
 ---
 
-## Token Role Doctrine
+## Token Roles — the canonical reference
 
-The token list is the *vocabulary*. This section is the *grammar*. Every token has exactly one role. Picking by role — not by "which color looks nicest in the current theme" — is what makes the system survive theme changes.
+**This is the single source of truth for what every token means.** Later sections
+(Decision Tree, Forbidden/Correct Patterns) are lookups and worked examples — when they
+disagree with these tables, these tables win, and the other section is the bug.
+
+Every token has exactly one role. Picking by role — not by "which color looks nicest in the current theme" — is what makes the system survive theme changes.
 
 ### Surface roles (where things sit)
 
@@ -54,7 +58,7 @@ Each text token is calibrated against a specific surface. Using the wrong pairin
 | `popover-foreground` | **Floating ink** | `popover` | Text inside popovers/menus/tooltips. |
 | `secondary-foreground` | **Frame ink** | `secondary` | Text on `secondary` surfaces (topbar labels, toolbar buttons). **Do not use this as free-floating "metadata text" on a `background` surface** — its contrast is calibrated against `secondary`, not `background`. |
 | `primary-foreground` | **CTA ink** | `primary` | Text on `primary` fills (button labels, badge text on primary backgrounds). |
-| `accent-foreground` | **Highlight ink** | `accent` | Text on `accent` fills. |
+| `accent-foreground` | **Fill ink** | `accent` | Text on `accent` fills. (Named "highlight ink" before D-131, when `accent` was still a highlight; it is a fill now.) |
 | `destructive-foreground` | **Error fill ink** | `destructive` | Text on `destructive` fills. Note: `destructive` text on a non-destructive surface uses `text-destructive` directly (see status section). |
 
 **Rule of thumb:** if you wrote `bg-X`, the matching text token is `text-X-foreground`. If you wrote `bg-background` or no surface at all, your text choices are `foreground` or `muted-foreground`.
@@ -64,38 +68,30 @@ Each text token is calibrated against a specific surface. Using the wrong pairin
 | Token | Role | Use for |
 |---|---|---|
 | `primary` | **Action / Selected** | Primary CTAs, the active item in a nav, the selected item in a list, in-progress informational state that needs visual weight. The "this is where the user is / what the user does next" color. |
-| `accent` | **Hover / Highlight / Emphasis** | Hover surfaces on interactive elements, decorative highlights, soft emphasis on a small number of high-meaning inline tokens. The "this is reactive / this is special" color. |
+| `accent` | **Hover FILL (a surface)** | The background a component paints on hover — `bg-accent`, `hover:bg-accent`. It is a *surface*, not an ink: under retro/brutal it is the fill behind a row, a ghost button, a menu item. Never `text-accent` / `hover:text-accent` / `border-accent` (D-131). |
 
-**`primary` vs `accent` discipline:**
-
-- `primary` is for things the user **acts on or has selected**. It's a commitment. One or two `primary` elements per view, max.
-- `accent` is for things the UI **reacts to or wants to emphasize**. It's a touch. Use it more freely, but stay restrained — accent everywhere is accent nowhere.
-- If you're tempted to introduce a third brand color: don't. Use `accent` with an opacity modifier (`bg-accent/20`) or fall back to `muted` / `muted-foreground`.
-
-**Hover and active state patterns** (apply consistently across the codebase):
-
-```tsx
-// Interactive surface (button, list item, nav item)
-<button className='bg-card hover:bg-accent text-card-foreground hover:text-accent-foreground' />
-
-// Selected / active item — primary holds, accent does not
-<button className='bg-primary text-primary-foreground' />        // when selected
-<button className='hover:bg-accent hover:text-accent-foreground' /> // when hovered
-
-// Soft hover (preferred for dense lists where full accent fill is too loud)
-<button className='hover:bg-accent/20' />
-
-// Text-only link / inline action
-<a className='text-foreground hover:text-accent' />
-
-// Ghost button on a card
-<button className='bg-transparent hover:bg-accent/10 text-card-foreground hover:text-accent-foreground' />
-
-// Border emphasis on hover (no fill)
-<div className='border border-border hover:border-accent' />
-```
-
-The principle: **hover always reaches for `accent`** (or `accent` with opacity). **Selected/active always reaches for `primary`.** Never the reverse. Never a Tailwind palette color.
+> ### THE FILL/HIGHLIGHT SPLIT (D-131) — stated once, here
+>
+> **`accent` paints backgrounds. `primary` colours text and borders.**
+>
+> | You are styling | Token |
+> |---|---|
+> | a hover **fill** (row, ghost button, menu item) | `bg-accent` / `hover:bg-accent` + `text-accent-foreground` |
+> | a selected/active **fill** | `bg-primary` + `text-primary-foreground` |
+> | **text** emphasis or a link hover | `text-primary` / `hover:text-primary` |
+> | a **border** highlight | `hover:border-primary` / `group-hover:border-primary` |
+>
+> **Why it cannot be one token.** The neobrutalist libraries paint `bg-accent` at full
+> opacity (retro's `installed/table.tsx` row hover, Button `ghost`, dropdown items);
+> retroui's own `--accent` is `#38342b`, a dark surface one step above its card. On a dark
+> background a fill must be *dark* and an ink must be *light* — measured, there is no
+> overlapping value. It is a role conflict, not a tuning problem.
+>
+> **Do not bridge it with opacity** (`bg-accent/15`). That fakes a token that should
+> exist, and the fill belongs to the component, not the call site.
+>
+> Discipline, unchanged: `primary` is a commitment — one or two per view. Wanting a third
+> brand colour means reaching for `muted` / `muted-foreground`, not inventing one.
 
 ### Status roles
 
@@ -132,8 +128,11 @@ Status tokens describe **outcome semantics**, not aesthetic mood. Don't use `suc
 |---|---|---|
 | `border` | **Default divider/outline** | All borders unless emphasized. Card outlines, input borders, dividers, list separators. |
 | `ring` | **Focus** | Keyboard focus rings (`focus-visible:ring-ring`). Never used decoratively. |
-| `accent` | **Emphasized border** | Hover/selected borders (`hover:border-accent`, `data-[selected=true]:border-accent`). |
+| `primary` | **Emphasized border** | Hover/selected borders — see Brand / Interactive above. |
 | status tokens | **State borders** | `border-success/40`, `border-destructive/40` for status-tagged containers. |
+| `shadow-color` | **Shadow colour** | The colour of the theme's offset/drop shadows, **deliberately separate from `border`**. The neobrutalist libraries draw a hard offset shadow next to a hard border; a theme wanting a black border but a visible mid-tone shadow cannot express that if its shadow strings reference `var(--border)` — the shadow goes black and disappears. CMS shadow strings MUST use `var(--shadow-color)`. |
+| `primary-hover` | **Fill hover** | Hover fill for `primary`-filled controls. retro's vendored `installed/button.tsx` ships `hover:bg-primary-hover`; without the token *and* a `--color-primary-hover` mapping in `globals.css` that class emits **no CSS at all** and the hover silently never fires. |
+| `secondary-hover` | **Fill hover** | Same, for `secondary`-filled controls (`hover:bg-secondary-hover`). |
 
 ### Sidebar role family
 
@@ -149,62 +148,6 @@ Used **only** by the actual sidebar component. Do not pull these into other chro
 | `sidebar-ring` | Sidebar focus ring |
 
 ---
-
-## The Complete Token List
-
-All tokens below are exposed as Tailwind utilities. For any token `X`, you can use `bg-X`, `text-X`, `border-X`, `ring-X`, and opacity variants like `border-X/40`, `bg-X/10`.
-
-### Surfaces
-
-| Token | Use for |
-|-------|---------|
-| `background` | Page canvas |
-| `foreground` | Primary text on canvas |
-| `secondary` | Structural chrome (topbar, toolbar, footer, tab strip) |
-| `secondary-foreground` | Text on secondary chrome |
-| `card` | Card / panel surfaces |
-| `card-foreground` | Text on card surfaces |
-| `popover` | Popovers, menus, tooltips |
-| `popover-foreground` | Text inside popovers |
-| `muted` | Recessed fills (chips, inactive controls, table zebra) |
-| `muted-foreground` | Quiet ink (metadata, helpers, placeholders) |
-| `input` | Input field background |
-
-### Brand / Interactive
-
-| Token | Use for |
-|-------|---------|
-| `primary` | Action / selected / weighted info |
-| `primary-foreground` | Text on `primary` |
-| `accent` | Hover / highlight / inline emphasis |
-| `accent-foreground` | Text on `accent` |
-
-### Status
-
-| Token | Use for |
-|-------|---------|
-| `success` | Positive outcome |
-| `warning` | Needs attention |
-| `destructive` | Failure / destructive action |
-| `destructive-foreground` | Text on `destructive` fills |
-
-### Chrome
-
-| Token | Use for |
-|-------|---------|
-| `border` | Dividers, card outlines, input borders |
-| `ring` | Focus ring |
-
-### Sidebar
-
-| Token | Use for |
-|-------|---------|
-| `sidebar` | Sidebar background |
-| `sidebar-foreground` | Sidebar text |
-| `sidebar-primary` / `sidebar-primary-foreground` | Sidebar active item |
-| `sidebar-accent` / `sidebar-accent-foreground` | Sidebar hover / highlight |
-| `sidebar-border` | Sidebar dividers |
-| `sidebar-ring` | Sidebar focus ring |
 
 ### Chart / multi-series
 
@@ -286,8 +229,13 @@ Cascades from the nearest `[data-agent="..."]` ancestor into `--agent-color`. Us
 // ❌ Status token used for mood, not outcome
 <div className='text-success'>Welcome back!</div>            // not an outcome — use foreground
 
-// ❌ Hover reaching for primary (reserved for selected/active)
-<button className='hover:bg-primary' />                       // use hover:bg-accent
+// ❌ Hover FILL reaching for primary
+<button className='hover:bg-primary' />                       // fills use hover:bg-accent
+
+// ❌ accent used as an ink — it is a fill (see THE FILL/HIGHLIGHT SPLIT)
+<a className='hover:text-accent' />                           // use hover:text-primary
+<div className='hover:border-accent' />                       // use hover:border-primary
+<span className='text-accent' />                              // use text-primary
 
 // ❌ Sidebar tokens leaking into non-sidebar chrome
 <header className='bg-sidebar text-sidebar-foreground' />    // use bg-secondary text-secondary-foreground
@@ -308,10 +256,10 @@ Cascades from the nearest `[data-agent="..."]` ancestor into `--agent-color`. Us
 <Button className='bg-primary text-primary-foreground'>Deliberate</Button>
 <NavItem className='data-[active=true]:bg-primary data-[active=true]:text-primary-foreground' />
 
-// ✅ Accent for hover / highlight / inline emphasis
+// ✅ accent = the hover FILL; primary = the ink/border highlight
 <button className='bg-card hover:bg-accent text-card-foreground hover:text-accent-foreground' />
-<a className='text-foreground hover:text-accent'>Read more</a>
-<span className='text-accent font-serif'>deliberation</span>  // sparingly: 1–2 emphases per view
+<a className='text-foreground hover:text-primary'>Read more</a>
+<span className='text-primary font-serif'>deliberation</span>  // sparingly: 1–2 emphases per view
 
 // ✅ Soft hover for dense lists
 <li className='hover:bg-accent/10' />
@@ -331,7 +279,7 @@ Cascades from the nearest `[data-agent="..."]` ancestor into `--agent-color`. Us
 <input className='focus-visible:ring-2 focus-visible:ring-ring' />
 
 // ✅ Border emphasis on hover
-<div className='border border-border hover:border-accent transition-colors' />
+<div className='border border-border hover:border-primary transition-colors' />
 ```
 
 ---
@@ -356,7 +304,7 @@ When unsure, walk this tree top-down. The first match wins.
 
 3. **Is this an interactive state?**
    - Default rest state → the surface's normal token
-   - Hover → `accent` (or `accent/10`/`accent/20` for soft)
+   - Hover → see **THE FILL/HIGHLIGHT SPLIT**: fill = `accent`, text/border = `primary`
    - Selected / active / current → `primary`
    - Focus ring → `ring`
    - Disabled → `muted` background + `muted-foreground` text
@@ -370,7 +318,7 @@ When unsure, walk this tree top-down. The first match wins.
 
 5. **Is this a border?**
    - Default → `border`
-   - Hover/selected emphasis → `accent`
+   - Hover/selected emphasis → `primary` (see THE FILL/HIGHLIGHT SPLIT)
    - Status-tagged → `success/40` / `warning/40` / `destructive/40`
    - Focus → `ring`
 

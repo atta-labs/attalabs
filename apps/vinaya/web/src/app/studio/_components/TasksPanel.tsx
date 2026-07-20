@@ -65,7 +65,7 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
               onClick={() => toggle(category)}
               aria-pressed={active}
               className={`h-7 font-mono text-xs ${
-                active ? 'border-accent bg-accent text-accent-foreground hover:bg-accent/90' : 'text-muted-foreground'
+                active ? 'border-primary bg-accent text-accent-foreground hover:bg-accent/90' : 'text-muted-foreground'
               }`}
             >
               {CATEGORY_LABEL[category]}
@@ -100,7 +100,7 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
                       href={task.issueUrl}
                       target='_blank'
                       rel='noreferrer'
-                      className='shrink-0 text-muted-foreground hover:text-accent hover:underline'
+                      className='shrink-0 text-muted-foreground hover:text-primary hover:underline'
                     >
                       #{task.issue}
                     </a>
@@ -122,7 +122,7 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
                       <NextLink
                         variant='unstyled'
                         href={task.iterationHref}
-                        className='hover:text-accent hover:underline'
+                        className='hover:text-primary hover:underline'
                       >
                         {task.iterationSlug}
                       </NextLink>
