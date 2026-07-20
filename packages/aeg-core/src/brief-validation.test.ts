@@ -19,6 +19,7 @@ import {
   checkWorktreeStep0,
   headerRegion
 } from './brief-validation'
+import { EOLS, FENCE_DELIMS, fenceShapes } from './fixtures/fence-shapes'
 import { readTierFromPrBody } from './pr-tier'
 
 const WELL_FORMED = `
@@ -224,6 +225,205 @@ describe('checkClosesN', () => {
   })
   it('fails when missing', () => {
     expect(checkClosesN('no closes reference').status).toBe('fail')
+  })
+  it("fails a body whose only Closes #N is inside an inline code span — GitHub won't auto-close it", () => {
+    const result = checkClosesN('Summary of the change. The bug: `Closes #5` was backticked.')
+    expect(result.status).toBe('fail')
+    expect(result.errors[0]).toContain('only inside a code span')
+  })
+  it('fails a body whose only Closes #N is inside a fenced block', () => {
+    const result = checkClosesN('Summary.\n\n```\nCloses #5\n```\n')
+    expect(result.status).toBe('fail')
+    expect(result.errors[0]).toContain('only inside a code span')
+  })
+  it('passes a bare Closes #N in prose', () => {
+    expect(checkClosesN('Ships the fix. Closes #5').status).toBe('pass')
+  })
+  it('passes a bare Closes #N inside the AEG:CLOSES anchor', () => {
+    const body = 'Summary.\n\n<!-- AEG:CLOSES:START -->\nCloses #5\n<!-- AEG:CLOSES:END -->\n'
+    expect(checkClosesN(body).status).toBe('pass')
+  })
+  it('passes when a fenced example Closes #99 sits alongside a real bare Closes #5', () => {
+    const body = 'Ships it. Closes #5\n\n```\nExample: Closes #99\n```\n'
+    expect(checkClosesN(body).status).toBe('pass')
+  })
+  it('fails a double-backtick-only Closes #N — GitHub sees a code span (PR #617 review)', () => {
+    const result = checkClosesN('See ``Closes #5`` here.')
+    expect(result.status).toBe('fail')
+    expect(result.errors[0]).toContain('only inside a code span')
+  })
+  it('fails a triple-backtick inline-only Closes #N', () => {
+    expect(checkClosesN('Ref: ```Closes #5``` inline.').status).toBe('fail')
+  })
+  it('does not over-strip a bare Closes #N sitting between two inline code spans', () => {
+    // The lazy matched-run rule must close each span at its own delimiter,
+    // never swallow the bare reference between them.
+    expect(checkClosesN('Use `a` then Closes #5 and `b`.').status).toBe('pass')
+  })
+  it('accepts the closed/fixed/resolved past-tense keywords (GitHub keyword set)', () => {
+    for (const phrase of ['Closed #5', 'Fixed #5', 'Resolved #5']) {
+      expect(checkClosesN(phrase).status).toBe('pass')
+    }
+  })
+
+  // ---- indented code blocks (PR #617 review, MINOR) ----
+  it('fails a Closes #N that lives only in a 4-space indented code block', () => {
+    const result = checkClosesN('Summary of the change.\n\n    Closes #5\n')
+    expect(result.status).toBe('fail')
+    expect(result.errors[0]).toContain('only inside a code span')
+  })
+  it('fails a Closes #N in a tab-indented code block', () => {
+    expect(checkClosesN('Summary.\n\n\tCloses #5\n').status).toBe('fail')
+  })
+  it('fails only the indented copy — a real bare Closes #5 alongside it still passes', () => {
+    expect(checkClosesN('Ships it. Closes #5\n\n    Example: Closes #99\n').status).toBe('pass')
+  })
+  it('strips a multi-line indented block, not just its first line', () => {
+    expect(checkClosesN('Summary.\n\n    line one\n    Closes #5\n').status).toBe('fail')
+  })
+
+  // ---- over-strip guards: these must NOT be treated as code ----
+  it('does NOT strip an indented Closes #N that is list-item continuation', () => {
+    // 4-space indent under a list marker is list content, not code — GitHub
+    // auto-closes it, so the gate must too.
+    expect(checkClosesN('- item\n\n    Closes #5\n').status).toBe('pass')
+  })
+  it('does NOT strip an indented line that merely continues a paragraph', () => {
+    // No blank line before it => cannot be an indented code block.
+    expect(checkClosesN('Some running prose\n    Closes #5\n').status).toBe('pass')
+  })
+  it('resumes stripping after the list context closes at column 0', () => {
+    expect(checkClosesN('- item\n\nBack to prose.\n\n    Closes #5\n').status).toBe('fail')
+  })
+
+  // ---- fenced blocks: character + run length (PR #617 security pass, MEDIUM) ----
+  it('fails a Closes #N inside a tilde fence', () => {
+    expect(checkClosesN('~~~\nCloses #5\n~~~').status).toBe('fail')
+  })
+  it('fails a Closes #N inside a tilde fence carrying an info string', () => {
+    expect(checkClosesN('~~~js\nCloses #5\n~~~').status).toBe('fail')
+  })
+  it('fails a Closes #N inside a six-backtick fence (run-length leak)', () => {
+    expect(checkClosesN('``````\nCloses #5\n``````').status).toBe('fail')
+  })
+  it('fails a Closes #N inside a backtick fence with an info string', () => {
+    expect(checkClosesN('```js\nCloses #5\n```').status).toBe('fail')
+  })
+  it('fails a Closes #N after an unclosed fence — GitHub renders it as code too', () => {
+    expect(checkClosesN('Summary.\n\n```\nCloses #5\n').status).toBe('fail')
+  })
+  it('does not let a short closing run terminate a longer fence', () => {
+    // ``` cannot close ````` — the Closes stays inside the block.
+    expect(checkClosesN('`````\nCloses #5\n```\n').status).toBe('fail')
+  })
+  it('still treats a same-line triple-backtick as an inline span, not a fence', () => {
+    expect(checkClosesN('Ref ```Closes #5``` inline.').status).toBe('fail')
+  })
+  it('keeps a real bare Closes #5 that sits outside a tilde fence', () => {
+    expect(checkClosesN('Ships it. Closes #5\n\n~~~\nExample: Closes #99\n~~~\n').status).toBe('pass')
+  })
+})
+
+/**
+ * Exhaustive fence matrix — {backtick, tilde} × {3,4,6} × {LF, CRLF} ×
+ * {closed, unclosed} × {info string, none}, plus the closer-length rules.
+ *
+ * Three successive fence bugs (double-backtick spans, then tilde/run-length,
+ * then CRLF) each shipped a fix whose tests covered only the axis just
+ * reported, leaving the next axis to be found in review. This table exists so
+ * the axes are enumerated rather than discovered one incident at a time — add
+ * a dimension here, not another one-off `it`.
+ */
+describe('checkClosesN — fence matrix', () => {
+  // Shapes come from the shared enumeration (`fixtures/fence-shapes.ts`), not a
+  // local table: `anchored-region.test.ts` iterates the same list against
+  // `maskCode`, so a dimension added there covers both consumers at once.
+  for (const { name, open, close, eol } of fenceShapes()) {
+    it(`${name}: closed fence hides Closes #5`, () => {
+      expect(checkClosesN(['Summary.', '', open, 'Closes #5', close, ''].join(eol)).status).toBe('fail')
+    })
+
+    it(`${name}: unclosed fence hides Closes #5 to EOF`, () => {
+      expect(checkClosesN(['Summary.', '', open, 'Closes #5'].join(eol)).status).toBe('fail')
+    })
+
+    it(`${name}: a real bare Closes #5 outside the fence still passes`, () => {
+      const body = ['Ships it. Closes #5', '', open, 'Example: Closes #99', close, ''].join(eol)
+      expect(checkClosesN(body).status).toBe('pass')
+    })
+
+    it(`${name}: a longer closer still closes the fence`, () => {
+      const longer = close[0]?.repeat(close.length + 2) as string
+      const body = ['Ships it. Closes #5', '', open, 'x', longer, '', 'tail'].join(eol)
+      expect(checkClosesN(body).status).toBe('pass')
+    })
+  }
+
+  // Rules below are properties of the fence *scanner* rather than of a shape,
+  // so they stay here rather than multiplying the shared matrix.
+  for (const [eolName, eol] of EOLS) {
+    for (const [fenceName, ch] of FENCE_DELIMS) {
+      it(`${eolName}/${fenceName}: a shorter run cannot close a longer fence`, () => {
+        const body = ['Summary.', '', ch.repeat(5), 'Closes #5', ch.repeat(3), ''].join(eol)
+        expect(checkClosesN(body).status).toBe('fail')
+      })
+
+      it(`${eolName}/${fenceName}: fence indented up to 3 spaces still opens`, () => {
+        const body = ['Summary.', '', `   ${ch.repeat(3)}`, 'Closes #5', `   ${ch.repeat(3)}`, ''].join(eol)
+        expect(checkClosesN(body).status).toBe('fail')
+      })
+    }
+
+    it(`${eolName}: same-line triple backticks stay an inline span, not a fence`, () => {
+      expect(checkClosesN(['Ref ```Closes #5``` inline.'].join(eol)).status).toBe('fail')
+    })
+
+    it(`${eolName}: bare Closes #5 in the AEG:CLOSES anchor passes`, () => {
+      const body = ['<!-- AEG:CLOSES:START -->', 'Closes #5', '<!-- AEG:CLOSES:END -->'].join(eol)
+      expect(checkClosesN(body).status).toBe('pass')
+    })
+
+    it(`${eolName}: indented code block hides Closes #5`, () => {
+      expect(checkClosesN(['Summary.', '', '    Closes #5', ''].join(eol)).status).toBe('fail')
+    })
+
+    it(`${eolName}: list-continuation Closes #5 is NOT treated as code`, () => {
+      expect(checkClosesN(['- item', '', '    Closes #5', ''].join(eol)).status).toBe('pass')
+    })
+  }
+})
+
+/**
+ * Separator bound — `\s{0,8}` replaced `\s*` to kill the quadratic backtrack
+ * two adjacent unbounded `\s*` groups produce (PR #617 security LOW). These
+ * pin both halves of the trade: every realistic separator still matches, and
+ * the pathological body no longer costs seconds.
+ */
+describe('checkClosesN — separator bound', () => {
+  it.each([
+    ['no separator', 'Closes#5'],
+    ['single space', 'Closes #5'],
+    ['colon', 'Closes: #5'],
+    ['colon, no space', 'Closes:#5'],
+    ['newline', 'Closes\n#5'],
+    ['eight spaces (the bound)', `Closes${' '.repeat(8)}#5`]
+  ])('accepts %s', (_name, body) => {
+    expect(checkClosesN(body).status).toBe('pass')
+  })
+
+  it('rejects a separator past the bound rather than scanning unboundedly', () => {
+    expect(checkClosesN(`Closes${' '.repeat(40)}#5`).status).toBe('fail')
+  })
+
+  it('scans a 65k adversarial body in well under a second', () => {
+    // GitHub's body cap is 65,536 chars. `closes` + all-whitespace + no `#` is
+    // the worst case: pre-bound this measured ~2.65s, and `checkClosesN` runs
+    // the pattern twice on the fail path. Threshold is ~5x the observed
+    // post-fix time, so it flags a reintroduced backtrack, not runner jitter.
+    const body = `closes${' '.repeat(65_536)}`
+    const started = performance.now()
+    expect(checkClosesN(body).status).toBe('fail')
+    expect(performance.now() - started).toBeLessThan(500)
   })
 })
 

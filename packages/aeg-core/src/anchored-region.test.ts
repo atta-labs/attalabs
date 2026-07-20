@@ -3,9 +3,10 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { anchoredRegion } from './anchored-region'
-import { buildProvenanceBlock, type MergedPrFacts } from './archive-task'
-import { checkProjectField } from './brief-validation'
-import { checkClosesN, type IterationFile } from './coherence-checks'
+import { buildProvenanceBlock, extractIssue, type MergedPrFacts } from './archive-task'
+import { checkClosesN as checkClosesNField, checkProjectField } from './brief-validation'
+import { checkClosesN, extractClosesReferences, type IterationFile } from './coherence-checks'
+import { fenceShapes } from './fixtures/fence-shapes'
 import { readTierFromPrBody } from './pr-tier'
 import { parsePremiseBlock } from './premise-check'
 import { locateTestPlanSection } from './test-plan-section'
@@ -343,5 +344,140 @@ describe('template-shaped body — anchored report above a <details>-wrapped bri
   it('the raw body still carries the full reference-brief text for provenance greps', () => {
     // The <details> wrap hides nothing from raw-body consumers.
     expect(body).toContain('decoy brief text')
+  })
+})
+
+/**
+ * `maskCode` runs *upstream* of `stripCode` — `anchoredRegion` picks the region
+ * before any consumer strips it — so a decoy anchor the mask cannot see wins
+ * outright, and the gate resolves a **wrong** Issue number rather than none.
+ * `maskCode` sat on the naive fence/inline regexes for the whole life of this
+ * PR while `stripCode` was hardened three times (PR #617 review BLOCKER). These
+ * cases pin the mask to the same grammar, across every anchor field, and pin
+ * the over-strip direction too: a real anchor must survive every shape below.
+ */
+describe('maskCode / stripCode grammar parity (PR #617 review BLOCKER)', () => {
+  const decoyBody = (open: string, close: string, eol = '\n') =>
+    [
+      '## Summary',
+      '',
+      'Example of the anchor shape:',
+      '',
+      open,
+      '<!-- AEG:CLOSES:START -->',
+      'Closes #123',
+      '<!-- AEG:CLOSES:END -->',
+      '<!-- AEG:TIER:START -->',
+      '**Tier:** 3',
+      '<!-- AEG:TIER:END -->',
+      close,
+      '',
+      '<!-- AEG:CLOSES:START -->',
+      'Closes #616',
+      '<!-- AEG:CLOSES:END -->',
+      '<!-- AEG:TIER:START -->',
+      '**Tier:** 1',
+      '<!-- AEG:TIER:END -->',
+      ''
+    ].join(eol)
+
+  // The same shared enumeration `brief-validation.test.ts` runs against
+  // `stripCode` — one matrix, both consumers (PR #617 review finding 3). The
+  // BLOCKER existed precisely because this file's fence coverage was
+  // backtick-only while the other file's had grown three more dimensions.
+  for (const { name, open, close, eol } of fenceShapes()) {
+    it(`${name}: a decoy anchor inside the fence loses to the real one`, () => {
+      const body = decoyBody(open, close, eol)
+      expect([...extractClosesReferences(body)]).toEqual([616])
+      expect(readTierFromPrBody(body)).toBe(1)
+    })
+  }
+
+  it('a decoy anchor in a double-backtick inline span loses to the real one', () => {
+    const body =
+      'See ``<!-- AEG:CLOSES:START -->Closes #123<!-- AEG:CLOSES:END -->`` for shape.\n\n<!-- AEG:CLOSES:START -->\nCloses #616\n<!-- AEG:CLOSES:END -->\n'
+    expect([...extractClosesReferences(body)]).toEqual([616])
+  })
+
+  it('a decoy anchor in an indented code block loses to the real one', () => {
+    const body =
+      'Shape:\n\n    <!-- AEG:CLOSES:START -->\n    Closes #123\n    <!-- AEG:CLOSES:END -->\n\n<!-- AEG:CLOSES:START -->\nCloses #616\n<!-- AEG:CLOSES:END -->\n'
+    expect([...extractClosesReferences(body)]).toEqual([616])
+  })
+
+  // Over-strip is the worse failure (a false-red on an honest body, the brief's
+  // §10 stop condition), so every shape a real anchor legitimately appears in
+  // must still resolve. `anchoredRegion` slices the ORIGINAL body, so these also
+  // pin the mask's 1:1 index mapping — a length-changing mask would misalign here.
+  it.each([
+    ['plain', '<!-- AEG:CLOSES:START -->\nCloses #616\n<!-- AEG:CLOSES:END -->', '\nCloses #616\n'],
+    [
+      'after a fenced block',
+      '```\ncode\n```\n\n<!-- AEG:CLOSES:START -->\nCloses #616\n<!-- AEG:CLOSES:END -->',
+      '\nCloses #616\n'
+    ],
+    ['between two inline spans', '`a` <!-- AEG:CLOSES:START -->Closes #616<!-- AEG:CLOSES:END --> `b`', 'Closes #616'],
+    [
+      'indented inside a list item',
+      '- item\n\n    <!-- AEG:CLOSES:START -->Closes #616<!-- AEG:CLOSES:END -->',
+      'Closes #616'
+    ],
+    ['CRLF body', '<!-- AEG:CLOSES:START -->\r\nCloses #616\r\n<!-- AEG:CLOSES:END -->', '\r\nCloses #616\r\n']
+  ])('does not over-mask a real anchor: %s', (_name, body, expected) => {
+    expect(anchoredRegion(body, 'CLOSES')).toBe(expected)
+  })
+})
+
+/**
+ * Strip whole, then slice — never strip a slice.
+ *
+ * Every `stripCode` rule is block-structural, so a fragment strips differently
+ * from the same text inside its body. Stripping the *sliced* anchor region
+ * blanked an anchor indented inside a list item — list content in the full
+ * body, which GitHub does auto-close — and `extractIssue` returned
+ * `issue: null`, stranding the Issue on merge: the failure this PR exists to
+ * eliminate, reintroduced along the over-strip axis (PR #617 review MAJOR).
+ *
+ * The load-bearing case is the *pass* direction, which is the easy one to
+ * forget: these assert a real reference survives, and that the two parsers
+ * agree — they disagreed in the same call while the suite was 922-green.
+ */
+describe('strip whole, then slice (PR #617 review MAJOR)', () => {
+  const listAnchor = [
+    '## Summary',
+    '',
+    '- context bullet',
+    '',
+    '    <!-- AEG:CLOSES:START -->',
+    '    Closes #616',
+    '    <!-- AEG:CLOSES:END -->',
+    ''
+  ].join('\n')
+
+  it('an anchor indented inside a list item still resolves (GitHub auto-closes it)', () => {
+    expect(checkClosesNField(listAnchor).status).toBe('pass')
+    expect(extractIssue(listAnchor).issue).toBe(616)
+    expect([...extractClosesReferences(listAnchor)]).toEqual([616])
+  })
+
+  it('a genuine indented code block is still stripped (the guard is not simply disabled)', () => {
+    const body = 'Shape:\n\n    <!-- AEG:CLOSES:START -->\n    Closes #123\n    <!-- AEG:CLOSES:END -->\n'
+    expect(extractIssue(body).issue).toBeNull()
+  })
+
+  // The invariant that broke: one body, two parsers, one answer. Both read the
+  // same grammar over the same text, so any disagreement is a bug by definition.
+  it.each([
+    ['plain anchor', '<!-- AEG:CLOSES:START -->\nCloses #616\n<!-- AEG:CLOSES:END -->'],
+    ['list-indented anchor', listAnchor],
+    [
+      'anchor after a fenced decoy',
+      '```\n<!-- AEG:CLOSES:START -->\nCloses #123\n<!-- AEG:CLOSES:END -->\n```\n\n<!-- AEG:CLOSES:START -->\nCloses #616\n<!-- AEG:CLOSES:END -->'
+    ],
+    ['CRLF anchor', '<!-- AEG:CLOSES:START -->\r\nCloses #616\r\n<!-- AEG:CLOSES:END -->'],
+    ['anchor between inline spans', '`a` <!-- AEG:CLOSES:START -->Closes #616<!-- AEG:CLOSES:END --> `b`']
+  ])('extractIssue and extractClosesReferences agree: %s', (_name, body) => {
+    expect(extractIssue(body).issue).toBe(616)
+    expect([...extractClosesReferences(body)]).toEqual([616])
   })
 })

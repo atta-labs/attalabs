@@ -6,7 +6,7 @@
  * topology are injected by the caller (`bin/verify-coherence.ts`, the I/O shim).
  */
 
-import { anchoredRegion } from './anchored-region'
+import { anchoredRegion, stripCode } from './anchored-region'
 import { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 import type { ForgeIssue, TaskIssueRef } from '@atta/aeg-types'
 import type { ForgeFacts, Iteration, Task } from './types'
@@ -621,10 +621,26 @@ export function checkL5(activeIterationSlugs: string[], entriesBySlug: Map<strin
  * grammar, not a second copy of the pattern (D-078 discipline). Honors the
  * AEG:CLOSES anchor pair (`anchored-region.ts`, task 30) when present: only
  * references inside the pair count, so a Closes-shaped line in a pasted
- * reference brief elsewhere in the PR body isn't picked up. */
+ * reference brief elsewhere in the PR body isn't picked up. The searched region
+ * is additionally `stripCode`d before matching, for parity with GitHub's
+ * auto-close parser (which ignores `Closes #N` inside code) — a backticked-only
+ * reference resolves to no Issue here exactly as it does on merge, so this
+ * repo-wide check and the pre-merge `checkClosesN` agree with GitHub.
+ *
+ * The separator groups are bounded (`\s{0,8}`) for the same reason, and to the
+ * same width, as `checkClosesN`'s — see the ReDoS note there. The two patterns
+ * must stay byte-identical apart from the capture group; a divergence here is
+ * a gate-disagreement bug, not a style difference. */
 export function extractClosesReferences(prBody: string): Set<number> {
-  const closesPattern = /(?:closes|close|fixes|fix|resolves|resolve)\s*:?\s*#(\d+)/gi
-  const searchIn = anchoredRegion(prBody, 'CLOSES') ?? prBody
+  const closesPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s{0,8}:?\s{0,8}#(\d+)/gi
+  // Strip the WHOLE body, then slice the anchor region out of the stripped
+  // text — never strip a sliced region. A region has lost the block context
+  // the strip's rules read (list vs indented-code, fence pairing), so an
+  // anchor indented inside a list item was blanked as if it were code, and
+  // this parser silently disagreed with the whole-body path in the same call
+  // (PR #617 review MAJOR). See `archive-task.ts`'s `extractIssue`.
+  const stripped = stripCode(prBody)
+  const searchIn = anchoredRegion(stripped, 'CLOSES') ?? stripped
   const referenced = new Set<number>()
   for (const hit of searchIn.matchAll(closesPattern)) {
     referenced.add(Number(hit[1]))

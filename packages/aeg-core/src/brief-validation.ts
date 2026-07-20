@@ -12,7 +12,7 @@
  * `brief-authoring` skill and `brief-developer` contract define.
  */
 
-import { type AnchorField, anchoredRegion } from './anchored-region'
+import { type AnchorField, anchoredRegion, stripCode } from './anchored-region'
 import { parsePremiseBlock } from './premise-check'
 
 export type BriefSectionResult = { status: 'pass' | 'fail'; errors: string[] }
@@ -261,9 +261,39 @@ export function checkForField(prBody: string): BriefSectionResult {
   }
 }
 
+/**
+ * `Closes #N` gate — the match runs on **code-stripped** body text (fenced
+ * blocks + inline spans removed via `stripCode`), so it agrees byte-for-byte
+ * with GitHub's own auto-close parser, which also ignores `Closes #N` inside
+ * code. Without the strip, a body whose only closing reference is backticked
+ * (`` `Closes #600` ``) passed this gate green yet merged **without** closing
+ * its Issue — stranding #600 (PR #608) and #601 (PR #611) and reddening every
+ * open PR via the A3 `auto-close-misfire` oracle. "verify-docs green" must
+ * imply "GitHub will auto-close"; stripping code here is what makes it so.
+ *
+ * The separator groups are **bounded** (`\s{0,8}`, not `\s*`). Two adjacent
+ * unbounded `\s*` around an optional `:` backtrack quadratically on a body of
+ * the shape `closes` + long whitespace + no `#` — ~2.65 s at GitHub's
+ * 65,536-char body cap, and this function runs the pattern twice on the fail
+ * path (PR #617 security pass). A constant bound makes the work per start
+ * position constant, so the scan is linear in body length. Eight is far past
+ * any real separator; a body needing more is malformed by the brief's own
+ * convention (a bare ref inside the `AEG:CLOSES` anchor) and fails with an
+ * actionable message rather than silently stranding its Issue.
+ */
 export function checkClosesN(prBody: string): BriefSectionResult {
-  if (/(?:closes|close|fixes|fix|resolves|resolve)\s*:?\s*#\d+/i.test(prBody)) {
+  const closesPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s{0,8}:?\s{0,8}#\d+/i
+  if (closesPattern.test(stripCode(prBody))) {
     return { status: 'pass', errors: [] }
+  }
+  // Distinguish "only inside code" (actionable — move it out) from "absent entirely".
+  if (closesPattern.test(prBody)) {
+    return {
+      status: 'fail',
+      errors: [
+        "brief-validation Closes #N: `Closes #N` found only inside a code span — GitHub won't auto-close it. Put a bare `Closes #N` on its own line inside the `AEG:CLOSES` anchor."
+      ]
+    }
   }
   return {
     status: 'fail',
