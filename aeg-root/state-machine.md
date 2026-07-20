@@ -236,7 +236,7 @@ Most specs are `draft` — no deliberate ratification pass has been done. Future
 
 **Append-only invariant:** logs are never edited in place. Status changes are new entries referencing the old via `Supersedes:`; the original gets `Superseded by:` filled and its `Status:` flipped to SUPERSEDED, body otherwise unchanged.
 
-**Numbering is per-log, not globally unique.** Each log carries its own `D-###` sequence; numbers collide across logs deliberately. The legacy Vāda log (`apps/vada-ai/specs/vada-decisions.md`) runs its own sequence, as did Cetana's before that product was retired and deleted (D-095/D-131). There is a Vāda D-025 and a global D-025 and they are different decisions. **Always disambiguate by naming the log** (e.g. "global D-026", "vada-decisions D-033"). The global log has apparent gaps because some early v3 decisions were filed in project logs. Within any single log, numbers are sequential and append-only; the Archivist validates within-log sequencing (Section 12).
+**Numbering is per-log, not globally unique.** Each log carries its own `D-###` sequence; numbers collide across logs deliberately. The legacy Vāda log (`apps/vada-ai/specs/vada-decisions.md`) runs its own sequence, as did Cetana's before that product was retired and deleted (D-095/D-132). There is a Vāda D-025 and a global D-025 and they are different decisions. **Always disambiguate by naming the log** (e.g. "global D-026", "vada-decisions D-033"). The global log has apparent gaps because some early v3 decisions were filed in project logs. Within any single log, numbers are sequential and append-only; the Archivist validates within-log sequencing (Section 12).
 
 ---
 

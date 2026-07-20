@@ -369,4 +369,4 @@ New project specs and major feature specs (Tier 1 / Tier 3); the "Goal" section 
 Existing specs are not migrated wholesale; a spec adopts this format when it's next rewritten for other reasons.
 
 ### Why
-Spec Kit's evaluation found the template produces measurably better-structured artifacts — explicit priority, visible ambiguities, success tied to user-observable outcomes. The repo adopts the format without adopting Spec Kit the tool. (The open question of whether an orchestrator eventually wraps Spec Kit templates as MCP tools was Cetana's; it retired with that product, D-095/D-131.)
+Spec Kit's evaluation found the template produces measurably better-structured artifacts — explicit priority, visible ambiguities, success tied to user-observable outcomes. The repo adopts the format without adopting Spec Kit the tool. (The open question of whether an orchestrator eventually wraps Spec Kit templates as MCP tools was Cetana's; it retired with that product, D-095/D-132.)

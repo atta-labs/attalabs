@@ -27,7 +27,7 @@
  * `dependsOn`/`conflictsWith` for an ACTIVE iteration derive from the forge
  * like everything else. A legacy `aeg-root/iterations/<slug>.md` topology
  * table was once merged in as best-effort enrichment for pre-cutover files;
- * that path was removed by `deprecation-v1` task 1 (D-131) once it was
+ * that path was removed by `deprecation-v1` task 1 (D-132) once it was
  * provably unreachable — no live iteration has carried such a file since
  * #512/#517 deleted the last one (`aeg-drift-prevention-v1.md`), and
  * `check-no-disk-state.ts` now CI-blocks adding a new active topology file

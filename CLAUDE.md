@@ -19,7 +19,7 @@ For the canonical naming and ecosystem framing, see [`apps/atta-ai/specs/atta-na
 - **AttaLabs** is the dev/lab ecosystem. Domain: `attalabs.dev`. Multiple products live here.
 - **Atta** is one product within AttaLabs — the deep-thinking AI composed of Vāda + Vitakka + Sati. Target consumer domain: `atta.ai` (preferred, not owned).
 - **Vāda, Vitakka, Sati** are the layers inside Atta. Vāda and Vitakka also live as standalone products at AttaLabs.
-- **Herald** and **Vinaya** are standalone products in AttaLabs, not part of Atta. (**Cetana** was retired — D-095, deleted by D-131.)
+- **Herald** and **Vinaya** are standalone products in AttaLabs, not part of Atta. (**Cetana** was retired — D-095, deleted by D-132.)
 - **The Atta Engine** is the execution substrate (`@atta/engine` + `@atta/adapter-langgraph`).
 - **No `-AI` suffix** on any product brand. Pāli naming is mandatory inside Atta, elective elsewhere.
 

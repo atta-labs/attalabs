@@ -19,7 +19,7 @@ AEG is **agent-agnostic and tool-agnostic.** The roles below describe *what an a
 ## 1. AEG is two things sharing one name (don't confuse them)
 
 - **AEG the model** — this operating model: the governance/flow constitution. It lives at repo-root `aeg-root/` (the model exists once, at the root only — D-041) and governs the whole repo. *This skill is the model.*
-- **AEG the product** — a deployed UI that *visualizes* a repo's AEG execution, plus the CLI that lays the AEG structure into any repo. That product is **Vinaya**; in this repo it lives at `apps/vinaya/` (the earlier `apps/aeg` app was superseded by it and deleted, D-131).
+- **AEG the product** — a deployed UI that *visualizes* a repo's AEG execution, plus the CLI that lays the AEG structure into any repo. That product is **Vinaya**; in this repo it lives at `apps/vinaya/` (the earlier `apps/aeg` app was superseded by it and deleted, D-132).
 
 When someone says "AEG," default to the model unless the context is clearly the product (the UI, the website, the scaffolder).
 

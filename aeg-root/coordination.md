@@ -97,7 +97,7 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 
 > **`now.md` is retired (D-057).** Active work, blocked tasks, and next candidates are derived from the forge (see "Session-start forge queries" above). The forge is the single source of truth for what is happening; the per-project pinned state Issue holds what the forge cannot derive.
 
-The roadmap is **not** an AEG file — it lives in the company's tool (or, for solo AttaLabs work, in the per-project backlogs `apps/<project>/specs/<project>-backlog.md`, which are reference docs out of the flow). The old global `roadmap.md` is retired, and the monorepo-wide `specs/ecosystem-backlog.md` it once sat beside was deleted with the rest of the stale AEG research (`deprecation-v1` task 1, D-131) — cross-cutting items are cut as backlog Issues instead. **Backlog convention (D-037, D-041):** a unit's *plan* lives in its `specs/` (`apps/<project>/specs/<project>-backlog.md` per project); a unit's *flow + governance* lives in the root `aeg-root/` (model, exists once); its *living state* lives on the per-project pinned Issue (D-110 — the old per-unit `aeg-project/` state folder is retired).
+The roadmap is **not** an AEG file — it lives in the company's tool (or, for solo AttaLabs work, in the per-project backlogs `apps/<project>/specs/<project>-backlog.md`, which are reference docs out of the flow). The old global `roadmap.md` is retired, and the monorepo-wide `specs/ecosystem-backlog.md` it once sat beside was deleted with the rest of the stale AEG research (`deprecation-v1` task 1, D-132) — cross-cutting items are cut as backlog Issues instead. **Backlog convention (D-037, D-041):** a unit's *plan* lives in its `specs/` (`apps/<project>/specs/<project>-backlog.md` per project); a unit's *flow + governance* lives in the root `aeg-root/` (model, exists once); its *living state* lives on the per-project pinned Issue (D-110 — the old per-unit `aeg-project/` state folder is retired).
 
 ### What lives in the repo
 
@@ -131,7 +131,7 @@ When context-sensitive, prefer the explicit qualifier ("AttaLabs ecosystem" vs "
 | **Vāda** | Deliberation engine. V1 live. Standalone product + deliberation layer inside Atta. Pāli for "debate/discourse." | `vada.attalabs.dev` |
 | **Vitakka** | Focused-thinking product. Not yet built. Standalone + focus layer inside Atta. Pāli for "directed thought." | `vitakka.attalabs.dev` (when built) |
 | **Sati** | Memory layer inside Atta. Standalone surface deferred. Pāli for "mindfulness, recollection." | TBD |
-| **Vinaya** | Agentic Execution Governance made shippable — the CLI plus Vinaya Studio, the UI that visualizes a repo's AEG execution (`apps/vinaya/`). The model is repo-root `aeg-root/`. Supersedes both Cetana (retired, D-095/D-131) and the old AEG Studio app (deleted, D-131). NOT part of Atta. | `vinaya.attalabs.dev` |
+| **Vinaya** | Agentic Execution Governance made shippable — the CLI plus Vinaya Studio, the UI that visualizes a repo's AEG execution (`apps/vinaya/`). The model is repo-root `aeg-root/`. Supersedes both Cetana (retired, D-095/D-132) and the old AEG Studio app (deleted, D-132). NOT part of Atta. | `vinaya.attalabs.dev` |
 | **Herald** | Standalone forensic CV/JD match tool. NOT part of Atta. Sibling product in AttaLabs. English name. | `herald.attalabs.dev` (when deployed) |
 
 ### Naming convention — no `-AI` suffix on any product brand

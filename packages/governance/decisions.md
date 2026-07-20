@@ -3276,7 +3276,7 @@ Separately, retro's vendored `installed/button.tsx` references `hover:bg-primary
 
 ---
 
-## D-132 — D-072's sanctioned-crossings list drops the deleted Cetana crossing and retires its now-gone path references
+## D-133 — D-072's sanctioned-crossings list drops the deleted Cetana crossing and retires its now-gone path references
 
 **Date:** 2026-07-20
 **Status:** ACTIVE
