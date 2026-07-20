@@ -168,13 +168,13 @@ export function AdminEditorPage({
                             key={s}
                             type='button'
                             variant='ghost'
-                            size='sm'
+                            size='xs'
                             onClick={(e) => {
                               e.stopPropagation()
                               setThemeId(theme._id)
                               handleSchemeToggle(theme._id, s)
                             }}
-                            className={`h-auto rounded px-1.5 py-0.5 font-mono text-xs uppercase tracking-[0.1em] transition-colors ${
+                            className={`font-mono uppercase tracking-[0.1em] transition-colors ${
                               isSelected && colorScheme === s
                                 ? 'bg-foreground text-background'
                                 : 'text-muted-foreground hover:text-foreground'
