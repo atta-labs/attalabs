@@ -323,6 +323,123 @@ describe('checkClosesN', () => {
   })
 })
 
+/**
+ * Exhaustive fence matrix — {backtick, tilde} × {3,4,6} × {LF, CRLF} ×
+ * {closed, unclosed} × {info string, none}, plus the closer-length rules.
+ *
+ * Three successive fence bugs (double-backtick spans, then tilde/run-length,
+ * then CRLF) each shipped a fix whose tests covered only the axis just
+ * reported, leaving the next axis to be found in review. This table exists so
+ * the axes are enumerated rather than discovered one incident at a time — add
+ * a dimension here, not another one-off `it`.
+ */
+describe('checkClosesN — fence matrix', () => {
+  const EOLS = [
+    ['LF', '\n'],
+    ['CRLF', '\r\n']
+  ] as const
+  const FENCES = [
+    ['backtick', '`'],
+    ['tilde', '~']
+  ] as const
+  const LENGTHS = [3, 4, 6] as const
+
+  for (const [eolName, eol] of EOLS) {
+    for (const [fenceName, ch] of FENCES) {
+      for (const len of LENGTHS) {
+        const fence = ch.repeat(len)
+        const info = ch === '`' ? 'js' : 'js x'
+
+        it(`${eolName}/${fenceName}×${len}: closed fence hides Closes #5`, () => {
+          const body = ['Summary.', '', fence, 'Closes #5', fence, ''].join(eol)
+          expect(checkClosesN(body).status).toBe('fail')
+        })
+
+        it(`${eolName}/${fenceName}×${len}: fence with info string hides Closes #5`, () => {
+          const body = ['Summary.', '', fence + info, 'Closes #5', fence, ''].join(eol)
+          expect(checkClosesN(body).status).toBe('fail')
+        })
+
+        it(`${eolName}/${fenceName}×${len}: unclosed fence hides Closes #5 to EOF`, () => {
+          const body = ['Summary.', '', fence, 'Closes #5'].join(eol)
+          expect(checkClosesN(body).status).toBe('fail')
+        })
+
+        it(`${eolName}/${fenceName}×${len}: a real bare Closes #5 outside the fence still passes`, () => {
+          const body = ['Ships it. Closes #5', '', fence, 'Example: Closes #99', fence, ''].join(eol)
+          expect(checkClosesN(body).status).toBe('pass')
+        })
+
+        it(`${eolName}/${fenceName}×${len}: a longer closer still closes the fence`, () => {
+          const body = ['Ships it. Closes #5', '', fence, 'x', ch.repeat(len + 2), '', 'tail'].join(eol)
+          expect(checkClosesN(body).status).toBe('pass')
+        })
+      }
+
+      it(`${eolName}/${fenceName}: a shorter run cannot close a longer fence`, () => {
+        const body = ['Summary.', '', ch.repeat(5), 'Closes #5', ch.repeat(3), ''].join(eol)
+        expect(checkClosesN(body).status).toBe('fail')
+      })
+
+      it(`${eolName}/${fenceName}: fence indented up to 3 spaces still opens`, () => {
+        const body = ['Summary.', '', `   ${ch.repeat(3)}`, 'Closes #5', `   ${ch.repeat(3)}`, ''].join(eol)
+        expect(checkClosesN(body).status).toBe('fail')
+      })
+    }
+
+    it(`${eolName}: same-line triple backticks stay an inline span, not a fence`, () => {
+      expect(checkClosesN(['Ref ```Closes #5``` inline.'].join(eol)).status).toBe('fail')
+    })
+
+    it(`${eolName}: bare Closes #5 in the AEG:CLOSES anchor passes`, () => {
+      const body = ['<!-- AEG:CLOSES:START -->', 'Closes #5', '<!-- AEG:CLOSES:END -->'].join(eol)
+      expect(checkClosesN(body).status).toBe('pass')
+    })
+
+    it(`${eolName}: indented code block hides Closes #5`, () => {
+      expect(checkClosesN(['Summary.', '', '    Closes #5', ''].join(eol)).status).toBe('fail')
+    })
+
+    it(`${eolName}: list-continuation Closes #5 is NOT treated as code`, () => {
+      expect(checkClosesN(['- item', '', '    Closes #5', ''].join(eol)).status).toBe('pass')
+    })
+  }
+})
+
+/**
+ * Separator bound — `\s{0,8}` replaced `\s*` to kill the quadratic backtrack
+ * two adjacent unbounded `\s*` groups produce (PR #617 security LOW). These
+ * pin both halves of the trade: every realistic separator still matches, and
+ * the pathological body no longer costs seconds.
+ */
+describe('checkClosesN — separator bound', () => {
+  it.each([
+    ['no separator', 'Closes#5'],
+    ['single space', 'Closes #5'],
+    ['colon', 'Closes: #5'],
+    ['colon, no space', 'Closes:#5'],
+    ['newline', 'Closes\n#5'],
+    ['eight spaces (the bound)', `Closes${' '.repeat(8)}#5`]
+  ])('accepts %s', (_name, body) => {
+    expect(checkClosesN(body).status).toBe('pass')
+  })
+
+  it('rejects a separator past the bound rather than scanning unboundedly', () => {
+    expect(checkClosesN(`Closes${' '.repeat(40)}#5`).status).toBe('fail')
+  })
+
+  it('scans a 65k adversarial body in well under a second', () => {
+    // GitHub's body cap is 65,536 chars. `closes` + all-whitespace + no `#` is
+    // the worst case: pre-bound this measured ~2.65s, and `checkClosesN` runs
+    // the pattern twice on the fail path. Threshold is ~5x the observed
+    // post-fix time, so it flags a reintroduced backtrack, not runner jitter.
+    const body = `closes${' '.repeat(65_536)}`
+    const started = performance.now()
+    expect(checkClosesN(body).status).toBe('fail')
+    expect(performance.now() - started).toBeLessThan(500)
+  })
+})
+
 describe('headerRegion', () => {
   it('returns everything before the first h2+ heading', () => {
     expect(headerRegion('Tier: 3\nProject: aeg\n\n## Summary\n\nbody')).toBe('Tier: 3\nProject: aeg\n\n')

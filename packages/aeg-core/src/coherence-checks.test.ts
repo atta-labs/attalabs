@@ -926,4 +926,16 @@ describe('extractClosesReferences', () => {
   it('accepts past-tense closed/fixed/resolved keywords', () => {
     expect([...extractClosesReferences('Fixed #5')]).toEqual([5])
   })
+  it('ignores a Closes #N inside a CRLF fenced block (PR #617 security re-pass)', () => {
+    expect(extractClosesReferences('```\r\nCloses #5\r\n```\r\n').size).toBe(0)
+  })
+  it('keeps a bare Closes #N in a CRLF body', () => {
+    expect([...extractClosesReferences('Ships it. Closes #5\r\n')]).toEqual([5])
+  })
+  // Separator bound — must stay identical to `checkClosesN`'s; the two gates
+  // disagreeing about what counts as a reference is the bug class this PR closes.
+  it('accepts separators up to the bound and rejects past it', () => {
+    expect([...extractClosesReferences(`Closes${' '.repeat(8)}#5`)]).toEqual([5])
+    expect(extractClosesReferences(`Closes${' '.repeat(40)}#5`).size).toBe(0)
+  })
 })

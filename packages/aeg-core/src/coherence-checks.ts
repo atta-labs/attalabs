@@ -625,9 +625,14 @@ export function checkL5(activeIterationSlugs: string[], entriesBySlug: Map<strin
  * is additionally `stripCode`d before matching, for parity with GitHub's
  * auto-close parser (which ignores `Closes #N` inside code) — a backticked-only
  * reference resolves to no Issue here exactly as it does on merge, so this
- * repo-wide check and the pre-merge `checkClosesN` agree with GitHub. */
+ * repo-wide check and the pre-merge `checkClosesN` agree with GitHub.
+ *
+ * The separator groups are bounded (`\s{0,8}`) for the same reason, and to the
+ * same width, as `checkClosesN`'s — see the ReDoS note there. The two patterns
+ * must stay byte-identical apart from the capture group; a divergence here is
+ * a gate-disagreement bug, not a style difference. */
 export function extractClosesReferences(prBody: string): Set<number> {
-  const closesPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s*#(\d+)/gi
+  const closesPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s{0,8}:?\s{0,8}#(\d+)/gi
   const searchIn = stripCode(anchoredRegion(prBody, 'CLOSES') ?? prBody)
   const referenced = new Set<number>()
   for (const hit of searchIn.matchAll(closesPattern)) {

@@ -270,9 +270,19 @@ export function checkForField(prBody: string): BriefSectionResult {
  * its Issue — stranding #600 (PR #608) and #601 (PR #611) and reddening every
  * open PR via the A3 `auto-close-misfire` oracle. "verify-docs green" must
  * imply "GitHub will auto-close"; stripping code here is what makes it so.
+ *
+ * The separator groups are **bounded** (`\s{0,8}`, not `\s*`). Two adjacent
+ * unbounded `\s*` around an optional `:` backtrack quadratically on a body of
+ * the shape `closes` + long whitespace + no `#` — ~2.65 s at GitHub's
+ * 65,536-char body cap, and this function runs the pattern twice on the fail
+ * path (PR #617 security pass). A constant bound makes the work per start
+ * position constant, so the scan is linear in body length. Eight is far past
+ * any real separator; a body needing more is malformed by the brief's own
+ * convention (a bare ref inside the `AEG:CLOSES` anchor) and fails with an
+ * actionable message rather than silently stranding its Issue.
  */
 export function checkClosesN(prBody: string): BriefSectionResult {
-  const closesPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s*#\d+/i
+  const closesPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s{0,8}:?\s{0,8}#\d+/i
   if (closesPattern.test(stripCode(prBody))) {
     return { status: 'pass', errors: [] }
   }

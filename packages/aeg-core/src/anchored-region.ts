@@ -82,7 +82,13 @@ function maskCode(body: string): string {
  * between (see `stripIndentedCode`).
  */
 export function stripCode(body: string): string {
-  return stripIndentedCode(stripFencedCode(body)).replace(/(`+)[^\n]*?\1/g, '')
+  // Normalise line endings FIRST. The line scanners below anchor with `$`, and
+  // JS's `.`/`[ \t]` never match `\r`, so a CRLF body would open no fence at all
+  // and let a fenced `Closes #N` walk free (PR #617 security re-pass). Doing it
+  // once here keeps every sub-stripper line-ending agnostic, rather than
+  // teaching each individual regex about `\r` and missing the next one.
+  const normalised = body.replace(/\r\n?/g, '\n')
+  return stripIndentedCode(stripFencedCode(normalised)).replace(/(`+)[^\n]*?\1/g, '')
 }
 
 /** An opening code fence: ≤3 leading spaces, then a run of ≥3 backticks or ≥3 tildes, then an info string. */
