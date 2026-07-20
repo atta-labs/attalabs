@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react'
 import {
+  Badge,
   Button,
   Card,
   CardContent,
@@ -634,9 +635,10 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                 }}
               >
                 {stackTags.map((tag) => (
-                  <span
+                  <Badge
                     key={tag}
-                    className='flex items-center gap-1 rounded border border-border px-2 py-0.5 font-mono text-xs text-foreground'
+                    variant='outline'
+                    className='flex h-auto items-center gap-1 px-2 py-0.5 font-mono text-xs text-foreground'
                   >
                     {tag}
                     <Button
@@ -648,7 +650,7 @@ export function ProfileEditor({ profile, defaultTab = 'profile' }: { profile: Pr
                     >
                       <X className='h-3 w-3' />
                     </Button>
-                  </span>
+                  </Badge>
                 ))}
                 {!stackAtLimit && (
                   <Input
