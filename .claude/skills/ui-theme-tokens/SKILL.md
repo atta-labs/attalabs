@@ -54,7 +54,7 @@ Each text token is calibrated against a specific surface. Using the wrong pairin
 | `popover-foreground` | **Floating ink** | `popover` | Text inside popovers/menus/tooltips. |
 | `secondary-foreground` | **Frame ink** | `secondary` | Text on `secondary` surfaces (topbar labels, toolbar buttons). **Do not use this as free-floating "metadata text" on a `background` surface** — its contrast is calibrated against `secondary`, not `background`. |
 | `primary-foreground` | **CTA ink** | `primary` | Text on `primary` fills (button labels, badge text on primary backgrounds). |
-| `accent-foreground` | **Highlight ink** | `accent` | Text on `accent` fills. |
+| `accent-foreground` | **Fill ink** | `accent` | Text on `accent` fills. (Named "highlight ink" before D-131, when `accent` was still a highlight; it is a fill now.) |
 | `destructive-foreground` | **Error fill ink** | `destructive` | Text on `destructive` fills. Note: `destructive` text on a non-destructive surface uses `text-destructive` directly (see status section). |
 
 **Rule of thumb:** if you wrote `bg-X`, the matching text token is `text-X-foreground`. If you wrote `bg-background` or no surface at all, your text choices are `foreground` or `muted-foreground`.
@@ -189,10 +189,10 @@ All tokens below are exposed as Tailwind utilities. For any token `X`, you can u
 
 | Token | Use for |
 |-------|---------|
-| `primary` | Action / selected / weighted info |
-| `primary-foreground` | Text on `primary` |
-| `accent` | Hover / highlight / inline emphasis |
-| `accent-foreground` | Text on `accent` |
+| `primary` | Action / selected / weighted info, **and every text or border highlight** (`text-primary`, `hover:text-primary`, `hover:border-primary`) |
+| `primary-foreground` | Text on `primary` fills |
+| `accent` | **Hover fill only** — `bg-accent`, `hover:bg-accent`. Never a text or border colour (D-131) |
+| `accent-foreground` | Text on `accent` fills |
 
 ### Status
 

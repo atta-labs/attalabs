@@ -194,6 +194,16 @@ const INSTALLED_RE = /(?:^|\/)packages\/ui\/libraries\/[^/]+\/installed\//
 // Committed Sanity Studio build output — see the file-header comment above.
 const STUDIO_BUILD_RE = /(?:^|\/)packages\/cms\/[^/]+-ai\//
 
+// `packages/cms/scripts/**` seeds and migrates CMS DATA, not UI. A theme document's
+// colour tokens ARE literal colour values — that is what the CMS stores and what
+// `generateThemeCSSForScheme` converts to oklch at render time. ui-theme-tokens/SKILL.md
+// states the exception directly: "CMS theme values are the exception, they live in
+// Sanity". Gating them here would make it impossible to have a reproducible theme seed,
+// which is the only alternative to theme values existing solely as published documents.
+// This exemption is for CMS data scripts only — it does NOT extend to `packages/cms/src`,
+// where colour literals in query or render code would still be a real violation.
+const CMS_SEED_RE = /(?:^|\/)packages\/cms\/scripts\//
+
 function scanLine(file: string, line: number, text: string): Violation[] {
   const violations: Violation[] = []
   const trimmed = text.trim()
@@ -263,7 +273,7 @@ function main(): void {
   }
 
   const added = parseAddedLines(diff).filter(
-    (a) => isUiFile(a.file) && !INSTALLED_RE.test(a.file) && !STUDIO_BUILD_RE.test(a.file)
+    (a) => isUiFile(a.file) && !INSTALLED_RE.test(a.file) && !STUDIO_BUILD_RE.test(a.file) && !CMS_SEED_RE.test(a.file)
   )
   const violations: Violation[] = []
   for (const a of added) {
