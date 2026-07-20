@@ -12,10 +12,10 @@ export default function BrokeredBenchLayout({ children }: { children: ReactNode 
       <header className='border-b border-border bg-muted/20 px-4 py-3'>
         <nav className='flex items-center gap-6 text-sm'>
           <span className='font-mono font-semibold text-foreground'>/bench</span>
-          <Link href='/bench' className='text-muted-foreground hover:text-accent transition-colors'>
+          <Link href='/bench' className='text-muted-foreground hover:text-primary transition-colors'>
             Overview
           </Link>
-          <Link href='/sessions/consultations' className='text-muted-foreground hover:text-accent transition-colors'>
+          <Link href='/sessions/consultations' className='text-muted-foreground hover:text-primary transition-colors'>
             Consultations →
           </Link>
         </nav>
