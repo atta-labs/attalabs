@@ -69,6 +69,28 @@ describe('listTasksForSlug', () => {
     expect(task?.projects).toEqual(['vinaya', 'herald'])
   })
 
+  it('ignores prose in the **Project:** field rather than deriving a garbage project (#554)', () => {
+    // #554's EXACT body line. Unguarded, this split to a single "project"
+    // named "(none — tools/admin is unregistered; …)", which rendered as a
+    // project label and built a board link that 404s — strictly worse than
+    // the board-less row it replaced. Regression pin: fails without the
+    // slug-shape guard in `parseProjectField`.
+    vi.mocked(ghIssueListByLabel).mockReturnValue([
+      {
+        number: 554,
+        title: '[admin-ui-library-picker-v1] 1 — Add per-app Library picker to tools/admin',
+        body: '**Project:** (none — tools/admin is unregistered; see Project(s) + blast radius above)',
+        state: 'OPEN',
+        milestone: null,
+        labels: [{ name: 'iteration:admin-ui-library-picker-v1' }]
+      }
+    ])
+
+    const [task] = listTasksForSlug('daniboomerang', 'attalabs', 'admin-ui-library-picker-v1')
+
+    expect(task?.projects).toEqual([])
+  })
+
   it('sorts numeric ids ahead of alpha suffix, e.g. 7 before 7a', () => {
     vi.mocked(ghIssueListByLabel).mockReturnValue([
       {

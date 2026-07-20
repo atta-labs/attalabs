@@ -17,14 +17,25 @@ function parseProjectLabels(labels: Array<{ name: string }>): string[] {
  * forge-native task Issue that carries only the field — never got a label — a
  * resolvable project today (the `state-machine-v1` dead-board case). Matches the
  * bold field line only; the prose `**Project(s) + blast radius**` heading and a
- * backticked inline `Project: x` never match (no `:**` immediately after). */
+ * backticked inline `Project: x` never match (no `:**` immediately after).
+ *
+ * Values are shape-guarded, not registry-checked: the field is free prose and
+ * authors write real sentences in it (#554: `**Project:** (none — tools/admin
+ * is unregistered; …)`), which without a guard becomes a "project" that builds
+ * a 404 board link — strictly worse than the board-less row it replaces. The
+ * guard stays a slug shape rather than a registry lookup on purpose: this
+ * package is pure, repo-parameterized forge derivation and must not couple to
+ * `packages/governance`. An unregistered-but-slug-shaped value still resolves
+ * here; that is the registry's problem to report, not this parser's. */
+const PROJECT_SLUG = /^[a-z0-9][a-z0-9-]*$/i
+
 function parseProjectField(body: string): string[] {
   const m = body.match(/^\s*\*\*Project(?:\(s\))?:\*\*\s*(.+)$/im)
   if (!m) return []
   return (m[1] ?? '')
     .split(',')
     .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith('<'))
+    .filter((s) => PROJECT_SLUG.test(s))
 }
 
 /** Union of label-derived and field-derived projects, de-duplicated, order
